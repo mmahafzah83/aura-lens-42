@@ -186,6 +186,19 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
+    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    const CRON_SECRET = Deno.env.get("CRON_SECRET") || "";
+    const apiKey = req.headers.get("apikey") || req.headers.get("x-api-key") ||
+      (req.headers.get("Authorization") || "").replace("Bearer ", "");
+    const cronHeader = req.headers.get("x-cron-secret") || "";
+    const isCron = !!CRON_SECRET && cronHeader === CRON_SECRET;
+    const isServiceRole = !!SERVICE_KEY && apiKey === SERVICE_KEY;
+    if (!isCron && !isServiceRole) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const { user_id, email_type } = await req.json();
     if (!user_id || !email_type) {
       return new Response(JSON.stringify({ error: "user_id and email_type required" }), {
