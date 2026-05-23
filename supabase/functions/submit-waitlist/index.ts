@@ -158,6 +158,17 @@ serve(async (req) => {
       });
     }
 
+    // Get position on the list (total count after insert)
+    let position = 0;
+    try {
+      const { count } = await supabase
+        .from("beta_allowlist")
+        .select("*", { count: "exact", head: true });
+      position = count || 0;
+    } catch (countErr) {
+      console.error("Position count failed (non-fatal):", countErr);
+    }
+
     // Send confirmation email via Supabase Auth admin generateLink + custom email is non-trivial.
     // Use simple approach: send via Resend if available, otherwise log and continue (do not fail submit).
     try {
@@ -219,7 +230,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, message: "You're on the list" }),
+      JSON.stringify({ success: true, message: "You're on the list", position }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
