@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import usePageMeta from "@/hooks/usePageMeta";
 
@@ -41,6 +41,7 @@ function useCountUp(target: number, start: boolean, duration = 1200) {
 const StatCard = ({ value, suffix = "%", literal, desc, fullWidth }: { value?: number; suffix?: string; literal?: string; desc: string; fullWidth?: boolean }) => {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
+  const [landed, setLanded] = useState(false);
   useEffect(() => {
     if (!ref.current) return;
     const io = new IntersectionObserver(([e]) => {
@@ -50,10 +51,21 @@ const StatCard = ({ value, suffix = "%", literal, desc, fullWidth }: { value?: n
     return () => io.disconnect();
   }, []);
   const counted = useCountUp(value ?? 0, visible);
+  // Pulse when the count finishes landing
+  useEffect(() => {
+    if (!visible) return;
+    if (literal != null) { setLanded(true); return; }
+    if (value != null && counted >= value) {
+      const t = setTimeout(() => setLanded(true), 30);
+      return () => clearTimeout(t);
+    }
+  }, [visible, counted, value, literal]);
+  // Highlight the 54% rejection stat with a bronze accent
+  const isAccent = value === 54;
   return (
     <div
       ref={ref}
-      className={`pw-stat-card reveal ${fullWidth ? "sm:col-span-2 pw-stat-capstone" : ""}`}
+      className={`pw-stat-card reveal pw-stat-flash ${fullWidth ? "pw-stat-fullwidth" : ""} ${isAccent ? "pw-stat-accent" : ""}`}
       style={{
         background: CARD_BG,
         border: "1px solid #1f1f1f",
@@ -61,10 +73,9 @@ const StatCard = ({ value, suffix = "%", literal, desc, fullWidth }: { value?: n
         padding: 28,
         textAlign: "center",
         transition: "border-color 300ms ease, transform 300ms ease",
-        ...(fullWidth ? { borderLeft: `3px solid ${BRONZE}` } : {}),
       }}
     >
-      <div style={{
+      <div className={landed ? "pw-stat-pulse" : ""} style={{
         fontFamily: "'Cormorant Garamond', Georgia, serif",
         fontSize: "clamp(40px, 7vw, 64px)",
         color: BRONZE,
@@ -108,6 +119,7 @@ const Milestone = ({ label, title, desc, preFilled }: { label: string; title: st
       />
       <div
         aria-hidden
+        className={filled ? "pw-dot-ripple" : ""}
         style={{
           position: "absolute", left: 0, top: 2, width: 18, height: 18, borderRadius: "50%",
           border: `2.5px solid ${BRONZE}`,
