@@ -579,6 +579,43 @@ const Onboarding = () => {
     );
   }
 
+  // ───── Identity confirmation gate (Fix 5) ─────
+  if (needsIdentityConfirm) {
+    return cardShell(
+      <>
+        <div style={{ textAlign: "center", fontSize: 24, color: "var(--brand)", marginBottom: 12 }}>✦</div>
+        {eyebrow("Confirm it's you")}
+        {heading("This invitation was sent to:")}
+        <p
+          className="mb-6"
+          style={{
+            fontSize: 18,
+            fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+            color: "hsl(var(--foreground))",
+            wordBreak: "break-all",
+          }}
+        >
+          {userEmail || "—"}
+        </p>
+        <p className="mb-6" style={{ fontSize: 15, lineHeight: 1.7, color: "hsl(var(--muted-foreground))" }}>
+          Is this your email address?
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {primaryBtn(<>Yes, that's me <ArrowRight className="w-4 h-4" /></>, confirmIdentityYes)}
+          <button
+            type="button"
+            onClick={confirmIdentityNo}
+            disabled={signingOut}
+            className="w-full text-sm py-3 transition-colors"
+            style={{ color: "hsl(var(--muted-foreground))", background: "transparent" }}
+          >
+            {signingOut ? "Signing out…" : "No, this isn't mine"}
+          </button>
+        </div>
+      </>,
+    );
+  }
+
   // ───── STEP -1: Password gate ─────
   const handleSetPassword = async () => {
     if (!pwd || pwd.length < 8) {
