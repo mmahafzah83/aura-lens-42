@@ -171,7 +171,7 @@ const Onboarding = () => {
   useEffect(() => {
     if (step !== 0 || checking) return;
     setRevealCount(0);
-    const timers = [500, 1000, 1500].map((ms, i) =>
+    const timers = [300, 600, 900].map((ms, i) =>
       window.setTimeout(() => setRevealCount(i + 1), ms),
     );
     return () => timers.forEach(clearTimeout);
@@ -657,9 +657,9 @@ const Onboarding = () => {
   // ───── STEP 0 ─────
   if (step === 0) {
     const items = [
-      "Read your LinkedIn and understand who you are professionally",
-      "Find a relevant article from your sector — your first intelligence capture",
-      "Begin building your strategic positioning",
+      "Aura reads what you already read — and finds the signals you'd miss.",
+      "It writes in your voice — because generic AI content damages your reputation.",
+      "It tracks what matters — so the right people notice you before you even pitch.",
     ];
     return cardShell(
       <>
@@ -668,7 +668,7 @@ const Onboarding = () => {
         <div className="space-y-4 mb-8">
           {body(<>You have the expertise. The certificates. The years. But right now, to anyone who hasn't met you in person — you're invisible.</>)}
           {body(<>That changes today.</>)}
-          {body(<>In the next 3 minutes, Aura will:</>)}
+          {body(<>Here's why Aura is different:</>)}
         </div>
         <ul className="space-y-3 mb-8">
           {items.map((it, i) => (
@@ -688,10 +688,19 @@ const Onboarding = () => {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: revealCount >= 3 ? 1 : 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.5, delay: revealCount >= 3 ? 0.6 : 0 }}
         >
           {primaryBtn(<>Let's begin <ArrowRight className="w-4 h-4" /></>, () => goStep(1), { disabled: revealCount < 3 })}
         </motion.div>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: revealCount >= 3 ? 1 : 0 }}
+          transition={{ duration: 0.4, delay: revealCount >= 3 ? 0.9 : 0 }}
+          className="text-center mt-4"
+          style={{ fontSize: 13, color: "hsl(var(--muted-foreground))" }}
+        >
+          5 steps. About 10 minutes. Worth every second.
+        </motion.p>
       </>,
     );
   }
