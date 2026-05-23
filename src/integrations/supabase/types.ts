@@ -445,6 +445,7 @@ export type Database = {
           north_star_goal: string | null
           notification_prefs: Json | null
           onboarding_completed: boolean
+          onboarding_step: number | null
           phone_verified: boolean | null
           phone_whatsapp: string | null
           primary_strength: string | null
@@ -481,6 +482,7 @@ export type Database = {
           north_star_goal?: string | null
           notification_prefs?: Json | null
           onboarding_completed?: boolean
+          onboarding_step?: number | null
           phone_verified?: boolean | null
           phone_whatsapp?: string | null
           primary_strength?: string | null
@@ -517,6 +519,7 @@ export type Database = {
           north_star_goal?: string | null
           notification_prefs?: Json | null
           onboarding_completed?: boolean
+          onboarding_step?: number | null
           phone_verified?: boolean | null
           phone_whatsapp?: string | null
           primary_strength?: string | null
