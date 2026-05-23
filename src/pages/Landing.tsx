@@ -7,6 +7,7 @@ import HeroHead from "@/components/landing/HeroHead";
 import heroBg from "@/assets/hero-bg.jpg";
 import carbonBg from "@/assets/carbon-bg.jpg";
 import usePageMeta from "@/hooks/usePageMeta";
+import PublicWelcome from "./PublicWelcome";
 
 /* ── Scroll-based reveal hook (works in iframes) ── */
 const useReveal = () => {
@@ -176,6 +177,7 @@ const MobileTestimonials = ({ testimonials }: { testimonials: { q: string; a: st
 const Landing = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [showWelcome, setShowWelcome] = useState(false);
 
   usePageMeta({
     title: "Aura — Strategic Intelligence OS",
@@ -188,9 +190,10 @@ const Landing = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) navigate("/home", { replace: true });
       else {
-        // Non-authenticated visitors to the root URL get the public welcome page.
+        // Non-authenticated visitors to the root URL get the in-app public welcome page.
         if (window.location.pathname === "/") {
-          window.location.href = "https://aura-introduction1.netlify.app/";
+          setShowWelcome(true);
+          setLoading(false);
           return;
         }
         setLoading(false);
@@ -210,6 +213,7 @@ const Landing = () => {
   };
 
   if (loading) return <div className="min-h-screen" style={{ background: "var(--ink)" }} />;
+  if (showWelcome) return <PublicWelcome />;
 
   const testimonials = [
     { q: "I used to spend hours trying to write a LinkedIn post. Now I just capture what I read and Aura does the rest.", a: "— Sarah M. · Senior Consultant · Big Four · Riyadh" },

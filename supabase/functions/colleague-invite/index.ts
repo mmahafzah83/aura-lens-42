@@ -142,7 +142,7 @@ serve(async (req) => {
       <p style="font-size:10px;letter-spacing:2px;color:${BRAND};font-weight:600;margin:0 0 12px;">WHAT HAPPENS NEXT</p>
       <p style="font-size:15px;line-height:1.75;color:#ededed;margin:0 0 22px;">I'll review your profile this week. If Aura is right for you, you'll receive a personal invitation from me — with everything you need to get started in 10 minutes.</p>
       <p style="font-size:15px;line-height:1.75;color:#ededed;margin:0 0 8px;">In the meantime, see what Aura is about:</p>
-      <p style="font-size:15px;line-height:1.75;margin:0 0 8px;"><a href="https://aura-introduction1.netlify.app/" style="color:${BRAND};text-decoration:none;font-weight:500;">Explore Aura →</a></p>
+      <p style="font-size:15px;line-height:1.75;margin:0 0 8px;"><a href="https://aura-intel.org" style="color:${BRAND};text-decoration:none;font-weight:500;">Explore Aura →</a></p>
       ${noteBlock}
       <p style="font-size:15px;color:#ededed;font-weight:500;margin:24px 0 4px;">Mohammad Mahafzah</p>
       <p style="font-size:13px;color:#666;margin:0 0 24px;">Aura builder</p>
