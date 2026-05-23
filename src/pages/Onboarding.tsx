@@ -99,6 +99,8 @@ const Onboarding = () => {
 
   // Step -1: password setup gate
   const [needsPassword, setNeedsPassword] = useState(false);
+  const [needsIdentityConfirm, setNeedsIdentityConfirm] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const [pwd, setPwd] = useState("");
   const [pwdConfirm, setPwdConfirm] = useState("");
   const [pwdShow, setPwdShow] = useState(false);
@@ -137,6 +139,7 @@ const Onboarding = () => {
 
   // Step 3
   const [assessmentOpen, setAssessmentOpen] = useState(false);
+  const [initialSkillScores, setInitialSkillScores] = useState<Record<string, number> | null>(null);
 
   // Breathing transition between article capture (step 2) and calibration (step 3)
   const [breathing, setBreathing] = useState(false);
@@ -153,19 +156,88 @@ const Onboarding = () => {
       setUserId(session.user.id);
       setUserEmail(session.user.email ?? null);
       const passwordAlreadySet = Boolean((session.user.user_metadata as any)?.password_set);
-      if (!passwordAlreadySet) setNeedsPassword(true);
+      // Identity confirmation gate: anyone who just arrived via an invite
+      // (no password set yet) must first confirm this is their email — prevents
+      // a forwarded-invite recipient from silently taking over the account.
+      let confirmedThisSession = false;
+      try {
+        confirmedThisSession = sessionStorage.getItem(`aura_identity_confirmed_${session.user.id}`) === "true";
+      } catch { /* ignore */ }
+      if (!passwordAlreadySet && !confirmedThisSession) {
+        setNeedsIdentityConfirm(true);
+      } else if (!passwordAlreadySet) {
+        setNeedsPassword(true);
+      }
       const { data: profile } = await supabase
         .from("diagnostic_profiles" as any)
-        .select("first_name, onboarding_completed")
+        .select("first_name, onboarding_completed, onboarding_step, skill_ratings")
         .eq("user_id", session.user.id)
         .maybeSingle();
-      if (profile && (profile as any).onboarding_completed && (profile as any).first_name) {
+      const p: any = profile || {};
+      // Completion redirect — Fix 10: any user with onboarding_step >= 5
+      // (or the legacy onboarding_completed flag) can never accidentally restart.
+      if (p && ((p.onboarding_step ?? 0) >= 5 || (p.onboarding_completed && p.first_name))) {
         goHome();
         return;
       }
+      // Resume from last saved step (Fix 1C)
+      const savedStep = Number(p.onboarding_step ?? 0);
+      if (savedStep > 0 && savedStep <= 4) {
+        setStep(savedStep as Step);
+      }
+      // Pre-populate calibration sliders with any partial scores (Fix 1D)
+      if (p.skill_ratings && typeof p.skill_ratings === "object") {
+        setInitialSkillScores(p.skill_ratings as Record<string, number>);
+      }
+      // Pre-populate Step 1 form fields if returning user has partial data
+      if (p.first_name) setFirstName(p.first_name);
+      if (p.last_name) setLastName(p.last_name);
+      if (p.firm) setFirm(p.firm);
+      if (p.level) setLevel(p.level);
+      if (p.sector_focus) setSectorFocus(p.sector_focus);
+      if (p.core_practice) setCorePractice(p.core_practice);
+      if (p.north_star_goal) setNorthStar(p.north_star_goal);
       setChecking(false);
     })();
   }, [navigate]);
+
+  // Helper — persist onboarding progress so users can resume after closing the tab.
+  const saveProgress = async (stepCompleted: number) => {
+    if (!userId) return;
+    try {
+      await (supabase.from("diagnostic_profiles" as any) as any)
+        .update({ onboarding_step: stepCompleted })
+        .eq("user_id", userId);
+    } catch (e) {
+      console.warn("saveProgress failed:", e);
+    }
+  };
+
+  // Auto-save partial calibration scores after every slider Next click (Fix 1D)
+  const autoSaveScores = async (currentScores: Record<string, number>) => {
+    if (!userId) return;
+    try {
+      await (supabase.from("diagnostic_profiles" as any) as any)
+        .update({ skill_ratings: currentScores })
+        .eq("user_id", userId);
+    } catch (e) {
+      console.warn("autoSaveScores failed:", e);
+    }
+  };
+
+  const confirmIdentityYes = () => {
+    if (!userId) return;
+    try { sessionStorage.setItem(`aura_identity_confirmed_${userId}`, "true"); } catch {}
+    setNeedsIdentityConfirm(false);
+    // After confirming, gate to password setup if not set yet.
+    setNeedsPassword(true);
+  };
+
+  const confirmIdentityNo = async () => {
+    setSigningOut(true);
+    try { await supabase.auth.signOut(); } catch {}
+    navigate("/request-access", { replace: true });
+  };
 
   // Step 0: stagger reveal of the 3 bullet items
   useEffect(() => {
