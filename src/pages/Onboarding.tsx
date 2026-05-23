@@ -90,8 +90,6 @@ const Onboarding = () => {
       if (!alreadyPlayed) {
         localStorage.setItem("aura_onboarding_ceremony_seen", "true");
         setCeremony(true);
-        // Auto-advance after 2.5s
-        window.setTimeout(() => completeCeremonyAndNavigate(), 2500);
         return;
       }
     } catch { /* ignore — fall through to navigation */ }
