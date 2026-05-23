@@ -1056,42 +1056,60 @@ function ResultsView({
 }
 
 // ============================================================
-// CinematicLoading — full-screen shimmer text while generating
+// CinematicLoading — eye + staged processing lines
 // ============================================================
-function CinematicLoading() {
+const PROCESSING_LINES = [
+  "Mapping your expertise across 6 frameworks...",
+  "Finding the space only you can own...",
+  "Composing your market position...",
+  "This is taking a moment — your profile is more complex than most...",
+];
+function CinematicLoading({ stage = 0 }: { stage?: number }) {
   return (
     <div
       style={{
         minHeight: "70vh",
         display: "flex",
+        flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
         padding: "0 24px",
+        gap: 28,
       }}
     >
       <style>{`
-        @keyframes aura-shimmer {
-          0% { background-position: -200% 0; }
-          100% { background-position: 200% 0; }
-        }
+        @keyframes aura-eye-in { from { opacity: 0; transform: scale(0.3); } to { opacity: 1; transform: scale(1); } }
+        @keyframes aura-eye-pulse { 0%,100% { opacity: 0.7; } 50% { opacity: 1; } }
+        @keyframes aura-line-cycle { 0% { opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
       `}</style>
+      <div
+        style={{
+          width: 80, height: 80,
+          opacity: 0,
+          animation: "aura-eye-in 800ms ease-out forwards, aura-eye-pulse 3s ease-in-out 1.1s infinite",
+        }}
+        aria-hidden="true"
+      >
+        <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <ellipse cx="40" cy="40" rx="34" ry="18" stroke="#B08D3A" strokeWidth="1.5" />
+          <circle cx="40" cy="40" r="11" stroke="#B08D3A" strokeWidth="1.5" />
+          <circle cx="40" cy="40" r="4" fill="#B08D3A" />
+        </svg>
+      </div>
       <p
+        key={stage}
         style={{
           fontFamily: "'Cormorant Garamond', Georgia, serif",
-          fontSize: 24,
-          fontStyle: "italic",
+          fontSize: 18,
           textAlign: "center",
+          color: "#d4b056",
+          maxWidth: 420,
           margin: 0,
-          backgroundImage:
-            "linear-gradient(90deg, rgba(212,176,86,0.35) 0%, rgba(255,232,150,0.95) 50%, rgba(212,176,86,0.35) 100%)",
-          backgroundSize: "200% 100%",
-          WebkitBackgroundClip: "text",
-          backgroundClip: "text",
-          color: "transparent",
-          animation: "aura-shimmer 2s linear infinite",
+          opacity: 0,
+          animation: "aura-line-cycle 2700ms ease-in-out forwards",
         }}
       >
-        Discovering how the market sees you…
+        {PROCESSING_LINES[Math.min(stage, PROCESSING_LINES.length - 1)]}
       </p>
     </div>
   );
