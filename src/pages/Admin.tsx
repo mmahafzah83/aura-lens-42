@@ -651,16 +651,36 @@ const Admin = () => {
             Send an invite straight to an email — they'll be added to the allowlist automatically.
           </p>
           <div className="flex flex-col sm:flex-row gap-2">
-            <input type="email" value={directEmail} onChange={(e) => setDirectEmail(e.target.value)} placeholder="email@company.com" className="flex-1 px-3 py-2.5 rounded-md text-sm outline-none focus:border-brand transition-colors bg-primary-foreground" style={{ backgroundColor: "var(--ink)", border: "1px solid var(--ink-3)", color: "var(--ink-7)" }} />
+            <input
+              type="text"
+              value={directName}
+              onChange={(e) => { setDirectName(e.target.value); setDirectDuplicate(null); }}
+              placeholder="Name (optional)"
+              className="sm:w-[200px] px-3 py-2.5 rounded-md text-sm outline-none transition-colors"
+              style={{ backgroundColor: "var(--ink)", border: "1px solid var(--ink-3)", color: "var(--ink-7)" }}
+            />
+            <input
+              type="email"
+              value={directEmail}
+              onChange={(e) => { setDirectEmail(e.target.value); setDirectDuplicate(null); }}
+              placeholder="email@company.com"
+              className="flex-1 px-3 py-2.5 rounded-md text-sm outline-none transition-colors"
+              style={{ backgroundColor: "var(--ink)", border: "1px solid var(--ink-3)", color: "var(--ink-7)" }}
+            />
             <button
               onClick={sendDirectInvite}
               disabled={directSending || !directEmail}
               className="px-5 py-2.5 rounded-md text-sm font-medium inline-flex items-center justify-center gap-2 disabled:opacity-60 whitespace-nowrap"
               style={{ backgroundColor: "var(--brand)", color: "var(--ink)" }}
             >
-              {directSending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Send invite"}
+              {directSending ? <Loader2 className="w-4 h-4 animate-spin" /> : directDuplicate ? "Send anyway" : "Send invite"}
             </button>
           </div>
+          {directDuplicate && (
+            <p className="text-xs mt-3" style={{ color: "var(--brand)" }}>
+              This email is already on the waitlist as {directDuplicate.name || "(no name)"} ({directDuplicate.status}). Click "Send anyway" to proceed.
+            </p>
+          )}
         </div>
 
         {/* Active users */}
