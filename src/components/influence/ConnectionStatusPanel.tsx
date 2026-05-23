@@ -12,7 +12,7 @@ const ConnectionStatusPanel = () => {
     (async () => {
       try {
         const { data } = await supabase
-          .from("linkedin_connections")
+          .from("linkedin_connections_safe")
           .select("id, handle, profile_name, display_name, profile_url, status, connected_at")
           .order("created_at", { ascending: false })
           .limit(1);
