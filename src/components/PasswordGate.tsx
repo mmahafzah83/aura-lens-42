@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2, Eye, EyeOff, Check, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -53,6 +53,24 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pwFocused, setPwFocused] = useState(false);
+  const [confirmFocused, setConfirmFocused] = useState(false);
+  const [companionVisible, setCompanionVisible] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const companionTimer = useRef<number | null>(null);
+
+  // Companion voice — debounced 1s after typing in the password field
+  useEffect(() => {
+    if (companionTimer.current) window.clearTimeout(companionTimer.current);
+    if (password.length === 0) {
+      setCompanionVisible(false);
+      return;
+    }
+    companionTimer.current = window.setTimeout(() => setCompanionVisible(true), 1000);
+    return () => {
+      if (companionTimer.current) window.clearTimeout(companionTimer.current);
+    };
+  }, [password]);
 
   const checks = {
     length: password.length >= 8,
@@ -82,8 +100,12 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
       } catch (e) {
         console.warn("password_set notification failed:", e);
       }
-      toast.success("Password set. You can now log in anytime.");
-      onComplete();
+      // Ceremony pause — intentional. Show the gold ✦ and the "setting up"
+      // line, then proceed to onboarding after 800ms.
+      setSubmitted(true);
+      window.setTimeout(() => {
+        onComplete();
+      }, 800);
     } catch (e: any) {
       toast.error(e?.message || "Couldn't set password. Please try again.");
       setIsSubmitting(false);
@@ -103,6 +125,10 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
       className="min-h-screen flex items-center justify-center px-4 py-10"
       style={{ background: "hsl(var(--background))", fontFamily: "'DM Sans', sans-serif" }}
     >
+      <style>{`
+        @keyframes pg-fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pg-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+      `}</style>
       <div
         className="w-full max-w-md rounded-2xl p-8"
         style={{
@@ -119,21 +145,32 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
             Welcome to the inner circle.
           </h1>
           <p style={{ fontSize: 14, color: "hsl(var(--muted-foreground))" }}>
-            You're one of the first 50 people in Aura. Set your password to get started.
+            Set a password you'll remember. This space is yours now.
           </p>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-xs mb-1.5" style={{ color: "hsl(var(--muted-foreground))" }}>Password</label>
+            <label className="block text-xs mb-1.5" style={{ color: "hsl(var(--muted-foreground))" }}>Your password</label>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onFocus={() => setPwFocused(true)}
+                onBlur={() => setPwFocused(false)}
                 placeholder="Create a password"
                 className="w-full rounded-lg outline-none"
-                style={{ padding: "12px 40px 12px 14px", fontSize: 14, background: "hsl(var(--muted) / 0.4)", border: "1px solid hsl(var(--border))", color: "hsl(var(--foreground))" }}
+                style={{
+                  padding: "12px 40px 12px 14px",
+                  fontSize: 14,
+                  background: "hsl(var(--muted) / 0.4)",
+                  border: "1px solid hsl(var(--border))",
+                  borderBottomColor: pwFocused ? "var(--brand, hsl(var(--primary)))" : "hsl(var(--border))",
+                  borderBottomWidth: pwFocused ? 2 : 1,
+                  color: "hsl(var(--foreground))",
+                  transition: "border-color 300ms ease, border-bottom-width 300ms ease",
+                }}
                 autoFocus
                 autoComplete="new-password"
               />
@@ -169,9 +206,20 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
                 type={showConfirm ? "text" : "password"}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
+                onFocus={() => setConfirmFocused(true)}
+                onBlur={() => setConfirmFocused(false)}
                 placeholder="Confirm password"
                 className="w-full rounded-lg outline-none"
-                style={{ padding: "12px 40px 12px 14px", fontSize: 14, background: "hsl(var(--muted) / 0.4)", border: "1px solid hsl(var(--border))", color: "hsl(var(--foreground))" }}
+                style={{
+                  padding: "12px 40px 12px 14px",
+                  fontSize: 14,
+                  background: "hsl(var(--muted) / 0.4)",
+                  border: "1px solid hsl(var(--border))",
+                  borderBottomColor: confirmFocused ? "var(--brand, hsl(var(--primary)))" : "hsl(var(--border))",
+                  borderBottomWidth: confirmFocused ? 2 : 1,
+                  color: "hsl(var(--foreground))",
+                  transition: "border-color 300ms ease, border-bottom-width 300ms ease",
+                }}
                 autoComplete="new-password"
                 onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(); }}
               />
@@ -206,8 +254,50 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
               opacity: allValid && !isSubmitting ? 1 : 0.5,
             }}
           >
-            {isSubmitting ? "Setting password..." : (<>Set password & continue <ArrowRight size={16} /></>)}
+            {submitted ? (
+              <span
+                style={{
+                  color: "#ffffff",
+                  fontSize: 18,
+                  display: "inline-block",
+                  animation: "pg-pulse 300ms ease-out",
+                }}
+              >
+                ✦
+              </span>
+            ) : isSubmitting ? (
+              "Setting password..."
+            ) : (
+              <>Enter <ArrowRight size={16} /></>
+            )}
           </button>
+
+          {submitted && (
+            <p
+              style={{
+                fontSize: 13,
+                color: "hsl(var(--muted-foreground))",
+                textAlign: "center",
+                margin: "8px 0 0",
+                animation: "pg-fade-in 400ms ease-out forwards",
+              }}
+            >
+              Setting up your intelligence system…
+            </p>
+          )}
+
+          {!submitted && companionVisible && (
+            <p
+              style={{
+                fontSize: 13,
+                color: "hsl(var(--muted-foreground))",
+                margin: "4px 0 0",
+                animation: "pg-fade-in 300ms ease-out forwards",
+              }}
+            >
+              Good. Let's get you inside.
+            </p>
+          )}
         </div>
       </div>
     </div>

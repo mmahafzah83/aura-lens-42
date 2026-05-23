@@ -11,6 +11,7 @@ import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import LinkedInCallback from "./pages/LinkedInCallback";
 import RequestAccess from "./pages/RequestAccess";
+import AcceptInvitation from "./pages/AcceptInvitation";
 import NotFound from "./pages/NotFound";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
@@ -81,6 +82,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/login" element={<Auth />} />
             <Route path="/request-access" element={<RequestAccess />} />
+            <Route path="/accept-invitation" element={<AcceptInvitation />} />
             <Route path="/admin" element={<PasswordGate><Admin /></PasswordGate>} />
             <Route path="/admin/design-system" element={<PasswordGate><AdminDesignSystem /></PasswordGate>} />
             <Route path="/admin/experience" element={<PasswordGate><AdminExperience /></PasswordGate>} />

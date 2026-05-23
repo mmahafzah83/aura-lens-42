@@ -8,7 +8,11 @@ const corsHeaders = {
 };
 
 const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
+// Where Supabase sends the user AFTER it verifies the invite token.
 const REDIRECT_URL = "https://aura-intel.org/auth";
+// Public ceremony page shown BEFORE the token is verified — the user clicks
+// "Let the world see what I know →" here, which then triggers Supabase verify.
+const ACCEPTANCE_URL = "https://aura-intel.org/accept-invitation";
 
 // Horizon Eye mark — inline SVG, bronze stroke. Renders consistently across email clients.
 const horizonEye = (size = 40, color = "#B08D3A") => `
@@ -341,6 +345,23 @@ serve(async (req) => {
 
     const confirmationUrl = linkRes.data.properties.action_link;
 
+    // Wrap the Supabase verify URL in our acceptance page so the user sees the
+    // ceremony first. The page reads `token`+`type` (and `next` as fallback)
+    // and forwards to the original verify URL on CTA click.
+    let ceremonyUrl = confirmationUrl;
+    try {
+      const verifyUrl = new URL(confirmationUrl);
+      const t = verifyUrl.searchParams.get("token") || "";
+      const ty = verifyUrl.searchParams.get("type") || "invite";
+      const ceremony = new URL(ACCEPTANCE_URL);
+      ceremony.searchParams.set("token", t);
+      ceremony.searchParams.set("type", ty);
+      ceremony.searchParams.set("next", confirmationUrl);
+      ceremonyUrl = ceremony.toString();
+    } catch (e) {
+      console.warn("[send-invite] could not wrap confirmationUrl, using raw verify URL", e);
+    }
+
     // Escape inviter note to prevent HTML injection
     const escapeHtml = (s: string) => s
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -353,7 +374,7 @@ serve(async (req) => {
     const greeting = firstName ? `Hi ${escapeHtml(firstName)},` : "Hi there,";
     const html = buildEmailHtml(BRAND)
       .replace(/{{GREETING}}/g, greeting)
-      .replace(/{{CONFIRMATION_URL}}/g, confirmationUrl)
+      .replace(/{{CONFIRMATION_URL}}/g, ceremonyUrl)
       .replace(/{{INVITER_NOTE_BLOCK}}/g, inviterNoteBlock)
       .replace(/{{EMAIL}}/g, email);
 
