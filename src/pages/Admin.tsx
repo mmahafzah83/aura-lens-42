@@ -289,23 +289,57 @@ const Admin = () => {
     try {
       const { data: existing } = await supabase
         .from("beta_allowlist")
-        .select("id, name")
+        .select("id, name, status")
         .eq("email", email)
         .maybeSingle();
+      if (existing && !directDuplicate) {
+        setDirectDuplicate({ name: (existing as any).name ?? null, status: (existing as any).status });
+        setDirectSending(false);
+        return;
+      }
       if (!existing) {
         const { error: insertErr } = await supabase
           .from("beta_allowlist")
-          .insert({ email, status: "pending", source: "direct" });
+          .insert({ email, name: directName.trim() || null, status: "pending", source: "direct" });
         if (insertErr) throw insertErr;
       }
-      await callSendInvite(email, existing?.name ?? null);
+      await callSendInvite(email, directName.trim() || (existing as any)?.name || null);
       toast.success(`Invite sent to ${email}`);
       setDirectEmail("");
+      setDirectName("");
+      setDirectDuplicate(null);
       fetchRows();
     } catch (err: any) {
       toast.error(err?.message || "Couldn't send direct invite");
     } finally {
       setDirectSending(false);
+    }
+  };
+
+  const declineRow = async (row: Row) => {
+    setDecliningId(row.id);
+    try {
+      const { error: upErr } = await supabase
+        .from("beta_allowlist")
+        .update({ status: "declined" })
+        .eq("id", row.id);
+      if (upErr) throw upErr;
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        await supabase.functions.invoke("send-decline-email", {
+          body: { email: row.email, name: row.name || "" },
+          headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+        });
+      } catch (mailErr) {
+        console.warn("decline email failed", mailErr);
+      }
+      setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, status: "declined" } : r)));
+      toast.success(`Declined ${row.email}`);
+    } catch (err: any) {
+      toast.error(err?.message || "Couldn't decline");
+    } finally {
+      setDecliningId(null);
+      setConfirmDeclineRow(null);
     }
   };
 
