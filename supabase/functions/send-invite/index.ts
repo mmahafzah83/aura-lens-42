@@ -26,78 +26,202 @@ const buildEmailHtml = (BRAND: string) => {
   const HEADING_FONT = "'Cormorant Garamond', Georgia, 'Times New Roman', serif";
   const BODY_FONT = "'DM Sans', -apple-system, BlinkMacSystemFont, Arial, sans-serif";
   const CTA = BRAND;
+
+  // Stat card cell — used in a 2-col table layout (email-client safe).
+  const statCell = (num: string, desc: string) => `
+    <td valign="top" style="width:50%;padding:14px 12px;background:#111;border:1px solid #1f1f1f;border-radius:8px;">
+      <div style="font-family:${HEADING_FONT};font-size:28px;line-height:1.1;color:${BRAND};margin:0 0 8px;">${num}</div>
+      <div style="font-size:12px;line-height:1.5;color:#777;">${desc}</div>
+    </td>`;
+  const statSpacer = `<td style="width:12px;font-size:0;line-height:0;">&nbsp;</td>`;
+
+  // Timeline row — circle + connector on the left, content on the right.
+  const milestone = (
+    label: string,
+    title: string,
+    desc: string,
+    filled: boolean,
+    isLast: boolean,
+  ) => {
+    const dot = filled
+      ? `<div style="width:13px;height:13px;border-radius:50%;background:${BRAND};margin:4px auto 0;"></div>`
+      : `<div style="width:13px;height:13px;border-radius:50%;border:1.5px solid ${BRAND};box-sizing:border-box;margin:4px auto 0;"></div>`;
+    const line = isLast
+      ? ""
+      : `<div style="width:1px;background:#2a2a2a;margin:6px auto 0;height:100%;min-height:48px;"></div>`;
+    return `
+      <tr>
+        <td valign="top" width="28" style="width:28px;padding:0 12px 0 0;">
+          ${dot}
+          ${line}
+        </td>
+        <td valign="top" style="padding:0 0 22px;">
+          <div style="font-size:10px;letter-spacing:1.5px;color:${BRAND};font-weight:700;margin:0 0 6px;">${label}</div>
+          <div style="font-size:14px;color:#ffffff;font-weight:500;margin:0 0 6px;line-height:1.4;">${title}</div>
+          <div style="font-size:13px;color:#777;line-height:1.55;">${desc}</div>
+        </td>
+      </tr>`;
+  };
+
+  // How-Aura-Works row
+  const howRow = (symbol: string, title: string, desc: string) => `
+    <tr>
+      <td valign="top" width="28" style="width:28px;padding:0 12px 18px 0;font-family:${HEADING_FONT};font-size:18px;color:${BRAND};line-height:1.2;">${symbol}</td>
+      <td valign="top" style="padding:0 0 18px;">
+        <div style="font-size:14px;color:#ffffff;font-weight:600;margin:0 0 6px;">${title}</div>
+        <div style="font-size:13px;color:#9a9a9a;line-height:1.6;">${desc}</div>
+      </td>
+    </tr>`;
+
+  const sectionLabel = (text: string) =>
+    `<p style="font-size:11px;letter-spacing:2px;color:${BRAND};margin:0 0 18px;font-weight:600;">${text}</p>`;
+  const divider = `<hr style="border:0;border-top:1px solid #1f1f1f;margin:0 40px;">`;
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Your expertise deserves to be seen</title>
+<title>Your Aura is ready</title>
 </head>
 <body style="margin:0;padding:0;background:#0d0d0d;font-family:${BODY_FONT};color:#ededed;-webkit-font-smoothing:antialiased;">
-<div style="display:none;max-height:0;overflow:hidden;">Aura is ready for you. Private beta — fewer than 50 people.</div>
+<div style="display:none;max-height:0;overflow:hidden;">A private invitation. Fewer than 50 professionals have access.</div>
 <div style="padding:32px 16px;background:#0d0d0d;">
-  <div style="max-width:580px;margin:0 auto;background:#0d0d0d;border:1px solid #1f1f1f;border-radius:12px;overflow:hidden;">
+  <div style="max-width:600px;margin:0 auto;background:#0d0d0d;border:1px solid #1f1f1f;border-radius:12px;overflow:hidden;">
 
-    <!-- HERO -->
+    <!-- 1 · HERO (the pain) -->
     <div style="padding:36px 40px 0;text-align:left;">${horizonEye(40, BRAND)}</div>
     <div style="padding:24px 40px 8px;">
-      <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 18px;">{{GREETING}}</p>
-      <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 18px;">I've been building something for people like you.</p>
-      <p style="font-size:15px;line-height:1.7;color:#bdbdbd;margin:0 0 18px;">Senior professionals who've spent years becoming exceptional at what they do — but whose expertise is invisible outside their direct network.</p>
-      <p style="font-size:15px;line-height:1.9;color:#ededed;margin:0 0 18px;">You read more in a week than most people read in a month.<br>You see patterns others miss.<br>You hold opinions that executives pay to hear.</p>
-      <p style="font-size:15px;line-height:1.7;color:#bdbdbd;margin:0 0 18px;">But the market doesn't know that yet.</p>
-      <p style="font-family:${HEADING_FONT};font-size:24px;line-height:1.3;color:#ffffff;margin:8px 0 24px;">Aura changes that.</p>
+      <p style="font-size:15px;line-height:1.7;color:#ffffff;font-weight:600;margin:0 0 18px;">{{GREETING}}</p>
+      <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 18px;">I don't send these often. And I'll be honest with you.</p>
+      <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 20px;">I built Aura because I was tired of watching the smartest people in the room stay invisible.</p>
+      <blockquote style="margin:0 0 22px;padding:14px 18px;border-left:2px solid #333;font-style:italic;color:#bbb;font-size:14px;line-height:1.75;">
+        You know the feeling. You've spent years becoming exceptional at what you do. You've led teams, shaped strategy, solved problems most people can't even name. But when someone outside your direct circle searches your name — they find almost nothing. No signal. No fingerprint. No proof of what you actually know.
+      </blockquote>
+      <p style="font-size:15px;line-height:1.7;color:#bdbdbd;margin:0 0 18px;">Meanwhile, professionals who publish consistently — even when their expertise is narrower than yours — are the ones getting invited to the table. The keynote slots. The "have you seen what they wrote?" reputation.</p>
+      <p style="font-size:15px;line-height:1.7;color:#bdbdbd;margin:0 0 18px;">The problem was never your expertise. It was never your knowledge. It was never your ideas.</p>
+      <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 20px;">The problem is that <strong style="color:#ffffff;">no one has helped you turn what's in your head into what the market sees.</strong></p>
+      <p style="font-family:${HEADING_FONT};font-size:22px;line-height:1.3;color:${BRAND};margin:8px 0 28px;">Until now.</p>
+    </div>
+
+    ${divider}
+
+    <!-- 2 · WHY I BUILT THIS -->
+    <div style="padding:28px 40px 8px;">
+      ${sectionLabel("WHY I BUILT THIS")}
+      <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 18px;">Because I'm one of you.</p>
+      <p style="font-size:15px;line-height:1.7;color:#bdbdbd;margin:0 0 18px;">I read 30+ articles a week. I see patterns in digital transformation that most reports miss. I hold opinions that could shape how utilities and infrastructure organizations think about their future.</p>
+      <p style="font-size:15px;line-height:1.7;color:#bdbdbd;margin:0 0 18px;">But for years, all of that stayed locked in my head, my notes, my devices. The market had no idea.</p>
+      <p style="font-size:15px;line-height:1.7;color:#bdbdbd;margin:0 0 22px;">So I built the system I wished existed. One that takes what I already read, finds the strategic patterns, understands my voice and my expertise — and turns it into a digital presence that compounds over time.</p>
+      <p style="font-family:${HEADING_FONT};font-size:20px;line-height:1.3;color:${BRAND};margin:0 0 28px;">I called it Aura. And now it's ready for you.</p>
+    </div>
+
+    ${divider}
+
+    <!-- 3 · THE NUMBERS DON'T LIE -->
+    <div style="padding:28px 40px 8px;">
+      ${sectionLabel("THE NUMBERS DON'T LIE")}
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:separate;border-spacing:0;margin:0 0 12px;">
+        <tr>
+          ${statCell("73%", "of decision-makers trust expertise content over marketing materials")}
+          ${statSpacer}
+          ${statCell("82%", "trust companies more when senior leaders are visible online")}
+        </tr>
+        <tr><td colspan="3" style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr>
+        <tr>
+          ${statCell("54%", "have rejected candidates because of invisible online presence")}
+          ${statSpacer}
+          ${statCell("<3%", "of LinkedIn's 1B+ users create original content weekly")}
+        </tr>
+        <tr><td colspan="3" style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr>
+        <tr>
+          <td colspan="3" valign="top" style="padding:14px 12px;background:#111;border:1px solid #1f1f1f;border-radius:8px;text-align:center;">
+            <div style="font-family:${HEADING_FONT};font-size:28px;line-height:1.1;color:${BRAND};margin:0 0 8px;">44%</div>
+            <div style="font-size:12px;line-height:1.5;color:#777;">of company value is tied to its leader's reputation</div>
+          </td>
+        </tr>
+      </table>
+      <p style="font-size:14px;line-height:1.7;color:#ededed;margin:22px 0 14px;">You're already in the top 1% of expertise. Aura puts you in the top 1% of visibility — without changing how you spend your week.</p>
+      <p style="font-size:12px;color:#555;margin:0 0 26px;">Sources: Edelman-LinkedIn 2024/2025, Weber Shandwick, Brunswick Group</p>
+    </div>
+
+    ${divider}
+
+    <!-- 4 · HOW AURA WORKS -->
+    <div style="padding:28px 40px 8px;">
+      ${sectionLabel("HOW AURA WORKS")}
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+        ${howRow("&#10022;", "The identity map", "Aura doesn't start with content. It starts with YOU. Your strengths. Your sector expertise. Your natural voice. It builds a complete map of who you are professionally — so nothing it creates is generic.")}
+        ${howRow("&#9670;", "The intelligence engine", "You read an article. Aura reads it too. It finds the strategic pattern you'd miss on a busy Tuesday — and connects it to what matters in your sector right now.")}
+        ${howRow("&#9671;", "The voice studio", "Aura writes in your voice. Not templates. Not AI speak. Content that sounds like you wrote it at your absolute best — the version of you that had 3 uninterrupted hours to think and write.")}
+        ${howRow("&#9679;", "The presence score", "Aura tracks your digital visibility over time — what's working, what's growing, where the right people are noticing you. Your reputation, measured and compounding.")}
+      </table>
+    </div>
+
+    ${divider}
+
+    <!-- 5 · WHAT CHANGES FOR YOU -->
+    <div style="padding:28px 40px 8px;">
+      ${sectionLabel("WHAT CHANGES FOR YOU")}
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+        ${milestone("DAY 1", "Aura learns who you are.", "Your strengths. Your sector. Your voice. By the end of your first session, Aura knows what makes you different from every other professional in your market.", true, false)}
+        ${milestone("WEEK 1", "Your first post goes live.", "A LinkedIn post that sounds like you — not like AI. About a signal Aura found in what you read. Your expertise, visible for the first time to people who've never met you.", true, false)}
+        ${milestone("MONTH 1", "People start to notice.", "Consistent, intelligent content builds recognition. Decision-makers in your sector start seeing your name next to insights they care about. The compound effect begins.", false, false)}
+        ${milestone("MONTH 3", "The invitations arrive.", "Speaking panels. Advisory requests. DMs from people you've never met saying 'I've been following your content.' The market is finding you — because Aura made your expertise impossible to miss.", false, false)}
+        ${milestone("YEAR 1", "You own your space.", "When someone in your industry mentions your topic — your name comes up. Not because you marketed yourself. Because your expertise finally has the fingerprint it always deserved.", false, true)}
+      </table>
+    </div>
+
+    ${divider}
+
+    <!-- 6 · YOUR INVITATION -->
+    <div style="padding:28px 40px 8px;">
+      ${sectionLabel("YOUR INVITATION")}
+      <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 14px;">You're one of fewer than 50 professionals with access right now.</p>
+      <p style="font-size:15px;line-height:1.7;color:#bdbdbd;margin:0 0 18px;">This isn't a mass email. I reviewed your profile personally.</p>
       {{INVITER_NOTE_BLOCK}}
-    </div>
-
-    <hr style="border:0;border-top:1px solid #1f1f1f;margin:8px 40px;">
-
-    <!-- WHAT HAPPENS INSIDE -->
-    <div style="padding:24px 40px 8px;">
-      <p style="font-size:11px;letter-spacing:2px;color:${BRAND};margin:0 0 16px;font-weight:600;">WHAT HAPPENS INSIDE</p>
-      <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 18px;">You keep doing what you already do — reading articles, following your sector, forming opinions. Aura watches what you read and finds the patterns you haven't noticed yet. Then it turns those patterns into content that sounds like you wrote it at your best.</p>
-      <p style="font-size:15px;line-height:1.7;color:#bdbdbd;margin:0 0 24px;">Not templates. Not generic AI. Your real voice. Your real expertise. Finally visible.</p>
-    </div>
-
-    <hr style="border:0;border-top:1px solid #1f1f1f;margin:8px 40px;">
-
-    <!-- YOUR ACCESS -->
-    <div style="padding:24px 40px 8px;">
-      <p style="font-size:11px;letter-spacing:2px;color:${BRAND};margin:0 0 16px;font-weight:600;">YOUR ACCESS</p>
-      <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 18px;">You're one of fewer than 50 people in the private beta. I reviewed your request personally.</p>
-      <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 14px;">Two things before you click:</p>
-      <p style="font-size:14px;line-height:1.7;color:#bdbdbd;margin:0 0 12px;">This link expires in <strong style="color:#ededed;">48 hours</strong>. Click when you have 10 quiet minutes — it's worth your full attention.</p>
-      <p style="font-size:14px;line-height:1.7;color:#bdbdbd;margin:0 0 28px;">You'll be logged in automatically. Once inside, tap your avatar (top right) → <strong style="color:#ededed;">set a password</strong> so you can return anytime.</p>
-      <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 18px;">Click below to give your expertise the visibility it deserves.</p>
-      <div style="margin:0 0 28px;">
+      <p style="font-size:15px;line-height:1.7;color:#bdbdbd;margin:0 0 18px;">When you click below, Aura will guide you through a 10-minute experience unlike anything you've seen in a professional tool. It will learn your voice, map your strengths, and show you how the market sees your expertise.</p>
+      <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 26px;">Give it your full attention. It's worth it.</p>
+      <div style="margin:0 0 14px;">
         <a href="{{CONFIRMATION_URL}}" style="display:inline-block;background:${CTA};color:#ffffff;padding:0 28px;height:48px;line-height:48px;border-radius:8px;font-weight:600;font-size:15px;text-decoration:none;font-family:${BODY_FONT};">Open my Aura →</a>
       </div>
+      <p style="font-size:12px;color:#444;margin:0 0 28px;">This link expires in 48 hours.</p>
     </div>
 
-    <!-- FIRST 10 MINUTES (lighter section) -->
-    <div style="background:#1a1a1a;padding:28px 40px;border-top:1px solid #1f1f1f;border-bottom:1px solid #1f1f1f;">
-      <p style="font-size:11px;letter-spacing:2px;color:${BRAND};margin:0 0 16px;font-weight:600;">YOUR FIRST 10 MINUTES</p>
+    <!-- 7 · YOUR FIRST 10 MINUTES -->
+    <div style="background:#111;padding:28px 40px;border-top:1px solid #1f1f1f;border-bottom:1px solid #1f1f1f;">
+      ${sectionLabel("YOUR FIRST 10 MINUTES")}
       <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 22px;">You'll feel the difference immediately.</p>
 
-      <p style="font-size:14px;line-height:1.7;color:#ededed;margin:0 0 4px;"><strong>1 · Set your password</strong></p>
-      <p style="font-size:14px;line-height:1.7;color:#bdbdbd;margin:0 0 18px;">Click the button above. You're in — takes under a minute.</p>
+      <p style="font-size:14px;line-height:1.7;color:#ededed;margin:0 0 4px;font-weight:600;">1 · Accept your invitation</p>
+      <p style="font-size:13px;line-height:1.7;color:#9a9a9a;margin:0 0 18px;">A welcome that shows you this was built for someone at your level.</p>
 
-      <p style="font-size:14px;line-height:1.7;color:#ededed;margin:0 0 4px;"><strong>2 · Tell Aura who you are — 5 minutes</strong></p>
-      <p style="font-size:14px;line-height:1.7;color:#bdbdbd;margin:0 0 18px;">Answer 5 questions about your expertise and sector. This teaches Aura how you think — so every post it writes carries your voice, not generic AI.</p>
+      <p style="font-size:14px;line-height:1.7;color:#ededed;margin:0 0 4px;font-weight:600;">2 · Tell Aura who you are</p>
+      <p style="font-size:13px;line-height:1.7;color:#9a9a9a;margin:0 0 18px;">Paste your LinkedIn headline. Aura reads it in 3 seconds — no forms, no typing.</p>
 
-      <p style="font-size:14px;line-height:1.7;color:#ededed;margin:0 0 4px;"><strong>3 · Save one article</strong></p>
-      <p style="font-size:14px;line-height:1.7;color:#bdbdbd;margin:0 0 18px;">Paste a link to something you read this week. An industry report. A competitor's post. Anything from your world. Aura reads it and starts finding patterns — no effort on your end.</p>
+      <p style="font-size:14px;line-height:1.7;color:#ededed;margin:0 0 4px;font-weight:600;">3 · Calibrate your edge</p>
+      <p style="font-size:13px;line-height:1.7;color:#9a9a9a;margin:0 0 18px;">10 quick strength sliders. Aura uses them to understand what truly sets you apart — and gives you instant insight on each one.</p>
 
-      <p style="font-size:14px;line-height:1.7;color:#ededed;margin:0 0 4px;"><strong>4 · Watch your first signal appear</strong></p>
-      <p style="font-size:14px;line-height:1.7;color:#bdbdbd;margin:0 0 8px;">After 3-5 articles, your first signal appears — a strategic pattern Aura found in what you read. From there, one click turns it into a post in your voice. That's the moment everything clicks.</p>
+      <p style="font-size:14px;line-height:1.7;color:#ededed;margin:0 0 4px;font-weight:600;">4 · See yourself through the market's eyes</p>
+      <p style="font-size:13px;line-height:1.7;color:#9a9a9a;margin:0 0 4px;">The moment that changes how you see your own expertise. People screenshot this. You'll understand why.</p>
+    </div>
+
+    <!-- 8 · SIGN-OFF -->
+    <div style="padding:32px 40px 16px;">
+      <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 22px;">I'll be watching to see what Aura discovers about you.</p>
+      <p dir="rtl" lang="ar" style="font-family:${HEADING_FONT};font-size:16px;color:${BRAND};text-align:center;margin:18px 0 26px;">حتى يعرف السوق قيمتك قبل أن يقابلك ✦</p>
+      <p style="font-size:15px;color:#ffffff;font-weight:500;margin:0 0 4px;">Mohammad Mahafzah</p>
+      <p style="font-size:13px;color:#666;margin:0;">Aura builder</p>
     </div>
 
     <!-- FOOTER -->
-    <div style="padding:24px 40px;">
-      <p style="font-size:12px;color:#8a8a8a;line-height:1.6;margin:0 0 16px;word-break:break-all;">If the button doesn't work, paste this link:<br><a href="{{CONFIRMATION_URL}}" style="color:${BRAND};">{{CONFIRMATION_URL}}</a></p>
-      <p style="font-size:13px;line-height:1.7;color:#bdbdbd;margin:0 0 18px;">Questions or feedback — reply directly. This email reaches me, not a support queue.</p>
-      <p style="font-size:14px;line-height:1.6;color:#ededed;margin:0 0 14px;">Mohammad Mahafdhah<br><span style="color:#8a8a8a;">Building Aura · <a href="https://aura-intel.org" style="color:#8a8a8a;text-decoration:none;">aura-intel.org</a></span></p>
-      <p style="font-size:11px;letter-spacing:1.5px;color:#8a8a8a;margin:0;">Strategic Intelligence · Private Beta</p>
+    <div style="padding:18px 40px 28px;border-top:1px solid #1f1f1f;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td valign="middle" style="padding-right:10px;">${horizonEye(16, "#555")}</td>
+          <td valign="middle" style="font-size:11px;letter-spacing:1px;color:#555;">Aura · Strategic Intelligence · aura-intel.org</td>
+        </tr>
+      </table>
     </div>
 
   </div>
@@ -243,7 +367,7 @@ serve(async (req) => {
       body: JSON.stringify({
         from: "Aura <invites@aura-intel.org>",
         to: [email],
-        subject: "Your expertise deserves to be seen",
+        subject: firstName ? `Your Aura is ready, ${firstName}` : "Your Aura is ready",
         reply_to: "mohammad.mahafdhah@aura-intel.org",
         html,
       }),
