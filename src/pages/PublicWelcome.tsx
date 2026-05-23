@@ -607,7 +607,7 @@ export default function PublicWelcome() {
             </p>
             <Link to="/request-access" className="pw-cta pw-cta-shimmer pw-cta-breathe reveal reveal-d3">
               <span style={{ position: "relative", zIndex: 1 }}>
-                Accept Your Invitation →
+                Request Your Access →
               </span>
             </Link>
             <p className="reveal reveal-d3" style={{ fontSize: 12, color: "#666", marginTop: 14 }}>
