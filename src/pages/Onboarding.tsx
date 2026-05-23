@@ -675,7 +675,7 @@ const Onboarding = () => {
   if (step === 1) {
     return cardShell(
       <>
-        {eyebrow("Step 1 of 3 — Tell Aura who you are")}
+        {eyebrow("Step 1 of 5 — Tell Aura who you are")}
         {!showForm ? (
           <>
             {heading("Paste your LinkedIn headline and About section")}
