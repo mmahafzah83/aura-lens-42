@@ -878,6 +878,20 @@ function ResultsView({
         <div
           style={{
             fontSize: 11,
+            letterSpacing: "2px",
+            textTransform: "uppercase",
+            color: "#B08D3A",
+            fontWeight: 600,
+            marginBottom: 16,
+            opacity: 0,
+            animation: "aura-fade-in 500ms ease-out 600ms forwards",
+          }}
+        >
+          Step 5 of 5 — Your market position
+        </div>
+        <div
+          style={{
+            fontSize: 11,
             letterSpacing: "3px",
             textTransform: "uppercase",
             color: "var(--brand)",
