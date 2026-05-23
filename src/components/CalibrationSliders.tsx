@@ -112,15 +112,21 @@ const CustomSlider = ({ value, onChange, onChangeEnd }: CustomSliderProps) => {
 interface Props {
   sector?: string | null;
   onComplete: (scores: Record<string, number>) => void | Promise<void>;
+  initialScores?: Record<string, number> | null;
+  onAutoSave?: (scores: Record<string, number>) => void;
 }
 
-export const CalibrationSliders = ({ sector, onComplete }: Props) => {
+export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSave }: Props) => {
   const reduceMotion = useReducedMotion();
   const [index, setIndex] = useState(0); // 0..9 dimensions, 10 = summary
   const [direction, setDirection] = useState(1);
   const [scores, setScores] = useState<Record<string, number>>(() => {
     const init: Record<string, number> = {};
-    CALIBRATION_DIMENSIONS.forEach((d) => { init[d.id] = 50; });
+    CALIBRATION_DIMENSIONS.forEach((d) => {
+      init[d.id] = (initialScores && typeof initialScores[d.id] === "number")
+        ? initialScores[d.id]
+        : 50;
+    });
     return init;
   });
   const [insight, setInsight] = useState<string>("");
@@ -165,6 +171,8 @@ export const CalibrationSliders = ({ sector, onComplete }: Props) => {
 
   const next = () => {
     if (current) {
+      // Persist partial scores so progress isn't lost if the user closes the tab.
+      try { onAutoSave?.(scores); } catch { /* non-blocking */ }
       // Companion voice checkpoints (after card 3, 5, 8)
       const justFinished = index + 1; // 1-indexed
       let line = "";
