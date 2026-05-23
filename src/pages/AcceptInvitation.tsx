@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import AuraLogo from "@/components/brand/AuraLogo";
+import usePageMeta from "@/hooks/usePageMeta";
 
 /**
  * Acceptance page — the ceremonial intermediate screen between the invite
@@ -9,6 +10,11 @@ import AuraLogo from "@/components/brand/AuraLogo";
  * URL (preserved as `next` or reconstructed from `token`+`type`).
  */
 export default function AcceptInvitation() {
+  usePageMeta({
+    title: "Aura — Accept your invitation",
+    description: "You've been invited to join Aura, the strategic intelligence OS for senior professionals. Accept your invitation to set up your account.",
+    path: "/accept-invitation",
+  });
   const [params] = useSearchParams();
   const token = params.get("token");
   const type = params.get("type") || "invite";
