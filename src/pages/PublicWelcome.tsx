@@ -164,12 +164,53 @@ const Engine = ({ symbol, title, desc }: { symbol: string; title: string; desc: 
   </div>
 );
 
-const SectionDivider = () => (
-  <div aria-hidden style={{
-    width: "60%", height: 1, margin: "0 auto",
-    background: "linear-gradient(90deg, transparent, rgba(176,141,58,0.3), transparent)",
-  }} />
-);
+const SectionDivider = () => {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!ref.current) return;
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) {
+        ref.current?.classList.add("pw-divider-sweep-on");
+        io.disconnect();
+      }
+    }, { threshold: 0.6 });
+    io.observe(ref.current);
+    return () => io.disconnect();
+  }, []);
+  return (
+    <div ref={ref} className="pw-divider-sweep" aria-hidden style={{
+      width: "60%", height: 1, margin: "0 auto",
+      background: "linear-gradient(90deg, transparent, rgba(176,141,58,0.45), transparent)",
+    }} />
+  );
+};
+
+const TypewriterQuote = ({ text }: { text: string }) => {
+  const ref = useRef<HTMLQuoteElement>(null);
+  const words = useMemo(() => text.split(/(\s+)/), [text]);
+  useEffect(() => {
+    if (!ref.current) return;
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) {
+        ref.current?.classList.add("pw-tw-on");
+        io.disconnect();
+      }
+    }, { threshold: 0.4 });
+    io.observe(ref.current);
+    return () => io.disconnect();
+  }, []);
+  return (
+    <blockquote ref={ref} className="reveal reveal-d2 pw-tw" style={{
+      borderLeft: `3px solid ${BRONZE}`, padding: "24px 28px",
+      fontStyle: "italic", color: "#cdcdcd", fontSize: 16, lineHeight: 1.8,
+      margin: "32px 0",
+    }}>
+      {words.map((w, i) => (
+        <span key={i} className="pw-tw-w" style={{ ['--i' as any]: i }}>{w}</span>
+      ))}
+    </blockquote>
+  );
+};
 
 const responseFor = (v: number) => {
   if (v <= 30) return "You're not alone. 97% of senior professionals are here — invisible despite years of deep expertise. Scroll to see why.";
