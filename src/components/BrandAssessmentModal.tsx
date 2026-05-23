@@ -881,19 +881,29 @@ function ResultsView({
         <h2
           style={{
             fontFamily: "'Cormorant Garamond', Georgia, serif",
-            fontSize: 32,
+            fontSize: "clamp(28px, 5vw, 36px)",
             fontWeight: 400,
             color: "rgba(255, 250, 240, 0.96)",
             lineHeight: 1.15,
             letterSpacing: "-0.01em",
             margin: "18px 0 14px",
             maxWidth: 520,
-            opacity: 0,
-            transform: "translateY(20px)",
-            animation: "aura-fade-up 600ms ease-out 1800ms forwards",
           }}
         >
-          {archetype}
+          {archetype.split(/\s+/).map((word, i) => (
+            <span
+              key={i}
+              style={{
+                display: "inline-block",
+                opacity: 0,
+                transform: "translateY(12px)",
+                animation: `aura-fade-up 500ms ease-out ${1500 + i * 300}ms forwards`,
+                marginRight: 8,
+              }}
+            >
+              {word}
+            </span>
+          ))}
         </h2>
 
         {(oneLineDesc || positioning) && (
