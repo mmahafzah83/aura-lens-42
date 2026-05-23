@@ -55,6 +55,17 @@ const Onboarding = () => {
   const completeCeremonyAndNavigate = () => {
     if (ceremonyLeaving) return;
     setCeremonyLeaving(true);
+    // Mark onboarding fully complete (Fix 9/10) — best-effort, non-blocking.
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          await (supabase.from("diagnostic_profiles" as any) as any)
+            .update({ onboarding_step: 5, onboarding_completed: true })
+            .eq("user_id", session.user.id);
+        }
+      } catch (e) { console.warn("final onboarding_step save failed:", e); }
+    })();
     window.setTimeout(() => {
       try {
         const raw = localStorage.getItem("aura_visited_pages");
@@ -63,6 +74,9 @@ const Onboarding = () => {
           arr.push("home");
           localStorage.setItem("aura_visited_pages", JSON.stringify(arr));
         }
+      } catch { /* ignore */ }
+      try {
+        toast.success("Welcome home. ✦", { duration: 4000 });
       } catch { /* ignore */ }
       navigate("/home", { replace: true });
     }, 500);
