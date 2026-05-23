@@ -135,29 +135,36 @@ serve(async (req) => {
     try {
       const resendKey = Deno.env.get("RESEND_API_KEY");
       if (resendKey) {
-        const html = `<!doctype html><html><body style="margin:0;padding:0;background:#F6F1E8;font-family:'DM Sans',-apple-system,Arial,sans-serif;color:#1A1916;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F6F1E8;padding:32px 16px;">
-    <tr><td align="center">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#FFFDF8;border:1px solid #E8DFCC;border-radius:14px;padding:36px 36px 28px;">
-        <tr><td align="left" style="padding-bottom:18px;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 64 64" fill="none">
-            <ellipse cx="32" cy="32" rx="28" ry="14" stroke="#B08D3A" stroke-width="2" fill="none"/>
-            <circle cx="32" cy="32" r="7" fill="#B08D3A"/>
-            <circle cx="32" cy="32" r="2.5" fill="#1A1916"/>
-          </svg>
-        </td></tr>
-        <tr><td>
-          <h1 style="font-family:'Cormorant Garamond',Georgia,serif;font-size:28px;font-weight:500;line-height:1.2;margin:0 0 14px;color:#1A1916;">You're on the list, ${name}.</h1>
-          <p style="font-size:15px;line-height:1.6;margin:0 0 14px;color:#3A3633;">We received your request. Aura is in private beta with fewer than 50 seats — we review every application personally.</p>
-          <p style="font-size:15px;line-height:1.6;margin:0 0 14px;color:#3A3633;">We'll reach out to <strong>${email}</strong> when your spot opens.</p>
-          <p style="font-size:14px;line-height:1.6;margin:18px 0 0;color:#6B6866;font-style:italic;">In the meantime, keep reading what matters to your sector. That's exactly what Aura will turn into authority.</p>
-        </td></tr>
-        <tr><td style="border-top:1px solid #EDE6D5;padding-top:18px;margin-top:24px;">
-          <p style="font-size:11px;color:#8A8580;margin:18px 0 0;">Aura · Strategic Intelligence · aura-intel.org</p>
-        </td></tr>
-      </table>
-    </td></tr>
-  </table>
+        const BRAND = "#B08D3A";
+        const HEADING_FONT = "'Cormorant Garamond', Georgia, 'Times New Roman', serif";
+        const BODY_FONT = "'DM Sans', -apple-system, BlinkMacSystemFont, Arial, sans-serif";
+        const eye = (size: number, color: string) => `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 80 80" fill="none" aria-label="Aura">
+  <path d="M8 40 C 22 22, 58 22, 72 40 C 58 58, 22 58, 8 40 Z" stroke="${color}" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <circle cx="40" cy="40" r="11" stroke="${color}" stroke-width="2" fill="none"/>
+  <circle cx="40" cy="40" r="4" fill="${color}"/>
+</svg>`;
+        const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>You're on the list</title></head>
+<body style="margin:0;padding:0;background:#0d0d0d;font-family:${BODY_FONT};color:#ededed;-webkit-font-smoothing:antialiased;">
+<div style="padding:32px 16px;background:#0d0d0d;">
+  <div style="max-width:560px;margin:0 auto;background:#0d0d0d;border:1px solid #1f1f1f;border-radius:12px;overflow:hidden;">
+    <div style="padding:36px 40px 0;">${eye(36, BRAND)}</div>
+    <div style="padding:24px 40px 8px;">
+      <h1 style="font-family:${HEADING_FONT};font-size:24px;font-weight:500;line-height:1.3;color:#ffffff;margin:0 0 22px;">${name}, you're on the list.</h1>
+      <p style="font-size:15px;line-height:1.75;color:#ededed;margin:0 0 16px;">We received your request.</p>
+      <p style="font-size:15px;line-height:1.75;color:#ededed;margin:0 0 16px;">Aura is in private beta with fewer than 50 professionals. I review every application personally — not an algorithm, not a form filter. Me.</p>
+      <p style="font-size:15px;line-height:1.75;color:#ededed;margin:0 0 16px;">I'll look at your background this week. If Aura is right for you, you'll receive an invitation with everything you need to get started.</p>
+      <p style="font-size:15px;line-height:1.75;color:#999;margin:16px 0 20px;">In the meantime — keep reading what matters to your sector. That's exactly what Aura will turn into presence.</p>
+      <p style="font-size:15px;color:#ededed;font-weight:500;margin:20px 0 4px;">Mohammad Mahafzah</p>
+      <p style="font-size:13px;color:#666;margin:0 0 24px;">Aura builder</p>
+    </div>
+    <div style="padding:16px 40px 28px;border-top:1px solid #1f1f1f;margin-top:24px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+        <td valign="middle" style="padding-right:10px;">${eye(16, "#555")}</td>
+        <td valign="middle" style="font-size:11px;letter-spacing:1px;color:#555;">Aura · Strategic Intelligence · aura-intel.org</td>
+      </tr></table>
+    </div>
+  </div>
+</div>
 </body></html>`;
         await fetch("https://api.resend.com/emails", {
           method: "POST",
@@ -168,7 +175,7 @@ serve(async (req) => {
           body: JSON.stringify({
             from: "Aura <invites@aura-intel.org>",
             to: [email],
-            subject: "You're on the Aura waitlist",
+            subject: `You're on the list, ${name}`,
             reply_to: "mohammad.mahafdhah@aura-intel.org",
             html,
           }),

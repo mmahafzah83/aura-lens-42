@@ -187,7 +187,14 @@ const Landing = () => {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) navigate("/home", { replace: true });
-      else setLoading(false);
+      else {
+        // Non-authenticated visitors to the root URL get the public welcome page.
+        if (window.location.pathname === "/") {
+          window.location.href = "https://aura-introduction1.netlify.app/";
+          return;
+        }
+        setLoading(false);
+      }
     });
   }, [navigate]);
 
