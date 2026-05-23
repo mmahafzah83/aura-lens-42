@@ -605,7 +605,9 @@ export default function PublicWelcome() {
             </p>
           </div>
         </section>
+        </div>{/* /gated */}
       </main>
+    </div>
     </div>
 
       {/* FOOTER */}
