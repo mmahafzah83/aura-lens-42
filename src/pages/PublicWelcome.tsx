@@ -55,7 +55,7 @@ const StatCard = ({ value, suffix = "%", literal, desc, fullWidth }: { value?: n
       <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 32, color: BRONZE, lineHeight: 1.1 }}>
         {literal ?? `${counted}${suffix}`}
       </div>
-      <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "#666", lineHeight: 1.45, marginTop: 8 }}>
+      <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "#a3a3a3", lineHeight: 1.45, marginTop: 8 }}>
         {desc}
       </div>
     </div>
@@ -200,16 +200,16 @@ export default function PublicWelcome() {
         }
       `}</style>
 
+      <main>
       {/* HERO */}
       <section style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px" }}>
         <div style={{ width: "100%", maxWidth: 560, margin: "0 auto", display: "flex", flexDirection: "column", alignItems: "center", gap: 28 }}>
           <div className="pw-eye-in pw-eye-pulse">
             <HorizonEye size={60} pupilR={pupilR} />
           </div>
-          <h1 className="pw-fade-up" style={{
+          <h1 style={{
             fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300,
             fontSize: "clamp(22px, 4vw, 28px)", color: "#fff", textAlign: "center", margin: 0,
-            animationDelay: "1.2s", opacity: 0,
           }}>
             How visible is your expertise right now?
           </h1>
@@ -220,7 +220,7 @@ export default function PublicWelcome() {
               className="pw-slider"
               aria-label="How visible is your expertise"
             />
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10, fontSize: 12, color: "#666" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10, fontSize: 12, color: "#a3a3a3" }}>
               <span>Only my clients know</span>
               <span>The market knows my name</span>
             </div>
@@ -228,12 +228,12 @@ export default function PublicWelcome() {
           <div style={{ minHeight: 80, maxWidth: 380, textAlign: "center" }}>
             {moved && (
               <p style={{
-                fontSize: 15, color: "#999", lineHeight: 1.65, margin: 0,
+                fontSize: 15, color: "#bdbdbd", lineHeight: 1.65, margin: 0,
                 opacity: fading ? 0 : 1, transition: "opacity 300ms ease",
               }}>{responseText}</p>
             )}
           </div>
-          <div className="pw-fade-up pw-bounce" style={{ fontSize: 12, color: "#444", animationDelay: "2.5s", opacity: 0, marginTop: 8 }}>↓</div>
+          <div className="pw-fade-up pw-bounce" style={{ fontSize: 12, color: "#8a8a8a", animationDelay: "2.5s", opacity: 0, marginTop: 8 }}>↓</div>
         </div>
       </section>
 
@@ -273,7 +273,7 @@ export default function PublicWelcome() {
             <StatCard literal="<3%" desc="of LinkedIn's 1B+ users create original content weekly" />
             <StatCard value={44} desc="of company value is tied to its leader's reputation" fullWidth />
           </div>
-          <p className="reveal" style={{ fontSize: 11, color: "#444", marginTop: 16 }}>
+          <p className="reveal" style={{ fontSize: 11, color: "#9a9a9a", marginTop: 16 }}>
             Edelman-LinkedIn 2024/2025 · Weber Shandwick · Brunswick Group
           </p>
           <p className="reveal reveal-d1" style={{ fontSize: 15, color: "#ededed", lineHeight: 1.75, marginTop: 20 }}>
@@ -371,19 +371,20 @@ export default function PublicWelcome() {
           <p className="reveal reveal-d4" dir="rtl" style={{ fontSize: 16, color: BRONZE, marginTop: 24, fontFamily: "'Cairo', 'DM Sans', sans-serif" }}>
             حتى يعرف السوق قيمتك قبل أن يقابلك ✦
           </p>
-          <p className="reveal reveal-d4" style={{ fontSize: 11, letterSpacing: "2px", color: "#444", marginTop: 16 }}>
+          <p className="reveal reveal-d4" style={{ fontSize: 11, letterSpacing: "2px", color: "#9a9a9a", marginTop: 16 }}>
             PRIVATE BETA · BY INVITATION ONLY
           </p>
         </div>
       </section>
+      </main>
 
       {/* FOOTER */}
       <footer style={{ padding: 40, borderTop: "1px solid #1a1a1a", textAlign: "center" }}>
         <div style={{ fontSize: 14, color: "#ededed" }}>Mohammad Mahafzah</div>
-        <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>Aura builder</div>
+        <div style={{ fontSize: 12, color: "#a3a3a3", marginTop: 4 }}>Aura builder</div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 16 }}>
-          <HorizonEye size={16} color="#555" />
-          <span style={{ fontSize: 11, color: "#555" }}>Aura · Strategic Intelligence · aura-intel.org</span>
+          <HorizonEye size={16} color="#8a8a8a" />
+          <span style={{ fontSize: 11, color: "#9a9a9a" }}>Aura · Strategic Intelligence · aura-intel.org</span>
         </div>
       </footer>
     </div>
