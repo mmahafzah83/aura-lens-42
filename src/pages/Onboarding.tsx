@@ -1144,38 +1144,58 @@ const Onboarding = () => {
         <div
           className={`aura-ceremony-overlay${ceremonyLeaving ? " is-leaving" : ""}`}
           role="dialog"
-          aria-label="Your intelligence is active"
-          onClick={completeCeremonyAndNavigate}
+          aria-label="Aura sees who you are now"
         >
+          {/* 5 progress dots — all filled bronze */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 28 }}>
+            {[0, 1, 2, 3, 4].map((i) => (
+              <span
+                key={i}
+                style={{
+                  width: 8, height: 8, borderRadius: 999,
+                  background: "#B08D3A",
+                  display: "inline-block",
+                }}
+              />
+            ))}
+          </div>
           <span
             aria-hidden="true"
             className="aura-gold-pulse"
-            style={{ fontSize: 56, lineHeight: 1, marginBottom: 28 }}
+            style={{ fontSize: 24, color: "#B08D3A", lineHeight: 1, marginBottom: 22 }}
           >
             ✦
           </span>
           <h2
             style={{
               fontFamily: "var(--font-display, 'Cormorant Garamond', Georgia, serif)",
-              fontSize: 36, lineHeight: 1.15, margin: "0 0 12px",
-              color: "hsl(40 20% 95%)", letterSpacing: "-0.01em",
+              fontSize: 20, lineHeight: 1.35, margin: "0 0 28px",
+              color: "#ffffff", letterSpacing: "-0.005em",
+              textAlign: "center", maxWidth: 420, padding: "0 16px",
             }}
           >
-            Your intelligence is active.
+            Aura sees who you are now — and everything it creates will reflect it.
           </h2>
-          <p style={{
-            fontSize: 15, lineHeight: 1.6, margin: 0,
-            color: "hsl(40 18% 95% / 0.7)", maxWidth: 360,
-          }}>
-            Aura is now watching the market for you.
-          </p>
-          <span style={{
-            position: "absolute", bottom: 32, left: 0, right: 0,
-            fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase",
-            color: "hsl(40 18% 95% / 0.4)",
-          }}>
-            Tap anywhere to continue
-          </span>
+          <button
+            type="button"
+            onClick={completeCeremonyAndNavigate}
+            style={{
+              background: "#B08D3A",
+              color: "#1A1916",
+              border: 0,
+              borderRadius: 10,
+              fontSize: 15,
+              fontWeight: 600,
+              padding: "14px 28px",
+              width: "100%",
+              maxWidth: 320,
+              cursor: "pointer",
+              fontFamily: "'DM Sans', system-ui, sans-serif",
+              letterSpacing: "0.01em",
+            }}
+          >
+            Enter my dashboard ✦
+          </button>
         </div>
       )}
     </>
