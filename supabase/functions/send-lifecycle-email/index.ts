@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 const APP_URL = "https://aura-intel.org";
-const FROM = "Aura <invites@aura-intel.org>";
+const FROM = "Aura <Mohammad.Mahafdhah@aura-intel.org>";
 const REPLY_TO = "mohammad.mahafdhah@aura-intel.org";
 
 type EmailType = "welcome" | "day1" | "day3" | "day7" | "inactive" | "silence";
