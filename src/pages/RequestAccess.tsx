@@ -45,6 +45,26 @@ const SECTOR = [
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+function usePositionCount(target: number, start: boolean, duration = 800) {
+  const [value, setValue] = useState(0);
+  const started = useRef(false);
+  useEffect(() => {
+    if (!start || started.current || !target) return;
+    started.current = true;
+    const reduced = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) { setValue(target); return; }
+    const t0 = performance.now();
+    const tick = (now: number) => {
+      const p = Math.min((now - t0) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setValue(Math.round(target * eased));
+      if (p < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, [target, start, duration]);
+  return value;
+}
+
 const HorizonEye = ({ size = 48, color = BRONZE }: { size?: number; color?: string }) => (
   <svg width={size} height={size * 0.55} viewBox="0 0 60 33" fill="none" aria-hidden>
     <path d="M2 16.5 C 12 4, 48 4, 58 16.5 C 48 29, 12 29, 2 16.5 Z" stroke={color} strokeWidth="1.5" fill="none" />
