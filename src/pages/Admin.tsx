@@ -6,6 +6,16 @@ import { toast } from "sonner";
 import { Loader2, Send, Trash2 } from "lucide-react";
 import AuraLogo from "@/components/brand/AuraLogo";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
