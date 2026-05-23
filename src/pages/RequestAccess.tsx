@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import usePageMeta from "@/hooks/usePageMeta";
@@ -68,6 +68,15 @@ export default function RequestAccess() {
   const [submittedName, setSubmittedName] = useState("");
   const [errors, setErrors] = useState<{ name?: string; email?: string; seniority?: string; sector?: string }>({});
 
+  // Persisted submission flag — if user already submitted, skip the form entirely.
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined" && localStorage.getItem("aura_waitlist_submitted") === "true") {
+        setStatus("duplicate");
+      }
+    } catch { /* ignore */ }
+  }, []);
+
   const validate = () => {
     const next: typeof errors = {};
     if (!name.trim()) next.name = "Your name is required";
@@ -89,6 +98,7 @@ export default function RequestAccess() {
       });
       if (error) throw error;
       setSubmittedName(name.trim().split(" ")[0]);
+      try { localStorage.setItem("aura_waitlist_submitted", "true"); } catch { /* ignore */ }
       if (data?.duplicate) setStatus("duplicate");
       else setStatus("success");
     } catch (err) {
@@ -271,9 +281,9 @@ export default function RequestAccess() {
             {status === "duplicate" && (
               <SuccessCeremony
                 title="You're already on our list."
-                subline="We have your request. If I haven't reached out yet, I will soon. Some applications take a few extra days to review."
+                subline="We have your request. If I haven't reached out yet, I will soon."
                 ctaHref="/"
-                ctaLabel="Go back to the welcome page →"
+                ctaLabel="Go back to explore Aura →"
               />
             )}
           </div>
