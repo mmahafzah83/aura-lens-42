@@ -319,6 +319,17 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
     setShowResults(true);
     setLoading(true);
 
+    // Persist raw answers FIRST so they aren't lost if the EF fails.
+    await persistAnswersOnly();
+
+    // Hard 30s timeout — flip to graceful error if EF hasn't responded.
+    let timedOut = false;
+    const hardTimeout = window.setTimeout(() => {
+      timedOut = true;
+      setGenError(true);
+      setLoading(false);
+    }, 30000);
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
@@ -342,19 +353,19 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
         body: { answers: formattedAnswers, auditScores: auditScores || "No audit scores available yet" },
       });
 
+      if (timedOut) return;
       if (error) throw error;
       if (!data || (data as any).pending || !(data as any).interpretation) {
-        await persistAnswersOnly();
         setGenError(true);
         return;
       }
       setInterpretation((data as any).interpretation);
     } catch (e: any) {
-      // Suppress technical error toast — show a friendly in-modal message instead
+      if (timedOut) return;
       console.error("Brand assessment error:", e);
-      await persistAnswersOnly();
       setGenError(true);
     } finally {
+      window.clearTimeout(hardTimeout);
       setLoading(false);
     }
   };
@@ -864,6 +875,20 @@ function ResultsView({
         }}
       >
         {/* 800ms empty pause before label */}
+        <div
+          style={{
+            fontSize: 11,
+            letterSpacing: "2px",
+            textTransform: "uppercase",
+            color: "#B08D3A",
+            fontWeight: 600,
+            marginBottom: 16,
+            opacity: 0,
+            animation: "aura-fade-in 500ms ease-out 600ms forwards",
+          }}
+        >
+          Step 5 of 5 — Your market position
+        </div>
         <div
           style={{
             fontSize: 11,

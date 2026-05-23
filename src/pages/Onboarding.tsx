@@ -55,6 +55,17 @@ const Onboarding = () => {
   const completeCeremonyAndNavigate = () => {
     if (ceremonyLeaving) return;
     setCeremonyLeaving(true);
+    // Mark onboarding fully complete (Fix 9/10) — best-effort, non-blocking.
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          await (supabase.from("diagnostic_profiles" as any) as any)
+            .update({ onboarding_step: 5, onboarding_completed: true })
+            .eq("user_id", session.user.id);
+        }
+      } catch (e) { console.warn("final onboarding_step save failed:", e); }
+    })();
     window.setTimeout(() => {
       try {
         const raw = localStorage.getItem("aura_visited_pages");
@@ -63,6 +74,9 @@ const Onboarding = () => {
           arr.push("home");
           localStorage.setItem("aura_visited_pages", JSON.stringify(arr));
         }
+      } catch { /* ignore */ }
+      try {
+        toast.success("Welcome home. ✦", { duration: 4000 });
       } catch { /* ignore */ }
       navigate("/home", { replace: true });
     }, 500);
@@ -76,8 +90,6 @@ const Onboarding = () => {
       if (!alreadyPlayed) {
         localStorage.setItem("aura_onboarding_ceremony_seen", "true");
         setCeremony(true);
-        // Auto-advance after 2.5s
-        window.setTimeout(() => completeCeremonyAndNavigate(), 2500);
         return;
       }
     } catch { /* ignore — fall through to navigation */ }
@@ -99,6 +111,8 @@ const Onboarding = () => {
 
   // Step -1: password setup gate
   const [needsPassword, setNeedsPassword] = useState(false);
+  const [needsIdentityConfirm, setNeedsIdentityConfirm] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const [pwd, setPwd] = useState("");
   const [pwdConfirm, setPwdConfirm] = useState("");
   const [pwdShow, setPwdShow] = useState(false);
@@ -137,6 +151,7 @@ const Onboarding = () => {
 
   // Step 3
   const [assessmentOpen, setAssessmentOpen] = useState(false);
+  const [initialSkillScores, setInitialSkillScores] = useState<Record<string, number> | null>(null);
 
   // Breathing transition between article capture (step 2) and calibration (step 3)
   const [breathing, setBreathing] = useState(false);
@@ -153,19 +168,88 @@ const Onboarding = () => {
       setUserId(session.user.id);
       setUserEmail(session.user.email ?? null);
       const passwordAlreadySet = Boolean((session.user.user_metadata as any)?.password_set);
-      if (!passwordAlreadySet) setNeedsPassword(true);
+      // Identity confirmation gate: anyone who just arrived via an invite
+      // (no password set yet) must first confirm this is their email — prevents
+      // a forwarded-invite recipient from silently taking over the account.
+      let confirmedThisSession = false;
+      try {
+        confirmedThisSession = sessionStorage.getItem(`aura_identity_confirmed_${session.user.id}`) === "true";
+      } catch { /* ignore */ }
+      if (!passwordAlreadySet && !confirmedThisSession) {
+        setNeedsIdentityConfirm(true);
+      } else if (!passwordAlreadySet) {
+        setNeedsPassword(true);
+      }
       const { data: profile } = await supabase
         .from("diagnostic_profiles" as any)
-        .select("first_name, onboarding_completed")
+        .select("first_name, onboarding_completed, onboarding_step, skill_ratings")
         .eq("user_id", session.user.id)
         .maybeSingle();
-      if (profile && (profile as any).onboarding_completed && (profile as any).first_name) {
+      const p: any = profile || {};
+      // Completion redirect — Fix 10: any user with onboarding_step >= 5
+      // (or the legacy onboarding_completed flag) can never accidentally restart.
+      if (p && ((p.onboarding_step ?? 0) >= 5 || (p.onboarding_completed && p.first_name))) {
         goHome();
         return;
       }
+      // Resume from last saved step (Fix 1C)
+      const savedStep = Number(p.onboarding_step ?? 0);
+      if (savedStep > 0 && savedStep <= 4) {
+        setStep(savedStep as Step);
+      }
+      // Pre-populate calibration sliders with any partial scores (Fix 1D)
+      if (p.skill_ratings && typeof p.skill_ratings === "object") {
+        setInitialSkillScores(p.skill_ratings as Record<string, number>);
+      }
+      // Pre-populate Step 1 form fields if returning user has partial data
+      if (p.first_name) setFirstName(p.first_name);
+      if (p.last_name) setLastName(p.last_name);
+      if (p.firm) setFirm(p.firm);
+      if (p.level) setLevel(p.level);
+      if (p.sector_focus) setSectorFocus(p.sector_focus);
+      if (p.core_practice) setCorePractice(p.core_practice);
+      if (p.north_star_goal) setNorthStar(p.north_star_goal);
       setChecking(false);
     })();
   }, [navigate]);
+
+  // Helper — persist onboarding progress so users can resume after closing the tab.
+  const saveProgress = async (stepCompleted: number) => {
+    if (!userId) return;
+    try {
+      await (supabase.from("diagnostic_profiles" as any) as any)
+        .update({ onboarding_step: stepCompleted })
+        .eq("user_id", userId);
+    } catch (e) {
+      console.warn("saveProgress failed:", e);
+    }
+  };
+
+  // Auto-save partial calibration scores after every slider Next click (Fix 1D)
+  const autoSaveScores = async (currentScores: Record<string, number>) => {
+    if (!userId) return;
+    try {
+      await (supabase.from("diagnostic_profiles" as any) as any)
+        .update({ skill_ratings: currentScores })
+        .eq("user_id", userId);
+    } catch (e) {
+      console.warn("autoSaveScores failed:", e);
+    }
+  };
+
+  const confirmIdentityYes = () => {
+    if (!userId) return;
+    try { sessionStorage.setItem(`aura_identity_confirmed_${userId}`, "true"); } catch {}
+    setNeedsIdentityConfirm(false);
+    // After confirming, gate to password setup if not set yet.
+    setNeedsPassword(true);
+  };
+
+  const confirmIdentityNo = async () => {
+    setSigningOut(true);
+    try { await supabase.auth.signOut(); } catch {}
+    navigate("/request-access", { replace: true });
+  };
 
   // Step 0: stagger reveal of the 3 bullet items
   useEffect(() => {
@@ -287,6 +371,7 @@ const Onboarding = () => {
         .catch(() => {})
         .finally(() => setArticleSearchDone(true));
 
+      await saveProgress(1);
       goStep(2);
     } catch (e: any) {
       toast.error(e.message || "Couldn't save profile — please try again");
@@ -350,6 +435,7 @@ const Onboarding = () => {
     window.setTimeout(() => {
       setBreathing(false);
       setBreathingLeaving(false);
+      saveProgress(2);
       goStep(3);
     }, 2000);
   };
@@ -364,6 +450,7 @@ const Onboarding = () => {
     } catch (e) {
       console.warn("Could not save calibration scores:", e);
     }
+    await saveProgress(3);
     goStep(4);
   };
 
@@ -501,6 +588,43 @@ const Onboarding = () => {
       <div className="min-h-screen flex items-center justify-center" style={{ background: "hsl(var(--background))" }}>
         <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--brand)" }} />
       </div>
+    );
+  }
+
+  // ───── Identity confirmation gate (Fix 5) ─────
+  if (needsIdentityConfirm) {
+    return cardShell(
+      <>
+        <div style={{ textAlign: "center", fontSize: 24, color: "var(--brand)", marginBottom: 12 }}>✦</div>
+        {eyebrow("Confirm it's you")}
+        {heading("This invitation was sent to:")}
+        <p
+          className="mb-6"
+          style={{
+            fontSize: 18,
+            fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+            color: "hsl(var(--foreground))",
+            wordBreak: "break-all",
+          }}
+        >
+          {userEmail || "—"}
+        </p>
+        <p className="mb-6" style={{ fontSize: 15, lineHeight: 1.7, color: "hsl(var(--muted-foreground))" }}>
+          Is this your email address?
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {primaryBtn(<>Yes, that's me <ArrowRight className="w-4 h-4" /></>, confirmIdentityYes)}
+          <button
+            type="button"
+            onClick={confirmIdentityNo}
+            disabled={signingOut}
+            className="w-full text-sm py-3 transition-colors"
+            style={{ color: "hsl(var(--muted-foreground))", background: "transparent" }}
+          >
+            {signingOut ? "Signing out…" : "No, this isn't mine"}
+          </button>
+        </div>
+      </>,
     );
   }
 
@@ -969,6 +1093,8 @@ const Onboarding = () => {
             <CalibrationSliders
               sector={sectorFocus || null}
               onComplete={handleCalibrationComplete}
+              initialScores={initialSkillScores}
+              onAutoSave={autoSaveScores}
             />
           </div>
         </div>
@@ -1018,38 +1144,58 @@ const Onboarding = () => {
         <div
           className={`aura-ceremony-overlay${ceremonyLeaving ? " is-leaving" : ""}`}
           role="dialog"
-          aria-label="Your intelligence is active"
-          onClick={completeCeremonyAndNavigate}
+          aria-label="Aura sees who you are now"
         >
+          {/* 5 progress dots — all filled bronze */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 28 }}>
+            {[0, 1, 2, 3, 4].map((i) => (
+              <span
+                key={i}
+                style={{
+                  width: 8, height: 8, borderRadius: 999,
+                  background: "#B08D3A",
+                  display: "inline-block",
+                }}
+              />
+            ))}
+          </div>
           <span
             aria-hidden="true"
             className="aura-gold-pulse"
-            style={{ fontSize: 56, lineHeight: 1, marginBottom: 28 }}
+            style={{ fontSize: 24, color: "#B08D3A", lineHeight: 1, marginBottom: 22 }}
           >
             ✦
           </span>
           <h2
             style={{
               fontFamily: "var(--font-display, 'Cormorant Garamond', Georgia, serif)",
-              fontSize: 36, lineHeight: 1.15, margin: "0 0 12px",
-              color: "hsl(40 20% 95%)", letterSpacing: "-0.01em",
+              fontSize: 20, lineHeight: 1.35, margin: "0 0 28px",
+              color: "#ffffff", letterSpacing: "-0.005em",
+              textAlign: "center", maxWidth: 420, padding: "0 16px",
             }}
           >
-            Your intelligence is active.
+            Aura sees who you are now — and everything it creates will reflect it.
           </h2>
-          <p style={{
-            fontSize: 15, lineHeight: 1.6, margin: 0,
-            color: "hsl(40 18% 95% / 0.7)", maxWidth: 360,
-          }}>
-            Aura is now watching the market for you.
-          </p>
-          <span style={{
-            position: "absolute", bottom: 32, left: 0, right: 0,
-            fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase",
-            color: "hsl(40 18% 95% / 0.4)",
-          }}>
-            Tap anywhere to continue
-          </span>
+          <button
+            type="button"
+            onClick={completeCeremonyAndNavigate}
+            style={{
+              background: "#B08D3A",
+              color: "#1A1916",
+              border: 0,
+              borderRadius: 10,
+              fontSize: 15,
+              fontWeight: 600,
+              padding: "14px 28px",
+              width: "100%",
+              maxWidth: 320,
+              cursor: "pointer",
+              fontFamily: "'DM Sans', system-ui, sans-serif",
+              letterSpacing: "0.01em",
+            }}
+          >
+            Enter my dashboard ✦
+          </button>
         </div>
       )}
     </>
