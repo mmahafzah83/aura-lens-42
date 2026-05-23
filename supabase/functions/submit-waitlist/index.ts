@@ -194,7 +194,8 @@ serve(async (req) => {
   </div>
 </div>
 </body></html>`;
-        await fetch("https://api.resend.com/emails", {
+        console.log(`[submit-waitlist] Attempting to send confirmation email to ${email}`);
+        const res = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${resendKey}`,
@@ -208,11 +209,13 @@ serve(async (req) => {
             html,
           }),
         });
+        const resBody = await res.text();
+        console.log(`[submit-waitlist] Resend response: ${res.status} ${resBody}`);
       } else {
         console.log(`[submit-waitlist] No RESEND_API_KEY set — skipping confirmation email for ${email}`);
       }
     } catch (mailErr) {
-      console.error("Email send failed (non-fatal):", mailErr);
+      console.error("[submit-waitlist] Email send failed (non-fatal):", mailErr);
     }
 
     return new Response(
