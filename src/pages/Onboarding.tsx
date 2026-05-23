@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import usePageMeta from "@/hooks/usePageMeta";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
+import CalibrationSliders from "@/components/CalibrationSliders";
 
 const SECTORS = [
   "Energy & Utilities",
@@ -21,7 +22,7 @@ const SECTORS = [
   "Other",
 ];
 
-type Step = 0 | 1 | 2 | 3;
+type Step = 0 | 1 | 2 | 3 | 4;
 
 interface Prefill {
   first_name?: string;
@@ -136,6 +137,10 @@ const Onboarding = () => {
 
   // Step 3
   const [assessmentOpen, setAssessmentOpen] = useState(false);
+
+  // Breathing transition between article capture (step 2) and calibration (step 3)
+  const [breathing, setBreathing] = useState(false);
+  const [breathingLeaving, setBreathingLeaving] = useState(false);
 
   // Auth + gate: if user already onboarded, send them home.
   useEffect(() => {
@@ -329,7 +334,7 @@ const Onboarding = () => {
       // ingest-capture creates the entry server-side — no client-side insert needed.
       setCapturedTitle(articleMeta?.title || "");
       setCaptureSuccess(true);
-      window.setTimeout(() => goStep(3), 3000);
+      window.setTimeout(() => startBreathingToCalibration(), 3000);
     } catch (e: any) {
       toast.error(e.message || "Couldn't capture that one");
     } finally {
@@ -337,10 +342,35 @@ const Onboarding = () => {
     }
   };
 
+  // Breathing transition between step 2 (article) → step 3 (calibration)
+  const startBreathingToCalibration = () => {
+    setBreathing(true);
+    setBreathingLeaving(false);
+    window.setTimeout(() => setBreathingLeaving(true), 1700);
+    window.setTimeout(() => {
+      setBreathing(false);
+      setBreathingLeaving(false);
+      goStep(3);
+    }, 2000);
+  };
+
+  // Step 3: save calibration scores then advance to assessment (step 4)
+  const handleCalibrationComplete = async (scores: Record<string, number>) => {
+    if (!userId) { goStep(4); return; }
+    try {
+      await (supabase.from("diagnostic_profiles" as any) as any)
+        .update({ skill_ratings: scores, audit_results: scores })
+        .eq("user_id", userId);
+    } catch (e) {
+      console.warn("Could not save calibration scores:", e);
+    }
+    goStep(4);
+  };
+
   // ─── Render helpers ───
   const ProgressDots = () => (
     <div className="flex items-center justify-center gap-2 mb-6">
-      {[0, 1, 2, 3].map((i) => {
+      {[0, 1, 2, 3, 4].map((i) => {
         const isCurrent = i === step;
         const isDone = i < step;
         return (
@@ -670,7 +700,7 @@ const Onboarding = () => {
   if (step === 1) {
     return cardShell(
       <>
-        {eyebrow("Step 1 of 3 — Tell Aura who you are")}
+        {eyebrow("Step 1 of 5 — Tell Aura who you are")}
         {!showForm ? (
           <>
             {heading("Paste your LinkedIn headline and About section")}
@@ -820,7 +850,7 @@ const Onboarding = () => {
     if (captureSuccess) {
       return cardShell(
         <>
-          {eyebrow("Step 2 of 3 — Your first intelligence capture")}
+          {eyebrow("Step 2 of 5 — Your first intelligence capture")}
           {heading("First capture complete.")}
           <p className="mb-6" style={{ fontSize: 15, lineHeight: 1.7, color: "hsl(var(--foreground))" }}>
             Aura is already detecting strategic patterns. After 3-5 more articles, your first signal emerges.
@@ -839,14 +869,14 @@ const Onboarding = () => {
               Aura is building your first signal.
             </p>
           </motion.div>
-          {primaryBtn(<>Continue <ArrowRight className="w-4 h-4" /></>, () => goStep(3))}
+          {primaryBtn(<>Continue <ArrowRight className="w-4 h-4" /></>, () => startBreathingToCalibration())}
         </>,
       );
     }
 
     return cardShell(
       <>
-        {eyebrow("Step 2 of 3 — Your first intelligence capture")}
+        {eyebrow("Step 2 of 5 — Your first intelligence capture")}
         {stillSearching ? (
           <>
             {heading("Finding something relevant in your sector...")}
@@ -855,7 +885,7 @@ const Onboarding = () => {
               <span className="text-sm">Aura is searching trusted sources...</span>
             </div>
             <ArticleManualPaste url={manualUrl} setUrl={setManualUrl} onSave={() => captureArticle(manualUrl)} loading={capturing} inputCls={inputCls} inputStyle={inputStyle} />
-            <div className="mt-3">{ghostLink("Skip for now", () => goStep(3))}</div>
+            <div className="mt-3">{ghostLink("Skip for now", () => startBreathingToCalibration())}</div>
           </>
         ) : foundArticle ? (
           <>
@@ -888,7 +918,7 @@ const Onboarding = () => {
             </div>
             <div className="my-4 text-xs text-center" style={{ color: "hsl(var(--muted-foreground))" }}>Or paste your own URL:</div>
             <ArticleManualPaste url={manualUrl} setUrl={setManualUrl} onSave={() => captureArticle(manualUrl)} loading={capturing} inputCls={inputCls} inputStyle={inputStyle} compact />
-            <div className="mt-3">{ghostLink("Skip for now", () => goStep(3))}</div>
+            <div className="mt-3">{ghostLink("Skip for now", () => startBreathingToCalibration())}</div>
           </>
         ) : (
           <>
@@ -897,19 +927,50 @@ const Onboarding = () => {
               Paste one article you read this week. Aura will find the strategic pattern inside it.
             </p>
             <ArticleManualPaste url={manualUrl} setUrl={setManualUrl} onSave={() => captureArticle(manualUrl)} loading={capturing} inputCls={inputCls} inputStyle={inputStyle} />
-            <div className="mt-3">{ghostLink("Skip for now", () => goStep(3))}</div>
+            <div className="mt-3">{ghostLink("Skip for now", () => startBreathingToCalibration())}</div>
           </>
         )}
       </>,
     );
   }
 
-  // ───── STEP 3 ─────
+  // ───── STEP 3: CALIBRATION ─────
+  if (step === 3) {
+    return (
+      <>
+        <div
+          className="min-h-screen w-full flex items-center justify-center px-5 py-10"
+          style={{ background: "hsl(var(--background))" }}
+        >
+          <div
+            className="w-full"
+            style={{
+              maxWidth: 560,
+              background: "hsl(var(--card))",
+              color: "hsl(var(--card-foreground))",
+              borderRadius: 16,
+              boxShadow: "0 8px 32px rgba(0,0,0,0.08), 0 8px 32px rgba(0,0,0,0.3)",
+              padding: "clamp(32px, 6vw, 48px)",
+              border: "1px solid hsl(var(--border))",
+            }}
+          >
+            <CalibrationSliders
+              sector={sectorFocus || null}
+              onComplete={handleCalibrationComplete}
+            />
+          </div>
+        </div>
+        {breathing && <BreathingOverlay leaving={breathingLeaving} />}
+      </>
+    );
+  }
+
+  // ───── STEP 4: BRAND ASSESSMENT ─────
   return (
     <>
       {cardShell(
         <>
-          {eyebrow("Step 3 of 3 — How the market sees you")}
+          {eyebrow("Step 4 of 5 — How the market sees you")}
           {heading("See how the market sees you.")}
           <p className="mb-3" style={{ fontSize: 15, lineHeight: 1.7, color: "hsl(var(--foreground))" }}>
             4 quick questions. Takes 60 seconds. This shapes everything Aura creates for you.
@@ -921,6 +982,7 @@ const Onboarding = () => {
           <div className="mt-3">{ghostLink("I'll do this later", () => goHome())}</div>
         </>,
       )}
+      {breathing && <BreathingOverlay leaving={breathingLeaving} />}
       <BrandAssessmentModal
         open={assessmentOpen}
         onOpenChange={(o) => {
@@ -1024,3 +1086,27 @@ const ArticleManualPaste = ({
 );
 
 export default Onboarding;
+
+const BreathingOverlay = ({ leaving }: { leaving: boolean }) => (
+  <div
+    style={{
+      position: "fixed", inset: 0, zIndex: 100,
+      background: "hsl(var(--background))",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      opacity: leaving ? 0 : 1,
+      transition: "opacity 300ms ease-out",
+    }}
+  >
+    <p
+      style={{
+        fontFamily: "'DM Sans', system-ui, sans-serif",
+        fontSize: 15, lineHeight: 1.6,
+        color: "hsl(var(--muted-foreground))",
+        textAlign: "center", maxWidth: 420, padding: "0 24px",
+      }}
+    >
+      Perfect. Now let's map what makes you different.{" "}
+      <span style={{ color: "#B08D3A" }}>◆</span>
+    </p>
+  </div>
+);
