@@ -324,6 +324,43 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
     return () => clearInterval(t);
   }, []);
 
+  // One-time welcome ceremony after onboarding completion
+  useEffect(() => {
+    let flag: string | null = null;
+    try { flag = sessionStorage.getItem("aura-onboarding-just-completed"); } catch {}
+    if (flag !== "1") return;
+    try { sessionStorage.removeItem("aura-onboarding-just-completed"); } catch {}
+    const id = window.setTimeout(() => {
+      toast.custom(
+        (t) => (
+          <div
+            style={{
+              background: "var(--ink)",
+              color: "var(--paper)",
+              border: "1px solid rgba(212,176,86,0.4)",
+              borderRadius: 14,
+              padding: "18px 22px",
+              maxWidth: 380,
+              boxShadow: "0 10px 32px rgba(0,0,0,0.35)",
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              lineHeight: 1.5,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+              <span style={{ color: "#d4b056", fontSize: 18 }}>✦</span>
+              <span style={{ fontSize: 18 }}>Welcome to your Aura.</span>
+            </div>
+            <div style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "rgba(230,222,205,0.85)" }}>
+              Your intelligence radar is live. Your first briefing arrives in 24 hours.
+            </div>
+          </div>
+        ),
+        { duration: 6500 },
+      );
+    }, 600);
+    return () => clearTimeout(id);
+  }, []);
+
   // and only if there is no diagnostic_profiles row for this user yet.
   useEffect(() => {
     if (!sessionConfirmed || !authUser?.id) return;

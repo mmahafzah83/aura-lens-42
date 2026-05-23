@@ -183,6 +183,8 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
   const [loadingStage, setLoadingStage] = useState(0);
   const [confirmClose, setConfirmClose] = useState(false);
   const [genError, setGenError] = useState(false);
+  const [interlude, setInterlude] = useState<null | { dots: string; text: string }>(null);
+  const [companionLine, setCompanionLine] = useState<string>("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -195,25 +197,20 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
       setLoadingStage(0);
       setConfirmClose(false);
       setGenError(false);
+      setInterlude(null);
+      setCompanionLine("");
     }
   }, [open]);
 
-  // Staged loading messages — rotate every 4 seconds while generating
+  // Cinematic processing line cycling (3 lines on a schedule + 12s grace line)
   useEffect(() => {
     if (!loading) { setLoadingStage(0); return; }
-    const id = setInterval(() => {
-      setLoadingStage((s) => Math.min(s + 1, 4));
-    }, 4000);
-    return () => clearInterval(id);
+    setLoadingStage(0);
+    const t1 = window.setTimeout(() => setLoadingStage(1), 4000);
+    const t2 = window.setTimeout(() => setLoadingStage(2), 6500);
+    const t3 = window.setTimeout(() => setLoadingStage(3), 12000);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [loading]);
-
-  const LOADING_STAGES = [
-    "Reading your answers...",
-    "Mapping your market position...",
-    "Identifying your topics...",
-    "Finding the space only you can own...",
-    "Finalizing your positioning...",
-  ];
 
   const persistAnswersOnly = async () => {
     try {
@@ -259,6 +256,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
   const toggleOption = (opt: string) => {
     if (q.type === "single") {
       setAnswers((prev) => ({ ...prev, [step]: opt }));
+      maybeFireCompanionVoice(step);
       return;
     }
     const current = (answers[step] as string[]) || [];
@@ -267,7 +265,23 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
     } else {
       if (q.max && current.length >= q.max) return;
       setAnswers((prev) => ({ ...prev, [step]: [...current, opt] }));
+      maybeFireCompanionVoice(step);
     }
+  };
+
+  const showCompanion = (text: string) => {
+    setCompanionLine(text);
+    window.setTimeout(() => setCompanionLine((c) => (c === text ? "" : c)), 4000);
+  };
+
+  // Companion voice after specific question selections (Q1, Q5, Q7 → indices 0, 4, 6)
+  const maybeFireCompanionVoice = (idx: number) => {
+    const a = answers[idx];
+    const alreadyAnswered = Array.isArray(a) ? a.length > 0 : !!a;
+    if (alreadyAnswered) return; // only on first selection
+    if (idx === 0) showCompanion("Good choice. That tells Aura a lot about how you want to be positioned.");
+    else if (idx === 4) showCompanion("You're in the zone. Stay with it.");
+    else if (idx === 6) showCompanion("Almost there. The reveal is worth it.");
   };
 
   const isSelected = (opt: string) => {
@@ -278,7 +292,24 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
 
   const handleNext = async () => {
     if (step < QUESTIONS.length - 1) {
+      // Anticipation interludes after Q3 (idx 2), Q6 (idx 5), Q9 (idx 8)
+      const interludeMap: Record<number, { dots: string; text: string }> = {
+        2: { dots: "◆", text: "Interesting. Aura is starting to see a pattern in your answers..." },
+        5: { dots: "◆◆", text: "Your market position is taking shape. 4 more questions." },
+        8: { dots: "◆◆◆", text: "One more. This last question shapes everything." },
+      };
+      const peek = interludeMap[step];
+      if (peek) {
+        setInterlude(peek);
+        window.setTimeout(() => {
+          setInterlude(null);
+          setStep((s) => s + 1);
+          setCompanionLine("");
+        }, 2500);
+        return;
+      }
       setStep((s) => s + 1);
+      setCompanionLine("");
     } else {
       await submitAssessment();
     }
@@ -422,7 +453,9 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
           </div>
 
           {!showResults && step === 0 && (
-            <p className="text-xs text-ink-5 mt-2 mb-1">10 questions · 8 minutes · reveals your positioning</p>
+            <p className="text-xs mt-2 mb-1" style={{ color: "rgba(212,176,86,0.7)", letterSpacing: "0.2em", textTransform: "uppercase", fontWeight: 600, fontSize: 11 }}>
+              Step 4 of 5 — How the market sees you
+            </p>
           )}
 
           {/* Progress bar */}
@@ -441,7 +474,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
           {showResults ? (
             <div className="max-w-2xl mx-auto h-full">
               {loading ? (
-                <CinematicLoading />
+                <CinematicLoading stage={loadingStage} />
               ) : genError ? (
                 <div className="flex flex-col items-center justify-center py-16 px-4 text-center gap-5 max-w-md mx-auto">
                   <h3 className="text-[18px] text-ink-7 font-medium leading-snug">
@@ -467,6 +500,20 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
             </div>
           ) : (
             <div className="max-w-lg mx-auto pt-4">
+              {step === QUESTIONS.length - 1 && (
+                <p
+                  className="uppercase"
+                  style={{
+                    fontSize: 10,
+                    letterSpacing: "2px",
+                    color: "var(--brand)",
+                    fontWeight: 700,
+                    marginBottom: 8,
+                  }}
+                >
+                  Final question
+                </p>
+              )}
               <p
                 className="mb-3 uppercase"
                 style={{
@@ -504,77 +551,127 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
                 />
               ) : (
                 <div className="space-y-2">
-                  {q.options?.map((opt) => (
-                    <button
-                      key={opt}
-                      onClick={() => toggleOption(opt)}
-                      className="w-full text-left transition-all duration-150"
-                      style={{
-                        background: isSelected(opt)
-                          ? "rgba(176, 141, 58, 0.12)"
-                          : "transparent",
-                        border: `1px solid ${
-                          isSelected(opt)
-                            ? "#d4b056"
-                            : "rgba(212, 176, 86, 0.2)"
-                        }`,
-                        color: isSelected(opt)
-                          ? "#ffe896"
-                          : "rgba(230, 222, 205, 0.9)",
-                        borderRadius: 12,
-                        padding: "16px 20px",
-                        fontSize: 15,
-                        fontWeight: isSelected(opt) ? 500 : 400,
-                        cursor: "pointer",
-                      }}
-                      onMouseEnter={(e) => {
-                        if (isSelected(opt)) return;
-                        e.currentTarget.style.borderColor = "rgba(212, 176, 86, 0.5)";
-                        e.currentTarget.style.background = "rgba(176, 141, 58, 0.08)";
-                      }}
-                      onMouseLeave={(e) => {
-                        if (isSelected(opt)) return;
-                        e.currentTarget.style.borderColor = "rgba(212, 176, 86, 0.2)";
-                        e.currentTarget.style.background = "transparent";
-                      }}
-                    >
-                      {opt}
-                    </button>
-                  ))}
+                  {q.options?.map((opt) => {
+                    const sel = isSelected(opt);
+                    const anySelected = q.type === "single"
+                      ? !!currentAnswer
+                      : Array.isArray(currentAnswer) && currentAnswer.length > 0;
+                    const dim = anySelected && !sel;
+                    return (
+                      <button
+                        key={opt}
+                        onClick={() => toggleOption(opt)}
+                        className="w-full text-left flex items-center justify-between gap-3"
+                        style={{
+                          background: sel ? "rgba(176, 141, 58, 0.14)" : "transparent",
+                          borderTop: "1px solid rgba(212,176,86,0.2)",
+                          borderRight: "1px solid rgba(212,176,86,0.2)",
+                          borderBottom: "1px solid rgba(212,176,86,0.2)",
+                          borderLeft: sel ? "3px solid #d4b056" : "1px solid rgba(212,176,86,0.2)",
+                          color: sel ? "#ffe896" : "rgba(230, 222, 205, 0.9)",
+                          borderRadius: 12,
+                          padding: sel ? "16px 20px 16px 18px" : "16px 20px",
+                          fontSize: 15,
+                          fontWeight: sel ? 500 : 400,
+                          cursor: "pointer",
+                          opacity: dim ? 0.45 : 1,
+                          transform: sel ? "scale(1.02)" : "scale(1)",
+                          transition: "transform 200ms ease, opacity 300ms ease, background 200ms ease, border-color 300ms ease, padding 200ms ease",
+                        }}
+                      >
+                        <span>{opt}</span>
+                        <span
+                          aria-hidden="true"
+                          style={{
+                            color: "#d4b056",
+                            fontSize: 10,
+                            opacity: sel ? 1 : 0,
+                            transition: "opacity 200ms ease",
+                          }}
+                        >✦</span>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
+
+              {/* Companion voice */}
+              {companionLine && (
+                <p
+                  style={{
+                    marginTop: 18,
+                    fontSize: 13,
+                    color: "var(--ink-5)",
+                    textAlign: "center",
+                    opacity: 0,
+                    animation: "aura-fade-in 300ms ease-out forwards",
+                  }}
+                >
+                  {companionLine}
+                </p>
+              )}
+              <style>{`
+                @keyframes aura-fade-in { from { opacity: 0; } to { opacity: 1; } }
+                @keyframes aura-fade-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+              `}</style>
             </div>
           )}
         </div>
 
         {/* Footer — sticky */}
-        {!showResults && (
+        {!showResults && canProceed() && (
           <div
             className="shrink-0"
             style={{
               background: "var(--ink)",
               borderTop: "0.5px solid var(--surface-ink-subtle)",
               padding: "12px 16px",
+              animation: "aura-fade-up 300ms ease-out forwards",
             }}
           >
             <button
               onClick={handleNext}
-              disabled={!canProceed()}
-              className={`w-full py-3.5 rounded-xl text-sm font-medium tracking-wide transition-all duration-200 ${
-                canProceed()
-                  ? "hover:brightness-110 active:scale-[0.98]"
-                  : "bg-surface-ink-subtle text-ink-4 cursor-not-allowed"
-              }`}
-              style={canProceed() ? {
+              className="w-full rounded-xl font-medium tracking-wide transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
+              style={{
                 background: "linear-gradient(to bottom, hsl(43 80% 55%), var(--brand))",
                 color: "var(--ink)",
-              } : undefined}
+                padding: step === QUESTIONS.length - 1 ? "16px" : "14px",
+                fontSize: step === QUESTIONS.length - 1 ? 15 : 14,
+              }}
             >
-              {step < QUESTIONS.length - 1 ? "Next" : "Generate Brand Positioning"}
+              {step < QUESTIONS.length - 1 ? "Next →" : "Show me how the market sees me →"}
             </button>
           </div>
         )}
       </div>
+
+      {/* Anticipation interlude overlay (after Q3 / Q6 / Q9) */}
+      {interlude && (
+        <div
+          className="fixed inset-0 flex items-center justify-center px-6"
+          style={{
+            background: "rgba(10,9,7,0.94)",
+            zIndex: 1050,
+            animation: "aura-fade-in 400ms ease-out",
+          }}
+        >
+          <div style={{ textAlign: "center", maxWidth: 360 }}>
+            <div style={{ color: "#B08D3A", fontSize: 16, marginBottom: 18, letterSpacing: "0.3em" }}>{interlude.dots}</div>
+            <p
+              style={{
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontSize: 18,
+                color: "#B08D3A",
+                lineHeight: 1.55,
+                margin: 0,
+              }}
+            >
+              {interlude.text}
+            </p>
+            <div style={{ color: "#B08D3A", fontSize: 16, marginTop: 18, letterSpacing: "0.3em" }}>{interlude.dots}</div>
+          </div>
+        </div>
+      )}
 
       {confirmClose && (
         <div
@@ -784,19 +881,29 @@ function ResultsView({
         <h2
           style={{
             fontFamily: "'Cormorant Garamond', Georgia, serif",
-            fontSize: 32,
+            fontSize: "clamp(28px, 5vw, 36px)",
             fontWeight: 400,
             color: "rgba(255, 250, 240, 0.96)",
             lineHeight: 1.15,
             letterSpacing: "-0.01em",
             margin: "18px 0 14px",
             maxWidth: 520,
-            opacity: 0,
-            transform: "translateY(20px)",
-            animation: "aura-fade-up 600ms ease-out 1800ms forwards",
           }}
         >
-          {archetype}
+          {archetype.split(/\s+/).map((word, i) => (
+            <span
+              key={i}
+              style={{
+                display: "inline-block",
+                opacity: 0,
+                transform: "translateY(12px)",
+                animation: `aura-fade-up 500ms ease-out ${1500 + i * 300}ms forwards`,
+                marginRight: 8,
+              }}
+            >
+              {word}
+            </span>
+          ))}
         </h2>
 
         {(oneLineDesc || positioning) && (
@@ -959,42 +1066,60 @@ function ResultsView({
 }
 
 // ============================================================
-// CinematicLoading — full-screen shimmer text while generating
+// CinematicLoading — eye + staged processing lines
 // ============================================================
-function CinematicLoading() {
+const PROCESSING_LINES = [
+  "Mapping your expertise across 6 frameworks...",
+  "Finding the space only you can own...",
+  "Composing your market position...",
+  "This is taking a moment — your profile is more complex than most...",
+];
+function CinematicLoading({ stage = 0 }: { stage?: number }) {
   return (
     <div
       style={{
         minHeight: "70vh",
         display: "flex",
+        flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
         padding: "0 24px",
+        gap: 28,
       }}
     >
       <style>{`
-        @keyframes aura-shimmer {
-          0% { background-position: -200% 0; }
-          100% { background-position: 200% 0; }
-        }
+        @keyframes aura-eye-in { from { opacity: 0; transform: scale(0.3); } to { opacity: 1; transform: scale(1); } }
+        @keyframes aura-eye-pulse { 0%,100% { opacity: 0.7; } 50% { opacity: 1; } }
+        @keyframes aura-line-cycle { 0% { opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
       `}</style>
+      <div
+        style={{
+          width: 80, height: 80,
+          opacity: 0,
+          animation: "aura-eye-in 800ms ease-out forwards, aura-eye-pulse 3s ease-in-out 1.1s infinite",
+        }}
+        aria-hidden="true"
+      >
+        <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <ellipse cx="40" cy="40" rx="34" ry="18" stroke="#B08D3A" strokeWidth="1.5" />
+          <circle cx="40" cy="40" r="11" stroke="#B08D3A" strokeWidth="1.5" />
+          <circle cx="40" cy="40" r="4" fill="#B08D3A" />
+        </svg>
+      </div>
       <p
+        key={stage}
         style={{
           fontFamily: "'Cormorant Garamond', Georgia, serif",
-          fontSize: 24,
-          fontStyle: "italic",
+          fontSize: 18,
           textAlign: "center",
+          color: "#d4b056",
+          maxWidth: 420,
           margin: 0,
-          backgroundImage:
-            "linear-gradient(90deg, rgba(212,176,86,0.35) 0%, rgba(255,232,150,0.95) 50%, rgba(212,176,86,0.35) 100%)",
-          backgroundSize: "200% 100%",
-          WebkitBackgroundClip: "text",
-          backgroundClip: "text",
-          color: "transparent",
-          animation: "aura-shimmer 2s linear infinite",
+          opacity: 0,
+          animation: "aura-line-cycle 2700ms ease-in-out forwards",
         }}
       >
-        Discovering how the market sees you…
+        {PROCESSING_LINES[Math.min(stage, PROCESSING_LINES.length - 1)]}
       </p>
     </div>
   );

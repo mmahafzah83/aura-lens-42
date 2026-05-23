@@ -171,7 +171,7 @@ const Onboarding = () => {
   useEffect(() => {
     if (step !== 0 || checking) return;
     setRevealCount(0);
-    const timers = [500, 1000, 1500].map((ms, i) =>
+    const timers = [300, 600, 900].map((ms, i) =>
       window.setTimeout(() => setRevealCount(i + 1), ms),
     );
     return () => timers.forEach(clearTimeout);
@@ -657,9 +657,9 @@ const Onboarding = () => {
   // ───── STEP 0 ─────
   if (step === 0) {
     const items = [
-      "Read your LinkedIn and understand who you are professionally",
-      "Find a relevant article from your sector — your first intelligence capture",
-      "Begin building your strategic positioning",
+      "Aura reads what you already read — and finds the signals you'd miss.",
+      "It writes in your voice — because generic AI content damages your reputation.",
+      "It tracks what matters — so the right people notice you before you even pitch.",
     ];
     return cardShell(
       <>
@@ -668,7 +668,7 @@ const Onboarding = () => {
         <div className="space-y-4 mb-8">
           {body(<>You have the expertise. The certificates. The years. But right now, to anyone who hasn't met you in person — you're invisible.</>)}
           {body(<>That changes today.</>)}
-          {body(<>In the next 3 minutes, Aura will:</>)}
+          {body(<>Here's why Aura is different:</>)}
         </div>
         <ul className="space-y-3 mb-8">
           {items.map((it, i) => (
@@ -688,10 +688,19 @@ const Onboarding = () => {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: revealCount >= 3 ? 1 : 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.5, delay: revealCount >= 3 ? 0.6 : 0 }}
         >
           {primaryBtn(<>Let's begin <ArrowRight className="w-4 h-4" /></>, () => goStep(1), { disabled: revealCount < 3 })}
         </motion.div>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: revealCount >= 3 ? 1 : 0 }}
+          transition={{ duration: 0.4, delay: revealCount >= 3 ? 0.9 : 0 }}
+          className="text-center mt-4"
+          style={{ fontSize: 13, color: "hsl(var(--muted-foreground))" }}
+        >
+          5 steps. About 10 minutes. Worth every second.
+        </motion.p>
       </>,
     );
   }
@@ -850,10 +859,13 @@ const Onboarding = () => {
     if (captureSuccess) {
       return cardShell(
         <>
-          {eyebrow("Step 2 of 5 — Your first intelligence capture")}
+          {eyebrow("Step 2 of 5 — Your first signal starts here")}
           {heading("First capture complete.")}
-          <p className="mb-6" style={{ fontSize: 15, lineHeight: 1.7, color: "hsl(var(--foreground))" }}>
+          <p className="mb-3" style={{ fontSize: 15, lineHeight: 1.7, color: "hsl(var(--foreground))" }}>
             Aura is already detecting strategic patterns. After 3-5 more articles, your first signal emerges.
+          </p>
+          <p className="mb-6 italic" style={{ fontSize: 13, lineHeight: 1.7, color: "hsl(var(--muted-foreground))" }}>
+            That's the muscle most leaders never build — Aura builds it for you.
           </p>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -869,14 +881,14 @@ const Onboarding = () => {
               Aura is building your first signal.
             </p>
           </motion.div>
-          {primaryBtn(<>Continue <ArrowRight className="w-4 h-4" /></>, () => startBreathingToCalibration())}
+          {primaryBtn(<>Continue → <ArrowRight className="w-4 h-4" /></>, () => startBreathingToCalibration())}
         </>,
       );
     }
 
     return cardShell(
       <>
-        {eyebrow("Step 2 of 5 — Your first intelligence capture")}
+        {eyebrow("Step 2 of 5 — Your first signal starts here")}
         {stillSearching ? (
           <>
             {heading("Finding something relevant in your sector...")}
@@ -922,12 +934,12 @@ const Onboarding = () => {
           </>
         ) : (
           <>
-            {heading("Save your first article")}
+            {heading("Capture the article that's on your mind right now.")}
             <p className="mb-5" style={{ fontSize: 15, lineHeight: 1.7, color: "hsl(var(--muted-foreground))" }}>
-              Paste one article you read this week. Aura will find the strategic pattern inside it.
+              The one you read at 11pm and thought 'this changes things'. Aura will turn it into your first signal.
             </p>
             <ArticleManualPaste url={manualUrl} setUrl={setManualUrl} onSave={() => captureArticle(manualUrl)} loading={capturing} inputCls={inputCls} inputStyle={inputStyle} />
-            <div className="mt-3">{ghostLink("Skip for now", () => startBreathingToCalibration())}</div>
+            <div className="mt-3">{ghostLink("I'll capture one later", () => startBreathingToCalibration())}</div>
           </>
         )}
       </>,
@@ -971,14 +983,11 @@ const Onboarding = () => {
       {cardShell(
         <>
           {eyebrow("Step 4 of 5 — How the market sees you")}
-          {heading("See how the market sees you.")}
-          <p className="mb-3" style={{ fontSize: 15, lineHeight: 1.7, color: "hsl(var(--foreground))" }}>
-            4 quick questions. Takes 60 seconds. This shapes everything Aura creates for you.
-          </p>
+          {heading("Discover your market archetype.")}
           <p className="mb-6" style={{ fontSize: 15, lineHeight: 1.7, color: "hsl(var(--muted-foreground))" }}>
-            It shapes how Aura writes your content and reflects your expertise.
+            This 5-minute assessment reveals how a CIO in your sector would describe you to a colleague. It shapes how Aura writes your content and positions your expertise.
           </p>
-          {primaryBtn(<>Let's find out your position in the market <ArrowRight className="w-4 h-4" /></>, () => setAssessmentOpen(true))}
+          {primaryBtn(<>Discover my market position → <ArrowRight className="w-4 h-4" /></>, () => setAssessmentOpen(true))}
           <div className="mt-3">{ghostLink("I'll do this later", () => goHome())}</div>
         </>,
       )}
@@ -1001,6 +1010,7 @@ const Onboarding = () => {
           } catch (e) {
             console.warn("welcome email failed:", e);
           }
+          try { sessionStorage.setItem("aura-onboarding-just-completed", "1"); } catch {}
           goHome();
         }}
       />
