@@ -80,7 +80,12 @@ const Admin = () => {
   const [noteByRow, setNoteByRow] = useState<Record<string, string>>({});
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [directEmail, setDirectEmail] = useState("");
+  const [directName, setDirectName] = useState("");
   const [directSending, setDirectSending] = useState(false);
+  const [confirmInviteRow, setConfirmInviteRow] = useState<Row | null>(null);
+  const [confirmDeclineRow, setConfirmDeclineRow] = useState<Row | null>(null);
+  const [decliningId, setDecliningId] = useState<string | null>(null);
+  const [directDuplicate, setDirectDuplicate] = useState<{ name: string | null; status: string } | null>(null);
   const [npsRows, setNpsRows] = useState<Array<{ id: string; rating: number | null; message: string | null; page: string | null; created_at: string | null }>>([]);
   const [activeUsers, setActiveUsers] = useState<Array<{ email: string; first_name: string | null; sector: string | null; last_sign_in_at: string | null; activated_at: string | null; captures: number }>>([]);
   const [activeLoading, setActiveLoading] = useState(false);
