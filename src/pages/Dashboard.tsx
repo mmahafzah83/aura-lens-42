@@ -24,6 +24,7 @@ import NpsSurveyModal from "@/components/NpsSurveyModal";
 import HomeTab from "@/components/tabs/HomeTab";
 import IdentityTab from "@/components/tabs/IdentityTab";
 import IntelligenceTab from "@/components/tabs/IntelligenceTab";
+import usePageMeta from "@/hooks/usePageMeta";
 
 import AuthorityTab from "@/components/tabs/AuthorityTab";
 import ImpactTab from "@/components/tabs/ImpactTab";
@@ -50,6 +51,11 @@ const applyThemeToRoot = (theme: "dark" | "light") => {
 };
 
 const Dashboard = () => {
+  usePageMeta({
+    title: "Aura — Dashboard",
+    description: "Your strategic intelligence command center: signals, captures, content, and authority growth in one place.",
+    path: "/dashboard",
+  });
   const [entries, setEntries] = useState<Entry[]>([]);
   const [activeTab, setActiveTab] = useState<TabValue>("home");
   const [captureOpen, setCaptureOpen] = useState(false);

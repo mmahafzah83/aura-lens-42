@@ -1,0 +1,18 @@
+# Aura
+
+> Aura is the strategic intelligence OS for senior professionals. It captures what you read, detects the patterns in your expertise, and helps you publish content that compounds authority.
+
+Aura is built for Directors, VPs, CIOs, and CDOs — especially in the GCC — who read extensively but don't publish enough. The platform turns daily reading into strategic signals, then generates LinkedIn-ready content grounded in those signals and the user's own voice. English and Arabic are both supported.
+
+## Pages
+
+- [Home](/): Product overview, how Aura works, and how to request access.
+- [Guide](/guide): How Aura works end-to-end — capture, signal detection, content generation, and the digital presence score.
+- [Request access](/request-access): Apply to the closed beta.
+- [Accept invitation](/accept-invitation): Landing page for invited users opening their welcome email.
+- [Sign in](/auth): Sign in to an existing Aura account.
+
+## Legal
+
+- [Terms](/terms): Terms of service, acceptable use, and AI-generated content disclaimers.
+- [Privacy](/privacy): What data Aura collects, how it's stored, and how AI providers process it.
