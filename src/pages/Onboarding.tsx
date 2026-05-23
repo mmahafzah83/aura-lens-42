@@ -359,6 +359,7 @@ const Onboarding = () => {
         .catch(() => {})
         .finally(() => setArticleSearchDone(true));
 
+      await saveProgress(1);
       goStep(2);
     } catch (e: any) {
       toast.error(e.message || "Couldn't save profile — please try again");
@@ -422,6 +423,7 @@ const Onboarding = () => {
     window.setTimeout(() => {
       setBreathing(false);
       setBreathingLeaving(false);
+      saveProgress(2);
       goStep(3);
     }, 2000);
   };
@@ -436,6 +438,7 @@ const Onboarding = () => {
     } catch (e) {
       console.warn("Could not save calibration scores:", e);
     }
+    await saveProgress(3);
     goStep(4);
   };
 
