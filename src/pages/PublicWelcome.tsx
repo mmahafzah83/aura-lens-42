@@ -55,7 +55,7 @@ const StatCard = ({ value, suffix = "%", literal, desc, fullWidth }: { value?: n
       <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 32, color: BRONZE, lineHeight: 1.1 }}>
         {literal ?? `${counted}${suffix}`}
       </div>
-      <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "#666", lineHeight: 1.45, marginTop: 8 }}>
+      <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "#a3a3a3", lineHeight: 1.45, marginTop: 8 }}>
         {desc}
       </div>
     </div>
@@ -371,7 +371,7 @@ export default function PublicWelcome() {
           <p className="reveal reveal-d4" dir="rtl" style={{ fontSize: 16, color: BRONZE, marginTop: 24, fontFamily: "'Cairo', 'DM Sans', sans-serif" }}>
             حتى يعرف السوق قيمتك قبل أن يقابلك ✦
           </p>
-          <p className="reveal reveal-d4" style={{ fontSize: 11, letterSpacing: "2px", color: "#444", marginTop: 16 }}>
+          <p className="reveal reveal-d4" style={{ fontSize: 11, letterSpacing: "2px", color: "#9a9a9a", marginTop: 16 }}>
             PRIVATE BETA · BY INVITATION ONLY
           </p>
         </div>
