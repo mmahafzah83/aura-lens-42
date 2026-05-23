@@ -474,7 +474,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
           {showResults ? (
             <div className="max-w-2xl mx-auto h-full">
               {loading ? (
-                <CinematicLoading />
+                <CinematicLoading stage={loadingStage} />
               ) : genError ? (
                 <div className="flex flex-col items-center justify-center py-16 px-4 text-center gap-5 max-w-md mx-auto">
                   <h3 className="text-[18px] text-ink-7 font-medium leading-snug">
