@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import usePageMeta from "@/hooks/usePageMeta";
@@ -68,6 +68,15 @@ export default function RequestAccess() {
   const [submittedName, setSubmittedName] = useState("");
   const [errors, setErrors] = useState<{ name?: string; email?: string; seniority?: string; sector?: string }>({});
 
+  // Persisted submission flag — if user already submitted, skip the form entirely.
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined" && localStorage.getItem("aura_waitlist_submitted") === "true") {
+        setStatus("duplicate");
+      }
+    } catch { /* ignore */ }
+  }, []);
+
   const validate = () => {
     const next: typeof errors = {};
     if (!name.trim()) next.name = "Your name is required";
@@ -89,6 +98,7 @@ export default function RequestAccess() {
       });
       if (error) throw error;
       setSubmittedName(name.trim().split(" ")[0]);
+      try { localStorage.setItem("aura_waitlist_submitted", "true"); } catch { /* ignore */ }
       if (data?.duplicate) setStatus("duplicate");
       else setStatus("success");
     } catch (err) {
@@ -271,9 +281,9 @@ export default function RequestAccess() {
             {status === "duplicate" && (
               <SuccessCeremony
                 title="You're already on our list."
-                subline="We have your request. If I haven't reached out yet, I will soon. Some applications take a few extra days to review."
+                subline="We have your request. If I haven't reached out yet, I will soon."
                 ctaHref="/"
-                ctaLabel="Go back to the welcome page →"
+                ctaLabel="Go back to explore Aura →"
               />
             )}
           </div>
@@ -436,6 +446,17 @@ const RA_CSS = `
   .ra-field:focus {
     border-color: ${BRONZE} !important;
     box-shadow: 0 0 0 3px rgba(176,141,58,0.15) !important;
+  }
+
+  /* Kill the yellow autofill background that browsers force on inputs/selects */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  select:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0px 1000px ${FIELD_BG} inset !important;
+    -webkit-text-fill-color: #ededed !important;
+    caret-color: #ededed !important;
+    transition: background-color 5000s ease-in-out 0s;
   }
 
   .ra-cta:hover:not(:disabled) {

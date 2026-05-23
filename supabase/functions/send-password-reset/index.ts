@@ -102,7 +102,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Aura <invites@aura-intel.org>",
+        from: "Aura <Mohammad.Mahafdhah@aura-intel.org>",
         to: [cleanEmail],
         reply_to: "mohammad.mahafdhah@aura-intel.org",
         subject: "Reset your Aura password",

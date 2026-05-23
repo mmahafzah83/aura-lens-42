@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import usePageMeta from "@/hooks/usePageMeta";
 
@@ -41,6 +41,7 @@ function useCountUp(target: number, start: boolean, duration = 1200) {
 const StatCard = ({ value, suffix = "%", literal, desc, fullWidth }: { value?: number; suffix?: string; literal?: string; desc: string; fullWidth?: boolean }) => {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
+  const [landed, setLanded] = useState(false);
   useEffect(() => {
     if (!ref.current) return;
     const io = new IntersectionObserver(([e]) => {
@@ -50,10 +51,21 @@ const StatCard = ({ value, suffix = "%", literal, desc, fullWidth }: { value?: n
     return () => io.disconnect();
   }, []);
   const counted = useCountUp(value ?? 0, visible);
+  // Pulse when the count finishes landing
+  useEffect(() => {
+    if (!visible) return;
+    if (literal != null) { setLanded(true); return; }
+    if (value != null && counted >= value) {
+      const t = setTimeout(() => setLanded(true), 30);
+      return () => clearTimeout(t);
+    }
+  }, [visible, counted, value, literal]);
+  // Highlight the 54% rejection stat with a bronze accent
+  const isAccent = value === 54;
   return (
     <div
       ref={ref}
-      className={`pw-stat-card reveal ${fullWidth ? "sm:col-span-2 pw-stat-capstone" : ""}`}
+      className={`pw-stat-card reveal pw-stat-flash ${fullWidth ? "pw-stat-fullwidth" : ""} ${isAccent ? "pw-stat-accent" : ""}`}
       style={{
         background: CARD_BG,
         border: "1px solid #1f1f1f",
@@ -61,10 +73,9 @@ const StatCard = ({ value, suffix = "%", literal, desc, fullWidth }: { value?: n
         padding: 28,
         textAlign: "center",
         transition: "border-color 300ms ease, transform 300ms ease",
-        ...(fullWidth ? { borderLeft: `3px solid ${BRONZE}` } : {}),
       }}
     >
-      <div style={{
+      <div className={landed ? "pw-stat-pulse" : ""} style={{
         fontFamily: "'Cormorant Garamond', Georgia, serif",
         fontSize: "clamp(40px, 7vw, 64px)",
         color: BRONZE,
@@ -108,6 +119,7 @@ const Milestone = ({ label, title, desc, preFilled }: { label: string; title: st
       />
       <div
         aria-hidden
+        className={filled ? "pw-dot-ripple" : ""}
         style={{
           position: "absolute", left: 0, top: 2, width: 18, height: 18, borderRadius: "50%",
           border: `2.5px solid ${BRONZE}`,
@@ -152,12 +164,53 @@ const Engine = ({ symbol, title, desc }: { symbol: string; title: string; desc: 
   </div>
 );
 
-const SectionDivider = () => (
-  <div aria-hidden style={{
-    width: "60%", height: 1, margin: "0 auto",
-    background: "linear-gradient(90deg, transparent, rgba(176,141,58,0.3), transparent)",
-  }} />
-);
+const SectionDivider = () => {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!ref.current) return;
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) {
+        ref.current?.classList.add("pw-divider-sweep-on");
+        io.disconnect();
+      }
+    }, { threshold: 0.6 });
+    io.observe(ref.current);
+    return () => io.disconnect();
+  }, []);
+  return (
+    <div ref={ref} className="pw-divider-sweep" aria-hidden style={{
+      width: "60%", height: 1, margin: "0 auto",
+      background: "linear-gradient(90deg, transparent, rgba(176,141,58,0.45), transparent)",
+    }} />
+  );
+};
+
+const TypewriterQuote = ({ text }: { text: string }) => {
+  const ref = useRef<HTMLQuoteElement>(null);
+  const words = useMemo(() => text.split(/(\s+)/), [text]);
+  useEffect(() => {
+    if (!ref.current) return;
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) {
+        ref.current?.classList.add("pw-tw-on");
+        io.disconnect();
+      }
+    }, { threshold: 0.4 });
+    io.observe(ref.current);
+    return () => io.disconnect();
+  }, []);
+  return (
+    <blockquote ref={ref} className="reveal reveal-d2 pw-tw" style={{
+      borderLeft: `3px solid ${BRONZE}`, padding: "24px 28px",
+      fontStyle: "italic", color: "#cdcdcd", fontSize: 16, lineHeight: 1.8,
+      margin: "32px 0",
+    }}>
+      {words.map((w, i) => (
+        <span key={i} className="pw-tw-w" style={{ ['--i' as any]: i }}>{w}</span>
+      ))}
+    </blockquote>
+  );
+};
 
 const responseFor = (v: number) => {
   if (v <= 30) return "You're not alone. 97% of senior professionals are here — invisible despite years of deep expertise. Scroll to see why.";
@@ -178,15 +231,54 @@ export default function PublicWelcome() {
   const [responseText, setResponseText] = useState(responseFor(30));
   const [fading, setFading] = useState(false);
 
+  const [alreadySubmitted, setAlreadySubmitted] = useState(false);
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined" && localStorage.getItem("aura_waitlist_submitted") === "true") {
+        setAlreadySubmitted(true);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  // Gentle scroll-gate
+  const [contentRevealed, setContentRevealed] = useState(false);
+  const [showNudge, setShowNudge] = useState(false);
+  const [nudgeSeen, setNudgeSeen] = useState(false);
+  useEffect(() => {
+    if (moved && !contentRevealed) setContentRevealed(true);
+  }, [moved, contentRevealed]);
+  useEffect(() => {
+    if (contentRevealed) return;
+    const onAttempt = () => {
+      if (moved || nudgeSeen) return;
+      if (window.scrollY > 60) {
+        setShowNudge(true);
+        setNudgeSeen(true);
+        setTimeout(() => { setShowNudge(false); setContentRevealed(true); }, 3000);
+      }
+    };
+    window.addEventListener("scroll", onAttempt, { passive: true });
+    window.addEventListener("wheel", onAttempt, { passive: true });
+    window.addEventListener("touchmove", onAttempt, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onAttempt);
+      window.removeEventListener("wheel", onAttempt);
+      window.removeEventListener("touchmove", onAttempt);
+    };
+  }, [moved, nudgeSeen, contentRevealed]);
+
   // Eye pupil + scroll progress
   const [pupilR, setPupilR] = useState(5);
   const [scrollPct, setScrollPct] = useState(0);
+  const [heroScroll, setHeroScroll] = useState(0);
   useEffect(() => {
     const onScroll = () => {
       const max = document.documentElement.scrollHeight - window.innerHeight;
       const p = max > 0 ? Math.min(window.scrollY / max, 1) : 0;
       setPupilR(5 + p * 3);
       setScrollPct(p * 100);
+      const h = window.innerHeight || 1;
+      setHeroScroll(Math.min(window.scrollY / h, 1));
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -228,9 +320,9 @@ export default function PublicWelcome() {
     }}>
       <style>{PW_CSS}</style>
 
-      {/* Scroll progress bar */}
-      <div aria-hidden style={{
-        position: "fixed", top: 0, left: 0, height: 2, width: `${scrollPct}%`,
+      {/* Scroll progress bar — top on desktop, bottom on mobile */}
+      <div aria-hidden className="pw-progress" style={{
+        position: "fixed", left: 0, width: `${scrollPct}%`,
         background: BRONZE, zIndex: 100,
         transition: "width 80ms linear",
       }} />
@@ -246,7 +338,10 @@ export default function PublicWelcome() {
             pointerEvents: "none",
           }} />
           <div style={{ position: "relative", width: "100%", maxWidth: 720, margin: "0 auto", display: "flex", flexDirection: "column", alignItems: "center", gap: 36 }}>
-            <div className="pw-eye-in pw-eye-pulse">
+            <div className="pw-eye-in pw-eye-pulse pw-eye-parallax" style={{
+              transform: `translateY(${heroScroll * -20}px)`,
+              transition: "transform 120ms linear",
+            }}>
               <HorizonEye size={80} pupilR={pupilR} />
             </div>
             <h1 style={{
@@ -274,11 +369,25 @@ export default function PublicWelcome() {
                   opacity: fading ? 0 : 1, transition: "opacity 300ms ease",
                 }}>{responseText}</p>
               )}
+              {showNudge && !moved && (
+                <p className="pw-nudge" style={{
+                  fontSize: 13, color: BRONZE, marginTop: 12,
+                  fontFamily: "'DM Sans', sans-serif",
+                }}>Move the slider to begin.</p>
+              )}
             </div>
-            <div className="pw-fade-up pw-bounce" style={{ fontSize: 13, color: "#8a8a8a", animationDelay: "1.8s", opacity: 0, marginTop: 8 }}>↓</div>
+            <div className="pw-fade-up pw-bounce" style={{ fontSize: 13, color: contentRevealed ? BRONZE : "#8a8a8a", animationDelay: "1.8s", opacity: 0, marginTop: 8, transition: "color 400ms ease" }}>
+              {contentRevealed ? "Scroll to discover what's possible ↓" : "↓"}
+            </div>
           </div>
         </section>
 
+        {/* Gated content below the hero */}
+        <div style={{
+          opacity: contentRevealed ? 1 : 0,
+          pointerEvents: contentRevealed ? "auto" : "none",
+          transition: "opacity 800ms ease",
+        }}>
         <SectionDivider />
 
         {/* PAIN */}
@@ -291,13 +400,7 @@ export default function PublicWelcome() {
             }}>
               You've spent years becoming <em style={{ color: BRONZE, fontStyle: "italic" }}>exceptional</em>. The market has no idea.
             </h2>
-            <blockquote className="reveal reveal-d2" style={{
-              borderLeft: `3px solid ${BRONZE}`, padding: "24px 28px",
-              fontStyle: "italic", color: "#cdcdcd", fontSize: 16, lineHeight: 1.8,
-              margin: "32px 0",
-            }}>
-              "You've led teams, shaped strategy, solved problems most people can't even name. But when someone outside your direct circle searches your name — they find almost nothing. No signal. No fingerprint. No proof of what you actually know."
-            </blockquote>
+            <TypewriterQuote text={`"You've led teams, shaped strategy, solved problems most people can't even name. But when someone outside your direct circle searches your name — they find almost nothing. No signal. No fingerprint. No proof of what you actually know."`} />
             <p className="reveal reveal-d1" style={{ fontSize: 15, color: "#ededed", lineHeight: 1.75, marginTop: 24 }}>
               Meanwhile, professionals who publish consistently — even when their expertise is narrower than yours — are the ones getting invited to the table. The keynote slots. The advisory boards.
             </p>
@@ -486,8 +589,10 @@ export default function PublicWelcome() {
             <p className="reveal reveal-d2" style={{ fontSize: 16, color: "#bdbdbd", maxWidth: 440, margin: "24px auto 36px", lineHeight: 1.75 }}>
               Your expertise has earned its place. Give Aura 10 minutes — and it will show you who you really are in the market.
             </p>
-            <Link to="/request-access" className="pw-cta pw-cta-shimmer reveal reveal-d3">
-              <span style={{ position: "relative", zIndex: 1 }}>Accept Your Invitation →</span>
+            <Link to="/request-access" className="pw-cta pw-cta-shimmer pw-cta-breathe reveal reveal-d3">
+              <span style={{ position: "relative", zIndex: 1 }}>
+                {alreadySubmitted ? "You're on the list ✦" : "Accept Your Invitation →"}
+              </span>
             </Link>
             <p className="reveal reveal-d4" dir="rtl" style={{
               fontSize: 18, color: BRONZE, marginTop: 28,
@@ -500,6 +605,7 @@ export default function PublicWelcome() {
             </p>
           </div>
         </section>
+        </div>{/* /gated */}
       </main>
 
       {/* FOOTER */}
@@ -564,8 +670,63 @@ const PW_CSS = `
   .pw-milestone-pop { animation: pw-pop 300ms ease-out; }
   @keyframes pw-pop { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
 
+  /* Scroll progress bar — top desktop, bottom mobile (3px) */
+  .pw-progress { top: env(safe-area-inset-top, 0px); height: 2px; }
+  @media (max-width: 767px) {
+    .pw-progress { top: auto; bottom: 0; height: 3px; }
+  }
+
+  /* Slider nudge */
+  .pw-nudge { animation: pw-nudgeIn 280ms ease-out; }
+  @keyframes pw-nudgeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Stat-card: bronze glow on entry + number landing pulse + 54% accent */
+  .pw-stat-card.pw-stat-flash.visible { animation: pw-statGlow 800ms ease-out; }
+  @keyframes pw-statGlow {
+    0% { box-shadow: 0 0 0 transparent; }
+    40% { box-shadow: 0 0 16px rgba(176,141,58,0.28); }
+    100% { box-shadow: 0 0 0 transparent; }
+  }
+  .pw-stat-pulse { animation: pw-statPulse 320ms ease-out; }
+  @keyframes pw-statPulse { 0% { transform: scale(1); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
+  .pw-stat-accent { border-left: 3px solid ${BRONZE} !important; }
+  /* Desktop only: full-width capstone spans two columns */
+  @media (min-width: 640px) {
+    .pw-stat-fullwidth { grid-column: span 2 / span 2; border-top: 2px solid ${BRONZE} !important; }
+  }
+
+  /* Timeline dot ripple */
+  .pw-dot-ripple::after {
+    content: ""; position: absolute; inset: -2px; border-radius: 50%;
+    border: 2px solid ${BRONZE};
+    animation: pw-ripple 700ms ease-out forwards;
+    pointer-events: none;
+  }
+  @keyframes pw-ripple {
+    from { transform: scale(1); opacity: 0.4; }
+    to { transform: scale(2.5); opacity: 0; }
+  }
+
+  /* CTA breathing */
+  .pw-cta-breathe { animation: pw-breathe 3s ease-in-out infinite; }
+  .pw-cta-breathe:hover, .pw-cta-breathe:active { animation: none; }
+  @keyframes pw-breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.015); } }
+
+  /* Section divider sweep */
+  .pw-divider-sweep { transform: scaleX(0); transform-origin: center; transition: transform 800ms ease-out; }
+  .pw-divider-sweep.pw-divider-sweep-on { transform: scaleX(1); }
+
+  /* Typewriter pain quote — word-by-word reveal */
+  .pw-tw .pw-tw-w { opacity: 0; transition: opacity 320ms ease-out; transition-delay: calc(var(--i, 0) * 30ms); }
+  .pw-tw.pw-tw-on .pw-tw-w { opacity: 1; }
+
   @media (prefers-reduced-motion: reduce) {
     .reveal, .pw-fade-up, .pw-eye-in { opacity: 1 !important; transform: none !important; animation: none !important; transition: none !important; }
-    .pw-eye-pulse, .pw-bounce, .pw-cta-shimmer::before, .pw-milestone-pop { animation: none !important; }
+    .pw-eye-pulse, .pw-bounce, .pw-cta-shimmer::before, .pw-milestone-pop,
+    .pw-cta-breathe, .pw-stat-flash, .pw-stat-pulse, .pw-dot-ripple::after,
+    .pw-nudge { animation: none !important; }
+    .pw-eye-parallax { transform: none !important; }
+    .pw-divider-sweep { transform: scaleX(1) !important; transition: none !important; }
+    .pw-tw .pw-tw-w { opacity: 1 !important; transition: none !important; }
   }
 `;

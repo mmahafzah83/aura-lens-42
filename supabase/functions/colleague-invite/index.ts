@@ -166,7 +166,7 @@ serve(async (req) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: "Aura <invites@aura-intel.org>",
+            from: "Aura <Mohammad.Mahafdhah@aura-intel.org>",
             to: [email],
             subject: `${displayInviter} thinks you should see this`,
             reply_to: "mohammad.mahafdhah@aura-intel.org",
@@ -186,7 +186,7 @@ serve(async (req) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: "Aura <invites@aura-intel.org>",
+            from: "Aura <Mohammad.Mahafdhah@aura-intel.org>",
             to: ["mohammad.mahafdhah@aura-intel.org"],
             subject: `New colleague invite: ${email}`,
             html: `<p><strong>${callerEmail}</strong> (${inviterName || "unknown name"}) invited <strong>${email}</strong> to the Aura beta.</p>${note ? `<p>Note: "${note}"</p>` : ""}<p>A referral email has been sent to ${email}.</p>`,
