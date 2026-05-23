@@ -44,6 +44,15 @@ const SECTOR = [
 ];
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PERSONAL_DOMAINS = new Set([
+  "gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "icloud.com",
+  "aol.com", "live.com", "protonmail.com", "proton.me", "msn.com",
+  "yahoo.co.uk", "googlemail.com",
+]);
+const isPersonalEmail = (e: string) => {
+  const d = e.trim().toLowerCase().split("@")[1];
+  return !!d && PERSONAL_DOMAINS.has(d);
+};
 
 function usePositionCount(target: number, start: boolean, duration = 800) {
   const [value, setValue] = useState(0);
@@ -88,6 +97,8 @@ export default function RequestAccess() {
   const [submittedName, setSubmittedName] = useState("");
   const [position, setPosition] = useState<number | null>(null);
   const [errors, setErrors] = useState<{ name?: string; email?: string; seniority?: string; sector?: string }>({});
+  const [emailTouched, setEmailTouched] = useState(false);
+  const showPersonalWarning = emailTouched && EMAIL_RE.test(email.trim()) && isPersonalEmail(email);
 
   const validate = () => {
     const next: typeof errors = {};
@@ -218,6 +229,8 @@ export default function RequestAccess() {
                     onChange={(v) => { setEmail(v); if (errors.email) setErrors((p) => ({ ...p, email: undefined })); }}
                     error={errors.email}
                     maxLength={255}
+                    onBlur={() => setEmailTouched(true)}
+                    hint={showPersonalWarning ? "We recommend using your work email — it helps us review your application faster." : undefined}
                   />
                   <Select
                     id="seniority"
