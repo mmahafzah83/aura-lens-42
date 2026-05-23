@@ -39,9 +39,8 @@ export default function ProfileMenu({
   onViewFullJourney: _onViewFullJourney,
 }: ProfileMenuProps) {
   const [pwModalOpen, setPwModalOpen] = useState(false);
-  const [hasPassword, setHasPassword] = useState<boolean>(() => {
-    try { return localStorage.getItem("password_set") === "1"; } catch { return false; }
-  });
+  // Default to false; trust only the server-side user_metadata.password_set flag.
+  const [hasPassword, setHasPassword] = useState<boolean>(false);
 
   useEffect(() => {
     let active = true;
