@@ -369,11 +369,25 @@ export default function PublicWelcome() {
                   opacity: fading ? 0 : 1, transition: "opacity 300ms ease",
                 }}>{responseText}</p>
               )}
+              {showNudge && !moved && (
+                <p className="pw-nudge" style={{
+                  fontSize: 13, color: BRONZE, marginTop: 12,
+                  fontFamily: "'DM Sans', sans-serif",
+                }}>Move the slider to begin.</p>
+              )}
             </div>
-            <div className="pw-fade-up pw-bounce" style={{ fontSize: 13, color: "#8a8a8a", animationDelay: "1.8s", opacity: 0, marginTop: 8 }}>↓</div>
+            <div className="pw-fade-up pw-bounce" style={{ fontSize: 13, color: contentRevealed ? BRONZE : "#8a8a8a", animationDelay: "1.8s", opacity: 0, marginTop: 8, transition: "color 400ms ease" }}>
+              {contentRevealed ? "Scroll to discover what's possible ↓" : "↓"}
+            </div>
           </div>
         </section>
 
+        {/* Gated content below the hero */}
+        <div style={{
+          opacity: contentRevealed ? 1 : 0,
+          pointerEvents: contentRevealed ? "auto" : "none",
+          transition: "opacity 800ms ease",
+        }}>
         <SectionDivider />
 
         {/* PAIN */}
@@ -386,13 +400,7 @@ export default function PublicWelcome() {
             }}>
               You've spent years becoming <em style={{ color: BRONZE, fontStyle: "italic" }}>exceptional</em>. The market has no idea.
             </h2>
-            <blockquote className="reveal reveal-d2" style={{
-              borderLeft: `3px solid ${BRONZE}`, padding: "24px 28px",
-              fontStyle: "italic", color: "#cdcdcd", fontSize: 16, lineHeight: 1.8,
-              margin: "32px 0",
-            }}>
-              "You've led teams, shaped strategy, solved problems most people can't even name. But when someone outside your direct circle searches your name — they find almost nothing. No signal. No fingerprint. No proof of what you actually know."
-            </blockquote>
+            <TypewriterQuote text={`"You've led teams, shaped strategy, solved problems most people can't even name. But when someone outside your direct circle searches your name — they find almost nothing. No signal. No fingerprint. No proof of what you actually know."`} />
             <p className="reveal reveal-d1" style={{ fontSize: 15, color: "#ededed", lineHeight: 1.75, marginTop: 24 }}>
               Meanwhile, professionals who publish consistently — even when their expertise is narrower than yours — are the ones getting invited to the table. The keynote slots. The advisory boards.
             </p>
@@ -581,8 +589,10 @@ export default function PublicWelcome() {
             <p className="reveal reveal-d2" style={{ fontSize: 16, color: "#bdbdbd", maxWidth: 440, margin: "24px auto 36px", lineHeight: 1.75 }}>
               Your expertise has earned its place. Give Aura 10 minutes — and it will show you who you really are in the market.
             </p>
-            <Link to="/request-access" className="pw-cta pw-cta-shimmer reveal reveal-d3">
-              <span style={{ position: "relative", zIndex: 1 }}>Accept Your Invitation →</span>
+            <Link to="/request-access" className="pw-cta pw-cta-shimmer pw-cta-breathe reveal reveal-d3">
+              <span style={{ position: "relative", zIndex: 1 }}>
+                {alreadySubmitted ? "You're on the list ✦" : "Accept Your Invitation →"}
+              </span>
             </Link>
             <p className="reveal reveal-d4" dir="rtl" style={{
               fontSize: 18, color: BRONZE, marginTop: 28,
@@ -596,6 +606,7 @@ export default function PublicWelcome() {
           </div>
         </section>
       </main>
+        </div>
 
       {/* FOOTER */}
       <footer style={{ padding: 40, borderTop: "1px solid #1a1a1a", textAlign: "center" }}>
