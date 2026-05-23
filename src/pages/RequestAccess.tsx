@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import usePageMeta from "@/hooks/usePageMeta";
@@ -66,16 +66,8 @@ export default function RequestAccess() {
   const [sector, setSector] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [submittedName, setSubmittedName] = useState("");
+  const [position, setPosition] = useState<number | null>(null);
   const [errors, setErrors] = useState<{ name?: string; email?: string; seniority?: string; sector?: string }>({});
-
-  // Persisted submission flag — if user already submitted, skip the form entirely.
-  useEffect(() => {
-    try {
-      if (typeof window !== "undefined" && localStorage.getItem("aura_waitlist_submitted") === "true") {
-        setStatus("duplicate");
-      }
-    } catch { /* ignore */ }
-  }, []);
 
   const validate = () => {
     const next: typeof errors = {};
@@ -98,9 +90,12 @@ export default function RequestAccess() {
       });
       if (error) throw error;
       setSubmittedName(name.trim().split(" ")[0]);
-      try { localStorage.setItem("aura_waitlist_submitted", "true"); } catch { /* ignore */ }
-      if (data?.duplicate) setStatus("duplicate");
-      else setStatus("success");
+      if (data?.duplicate) {
+        setStatus("duplicate");
+      } else {
+        if (typeof data?.position === "number") setPosition(data.position);
+        setStatus("success");
+      }
     } catch (err) {
       console.error("submit-waitlist failed:", err);
       setStatus("error");
@@ -188,7 +183,7 @@ export default function RequestAccess() {
                   <Field
                     id="name"
                     label="Your name"
-                    placeholder="e.g. Mohammad Mahafzah"
+                    placeholder="Your full name"
                     value={name}
                     onChange={(v) => { setName(v); if (errors.name) setErrors((p) => ({ ...p, name: undefined })); }}
                     error={errors.name}
@@ -275,6 +270,9 @@ export default function RequestAccess() {
                 subline="I review every application personally. If Aura is right for you, you'll hear from me within a week."
                 companion="In the meantime — keep reading what matters to your sector. That's exactly what Aura will turn into presence."
                 withSignature
+                position={position}
+                ctaHref="/"
+                ctaLabel="Explore what Aura does →"
               />
             )}
 
@@ -282,6 +280,7 @@ export default function RequestAccess() {
               <SuccessCeremony
                 title="You're already on our list."
                 subline="We have your request. If I haven't reached out yet, I will soon."
+                companion="Want to check your status? Email me at mohammad.mahafdhah@aura-intel.org"
                 ctaHref="/"
                 ctaLabel="Go back to explore Aura →"
               />
