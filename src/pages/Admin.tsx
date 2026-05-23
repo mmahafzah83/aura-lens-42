@@ -545,16 +545,30 @@ const Admin = () => {
                         </td>
                         <td className="px-4 py-3 text-right">
                           {r.status === "pending" && (
-                            <button
-                              onClick={() => setActiveInvite(activeInvite === r.id ? null : r.id)}
-                              className="text-xs px-3 py-1.5 rounded-md font-medium transition-colors"
-                              style={{
-                                backgroundColor: "var(--brand)",
-                                color: "var(--ink)",
-                              }}
-                            >
-                              Invite
-                            </button>
+                            <div className="inline-flex items-center gap-2">
+                              <button
+                                onClick={() => setConfirmDeclineRow(r)}
+                                disabled={decliningId === r.id}
+                                className="text-xs px-3 py-1.5 rounded-md font-medium transition-colors disabled:opacity-60"
+                                style={{
+                                  backgroundColor: "transparent",
+                                  color: "var(--ink-5)",
+                                  border: "1px solid var(--ink-3)",
+                                }}
+                              >
+                                {decliningId === r.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Decline"}
+                              </button>
+                              <button
+                                onClick={() => setConfirmInviteRow(r)}
+                                className="text-xs px-3 py-1.5 rounded-md font-medium transition-colors"
+                                style={{
+                                  backgroundColor: "var(--brand)",
+                                  color: "var(--ink)",
+                                }}
+                              >
+                                Invite
+                              </button>
+                            </div>
                           )}
                           {r.status === "approved" && (
                             <span className="text-xs" style={{ color: "var(--ink-5)" }}>
@@ -563,6 +577,11 @@ const Admin = () => {
                           )}
                           {r.status === "active" && (
                             <span className="text-xs text-green-400">Active ✓</span>
+                          )}
+                          {r.status === "declined" && (
+                            <span className="text-xs" style={{ color: "var(--ink-5)" }}>
+                              Declined
+                            </span>
                           )}
                         </td>
                       </tr>
