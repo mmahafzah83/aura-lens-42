@@ -183,6 +183,8 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
   const [loadingStage, setLoadingStage] = useState(0);
   const [confirmClose, setConfirmClose] = useState(false);
   const [genError, setGenError] = useState(false);
+  const [interlude, setInterlude] = useState<null | { dots: string; text: string }>(null);
+  const [companionLine, setCompanionLine] = useState<string>("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -195,25 +197,20 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
       setLoadingStage(0);
       setConfirmClose(false);
       setGenError(false);
+      setInterlude(null);
+      setCompanionLine("");
     }
   }, [open]);
 
-  // Staged loading messages — rotate every 4 seconds while generating
+  // Cinematic processing line cycling (3 lines on a schedule + 12s grace line)
   useEffect(() => {
     if (!loading) { setLoadingStage(0); return; }
-    const id = setInterval(() => {
-      setLoadingStage((s) => Math.min(s + 1, 4));
-    }, 4000);
-    return () => clearInterval(id);
+    setLoadingStage(0);
+    const t1 = window.setTimeout(() => setLoadingStage(1), 4000);
+    const t2 = window.setTimeout(() => setLoadingStage(2), 6500);
+    const t3 = window.setTimeout(() => setLoadingStage(3), 12000);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [loading]);
-
-  const LOADING_STAGES = [
-    "Reading your answers...",
-    "Mapping your market position...",
-    "Identifying your topics...",
-    "Finding the space only you can own...",
-    "Finalizing your positioning...",
-  ];
 
   const persistAnswersOnly = async () => {
     try {
@@ -259,6 +256,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
   const toggleOption = (opt: string) => {
     if (q.type === "single") {
       setAnswers((prev) => ({ ...prev, [step]: opt }));
+      maybeFireCompanionVoice(step);
       return;
     }
     const current = (answers[step] as string[]) || [];
@@ -267,7 +265,23 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
     } else {
       if (q.max && current.length >= q.max) return;
       setAnswers((prev) => ({ ...prev, [step]: [...current, opt] }));
+      maybeFireCompanionVoice(step);
     }
+  };
+
+  const showCompanion = (text: string) => {
+    setCompanionLine(text);
+    window.setTimeout(() => setCompanionLine((c) => (c === text ? "" : c)), 4000);
+  };
+
+  // Companion voice after specific question selections (Q1, Q5, Q7 → indices 0, 4, 6)
+  const maybeFireCompanionVoice = (idx: number) => {
+    const a = answers[idx];
+    const alreadyAnswered = Array.isArray(a) ? a.length > 0 : !!a;
+    if (alreadyAnswered) return; // only on first selection
+    if (idx === 0) showCompanion("Good choice. That tells Aura a lot about how you want to be positioned.");
+    else if (idx === 4) showCompanion("You're in the zone. Stay with it.");
+    else if (idx === 6) showCompanion("Almost there. The reveal is worth it.");
   };
 
   const isSelected = (opt: string) => {
@@ -278,7 +292,24 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
 
   const handleNext = async () => {
     if (step < QUESTIONS.length - 1) {
+      // Anticipation interludes after Q3 (idx 2), Q6 (idx 5), Q9 (idx 8)
+      const interludeMap: Record<number, { dots: string; text: string }> = {
+        2: { dots: "◆", text: "Interesting. Aura is starting to see a pattern in your answers..." },
+        5: { dots: "◆◆", text: "Your market position is taking shape. 4 more questions." },
+        8: { dots: "◆◆◆", text: "One more. This last question shapes everything." },
+      };
+      const peek = interludeMap[step];
+      if (peek) {
+        setInterlude(peek);
+        window.setTimeout(() => {
+          setInterlude(null);
+          setStep((s) => s + 1);
+          setCompanionLine("");
+        }, 2500);
+        return;
+      }
       setStep((s) => s + 1);
+      setCompanionLine("");
     } else {
       await submitAssessment();
     }
