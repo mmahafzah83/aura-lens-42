@@ -26,8 +26,36 @@ function checkRateLimit(ip: string): boolean {
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const ALLOWED_SENIORITY = ["C-Suite", "VP", "Director", "Manager", "Other"];
-const ALLOWED_SECTOR = ["Consulting", "Energy", "Finance", "Government", "Technology", "Other"];
+const ALLOWED_SENIORITY = [
+  "C-Suite",
+  "SVP / EVP",
+  "VP",
+  "Senior Director",
+  "Director",
+  "Senior Manager",
+  "Manager",
+  "Principal / Fellow",
+  "Advisor / Board Member",
+  "Other",
+];
+const ALLOWED_SECTOR = [
+  "Consulting & Professional Services",
+  "Energy & Utilities",
+  "Water & Infrastructure",
+  "Oil & Gas",
+  "Finance & Banking",
+  "Government & Public Sector",
+  "Technology & IT",
+  "Healthcare & Pharma",
+  "Real Estate & Construction",
+  "Telecom",
+  "Education & Academia",
+  "Manufacturing & Industrial",
+  "Defense & Aerospace",
+  "Retail & Consumer",
+  "Transportation & Logistics",
+  "Other",
+];
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
