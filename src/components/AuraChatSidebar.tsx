@@ -1,5 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
-import { useMemo } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { X, Send, Loader2, Trash2, Briefcase, Rocket, FileText, Target, Linkedin, Bookmark, Check, Plus, ChevronLeft, Presentation, Clock, MessageSquare, Pin, PinOff, Pencil, ChevronDown, Search, HelpCircle, Eye, PenTool, Compass, AlertTriangle } from "lucide-react";
 import AuraLogo from "@/components/brand/AuraLogo";
 import UserAvatar from "@/components/ui/UserAvatar";
@@ -9,6 +8,161 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import ReactMarkdown from "react-markdown";
 import { ERROR, EMPTY_STATE } from "@/constants/language";
+
+/* ── Dimension display labels (mirrors CalibrationSliders P16 labels) ── */
+const DIM_LABELS: Record<string, string> = {
+  strategic_architecture: "Strategic Thinking",
+  sector_foresight: "Industry Vision",
+  digital_synthesis: "Digital Strategy",
+  csuite_stewardship: "Executive Leadership",
+  executive_presence: "Professional Presence",
+  geopolitical_fluency: "Regional Awareness",
+  human_centric_leadership: "People Leadership",
+  operational_resilience: "Operational Strength",
+  commercial_velocity: "Business Impact",
+  value_based_pnl: "Financial Acumen",
+  // legacy label keys → new labels
+  "Strategic Architecture": "Strategic Thinking",
+  "Sector Foresight": "Industry Vision",
+  "Digital Synthesis": "Digital Strategy",
+  "C-Suite Stewardship": "Executive Leadership",
+  "Executive Presence": "Professional Presence",
+  "Geopolitical Fluency": "Regional Awareness",
+  "Human-Centric Leadership": "People Leadership",
+  "Operational Resilience": "Operational Strength",
+  "Commercial Velocity": "Business Impact",
+  "Value-Based P&L": "Financial Acumen",
+};
+
+function topTwoDimensions(ratings: Record<string, number> | null | undefined): string[] {
+  if (!ratings || typeof ratings !== "object") return [];
+  const entries = Object.entries(ratings).filter(([, v]) => typeof v === "number" && (v as number) > 0);
+  entries.sort((a, b) => (b[1] as number) - (a[1] as number));
+  return entries.slice(0, 2).map(([k]) => DIM_LABELS[k] || k);
+}
+
+/* ── Cinematic processing ceremony — replaces spinner during AI wait ── */
+const ThinkingCeremony = ({ signalCount, captureCount }: { signalCount: number; captureCount: number }) => {
+  const lines = useMemo(() => [
+    captureCount > 0 ? `Reading your ${captureCount} capture${captureCount === 1 ? "" : "s"}…` : "Studying your profile…",
+    signalCount > 0 ? `Cross-referencing ${signalCount} active signal${signalCount === 1 ? "" : "s"}…` : "Mapping your sector…",
+    "Connecting the patterns…",
+  ], [signalCount, captureCount]);
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    const timers = lines.map((_, i) => window.setTimeout(() => setStep(i + 1), (i + 1) * 800));
+    return () => timers.forEach((t) => window.clearTimeout(t));
+  }, [lines]);
+  return (
+    <div style={{
+      padding: "14px 16px",
+      borderRadius: 12,
+      background: "rgba(176,141,58,0.06)",
+      border: "1px solid rgba(176,141,58,0.15)",
+    }}>
+      {lines.map((line, i) => (
+        <div key={i} style={{
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: 13,
+          color: "rgba(230, 222, 205, 0.7)",
+          opacity: step > i ? 1 : 0,
+          transform: step > i ? "translateY(0)" : "translateY(8px)",
+          transition: "all 0.5s ease-out",
+          marginBottom: 4,
+        }}>
+          {line}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+/* ── Horizon Eye with bronze pulse ── */
+const HorizonEye = ({ fast }: { fast?: boolean }) => (
+  <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 6px" }}>
+    <span style={{
+      display: "inline-flex",
+      animation: `eyePulse ${fast ? "1.5s" : "3s"} ease-in-out infinite`,
+    }}>
+      <AuraLogo size={26} variant="dark" />
+    </span>
+  </div>
+);
+
+/* ── Dynamic Action Button row ── */
+type ActionIcon = "search" | "help" | "eye" | "plus" | "pen" | "compass" | "briefcase" | "alert";
+const ICONS: Record<ActionIcon, any> = {
+  search: Search, help: HelpCircle, eye: Eye, plus: Plus,
+  pen: PenTool, compass: Compass, briefcase: Briefcase, alert: AlertTriangle,
+};
+interface DynAction { label: string; prompt: string; icon: ActionIcon; }
+const STATE_ACTIONS: Record<string, DynAction[]> = {
+  fresh: [
+    { label: "What should I capture?", prompt: "Based on my profile and sector, what types of articles should I be reading and capturing? Give me 3 specific recommendations.", icon: "search" },
+    { label: "Help me understand Aura", prompt: "Walk me through how Aura works — how do captures become signals, and how do signals become content?", icon: "help" },
+  ],
+  building: [
+    { label: "What patterns do you see?", prompt: "Based on what I've captured so far, what patterns are emerging? Even if signals haven't formed yet, what direction is my reading pointing?", icon: "eye" },
+    { label: "Capture another article", prompt: "__OPEN_CAPTURE__", icon: "plus" },
+  ],
+  ready: [
+    { label: "Draft a post", prompt: "Based on my strongest signal, draft a LinkedIn post in my voice. Make it specific to my sector and grounded in what I've captured.", icon: "pen" },
+    { label: "Find my angle", prompt: "What unique angle do I have on my strongest signal that no one else in my network is covering?", icon: "compass" },
+    { label: "Meeting prep", prompt: "I have a meeting this week. Based on my latest signals, what insights should I bring to the table?", icon: "briefcase" },
+  ],
+  active: [
+    { label: "Draft a post", prompt: "Based on my strongest signal, draft a LinkedIn post in my voice.", icon: "pen" },
+    { label: "Find patterns", prompt: "What new patterns have emerged from my recent captures? Connect them to my existing signals.", icon: "eye" },
+    { label: "Meeting prep", prompt: "Prepare key talking points for a meeting this week based on my signals and sector.", icon: "briefcase" },
+    { label: "Challenge my thinking", prompt: "What am I missing? Based on my captures and signals, where are my blind spots?", icon: "alert" },
+  ],
+};
+
+const DynamicActions = ({ state, onAction, disabled }: { state: string; onAction: (p: string) => void; disabled?: boolean }) => (
+  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
+    {(STATE_ACTIONS[state] || STATE_ACTIONS.fresh).map((a) => {
+      const Icon = ICONS[a.icon];
+      return (
+        <button
+          key={a.label}
+          disabled={disabled}
+          onClick={() => {
+            if (a.prompt === "__OPEN_CAPTURE__") {
+              window.dispatchEvent(new CustomEvent("aura:open-capture"));
+            } else {
+              onAction(a.prompt);
+            }
+          }}
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 6,
+            background: "rgba(176,141,58,0.08)",
+            border: "1px solid rgba(176,141,58,0.2)",
+            borderRadius: 20,
+            padding: "8px 14px",
+            fontSize: 13,
+            color: "rgba(230,222,205,0.85)",
+            cursor: disabled ? "not-allowed" : "pointer",
+            transition: "all 0.2s ease",
+            opacity: disabled ? 0.5 : 1,
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background = "rgba(176,141,58,0.15)";
+            (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(176,141,58,0.4)";
+            (e.currentTarget as HTMLButtonElement).style.color = "#D4B056";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background = "rgba(176,141,58,0.08)";
+            (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(176,141,58,0.2)";
+            (e.currentTarget as HTMLButtonElement).style.color = "rgba(230,222,205,0.85)";
+          }}
+        >
+          <Icon size={14} />
+          {a.label}
+        </button>
+      );
+    })}
+  </div>
+);
 
 /* ── Always-on Context Strip (signals + identity pills) ── */
 interface TopSignal { id: string; signal_title: string; }
