@@ -115,7 +115,11 @@ export function useJourneyState(userId: string | null | undefined): JourneyState
   useEffect(() => {
     const handler = () => compute();
     window.addEventListener(REFRESH_EVENT, handler);
-    return () => window.removeEventListener(REFRESH_EVENT, handler);
+    window.addEventListener("capture-complete", handler);
+    return () => {
+      window.removeEventListener(REFRESH_EVENT, handler);
+      window.removeEventListener("capture-complete", handler);
+    };
   }, [compute]);
 
   return { ...state, refresh: compute };
