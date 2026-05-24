@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import usePageMeta from "@/hooks/usePageMeta";
+import ScrollSpyNav from "@/components/ScrollSpyNav";
 
 const BRONZE = "#B08D3A";
 const BG = "#0a0a08";
@@ -364,27 +365,6 @@ export default function PublicWelcome() {
   // Floating mini-CTA pill: appears after "Until now.", hides at final CTA
   const untilNowRef = useRef<HTMLElement>(null);
   const finalCtaRef = useRef<HTMLElement>(null);
-  const [showPill, setShowPill] = useState(false);
-  useEffect(() => {
-    if (!contentRevealed) return;
-    const untilEl = untilNowRef.current;
-    const finalEl = finalCtaRef.current;
-    if (!untilEl || !finalEl) return;
-    let pastUntil = false;
-    let inFinal = false;
-    const update = () => setShowPill(pastUntil && !inFinal);
-    const io1 = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting || e.boundingClientRect.top < 0) pastUntil = true;
-      update();
-    }, { threshold: 0 });
-    const io2 = new IntersectionObserver(([e]) => {
-      inFinal = e.isIntersecting;
-      update();
-    }, { threshold: 0.15 });
-    io1.observe(untilEl);
-    io2.observe(finalEl);
-    return () => { io1.disconnect(); io2.disconnect(); };
-  }, [contentRevealed]);
   useEffect(() => {
     if (contentRevealed) return;
     const onAttempt = () => {
@@ -479,6 +459,8 @@ export default function PublicWelcome() {
     }}>
       <style>{PW_CSS}</style>
 
+      <ScrollSpyNav />
+
       {/* Scroll progress bar — top on desktop, bottom on mobile */}
       <div aria-hidden className="pw-progress" style={{
         position: "fixed", left: 0, width: `${scrollPct}%`,
@@ -488,7 +470,7 @@ export default function PublicWelcome() {
 
       <main>
         {/* HERO */}
-        <section ref={heroZoneRef} style={{ position: "relative", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px", overflow: "hidden" }}>
+        <section id="hero" ref={heroZoneRef} style={{ position: "relative", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px", overflow: "hidden" }}>
           {/* ambient bronze glow */}
           <div aria-hidden style={{
             position: "absolute", top: "38%", left: "50%", transform: "translate(-50%, -50%)",
@@ -588,7 +570,7 @@ export default function PublicWelcome() {
         <SectionDivider />
 
         {/* PAIN */}
-        <section style={{ background: BG, padding: "100px 24px" }}>
+        <section id="problem" style={{ background: BG, padding: "100px 24px" }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <p className="reveal" style={{ fontSize: 10, letterSpacing: "2.5px", color: BRONZE, fontWeight: 600, margin: 0 }}>THE REAL PROBLEM</p>
             <h2 className="reveal reveal-d1 pw-illuminate" style={{
@@ -628,7 +610,7 @@ export default function PublicWelcome() {
         <SectionDivider />
 
         {/* STATS */}
-        <section ref={midZoneRef} style={{ background: BG_ALT, padding: "100px 24px" }}>
+        <section id="stats" ref={midZoneRef} style={{ background: BG_ALT, padding: "100px 24px" }}>
           <div style={{ maxWidth: 700, margin: "0 auto" }}>
             <p className="reveal" style={{ fontSize: 10, letterSpacing: "2.5px", color: BRONZE, fontWeight: 600, margin: 0 }}>THE NUMBERS DON'T LIE</p>
             <div className="mt-10">
@@ -650,7 +632,7 @@ export default function PublicWelcome() {
         <SectionDivider />
 
         {/* BUILDER */}
-        <section style={{ background: BG_WARM, padding: "100px 24px", position: "relative", overflow: "hidden" }}>
+        <section id="builder" style={{ background: BG_WARM, padding: "100px 24px", position: "relative", overflow: "hidden" }}>
           <div aria-hidden className="pw-watermark">AURA</div>
           <div style={{ maxWidth: 680, margin: "0 auto", position: "relative" }}>
             <p className="reveal" style={{ fontSize: 10, letterSpacing: "2.5px", color: BRONZE, fontWeight: 600, margin: 0 }}>WHY I BUILT THIS</p>
@@ -684,7 +666,7 @@ export default function PublicWelcome() {
         <SectionDivider />
 
         {/* HOW — 2×2 engine cards */}
-        <section style={{ background: BG_ALT, padding: "100px 24px" }}>
+        <section id="how-it-works" style={{ background: BG_ALT, padding: "100px 24px" }}>
           <div style={{ maxWidth: 760, margin: "0 auto" }}>
             <p className="reveal" style={{ fontSize: 10, letterSpacing: "2.5px", color: BRONZE, fontWeight: 600, margin: 0 }}>HOW AURA WORKS</p>
             <h2 className="reveal reveal-d1" style={{
@@ -705,7 +687,7 @@ export default function PublicWelcome() {
         <SectionDivider />
 
         {/* TIMELINE */}
-        <section style={{ background: BG, padding: "100px 24px" }}>
+        <section id="timeline" style={{ background: BG, padding: "100px 24px" }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <p className="reveal" style={{ fontSize: 10, letterSpacing: "2.5px", color: BRONZE, fontWeight: 600, margin: 0 }}>WHAT CHANGES FOR YOU</p>
             <h2 className="reveal reveal-d1" style={{
@@ -774,7 +756,7 @@ export default function PublicWelcome() {
         <SectionDivider />
 
         {/* FINAL CTA */}
-        <section ref={finalCtaRef} style={{ background: BG, minHeight: "80vh", padding: "100px 24px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <section id="final-cta" ref={finalCtaRef} style={{ background: BG, minHeight: "80vh", padding: "100px 24px", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ maxWidth: 600, margin: "0 auto", textAlign: "center" }}>
             <div className="pw-eye-pulse reveal" style={{ display: "flex", justifyContent: "center" }}>
               <HorizonEye size={56} />
@@ -812,16 +794,6 @@ export default function PublicWelcome() {
         </section>
         </div>{/* /gated */}
       </main>
-
-      {/* Floating mini-CTA */}
-      <Link
-        to="/request-access"
-        aria-label="Request access"
-        className="pw-pill"
-        data-visible={showPill ? "true" : "false"}
-      >
-        Request access →
-      </Link>
 
       {/* FOOTER */}
       <footer style={{ padding: 40, borderTop: "1px solid #1a1a1a", textAlign: "center" }}>
