@@ -1954,11 +1954,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
               )}
 
               {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
-                <div className="flex justify-start">
-                  <div className="bg-secondary/60 border border-border/20 rounded-2xl rounded-bl-md px-4 py-3">
-                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                  </div>
-                </div>
+                <ThinkingCeremony />
               )}
             </div>
 
