@@ -387,7 +387,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
       });
 
       const { data, error } = await supabase.functions.invoke("brand-assessment", {
-        body: { answers: formattedAnswers, auditScores: auditScores || "No audit scores available yet" },
+        body: { answers: formattedAnswers, auditScores: auditScores || "No audit scores available yet", sector: sector || null },
       });
 
       if (timedOut) return;
@@ -473,7 +473,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
           height: "88vh",
           display: "flex",
           flexDirection: "column",
-          background: "var(--ink)",
+          background: "#0d0d0b",
           borderRadius: 16,
           border: "1px solid var(--ink-3)",
           overflow: "hidden",
@@ -526,16 +526,29 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
               ) : genError ? (
                 <div className="flex flex-col items-center justify-center py-16 px-4 text-center gap-5 max-w-md mx-auto">
                   <h3 className="text-[18px] text-ink-7 font-medium leading-snug">
-                    We couldn't build your analysis right now
+                    We couldn't build your analysis right now.
                   </h3>
                   <p className="text-sm text-ink-5 leading-relaxed">
-                    Your answers are saved. You can try again from My Story whenever you're ready.
+                    Your answers are saved. We'll process them in the background — you'll see your results next time you visit.
                   </p>
                   <button
-                    onClick={() => { onOpenChange(false); onNavigate?.("identity"); }}
+                    onClick={async () => {
+                      try {
+                        const { data: { user } } = await supabase.auth.getUser();
+                        if (user) {
+                          await (supabase.from("diagnostic_profiles" as any) as any)
+                            .update({ onboarding_step: 5 })
+                            .eq("user_id", user.id);
+                        }
+                      } catch (e) {
+                        console.warn("Couldn't update onboarding_step:", e);
+                      }
+                      onOpenChange(false);
+                      onNavigate?.("home");
+                    }}
                     className="mt-2 px-5 py-2.5 rounded-xl text-sm font-medium bg-brand text-white hover:brightness-110 transition"
                   >
-                    Go to My Story →
+                    Go to my dashboard →
                   </button>
                 </div>
               ) : (
@@ -622,7 +635,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
                           fontSize: 15,
                           fontWeight: sel ? 500 : 400,
                           cursor: "pointer",
-                          opacity: dim ? 0.45 : 1,
+                        opacity: dim ? 0.7 : 1,
                           transform: sel ? "scale(1.02)" : "scale(1)",
                           transition: "transform 200ms ease, opacity 300ms ease, background 200ms ease, border-color 300ms ease, padding 200ms ease",
                         }}
