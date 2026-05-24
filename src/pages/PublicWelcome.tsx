@@ -503,6 +503,10 @@ export default function PublicWelcome() {
                   zIndex: 0,
                 }}
               />
+              {/* Orbiting bronze scan dot */}
+              <div aria-hidden className="pw-eye-orbit-wrap">
+                <div className="pw-eye-orbit-dot" />
+              </div>
               <img
                 src="/aura-hero-head.png"
                 alt="Aura Intelligence"
