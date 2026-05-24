@@ -479,12 +479,21 @@ export default function PublicWelcome() {
             pointerEvents: "none",
           }} />
           <div style={{ position: "relative", width: "100%", maxWidth: 720, margin: "0 auto", display: "flex", flexDirection: "column", alignItems: "center", gap: 36 }}>
-            <div className="pw-eye-in pw-eye-pulse pw-eye-parallax" style={{
-              transform: `translateY(${heroScroll * -20}px)`,
-              transition: "transform 120ms linear",
-            }}>
-              <HorizonEye size={80} pupilR={pupilR} />
-            </div>
+            <img
+              src="/aura-hero-head.png"
+              alt="Aura Intelligence"
+              loading="eager"
+              fetchPriority="high"
+              className="pw-hero-head"
+              style={{
+                width: "clamp(200px, 40vw, 360px)",
+                height: "auto",
+                display: "block",
+                margin: "0 auto",
+                filter: "hue-rotate(20deg) saturate(0.8)",
+                transform: `translateY(${heroScroll * -20}px)`,
+              }}
+            />
             <CharReveal
               text="How visible is your expertise right now?"
               style={{
