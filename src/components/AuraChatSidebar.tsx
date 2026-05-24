@@ -82,7 +82,7 @@ const HorizonEye = ({ fast }: { fast?: boolean }) => (
   <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 6px" }}>
     <span style={{
       display: "inline-flex",
-      animation: `eyePulse ${fast ? "1.5s" : "3s"} ease-in-out infinite`,
+      animation: `eyePulse ${fast ? "1s" : "3s"} ease-in-out infinite`,
     }}>
       <AuraLogo size={26} variant="dark" />
     </span>
