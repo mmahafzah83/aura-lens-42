@@ -946,6 +946,27 @@ const PW_CSS = `
   }
   @keyframes pw-charIn { to { opacity: 1; transform: translateY(0); } }
 
+  /* Hero wireframe head entrance */
+  .pw-hero-head {
+    opacity: 0;
+    animation: pw-headIn 1.2s ease-out 0.3s forwards;
+    transition: transform 120ms linear;
+    will-change: opacity, transform;
+  }
+  @keyframes pw-headIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 0.85; transform: scale(1); }
+  }
+
+  /* deduped below */
+  .pw-char-dup {
+    opacity: 0;
+    transform: translateY(8px);
+    animation: pw-charIn 0.4s ease-out forwards;
+    will-change: opacity, transform;
+  }
+  @keyframes pw-charIn { to { opacity: 1; transform: translateY(0); } }
+
   /* Pain headline dim → bright on scroll */
   .pw-illuminate { opacity: 0.3; transition: opacity 0.6s ease-out; }
   .pw-illuminate.visible { opacity: 1; }
