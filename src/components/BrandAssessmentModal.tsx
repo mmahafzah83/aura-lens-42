@@ -636,7 +636,6 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
                           fontSize: 15,
                           fontWeight: sel ? 500 : 400,
                           cursor: "pointer",
-                        opacity: dim ? 0.7 : 1,
                           transform: sel ? "scale(1.02)" : "scale(1)",
                           transition: "transform 200ms ease, opacity 300ms ease, background 200ms ease, border-color 300ms ease, padding 200ms ease",
                         }}
