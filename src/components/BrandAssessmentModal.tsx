@@ -537,18 +537,19 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
                         const { data: { user } } = await supabase.auth.getUser();
                         if (user) {
                           await (supabase.from("diagnostic_profiles" as any) as any)
-                            .update({ onboarding_step: 5 })
+                            .update({ onboarding_step: 5, onboarding_completed: true })
                             .eq("user_id", user.id);
                         }
                       } catch (e) {
                         console.warn("Couldn't update onboarding_step:", e);
                       }
+                      onComplete?.();
                       onOpenChange(false);
-                      onNavigate?.("home");
+                      onNavigate?.("identity");
                     }}
                     className="mt-2 px-5 py-2.5 rounded-xl text-sm font-medium bg-brand text-white hover:brightness-110 transition"
                   >
-                    Go to my dashboard →
+                    Go to My Story →
                   </button>
                 </div>
               ) : (
