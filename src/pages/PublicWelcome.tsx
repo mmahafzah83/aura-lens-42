@@ -917,5 +917,51 @@ const PW_CSS = `
     .pw-eye-parallax { transform: none !important; }
     .pw-divider-sweep { transform: scaleX(1) !important; transition: none !important; }
     .pw-tw .pw-tw-w { opacity: 1 !important; transition: none !important; }
+    .pw-char { opacity: 1 !important; transform: none !important; animation: none !important; }
+    .pw-illuminate { opacity: 1 !important; }
+    .pw-split-left, .pw-split-right { opacity: 1 !important; transform: none !important; text-shadow: none !important; }
+    .pw-split-bar { height: 60px !important; transition: none !important; }
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* Character-by-character headline reveal */
+  .pw-char {
+    opacity: 0;
+    transform: translateY(8px);
+    animation: pw-charIn 0.4s ease-out forwards;
+    will-change: opacity, transform;
+  }
+  @keyframes pw-charIn { to { opacity: 1; transform: translateY(0); } }
+
+  /* Pain headline dim → bright on scroll */
+  .pw-illuminate { opacity: 0.3; transition: opacity 0.6s ease-out; }
+  .pw-illuminate.visible { opacity: 1; }
+
+  /* Kinetic split */
+  .pw-split-left { opacity: 1; transform: translateX(0); transition: opacity 600ms ease-out, transform 600ms ease-out; }
+  .pw-split-left.on { opacity: 0.4; transform: translateX(-20px); }
+  .pw-split-bar {
+    display: inline-block; width: 2px; height: 0; background: ${BRONZE};
+    transition: height 400ms ease-out 200ms;
+  }
+  .pw-split-bar.on { height: 60px; }
+  .pw-split-right { opacity: 1; text-shadow: 0 0 0 transparent; transition: text-shadow 600ms ease-out 200ms; }
+  .pw-split-right.on { text-shadow: 0 0 20px rgba(176,141,58,0.35); }
+
+  /* AURA watermark behind builder */
+  .pw-watermark {
+    position: absolute; left: 0; right: 0; top: 50%;
+    transform: translateY(-50%);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: clamp(80px, 15vw, 140px);
+    font-weight: 300;
+    color: rgba(176,141,58,0.04);
+    text-align: center; width: 100%;
+    pointer-events: none; user-select: none;
+    letter-spacing: 0.05em;
   }
 `;
