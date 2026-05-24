@@ -1621,31 +1621,210 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                   <Loader2 className="w-6 h-6 animate-spin text-primary" />
                 </div>
               ) : messages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-center py-8">
-                  <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                    <AuraLogo size={40} variant="auto" />
-                  </div>
-                  <h3 className="text-base font-semibold text-foreground mb-1">I'm Aura, your strategic advisor</h3>
-                  <p className="text-xs text-muted-foreground max-w-[280px] leading-relaxed mb-5">
-                    Ask me anything about your authority, signals, or what to publish next.
-                  </p>
-                  <div className="flex flex-wrap items-center justify-center gap-2 w-full max-w-[340px]">
-                    {[
-                      "What should I publish this week?",
-                      "Which signal is strongest right now?",
-                      "How is my authority score trending?",
-                      "What are my competitors missing?",
-                    ].map(q => (
-                      <button
-                        key={q}
-                        onClick={() => send(q)}
-                        className="text-xs px-3.5 py-2 rounded-full bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors tactile-press"
-                      >
-                        {q}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                (() => {
+                  // Derive user state for dynamic actions
+                  const captureCount = headerCounts?.captures ?? 0;
+                  const signalCount = headerCounts?.signals ?? 0;
+                  const userState = captureCount === 0 ? "fresh" : signalCount === 0 ? "building" : "ready";
+
+                  const dims = firstOpenCtx.topDims;
+                  const hasDims = dims.length >= 2;
+                  const level = firstOpenCtx.level || "leader";
+                  const sector = firstOpenCtx.sector || "your sector";
+
+                  const studyParagraph = hasDims
+                    ? `Your strengths cluster around ${dims[0]} and ${dims[1]} — that's unusual. Most ${level}s in ${sector} lead with operational skills. You lead with strategic vision.`
+                    : `I've been mapping your profile against ${sector}. The shape is starting to form.`;
+
+                  return (
+                    <div className="flex flex-col items-stretch justify-start h-full py-2 px-1" style={{ gap: 18 }}>
+                      {/* Milestone card (top, dismissable) */}
+                      {milestone && (
+                        <div style={{
+                          background: "rgba(176,141,58,0.1)",
+                          border: "1px solid rgba(176,141,58,0.35)",
+                          borderRadius: 12,
+                          padding: "14px 16px",
+                          position: "relative",
+                        }}>
+                          <div style={{ color: "#D4B056", fontSize: 18, marginBottom: 8 }}>✦</div>
+                          <div style={{
+                            fontFamily: "'DM Sans', sans-serif",
+                            fontSize: 13,
+                            lineHeight: 1.6,
+                            color: "rgba(230,222,205,0.9)",
+                            whiteSpace: "pre-line",
+                          }}>{milestone.message}</div>
+                          {milestone.cta && (
+                            <button
+                              onClick={() => { const cta = milestone.cta!; setMilestone(null); send(cta.prompt); }}
+                              style={{
+                                marginTop: 10,
+                                background: "#D4B056",
+                                color: "#0d0d0b",
+                                border: "none",
+                                padding: "8px 14px",
+                                borderRadius: 8,
+                                fontSize: 13,
+                                fontWeight: 600,
+                                cursor: "pointer",
+                              }}
+                            >{milestone.cta.label}</button>
+                          )}
+                          <button
+                            onClick={() => setMilestone(null)}
+                            style={{ position: "absolute", top: 8, right: 8, background: "transparent", border: "none", color: "rgba(230,222,205,0.4)", cursor: "pointer" }}
+                          ><X size={14} /></button>
+                        </div>
+                      )}
+
+                      {/* First-open ceremony */}
+                      {firstOpenCtx.loaded && firstOpenCtx.isFirst ? (
+                        <div style={{
+                          fontFamily: "'DM Sans', sans-serif",
+                          fontSize: 14,
+                          lineHeight: 1.75,
+                          color: "rgba(230,222,205,0.9)",
+                          padding: "8px 4px",
+                        }}>
+                          <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, color: "#ededed", marginBottom: 14 }}>
+                            I've been studying your profile.
+                          </div>
+                          <p style={{ marginBottom: 14 }}>{studyParagraph}</p>
+                          {firstOpenCtx.northStar ? (
+                            <>
+                              <p style={{ marginBottom: 14 }}>
+                                You told me your goal is: <span style={{ color: "#D4B056", fontStyle: "italic" }}>"{firstOpenCtx.northStar}"</span>
+                              </p>
+                              <p style={{ marginBottom: 18 }}>
+                                Based on your calibration, the market has a gap exactly where your strengths sit. Let me show you.
+                              </p>
+                              <button
+                                onClick={() => send("Based on my calibration and north star goal, what territory should I claim in my sector? Be specific about what gap exists and why I'm positioned to fill it.")}
+                                style={{
+                                  background: "#D4B056", color: "#0d0d0b", border: "none",
+                                  padding: "10px 18px", borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: "pointer",
+                                }}
+                              >Show me →</button>
+                            </>
+                          ) : (
+                            <>
+                              <p style={{ marginBottom: 14 }}>That's not common. And it's exactly what the market is undervaluing right now.</p>
+                              <p style={{ marginBottom: 14 }}>I have one question for you.</p>
+                              <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, color: "#ededed", marginBottom: 12 }}>
+                                What topic do you want the market to associate with your name?
+                              </div>
+                              <div style={{ display: "flex", gap: 8 }}>
+                                <input
+                                  type="text"
+                                  value={northStarInput}
+                                  onChange={(e) => setNorthStarInput(e.target.value)}
+                                  placeholder="e.g. AI strategy for utilities"
+                                  style={{
+                                    flex: 1,
+                                    background: "rgba(255,255,255,0.04)",
+                                    border: "1px solid #D4B056",
+                                    borderRadius: 8,
+                                    padding: "10px 12px",
+                                    color: "rgba(230,222,205,0.95)",
+                                    fontSize: 14,
+                                    outline: "none",
+                                  }}
+                                  onKeyDown={async (e) => {
+                                    if (e.key !== "Enter" || !northStarInput.trim() || savingNorthStar) return;
+                                    const answer = northStarInput.trim();
+                                    setSavingNorthStar(true);
+                                    try {
+                                      const { data: { session } } = await supabase.auth.getSession();
+                                      if (session) {
+                                        await supabase.from("diagnostic_profiles").update({ north_star_goal: answer }).eq("user_id", session.user.id);
+                                      }
+                                      setFirstOpenCtx(c => ({ ...c, northStar: answer }));
+                                      send(`The user just told me their north star topic is: "${answer}". Based on their profile and calibration, give them a specific, grounded response about why this topic is theirs to claim and what their first move should be.`);
+                                    } catch (err) { console.error(err); }
+                                    finally { setSavingNorthStar(false); }
+                                  }}
+                                />
+                                <button
+                                  disabled={!northStarInput.trim() || savingNorthStar}
+                                  onClick={async () => {
+                                    const answer = northStarInput.trim();
+                                    if (!answer) return;
+                                    setSavingNorthStar(true);
+                                    try {
+                                      const { data: { session } } = await supabase.auth.getSession();
+                                      if (session) {
+                                        await supabase.from("diagnostic_profiles").update({ north_star_goal: answer }).eq("user_id", session.user.id);
+                                      }
+                                      setFirstOpenCtx(c => ({ ...c, northStar: answer }));
+                                      send(`The user just told me their north star topic is: "${answer}". Based on their profile and calibration, give them a specific, grounded response about why this topic is theirs to claim and what their first move should be.`);
+                                    } catch (err) { console.error(err); }
+                                    finally { setSavingNorthStar(false); }
+                                  }}
+                                  style={{
+                                    background: "#D4B056", color: "#0d0d0b", border: "none",
+                                    padding: "0 16px", borderRadius: 8, fontSize: 13, fontWeight: 600,
+                                    cursor: northStarInput.trim() ? "pointer" : "not-allowed",
+                                    opacity: northStarInput.trim() ? 1 : 0.5,
+                                  }}
+                                >{savingNorthStar ? "…" : "Send"}</button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      ) : (
+                        <>
+                          {/* Contextual greeting card */}
+                          {firstOpenCtx.topSignalTitle ? (
+                            <div style={{
+                              background: "rgba(176,141,58,0.08)",
+                              border: "1px solid rgba(176,141,58,0.2)",
+                              borderRadius: 10,
+                              padding: "12px 14px",
+                            }}>
+                              <div style={{ fontSize: 11, color: "#D4B056", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 6, fontWeight: 600 }}>Your top signal</div>
+                              <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, color: "#ededed", lineHeight: 1.4, marginBottom: 4 }}>
+                                "{firstOpenCtx.topSignalTitle}"
+                              </div>
+                              <div style={{ fontSize: 12, color: "rgba(230,222,205,0.6)" }}>
+                                {Math.round((firstOpenCtx.topSignalConfidence || 0) * 100)}% confidence
+                                {firstOpenCtx.topSignalSources != null ? ` · ${firstOpenCtx.topSignalSources} source${firstOpenCtx.topSignalSources === 1 ? "" : "s"}` : ""}
+                              </div>
+                            </div>
+                          ) : captureCount > 0 ? (
+                            <div style={{
+                              background: "rgba(176,141,58,0.06)",
+                              border: "1px solid rgba(176,141,58,0.18)",
+                              borderRadius: 10,
+                              padding: "12px 14px",
+                            }}>
+                              <div style={{ fontSize: 11, color: "#D4B056", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 6, fontWeight: 600 }}>Your intelligence</div>
+                              <div style={{ fontSize: 13, color: "rgba(230,222,205,0.85)", lineHeight: 1.5 }}>
+                                {captureCount} capture{captureCount === 1 ? "" : "s"} processed.
+                                {captureCount < 3 ? ` ${3 - captureCount} more to detect your first signal.` : " Signals emerging."}
+                              </div>
+                            </div>
+                          ) : (
+                            <div style={{
+                              background: "rgba(176,141,58,0.06)",
+                              border: "1px solid rgba(176,141,58,0.18)",
+                              borderRadius: 10,
+                              padding: "12px 14px",
+                            }}>
+                              <div style={{ fontSize: 11, color: "#D4B056", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 6, fontWeight: 600 }}>Getting started</div>
+                              <div style={{ fontSize: 13, color: "rgba(230,222,205,0.85)", lineHeight: 1.5 }}>
+                                Capture your first article and I'll start finding patterns in what you read.
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Dynamic action buttons */}
+                          <DynamicActions state={userState} onAction={(p) => send(p)} disabled={isLoading} />
+                        </>
+                      )}
+                    </div>
+                  );
+                })()
               ) : (
                 messages.map((msg, i) => (
                   <div key={i} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
