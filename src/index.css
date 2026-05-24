@@ -896,6 +896,13 @@ html.dark  { background-color: var(--paper, #14110C); }
   transition: border-color 0.15s, background 0.15s, box-shadow 0.15s !important;
 }
 .aura-create-input::placeholder { color: #B4B0AA !important; }
+
+/* Dark-mode placeholder contrast (WCAG AA-friendly warm parchment at 60%) */
+.dark ::placeholder,
+[data-theme="dark"] ::placeholder {
+  color: rgba(226, 217, 197, 0.55);
+  opacity: 1;
+}
 .aura-create-input:focus,
 .aura-create-input:focus-visible {
   border-color: var(--brand) !important;
