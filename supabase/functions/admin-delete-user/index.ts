@@ -8,44 +8,8 @@ const corsHeaders = {
 };
 
 const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
-
-// Tables that store per-user data. Order doesn't matter (no FK cascades),
-// but we attempt all and log any failures gracefully.
-const TABLES_TO_CLEAN = [
-  "aura_conversation_memory",
-  "linkedin_post_metrics",
-  "linkedin_posts",
-  "content_items",
-  "evidence_fragments",
-  "strategic_signals",
-  "score_snapshots",
-  "authority_scores",
-  "user_milestones",
-  "milestones",
-  "authority_voice_profiles",
-  "market_mirror_cache",
-  "narrative_suggestions",
-  "industry_trends",
-  "framework_activations",
-  "master_frameworks",
-  "learned_intelligence",
-  "document_chunks",
-  "documents",
-  "captures",
-  "entries",
-  "diagnostic_profiles",
-  "influence_snapshots",
-  "import_jobs",
-  "discovery_review_queue",
-  "focus_accounts",
-  "chat_messages",
-  "chat_conversations",
-  "notifications",
-  "notification_events",
-  "beta_feedback",
-  "lifecycle_emails",
-  "linkedin_connections",
-];
+// All per-user tables have ON DELETE CASCADE FKs to auth.users(id).
+// Deleting the auth user automatically removes all of their rows.
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -124,18 +88,6 @@ serve(async (req) => {
       });
     }
 
-    let tablesCleaned = 0;
-    if (target_user_id) {
-      for (const table of TABLES_TO_CLEAN) {
-        const { error } = await admin.from(table).delete().eq("user_id", target_user_id);
-        if (error) {
-          console.log(`[admin-delete-user] note: ${table}: ${error.message}`);
-        } else {
-          tablesCleaned++;
-        }
-      }
-    }
-
     // Remove from beta_allowlist (by email — covers pending users with no auth)
     if (resolvedEmail) {
       const { error: allowErr } = await admin
@@ -157,7 +109,7 @@ serve(async (req) => {
       success: true,
       deleted_user_id: target_user_id,
       deleted_email: resolvedEmail,
-      tables_cleaned: tablesCleaned,
+      cascade: true,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e: any) {
     console.error("[admin-delete-user] error", e);
