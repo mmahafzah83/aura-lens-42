@@ -125,9 +125,9 @@ serve(async (req) => {
       safe(
         admin
           .from("score_snapshots")
-          .select("score, tier, components, captured_at")
+          .select("score, tier, components, created_at")
           .eq("user_id", user_id)
-          .order("captured_at", { ascending: false })
+          .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle() as any,
       ),
@@ -148,9 +148,9 @@ serve(async (req) => {
       safe(
         admin
           .from("linkedin_post_metrics")
-          .select("impressions, engagement_rate, likes, comments, captured_at")
+          .select("impressions, engagement_rate, reactions, comments, snapshot_date")
           .eq("user_id", user_id)
-          .order("captured_at", { ascending: false })
+          .order("snapshot_date", { ascending: false })
           .limit(5) as any,
       ),
       safe(
@@ -191,7 +191,7 @@ serve(async (req) => {
         : mets
             .map(
               (m) =>
-                `- ${m.captured_at?.slice(0, 10) || "—"} · impressions ${m.impressions ?? 0} · eng ${(Number(m.engagement_rate || 0) * 100).toFixed(1)}% · ${m.likes ?? 0}♥ ${m.comments ?? 0}💬`,
+                `- ${(m.snapshot_date || "").slice(0, 10) || "—"} · impressions ${m.impressions ?? 0} · eng ${(Number(m.engagement_rate || 0) * 100).toFixed(1)}% · ${m.reactions ?? 0}♥ ${m.comments ?? 0}💬`,
             )
             .join("\n");
 
