@@ -164,6 +164,50 @@ const DynamicActions = ({ state, onAction, disabled }: { state: string; onAction
   </div>
 );
 
+/* ── Whisper suggestions — text-with-arrow, not chips (PART 3) ── */
+const WhisperSuggestions = ({ state, onAction, disabled }: { state: string; onAction: (p: string) => void; disabled?: boolean }) => {
+  const items = STATE_ACTIONS[state] || STATE_ACTIONS.fresh;
+  return (
+    <div style={{ margin: "16px 0 6px", display: "flex", flexDirection: "column", gap: 2 }}>
+      {items.map((a) => (
+        <div
+          key={a.label}
+          onClick={() => {
+            if (disabled) return;
+            if (a.prompt === "__OPEN_CAPTURE__") {
+              window.dispatchEvent(new CustomEvent("aura:open-capture"));
+            } else {
+              onAction(a.prompt);
+            }
+          }}
+          style={{
+            fontSize: 12,
+            color: "rgba(230, 222, 205, 0.32)",
+            padding: "6px 0",
+            cursor: disabled ? "not-allowed" : "pointer",
+            transition: "all 0.25s ease",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+          onMouseEnter={(e) => {
+            if (disabled) return;
+            (e.currentTarget as HTMLDivElement).style.color = "#D4B056";
+            (e.currentTarget as HTMLDivElement).style.transform = "translateX(4px)";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLDivElement).style.color = "rgba(230, 222, 205, 0.32)";
+            (e.currentTarget as HTMLDivElement).style.transform = "translateX(0)";
+          }}
+        >
+          <span style={{ fontSize: 12, opacity: 0.5 }}>→</span>
+          <span>{a.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 /* ── Always-on Context Strip (signals + identity pills) ── */
 interface TopSignal { id: string; signal_title: string; }
 interface IdentityCtx { level?: string | null; firm?: string | null; sector_focus?: string | null; }
