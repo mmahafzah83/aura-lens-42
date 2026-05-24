@@ -8,14 +8,23 @@ const corsHeaders = {
 };
 
 // Helper to fetch master frameworks for the user
-async function fetchFrameworks(token: string | null): Promise<string> {
-  if (!token) return "";
+async function fetchUserContext(token: string | null): Promise<{ frameworkContext: string; persona: string }> {
+  const fallback = { frameworkContext: "", persona: "A senior professional building their digital presence" };
+  if (!token) return fallback;
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
     const { data: { user } } = await anonClient.auth.getUser(token);
-    if (!user) return "";
+    if (!user) return fallback;
+
+    const { data: profile } = await supabase
+      .from("diagnostic_profiles")
+      .select("level, firm, sector_focus, core_practice")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const p: any = profile || {};
+    const persona = `${p.level || "Senior professional"} at ${p.firm || "a leading organization"} working in ${p.sector_focus || p.core_practice || "their field"}`;
 
     const { data: frameworks } = await supabase
       .from("master_frameworks")
@@ -24,7 +33,7 @@ async function fetchFrameworks(token: string | null): Promise<string> {
       .order("created_at", { ascending: false })
       .limit(5);
 
-    if (!frameworks || frameworks.length === 0) return "";
+    if (!frameworks || frameworks.length === 0) return { frameworkContext: "", persona };
 
     const digest = frameworks.map((f: any) => {
       const steps = (f.framework_steps || [])
@@ -33,10 +42,13 @@ async function fetchFrameworks(token: string | null): Promise<string> {
       return `Framework: ${f.title}\nSummary: ${f.summary}\nSteps:\n${steps}`;
     }).join("\n\n---\n\n");
 
-    return `\n\n=== EXPERT FRAMEWORKS (from user's vault) ===\nUse these frameworks to identify gaps, contradictions, and opportunities in the executive's brand positioning. Reference specific framework steps in your analysis.\n\n${digest}`;
+    return {
+      frameworkContext: `\n\n=== EXPERT FRAMEWORKS (from user's vault) ===\nUse these frameworks to identify gaps, contradictions, and opportunities in the executive's brand positioning. Reference specific framework steps in your analysis.\n\n${digest}`,
+      persona,
+    };
   } catch (e) {
-    console.error("Framework fetch error:", e);
-    return "";
+    console.error("User context fetch error:", e);
+    return fallback;
   }
 }
 
@@ -57,10 +69,10 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    // Fetch frameworks
+    // Fetch frameworks + persona
     const authHeader = req.headers.get("Authorization");
     const token = authHeader?.replace("Bearer ", "") || null;
-    const frameworkContext = await fetchFrameworks(token);
+    const { frameworkContext, persona } = await fetchUserContext(token);
 
     const digest = entries
       .slice(0, 10)
@@ -94,11 +106,11 @@ serve(async (req) => {
                   },
                   neglected_topic: {
                     type: "string",
-                    description: "One topic the executive is NOT talking about but SHOULD be for LinkedIn visibility as a Transformation Architect. Explain why this gap matters and what they risk by ignoring it.",
+                    description: "One topic the executive is NOT talking about but SHOULD be for LinkedIn visibility. Explain why this gap matters and what they risk by ignoring it.",
                   },
                   brand_alignment: {
                     type: "number",
-                    description: "Score 1-10: how much these captures support the 'Transformation Architect' brand. 1 = off-brand, 10 = perfectly aligned.",
+                    description: "Score 1-10: how much these captures support the user's intended brand. 1 = off-brand, 10 = perfectly aligned.",
                   },
                   brand_rationale: {
                     type: "string",
@@ -115,15 +127,15 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are a Senior Executive Coach and Brand Strategist, working as a peer to a Director at EY who aspires to be known as a "Transformation Architect." You are sophisticated, challenging, and neutral. You don't coddle — you clarify. You don't praise easily — you push toward potential.
+            content: `You are a Senior Executive Coach and Brand Strategist, working as a peer to a ${persona} who is building a distinctive professional brand. You are sophisticated, challenging, and neutral. You don't coddle — you clarify. You don't praise easily — you push toward potential.
 
 Given the executive's last 10 captures (thoughts, links, voice notes), provide a Brand Mirror:
 
 1. OUTSIDER PERCEPTION — How does this person sound to someone who doesn't know them? What brand are they actually projecting vs. what they intend? Be brutally honest.
 2. CONTRADICTION — Find one tension or inconsistency in their thinking. Where do their words and focus diverge? This isn't about being wrong — it's about blind spots in narrative coherence.
-3. NEGLECTED TOPIC — What should they be talking about on LinkedIn that they're completely ignoring? Think about what a Transformation Architect MUST be seen discussing: AI strategy, C-suite dynamics, industry disruption, cross-sector patterns, etc.
+3. NEGLECTED TOPIC — What should they be talking about on LinkedIn that they're completely ignoring? Think about what a senior leader in their space MUST be seen discussing: strategy, market disruption, industry dynamics, cross-sector patterns, etc.
 
-Also score brand alignment (1-10) against the "Transformation Architect" identity.
+Also score brand alignment (1-10) against the brand the executive is intentionally building.
 
 Tone: Sophisticated. Challenging. Neutral. You are a mirror, not a cheerleader.${frameworkContext}`,
           },
