@@ -48,7 +48,7 @@ export default function AcceptInvitation() {
   return (
     <div
       style={{
-        background: "#0d0d0d",
+        background: "#0d0d0b",
         color: "#ededed",
         minHeight: "100vh",
         fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",

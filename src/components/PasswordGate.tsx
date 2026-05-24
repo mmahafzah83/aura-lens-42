@@ -34,8 +34,8 @@ export default function PasswordGate({ children }: { children: React.ReactNode }
 
   if (checking) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "hsl(var(--background))" }}>
-        <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--brand, hsl(var(--primary)))" }} />
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "#0d0d0b" }}>
+        <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#B08D3A" }} />
       </div>
     );
   }
@@ -123,7 +123,7 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4 py-10"
-      style={{ background: "hsl(var(--background))", fontFamily: "'DM Sans', sans-serif" }}
+      style={{ background: "#0d0d0b", color: "#ededed", fontFamily: "'DM Sans', sans-serif" }}
     >
       <style>{`
         @keyframes pg-fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
@@ -132,26 +132,26 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
       <div
         className="w-full max-w-md rounded-2xl p-8"
         style={{
-          background: "hsl(var(--card))",
-          border: "1px solid hsl(var(--border))",
-          boxShadow: "0 20px 60px -20px rgba(0,0,0,0.4)",
+          background: "#141412",
+          border: "1px solid rgba(255,255,255,0.08)",
+          boxShadow: "0 20px 60px -20px rgba(0,0,0,0.6)",
         }}
       >
         <div className="mb-6">
-          <div className="text-xs tracking-[0.2em] uppercase mb-3" style={{ color: "var(--brand, hsl(var(--primary)))" }}>
+          <div className="text-xs tracking-[0.2em] uppercase mb-3" style={{ color: "#B08D3A" }}>
             Aura · Strategic Intelligence
           </div>
-          <h1 className="mb-2" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 30, fontWeight: 500, lineHeight: 1.15, color: "hsl(var(--foreground))" }}>
+          <h1 className="mb-2" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 30, fontWeight: 500, lineHeight: 1.15, color: "#ffffff" }}>
             Welcome to the inner circle.
           </h1>
-          <p style={{ fontSize: 14, color: "hsl(var(--muted-foreground))" }}>
+          <p style={{ fontSize: 14, color: "rgba(237,237,237,0.65)" }}>
             Set a password you'll remember. This space is yours now.
           </p>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-xs mb-1.5" style={{ color: "hsl(var(--muted-foreground))" }}>Your password</label>
+            <label className="block text-xs mb-1.5" style={{ color: "rgba(237,237,237,0.65)" }}>Your password</label>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
@@ -164,11 +164,11 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
                 style={{
                   padding: "12px 40px 12px 14px",
                   fontSize: 14,
-                  background: "hsl(var(--muted) / 0.4)",
-                  border: "1px solid hsl(var(--border))",
-                  borderBottomColor: pwFocused ? "var(--brand, hsl(var(--primary)))" : "hsl(var(--border))",
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderBottomColor: pwFocused ? "#B08D3A" : "rgba(255,255,255,0.1)",
                   borderBottomWidth: pwFocused ? 2 : 1,
-                  color: "hsl(var(--foreground))",
+                  color: "#ededed",
                   transition: "border-color 300ms ease, border-bottom-width 300ms ease",
                 }}
                 autoFocus
@@ -177,7 +177,7 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
               <button
                 type="button" onClick={() => setShowPassword((s) => !s)}
                 className="absolute right-3 top-1/2 -translate-y-1/2"
-                style={{ background: "transparent", border: 0, cursor: "pointer", color: "hsl(var(--muted-foreground))" }}
+                style={{ background: "transparent", border: 0, cursor: "pointer", color: "rgba(237,237,237,0.5)" }}
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >{showPassword ? <EyeOff size={16} /> : <Eye size={16} />}</button>
             </div>
@@ -189,18 +189,18 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
               return (
                 <div key={key} className="flex items-center gap-2" style={{ fontSize: 14 }}>
                   {ok ? (
-                    <Check size={14} style={{ color: "hsl(142 70% 45%)" }} />
+                    <Check size={14} style={{ color: "hsl(142 70% 55%)" }} />
                   ) : (
-                    <span style={{ width: 14, height: 14, borderRadius: 999, border: "1.5px solid hsl(var(--border))", display: "inline-block" }} />
+                    <span style={{ width: 14, height: 14, borderRadius: 999, border: "1.5px solid rgba(255,255,255,0.18)", display: "inline-block" }} />
                   )}
-                  <span style={{ color: ok ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))" }}>{label}</span>
+                  <span style={{ color: ok ? "#ededed" : "rgba(237,237,237,0.55)" }}>{label}</span>
                 </div>
               );
             })}
           </div>
 
           <div>
-            <label className="block text-xs mb-1.5" style={{ color: "hsl(var(--muted-foreground))" }}>Confirm password</label>
+            <label className="block text-xs mb-1.5" style={{ color: "rgba(237,237,237,0.65)" }}>Confirm password</label>
             <div className="relative">
               <input
                 type={showConfirm ? "text" : "password"}
@@ -213,11 +213,11 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
                 style={{
                   padding: "12px 40px 12px 14px",
                   fontSize: 14,
-                  background: "hsl(var(--muted) / 0.4)",
-                  border: "1px solid hsl(var(--border))",
-                  borderBottomColor: confirmFocused ? "var(--brand, hsl(var(--primary)))" : "hsl(var(--border))",
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderBottomColor: confirmFocused ? "#B08D3A" : "rgba(255,255,255,0.1)",
                   borderBottomWidth: confirmFocused ? 2 : 1,
-                  color: "hsl(var(--foreground))",
+                  color: "#ededed",
                   transition: "border-color 300ms ease, border-bottom-width 300ms ease",
                 }}
                 autoComplete="new-password"
@@ -226,7 +226,7 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
               <button
                 type="button" onClick={() => setShowConfirm((s) => !s)}
                 className="absolute right-3 top-1/2 -translate-y-1/2"
-                style={{ background: "transparent", border: 0, cursor: "pointer", color: "hsl(var(--muted-foreground))" }}
+                style={{ background: "transparent", border: 0, cursor: "pointer", color: "rgba(237,237,237,0.5)" }}
                 aria-label={showConfirm ? "Hide password" : "Show password"}
               >{showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}</button>
             </div>
@@ -234,11 +234,11 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
 
           <div className="flex items-center gap-2" style={{ fontSize: 14 }}>
             {checks.match ? (
-              <Check size={14} style={{ color: "hsl(142 70% 45%)" }} />
+              <Check size={14} style={{ color: "hsl(142 70% 55%)" }} />
             ) : (
-              <span style={{ width: 14, height: 14, borderRadius: 999, border: "1.5px solid hsl(var(--border))", display: "inline-block" }} />
+              <span style={{ width: 14, height: 14, borderRadius: 999, border: "1.5px solid rgba(255,255,255,0.18)", display: "inline-block" }} />
             )}
-            <span style={{ color: checks.match ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))" }}>Passwords match</span>
+            <span style={{ color: checks.match ? "#ededed" : "rgba(237,237,237,0.55)" }}>Passwords match</span>
           </div>
 
           <button
@@ -248,8 +248,8 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
             className="w-full rounded-lg flex items-center justify-center gap-2 mt-2"
             style={{
               padding: "12px 16px", fontSize: 14, fontWeight: 600,
-              background: "var(--brand, hsl(var(--primary)))",
-              color: "hsl(var(--primary-foreground))",
+              background: "#B08D3A",
+              color: "#ffffff",
               border: 0, cursor: allValid && !isSubmitting ? "pointer" : "not-allowed",
               opacity: allValid && !isSubmitting ? 1 : 0.5,
             }}
@@ -276,7 +276,7 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
             <p
               style={{
                 fontSize: 13,
-                color: "hsl(var(--muted-foreground))",
+                color: "rgba(237,237,237,0.55)",
                 textAlign: "center",
                 margin: "8px 0 0",
                 animation: "pg-fade-in 400ms ease-out forwards",
@@ -290,7 +290,7 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
             <p
               style={{
                 fontSize: 13,
-                color: "hsl(var(--muted-foreground))",
+                color: "rgba(237,237,237,0.55)",
                 margin: "4px 0 0",
                 animation: "pg-fade-in 300ms ease-out forwards",
               }}
