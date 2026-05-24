@@ -1917,8 +1917,8 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                             </div>
                           )}
 
-                          {/* Dynamic action buttons */}
-                          <DynamicActions state={userState} onAction={(p) => send(p)} disabled={isLoading} />
+                          {/* Whisper suggestions (PART 3) */}
+                          <WhisperSuggestions state={userState} onAction={(p) => send(p)} disabled={isLoading} />
                         </>
                       )}
                     </div>
