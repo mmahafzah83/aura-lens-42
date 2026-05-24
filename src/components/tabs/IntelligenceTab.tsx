@@ -402,7 +402,7 @@ const SignalDetailPanel = ({
           )}
 
           {/* Built from these sources */}
-          <div style={{ marginBottom: 20 }}>
+          <div id="signal-evidence-section" style={{ marginBottom: 20, scrollMarginTop: 12 }}>
             <p style={{ fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 8 }}>
               Built from {uniqueEvidence.length} source{uniqueEvidence.length === 1 ? "" : "s"}
             </p>
