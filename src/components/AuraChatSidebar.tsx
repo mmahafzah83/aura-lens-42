@@ -584,6 +584,67 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
     })();
   }, [open]);
 
+  // ── Load first-open context: skill ratings, north star, top signal, prior messages ──
+  useEffect(() => {
+    if (!open) return;
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const uid = session.user.id;
+        const [profRes, sigRes, memCountRes] = await Promise.all([
+          supabase.from("diagnostic_profiles").select("level, sector_focus, north_star_goal, skill_ratings").eq("user_id", uid).maybeSingle(),
+          supabase.from("strategic_signals").select("signal_title, confidence, source_count, priority_score").eq("user_id", uid).eq("status", "active").order("priority_score", { ascending: false }).limit(1),
+          supabase.from("aura_conversation_memory" as any).select("id", { count: "exact", head: true }).eq("user_id", uid).not("role", "is", null),
+        ]);
+        const p: any = profRes.data || {};
+        const topSig: any = (sigRes.data || [])[0] || null;
+        const isFirst = ((memCountRes as any)?.count ?? 0) === 0;
+        setFirstOpenCtx({
+          loaded: true,
+          isFirst,
+          topDims: topTwoDimensions(p.skill_ratings),
+          level: p.level || null,
+          sector: p.sector_focus || null,
+          northStar: p.north_star_goal || null,
+          topSignalTitle: topSig?.signal_title || null,
+          topSignalConfidence: topSig?.confidence ?? null,
+          topSignalSources: topSig?.source_count ?? null,
+        });
+
+        // Milestone detection
+        const checkMilestone = async () => {
+          // First signal ever
+          if (topSig && !localStorage.getItem("aura_milestone_first_signal")) {
+            const sigCountRes = await supabase.from("strategic_signals").select("id", { count: "exact", head: true }).eq("user_id", uid).eq("status", "active");
+            if ((sigCountRes.count ?? 0) === 1) {
+              localStorage.setItem("aura_milestone_first_signal", "true");
+              setMilestone({
+                message: `Your first signal just formed.\n\n"${topSig.signal_title}" — ${Math.round((topSig.confidence || 0) * 100)}% confidence.\n\nThis is what separates you from professionals who consume the same information but never extract the pattern.\n\nYou see it. Now the market needs to hear it.`,
+                cta: { label: "Draft a post from this signal", prompt: `Draft a LinkedIn post based on my signal "${topSig.signal_title}". Make it contrarian and specific to my sector.` },
+              });
+              return;
+            }
+          }
+          // First post published
+          if (!localStorage.getItem("aura_milestone_first_post")) {
+            const pubRes = await supabase.from("linkedin_posts" as any).select("id", { count: "exact", head: true }).eq("user_id", uid).not("published_at", "is", null);
+            if ((pubRes.count ?? 0) === 1) {
+              localStorage.setItem("aura_milestone_first_post", "true");
+              setMilestone({
+                message: `The market heard your voice for the first time.\n\nNot a ghostwriter's voice. Not generic AI content. YOUR insight, from YOUR signal, in YOUR words.\n\nThis is what compounds. Every post from here builds on this one.`,
+              });
+            }
+          }
+        };
+        checkMilestone().catch(() => {});
+      } catch (e) {
+        console.error("[first-open] context load failed", e);
+        setFirstOpenCtx(c => ({ ...c, loaded: true }));
+      }
+    })();
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
 
