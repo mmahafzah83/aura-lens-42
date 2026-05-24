@@ -298,7 +298,7 @@ const Onboarding = () => {
         setLevel(p.level || "");
         setCorePractice(p.core_practice || "");
         const s = p.sector_focus || "";
-        setSectorFocus(SECTORS.includes(s) ? s : (s ? "Other" : ""));
+        setSectorFocus(s ? normalizeSector(s) : "");
         setUsedLinkedIn(true);
         setShowForm(true);
         // Successful extraction — show inline confirmation only, no error toast.
