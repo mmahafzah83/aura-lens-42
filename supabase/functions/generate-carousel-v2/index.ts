@@ -414,7 +414,7 @@ Author context (for tone only — do not hardcode in slides): ${authorFullName}$
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-6",
+        model: "claude-sonnet-4-20250514",
         max_tokens: 16384,
         system: systemPrompt,
         messages: [{ role: "user", content: userMessage }],
