@@ -684,7 +684,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
           <div
             className="shrink-0"
             style={{
-              background: "var(--ink)",
+              background: "#0d0d0b",
               borderTop: "0.5px solid var(--surface-ink-subtle)",
               padding: "12px 16px",
               animation: "aura-fade-up 300ms ease-out forwards",
