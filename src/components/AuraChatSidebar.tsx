@@ -1954,7 +1954,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
               )}
 
               {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
-                <ThinkingCeremony />
+                <ThinkingCeremony signalCount={headerCounts?.signals ?? 0} captureCount={headerCounts?.captures ?? 0} />
               )}
             </div>
 
