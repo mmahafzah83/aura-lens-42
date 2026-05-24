@@ -44,6 +44,16 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
+    // Load user profile to build dynamic persona (no hardcoded identity)
+    const { data: profile } = await adminClient
+      .from("diagnostic_profiles")
+      .select("first_name, firm, level, sector_focus, core_practice")
+      .eq("user_id", user_id)
+      .maybeSingle();
+    const p: any = profile || {};
+    const persona = `${p.level || "Senior professional"} at ${p.firm || "a leading organization"} specializing in ${p.sector_focus || p.core_practice || "their field"}`;
+    const sectorRef = p.sector_focus || p.core_practice || "their sector";
+
     // Fetch the framework
     const { data: fw, error: fwErr } = await adminClient
       .from("master_frameworks")
@@ -68,11 +78,11 @@ ${stepsText}`;
       // 1. LinkedIn Authority Post
       aiGenerate(
         LOVABLE_API_KEY,
-        `You are a thought leadership ghostwriter for a Senior Director at EY specializing in Digital Transformation & Saudi Utility sector (MEWA, NWC, SWA). Write LinkedIn posts using this structure:
+        `You are a thought leadership ghostwriter for a ${persona}. Write LinkedIn posts using this structure:
 
 HOOK (Lines 1-3): Bold curiosity gap or contrarian insight. Must create a "See more" cliffhanger by line 3.
 BODY: Atomic formatting - max 2-line paragraphs. White space. Include the framework steps as a numbered insight list.
-PARTNER LENS: One Director-level insight connecting to Value-Based P&L, Vision 2030, or Digital Transformation.
+PARTNER LENS: One senior-level strategic insight relevant to ${sectorRef}.
 CTA: End with a provocative open-ended question to drive comments.
 
 Write in first person. Bold key terms. Use line breaks generously.`,
@@ -91,14 +101,14 @@ Write in first person. Bold key terms. Use line breaks generously.`,
 **Strategic Value**: Quantifiable impact and ROI story
 **Pricing Signal**: Indicative engagement size (e.g., "SR 250K-500K diagnostic")
 
-Write in professional consulting language. Reference Saudi Vision 2030 and digital transformation where relevant.`,
+Write in professional consulting language. Reference ${sectorRef} dynamics where relevant.`,
         `Propose a consulting offering based on this approved framework:\n\n${frameworkContext}`
       ),
 
       // 3. Strategy Brief
       aiGenerate(
         LOVABLE_API_KEY,
-        `You are a strategy document writer for a Big 4 consulting firm. Write a one-page strategy brief with these sections:
+        `You are a strategy document writer working with a ${persona}. Write a one-page strategy brief with these sections:
 
 **EXECUTIVE SUMMARY**: 2-3 sentences on what the framework is and why it matters.
 **FRAMEWORK OVERVIEW**: Explain each step clearly with practical guidance.
