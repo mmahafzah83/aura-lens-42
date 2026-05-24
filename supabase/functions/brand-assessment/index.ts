@@ -84,7 +84,21 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    console.log("DIAG-0 REQUEST_RECEIVED:", new Date().toISOString());
+
     const { answers, auditScores, sector } = await req.json();
+
+    console.log("DIAG-1 INPUT:", JSON.stringify({
+      hasAnswers: !!answers,
+      answersType: typeof answers,
+      answersKeys: answers ? Object.keys(answers).length : 0,
+      answersPreview: answers ? JSON.stringify(answers).substring(0, 200) : "NULL",
+      hasAuditScores: !!auditScores,
+      auditScoresType: typeof auditScores,
+      auditScoresPreview: auditScores ? JSON.stringify(auditScores).substring(0, 200) : "NULL",
+      sector: sector || "NOT_PROVIDED",
+      userId: userData.user.id
+    }));
 
     // Build audit scores context for the AI
     const auditContext = typeof auditScores === "string"
@@ -103,10 +117,24 @@ Analyse this professional using all six frameworks and provide the complete bran
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
 
+    console.log("DIAG-2 API_KEY:", JSON.stringify({
+      exists: !!ANTHROPIC_API_KEY,
+      length: ANTHROPIC_API_KEY?.length || 0,
+      prefix: ANTHROPIC_API_KEY?.substring(0, 10) || "NONE",
+      suffix: ANTHROPIC_API_KEY?.substring(ANTHROPIC_API_KEY.length - 4) || "NONE"
+    }));
+
     const callAnthropic = async () => {
       const ctrl = new AbortController();
       const t = setTimeout(() => ctrl.abort(), 110000);
       try {
+        console.log("DIAG-3 CALLING_AI:", JSON.stringify({
+          model: "claude-sonnet-4-5-20250929",
+          promptLength: userPrompt.length,
+          systemPromptLength: SYSTEM_PROMPT.length,
+          totalChars: userPrompt.length + SYSTEM_PROMPT.length,
+          timestamp: new Date().toISOString()
+        }));
         return await fetch("https://api.anthropic.com/v1/messages", {
           method: "POST",
           headers: {
@@ -132,6 +160,17 @@ Analyse this professional using all six frameworks and provide the complete bran
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
         response = await callAnthropic();
+        console.log("DIAG-4 AI_RESPONSE:", JSON.stringify({
+          attempt: attempt + 1,
+          ok: response?.ok,
+          status: response?.status,
+          statusText: response?.statusText,
+          headers: {
+            contentType: response?.headers?.get("content-type"),
+            requestId: response?.headers?.get("request-id")
+          },
+          timestamp: new Date().toISOString()
+        }));
         if (response.ok) break;
         if (response.status === 429 || response.status === 402) break;
         const t = await response.text();
@@ -140,8 +179,24 @@ Analyse this professional using all six frameworks and provide the complete bran
       } catch (e) {
         lastErr = e;
         console.error(`AI gateway fetch failed attempt ${attempt + 1}:`, e);
+        console.error("DIAG-5 RETRY_CATCH:", JSON.stringify({
+          attempt: attempt + 1,
+          errorType: (e as any)?.constructor?.name || "unknown",
+          errorName: (e as any)?.name || "unknown",
+          errorMessage: e instanceof Error ? e.message : String(e),
+          isAbort: (e as any)?.name === "AbortError",
+          timestamp: new Date().toISOString()
+        }));
       }
     }
+
+    console.log("DIAG-6 RETRY_RESULT:", JSON.stringify({
+      hasResponse: !!response,
+      responseOk: response?.ok ?? null,
+      responseStatus: response?.status ?? null,
+      lastErr: lastErr ? String(lastErr) : null,
+      timestamp: new Date().toISOString()
+    }));
 
     if (!response) {
       console.error("brand-assessment: returning graceful fallback", lastErr);
@@ -173,11 +228,32 @@ Analyse this professional using all six frameworks and provide the complete bran
     const data = await response.json();
     const interpretation = (data.content || []).map((c: any) => c.text || "").join("") || "";
 
+    console.log("DIAG-7 PARSED:", JSON.stringify({
+      hasData: !!data,
+      dataKeys: Object.keys(data || {}),
+      hasContent: !!data?.content,
+      contentLength: Array.isArray(data?.content) ? data.content.length : 0,
+      firstBlockType: data?.content?.[0]?.type || "NONE",
+      interpretationLength: interpretation.length,
+      interpretationFirst200: interpretation.substring(0, 200),
+      interpretationLast100: interpretation.substring(Math.max(0, interpretation.length - 100)),
+      hasJsonBlock: interpretation.includes("---JSON---"),
+      stopReason: data?.stop_reason || "NONE",
+      usage: data?.usage || null
+    }));
+
     return new Response(JSON.stringify({ interpretation }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("brand-assessment error:", e);
+    console.error("DIAG-8 OUTER_CATCH:", JSON.stringify({
+      errorType: (e as any)?.constructor?.name || "unknown",
+      errorName: (e as any)?.name || "unknown",
+      errorMessage: e instanceof Error ? e.message : String(e),
+      errorStack: e instanceof Error ? e.stack?.substring(0, 500) : "N/A",
+      timestamp: new Date().toISOString()
+    }));
     return new Response(
       JSON.stringify({
         interpretation: "",
