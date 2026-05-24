@@ -191,6 +191,15 @@ export default function RequestAccess() {
             >
               حتى السوق يعرفك قبل ما يشوفك ✦
             </p>
+            <Link
+              to="/"
+              style={{
+                fontSize: 12, color: "#666", textDecoration: "none",
+                marginTop: 16, display: "block",
+              }}
+            >
+              ← Explore what Aura does
+            </Link>
           </div>
         </aside>
 
@@ -199,6 +208,19 @@ export default function RequestAccess() {
           <div className="ra-right-inner ra-anim ra-d-form">
             {!isDone && (
               <>
+                <Link
+                  to="/"
+                  className="ra-back-link"
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 4,
+                    fontSize: 13, color: "#888", textDecoration: "none",
+                    marginBottom: 20, transition: "color 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = BRONZE)}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "#888")}
+                >
+                  ← Back to Aura
+                </Link>
                 <h2 style={{
                   fontFamily: "'Cormorant Garamond', Georgia, serif",
                   fontWeight: 400, fontSize: 24, color: "#fff",
