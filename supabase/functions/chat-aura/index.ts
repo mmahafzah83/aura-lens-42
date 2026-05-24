@@ -104,9 +104,14 @@ serve(async (req) => {
           .join(", ")
       : "none yet";
 
+    const userTitle = liveProfile.level || "professional";
+    const userName = liveProfile.first_name || "there";
+    const userFirm = liveProfile.firm || "a leading organization";
+    const userSector = liveProfile.sector_focus || liveProfile.core_practice || "their sector";
+
     const userContextBlock = `USER CONTEXT (reference naturally — never recite this block verbatim):
-Name: ${liveProfile.first_name || "Director"}, ${liveProfile.level || "—"} at ${liveProfile.firm || "—"}
-Focus: ${liveProfile.sector_focus || "—"}
+Name: ${userName}, ${userTitle} at ${userFirm}
+Focus: ${userSector}
 North star: ${liveProfile.north_star_goal || "—"}
 Top signals: ${signalsLine}
 Publishing: ${postCount} posts in last 30 days
@@ -286,12 +291,12 @@ If days_since_last_post > 7, naturally mention the publishing gap in your respon
     let memoryContext = "";
     if (profile) {
       const exp = profile.years_experience || "unknown";
-      const firm = profile.firm || "Big 4";
-      const level = profile.level || "Director";
+      const firm = profile.firm || "their organization";
+      const level = profile.level || "professional";
       const sector = profile.sector_focus || "their sector";
-      const practice = profile.core_practice || "Transformation";
-      const northStar = profile.north_star_goal || "Partner";
-      memoryContext += `\nDIRECTOR PROFILE: ${level} at ${firm} | ${exp} years experience | Practice: ${practice} | Sector: ${sector} | North Star: ${northStar}`;
+      const practice = profile.core_practice || "their practice area";
+      const northStar = profile.north_star_goal || "their stated goal";
+      memoryContext += `\nUSER PROFILE: ${level} at ${firm} | ${exp} years experience | Practice: ${practice} | Sector: ${sector} | North Star: ${northStar}`;
       if (profile.brand_pillars && profile.brand_pillars.length > 0) {
         memoryContext += ` | Brand Pillars: ${profile.brand_pillars.join(", ")}`;
       }
