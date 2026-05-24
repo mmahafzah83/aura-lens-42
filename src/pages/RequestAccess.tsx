@@ -24,24 +24,7 @@ const SENIORITY = [
   "Other",
 ];
 
-const SECTOR = [
-  "Consulting & Professional Services",
-  "Energy & Utilities",
-  "Water & Infrastructure",
-  "Oil & Gas",
-  "Finance & Banking",
-  "Government & Public Sector",
-  "Technology & IT",
-  "Healthcare & Pharma",
-  "Real Estate & Construction",
-  "Telecom",
-  "Education & Academia",
-  "Manufacturing & Industrial",
-  "Defense & Aerospace",
-  "Retail & Consumer",
-  "Transportation & Logistics",
-  "Other",
-];
+import { SECTORS as SECTOR } from "@/constants/sectors";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PERSONAL_DOMAINS = new Set([
