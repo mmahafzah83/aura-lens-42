@@ -1126,6 +1126,11 @@ const Onboarding = () => {
             // closed — assessment may or may not be complete; either way, hand off to home.
           }
         }}
+        onNavigate={(_tab) => {
+          setAssessmentOpen(false);
+          goHome();
+        }}
+        sector={sectorFocus || corePractice || "your sector"}
         onComplete={async () => {
           try {
             if (userId) {
