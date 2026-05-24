@@ -78,7 +78,7 @@ serve(async (req) => {
       safe(
         admin
           .from("diagnostic_profiles")
-          .select("sector_focus, core_practice, north_star_goal, level, firm, brand_pillars, first_name, archetype_name, skill_ratings, created_at")
+          .select("sector_focus, core_practice, north_star_goal, level, firm, brand_pillars, first_name, skill_ratings, created_at")
           .eq("user_id", user_id)
           .maybeSingle() as any,
       ),
@@ -261,7 +261,6 @@ Sector: ${p.sector_focus || "—"}
 Core Practice: ${p.core_practice || "—"}
 North Star Goal: ${p.north_star_goal || "—"}
 Brand Pillars: ${fmtList(p.brand_pillars)}
-Archetype: ${p.archetype_name || "—"}
 Account age: ${accountDays != null ? `${accountDays} day${accountDays === 1 ? "" : "s"} on Aura` : "—"}
 
 CALIBRATION SCORES (skill_ratings, 0-100):
