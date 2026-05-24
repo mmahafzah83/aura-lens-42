@@ -74,29 +74,29 @@ serve(async (req) => {
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
     // STEP 1 — assemble context (in parallel, tolerate failures)
-    const [profile, signals, posts, memory, alerts] = await Promise.all([
+    const [profile, signals, posts, memory, alerts, voice, scoreSnap, entriesRecent, entriesCount, metrics, trends] = await Promise.all([
       safe(
         admin
           .from("diagnostic_profiles")
-          .select("sector_focus, core_practice, north_star_goal, level, firm, brand_pillars, first_name")
+          .select("sector_focus, core_practice, north_star_goal, level, firm, brand_pillars, first_name, archetype_name, skill_ratings, created_at")
           .eq("user_id", user_id)
           .maybeSingle() as any,
       ),
       safe(
         admin
           .from("strategic_signals")
-          .select("signal_title, explanation, strategic_implications, confidence, theme_tags, status, priority_score")
+          .select("signal_title, explanation, strategic_implications, confidence, theme_tags, status, priority_score, source_count, velocity_status")
           .eq("user_id", user_id)
           .order("priority_score", { ascending: false })
-          .limit(10) as any,
+          .limit(5) as any,
       ),
       safe(
         admin
           .from("linkedin_posts")
-          .select("post_text, engagement_score, tone, theme, format_type, published_at")
+          .select("post_text, engagement_score, tone, theme, format_type, published_at, hook, framework_type, tracking_status")
           .eq("user_id", user_id)
           .order("published_at", { ascending: false })
-          .limit(5) as any,
+          .limit(10) as any,
       ),
       safe(
         admin
@@ -104,7 +104,7 @@ serve(async (req) => {
           .select("session_date, summary, key_decisions, topics_discussed, actions_committed")
           .eq("user_id", user_id)
           .order("session_date", { ascending: false })
-          .limit(3) as any,
+          .limit(5) as any,
       ),
       safe(
         admin
@@ -115,6 +115,51 @@ serve(async (req) => {
           .order("sent_at", { ascending: false })
           .limit(5) as any,
       ),
+      safe(
+        admin
+          .from("authority_voice_profiles")
+          .select("tone, preferred_structures, storytelling_patterns")
+          .eq("user_id", user_id)
+          .maybeSingle() as any,
+      ),
+      safe(
+        admin
+          .from("score_snapshots")
+          .select("score, tier, components, captured_at")
+          .eq("user_id", user_id)
+          .order("captured_at", { ascending: false })
+          .limit(1)
+          .maybeSingle() as any,
+      ),
+      safe(
+        admin
+          .from("entries")
+          .select("title, entry_type, created_at")
+          .eq("user_id", user_id)
+          .order("created_at", { ascending: false })
+          .limit(10) as any,
+      ),
+      safe(
+        admin
+          .from("entries")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user_id) as any,
+      ),
+      safe(
+        admin
+          .from("linkedin_post_metrics")
+          .select("impressions, engagement_rate, likes, comments, captured_at")
+          .eq("user_id", user_id)
+          .order("captured_at", { ascending: false })
+          .limit(5) as any,
+      ),
+      safe(
+        admin
+          .from("industry_trends")
+          .select("headline, impact_level")
+          .order("created_at", { ascending: false })
+          .limit(3) as any,
+      ),
     ]);
 
     const p: any = profile || {};
@@ -122,6 +167,45 @@ serve(async (req) => {
     const pst: any[] = Array.isArray(posts) ? posts : [];
     const mem: any[] = Array.isArray(memory) ? memory : [];
     const alt: any[] = Array.isArray(alerts) ? alerts : [];
+    const vp: any = voice || {};
+    const sc: any = scoreSnap || {};
+    const ents: any[] = Array.isArray(entriesRecent) ? entriesRecent : [];
+    const entsTotal: number = (entriesCount as any)?.count ?? ents.length;
+    const mets: any[] = Array.isArray(metrics) ? metrics : [];
+    const trnds: any[] = Array.isArray(trends) ? trends : [];
+
+    const publishedCount = pst.filter((x) => !!x.published_at).length;
+    const draftCount = pst.length - publishedCount;
+    const accountDays = p.created_at
+      ? Math.max(1, Math.floor((Date.now() - new Date(p.created_at).getTime()) / 86400000))
+      : null;
+
+    const entriesBlock =
+      ents.length === 0
+        ? "—"
+        : ents.map((e) => `- ${(e.title || "(untitled)").slice(0, 80)} [${e.entry_type || "entry"}]`).join("\n");
+
+    const metricsBlock =
+      mets.length === 0
+        ? "—"
+        : mets
+            .map(
+              (m) =>
+                `- ${m.captured_at?.slice(0, 10) || "—"} · impressions ${m.impressions ?? 0} · eng ${(Number(m.engagement_rate || 0) * 100).toFixed(1)}% · ${m.likes ?? 0}♥ ${m.comments ?? 0}💬`,
+            )
+            .join("\n");
+
+    const trendsBlock =
+      trnds.length === 0 ? "—" : trnds.map((t) => `- ${t.headline} (${t.impact_level || "med"} impact)`).join("\n");
+
+    const skillsBlock = (() => {
+      const sr = p.skill_ratings;
+      if (!sr || typeof sr !== "object") return "—";
+      const entries = Object.entries(sr).filter(([, v]) => typeof v === "number");
+      if (!entries.length) return "—";
+      entries.sort((a, b) => (b[1] as number) - (a[1] as number));
+      return entries.map(([k, v]) => `- ${k}: ${v}/100`).join("\n");
+    })();
 
     const fmtList = (arr: any) =>
       Array.isArray(arr) && arr.length ? arr.join(", ") : "—";
@@ -177,8 +261,31 @@ Sector: ${p.sector_focus || "—"}
 Core Practice: ${p.core_practice || "—"}
 North Star Goal: ${p.north_star_goal || "—"}
 Brand Pillars: ${fmtList(p.brand_pillars)}
+Archetype: ${p.archetype_name || "—"}
+Account age: ${accountDays != null ? `${accountDays} day${accountDays === 1 ? "" : "s"} on Aura` : "—"}
 
-ACTIVE SIGNALS (top 10 by priority):
+CALIBRATION SCORES (skill_ratings, 0-100):
+${skillsBlock}
+
+VOICE PROFILE:
+Tone: ${vp.tone || "—"}
+Preferred structures: ${fmtList(vp.preferred_structures)}
+Storytelling patterns: ${fmtList(vp.storytelling_patterns)}
+
+PRESENCE SCORE: ${sc.score ?? "—"}${sc.tier ? ` (${sc.tier})` : ""}
+
+RECENT CAPTURES (last 10 of ${entsTotal} total):
+${entriesBlock}
+
+RECENT POST METRICS (last 5):
+${metricsBlock}
+
+CONTENT SUMMARY: ${publishedCount} published, ${draftCount} draft${draftCount === 1 ? "" : "s"}
+
+INDUSTRY TRENDS (top 3):
+${trendsBlock}
+
+ACTIVE SIGNALS (top 5 by priority):
 ${signalsBlock}
 
 RECENT CONTENT (last 5 posts):
@@ -230,17 +337,21 @@ Never end a response without this line.
 
     const responseRules = `
 
-RESPONSE RULES (v2 — ALWAYS APPLY):
-1. Every response must end with a specific NEXT STEP — not generic advice, but a concrete action the user can take TODAY.
-2. When recommending content topics, recommend ONE topic, not a list of 5. Reduce decision fatigue.
-3. Always cite which signal or capture your insight is based on. Use bold for signal names.
-4. When the user asks "what should I post about", reference their strongest signal by name, explain why NOW is the timing window, and position them as the contrarian voice.
-5. Never say "Here are 5 ideas" or "Consider these options." ONE recommendation with conviction.
-6. If the user writes in Arabic, respond entirely in Arabic using professional Gulf Arabic tone — one sentence per line, max 10-12 Arabic words per line. Signal names stay in English.
-7. Address the user by their first name naturally (not every message, but when it creates warmth).
-8. If you don't have data to support a claim, say "I don't have intelligence on that yet. Capture an article about it and I'll analyze it."
-9. Never use these phrases: "As an AI", "Great question!", "Here are some suggestions", "You might want to consider", "That's a wonderful insight."
-10. Think like a McKinsey Senior Partner giving private counsel to a peer — direct, evidence-based, no fluff.`;
+RESPONSE RULES (v2 DEFINITIVE — ALWAYS APPLY):
+1. You know EVERYTHING about this user from the context above. Use it. Reference specific signals by name, specific calibration scores with numbers, specific captures by title.
+2. When asked about strengths, give EXACT calibration scores from the CALIBRATION SCORES block — not generic advice.
+3. When reviewing content, compare against the VOICE PROFILE. Be honest about what's weak.
+4. ONE recommendation, not five. Reduce decision fatigue. Never write "Here are 5 ideas" or "Consider these options."
+5. End every response with a specific NEXT STEP line.
+6. Cite signals by name in **bold**. Reference captures by title.
+7. If you don't have data: "I don't have intelligence on that yet. Capture an article about it."
+8. If the user writes in Arabic, respond in professional Gulf Arabic. One sentence per line, max 10-12 Arabic words per line. Signal names stay in English.
+9. Never say: "As an AI", "Great question!", "Here are some suggestions", "You might want to consider", "That's a wonderful insight."
+10. Think like a McKinsey Senior Partner giving private counsel to a peer — direct, evidence-based, no fluff.
+11. When reviewing posts: be HONEST. Weak hook? Say so. Suggest a specific rewrite.
+12. Reference account age and progress when relevant: "You've been on Aura for ${accountDays ?? "—"} days — your top signal '${(sigs[0]?.signal_title) || "—"}' formed from that work."
+13. When recommending content topics, frame as competitive: "No one in your network has covered this angle."
+14. Use ONE serif "key insight" line per response when appropriate, wrapped as: <span class="serif-insight">…</span>. Optionally one italic provocation as: <blockquote>…</blockquote>.`;
 
     const finalSystemPrompt = systemPrompt + responseRules;
 
