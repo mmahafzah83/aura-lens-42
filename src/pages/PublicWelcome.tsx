@@ -17,6 +17,110 @@ const HorizonEye = ({ size = 80, color = BRONZE, pupilR = 5 }: { size?: number; 
   </svg>
 );
 
+/* Character-by-character headline reveal */
+const CharReveal = ({ text, accentWord, className, style }: { text: string; accentWord?: string; className?: string; style?: React.CSSProperties }) => {
+  const chars = Array.from(text);
+  let cursor = 0;
+  return (
+    <h1 aria-label={text} className={className} style={style}>
+      {text.split(/(\s+)/).map((word, wi) => {
+        const isAccent = accentWord && word === accentWord;
+        return (
+          <span key={wi} style={{ whiteSpace: "nowrap", color: isAccent ? BRONZE : undefined }}>
+            {Array.from(word).map((ch, ci) => {
+              const i = cursor++;
+              if (/\s/.test(ch)) return ch;
+              return (
+                <span
+                  key={ci}
+                  aria-hidden
+                  className="pw-char"
+                  style={{ display: "inline-block", animationDelay: `${i * 40}ms` }}
+                >
+                  {ch}
+                </span>
+              );
+            })}
+          </span>
+        );
+      })}
+    </h1>
+  );
+};
+
+/* Massive count-up stat row */
+const MassiveStat = ({ value, suffix = "%", literal, desc, accent, source }: { value?: number; suffix?: string; literal?: string; desc: string; accent?: boolean; source?: string }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  const [landed, setLanded] = useState(false);
+  useEffect(() => {
+    if (!ref.current) return;
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { setVisible(true); io.disconnect(); }
+    }, { threshold: 0.5 });
+    io.observe(ref.current);
+    return () => io.disconnect();
+  }, []);
+  const counted = useCountUp(value ?? 0, visible);
+  useEffect(() => {
+    if (!visible) return;
+    if (literal != null) { setLanded(true); return; }
+    if (value != null && counted >= value) {
+      const t = setTimeout(() => setLanded(true), 30);
+      return () => clearTimeout(t);
+    }
+  }, [visible, counted, value, literal]);
+  return (
+    <div ref={ref} className="reveal" style={{
+      margin: "48px 0", textAlign: "center",
+      borderLeft: accent ? `3px solid ${BRONZE}` : undefined,
+      paddingLeft: accent ? 16 : 0,
+    }}>
+      <div className={landed ? "pw-stat-pulse" : ""} style={{
+        fontFamily: "'Cormorant Garamond', Georgia, serif",
+        fontSize: "clamp(40px, 10vw, 72px)",
+        color: BRONZE, fontWeight: 300, lineHeight: 1,
+      }}>
+        {literal ?? `${counted}${suffix}`}
+      </div>
+      <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#888", lineHeight: 1.5, marginTop: 16, maxWidth: 240, marginLeft: "auto", marginRight: "auto" }}>
+        {desc}
+      </div>
+      {source && <div style={{ fontSize: 11, color: "#444", marginTop: 8 }}>{source}</div>}
+    </div>
+  );
+};
+
+/* Kinetic Invisible → Undeniable split */
+const KineticSplit = () => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    if (!ref.current) return;
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { setOn(true); io.disconnect(); }
+    }, { threshold: 0.5 });
+    io.observe(ref.current);
+    return () => io.disconnect();
+  }, []);
+  return (
+    <div ref={ref} aria-label="From invisible to undeniable" className="pw-split" style={{
+      display: "flex", alignItems: "center", justifyContent: "center",
+      gap: 24, margin: "20px 0 48px", flexWrap: "nowrap",
+    }}>
+      <span className={`pw-split-left ${on ? "on" : ""}`} style={{
+        fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "clamp(22px, 4vw, 32px)",
+        color: "#ededed", fontWeight: 300,
+      }}>Invisible</span>
+      <span aria-hidden className={`pw-split-bar ${on ? "on" : ""}`} />
+      <span className={`pw-split-right ${on ? "on" : ""}`} style={{
+        fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "clamp(22px, 4vw, 32px)",
+        color: BRONZE, fontStyle: "italic", fontWeight: 300,
+      }}>Undeniable</span>
+    </div>
+  );
+};
+
 /* ── Count up hook (respects reduced motion) ── */
 function useCountUp(target: number, start: boolean, duration = 1200) {
   const [value, setValue] = useState(0);
@@ -291,7 +395,6 @@ export default function PublicWelcome() {
     const onScroll = () => {
       const max = document.documentElement.scrollHeight - window.innerHeight;
       const p = max > 0 ? Math.min(window.scrollY / max, 1) : 0;
-      setPupilR(5 + p * 3);
       setScrollPct(p * 100);
       const h = window.innerHeight || 1;
       setHeroScroll(Math.min(window.scrollY / h, 1));
@@ -300,6 +403,28 @@ export default function PublicWelcome() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // 3-zone pupil: hero=4, middle=6, final CTA=5
+  const heroZoneRef = useRef<HTMLElement>(null);
+  const midZoneRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const hero = heroZoneRef.current;
+    const mid = midZoneRef.current;
+    const final = finalCtaRef.current;
+    if (!hero || !mid || !final) return;
+    const inView = { hero: true, mid: false, final: false };
+    const update = () => {
+      if (inView.final) setPupilR(5);
+      else if (inView.mid) setPupilR(6);
+      else setPupilR(4);
+    };
+    const make = (key: "hero" | "mid" | "final", el: Element) =>
+      new IntersectionObserver(([e]) => { inView[key] = e.isIntersecting; update(); }, { threshold: 0.3 });
+    const ios = [make("hero", hero), make("mid", mid), make("final", final)];
+    ios[0].observe(hero); ios[1].observe(mid); ios[2].observe(final);
+    update();
+    return () => ios.forEach((io) => io.disconnect());
+  }, [contentRevealed]);
 
   // Slider response crossfade
   useEffect(() => {
@@ -345,7 +470,7 @@ export default function PublicWelcome() {
 
       <main>
         {/* HERO */}
-        <section style={{ position: "relative", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px", overflow: "hidden" }}>
+        <section ref={heroZoneRef} style={{ position: "relative", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px", overflow: "hidden" }}>
           {/* ambient bronze glow */}
           <div aria-hidden style={{
             position: "absolute", top: "38%", left: "50%", transform: "translate(-50%, -50%)",
@@ -360,12 +485,13 @@ export default function PublicWelcome() {
             }}>
               <HorizonEye size={80} pupilR={pupilR} />
             </div>
-            <h1 style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300,
-              fontSize: "clamp(32px, 5vw, 48px)", color: "#fff", textAlign: "center", margin: 0, lineHeight: 1.15,
-            }}>
-              How visible is your expertise right now?
-            </h1>
+            <CharReveal
+              text="How visible is your expertise right now?"
+              style={{
+                fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300,
+                fontSize: "clamp(32px, 5vw, 48px)", color: "#fff", textAlign: "center", margin: 0, lineHeight: 1.15,
+              }}
+            />
             <div className="pw-fade-up" style={{ width: "100%", maxWidth: 460, animationDelay: "0.8s", opacity: 0 }}>
               <input
                 type="range" min={0} max={100} value={slider}
@@ -410,7 +536,7 @@ export default function PublicWelcome() {
         <section style={{ background: BG, padding: "100px 24px" }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <p className="reveal" style={{ fontSize: 10, letterSpacing: "2.5px", color: BRONZE, fontWeight: 600, margin: 0 }}>THE REAL PROBLEM</p>
-            <h2 className="reveal reveal-d1" style={{
+            <h2 className="reveal reveal-d1 pw-illuminate" style={{
               fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300,
               fontSize: "clamp(28px, 5vw, 44px)", color: "#fff", lineHeight: 1.2, marginTop: 20,
             }}>
@@ -447,17 +573,17 @@ export default function PublicWelcome() {
         <SectionDivider />
 
         {/* STATS */}
-        <section style={{ background: BG_ALT, padding: "100px 24px" }}>
+        <section ref={midZoneRef} style={{ background: BG_ALT, padding: "100px 24px" }}>
           <div style={{ maxWidth: 700, margin: "0 auto" }}>
             <p className="reveal" style={{ fontSize: 10, letterSpacing: "2.5px", color: BRONZE, fontWeight: 600, margin: 0 }}>THE NUMBERS DON'T LIE</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-10">
-              <StatCard value={73} desc="of decision-makers trust expertise content over marketing" />
-              <StatCard value={82} desc="trust companies more when leaders are visible online" />
-              <StatCard value={54} desc="have rejected candidates for invisible online presence" />
-              <StatCard literal="<3%" desc="of LinkedIn's 1B+ users create original content weekly" />
-              <StatCard value={44} desc="of company value is tied to its leader's reputation" fullWidth />
+            <div className="mt-10">
+              <MassiveStat value={73} desc="of decision-makers trust expertise content over marketing" />
+              <MassiveStat value={82} desc="trust companies more when leaders are visible online" />
+              <MassiveStat value={54} accent desc="have rejected candidates for invisible online presence" />
+              <MassiveStat literal="<3%" desc="of LinkedIn's 1B+ users create original content weekly" />
+              <MassiveStat value={44} desc="of company value is tied to its leader's reputation" />
             </div>
-            <p className="reveal" style={{ fontSize: 11, color: "#9a9a9a", marginTop: 20 }}>
+            <p className="reveal" style={{ fontSize: 11, color: "#9a9a9a", marginTop: 20, textAlign: "center" }}>
               Edelman-LinkedIn 2024/2025 · Weber Shandwick · Brunswick Group
             </p>
             <p className="reveal reveal-d1" style={{ fontSize: 17, color: "#ededed", lineHeight: 1.75, marginTop: 28 }}>
@@ -469,8 +595,9 @@ export default function PublicWelcome() {
         <SectionDivider />
 
         {/* BUILDER */}
-        <section style={{ background: BG_WARM, padding: "100px 24px" }}>
-          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+        <section style={{ background: BG_WARM, padding: "100px 24px", position: "relative", overflow: "hidden" }}>
+          <div aria-hidden className="pw-watermark">AURA</div>
+          <div style={{ maxWidth: 680, margin: "0 auto", position: "relative" }}>
             <p className="reveal" style={{ fontSize: 10, letterSpacing: "2.5px", color: BRONZE, fontWeight: 600, margin: 0 }}>WHY I BUILT THIS</p>
             <h2 className="reveal reveal-d1" style={{
               fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300,
@@ -530,8 +657,9 @@ export default function PublicWelcome() {
               fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300,
               fontSize: "clamp(26px, 4.5vw, 38px)", color: "#fff", marginTop: 20, marginBottom: 48,
             }}>
-              From invisible to <em style={{ color: BRONZE, fontStyle: "italic" }}>undeniable</em>.
+              From invisible to undeniable.
             </h2>
+            <KineticSplit />
             <Milestone preFilled label="DAY 1" title="Aura learns who you are." desc="Your strengths. Your sector. Your voice. By the end of your first session, Aura knows what makes you different from every other professional in your market." />
             <Milestone preFilled label="WEEK 1" title="Your first post goes live." desc="A LinkedIn post that sounds like you — not like AI. About a signal Aura found in what you read. Your expertise, visible for the first time to people who've never met you." />
             <Milestone label="MONTH 1" title="People start to notice." desc="Consistent, intelligent content builds recognition. Decision-makers in your sector start seeing your name next to insights they care about." />
@@ -789,5 +917,51 @@ const PW_CSS = `
     .pw-eye-parallax { transform: none !important; }
     .pw-divider-sweep { transform: scaleX(1) !important; transition: none !important; }
     .pw-tw .pw-tw-w { opacity: 1 !important; transition: none !important; }
+    .pw-char { opacity: 1 !important; transform: none !important; animation: none !important; }
+    .pw-illuminate { opacity: 1 !important; }
+    .pw-split-left, .pw-split-right { opacity: 1 !important; transform: none !important; text-shadow: none !important; }
+    .pw-split-bar { height: 60px !important; transition: none !important; }
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* Character-by-character headline reveal */
+  .pw-char {
+    opacity: 0;
+    transform: translateY(8px);
+    animation: pw-charIn 0.4s ease-out forwards;
+    will-change: opacity, transform;
+  }
+  @keyframes pw-charIn { to { opacity: 1; transform: translateY(0); } }
+
+  /* Pain headline dim → bright on scroll */
+  .pw-illuminate { opacity: 0.3; transition: opacity 0.6s ease-out; }
+  .pw-illuminate.visible { opacity: 1; }
+
+  /* Kinetic split */
+  .pw-split-left { opacity: 1; transform: translateX(0); transition: opacity 600ms ease-out, transform 600ms ease-out; }
+  .pw-split-left.on { opacity: 0.4; transform: translateX(-20px); }
+  .pw-split-bar {
+    display: inline-block; width: 2px; height: 0; background: ${BRONZE};
+    transition: height 400ms ease-out 200ms;
+  }
+  .pw-split-bar.on { height: 60px; }
+  .pw-split-right { opacity: 1; text-shadow: 0 0 0 transparent; transition: text-shadow 600ms ease-out 200ms; }
+  .pw-split-right.on { text-shadow: 0 0 20px rgba(176,141,58,0.35); }
+
+  /* AURA watermark behind builder */
+  .pw-watermark {
+    position: absolute; left: 0; right: 0; top: 50%;
+    transform: translateY(-50%);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: clamp(80px, 15vw, 140px);
+    font-weight: 300;
+    color: rgba(176,141,58,0.04);
+    text-align: center; width: 100%;
+    pointer-events: none; user-select: none;
+    letter-spacing: 0.05em;
   }
 `;
