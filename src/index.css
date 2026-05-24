@@ -88,8 +88,8 @@ html.dark  { background-color: var(--paper, #14110C); }
   --ink: #FBF8F1;
   --ink-2: #E2D9C5;
   /* A11y: meet WCAG AA on --paper #14110C */
-  --ink-3: #B8AE99;
-  --ink-4: #8A8170;
+  --ink-3: #C9C0AC;
+  --ink-4: #A89F8A;
   --ink-5: #5A5347;
 
   /* Bronze (primary brand) — dark mode default */
@@ -896,6 +896,13 @@ html.dark  { background-color: var(--paper, #14110C); }
   transition: border-color 0.15s, background 0.15s, box-shadow 0.15s !important;
 }
 .aura-create-input::placeholder { color: #B4B0AA !important; }
+
+/* Dark-mode placeholder contrast (WCAG AA-friendly warm parchment at 60%) */
+.dark ::placeholder,
+[data-theme="dark"] ::placeholder {
+  color: rgba(226, 217, 197, 0.55);
+  opacity: 1;
+}
 .aura-create-input:focus,
 .aura-create-input:focus-visible {
   border-color: var(--brand) !important;

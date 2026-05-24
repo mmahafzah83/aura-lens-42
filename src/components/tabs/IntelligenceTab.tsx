@@ -402,7 +402,7 @@ const SignalDetailPanel = ({
           )}
 
           {/* Built from these sources */}
-          <div style={{ marginBottom: 20 }}>
+          <div id="signal-evidence-section" style={{ marginBottom: 20, scrollMarginTop: 12 }}>
             <p style={{ fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 8 }}>
               Built from {uniqueEvidence.length} source{uniqueEvidence.length === 1 ? "" : "s"}
             </p>
@@ -1274,12 +1274,12 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                           {(whyNow || yourMove) && (
                             <div style={{ fontSize: 12, color: "var(--ink-4)", lineHeight: 1.4, margin: "6px 0 8px" }}>
                               {whyNow && (
-                                <div style={{ overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical" }}>
+                                <div style={{ overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>
                                   <span style={{ color: "var(--ink-3)", fontWeight: 600 }}>Why now: </span>{whyNow}
                                 </div>
                               )}
                               {yourMove && (
-                                <div style={{ marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical" }}>
+                                <div style={{ marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>
                                   <span style={{ color: "var(--ink-3)", fontWeight: 600 }}>Your move: </span>{yourMove}
                                 </div>
                               )}
@@ -1295,7 +1295,14 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                               Draft post →
                             </button>
                             <button
-                              onClick={(e) => { e.stopPropagation(); setSelectedSignalId(s.id); }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedSignalId(s.id);
+                                setTimeout(() => {
+                                  const ev = document.getElementById("signal-evidence-section");
+                                  if (ev) ev.scrollIntoView({ behavior: "smooth", block: "start" });
+                                }, 120);
+                              }}
                               style={{ fontSize: 12, padding: "4px 10px", borderRadius: 4, border: "0.5px solid var(--surface-ink-subtle)", background: "transparent", color: "var(--ink-4)", cursor: "pointer" }}
                             >
                               View evidence

@@ -873,9 +873,17 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               variant="ghost"
               size="sm"
               onClick={handleUploadClick}
+              disabled={uploading}
               style={{ borderRadius: 6, padding: "10px 22px" }}
             >
-              Upload LinkedIn Analytics (.xlsx)
+              {uploading ? (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Processing your analytics...
+                </span>
+              ) : (
+                "Upload LinkedIn Analytics (.xlsx)"
+              )}
             </AuraButton>
           </div>
 
@@ -883,7 +891,17 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             ref={fileInputRef}
             type="file"
             accept=".xlsx"
-            onChange={handleFileSelect}
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              if (!file.name.toLowerCase().endsWith(".xlsx")) {
+                toast.error("Please upload a .xlsx file");
+                return;
+              }
+              setSelectedFile(file);
+              // auto-upload in empty state so user sees progress immediately
+              setTimeout(() => handleUpload(), 0);
+            }}
             className="hidden"
           />
         </section>
