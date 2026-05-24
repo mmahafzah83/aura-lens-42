@@ -1227,16 +1227,33 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        className="relative flex flex-col w-full bg-background rounded-t-2xl overflow-hidden"
+        className="relative flex flex-col w-full rounded-t-2xl overflow-hidden aura-chat-dark"
         style={{
           height: "85vh",
           zIndex: 1000,
+          background: "#0d0d0b",
+          color: "rgba(230, 222, 205, 0.95)",
           transform: swipeY > 0 ? `translateY(${swipeY}px)` : "translateY(0)",
           transition: swipeY > 0 ? "none" : "transform 0.3s ease-out",
           opacity: swipeY > 0 ? Math.max(0.3, 1 - swipeY / 400) : 1,
           willChange: "unset",
         }}
       >
+        {/* Keyframes for Horizon Eye pulse */}
+        <style>{`
+          @keyframes eyePulse {
+            0%, 100% { opacity: 0.45; filter: brightness(1); }
+            50% { opacity: 0.9; filter: brightness(1.3); }
+          }
+          .aura-chat-dark textarea, .aura-chat-dark input[type="text"] {
+            background: rgba(255,255,255,0.04) !important;
+            color: rgba(230,222,205,0.95) !important;
+            border-color: rgba(176,141,58,0.25) !important;
+          }
+          .aura-chat-dark textarea::placeholder { color: rgba(230,222,205,0.4) !important; }
+        `}</style>
+        {/* Horizon Eye */}
+        {viewMode === "chat" && <HorizonEye fast={isLoading} />}
         {/* Swipe handle */}
         <div className="flex justify-center pt-2.5 pb-1 cursor-grab">
           <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
