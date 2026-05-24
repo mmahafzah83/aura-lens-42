@@ -82,7 +82,7 @@ const HorizonEye = ({ fast }: { fast?: boolean }) => (
   <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 6px" }}>
     <span style={{
       display: "inline-flex",
-      animation: `eyePulse ${fast ? "1.5s" : "3s"} ease-in-out infinite`,
+      animation: `eyePulse ${fast ? "1s" : "3s"} ease-in-out infinite`,
     }}>
       <AuraLogo size={26} variant="dark" />
     </span>
@@ -163,6 +163,50 @@ const DynamicActions = ({ state, onAction, disabled }: { state: string; onAction
     })}
   </div>
 );
+
+/* ── Whisper suggestions — text-with-arrow, not chips (PART 3) ── */
+const WhisperSuggestions = ({ state, onAction, disabled }: { state: string; onAction: (p: string) => void; disabled?: boolean }) => {
+  const items = STATE_ACTIONS[state] || STATE_ACTIONS.fresh;
+  return (
+    <div style={{ margin: "16px 0 6px", display: "flex", flexDirection: "column", gap: 2 }}>
+      {items.map((a) => (
+        <div
+          key={a.label}
+          onClick={() => {
+            if (disabled) return;
+            if (a.prompt === "__OPEN_CAPTURE__") {
+              window.dispatchEvent(new CustomEvent("aura:open-capture"));
+            } else {
+              onAction(a.prompt);
+            }
+          }}
+          style={{
+            fontSize: 12,
+            color: "rgba(230, 222, 205, 0.32)",
+            padding: "6px 0",
+            cursor: disabled ? "not-allowed" : "pointer",
+            transition: "all 0.25s ease",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+          onMouseEnter={(e) => {
+            if (disabled) return;
+            (e.currentTarget as HTMLDivElement).style.color = "#D4B056";
+            (e.currentTarget as HTMLDivElement).style.transform = "translateX(4px)";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLDivElement).style.color = "rgba(230, 222, 205, 0.32)";
+            (e.currentTarget as HTMLDivElement).style.transform = "translateX(0)";
+          }}
+        >
+          <span style={{ fontSize: 12, opacity: 0.5 }}>→</span>
+          <span>{a.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 /* ── Always-on Context Strip (signals + identity pills) ── */
 interface TopSignal { id: string; signal_title: string; }
@@ -1308,7 +1352,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
         style={{
           height: "85vh",
           zIndex: 1000,
-          background: "#0d0d0b",
+          background: "#0a0908",
           color: "rgba(230, 222, 205, 0.95)",
           transform: swipeY > 0 ? `translateY(${swipeY}px)` : "translateY(0)",
           transition: swipeY > 0 ? "none" : "transform 0.3s ease-out",
@@ -1316,11 +1360,35 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
           willChange: "unset",
         }}
       >
+        {/* Ambient glow — subtle radial light behind the Eye (PART 1A) */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            top: -120,
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: 520,
+            height: 520,
+            background: "radial-gradient(circle, rgba(176,141,58,0.08) 0%, rgba(176,141,58,0) 60%)",
+            pointerEvents: "none",
+            opacity: 0.7,
+          }}
+        />
         {/* Keyframes for Horizon Eye pulse */}
         <style>{`
           @keyframes eyePulse {
             0%, 100% { opacity: 0.45; filter: brightness(1); }
             50% { opacity: 0.9; filter: brightness(1.3); }
+          }
+          @keyframes auraMsgIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes auraSignalGlow {
+            0% { box-shadow: 0 0 0 0 rgba(176,141,58,0); }
+            50% { box-shadow: 0 0 12px 2px rgba(176,141,58,0.12); }
+            100% { box-shadow: 0 0 0 0 rgba(176,141,58,0); }
           }
           .aura-chat-dark textarea, .aura-chat-dark input[type="text"] {
             background: rgba(255,255,255,0.04) !important;
@@ -1328,6 +1396,37 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
             border-color: rgba(176,141,58,0.25) !important;
           }
           .aura-chat-dark textarea::placeholder { color: rgba(230,222,205,0.4) !important; }
+          .aura-chat-dark .aura-msg .serif-insight {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 16px;
+            color: rgba(237, 237, 237, 0.95);
+            line-height: 1.4;
+            display: block;
+            margin-bottom: 4px;
+          }
+          .aura-chat-dark .aura-msg .signal-ref,
+          .aura-chat-dark .aura-msg strong {
+            color: #D4B056;
+            font-weight: 500;
+          }
+          .aura-chat-dark .aura-msg .dim-ref { color: rgba(212, 176, 86, 0.75); }
+          .aura-chat-dark .aura-msg .provocation,
+          .aura-chat-dark .aura-msg blockquote {
+            font-style: italic;
+            color: rgba(230, 222, 205, 0.5);
+            border-left: 2px solid rgba(176, 141, 58, 0.25);
+            padding-left: 12px;
+            display: block;
+            margin: 10px 0;
+            line-height: 1.6;
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .aura-chat-dark *, .aura-chat-dark *::before, .aura-chat-dark *::after {
+              animation-duration: 0.01ms !important;
+              animation-iteration-count: 1 !important;
+              transition-duration: 0.01ms !important;
+            }
+          }
         `}</style>
         {/* Horizon Eye */}
         {viewMode === "chat" && <HorizonEye fast={isLoading} />}
@@ -1818,8 +1917,8 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                             </div>
                           )}
 
-                          {/* Dynamic action buttons */}
-                          <DynamicActions state={userState} onAction={(p) => send(p)} disabled={isLoading} />
+                          {/* Whisper suggestions (PART 3) */}
+                          <WhisperSuggestions state={userState} onAction={(p) => send(p)} disabled={isLoading} />
                         </>
                       )}
                     </div>
