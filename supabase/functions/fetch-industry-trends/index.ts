@@ -766,13 +766,13 @@ For EACH article return:
 - signal_type: ONE of [Trend, Insight, Disruption, Benchmark, Risk].
 - opportunity_type: ONE of [Content, Consulting, Product, Partnership, Internal] — the most natural way THIS consultant can act on it.
 - action_recommendation: <= 200 chars. MUST contain THREE elements: (1) a specific target audience (CFO/COO/board/regulator/specific industry leader), (2) a concrete action verb (engage/diagnose/propose/build/pilot/launch), (3) the business value or outcome.
-    GOOD: "Engage utility CFOs to assess digital twin ROI and position a predictive maintenance offering."
-    GOOD: "Build a 90-day diagnostic offer for water utilities exposed to the new EU regulation; lead with risk quantification."
+    GOOD: "Engage sector CFOs to assess digital twin ROI and position a predictive maintenance offering."
+    GOOD: "Build a 90-day diagnostic offer for firms exposed to the new regulation; lead with risk quantification."
     BAD: "Consider exploring digital twins." / "Stay informed." / "Read more." / "Position digital transformation."
 - content_angle: <= 200 chars. A LinkedIn-ready angle that ONLY this consultant could credibly write. Must be specific, sharp, and engaging — preferably contrarian or counted.
-    GOOD: "Why 70% of utility transformations fail before scaling — and how to fix it."
-    GOOD: "3 things water utility CFOs get wrong about digital twins — and the one number that fixes the conversation."
-    BAD: "Digital transformation in utilities." / "AI in operations." / "The future of utilities." / "Why this trend is important."`,
+    GOOD: "Why 70% of large transformations fail before scaling — and how to fix it."
+    GOOD: "3 things CFOs get wrong about digital twins — and the one number that fixes the conversation."
+    BAD: "Digital transformation." / "AI in operations." / "The future of the sector." / "Why this trend is important."`,
         },
         {
           role: "user",
