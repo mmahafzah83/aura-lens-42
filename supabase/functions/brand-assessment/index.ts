@@ -84,14 +84,16 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { answers, auditScores } = await req.json();
+    const { answers, auditScores, sector } = await req.json();
 
     // Build audit scores context for the AI
     const auditContext = typeof auditScores === "string"
       ? auditScores
       : `The user's Objective Evidence Audit scores are: ${JSON.stringify(auditScores, null, 2)}`;
 
-    const userPrompt = `${auditContext}
+    const userPrompt = `User's sector: ${sector || "Not specified"}
+
+${auditContext}
 
 Here are the user's Brand Assessment answers:
 ${JSON.stringify(answers, null, 2)}
