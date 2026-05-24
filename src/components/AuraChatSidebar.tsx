@@ -486,6 +486,22 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
   const [vaultLoading, setVaultLoading] = useState(false);
   const [expandedVaultId, setExpandedVaultId] = useState<string | null>(null);
   const [savedFlash, setSavedFlash] = useState<Set<number>>(new Set());
+  // ── First-open intelligence context ──
+  const [firstOpenCtx, setFirstOpenCtx] = useState<{
+    loaded: boolean;
+    isFirst: boolean;
+    topDims: string[];
+    level: string | null;
+    sector: string | null;
+    northStar: string | null;
+    topSignalTitle: string | null;
+    topSignalConfidence: number | null;
+    topSignalSources: number | null;
+  }>({ loaded: false, isFirst: false, topDims: [], level: null, sector: null, northStar: null, topSignalTitle: null, topSignalConfidence: null, topSignalSources: null });
+  const [northStarInput, setNorthStarInput] = useState("");
+  const [savingNorthStar, setSavingNorthStar] = useState(false);
+  // ── Milestone card (dismissable) ──
+  const [milestone, setMilestone] = useState<{ message: string; cta?: { label: string; prompt: string } } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
