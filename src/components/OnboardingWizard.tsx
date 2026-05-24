@@ -4,33 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, X } from "lucide-react";
+import { SECTORS } from "@/constants/sectors";
 
 interface Props {
   userId: string;
   onComplete: () => void;
 }
-
-const SECTORS = [
-  "Technology & IT",
-  "Financial Services",
-  "Energy & Utilities",
-  "Healthcare & Pharma",
-  "Government & Public Sector",
-  "Education & Academia",
-  "Real Estate & Construction",
-  "Telecommunications",
-  "Oil & Gas",
-  "Retail & E-commerce",
-  "Manufacturing",
-  "Professional Services & Consulting",
-  "Transportation & Logistics",
-  "Media & Entertainment",
-  "Hospitality & Tourism",
-  "Agriculture & Food",
-  "Defense & Security",
-  "Non-profit & Development",
-  "Other",
-];
 
 const PILLARS = [
   "Digital Transformation",
