@@ -122,7 +122,7 @@ const KineticSplit = () => {
 };
 
 /* ── Count up hook (respects reduced motion) ── */
-function useCountUp(target: number, start: boolean, duration = 1200) {
+function useCountUp(target: number, start: boolean, duration = 2000) {
   const [value, setValue] = useState(0);
   const startedRef = useRef(false);
   useEffect(() => {
@@ -133,7 +133,8 @@ function useCountUp(target: number, start: boolean, duration = 1200) {
     const t0 = performance.now();
     const tick = (now: number) => {
       const p = Math.min((now - t0) / duration, 1);
-      const eased = 1 - Math.pow(1 - p, 3);
+      // cubic-bezier(0.22, 0.61, 0.36, 1)-ish — decelerate toward end
+      const eased = 1 - Math.pow(1 - p, 3.2);
       setValue(Math.round(target * eased));
       if (p < 1) requestAnimationFrame(tick);
     };
