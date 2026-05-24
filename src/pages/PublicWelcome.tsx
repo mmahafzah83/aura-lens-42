@@ -992,16 +992,16 @@ const PW_CSS = `
 
   /* Kinetic split — Invisible fades to nothing, Undeniable rises */
   .pw-split-left {
-    opacity: 0.5; filter: blur(0); transform: translateY(0);
+    opacity: 0.7; filter: blur(0); transform: translateY(0);
     will-change: opacity, filter, transform;
   }
   .pw-split-left.on {
     animation: pw-fadeToInvisible 4s ease-in-out forwards;
   }
   @keyframes pw-fadeToInvisible {
-    0%   { opacity: 0.5; filter: blur(0); transform: translateY(0); }
-    35%  { opacity: 0.5; filter: blur(0); transform: translateY(0); }
-    100% { opacity: 0.05; filter: blur(2px); transform: translateY(-8px); }
+    0%   { opacity: 0.7; filter: blur(0); transform: translateY(0); }
+    35%  { opacity: 0.7; filter: blur(0); transform: translateY(0); }
+    100% { opacity: 0.08; filter: blur(2px); transform: translateY(-8px); }
   }
   .pw-split-right {
     opacity: 0; transform: translateY(16px);
