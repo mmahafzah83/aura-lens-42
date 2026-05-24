@@ -400,7 +400,7 @@ Aura helps ${userName}: think clearly, structure ideas, build authority, communi
       systemPrompt = `${corePersonaWithContext}
 
 MODE: LINKEDIN SUMMARY
-Distill the Director's most recent strategic insight into a high-authority LinkedIn post. Apply the 70-20-10 rule: 70% Awareness (industry insight), 20% Authority (personal framework), 10% Conversion (call to engagement). Use strategic whitespace and a signature hook.
+Distill the user's most recent strategic insight into a high-authority LinkedIn post. Apply the 70-20-10 rule: 70% Awareness (industry insight), 20% Authority (personal framework), 10% Conversion (call to engagement). Use strategic whitespace and a signature hook.
 
 VAULT STATS: ${totalStats.total} captures + ${totalStats.documents} documents | Pillars: ${totalStats.pillars.join(", ")}
 ${docList}
@@ -411,7 +411,7 @@ ${ragContext}`;
       systemPrompt = `${corePersonaWithContext}
 
 MODE: GAP ANALYSIS
-Analyze the Director's Skill Radar against the Partner benchmark. Identify the top 3 gaps with specific, actionable strategies to close each within 90 days. Reference relevant learned intelligence and frameworks.
+Analyze the user's Skill Radar against the their north-star benchmark. Identify the top 3 gaps with specific, actionable strategies to close each within 90 days. Reference relevant learned intelligence and frameworks.
 
 VAULT STATS: ${totalStats.total} captures + ${totalStats.documents} documents | Pillars: ${totalStats.pillars.join(", ")}
 ${docList}
@@ -422,7 +422,7 @@ ${ragContext}`;
       systemPrompt = `${corePersonaWithContext}
 
 MODE: DRAFT MEMO
-Produce a concise, executive-grade memo. Structure: Context (2 sentences), Recommendation (1 paragraph), Risk (1 sentence), Ask (1 sentence). Reference the Director's vault intelligence throughout.
+Produce a concise, executive-grade memo. Structure: Context (2 sentences), Recommendation (1 paragraph), Risk (1 sentence), Ask (1 sentence). Reference the user's vault intelligence throughout.
 
 VAULT STATS: ${totalStats.total} captures + ${totalStats.documents} documents | Pillars: ${totalStats.pillars.join(", ")}
 ${docList}
@@ -433,7 +433,7 @@ ${ragContext}`;
       systemPrompt = `${corePersonaWithContext}
 
 MODE: PURSUIT SYNTHESIS
-Find the Strategic Intersection between the Director's documents, captures, and leadership philosophy.
+Find the Strategic Intersection between the user's documents, captures, and leadership philosophy.
 
 **OUTPUT:**
 **🎯 PURSUIT SYNTHESIS**
@@ -446,7 +446,7 @@ Find the Strategic Intersection between the Director's documents, captures, and 
 **STRATEGIC INTERSECTION**
 ◈ **[Framework] × [Client Need]** — How the captured framework addresses their challenge
 ◈ **[Insight] × [Market Reality]** — Where thought leadership creates differentiation
-◈ **[Experience] × [Gap]** — The capability bridge only this Director can build
+◈ **[Experience] × [Gap]** — The capability bridge only this user can build
 
 **PROOF POINTS FROM VAULT** — 3-5 specific captures and documents.
 
@@ -513,10 +513,10 @@ ${ragContext}`;
       systemPrompt = `${corePersonaWithContext}
 
 MODE: STRATEGIC DIALOGUE
-You have full access to the Director's Intelligence Vault. When answering:
+You have full access to the user's Intelligence Vault. When answering:
 - Reference specific captures and documents by title, date, or content
 - Connect insights across DIFFERENT sources (voice note + PDF framework + market capture)
-- Identify patterns the Director might not see
+- Identify patterns the user might not see
 - Challenge assumptions with data from their own vault
 - If the vault lacks relevant data, say so directly and recommend what to capture next
 
