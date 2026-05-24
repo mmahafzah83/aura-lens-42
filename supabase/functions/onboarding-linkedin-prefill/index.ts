@@ -6,6 +6,74 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Canonical sector list — must stay in sync with src/constants/sectors.ts
+const CANONICAL_SECTORS = [
+  "Consulting & Professional Services",
+  "Energy & Utilities",
+  "Water & Infrastructure",
+  "Oil & Gas",
+  "Finance & Banking",
+  "Government & Public Sector",
+  "Technology & IT",
+  "Healthcare & Pharma",
+  "Real Estate & Construction",
+  "Telecom",
+  "Education & Academia",
+  "Manufacturing & Industrial",
+  "Defense & Aerospace",
+  "Retail & Consumer",
+  "Transportation & Logistics",
+  "Other",
+];
+
+const SECTOR_MAP: Record<string, string> = {
+  "consulting": "Consulting & Professional Services",
+  "professional services": "Consulting & Professional Services",
+  "energy": "Energy & Utilities",
+  "utilities": "Energy & Utilities",
+  "water": "Water & Infrastructure",
+  "water utilities": "Water & Infrastructure",
+  "oil and gas": "Oil & Gas",
+  "petroleum": "Oil & Gas",
+  "finance": "Finance & Banking",
+  "financial services": "Finance & Banking",
+  "banking": "Finance & Banking",
+  "government": "Government & Public Sector",
+  "public sector": "Government & Public Sector",
+  "technology": "Technology & IT",
+  "tech": "Technology & IT",
+  "it": "Technology & IT",
+  "healthcare": "Healthcare & Pharma",
+  "health & life sciences": "Healthcare & Pharma",
+  "pharma": "Healthcare & Pharma",
+  "pharmaceutical": "Healthcare & Pharma",
+  "real estate": "Real Estate & Construction",
+  "construction": "Real Estate & Construction",
+  "telecom": "Telecom",
+  "telecommunications": "Telecom",
+  "tmt": "Telecom",
+  "education": "Education & Academia",
+  "academia": "Education & Academia",
+  "manufacturing": "Manufacturing & Industrial",
+  "industrial": "Manufacturing & Industrial",
+  "defense": "Defense & Aerospace",
+  "aerospace": "Defense & Aerospace",
+  "retail": "Retail & Consumer",
+  "consumer": "Retail & Consumer",
+  "transportation": "Transportation & Logistics",
+  "logistics": "Transportation & Logistics",
+};
+
+function normalizeSector(raw: unknown): string {
+  if (typeof raw !== "string") return "Other";
+  const trimmed = raw.trim();
+  if (!trimmed) return "Other";
+  const lower = trimmed.toLowerCase();
+  if (SECTOR_MAP[lower]) return SECTOR_MAP[lower];
+  const exact = CANONICAL_SECTORS.find((s) => s.toLowerCase() === lower);
+  return exact || "Other";
+}
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -49,7 +117,7 @@ serve(async (req) => {
             {
               role: "system",
               content:
-                "The text below is pasted by the user from their LinkedIn profile. It may include their headline, about section, or a free-text description of their role. Extract what you can. Return ONLY valid JSON with fields: first_name, last_name, firm, level, core_practice, sector_focus, headline, about_summary, location, skills (array of up to 5). For sector_focus, map to one of: Energy & Utilities, Financial Services, Government, Healthcare, Technology, Consulting, Manufacturing, Real Estate, Telecommunications, Education, Other. If a field is not found, return null. No markdown backticks.",
+                `The text below is pasted by the user from their LinkedIn profile. It may include their headline, about section, or a free-text description of their role. Extract what you can. Return ONLY valid JSON with fields: first_name, last_name, firm, level, core_practice, sector_focus, headline, about_summary, location, skills (array of up to 5). For sector_focus, choose EXACTLY one of these canonical names: ${CANONICAL_SECTORS.join(", ")}. If unsure, use "Other". If a field is not found, return null. No markdown backticks.`,
             },
             {
               role: "user",
@@ -75,6 +143,11 @@ serve(async (req) => {
       } catch (e) {
         console.error("AI response not valid JSON:", content);
         return json({ error: "Could not process profile data", fallback: true }, 200);
+      }
+
+      // Normalize sector_focus to canonical list before returning.
+      if (profile && "sector_focus" in profile) {
+        profile.sector_focus = normalizeSector(profile.sector_focus);
       }
 
       return json({ success: true, profile }, 200);
