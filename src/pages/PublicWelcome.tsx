@@ -17,6 +17,110 @@ const HorizonEye = ({ size = 80, color = BRONZE, pupilR = 5 }: { size?: number; 
   </svg>
 );
 
+/* Character-by-character headline reveal */
+const CharReveal = ({ text, accentWord, className, style }: { text: string; accentWord?: string; className?: string; style?: React.CSSProperties }) => {
+  const chars = Array.from(text);
+  let cursor = 0;
+  return (
+    <h1 aria-label={text} className={className} style={style}>
+      {text.split(/(\s+)/).map((word, wi) => {
+        const isAccent = accentWord && word === accentWord;
+        return (
+          <span key={wi} style={{ whiteSpace: "nowrap", color: isAccent ? BRONZE : undefined }}>
+            {Array.from(word).map((ch, ci) => {
+              const i = cursor++;
+              if (/\s/.test(ch)) return ch;
+              return (
+                <span
+                  key={ci}
+                  aria-hidden
+                  className="pw-char"
+                  style={{ display: "inline-block", animationDelay: `${i * 40}ms` }}
+                >
+                  {ch}
+                </span>
+              );
+            })}
+          </span>
+        );
+      })}
+    </h1>
+  );
+};
+
+/* Massive count-up stat row */
+const MassiveStat = ({ value, suffix = "%", literal, desc, accent, source }: { value?: number; suffix?: string; literal?: string; desc: string; accent?: boolean; source?: string }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  const [landed, setLanded] = useState(false);
+  useEffect(() => {
+    if (!ref.current) return;
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { setVisible(true); io.disconnect(); }
+    }, { threshold: 0.5 });
+    io.observe(ref.current);
+    return () => io.disconnect();
+  }, []);
+  const counted = useCountUp(value ?? 0, visible);
+  useEffect(() => {
+    if (!visible) return;
+    if (literal != null) { setLanded(true); return; }
+    if (value != null && counted >= value) {
+      const t = setTimeout(() => setLanded(true), 30);
+      return () => clearTimeout(t);
+    }
+  }, [visible, counted, value, literal]);
+  return (
+    <div ref={ref} className="reveal" style={{
+      margin: "48px 0", textAlign: "center",
+      borderLeft: accent ? `3px solid ${BRONZE}` : undefined,
+      paddingLeft: accent ? 16 : 0,
+    }}>
+      <div className={landed ? "pw-stat-pulse" : ""} style={{
+        fontFamily: "'Cormorant Garamond', Georgia, serif",
+        fontSize: "clamp(40px, 10vw, 72px)",
+        color: BRONZE, fontWeight: 300, lineHeight: 1,
+      }}>
+        {literal ?? `${counted}${suffix}`}
+      </div>
+      <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#888", lineHeight: 1.5, marginTop: 16, maxWidth: 240, marginLeft: "auto", marginRight: "auto" }}>
+        {desc}
+      </div>
+      {source && <div style={{ fontSize: 11, color: "#444", marginTop: 8 }}>{source}</div>}
+    </div>
+  );
+};
+
+/* Kinetic Invisible → Undeniable split */
+const KineticSplit = () => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    if (!ref.current) return;
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { setOn(true); io.disconnect(); }
+    }, { threshold: 0.5 });
+    io.observe(ref.current);
+    return () => io.disconnect();
+  }, []);
+  return (
+    <div ref={ref} aria-label="From invisible to undeniable" className="pw-split" style={{
+      display: "flex", alignItems: "center", justifyContent: "center",
+      gap: 24, margin: "20px 0 48px", flexWrap: "nowrap",
+    }}>
+      <span className={`pw-split-left ${on ? "on" : ""}`} style={{
+        fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "clamp(22px, 4vw, 32px)",
+        color: "#ededed", fontWeight: 300,
+      }}>Invisible</span>
+      <span aria-hidden className={`pw-split-bar ${on ? "on" : ""}`} />
+      <span className={`pw-split-right ${on ? "on" : ""}`} style={{
+        fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "clamp(22px, 4vw, 32px)",
+        color: BRONZE, fontStyle: "italic", fontWeight: 300,
+      }}>Undeniable</span>
+    </div>
+  );
+};
+
 /* ── Count up hook (respects reduced motion) ── */
 function useCountUp(target: number, start: boolean, duration = 1200) {
   const [value, setValue] = useState(0);
