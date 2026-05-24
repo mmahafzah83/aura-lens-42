@@ -395,7 +395,6 @@ export default function PublicWelcome() {
     const onScroll = () => {
       const max = document.documentElement.scrollHeight - window.innerHeight;
       const p = max > 0 ? Math.min(window.scrollY / max, 1) : 0;
-      setPupilR(5 + p * 3);
       setScrollPct(p * 100);
       const h = window.innerHeight || 1;
       setHeroScroll(Math.min(window.scrollY / h, 1));
@@ -404,6 +403,28 @@ export default function PublicWelcome() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // 3-zone pupil: hero=4, middle=6, final CTA=5
+  const heroZoneRef = useRef<HTMLElement>(null);
+  const midZoneRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const hero = heroZoneRef.current;
+    const mid = midZoneRef.current;
+    const final = finalCtaRef.current;
+    if (!hero || !mid || !final) return;
+    const inView = { hero: true, mid: false, final: false };
+    const update = () => {
+      if (inView.final) setPupilR(5);
+      else if (inView.mid) setPupilR(6);
+      else setPupilR(4);
+    };
+    const make = (key: "hero" | "mid" | "final", el: Element) =>
+      new IntersectionObserver(([e]) => { inView[key] = e.isIntersecting; update(); }, { threshold: 0.3 });
+    const ios = [make("hero", hero), make("mid", mid), make("final", final)];
+    ios[0].observe(hero); ios[1].observe(mid); ios[2].observe(final);
+    update();
+    return () => ios.forEach((io) => io.disconnect());
+  }, [contentRevealed]);
 
   // Slider response crossfade
   useEffect(() => {
@@ -449,7 +470,7 @@ export default function PublicWelcome() {
 
       <main>
         {/* HERO */}
-        <section style={{ position: "relative", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px", overflow: "hidden" }}>
+        <section ref={heroZoneRef} style={{ position: "relative", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px", overflow: "hidden" }}>
           {/* ambient bronze glow */}
           <div aria-hidden style={{
             position: "absolute", top: "38%", left: "50%", transform: "translate(-50%, -50%)",
@@ -464,12 +485,13 @@ export default function PublicWelcome() {
             }}>
               <HorizonEye size={80} pupilR={pupilR} />
             </div>
-            <h1 style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300,
-              fontSize: "clamp(32px, 5vw, 48px)", color: "#fff", textAlign: "center", margin: 0, lineHeight: 1.15,
-            }}>
-              How visible is your expertise right now?
-            </h1>
+            <CharReveal
+              text="How visible is your expertise right now?"
+              style={{
+                fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300,
+                fontSize: "clamp(32px, 5vw, 48px)", color: "#fff", textAlign: "center", margin: 0, lineHeight: 1.15,
+              }}
+            />
             <div className="pw-fade-up" style={{ width: "100%", maxWidth: 460, animationDelay: "0.8s", opacity: 0 }}>
               <input
                 type="range" min={0} max={100} value={slider}
