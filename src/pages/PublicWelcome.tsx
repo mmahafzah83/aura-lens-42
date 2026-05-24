@@ -975,9 +975,11 @@ const PW_CSS = `
     .pw-char { opacity: 1 !important; transform: none !important; animation: none !important; }
     .pw-illuminate { opacity: 1 !important; }
     .pw-split-left, .pw-split-right { opacity: 1 !important; transform: none !important; text-shadow: none !important; }
-    .pw-split-bar { height: 60px !important; transition: none !important; }
     .pw-hero-head { opacity: 0.92 !important; transform: none !important; animation: none !important; }
     .pw-hero-head-wrap { animation: none !important; }
+    .pw-split-left { opacity: 0.3 !important; filter: none !important; animation: none !important; }
+    .pw-split-right { opacity: 1 !important; animation: none !important; }
+    .pw-eye-orbit-wrap, .pw-eye-orbit-dot { animation: none !important; opacity: 0 !important; }
     *, *::before, *::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
