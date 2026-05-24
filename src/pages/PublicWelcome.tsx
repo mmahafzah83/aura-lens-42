@@ -479,12 +479,21 @@ export default function PublicWelcome() {
             pointerEvents: "none",
           }} />
           <div style={{ position: "relative", width: "100%", maxWidth: 720, margin: "0 auto", display: "flex", flexDirection: "column", alignItems: "center", gap: 36 }}>
-            <div className="pw-eye-in pw-eye-pulse pw-eye-parallax" style={{
-              transform: `translateY(${heroScroll * -20}px)`,
-              transition: "transform 120ms linear",
-            }}>
-              <HorizonEye size={80} pupilR={pupilR} />
-            </div>
+            <img
+              src="/aura-hero-head.png"
+              alt="Aura Intelligence"
+              loading="eager"
+              fetchPriority="high"
+              className="pw-hero-head"
+              style={{
+                width: "clamp(200px, 40vw, 360px)",
+                height: "auto",
+                display: "block",
+                margin: "0 auto",
+                filter: "hue-rotate(20deg) saturate(0.8)",
+                transform: `translateY(${heroScroll * -20}px)`,
+              }}
+            />
             <CharReveal
               text="How visible is your expertise right now?"
               style={{
@@ -921,6 +930,7 @@ const PW_CSS = `
     .pw-illuminate { opacity: 1 !important; }
     .pw-split-left, .pw-split-right { opacity: 1 !important; transform: none !important; text-shadow: none !important; }
     .pw-split-bar { height: 60px !important; transition: none !important; }
+    .pw-hero-head { opacity: 0.85 !important; transform: none !important; animation: none !important; }
     *, *::before, *::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
@@ -936,6 +946,18 @@ const PW_CSS = `
     will-change: opacity, transform;
   }
   @keyframes pw-charIn { to { opacity: 1; transform: translateY(0); } }
+
+  /* Hero wireframe head entrance */
+  .pw-hero-head {
+    opacity: 0;
+    animation: pw-headIn 1.2s ease-out 0.3s forwards;
+    transition: transform 120ms linear;
+    will-change: opacity, transform;
+  }
+  @keyframes pw-headIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 0.85; transform: scale(1); }
+  }
 
   /* Pain headline dim → bright on scroll */
   .pw-illuminate { opacity: 0.3; transition: opacity 0.6s ease-out; }
