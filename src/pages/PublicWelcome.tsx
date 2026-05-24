@@ -954,7 +954,8 @@ const PW_CSS = `
     .pw-illuminate { opacity: 1 !important; }
     .pw-split-left, .pw-split-right { opacity: 1 !important; transform: none !important; text-shadow: none !important; }
     .pw-split-bar { height: 60px !important; transition: none !important; }
-    .pw-hero-head { opacity: 0.85 !important; transform: none !important; animation: none !important; }
+    .pw-hero-head { opacity: 0.92 !important; transform: none !important; animation: none !important; }
+    .pw-hero-head-wrap { animation: none !important; }
     *, *::before, *::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
@@ -974,13 +975,19 @@ const PW_CSS = `
   /* Hero wireframe head entrance */
   .pw-hero-head {
     opacity: 0;
-    animation: pw-headIn 1.2s ease-out 0.3s forwards;
-    transition: transform 120ms linear;
+    animation:
+      pw-headIn 1.2s ease-out 0.3s forwards,
+      pw-headSurvey 12s ease-in-out 1.5s infinite;
     will-change: opacity, transform;
   }
   @keyframes pw-headIn {
     from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 0.85; transform: scale(1); }
+    to { opacity: 0.92; transform: scale(1); }
+  }
+  @keyframes pw-headSurvey {
+    0%   { transform: translateX(-2px); }
+    50%  { transform: translateX(2px); }
+    100% { transform: translateX(-2px); }
   }
 
   /* Pain headline dim → bright on scroll */
