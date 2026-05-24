@@ -536,7 +536,7 @@ export default function PublicWelcome() {
         <section style={{ background: BG, padding: "100px 24px" }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <p className="reveal" style={{ fontSize: 10, letterSpacing: "2.5px", color: BRONZE, fontWeight: 600, margin: 0 }}>THE REAL PROBLEM</p>
-            <h2 className="reveal reveal-d1" style={{
+            <h2 className="reveal reveal-d1 pw-illuminate" style={{
               fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300,
               fontSize: "clamp(28px, 5vw, 44px)", color: "#fff", lineHeight: 1.2, marginTop: 20,
             }}>
@@ -573,17 +573,17 @@ export default function PublicWelcome() {
         <SectionDivider />
 
         {/* STATS */}
-        <section style={{ background: BG_ALT, padding: "100px 24px" }}>
+        <section ref={midZoneRef} style={{ background: BG_ALT, padding: "100px 24px" }}>
           <div style={{ maxWidth: 700, margin: "0 auto" }}>
             <p className="reveal" style={{ fontSize: 10, letterSpacing: "2.5px", color: BRONZE, fontWeight: 600, margin: 0 }}>THE NUMBERS DON'T LIE</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-10">
-              <StatCard value={73} desc="of decision-makers trust expertise content over marketing" />
-              <StatCard value={82} desc="trust companies more when leaders are visible online" />
-              <StatCard value={54} desc="have rejected candidates for invisible online presence" />
-              <StatCard literal="<3%" desc="of LinkedIn's 1B+ users create original content weekly" />
-              <StatCard value={44} desc="of company value is tied to its leader's reputation" fullWidth />
+            <div className="mt-10">
+              <MassiveStat value={73} desc="of decision-makers trust expertise content over marketing" />
+              <MassiveStat value={82} desc="trust companies more when leaders are visible online" />
+              <MassiveStat value={54} accent desc="have rejected candidates for invisible online presence" />
+              <MassiveStat literal="<3%" desc="of LinkedIn's 1B+ users create original content weekly" />
+              <MassiveStat value={44} desc="of company value is tied to its leader's reputation" />
             </div>
-            <p className="reveal" style={{ fontSize: 11, color: "#9a9a9a", marginTop: 20 }}>
+            <p className="reveal" style={{ fontSize: 11, color: "#9a9a9a", marginTop: 20, textAlign: "center" }}>
               Edelman-LinkedIn 2024/2025 · Weber Shandwick · Brunswick Group
             </p>
             <p className="reveal reveal-d1" style={{ fontSize: 17, color: "#ededed", lineHeight: 1.75, marginTop: 28 }}>
@@ -595,8 +595,9 @@ export default function PublicWelcome() {
         <SectionDivider />
 
         {/* BUILDER */}
-        <section style={{ background: BG_WARM, padding: "100px 24px" }}>
-          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+        <section style={{ background: BG_WARM, padding: "100px 24px", position: "relative", overflow: "hidden" }}>
+          <div aria-hidden className="pw-watermark">AURA</div>
+          <div style={{ maxWidth: 680, margin: "0 auto", position: "relative" }}>
             <p className="reveal" style={{ fontSize: 10, letterSpacing: "2.5px", color: BRONZE, fontWeight: 600, margin: 0 }}>WHY I BUILT THIS</p>
             <h2 className="reveal reveal-d1" style={{
               fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300,
@@ -656,8 +657,9 @@ export default function PublicWelcome() {
               fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300,
               fontSize: "clamp(26px, 4.5vw, 38px)", color: "#fff", marginTop: 20, marginBottom: 48,
             }}>
-              From invisible to <em style={{ color: BRONZE, fontStyle: "italic" }}>undeniable</em>.
+              From invisible to undeniable.
             </h2>
+            <KineticSplit />
             <Milestone preFilled label="DAY 1" title="Aura learns who you are." desc="Your strengths. Your sector. Your voice. By the end of your first session, Aura knows what makes you different from every other professional in your market." />
             <Milestone preFilled label="WEEK 1" title="Your first post goes live." desc="A LinkedIn post that sounds like you — not like AI. About a signal Aura found in what you read. Your expertise, visible for the first time to people who've never met you." />
             <Milestone label="MONTH 1" title="People start to notice." desc="Consistent, intelligent content builds recognition. Decision-makers in your sector start seeing your name next to insights they care about." />
