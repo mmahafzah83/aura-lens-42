@@ -479,21 +479,45 @@ export default function PublicWelcome() {
             pointerEvents: "none",
           }} />
           <div style={{ position: "relative", width: "100%", maxWidth: 720, margin: "0 auto", display: "flex", flexDirection: "column", alignItems: "center", gap: 36 }}>
-            <img
-              src="/aura-hero-head.png"
-              alt="Aura Intelligence"
-              loading="eager"
-              fetchPriority="high"
-              className="pw-hero-head"
+            <div
+              className="pw-hero-head-wrap"
               style={{
+                position: "relative",
                 width: "clamp(200px, 40vw, 360px)",
-                height: "auto",
-                display: "block",
                 margin: "0 auto",
-                filter: "hue-rotate(20deg) saturate(0.8)",
                 transform: `translateY(${heroScroll * -20}px)`,
               }}
-            />
+            >
+              {/* Ambient bronze glow behind head */}
+              <div
+                aria-hidden
+                className="pw-hero-head-glow"
+                style={{
+                  position: "absolute",
+                  inset: "-20% -20% -20% -20%",
+                  background:
+                    "radial-gradient(circle, rgba(176,141,58,0.18) 0%, rgba(176,141,58,0.08) 40%, transparent 70%)",
+                  filter: "blur(20px)",
+                  pointerEvents: "none",
+                  zIndex: 0,
+                }}
+              />
+              <img
+                src="/aura-hero-head.png"
+                alt="Aura Intelligence"
+                loading="eager"
+                fetchPriority="high"
+                className="pw-hero-head"
+                style={{
+                  position: "relative",
+                  zIndex: 1,
+                  width: "100%",
+                  height: "auto",
+                  display: "block",
+                  filter: "sepia(1) saturate(1.8) hue-rotate(15deg) brightness(0.9)",
+                }}
+              />
+            </div>
             <CharReveal
               text="How visible is your expertise right now?"
               style={{
