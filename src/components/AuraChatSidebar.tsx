@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { X, Send, Loader2, Trash2, Briefcase, Rocket, FileText, Target, Linkedin, Bookmark, Check, Plus, ChevronLeft, Presentation, Clock, MessageSquare, Pin, PinOff, Pencil, ChevronDown } from "lucide-react";
+import { useMemo } from "react";
+import { X, Send, Loader2, Trash2, Briefcase, Rocket, FileText, Target, Linkedin, Bookmark, Check, Plus, ChevronLeft, Presentation, Clock, MessageSquare, Pin, PinOff, Pencil, ChevronDown, Search, HelpCircle, Eye, PenTool, Compass, AlertTriangle } from "lucide-react";
 import AuraLogo from "@/components/brand/AuraLogo";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { supabase } from "@/integrations/supabase/client";
