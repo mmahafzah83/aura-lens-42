@@ -35,7 +35,7 @@ const CharReveal = ({ text, accentWord, className, style }: { text: string; acce
                   key={ci}
                   aria-hidden
                   className="pw-char"
-                  style={{ display: "inline-block", animationDelay: `${i * 40}ms` }}
+                  style={{ display: "inline-block", animationDelay: `${i * 70}ms` }}
                 >
                   {ch}
                 </span>
@@ -104,25 +104,42 @@ const KineticSplit = () => {
     return () => io.disconnect();
   }, []);
   return (
-    <div ref={ref} aria-label="From invisible to undeniable" className="pw-split" style={{
-      display: "flex", alignItems: "center", justifyContent: "center",
-      gap: 24, margin: "20px 0 48px", flexWrap: "nowrap",
-    }}>
-      <span className={`pw-split-left ${on ? "on" : ""}`} style={{
-        fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "clamp(22px, 4vw, 32px)",
-        color: "#ededed", fontWeight: 300,
-      }}>Invisible</span>
-      <span aria-hidden className={`pw-split-bar ${on ? "on" : ""}`} />
-      <span className={`pw-split-right ${on ? "on" : ""}`} style={{
-        fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "clamp(22px, 4vw, 32px)",
-        color: BRONZE, fontStyle: "italic", fontWeight: 300,
-      }}>Undeniable</span>
+    <div
+      ref={ref}
+      aria-label="From invisible to undeniable"
+      className="pw-split"
+      style={{
+        display: "flex", alignItems: "center", justifyContent: "center",
+        gap: 28, margin: "32px 0 56px", flexWrap: "nowrap",
+        minHeight: 100,
+      }}
+    >
+      <span
+        className={`pw-split-left ${on ? "on" : ""}`}
+        style={{
+          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontSize: "clamp(28px, 6vw, 48px)",
+          color: "#ededed", fontWeight: 300,
+        }}
+      >
+        Invisible
+      </span>
+      <span
+        className={`pw-split-right ${on ? "on" : ""}`}
+        style={{
+          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontSize: "clamp(32px, 7vw, 56px)",
+          color: BRONZE, fontStyle: "italic", fontWeight: 400,
+        }}
+      >
+        Undeniable
+      </span>
     </div>
   );
 };
 
 /* ── Count up hook (respects reduced motion) ── */
-function useCountUp(target: number, start: boolean, duration = 1200) {
+function useCountUp(target: number, start: boolean, duration = 2000) {
   const [value, setValue] = useState(0);
   const startedRef = useRef(false);
   useEffect(() => {
@@ -133,7 +150,8 @@ function useCountUp(target: number, start: boolean, duration = 1200) {
     const t0 = performance.now();
     const tick = (now: number) => {
       const p = Math.min((now - t0) / duration, 1);
-      const eased = 1 - Math.pow(1 - p, 3);
+      // cubic-bezier(0.22, 0.61, 0.36, 1)-ish — decelerate toward end
+      const eased = 1 - Math.pow(1 - p, 3.2);
       setValue(Math.round(target * eased));
       if (p < 1) requestAnimationFrame(tick);
     };
@@ -502,6 +520,10 @@ export default function PublicWelcome() {
                   zIndex: 0,
                 }}
               />
+              {/* Orbiting bronze scan dot */}
+              <div aria-hidden className="pw-eye-orbit-wrap">
+                <div className="pw-eye-orbit-dot" />
+              </div>
               <img
                 src="/aura-hero-head.png"
                 alt="Aura Intelligence"
@@ -847,7 +869,7 @@ const PW_CSS = `
     content: ""; position: absolute; inset: 0;
     background: linear-gradient(90deg, transparent 0%, rgba(255,235,180,0.25) 50%, transparent 100%);
     transform: translateX(-100%);
-    animation: pw-shimmer 3s ease-in-out infinite;
+    animation: pw-shimmer 5s ease-in-out infinite;
     pointer-events: none;
   }
   @keyframes pw-shimmer {
@@ -892,7 +914,7 @@ const PW_CSS = `
   .pw-dot-ripple::after {
     content: ""; position: absolute; inset: -2px; border-radius: 50%;
     border: 2px solid ${BRONZE};
-    animation: pw-ripple 700ms ease-out forwards;
+    animation: pw-ripple 800ms ease-out forwards;
     pointer-events: none;
   }
   @keyframes pw-ripple {
@@ -906,11 +928,11 @@ const PW_CSS = `
   @keyframes pw-breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.015); } }
 
   /* Section divider sweep */
-  .pw-divider-sweep { transform: scaleX(0); transform-origin: center; transition: transform 800ms ease-out; }
+  .pw-divider-sweep { transform: scaleX(0); transform-origin: center; transition: transform 900ms ease-out; }
   .pw-divider-sweep.pw-divider-sweep-on { transform: scaleX(1); }
 
   /* Typewriter pain quote — word-by-word reveal */
-  .pw-tw .pw-tw-w { opacity: 0; transition: opacity 320ms ease-out; transition-delay: calc(var(--i, 0) * 30ms); }
+  .pw-tw .pw-tw-w { opacity: 0; transition: opacity 700ms ease-out; transition-delay: calc(var(--i, 0) * 80ms); }
   .pw-tw.pw-tw-on .pw-tw-w { opacity: 1; }
 
   /* Floating mini-CTA pill */
@@ -953,9 +975,11 @@ const PW_CSS = `
     .pw-char { opacity: 1 !important; transform: none !important; animation: none !important; }
     .pw-illuminate { opacity: 1 !important; }
     .pw-split-left, .pw-split-right { opacity: 1 !important; transform: none !important; text-shadow: none !important; }
-    .pw-split-bar { height: 60px !important; transition: none !important; }
     .pw-hero-head { opacity: 0.92 !important; transform: none !important; animation: none !important; }
     .pw-hero-head-wrap { animation: none !important; }
+    .pw-split-left { opacity: 0.3 !important; filter: none !important; animation: none !important; }
+    .pw-split-right { opacity: 1 !important; animation: none !important; }
+    .pw-eye-orbit-wrap, .pw-eye-orbit-dot { animation: none !important; opacity: 0 !important; }
     *, *::before, *::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
@@ -967,7 +991,7 @@ const PW_CSS = `
   .pw-char {
     opacity: 0;
     transform: translateY(8px);
-    animation: pw-charIn 0.4s ease-out forwards;
+    animation: pw-charIn 0.6s ease-out forwards;
     will-change: opacity, transform;
   }
   @keyframes pw-charIn { to { opacity: 1; transform: translateY(0); } }
@@ -991,19 +1015,63 @@ const PW_CSS = `
   }
 
   /* Pain headline dim → bright on scroll */
-  .pw-illuminate { opacity: 0.3; transition: opacity 0.6s ease-out; }
+  .pw-illuminate { opacity: 0.3; transition: opacity 1s ease-out; }
   .pw-illuminate.visible { opacity: 1; }
 
-  /* Kinetic split */
-  .pw-split-left { opacity: 1; transform: translateX(0); transition: opacity 600ms ease-out, transform 600ms ease-out; }
-  .pw-split-left.on { opacity: 0.4; transform: translateX(-20px); }
-  .pw-split-bar {
-    display: inline-block; width: 2px; height: 0; background: ${BRONZE};
-    transition: height 400ms ease-out 200ms;
+  /* Kinetic split — Invisible fades to nothing, Undeniable rises */
+  .pw-split-left {
+    opacity: 0.5; filter: blur(0); transform: translateY(0);
+    will-change: opacity, filter, transform;
   }
-  .pw-split-bar.on { height: 60px; }
-  .pw-split-right { opacity: 1; text-shadow: 0 0 0 transparent; transition: text-shadow 600ms ease-out 200ms; }
-  .pw-split-right.on { text-shadow: 0 0 20px rgba(176,141,58,0.35); }
+  .pw-split-left.on {
+    animation: pw-fadeToInvisible 4s ease-in-out forwards;
+  }
+  @keyframes pw-fadeToInvisible {
+    0%   { opacity: 0.5; filter: blur(0); transform: translateY(0); }
+    35%  { opacity: 0.5; filter: blur(0); transform: translateY(0); }
+    100% { opacity: 0.05; filter: blur(2px); transform: translateY(-8px); }
+  }
+  .pw-split-right {
+    opacity: 0; transform: translateY(16px);
+    will-change: opacity, transform;
+  }
+  .pw-split-right.on {
+    animation:
+      pw-undeniableIn 1.5s ease-out 2s forwards,
+      pw-undeniablePulse 3s ease-in-out 3.5s 3;
+  }
+  @keyframes pw-undeniableIn {
+    from { opacity: 0; transform: translateY(16px); text-shadow: 0 0 0 transparent; }
+    to   { opacity: 1; transform: translateY(0); text-shadow: 0 0 30px rgba(212,176,86,0.3); }
+  }
+  @keyframes pw-undeniablePulse {
+    0%, 100% { transform: scale(1); text-shadow: 0 0 10px rgba(212,176,86,0.2); }
+    50%      { transform: scale(1.03); text-shadow: 0 0 30px rgba(212,176,86,0.4); }
+  }
+
+  /* Orbiting bronze scan dot around the hero head */
+  .pw-eye-orbit-wrap {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: none; z-index: 2;
+    animation: pw-eye-orbit-spin 16s linear infinite;
+  }
+  .pw-eye-orbit-dot {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: ${BRONZE};
+    box-shadow: 0 0 18px 4px rgba(176,141,58,0.55);
+    transform: translateX(60%);
+    animation: pw-eye-orbit-fade 16s ease-in-out infinite;
+  }
+  @keyframes pw-eye-orbit-spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+  @keyframes pw-eye-orbit-fade {
+    0%, 100% { opacity: 0.55; }
+    25%, 75% { opacity: 1; }
+    50%      { opacity: 0.55; }
+  }
 
   /* AURA watermark behind builder */
   .pw-watermark {
