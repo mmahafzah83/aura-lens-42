@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from "react";
-import { X, Send, Loader2, Trash2, Briefcase, Rocket, FileText, Target, Linkedin, Bookmark, Check, Plus, ChevronLeft, Presentation, Clock, MessageSquare, Pin, PinOff, Pencil, ChevronDown } from "lucide-react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { X, Send, Loader2, Trash2, Briefcase, Rocket, FileText, Target, Linkedin, Bookmark, Check, Plus, ChevronLeft, Presentation, Clock, MessageSquare, Pin, PinOff, Pencil, ChevronDown, Search, HelpCircle, Eye, PenTool, Compass, AlertTriangle } from "lucide-react";
 import AuraLogo from "@/components/brand/AuraLogo";
 import UserAvatar from "@/components/ui/UserAvatar";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +8,161 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import ReactMarkdown from "react-markdown";
 import { ERROR, EMPTY_STATE } from "@/constants/language";
+
+/* ── Dimension display labels (mirrors CalibrationSliders P16 labels) ── */
+const DIM_LABELS: Record<string, string> = {
+  strategic_architecture: "Strategic Thinking",
+  sector_foresight: "Industry Vision",
+  digital_synthesis: "Digital Strategy",
+  csuite_stewardship: "Executive Leadership",
+  executive_presence: "Professional Presence",
+  geopolitical_fluency: "Regional Awareness",
+  human_centric_leadership: "People Leadership",
+  operational_resilience: "Operational Strength",
+  commercial_velocity: "Business Impact",
+  value_based_pnl: "Financial Acumen",
+  // legacy label keys → new labels
+  "Strategic Architecture": "Strategic Thinking",
+  "Sector Foresight": "Industry Vision",
+  "Digital Synthesis": "Digital Strategy",
+  "C-Suite Stewardship": "Executive Leadership",
+  "Executive Presence": "Professional Presence",
+  "Geopolitical Fluency": "Regional Awareness",
+  "Human-Centric Leadership": "People Leadership",
+  "Operational Resilience": "Operational Strength",
+  "Commercial Velocity": "Business Impact",
+  "Value-Based P&L": "Financial Acumen",
+};
+
+function topTwoDimensions(ratings: Record<string, number> | null | undefined): string[] {
+  if (!ratings || typeof ratings !== "object") return [];
+  const entries = Object.entries(ratings).filter(([, v]) => typeof v === "number" && (v as number) > 0);
+  entries.sort((a, b) => (b[1] as number) - (a[1] as number));
+  return entries.slice(0, 2).map(([k]) => DIM_LABELS[k] || k);
+}
+
+/* ── Cinematic processing ceremony — replaces spinner during AI wait ── */
+const ThinkingCeremony = ({ signalCount, captureCount }: { signalCount: number; captureCount: number }) => {
+  const lines = useMemo(() => [
+    captureCount > 0 ? `Reading your ${captureCount} capture${captureCount === 1 ? "" : "s"}…` : "Studying your profile…",
+    signalCount > 0 ? `Cross-referencing ${signalCount} active signal${signalCount === 1 ? "" : "s"}…` : "Mapping your sector…",
+    "Connecting the patterns…",
+  ], [signalCount, captureCount]);
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    const timers = lines.map((_, i) => window.setTimeout(() => setStep(i + 1), (i + 1) * 800));
+    return () => timers.forEach((t) => window.clearTimeout(t));
+  }, [lines]);
+  return (
+    <div style={{
+      padding: "14px 16px",
+      borderRadius: 12,
+      background: "rgba(176,141,58,0.06)",
+      border: "1px solid rgba(176,141,58,0.15)",
+    }}>
+      {lines.map((line, i) => (
+        <div key={i} style={{
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: 13,
+          color: "rgba(230, 222, 205, 0.7)",
+          opacity: step > i ? 1 : 0,
+          transform: step > i ? "translateY(0)" : "translateY(8px)",
+          transition: "all 0.5s ease-out",
+          marginBottom: 4,
+        }}>
+          {line}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+/* ── Horizon Eye with bronze pulse ── */
+const HorizonEye = ({ fast }: { fast?: boolean }) => (
+  <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 6px" }}>
+    <span style={{
+      display: "inline-flex",
+      animation: `eyePulse ${fast ? "1.5s" : "3s"} ease-in-out infinite`,
+    }}>
+      <AuraLogo size={26} variant="dark" />
+    </span>
+  </div>
+);
+
+/* ── Dynamic Action Button row ── */
+type ActionIcon = "search" | "help" | "eye" | "plus" | "pen" | "compass" | "briefcase" | "alert";
+const ICONS: Record<ActionIcon, any> = {
+  search: Search, help: HelpCircle, eye: Eye, plus: Plus,
+  pen: PenTool, compass: Compass, briefcase: Briefcase, alert: AlertTriangle,
+};
+interface DynAction { label: string; prompt: string; icon: ActionIcon; }
+const STATE_ACTIONS: Record<string, DynAction[]> = {
+  fresh: [
+    { label: "What should I capture?", prompt: "Based on my profile and sector, what types of articles should I be reading and capturing? Give me 3 specific recommendations.", icon: "search" },
+    { label: "Help me understand Aura", prompt: "Walk me through how Aura works — how do captures become signals, and how do signals become content?", icon: "help" },
+  ],
+  building: [
+    { label: "What patterns do you see?", prompt: "Based on what I've captured so far, what patterns are emerging? Even if signals haven't formed yet, what direction is my reading pointing?", icon: "eye" },
+    { label: "Capture another article", prompt: "__OPEN_CAPTURE__", icon: "plus" },
+  ],
+  ready: [
+    { label: "Draft a post", prompt: "Based on my strongest signal, draft a LinkedIn post in my voice. Make it specific to my sector and grounded in what I've captured.", icon: "pen" },
+    { label: "Find my angle", prompt: "What unique angle do I have on my strongest signal that no one else in my network is covering?", icon: "compass" },
+    { label: "Meeting prep", prompt: "I have a meeting this week. Based on my latest signals, what insights should I bring to the table?", icon: "briefcase" },
+  ],
+  active: [
+    { label: "Draft a post", prompt: "Based on my strongest signal, draft a LinkedIn post in my voice.", icon: "pen" },
+    { label: "Find patterns", prompt: "What new patterns have emerged from my recent captures? Connect them to my existing signals.", icon: "eye" },
+    { label: "Meeting prep", prompt: "Prepare key talking points for a meeting this week based on my signals and sector.", icon: "briefcase" },
+    { label: "Challenge my thinking", prompt: "What am I missing? Based on my captures and signals, where are my blind spots?", icon: "alert" },
+  ],
+};
+
+const DynamicActions = ({ state, onAction, disabled }: { state: string; onAction: (p: string) => void; disabled?: boolean }) => (
+  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
+    {(STATE_ACTIONS[state] || STATE_ACTIONS.fresh).map((a) => {
+      const Icon = ICONS[a.icon];
+      return (
+        <button
+          key={a.label}
+          disabled={disabled}
+          onClick={() => {
+            if (a.prompt === "__OPEN_CAPTURE__") {
+              window.dispatchEvent(new CustomEvent("aura:open-capture"));
+            } else {
+              onAction(a.prompt);
+            }
+          }}
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 6,
+            background: "rgba(176,141,58,0.08)",
+            border: "1px solid rgba(176,141,58,0.2)",
+            borderRadius: 20,
+            padding: "8px 14px",
+            fontSize: 13,
+            color: "rgba(230,222,205,0.85)",
+            cursor: disabled ? "not-allowed" : "pointer",
+            transition: "all 0.2s ease",
+            opacity: disabled ? 0.5 : 1,
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background = "rgba(176,141,58,0.15)";
+            (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(176,141,58,0.4)";
+            (e.currentTarget as HTMLButtonElement).style.color = "#D4B056";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background = "rgba(176,141,58,0.08)";
+            (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(176,141,58,0.2)";
+            (e.currentTarget as HTMLButtonElement).style.color = "rgba(230,222,205,0.85)";
+          }}
+        >
+          <Icon size={14} />
+          {a.label}
+        </button>
+      );
+    })}
+  </div>
+);
 
 /* ── Always-on Context Strip (signals + identity pills) ── */
 interface TopSignal { id: string; signal_title: string; }
@@ -331,6 +486,22 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
   const [vaultLoading, setVaultLoading] = useState(false);
   const [expandedVaultId, setExpandedVaultId] = useState<string | null>(null);
   const [savedFlash, setSavedFlash] = useState<Set<number>>(new Set());
+  // ── First-open intelligence context ──
+  const [firstOpenCtx, setFirstOpenCtx] = useState<{
+    loaded: boolean;
+    isFirst: boolean;
+    topDims: string[];
+    level: string | null;
+    sector: string | null;
+    northStar: string | null;
+    topSignalTitle: string | null;
+    topSignalConfidence: number | null;
+    topSignalSources: number | null;
+  }>({ loaded: false, isFirst: false, topDims: [], level: null, sector: null, northStar: null, topSignalTitle: null, topSignalConfidence: null, topSignalSources: null });
+  const [northStarInput, setNorthStarInput] = useState("");
+  const [savingNorthStar, setSavingNorthStar] = useState(false);
+  // ── Milestone card (dismissable) ──
+  const [milestone, setMilestone] = useState<{ message: string; cta?: { label: string; prompt: string } } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -409,6 +580,67 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
         if (p) setUserIdentity({ firstName: p.first_name ?? null, lastName: p.last_name ?? null });
       } catch {
         // fail silently
+      }
+    })();
+  }, [open]);
+
+  // ── Load first-open context: skill ratings, north star, top signal, prior messages ──
+  useEffect(() => {
+    if (!open) return;
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const uid = session.user.id;
+        const [profRes, sigRes, memCountRes] = await Promise.all([
+          supabase.from("diagnostic_profiles").select("level, sector_focus, north_star_goal, skill_ratings").eq("user_id", uid).maybeSingle(),
+          supabase.from("strategic_signals").select("signal_title, confidence, source_count, priority_score").eq("user_id", uid).eq("status", "active").order("priority_score", { ascending: false }).limit(1),
+          supabase.from("aura_conversation_memory" as any).select("id", { count: "exact", head: true }).eq("user_id", uid).not("role", "is", null),
+        ]);
+        const p: any = profRes.data || {};
+        const topSig: any = (sigRes.data || [])[0] || null;
+        const isFirst = ((memCountRes as any)?.count ?? 0) === 0;
+        setFirstOpenCtx({
+          loaded: true,
+          isFirst,
+          topDims: topTwoDimensions(p.skill_ratings),
+          level: p.level || null,
+          sector: p.sector_focus || null,
+          northStar: p.north_star_goal || null,
+          topSignalTitle: topSig?.signal_title || null,
+          topSignalConfidence: topSig?.confidence ?? null,
+          topSignalSources: topSig?.source_count ?? null,
+        });
+
+        // Milestone detection
+        const checkMilestone = async () => {
+          // First signal ever
+          if (topSig && !localStorage.getItem("aura_milestone_first_signal")) {
+            const sigCountRes = await supabase.from("strategic_signals").select("id", { count: "exact", head: true }).eq("user_id", uid).eq("status", "active");
+            if ((sigCountRes.count ?? 0) === 1) {
+              localStorage.setItem("aura_milestone_first_signal", "true");
+              setMilestone({
+                message: `Your first signal just formed.\n\n"${topSig.signal_title}" — ${Math.round((topSig.confidence || 0) * 100)}% confidence.\n\nThis is what separates you from professionals who consume the same information but never extract the pattern.\n\nYou see it. Now the market needs to hear it.`,
+                cta: { label: "Draft a post from this signal", prompt: `Draft a LinkedIn post based on my signal "${topSig.signal_title}". Make it contrarian and specific to my sector.` },
+              });
+              return;
+            }
+          }
+          // First post published
+          if (!localStorage.getItem("aura_milestone_first_post")) {
+            const pubRes = await supabase.from("linkedin_posts" as any).select("id", { count: "exact", head: true }).eq("user_id", uid).not("published_at", "is", null);
+            if ((pubRes.count ?? 0) === 1) {
+              localStorage.setItem("aura_milestone_first_post", "true");
+              setMilestone({
+                message: `The market heard your voice for the first time.\n\nNot a ghostwriter's voice. Not generic AI content. YOUR insight, from YOUR signal, in YOUR words.\n\nThis is what compounds. Every post from here builds on this one.`,
+              });
+            }
+          }
+        };
+        checkMilestone().catch(() => {});
+      } catch (e) {
+        console.error("[first-open] context load failed", e);
+        setFirstOpenCtx(c => ({ ...c, loaded: true }));
       }
     })();
   }, [open]);
@@ -1072,16 +1304,33 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        className="relative flex flex-col w-full bg-background rounded-t-2xl overflow-hidden"
+        className="relative flex flex-col w-full rounded-t-2xl overflow-hidden aura-chat-dark"
         style={{
           height: "85vh",
           zIndex: 1000,
+          background: "#0d0d0b",
+          color: "rgba(230, 222, 205, 0.95)",
           transform: swipeY > 0 ? `translateY(${swipeY}px)` : "translateY(0)",
           transition: swipeY > 0 ? "none" : "transform 0.3s ease-out",
           opacity: swipeY > 0 ? Math.max(0.3, 1 - swipeY / 400) : 1,
           willChange: "unset",
         }}
       >
+        {/* Keyframes for Horizon Eye pulse */}
+        <style>{`
+          @keyframes eyePulse {
+            0%, 100% { opacity: 0.45; filter: brightness(1); }
+            50% { opacity: 0.9; filter: brightness(1.3); }
+          }
+          .aura-chat-dark textarea, .aura-chat-dark input[type="text"] {
+            background: rgba(255,255,255,0.04) !important;
+            color: rgba(230,222,205,0.95) !important;
+            border-color: rgba(176,141,58,0.25) !important;
+          }
+          .aura-chat-dark textarea::placeholder { color: rgba(230,222,205,0.4) !important; }
+        `}</style>
+        {/* Horizon Eye */}
+        {viewMode === "chat" && <HorizonEye fast={isLoading} />}
         {/* Swipe handle */}
         <div className="flex justify-center pt-2.5 pb-1 cursor-grab">
           <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
@@ -1199,16 +1448,17 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
         {viewMode === "chat" && (() => {
           const lastAssistant = memoryRows.find(r => r.role === "assistant" && r.content);
           if (!lastAssistant) return null;
-          const topic = (lastAssistant.content || "").replace(/\s+/g, " ").trim().slice(0, 70);
+          const firstSentence = (lastAssistant.content || "").replace(/\s+/g, " ").trim().split(/(?<=[.!?])\s/)[0] || "";
+          const topic = firstSentence.length > 60 ? firstSentence.slice(0, 60) + "…" : firstSentence;
           const lastAssistants = memoryRows.filter(r => r.role === "assistant" && r.content).slice(0, 5);
           return (
-            <div style={{ background: "var(--gold-pale)", borderBottom: "0.5px solid var(--gold-light)" }}>
+            <div style={{ background: "rgba(176,141,58,0.08)", borderBottom: "0.5px solid rgba(176,141,58,0.2)" }}>
               <div className="flex items-center gap-2 px-4 py-2">
-                <span style={{ background: "var(--brand)", color: "#fff", fontSize: 12, fontWeight: 600, padding: "2px 7px", borderRadius: 8, textTransform: "uppercase", letterSpacing: 0.4 }}>
-                  Remembers
+                <span style={{ color: "#D4B056", fontSize: 12, fontWeight: 600 }}>
+                  ✦
                 </span>
-                <span style={{ fontSize: 12, color: "var(--gold-text)", lineHeight: 1.35 }} className="truncate">
-                  Continuing from last session — {topic}
+                <span style={{ fontSize: 12, color: "rgba(230,222,205,0.75)", lineHeight: 1.35 }} className="truncate">
+                  Continuing from: {topic}
                 </span>
               </div>
               {showMemoryPanel && (
@@ -1371,31 +1621,210 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                   <Loader2 className="w-6 h-6 animate-spin text-primary" />
                 </div>
               ) : messages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-center py-8">
-                  <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                    <AuraLogo size={40} variant="auto" />
-                  </div>
-                  <h3 className="text-base font-semibold text-foreground mb-1">I'm Aura, your strategic advisor</h3>
-                  <p className="text-xs text-muted-foreground max-w-[280px] leading-relaxed mb-5">
-                    Ask me anything about your authority, signals, or what to publish next.
-                  </p>
-                  <div className="flex flex-wrap items-center justify-center gap-2 w-full max-w-[340px]">
-                    {[
-                      "What should I publish this week?",
-                      "Which signal is strongest right now?",
-                      "How is my authority score trending?",
-                      "What are my competitors missing?",
-                    ].map(q => (
-                      <button
-                        key={q}
-                        onClick={() => send(q)}
-                        className="text-xs px-3.5 py-2 rounded-full bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors tactile-press"
-                      >
-                        {q}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                (() => {
+                  // Derive user state for dynamic actions
+                  const captureCount = headerCounts?.captures ?? 0;
+                  const signalCount = headerCounts?.signals ?? 0;
+                  const userState = captureCount === 0 ? "fresh" : signalCount === 0 ? "building" : "ready";
+
+                  const dims = firstOpenCtx.topDims;
+                  const hasDims = dims.length >= 2;
+                  const level = firstOpenCtx.level || "leader";
+                  const sector = firstOpenCtx.sector || "your sector";
+
+                  const studyParagraph = hasDims
+                    ? `Your strengths cluster around ${dims[0]} and ${dims[1]} — that's unusual. Most ${level}s in ${sector} lead with operational skills. You lead with strategic vision.`
+                    : `I've been mapping your profile against ${sector}. The shape is starting to form.`;
+
+                  return (
+                    <div className="flex flex-col items-stretch justify-start h-full py-2 px-1" style={{ gap: 18 }}>
+                      {/* Milestone card (top, dismissable) */}
+                      {milestone && (
+                        <div style={{
+                          background: "rgba(176,141,58,0.1)",
+                          border: "1px solid rgba(176,141,58,0.35)",
+                          borderRadius: 12,
+                          padding: "14px 16px",
+                          position: "relative",
+                        }}>
+                          <div style={{ color: "#D4B056", fontSize: 18, marginBottom: 8 }}>✦</div>
+                          <div style={{
+                            fontFamily: "'DM Sans', sans-serif",
+                            fontSize: 13,
+                            lineHeight: 1.6,
+                            color: "rgba(230,222,205,0.9)",
+                            whiteSpace: "pre-line",
+                          }}>{milestone.message}</div>
+                          {milestone.cta && (
+                            <button
+                              onClick={() => { const cta = milestone.cta!; setMilestone(null); send(cta.prompt); }}
+                              style={{
+                                marginTop: 10,
+                                background: "#D4B056",
+                                color: "#0d0d0b",
+                                border: "none",
+                                padding: "8px 14px",
+                                borderRadius: 8,
+                                fontSize: 13,
+                                fontWeight: 600,
+                                cursor: "pointer",
+                              }}
+                            >{milestone.cta.label}</button>
+                          )}
+                          <button
+                            onClick={() => setMilestone(null)}
+                            style={{ position: "absolute", top: 8, right: 8, background: "transparent", border: "none", color: "rgba(230,222,205,0.4)", cursor: "pointer" }}
+                          ><X size={14} /></button>
+                        </div>
+                      )}
+
+                      {/* First-open ceremony */}
+                      {firstOpenCtx.loaded && firstOpenCtx.isFirst ? (
+                        <div style={{
+                          fontFamily: "'DM Sans', sans-serif",
+                          fontSize: 14,
+                          lineHeight: 1.75,
+                          color: "rgba(230,222,205,0.9)",
+                          padding: "8px 4px",
+                        }}>
+                          <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, color: "#ededed", marginBottom: 14 }}>
+                            I've been studying your profile.
+                          </div>
+                          <p style={{ marginBottom: 14 }}>{studyParagraph}</p>
+                          {firstOpenCtx.northStar ? (
+                            <>
+                              <p style={{ marginBottom: 14 }}>
+                                You told me your goal is: <span style={{ color: "#D4B056", fontStyle: "italic" }}>"{firstOpenCtx.northStar}"</span>
+                              </p>
+                              <p style={{ marginBottom: 18 }}>
+                                Based on your calibration, the market has a gap exactly where your strengths sit. Let me show you.
+                              </p>
+                              <button
+                                onClick={() => send("Based on my calibration and north star goal, what territory should I claim in my sector? Be specific about what gap exists and why I'm positioned to fill it.")}
+                                style={{
+                                  background: "#D4B056", color: "#0d0d0b", border: "none",
+                                  padding: "10px 18px", borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: "pointer",
+                                }}
+                              >Show me →</button>
+                            </>
+                          ) : (
+                            <>
+                              <p style={{ marginBottom: 14 }}>That's not common. And it's exactly what the market is undervaluing right now.</p>
+                              <p style={{ marginBottom: 14 }}>I have one question for you.</p>
+                              <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, color: "#ededed", marginBottom: 12 }}>
+                                What topic do you want the market to associate with your name?
+                              </div>
+                              <div style={{ display: "flex", gap: 8 }}>
+                                <input
+                                  type="text"
+                                  value={northStarInput}
+                                  onChange={(e) => setNorthStarInput(e.target.value)}
+                                  placeholder="e.g. AI strategy for utilities"
+                                  style={{
+                                    flex: 1,
+                                    background: "rgba(255,255,255,0.04)",
+                                    border: "1px solid #D4B056",
+                                    borderRadius: 8,
+                                    padding: "10px 12px",
+                                    color: "rgba(230,222,205,0.95)",
+                                    fontSize: 14,
+                                    outline: "none",
+                                  }}
+                                  onKeyDown={async (e) => {
+                                    if (e.key !== "Enter" || !northStarInput.trim() || savingNorthStar) return;
+                                    const answer = northStarInput.trim();
+                                    setSavingNorthStar(true);
+                                    try {
+                                      const { data: { session } } = await supabase.auth.getSession();
+                                      if (session) {
+                                        await supabase.from("diagnostic_profiles").update({ north_star_goal: answer }).eq("user_id", session.user.id);
+                                      }
+                                      setFirstOpenCtx(c => ({ ...c, northStar: answer }));
+                                      send(`The user just told me their north star topic is: "${answer}". Based on their profile and calibration, give them a specific, grounded response about why this topic is theirs to claim and what their first move should be.`);
+                                    } catch (err) { console.error(err); }
+                                    finally { setSavingNorthStar(false); }
+                                  }}
+                                />
+                                <button
+                                  disabled={!northStarInput.trim() || savingNorthStar}
+                                  onClick={async () => {
+                                    const answer = northStarInput.trim();
+                                    if (!answer) return;
+                                    setSavingNorthStar(true);
+                                    try {
+                                      const { data: { session } } = await supabase.auth.getSession();
+                                      if (session) {
+                                        await supabase.from("diagnostic_profiles").update({ north_star_goal: answer }).eq("user_id", session.user.id);
+                                      }
+                                      setFirstOpenCtx(c => ({ ...c, northStar: answer }));
+                                      send(`The user just told me their north star topic is: "${answer}". Based on their profile and calibration, give them a specific, grounded response about why this topic is theirs to claim and what their first move should be.`);
+                                    } catch (err) { console.error(err); }
+                                    finally { setSavingNorthStar(false); }
+                                  }}
+                                  style={{
+                                    background: "#D4B056", color: "#0d0d0b", border: "none",
+                                    padding: "0 16px", borderRadius: 8, fontSize: 13, fontWeight: 600,
+                                    cursor: northStarInput.trim() ? "pointer" : "not-allowed",
+                                    opacity: northStarInput.trim() ? 1 : 0.5,
+                                  }}
+                                >{savingNorthStar ? "…" : "Send"}</button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      ) : (
+                        <>
+                          {/* Contextual greeting card */}
+                          {firstOpenCtx.topSignalTitle ? (
+                            <div style={{
+                              background: "rgba(176,141,58,0.08)",
+                              border: "1px solid rgba(176,141,58,0.2)",
+                              borderRadius: 10,
+                              padding: "12px 14px",
+                            }}>
+                              <div style={{ fontSize: 11, color: "#D4B056", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 6, fontWeight: 600 }}>Your top signal</div>
+                              <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, color: "#ededed", lineHeight: 1.4, marginBottom: 4 }}>
+                                "{firstOpenCtx.topSignalTitle}"
+                              </div>
+                              <div style={{ fontSize: 12, color: "rgba(230,222,205,0.6)" }}>
+                                {Math.round((firstOpenCtx.topSignalConfidence || 0) * 100)}% confidence
+                                {firstOpenCtx.topSignalSources != null ? ` · ${firstOpenCtx.topSignalSources} source${firstOpenCtx.topSignalSources === 1 ? "" : "s"}` : ""}
+                              </div>
+                            </div>
+                          ) : captureCount > 0 ? (
+                            <div style={{
+                              background: "rgba(176,141,58,0.06)",
+                              border: "1px solid rgba(176,141,58,0.18)",
+                              borderRadius: 10,
+                              padding: "12px 14px",
+                            }}>
+                              <div style={{ fontSize: 11, color: "#D4B056", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 6, fontWeight: 600 }}>Your intelligence</div>
+                              <div style={{ fontSize: 13, color: "rgba(230,222,205,0.85)", lineHeight: 1.5 }}>
+                                {captureCount} capture{captureCount === 1 ? "" : "s"} processed.
+                                {captureCount < 3 ? ` ${3 - captureCount} more to detect your first signal.` : " Signals emerging."}
+                              </div>
+                            </div>
+                          ) : (
+                            <div style={{
+                              background: "rgba(176,141,58,0.06)",
+                              border: "1px solid rgba(176,141,58,0.18)",
+                              borderRadius: 10,
+                              padding: "12px 14px",
+                            }}>
+                              <div style={{ fontSize: 11, color: "#D4B056", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 6, fontWeight: 600 }}>Getting started</div>
+                              <div style={{ fontSize: 13, color: "rgba(230,222,205,0.85)", lineHeight: 1.5 }}>
+                                Capture your first article and I'll start finding patterns in what you read.
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Dynamic action buttons */}
+                          <DynamicActions state={userState} onAction={(p) => send(p)} disabled={isLoading} />
+                        </>
+                      )}
+                    </div>
+                  );
+                })()
               ) : (
                 messages.map((msg, i) => (
                   <div key={i} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
@@ -1525,11 +1954,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
               )}
 
               {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
-                <div className="flex justify-start">
-                  <div className="bg-secondary/60 border border-border/20 rounded-2xl rounded-bl-md px-4 py-3">
-                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                  </div>
-                </div>
+                <ThinkingCeremony signalCount={headerCounts?.signals ?? 0} captureCount={headerCounts?.captures ?? 0} />
               )}
             </div>
 
