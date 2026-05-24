@@ -35,7 +35,7 @@ const CharReveal = ({ text, accentWord, className, style }: { text: string; acce
                   key={ci}
                   aria-hidden
                   className="pw-char"
-                  style={{ display: "inline-block", animationDelay: `${i * 40}ms` }}
+                  style={{ display: "inline-block", animationDelay: `${i * 70}ms` }}
                 >
                   {ch}
                 </span>
