@@ -479,21 +479,45 @@ export default function PublicWelcome() {
             pointerEvents: "none",
           }} />
           <div style={{ position: "relative", width: "100%", maxWidth: 720, margin: "0 auto", display: "flex", flexDirection: "column", alignItems: "center", gap: 36 }}>
-            <img
-              src="/aura-hero-head.png"
-              alt="Aura Intelligence"
-              loading="eager"
-              fetchPriority="high"
-              className="pw-hero-head"
+            <div
+              className="pw-hero-head-wrap"
               style={{
+                position: "relative",
                 width: "clamp(200px, 40vw, 360px)",
-                height: "auto",
-                display: "block",
                 margin: "0 auto",
-                filter: "hue-rotate(20deg) saturate(0.8)",
                 transform: `translateY(${heroScroll * -20}px)`,
               }}
-            />
+            >
+              {/* Ambient bronze glow behind head */}
+              <div
+                aria-hidden
+                className="pw-hero-head-glow"
+                style={{
+                  position: "absolute",
+                  inset: "-20% -20% -20% -20%",
+                  background:
+                    "radial-gradient(circle, rgba(176,141,58,0.18) 0%, rgba(176,141,58,0.08) 40%, transparent 70%)",
+                  filter: "blur(20px)",
+                  pointerEvents: "none",
+                  zIndex: 0,
+                }}
+              />
+              <img
+                src="/aura-hero-head.png"
+                alt="Aura Intelligence"
+                loading="eager"
+                fetchPriority="high"
+                className="pw-hero-head"
+                style={{
+                  position: "relative",
+                  zIndex: 1,
+                  width: "100%",
+                  height: "auto",
+                  display: "block",
+                  filter: "sepia(1) saturate(1.8) hue-rotate(15deg) brightness(0.9)",
+                }}
+              />
+            </div>
             <CharReveal
               text="How visible is your expertise right now?"
               style={{
@@ -930,7 +954,8 @@ const PW_CSS = `
     .pw-illuminate { opacity: 1 !important; }
     .pw-split-left, .pw-split-right { opacity: 1 !important; transform: none !important; text-shadow: none !important; }
     .pw-split-bar { height: 60px !important; transition: none !important; }
-    .pw-hero-head { opacity: 0.85 !important; transform: none !important; animation: none !important; }
+    .pw-hero-head { opacity: 0.92 !important; transform: none !important; animation: none !important; }
+    .pw-hero-head-wrap { animation: none !important; }
     *, *::before, *::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
@@ -950,13 +975,19 @@ const PW_CSS = `
   /* Hero wireframe head entrance */
   .pw-hero-head {
     opacity: 0;
-    animation: pw-headIn 1.2s ease-out 0.3s forwards;
-    transition: transform 120ms linear;
+    animation:
+      pw-headIn 1.2s ease-out 0.3s forwards,
+      pw-headSurvey 12s ease-in-out 1.5s infinite;
     will-change: opacity, transform;
   }
   @keyframes pw-headIn {
     from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 0.85; transform: scale(1); }
+    to { opacity: 0.92; transform: scale(1); }
+  }
+  @keyframes pw-headSurvey {
+    0%   { transform: translateX(-2px); }
+    50%  { transform: translateX(2px); }
+    100% { transform: translateX(-2px); }
   }
 
   /* Pain headline dim → bright on scroll */
