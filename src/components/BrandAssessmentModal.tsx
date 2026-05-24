@@ -49,6 +49,7 @@ interface BrandAssessmentModalProps {
   onOpenChange: (open: boolean) => void;
   onComplete?: () => void;
   onNavigate?: (target: string) => void;
+  sector?: string;
 }
 
 interface Question {
@@ -60,7 +61,41 @@ interface Question {
   placeholder?: string;
 }
 
-const QUESTIONS: Question[] = [
+function placeholderFor(sector: string | undefined, idx: number): string {
+  const s = sector && sector.trim().length > 0 ? sector : "";
+  if (idx === 4) {
+    if (s === "Energy & Utilities") return "e.g. Digital transformation in regulated utilities";
+    if (s === "Healthcare & Pharma") return "e.g. AI adoption in clinical operations";
+    if (s === "Finance & Banking") return "e.g. Risk modeling in emerging markets";
+    if (s === "Government & Public Sector") return "e.g. Digital service delivery in government";
+    if (s === "Technology & IT") return "e.g. Cloud migration strategy for enterprise";
+    if (s === "Consulting & Professional Services") return "e.g. Change management in large transformations";
+    if (s === "Water & Infrastructure") return "e.g. Smart infrastructure and IoT integration";
+    if (s === "Real Estate & Construction") return "e.g. Sustainable building technology adoption";
+    if (s === "Oil & Gas") return "e.g. Operational technology modernization";
+    if (s === "Telecom") return "e.g. 5G infrastructure deployment strategy";
+    return s ? `e.g. Strategic leadership in ${s}` : "e.g. Strategic leadership in your sector";
+  }
+  if (idx === 5) {
+    if (s === "Energy & Utilities") return "e.g. The real barrier to grid modernization isn't technology — it's organizational readiness";
+    if (s === "Healthcare & Pharma") return "e.g. Clinical AI will never replace physician judgment — it will amplify it";
+    if (s === "Finance & Banking") return "e.g. Regulation isn't the enemy of innovation — it's the framework that makes it sustainable";
+    if (s === "Government & Public Sector") return "e.g. Digital transformation in government fails when it ignores citizen trust";
+    if (s === "Consulting & Professional Services") return "e.g. The best strategy means nothing if the client can't execute it";
+    return s ? `e.g. The biggest challenge in ${s} isn't what most people think it is` : "e.g. The biggest challenge in your field isn't what most people think it is";
+  }
+  if (idx === 7) {
+    if (s === "Energy & Utilities") return "e.g. No one is connecting geopolitical risk to grid modernization timelines";
+    if (s === "Healthcare & Pharma") return "e.g. No one is bridging the gap between clinical research and operational AI";
+    if (s === "Finance & Banking") return "e.g. No one is connecting ESG mandates to credit risk modeling";
+    if (s === "Consulting & Professional Services") return "e.g. No one is measuring the long-term ROI of transformation advisory";
+    return s ? `e.g. There's a gap in ${s} that no one is addressing yet` : "e.g. There's a gap in your field that no one is addressing yet";
+  }
+  return "";
+}
+
+function buildQuestions(sector?: string): Question[] {
+  return [
   {
     title: "How do clients describe you?",
     sub: "Pick up to 3 that feel most accurate.",
@@ -122,13 +157,13 @@ const QUESTIONS: Question[] = [
     title: "What topic do you get asked about most?",
     sub: "Type it in your own words.",
     type: "text",
-    placeholder: "e.g. Digital transformation in regulated utilities",
+    placeholder: placeholderFor(sector, 4),
   },
   {
     title: "What do you believe that most people in your field do not?",
     sub: "Be honest — this is your contrarian edge.",
     type: "text",
-    placeholder: "e.g. Technology is never the real transformation challenge — culture always is",
+    placeholder: placeholderFor(sector, 5),
   },
   {
     title: "What type of content do you most want to be known for?",
@@ -146,7 +181,7 @@ const QUESTIONS: Question[] = [
     title: "What gap in your field are you uniquely placed to fill?",
     sub: "The space no one else owns yet.",
     type: "text",
-    placeholder: "e.g. No one is connecting geopolitical risk to digital transformation delivery in utilities",
+    placeholder: placeholderFor(sector, 7),
   },
   {
     title: "Which reputation feels closest to your ideal?",
@@ -172,9 +207,11 @@ const QUESTIONS: Question[] = [
       "I have started but cannot maintain momentum",
     ],
   },
-];
+  ];
+}
 
-const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: BrandAssessmentModalProps) => {
+const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sector }: BrandAssessmentModalProps) => {
+  const QUESTIONS = useMemo(() => buildQuestions(sector), [sector]);
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string | string[]>>({});
   const [showResults, setShowResults] = useState(false);
