@@ -165,15 +165,28 @@ const SectorPulseTicker = ({ onOpenChat }: SectorPulseTickerProps) => {
   const [userSector, setUserSector] = useState<string>("default");
   const [validating, setValidating] = useState(false);
   const [paused, setPaused] = useState(false);
+  const [trendCount, setTrendCount] = useState<number | null>(null);
   const { toast } = useToast();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const detectSector = async () => {
-      const { data: profile } = await supabase
-        .from("diagnostic_profiles")
-        .select("sector_focus, core_practice")
-        .maybeSingle();
+      const { data: { session } } = await supabase.auth.getSession();
+      const uid = session?.user?.id;
+      if (!uid) { setUserSector("default"); setTrendCount(0); return; }
+
+      const [{ data: profile }, { count }] = await Promise.all([
+        supabase
+          .from("diagnostic_profiles")
+          .select("sector_focus, core_practice")
+          .eq("user_id", uid)
+          .maybeSingle(),
+        supabase
+          .from("industry_trends")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", uid),
+      ]);
+      setTrendCount(count || 0);
       if (!profile) { setUserSector("default"); return; }
       const focus = ((profile as any).sector_focus || (profile as any).core_practice || "").toLowerCase();
       if (focus.includes("water") || focus.includes("utilit")) setUserSector("water");
@@ -226,6 +239,10 @@ const SectorPulseTicker = ({ onOpenChat }: SectorPulseTickerProps) => {
 
   // Duplicate items for seamless infinite loop
   const loopItems = [...items, ...items];
+
+  // Hide ticker entirely until the user has real trends data in their account.
+  // Prevents wrong-sector hardcoded content from appearing for non-water users.
+  if (trendCount === null || trendCount < 3) return null;
 
   return (
     <>

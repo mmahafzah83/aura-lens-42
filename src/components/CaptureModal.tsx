@@ -749,10 +749,10 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
   // Skill pillar chip fallbacks (per spec)
   const PILLAR_CHIPS = [
     "Digital Transformation",
-    "IT/OT",
-    "Water Utilities",
-    "AI/ML",
-    "Vision 2030",
+    "Strategy",
+    "Operations",
+    "AI & Automation",
+    "Leadership",
   ];
 
   const fmtBytes = (b: number | null) => {
