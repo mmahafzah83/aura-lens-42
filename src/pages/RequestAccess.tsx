@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import usePageMeta from "@/hooks/usePageMeta";
+import { SECTORS } from "@/constants/sectors";
 
 type Status = "idle" | "loading" | "success" | "duplicate" | "error";
 
@@ -24,24 +25,7 @@ const SENIORITY = [
   "Other",
 ];
 
-const SECTOR = [
-  "Consulting & Professional Services",
-  "Energy & Utilities",
-  "Water & Infrastructure",
-  "Oil & Gas",
-  "Finance & Banking",
-  "Government & Public Sector",
-  "Technology & IT",
-  "Healthcare & Pharma",
-  "Real Estate & Construction",
-  "Telecom",
-  "Education & Academia",
-  "Manufacturing & Industrial",
-  "Defense & Aerospace",
-  "Retail & Consumer",
-  "Transportation & Logistics",
-  "Other",
-];
+const SECTOR: string[] = [...SECTORS];
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PERSONAL_DOMAINS = new Set([

@@ -1,0 +1,15 @@
+UPDATE public.diagnostic_profiles SET sector_focus = 'Finance & Banking' WHERE LOWER(TRIM(sector_focus)) IN ('financial services', 'finance', 'banking');
+UPDATE public.diagnostic_profiles SET sector_focus = 'Healthcare & Pharma' WHERE LOWER(TRIM(sector_focus)) IN ('healthcare', 'pharma', 'pharmaceutical', 'health & life sciences');
+UPDATE public.diagnostic_profiles SET sector_focus = 'Technology & IT' WHERE LOWER(TRIM(sector_focus)) IN ('technology', 'tech', 'it', 'technology and digital');
+UPDATE public.diagnostic_profiles SET sector_focus = 'Telecom' WHERE LOWER(TRIM(sector_focus)) IN ('telecommunications', 'tmt', 'tmt (tech, media, telecom)');
+UPDATE public.diagnostic_profiles SET sector_focus = 'Energy & Utilities' WHERE LOWER(TRIM(sector_focus)) IN ('energy', 'utilities', 'energy and resources');
+UPDATE public.diagnostic_profiles SET sector_focus = 'Consulting & Professional Services' WHERE LOWER(TRIM(sector_focus)) IN ('consulting', 'professional services', 'consulting (cross-industry)');
+UPDATE public.diagnostic_profiles SET sector_focus = 'Government & Public Sector' WHERE LOWER(TRIM(sector_focus)) IN ('government', 'public sector');
+UPDATE public.diagnostic_profiles SET sector_focus = 'Water & Infrastructure' WHERE LOWER(TRIM(sector_focus)) IN ('water', 'water utilities', 'water & utilities', 'utilities and infrastructure');
+UPDATE public.diagnostic_profiles SET sector_focus = 'Manufacturing & Industrial' WHERE LOWER(TRIM(sector_focus)) IN ('manufacturing', 'industrial');
+UPDATE public.diagnostic_profiles SET sector_focus = 'Real Estate & Construction' WHERE LOWER(TRIM(sector_focus)) IN ('real estate', 'construction');
+UPDATE public.diagnostic_profiles SET sector_focus = 'Education & Academia' WHERE LOWER(TRIM(sector_focus)) IN ('education', 'academia');
+UPDATE public.diagnostic_profiles SET sector_focus = 'Oil & Gas' WHERE LOWER(TRIM(sector_focus)) IN ('oil and gas', 'petroleum');
+UPDATE public.diagnostic_profiles SET sector_focus = 'Defense & Aerospace' WHERE LOWER(TRIM(sector_focus)) IN ('defense', 'aerospace');
+UPDATE public.diagnostic_profiles SET sector_focus = 'Retail & Consumer' WHERE LOWER(TRIM(sector_focus)) IN ('retail', 'consumer', 'retail & e-commerce');
+UPDATE public.diagnostic_profiles SET sector_focus = 'Transportation & Logistics' WHERE LOWER(TRIM(sector_focus)) IN ('transportation', 'logistics');

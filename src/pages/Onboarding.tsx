@@ -7,20 +7,7 @@ import { toast } from "sonner";
 import usePageMeta from "@/hooks/usePageMeta";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
 import CalibrationSliders from "@/components/CalibrationSliders";
-
-const SECTORS = [
-  "Energy & Utilities",
-  "Financial Services",
-  "Government",
-  "Healthcare",
-  "Technology",
-  "Consulting",
-  "Manufacturing",
-  "Real Estate",
-  "Telecommunications",
-  "Education",
-  "Other",
-];
+import { SECTORS, normalizeSector } from "@/constants/sectors";
 
 type Step = 0 | 1 | 2 | 3 | 4;
 
@@ -311,7 +298,7 @@ const Onboarding = () => {
         setLevel(p.level || "");
         setCorePractice(p.core_practice || "");
         const s = p.sector_focus || "";
-        setSectorFocus(SECTORS.includes(s) ? s : (s ? "Other" : ""));
+        setSectorFocus(s ? normalizeSector(s) : "");
         setUsedLinkedIn(true);
         setShowForm(true);
         // Successful extraction — show inline confirmation only, no error toast.

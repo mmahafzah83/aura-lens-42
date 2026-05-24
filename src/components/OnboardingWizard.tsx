@@ -4,33 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, X } from "lucide-react";
+import { SECTORS } from "@/constants/sectors";
 
 interface Props {
   userId: string;
   onComplete: () => void;
 }
-
-const SECTORS = [
-  "Technology & IT",
-  "Financial Services",
-  "Energy & Utilities",
-  "Healthcare & Pharma",
-  "Government & Public Sector",
-  "Education & Academia",
-  "Real Estate & Construction",
-  "Telecommunications",
-  "Oil & Gas",
-  "Retail & E-commerce",
-  "Manufacturing",
-  "Professional Services & Consulting",
-  "Transportation & Logistics",
-  "Media & Entertainment",
-  "Hospitality & Tourism",
-  "Agriculture & Food",
-  "Defense & Security",
-  "Non-profit & Development",
-  "Other",
-];
 
 const PILLARS = [
   "Digital Transformation",
@@ -90,13 +69,13 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
     const s = resolvedSector;
     if (s === "Energy & Utilities") return "e.g. Lead the region's first fully digital utility operation";
     if (s === "Healthcare & Pharma") return "e.g. Transform how clinical decisions are made with data";
-    if (s === "Financial Services") return "e.g. Build the most trusted advisory practice in the region";
+    if (s === "Finance & Banking") return "e.g. Build the most trusted advisory practice in the region";
     if (s === "Government & Public Sector") return "e.g. Modernize how public services reach citizens";
     if (s === "Technology & IT") return "e.g. Lead the next wave of enterprise AI adoption";
     if (s === "Oil & Gas") return "e.g. Pioneer autonomous operations in upstream production";
-    if (s === "Professional Services & Consulting") return "e.g. Become the go-to advisor for transformation in the region";
+    if (s === "Consulting & Professional Services") return "e.g. Become the go-to advisor for transformation in the region";
     if (s === "Real Estate & Construction") return "e.g. Redefine how megaprojects are delivered in the region";
-    if (s === "Telecommunications") return "e.g. Lead the GCC's shift to AI-native network operations";
+    if (s === "Telecom") return "e.g. Lead the GCC's shift to AI-native network operations";
     if (s === "Education & Academia") return "e.g. Reshape how the next generation learns and leads";
     return "e.g. Become the recognized leader in your field";
   })();
