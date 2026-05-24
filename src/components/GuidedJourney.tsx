@@ -19,7 +19,7 @@ const COPY = {
   },
   step2: {
     title: "Brand assessment",
-    why: "This assessment is built on the same frameworks used by the world's top leadership firms — Gallup CliftonStrengths for strengths mapping, McKinsey archetypes for market positioning, and Blue Ocean strategy for finding uncontested space. 10 questions. 5 minutes. It shapes everything Aura does for you from this point forward.",
+    why: "This assessment is built on the same frameworks used by the world's top leadership firms — Gallup CliftonStrengths for strengths mapping, McKinsey market positioning, and Blue Ocean strategy for finding uncontested space. 10 questions. 5 minutes. It shapes everything Aura does for you from this point forward.",
     cta: "Discover your market position",
   },
   step3: {

@@ -40,7 +40,7 @@ const buildShareContext = (id: string, name: string, ctx: any, sectorFocus: stri
   if (id === "profile_complete") return `Professional identity configured for ${sector}`;
   if (id === "first_signal") return `First strategic signal: ${ctx?.signal_title || name}`;
   if (id === "voice_trained") return "AI voice model trained on my writing style";
-  if (id === "brand_assessment") return "Professional brand archetype identified";
+  if (id === "brand_assessment") return "Professional market position identified";
   if (id === "five_signals") return `${ctx?.count ?? 5} active signals across ${sector}`;
   if (id === "sector_depth") {
     const t = Array.isArray(ctx?.themes) ? ctx.themes.length : (ctx?.theme_count ?? 5);

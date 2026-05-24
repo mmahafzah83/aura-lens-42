@@ -9,16 +9,16 @@ export interface CalibrationDimension {
 }
 
 export const CALIBRATION_DIMENSIONS: CalibrationDimension[] = [
-  { id: "strategic_architecture", name: "Strategic Architecture", description: "How well do you translate strategy into systems that actually execute?" },
-  { id: "sector_foresight", name: "Sector Foresight", description: "Can you see what's coming in your industry before the analysts publish it?" },
-  { id: "digital_synthesis", name: "Digital Synthesis", description: "How naturally do you connect technology trends to business outcomes?" },
-  { id: "csuite_stewardship", name: "C-Suite Stewardship", description: "When you speak to a CEO, do they listen because of your title — or your insight?" },
-  { id: "executive_presence", name: "Executive Presence", description: "In a room of senior leaders, does your perspective change the direction of the conversation?" },
-  { id: "geopolitical_fluency", name: "Geopolitical Fluency", description: "How well do you read the forces shaping your market — regulation, policy, global shifts?" },
-  { id: "human_centric_leadership", name: "Human-Centric Leadership", description: "Do your teams follow you because they have to — or because they want to?" },
-  { id: "operational_resilience", name: "Operational Resilience", description: "When things break, do you panic — or does your system hold?" },
-  { id: "commercial_velocity", name: "Commercial Velocity", description: "How quickly can you turn an idea into revenue?" },
-  { id: "value_based_pnl", name: "Value-Based P&L", description: "Can you prove the value of your work in numbers a CFO would respect?" },
+  { id: "strategic_architecture", name: "Strategic Thinking", description: "How well do you think in systems and turn strategy into execution?" },
+  { id: "sector_foresight", name: "Industry Vision", description: "How clearly do you see where your industry is heading?" },
+  { id: "digital_synthesis", name: "Digital Strategy", description: "How naturally do you connect technology to business outcomes?" },
+  { id: "csuite_stewardship", name: "Executive Leadership", description: "When you speak to a CEO, do they listen because of your insight?" },
+  { id: "executive_presence", name: "Professional Presence", description: "In a room of senior leaders, does your perspective shift the conversation?" },
+  { id: "geopolitical_fluency", name: "Regional Awareness", description: "How well do you read the forces shaping your market — policy, regulation, regional shifts?" },
+  { id: "human_centric_leadership", name: "People Leadership", description: "Do your teams follow you because they want to — not because they have to?" },
+  { id: "operational_resilience", name: "Operational Strength", description: "When things break, does your system hold steady?" },
+  { id: "commercial_velocity", name: "Business Impact", description: "How quickly can you turn an idea into measurable revenue?" },
+  { id: "value_based_pnl", name: "Financial Acumen", description: "Can you prove the value of your work in numbers a CFO would respect?" },
 ];
 
 function insightFor(score: number, sector?: string | null): string {
@@ -234,7 +234,7 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
         fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase",
         color: BRONZE, textAlign: "center", marginBottom: 24, fontWeight: 600,
       }}>
-        Step 3 of 5 — Calibrate your strengths
+        Step 3 of 5 — Map your strengths
       </p>
 
       <AnimatePresence mode="wait" custom={direction} initial={false}>

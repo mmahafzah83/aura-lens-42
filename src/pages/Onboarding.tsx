@@ -1096,7 +1096,7 @@ const Onboarding = () => {
       {cardShell(
         <>
           {eyebrow("Step 4 of 5 — How the market sees you")}
-          {heading("Discover your market archetype.")}
+          {heading("Discover your market position.")}
           <p className="mb-6" style={{ fontSize: 15, lineHeight: 1.7, color: "hsl(var(--muted-foreground))" }}>
             This 5-minute assessment reveals how a CIO in your sector would describe you to a colleague. It shapes how Aura writes your content and positions your expertise.
           </p>

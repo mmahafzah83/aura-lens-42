@@ -132,11 +132,11 @@ export default function ArchetypeHeroCard({
             display: "inline-flex", alignItems: "center", gap: 6,
           }}
         >
-          Your market archetype
+          Your market position
           <TooltipProvider delayDuration={150}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <button type="button" aria-label="About your archetype" style={{ background: "transparent", border: 0, color: "inherit", cursor: "help", padding: 0, opacity: 0.7 }}>
+                <button type="button" aria-label="About your market position" style={{ background: "transparent", border: 0, color: "inherit", cursor: "help", padding: 0, opacity: 0.7 }}>
                   <Info className="w-3 h-3" />
                 </button>
               </TooltipTrigger>
@@ -152,7 +152,7 @@ export default function ArchetypeHeroCard({
             fontSize: 30, color: "var(--aura-accent)", lineHeight: 1.15, marginBottom: 10,
           }}
         >
-          {archetypeName || "Complete assessment to reveal your archetype"}
+          {archetypeName || "Complete assessment to reveal your market position"}
         </div>
         {description && (
           <p style={{ fontSize: 14, color: textSecondary, lineHeight: 1.625, margin: 0, marginBottom: 16 }}>
