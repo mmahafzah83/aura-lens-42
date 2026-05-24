@@ -104,19 +104,36 @@ const KineticSplit = () => {
     return () => io.disconnect();
   }, []);
   return (
-    <div ref={ref} aria-label="From invisible to undeniable" className="pw-split" style={{
-      display: "flex", alignItems: "center", justifyContent: "center",
-      gap: 24, margin: "20px 0 48px", flexWrap: "nowrap",
-    }}>
-      <span className={`pw-split-left ${on ? "on" : ""}`} style={{
-        fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "clamp(22px, 4vw, 32px)",
-        color: "#ededed", fontWeight: 300,
-      }}>Invisible</span>
-      <span aria-hidden className={`pw-split-bar ${on ? "on" : ""}`} />
-      <span className={`pw-split-right ${on ? "on" : ""}`} style={{
-        fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "clamp(22px, 4vw, 32px)",
-        color: BRONZE, fontStyle: "italic", fontWeight: 300,
-      }}>Undeniable</span>
+    <div
+      ref={ref}
+      aria-label="From invisible to undeniable"
+      className="pw-split"
+      style={{
+        display: "flex", alignItems: "center", justifyContent: "center",
+        gap: 28, margin: "32px 0 56px", flexWrap: "nowrap",
+        minHeight: 100,
+      }}
+    >
+      <span
+        className={`pw-split-left ${on ? "on" : ""}`}
+        style={{
+          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontSize: "clamp(28px, 6vw, 48px)",
+          color: "#ededed", fontWeight: 300,
+        }}
+      >
+        Invisible
+      </span>
+      <span
+        className={`pw-split-right ${on ? "on" : ""}`}
+        style={{
+          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontSize: "clamp(32px, 7vw, 56px)",
+          color: BRONZE, fontStyle: "italic", fontWeight: 400,
+        }}
+      >
+        Undeniable
+      </span>
     </div>
   );
 };
