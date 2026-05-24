@@ -1371,16 +1371,17 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
         {viewMode === "chat" && (() => {
           const lastAssistant = memoryRows.find(r => r.role === "assistant" && r.content);
           if (!lastAssistant) return null;
-          const topic = (lastAssistant.content || "").replace(/\s+/g, " ").trim().slice(0, 70);
+          const firstSentence = (lastAssistant.content || "").replace(/\s+/g, " ").trim().split(/(?<=[.!?])\s/)[0] || "";
+          const topic = firstSentence.length > 60 ? firstSentence.slice(0, 60) + "…" : firstSentence;
           const lastAssistants = memoryRows.filter(r => r.role === "assistant" && r.content).slice(0, 5);
           return (
-            <div style={{ background: "var(--gold-pale)", borderBottom: "0.5px solid var(--gold-light)" }}>
+            <div style={{ background: "rgba(176,141,58,0.08)", borderBottom: "0.5px solid rgba(176,141,58,0.2)" }}>
               <div className="flex items-center gap-2 px-4 py-2">
-                <span style={{ background: "var(--brand)", color: "#fff", fontSize: 12, fontWeight: 600, padding: "2px 7px", borderRadius: 8, textTransform: "uppercase", letterSpacing: 0.4 }}>
-                  Remembers
+                <span style={{ color: "#D4B056", fontSize: 12, fontWeight: 600 }}>
+                  ✦
                 </span>
-                <span style={{ fontSize: 12, color: "var(--gold-text)", lineHeight: 1.35 }} className="truncate">
-                  Continuing from last session — {topic}
+                <span style={{ fontSize: 12, color: "rgba(230,222,205,0.75)", lineHeight: 1.35 }} className="truncate">
+                  Continuing from: {topic}
                 </span>
               </div>
               {showMemoryPanel && (
