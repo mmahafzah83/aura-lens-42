@@ -77,7 +77,7 @@ const BrandArchetypeWidget = ({ onStartAssessment }: BrandArchetypeWidgetProps) 
       )}
       {(primary || secondary) && (
         <p className="text-xs text-ink-5">
-          Archetype: {[primary, secondary].filter(Boolean).join(" · ")}
+          Market position: {[primary, secondary].filter(Boolean).join(" · ")}
         </p>
       )}
     </div>

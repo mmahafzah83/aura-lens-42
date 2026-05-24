@@ -1177,7 +1177,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                 {
                   n: 2,
                   title: "Complete your brand assessment",
-                  body: "Discover how the market sees you — your archetype, positioning, and authority territory. (5 minutes)",
+                  body: "Discover how the market sees you — your market position, positioning, and authority territory. (5 minutes)",
                   done: assessDone,
                   locked: !profileDone,
                   cta: assessDone || !profileDone ? null : "assessment" as const,

@@ -520,7 +520,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
                 <li style={{ fontSize: 14, color: "rgba(255,255,255,0.78)", lineHeight: 1.5 }}>
                   <span style={{ color: "var(--brand)", marginRight: 8 }}>◆</span>
-                  Your market archetype — the space you naturally own
+                  Your market position — the space you naturally own
                 </li>
                 <li style={{ fontSize: 14, color: "rgba(255,255,255,0.78)", lineHeight: 1.5 }}>
                   <span style={{ color: "var(--brand)", marginRight: 8 }}>◆</span>
