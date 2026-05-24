@@ -21,7 +21,7 @@ Sentence 3 — State the commercial ambition or proof point. A specific number, 
 
 RULE FOR VERB USAGE: Never use the phrase "I leverage." Replace with direct action verbs: "I deploy", "I use", "My approach is built on", "I apply". Scan the entire output for the word "leverage" and replace every instance with a direct action verb before returning it.
 
-Example of correct output for a GCC utility transformation advisor: 'GCC utility leaders are spending $40M+ on digital platforms and getting pilot purgatory — technology that works in demos and fails in the control room. I build the governance architecture that closes that gap, using the IT4B framework and Roman Riding model I developed specifically for the GCC infrastructure context — moving from fragmented pilots to integrated operational platforms. My goal is to build the $10M EY utility practice that makes this methodology the standard across the region.'
+Example of correct STRUCTURE (do NOT copy the content — generate fresh from the user's actual profile): 'Senior leaders in [their sector] are investing heavily in [specific initiative] and getting [specific painful outcome with a measurable consequence]. I build [the specific approach or framework] that closes that gap, using [proprietary methodology or distinctive experience] — moving from [current broken state] to [concrete operational end state]. My goal is to build [a specific, measurable commercial ambition].'
 
 This example shows the structure — do not copy the content. Generate fresh content from the user's actual profile and assessment answers every time.
 

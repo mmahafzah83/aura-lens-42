@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,6 +29,25 @@ serve(async (req) => {
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+    // Load profile for dynamic persona
+    let persona = "Senior professional building their digital presence";
+    try {
+      const authHeader = req.headers.get("Authorization");
+      const token = authHeader?.replace("Bearer ", "");
+      if (token) {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
+        const { data: { user } } = await anonClient.auth.getUser(token);
+        if (user) {
+          const admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+          const { data: p } = await admin.from("diagnostic_profiles")
+            .select("level, firm, sector_focus, core_practice")
+            .eq("user_id", user.id).maybeSingle();
+          if (p) persona = `${(p as any).level || "Senior professional"} at ${(p as any).firm || "a leading organization"} working in ${(p as any).sector_focus || (p as any).core_practice || "their field"}`;
+        }
+      }
+    } catch (_) { /* ignore */ }
 
     let pageRes: Response | null = null;
     const fetchWithTimeout = async (targetUrl: string, timeoutMs = 10000) => {
@@ -127,7 +147,7 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are a Senior Executive Coach analyzing web content for a Director at EY who aspires to be a "Transformation Architect." You are sophisticated, challenging, and neutral.
+            content: `You are a Senior Executive Coach analyzing web content for a ${persona}. You are sophisticated, challenging, and neutral.
 
 Given web page content, extract:
 1. A clean TITLE

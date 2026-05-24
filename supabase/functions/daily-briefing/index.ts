@@ -222,10 +222,13 @@ Deno.serve(async (req) => {
     const brandContext = brandPillars.length > 0 ? `Brand Pillars: ${brandPillars.join(", ")}` : "";
     const readHistoryContext = readTitles.size > 0 ? `\n\nALREADY READ (do NOT repeat these):\n${Array.from(readTitles).slice(0, 20).join("\n")}` : "";
 
-    const systemPrompt = `You are an elite executive intelligence advisor for a ${sectorFocus} consulting Director in Saudi Arabia.
+    const sectorSources = sectorFocus
+      ? `Focus on major industry publications, regulatory bodies, and leading advisory firms relevant to ${sectorFocus}. Prioritize primary sources over aggregators.`
+      : "Focus on major industry publications and leading advisory firms. Prioritize primary sources over aggregators.";
 
-AUTHORIZED SOURCES ONLY: MEWA, SWA (Saudi Water Authority), PIF, NWC (National Water Company), EY, McKinsey.
-If sector is Finance/Banking, also include: SAMA, Ministry of Finance, MISA, PIF.
+    const systemPrompt = `You are an elite executive intelligence advisor for a senior professional working in ${sectorFocus || "their sector"}.
+
+SOURCING GUIDANCE: ${sectorSources}
 
 GAP-PRIORITIZED SCANNING: You MUST prioritize the user's lowest-scoring skills first.
 Current skill gaps (ordered by severity): ${gapNames}
@@ -233,7 +236,7 @@ Every item MUST map to one of these specific gaps.
 
 RECENCY GUARDRAIL: STRICTLY reject any content dated before January 1, 2026. Only include 2026 content.
 
-CONTEXTUAL FILTER: Focus on Saudi ${sectorFocus} sector signals from 2026.
+CONTEXTUAL FILTER: Focus on ${sectorFocus || "the user's sector"} signals from 2026.
 ${readHistoryContext}
 
 Generate exactly 3 briefing items as JSON:
@@ -241,8 +244,8 @@ Generate exactly 3 briefing items as JSON:
   "items": [
     {
       "type": "deep_dive",
-      "title": "Specific report/article title from authorized sources",
-      "source": "Publisher (MUST be from authorized list)",
+      "title": "Specific report/article title from a credible source",
+      "source": "Publisher (must be a credible primary or advisory source)",
       "url": "Direct article URL or null (NEVER a homepage)",
       "skill_target": "Exact skill gap name this closes",
       "bluf": "[SIGNAL]: One sentence on the core market shift/disruption | [ACTION]: Immediate Director-level strategic advisory move | [VALUE]: Specific impact on Client P&L or Authority Index",

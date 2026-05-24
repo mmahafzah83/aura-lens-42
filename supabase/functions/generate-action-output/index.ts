@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,8 +25,9 @@ async function callAI(apiKey: string, system: string, user: string): Promise<str
   return data.choices?.[0]?.message?.content || "";
 }
 
-const SYSTEM_PROMPTS: Record<string, string> = {
-  executive_memo: `You are a senior executive advisor writing an internal leadership memo for a Director-level executive at EY.
+function buildPrompts(persona: string): Record<string, string> {
+  return {
+    executive_memo: `You are a senior executive advisor writing an internal leadership memo for a ${persona}.
 
 Structure the memo as:
 EXECUTIVE MEMO
@@ -40,7 +42,7 @@ RISK IF DELAYED — 1 sentence on cost of inaction
 
 Tone: Concise, authoritative, no filler. Under 200 words. No emojis.`,
 
-  meeting_prep: `You are an executive briefing advisor preparing meeting preparation notes for a Director at EY.
+    meeting_prep: `You are an executive briefing advisor preparing meeting preparation notes for a ${persona}.
 
 Structure as:
 MEETING PREPARATION BRIEF
@@ -54,7 +56,7 @@ CLOSING ASK — The specific commitment to request at the end
 
 Tone: Strategic, prepared, action-oriented. Under 250 words.`,
 
-  strategy_brief: `You are a senior strategy consultant writing a one-page strategy brief for an EY Director.
+    strategy_brief: `You are a senior strategy consultant writing a one-page strategy brief for a ${persona}.
 
 Structure as:
 STRATEGY BRIEF
@@ -68,7 +70,7 @@ NEXT STEPS — 2 immediate actions with owners and deadlines
 
 Tone: Consulting-grade, structured, evidence-oriented. Under 300 words.`,
 
-  presentation_slide: `You are a strategy presentation specialist creating a single slide script for an EY Director.
+    presentation_slide: `You are a strategy presentation specialist creating a single slide script for a ${persona}.
 
 Structure as:
 SLIDE CONTENT
@@ -81,7 +83,8 @@ SPEAKER NOTES — 3-4 sentences on what to say when presenting this slide
 SOURCE LINE — A credible attribution or data reference
 
 Format this so it can be directly used to build a presentation slide. Under 200 words.`,
-};
+  };
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -98,7 +101,31 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const systemPrompt = SYSTEM_PROMPTS[output_type];
+    // Load profile to build dynamic persona
+    let persona = "Senior professional building their digital presence";
+    let sectorRef = "their sector";
+    try {
+      const authHeader = req.headers.get("Authorization");
+      const token = authHeader?.replace("Bearer ", "");
+      if (token) {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const anon = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
+        const { data: { user } } = await anon.auth.getUser(token);
+        if (user) {
+          const admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+          const { data: prof } = await admin.from("diagnostic_profiles")
+            .select("level, firm, sector_focus, core_practice")
+            .eq("user_id", user.id).maybeSingle();
+          if (prof) {
+            const p: any = prof;
+            persona = `${p.level || "Senior professional"} at ${p.firm || "a leading organization"} working in ${p.sector_focus || p.core_practice || "their field"}`;
+            sectorRef = p.sector_focus || p.core_practice || "their sector";
+          }
+        }
+      }
+    } catch (_) { /* ignore */ }
+
+    const systemPrompt = buildPrompts(persona)[output_type];
     if (!systemPrompt) {
       return new Response(JSON.stringify({ error: `Unknown output_type: ${output_type}` }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -110,7 +137,7 @@ serve(async (req) => {
 Action: ${action}
 Rationale: ${rationale || "N/A"}
 
-Apply this to the context of infrastructure, water, energy, or digital transformation in KSA/GCC.`;
+Apply this to the context of ${sectorRef}.`;
 
     const content = await callAI(LOVABLE_API_KEY, systemPrompt, userPrompt);
 

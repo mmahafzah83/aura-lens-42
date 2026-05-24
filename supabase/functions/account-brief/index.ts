@@ -24,6 +24,15 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await anonClient.auth.getUser(token);
     if (userError || !user) throw new Error("Unauthorized");
 
+    // Load profile for dynamic persona
+    const { data: profile } = await supabase
+      .from("diagnostic_profiles")
+      .select("level, firm, sector_focus, core_practice")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const pp: any = profile || {};
+    const persona = `${pp.level || "Senior professional"} at ${pp.firm || "a leading organization"} working in ${pp.sector_focus || pp.core_practice || "their field"}`;
+
     // Query entries directly (tagged with account or matching in content/title)
     const { data: entries, error: entriesErr } = await supabase
       .from("entries")
@@ -101,7 +110,7 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are Aura, an executive intelligence advisor for a senior EY professional. Analyze account intelligence and produce strategic syntheses in English. Return JSON using the tool provided.`,
+            content: `You are Aura, an executive intelligence advisor for a ${persona}. Analyze account intelligence and produce strategic syntheses in English. Return JSON using the tool provided.`,
           },
           {
             role: "user",

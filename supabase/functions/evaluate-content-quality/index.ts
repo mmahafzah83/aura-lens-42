@@ -18,8 +18,8 @@ serve(async (req) => {
       });
     }
 
-    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-    if (!OPENAI_API_KEY) {
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
       return new Response(JSON.stringify({
         pass: true,
         score: 0,
@@ -52,14 +52,14 @@ Return JSON:
   "verdict": "One sentence: would you advise this executive to publish this as-is?"
 }`;
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o",
+        model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: `Post to evaluate:\n\n${post_text}\n\n${signal_title ? `Signal: "${signal_title}"` : ""}\n${voice_tone ? `Expected voice tone: ${voice_tone}` : ""}\n${user_sector ? `Sector: ${user_sector}` : ""}` },
@@ -69,7 +69,7 @@ Return JSON:
     });
 
     if (!response.ok) {
-      console.error("[evaluate-content-quality] GPT-4o error:", response.status);
+      console.error("[evaluate-content-quality] AI gateway error:", response.status);
       return new Response(JSON.stringify({ pass: true, score: 0, skipped: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

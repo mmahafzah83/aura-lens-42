@@ -75,9 +75,9 @@ Deno.serve(async (req) => {
 
     const p = profile as any || {};
     const brandPillars = (p.brand_pillars || []).join(", ") || "Strategy, Innovation, Leadership";
-    const firm = p.firm || "Big 4";
-    const level = p.level || "Director";
-    const sector = p.sector_focus || "Water & Utilities";
+    const firm = p.firm || "a leading organization";
+    const level = p.level || "Senior professional";
+    const sector = p.sector_focus || "their sector";
     const authorName = [p.first_name, p.last_name].filter(Boolean).join(" ").trim();
     const authorFooter = [authorName, level, firm || sector].filter(Boolean).join(" | ");
 

@@ -36,6 +36,16 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
+    // Load user profile to build dynamic persona
+    const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { data: profile } = await admin
+      .from("diagnostic_profiles")
+      .select("level, firm, sector_focus, core_practice")
+      .eq("user_id", userData.user.id)
+      .maybeSingle();
+    const p: any = profile || {};
+    const persona = `${p.level || "Senior professional"} at ${p.firm || "a leading organization"} working in ${p.sector_focus || p.core_practice || "their field"}`;
+
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -85,7 +95,7 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are a Senior Executive Coach analyzing screenshots and images for a Director at EY who is building a "Transformation Architect" brand. 
+            content: `You are a Senior Executive Coach analyzing screenshots and images for a ${persona} who is building their professional brand.
 
 Extract ALL text from the image. Then analyze the content for strategic frameworks, key insights, or actionable intelligence. Categorize into the appropriate skill pillar. If Arabic text is present, provide a bilingual summary.
 
