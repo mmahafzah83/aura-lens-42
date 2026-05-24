@@ -88,8 +88,8 @@ html.dark  { background-color: var(--paper, #14110C); }
   --ink: #FBF8F1;
   --ink-2: #E2D9C5;
   /* A11y: meet WCAG AA on --paper #14110C */
-  --ink-3: #B8AE99;
-  --ink-4: #8A8170;
+  --ink-3: #C9C0AC;
+  --ink-4: #A89F8A;
   --ink-5: #5A5347;
 
   /* Bronze (primary brand) — dark mode default */
