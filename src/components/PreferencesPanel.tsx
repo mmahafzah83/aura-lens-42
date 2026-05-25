@@ -305,6 +305,7 @@ export default function PreferencesPanel({
           inset: 0,
           transition: "opacity 200ms ease",
           animation: "aura-pref-fade-in 180ms ease",
+          touchAction: "none",
         }}
       />
       {/* Panel */}
