@@ -1333,17 +1333,9 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
 
                           {/* What / Why / Act */}
                           {(whyNow || yourMove) && (
-                            <div style={{ fontSize: 12, color: "var(--ink-4)", lineHeight: 1.4, margin: "6px 0 8px" }}>
-                              {whyNow && (
-                                <div style={{ overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>
-                                  <span style={{ color: "var(--ink-3)", fontWeight: 600 }}>Why now: </span>{whyNow}
-                                </div>
-                              )}
-                              {yourMove && (
-                                <div style={{ marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>
-                                  <span style={{ color: "var(--ink-3)", fontWeight: 600 }}>Your move: </span>{yourMove}
-                                </div>
-                              )}
+                            <div style={{ margin: "6px 0 8px" }}>
+                              {whyNow && <ExpandableSignalText label="Why now" text={whyNow} />}
+                              {yourMove && <ExpandableSignalText label="Your move" text={yourMove} />}
                             </div>
                           )}
 
@@ -1351,13 +1343,15 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                             <button
                               onClick={(e) => { e.stopPropagation(); draftFromSignal(s); }}
-                              style={{ fontSize: 12, padding: "4px 10px", borderRadius: 4, border: "0.5px solid var(--brand)", background: "var(--brand)", color: "var(--ink-on-brand, #fff)", cursor: "pointer" }}
+                              className="bg-brand text-white border border-brand dark:bg-transparent dark:text-brand dark:border-brand hover:opacity-90 transition-opacity"
+                              style={{ fontSize: 12, padding: "4px 10px", borderRadius: 4, cursor: "pointer" }}
                             >
                               Draft post →
                             </button>
                             <button
                               onClick={(e) => { e.stopPropagation(); onOpenChat?.(`Show competitor intel on: ${s.signal_title}`); }}
-                              style={{ fontSize: 12, padding: "4px 10px", borderRadius: 4, border: "0.5px solid var(--surface-ink-subtle)", background: "transparent", color: "var(--ink-4)", cursor: "pointer" }}
+                              className="text-ink-4 dark:text-ink-2 border border-[color:var(--surface-ink-subtle)] hover:opacity-90 transition-opacity"
+                              style={{ fontSize: 12, padding: "4px 10px", borderRadius: 4, background: "transparent", cursor: "pointer" }}
                             >
                               Competitor intel
                             </button>
