@@ -7,7 +7,6 @@ const corsHeaders = {
 };
 
 const FIRECRAWL_BASE = "https://api.firecrawl.dev/v2";
-const EXA_URL = "https://api.exa.ai/search";
 const MIN_CONTENT_CHARS = 1200;       // raw markdown gate (relaxed; clean gate is the hard rule)
 const MIN_CLEAN_TEXT_CHARS = 800;     // post-clean hard gate (per spec)
 const MAX_NOISE_RATIO = 0.30;         // reject if >30% of raw is noise
@@ -644,73 +643,62 @@ function computeTopicRelevance(text: string, profileTokens: string[]): number {
   return Math.round(coverage * 60 + density * 40);
 }
 
-// ───────── Exa discovery ─────────
-async function exaDiscover(
+// ───────── Perplexity discovery ─────────
+async function perplexityDiscover(
   apiKey: string,
   profileContext: string,
   queries: string[],
-  mode: "light" | "full" = "light",
+  _mode: "light" | "full" = "light",
 ): Promise<Array<{ url: string; title?: string; description?: string; reason?: string }>> {
-  const lookbackDays = mode === "full" ? 14 : 120;
-  const startPublishedDate = new Date(Date.now() - lookbackDays * 86400_000).toISOString();
   const collected = new Map<string, { url: string; title?: string; description?: string; reason?: string }>();
-
-  // Strategy: run two passes per query — one biased to consulting/business
-  // sources, one open. This avoids monoculture from a single category.
-  const consultingDomains = TRUSTED_DOMAINS.filter(d =>
-    !/(nature|science|nber)\.org?$/.test(d) && !/^nature\.com$/.test(d)
-  );
 
   for (const q of queries) {
     if (!q || q.length < 6) continue;
-    const passes: Array<Record<string, unknown>> = [
-      // Pass 1: business/consulting bias (no category, restricted domains)
-      {
-        query: `${q} — strategic implications for senior consultants (${profileContext})`,
-        numResults: 6,
-        type: "neural",
-        useAutoprompt: true,
-        startPublishedDate,
-        contents: { text: false, summary: { query: "Why this matters strategically" } },
-        includeDomains: consultingDomains,
-      },
-      // Pass 2: open neural search (broader pool, no domain/category lock)
-      {
-        query: `${q} executive briefing OR analysis OR report`,
-        numResults: 5,
-        type: "neural",
-        useAutoprompt: true,
-        startPublishedDate,
-        category: "research report",
-      },
-    ];
+    try {
+      const res = await fetch("https://api.perplexity.ai/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "sonar",
+          messages: [{
+            role: "user",
+            content: `Find 5 recent articles, reports, or whitepapers about: ${q}. Context: ${profileContext}. Return the exact URLs and titles. Focus on McKinsey, BCG, Deloitte, EY, PwC, Gartner, HBR, and industry-specific publications from 2025-2026.`,
+          }],
+          search_recency_filter: "month",
+        }),
+      });
 
-    for (const body of passes) {
-      try {
-        const res = await fetch(EXA_URL, {
-          method: "POST",
-          headers: { "x-api-key": apiKey, "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-        const data = await res.json().catch(() => null);
-        if (!res.ok) {
-          console.error("[trends] exa pass failed", res.status, data);
-          continue;
-        }
-        const results = Array.isArray(data?.results) ? data.results : [];
-        for (const r of results) {
-          if (r?.url && !collected.has(r.url)) {
-            collected.set(r.url, {
-              url: r.url,
-              title: r.title,
-              description: r.summary || r.text?.slice(0, 200),
-              reason: r.summary,
+      if (res.ok) {
+        const data = await res.json();
+        const citations = data?.citations || [];
+        const content = data?.choices?.[0]?.message?.content || "";
+
+        for (const url of citations) {
+          if (url && !collected.has(url)) {
+            collected.set(url, {
+              url,
+              title: "",
+              description: "",
+              reason: "Discovered via Perplexity market search",
             });
           }
         }
-      } catch (e) {
-        console.error("[trends] exa pass exception", e);
+
+        const urlRegex = /https?:\/\/[^\s)>"]+/g;
+        const contentUrls = content.match(urlRegex) || [];
+        for (const url of contentUrls) {
+          if (!collected.has(url)) {
+            collected.set(url, { url, description: "", reason: "Discovered via Perplexity" });
+          }
+        }
+      } else {
+        console.error("[trends] perplexity pass failed", res.status);
       }
+    } catch (e) {
+      console.error("[trends] perplexity search failed for query:", q, e);
     }
   }
 
@@ -1096,10 +1084,10 @@ Return JSON only.`;
 // ═══════════════════════════════════════════════════════════════════════════
 async function runPhaseA(opts: {
   userId: string; mode: "light" | "full";
-  adminClient: any; exaKey: string; profile: any;
+  adminClient: any; perplexityKey: string; profile: any;
   supabaseUrl: string; serviceKey: string;
 }): Promise<{ status: string; discovered: number; queued: number }> {
-  const { userId, mode, adminClient, exaKey, profile, supabaseUrl, serviceKey } = opts;
+  const { userId, mode, adminClient, perplexityKey, profile, supabaseUrl, serviceKey } = opts;
 
   const year = new Date().getFullYear();
   const profileContext = [profile.sector_focus, profile.core_practice, profile.firm, profile.level, profile.north_star_goal].filter(Boolean).join(", ");
@@ -1111,10 +1099,10 @@ async function runPhaseA(opts: {
     `${sector} technology adoption analysis ${year}`,
   ].filter(q => q.length > 8);
 
-  console.log("[phaseA] exa discovery:", queries);
+  console.log("[phaseA] perplexity discovery:", queries);
   const t0 = Date.now();
-  const discoveryResults = await exaDiscover(exaKey, profileContext, queries, opts.mode);
-  console.log(`[phaseA] exa returned: ${discoveryResults.length} in ${Date.now() - t0}ms`);
+  const discoveryResults = await perplexityDiscover(perplexityKey, profileContext, queries, opts.mode);
+  console.log(`[phaseA] perplexity returned: ${discoveryResults.length} in ${Date.now() - t0}ms`);
 
   const seen = new Set<string>();
   const candidates = discoveryResults.filter(r => {
@@ -1542,15 +1530,15 @@ serve(async (req) => {
     const anonKey     = Deno.env.get("SUPABASE_ANON_KEY")!;
     const lovableKey  = Deno.env.get("LOVABLE_API_KEY")!;
     const firecrawlKey= Deno.env.get("FIRECRAWL_API_KEY");
-    const exaKey      = Deno.env.get("EXA_API_KEY");
+    const perplexityKey = Deno.env.get("PERPLEXITY_API_KEY");
 
     if (!firecrawlKey) {
       return new Response(JSON.stringify({ error: "FIRECRAWL_API_KEY not configured" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (!exaKey) {
-      return new Response(JSON.stringify({ error: "EXA_API_KEY not configured" }), {
+    if (!perplexityKey) {
+      return new Response(JSON.stringify({ error: "PERPLEXITY_API_KEY not configured" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -1572,7 +1560,7 @@ serve(async (req) => {
         if (!userId) continue;
         try {
           const result = await runPhaseA({
-            userId, mode, adminClient, exaKey, profile: p, supabaseUrl, serviceKey,
+            userId, mode, adminClient, perplexityKey, profile: p, supabaseUrl, serviceKey,
           });
           summary.push({ user_id: userId, ...result });
         } catch (e) {
@@ -1636,7 +1624,7 @@ serve(async (req) => {
     }
 
     const result = await runPhaseA({
-      userId, mode, adminClient, exaKey, profile, supabaseUrl, serviceKey,
+      userId, mode, adminClient, perplexityKey, profile, supabaseUrl, serviceKey,
     });
 
     return new Response(JSON.stringify({
