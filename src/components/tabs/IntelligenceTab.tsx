@@ -1299,19 +1299,6 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                               Draft post →
                             </button>
                             <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedSignalId(s.id);
-                                setTimeout(() => {
-                                  const ev = document.getElementById("signal-evidence-section");
-                                  if (ev) ev.scrollIntoView({ behavior: "smooth", block: "start" });
-                                }, 120);
-                              }}
-                              style={{ fontSize: 12, padding: "4px 10px", borderRadius: 4, border: "0.5px solid var(--surface-ink-subtle)", background: "transparent", color: "var(--ink-4)", cursor: "pointer" }}
-                            >
-                              View evidence
-                            </button>
-                            <button
                               onClick={(e) => { e.stopPropagation(); onOpenChat?.(`Show competitor intel on: ${s.signal_title}`); }}
                               style={{ fontSize: 12, padding: "4px 10px", borderRadius: 4, border: "0.5px solid var(--surface-ink-subtle)", background: "transparent", color: "var(--ink-4)", cursor: "pointer" }}
                             >
