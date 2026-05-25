@@ -322,6 +322,7 @@ export default function PreferencesPanel({
           flexDirection: "column",
           animation: "aura-pref-slide-in 240ms cubic-bezier(0.16, 1, 0.3, 1)",
           overflow: "hidden",
+          height: "100%",
         }}
       >
         <style>{`
@@ -344,6 +345,7 @@ export default function PreferencesPanel({
             alignItems: "flex-start",
             justifyContent: "space-between",
             gap: 12,
+            flexShrink: 0,
           }}
         >
           <div style={{ minWidth: 0 }}>
@@ -392,19 +394,19 @@ export default function PreferencesPanel({
         </div>
 
         {/* Scrollable body */}
-        <div style={{ flex: 1, overflowY: "auto" }}>
+        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
           {/* YOUR PROFILE */}
           <SectionHeader>Your profile</SectionHeader>
-          <Row label="Name" value={displayName} onClick={onEditProfile} />
+          <Row label="Name" value={displayName} onClick={onEditField ? () => onEditField("first_name") : undefined} />
           <Row
             label="Firm"
             value={profile?.firm?.trim() || "Not set"}
-            onClick={onEditProfile}
+            onClick={onEditField ? () => onEditField("firm") : undefined}
           />
           <Row
             label="Sector"
             value={profile?.sector_focus?.trim() || "Not set"}
-            onClick={onEditProfile}
+            onClick={onEditField ? () => onEditField("sector_focus") : undefined}
           />
           {editingLinkedIn ? (
             <div
@@ -540,7 +542,9 @@ export default function PreferencesPanel({
 
           {/* ACCOUNT */}
           <SectionHeader>Account</SectionHeader>
-          <Row label="Change password" onClick={() => setPwModalOpen(true)} />
+          {onChangePassword && (
+            <Row label="Change password" onClick={onChangePassword} />
+          )}
           {onRetakeBrandAssessment && (
             <Row label="Retake brand assessment" onClick={onRetakeBrandAssessment} />
           )}
@@ -561,12 +565,6 @@ export default function PreferencesPanel({
           )}
         </div>
       </div>
-
-      <SetPasswordModal
-        open={pwModalOpen}
-        onClose={() => setPwModalOpen(false)}
-        isFirstTime={false}
-      />
     </div>
   );
 
