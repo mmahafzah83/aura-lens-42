@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { Send, Plus, Eye, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
-type ActionType = "PUBLISH" | "CAPTURE" | "WATCH";
-type Urgency = "HIGH" | "MEDIUM";
+export type ActionType = "PUBLISH" | "CAPTURE" | "WATCH";
+export type Urgency = "HIGH" | "MEDIUM";
 
-interface AuraItem {
+export interface AuraItem {
   action_type: ActionType;
   title: string;
   reason: string;
