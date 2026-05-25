@@ -756,12 +756,13 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     setSelectedFile(file);
   };
 
-  const handleUpload = async () => {
-    if (!selectedFile) return;
+  const handleUpload = async (fileOverride?: File) => {
+    const fileToUpload = fileOverride || selectedFile;
+    if (!fileToUpload) return;
     setUploading(true);
     try {
       const form = new FormData();
-      form.append("file", selectedFile);
+      form.append("file", fileToUpload);
       const { data, error } = await supabase.functions.invoke("import-linkedin-analytics", {
         body: form,
       });
@@ -769,7 +770,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       if ((data as any)?.error) throw new Error((data as any).error);
       const imp = (data as any)?.imported || {};
       const days = (imp.engagement_rows || 0) + (imp.follower_rows || 0);
-      toast.success(`LinkedIn data imported — ${days} days of data loaded`);
+      toast.success(`Analytics imported successfully — ${days} days of data loaded`);
       setSelectedFile(null);
       setPipeline({ voice: "pending", positioning: "pending", score: "pending" });
       await runPostImportPipeline(setPipeline);
