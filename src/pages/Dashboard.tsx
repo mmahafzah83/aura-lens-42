@@ -1056,7 +1056,7 @@ const Dashboard = () => {
         }}
         onRetakeBrandAssessment={() => {
           setPreferencesOpen(false);
-          setTimeout(() => window.dispatchEvent(new CustomEvent("aura:open-brand-assessment")), 180);
+          setTimeout(() => setBrandAssessmentOpen(true), 180);
         }}
       />
       <EditProfileModal
@@ -1069,6 +1069,11 @@ const Dashboard = () => {
         open={passwordModalOpen}
         onClose={() => setPasswordModalOpen(false)}
         isFirstTime={false}
+      />
+      <BrandAssessmentModal
+        open={brandAssessmentOpen}
+        onOpenChange={setBrandAssessmentOpen}
+        onComplete={() => setBrandAssessmentOpen(false)}
       />
     </div>
   );
