@@ -656,6 +656,63 @@ const FrameworksSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?:
    Main Intelligence Tab
    ═══════════════════════════════════════════ */
 
+/** Expandable text block for signal sidebar (Why now / Your move). */
+const ExpandableSignalText = ({ label, text }: { label: string; text: string }) => {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [overflows, setOverflows] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    setOverflows(el.scrollHeight - 1 > el.clientHeight);
+  }, [text]);
+
+  const clampStyle: React.CSSProperties = expanded
+    ? { display: "block" }
+    : {
+        display: "-webkit-box",
+        WebkitLineClamp: 3,
+        WebkitBoxOrient: "vertical",
+        overflow: "hidden",
+      };
+
+  const interactive = overflows;
+
+  return (
+    <div
+      onClick={(e) => {
+        if (!interactive) return;
+        e.stopPropagation();
+        setExpanded((v) => !v);
+      }}
+      style={{
+        cursor: interactive ? "pointer" : "default",
+        transition: "opacity 0.15s",
+        marginTop: 2,
+      }}
+      onMouseEnter={(e) => { if (interactive) e.currentTarget.style.opacity = "0.85"; }}
+      onMouseLeave={(e) => { if (interactive) e.currentTarget.style.opacity = "1"; }}
+    >
+      <span
+        ref={ref}
+        className="leading-relaxed text-ink-7 dark:text-ink-3"
+        style={{ ...clampStyle, transition: "all 0.3s ease-in-out", fontSize: 12 }}
+      >
+        <span className="font-semibold text-ink-5">{label}: </span>
+        {text}
+        {interactive && (
+          <ChevronDown
+            size={14}
+            className="text-ink-5 inline-block align-middle ml-1"
+            style={{ transform: expanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.3s ease-in-out" }}
+          />
+        )}
+      </span>
+    </div>
+  );
+};
+
 const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraftToStudio }: IntelligenceTabProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user: authUser } = useAuthReady();
