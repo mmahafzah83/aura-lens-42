@@ -39,7 +39,7 @@ interface Props {
   signals?: Array<{ theme_tags?: string[] }>;
 }
 
-export default function MarketCoverageSection({ onOpenCapture }: Props) {
+export default function MarketCoverageSection({ onOpenCapture, signals = [] }: Props) {
   const [open, setOpen] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
