@@ -431,8 +431,30 @@ const Onboarding = () => {
   const handleCalibrationComplete = async (scores: Record<string, number>) => {
     if (!userId) { goStep(4); return; }
     try {
+      // Map calibration dimensions to generated_skills format
+      const dimensionCategories: Record<string, string> = {
+        "Strategic Architecture": "Strategic",
+        "C-Suite Stewardship": "Leadership",
+        "Commercial Velocity": "Commercial",
+        "Human-Centric Leadership": "Leadership",
+        "Digital Synthesis": "Technical",
+        "Sector Foresight": "Strategic",
+        "Operational Resilience": "Operational",
+        "Executive Presence": "Leadership",
+        "Geopolitical Fluency": "Strategic",
+        "Value-Based P&L": "Commercial",
+      };
+      const generatedSkills = Object.entries(scores).map(([name, score]) => ({
+        name,
+        category: dimensionCategories[name] || "General",
+        description: `${dimensionCategories[name] || "General"} capability — calibrated at ${score}/100`,
+      }));
       await (supabase.from("diagnostic_profiles" as any) as any)
-        .update({ skill_ratings: scores, audit_results: scores })
+        .update({
+          skill_ratings: scores,
+          audit_results: scores,
+          generated_skills: generatedSkills,
+        })
         .eq("user_id", userId);
     } catch (e) {
       console.warn("Could not save calibration scores:", e);
