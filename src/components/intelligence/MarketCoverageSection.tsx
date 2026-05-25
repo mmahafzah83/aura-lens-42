@@ -36,9 +36,10 @@ interface CachedCoverage extends CoverageResult {
 
 interface Props {
   onOpenCapture?: () => void;
+  signals?: Array<{ theme_tags?: string[] }>;
 }
 
-export default function MarketCoverageSection({ onOpenCapture }: Props) {
+export default function MarketCoverageSection({ onOpenCapture, signals = [] }: Props) {
   const [open, setOpen] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -110,7 +111,7 @@ export default function MarketCoverageSection({ onOpenCapture }: Props) {
             label="MARKET COVERAGE"
             subtitle="Where the market conversation is happening"
           />
-          {data && (
+          {data && data.items.length > 0 && (
             <span
               style={{
                 fontSize: 12,
@@ -130,7 +131,7 @@ export default function MarketCoverageSection({ onOpenCapture }: Props) {
           {open ? <ChevronUp size={14} color="var(--ink-3)" /> : <ChevronDown size={14} color="var(--ink-3)" />}
         </div>
 
-        {open && data && (
+        {open && data && data.items.length > 0 && (
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ fontSize: 12, color: "var(--ink-3)" }}>
               Last refreshed: {formatSmartDate(data.generated_at)}
@@ -154,9 +155,9 @@ export default function MarketCoverageSection({ onOpenCapture }: Props) {
       ) : error && !data ? (
         <ErrorState message={error} onRetry={callEdge} />
       ) : !data ? (
-        <EmptyState />
+        <EmptyState signals={signals} />
       ) : data.items.length === 0 ? (
-        <EmptyState />
+        <EmptyState signals={signals} />
       ) : (
         <CoverageBody data={data} onOpenCapture={onOpenCapture} />
       )}
@@ -353,10 +354,22 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
   );
 }
 
-function EmptyState() {
+function EmptyState({ signals }: { signals?: Array<{ theme_tags?: string[] }> }) {
+  const allThemes = signals
+    ?.flatMap(s => s.theme_tags ?? [])
+    .filter(Boolean);
+  const uniqueThemes = Array.from(new Set(allThemes ?? []));
+  const topThree = uniqueThemes.slice(0, 3);
+
+  const themeList = topThree.join(", ");
+  const message =
+    topThree.length > 0
+      ? `Your intelligence is building around ${themeList}. Coverage deepens as you capture more.`
+      : "Capture a few articles from your sector — Aura will map the market conversations that matter to you.";
+
   return (
     <p style={{ fontSize: 14, color: "var(--ink-3)", margin: 0, fontStyle: "italic" }}>
-      Market intelligence is being gathered. Coverage analysis will appear once industry trends are loaded.
+      {message}
     </p>
   );
 }
