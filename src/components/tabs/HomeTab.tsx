@@ -1621,119 +1621,75 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         </div>
       )}
       {!auraLoading && !isEmpty && auraData && (() => {
-        const trend = auraData.score_trend;
-        const cells = (auraData.weekly_rhythm?.weekly_data || []).slice(-12);
-        while (cells.length < 12) cells.unshift(false);
-        const activeWeeks = auraData.weekly_rhythm?.active_weeks ?? cells.filter(Boolean).length;
+        const score = auraData.aura_score;
+        const tier = auraData.tier_name;
+        const dateLabel = now.toLocaleDateString("en-US", {
+          weekday: "long", year: "numeric", month: "long", day: "numeric",
+        }).toUpperCase();
+        const dashOffset = 132 - (Math.max(0, Math.min(100, score)) / 100) * 132;
         return (
           <div
-            className="flex items-start justify-between gap-4 flex-wrap"
+            data-testid="home-greeting-arc"
             style={{
-              borderBottom: "1px solid hsl(var(--border) / 0.5)",
-              paddingBottom: 16,
-              marginBottom: 8,
+              display: "flex", alignItems: "flex-start", justifyContent: "space-between",
+              gap: 16, marginBottom: 8,
             }}
           >
-            <div className="flex flex-col" style={{ gap: 2 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{
+                fontSize: 11, letterSpacing: "0.05em",
+                color: "hsl(var(--muted-foreground))", marginBottom: 6,
+              }}>
+                {dateLabel}
+              </div>
               <div
                 data-testid="home-greeting"
-                className="font-serif text-2xl font-normal text-ink"
-                style={{ marginBottom: 6, letterSpacing: "-0.005em" }}
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontSize: 22, fontWeight: 500,
+                  color: "hsl(var(--foreground))",
+                  lineHeight: 1.3, marginBottom: 4,
+                }}
               >
-                {getGreetingTitle(now.getHours())}{profileLoaded && userName ? `, ${userName}` : ""}
+                {getGreetingTitle(now.getHours())}{profileLoaded && userName ? `, ${userName}` : ""}.
               </div>
-              {(() => {
-                const score = auraData.aura_score;
-                const tier = auraData.tier_name;
-                const dropped = score7dAgo !== null && score < score7dAgo;
-                const dipDelta = dropped ? (score7dAgo as number) - score : 0;
-                let line = "";
-                if (dropped && dipDelta >= 2) {
-                  line = `Your score dipped ${dipDelta} pts to ${score}. A single capture restarts momentum.`;
-                } else if (daysSinceCapture !== null && daysSinceCapture >= 7) {
-                  line = `It's been ${daysSinceCapture} days since your last capture. Your signals are waiting for fresh evidence.`;
-                } else {
-                  line = `Your authority is at ${score} — ${tier} tier.`;
-                }
-                return (
-                  <div
-                    style={{
-                      fontSize: 13,
-                      color: "var(--ink-4)",
-                      lineHeight: 1.5,
-                      marginBottom: 6,
-                      maxWidth: 560,
-                    }}
-                  >
-                    {line}
-                  </div>
-                );
-              })()}
-              <div className="flex items-center" style={{ gap: 6 }}>
-                <span
-                  data-testid="home-score"
-                  style={{
-                    fontFamily: "'Cormorant Garamond', serif",
-                    fontSize: 36,
-                    fontWeight: 700,
-                    color: "var(--brand)",
-                    lineHeight: 1.5,
-                  }}
-                >
-                  <AnimatedScore value={auraData.aura_score} />
-                </span>
-                <InfoTooltip side="bottom" align="left" label="Digital Presence Score" width={280}>
-                  <div data-testid="home-score-breakdown" style={{ fontWeight: 600, color: "var(--ink)", marginBottom: 6 }}>Digital Presence Score</div>
-                  <p style={{ margin: "0 0 4px" }}>Signal intelligence — 40%</p>
-                  <p style={{ margin: "0 0 4px" }}>Content presence — 40%</p>
-                  <p style={{ margin: "0 0 8px" }}>Capture consistency — 20%</p>
-                  <div style={{ fontSize: 12, color: "var(--ink-4)", fontStyle: "italic" }}>
-                    Observer → Strategist → Presence
-                  </div>
-                </InfoTooltip>
-                {trend !== null && trend !== undefined && trend !== 0 && (
-                  <span
-                    style={{
-                      fontSize: 12, fontWeight: 500, marginLeft: 4,
-                      color: trend > 0 ? "var(--success)" : "hsl(var(--muted-foreground))",
-                    }}
-                  >
-                    {trend > 0 ? "↑" : "↓"} {Math.abs(trend)} pts
-                  </span>
-                )}
+              <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))" }}>
+                {sectorFocus ? `${sectorFocus} · ` : ""}{tier} tier
               </div>
-              <div data-testid="home-tier" style={{ fontSize: 14, fontWeight: 500, color: "var(--brand)" }}>
-                {auraData.tier_name}
-              </div>
-              {sectorFocus && (
-                <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
-                  {sectorFocus}
-                </div>
-              )}
             </div>
-
-            <div data-testid="home-capture-rhythm" className="flex flex-col items-end" style={{ gap: 6 }}>
-              <div style={{ display: "flex", gap: 3 }}>
-                {cells.map((filled, i) => (
-                  <div
-                    key={i}
-                    aria-label={`Week ${i + 1}: ${filled ? "active" : "inactive"}`}
-                    style={{
-                      width: 14, height: 14, borderRadius: 3,
-                      background: filled ? "var(--brand)" : "transparent",
-                      border: filled ? "1px solid var(--brand)" : "1px solid var(--brand-line)",
-                    }}
-                  />
-                ))}
+            <div style={{ flexShrink: 0, marginLeft: 16, display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <svg viewBox="0 0 100 60" style={{ width: 100, height: 60 }} aria-hidden>
+                <path
+                  d="M 8 52 A 42 42 0 0 1 92 52"
+                  fill="none"
+                  stroke="hsl(var(--border) / 0.6)"
+                  strokeWidth={4}
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M 8 52 A 42 42 0 0 1 92 52"
+                  fill="none"
+                  stroke="var(--warning)"
+                  strokeWidth={4}
+                  strokeLinecap="round"
+                  strokeDasharray={132}
+                  strokeDashoffset={dashOffset}
+                  style={{ transition: "stroke-dashoffset 800ms ease" }}
+                />
+              </svg>
+              <div
+                data-testid="home-score"
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontSize: 28, fontWeight: 500,
+                  color: "hsl(var(--foreground))",
+                  lineHeight: 1.1, marginTop: -8,
+                }}
+              >
+                <AnimatedScore value={score} />
               </div>
-              <div className="flex items-center" style={{ gap: 4, fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
-                <span>{activeWeeks}/12w</span>
-                <InfoTooltip side="top" align="right" label="Capture Rhythm" width={280}>
-                  <div style={{ fontWeight: 600, color: "var(--ink)", marginBottom: 6 }}>Capture Rhythm</div>
-                  <p style={{ margin: 0 }}>
-                    Each square = one week. Filled = at least one meaningful capture. {activeWeeks} of 12 weeks active.
-                  </p>
-                </InfoTooltip>
+              <div style={{ fontSize: 9, color: "hsl(var(--muted-foreground))", letterSpacing: "0.05em" }}>
+                of 100
               </div>
             </div>
           </div>
