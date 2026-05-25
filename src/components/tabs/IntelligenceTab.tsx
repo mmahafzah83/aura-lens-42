@@ -1245,7 +1245,11 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                           {/* Top row: title + confidence */}
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <p style={{ fontSize: 14, fontWeight: 500, color: "var(--ink-6)", margin: 0, lineHeight: 1.3 }}>
+                              <p
+                                style={{ fontSize: 14, fontWeight: 500, color: "var(--ink-6)", margin: 0, lineHeight: 1.3, cursor: "pointer", transition: "opacity 0.15s" }}
+                                onMouseEnter={e => { e.currentTarget.style.opacity = "0.75"; e.currentTarget.style.textDecoration = "underline"; }}
+                                onMouseLeave={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.textDecoration = "none"; }}
+                              >
                                 {s.signal_title}
                               </p>
                               <p style={{ fontSize: 12, color: "var(--ink-3)", margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
