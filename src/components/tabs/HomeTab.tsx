@@ -2359,16 +2359,17 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         </div>
       )}
 
-      {/* SECTION 2 — AI daily briefing */}
-      {/* Aura's Read */}
-      <BeatDivider label="What's happening" />
+      {/* TIER 1 — Your moves (from auras-read) */}
       <div data-testid="home-live-intel">
-        <AurasRead
+        <YourMoves
           userId={sessionConfirmed ? authUser?.id ?? null : null}
           onOpenCapture={onOpenCapture}
           onSwitchTab={onSwitchTab}
         />
       </div>
+
+      {/* TIER 2 — Market scan (from daily-briefing) */}
+      <MarketScan onOpenCapture={onOpenCapture} onSwitchTab={onSwitchTab} />
       </>)}
 
       <AuthorityProgressModal
