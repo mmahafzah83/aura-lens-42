@@ -2226,7 +2226,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
           );
         }
 
-        // Priority 2 — nudge card
+        // Priority 2 — nudge card (BRIEFING)
         if (auraData?.personalized_nudge) {
           const subs = [
             { key: "capture", value: auraData.capture_score },
@@ -2234,40 +2234,57 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
             { key: "content", value: auraData.content_score },
           ].sort((a, b) => a.value - b.value);
           const weakest = subs[0].key;
-          const ctaLabel = weakest === "content" ? "Draft post →" : weakest === "capture" ? "Capture now →" : "See your signals →";
+          const ctaLabel = weakest === "content"
+            ? "Draft post →"
+            : weakest === "capture"
+            ? "Capture a source →"
+            : "See your signals →";
           const ctaAction = weakest === "content"
             ? () => onSwitchTab?.("authority")
             : weakest === "capture"
             ? () => onOpenCapture?.()
             : () => onSwitchTab?.("intelligence");
+          const reinforcement = (weakest === "signal" || weakest === "capture")
+            ? " One more capture from a different source will push this signal above the confidence threshold — making it ready to publish."
+            : "";
           return (
             <div
               style={{
-                background: "hsl(var(--card))",
-                border: "1px solid hsl(var(--border) / 0.6)",
-                borderRadius: 8,
-                padding: "16px 18px",
+                borderLeft: "3px solid var(--warning)",
+                paddingLeft: 16,
               }}
             >
-              <div className="flex items-center" style={{ gap: 8, marginBottom: 8 }}>
-                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--brand)", display: "inline-block" }} />
-                <span style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--brand)", fontWeight: 600 }}>
-                  Your briefing
-                </span>
+              <div style={{
+                fontSize: 11, fontWeight: 500, letterSpacing: "0.04em",
+                color: "var(--warning)", textTransform: "uppercase", marginBottom: 6,
+              }}>
+                Briefing
               </div>
-              <p style={{ fontSize: 14, lineHeight: 1.65, color: "hsl(var(--foreground))", margin: 0 }}>
+              <div style={{
+                fontFamily: "'Cormorant Garamond', serif",
+                fontSize: 15, fontWeight: 500,
+                color: "hsl(var(--foreground))",
+                lineHeight: 1.4, marginBottom: 6,
+              }}>
                 {auraData.personalized_nudge}
-              </p>
-              <div className="flex items-center" style={{ marginTop: 14, gap: 8, flexWrap: "wrap" }}>
-                <AuraButton variant="primary" size="sm" onClick={ctaAction} style={{ borderRadius: 4, padding: "7px 18px" }}>
-                  {ctaLabel}
-                </AuraButton>
-                {weakest !== "signal" && (
-                  <AuraButton variant="ghost" size="sm" onClick={() => onSwitchTab?.("intelligence")} style={{ borderRadius: 4, padding: "7px 18px" }}>
-                    See your signals →
-                  </AuraButton>
-                )}
               </div>
+              {reinforcement && (
+                <p style={{ fontSize: 13, lineHeight: 1.6, color: "hsl(var(--muted-foreground))", margin: "0 0 12px" }}>
+                  {reinforcement.trim()}
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={ctaAction}
+                style={{
+                  fontSize: 12, fontWeight: 500,
+                  padding: "8px 18px", borderRadius: 6,
+                  background: "var(--warning)", color: "#fff",
+                  border: 0, cursor: "pointer",
+                }}
+              >
+                {ctaLabel}
+              </button>
             </div>
           );
         }
