@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
     // Fetch user's diagnostic profile for skill context
     const { data: profile } = await supabase
       .from("diagnostic_profiles")
-      .select("generated_skills, skill_ratings, sector_focus")
+      .select("generated_skills, skill_ratings, sector_focus, audit_results")
       .eq("user_id", user.id)
       .maybeSingle();
 
