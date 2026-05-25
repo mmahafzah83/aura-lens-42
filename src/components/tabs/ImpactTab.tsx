@@ -152,6 +152,12 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pipeline, setPipeline] = useState<PipelineState | null>(null);
+  const [progressStep, setProgressStep] = useState(0);
+  const [importedCount, setImportedCount] = useState<{ posts: number; days: number } | null>(null);
+  const [showSuccessCard, setShowSuccessCard] = useState(false);
+  const [successData, setSuccessData] = useState<{ posts: number; days: number } | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   // Content performance
   const [contentPerf, setContentPerf] = useState<{
