@@ -1717,6 +1717,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
       await ensureFontsReady(lang);
       const blob = await renderSlideToBlob(slide);
       downloadBlob(blob, `slide-${slide.slide_number}-${slugify(carousel.carousel_title || topic)}.png`);
+      trackExportedStyle("png");
     } catch (e: any) { toast.error(e.message || "Export failed"); }
     finally { setExporting(false); }
   };
@@ -1735,6 +1736,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
       const zipBlob = await zip.generateAsync({ type: "blob" });
       downloadBlob(zipBlob, `carousel-${slugify(carousel.carousel_title || topic)}.zip`);
       toast.success(`${slides.length} slides exported`);
+      trackExportedStyle("zip");
     } catch (e: any) { console.error(e); toast.error(e.message || "ZIP export failed"); }
     finally { setExporting(false); }
   };
@@ -1756,8 +1758,70 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
         pdf.addImage(dataUrl, "JPEG", 0, 0, w, h, undefined, "MEDIUM");
       }
       pdf.save(`carousel-${slugify(carousel.carousel_title || topic)}.pdf`);
+      trackExportedStyle("pdf");
     } catch (e: any) { console.error(e); toast.error(e.message || "PDF export failed"); }
     finally { setExporting(false); }
+  };
+
+  // Instrumentation: record the visual style used on each successful export so
+  // future generation can lean toward the user's preferred carousel style.
+  // Best-effort and non-blocking — never surfaces errors to the user.
+  const trackExportedStyle = async (format: "png" | "zip" | "pdf") => {
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const uid = sess?.session?.user?.id;
+      if (!uid || !styleKey) return;
+      const exportedAt = new Date().toISOString();
+
+      // 1) If this carousel is tied to a source signal, stamp the matching
+      //    linkedin_posts row's source_metadata with the preferred style.
+      if (selectedSignalId) {
+        const { data: posts } = await supabase
+          .from("linkedin_posts")
+          .select("id, source_metadata")
+          .eq("user_id", uid)
+          .eq("source_signal_id", selectedSignalId)
+          .limit(1);
+        const row = posts?.[0];
+        if (row?.id) {
+          const existing = (row.source_metadata as Record<string, any>) || {};
+          await supabase
+            .from("linkedin_posts")
+            .update({
+              source_metadata: {
+                ...existing,
+                preferred_carousel_style: styleKey,
+                last_carousel_export_format: format,
+                last_exported_at: exportedAt,
+              },
+            })
+            .eq("id", row.id);
+        }
+      }
+
+      // 2) Always mirror the latest preference on the user's profile
+      //    (preferred_carousel_style column does not exist — use the
+      //    existing identity_intelligence JSONB bucket).
+      const { data: profile } = await supabase
+        .from("diagnostic_profiles")
+        .select("identity_intelligence")
+        .eq("user_id", uid)
+        .maybeSingle();
+      const ii = (profile?.identity_intelligence as Record<string, any>) || {};
+      await supabase
+        .from("diagnostic_profiles")
+        .update({
+          identity_intelligence: {
+            ...ii,
+            preferred_carousel_style: styleKey,
+            last_carousel_export_format: format,
+            last_carousel_exported_at: exportedAt,
+          },
+        })
+        .eq("user_id", uid);
+    } catch (e) {
+      console.warn("[carousel] style tracking skipped:", (e as Error).message);
+    }
   };
 
   return (
