@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, useLayoutEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import {
-  Loader2, ThumbsUp, ThumbsDown, Archive, RefreshCw, Layers, Brain, Zap, AlertTriangle,
+  Loader2, ThumbsUp, ThumbsDown, Archive, RefreshCw, Layers, Brain, Zap, AlertTriangle, ChevronDown,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
