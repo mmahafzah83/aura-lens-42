@@ -451,7 +451,9 @@ const Auth = () => {
               ? "Enter your new password below."
               : resetSent
                 ? <>We sent a password reset link to <span style={{ color: "var(--ink-7)", fontWeight: 600 }}>{resetSentEmail}</span>.</>
-                : dailyInsight}
+                : hasEmailParam
+                  ? "Welcome back — sign in to see your intelligence brief."
+                  : dailyInsight}
           </p>
 
           {resetSent ? (
