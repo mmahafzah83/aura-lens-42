@@ -756,6 +756,7 @@ const Dashboard = () => {
                 theme={theme}
                 onToggleTheme={toggleTheme}
                 onSignOut={handleLogout}
+                onOpenPreferences={() => setPreferencesOpen(true)}
                 onEditProfile={() => {
                   setActiveTab("identity");
                   window.scrollTo({ top: 0, behavior: "smooth" });
