@@ -386,6 +386,51 @@ const Dashboard = () => {
     try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch {}
   }, [activeTab]);
 
+  // One-time backfill: populate generated_skills from audit_results if empty.
+  // For users who completed calibration before generated_skills was written
+  // during onboarding. Short-circuits when generated_skills is already set.
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: profile } = await (supabase.from("diagnostic_profiles" as any) as any)
+          .select("generated_skills, audit_results")
+          .eq("user_id", userId)
+          .maybeSingle();
+        if (cancelled || !profile) return;
+        const existing = (profile as any).generated_skills;
+        const audit = (profile as any).audit_results;
+        const isEmpty = !existing || (Array.isArray(existing) && existing.length === 0);
+        if (!isEmpty) return;
+        if (!audit || typeof audit !== "object" || Object.keys(audit).length === 0) return;
+        const dimensionCategories: Record<string, string> = {
+          "Strategic Architecture": "Strategic",
+          "C-Suite Stewardship": "Leadership",
+          "Commercial Velocity": "Commercial",
+          "Human-Centric Leadership": "Leadership",
+          "Digital Synthesis": "Technical",
+          "Sector Foresight": "Strategic",
+          "Operational Resilience": "Operational",
+          "Executive Presence": "Leadership",
+          "Geopolitical Fluency": "Strategic",
+          "Value-Based P&L": "Commercial",
+        };
+        const skills = Object.entries(audit as Record<string, unknown>).map(([name, score]) => ({
+          name,
+          category: dimensionCategories[name] || "General",
+          description: `${dimensionCategories[name] || "General"} capability — calibrated at ${Number(score)}/100`,
+        }));
+        await (supabase.from("diagnostic_profiles" as any) as any)
+          .update({ generated_skills: skills })
+          .eq("user_id", userId);
+      } catch (e) {
+        console.warn("generated_skills backfill skipped:", e);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [userId]);
+
   return (
     <div
       className="min-h-screen bg-background flex relative safe-area-container"
