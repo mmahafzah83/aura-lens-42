@@ -1,6 +1,5 @@
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { useEffect, useState } from "react";
-import { Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import InfoTooltip from "@/components/ui/InfoTooltip";
@@ -72,7 +71,28 @@ const WeeklyRhythm = ({ userId, data: provided }: Props) => {
   const cells = allCells.slice(-visibleCount);
   const todayIdx = cells.length - 1;
   const active = rhythm.active_weeks ?? allCells.filter(Boolean).length;
-  const milestone = active >= 4;
+
+  // Current-week streak: count consecutive filled weeks from the most recent backward.
+  let streak = 0;
+  for (let i = allCells.length - 1; i >= 0; i--) {
+    if (allCells[i]) streak++;
+    else break;
+  }
+
+  // Momentum copy (always against the full 12-week window).
+  const totalActive = rhythm.active_weeks ?? allCells.filter(Boolean).length;
+  let momentumCopy: string;
+  if (totalActive === 0) {
+    momentumCopy = "Start your rhythm — capture something you read this week.";
+  } else if (totalActive <= 3) {
+    momentumCopy = `Your rhythm is building. ${totalActive} ${totalActive === 1 ? "week" : "weeks"} and counting.`;
+  } else if (totalActive <= 7) {
+    momentumCopy = "Steady rhythm. This is how signals compound.";
+  } else if (totalActive <= 11) {
+    momentumCopy = "Strong rhythm. You're in the top tier.";
+  } else {
+    momentumCopy = "Perfect rhythm. 12 weeks of strategic intelligence.";
+  }
 
   return (
     <section
@@ -98,61 +118,70 @@ const WeeklyRhythm = ({ userId, data: provided }: Props) => {
         Capture rhythm
         <InfoTooltip
           label="Capture Rhythm"
-          text={`Weeks with at least one meaningful capture in the last ${visibleCount} weeks.`}
+          text="Your capture rhythm over the last 12 weeks. Consistent weekly captures compound your signal strength and keep your intelligence fresh."
         />
       </div>
-      <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
-        {`Your weekly capture consistency over the last ${visibleCount} weeks`}
+      <div
+        style={{
+          fontFamily: "var(--font-display, 'Cormorant Garamond')",
+          fontSize: 14,
+          fontStyle: "italic",
+          color: "var(--ink-3)",
+          marginTop: 3,
+          lineHeight: 1.5,
+        }}
+      >
+        {momentumCopy}
       </div>
 
       <div
         role="list"
-        aria-label={`${active} of ${visibleCount} weeks active`}
-        style={{ display: "flex", gap: 4, marginTop: 10 }}
+        aria-label={`${totalActive} of ${total} weeks active`}
+        className="flex gap-1.5 mt-3"
       >
         {cells.map((filled, i) => {
           const isToday = i === todayIdx;
+          // Connect adjacent filled squares visually via reduced left radius.
+          const prevFilled = i > 0 ? cells[i - 1] : false;
+          const nextFilled = i < cells.length - 1 ? cells[i + 1] : false;
+
+          const base = "w-6 h-6 rounded-sm transition-all duration-300";
+          let cls: string;
+
+          if (filled) {
+            // Glow intensifies slightly if part of a multi-week run.
+            const inRun = prevFilled || nextFilled;
+            cls = [
+              base,
+              "bg-brand dark:bg-brand/80",
+              inRun
+                ? "shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_2px_10px_rgba(176,141,58,0.45)]"
+                : "shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_1px_6px_rgba(176,141,58,0.30)]",
+              isToday ? "ring-2 ring-brand/30 ring-offset-0" : "",
+            ].join(" ");
+          } else {
+            cls = [
+              base,
+              "border border-dashed border-ink-3/30 bg-ink-2/20 dark:bg-transparent dark:border-ink-4/30",
+              isToday ? "animate-pulse border-brand/40" : "",
+            ].join(" ");
+          }
+
           return (
             <div
               key={i}
               role="listitem"
-              aria-label={`Week ${i + 1 - total + total}: ${filled ? "active" : "inactive"}`}
-              style={{
-                width: 20,
-                height: 20,
-                borderRadius: 4,
-                background: filled ? "hsl(var(--primary))" : "transparent",
-                border: filled
-                  ? "1px solid hsl(var(--primary))"
-                  : isToday
-                  ? "1.5px solid hsl(var(--primary) / 0.55)"
-                  : "1px solid hsl(var(--border))",
-                transition: "background 200ms ease",
-              }}
+              aria-label={`Week ${i + 1}: ${filled ? "active" : "inactive"}${isToday ? " (current week)" : ""}`}
+              className={cls}
             />
           );
         })}
       </div>
 
-      <div
-        style={{
-          marginTop: 10,
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-          fontFamily: "'DM Sans', sans-serif",
-          fontSize: 12,
-          color: "hsl(var(--muted-foreground))",
-        }}
-      >
-        <span>{Math.min(active, visibleCount)} of {visibleCount} weeks active</span>
-        {milestone && (
-          <Check
-            size={14}
-            strokeWidth={2.25}
-            aria-label="Milestone earned"
-            style={{ color: "hsl(var(--primary))" }}
-          />
+      <div className="mt-2.5 flex items-center gap-3 text-xs text-muted-foreground" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        <span className="tabular-nums">{Math.min(active, visibleCount)}/{visibleCount}w</span>
+        {streak >= 2 && (
+          <span className="text-brand font-medium">{streak}-week streak</span>
         )}
       </div>
 
@@ -175,19 +204,6 @@ const WeeklyRhythm = ({ userId, data: provided }: Props) => {
         >
           {expanded ? "Show recent weeks ←" : "Show full history →"}
         </button>
-      )}
-
-      {active === 0 && (
-        <div
-          style={{
-            marginTop: 6,
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: 12,
-            color: "hsl(var(--muted-foreground))",
-          }}
-        >
-          Capture something this week to start your rhythm.
-        </div>
       )}
     </section>
   );
