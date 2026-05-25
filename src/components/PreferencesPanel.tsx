@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import SetPasswordModal from "@/components/SetPasswordModal";
+import type { EditProfileField } from "@/components/EditProfileModal";
 
 interface PreferencesPanelProps {
   open: boolean;
@@ -13,7 +13,8 @@ interface PreferencesPanelProps {
   theme: "light" | "dark";
   onToggleTheme: () => void;
   onSignOut: () => void;
-  onEditProfile?: () => void;
+  onEditField?: (field: EditProfileField) => void;
+  onChangePassword?: () => void;
   onRetakeBrandAssessment?: () => void;
 }
 
@@ -206,13 +207,13 @@ export default function PreferencesPanel({
   theme,
   onToggleTheme,
   onSignOut,
-  onEditProfile,
+  onEditField,
+  onChangePassword,
   onRetakeBrandAssessment,
 }: PreferencesPanelProps) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [editingLinkedIn, setEditingLinkedIn] = useState(false);
   const [linkedInInput, setLinkedInInput] = useState("");
-  const [pwModalOpen, setPwModalOpen] = useState(false);
   const liInputRef = useRef<HTMLInputElement>(null);
 
   // Body scroll lock + Esc to close.
