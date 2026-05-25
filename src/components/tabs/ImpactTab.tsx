@@ -888,11 +888,11 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             className="flex items-center justify-center mb-4"
             style={{
               width: 48, height: 48, borderRadius: "50%",
-              background: "hsl(var(--success) / 0.15)",
-              border: "1px solid hsl(var(--success) / 0.4)",
+              background: "var(--success-pale)",
+              border: "1px solid var(--success)",
             }}
           >
-            <CheckCircle2 className="w-6 h-6" style={{ color: "hsl(var(--success))" }} />
+            <CheckCircle2 className="w-6 h-6" style={{ color: "var(--success)" }} />
           </div>
           <h2 className="text-base font-medium" style={{ color: "var(--ink)", margin: "0 0 6px" }}>
             Your presence data is live.
@@ -961,7 +961,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 className="flex items-center gap-2 text-sm transition-opacity duration-300"
                 style={{ opacity: progressStep >= 0 ? 1 : 0, color: "var(--ink-2)" }}
               >
-                <Check className="w-4 h-4 shrink-0" style={{ color: "hsl(var(--success))" }} />
+                <Check className="w-4 h-4 shrink-0" style={{ color: "var(--success)" }} />
                 <span>File received</span>
               </li>
               {/* Step 1: Parsing / imported count */}
@@ -969,7 +969,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 className="flex items-center gap-2 text-sm transition-opacity duration-500"
                 style={{ opacity: progressStep >= 1 ? 1 : 0, color: "var(--ink-2)" }}
               >
-                <Check className="w-4 h-4 shrink-0" style={{ color: "hsl(var(--success))" }} />
+                <Check className="w-4 h-4 shrink-0" style={{ color: "var(--success)" }} />
                 <span>
                   {importedCount ? `${importedCount.posts} posts imported` : "Parsing post data"}
                 </span>
@@ -1015,7 +1015,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               >
                 <TrendingUp className="w-[22px] h-[22px]" style={{ color: "var(--brand)" }} />
               </div>
-              <h2 className="font-cormorant text-lg font-medium" style={{ color: "var(--ink)", margin: "0 0 8px", letterSpacing: "-0.01em" }}>
+              <h2 className="text-lg font-medium" style={{ fontFamily: "var(--font-display)", color: "var(--ink)", margin: "0 0 8px", letterSpacing: "-0.01em" }}>
                 You have presence you can't see yet.
               </h2>
               <p className="text-sm max-w-md mx-auto" style={{ color: "var(--ink-3)", lineHeight: 1.55 }}>
