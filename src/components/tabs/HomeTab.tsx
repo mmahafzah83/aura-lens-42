@@ -395,6 +395,29 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
     return () => { cancelled = true; };
   }, [sessionConfirmed, authUser?.id]);
 
+  // Fetch Aura's Read items here so we can split URGENT (top HIGH PUBLISH) vs YourMoves
+  useEffect(() => {
+    if (!sessionConfirmed || !authUser?.id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("auras-read", {
+          body: { user_id: authUser.id },
+        });
+        if (cancelled) return;
+        if (error) throw error;
+        const list = Array.isArray((data as any)?.items) ? ((data as any).items as AuraItem[]) : [];
+        setAuraReadItems(list);
+      } catch (e) {
+        if (!cancelled) {
+          console.warn("[HomeTab] auras-read failed", e);
+          setAuraReadItems([]);
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [sessionConfirmed, authUser?.id]);
+
 
   // ─── Loaders (each takes the user from auth-ready, no getUser() roundtrip) ───
   const loadBriefing = useCallback(async (uid: string) => {
