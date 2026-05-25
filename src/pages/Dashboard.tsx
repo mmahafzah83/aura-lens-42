@@ -108,6 +108,7 @@ const Dashboard = () => {
   const [preferencesOpen, setPreferencesOpen] = useState(false);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
+  const [brandAssessmentOpen, setBrandAssessmentOpen] = useState(false);
   const [editProfileField, setEditProfileField] = useState<EditProfileField | undefined>(undefined);
 
   useEffect(() => {
