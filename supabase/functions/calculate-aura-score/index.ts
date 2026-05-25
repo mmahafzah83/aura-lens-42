@@ -266,29 +266,6 @@ serve(async (req) => {
       personalized_nudge = `Your ${topTitle} signal (${topConf}%) is ready to publish. Draft a post from this signal to boost your content score.`;
     }
 
-    // ── G4 Weekly rhythm (last 4 weeks) ──
-    const fourWeeksAgo = new Date(now.getTime() - 4 * 7 * 24 * 60 * 60 * 1000);
-    const { data: rhythmEntries } = await admin
-      .from("entries")
-      .select("created_at,has_strategic_insight")
-      .eq("user_id", userId)
-      .gte("created_at", fourWeeksAgo.toISOString());
-    const weekly_data: boolean[] = [];
-    for (let i = 0; i < 4; i++) {
-      const wkEnd = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
-      const wkStart = new Date(wkEnd.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const active = (rhythmEntries || []).some((e: any) => {
-        const t = new Date(e.created_at).getTime();
-        return t >= wkStart.getTime() && t < wkEnd.getTime() && e.has_strategic_insight === true;
-      });
-      weekly_data.push(active);
-    }
-    const weekly_rhythm = {
-      active_weeks: weekly_data.filter(Boolean).length,
-      total_weeks: 4,
-      weekly_data,
-    };
-
     // ── G4 Milestones ──
     const activeSignals = signalsFull || [];
     const themeSet = new Set<string>();
