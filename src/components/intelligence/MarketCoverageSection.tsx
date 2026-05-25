@@ -111,7 +111,7 @@ export default function MarketCoverageSection({ onOpenCapture, signals = [] }: P
             label="MARKET COVERAGE"
             subtitle="Where the market conversation is happening"
           />
-          {data && (
+          {data && data.items.length > 0 && (
             <span
               style={{
                 fontSize: 12,
