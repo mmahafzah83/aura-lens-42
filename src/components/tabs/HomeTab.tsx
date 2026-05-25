@@ -11,7 +11,6 @@ import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { useCountUp } from "@/hooks/useCountUp";
 import { withTimeout } from "@/lib/safeQuery";
 import { EMPTY_STATE } from "@/constants/language";
-import AurasRead from "@/components/AurasRead";
 import MilestoneNotification from "@/components/MilestoneNotification";
 import OnboardingChecklist from "@/components/OnboardingChecklist";
 import { addTrendToSignals as wireTrendToSignals } from "@/lib/addTrendToSignals";
