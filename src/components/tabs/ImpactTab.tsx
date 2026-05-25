@@ -1625,7 +1625,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                       {selectedFile.name}
                     </span>
                     <button
-                      onClick={handleUpload}
+                      onClick={() => handleUpload()}
                       disabled={uploading}
                       className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium disabled:opacity-60"
                       style={{ background: "var(--brand)", color: "var(--paper)" }}
