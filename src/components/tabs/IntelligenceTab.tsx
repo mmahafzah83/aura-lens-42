@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, useLayoutEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import {
-  Loader2, ThumbsUp, ThumbsDown, Archive, RefreshCw, Layers, Brain, Zap, AlertTriangle,
+  Loader2, ThumbsUp, ThumbsDown, Archive, RefreshCw, Layers, Brain, Zap, AlertTriangle, ChevronDown,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
@@ -656,6 +656,63 @@ const FrameworksSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?:
    Main Intelligence Tab
    ═══════════════════════════════════════════ */
 
+/** Expandable text block for signal sidebar (Why now / Your move). */
+const ExpandableSignalText = ({ label, text }: { label: string; text: string }) => {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [overflows, setOverflows] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    setOverflows(el.scrollHeight - 1 > el.clientHeight);
+  }, [text]);
+
+  const clampStyle: React.CSSProperties = expanded
+    ? { display: "block" }
+    : {
+        display: "-webkit-box",
+        WebkitLineClamp: 3,
+        WebkitBoxOrient: "vertical",
+        overflow: "hidden",
+      };
+
+  const interactive = overflows;
+
+  return (
+    <div
+      onClick={(e) => {
+        if (!interactive) return;
+        e.stopPropagation();
+        setExpanded((v) => !v);
+      }}
+      style={{
+        cursor: interactive ? "pointer" : "default",
+        transition: "opacity 0.15s",
+        marginTop: 2,
+      }}
+      onMouseEnter={(e) => { if (interactive) e.currentTarget.style.opacity = "0.85"; }}
+      onMouseLeave={(e) => { if (interactive) e.currentTarget.style.opacity = "1"; }}
+    >
+      <span
+        ref={ref}
+        className="leading-relaxed text-ink-7 dark:text-ink-3"
+        style={{ ...clampStyle, transition: "all 0.3s ease-in-out", fontSize: 12 }}
+      >
+        <span className="font-semibold text-ink-5">{label}: </span>
+        {text}
+        {interactive && (
+          <ChevronDown
+            size={14}
+            className="text-ink-5 inline-block align-middle ml-1"
+            style={{ transform: expanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.3s ease-in-out" }}
+          />
+        )}
+      </span>
+    </div>
+  );
+};
+
 const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraftToStudio }: IntelligenceTabProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user: authUser } = useAuthReady();
@@ -1276,17 +1333,9 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
 
                           {/* What / Why / Act */}
                           {(whyNow || yourMove) && (
-                            <div style={{ fontSize: 12, color: "var(--ink-4)", lineHeight: 1.4, margin: "6px 0 8px" }}>
-                              {whyNow && (
-                                <div style={{ overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>
-                                  <span style={{ color: "var(--ink-3)", fontWeight: 600 }}>Why now: </span>{whyNow}
-                                </div>
-                              )}
-                              {yourMove && (
-                                <div style={{ marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>
-                                  <span style={{ color: "var(--ink-3)", fontWeight: 600 }}>Your move: </span>{yourMove}
-                                </div>
-                              )}
+                            <div style={{ margin: "6px 0 8px" }}>
+                              {whyNow && <ExpandableSignalText label="Why now" text={whyNow} />}
+                              {yourMove && <ExpandableSignalText label="Your move" text={yourMove} />}
                             </div>
                           )}
 
@@ -1294,13 +1343,15 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                             <button
                               onClick={(e) => { e.stopPropagation(); draftFromSignal(s); }}
-                              style={{ fontSize: 12, padding: "4px 10px", borderRadius: 4, border: "0.5px solid var(--brand)", background: "var(--brand)", color: "var(--ink-on-brand, #fff)", cursor: "pointer" }}
+                              className="bg-brand text-white border border-brand dark:bg-transparent dark:text-brand dark:border-brand hover:opacity-90 transition-opacity"
+                              style={{ fontSize: 12, padding: "4px 10px", borderRadius: 4, cursor: "pointer" }}
                             >
                               Draft post →
                             </button>
                             <button
                               onClick={(e) => { e.stopPropagation(); onOpenChat?.(`Show competitor intel on: ${s.signal_title}`); }}
-                              style={{ fontSize: 12, padding: "4px 10px", borderRadius: 4, border: "0.5px solid var(--surface-ink-subtle)", background: "transparent", color: "var(--ink-4)", cursor: "pointer" }}
+                              className="text-ink-4 dark:text-ink-2 border border-[color:var(--surface-ink-subtle)] hover:opacity-90 transition-opacity"
+                              style={{ fontSize: 12, padding: "4px 10px", borderRadius: 4, background: "transparent", cursor: "pointer" }}
                             >
                               Competitor intel
                             </button>
