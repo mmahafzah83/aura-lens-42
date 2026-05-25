@@ -858,18 +858,10 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             Your digital presence starts here
           </h2>
           <p style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.625, maxWidth: 420, margin: "0 auto" }}>
-            Publish your first LinkedIn post from Aura and upload your analytics to see your impact grow.
+            Upload your LinkedIn analytics to see your impact grow.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-7 w-full">
-            <AuraButton
-              variant="primary"
-              size="sm"
-              onClick={() => window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "authority" } }))}
-              style={{ borderRadius: 6, padding: "10px 22px" }}
-            >
-              Create your first post →
-            </AuraButton>
             <AuraButton
               variant="ghost"
               size="sm"
@@ -900,8 +892,8 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 return;
               }
               setSelectedFile(file);
-              // auto-upload in empty state so user sees progress immediately
-              setTimeout(() => handleUpload(), 0);
+              // auto-upload in empty state — pass file directly to avoid stale state
+              handleUpload(file);
             }}
             className="hidden"
           />
