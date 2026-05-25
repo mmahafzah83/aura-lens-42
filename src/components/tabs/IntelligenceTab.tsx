@@ -1374,7 +1374,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                   </div>
                 </div>
                 <div data-testid="intel-coverage" style={{ marginTop: 32 }}>
-                  <MarketCoverageSection onOpenCapture={onOpenCapture} />
+                  <MarketCoverageSection onOpenCapture={onOpenCapture} signals={signals} />
                 </div>
                 <div style={{ marginTop: 32 }}>
                   <RecommendedReadingSection />
