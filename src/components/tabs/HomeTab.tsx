@@ -2335,10 +2335,93 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         </div>
       )}
 
-      {/* TIER 1 — Your moves (from auras-read) */}
+      {/* URGENT — top HIGH PUBLISH from auras-read (conditional) */}
+      {(() => {
+        if (!auraReadItems || auraReadItems.length === 0) return null;
+        const urgentIdx = auraReadItems.findIndex(
+          (it) => it.action_type === "PUBLISH" && it.urgency === "HIGH"
+        );
+        if (urgentIdx === -1) return null;
+        const urgent = auraReadItems[urgentIdx];
+        const frags = (topSignal as any)?.fragment_count ?? (topSignal as any)?.fragmentCount;
+        return (
+          <section
+            data-testid="home-urgent"
+            style={{ borderTop: "0.5px solid hsl(var(--border) / 0.5)", paddingTop: 20 }}
+          >
+            <div style={{
+              fontSize: 11, fontWeight: 500, letterSpacing: "0.04em",
+              color: "var(--danger)", textTransform: "uppercase", marginBottom: 6,
+            }}>
+              Urgent
+            </div>
+            <div style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: 15, fontWeight: 500, color: "hsl(var(--foreground))",
+              lineHeight: 1.4, marginBottom: 6,
+            }}>
+              {urgent.title}
+            </div>
+            <div style={{
+              fontSize: 12, color: "hsl(var(--muted-foreground))",
+              lineHeight: 1.5, marginBottom: 12,
+            }}>
+              {urgent.reason}
+              {frags != null && daysSinceCapture != null && (
+                <>
+                  {" "}
+                  <span style={{ color: "hsl(var(--foreground))", fontWeight: 500 }}>{frags} evidence fragments</span>
+                  {" · "}
+                  <span style={{ color: "var(--danger)", fontWeight: 500 }}>{daysSinceCapture} days</span>
+                  {" since your last capture · "}
+                  <span style={{ color: "var(--success)", fontWeight: 500 }}>+8 points</span>
+                </>
+              )}
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button
+                type="button"
+                onClick={() => onSwitchTab?.("authority")}
+                style={{
+                  fontSize: 12, fontWeight: 500, padding: "8px 16px", borderRadius: 6,
+                  background: "var(--danger)", color: "#fff", border: 0, cursor: "pointer",
+                }}
+              >
+                Draft this post →
+              </button>
+              <button
+                type="button"
+                onClick={() => onSwitchTab?.("intelligence")}
+                style={{
+                  fontSize: 12, fontWeight: 500, padding: "8px 16px", borderRadius: 6,
+                  background: "transparent",
+                  color: "hsl(var(--muted-foreground))",
+                  border: "0.5px solid hsl(var(--border) / 0.8)",
+                  cursor: "pointer",
+                }}
+              >
+                View signal →
+              </button>
+            </div>
+          </section>
+        );
+      })()}
+
+      {/* YOUR MOVES — remaining auras-read items */}
       <div data-testid="home-live-intel">
         <YourMoves
           userId={sessionConfirmed ? authUser?.id ?? null : null}
+          items={(() => {
+            if (!auraReadItems) return undefined;
+            const urgentIdx = auraReadItems.findIndex(
+              (it) => it.action_type === "PUBLISH" && it.urgency === "HIGH"
+            );
+            const remaining = urgentIdx === -1
+              ? auraReadItems
+              : auraReadItems.filter((_, i) => i !== urgentIdx);
+            return remaining.slice(0, 3);
+          })()}
+          hideIfEmpty
           onOpenCapture={onOpenCapture}
           onSwitchTab={onSwitchTab}
         />
