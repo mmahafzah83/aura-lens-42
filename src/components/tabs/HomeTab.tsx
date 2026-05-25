@@ -2420,7 +2420,7 @@ const BeatDivider = ({ label }: { label: string }) => (
       marginTop: 16,
     }}
   >
-    <div style={{ height: 1, flex: "0 0 24px", background: "hsl(var(--foreground) / 0.35)" }} />
+    <div className="h-[1px] flex-[0_0_24px] bg-ink-3/30 dark:bg-ink-5/30" />
     <div
       style={{
         fontFamily: "'Cormorant Garamond', Georgia, serif",
@@ -2434,6 +2434,6 @@ const BeatDivider = ({ label }: { label: string }) => (
     >
       {label}
     </div>
-    <div style={{ height: 1, flex: 1, background: "hsl(var(--foreground) / 0.35)" }} />
+    <div className="h-[1px] flex-1 bg-ink-3/30 dark:bg-ink-5/30" />
   </div>
 );
