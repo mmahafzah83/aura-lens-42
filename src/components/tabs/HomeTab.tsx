@@ -1696,16 +1696,103 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         );
       })()}
 
-      {/* P4 — Authority pulse strip + Journey cycle + Mission control (now below score) */}
+      {/* THREE FORCES — score breakdown directly under header */}
+      {!auraLoading && !isEmpty && auraData && (() => {
+        const signalW = Math.round((auraData.signal_score ?? 0) * 0.4);
+        const contentW = Math.round((auraData.content_score ?? 0) * 0.4);
+        const captureW = Math.round((auraData.capture_score ?? 0) * 0.2);
+
+        const forces = [
+          { key: "signal", label: "Signal strength",  weighted: signalW,  max: 40, color: "var(--warning)" },
+          { key: "content", label: "Content published", weighted: contentW, max: 40, color: "var(--color-info-text, var(--info))" },
+          { key: "consistency", label: "Weekly rhythm",  weighted: captureW, max: 20, color: "var(--success)" },
+        ];
+
+        const pcts = forces.map(f => f.max ? (f.weighted / f.max) : 0);
+        const minIdx = pcts.indexOf(Math.min(...pcts));
+        const weakest = forces[minIdx];
+
+        return (
+          <div
+            data-testid="home-forces-strip"
+            style={{
+              borderBottom: "0.5px solid hsl(var(--border) / 0.5)",
+              paddingBottom: 14,
+              marginBottom: 4,
+            }}
+          >
+            <div style={{ display: "flex", gap: 20, alignItems: "stretch", marginBottom: 14 }}>
+              {forces.map((f, i) => {
+                const pct = Math.max(0, Math.min(100, (f.weighted / f.max) * 100));
+                return (
+                  <div key={f.key} style={{ display: "flex", flex: 1, minWidth: 0, gap: 20 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 4 }}>
+                        <span style={{
+                          fontFamily: "'Cormorant Garamond', serif",
+                          fontSize: 26, fontWeight: 500, color: f.color, lineHeight: 1,
+                        }}>
+                          {f.weighted}
+                        </span>
+                        <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
+                          /{f.max}
+                        </span>
+                      </div>
+                      <div style={{
+                        fontSize: 11, color: "hsl(var(--muted-foreground))",
+                        marginBottom: 6,
+                      }}>
+                        {f.label}
+                      </div>
+                      <div style={{
+                        height: 2, background: "hsl(var(--border) / 0.6)",
+                        borderRadius: 1, overflow: "hidden",
+                      }}>
+                        <div style={{
+                          width: `${pct}%`, height: "100%",
+                          background: f.color, transition: "width 600ms ease",
+                        }} />
+                      </div>
+                    </div>
+                    {i < forces.length - 1 && (
+                      <div style={{ width: "0.5px", background: "hsl(var(--border) / 0.5)", flexShrink: 0 }} />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              gap: 12, flexWrap: "wrap",
+            }}>
+              <div style={{
+                display: "flex", alignItems: "center", gap: 6,
+                fontSize: 12, color: "hsl(var(--muted-foreground))", lineHeight: 1.5,
+              }}>
+                <Zap aria-hidden size={13} style={{ color: "var(--warning)", flexShrink: 0 }} />
+                <span>
+                  <span style={{ color: weakest.color, fontWeight: 500 }}>{weakest.label}</span>
+                  {" "}is your biggest growth lever right now
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => onSwitchTab?.("influence")}
+                style={{
+                  fontSize: 11, color: "var(--color-info-text, var(--info))",
+                  background: "transparent", border: 0, padding: 0, cursor: "pointer",
+                }}
+              >
+                See full breakdown →
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Mission control + optional journey cycle */}
       {authUser?.id && (
-        <>
-        <BeatDivider label="What to do next" />
         <div className="flex flex-col" style={{ gap: 10 }}>
-          <AuthorityPulseStrip
-            userId={authUser.id}
-            authorityScore={auraData?.aura_score ?? null}
-            onGoToImpact={() => onSwitchTab?.("influence")}
-          />
           {!hasAnySignals && (
             <JourneyCycle
               hasEntries={(entries?.length ?? 0) > 0 || journey.entryCount > 0}
@@ -1716,104 +1803,14 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               authorityScore={auraData?.aura_score ?? 0}
             />
           )}
-          <MissionControl userId={authUser.id} entriesCount={Array.isArray(entries) ? entries.length : 0} />
+          <MissionControl
+            userId={authUser.id}
+            entriesCount={Array.isArray(entries) ? entries.length : 0}
+            topSignalTitle={topSignal?.signal_title}
+            topSignalFragments={(topSignal as any)?.fragment_count ?? (topSignal as any)?.fragmentCount}
+          />
         </div>
-        </>
       )}
-
-      {/* Weekly LinkedIn data reminder — appears when LinkedIn data is 7+ days stale */}
-      {!auraLoading && !isEmpty && auraData && (() => {
-        const signalW = Math.round((auraData.signal_score ?? 0) * 0.4);
-        const contentW = Math.round((auraData.content_score ?? 0) * 0.4);
-        const captureW = Math.round((auraData.capture_score ?? 0) * 0.2);
-
-        let weakestAction = "";
-        if (signalW === 0 && contentW === 0 && captureW === 0) {
-          weakestAction = "Start by capturing an article — your score builds from there";
-        } else if (signalW <= contentW && signalW <= captureW) {
-          weakestAction = "Signal needs attention — capture from a new source";
-        } else if (contentW <= signalW && contentW <= captureW) {
-          weakestAction = "Content needs attention — publish from your strongest signal";
-        } else {
-          weakestAction = "Consistency needs attention — capture one thing this week";
-        }
-
-        const forces = [
-          { label: "Signal", weighted: signalW, max: 40, color: "var(--aura-accent)" },
-          { label: "Content", weighted: contentW, max: 40, color: "var(--aura-blue)" },
-          { label: "Consistency", weighted: captureW, max: 20, color: "var(--aura-positive)" },
-        ];
-
-        return (
-          <div
-            data-testid="home-forces-strip"
-            role="button"
-            tabIndex={0}
-            onClick={() => onSwitchTab?.("influence")}
-            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSwitchTab?.("influence"); } }}
-            style={{
-              background: "hsl(var(--card))",
-              border: "1px solid hsl(var(--border) / 0.5)",
-              borderRadius: 10,
-              padding: "14px 16px",
-              cursor: "pointer",
-              display: "flex",
-              flexDirection: "column",
-              gap: 10,
-            }}
-          >
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-              {forces.map((f) => {
-                const pct = Math.max(0, Math.min(100, (f.weighted / f.max) * 100));
-                return (
-                  <div key={f.label} style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
-                    <div style={{
-                      fontSize: 12, fontWeight: 600, letterSpacing: "0.1em",
-                      textTransform: "uppercase", color: "hsl(var(--muted-foreground))",
-                    }}>
-                      {f.label}
-                    </div>
-                    <div
-                      className="tabular-nums"
-                      style={{
-                        fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-                        fontSize: 18, fontWeight: 700, color: f.color, lineHeight: 1.5,
-                      }}
-                    >
-                      {f.weighted}
-                      <span style={{ fontSize: 12, fontWeight: 500, color: "hsl(var(--muted-foreground))" }}>
-                        {" "}/{f.max}
-                      </span>
-                    </div>
-                    <div style={{
-                      height: 4, background: "hsl(var(--border) / 0.6)",
-                      borderRadius: 2, overflow: "hidden",
-                    }}>
-                      <div style={{
-                        width: `${pct}%`, height: "100%",
-                        background: f.color, transition: "width 600ms ease",
-                      }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div style={{
-              fontSize: 12, color: "hsl(var(--foreground) / 0.85)",
-              lineHeight: 1.5, display: "flex", alignItems: "center", gap: 6,
-            }}>
-              <Zap aria-hidden size={14} style={{ color: "var(--brand)", flexShrink: 0 }} />
-              <span style={{ flex: 1, minWidth: 0 }}>{weakestAction}</span>
-            </div>
-            <div style={{
-              fontSize: 12, color: "hsl(var(--muted-foreground))",
-              textAlign: "right",
-            }}>
-              See full breakdown →
-            </div>
-          </div>
-        );
-      })()}
 
       <WeeklyIntelligenceLoopCard onSwitchTab={onSwitchTab} />
 
