@@ -354,10 +354,23 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
   );
 }
 
-function EmptyState() {
+function EmptyState({ signals }: { signals?: Array<{ theme_tags?: string[] }> }) {
+  const allThemes = signals
+    ?.flatMap(s => s.theme_tags ?? [])
+    .filter(Boolean);
+  const uniqueThemes = Array.from(new Set(allThemes ?? []));
+  const topThree = uniqueThemes.slice(0, 3);
+
+  const message =
+    topThree.length > 1
+      ? `Your intelligence is building around ${topThree.slice(1).reduce((acc, t) => `${acc}, ${t}`, topThree[1])}. Coverage deepens as you capture more.`
+      : topThree.length === 1
+      ? `Your intelligence is building around ${topThree[1]}. Coverage deepens as you capture more.`
+      : "Capture a few articles from your sector — Aura will map the market conversations that matter to you.";
+
   return (
     <p style={{ fontSize: 14, color: "var(--ink-3)", margin: 0, fontStyle: "italic" }}>
-      Market intelligence is being gathered. Coverage analysis will appear once industry trends are loaded.
+      {message}
     </p>
   );
 }
