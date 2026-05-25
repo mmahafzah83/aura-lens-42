@@ -2434,6 +2434,6 @@ const BeatDivider = ({ label }: { label: string }) => (
     >
       {label}
     </div>
-    <div className="h-[1px] flex-1" style={{ background: "hsl(var(--foreground) / 0.35)" }} />
+    <div className="h-[1px] flex-1" style={{ background: "currentColor", opacity: 0.25 }} />
   </div>
 );
