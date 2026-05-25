@@ -395,7 +395,18 @@ export default function PreferencesPanel({
         </div>
 
         {/* Scrollable body */}
-        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
+        <div
+          className="overscroll-contain"
+          onWheel={(e) => e.stopPropagation()}
+          onTouchMove={(e) => e.stopPropagation()}
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: "auto",
+            WebkitOverflowScrolling: "touch",
+            overscrollBehavior: "contain",
+          }}
+        >
           {/* YOUR PROFILE */}
           <SectionHeader>Your profile</SectionHeader>
           <Row label="Name" value={displayName} onClick={onEditField ? () => onEditField("first_name") : undefined} />
