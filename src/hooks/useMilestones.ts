@@ -61,6 +61,9 @@ export function useMilestones(userId: string | null) {
 
   const acknowledgeMilestone = useCallback(
     async (id: string) => {
+      // Optimistic update first so the UI never re-shows the milestone
+      // even if navigation/refresh interrupts the DB write.
+      setAllMilestones((prev) => prev.map((m) => (m.id === id ? { ...m, acknowledged: true } : m)));
       const { error } = await supabase
         .from("user_milestones" as any)
         .update({ acknowledged: true })
@@ -69,7 +72,6 @@ export function useMilestones(userId: string | null) {
         console.error("acknowledgeMilestone failed", error);
         return;
       }
-      setAllMilestones((prev) => prev.map((m) => (m.id === id ? { ...m, acknowledged: true } : m)));
     },
     []
   );

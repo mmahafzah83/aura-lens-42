@@ -17,7 +17,6 @@ import { addTrendToSignals as wireTrendToSignals } from "@/lib/addTrendToSignals
 import { toast } from "sonner";
 import { AuraButton } from "@/components/ui/AuraButton";
 import { AuraCard } from "@/components/ui/AuraCard";
-import AuthorityProgressModal from "@/components/AuthorityProgressModal";
 import { ChevronDown, Lock, Zap } from "lucide-react";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
@@ -2371,12 +2370,6 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       <MarketScan onOpenCapture={onOpenCapture} onSwitchTab={onSwitchTab} />
       </>)}
 
-      <AuthorityProgressModal
-        tierName={auraData?.tier_name}
-        score={auraData?.aura_score ?? null}
-        sectorFocus={sectorFocus}
-        userId={sessionConfirmed ? authUser?.id ?? null : null}
-      />
       {scoreJumpShareData && (
         <MilestoneShareModal
           open={!!scoreJumpShareData}
