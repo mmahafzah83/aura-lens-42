@@ -131,7 +131,7 @@ export default function MarketCoverageSection({ onOpenCapture, signals = [] }: P
           {open ? <ChevronUp size={14} color="var(--ink-3)" /> : <ChevronDown size={14} color="var(--ink-3)" />}
         </div>
 
-        {open && data && (
+        {open && data && data.items.length > 0 && (
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ fontSize: 12, color: "var(--ink-3)" }}>
               Last refreshed: {formatSmartDate(data.generated_at)}
