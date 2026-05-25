@@ -214,7 +214,7 @@ serve(async (req) => {
         user_id: userId,
         score: auraScore,
         tier: currentTier,
-        components: { capture_score: captureScore, signal_score: signalScore, content_score: contentScore },
+        components: { capture_score: captureScore, signal_score: signalScore, content_score: contentScore, weekly_rhythm },
       });
     }
 
