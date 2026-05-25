@@ -756,12 +756,13 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     setSelectedFile(file);
   };
 
-  const handleUpload = async () => {
-    if (!selectedFile) return;
+  const handleUpload = async (fileOverride?: File) => {
+    const fileToUpload = fileOverride || selectedFile;
+    if (!fileToUpload) return;
     setUploading(true);
     try {
       const form = new FormData();
-      form.append("file", selectedFile);
+      form.append("file", fileToUpload);
       const { data, error } = await supabase.functions.invoke("import-linkedin-analytics", {
         body: form,
       });
@@ -769,7 +770,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       if ((data as any)?.error) throw new Error((data as any).error);
       const imp = (data as any)?.imported || {};
       const days = (imp.engagement_rows || 0) + (imp.follower_rows || 0);
-      toast.success(`LinkedIn data imported — ${days} days of data loaded`);
+      toast.success(`Analytics imported successfully — ${days} days of data loaded`);
       setSelectedFile(null);
       setPipeline({ voice: "pending", positioning: "pending", score: "pending" });
       await runPostImportPipeline(setPipeline);
@@ -857,18 +858,10 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             Your digital presence starts here
           </h2>
           <p style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.625, maxWidth: 420, margin: "0 auto" }}>
-            Publish your first LinkedIn post from Aura and upload your analytics to see your impact grow.
+            Upload your LinkedIn analytics to see your impact grow.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-7 w-full">
-            <AuraButton
-              variant="primary"
-              size="sm"
-              onClick={() => window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "authority" } }))}
-              style={{ borderRadius: 6, padding: "10px 22px" }}
-            >
-              Create your first post →
-            </AuraButton>
             <AuraButton
               variant="ghost"
               size="sm"
@@ -899,8 +892,8 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 return;
               }
               setSelectedFile(file);
-              // auto-upload in empty state so user sees progress immediately
-              setTimeout(() => handleUpload(), 0);
+              // auto-upload in empty state — pass file directly to avoid stale state
+              handleUpload(file);
             }}
             className="hidden"
           />
@@ -1624,7 +1617,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                       {selectedFile.name}
                     </span>
                     <button
-                      onClick={handleUpload}
+                      onClick={() => handleUpload()}
                       disabled={uploading}
                       className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium disabled:opacity-60"
                       style={{ background: "var(--brand)", color: "var(--paper)" }}
