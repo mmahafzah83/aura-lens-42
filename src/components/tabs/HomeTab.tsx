@@ -2420,7 +2420,7 @@ const BeatDivider = ({ label }: { label: string }) => (
       marginTop: 16,
     }}
   >
-    <div className="h-[1px] flex-[0_0_24px]" style={{ background: "hsl(var(--foreground) / 0.35)" }} />
+    <div className="h-[1px] flex-[0_0_24px]" style={{ background: "currentColor", opacity: 0.25 }} />
     <div
       style={{
         fontFamily: "'Cormorant Garamond', Georgia, serif",
