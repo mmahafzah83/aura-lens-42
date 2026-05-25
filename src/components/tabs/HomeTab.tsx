@@ -2370,12 +2370,6 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       <MarketScan onOpenCapture={onOpenCapture} onSwitchTab={onSwitchTab} />
       </>)}
 
-      <AuthorityProgressModal
-        tierName={auraData?.tier_name}
-        score={auraData?.aura_score ?? null}
-        sectorFocus={sectorFocus}
-        userId={sessionConfirmed ? authUser?.id ?? null : null}
-      />
       {scoreJumpShareData && (
         <MilestoneShareModal
           open={!!scoreJumpShareData}
