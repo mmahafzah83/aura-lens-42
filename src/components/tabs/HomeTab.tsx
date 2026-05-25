@@ -296,6 +296,9 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
   const [showSecondaryMoves, setShowSecondaryMoves] = useState(false);
   const [scoreTooltipOpen, setScoreTooltipOpen] = useState(false);
 
+  // Aura's read items — split into URGENT (top HIGH PUBLISH) + remaining for YourMoves
+  const [auraReadItems, setAuraReadItems] = useState<AuraItem[] | null>(null);
+
   // Score-jump celebratory banner state
   const [scoreJumpShareData, setScoreJumpShareData] = useState<MilestoneShareData | null>(null);
   const weekKey = (() => {
