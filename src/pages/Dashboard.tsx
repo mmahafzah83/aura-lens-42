@@ -18,6 +18,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import NotificationBell from "@/components/NotificationBell";
 import { HelpPanel, HelpButton } from "@/components/HelpPanel";
 import ProfileMenu from "@/components/ProfileMenu";
+import PreferencesPanel from "@/components/PreferencesPanel";
 import FeedbackButton from "@/components/FeedbackButton";
 import InviteColleagueModal from "@/components/InviteColleagueModal";
 import NpsSurveyModal from "@/components/NpsSurveyModal";
@@ -101,6 +102,7 @@ const Dashboard = () => {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { t } = useLanguage();
+  const [preferencesOpen, setPreferencesOpen] = useState(false);
 
   useEffect(() => {
     applyThemeToRoot(theme);
@@ -754,6 +756,7 @@ const Dashboard = () => {
                 theme={theme}
                 onToggleTheme={toggleTheme}
                 onSignOut={handleLogout}
+                onOpenPreferences={() => setPreferencesOpen(true)}
                 onEditProfile={() => {
                   setActiveTab("identity");
                   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1026,6 +1029,28 @@ const Dashboard = () => {
       <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} activeTab={activeTab} />
       <InviteColleagueModal open={inviteOpen} onClose={() => setInviteOpen(false)} />
       <NpsSurveyModal />
+      <PreferencesPanel
+        open={preferencesOpen}
+        onClose={() => setPreferencesOpen(false)}
+        userId={userId}
+        fullName={user?.fullName ?? null}
+        email={user?.email}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        onSignOut={() => { setPreferencesOpen(false); handleLogout(); }}
+        onEditProfile={() => {
+          setPreferencesOpen(false);
+          setActiveTab("identity");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          setTimeout(() => window.dispatchEvent(new CustomEvent("aura:open-profile-editor")), 250);
+        }}
+        onRetakeBrandAssessment={() => {
+          setPreferencesOpen(false);
+          setActiveTab("identity");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          setTimeout(() => window.dispatchEvent(new CustomEvent("aura:open-brand-assessment")), 250);
+        }}
+      />
     </div>
   );
 };

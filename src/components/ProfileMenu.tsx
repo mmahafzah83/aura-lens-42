@@ -1,7 +1,4 @@
-import { useEffect, useState } from "react";
-import { User, LogOut, UserCog, KeyRound } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import SetPasswordModal from "@/components/SetPasswordModal";
+import { User, LogOut, Settings2 } from "lucide-react";
 import UserAvatar from "@/components/ui/UserAvatar";
 import {
   DropdownMenu,
@@ -14,10 +11,11 @@ interface ProfileMenuProps {
   email?: string;
   avatarUrl?: string | null;
   userId?: string | null;
-  theme: "light" | "dark";
-  onToggleTheme: () => void;
+  theme?: "light" | "dark";
+  onToggleTheme?: () => void;
   onSignOut: () => void;
   onEditProfile?: () => void;
+  onOpenPreferences?: () => void;
   onQuestAction?: (questId: string) => void;
   onViewFullJourney?: () => void;
 }
@@ -26,11 +24,8 @@ export default function ProfileMenu({
   fullName,
   email,
   avatarUrl,
-  userId,
-  theme,
-  onToggleTheme,
   onSignOut,
-  onEditProfile,
+  onOpenPreferences,
   // onQuestAction and onViewFullJourney are accepted for backwards
   // compatibility but no longer rendered — the dropdown no longer
   // hosts its own progress tracker. Home checklist + My Story
@@ -38,23 +33,6 @@ export default function ProfileMenu({
   onQuestAction: _onQuestAction,
   onViewFullJourney: _onViewFullJourney,
 }: ProfileMenuProps) {
-  const [pwModalOpen, setPwModalOpen] = useState(false);
-  // Default to false; trust only the server-side user_metadata.password_set flag.
-  const [hasPassword, setHasPassword] = useState<boolean>(false);
-
-  useEffect(() => {
-    let active = true;
-    supabase.auth.getUser().then(({ data }) => {
-      if (!active) return;
-      const meta = (data.user?.user_metadata || {}) as Record<string, unknown>;
-      if (meta.password_set === true) {
-        setHasPassword(true);
-        try { localStorage.setItem("password_set", "1"); } catch {}
-      }
-    });
-    return () => { active = false; };
-  }, [userId]);
-
   const fn = (fullName || "").trim();
   const parts = fn.split(/\s+/).filter(Boolean);
   const firstNameParsed = parts[0] || "";
@@ -66,12 +44,7 @@ export default function ProfileMenu({
         ? parts[0][0]?.toUpperCase()
         : "";
 
-  const setTheme = (target: "light" | "dark") => {
-    if (target !== theme) onToggleTheme();
-  };
-
   return (
-    <>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
@@ -166,63 +139,6 @@ export default function ProfileMenu({
           </div>
         </div>
 
-        {/* THEME / APPEARANCE */}
-        <div style={{ padding: "0 12px 12px" }}>
-          <div
-            style={{
-              fontSize: 12,
-              color: "var(--muted-foreground)",
-              marginBottom: 6,
-            }}
-          >
-            Appearance
-          </div>
-          <div
-            role="group"
-            aria-label="Theme"
-            style={{
-              display: "flex",
-              width: "100%",
-              padding: 3,
-              borderRadius: 999,
-              background: "var(--brand-ghost, rgba(0,0,0,0.04))",
-              border: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))",
-            }}
-          >
-            {(["light", "dark"] as const).map((mode) => {
-              const active = theme === mode;
-              return (
-                <button
-                  key={mode}
-                  type="button"
-                  data-testid={mode === "light" ? "nav-theme-toggle" : undefined}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setTheme(mode);
-                  }}
-                  aria-pressed={active}
-                  style={{
-                    flex: 1,
-                    minHeight: 32,
-                    padding: "6px 10px",
-                    fontSize: 12,
-                    fontWeight: 500,
-                    border: "none",
-                    borderRadius: 999,
-                    cursor: "pointer",
-                    background: active ? "var(--brand-surface, var(--brand-pale, #f3ecd9))" : "transparent",
-                    color: active ? "var(--brand)" : "var(--muted-foreground)",
-                    transition: "background 150ms ease, color 150ms ease",
-                    textTransform: "capitalize",
-                  }}
-                >
-                  {mode}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
         {/* DIVIDER */}
         <div
           style={{
@@ -232,11 +148,11 @@ export default function ProfileMenu({
           }}
         />
 
-        {/* EDIT PROFILE */}
-        {onEditProfile && (
+        {/* PREFERENCES */}
+        {onOpenPreferences && (
           <button
             type="button"
-            onClick={onEditProfile}
+            onClick={onOpenPreferences}
             style={{
               width: "100%",
               minHeight: 44,
@@ -255,36 +171,10 @@ export default function ProfileMenu({
             }}
             className="hover:bg-[var(--brand-ghost,rgba(0,0,0,0.04))] transition-colors"
           >
-            <UserCog className="w-4 h-4" />
-            Edit profile
+            <Settings2 className="w-4 h-4" />
+            Preferences
           </button>
         )}
-
-        {/* SET / CHANGE PASSWORD */}
-        <button
-          type="button"
-          onClick={() => setPwModalOpen(true)}
-          style={{
-            width: "100%",
-            minHeight: 44,
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "10px 12px",
-            marginTop: 4,
-            background: "transparent",
-            border: "none",
-            borderRadius: 8,
-            cursor: "pointer",
-            color: "var(--foreground)",
-            fontSize: 14,
-            fontWeight: 500,
-          }}
-          className="hover:bg-[var(--brand-ghost,rgba(0,0,0,0.04))] transition-colors"
-        >
-          <KeyRound className="w-4 h-4" />
-          {hasPassword ? "Change password" : "Set password"}
-        </button>
 
         {/* SIGN OUT */}
         <button
@@ -313,11 +203,5 @@ export default function ProfileMenu({
         </button>
       </DropdownMenuContent>
     </DropdownMenu>
-    <SetPasswordModal
-      open={pwModalOpen}
-      onClose={() => { setPwModalOpen(false); setHasPassword(true); }}
-      isFirstTime={!hasPassword}
-    />
-    </>
   );
 }
