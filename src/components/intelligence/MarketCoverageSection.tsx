@@ -36,6 +36,7 @@ interface CachedCoverage extends CoverageResult {
 
 interface Props {
   onOpenCapture?: () => void;
+  signals?: Array<{ theme_tags?: string[] }>;
 }
 
 export default function MarketCoverageSection({ onOpenCapture }: Props) {
