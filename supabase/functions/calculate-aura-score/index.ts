@@ -51,6 +51,29 @@ serve(async (req) => {
     }
     const captureScore = Math.round((activeWeeksInLast4 / 4) * 100);
 
+    // --- weekly_rhythm: any entry counts (12-week window) ---
+    const twelveWeeksAgoForRhythm = new Date(now.getTime() - 12 * 7 * 24 * 60 * 60 * 1000);
+    const { data: rhythmEntries } = await admin
+      .from("entries")
+      .select("created_at")
+      .eq("user_id", userId)
+      .gte("created_at", twelveWeeksAgoForRhythm.toISOString());
+    const weekly_data: boolean[] = [];
+    for (let i = 0; i < 12; i++) {
+      const wkEnd = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
+      const wkStart = new Date(wkEnd.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const active = (rhythmEntries || []).some((e: any) => {
+        const t = new Date(e.created_at).getTime();
+        return t >= wkStart.getTime() && t < wkEnd.getTime();
+      });
+      weekly_data.push(active);
+    }
+    const weekly_rhythm = {
+      active_weeks: weekly_data.filter(Boolean).length,
+      total_weeks: 12,
+      weekly_data,
+    };
+
     // --- signal_score: count × 20 + avg confidence × 50 + theme breadth × 6 ---
     const { data: signals } = await admin
       .from("strategic_signals")
