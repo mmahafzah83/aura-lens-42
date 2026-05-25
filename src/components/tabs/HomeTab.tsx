@@ -31,7 +31,7 @@ import IdentityDriftBanner from "@/components/IdentityDriftBanner";
 import JourneyCycle from "@/components/home/JourneyCycle";
 import MissionControl from "@/components/home/MissionControl";
 import RecommendedMoveCard from "@/components/home/RecommendedMoveCard";
-import YourMoves from "@/components/home/YourMoves";
+import YourMoves, { type AuraItem } from "@/components/home/YourMoves";
 import MarketScan from "@/components/home/MarketScan";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
