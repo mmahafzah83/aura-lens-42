@@ -21,6 +21,7 @@ import ProfileMenu from "@/components/ProfileMenu";
 import PreferencesPanel from "@/components/PreferencesPanel";
 import EditProfileModal, { type EditProfileField } from "@/components/EditProfileModal";
 import SetPasswordModal from "@/components/SetPasswordModal";
+import BrandAssessmentModal from "@/components/BrandAssessmentModal";
 import FeedbackButton from "@/components/FeedbackButton";
 import InviteColleagueModal from "@/components/InviteColleagueModal";
 import NpsSurveyModal from "@/components/NpsSurveyModal";
