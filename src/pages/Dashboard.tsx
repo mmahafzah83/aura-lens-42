@@ -102,6 +102,7 @@ const Dashboard = () => {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { t } = useLanguage();
+  const [preferencesOpen, setPreferencesOpen] = useState(false);
 
   useEffect(() => {
     applyThemeToRoot(theme);
