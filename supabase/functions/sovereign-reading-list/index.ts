@@ -98,41 +98,41 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Discover REAL articles via Exa semantic search to ground recommendations
-    const sectorFocus = (profile as any)?.sector_focus || "";
-    const EXA_KEY = Deno.env.get("EXA_API_KEY");
+    // Discover real articles via Perplexity (replaces Exa)
     let discoveredArticles = "";
-    if (EXA_KEY) {
+    const PERPLEXITY_KEY = Deno.env.get("PERPLEXITY_API_KEY");
+    if (PERPLEXITY_KEY && skillGaps.length > 0) {
       try {
-        const gapTopics = skillGaps.map((g: any) => g.name).join(", ");
-        const query = `${gapTopics}${sectorFocus ? ` in ${sectorFocus}` : ""} executive analysis thought leadership`;
-        const exaRes = await fetch("https://api.exa.ai/search", {
+        const sectorFocus = (profile as any)?.sector_focus || "consulting";
+        const gapNames = skillGaps.map((g: any) => g.name).join(", ");
+        const perpRes = await fetch("https://api.perplexity.ai/chat/completions", {
           method: "POST",
           headers: {
-            "x-api-key": EXA_KEY,
+            Authorization: `Bearer ${PERPLEXITY_KEY}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            query,
-            num_results: 10,
-            use_autoprompt: true,
-            start_published_date: new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0],
-            type: "auto",
+            model: "sonar",
+            messages: [{
+              role: "user",
+              content: `Find 5 recent executive-level articles, whitepapers, or reports about ${gapNames} in the ${sectorFocus} sector. For each, provide the exact title, author/publisher, URL, and a one-sentence summary. Focus on sources like McKinsey, HBR, BCG, Deloitte, EY, Gartner, and industry-specific publications. Only include 2025-2026 content.`,
+            }],
+            search_recency_filter: "month",
           }),
         });
-        if (exaRes.ok) {
-          const exaData = await exaRes.json();
-          const results = (exaData.results || []).map((r: any) =>
-            `- "${r.title}" (${r.url}) — ${r.published_date || "recent"}`
-          ).join("\n");
-          if (results) {
-            discoveredArticles = `\n\nREAL ARTICLES DISCOVERED (recommend FROM THESE — they are semantically relevant to the user's skill gaps. Include the URL so the user can read them. Explain WHY each fills a specific gap):\n${results}`;
+        if (perpRes.ok) {
+          const perpData = await perpRes.json();
+          const content = perpData?.choices?.[0]?.message?.content || "";
+          const citations = perpData?.citations || [];
+          if (content) {
+            discoveredArticles = `\n\nREAL ARTICLES DISCOVERED (recommend FROM THESE — they are semantically relevant to the user's skill gaps. Include the URL so the user can read them. Explain WHY each fills a specific gap):\n${content}`;
+            if (citations.length > 0) {
+              discoveredArticles += `\n\nSOURCE URLs: ${citations.join(", ")}`;
+            }
           }
-        } else {
-          console.warn("[sovereign-reading-list] Exa non-OK:", exaRes.status);
         }
       } catch (e) {
-        console.warn("[sovereign-reading-list] Exa search failed:", (e as Error).message);
+        console.warn("[sovereign-reading-list] Perplexity search failed:", (e as Error).message);
       }
     }
 
