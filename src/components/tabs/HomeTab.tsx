@@ -2477,32 +2477,3 @@ const AnimatedScore = ({ value }: { value: number }) => {
   );
 };
 
-/* Narrative beat divider — thin gold line + small-caps eyebrow */
-const BeatDivider = ({ label }: { label: string }) => (
-  <div
-    aria-hidden="true"
-    style={{
-      display: "flex",
-      alignItems: "center",
-      gap: 12,
-      padding: "16px 0 8px",
-      marginTop: 16,
-    }}
-  >
-    <div className="h-[1px] flex-[0_0_24px]" style={{ background: "currentColor", opacity: 0.25 }} />
-    <div
-      style={{
-        fontFamily: "'Cormorant Garamond', Georgia, serif",
-        fontSize: 12,
-        fontWeight: 500,
-        letterSpacing: "0.18em",
-        textTransform: "uppercase",
-        color: "var(--ink-5)",
-        whiteSpace: "nowrap",
-      }}
-    >
-      {label}
-    </div>
-    <div className="h-[1px] flex-1" style={{ background: "currentColor", opacity: 0.25 }} />
-  </div>
-);
