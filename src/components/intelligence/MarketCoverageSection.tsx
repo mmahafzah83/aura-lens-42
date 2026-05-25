@@ -155,9 +155,9 @@ export default function MarketCoverageSection({ onOpenCapture, signals = [] }: P
       ) : error && !data ? (
         <ErrorState message={error} onRetry={callEdge} />
       ) : !data ? (
-        <EmptyState />
+        <EmptyState signals={signals} />
       ) : data.items.length === 0 ? (
-        <EmptyState />
+        <EmptyState signals={signals} />
       ) : (
         <CoverageBody data={data} onOpenCapture={onOpenCapture} />
       )}
