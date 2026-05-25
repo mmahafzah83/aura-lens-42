@@ -1029,6 +1029,28 @@ const Dashboard = () => {
       <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} activeTab={activeTab} />
       <InviteColleagueModal open={inviteOpen} onClose={() => setInviteOpen(false)} />
       <NpsSurveyModal />
+      <PreferencesPanel
+        open={preferencesOpen}
+        onClose={() => setPreferencesOpen(false)}
+        userId={userId}
+        fullName={user?.fullName ?? null}
+        email={user?.email}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        onSignOut={() => { setPreferencesOpen(false); handleLogout(); }}
+        onEditProfile={() => {
+          setPreferencesOpen(false);
+          setActiveTab("identity");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          setTimeout(() => window.dispatchEvent(new CustomEvent("aura:open-profile-editor")), 250);
+        }}
+        onRetakeBrandAssessment={() => {
+          setPreferencesOpen(false);
+          setActiveTab("identity");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          setTimeout(() => window.dispatchEvent(new CustomEvent("aura:open-brand-assessment")), 250);
+        }}
+      />
     </div>
   );
 };
