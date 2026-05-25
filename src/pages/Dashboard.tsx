@@ -235,13 +235,17 @@ const Dashboard = () => {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session) navigate("/auth");
-      else { setUser({ email: session.user.email }); setUserId(session.user.id); }
+      if (!session) {
+        const returnTo = window.location.pathname + window.location.search;
+        navigate(`/auth?returnTo=${encodeURIComponent(returnTo)}`);
+      } else { setUser({ email: session.user.email }); setUserId(session.user.id); }
     });
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session) navigate("/auth");
-      else {
+      if (!session) {
+        const returnTo = window.location.pathname + window.location.search;
+        navigate(`/auth?returnTo=${encodeURIComponent(returnTo)}`);
+      } else {
         setUser({ email: session.user.email });
         const uid = session.user.id;
         setUserId(uid);
