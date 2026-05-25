@@ -239,14 +239,16 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
     }
   }, [open]);
 
-  // Cinematic processing line cycling (3 lines on a schedule + 12s grace line)
+  // Cinematic processing line cycling — 6 stages spanning the full ~110s EF window
   useEffect(() => {
     if (!loading) { setLoadingStage(0); return; }
     setLoadingStage(0);
     const t1 = window.setTimeout(() => setLoadingStage(1), 4000);
-    const t2 = window.setTimeout(() => setLoadingStage(2), 6500);
-    const t3 = window.setTimeout(() => setLoadingStage(3), 12000);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+    const t2 = window.setTimeout(() => setLoadingStage(2), 8000);
+    const t3 = window.setTimeout(() => setLoadingStage(3), 15000);
+    const t4 = window.setTimeout(() => setLoadingStage(4), 25000);
+    const t5 = window.setTimeout(() => setLoadingStage(5), 45000);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5); };
   }, [loading]);
 
   const persistAnswersOnly = async () => {
@@ -359,13 +361,14 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
     // Persist raw answers FIRST so they aren't lost if the EF fails.
     await persistAnswersOnly();
 
-    // Hard 30s timeout — flip to graceful error if EF hasn't responded.
+    // Hard 120s timeout — the EF's own AbortController fires at 110s, so the
+    // frontend should never give up before the backend does.
     let timedOut = false;
     const hardTimeout = window.setTimeout(() => {
       timedOut = true;
       setGenError(true);
       setLoading(false);
-    }, 30000);
+    }, 120000);
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -1144,10 +1147,12 @@ function ResultsView({
 // CinematicLoading — eye + staged processing lines
 // ============================================================
 const PROCESSING_LINES = [
-  "Mapping your expertise across 6 frameworks...",
-  "Finding the space only you can own...",
-  "Composing your market position...",
-  "This is taking a moment — your profile is more complex than most...",
+  "Reading your story...",
+  "Finding what makes you different...",
+  "Seeing the patterns others miss...",
+  "Building something worth waiting for...",
+  "Almost there — depth takes a moment...",
+  "Still with you — this is worth it...",
 ];
 function CinematicLoading({ stage = 0 }: { stage?: number }) {
   return (
