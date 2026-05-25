@@ -765,6 +765,8 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const handleUpload = async (fileOverride?: File) => {
     const fileToUpload = fileOverride || selectedFile;
     if (!fileToUpload) return;
+    setUploadError(null);
+    setImportedCount(null);
     setUploading(true);
     try {
       const form = new FormData();
@@ -775,20 +777,44 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
       const imp = (data as any)?.imported || {};
+      const posts = imp.post_rows || imp.imported || 0;
       const days = (imp.engagement_rows || 0) + (imp.follower_rows || 0);
+      const totalImported = (imp.engagement_rows || 0) + (imp.follower_rows || 0) + (imp.post_rows || 0);
+      if (totalImported === 0) {
+        toast.error("No post data found in this file. Make sure you're exporting from LinkedIn Analytics → Post impressions.");
+        setUploadError("No post data found in this file. Make sure you're exporting from LinkedIn Analytics → Post impressions.");
+        setUploading(false);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        return;
+      }
+      setImportedCount({ posts, days });
       toast.success(`Analytics imported successfully — ${days} days of data loaded`);
       setSelectedFile(null);
       setPipeline({ voice: "pending", positioning: "pending", score: "pending" });
       await runPostImportPipeline(setPipeline);
       await loadAll(selectedDays);
+      setSuccessData({ posts, days });
+      setShowSuccessCard(true);
+      setTimeout(() => setShowSuccessCard(false), 2500);
     } catch (err: any) {
       console.error("XLSX upload failed:", err);
       toast.error(err?.message || "Upload failed. Please try again.");
+      setUploadError(err?.message || "Upload failed. Please try again.");
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
+
+  // Staggered progress steps (cosmetic — reduces perceived wait time)
+  useEffect(() => {
+    if (uploading) {
+      setProgressStep(0);
+      const t1 = setTimeout(() => setProgressStep(1), 800);
+      const t2 = setTimeout(() => setProgressStep(2), 2000);
+      return () => { clearTimeout(t1); clearTimeout(t2); };
+    }
+  }, [uploading]);
 
   /* ── Render ── */
   if (loading) {
