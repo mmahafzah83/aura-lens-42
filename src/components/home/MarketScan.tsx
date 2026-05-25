@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Globe, FileText, TrendingUp, Lightbulb, Plus, ExternalLink, ArrowRight } from "lucide-react";
+import { FileText, TrendingUp, Lightbulb, Plus, ExternalLink, ArrowRight, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface BriefingItem {
@@ -165,6 +165,7 @@ export default function MarketScan({ onOpenCapture, onSwitchTab }: MarketScanPro
   const [items, setItems] = useState<BriefingItem[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
+  const [expanded, setExpanded] = useState(true);
 
   useEffect(() => {
     const date = todayKey();
@@ -203,19 +204,35 @@ export default function MarketScan({ onOpenCapture, onSwitchTab }: MarketScanPro
   if (!loading && (failed || !items || items.length === 0)) return null;
 
   return (
-    <section>
-      <div style={{
-        display: "flex", alignItems: "center", gap: 8,
-        padding: "0 4px", marginBottom: 12, flexWrap: "wrap",
-      }}>
-        <Globe size={14} style={{ color: "hsl(var(--muted-foreground))" }} />
-        <span style={{ fontSize: 13, color: "var(--color-text-secondary, hsl(var(--foreground)))" }}>
+    <section style={{ borderTop: "0.5px solid hsl(var(--border) / 0.5)", paddingTop: 20 }}>
+      <button
+        type="button"
+        onClick={() => setExpanded(s => !s)}
+        style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          width: "100%", background: "transparent", border: 0, padding: 0,
+          cursor: "pointer", marginBottom: 6,
+        }}
+      >
+        <span style={{
+          fontSize: 11, fontWeight: 500, letterSpacing: "0.04em",
+          color: "hsl(var(--muted-foreground))", textTransform: "uppercase",
+        }}>
           Market scan
         </span>
-        <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
-          Curated for your sector · verify before citing
-        </span>
+        <ChevronDown
+          size={14}
+          style={{
+            color: "hsl(var(--muted-foreground))",
+            transform: expanded ? "rotate(0deg)" : "rotate(-90deg)",
+            transition: "transform 200ms",
+          }}
+        />
+      </button>
+      <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 12, lineHeight: 1.5 }}>
+        AI-curated articles aligned to your sector. Verify before citing.
       </div>
+      {expanded && (
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {loading ? (
           <><Skel /><Skel /><Skel /></>
@@ -230,6 +247,7 @@ export default function MarketScan({ onOpenCapture, onSwitchTab }: MarketScanPro
           ))
         )}
       </div>
+      )}
     </section>
   );
 }

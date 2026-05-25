@@ -28,11 +28,10 @@ import WeeklyIntelligenceLoopCard from "@/components/WeeklyIntelligenceLoopCard"
 import SilenceAlarm from "@/components/SilenceAlarm";
 import TierCeremonyModal from "@/components/TierCeremonyModal";
 import IdentityDriftBanner from "@/components/IdentityDriftBanner";
-import AuthorityPulseStrip from "@/components/home/AuthorityPulseStrip";
 import JourneyCycle from "@/components/home/JourneyCycle";
 import MissionControl from "@/components/home/MissionControl";
 import RecommendedMoveCard from "@/components/home/RecommendedMoveCard";
-import YourMoves from "@/components/home/YourMoves";
+import YourMoves, { type AuraItem } from "@/components/home/YourMoves";
 import MarketScan from "@/components/home/MarketScan";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
@@ -297,6 +296,9 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
   const [showSecondaryMoves, setShowSecondaryMoves] = useState(false);
   const [scoreTooltipOpen, setScoreTooltipOpen] = useState(false);
 
+  // Aura's read items — split into URGENT (top HIGH PUBLISH) + remaining for YourMoves
+  const [auraReadItems, setAuraReadItems] = useState<AuraItem[] | null>(null);
+
   // Score-jump celebratory banner state
   const [scoreJumpShareData, setScoreJumpShareData] = useState<MilestoneShareData | null>(null);
   const weekKey = (() => {
@@ -390,6 +392,29 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       }
     };
     checkOnboarding();
+    return () => { cancelled = true; };
+  }, [sessionConfirmed, authUser?.id]);
+
+  // Fetch Aura's Read items here so we can split URGENT (top HIGH PUBLISH) vs YourMoves
+  useEffect(() => {
+    if (!sessionConfirmed || !authUser?.id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("auras-read", {
+          body: { user_id: authUser.id },
+        });
+        if (cancelled) return;
+        if (error) throw error;
+        const list = Array.isArray((data as any)?.items) ? ((data as any).items as AuraItem[]) : [];
+        setAuraReadItems(list);
+      } catch (e) {
+        if (!cancelled) {
+          console.warn("[HomeTab] auras-read failed", e);
+          setAuraReadItems([]);
+        }
+      }
+    })();
     return () => { cancelled = true; };
   }, [sessionConfirmed, authUser?.id]);
 
@@ -1621,135 +1646,178 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         </div>
       )}
       {!auraLoading && !isEmpty && auraData && (() => {
-        const trend = auraData.score_trend;
-        const cells = (auraData.weekly_rhythm?.weekly_data || []).slice(-12);
-        while (cells.length < 12) cells.unshift(false);
-        const activeWeeks = auraData.weekly_rhythm?.active_weeks ?? cells.filter(Boolean).length;
+        const score = auraData.aura_score;
+        const tier = auraData.tier_name;
+        const dateLabel = now.toLocaleDateString("en-US", {
+          weekday: "long", year: "numeric", month: "long", day: "numeric",
+        }).toUpperCase();
+        const dashOffset = 132 - (Math.max(0, Math.min(100, score)) / 100) * 132;
         return (
           <div
-            className="flex items-start justify-between gap-4 flex-wrap"
+            data-testid="home-greeting-arc"
             style={{
-              borderBottom: "1px solid hsl(var(--border) / 0.5)",
-              paddingBottom: 16,
-              marginBottom: 8,
+              display: "flex", alignItems: "flex-start", justifyContent: "space-between",
+              gap: 16, marginBottom: 8,
             }}
           >
-            <div className="flex flex-col" style={{ gap: 2 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{
+                fontSize: 11, letterSpacing: "0.05em",
+                color: "hsl(var(--muted-foreground))", marginBottom: 6,
+              }}>
+                {dateLabel}
+              </div>
               <div
                 data-testid="home-greeting"
-                className="font-serif text-2xl font-normal text-ink"
-                style={{ marginBottom: 6, letterSpacing: "-0.005em" }}
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontSize: 22, fontWeight: 500,
+                  color: "hsl(var(--foreground))",
+                  lineHeight: 1.3, marginBottom: 4,
+                }}
               >
-                {getGreetingTitle(now.getHours())}{profileLoaded && userName ? `, ${userName}` : ""}
+                {getGreetingTitle(now.getHours())}{profileLoaded && userName ? `, ${userName}` : ""}.
               </div>
-              {(() => {
-                const score = auraData.aura_score;
-                const tier = auraData.tier_name;
-                const dropped = score7dAgo !== null && score < score7dAgo;
-                const dipDelta = dropped ? (score7dAgo as number) - score : 0;
-                let line = "";
-                if (dropped && dipDelta >= 2) {
-                  line = `Your score dipped ${dipDelta} pts to ${score}. A single capture restarts momentum.`;
-                } else if (daysSinceCapture !== null && daysSinceCapture >= 7) {
-                  line = `It's been ${daysSinceCapture} days since your last capture. Your signals are waiting for fresh evidence.`;
-                } else {
-                  line = `Your authority is at ${score} — ${tier} tier.`;
-                }
-                return (
-                  <div
-                    style={{
-                      fontSize: 13,
-                      color: "var(--ink-4)",
-                      lineHeight: 1.5,
-                      marginBottom: 6,
-                      maxWidth: 560,
-                    }}
-                  >
-                    {line}
-                  </div>
-                );
-              })()}
-              <div className="flex items-center" style={{ gap: 6 }}>
-                <span
-                  data-testid="home-score"
-                  style={{
-                    fontFamily: "'Cormorant Garamond', serif",
-                    fontSize: 36,
-                    fontWeight: 700,
-                    color: "var(--brand)",
-                    lineHeight: 1.5,
-                  }}
-                >
-                  <AnimatedScore value={auraData.aura_score} />
-                </span>
-                <InfoTooltip side="bottom" align="left" label="Digital Presence Score" width={280}>
-                  <div data-testid="home-score-breakdown" style={{ fontWeight: 600, color: "var(--ink)", marginBottom: 6 }}>Digital Presence Score</div>
-                  <p style={{ margin: "0 0 4px" }}>Signal intelligence — 40%</p>
-                  <p style={{ margin: "0 0 4px" }}>Content presence — 40%</p>
-                  <p style={{ margin: "0 0 8px" }}>Capture consistency — 20%</p>
-                  <div style={{ fontSize: 12, color: "var(--ink-4)", fontStyle: "italic" }}>
-                    Observer → Strategist → Presence
-                  </div>
-                </InfoTooltip>
-                {trend !== null && trend !== undefined && trend !== 0 && (
-                  <span
-                    style={{
-                      fontSize: 12, fontWeight: 500, marginLeft: 4,
-                      color: trend > 0 ? "var(--success)" : "hsl(var(--muted-foreground))",
-                    }}
-                  >
-                    {trend > 0 ? "↑" : "↓"} {Math.abs(trend)} pts
-                  </span>
-                )}
+              <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))" }}>
+                {sectorFocus ? `${sectorFocus} · ` : ""}{tier} tier
               </div>
-              <div data-testid="home-tier" style={{ fontSize: 14, fontWeight: 500, color: "var(--brand)" }}>
-                {auraData.tier_name}
-              </div>
-              {sectorFocus && (
-                <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
-                  {sectorFocus}
-                </div>
-              )}
             </div>
-
-            <div data-testid="home-capture-rhythm" className="flex flex-col items-end" style={{ gap: 6 }}>
-              <div style={{ display: "flex", gap: 3 }}>
-                {cells.map((filled, i) => (
-                  <div
-                    key={i}
-                    aria-label={`Week ${i + 1}: ${filled ? "active" : "inactive"}`}
-                    style={{
-                      width: 14, height: 14, borderRadius: 3,
-                      background: filled ? "var(--brand)" : "transparent",
-                      border: filled ? "1px solid var(--brand)" : "1px solid var(--brand-line)",
-                    }}
-                  />
-                ))}
+            <div style={{ flexShrink: 0, marginLeft: 16, display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <svg viewBox="0 0 100 60" style={{ width: 100, height: 60 }} aria-hidden>
+                <path
+                  d="M 8 52 A 42 42 0 0 1 92 52"
+                  fill="none"
+                  stroke="hsl(var(--border) / 0.6)"
+                  strokeWidth={4}
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M 8 52 A 42 42 0 0 1 92 52"
+                  fill="none"
+                  stroke="var(--warning)"
+                  strokeWidth={4}
+                  strokeLinecap="round"
+                  strokeDasharray={132}
+                  strokeDashoffset={dashOffset}
+                  style={{ transition: "stroke-dashoffset 800ms ease" }}
+                />
+              </svg>
+              <div
+                data-testid="home-score"
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontSize: 28, fontWeight: 500,
+                  color: "hsl(var(--foreground))",
+                  lineHeight: 1.1, marginTop: -8,
+                }}
+              >
+                <AnimatedScore value={score} />
               </div>
-              <div className="flex items-center" style={{ gap: 4, fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
-                <span>{activeWeeks}/12w</span>
-                <InfoTooltip side="top" align="right" label="Capture Rhythm" width={280}>
-                  <div style={{ fontWeight: 600, color: "var(--ink)", marginBottom: 6 }}>Capture Rhythm</div>
-                  <p style={{ margin: 0 }}>
-                    Each square = one week. Filled = at least one meaningful capture. {activeWeeks} of 12 weeks active.
-                  </p>
-                </InfoTooltip>
+              <div style={{ fontSize: 9, color: "hsl(var(--muted-foreground))", letterSpacing: "0.05em" }}>
+                of 100
               </div>
             </div>
           </div>
         );
       })()}
 
-      {/* P4 — Authority pulse strip + Journey cycle + Mission control (now below score) */}
+      {/* THREE FORCES — score breakdown directly under header */}
+      {!auraLoading && !isEmpty && auraData && (() => {
+        const signalW = Math.round((auraData.signal_score ?? 0) * 0.4);
+        const contentW = Math.round((auraData.content_score ?? 0) * 0.4);
+        const captureW = Math.round((auraData.capture_score ?? 0) * 0.2);
+
+        const forces = [
+          { key: "signal", label: "Signal strength",  weighted: signalW,  max: 40, color: "var(--warning)" },
+          { key: "content", label: "Content published", weighted: contentW, max: 40, color: "var(--color-info-text, var(--info))" },
+          { key: "consistency", label: "Weekly rhythm",  weighted: captureW, max: 20, color: "var(--success)" },
+        ];
+
+        const pcts = forces.map(f => f.max ? (f.weighted / f.max) : 0);
+        const minIdx = pcts.indexOf(Math.min(...pcts));
+        const weakest = forces[minIdx];
+
+        return (
+          <div
+            data-testid="home-forces-strip"
+            style={{
+              borderBottom: "0.5px solid hsl(var(--border) / 0.5)",
+              paddingBottom: 14,
+              marginBottom: 4,
+            }}
+          >
+            <div style={{ display: "flex", gap: 20, alignItems: "stretch", marginBottom: 14 }}>
+              {forces.map((f, i) => {
+                const pct = Math.max(0, Math.min(100, (f.weighted / f.max) * 100));
+                return (
+                  <div key={f.key} style={{ display: "flex", flex: 1, minWidth: 0, gap: 20 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 4 }}>
+                        <span style={{
+                          fontFamily: "'Cormorant Garamond', serif",
+                          fontSize: 26, fontWeight: 500, color: f.color, lineHeight: 1,
+                        }}>
+                          {f.weighted}
+                        </span>
+                        <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
+                          /{f.max}
+                        </span>
+                      </div>
+                      <div style={{
+                        fontSize: 11, color: "hsl(var(--muted-foreground))",
+                        marginBottom: 6,
+                      }}>
+                        {f.label}
+                      </div>
+                      <div style={{
+                        height: 2, background: "hsl(var(--border) / 0.6)",
+                        borderRadius: 1, overflow: "hidden",
+                      }}>
+                        <div style={{
+                          width: `${pct}%`, height: "100%",
+                          background: f.color, transition: "width 600ms ease",
+                        }} />
+                      </div>
+                    </div>
+                    {i < forces.length - 1 && (
+                      <div style={{ width: "0.5px", background: "hsl(var(--border) / 0.5)", flexShrink: 0 }} />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              gap: 12, flexWrap: "wrap",
+            }}>
+              <div style={{
+                display: "flex", alignItems: "center", gap: 6,
+                fontSize: 12, color: "hsl(var(--muted-foreground))", lineHeight: 1.5,
+              }}>
+                <Zap aria-hidden size={13} style={{ color: "var(--warning)", flexShrink: 0 }} />
+                <span>
+                  <span style={{ color: weakest.color, fontWeight: 500 }}>{weakest.label}</span>
+                  {" "}is your biggest growth lever right now
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => onSwitchTab?.("influence")}
+                style={{
+                  fontSize: 11, color: "var(--color-info-text, var(--info))",
+                  background: "transparent", border: 0, padding: 0, cursor: "pointer",
+                }}
+              >
+                See full breakdown →
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Mission control + optional journey cycle */}
       {authUser?.id && (
-        <>
-        <BeatDivider label="What to do next" />
         <div className="flex flex-col" style={{ gap: 10 }}>
-          <AuthorityPulseStrip
-            userId={authUser.id}
-            authorityScore={auraData?.aura_score ?? null}
-            onGoToImpact={() => onSwitchTab?.("influence")}
-          />
           {!hasAnySignals && (
             <JourneyCycle
               hasEntries={(entries?.length ?? 0) > 0 || journey.entryCount > 0}
@@ -1760,104 +1828,14 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               authorityScore={auraData?.aura_score ?? 0}
             />
           )}
-          <MissionControl userId={authUser.id} entriesCount={Array.isArray(entries) ? entries.length : 0} />
+          <MissionControl
+            userId={authUser.id}
+            entriesCount={Array.isArray(entries) ? entries.length : 0}
+            topSignalTitle={topSignal?.signal_title}
+            topSignalFragments={(topSignal as any)?.fragment_count ?? (topSignal as any)?.fragmentCount}
+          />
         </div>
-        </>
       )}
-
-      {/* Weekly LinkedIn data reminder — appears when LinkedIn data is 7+ days stale */}
-      {!auraLoading && !isEmpty && auraData && (() => {
-        const signalW = Math.round((auraData.signal_score ?? 0) * 0.4);
-        const contentW = Math.round((auraData.content_score ?? 0) * 0.4);
-        const captureW = Math.round((auraData.capture_score ?? 0) * 0.2);
-
-        let weakestAction = "";
-        if (signalW === 0 && contentW === 0 && captureW === 0) {
-          weakestAction = "Start by capturing an article — your score builds from there";
-        } else if (signalW <= contentW && signalW <= captureW) {
-          weakestAction = "Signal needs attention — capture from a new source";
-        } else if (contentW <= signalW && contentW <= captureW) {
-          weakestAction = "Content needs attention — publish from your strongest signal";
-        } else {
-          weakestAction = "Consistency needs attention — capture one thing this week";
-        }
-
-        const forces = [
-          { label: "Signal", weighted: signalW, max: 40, color: "var(--aura-accent)" },
-          { label: "Content", weighted: contentW, max: 40, color: "var(--aura-blue)" },
-          { label: "Consistency", weighted: captureW, max: 20, color: "var(--aura-positive)" },
-        ];
-
-        return (
-          <div
-            data-testid="home-forces-strip"
-            role="button"
-            tabIndex={0}
-            onClick={() => onSwitchTab?.("influence")}
-            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSwitchTab?.("influence"); } }}
-            style={{
-              background: "hsl(var(--card))",
-              border: "1px solid hsl(var(--border) / 0.5)",
-              borderRadius: 10,
-              padding: "14px 16px",
-              cursor: "pointer",
-              display: "flex",
-              flexDirection: "column",
-              gap: 10,
-            }}
-          >
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-              {forces.map((f) => {
-                const pct = Math.max(0, Math.min(100, (f.weighted / f.max) * 100));
-                return (
-                  <div key={f.label} style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
-                    <div style={{
-                      fontSize: 12, fontWeight: 600, letterSpacing: "0.1em",
-                      textTransform: "uppercase", color: "hsl(var(--muted-foreground))",
-                    }}>
-                      {f.label}
-                    </div>
-                    <div
-                      className="tabular-nums"
-                      style={{
-                        fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-                        fontSize: 18, fontWeight: 700, color: f.color, lineHeight: 1.5,
-                      }}
-                    >
-                      {f.weighted}
-                      <span style={{ fontSize: 12, fontWeight: 500, color: "hsl(var(--muted-foreground))" }}>
-                        {" "}/{f.max}
-                      </span>
-                    </div>
-                    <div style={{
-                      height: 4, background: "hsl(var(--border) / 0.6)",
-                      borderRadius: 2, overflow: "hidden",
-                    }}>
-                      <div style={{
-                        width: `${pct}%`, height: "100%",
-                        background: f.color, transition: "width 600ms ease",
-                      }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div style={{
-              fontSize: 12, color: "hsl(var(--foreground) / 0.85)",
-              lineHeight: 1.5, display: "flex", alignItems: "center", gap: 6,
-            }}>
-              <Zap aria-hidden size={14} style={{ color: "var(--brand)", flexShrink: 0 }} />
-              <span style={{ flex: 1, minWidth: 0 }}>{weakestAction}</span>
-            </div>
-            <div style={{
-              fontSize: 12, color: "hsl(var(--muted-foreground))",
-              textAlign: "right",
-            }}>
-              See full breakdown →
-            </div>
-          </div>
-        );
-      })()}
 
       <WeeklyIntelligenceLoopCard onSwitchTab={onSwitchTab} />
 
@@ -2248,7 +2226,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
           );
         }
 
-        // Priority 2 — nudge card
+        // Priority 2 — nudge card (BRIEFING)
         if (auraData?.personalized_nudge) {
           const subs = [
             { key: "capture", value: auraData.capture_score },
@@ -2256,40 +2234,57 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
             { key: "content", value: auraData.content_score },
           ].sort((a, b) => a.value - b.value);
           const weakest = subs[0].key;
-          const ctaLabel = weakest === "content" ? "Draft post →" : weakest === "capture" ? "Capture now →" : "See your signals →";
+          const ctaLabel = weakest === "content"
+            ? "Draft post →"
+            : weakest === "capture"
+            ? "Capture a source →"
+            : "See your signals →";
           const ctaAction = weakest === "content"
             ? () => onSwitchTab?.("authority")
             : weakest === "capture"
             ? () => onOpenCapture?.()
             : () => onSwitchTab?.("intelligence");
+          const reinforcement = (weakest === "signal" || weakest === "capture")
+            ? " One more capture from a different source will push this signal above the confidence threshold — making it ready to publish."
+            : "";
           return (
             <div
               style={{
-                background: "hsl(var(--card))",
-                border: "1px solid hsl(var(--border) / 0.6)",
-                borderRadius: 8,
-                padding: "16px 18px",
+                borderLeft: "3px solid var(--warning)",
+                paddingLeft: 16,
               }}
             >
-              <div className="flex items-center" style={{ gap: 8, marginBottom: 8 }}>
-                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--brand)", display: "inline-block" }} />
-                <span style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--brand)", fontWeight: 600 }}>
-                  Your briefing
-                </span>
+              <div style={{
+                fontSize: 11, fontWeight: 500, letterSpacing: "0.04em",
+                color: "var(--warning)", textTransform: "uppercase", marginBottom: 6,
+              }}>
+                Briefing
               </div>
-              <p style={{ fontSize: 14, lineHeight: 1.65, color: "hsl(var(--foreground))", margin: 0 }}>
+              <div style={{
+                fontFamily: "'Cormorant Garamond', serif",
+                fontSize: 15, fontWeight: 500,
+                color: "hsl(var(--foreground))",
+                lineHeight: 1.4, marginBottom: 6,
+              }}>
                 {auraData.personalized_nudge}
-              </p>
-              <div className="flex items-center" style={{ marginTop: 14, gap: 8, flexWrap: "wrap" }}>
-                <AuraButton variant="primary" size="sm" onClick={ctaAction} style={{ borderRadius: 4, padding: "7px 18px" }}>
-                  {ctaLabel}
-                </AuraButton>
-                {weakest !== "signal" && (
-                  <AuraButton variant="ghost" size="sm" onClick={() => onSwitchTab?.("intelligence")} style={{ borderRadius: 4, padding: "7px 18px" }}>
-                    See your signals →
-                  </AuraButton>
-                )}
               </div>
+              {reinforcement && (
+                <p style={{ fontSize: 13, lineHeight: 1.6, color: "hsl(var(--muted-foreground))", margin: "0 0 12px" }}>
+                  {reinforcement.trim()}
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={ctaAction}
+                style={{
+                  fontSize: 12, fontWeight: 500,
+                  padding: "8px 18px", borderRadius: 6,
+                  background: "var(--warning)", color: "#fff",
+                  border: 0, cursor: "pointer",
+                }}
+              >
+                {ctaLabel}
+              </button>
             </div>
           );
         }
@@ -2357,10 +2352,93 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         </div>
       )}
 
-      {/* TIER 1 — Your moves (from auras-read) */}
+      {/* URGENT — top HIGH PUBLISH from auras-read (conditional) */}
+      {(() => {
+        if (!auraReadItems || auraReadItems.length === 0) return null;
+        const urgentIdx = auraReadItems.findIndex(
+          (it) => it.action_type === "PUBLISH" && it.urgency === "HIGH"
+        );
+        if (urgentIdx === -1) return null;
+        const urgent = auraReadItems[urgentIdx];
+        const frags = (topSignal as any)?.fragment_count ?? (topSignal as any)?.fragmentCount;
+        return (
+          <section
+            data-testid="home-urgent"
+            style={{ borderTop: "0.5px solid hsl(var(--border) / 0.5)", paddingTop: 20 }}
+          >
+            <div style={{
+              fontSize: 11, fontWeight: 500, letterSpacing: "0.04em",
+              color: "var(--danger)", textTransform: "uppercase", marginBottom: 6,
+            }}>
+              Urgent
+            </div>
+            <div style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: 15, fontWeight: 500, color: "hsl(var(--foreground))",
+              lineHeight: 1.4, marginBottom: 6,
+            }}>
+              {urgent.title}
+            </div>
+            <div style={{
+              fontSize: 12, color: "hsl(var(--muted-foreground))",
+              lineHeight: 1.5, marginBottom: 12,
+            }}>
+              {urgent.reason}
+              {frags != null && daysSinceCapture != null && (
+                <>
+                  {" "}
+                  <span style={{ color: "hsl(var(--foreground))", fontWeight: 500 }}>{frags} evidence fragments</span>
+                  {" · "}
+                  <span style={{ color: "var(--danger)", fontWeight: 500 }}>{daysSinceCapture} days</span>
+                  {" since your last capture · "}
+                  <span style={{ color: "var(--success)", fontWeight: 500 }}>+8 points</span>
+                </>
+              )}
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button
+                type="button"
+                onClick={() => onSwitchTab?.("authority")}
+                style={{
+                  fontSize: 12, fontWeight: 500, padding: "8px 16px", borderRadius: 6,
+                  background: "var(--danger)", color: "#fff", border: 0, cursor: "pointer",
+                }}
+              >
+                Draft this post →
+              </button>
+              <button
+                type="button"
+                onClick={() => onSwitchTab?.("intelligence")}
+                style={{
+                  fontSize: 12, fontWeight: 500, padding: "8px 16px", borderRadius: 6,
+                  background: "transparent",
+                  color: "hsl(var(--muted-foreground))",
+                  border: "0.5px solid hsl(var(--border) / 0.8)",
+                  cursor: "pointer",
+                }}
+              >
+                View signal →
+              </button>
+            </div>
+          </section>
+        );
+      })()}
+
+      {/* YOUR MOVES — remaining auras-read items */}
       <div data-testid="home-live-intel">
         <YourMoves
           userId={sessionConfirmed ? authUser?.id ?? null : null}
+          items={(() => {
+            if (!auraReadItems) return undefined;
+            const urgentIdx = auraReadItems.findIndex(
+              (it) => it.action_type === "PUBLISH" && it.urgency === "HIGH"
+            );
+            const remaining = urgentIdx === -1
+              ? auraReadItems
+              : auraReadItems.filter((_, i) => i !== urgentIdx);
+            return remaining.slice(0, 3);
+          })()}
+          hideIfEmpty
           onOpenCapture={onOpenCapture}
           onSwitchTab={onSwitchTab}
         />
@@ -2399,32 +2477,3 @@ const AnimatedScore = ({ value }: { value: number }) => {
   );
 };
 
-/* Narrative beat divider — thin gold line + small-caps eyebrow */
-const BeatDivider = ({ label }: { label: string }) => (
-  <div
-    aria-hidden="true"
-    style={{
-      display: "flex",
-      alignItems: "center",
-      gap: 12,
-      padding: "16px 0 8px",
-      marginTop: 16,
-    }}
-  >
-    <div className="h-[1px] flex-[0_0_24px]" style={{ background: "currentColor", opacity: 0.25 }} />
-    <div
-      style={{
-        fontFamily: "'Cormorant Garamond', Georgia, serif",
-        fontSize: 12,
-        fontWeight: 500,
-        letterSpacing: "0.18em",
-        textTransform: "uppercase",
-        color: "var(--ink-5)",
-        whiteSpace: "nowrap",
-      }}
-    >
-      {label}
-    </div>
-    <div className="h-[1px] flex-1" style={{ background: "currentColor", opacity: 0.25 }} />
-  </div>
-);

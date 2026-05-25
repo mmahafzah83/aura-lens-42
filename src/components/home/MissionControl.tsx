@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Target, Check } from "lucide-react";
+import { Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Mission {
@@ -15,13 +15,49 @@ const TYPE_LABEL: Record<string, string> = {
   signal: "Signal", content: "Content", rhythm: "Rhythm", voice: "Voice", baseline: "Baseline",
 };
 
+const TYPE_COLOR: Record<string, string> = {
+  signal: "var(--warning)",
+  content: "var(--color-info-text, var(--info))",
+  voice: "var(--success)",
+  rhythm: "var(--success)",
+  baseline: "hsl(var(--muted-foreground))",
+};
+
+const explainMission = (
+  title: string,
+  type: string,
+  topSignalTitle?: string,
+  topSignalFragments?: number,
+): string => {
+  const t = title.toLowerCase();
+  if (t.includes("capture")) {
+    return "Find an article about your sector and save it. Aura will extract the strategic pattern.";
+  }
+  if (t.includes("publish")) {
+    const sig = topSignalTitle || "strongest";
+    const frags = topSignalFragments ?? 0;
+    return `Your ${sig} signal has ${frags} fragment${frags === 1 ? "" : "s"}. Draft a LinkedIn post and share your perspective.`;
+  }
+  if (t.includes("voice") || type === "voice") {
+    return "Paste 2 LinkedIn posts you've written before. Aura learns your tone so generated content sounds like you.";
+  }
+  return "";
+};
+
 const DEFAULT_MISSIONS: Mission[] = [
   { id: "default-1", title: "Capture a new source", description: null, mission_type: "signal", points: 5, status: "pending" },
   { id: "default-2", title: "Publish from your strongest signal", description: null, mission_type: "content", points: 8, status: "pending" },
   { id: "default-3", title: "Train your voice with 2 posts", description: null, mission_type: "voice", points: 6, status: "pending" },
 ];
 
-export default function MissionControl({ userId, entriesCount = 0 }: { userId: string | null; entriesCount?: number }) {
+interface MissionControlProps {
+  userId: string | null;
+  entriesCount?: number;
+  topSignalTitle?: string;
+  topSignalFragments?: number;
+}
+
+export default function MissionControl({ userId, entriesCount = 0, topSignalTitle, topSignalFragments }: MissionControlProps) {
   const [missions, setMissions] = useState<Mission[]>([]);
   const [loaded, setLoaded] = useState(false);
 
@@ -64,52 +100,50 @@ export default function MissionControl({ userId, entriesCount = 0 }: { userId: s
 
   const done = missions.filter(m => m.status === "completed").length;
   const total = missions.length;
-  const pct = total ? (done / total) * 100 : 0;
+  const pointsAvailable = missions
+    .filter(m => m.status !== "completed")
+    .reduce((s, m) => s + (m.points ?? 5), 0);
 
   return (
-    <div
-      style={{
-        border: "1px solid var(--aura-border)",
-        borderRadius: 10,
-        overflow: "hidden",
-        background: "var(--aura-card)",
-      }}
-    >
-      <div
-        className="flex items-center justify-between"
-        style={{ padding: "14px 16px", borderBottom: "1px solid var(--aura-border)" }}
-      >
-        <div className="flex items-center" style={{ gap: 8 }}>
-          <Target size={15} color="var(--aura-accent)" />
-          <span style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)" }}>
-            Your missions this week
-          </span>
-        </div>
+    <section style={{ borderTop: "0.5px solid hsl(var(--border) / 0.5)", paddingTop: 20 }}>
+      <div className="flex items-baseline justify-between" style={{ marginBottom: 4 }}>
+        <span style={{
+          fontSize: 11, fontWeight: 500, letterSpacing: "0.04em",
+          color: "hsl(var(--muted-foreground))", textTransform: "uppercase",
+        }}>
+          This week's missions
+        </span>
         {total > 0 && (
-          <div className="flex items-center" style={{ gap: 10 }}>
-            <span style={{ fontSize: 12, color: "var(--ink-3)" }}>{done} of {total}</span>
-            <div style={{ width: 60, height: 4, background: "var(--aura-border)", borderRadius: 2, overflow: "hidden" }}>
-              <div style={{ width: `${pct}%`, height: "100%", background: "var(--aura-accent)", transition: "width 400ms" }} />
-            </div>
-          </div>
+          <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
+            {done} of {total} ·{" "}
+            <span style={{ color: "var(--success)", fontWeight: 500 }}>+{pointsAvailable} pts available</span>
+          </span>
         )}
+      </div>
+      <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 12, lineHeight: 1.5 }}>
+        Complete these to grow your presence score. Each one strengthens a different pillar.
       </div>
 
       {loaded && missions.length === 0 ? (
-        <div style={{ padding: "20px 16px", fontSize: 12, color: "var(--ink-3)", textAlign: "center" }}>
+        <div style={{ padding: "16px 4px", fontSize: 12, color: "hsl(var(--muted-foreground))", textAlign: "center" }}>
           Your first missions will appear after your first capture.
         </div>
       ) : (
-        missions.map((m, i) => {
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {missions.map((m, i) => {
           const isDone = m.status === "completed";
+          const explanation = explainMission(m.title, m.mission_type, topSignalTitle, topSignalFragments);
+          const pillarColor = TYPE_COLOR[m.mission_type] || "hsl(var(--muted-foreground))";
           return (
             <div
               key={m.id}
               className="flex animate-fade-up-in"
               style={{
-                gap: 12, padding: "12px 16px",
-                borderBottom: i === missions.length - 1 ? "none" : "1px solid var(--aura-border)",
+                gap: 12, padding: "12px 14px",
+                border: "0.5px solid hsl(var(--border) / 0.5)",
+                borderRadius: 8,
                 alignItems: "flex-start",
+                background: "hsl(var(--card))",
                 animationDelay: `${Math.min(i * 60, 480)}ms`,
                 animationFillMode: "backwards",
               }}
@@ -119,43 +153,57 @@ export default function MissionControl({ userId, entriesCount = 0 }: { userId: s
                 onClick={() => toggle(m)}
                 aria-label={isDone ? "Mark as pending" : "Mark complete"}
                 style={{
-                  width: 20, height: 20, borderRadius: "50%",
-                  border: isDone ? "0" : "1.5px solid var(--aura-border)",
-                  background: isDone ? "var(--aura-accent)" : "transparent",
+                  width: 18, height: 18, borderRadius: "50%",
+                  border: isDone ? "0" : "1.5px solid hsl(var(--muted-foreground) / 0.6)",
+                  background: isDone ? "var(--success)" : "transparent",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   cursor: "pointer", flexShrink: 0, marginTop: 1,
                 }}
               >
-                {isDone && <Check size={12} color="#fff" strokeWidth={3} />}
+                {isDone && <Check size={11} color="#fff" strokeWidth={3} />}
               </button>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div
-                  style={{
-                    fontSize: 14,
-                    color: isDone ? "var(--ink-3)" : "var(--ink)",
-                    textDecoration: isDone ? "line-through" : "none",
-                  }}
-                >
+                <div style={{
+                  fontSize: 13, fontWeight: 500,
+                  color: isDone ? "hsl(var(--muted-foreground))" : "hsl(var(--foreground))",
+                  textDecoration: isDone ? "line-through" : "none",
+                  lineHeight: 1.4,
+                }}>
                   {m.title}
                 </div>
-                <div
-                  className="flex items-center"
-                  style={{ gap: 8, marginTop: 4, fontSize: 12, color: "var(--ink-3)" }}
-                >
-                  <span style={{
-                    color: "var(--aura-accent)", fontWeight: 500,
-                    background: "color-mix(in srgb, var(--aura-accent) 12%, transparent)",
-                    padding: "2px 6px", borderRadius: 4, fontSize: 12,
+                {explanation && (
+                  <div style={{
+                    fontSize: 11, color: "hsl(var(--muted-foreground))",
+                    marginTop: 2, lineHeight: 1.45,
                   }}>
-                    +{m.points ?? 5} pts
-                  </span>
-                  <span>{TYPE_LABEL[m.mission_type] || m.mission_type}</span>
-                </div>
+                    {explanation}
+                  </div>
+                )}
+              </div>
+              <div style={{
+                display: "flex", flexDirection: "column", alignItems: "flex-end",
+                gap: 4, flexShrink: 0,
+              }}>
+                <span style={{
+                  fontSize: 11, fontWeight: 600,
+                  color: "var(--success)",
+                  background: "hsl(var(--success) / 0.12)",
+                  padding: "2px 7px", borderRadius: 4,
+                }}>
+                  +{m.points ?? 5}
+                </span>
+                <span style={{
+                  fontSize: 10, fontWeight: 500, letterSpacing: "0.04em",
+                  color: pillarColor, textTransform: "uppercase",
+                }}>
+                  {TYPE_LABEL[m.mission_type] || m.mission_type}
+                </span>
               </div>
             </div>
           );
-        })
+        })}
+        </div>
       )}
-    </div>
+    </section>
   );
 }
