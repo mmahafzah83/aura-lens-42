@@ -841,7 +841,13 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
     return sortedByConfidence.findIndex(s => s.id === selectedSignal.id);
   }, [sortedByConfidence, selectedSignal]);
 
-  const draftFromSignal = (s: Signal) => {
+  const draftFromSignal = async (s: Signal) => {
+    // Track signal preference — user chose to write about this signal
+    await supabase
+      .from("strategic_signals")
+      .update({ priority_score: (s.priority_score || 0) + 0.05 })
+      .eq("id", s.id);
+
     onDraftToStudio?.({
       topic: s.signal_title,
       context: [s.explanation, s.strategic_implications, s.what_it_means_for_you].filter(Boolean).join("\n\n"),
