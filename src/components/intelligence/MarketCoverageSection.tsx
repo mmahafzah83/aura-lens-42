@@ -361,11 +361,10 @@ function EmptyState({ signals }: { signals?: Array<{ theme_tags?: string[] }> })
   const uniqueThemes = Array.from(new Set(allThemes ?? []));
   const topThree = uniqueThemes.slice(0, 3);
 
+  const themeList = topThree.join(", ");
   const message =
-    topThree.length > 1
-      ? `Your intelligence is building around ${topThree.slice(1).reduce((acc, t) => `${acc}, ${t}`, topThree[1])}. Coverage deepens as you capture more.`
-      : topThree.length === 1
-      ? `Your intelligence is building around ${topThree[1]}. Coverage deepens as you capture more.`
+    topThree.length > 0
+      ? `Your intelligence is building around ${themeList}. Coverage deepens as you capture more.`
       : "Capture a few articles from your sector — Aura will map the market conversations that matter to you.";
 
   return (
