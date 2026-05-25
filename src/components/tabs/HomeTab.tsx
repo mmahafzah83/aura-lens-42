@@ -11,7 +11,6 @@ import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { useCountUp } from "@/hooks/useCountUp";
 import { withTimeout } from "@/lib/safeQuery";
 import { EMPTY_STATE } from "@/constants/language";
-import AurasRead from "@/components/AurasRead";
 import MilestoneNotification from "@/components/MilestoneNotification";
 import OnboardingChecklist from "@/components/OnboardingChecklist";
 import { addTrendToSignals as wireTrendToSignals } from "@/lib/addTrendToSignals";
@@ -34,7 +33,8 @@ import AuthorityPulseStrip from "@/components/home/AuthorityPulseStrip";
 import JourneyCycle from "@/components/home/JourneyCycle";
 import MissionControl from "@/components/home/MissionControl";
 import RecommendedMoveCard from "@/components/home/RecommendedMoveCard";
-import TodaysIntelligence from "@/components/home/TodaysIntelligence";
+import YourMoves from "@/components/home/YourMoves";
+import MarketScan from "@/components/home/MarketScan";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
 
@@ -1507,9 +1507,6 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
 {/* Removed "X this week" badge — refresh control lives in the Live Intelligence section */}
       </header>
 
-      {/* Today's intelligence — condensed daily briefing, above the status strip */}
-      <TodaysIntelligence />
-
       {/* H2b — STATUS STRIP (score + tier + rhythm) — promoted above KPI strip */}
       {/* Full-strip skeleton: cover score, tier, sector, AND the right-side
           weekly rhythm grid so users never see partial flashes (e.g. tier
@@ -2361,16 +2358,17 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         </div>
       )}
 
-      {/* SECTION 2 — AI daily briefing */}
-      {/* Aura's Read */}
-      <BeatDivider label="What's happening" />
+      {/* TIER 1 — Your moves (from auras-read) */}
       <div data-testid="home-live-intel">
-        <AurasRead
+        <YourMoves
           userId={sessionConfirmed ? authUser?.id ?? null : null}
           onOpenCapture={onOpenCapture}
           onSwitchTab={onSwitchTab}
         />
       </div>
+
+      {/* TIER 2 — Market scan (from daily-briefing) */}
+      <MarketScan onOpenCapture={onOpenCapture} onSwitchTab={onSwitchTab} />
       </>)}
 
       <AuthorityProgressModal
