@@ -21,6 +21,7 @@ import ProfileMenu from "@/components/ProfileMenu";
 import PreferencesPanel from "@/components/PreferencesPanel";
 import EditProfileModal, { type EditProfileField } from "@/components/EditProfileModal";
 import SetPasswordModal from "@/components/SetPasswordModal";
+import BrandAssessmentModal from "@/components/BrandAssessmentModal";
 import FeedbackButton from "@/components/FeedbackButton";
 import InviteColleagueModal from "@/components/InviteColleagueModal";
 import NpsSurveyModal from "@/components/NpsSurveyModal";
@@ -107,6 +108,7 @@ const Dashboard = () => {
   const [preferencesOpen, setPreferencesOpen] = useState(false);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
+  const [brandAssessmentOpen, setBrandAssessmentOpen] = useState(false);
   const [editProfileField, setEditProfileField] = useState<EditProfileField | undefined>(undefined);
 
   useEffect(() => {
@@ -1054,7 +1056,7 @@ const Dashboard = () => {
         }}
         onRetakeBrandAssessment={() => {
           setPreferencesOpen(false);
-          setTimeout(() => window.dispatchEvent(new CustomEvent("aura:open-brand-assessment")), 180);
+          setTimeout(() => setBrandAssessmentOpen(true), 180);
         }}
       />
       <EditProfileModal
@@ -1067,6 +1069,11 @@ const Dashboard = () => {
         open={passwordModalOpen}
         onClose={() => setPasswordModalOpen(false)}
         isFirstTime={false}
+      />
+      <BrandAssessmentModal
+        open={brandAssessmentOpen}
+        onOpenChange={setBrandAssessmentOpen}
+        onComplete={() => setBrandAssessmentOpen(false)}
       />
     </div>
   );
