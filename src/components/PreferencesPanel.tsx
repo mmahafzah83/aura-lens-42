@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import SetPasswordModal from "@/components/SetPasswordModal";
+import type { EditProfileField } from "@/components/EditProfileModal";
 
 interface PreferencesPanelProps {
   open: boolean;
@@ -13,7 +13,8 @@ interface PreferencesPanelProps {
   theme: "light" | "dark";
   onToggleTheme: () => void;
   onSignOut: () => void;
-  onEditProfile?: () => void;
+  onEditField?: (field: EditProfileField) => void;
+  onChangePassword?: () => void;
   onRetakeBrandAssessment?: () => void;
 }
 
@@ -206,13 +207,13 @@ export default function PreferencesPanel({
   theme,
   onToggleTheme,
   onSignOut,
-  onEditProfile,
+  onEditField,
+  onChangePassword,
   onRetakeBrandAssessment,
 }: PreferencesPanelProps) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [editingLinkedIn, setEditingLinkedIn] = useState(false);
   const [linkedInInput, setLinkedInInput] = useState("");
-  const [pwModalOpen, setPwModalOpen] = useState(false);
   const liInputRef = useRef<HTMLInputElement>(null);
 
   // Body scroll lock + Esc to close.
@@ -321,6 +322,7 @@ export default function PreferencesPanel({
           flexDirection: "column",
           animation: "aura-pref-slide-in 240ms cubic-bezier(0.16, 1, 0.3, 1)",
           overflow: "hidden",
+          height: "100%",
         }}
       >
         <style>{`
@@ -343,6 +345,7 @@ export default function PreferencesPanel({
             alignItems: "flex-start",
             justifyContent: "space-between",
             gap: 12,
+            flexShrink: 0,
           }}
         >
           <div style={{ minWidth: 0 }}>
@@ -391,19 +394,19 @@ export default function PreferencesPanel({
         </div>
 
         {/* Scrollable body */}
-        <div style={{ flex: 1, overflowY: "auto" }}>
+        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
           {/* YOUR PROFILE */}
           <SectionHeader>Your profile</SectionHeader>
-          <Row label="Name" value={displayName} onClick={onEditProfile} />
+          <Row label="Name" value={displayName} onClick={onEditField ? () => onEditField("first_name") : undefined} />
           <Row
             label="Firm"
             value={profile?.firm?.trim() || "Not set"}
-            onClick={onEditProfile}
+            onClick={onEditField ? () => onEditField("firm") : undefined}
           />
           <Row
             label="Sector"
             value={profile?.sector_focus?.trim() || "Not set"}
-            onClick={onEditProfile}
+            onClick={onEditField ? () => onEditField("sector_focus") : undefined}
           />
           {editingLinkedIn ? (
             <div
@@ -539,7 +542,9 @@ export default function PreferencesPanel({
 
           {/* ACCOUNT */}
           <SectionHeader>Account</SectionHeader>
-          <Row label="Change password" onClick={() => setPwModalOpen(true)} />
+          {onChangePassword && (
+            <Row label="Change password" onClick={onChangePassword} />
+          )}
           {onRetakeBrandAssessment && (
             <Row label="Retake brand assessment" onClick={onRetakeBrandAssessment} />
           )}
@@ -560,12 +565,6 @@ export default function PreferencesPanel({
           )}
         </div>
       </div>
-
-      <SetPasswordModal
-        open={pwModalOpen}
-        onClose={() => setPwModalOpen(false)}
-        isFirstTime={false}
-      />
     </div>
   );
 

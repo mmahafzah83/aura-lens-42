@@ -19,6 +19,8 @@ import NotificationBell from "@/components/NotificationBell";
 import { HelpPanel, HelpButton } from "@/components/HelpPanel";
 import ProfileMenu from "@/components/ProfileMenu";
 import PreferencesPanel from "@/components/PreferencesPanel";
+import EditProfileModal, { type EditProfileField } from "@/components/EditProfileModal";
+import SetPasswordModal from "@/components/SetPasswordModal";
 import FeedbackButton from "@/components/FeedbackButton";
 import InviteColleagueModal from "@/components/InviteColleagueModal";
 import NpsSurveyModal from "@/components/NpsSurveyModal";
@@ -103,6 +105,9 @@ const Dashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { t } = useLanguage();
   const [preferencesOpen, setPreferencesOpen] = useState(false);
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
+  const [editProfileField, setEditProfileField] = useState<EditProfileField | undefined>(undefined);
 
   useEffect(() => {
     applyThemeToRoot(theme);
@@ -1038,18 +1043,30 @@ const Dashboard = () => {
         theme={theme}
         onToggleTheme={toggleTheme}
         onSignOut={() => { setPreferencesOpen(false); handleLogout(); }}
-        onEditProfile={() => {
+        onEditField={(field) => {
           setPreferencesOpen(false);
-          setActiveTab("identity");
-          window.scrollTo({ top: 0, behavior: "smooth" });
-          setTimeout(() => window.dispatchEvent(new CustomEvent("aura:open-profile-editor")), 250);
+          setEditProfileField(field);
+          setTimeout(() => setEditProfileOpen(true), 180);
+        }}
+        onChangePassword={() => {
+          setPreferencesOpen(false);
+          setTimeout(() => setPasswordModalOpen(true), 180);
         }}
         onRetakeBrandAssessment={() => {
           setPreferencesOpen(false);
-          setActiveTab("identity");
-          window.scrollTo({ top: 0, behavior: "smooth" });
-          setTimeout(() => window.dispatchEvent(new CustomEvent("aura:open-brand-assessment")), 250);
+          setTimeout(() => window.dispatchEvent(new CustomEvent("aura:open-brand-assessment")), 180);
         }}
+      />
+      <EditProfileModal
+        open={editProfileOpen}
+        onClose={() => setEditProfileOpen(false)}
+        userId={userId}
+        focusField={editProfileField}
+      />
+      <SetPasswordModal
+        open={passwordModalOpen}
+        onClose={() => setPasswordModalOpen(false)}
+        isFirstTime={false}
       />
     </div>
   );
