@@ -19,11 +19,45 @@ serve(async (req) => {
   }
 
   try {
+    // Require authenticated caller before doing any work.
+    const authHeader = req.headers.get("Authorization") || "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
+    const { data: authData, error: authErr } = await anonClient.auth.getUser(
+      authHeader.replace("Bearer ", "")
+    );
+    if (authErr || !authData?.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const authedUser = authData.user;
+
     const { url } = await req.json();
     if (!url) {
       return new Response(JSON.stringify({ error: "URL is required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Only allow https URLs to mitigate SSRF / internal-host probing.
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(url);
+    } catch {
+      return new Response(JSON.stringify({ error: "Invalid URL" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (parsedUrl.protocol !== "https:") {
+      return new Response(JSON.stringify({ error: "Only https:// URLs are allowed" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -33,20 +67,11 @@ serve(async (req) => {
     // Load profile for dynamic persona
     let persona = "Senior professional building their digital presence";
     try {
-      const authHeader = req.headers.get("Authorization");
-      const token = authHeader?.replace("Bearer ", "");
-      if (token) {
-        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-        const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
-        const { data: { user } } = await anonClient.auth.getUser(token);
-        if (user) {
-          const admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-          const { data: p } = await admin.from("diagnostic_profiles")
-            .select("level, firm, sector_focus, core_practice")
-            .eq("user_id", user.id).maybeSingle();
-          if (p) persona = `${(p as any).level || "Senior professional"} at ${(p as any).firm || "a leading organization"} working in ${(p as any).sector_focus || (p as any).core_practice || "their field"}`;
-        }
-      }
+      const admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      const { data: p } = await admin.from("diagnostic_profiles")
+        .select("level, firm, sector_focus, core_practice")
+        .eq("user_id", authedUser.id).maybeSingle();
+      if (p) persona = `${(p as any).level || "Senior professional"} at ${(p as any).firm || "a leading organization"} working in ${(p as any).sector_focus || (p as any).core_practice || "their field"}`;
     } catch (_) { /* ignore */ }
 
     let pageRes: Response | null = null;
