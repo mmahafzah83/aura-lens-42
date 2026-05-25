@@ -167,10 +167,43 @@ const Dashboard = () => {
   // Handle ?tab=intelligence&signal=xxx from URL
   useEffect(() => {
     const tabParam = searchParams.get("tab");
-    // Redirect old "strategy" tab to "intelligence"
-    const resolvedTab = tabParam === "strategy" ? "intelligence" : tabParam;
+    // Tab aliases — map external/legacy names to internal tab values.
+    // Email deep links use friendly names (publish, impact, strategy).
+    const tabAlias: Record<string, string> = {
+      strategy: "intelligence",
+      publish: "authority",
+      impact: "influence",
+    };
+    const resolvedTab = tabParam ? (tabAlias[tabParam] ?? tabParam) : null;
     if (resolvedTab && NAV_ITEMS.some(n => n.value === resolvedTab)) {
       setActiveTab(resolvedTab as TabValue);
+    }
+
+    // If we landed on the Publish tab with a signal id, fetch that signal and
+    // pre-fill the draft so the user lands directly in the right context.
+    const signalParam = searchParams.get("signal");
+    if (signalParam && resolvedTab === "authority") {
+      (async () => {
+        const { data: sig } = await (supabase
+          .from("strategic_signals" as any) as any)
+          .select("id, signal_title, strategic_implications, explanation")
+          .eq("id", signalParam)
+          .maybeSingle();
+        if (sig) {
+          setSignalDraftPrefill({
+            topic: sig.signal_title,
+            context: sig.strategic_implications || sig.explanation || "",
+            signalId: sig.id,
+            signalTitle: sig.signal_title,
+            sourceType: "signal",
+            sourceTitle: sig.signal_title,
+          } as any);
+        }
+        // Clear so a refresh doesn't reapply
+        const next = new URLSearchParams(window.location.search);
+        next.delete("signal");
+        setSearchParams(next, { replace: true });
+      })();
     }
   }, []);
 
