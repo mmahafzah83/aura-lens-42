@@ -9,21 +9,6 @@ const corsHeaders = {
 
 const APP_URL = "https://www.aura-intel.org";
 
-type AlertType = "timing_window" | "silence_alarm" | "signal_shift" | string;
-
-function urgencyMeta(type: AlertType) {
-  switch (type) {
-    case "timing_window":
-      return { color: "#F97316", label: "Timing window" };
-    case "silence_alarm":
-      return { color: "#DC2626", label: "Silence alarm" };
-    case "signal_shift":
-      return { color: "#2563EB", label: "Signal shift" };
-    default:
-      return { color: "#6B7280", label: "Update" };
-  }
-}
-
 function escapeHtml(s: string): string {
   return (s ?? "")
     .replace(/&/g, "&amp;")
@@ -33,72 +18,127 @@ function escapeHtml(s: string): string {
     .replace(/'/g, "&#39;");
 }
 
-function buildHtml(opts: {
+function firstSentence(s: string | null | undefined): string {
+  if (!s) return "";
+  const trimmed = s.trim();
+  const m = trimmed.match(/^[^.!?]+[.!?]/);
+  return (m ? m[0] : trimmed).trim();
+}
+
+function appendParams(url: string, params: Record<string, string | undefined>): string {
+  const u = new URL(url);
+  for (const [k, v] of Object.entries(params)) {
+    if (v) u.searchParams.set(k, v);
+  }
+  return u.toString();
+}
+
+interface BuildHtmlOpts {
   firstName: string;
   dayDate: string;
-  alerts: Array<{ type: string; title: string; body: string }>;
-  topSignals: Array<{ title: string; currentPct: number; deltaPct: number }>;
+  topSignals: Array<{ id: string; title: string; currentPct: number; deltaPct: number; whyNow?: string }>;
   postsThisWeek: number;
   postsLastWeek: number;
-  moves: Array<{ title: string; rationale: string }>;
   brand: string;
   brandFont: string;
-}): string {
-  const { firstName, dayDate, alerts, topSignals, postsThisWeek, postsLastWeek, moves, brand, brandFont } = opts;
+  headline: string;
+  emailParam: string;
+  marketPulse: { headline: string; url: string | null; isExternal: boolean } | null;
+  yourMove: { copy: string; ctaLabel: string; ctaHref: string };
+  worthReading: { title: string; url: string; author: string | null; readMinutes: number; why: string } | null;
+  activeWeeks: number;
+  rhythmCopy: string;
+}
 
-  const alertsHtml = alerts.length
-    ? alerts
-        .map((a) => {
-          const m = urgencyMeta(a.type);
-          return `
-        <div style="margin-bottom:14px;padding:18px;background:#faf8f4;border-radius:8px;border-left:4px solid ${m.color};">
-          <p style="font-size:12px;font-weight:600;color:${m.color};letter-spacing:0.06em;text-transform:uppercase;margin-bottom:6px;">${escapeHtml(m.label)}</p>
-          <p style="font-size:15px;font-weight:600;color:#0d0d0d;margin-bottom:6px;">${escapeHtml(a.title)}</p>
-          <p style="font-size:14px;line-height:1.6;color:#555;margin:0;">${escapeHtml(a.body)}</p>
-        </div>`;
-        })
-        .join("")
-    : "";
+function buildHtml(opts: BuildHtmlOpts): string {
+  const {
+    firstName, dayDate, topSignals, postsThisWeek,
+    brand, brandFont, headline, marketPulse, yourMove, worthReading, activeWeeks, rhythmCopy,
+  } = opts;
 
-  const signalsHtml = topSignals.length
-    ? `<div style="margin:8px 0 22px;">
-         <p style="font-size:12px;font-weight:600;color:#888;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;">Top signals this week</p>
-         ${topSignals
-           .map((s) => {
-             const sign = s.deltaPct > 0 ? "+" : "";
-             const deltaColor = s.deltaPct > 0 ? "#16a34a" : s.deltaPct < 0 ? "#dc2626" : "#888";
-             const deltaText = s.deltaPct === 0 ? "no change" : `${sign}${s.deltaPct} pts`;
-             return `
-           <div style="margin-bottom:10px;padding:14px 16px;background:#faf8f4;border-radius:8px;">
-             <p style="font-size:14px;font-weight:600;color:#0d0d0d;margin-bottom:4px;">${escapeHtml(s.title)}</p>
-             <p style="font-size:12px;color:#555;margin:0;">Confidence <strong style="color:#0d0d0d;">${s.currentPct}%</strong> · <span style="color:${deltaColor};">${deltaText} vs 7d ago</span></p>
-           </div>`;
-           })
-           .join("")}
+  const sectionHeader = (label: string) =>
+    `<p style="font-size:11px;font-weight:600;color:#8a8480;letter-spacing:0.14em;text-transform:uppercase;margin:0 0 12px;font-family:'DM Sans',system-ui,sans-serif;">${escapeHtml(label)}</p>`;
+
+  const marketPulseHtml = marketPulse
+    ? `<div style="margin:0 0 28px;">
+         ${sectionHeader("Market pulse")}
+         <div style="padding:14px 16px;background:#faf8f4;border-radius:8px;">
+           <p style="font-size:14px;line-height:1.55;color:#1a1a1a;margin:0;font-family:'DM Sans',system-ui,sans-serif;">
+             <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#16a34a;margin-right:8px;vertical-align:middle;"></span>
+             ${marketPulse.isExternal
+               ? `${escapeHtml(marketPulse.headline)}${marketPulse.url ? ` &nbsp;<a href="${escapeHtml(marketPulse.url)}" style="color:${brand};font-weight:600;text-decoration:none;">Read →</a>` : ""}`
+               : `<span style="color:#555;font-weight:600;">In your sector this week:</span> ${escapeHtml(marketPulse.headline)}`}
+           </p>
+         </div>
        </div>`
     : "";
 
-  const pubDelta = postsThisWeek - postsLastWeek;
-  const pubDeltaTxt = pubDelta === 0 ? "same as last week" : pubDelta > 0 ? `+${pubDelta} vs last week` : `${pubDelta} vs last week`;
-  const publishingHtml = `<div style="margin:8px 0 22px;padding:14px 16px;background:#faf8f4;border-radius:8px;">
-         <p style="font-size:12px;font-weight:600;color:#888;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;">Publishing cadence</p>
-         <p style="font-size:14px;color:#0d0d0d;margin:0;"><strong>${postsThisWeek}</strong> post${postsThisWeek === 1 ? "" : "s"} this week · <span style="color:#555;">${escapeHtml(pubDeltaTxt)}</span></p>
+  const yourMoveHtml = `<div style="margin:0 0 28px;padding:20px 24px;background:${brand}0D;border-radius:8px;">
+       ${sectionHeader("Your move this week")}
+       <p style="font-size:15px;line-height:1.6;color:#1a1a1a;margin:0 0 16px;font-family:'DM Sans',system-ui,sans-serif;">${escapeHtml(yourMove.copy)}</p>
+       <a href="${escapeHtml(yourMove.ctaHref)}" style="display:inline-block;background:${brand};color:#ffffff;padding:11px 28px;border-radius:6px;font-weight:600;font-size:14px;text-decoration:none;font-family:'DM Sans',system-ui,sans-serif;">${escapeHtml(yourMove.ctaLabel)}</a>
+     </div>`;
+
+  let signalsHtml = "";
+  if (topSignals.length === 0) {
+    const captureHref = appendParams(`${APP_URL}/home`, { email: opts.emailParam });
+    signalsHtml = `<div style="margin:0 0 28px;">
+         ${sectionHeader("Signal pulse")}
+         <div style="padding:14px 16px;background:#faf8f4;border-radius:8px;">
+           <p style="font-size:14px;line-height:1.6;color:#555;margin:0 0 10px;font-family:'DM Sans',system-ui,sans-serif;">No active signals yet. Capture 2-3 articles from your sector to seed your first signal.</p>
+           <a href="${escapeHtml(captureHref)}" style="color:${brand};font-weight:600;font-size:13px;text-decoration:none;font-family:'DM Sans',system-ui,sans-serif;">Capture an article →</a>
+         </div>
        </div>`;
+  } else {
+    const rows = topSignals.slice(0, 2).map((s, idx) => {
+      const sign = s.deltaPct > 0 ? "+" : "";
+      const deltaColor = s.deltaPct > 0 ? "#16a34a" : s.deltaPct < 0 ? "#dc2626" : "#888";
+      const deltaText = s.deltaPct === 0 ? "no change" : `${sign}${s.deltaPct} pts`;
+      const borderColor = idx === 0 ? brand : `${brand}40`;
+      const href = appendParams(`${APP_URL}/home`, {
+        tab: "intelligence", signal: s.id, email: opts.emailParam,
+      });
+      return `<div style="margin-bottom:10px;padding:14px 16px;background:#faf8f4;border-radius:8px;border-left:3px solid ${borderColor};">
+             <a href="${escapeHtml(href)}" style="display:block;font-size:14px;font-weight:600;color:${brand};text-decoration:none;margin-bottom:4px;font-family:'DM Sans',system-ui,sans-serif;">${escapeHtml(s.title)}</a>
+             <p style="font-size:12px;color:#555;margin:0;font-family:'DM Sans',system-ui,sans-serif;">Confidence <strong style="color:#0d0d0d;">${s.currentPct}%</strong> · <span style="color:${deltaColor};">${escapeHtml(deltaText)}</span> vs 7d ago</p>
+             ${idx === 0 && s.whyNow ? `<p style="font-size:13px;line-height:1.55;color:#3a3835;margin:8px 0 0;font-family:'DM Sans',system-ui,sans-serif;"><span style="color:#888;font-weight:600;">Why now:</span> ${escapeHtml(s.whyNow)}</p>` : ""}
+           </div>`;
+    }).join("");
+    signalsHtml = `<div style="margin:0 0 28px;">${sectionHeader("Signal pulse")}${rows}</div>`;
+  }
 
-  const movesHtml = moves.length
-    ? `<div style="margin:8px 0 22px;">
-         <p style="font-size:12px;font-weight:600;color:#888;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;">Recommended moves</p>
-         ${moves
-           .map(
-             (m) => `
-           <div style="margin-bottom:10px;padding:14px 16px;background:#faf8f4;border-radius:8px;border-left:4px solid ${brand};">
-             <p style="font-size:14px;font-weight:600;color:#0d0d0d;margin-bottom:4px;">${escapeHtml(m.title)}</p>
-             <p style="font-size:13px;line-height:1.6;color:#555;margin:0;">${escapeHtml(m.rationale)}</p>
-           </div>`,
-           )
-           .join("")}
+  const worthReadingHtml = worthReading
+    ? `<div style="margin:0 0 28px;">
+         ${sectionHeader("Worth reading")}
+         <div style="padding:14px 16px;background:#faf8f4;border-radius:8px;">
+           <p style="font-size:14px;line-height:1.5;color:#1a1a1a;margin:0 0 6px;font-family:'DM Sans',system-ui,sans-serif;">
+             <span style="margin-right:8px;">📖</span>
+             <a href="${escapeHtml(worthReading.url)}" style="color:${brand};font-weight:600;text-decoration:none;">${escapeHtml(worthReading.title)}</a>
+           </p>
+           <p style="font-size:12px;color:#888;margin:0 0 8px;font-family:'DM Sans',system-ui,sans-serif;">${escapeHtml(worthReading.author || "")}${worthReading.author ? " · " : ""}${worthReading.readMinutes} min read</p>
+           <p style="font-size:13px;line-height:1.55;color:#555;margin:0;font-family:'DM Sans',system-ui,sans-serif;">${escapeHtml(worthReading.why)}</p>
+         </div>
        </div>`
     : "";
+
+  const rhythmHtml = `<div style="margin:0 0 8px;">
+       ${sectionHeader("Your rhythm")}
+       <div style="padding:16px 18px;background:#faf8f4;border-radius:8px;">
+         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+           <tr>
+             <td width="50%" valign="top" style="padding-right:8px;">
+               <p style="font-size:22px;font-weight:500;color:#0d0d0d;margin:0 0 4px;line-height:1.1;font-family:'DM Sans',system-ui,sans-serif;">${postsThisWeek}</p>
+               <p style="font-size:11px;color:#888;letter-spacing:0.04em;margin:0;text-transform:uppercase;font-family:'DM Sans',system-ui,sans-serif;">Post${postsThisWeek === 1 ? "" : "s"} this week</p>
+             </td>
+             <td width="50%" valign="top" style="padding-left:8px;">
+               <p style="font-size:22px;font-weight:500;color:#0d0d0d;margin:0 0 4px;line-height:1.1;font-family:'DM Sans',system-ui,sans-serif;">${activeWeeks} <span style="font-size:13px;color:#888;font-weight:400;">of 12</span></p>
+               <p style="font-size:11px;color:#888;letter-spacing:0.04em;margin:0;text-transform:uppercase;font-family:'DM Sans',system-ui,sans-serif;">Weeks active</p>
+             </td>
+           </tr>
+         </table>
+         <p style="font-size:13px;line-height:1.55;color:#555;margin:14px 0 0;font-family:'DM Sans',system-ui,sans-serif;">${escapeHtml(rhythmCopy)}</p>
+       </div>
+     </div>`;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -108,15 +148,14 @@ function buildHtml(opts: {
 <title>Your Aura intelligence brief</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
-  body { background-color:#f0ede8; font-family:'${brandFont}',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; -webkit-font-smoothing:antialiased; }
+  body { background-color:#f0ede8; font-family:'${brandFont}','DM Sans',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; -webkit-font-smoothing:antialiased; }
   a { text-decoration:none; }
   @media only screen and (max-width:600px) {
     .email-wrapper { padding:0 !important; }
     .email-card { border-radius:0 !important; }
-    .content-pad { padding:32px 24px !important; }
+    .content-pad { padding:28px 22px !important; }
     .hero-pad { padding:36px 24px 28px !important; }
     .footer-pad { padding:24px 24px !important; }
-    .cta-btn { padding:16px 28px !important; font-size:15px !important; }
   }
 </style>
 </head>
@@ -126,29 +165,23 @@ function buildHtml(opts: {
 <div class="email-wrapper" style="padding:24px;background-color:#f0ede8;">
   <div class="email-card" style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;">
 
-    <div class="hero-pad" style="padding:40px 40px 32px;background:linear-gradient(135deg,#0d0d0d,#1a1a1a);color:#f0f0f0;">
-      <p style="font-size:13px;color:${brand};letter-spacing:0.08em;text-transform:uppercase;margin-bottom:14px;">Aura · Weekly Brief</p>
-      <h1 style="font-family:'Cormorant Garamond',Georgia,'Times New Roman',serif;font-size:30px;line-height:1.2;font-weight:600;color:#f0f0f0;margin-bottom:8px;">Your intelligence brief</h1>
-      <p style="font-size:14px;color:#aaa;line-height:1.5;">${escapeHtml(dayDate)}</p>
+    <div class="hero-pad" style="padding:40px 40px 32px;background:#1a1714;color:#f0f0f0;">
+      <p style="font-size:11px;color:${brand};letter-spacing:0.14em;text-transform:uppercase;margin-bottom:14px;font-weight:600;font-family:'DM Sans',system-ui,sans-serif;">Aura · Weekly Brief</p>
+      <h1 style="font-family:'Cormorant Garamond',Georgia,'Times New Roman',serif;font-size:30px;line-height:1.2;font-weight:500;color:#f0f0f0;margin-bottom:8px;">${escapeHtml(headline)}</h1>
+      <p style="font-size:13px;color:#9a9590;line-height:1.5;font-family:'DM Sans',system-ui,sans-serif;">${escapeHtml(dayDate)}</p>
     </div>
 
     <div class="content-pad" style="padding:36px 40px;color:#1a1a1a;">
-      <p style="font-size:16px;line-height:1.6;margin-bottom:14px;">Good morning, ${escapeHtml(firstName)}.</p>
-      <p style="font-size:15px;line-height:1.7;color:#333;margin-bottom:24px;">Here is what shifted in your authority landscape this week.</p>
-
-      ${alertsHtml}
+      ${marketPulseHtml}
+      ${yourMoveHtml}
       ${signalsHtml}
-      ${publishingHtml}
-      ${movesHtml}
-
-      <div style="text-align:center;margin:28px 0 8px;">
-        <a href="${APP_URL}/home" class="cta-btn" style="display:inline-block;background:${brand};color:#0d0d0d;padding:16px 32px;border-radius:8px;font-weight:700;font-size:15px;">Open Aura →</a>
-      </div>
+      ${worthReadingHtml}
+      ${rhythmHtml}
     </div>
 
     <div class="footer-pad" style="padding:28px 40px;background:#faf8f4;border-top:1px solid #ece8e0;">
-      <p style="font-size:12px;color:#888;line-height:1.6;text-align:center;margin-bottom:6px;">Aura · Strategic Intelligence for senior professionals.</p>
-      <p style="font-size:11px;color:#aaa;line-height:1.6;text-align:center;">You're receiving this because you opted in to weekly briefs. Update your notification preferences anytime in Aura → Settings.</p>
+      <p style="font-size:12px;color:#888;line-height:1.6;text-align:center;margin-bottom:6px;font-family:'DM Sans',system-ui,sans-serif;">Aura · Strategic Intelligence for senior professionals.</p>
+      <p style="font-size:11px;color:#aaa;line-height:1.6;text-align:center;font-family:'DM Sans',system-ui,sans-serif;">Manage your preferences from your profile menu in Aura.</p>
     </div>
 
   </div>
@@ -172,7 +205,6 @@ serve(async (req) => {
     const isCron = !!CRON_SECRET && cronHeader === CRON_SECRET;
     const isServiceRole = bearer === SERVICE_ROLE || apiKey === SERVICE_ROLE;
 
-    // Authn: cron / service-role / user JWT
     let authedUserId: string | null = null;
     if (!isCron && !isServiceRole) {
       if (!bearer) {
@@ -202,7 +234,6 @@ serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
-    // Fetch active design system tokens for brand colors / fonts
     const { data: dsRow } = await admin
       .from('design_system')
       .select('tokens')
@@ -222,12 +253,10 @@ serve(async (req) => {
         // no body — process all users
       }
     }
-    // User-scoped callers can only send their own brief.
     if (!isCron && !isServiceRole) {
       targetUserId = authedUserId;
     }
 
-    // Resolve target user IDs
     let userIds: string[] = [];
     if (targetUserId) {
       userIds = [targetUserId];
@@ -246,14 +275,12 @@ serve(async (req) => {
       month: "long",
       day: "numeric",
     });
-    const subject = `Your Aura intelligence brief · ${dayDate}`;
 
     let sentCount = 0;
     const errors: Array<{ user_id: string; error: string }> = [];
 
     for (const userId of userIds) {
       try {
-        // 1. Email from auth.users
         const { data: userRes, error: userErr } = await admin.auth.admin.getUserById(userId);
         if (userErr || !userRes?.user?.email) {
           errors.push({ user_id: userId, error: "no auth user/email" });
@@ -261,7 +288,6 @@ serve(async (req) => {
         }
         const email = userRes.user.email;
 
-        // 2. Profile
         const { data: profile } = await admin
           .from("diagnostic_profiles")
           .select("first_name, firm, sector_focus, notification_prefs")
@@ -269,7 +295,6 @@ serve(async (req) => {
           .maybeSingle();
 
         const prefs = (profile?.notification_prefs ?? {}) as Record<string, unknown>;
-        // 3. Skip if email_weekly_brief explicitly false
         if (prefs.email_weekly_brief === false) {
           continue;
         }
@@ -277,41 +302,15 @@ serve(async (req) => {
         const firstName = (profile?.first_name as string | undefined)?.trim()
           || (email.split("@")[0] ?? "there");
 
-        // 4. Top 3 unread notifications, last 7d, ordered by type priority
-        const { data: events } = await admin
-          .from("notification_events")
-          .select("type, title, body, sent_at")
-          .eq("user_id", userId)
-          .eq("read", false)
-          .gte("sent_at", sevenDaysAgo)
-          .in("type", ["timing_window", "silence_alarm", "signal_shift"]);
-
-        const order: Record<string, number> = { timing_window: 0, silence_alarm: 1, signal_shift: 2 };
-        const sortedEvents = (events ?? [])
-          .slice()
-          .sort((a, b) => {
-            const oa = order[a.type] ?? 99;
-            const ob = order[b.type] ?? 99;
-            if (oa !== ob) return oa - ob;
-            return new Date(b.sent_at ?? 0).getTime() - new Date(a.sent_at ?? 0).getTime();
-          })
-          .slice(0, 3)
-          .map((e) => ({
-            type: e.type as string,
-            title: (e.title as string) ?? "Update",
-            body: (e.body as string) ?? "",
-          }));
-
-        // 5. Top 3 signals + 7-day confidence deltas (snapshot comparison from score_snapshots.components)
+        // Top signals (now include strategic_implications for "Why now")
         const { data: topSignalsRows } = await admin
           .from("strategic_signals")
-          .select("id, signal_title, confidence")
+          .select("id, signal_title, confidence, strategic_implications")
           .eq("user_id", userId)
           .eq("status", "active")
           .order("priority_score", { ascending: false })
           .limit(3);
 
-        // Pull a snapshot from ~7 days ago to compute confidence deltas, if available
         let priorConfidenceById: Record<string, number> = {};
         const { data: priorSnapshot } = await admin
           .from("score_snapshots")
@@ -335,14 +334,16 @@ serve(async (req) => {
           const prior = priorConfidenceById[s.id];
           const priorPct = prior != null ? Math.round(prior * 100) : currentPct;
           return {
+            id: s.id as string,
             title: s.signal_title as string,
             currentPct,
             deltaPct: currentPct - priorPct,
+            whyNow: firstSentence(s.strategic_implications as string | null),
           };
         });
         const topSignalTitle = topSignals[0]?.title ?? null;
 
-        // 6. Publishing cadence: posts this week vs last week
+        // Publishing cadence
         const oneWeekAgoIso = sevenDaysAgo;
         const twoWeeksAgoIso = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
         const [{ count: postsThisWeek }, { count: postsLastWeek }] = await Promise.all([
@@ -359,34 +360,138 @@ serve(async (req) => {
             .lt("published_at", oneWeekAgoIso),
         ]);
 
-        // 7. Recommended moves — up to 2 active
-        const nowIso = new Date().toISOString();
-        const { data: moveRows } = await admin
-          .from("recommended_moves")
-          .select("title, rationale, status, expires_at")
+        // Capture rhythm — distinct active weeks in last 12
+        const twelveWeeksAgo = new Date(Date.now() - 12 * 7 * 86400000);
+        const { data: rhythmEntries } = await admin
+          .from("entries")
+          .select("created_at")
           .eq("user_id", userId)
-          .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
-          .in("status", ["active", "pending", "open"])
-          .order("created_at", { ascending: false })
-          .limit(2);
-        const moves = (moveRows ?? []).map((m: any) => ({
-          title: m.title as string,
-          rationale: (m.rationale as string) ?? "",
-        }));
+          .gte("created_at", twelveWeeksAgo.toISOString());
+        let activeWeeks = 0;
+        for (let i = 0; i < 12; i++) {
+          const wkEnd = new Date(Date.now() - i * 7 * 86400000);
+          const wkStart = new Date(wkEnd.getTime() - 7 * 86400000);
+          if ((rhythmEntries || []).some((e: any) => {
+            const t = new Date(e.created_at).getTime();
+            return t >= wkStart.getTime() && t < wkEnd.getTime();
+          })) activeWeeks++;
+        }
+
+        // Market pulse — most recent industry_trends, else top signal implication
+        const { data: latestTrend } = await admin
+          .from("industry_trends")
+          .select("headline, url, source")
+          .eq("user_id", userId)
+          .order("fetched_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        let marketPulse: BuildHtmlOpts["marketPulse"] = null;
+        if (latestTrend?.headline) {
+          marketPulse = {
+            headline: latestTrend.headline as string,
+            url: (latestTrend.url as string | null) || null,
+            isExternal: true,
+          };
+        } else if (topSignals[0]) {
+          const impl = firstSentence((topSignalsRows?.[0] as any)?.strategic_implications);
+          if (impl) marketPulse = { headline: impl, url: null, isExternal: false };
+        }
+
+        // Worth reading — most recent industry_trends not yet captured
+        let worthReading: BuildHtmlOpts["worthReading"] = null;
+        const { data: candidateTrends } = await admin
+          .from("industry_trends")
+          .select("headline, url, source, summary, insight, fetched_at")
+          .eq("user_id", userId)
+          .not("url", "is", null)
+          .order("fetched_at", { ascending: false })
+          .limit(10);
+        if (candidateTrends && candidateTrends.length) {
+          const urls = candidateTrends.map((t: any) => t.url).filter(Boolean);
+          const { data: capturedRows } = await admin
+            .from("entries")
+            .select("image_url")
+            .eq("user_id", userId)
+            .in("image_url", urls);
+          const captured = new Set((capturedRows || []).map((r: any) => r.image_url));
+          const pick: any = candidateTrends.find((t: any) => t.url && !captured.has(t.url));
+          if (pick) {
+            worthReading = {
+              title: pick.headline as string,
+              url: pick.url as string,
+              author: (pick.source as string | null) || null,
+              readMinutes: 5,
+              why: firstSentence(pick.insight || pick.summary || "") || "Aura picked this for you.",
+            };
+          }
+        }
+
+        // Hero headline (dynamic, not signal-name based)
+        let headline: string;
+        if ((postsLastWeek ?? 0) > 0) {
+          headline = `${firstName}, your momentum is building.`;
+        } else if (topSignals.length > 0) {
+          headline = `${firstName}, one move this week keeps your momentum.`;
+        } else {
+          headline = `${firstName}, your intelligence is waiting.`;
+        }
+
+        // Email parameter for prefill on landing
+        const emailParam = email;
+
+        // "Your move this week" CTA logic
+        let yourMove: BuildHtmlOpts["yourMove"];
+        if ((postsLastWeek ?? 0) > 0) {
+          yourMove = {
+            copy: "You published last week — let's see how it landed and where to compound next.",
+            ctaLabel: "See your impact →",
+            ctaHref: appendParams(`${APP_URL}/home`, { tab: "authority", email: emailParam }),
+          };
+        } else if (topSignals.length > 0) {
+          yourMove = {
+            copy: `Your strongest signal is ready to publish. One post turns market intelligence into visible authority.`,
+            ctaLabel: "Draft your post →",
+            ctaHref: appendParams(`${APP_URL}/home`, { tab: "publish", signal: topSignals[0].id, email: emailParam }),
+          };
+        } else {
+          yourMove = {
+            copy: "Capture one article from your sector this week — that's how Aura starts surfacing signals you can publish from.",
+            ctaLabel: "Capture an article →",
+            ctaHref: appendParams(`${APP_URL}/home`, { email: emailParam }),
+          };
+        }
+
+        // Rhythm copy
+        let rhythmCopy: string;
+        if ((postsThisWeek ?? 0) > 0) {
+          rhythmCopy = "Active rhythm. This is how presence compounds.";
+        } else if (activeWeeks > 0) {
+          rhythmCopy = "You're capturing consistently. Publishing is the next step.";
+        } else {
+          rhythmCopy = "Your first post turns signals into presence. Start this week.";
+        }
+
+        const subject = topSignals.length > 0
+          ? `Your signals shifted — here's your edge · ${dayDate}`
+          : `Your week ahead · ${dayDate}`;
 
         const html = buildHtml({
           firstName,
           dayDate,
-          alerts: sortedEvents,
           topSignals,
           postsThisWeek: postsThisWeek ?? 0,
           postsLastWeek: postsLastWeek ?? 0,
-          moves,
           brand: BRAND,
           brandFont: BRAND_FONT,
+          headline,
+          emailParam,
+          marketPulse,
+          yourMove,
+          worthReading,
+          activeWeeks,
+          rhythmCopy,
         });
 
-        // Send via Resend
         const resendRes = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: {
@@ -409,7 +514,6 @@ serve(async (req) => {
           continue;
         }
 
-        // Log notification_events row
         await admin.from("notification_events").insert({
           user_id: userId,
           type: "weekly_brief",
@@ -419,8 +523,9 @@ serve(async (req) => {
           read: true,
           read_at: new Date().toISOString(),
           metadata: {
-            alerts_count: sortedEvents.length,
             top_signal: topSignalTitle,
+            active_weeks: activeWeeks,
+            posts_this_week: postsThisWeek ?? 0,
           },
         });
 

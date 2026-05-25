@@ -12,7 +12,18 @@ const Auth = () => {
     description: "Sign in to Aura to access your strategic intelligence dashboard, signals, and content tools.",
     path: "/auth",
   });
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() => {
+    if (typeof window === "undefined") return "";
+    try {
+      const p = new URLSearchParams(window.location.search);
+      return p.get("email") ?? "";
+    } catch { return ""; }
+  });
+  const [hasEmailParam] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try { return !!new URLSearchParams(window.location.search).get("email"); }
+    catch { return false; }
+  });
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -47,6 +58,14 @@ const Auth = () => {
     dailyInsights[new Date().getDay() % dailyInsights.length];
 
   const checkOnboardingAndRedirect = async (session: any) => {
+    // Honor ?returnTo=... so deep links from the weekly brief land at the
+    // exact destination after login. Only relative paths are accepted.
+    let returnTo: string | null = null;
+    try {
+      const p = new URLSearchParams(window.location.search);
+      const rt = p.get("returnTo");
+      if (rt && rt.startsWith("/") && !rt.startsWith("//")) returnTo = rt;
+    } catch {}
     const { data: profile } = await supabase
       .from("diagnostic_profiles")
       .select("onboarding_completed")
@@ -54,13 +73,13 @@ const Auth = () => {
       .maybeSingle();
     // No profile row → go to /home where the onboarding wizard (G1) will trigger.
     if (!profile) {
-      navigate("/home");
+      navigate(returnTo || "/home");
       return;
     }
     if (!(profile as any).onboarding_completed) {
       navigate("/onboarding");
     } else {
-      navigate("/home");
+      navigate(returnTo || "/home");
     }
   };
 
@@ -432,7 +451,9 @@ const Auth = () => {
               ? "Enter your new password below."
               : resetSent
                 ? <>We sent a password reset link to <span style={{ color: "var(--ink-7)", fontWeight: 600 }}>{resetSentEmail}</span>.</>
-                : dailyInsight}
+                : hasEmailParam
+                  ? "Welcome back — sign in to see your intelligence brief."
+                  : dailyInsight}
           </p>
 
           {resetSent ? (
