@@ -72,6 +72,26 @@ Deno.serve(async (req) => {
       .sort((a: any, b: any) => b.gap - a.gap)
       .slice(0, 3);
 
+    // Fallback: derive skill gaps from audit_results if generated_skills is empty
+    if (skillGaps.length === 0 && (profile as any)?.audit_results) {
+      const auditScores = (profile as any).audit_results;
+      if (typeof auditScores === "object" && Object.keys(auditScores).length > 0) {
+        const sorted = Object.entries(auditScores)
+          .map(([name, score]) => ({ name, currentRating: Number(score), gap: 100 - Number(score) }))
+          .sort((a, b) => b.gap - a.gap);
+
+        const top3 = sorted.slice(0, 3);
+        top3.forEach((item) => {
+          skillGaps.push({
+            name: item.name,
+            currentRating: item.currentRating,
+            gap: item.gap,
+            description: `Score: ${item.currentRating}/100 — this is a growth area that would strengthen market positioning.`,
+          });
+        });
+      }
+    }
+
     if (skillGaps.length === 0) {
       return new Response(JSON.stringify({ recommendations: [] }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
