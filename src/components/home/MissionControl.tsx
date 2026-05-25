@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Target, Check } from "lucide-react";
+import { Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Mission {
@@ -15,13 +15,49 @@ const TYPE_LABEL: Record<string, string> = {
   signal: "Signal", content: "Content", rhythm: "Rhythm", voice: "Voice", baseline: "Baseline",
 };
 
+const TYPE_COLOR: Record<string, string> = {
+  signal: "var(--warning)",
+  content: "var(--color-info-text, var(--info))",
+  voice: "var(--success)",
+  rhythm: "var(--success)",
+  baseline: "hsl(var(--muted-foreground))",
+};
+
+const explainMission = (
+  title: string,
+  type: string,
+  topSignalTitle?: string,
+  topSignalFragments?: number,
+): string => {
+  const t = title.toLowerCase();
+  if (t.includes("capture")) {
+    return "Find an article about your sector and save it. Aura will extract the strategic pattern.";
+  }
+  if (t.includes("publish")) {
+    const sig = topSignalTitle || "strongest";
+    const frags = topSignalFragments ?? 0;
+    return `Your ${sig} signal has ${frags} fragment${frags === 1 ? "" : "s"}. Draft a LinkedIn post and share your perspective.`;
+  }
+  if (t.includes("voice") || type === "voice") {
+    return "Paste 2 LinkedIn posts you've written before. Aura learns your tone so generated content sounds like you.";
+  }
+  return "";
+};
+
 const DEFAULT_MISSIONS: Mission[] = [
   { id: "default-1", title: "Capture a new source", description: null, mission_type: "signal", points: 5, status: "pending" },
   { id: "default-2", title: "Publish from your strongest signal", description: null, mission_type: "content", points: 8, status: "pending" },
   { id: "default-3", title: "Train your voice with 2 posts", description: null, mission_type: "voice", points: 6, status: "pending" },
 ];
 
-export default function MissionControl({ userId, entriesCount = 0 }: { userId: string | null; entriesCount?: number }) {
+interface MissionControlProps {
+  userId: string | null;
+  entriesCount?: number;
+  topSignalTitle?: string;
+  topSignalFragments?: number;
+}
+
+export default function MissionControl({ userId, entriesCount = 0, topSignalTitle, topSignalFragments }: MissionControlProps) {
   const [missions, setMissions] = useState<Mission[]>([]);
   const [loaded, setLoaded] = useState(false);
 
