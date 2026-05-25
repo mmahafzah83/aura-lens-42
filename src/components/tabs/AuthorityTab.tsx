@@ -2861,6 +2861,35 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
         .from("content_items")
         .update({ status: "published" })
         .eq("id", id);
+      // Voice learning loop — append the published post to the user's
+      // voice example library so future generations evolve toward their
+      // current style. Keep only the last 10 examples.
+      try {
+        const publishedPostText = item.post_text || "";
+        if (publishedPostText.length > 50) {
+          const { data: voiceProfile } = await supabase
+            .from("authority_voice_profiles")
+            .select("example_posts")
+            .eq("user_id", session.user.id)
+            .maybeSingle();
+          const existingExamples = Array.isArray(voiceProfile?.example_posts)
+            ? (voiceProfile!.example_posts as any[])
+            : [];
+          const updatedExamples = [...existingExamples, publishedPostText].slice(-10);
+          if (voiceProfile) {
+            await supabase
+              .from("authority_voice_profiles")
+              .update({ example_posts: updatedExamples })
+              .eq("user_id", session.user.id);
+          } else {
+            await supabase
+              .from("authority_voice_profiles")
+              .insert({ user_id: session.user.id, example_posts: updatedExamples });
+          }
+        }
+      } catch (voiceErr) {
+        console.warn("voice profile update failed:", voiceErr);
+      }
       setDrafts(prev => prev.filter(p => p.id !== id));
       // Fetch the related signal title to personalize the ceremony toast.
       let signalTitle = "strategic";
