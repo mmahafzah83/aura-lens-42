@@ -39,125 +39,70 @@ serve(async (req) => {
       return json({ found: false, error: "At least sector_focus or core_practice required" }, 400);
     }
 
-    const EXA_API_KEY = Deno.env.get("EXA_API_KEY");
-    if (!EXA_API_KEY) {
-      return json({ found: false, error: "EXA_API_KEY not configured" }, 500);
+    const PERPLEXITY_KEY = Deno.env.get("PERPLEXITY_API_KEY");
+    if (!PERPLEXITY_KEY) {
+      return json({ found: false, error: "PERPLEXITY_API_KEY not configured" }, 500);
     }
 
-    // Build search query
-    const parts = [core_practice, sector_focus].filter(Boolean);
-    const query = `${parts.join(" ")} strategic implications executive briefing`.trim();
+    const searchQuery = [core_practice, sector_focus].filter(Boolean).join(" ") + " strategic implications executive briefing";
 
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0];
-
-    // Trusted consulting / news domains
-    const includeDomains = [
-      "mckinsey.com",
-      "hbr.org",
-      "bcg.com",
-      "bain.com",
-      "deloitte.com",
-      "pwc.com",
-      "ey.com",
-      "accenture.com",
-      "gartner.com",
-      "forrester.com",
-      "weforum.org",
-      "reuters.com",
-      "bloomberg.com",
-      "ft.com",
-      "thenationalnews.com",
-      "arabnews.com",
-      "zawya.com",
-      "sloanreview.mit.edu",
-      "strategy-business.com",
-    ];
-
-    // 1) Primary search with domain restrictions
-    let results: any[] = [];
     try {
-      const exaRes = await fetch("https://api.exa.ai/search", {
+      const perpRes = await fetch("https://api.perplexity.ai/chat/completions", {
         method: "POST",
         headers: {
-          "x-api-key": EXA_API_KEY,
+          Authorization: `Bearer ${PERPLEXITY_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          query,
-          numResults: 5,
-          type: "neural",
-          useAutoprompt: true,
-          startPublishedDate: thirtyDaysAgo,
-          includeDomains,
-          contents: { text: false, summary: { query: "Key strategic insight from this article" } },
+          model: "sonar",
+          messages: [{
+            role: "system",
+            content: `Find ONE recent high-quality article about ${sector_focus || core_practice} from a trusted source (McKinsey, HBR, BCG, Deloitte, EY, Gartner, industry publications). Return a JSON object: {"title": "article title", "url": "direct article URL", "summary": "2-sentence strategic summary", "source": "publisher name"}. Only 2025-2026 content.`,
+          }, {
+            role: "user",
+            content: searchQuery,
+          }],
+          search_recency_filter: "month",
         }),
       });
 
-      if (exaRes.ok) {
-        const exaData = await exaRes.json();
-        results = exaData.results || [];
-      } else {
-        console.warn("Exa primary search non-OK:", exaRes.status);
-      }
-    } catch (e) {
-      console.warn("Exa primary search failed:", (e as Error).message);
-    }
-
-    // Pick first result if any
-    if (results.length > 0) {
-      const first = results[0];
-      return json({
-        found: true,
-        article: {
-          url: first.url || "",
-          title: first.title || "",
-          summary: first.text || first.summary || "",
-          source: new URL(first.url || "https://example.com").hostname.replace(/^www\./, ""),
-        },
-      }, 200);
-    }
-
-    // 2) Fallback search without domain restrictions
-    const fallbackQuery = `${core_practice || sector_focus} latest trends analysis`.trim();
-    try {
-      const fallbackRes = await fetch("https://api.exa.ai/search", {
-        method: "POST",
-        headers: {
-          "x-api-key": EXA_API_KEY,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          query: fallbackQuery,
-          numResults: 3,
-          type: "neural",
-          category: "research report",
-          contents: { text: false, summary: { query: "Key strategic insight from this article" } },
-        }),
-      });
-
-      if (fallbackRes.ok) {
-        const fallbackData = await fallbackRes.json();
-        const fallbackResults = fallbackData.results || [];
-        if (fallbackResults.length > 0) {
-          const first = fallbackResults[0];
-          return json({
-            found: true,
-            article: {
-              url: first.url || "",
-              title: first.title || "",
-              summary: first.text || first.summary || "",
-              source: new URL(first.url || "https://example.com").hostname.replace(/^www\./, ""),
-            },
-          }, 200);
+      if (perpRes.ok) {
+        const perpData = await perpRes.json();
+        const content = perpData?.choices?.[0]?.message?.content || "";
+        const citations = perpData?.citations || [];
+        try {
+          const jsonMatch = content.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const article = JSON.parse(jsonMatch[0]);
+            return json({
+              found: true,
+              article: {
+                url: article.url || citations[0] || "",
+                title: article.title || "",
+                summary: article.summary || "",
+                source: article.source || "Market Intelligence",
+              },
+            });
+          }
+        } catch {
+          // If JSON parse fails but we have citations, use first citation
+          if (citations.length > 0) {
+            return json({
+              found: true,
+              article: {
+                url: citations[0],
+                title: content.slice(0, 100),
+                summary: content.slice(0, 200),
+                source: new URL(citations[0]).hostname.replace(/^www\./, ""),
+              },
+            });
+          }
         }
-      } else {
-        console.warn("Exa fallback search non-OK:", fallbackRes.status);
       }
     } catch (e) {
-      console.warn("Exa fallback search failed:", (e as Error).message);
+      console.warn("Perplexity search failed:", (e as Error).message);
     }
 
-    // Nothing found
     return json({ found: false }, 200);
   } catch (e) {
     console.error("onboarding-find-article error:", e);
