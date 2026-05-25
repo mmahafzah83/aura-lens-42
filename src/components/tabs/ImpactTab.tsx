@@ -1,7 +1,7 @@
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Upload, Loader2, ExternalLink, Sparkles, Check, BarChart3, ChevronDown, Info, HelpCircle, TrendingUp } from "lucide-react";
+import { Upload, Loader2, ExternalLink, Sparkles, Check, BarChart3, ChevronDown, Info, HelpCircle, TrendingUp, Lock, Clock, RefreshCw, AlertTriangle, CheckCircle2, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { EMPTY_STATE } from "@/constants/language";
@@ -152,6 +152,12 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pipeline, setPipeline] = useState<PipelineState | null>(null);
+  const [progressStep, setProgressStep] = useState(0);
+  const [importedCount, setImportedCount] = useState<{ posts: number; days: number } | null>(null);
+  const [showSuccessCard, setShowSuccessCard] = useState(false);
+  const [successData, setSuccessData] = useState<{ posts: number; days: number } | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   // Content performance
   const [contentPerf, setContentPerf] = useState<{
@@ -759,6 +765,8 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const handleUpload = async (fileOverride?: File) => {
     const fileToUpload = fileOverride || selectedFile;
     if (!fileToUpload) return;
+    setUploadError(null);
+    setImportedCount(null);
     setUploading(true);
     try {
       const form = new FormData();
@@ -769,20 +777,44 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
       const imp = (data as any)?.imported || {};
+      const posts = imp.post_rows || imp.imported || 0;
       const days = (imp.engagement_rows || 0) + (imp.follower_rows || 0);
+      const totalImported = (imp.engagement_rows || 0) + (imp.follower_rows || 0) + (imp.post_rows || 0);
+      if (totalImported === 0) {
+        toast.error("No post data found in this file. Make sure you're exporting from LinkedIn Analytics → Post impressions.");
+        setUploadError("No post data found in this file. Make sure you're exporting from LinkedIn Analytics → Post impressions.");
+        setUploading(false);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        return;
+      }
+      setImportedCount({ posts, days });
       toast.success(`Analytics imported successfully — ${days} days of data loaded`);
       setSelectedFile(null);
       setPipeline({ voice: "pending", positioning: "pending", score: "pending" });
       await runPostImportPipeline(setPipeline);
       await loadAll(selectedDays);
+      setSuccessData({ posts, days });
+      setShowSuccessCard(true);
+      setTimeout(() => setShowSuccessCard(false), 2500);
     } catch (err: any) {
       console.error("XLSX upload failed:", err);
       toast.error(err?.message || "Upload failed. Please try again.");
+      setUploadError(err?.message || "Upload failed. Please try again.");
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
+
+  // Staggered progress steps (cosmetic — reduces perceived wait time)
+  useEffect(() => {
+    if (uploading) {
+      setProgressStep(0);
+      const t1 = setTimeout(() => setProgressStep(1), 800);
+      const t2 = setTimeout(() => setProgressStep(2), 2000);
+      return () => { clearTimeout(t1); clearTimeout(t2); };
+    }
+  }, [uploading]);
 
   /* ── Render ── */
   if (loading) {
@@ -811,6 +843,68 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   // Empty when no impact data exists at all — no LinkedIn metrics and no influence snapshots
   const isEmpty = postMetricsCount === 0 && latestFollowers === null;
 
+  // Shared hidden file input + drag-drop handlers for the empty state
+  const onDropFile = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith(".xlsx")) {
+      toast.error("Please upload a .xlsx file");
+      return;
+    }
+    setSelectedFile(file);
+    handleUpload(file);
+  };
+
+  // ─── Success card (briefly shown between processing and analytics) ───
+  if (showSuccessCard && successData) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="space-y-7 max-w-5xl"
+      >
+        <div style={{ marginBottom: 8 }}>
+          <div className="font-serif text-base font-medium tracking-wide text-ink-4" style={{ marginBottom: 6 }}>
+            Your digital presence growth
+          </div>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
+            Impact
+          </h1>
+        </div>
+        <section
+          className="mx-auto flex flex-col items-center text-center"
+          style={{
+            maxWidth: 580,
+            background: "var(--color-background-primary, var(--surface-ink-raised))",
+            border: "0.5px solid var(--color-border-tertiary, var(--brand-line))",
+            borderRadius: 12,
+            padding: "40px 24px",
+          }}
+        >
+          <div
+            className="flex items-center justify-center mb-4"
+            style={{
+              width: 48, height: 48, borderRadius: "50%",
+              background: "var(--success-pale)",
+              border: "1px solid var(--success)",
+            }}
+          >
+            <CheckCircle2 className="w-6 h-6" style={{ color: "var(--success)" }} />
+          </div>
+          <h2 className="text-base font-medium" style={{ color: "var(--ink)", margin: "0 0 6px" }}>
+            Your presence data is live.
+          </h2>
+          <p className="text-sm" style={{ color: "var(--ink-3)" }}>
+            {successData.posts} posts imported across {successData.days} days.
+          </p>
+        </section>
+      </motion.div>
+    );
+  }
+
   // ─── New-user empty state ───
   // With no LinkedIn analytics there is nothing meaningful to show in the trajectory,
   // breakdown, follower-growth, or LinkedIn sections.
@@ -831,73 +925,251 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           </h1>
         </div>
 
-        <section
-          className="relative overflow-hidden flex flex-col items-center text-center"
-          style={{
-            background: "var(--surface-ink-raised)",
-            borderRadius: 14,
-            padding: "40px 28px",
-            color: "var(--ink)",
-            border: "0.5px solid var(--brand-line)",
-            boxShadow: "var(--shadow-rest)",
-          }}
-        >
-          <div
-            className="flex items-center justify-center mb-5"
+        {uploading ? (
+          /* ─── Processing card ─── */
+          <section
+            className="mx-auto flex flex-col items-center text-center"
             style={{
-              width: 72,
-              height: 72,
-              borderRadius: "50%",
-              background: "var(--gold-pale)",
-              border: "1px solid var(--gold-light)",
+              maxWidth: 580,
+              background: "var(--color-background-primary, var(--surface-ink-raised))",
+              border: "0.5px solid var(--color-border-tertiary, var(--brand-line))",
+              borderRadius: 12,
+              padding: "32px 24px",
             }}
           >
-            <TrendingUp className="w-7 h-7" style={{ color: "var(--brand)" }} />
-          </div>
-          <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 500, color: "var(--ink)", margin: "0 0 10px", letterSpacing: "-0.01em" }}>
-            Your digital presence starts here
-          </h2>
-          <p style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.625, maxWidth: 420, margin: "0 auto" }}>
-            Upload your LinkedIn analytics to see your impact grow.
-          </p>
+            <div className="relative flex items-center justify-center mb-4" style={{ width: 56, height: 56 }}>
+              <div
+                className="absolute inset-0 rounded-full animate-spin"
+                style={{
+                  border: "2px solid transparent",
+                  borderTopColor: "var(--brand)",
+                  borderRightColor: "var(--brand)",
+                }}
+              />
+              <BarChart3 className="w-6 h-6" style={{ color: "var(--brand)" }} />
+            </div>
+            <h2 className="text-base font-medium" style={{ color: "var(--ink)", margin: "0 0 6px" }}>
+              Reading your LinkedIn data...
+            </h2>
+            <p className="text-sm mb-6" style={{ color: "var(--ink-3)" }}>
+              This usually takes a few seconds.
+            </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-7 w-full">
-            <AuraButton
-              variant="ghost"
-              size="sm"
-              onClick={handleUploadClick}
-              disabled={uploading}
-              style={{ borderRadius: 6, padding: "10px 22px" }}
-            >
-              {uploading ? (
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Processing your analytics...
+            <ul className="w-full max-w-xs space-y-2.5 text-left" style={{ margin: "0 auto" }}>
+              {/* Step 0: File received */}
+              <li
+                className="flex items-center gap-2 text-sm transition-opacity duration-300"
+                style={{ opacity: progressStep >= 0 ? 1 : 0, color: "var(--ink-2)" }}
+              >
+                <Check className="w-4 h-4 shrink-0" style={{ color: "var(--success)" }} />
+                <span>File received</span>
+              </li>
+              {/* Step 1: Parsing / imported count */}
+              <li
+                className="flex items-center gap-2 text-sm transition-opacity duration-500"
+                style={{ opacity: progressStep >= 1 ? 1 : 0, color: "var(--ink-2)" }}
+              >
+                <Check className="w-4 h-4 shrink-0" style={{ color: "var(--success)" }} />
+                <span>
+                  {importedCount ? `${importedCount.posts} posts imported` : "Parsing post data"}
                 </span>
-              ) : (
-                "Upload LinkedIn Analytics (.xlsx)"
-              )}
-            </AuraButton>
-          </div>
+              </li>
+              {/* Step 2: Pipeline-driven label */}
+              <li
+                className="flex items-center gap-2 text-sm font-medium transition-opacity duration-500"
+                style={{ opacity: progressStep >= 2 ? 1 : 0, color: "var(--ink)" }}
+              >
+                <Loader2 className="w-4 h-4 shrink-0 animate-spin" style={{ color: "var(--brand)" }} />
+                <span>
+                  {pipeline?.voice === "running" || pipeline?.voice === "pending"
+                    ? PIPELINE_LABELS.voice
+                    : pipeline?.positioning === "running" || pipeline?.positioning === "pending"
+                    ? PIPELINE_LABELS.positioning
+                    : pipeline?.score === "running" || pipeline?.score === "pending"
+                    ? PIPELINE_LABELS.score
+                    : "Building your presence profile..."}
+                </span>
+              </li>
+            </ul>
+          </section>
+        ) : (
+          /* ─── Empty state ─── */
+          <div className="mx-auto" style={{ maxWidth: 580 }}>
+            <section
+              className="flex flex-col items-center text-center"
+              style={{
+                background: "var(--color-background-primary, var(--surface-ink-raised))",
+                border: "0.5px solid var(--color-border-tertiary, var(--brand-line))",
+                borderRadius: 12,
+                padding: "28px 24px",
+              }}
+            >
+              {/* Emotional hook */}
+              <div
+                className="flex items-center justify-center mb-4"
+                style={{
+                  width: 48, height: 48, borderRadius: "50%",
+                  background: "var(--gold-pale)",
+                  border: "1px solid var(--gold-light)",
+                }}
+              >
+                <TrendingUp className="w-[22px] h-[22px]" style={{ color: "var(--brand)" }} />
+              </div>
+              <h2 className="text-lg font-medium" style={{ fontFamily: "var(--font-display)", color: "var(--ink)", margin: "0 0 8px", letterSpacing: "-0.01em" }}>
+                You have presence you can't see yet.
+              </h2>
+              <p className="text-sm max-w-md mx-auto" style={{ color: "var(--ink-3)", lineHeight: 1.55 }}>
+                Every LinkedIn post has data behind it — who saw it, who engaged, which topics resonated. Upload your analytics and Aura turns it into a growth map.
+              </p>
 
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".xlsx"
-            onChange={async (e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              if (!file.name.toLowerCase().endsWith(".xlsx")) {
-                toast.error("Please upload a .xlsx file");
-                return;
-              }
-              setSelectedFile(file);
-              // auto-upload in empty state — pass file directly to avoid stale state
-              handleUpload(file);
-            }}
-            className="hidden"
-          />
-        </section>
+              {/* Step-by-step guide */}
+              <div
+                className="w-full mt-6 text-left"
+                style={{
+                  background: "var(--surface-ink-recessed, hsl(var(--muted) / 0.4))",
+                  border: "0.5px solid var(--color-border-tertiary, var(--brand-line))",
+                  borderRadius: 10,
+                  padding: "16px 16px",
+                }}
+              >
+                <div
+                  className="text-xs uppercase font-medium mb-3"
+                  style={{ letterSpacing: "0.08em", color: "var(--brand)" }}
+                >
+                  3 steps — takes 30 seconds
+                </div>
+                <ol className="space-y-2.5">
+                  {[
+                    'LinkedIn → your profile → tap "Analytics" below your headline',
+                    'Open "Post impressions" and click Export',
+                    'Upload that file below — Aura reads it instantly',
+                  ].map((step, i) => (
+                    <li key={i} className="flex items-start gap-3 text-sm" style={{ color: "var(--ink-2)" }}>
+                      <span
+                        className="shrink-0 flex items-center justify-center text-xs font-medium"
+                        style={{
+                          width: 20, height: 20, borderRadius: "50%",
+                          background: "var(--gold-pale)",
+                          border: "0.5px solid var(--gold-light)",
+                          color: "var(--brand)",
+                          marginTop: 1,
+                        }}
+                      >
+                        {i + 1}
+                      </span>
+                      <span style={{ lineHeight: 1.5 }}>{step}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+
+              {/* Upload drop zone */}
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={handleUploadClick}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleUploadClick(); }}
+                onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                onDragLeave={() => setIsDragOver(false)}
+                onDrop={onDropFile}
+                className="w-full mt-4 flex flex-col items-center justify-center cursor-pointer transition-colors"
+                style={{
+                  border: `1.5px dashed ${isDragOver ? "var(--brand)" : "var(--color-border-tertiary, var(--brand-line))"}`,
+                  borderRadius: 8,
+                  padding: 20,
+                  background: isDragOver ? "var(--gold-pale)" : "transparent",
+                }}
+              >
+                <Upload className="w-5 h-5 mb-2" style={{ color: "var(--ink-3)" }} />
+                <div className="text-sm font-medium" style={{ color: "var(--ink)" }}>
+                  Drop your LinkedIn export here
+                </div>
+                <div className="text-xs mt-1" style={{ color: "var(--ink-3)" }}>
+                  Accepts .xlsx
+                </div>
+              </div>
+
+              {/* Trust signals */}
+              <div className="flex items-center justify-center gap-4 mt-4 flex-wrap">
+                {[
+                  { Icon: Lock, label: "Private" },
+                  { Icon: Clock, label: "30 sec" },
+                  { Icon: RefreshCw, label: "Re-upload anytime" },
+                ].map(({ Icon, label }) => (
+                  <div key={label} className="flex items-center gap-1.5 text-xs" style={{ color: "var(--ink-3)" }}>
+                    <Icon className="w-3.5 h-3.5" />
+                    <span>{label}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Inline error state */}
+              {uploadError && (
+                <div
+                  className="w-full mt-4 text-left flex items-start gap-2.5"
+                  style={{
+                    background: "hsl(var(--destructive) / 0.08)",
+                    border: "0.5px solid hsl(var(--destructive) / 0.4)",
+                    borderRadius: 8,
+                    padding: "12px 14px",
+                  }}
+                >
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "hsl(var(--destructive))" }} />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium" style={{ color: "hsl(var(--destructive))" }}>
+                      {uploadError}
+                    </div>
+                    <div className="text-xs mt-1" style={{ color: "var(--ink-3)" }}>
+                      Make sure you're exporting from LinkedIn Analytics → Post impressions. The file should be .xlsx format.
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setUploadError(null); handleUploadClick(); }}
+                      className="text-xs font-medium mt-2 underline"
+                      style={{ color: "var(--brand)" }}
+                    >
+                      Try again
+                    </button>
+                  </div>
+                </div>
+              )}
+            </section>
+
+            {/* Create first post alternative */}
+            <div className="flex items-center gap-3 my-5" aria-hidden="true">
+              <div className="flex-1 h-px" style={{ background: "var(--color-border-tertiary, var(--brand-line))" }} />
+              <span className="text-xs" style={{ color: "var(--ink-3)" }}>or start creating first</span>
+              <div className="flex-1 h-px" style={{ background: "var(--color-border-tertiary, var(--brand-line))" }} />
+            </div>
+            <div className="flex justify-center">
+              <AuraButton
+                variant="ghost"
+                size="sm"
+                onClick={() => window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "authority" } }))}
+                style={{ borderRadius: 6, padding: "10px 22px" }}
+              >
+                Create your first post →
+              </AuraButton>
+            </div>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                if (!file.name.toLowerCase().endsWith(".xlsx")) {
+                  toast.error("Please upload a .xlsx file");
+                  return;
+                }
+                setSelectedFile(file);
+                handleUpload(file);
+              }}
+              className="hidden"
+            />
+          </div>
+        )}
       </motion.div>
     );
   }
