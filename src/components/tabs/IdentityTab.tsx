@@ -638,7 +638,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 )}
                 {authorityScore != null && (
                   <span style={{ fontFamily: "var(--font-display)", fontSize: 15, color: "var(--warning, var(--brand))", fontWeight: 500 }}>
-                    {authorityScore}
+                    {scoreTotal ?? authorityScore}
                   </span>
                 )}
               </div>
