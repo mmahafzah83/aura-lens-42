@@ -439,6 +439,7 @@ const EditorialBlindSpots = ({
 }: { signals: Signal[]; onOpenCapture?: () => void }) => {
   const [data, setData] = useState<(CoverageResult & { generated_at?: string }) | null>(null);
   const [loading, setLoading] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -503,7 +504,7 @@ const EditorialBlindSpots = ({
           </p>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {gaps.map((it, idx) => {
+            {gaps.slice(0, expanded ? 3 : 1).map((it, idx) => {
               const isOpp = it.category === "opportunity";
               const accent = isOpp ? "var(--warning, hsl(35 90% 55%))" : "var(--danger, hsl(0 70% 55%))";
               const urgency = isOpp
@@ -545,6 +546,21 @@ const EditorialBlindSpots = ({
               );
             })}
           </div>
+          {gaps.length > 1 && (
+            <button
+              onClick={() => setExpanded(e => !e)}
+              style={{
+                marginTop: 12, background: "none", border: "none", padding: 0, cursor: "pointer",
+                display: "inline-flex", alignItems: "center", gap: 6,
+                fontSize: 12, color: "var(--ink-3)",
+              }}
+            >
+              {expanded
+                ? "Show less"
+                : `${Math.min(gaps.length, 3) - 1} more blind spot${Math.min(gaps.length, 3) - 1 === 1 ? "" : "s"}`}
+              <ChevronDown size={12} style={{ transform: expanded ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s" }} />
+            </button>
+          )}
         </>
       )}
     </section>
