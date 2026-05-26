@@ -130,7 +130,7 @@ const ExpandablePanel = ({
 /* ═══════════════════════════════════════════
    INTELLIGENCE RADAR
    ═══════════════════════════════════════════ */
-const IntelligenceRadar = ({ signals }: { signals: Signal[] }) => {
+const IntelligenceRadar = ({ signals, captureCount = 0 }: { signals: Signal[]; captureCount?: number }) => {
   // Build unique themes with strongest signal per theme
   const themeMap = new Map<string, Signal>();
   signals.forEach(s => {
@@ -158,12 +158,19 @@ const IntelligenceRadar = ({ signals }: { signals: Signal[] }) => {
         ? "var(--color-text-info, var(--info))"
         : "var(--ink-3)";
     const opacity = t.sig.id === topConfId ? 1 : conf > 0.3 ? 0.45 : 0.25;
-    const lx = cx + Math.cos(angle) * (r + 18);
-    const ly = cy + Math.sin(angle) * (r + 18);
+    const lx = cx + Math.cos(angle) * (r + 22);
+    const ly = cy + Math.sin(angle) * (r + 22);
+    // Humanise: underscores → spaces, title case
+    const human = t.name
+      .replace(/[_-]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .replace(/\b\w/g, c => c.toUpperCase());
+    const display = human.length > 18 ? human.slice(0, 17) + "…" : human;
     return {
       x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r,
       lx, ly, radius, color, opacity,
-      name: t.name, isTop: t.sig.id === topConfId,
+      name: display, isTop: t.sig.id === topConfId,
     };
   });
 
@@ -196,9 +203,8 @@ const IntelligenceRadar = ({ signals }: { signals: Signal[] }) => {
               {n.isTop && <animate attributeName="r" values={`${n.radius};${n.radius + 1};${n.radius}`} dur="3s" repeatCount="indefinite" />}
             </circle>
             <text x={n.lx} y={n.ly} textAnchor="middle" dominantBaseline="middle"
-              fontSize={11} fill="var(--ink-4)"
-              style={{ textTransform: "capitalize" }}>
-              {n.name.length > 16 ? n.name.slice(0, 14) + "…" : n.name}
+              fontSize={11} fill="var(--ink-4)">
+              {n.name}
             </text>
           </g>
         ))}
@@ -215,6 +221,12 @@ const IntelligenceRadar = ({ signals }: { signals: Signal[] }) => {
           <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ink-3)", opacity: 0.5 }} /> Weak
         </span>
       </div>
+
+      {captureCount > 0 && (
+        <p style={{ marginTop: 10, fontSize: 11, color: "var(--ink-3)", textAlign: "center" }}>
+          Themes detected from your {captureCount} capture{captureCount === 1 ? "" : "s"} — each node is a pattern Aura found.
+        </p>
+      )}
 
       <div style={{ marginTop: 14, width: "100%", maxWidth: 520 }}>
         <ExpandablePanel label="How does the radar work?" align="left">
@@ -356,7 +368,8 @@ const SignalHero = ({
         </div>
       )}
 
-      {signal.strategic_implications && (
+      {signal.strategic_implications &&
+        signal.strategic_implications.trim() !== (signal.what_it_means_for_you || "").trim() && (
         <p style={{ fontSize: 12, color: "var(--ink-3)", lineHeight: 1.6, margin: "0 0 18px" }}>
           {signal.strategic_implications}{" "}
           <span style={{ color: "var(--brand)", fontWeight: 500 }}>The window is open.</span>
@@ -426,6 +439,7 @@ const EditorialBlindSpots = ({
 }: { signals: Signal[]; onOpenCapture?: () => void }) => {
   const [data, setData] = useState<(CoverageResult & { generated_at?: string }) | null>(null);
   const [loading, setLoading] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -490,7 +504,7 @@ const EditorialBlindSpots = ({
           </p>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {gaps.map((it, idx) => {
+            {gaps.slice(0, expanded ? 3 : 1).map((it, idx) => {
               const isOpp = it.category === "opportunity";
               const accent = isOpp ? "var(--warning, hsl(35 90% 55%))" : "var(--danger, hsl(0 70% 55%))";
               const urgency = isOpp
@@ -532,6 +546,21 @@ const EditorialBlindSpots = ({
               );
             })}
           </div>
+          {gaps.length > 1 && (
+            <button
+              onClick={() => setExpanded(e => !e)}
+              style={{
+                marginTop: 12, background: "none", border: "none", padding: 0, cursor: "pointer",
+                display: "inline-flex", alignItems: "center", gap: 6,
+                fontSize: 12, color: "var(--ink-3)",
+              }}
+            >
+              {expanded
+                ? "Show less"
+                : `${Math.min(gaps.length, 3) - 1} more blind spot${Math.min(gaps.length, 3) - 1 === 1 ? "" : "s"}`}
+              <ChevronDown size={12} style={{ transform: expanded ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s" }} />
+            </button>
+          )}
         </>
       )}
     </section>
@@ -557,6 +586,7 @@ const EditorialReadingList = ({
   const [recs, setRecs] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const load = useCallback(async (force = false) => {
     setLoading(true); setError(false);
@@ -588,22 +618,37 @@ const EditorialReadingList = ({
 
   const topSignal = signals[0];
 
-  const contextualMatter = (rec: Recommendation) => {
+  const contextualMatter = (rec: Recommendation, index: number) => {
     const haystack = `${rec.title} ${rec.intelligence_value || ""} ${rec.skill_gap || ""}`.toLowerCase();
     const matchedTheme = Array.from(signalThemes).find(t => haystack.includes(t));
     if (matchedTheme && topSignal) {
       return {
         icon: <TrendingUp size={12} style={{ color: "var(--success, hsl(140 60% 45%))" }} />,
-        label: "Strengthens top signal:",
+        label: "Strengthens your signal:",
         text: rec.intelligence_value || `Adds depth to your "${topSignal.signal_title}" signal.`,
         color: "var(--success, hsl(140 60% 45%))",
       };
     }
+    if (rec.skill_gap && rec.skill_gap.trim()) {
+      return {
+        icon: <EyeOff size={12} style={{ color: "var(--danger, hsl(0 70% 55%))" }} />,
+        label: "Closes a blind spot:",
+        text: rec.skill_gap || rec.intelligence_value || "",
+        color: "var(--danger, hsl(0 70% 55%))",
+      };
+    }
+    // Default rotation to avoid monotony
+    const palette = [
+      { color: "var(--brand)", icon: <Lightbulb size={12} style={{ color: "var(--brand)" }} /> },
+      { color: "var(--success, hsl(140 60% 45%))", icon: <Lightbulb size={12} style={{ color: "var(--success, hsl(140 60% 45%))" }} /> },
+      { color: "var(--info, var(--brand))", icon: <Lightbulb size={12} style={{ color: "var(--info, var(--brand))" }} /> },
+    ];
+    const p = palette[index % palette.length];
     return {
-      icon: <Lightbulb size={12} style={{ color: "var(--brand)" }} />,
+      icon: p.icon,
       label: "Why this matters:",
       text: rec.intelligence_value || rec.skill_gap || "Closes a blind spot in your radar.",
-      color: "var(--brand)",
+      color: p.color,
     };
   };
 
@@ -649,8 +694,8 @@ const EditorialReadingList = ({
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {recs.map((rec, i) => {
-            const ctx = contextualMatter(rec);
+          {recs.slice(0, expanded ? recs.length : 1).map((rec, i) => {
+            const ctx = contextualMatter(rec, i);
             const domain = domainFromUrl(rec.url);
             return (
               <div key={i} style={{
@@ -706,6 +751,21 @@ const EditorialReadingList = ({
               </div>
             );
           })}
+          {recs.length > 1 && (
+            <button
+              onClick={() => setExpanded(e => !e)}
+              style={{
+                background: "none", border: "none", padding: 0, cursor: "pointer",
+                display: "inline-flex", alignItems: "center", gap: 6,
+                fontSize: 12, color: "var(--ink-3)", alignSelf: "flex-start",
+              }}
+            >
+              {expanded
+                ? "Show less"
+                : `${recs.length - 1} more article${recs.length - 1 === 1 ? "" : "s"}`}
+              <ChevronDown size={12} style={{ transform: expanded ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s" }} />
+            </button>
+          )}
         </div>
       )}
     </section>
@@ -990,7 +1050,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
             ) : (
               <>
                 {/* RADAR (only when 3+ themes) */}
-                {uniqueThemeCount >= 3 && <IntelligenceRadar signals={signals} />}
+                {uniqueThemeCount >= 3 && <IntelligenceRadar signals={signals} captureCount={entryCount} />}
 
                 {/* SIGNAL HERO */}
                 {selectedSignal && (
@@ -1091,24 +1151,28 @@ const Header = ({ entryCount, signalsCount, movesCount }: { entryCount: number; 
     <p style={{ fontSize: 13, color: "var(--ink-3)", margin: "0 0 16px", lineHeight: 1.5 }}>
       What the market doesn't know you know.
     </p>
-    <div data-testid="intel-stats" style={{ display: "inline-flex", alignItems: "center", gap: 20 }}>
+    <div data-testid="intel-stats" style={{ display: "inline-flex", alignItems: "center", gap: 0, background: "none", border: "none" }}>
       {[
-        { val: entryCount, label: "sources", color: "var(--brand)" },
-        { val: signalsCount, label: "signals", color: "var(--info, var(--brand))" },
-        { val: movesCount, label: "moves", color: "var(--success, hsl(140 60% 45%))" },
+        { val: entryCount, label: entryCount === 1 ? "source" : "sources", color: "var(--brand)" },
+        { val: signalsCount, label: signalsCount === 1 ? "signal" : "signals", color: "var(--info, var(--brand))" },
+        { val: movesCount, label: movesCount === 1 ? "move" : "moves", color: "var(--success, hsl(140 60% 45%))" },
       ].map((s, i, arr) => (
-        <div key={s.label} style={{
-          display: "flex", flexDirection: "column", alignItems: "center",
-          paddingRight: i < arr.length - 1 ? 20 : 0,
-          borderRight: i < arr.length - 1 ? "0.5px solid var(--surface-ink-subtle)" : "none",
-        }}>
+        <div key={s.label} style={{ display: "inline-flex", alignItems: "center" }}>
           <div style={{
-            fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
-            fontSize: 20, fontWeight: 500, color: s.color, lineHeight: 1,
-          }}>{s.val}</div>
-          <div style={{ fontSize: 9, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: ".1em", marginTop: 4 }}>
-            {s.label}
+            display: "flex", flexDirection: "column", alignItems: "center",
+            padding: "0 18px", background: "none", border: "none",
+          }}>
+            <div style={{
+              fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
+              fontSize: 20, fontWeight: 500, color: s.color, lineHeight: 1,
+            }}>{s.val}</div>
+            <div style={{ fontSize: 9, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: ".06em", marginTop: 4 }}>
+              {s.label}
+            </div>
           </div>
+          {i < arr.length - 1 && (
+            <span style={{ width: 0.5, height: 20, background: "var(--surface-ink-subtle)" }} />
+          )}
         </div>
       ))}
     </div>
