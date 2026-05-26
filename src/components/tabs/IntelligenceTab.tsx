@@ -130,11 +130,7 @@ const ExpandablePanel = ({
 /* ═══════════════════════════════════════════
    INTELLIGENCE RADAR
    ═══════════════════════════════════════════ */
-const IntelligenceRadar = ({ signals }: { signals: Signal[] }) => {
-  return <IntelligenceRadarInner signals={signals} captureCount={0} />;
-};
-
-const IntelligenceRadarInner = ({ signals, captureCount }: { signals: Signal[]; captureCount: number }) => {
+const IntelligenceRadar = ({ signals, captureCount = 0 }: { signals: Signal[]; captureCount?: number }) => {
   // Build unique themes with strongest signal per theme
   const themeMap = new Map<string, Signal>();
   signals.forEach(s => {
