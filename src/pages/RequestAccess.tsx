@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import usePageMeta from "@/hooks/usePageMeta";
 import { SECTORS } from "@/constants/sectors";
+import PublicFooter from "@/components/PublicFooter";
 
 type Status = "idle" | "loading" | "success" | "duplicate" | "error";
 
@@ -123,10 +124,10 @@ export default function RequestAccess() {
     "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>\")";
 
   return (
-    <div style={{ minHeight: "100vh", background: LEFT_BG, color: "#ededed", fontFamily: "'DM Sans', sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: LEFT_BG, color: "#ededed", fontFamily: "'DM Sans', sans-serif", display: "flex", flexDirection: "column" }}>
       <style>{RA_CSS}</style>
 
-      <main className="ra-grid">
+      <main className="ra-grid" style={{ flex: 1 }}>
         {/* LEFT PANEL */}
         <aside className="ra-left" style={{ background: LEFT_BG }}>
           <div className="ra-left-inner">
@@ -292,6 +293,14 @@ export default function RequestAccess() {
                   </button>
                 </form>
 
+                <p style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", textAlign: "center", marginTop: 12 }}>
+                  Your data is protected under Saudi PDPL. See our{" "}
+                  <Link to="/privacy" style={{ color: "#D4B056", textDecoration: "none" }}>
+                    Privacy Policy
+                  </Link>
+                  .
+                </p>
+
                 <div style={{ textAlign: "center", marginTop: 24 }}>
                   <span style={{ fontSize: 14, color: "#999" }}>
                     Already have access?{" "}
@@ -327,6 +336,7 @@ export default function RequestAccess() {
           </div>
         </section>
       </main>
+      <PublicFooter forceDark />
     </div>
   );
 }
