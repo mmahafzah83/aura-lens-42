@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, X } from "lucide-react";
 import { SECTORS } from "@/constants/sectors";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 
 interface Props {
   userId: string;
@@ -418,7 +419,15 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
             {step === 3 && (
               <div className="mt-6 space-y-3">
                 <Label hint="Paste 2–3 posts you've written. Optional — you can add these later from My Story.">
-                  Your LinkedIn posts
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                    Your LinkedIn posts
+                    <InfoTooltip
+                      label="LinkedIn text"
+                      text="Paste from your LinkedIn About section or any post. Aura uses this to learn your writing voice — not stored publicly."
+                      side="bottom"
+                      triggerSize={13}
+                    />
+                  </span>
                 </Label>
                 {[post1, post2, post3].map((val, i) => (
                   <textarea

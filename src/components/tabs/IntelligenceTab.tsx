@@ -15,6 +15,7 @@ import { useAuthReady } from "@/hooks/useAuthReady";
 import { showQueryErrorToast } from "@/lib/safeQuery";
 import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/ui/EmptyState";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import type { Database } from "@/integrations/supabase/types";
 import { daysUntilDormant } from "@/components/intelligence/VelocityIndicators";
 import {
@@ -346,8 +347,20 @@ const SignalHero = ({
       <p style={{ fontSize: 12, color: "var(--ink-3)", lineHeight: 1.7, margin: "0 0 20px" }}>
         You've captured <strong style={{ color: "var(--ink-6)", fontWeight: 500 }}>{fragCount} evidence fragments</strong> from{" "}
         <strong style={{ color: "var(--ink-6)", fontWeight: 500 }}>{orgs} organisation{orgs === 1 ? "" : "s"}</strong>.{" "}
-        Confidence: <strong style={{ color: "var(--brand)", fontWeight: 500 }}>{confPct}%</strong>{" "}
-        <span style={{ color: velColor, fontWeight: 500 }}>{velText}</span>.
+        Confidence: <strong style={{ color: "var(--brand)", fontWeight: 500 }}>{confPct}%</strong>
+        <InfoTooltip
+          label="Confidence"
+          text="Evidence strength for this signal. More captures on this theme = higher confidence. Signals below 20% will fade."
+          side="top"
+          triggerSize={14}
+        />{" "}
+        <span style={{ color: velColor, fontWeight: 500 }}>{velText}</span>
+        <InfoTooltip
+          label="Velocity"
+          text="Gaining: fresh evidence arriving. Stable: holding steady. Fading: needs new captures to sustain."
+          side="top"
+          triggerSize={14}
+        />.
         {orgs < 3 && " Two more sources from different organisations would push this above the publishing threshold."}
       </p>
 
@@ -476,6 +489,12 @@ const EditorialBlindSpots = ({
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 500, letterSpacing: ".06em", color: "var(--danger, hsl(0 70% 55%))" }}>
           <EyeOff size={12} />
           WHAT YOU'RE NOT SEEING
+          <InfoTooltip
+            label="Blind spots"
+            text="Topics active in your sector that you haven't captured yet. Publishing here expands your territory."
+            side="bottom"
+            triggerSize={13}
+          />
         </span>
         <ExpandablePanel label="How are blind spots detected?" align="right">
           Aura compares your captured themes against active conversations in your sector. Topics your peers discuss that you have zero captures on appear here.

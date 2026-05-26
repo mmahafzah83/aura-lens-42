@@ -21,6 +21,7 @@ import { useJourneyState } from "@/hooks/useJourneyState";
 import ScoreBreakdown from "@/components/identity/ScoreBreakdown";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 
 // Canonical 8-milestone definition for the timeline
 const MILESTONE_DEFS: { id: string; name: string; cta?: { label: string; tab: string } }[] = [
@@ -632,13 +633,26 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                     fontSize: 11, fontWeight: 500, padding: "3px 10px",
                     borderRadius: 12, background: "var(--brand-pale, rgba(176,141,58,0.12))",
                     color: "var(--warning, var(--brand))",
+                    display: "inline-flex", alignItems: "center", gap: 6,
                   }}>
                     {archetypeName}
+                    <InfoTooltip
+                      label="Your archetype"
+                      text="Your primary professional archetype from your brand assessment. Shapes how Aura positions your content."
+                      side="bottom"
+                      triggerSize={13}
+                    />
                   </span>
                 )}
                 {authorityScore != null && (
-                  <span style={{ fontFamily: "var(--font-display)", fontSize: 15, color: "var(--warning, var(--brand))", fontWeight: 500 }}>
+                  <span style={{ fontFamily: "var(--font-display)", fontSize: 15, color: "var(--warning, var(--brand))", fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 6 }}>
                     {scoreTotal ?? authorityScore}
+                    <InfoTooltip
+                      label="Archetype strength"
+                      text="Increases as you publish content aligned with your archetype patterns."
+                      side="bottom"
+                      triggerSize={13}
+                    />
                   </span>
                 )}
               </div>
@@ -659,8 +673,14 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }} data-testid="story-market-mirror">
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
             <Eye className="w-3.5 h-3.5" style={{ color: "var(--danger, #c0392b)" }} />
-            <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.06em", color: "var(--danger, #c0392b)", textTransform: "uppercase" }}>
+            <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.06em", color: "var(--danger, #c0392b)", textTransform: "uppercase", display: "inline-flex", alignItems: "center", gap: 6 }}>
               How the market sees you
+              <InfoTooltip
+                label="Market Mirror"
+                text="How three audiences would describe you today — based on your signals, content, and assessment. Refreshes as your intelligence grows."
+                side="bottom"
+                triggerSize={13}
+              />
             </span>
           </div>
           <p style={{ fontSize: 12, color: "var(--ink-5)", margin: "0 0 12px" }}>
@@ -675,8 +695,14 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
             <Zap className="w-3.5 h-3.5" style={{ color: "var(--warning, var(--brand))" }} />
-            <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.06em", color: "var(--warning, var(--brand))", textTransform: "uppercase" }}>
+            <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.06em", color: "var(--warning, var(--brand))", textTransform: "uppercase", display: "inline-flex", alignItems: "center", gap: 6 }}>
               Close the gap
+              <InfoTooltip
+                label="Presence gap"
+                text="The gap between your current digital footprint and what the market expects from someone at your level."
+                side="bottom"
+                triggerSize={13}
+              />
             </span>
           </div>
           <p style={{ fontSize: 12, color: "var(--ink-3)", margin: "0 0 12px" }}>
@@ -717,8 +743,14 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <MapIcon className="w-3.5 h-3.5" style={{ color: "var(--ink-5)" }} />
-              <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.06em", color: "var(--ink-5)", textTransform: "uppercase" }}>
+              <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.06em", color: "var(--ink-5)", textTransform: "uppercase", display: "inline-flex", alignItems: "center", gap: 6 }}>
                 Your territory
+                <InfoTooltip
+                  label="Your territories"
+                  text="Your strongest content themes. Gold-highlighted territories have the deepest signal evidence."
+                  side="bottom"
+                  triggerSize={13}
+                />
               </span>
             </div>
             <span style={{ fontSize: 11, color: "var(--ink-5)" }}>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 
 export interface CalibrationDimension {
   id: string;
@@ -256,9 +257,16 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
               style={{
                 fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
                 fontSize: 22, color: BRONZE, marginBottom: 10, lineHeight: 1.3,
+                display: "inline-flex", alignItems: "center", gap: 8,
               }}
             >
               {current.name}
+              <InfoTooltip
+                label="Calibration"
+                text="Rate your comfort level on each dimension. No wrong answers — this shapes how Aura calibrates your profile."
+                side="bottom"
+                triggerSize={14}
+              />
             </motion.h2>
             <p style={{
               fontSize: 15, lineHeight: 1.5, color: "hsl(var(--muted-foreground))",

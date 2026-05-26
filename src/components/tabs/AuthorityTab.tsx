@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Linkedin } from "lucide-react";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1019,7 +1020,15 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
           <>
             {/* Framework Selector */}
             <div>
-              <p className="text-label uppercase tracking-wider text-xs font-semibold mb-1">Structure</p>
+              <p className="text-label uppercase tracking-wider text-xs font-semibold mb-1" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                Structure
+                <InfoTooltip
+                  label="Structure"
+                  text="The argument pattern your post follows. Auto picks the best fit. Choose manually to control the narrative shape."
+                  side="top"
+                  triggerSize={13}
+                />
+              </p>
               <p className="text-[12px] text-muted-foreground mb-2">Structural patterns that shape how your argument unfolds</p>
               <div className="flex flex-wrap gap-1.5">
                 {FRAMEWORK_OPTIONS.map(fw => {
@@ -1087,7 +1096,15 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
 
             {/* Language */}
             <div className="flex items-center gap-3">
-              <p className="text-label uppercase tracking-wider text-xs font-semibold">Language</p>
+              <p className="text-label uppercase tracking-wider text-xs font-semibold" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                Language
+                <InfoTooltip
+                  label="Language"
+                  text="Generate your post in English or Arabic. Arabic posts use Gulf executive writing patterns."
+                  side="top"
+                  triggerSize={13}
+                />
+              </p>
               <div data-testid="pub-lang-toggle" className="flex gap-1 bg-secondary/30 rounded-lg p-0.5 border border-border/10">
                 <button onClick={() => setLang("en")} className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${lang === "en" ? "bg-primary text-primary-foreground" : "text-foreground"}`}>English</button>
                 <button onClick={() => setLang("ar")} className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${lang === "ar" ? "bg-primary text-primary-foreground" : "text-foreground"}`}>العربية</button>
