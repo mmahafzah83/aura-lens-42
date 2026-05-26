@@ -586,6 +586,7 @@ const EditorialReadingList = ({
   const [recs, setRecs] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const load = useCallback(async (force = false) => {
     setLoading(true); setError(false);
@@ -617,22 +618,37 @@ const EditorialReadingList = ({
 
   const topSignal = signals[0];
 
-  const contextualMatter = (rec: Recommendation) => {
+  const contextualMatter = (rec: Recommendation, index: number) => {
     const haystack = `${rec.title} ${rec.intelligence_value || ""} ${rec.skill_gap || ""}`.toLowerCase();
     const matchedTheme = Array.from(signalThemes).find(t => haystack.includes(t));
     if (matchedTheme && topSignal) {
       return {
         icon: <TrendingUp size={12} style={{ color: "var(--success, hsl(140 60% 45%))" }} />,
-        label: "Strengthens top signal:",
+        label: "Strengthens your signal:",
         text: rec.intelligence_value || `Adds depth to your "${topSignal.signal_title}" signal.`,
         color: "var(--success, hsl(140 60% 45%))",
       };
     }
+    if (rec.skill_gap && rec.skill_gap.trim()) {
+      return {
+        icon: <EyeOff size={12} style={{ color: "var(--danger, hsl(0 70% 55%))" }} />,
+        label: "Closes a blind spot:",
+        text: rec.skill_gap || rec.intelligence_value || "",
+        color: "var(--danger, hsl(0 70% 55%))",
+      };
+    }
+    // Default rotation to avoid monotony
+    const palette = [
+      { color: "var(--brand)", icon: <Lightbulb size={12} style={{ color: "var(--brand)" }} /> },
+      { color: "var(--success, hsl(140 60% 45%))", icon: <Lightbulb size={12} style={{ color: "var(--success, hsl(140 60% 45%))" }} /> },
+      { color: "var(--info, var(--brand))", icon: <Lightbulb size={12} style={{ color: "var(--info, var(--brand))" }} /> },
+    ];
+    const p = palette[index % palette.length];
     return {
-      icon: <Lightbulb size={12} style={{ color: "var(--brand)" }} />,
+      icon: p.icon,
       label: "Why this matters:",
       text: rec.intelligence_value || rec.skill_gap || "Closes a blind spot in your radar.",
-      color: "var(--brand)",
+      color: p.color,
     };
   };
 
@@ -678,8 +694,8 @@ const EditorialReadingList = ({
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {recs.map((rec, i) => {
-            const ctx = contextualMatter(rec);
+          {recs.slice(0, expanded ? recs.length : 1).map((rec, i) => {
+            const ctx = contextualMatter(rec, i);
             const domain = domainFromUrl(rec.url);
             return (
               <div key={i} style={{
@@ -735,6 +751,21 @@ const EditorialReadingList = ({
               </div>
             );
           })}
+          {recs.length > 1 && (
+            <button
+              onClick={() => setExpanded(e => !e)}
+              style={{
+                background: "none", border: "none", padding: 0, cursor: "pointer",
+                display: "inline-flex", alignItems: "center", gap: 6,
+                fontSize: 12, color: "var(--ink-3)", alignSelf: "flex-start",
+              }}
+            >
+              {expanded
+                ? "Show less"
+                : `${recs.length - 1} more article${recs.length - 1 === 1 ? "" : "s"}`}
+              <ChevronDown size={12} style={{ transform: expanded ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s" }} />
+            </button>
+          )}
         </div>
       )}
     </section>
