@@ -27,7 +27,7 @@ interface Props {
 const EmptyPanel = ({ icon: Icon, message }: { icon: any; message: string }) => (
   <div className="text-center py-10">
     <Icon className="w-8 h-8 text-muted-foreground/15 mx-auto mb-3" />
-    <p className="text-sm text-muted-foreground/40">{message}</p>
+    <p className="text-sm text-muted-foreground/70">{message}</p>
   </div>
 );
 
@@ -101,7 +101,7 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = fa
         <div className="glass-card rounded-2xl p-10 text-center animate-fade-in">
           <Loader2 className="w-10 h-10 text-primary/25 mx-auto mb-4 animate-spin" />
           <p className="text-sm font-medium text-foreground mb-1">Syncing LinkedIn analytics…</p>
-          <p className="text-xs text-muted-foreground/40">Classifying content and generating insights.</p>
+          <p className="text-xs text-muted-foreground/70">Classifying content and generating insights.</p>
         </div>
       );
     }
@@ -110,7 +110,7 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = fa
         <div className="glass-card rounded-2xl p-10 text-center animate-fade-in">
           <Activity className="w-10 h-10 text-primary/15 mx-auto mb-4" />
           <p className="text-sm font-medium text-foreground mb-1">LinkedIn connected — awaiting first analytics sync.</p>
-          <p className="text-xs text-muted-foreground/40">Click "Sync Now" above to pull your first analytics snapshot.</p>
+          <p className="text-xs text-muted-foreground/70">Click "Sync Now" above to pull your first analytics snapshot.</p>
         </div>
       );
     }
@@ -268,7 +268,7 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = fa
                         <div key={item.name} className="space-y-1">
                           <div className="flex items-center justify-between">
                             <span className="text-xs text-foreground/80">{item.name}</span>
-                            <span className="text-xs text-muted-foreground/40 tabular-nums">{item.pct}%</span>
+                            <span className="text-xs text-muted-foreground/70 tabular-nums">{item.pct}%</span>
                           </div>
                           <Progress value={item.pct} className="h-1" />
                         </div>
@@ -357,7 +357,7 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = fa
                     <div key={item.name} className="space-y-1.5">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-medium text-foreground/80">{item.name}</span>
-                        <span className="text-xs text-muted-foreground/40 tabular-nums">{pct}%</span>
+                        <span className="text-xs text-muted-foreground/70 tabular-nums">{pct}%</span>
                       </div>
                       <Progress value={pct} className="h-1" />
                     </div>
