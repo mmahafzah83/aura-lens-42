@@ -746,6 +746,8 @@ const Auth = () => {
           Closed beta · GCC senior professionals · 2026
         </div>
       </div>
+      </div>
+      <PublicFooter forceDark />
     </div>
   );
 };
