@@ -131,6 +131,10 @@ const ExpandablePanel = ({
    INTELLIGENCE RADAR
    ═══════════════════════════════════════════ */
 const IntelligenceRadar = ({ signals }: { signals: Signal[] }) => {
+  return <IntelligenceRadarInner signals={signals} captureCount={0} />;
+};
+
+const IntelligenceRadarInner = ({ signals, captureCount }: { signals: Signal[]; captureCount: number }) => {
   // Build unique themes with strongest signal per theme
   const themeMap = new Map<string, Signal>();
   signals.forEach(s => {
@@ -158,12 +162,19 @@ const IntelligenceRadar = ({ signals }: { signals: Signal[] }) => {
         ? "var(--color-text-info, var(--info))"
         : "var(--ink-3)";
     const opacity = t.sig.id === topConfId ? 1 : conf > 0.3 ? 0.45 : 0.25;
-    const lx = cx + Math.cos(angle) * (r + 18);
-    const ly = cy + Math.sin(angle) * (r + 18);
+    const lx = cx + Math.cos(angle) * (r + 22);
+    const ly = cy + Math.sin(angle) * (r + 22);
+    // Humanise: underscores → spaces, title case
+    const human = t.name
+      .replace(/[_-]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .replace(/\b\w/g, c => c.toUpperCase());
+    const display = human.length > 18 ? human.slice(0, 17) + "…" : human;
     return {
       x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r,
       lx, ly, radius, color, opacity,
-      name: t.name, isTop: t.sig.id === topConfId,
+      name: display, isTop: t.sig.id === topConfId,
     };
   });
 
@@ -196,9 +207,8 @@ const IntelligenceRadar = ({ signals }: { signals: Signal[] }) => {
               {n.isTop && <animate attributeName="r" values={`${n.radius};${n.radius + 1};${n.radius}`} dur="3s" repeatCount="indefinite" />}
             </circle>
             <text x={n.lx} y={n.ly} textAnchor="middle" dominantBaseline="middle"
-              fontSize={11} fill="var(--ink-4)"
-              style={{ textTransform: "capitalize" }}>
-              {n.name.length > 16 ? n.name.slice(0, 14) + "…" : n.name}
+              fontSize={11} fill="var(--ink-4)">
+              {n.name}
             </text>
           </g>
         ))}
@@ -215,6 +225,12 @@ const IntelligenceRadar = ({ signals }: { signals: Signal[] }) => {
           <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ink-3)", opacity: 0.5 }} /> Weak
         </span>
       </div>
+
+      {captureCount > 0 && (
+        <p style={{ marginTop: 10, fontSize: 11, color: "var(--ink-3)", textAlign: "center" }}>
+          Themes detected from your {captureCount} capture{captureCount === 1 ? "" : "s"} — each node is a pattern Aura found.
+        </p>
+      )}
 
       <div style={{ marginTop: 14, width: "100%", maxWidth: 520 }}>
         <ExpandablePanel label="How does the radar work?" align="left">
