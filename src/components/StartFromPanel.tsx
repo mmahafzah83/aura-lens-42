@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 
 type ContentType = "post" | "carousel" | "essay" | "framework_summary";
 
@@ -305,10 +306,19 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
       >
         {/* Header */}
         <div className="flex items-center justify-between" style={{ padding: "16px 16px 8px" }}>
-          <SectionHeader
-            label="Your publishing window"
-            subtitle="Your strongest signal territories — publish here first"
-          />
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
+            <SectionHeader
+              label="Your publishing window"
+              subtitle="Your strongest signal territories — publish here first"
+            />
+            <InfoTooltip
+              label="Publishing window"
+              text="Your strongest signals ranked by content-readiness. Publishing from these builds presence fastest."
+              side="bottom"
+              align="left"
+              triggerSize={14}
+            />
+          </div>
           <button
             onClick={fetchData}
             disabled={loading}
@@ -447,9 +457,18 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                 letterSpacing: "0.1em",
                 fontWeight: 700,
                 marginBottom: 4,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
               }}
             >
               Voice match
+              <InfoTooltip
+                label="Voice match"
+                text="Aura mirrors your real writing patterns — tone, rhythm, vocabulary. Train it with more example posts on My Story."
+                side="top"
+                triggerSize={13}
+              />
             </p>
             <p style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 8, lineHeight: 1.4 }}>
               Aura learned how you write from your real posts. This is your voice — not AI's.
