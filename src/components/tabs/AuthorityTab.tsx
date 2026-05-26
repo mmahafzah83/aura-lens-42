@@ -870,20 +870,20 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
               >
                 Generate post <ArrowRight className="w-4 h-4" />
               </AuraButton>
-              <div className="flex gap-1 rounded-[10px] p-0.5" style={{ background: "var(--paper)", opacity: 0.95 }}>
+              <div className="flex gap-1 rounded-[10px] p-0.5" style={{ background: "rgba(0,0,0,0.06)" }}>
                 <button
                   onClick={() => setLang("en")}
                   style={{
-                    background: lang === "en" ? "var(--paper-2)" : "transparent",
-                    color: lang === "en" ? "var(--ink)" : "var(--ink-4)",
+                    background: lang === "en" ? "rgba(0,0,0,0.10)" : "transparent",
+                    color: lang === "en" ? "var(--paper)" : "rgba(0,0,0,0.55)",
                     border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 500, cursor: "pointer",
                   }}
                 >EN</button>
                 <button
                   onClick={() => setLang("ar")}
                   style={{
-                    background: lang === "ar" ? "var(--paper-2)" : "transparent",
-                    color: lang === "ar" ? "var(--ink)" : "var(--ink-4)",
+                    background: lang === "ar" ? "rgba(0,0,0,0.10)" : "transparent",
+                    color: lang === "ar" ? "var(--paper)" : "rgba(0,0,0,0.55)",
                     border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 500, cursor: "pointer",
                   }}
                 >العربية</button>
