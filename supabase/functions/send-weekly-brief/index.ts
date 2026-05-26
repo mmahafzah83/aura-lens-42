@@ -48,12 +48,13 @@ interface BuildHtmlOpts {
   worthReading: { title: string; url: string; author: string | null; readMinutes: number; why: string } | null;
   activeWeeks: number;
   rhythmCopy: string;
+  readyPost: string | null;
 }
 
 function buildHtml(opts: BuildHtmlOpts): string {
   const {
     firstName, dayDate, topSignals, postsThisWeek,
-    brand, brandFont, headline, marketPulse, yourMove, worthReading, activeWeeks, rhythmCopy,
+    brand, brandFont, headline, marketPulse, yourMove, worthReading, activeWeeks, rhythmCopy, readyPost,
   } = opts;
 
   const sectionHeader = (label: string) =>
@@ -78,6 +79,14 @@ function buildHtml(opts: BuildHtmlOpts): string {
        <p style="font-size:15px;line-height:1.6;color:#1a1a1a;margin:0 0 16px;font-family:'DM Sans',system-ui,sans-serif;">${escapeHtml(yourMove.copy)}</p>
        <a href="${escapeHtml(yourMove.ctaHref)}" style="display:inline-block;background:${brand};color:#ffffff;padding:11px 28px;border-radius:6px;font-weight:600;font-size:14px;text-decoration:none;font-family:'DM Sans',system-ui,sans-serif;">${escapeHtml(yourMove.ctaLabel)}</a>
      </div>`;
+
+  const readyPostHtml = readyPost
+    ? `<div style="margin:24px 0;padding:20px 24px;background:#f5f0e8;border-radius:10px;border-left:4px solid ${brand};">
+         <p style="font-size:11px;font-weight:600;color:${brand};letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px;">✦ YOUR POST IS READY</p>
+         <p style="font-size:14px;line-height:1.75;color:#1a1a1a;margin-bottom:16px;white-space:pre-line;">${escapeHtml(readyPost)}</p>
+         <a href="${APP_URL}/home?tab=authority" style="display:inline-block;background:${brand};color:#0d0d0d;padding:10px 20px;border-radius:6px;font-weight:600;font-size:13px;text-decoration:none;">Open in Publish tab →</a>
+       </div>`
+    : "";
 
   let signalsHtml = "";
   if (topSignals.length === 0) {
@@ -174,6 +183,7 @@ function buildHtml(opts: BuildHtmlOpts): string {
     <div class="content-pad" style="padding:36px 40px;color:#1a1a1a;">
       ${marketPulseHtml}
       ${yourMoveHtml}
+      ${readyPostHtml}
       ${signalsHtml}
       ${worthReadingHtml}
       ${rhythmHtml}
@@ -343,6 +353,62 @@ serve(async (req) => {
         });
         const topSignalTitle = topSignals[0]?.title ?? null;
 
+        // Generate a ready-to-publish post from the top signal
+        let readyPost: string | null = null;
+        const topSig = (topSignalsRows || [])[0] as any;
+        if (topSig?.signal_title) {
+          try {
+            const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+            if (LOVABLE_API_KEY) {
+              const sectorFocus = (profile?.sector_focus as string) || "your sector";
+              const postPrompt = `Write a concise LinkedIn post (120-180 words) for a senior professional in ${sectorFocus}.
+
+Based on this strategic signal:
+Title: ${topSig.signal_title}
+Confidence: ${Math.round(Number(topSig.confidence) * 100)}%
+${topSig.strategic_implications ? `Implications: ${topSig.strategic_implications}` : ""}
+
+Rules:
+- Write as a senior professional sharing an observation, not as AI
+- Open with a hook that names a specific sector shift or data point
+- Include one concrete insight or implication
+- End with a question that invites professional discussion
+- No hashtags, no emoji, no motivational language
+- Professional, measured, direct tone
+- Do NOT use these words: delve, tapestry, landscape, synergy, leverage, holistic, robust, utilize, comprehensive, cutting-edge, game-changer, unprecedented, paradigm`;
+              const ctrl = new AbortController();
+              const timeoutId = setTimeout(() => ctrl.abort(), 15_000);
+              try {
+                const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+                  method: "POST",
+                  headers: {
+                    Authorization: `Bearer ${LOVABLE_API_KEY}`,
+                    "Content-Type": "application/json",
+                  },
+                  signal: ctrl.signal,
+                  body: JSON.stringify({
+                    model: "google/gemini-3-flash-preview",
+                    messages: [
+                      { role: "system", content: "You are a LinkedIn ghostwriter for GCC executives. Write concise, professional posts. Return only the post text — no preamble, no markdown, no quotes." },
+                      { role: "user", content: postPrompt },
+                    ],
+                  }),
+                });
+                clearTimeout(timeoutId);
+                if (aiRes.ok) {
+                  const aiData = await aiRes.json();
+                  readyPost = aiData?.choices?.[0]?.message?.content?.trim() || null;
+                }
+              } catch (e) {
+                clearTimeout(timeoutId);
+                console.warn("Ready post generation timed out or failed:", (e as Error).message);
+              }
+            }
+          } catch (e) {
+            console.warn("Ready post generation failed:", (e as Error).message);
+          }
+        }
+
         // Publishing cadence
         const oneWeekAgoIso = sevenDaysAgo;
         const twoWeeksAgoIso = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
@@ -490,6 +556,7 @@ serve(async (req) => {
           worthReading,
           activeWeeks,
           rhythmCopy,
+          readyPost,
         });
 
         const resendRes = await fetch("https://api.resend.com/emails", {
