@@ -67,6 +67,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [authorityScore, setAuthorityScore] = useState<number | null>(null);
+  const [scoreTotal, setScoreTotal] = useState<number | null>(null);
   const [signalStats, setSignalStats] = useState({
     count: 0,
     topConfidence: 0,
@@ -176,6 +177,25 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         } as ProfileRow);
       }
       if (scoreRes.data) setAuthorityScore(scoreRes.data.authority_score);
+      // Same total as ScoreBreakdown: components from latest score_snapshots row.
+      try {
+        const { data: snap } = await (supabase.from("score_snapshots" as any) as any)
+          .select("components, composite_score")
+          .eq("user_id", uid)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (snap) {
+          const c = (snap as any).components || {};
+          const sig = Number(c.signal_score) || 0;
+          const con = Number(c.content_score) || 0;
+          const cap = Number(c.capture_score) || 0;
+          const total = Math.round(sig * 0.4) + Math.round(con * 0.4) + Math.round(cap * 0.2);
+          setScoreTotal(total || Number((snap as any).composite_score) || null);
+        }
+      } catch (e) {
+        console.warn("[IdentityTab] score snapshot load failed", e);
+      }
       // Stage counts — entries + tracked LinkedIn posts (lightweight head queries)
       try {
         const [entriesCountRes, postsCountRes] = await Promise.all([
@@ -618,7 +638,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 )}
                 {authorityScore != null && (
                   <span style={{ fontFamily: "var(--font-display)", fontSize: 15, color: "var(--warning, var(--brand))", fontWeight: 500 }}>
-                    {authorityScore}
+                    {scoreTotal ?? authorityScore}
                   </span>
                 )}
               </div>
@@ -646,7 +666,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           <p style={{ fontSize: 12, color: "var(--ink-5)", margin: "0 0 12px" }}>
             Three perspectives on your digital footprint — refreshed from your latest intelligence.
           </p>
-          <MarketMirror userId={authUser?.id ?? null} />
+          <MarketMirror userId={authUser?.id ?? null} hideHeader />
         </section>
       )}
 
@@ -717,8 +737,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   padding: "6px 12px",
                   borderRadius: 8,
                   fontWeight: isStrong ? 500 : 400,
-                  background: isStrong ? "var(--brand-pale, rgba(176,141,58,0.12))" : "var(--surface-subtle)",
+                  background: isStrong ? "var(--brand-pale, rgba(176,141,58,0.12))" : "var(--vellum, var(--paper-2))",
                   color: isStrong ? "var(--warning, var(--brand))" : "var(--ink)",
+                  border: isStrong ? "0.5px solid transparent" : "0.5px solid var(--brand-line, rgba(0,0,0,0.1))",
                 }}>
                   {t.theme}
                 </span>
@@ -732,12 +753,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       {assessmentCompleted && (
         <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div style={{ background: "var(--aura-card)", border: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", borderRadius: 12, padding: 14 }}>
-              <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.04em", color: "var(--ink-5)", textTransform: "uppercase", marginBottom: 10 }}>
-                Score breakdown
-              </div>
-              <ScoreBreakdown userId={authUser?.id ?? null} />
-            </div>
+            <ScoreBreakdown userId={authUser?.id ?? null} />
             <div style={{ background: "var(--aura-card)", border: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", borderRadius: 12, padding: 14 }}>
               <AuditRadarWidget onStartAudit={() => setAuditOpen(true)} hideEditScores />
               <div style={{ fontSize: 10, color: "var(--ink-5)", marginTop: 6, textAlign: "center" }}>
@@ -776,7 +792,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 <Star className="w-2 h-2" style={{ color: "#fff" }} fill="currentColor" />
               </span>
               <div style={{ fontSize: 11, fontWeight: 500, color: "var(--warning, var(--brand))", letterSpacing: "0.04em" }}>
-                NOW — {archetypeName ? archetypeName.toUpperCase() : "STRATEGIST"}{authorityScore != null ? ` · SCORE ${authorityScore}` : ""}
+                NOW — {archetypeName ? archetypeName.toUpperCase() : "STRATEGIST"}{(scoreTotal ?? authorityScore) != null ? ` · SCORE ${scoreTotal ?? authorityScore}` : ""}
               </div>
               {(identityIntel?.primary_role || positioningTitle) && (
                 <div style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 500, color: "var(--ink)", marginTop: 3 }}>
@@ -909,12 +925,12 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 const dot = (
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                     <span style={{
-                      width: 18, height: 18, borderRadius: "50%",
+                      width: 16, height: 16, borderRadius: "50%",
                       background: isDone ? "var(--success, #2e7d32)" : isCurrent ? "var(--warning, var(--brand))" : "transparent",
                       border: !isDone && !isCurrent ? "1.5px solid var(--ink-5)" : "none",
                       display: "flex", alignItems: "center", justifyContent: "center",
                     }}>
-                      {isDone && <Check className="w-2.5 h-2.5" style={{ color: "#fff" }} strokeWidth={3} />}
+                      {isDone && <Check style={{ color: "#fff", width: 9, height: 9 }} strokeWidth={3} />}
                     </span>
                     <span style={{
                       fontSize: 9, marginTop: 6,
@@ -961,7 +977,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         </button>
         {fullProfileExpanded && assessmentCompleted && (
           <div className="mt-4" data-testid="story-strategic-identity">
-            <ProfileIntelligence onGenerateContent={handleGenerateContent} intelligenceStage={intelligenceStage} />
+            <ProfileIntelligence onGenerateContent={handleGenerateContent} intelligenceStage={intelligenceStage} hideSuggestedTopics />
           </div>
         )}
       </section>

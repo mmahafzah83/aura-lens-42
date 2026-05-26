@@ -33,7 +33,7 @@ function relTime(iso: string): string {
   return weeks === 1 ? "1 week ago" : `${weeks} weeks ago`;
 }
 
-export default function MarketMirror({ userId }: { userId: string | null }) {
+export default function MarketMirror({ userId, hideHeader = false }: { userId: string | null; hideHeader?: boolean }) {
   const [row, setRow] = useState<MirrorRow | null>(null);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -95,6 +95,7 @@ export default function MarketMirror({ userId }: { userId: string | null }) {
         color: "var(--ink, #f5efe1)",
       }}
     >
+      {!hideHeader && (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <Eye size={16} style={{ color: "var(--brand, #B08D3A)" }} />
@@ -126,6 +127,7 @@ export default function MarketMirror({ userId }: { userId: string | null }) {
           </div>
         )}
       </div>
+      )}
 
       {loading && (
         <div style={{ padding: 24, textAlign: "center", color: "var(--ink-2)" }}>
@@ -158,9 +160,33 @@ export default function MarketMirror({ userId }: { userId: string | null }) {
 
       {row && (
         <>
-          <p style={{ fontSize: 12, color: "var(--ink-muted, rgba(245,239,225,0.65))", lineHeight: 1.625, margin: "0 0 12px" }}>
-            Here's how three audiences would describe you today — based on your assessment. As your intelligence grows, this portrait sharpens.
-          </p>
+          {!hideHeader && (
+            <p style={{ fontSize: 12, color: "var(--ink-muted, rgba(245,239,225,0.65))", lineHeight: 1.625, margin: "0 0 12px" }}>
+              Three perspectives on your digital footprint — refreshed from your latest intelligence.
+            </p>
+          )}
+          {hideHeader && row && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10, marginBottom: 8 }}>
+              <span style={{ fontSize: 11, color: "var(--ink-5, var(--ink-muted))" }}>
+                Updated {relTime(row.generated_at)}
+              </span>
+              <button
+                onClick={generate}
+                disabled={!canRefresh || generating}
+                title={canRefresh ? "Refresh Market Mirror" : "Available once every 7 days"}
+                aria-label="Refresh Market Mirror"
+                style={{
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  width: 24, height: 24, borderRadius: 6,
+                  background: "transparent", border: 0,
+                  color: canRefresh ? "var(--brand, #B08D3A)" : "var(--ink-5, var(--ink-muted))",
+                  cursor: canRefresh && !generating ? "pointer" : "not-allowed",
+                }}
+              >
+                {generating ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+              </button>
+            </div>
+          )}
           <div style={{ display: "flex", gap: 6, marginBottom: 14, borderBottom: "1px solid var(--brand-line, rgba(197,165,90,0.18))" }}>
             {TABS.map((t) => {
               const active = tab === t.key;
@@ -191,7 +217,7 @@ export default function MarketMirror({ userId }: { userId: string | null }) {
             })}
           </div>
 
-          <p style={{ fontSize: 14, lineHeight: 1.625, color: "var(--ink, #f5efe1)", whiteSpace: "pre-wrap", margin: "0 0 14px" }}>
+          <p style={{ fontSize: 15, lineHeight: 1.65, color: "var(--ink, #f5efe1)", whiteSpace: "pre-wrap", margin: "0 0 14px", fontFamily: "var(--font-display, 'Cormorant Garamond', serif)", fontStyle: "italic" }}>
             {text || "No perspective generated."}
           </p>
 

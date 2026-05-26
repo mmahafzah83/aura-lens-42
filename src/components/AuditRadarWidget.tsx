@@ -17,6 +17,20 @@ const DIMENSION_ORDER = [
   "Value-Based P&L",
 ];
 
+// Shorter labels for tight radar rendering; full names are kept for tooltips & data keys.
+const DIMENSION_SHORT_LABELS: Record<string, string> = {
+  "Strategic Architecture": "Strategy",
+  "C-Suite Stewardship": "C-Suite",
+  "Sector Foresight": "Sector",
+  "Digital Synthesis": "Digital",
+  "Executive Presence": "Exec. Presence",
+  "Commercial Velocity": "Commercial",
+  "Human-Centric Leadership": "Human Leadership",
+  "Operational Resilience": "Op. Resilience",
+  "Geopolitical Fluency": "Geo. Fluency",
+  "Value-Based P&L": "Value P&L",
+};
+
 const DIMENSION_TIERS: Record<string, { tier: string; category: string }> = {
   "Strategic Architecture": { tier: "High", category: "Strategic" },
   "C-Suite Stewardship": { tier: "High", category: "Strategic" },
@@ -172,7 +186,7 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores }: AuditRadarWidgetProp
       ctx.rotate(rotation);
 
       ctx.font = "600 12px system-ui, sans-serif";
-      ctx.fillText(DIMENSION_ORDER[i], 0, 0);
+      ctx.fillText(DIMENSION_SHORT_LABELS[DIMENSION_ORDER[i]] || DIMENSION_ORDER[i], 0, 0);
       ctx.restore();
     }
   }, [auditResults]);
