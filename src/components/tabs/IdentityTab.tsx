@@ -474,555 +474,504 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     );
   }
 
+  // ============ Derived values for new layout ============
+  const themesForTerritory = signalStats.themeGroups
+    .map((g) => ({ theme: prettify(g.theme), conf: g.avgConfidence }))
+    .slice(0, 8);
+  const strongestTheme = themesForTerritory[0]?.theme || null;
+
+  const authorityThemes: { theme: string; rationale: string }[] = Array.isArray(identityIntel?.authority_themes)
+    ? identityIntel.authority_themes
+    : [];
+
+  // Earned milestones merged with canonical defs
+  const earnedById = new Map(milestoneData.filter((m) => m.earned).map((m) => [m.id, m]));
+  const earnedSorted = MILESTONE_DEFS
+    .filter((d) => earnedById.has(d.id))
+    .map((d) => ({ ...d, ...earnedById.get(d.id)! }))
+    .sort((a, b) => {
+      const ta = a.earned_at ? new Date(a.earned_at).getTime() : 0;
+      const tb = b.earned_at ? new Date(b.earned_at).getTime() : 0;
+      return tb - ta;
+    });
+  const nextMilestone = MILESTONE_DEFS.find((d) => !earnedById.has(d.id)) || null;
+  const futureMilestones = MILESTONE_DEFS
+    .filter((d) => !earnedById.has(d.id) && d.id !== nextMilestone?.id)
+    .map((d) => d.name);
+
+  const archetypeName = brandResults?.primary_archetype || positioningTitle || "";
+  const positioningOnly = brandResults?.positioning_statement || "";
+  const subtitle = [profile?.level, profile?.firm, profile?.sector_focus].filter(Boolean).join(" · ");
+
+  const fmtDate = (iso: string | null) => {
+    if (!iso) return "";
+    try { return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" }); } catch { return ""; }
+  };
+
+  const handleMilestoneShare = (m: { id: string; name: string; context: any }) => {
+    setMarketShareData({
+      milestoneId: m.id,
+      milestoneName: m.name,
+      contextText: m.context?.signal_title || m.context?.tone || "",
+    } as any);
+  };
+
+  const handleNextMilestoneCTA = () => {
+    if (!nextMilestone) return;
+    const cta = nextMilestone.cta;
+    if (cta && onSwitchTab) onSwitchTab(cta.tab);
+  };
+
   return (
     <div className="space-y-6">
       {loadError && (
         <SectionError onRetry={() => authUser && loadAll(authUser.id)} message="Couldn't load your story. " />
       )}
-      {/* Branded header */}
-      <div style={{ marginBottom: 0 }}>
-        <div className="font-serif text-base font-medium tracking-wide text-ink-4" style={{ marginBottom: 6 }}>
+
+      {/* SECTION 1 — HEADER (centered editorial) */}
+      <div className="text-center" style={{ paddingTop: 4 }}>
+        <div style={{ fontSize: 11, letterSpacing: "0.08em", color: "var(--ink-5)", fontWeight: 500, textTransform: "uppercase" }}>
           Your professional identity
         </div>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
+        <h1 style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 26, fontWeight: 500, color: "var(--ink)", margin: "8px 0 6px" }}>
           My Story
         </h1>
-        <p style={{ fontSize: 14, color: "var(--ink-3)", marginTop: 8, lineHeight: 1.5, maxWidth: 640 }}>
-          Everything you know — finally visible to the people who need to see it.
+        <p style={{ fontSize: 13, color: "var(--ink-3)", margin: "0 auto", maxWidth: 560, lineHeight: 1.6 }}>
+          A living record of how the market sees you — and how you're changing that.
         </p>
       </div>
       <FirstVisitHint page="story" />
 
-      {/* Gated welcome — single CTA for users who haven't completed Brand Assessment */}
+      {/* Gated welcome for users without brand assessment */}
       {!assessmentCompleted && (
-        <div
-          style={{
-            background: "var(--ink)",
-            borderRadius: 16,
-            padding: "28px 28px 24px",
-            position: "relative",
-            overflow: "hidden",
-            border: "1px solid var(--brand-line, rgba(197,165,90,0.2))",
-          }}
-        >
-          <div
-            aria-hidden="true"
-            style={{
-              position: "absolute", top: -80, right: -80, width: 240, height: 240,
-              background: "radial-gradient(circle, hsl(43 50% 55% / 0.12) 0%, transparent 70%)",
-              pointerEvents: "none",
-            }}
-          />
+        <div style={{ background: "var(--ink)", borderRadius: 16, padding: "28px 28px 24px", position: "relative", overflow: "hidden", border: "1px solid var(--brand-line, rgba(197,165,90,0.2))" }}>
           <div className="relative">
             <div style={{ fontSize: 12, letterSpacing: "0.16em", color: "var(--brand)", marginBottom: 8, fontWeight: 600 }}>
               Your professional identity
             </div>
-            <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 24, color: "#fff", margin: "0 0 12px", lineHeight: 1.375 }}>
-              Your expertise deserves a frame. Not a CV — a market position. Tell Aura who you are in 5 minutes, and it'll show you how the market should see you.
+            <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color: "#fff", margin: "0 0 12px", lineHeight: 1.375 }}>
+              Tell Aura who you are in 5 minutes, and it'll show you how the market should see you.
             </h2>
-            <p style={{ fontSize: 14, color: "rgba(255,255,255,0.72)", lineHeight: 1.625, marginBottom: 20, maxWidth: 620 }}>
-              This shapes everything Aura does for you — from what it reads between the lines to how it writes in your voice. The more honest you are, the more powerful the result.
-            </p>
             <button
               onClick={() => setBrandOpen(true)}
-              style={{
-                background: "var(--brand)",
-                color: "var(--ink)",
-                border: 0,
-                borderRadius: 10,
-                padding: "12px 20px",
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-              }}
+              style={{ background: "var(--brand)", color: "var(--ink)", border: 0, borderRadius: 10, padding: "12px 20px", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
             >
               Show me who I am in this market →
             </button>
-            <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-              <div style={{ fontSize: 12, letterSpacing: "0.12em", color: "rgba(255,255,255,0.5)", marginBottom: 10, fontWeight: 600 }}>
-                What you'll discover
-              </div>
-              <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
-                <li style={{ fontSize: 14, color: "rgba(255,255,255,0.78)", lineHeight: 1.5 }}>
-                  <span style={{ color: "var(--brand)", marginRight: 8 }}>◆</span>
-                  Your market position — the space you naturally own
-                </li>
-                <li style={{ fontSize: 14, color: "rgba(255,255,255,0.78)", lineHeight: 1.5 }}>
-                  <span style={{ color: "var(--brand)", marginRight: 8 }}>◆</span>
-                  Your positioning statement — how a CIO in your sector would describe you
-                </li>
-                <li style={{ fontSize: 14, color: "rgba(255,255,255,0.78)", lineHeight: 1.5 }}>
-                  <span style={{ color: "var(--brand)", marginRight: 8 }}>◆</span>
-                  Your influence territory — where your expertise runs deepest
-                </li>
-              </ul>
-            </div>
           </div>
         </div>
       )}
-      {/* Two-column layout */}
-      {/* Identity Portrait — Archetype hero + Authority radar + Territory map */}
+
+      {/* SECTION 2 — PROFILE HERO CARD */}
       {assessmentCompleted && (
-        <div className="space-y-4">
-          <ArchetypeHeroCard
-            firstName={profile?.first_name}
-            lastName={profile?.last_name}
-            avatarUrl={profile?.avatar_url}
-            level={profile?.level}
-            firm={profile?.firm}
-            sectorFocus={profile?.sector_focus}
-            archetypeName={
-              brandResults?.primary_archetype ||
-              positioningTitle ||
-              undefined
-            }
-            positioningStatement={positioningStatement}
-            brandPillars={profile?.brand_pillars || []}
-            tierLabel={intelligenceStage ? `Stage ${intelligenceStage}` : null}
-          />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <ScoreBreakdown userId={authUser?.id ?? null} />
-            <TerritoryMap
-              themes={signalStats.themeGroups.map((g) => ({ theme: g.theme, count: g.count }))}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Sections below the Identity Portrait */}
-      <div className="space-y-4">
-          {/* Active Focus Areas — pill chips */}
+        <div>
           <div
             style={{
-              background: "var(--aura-card)",
-              borderRadius: 16,
-              padding: 18,
-              boxShadow: "var(--shadow-sm)",
+              background: "var(--surface-subtle, var(--aura-card))",
+              borderRadius: 14,
+              padding: "18px 20px",
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              border: "0.5px solid var(--brand-line, rgba(0,0,0,0.06))",
             }}
           >
-            <div style={{ marginBottom: 10 }}>
-              <div
-                style={{
-                  fontSize: 12,
-                  color: "var(--ink-5)",
-                  letterSpacing: "0.08em",
-                  fontWeight: 600,
-                }}
-              >
-                Where your mind keeps going
-              </div>
-              <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
-                You keep coming back to these themes. There's a reason — and Aura knows what it is.
-              </div>
-            </div>
-            {signalStats.topTags.length > 0 ? (
-              <div className="flex flex-wrap gap-1.5">
-                {signalStats.topTags.map((s, i) => (
-                  <span
-                    key={i}
-                    style={{
-                      background: "var(--brand-pale)",
-                      color: "var(--warning)",
-                      borderRadius: 20,
-                      padding: "5px 13px",
-                      fontSize: 12,
-                      fontWeight: 500,
-                    }}
-                  >
-                    {s}
-                  </span>
-                ))}
-                <button
-                  onClick={() => onSwitchTab && onSwitchTab("intelligence")}
-                  style={{
-                    background: "var(--surface-subtle)",
-                    color: "var(--ink-4)",
-                    borderRadius: 20,
-                    padding: "5px 13px",
-                    fontSize: 12,
-                    fontWeight: 500,
-                  }}
-                >
-                  + add area
-                </button>
-              </div>
-            ) : (
-              <p style={{ fontSize: 12, color: "var(--ink-5)", fontStyle: "italic" }}>
-                Capture more to build your signal profile
-              </p>
-            )}
-          </div>
-
-          {/* Signal Coverage Map */}
-          {assessmentCompleted && signalStats.themeGroups.length > 0 && (
-            <div
-              data-testid="story-signal-coverage"
+            {/* Avatar */}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              title="Change photo"
               style={{
+                width: 60, height: 60, borderRadius: "50%",
+                border: "2px solid var(--brand, var(--warning))",
                 background: "var(--aura-card)",
-                borderRadius: 16,
-                padding: 18,
-                boxShadow: "var(--shadow-sm)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                overflow: "hidden", flexShrink: 0, padding: 0, cursor: "pointer",
               }}
+              aria-label="Change profile photo"
             >
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.12em", color: "var(--ink)" }}>
-                  Signal coverage
-                </div>
-                <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
-                  {intelligenceStage === 3
-                    ? <>Your influence territory — backed by <span style={{ color: "var(--brand)", fontWeight: 600 }}>{signalStats.count}</span> signals and market engagement data</>
-                    : intelligenceStage === 2
-                    ? <>Your intelligence footprint — <span style={{ color: "var(--brand)", fontWeight: 600 }}>{signalStats.count}</span> active signals across <span style={{ color: "var(--brand)", fontWeight: 600 }}>{signalStats.themeGroups.length}</span> themes</>
-                    : "Your starting coverage map — grows sharper with every capture"}
-                </div>
-              </div>
-              <div className="space-y-3">
-                {signalStats.themeGroups.map((g) => {
-                  const pct = Math.round(g.avgConfidence * 100);
-                  const c = g.avgConfidence;
-                  let label: string;
-                  let labelColor: string;
-                  let fillBg: string;
-                  if (c < 0.20)      { label = "Emerging";    labelColor = "var(--ink-5)"; fillBg = "var(--coverage-low, #D1CDBD)"; }
-                  else if (c < 0.40) { label = "Developing";  labelColor = "var(--ink-3)"; fillBg = "var(--coverage-low, #D1CDBD)"; }
-                  else if (c < 0.60) { label = "Established"; labelColor = "var(--brand)"; fillBg = "rgba(176, 141, 58, 0.4)"; }
-                  else if (c < 0.80) { label = "Strong";      labelColor = "var(--brand)"; fillBg = "var(--brand)"; }
-                  else                { label = "Dominant";    labelColor = "var(--brand)"; fillBg = "var(--brand)"; }
-                  return (
-                    <div key={g.theme}>
-                      <div className="flex items-center justify-between" style={{ marginBottom: 4 }}>
-                        <span style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)" }}>
-                          {g.theme}
-                        </span>
-                        <span style={{ fontSize: 12, color: "var(--ink-3)" }}>
-                          {g.count} {g.count === 1 ? "signal" : "signals"}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div
-                          style={{
-                            flex: 1,
-                            height: 4,
-                            background: "var(--surface-subtle)",
-                            borderRadius: 999,
-                            overflow: "hidden",
-                          }}
-                        >
-                          <div
-                            style={{
-                              width: `${Math.max(4, pct)}%`,
-                              height: "100%",
-                              background: fillBg,
-                              borderRadius: 999,
-                            }}
-                          />
-                        </div>
-                        <span style={{ fontSize: 12, color: labelColor, fontWeight: 600, minWidth: 76, textAlign: "right", letterSpacing: "0.02em" }}>
-                          {label}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-                {signalStats.themeGroups.length > 1 && (() => {
-                  const first = signalStats.themeGroups[0].avgConfidence;
-                  const allSame = signalStats.themeGroups.every(
-                    g => Math.abs(g.avgConfidence - first) < 0.02
-                  );
-                  return allSame ? (
-                    <div style={{ fontSize: 12, fontStyle: "italic", color: "var(--ink-5)", paddingTop: 8 }}>
-                      Capture more sources to differentiate your signal strengths.
-                    </div>
-                  ) : null;
-                })()}
-              </div>
-            </div>
-          )}
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt={userName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                <span style={{ color: "var(--brand)", fontFamily: "var(--font-display)", fontWeight: 500, fontSize: 18 }}>{initials}</span>
+              )}
+            </button>
+            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
 
-          {/* Authority Statement */}
-          {assessmentCompleted && (() => {
-            const fn = profile?.first_name || "You";
-            const sf = profile?.sector_focus || "your sector";
-            const themes = signalStats.themeGroups;
-            // Sanitize raw column-style names like `market_trend` → `Market Trend`
-            const prettify = (s?: string) =>
-              (s || "")
-                .replace(/[_-]+/g, " ")
-                .replace(/\s+/g, " ")
-                .trim()
-                .replace(/\b\w/g, (m) => m.toUpperCase());
-            const top = prettify(themes[0]?.theme);
-            const second = prettify(themes[1]?.theme);
-            const orgs = signalStats.topOrgs;
-            const topSig = signalStats.topSignal;
-            if (!top || !topSig) return null;
-            const themesPart = second
-              ? `from ${top} to ${second}`
-              : `centered on ${top}`;
-            const orgsPart = orgs.length > 0
-              ? ` across insights from ${orgs.slice(0, 3).join(", ")}.`
-              : ".";
-            return (
-              <div
-                style={{
-                  background: "var(--aura-card)",
-                  borderRadius: 12,
-                  padding: "16px 18px",
-                  boxShadow: "var(--shadow-sm)",
-                  borderLeft: "3px solid var(--brand)",
-                }}
-              >
-                <div style={{ marginBottom: 8 }}>
-                  <div
-                    title="AI-generated from your assessment, signals, and intelligence. Evolves as evidence accumulates."
-                    style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.12em", color: "var(--ink)", cursor: "help" }}
-                  >
-                    How the market sees you
-                  </div>
-                  <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
-                    {intelligenceStage === 3
-                      ? "Market-validated positioning — grounded in your intelligence and audience response"
-                      : intelligenceStage === 2
-                      ? <>Positioning informed by <span style={{ color: "var(--brand)", fontWeight: 600 }}>{entryCount}</span> captures and <span style={{ color: "var(--brand)", fontWeight: 600 }}>{signalStats.count}</span> signals</>
-                      : "Your AI-generated positioning based on your assessment — evolves as your intelligence builds"}
-                  </div>
-                </div>
-                {(() => {
-                  // Public authority declaration — positioning, not data dump.
-                  const lvl = profile?.level || "Executive";
-                  const firmPart = profile?.firm ? ` at ${profile.firm}` : "";
-                  const sectorPart = sf && sf !== "your sector" ? ` in ${sf}` : "";
-                  const shareText = `${fn} | ${lvl}${firmPart} | ${signalStats.count} strategic signal${signalStats.count === 1 ? "" : "s"}${sectorPart} | Powered by Aura — strategic intelligence for executives. aura-intel.org`;
-                  // In-card preview keeps the richer internal phrasing.
-                  const statementText = `${fn} tracks ${themes.length} strategic ${themes.length === 1 ? "theme" : "themes"} in ${sf} — ${themesPart}${orgsPart} Deepest expertise: ${prettify(topSig.title)} at ${topSig.confidence}%.`;
-                  const isThirdPerson = statementText.toLowerCase().startsWith(fn.toLowerCase());
-                  return (
-                    <>
-                      <p
-                        style={{
-                          fontFamily: "var(--aura-font-heading, 'Cormorant Garamond')",
-                          fontSize: 16,
-                          fontStyle: "italic",
-                          lineHeight: 1.625,
-                          color: "var(--ink)",
-                          margin: 0,
-                        }}
-                      >
-                        “{statementText}”
-                      </p>
-                      {isThirdPerson && (
-                        <p style={{ fontSize: 12, color: "var(--ink-5)", marginTop: 6, fontStyle: "italic" }}>
-                          Based on your assessment — click Regenerate for a first-person version.
-                        </p>
-                      )}
-                      <div style={{ marginTop: 10, display: "flex", gap: 14, alignItems: "center" }}>
-                        <ShareLink
-                          label="Share positioning →"
-                          ariaLabel="Share your positioning on LinkedIn"
-                          onClick={() => shareToLinkedIn({
-                            text: shareText,
-                            toastMessage: "Positioning copied — paste it in LinkedIn.",
-                          })}
-                        />
-                        <button
-                          type="button"
-                          onClick={regeneratePositioning}
-                          disabled={regenerating}
-                          style={{
-                            fontSize: 12,
-                            color: "var(--aura-accent, var(--brand))",
-                            background: "transparent",
-                            border: 0,
-                            cursor: regenerating ? "default" : "pointer",
-                            padding: 0,
-                          }}
-                        >
-                          {regenerating ? "Regenerating…" : "Regenerate"}
-                        </button>
-                      </div>
-                    </>
-                  );
-                })()}
+            {/* Center */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 500, color: "var(--ink)", lineHeight: 1.2 }}>
+                {userName}
               </div>
-            );
-          })()}
-
-          {/* 3-Year Target — Horizontal Timeline */}
-          <div
-            style={{
-              background: "var(--aura-card)",
-              borderRadius: 16,
-              padding: 22,
-              boxShadow: "var(--shadow-sm)",
-              position: "relative",
-            }}
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: "var(--ink-5)",
-                    letterSpacing: "0.08em",
-                    fontWeight: 600,
-                    marginBottom: 4,
-                  }}
-                >
-                  3-year target
-                </div>
-                {editingField === "north_star_goal" ? (
-                  <input
-                    value={editValue}
-                    onChange={e => setEditValue(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && saveEdit("north_star_goal")}
-                    onBlur={() => saveEdit("north_star_goal")}
-                    autoFocus
-                    className="bg-transparent border-b border-brand text-sm text-surface-ink-subtle outline-none"
-                    style={{ minWidth: 240 }}
-                  />
-                ) : (
-                  <p
-                    style={{
-                      fontSize: 14,
-                      color: "var(--ink)",
-                      lineHeight: 1.5,
-                      fontWeight: 500,
-                    }}
-                  >
-                    {profile?.north_star_goal || "Set your north star goal"}
-                  </p>
+              {subtitle && (
+                <div style={{ fontSize: 11, color: "var(--ink-5)", marginTop: 4 }}>{subtitle}</div>
+              )}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8 }}>
+                {archetypeName && (
+                  <span style={{
+                    fontSize: 11, fontWeight: 500, padding: "3px 10px",
+                    borderRadius: 12, background: "var(--brand-pale, rgba(176,141,58,0.12))",
+                    color: "var(--warning, var(--brand))",
+                  }}>
+                    {archetypeName}
+                  </span>
+                )}
+                {authorityScore != null && (
+                  <span style={{ fontFamily: "var(--font-display)", fontSize: 15, color: "var(--warning, var(--brand))", fontWeight: 500 }}>
+                    {authorityScore}
+                  </span>
                 )}
               </div>
-              {editingField !== "north_star_goal" && (
-                <button
-                  onClick={() => startEdit("north_star_goal", profile?.north_star_goal || "")}
-                  aria-label="Edit north star goal"
-                  className="opacity-50 hover:opacity-100 transition-opacity ml-2 shrink-0"
-                >
-                  <Pencil className="w-3.5 h-3.5" style={{ color: "var(--ink-5)" }} />
-                </button>
+            </div>
+          </div>
+
+          {/* ONE positioning paragraph */}
+          {positioningOnly && (
+            <p style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.7, marginTop: 14, marginBottom: 0 }}>
+              {positioningOnly}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* SECTION 3 — MARKET MIRROR */}
+      {assessmentCompleted && (
+        <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }} data-testid="story-market-mirror">
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+            <Eye className="w-3.5 h-3.5" style={{ color: "var(--danger, #c0392b)" }} />
+            <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.06em", color: "var(--danger, #c0392b)", textTransform: "uppercase" }}>
+              How the market sees you
+            </span>
+          </div>
+          <p style={{ fontSize: 12, color: "var(--ink-5)", margin: "0 0 12px" }}>
+            Three perspectives on your digital footprint — refreshed from your latest intelligence.
+          </p>
+          <MarketMirror userId={authUser?.id ?? null} />
+        </section>
+      )}
+
+      {/* SECTION 4 — CLOSE THE GAP */}
+      {assessmentCompleted && authorityThemes.length > 0 && (
+        <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+            <Zap className="w-3.5 h-3.5" style={{ color: "var(--warning, var(--brand))" }} />
+            <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.06em", color: "var(--warning, var(--brand))", textTransform: "uppercase" }}>
+              Close the gap
+            </span>
+          </div>
+          <p style={{ fontSize: 12, color: "var(--ink-3)", margin: "0 0 12px" }}>
+            Publishing on these topics directly addresses the gaps the market sees.
+          </p>
+          <div className="space-y-2">
+            {authorityThemes.slice(0, 5).map((t, i) => (
+              <button
+                key={i}
+                onClick={() => handleGenerateContent(t.theme, t.rationale)}
+                style={{
+                  display: "flex", alignItems: "center", width: "100%",
+                  padding: "12px 14px", borderRadius: 10,
+                  border: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))",
+                  background: "transparent", cursor: "pointer", textAlign: "left",
+                }}
+              >
+                <span style={{
+                  width: 6, height: 6, borderRadius: "50%",
+                  background: i === 0 ? "var(--danger, #c0392b)" : "var(--warning, var(--brand))",
+                  marginRight: 12, flexShrink: 0,
+                }} />
+                <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>
+                  {t.theme}
+                </span>
+                <span style={{ fontSize: 11, color: "var(--warning, var(--brand))", marginLeft: 12 }}>
+                  Write this →
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* SECTION 5 — YOUR TERRITORY */}
+      {assessmentCompleted && themesForTerritory.length > 0 && (
+        <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <MapIcon className="w-3.5 h-3.5" style={{ color: "var(--ink-5)" }} />
+              <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.06em", color: "var(--ink-5)", textTransform: "uppercase" }}>
+                Your territory
+              </span>
+            </div>
+            <span style={{ fontSize: 11, color: "var(--ink-5)" }}>
+              {themesForTerritory.length} {themesForTerritory.length === 1 ? "theme" : "themes"}
+            </span>
+          </div>
+          <p style={{ fontSize: 12, color: "var(--ink-3)", margin: "0 0 12px" }}>
+            The intellectual territory your intelligence is building around.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {themesForTerritory.map((t, i) => {
+              const isStrong = i === 0;
+              return (
+                <span key={i} style={{
+                  fontSize: 11,
+                  padding: "6px 12px",
+                  borderRadius: 8,
+                  fontWeight: isStrong ? 500 : 400,
+                  background: isStrong ? "var(--brand-pale, rgba(176,141,58,0.12))" : "var(--surface-subtle)",
+                  color: isStrong ? "var(--warning, var(--brand))" : "var(--ink)",
+                }}>
+                  {t.theme}
+                </span>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* SECTION 6 — SCORE + RADAR (two-column) */}
+      {assessmentCompleted && (
+        <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div style={{ background: "var(--aura-card)", border: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", borderRadius: 12, padding: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.04em", color: "var(--ink-5)", textTransform: "uppercase", marginBottom: 10 }}>
+                Score breakdown
+              </div>
+              <ScoreBreakdown userId={authUser?.id ?? null} />
+            </div>
+            <div style={{ background: "var(--aura-card)", border: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", borderRadius: 12, padding: 14 }}>
+              <AuditRadarWidget onStartAudit={() => setAuditOpen(true)} hideEditScores />
+              <div style={{ fontSize: 10, color: "var(--ink-5)", marginTop: 6, textAlign: "center" }}>
+                From your assessment
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* SECTION 7 — YOUR JOURNEY (timeline) */}
+      {assessmentCompleted && milestoneData.length > 0 && (
+        <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Trophy className="w-3.5 h-3.5" style={{ color: "var(--success, #2e7d32)" }} />
+              <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.06em", color: "var(--success, #2e7d32)", textTransform: "uppercase" }}>
+                Your journey
+              </span>
+            </div>
+            <span style={{ fontSize: 11, color: "var(--ink-5)" }}>
+              {earnedSorted.length} of {MILESTONE_DEFS.length} milestones
+            </span>
+          </div>
+          <p style={{ fontSize: 12, color: "var(--ink-3)", margin: "0 0 16px" }}>
+            Every milestone strengthens your market position.
+          </p>
+
+          <div style={{ paddingLeft: 22, borderLeft: "2px solid var(--brand-line, rgba(0,0,0,0.08))", marginLeft: 8 }}>
+            {/* NOW */}
+            <div style={{ position: "relative", paddingBottom: 18 }}>
+              <span style={{
+                position: "absolute", left: -30, top: 0, width: 14, height: 14, borderRadius: "50%",
+                background: "var(--warning, var(--brand))", display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <Star className="w-2 h-2" style={{ color: "#fff" }} fill="currentColor" />
+              </span>
+              <div style={{ fontSize: 11, fontWeight: 500, color: "var(--warning, var(--brand))", letterSpacing: "0.04em" }}>
+                NOW — {archetypeName ? archetypeName.toUpperCase() : "STRATEGIST"}{authorityScore != null ? ` · SCORE ${authorityScore}` : ""}
+              </div>
+              {(identityIntel?.primary_role || positioningTitle) && (
+                <div style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 500, color: "var(--ink)", marginTop: 3 }}>
+                  {identityIntel?.primary_role || positioningTitle}
+                </div>
               )}
             </div>
 
-            {/* Timeline rail */}
-            {(() => {
-              // 4 nodes: Foundation (onboarding), Building (signals), Now (positioning), Target (north star)
-              const onboardingDone = !!profile?.onboarding_completed;
-              const auditOrBrandDone = !!profile?.audit_completed_at || !!profile?.brand_assessment_completed_at;
-              const positioningDone = !!positioningTitle;
-              const nodes = [
-                { label: "Foundation", state: onboardingDone ? "done" : "future" as "done"|"current"|"future" },
-                { label: "Building", state: auditOrBrandDone ? "done" : (onboardingDone ? "current" : "future") as "done"|"current"|"future" },
-                { label: "Now", state: positioningDone ? "current" : (auditOrBrandDone ? "current" : "future") as "done"|"current"|"future" },
-                { label: "3-yr target", state: "future" as "done"|"current"|"future" },
-              ];
-              return (
-                <div className="relative" style={{ paddingTop: 6, paddingBottom: 4 }}>
-                  {/* Connecting line */}
-                  <div
-                    aria-hidden="true"
-                    style={{
-                      position: "absolute",
-                      top: 16,
-                      left: "8%",
-                      right: "8%",
-                      height: 1,
-                      background: "rgba(0,0,0,0.12)",
-                    }}
-                  />
-                  <div className="grid grid-cols-4 relative">
-                    {nodes.map((n, i) => {
-                      const isDone = n.state === "done";
-                      const isCurrent = n.state === "current";
-                      return (
-                        <div key={i} className="flex flex-col items-center">
-                          <span
-                            className="flex items-center justify-center"
-                            style={{
-                              width: 20,
-                              height: 20,
-                              borderRadius: "50%",
-                              background: isDone
-                                ? "var(--success)"
-                                : isCurrent
-                                  ? "var(--brand)"
-                                  : "var(--surface-subtle)",
-                              border: !isDone && !isCurrent ? "2px solid rgba(0,0,0,0.12)" : "none",
-                              boxShadow: isCurrent ? "0 0 0 4px var(--brand-muted)" : "none",
-                              zIndex: 1,
-                            }}
-                          >
-                            {isDone && <Check className="w-2.5 h-2.5" style={{ color: "#fff" }} strokeWidth={3} />}
-                          </span>
-                          <span
-                            style={{
-                              fontSize: 12,
-                              color: isCurrent ? "var(--brand)" : isDone ? "var(--ink-3)" : "var(--ink-5)",
-                              marginTop: 8,
-                              fontWeight: isCurrent ? 600 : 400,
-                              textAlign: "center",
-                            }}
-                          >
-                            {n.label}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
+            {/* Earned milestones */}
+            {earnedSorted.map((m) => (
+              <div key={m.id} style={{ position: "relative", paddingBottom: 16 }}>
+                <span style={{
+                  position: "absolute", left: -30, top: 0, width: 14, height: 14, borderRadius: "50%",
+                  background: "var(--success, #2e7d32)", display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <Check className="w-2 h-2" style={{ color: "#fff" }} strokeWidth={3} />
+                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 12, fontWeight: 500, color: "var(--ink)" }}>{m.name}</span>
+                  {m.earned_at && (
+                    <span style={{ fontSize: 10, color: "var(--ink-5)" }}>{fmtDate(m.earned_at)}</span>
+                  )}
+                  <button
+                    onClick={() => handleMilestoneShare(m)}
+                    style={{ fontSize: 10, color: "var(--brand)", background: "transparent", border: 0, padding: 0, cursor: "pointer", marginLeft: "auto" }}
+                  >
+                    Share
+                  </button>
                 </div>
-              );
-            })()}
-          </div>
+                {(m.context?.signal_title || m.context?.tone) && (
+                  <div style={{ fontSize: 11, color: "var(--ink-5)", marginTop: 2 }}>
+                    {m.context?.signal_title || (m.context?.tone ? `Tone: ${m.context.tone}` : "")}
+                  </div>
+                )}
+              </div>
+            ))}
 
-          {/* Strategic Identity — inlined (was hidden behind "Full profile" modal) */}
-          <div data-testid="story-strategic-identity" className="space-y-6">
-            {assessmentCompleted && (
-              <ProfileIntelligence onGenerateContent={handleGenerateContent} intelligenceStage={intelligenceStage} />
-            )}
-            {assessmentCompleted && (
-              <div data-testid="story-brand-assessment">
-                <BrandArchetypeWidget onStartAssessment={() => setBrandOpen(true)} />
+            {/* NEXT */}
+            {nextMilestone && (
+              <div style={{ position: "relative", paddingBottom: 16 }}>
+                <span style={{
+                  position: "absolute", left: -30, top: 0, width: 14, height: 14, borderRadius: "50%",
+                  background: "var(--aura-card)", border: "2px dashed var(--warning, var(--brand))",
+                }} />
+                <div style={{ fontSize: 12, fontWeight: 500, color: "var(--warning, var(--brand))" }}>
+                  Next: {nextMilestone.name}
+                </div>
+                <div style={{ fontSize: 11, color: "var(--ink-5)", marginTop: 3, lineHeight: 1.5 }}>
+                  This milestone strengthens your market presence.
+                </div>
+                {nextMilestone.cta && (
+                  <button
+                    onClick={handleNextMilestoneCTA}
+                    style={{
+                      marginTop: 8, padding: "6px 12px", borderRadius: 8,
+                      background: "var(--warning, var(--brand))", color: "var(--ink-on-brand, #fff)",
+                      border: 0, fontSize: 12, fontWeight: 500, cursor: "pointer",
+                    }}
+                  >
+                    {nextMilestone.cta.label}
+                  </button>
+                )}
               </div>
             )}
-            <div data-testid="story-evidence-audit">
-              <AuditRadarWidget onStartAudit={() => setAuditOpen(true)} />
-            </div>
-            <div className="pt-4" style={{ borderTop: "1px solid var(--surface-subtle)" }}>
-              <h3 style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", marginBottom: 12 }}>Profile Settings</h3>
-              <ProfileManagement onResetDiagnostic={onResetDiagnostic} onNavigate={handleNavigate} compact />
-            </div>
-            {assessmentCompleted && (
-              <div className="pt-2 text-center">
-                <button
-                  onClick={() => setBrandOpen(true)}
-                  className="text-xs text-ink-5 hover:text-brand transition-colors underline-offset-4 hover:underline"
-                >
-                  Retake brand assessment
-                </button>
+
+            {/* FUTURE */}
+            {futureMilestones.length > 0 && (
+              <div style={{ position: "relative" }}>
+                <span style={{
+                  position: "absolute", left: -30, top: 0, width: 14, height: 14, borderRadius: "50%",
+                  background: "var(--aura-card)", border: "2px solid var(--ink-5)", opacity: 0.4,
+                }} />
+                <div style={{ fontSize: 11, color: "var(--ink-5)" }}>
+                  Then: {futureMilestones.join(", ")}
+                </div>
               </div>
             )}
           </div>
+        </section>
+      )}
+
+      {/* SECTION 8 — 3-YEAR TARGET */}
+      <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+          <TargetIcon className="w-3.5 h-3.5" style={{ color: "var(--ink-5)" }} />
+          <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.06em", color: "var(--ink-5)", textTransform: "uppercase" }}>
+            3-year target
+          </span>
         </div>
+        {editingField === "north_star_goal" ? (
+          <input
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && saveEdit("north_star_goal")}
+            onBlur={() => saveEdit("north_star_goal")}
+            autoFocus
+            className="bg-transparent border-b border-brand outline-none w-full"
+            style={{ fontSize: 15, color: "var(--ink)", fontFamily: "var(--font-display)", fontWeight: 500, paddingBottom: 2 }}
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => startEdit("north_star_goal", profile?.north_star_goal || "")}
+            style={{
+              fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 500,
+              color: "var(--ink)", background: "transparent", border: 0, padding: 0,
+              textAlign: "left", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8,
+            }}
+          >
+            {profile?.north_star_goal || "Set your north star goal"}
+            <Pencil className="w-3 h-3" style={{ color: "var(--ink-5)", opacity: 0.5 }} />
+          </button>
+        )}
 
-      {/* Milestones (G7) — reads milestones array from calculate-aura-score */}
-      {/* My writing voice — moved out of the modal so users land directly on it */}
-      <VoiceEngineSection />
+        {/* Horizontal timeline */}
+        {(() => {
+          const onboardingDone = !!profile?.onboarding_completed;
+          const auditOrBrandDone = !!profile?.audit_completed_at || !!profile?.brand_assessment_completed_at;
+          const nodes = [
+            { label: "Foundation", state: onboardingDone ? "done" : "future" },
+            { label: "Building", state: auditOrBrandDone ? "done" : onboardingDone ? "current" : "future" },
+            { label: "Now", state: "current" },
+            { label: "3-yr target", state: "future" },
+          ] as const;
+          return (
+            <div style={{ display: "flex", alignItems: "center", marginTop: 16 }}>
+              {nodes.map((n, i) => {
+                const isDone = n.state === "done";
+                const isCurrent = n.state === "current";
+                const dot = (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                    <span style={{
+                      width: 18, height: 18, borderRadius: "50%",
+                      background: isDone ? "var(--success, #2e7d32)" : isCurrent ? "var(--warning, var(--brand))" : "transparent",
+                      border: !isDone && !isCurrent ? "1.5px solid var(--ink-5)" : "none",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      {isDone && <Check className="w-2.5 h-2.5" style={{ color: "#fff" }} strokeWidth={3} />}
+                    </span>
+                    <span style={{
+                      fontSize: 9, marginTop: 6,
+                      color: isCurrent ? "var(--warning, var(--brand))" : "var(--ink-5)",
+                      fontWeight: isCurrent ? 600 : 400, textTransform: "uppercase", letterSpacing: "0.04em",
+                    }}>
+                      {n.label}
+                    </span>
+                  </div>
+                );
+                const next = nodes[i + 1];
+                const barColor = (() => {
+                  if (!next) return "transparent";
+                  if (isDone && next.state === "done") return "var(--success, #2e7d32)";
+                  if (isDone && next.state === "current") return "var(--warning, var(--brand))";
+                  return "var(--brand-line, rgba(0,0,0,0.12))";
+                })();
+                return (
+                  <div key={i} style={{ display: "flex", alignItems: "center", flex: i === nodes.length - 1 ? "0 0 auto" : 1 }}>
+                    {dot}
+                    {i < nodes.length - 1 && (
+                      <div style={{ flex: 1, height: 2, background: barColor, margin: "0 8px", marginTop: -16 }} />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
+      </section>
 
-      <div data-testid="story-milestones">
+      {/* SECTION 9 — VIEW FULL PROFILE (collapsed by default) */}
+      <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 16 }}>
+        <button
+          onClick={() => setFullProfileExpanded((v) => !v)}
+          style={{
+            display: "flex", alignItems: "center", gap: 6,
+            fontSize: 12, color: "var(--ink-3)",
+            background: "transparent", border: 0, padding: 0, cursor: "pointer",
+          }}
+        >
+          {fullProfileExpanded ? "Hide full profile" : "View full profile"}
+          <ChevronDown className="w-3.5 h-3.5" style={{ transform: fullProfileExpanded ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+        </button>
+        {fullProfileExpanded && assessmentCompleted && (
+          <div className="mt-4" data-testid="story-strategic-identity">
+            <ProfileIntelligence onGenerateContent={handleGenerateContent} intelligenceStage={intelligenceStage} />
+          </div>
+        )}
+      </section>
+
+      {/* Hidden — still mounted for data refresh logic of milestones share */}
+      <div className="hidden">
         <MilestonesSection userId={authUser?.id ?? null} />
       </div>
 
-      {/* Market Mirror (O-3) — moved to bottom: shown after all earned content */}
-      {assessmentCompleted && (
-        <div data-testid="story-market-mirror">
-          <MarketMirror userId={authUser?.id ?? null} />
-        </div>
-      )}
-
-      {/* Assessment Modals */}
+      {/* Modals */}
       <ObjectiveAuditModal open={auditOpen} onOpenChange={setAuditOpen} onNavigate={handleNavigate} />
       <BrandAssessmentModal open={brandOpen} onOpenChange={setBrandOpen} onNavigate={handleNavigate} />
       {marketShareData && (
