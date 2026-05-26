@@ -155,7 +155,7 @@ const Guide = () => {
       <section className="px-5 sm:px-10 py-20" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
         <div className="max-w-6xl mx-auto">
           <p className="text-xs tracking-[0.2em] uppercase mb-4 text-center" style={{ color: "var(--bronze)" }}>The interface</p>
-          <h2 className="text-center mb-12" style={{ fontFamily: "var(--font-display)", fontSize: "clamp(26px, 3.5vw, 36px)", color: "var(--ink-3)", fontWeight: 500 }}>
+          <h2 className="text-center mb-12" style={{ fontFamily: "var(--font-display)", fontSize: "clamp(26px, 3.5vw, 36px)", color: "var(--ink-2)", fontWeight: 500 }}>
             Your pages
           </h2>
           <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
@@ -185,7 +185,7 @@ const Guide = () => {
       <section className="px-5 sm:px-10 py-20" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
         <div className="max-w-3xl mx-auto">
           <p className="text-xs tracking-[0.2em] uppercase mb-4 text-center" style={{ color: "var(--bronze)" }}>The score</p>
-          <h2 className="text-center mb-3" style={{ fontFamily: "var(--font-display)", fontSize: "clamp(26px, 3.5vw, 36px)", color: "var(--ink-3)", fontWeight: 500 }}>
+          <h2 className="text-center mb-3" style={{ fontFamily: "var(--font-display)", fontSize: "clamp(26px, 3.5vw, 36px)", color: "var(--ink-2)", fontWeight: 500 }}>
             How authority is calculated
           </h2>
           <p className="text-center mb-12" style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.625 }}>
@@ -229,7 +229,7 @@ const Guide = () => {
       {/* FAQ */}
       <section className="px-5 sm:px-10 py-20" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-center mb-12" style={{ fontFamily: "var(--font-display)", fontSize: "clamp(26px, 3.5vw, 36px)", color: "var(--ink-3)", fontWeight: 500, letterSpacing: "-0.01em" }}>
+          <h2 className="text-center mb-12" style={{ fontFamily: "var(--font-display)", fontSize: "clamp(26px, 3.5vw, 36px)", color: "var(--ink-2)", fontWeight: 500, letterSpacing: "-0.01em" }}>
             Frequently asked questions
           </h2>
           <div className="flex flex-col">
