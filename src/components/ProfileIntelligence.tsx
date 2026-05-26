@@ -57,9 +57,10 @@ type EditableArrayKey = typeof SECTION_CONFIG[number]["key"];
 interface ProfileIntelligenceProps {
   onGenerateContent?: (topic: string, context?: string) => void;
   intelligenceStage?: 1 | 2 | 3 | null;
+  hideSuggestedTopics?: boolean;
 }
 
-const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null }: ProfileIntelligenceProps) => {
+const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null, hideSuggestedTopics = false }: ProfileIntelligenceProps) => {
   const [identity, setIdentity] = useState<IdentityModel>(EMPTY_IDENTITY);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -278,7 +279,7 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null }: Pr
           </div>
 
           {/* Authority Theme Suggestions */}
-          {identity.authority_themes.length > 0 && (
+          {!hideSuggestedTopics && identity.authority_themes.length > 0 && (
             <div className="space-y-3">
               {intelligenceStage && (
                 <div className="text-xs uppercase tracking-wider text-muted-foreground" style={{ letterSpacing: "0.08em" }}>
