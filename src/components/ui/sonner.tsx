@@ -1,14 +1,26 @@
-import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 import { Toaster as Sonner, toast } from "sonner";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme();
+  const [currentTheme, setCurrentTheme] = useState<"light" | "dark">(() => {
+    if (typeof document === "undefined") return "light";
+    return (document.documentElement.getAttribute("data-theme") as "light" | "dark") || "light";
+  });
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      const t = document.documentElement.getAttribute("data-theme") as "light" | "dark";
+      if (t) setCurrentTheme(t);
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
+      theme={currentTheme}
       className="toaster group"
       toastOptions={{
         classNames: {
