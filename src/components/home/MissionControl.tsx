@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 
 interface Mission {
   id: string;
@@ -110,8 +111,15 @@ export default function MissionControl({ userId, entriesCount = 0, topSignalTitl
         <span style={{
           fontSize: 11, fontWeight: 500, letterSpacing: "0.04em",
           color: "hsl(var(--muted-foreground))", textTransform: "uppercase",
+          display: "inline-flex", alignItems: "center", gap: 6,
         }}>
           This week's missions
+          <InfoTooltip
+            label="Priority actions"
+            text="Your highest-impact next moves, ranked by urgency. Completing these advances your score fastest."
+            side="bottom"
+            triggerSize={14}
+          />
         </span>
         {total > 0 && (
           <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>

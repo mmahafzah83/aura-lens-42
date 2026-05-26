@@ -1678,8 +1678,14 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               >
                 {getGreetingTitle(now.getHours())}{profileLoaded && userName ? `, ${userName}` : ""}.
               </div>
-              <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))" }}>
-                {sectorFocus ? `${sectorFocus} · ` : ""}{tier} tier
+              <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <span>{sectorFocus ? `${sectorFocus} · ` : ""}{tier} tier</span>
+                <InfoTooltip
+                  label="Your tier"
+                  text="Observer (0–34): building foundation. Strategist (35–64): patterns forming. Presence (65–100): recognized in your field."
+                  side="bottom"
+                  triggerSize={14}
+                />
               </div>
             </div>
             <div style={{ flexShrink: 0, marginLeft: 16, display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -1713,8 +1719,15 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               >
                 <AnimatedScore value={score} />
               </div>
-              <div style={{ fontSize: 9, color: "hsl(var(--muted-foreground))", letterSpacing: "0.05em" }}>
-                of 100
+              <div style={{ fontSize: 9, color: "hsl(var(--muted-foreground))", letterSpacing: "0.05em", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <span>of 100</span>
+                <InfoTooltip
+                  label="Digital Presence Score"
+                  text="Combines signal depth (40%), published content (40%), and capture consistency (20%). Updates automatically as you use Aura."
+                  side="bottom"
+                  align="right"
+                  triggerSize={13}
+                />
               </div>
             </div>
           </div>
