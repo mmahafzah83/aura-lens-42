@@ -713,6 +713,54 @@ const Admin = () => {
           )}
         </div>
 
+        {/* Seed Captures */}
+        <div
+          className="rounded-2xl p-6 mt-8"
+          style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}
+        >
+          <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--ink-7)" }}>
+            Seed Captures
+          </h2>
+          <p className="text-xs mb-4" style={{ color: "var(--ink-5)" }}>
+            Pre-load articles for a user before inviting them.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Select value={seedUserId} onValueChange={setSeedUserId}>
+              <SelectTrigger
+                className="sm:w-[260px] text-sm"
+                style={{ backgroundColor: "var(--ink)", border: "1px solid var(--ink-3)", color: "var(--ink-7)" }}
+              >
+                <SelectValue placeholder="Choose user" />
+              </SelectTrigger>
+              <SelectContent>
+                {activeUsers
+                  .filter((u) => !!u.user_id && (u.first_name || u.email))
+                  .map((u) => (
+                    <SelectItem key={u.user_id as string} value={u.user_id as string}>
+                      {(u.first_name || u.email)} ({(u.user_id as string).slice(0, 8)})
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+            <input
+              type="text"
+              value={seedUrl}
+              onChange={(e) => setSeedUrl(e.target.value)}
+              placeholder="Paste article URL (https://...)"
+              className="flex-1 px-3 py-2.5 rounded-md text-sm outline-none transition-colors"
+              style={{ backgroundColor: "var(--ink)", border: "1px solid var(--ink-3)", color: "var(--ink-7)" }}
+            />
+            <button
+              onClick={seedCapture}
+              disabled={seedSending || !seedUserId || !seedUrl}
+              className="px-5 py-2.5 rounded-md text-sm font-medium inline-flex items-center justify-center gap-2 disabled:opacity-60 whitespace-nowrap"
+              style={{ backgroundColor: "var(--brand)", color: "var(--ink)" }}
+            >
+              {seedSending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Seed Capture"}
+            </button>
+          </div>
+        </div>
+
         {/* Active users */}
         <div
           className="rounded-2xl p-6 mt-8"
