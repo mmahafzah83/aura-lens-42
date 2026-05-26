@@ -737,8 +737,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   padding: "6px 12px",
                   borderRadius: 8,
                   fontWeight: isStrong ? 500 : 400,
-                  background: isStrong ? "var(--brand-pale, rgba(176,141,58,0.12))" : "var(--surface-subtle)",
+                  background: isStrong ? "var(--brand-pale, rgba(176,141,58,0.12))" : "var(--vellum, var(--paper-2))",
                   color: isStrong ? "var(--warning, var(--brand))" : "var(--ink)",
+                  border: isStrong ? "0.5px solid transparent" : "0.5px solid var(--brand-line, rgba(0,0,0,0.1))",
                 }}>
                   {t.theme}
                 </span>
