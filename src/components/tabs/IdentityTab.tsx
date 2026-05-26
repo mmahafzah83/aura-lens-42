@@ -753,12 +753,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       {assessmentCompleted && (
         <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div style={{ background: "var(--aura-card)", border: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", borderRadius: 12, padding: 14 }}>
-              <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.04em", color: "var(--ink-5)", textTransform: "uppercase", marginBottom: 10 }}>
-                Score breakdown
-              </div>
-              <ScoreBreakdown userId={authUser?.id ?? null} />
-            </div>
+            <ScoreBreakdown userId={authUser?.id ?? null} />
             <div style={{ background: "var(--aura-card)", border: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", borderRadius: 12, padding: 14 }}>
               <AuditRadarWidget onStartAudit={() => setAuditOpen(true)} hideEditScores />
               <div style={{ fontSize: 10, color: "var(--ink-5)", marginTop: 6, textAlign: "center" }}>
