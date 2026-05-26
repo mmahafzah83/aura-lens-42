@@ -835,17 +835,17 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
               borderRadius: 16,
               padding: 22,
               boxShadow: "var(--shadow-sm)",
-              color: "#fff",
+              color: "var(--paper)",
             }}
           >
-            <div style={{ fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(255,255,255,0.55)", marginBottom: 10, fontWeight: 600 }}>
+            <div style={{ fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--paper)", opacity: 0.6, marginBottom: 10, fontWeight: 600 }}>
               {isCustomAngle ? "Selected post angle" : "Generate from your top signal"}
             </div>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 500, color: "#fff", lineHeight: 1.375, margin: 0 }}>
+            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 500, color: "var(--paper)", lineHeight: 1.375, margin: 0 }}>
               {heroTitle}
             </h2>
             {isCustomAngle && (
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", marginTop: 6 }}>
+              <div style={{ fontSize: 12, color: "var(--paper)", opacity: 0.6, marginTop: 6 }}>
                 From signal: {activeSignal.signal_title} · {Math.round((activeSignal.confidence ?? 0) * 100)}%
               </div>
             )}
@@ -866,24 +866,24 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                   }
                   generate({ topic: heroTopic, context: heroContext, contentType: "post", language: lang, framework });
                 }}
-                style={{ flex: 1, gap: 6, color: "#fff" }}
+                style={{ flex: 1, gap: 6, color: "var(--paper)" }}
               >
                 Generate post <ArrowRight className="w-4 h-4" />
               </AuraButton>
-              <div className="flex gap-1 rounded-[10px] p-0.5" style={{ background: "rgba(255,255,255,0.08)" }}>
+              <div className="flex gap-1 rounded-[10px] p-0.5" style={{ background: "rgba(0,0,0,0.06)" }}>
                 <button
                   onClick={() => setLang("en")}
                   style={{
-                    background: lang === "en" ? "rgba(255,255,255,0.15)" : "transparent",
-                    color: lang === "en" ? "#fff" : "rgba(255,255,255,0.55)",
+                    background: lang === "en" ? "rgba(0,0,0,0.10)" : "transparent",
+                    color: lang === "en" ? "var(--paper)" : "rgba(0,0,0,0.55)",
                     border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 500, cursor: "pointer",
                   }}
                 >EN</button>
                 <button
                   onClick={() => setLang("ar")}
                   style={{
-                    background: lang === "ar" ? "rgba(255,255,255,0.15)" : "transparent",
-                    color: lang === "ar" ? "#fff" : "rgba(255,255,255,0.55)",
+                    background: lang === "ar" ? "rgba(0,0,0,0.10)" : "transparent",
+                    color: lang === "ar" ? "var(--paper)" : "rgba(0,0,0,0.55)",
                     border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 500, cursor: "pointer",
                   }}
                 >العربية</button>
@@ -996,9 +996,9 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
               style={{
                 display: "inline-flex", alignItems: "center", gap: 6,
                 padding: "8px 14px", borderRadius: 10,
-                background: "linear-gradient(135deg,#1C1812,#2A1F14)",
-                color: "#D4B056", fontSize: 12, fontWeight: 600,
-                border: "1px solid #D4B056", cursor: "pointer",
+                background: "var(--paper-3)",
+                color: "var(--bronze)", fontSize: 12, fontWeight: 600,
+                border: "1px solid var(--bronze)", cursor: "pointer",
               }}
             >
               <Sparkles className="w-4 h-4 inline-block mr-1.5" /> Carousel Studio

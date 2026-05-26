@@ -21,7 +21,7 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: "curator", label: "Conference curator" },
 ];
 
-const ORANGE = "#B08D3A"; // bronze — was orange; restricted to signal/status only
+const ORANGE = "var(--bronze)"; // bronze — was orange; restricted to signal/status only
 
 function relTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -223,7 +223,7 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
 
           {gap && (() => {
             const persona = tab === "headhunter" ? "headhunter" : tab === "client_cio" ? "CIO" : "curator";
-            const ALERT = "#F97316";
+            const ALERT = "var(--signal, #F97316)";
             return (
               <div
                 style={{

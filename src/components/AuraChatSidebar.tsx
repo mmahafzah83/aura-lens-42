@@ -148,7 +148,7 @@ const DynamicActions = ({ state, onAction, disabled }: { state: string; onAction
           onMouseEnter={(e) => {
             (e.currentTarget as HTMLButtonElement).style.background = "rgba(176,141,58,0.15)";
             (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(176,141,58,0.4)";
-            (e.currentTarget as HTMLButtonElement).style.color = "#D4B056";
+            (e.currentTarget as HTMLButtonElement).style.color = "var(--bronze)";
           }}
           onMouseLeave={(e) => {
             (e.currentTarget as HTMLButtonElement).style.background = "rgba(176,141,58,0.08)";
@@ -192,7 +192,7 @@ const WhisperSuggestions = ({ state, onAction, disabled }: { state: string; onAc
           }}
           onMouseEnter={(e) => {
             if (disabled) return;
-            (e.currentTarget as HTMLDivElement).style.color = "#D4B056";
+            (e.currentTarget as HTMLDivElement).style.color = "var(--bronze)";
             (e.currentTarget as HTMLDivElement).style.transform = "translateX(4px)";
           }}
           onMouseLeave={(e) => {
@@ -375,7 +375,7 @@ const ContextPanel = ({ userQuery }: { userQuery: string }) => {
           )}
 
           {loaded && (
-            <div style={{ marginTop: 8, fontSize: 12, color: signals.length > 0 ? "#4a8a4a" : "var(--gold-mid)" }}>
+            <div style={{ marginTop: 8, fontSize: 12, color: signals.length > 0 ? "var(--success)" : "var(--gold-mid)" }}>
               {signals.length > 0
                 ? "Response grounded in your stored intelligence"
                 : "Response based on general reasoning — capture more to improve relevance"}
