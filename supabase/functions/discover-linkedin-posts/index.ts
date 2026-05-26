@@ -261,6 +261,13 @@ Deno.serve(async (req) => {
     const adminClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     let userId: string | null = null;
+    const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const CRON_SECRET = Deno.env.get("CRON_SECRET") || "";
+    const bearer = (authHeader || "").replace("Bearer ", "");
+    const cronHeader = req.headers.get("x-cron-secret") || "";
+    const apiKeyHeader = req.headers.get("apikey") || req.headers.get("x-api-key") || "";
+    const isServiceRole = !!bearer && (bearer === SERVICE_ROLE_KEY || apiKeyHeader === SERVICE_ROLE_KEY);
+    const isCron = !!CRON_SECRET && cronHeader === CRON_SECRET;
 
     if (authHeader) {
       const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
@@ -273,7 +280,18 @@ Deno.serve(async (req) => {
     let body: any = {};
     try { body = await req.json(); } catch { /* empty */ }
 
-    if (!userId && body?.user_id) userId = body.user_id;
+    // Only allow body user_id override for service-role / cron callers.
+    if (!userId && body?.user_id && (isServiceRole || isCron)) {
+      userId = body.user_id;
+    }
+
+    // Reject unauthenticated callers who are neither service-role nor cron.
+    if (!userId && !isServiceRole && !isCron) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
     // Determine mode: "retry" (6h recent-post), "daily" (full), or "manual" (user-triggered)
     const mode: string = body?.mode || "manual";
