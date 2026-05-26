@@ -89,6 +89,7 @@ serve(async (req) => {
         last_sign_in_at: lastSignIn,
         activated_at: row.activated_at,
         captures,
+        user_id: userId,
       });
     }
 
