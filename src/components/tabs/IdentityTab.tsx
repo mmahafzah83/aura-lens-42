@@ -792,7 +792,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 <Star className="w-2 h-2" style={{ color: "#fff" }} fill="currentColor" />
               </span>
               <div style={{ fontSize: 11, fontWeight: 500, color: "var(--warning, var(--brand))", letterSpacing: "0.04em" }}>
-                NOW — {archetypeName ? archetypeName.toUpperCase() : "STRATEGIST"}{authorityScore != null ? ` · SCORE ${authorityScore}` : ""}
+                NOW — {archetypeName ? archetypeName.toUpperCase() : "STRATEGIST"}{(scoreTotal ?? authorityScore) != null ? ` · SCORE ${scoreTotal ?? authorityScore}` : ""}
               </div>
               {(identityIntel?.primary_role || positioningTitle) && (
                 <div style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 500, color: "var(--ink)", marginTop: 3 }}>
@@ -925,12 +925,12 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 const dot = (
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                     <span style={{
-                      width: 18, height: 18, borderRadius: "50%",
+                      width: 16, height: 16, borderRadius: "50%",
                       background: isDone ? "var(--success, #2e7d32)" : isCurrent ? "var(--warning, var(--brand))" : "transparent",
                       border: !isDone && !isCurrent ? "1.5px solid var(--ink-5)" : "none",
                       display: "flex", alignItems: "center", justifyContent: "center",
                     }}>
-                      {isDone && <Check className="w-2.5 h-2.5" style={{ color: "#fff" }} strokeWidth={3} />}
+                      {isDone && <Check style={{ color: "#fff", width: 9, height: 9 }} strokeWidth={3} />}
                     </span>
                     <span style={{
                       fontSize: 9, marginTop: 6,
@@ -977,7 +977,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         </button>
         {fullProfileExpanded && assessmentCompleted && (
           <div className="mt-4" data-testid="story-strategic-identity">
-            <ProfileIntelligence onGenerateContent={handleGenerateContent} intelligenceStage={intelligenceStage} />
+            <ProfileIntelligence onGenerateContent={handleGenerateContent} intelligenceStage={intelligenceStage} hideSuggestedTopics />
           </div>
         )}
       </section>
