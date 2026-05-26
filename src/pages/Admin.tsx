@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Send, Trash2 } from "lucide-react";
+import { Check, Copy, Loader2, Send, Trash2 } from "lucide-react";
 import AuraLogo from "@/components/brand/AuraLogo";
 import {
   AlertDialog,
@@ -55,6 +55,15 @@ const formatDate = (iso: string | null) => {
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 };
 
+const relativeTime = (iso: string | null) => {
+  if (!iso) return "Never logged in";
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (days === 0) return "Today";
+  if (days === 1) return "1 day ago";
+  return `${days} days ago`;
+};
+
 const statusBadge = (status: string) => {
   const map: Record<string, string> = {
     pending: "bg-neutral-500/15 text-neutral-300 border-neutral-500/30",
@@ -95,6 +104,9 @@ const Admin = () => {
   const [seedUserId, setSeedUserId] = useState<string>("");
   const [seedUrl, setSeedUrl] = useState<string>("");
   const [seedSending, setSeedSending] = useState(false);
+
+  // Inactivity alert
+  const [copiedUser, setCopiedUser] = useState<string | null>(null);
 
   // Delete-user state
   const [confirmEmail, setConfirmEmail] = useState<string | null>(null);
@@ -431,6 +443,91 @@ const Admin = () => {
             {counts.active} active
           </span>
         </div>
+
+        {/* Inactive users alert */}
+        {(() => {
+          const now = new Date();
+          const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+          const inactiveUsers = (activeUsers || []).filter((u) => {
+            if (!u.last_sign_in_at) return true;
+            return new Date(u.last_sign_in_at) < fortyEightHoursAgo;
+          });
+          if (inactiveUsers.length === 0) {
+            return (
+              <div className="flex items-center gap-2 mb-6">
+                <span className="text-xs px-3 py-1.5 rounded-full bg-green-500/15 text-green-300 border border-green-500/30 inline-flex items-center gap-1.5">
+                  All users active <Check className="w-3 h-3" />
+                </span>
+              </div>
+            );
+          }
+          return (
+            <div
+              className="rounded-2xl p-5 mb-6"
+              style={{
+                backgroundColor: "var(--surface-ink-raised)",
+                border: "1px solid var(--ink-3)",
+                borderLeft: "4px solid #F97316",
+              }}
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-sm font-semibold" style={{ color: "var(--ink-7)" }}>
+                  ⚠ Needs Attention
+                </span>
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: "rgba(249,115,22,0.15)", color: "#F97316", border: "1px solid rgba(249,115,22,0.3)" }}>
+                  {inactiveUsers.length}
+                </span>
+              </div>
+              <div className="space-y-2">
+                {inactiveUsers.map((u) => {
+                  const name = u.first_name || u.email;
+                  const message = `${name}، شفت إنك ما دخلت أورا من فترة. كل شيء تمام؟ أقدر أساعدك بشيء؟`;
+                  const isCopied = copiedUser === (u.user_id || u.email);
+                  return (
+                    <div
+                      key={u.user_id || u.email}
+                      className="flex items-center justify-between gap-3 p-2.5 rounded-md"
+                      style={{ backgroundColor: "var(--ink)", border: "1px solid var(--ink-3)" }}
+                    >
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium truncate" style={{ color: "var(--ink-7)" }}>
+                          {name}
+                        </div>
+                        <div className="text-xs" style={{ color: "var(--ink-5)" }}>
+                          {relativeTime(u.last_sign_in_at)}
+                        </div>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(message);
+                            setCopiedUser(u.user_id || u.email);
+                            toast.success("Message copied — send via WhatsApp");
+                            setTimeout(() => setCopiedUser((prev) => (prev === (u.user_id || u.email) ? null : prev)), 2000);
+                          } catch {
+                            toast.error("Copy failed");
+                          }
+                        }}
+                        className="text-xs px-3 py-1.5 rounded-md inline-flex items-center gap-1.5 shrink-0 transition-colors"
+                        style={{ border: "1px solid var(--ink-3)", color: "var(--ink-5)" }}
+                      >
+                        {isCopied ? (
+                          <>
+                            <Check className="w-3 h-3" style={{ color: "#22c55e" }} /> Copied
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3" /> Copy WhatsApp
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Filter bar */}
         <div className="flex flex-wrap gap-2 mb-5">
