@@ -1646,7 +1646,15 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             <div className="grid grid-cols-3 gap-4">
               <div className="glass-card rounded-xl p-5 border border-border/8">
                 <div className="text-foreground font-bold text-lg">{contentPerf.postCount}</div>
-                <div className="text-xs text-muted-foreground mt-1">Posts Analyzed</div>
+                <div className="text-xs text-muted-foreground mt-1" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  Posts Analyzed
+                  <InfoTooltip
+                    label="Posts analyzed"
+                    text="LinkedIn posts Aura has analyzed for voice training and performance tracking."
+                    side="top"
+                    triggerSize={13}
+                  />
+                </div>
               </div>
               <div className="glass-card rounded-xl p-5 border border-border/8">
                 {topSignal ? (
@@ -1668,7 +1676,15 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               </div>
               <div className="glass-card rounded-xl p-5 border border-border/8">
                 <div className="text-foreground font-bold text-lg">{contentPerf.avgEngagement}%</div>
-                <div className="text-xs text-muted-foreground mt-1">Avg Engagement</div>
+                <div className="text-xs text-muted-foreground mt-1" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  Avg Engagement
+                  <InfoTooltip
+                    label="Engagement rate"
+                    text="Average interactions (likes + comments) divided by impressions, per post."
+                    side="top"
+                    triggerSize={13}
+                  />
+                </div>
               </div>
             </div>
             {/* Tone distribution and Content insight removed (V1P-2 reorder) — low decision value.
@@ -1923,8 +1939,14 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-2">
                   <BarChart3 className="w-4 h-4" style={{ color: "var(--brand)" }} />
-                  <h2 className="text-xs font-semibold tracking-[0.14em]" style={{ color: "var(--color-text-secondary)" }}>
+                  <h2 className="text-xs font-semibold tracking-[0.14em]" style={{ color: "var(--color-text-secondary)", display: "inline-flex", alignItems: "center", gap: 6 }}>
                     LinkedIn analytics
+                    <InfoTooltip
+                      label="LinkedIn data"
+                      text="Upload your LinkedIn analytics export to connect real engagement data. Go to linkedin.com/analytics/creator → Export."
+                      side="bottom"
+                      triggerSize={13}
+                    />
                   </h2>
                 </div>
                 {hasData && lastUpdatedLabel && (
