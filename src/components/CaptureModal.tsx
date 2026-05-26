@@ -786,7 +786,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
         style={{
           maxHeight: "88vh",
           zIndex: 1000,
-          background: "var(--aura-card)",
+          background: "var(--paper-2)",
           borderTopLeftRadius: 20,
           borderTopRightRadius: 20,
           color: "var(--ink)",
@@ -846,8 +846,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
               width: 32,
               height: 32,
               borderRadius: "50%",
-              background: "var(--surface-subtle)",
-              color: "var(--ink-5)",
+              background: "var(--paper-3)",
+              color: "var(--ink-3)",
               border: "none",
             }}
             aria-label="Close capture"
@@ -885,9 +885,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                     borderRadius: 10,
                     fontSize: 12,
                     fontWeight: 500,
-                    border: active ? "0.5px solid var(--ink)" : "0.5px solid var(--border-subtle)",
-                    background: active ? "var(--ink)" : "transparent",
-                    color: active ? "#FFFFFF" : "var(--ink-4)",
+                    border: active ? "0.5px solid var(--bronze)" : "0.5px solid var(--brand-line)",
+                    background: active ? "var(--bronze)" : "var(--paper-3)",
+                    color: active ? "var(--paper)" : "var(--ink-3)",
                     opacity: disabled ? 0.5 : 1,
                     cursor: disabled ? "not-allowed" : "pointer",
                     transition: "all 150ms ease",
@@ -901,7 +901,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                       width: 22,
                       height: 22,
                       borderRadius: 6,
-                      background: active ? "rgba(255,255,255,0.15)" : "var(--surface-subtle)",
+                      background: active ? "rgba(255,255,255,0.15)" : "var(--vellum)",
                     }}
                   >
                     <Icon className="w-3.5 h-3.5" />
@@ -930,12 +930,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                   }}
                    onFocus={(e) => {
                     e.currentTarget.style.borderColor = "var(--brand)";
-                    e.currentTarget.style.background = "var(--aura-card)";
+                    e.currentTarget.style.background = "var(--vellum)";
                     e.currentTarget.style.boxShadow = "0 0 0 3px var(--brand-muted)";
                   }}
                   onBlur={async (e) => {
-                    e.currentTarget.style.borderColor = urlError ? "var(--danger)" : "var(--border)";
-                    e.currentTarget.style.background = "var(--surface-subtle)";
+                    e.currentTarget.style.borderColor = urlError ? "var(--danger)" : "var(--brand-line)";
+                    e.currentTarget.style.background = "var(--vellum)";
                     e.currentTarget.style.boxShadow = "none";
                     const url = e.target.value.trim();
                     if (!url || !isValidUrl(url)) return;
@@ -958,8 +958,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                   }}
                   style={{
                     width: "100%",
-                    background: "var(--surface-subtle)",
-                    border: urlError ? "0.5px solid var(--danger)" : "0.5px solid var(--border)",
+                    background: "var(--vellum)",
+                    border: urlError ? "0.5px solid var(--danger)" : "0.5px solid var(--brand-line)",
                     borderRadius: 12,
                     padding: "13px 76px 13px 16px",
                     fontSize: 14,
@@ -983,13 +983,13 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                     right: 8,
                     top: "50%",
                     transform: "translateY(-50%)",
-                    background: "var(--brand-pale)",
-                    color: "var(--brand)",
+                    background: "var(--paper-3)",
+                    color: "var(--ink-2)",
+                    border: "0.5px solid var(--brand-line)",
                     borderRadius: 7,
                     fontSize: 12,
                     fontWeight: 600,
                     padding: "5px 10px",
-                    border: "none",
                     cursor: "pointer",
                     textTransform: "uppercase",
                     letterSpacing: "0.05em",
@@ -1083,9 +1083,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                         fontSize: 12,
                         padding: "5px 12px",
                         borderRadius: 20,
-                        background: active ? "var(--ink)" : "var(--surface-subtle)",
-                        border: active ? "0.5px solid var(--ink)" : "0.5px solid var(--border-subtle)",
-                        color: active ? "#FFFFFF" : "var(--ink-3)",
+                        background: active ? "var(--bronze)" : "var(--paper-3)",
+                        border: active ? "0.5px solid var(--bronze)" : "0.5px solid var(--brand-line)",
+                        color: active ? "var(--paper)" : "var(--ink-3)",
                         cursor: "pointer",
                         transition: "all 150ms ease",
                       }}
@@ -1448,7 +1448,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
               style={{
                 width: "100%",
                 background: "var(--brand)",
-                color: "#FFFFFF",
+                color: "var(--paper)",
                 border: "none",
                 borderRadius: 12,
                 padding: 14,

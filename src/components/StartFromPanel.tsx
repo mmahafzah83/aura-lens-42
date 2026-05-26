@@ -295,9 +295,9 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
     >
       <div
         style={{
-          background: "#fff",
+          background: "var(--paper-2)",
           borderRadius: 16,
-          border: "0.5px solid rgba(0,0,0,0.07)",
+          border: "0.5px solid var(--brand-line)",
           boxShadow: "var(--shadow-sm)",
           maxHeight: "calc(100vh - 80px)",
           overflowY: "auto",
@@ -344,10 +344,11 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                   key={item.id}
                   className="group post-angle-card"
                   style={{
-                    background: isConfirm ? "var(--brand-pale)" : "var(--surface-subtle)",
+                    background: isConfirm ? "var(--brand-pale)" : "var(--vellum)",
                     borderRadius: 10,
                     padding: "10px 12px",
                     marginBottom: 7,
+                    border: "0.5px solid var(--brand-line)",
                     borderLeft: "3px solid transparent",
                     transition: "border-color 0.15s, background 0.15s",
                     cursor: "pointer",
@@ -394,12 +395,12 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                       </p>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
                         {typeof item.confidence === "number" && (
-                          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: "#B08D3A", fontWeight: 600 }}>
+                          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: "var(--bronze)", fontWeight: 600 }}>
                             {Math.round(item.confidence * 100)}%
                           </span>
                         )}
                         {item.velocityStatus === "fading" && (
-                          <span style={{ fontSize: 12, color: "#F97316", fontWeight: 600 }}>↓ Fading</span>
+                          <span style={{ fontSize: 12, color: "var(--warning)", fontWeight: 600 }}>↓ Fading</span>
                         )}
                         {item.velocityStatus === "accelerating" && (
                           <span style={{ fontSize: 12, color: "hsl(140 60% 40%)", fontWeight: 600 }}>↑ Gaining</span>
@@ -436,7 +437,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
             style={{
               marginTop: 12,
               paddingTop: 14,
-              borderTop: "0.5px solid rgba(0,0,0,0.07)",
+              borderTop: "0.5px solid var(--brand-line)",
             }}
           >
             <p
