@@ -67,6 +67,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [authorityScore, setAuthorityScore] = useState<number | null>(null);
+  const [scoreTotal, setScoreTotal] = useState<number | null>(null);
   const [signalStats, setSignalStats] = useState({
     count: 0,
     topConfidence: 0,
@@ -176,6 +177,25 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         } as ProfileRow);
       }
       if (scoreRes.data) setAuthorityScore(scoreRes.data.authority_score);
+      // Same total as ScoreBreakdown: components from latest score_snapshots row.
+      try {
+        const { data: snap } = await (supabase.from("score_snapshots" as any) as any)
+          .select("components, composite_score")
+          .eq("user_id", uid)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (snap) {
+          const c = (snap as any).components || {};
+          const sig = Number(c.signal_score) || 0;
+          const con = Number(c.content_score) || 0;
+          const cap = Number(c.capture_score) || 0;
+          const total = Math.round(sig * 0.4) + Math.round(con * 0.4) + Math.round(cap * 0.2);
+          setScoreTotal(total || Number((snap as any).composite_score) || null);
+        }
+      } catch (e) {
+        console.warn("[IdentityTab] score snapshot load failed", e);
+      }
       // Stage counts — entries + tracked LinkedIn posts (lightweight head queries)
       try {
         const [entriesCountRes, postsCountRes] = await Promise.all([
