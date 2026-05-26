@@ -1,33 +1,41 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Pencil, Check, Loader2, Upload, ChevronRight, X, User as UserIcon, Share2 } from "lucide-react";
+import { Pencil, Check, Eye, Zap, Map as MapIcon, Trophy, Target as TargetIcon, ChevronDown, Star } from "lucide-react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import ProfileIntelligence from "@/components/ProfileIntelligence";
-import ProfileManagement from "@/components/ProfileManagement";
 import MilestonesSection from "@/components/MilestonesSection";
-import BrandArchetypeWidget from "@/components/BrandArchetypeWidget";
 import AuditRadarWidget from "@/components/AuditRadarWidget";
 import ObjectiveAuditModal from "@/components/ObjectiveAuditModal";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
-import VoiceEngineSection from "@/components/VoiceEngineSection";
 import SectionError from "@/components/ui/section-error";
-import EmptyState from "@/components/ui/EmptyState";
 import { withTimeout, showQueryErrorToast } from "@/lib/safeQuery";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import MarketMirror from "@/components/MarketMirror";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
-import { createPortal } from "react-dom";
-import ShareLink from "@/components/ShareLink";
 import MilestoneShareModal, { type MilestoneShareData } from "@/components/MilestoneShareModal";
-import { shareToLinkedIn } from "@/lib/shareLinkedIn";
-import IntelligenceStageBadge, { computeIntelligenceStage, type IntelligenceStage } from "@/components/ui/IntelligenceStageBadge";
+import { computeIntelligenceStage, type IntelligenceStage } from "@/components/ui/IntelligenceStageBadge";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import GuidedJourney from "@/components/GuidedJourney";
 import { useJourneyState } from "@/hooks/useJourneyState";
-import ArchetypeHeroCard from "@/components/identity/ArchetypeHeroCard";
 import ScoreBreakdown from "@/components/identity/ScoreBreakdown";
-import TerritoryMap from "@/components/identity/TerritoryMap";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
+import { shareToLinkedIn } from "@/lib/shareLinkedIn";
+
+// Canonical 8-milestone definition for the timeline
+const MILESTONE_DEFS: { id: string; name: string; cta?: { label: string; tab: string } }[] = [
+  { id: "profile_complete", name: "Profile complete" },
+  { id: "brand_assessment", name: "Brand assessment" },
+  { id: "first_signal", name: "First signal", cta: { label: "Capture an article →", tab: "intelligence" } },
+  { id: "voice_trained", name: "Voice trained", cta: { label: "Train your voice →", tab: "authority" } },
+  { id: "first_publish", name: "First publish", cta: { label: "Draft this post →", tab: "authority" } },
+  { id: "five_signals", name: "Five signals", cta: { label: "Capture an article →", tab: "intelligence" } },
+  { id: "sector_depth", name: "Sector depth", cta: { label: "Capture more sources →", tab: "intelligence" } },
+  { id: "weekly_rhythm_4", name: "Weekly rhythm", cta: { label: "Capture this week →", tab: "intelligence" } },
+];
+
+const prettify = (s?: string) =>
+  (s || "").replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim().replace(/\b\w/g, (m) => m.toUpperCase());
 
 interface IdentityTabProps {
   onResetDiagnostic: () => void;
