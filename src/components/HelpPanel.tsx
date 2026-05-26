@@ -169,10 +169,10 @@ export function HelpPanel({ open, onClose, activeTab }: { open: boolean; onClose
                   marginBottom: 22,
                 }}
               >
-                <div style={{ fontFamily: "var(--font-display)", fontSize: 16, color: "var(--ink)", lineHeight: 1.3 }}>
+                <div style={{ fontFamily: "var(--font-display)", fontSize: 16, color: "#2D2820", lineHeight: 1.3 }}>
                   {ctx.title}
                 </div>
-                <p style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.7, marginTop: 8, marginBottom: 0 }}>
+                <p style={{ fontSize: 14, color: "#5A5347", lineHeight: 1.7, marginTop: 8, marginBottom: 0 }}>
                   {ctx.body}
                 </p>
               </div>
