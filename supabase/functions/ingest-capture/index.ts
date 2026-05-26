@@ -89,11 +89,19 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Admin override — allows seeding captures for other users
+    const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
+    let effectiveUserId = user.id;
+    if (body?.target_user_id && typeof body.target_user_id === "string" && user.id === ADMIN_USER_ID) {
+      effectiveUserId = body.target_user_id;
+      console.log("[ingest-capture] Admin seeding capture for user:", effectiveUserId);
+    }
+
     if (type === "link" && source_url) {
       const { data: existing } = await supabase
         .from("captures")
         .select("id, created_at")
-        .eq("user_id", user.id)
+        .eq("user_id", effectiveUserId)
         .eq("source_url", source_url)
         .limit(1);
 
@@ -114,7 +122,7 @@ Deno.serve(async (req) => {
     const { data: capture, error: insertError } = await supabase
       .from("captures")
       .insert({
-        user_id: user.id,
+        user_id: effectiveUserId,
         type,
         raw_content: content,
         source_url: source_url || null,
@@ -220,7 +228,7 @@ Deno.serve(async (req) => {
       const { data: entryRow, error: entryErr } = await supabase
         .from("entries")
         .insert({
-          user_id: user.id,
+          user_id: effectiveUserId,
           type: type === "link" ? "link" : type,
           title: extracted_title || null,
           content: extracted_text?.slice(0, 10000) || content,
@@ -239,7 +247,7 @@ Deno.serve(async (req) => {
           body: {
             source_type: "entry",
             source_id: newEntryId,
-            user_id: user.id,
+            user_id: effectiveUserId,
           },
         }).catch((e: any) =>
           console.warn("[ingest-capture] extract-evidence invoke failed:", e?.message)

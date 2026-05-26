@@ -88,8 +88,13 @@ const Admin = () => {
   const [decliningId, setDecliningId] = useState<string | null>(null);
   const [directDuplicate, setDirectDuplicate] = useState<{ name: string | null; status: string } | null>(null);
   const [npsRows, setNpsRows] = useState<Array<{ id: string; rating: number | null; message: string | null; page: string | null; created_at: string | null }>>([]);
-  const [activeUsers, setActiveUsers] = useState<Array<{ email: string; first_name: string | null; sector: string | null; last_sign_in_at: string | null; activated_at: string | null; captures: number }>>([]);
+  const [activeUsers, setActiveUsers] = useState<Array<{ email: string; first_name: string | null; sector: string | null; last_sign_in_at: string | null; activated_at: string | null; captures: number; user_id?: string | null }>>([]);
   const [activeLoading, setActiveLoading] = useState(false);
+
+  // Seed captures
+  const [seedUserId, setSeedUserId] = useState<string>("");
+  const [seedUrl, setSeedUrl] = useState<string>("");
+  const [seedSending, setSeedSending] = useState(false);
 
   // Delete-user state
   const [confirmEmail, setConfirmEmail] = useState<string | null>(null);
@@ -121,6 +126,30 @@ const Admin = () => {
       toast.error(e?.message || "QA check failed");
     } finally {
       setQaRunning(false);
+    }
+  };
+
+  const seedCapture = async () => {
+    const url = seedUrl.trim();
+    if (!seedUserId) { toast.error("Pick a user"); return; }
+    if (!/^https?:\/\//i.test(url)) { toast.error("Enter a valid URL (https://…)"); return; }
+    setSeedSending(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || accessToken;
+      const { error } = await supabase.functions.invoke("ingest-capture", {
+        body: { type: "link", content: url, source_url: url, target_user_id: seedUserId },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (error) throw error;
+      const target = activeUsers.find((u) => u.user_id === seedUserId);
+      const label = target?.first_name || target?.email || "user";
+      toast.success(`Article seeded for ${label}`);
+      setSeedUrl("");
+    } catch (e: any) {
+      toast.error(e?.message || "Seed failed");
+    } finally {
+      setSeedSending(false);
     }
   };
 
@@ -682,6 +711,54 @@ const Admin = () => {
               This email is already on the waitlist as {directDuplicate.name || "(no name)"} ({directDuplicate.status}). Click "Send anyway" to proceed.
             </p>
           )}
+        </div>
+
+        {/* Seed Captures */}
+        <div
+          className="rounded-2xl p-6 mt-8"
+          style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}
+        >
+          <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--ink-7)" }}>
+            Seed Captures
+          </h2>
+          <p className="text-xs mb-4" style={{ color: "var(--ink-5)" }}>
+            Pre-load articles for a user before inviting them.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Select value={seedUserId} onValueChange={setSeedUserId}>
+              <SelectTrigger
+                className="sm:w-[260px] text-sm"
+                style={{ backgroundColor: "var(--ink)", border: "1px solid var(--ink-3)", color: "var(--ink-7)" }}
+              >
+                <SelectValue placeholder="Choose user" />
+              </SelectTrigger>
+              <SelectContent>
+                {activeUsers
+                  .filter((u) => !!u.user_id && (u.first_name || u.email))
+                  .map((u) => (
+                    <SelectItem key={u.user_id as string} value={u.user_id as string}>
+                      {(u.first_name || u.email)} ({(u.user_id as string).slice(0, 8)})
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+            <input
+              type="text"
+              value={seedUrl}
+              onChange={(e) => setSeedUrl(e.target.value)}
+              placeholder="Paste article URL (https://...)"
+              className="flex-1 px-3 py-2.5 rounded-md text-sm outline-none transition-colors"
+              style={{ backgroundColor: "var(--ink)", border: "1px solid var(--ink-3)", color: "var(--ink-7)" }}
+            />
+            <button
+              onClick={seedCapture}
+              disabled={seedSending || !seedUserId || !seedUrl}
+              className="px-5 py-2.5 rounded-md text-sm font-medium inline-flex items-center justify-center gap-2 disabled:opacity-60 whitespace-nowrap"
+              style={{ backgroundColor: "var(--brand)", color: "var(--ink)" }}
+            >
+              {seedSending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Seed Capture"}
+            </button>
+          </div>
         </div>
 
         {/* Active users */}
