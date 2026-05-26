@@ -368,7 +368,8 @@ const SignalHero = ({
         </div>
       )}
 
-      {signal.strategic_implications && (
+      {signal.strategic_implications &&
+        signal.strategic_implications.trim() !== (signal.what_it_means_for_you || "").trim() && (
         <p style={{ fontSize: 12, color: "var(--ink-3)", lineHeight: 1.6, margin: "0 0 18px" }}>
           {signal.strategic_implications}{" "}
           <span style={{ color: "var(--brand)", fontWeight: 500 }}>The window is open.</span>
