@@ -162,7 +162,7 @@ export default function MissionControl({ userId, entriesCount = 0, topSignalTitl
                 aria-label={isDone ? "Mark as pending" : "Mark complete"}
                 style={{
                   width: 18, height: 18, borderRadius: "50%",
-                  border: isDone ? "0" : "1.5px solid hsl(var(--muted-foreground) / 0.6)",
+                  border: isDone ? "0" : "1.5px solid var(--ink-4)",
                   background: isDone ? "var(--success)" : "transparent",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   cursor: "pointer", flexShrink: 0, marginTop: 1,
