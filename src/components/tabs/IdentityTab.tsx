@@ -569,7 +569,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             <div style={{ fontSize: 12, letterSpacing: "0.16em", color: "var(--brand)", marginBottom: 8, fontWeight: 600 }}>
               Your professional identity
             </div>
-            <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color: "#fff", margin: "0 0 12px", lineHeight: 1.375 }}>
+            <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color: "var(--paper)", margin: "0 0 12px", lineHeight: 1.375 }}>
               Tell Aura who you are in 5 minutes, and it'll show you how the market should see you.
             </h2>
             <button
@@ -789,7 +789,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 position: "absolute", left: -30, top: 0, width: 14, height: 14, borderRadius: "50%",
                 background: "var(--warning, var(--brand))", display: "flex", alignItems: "center", justifyContent: "center",
               }}>
-                <Star className="w-2 h-2" style={{ color: "#fff" }} fill="currentColor" />
+                <Star className="w-2 h-2" style={{ color: "var(--paper)" }} fill="currentColor" />
               </span>
               <div style={{ fontSize: 11, fontWeight: 500, color: "var(--warning, var(--brand))", letterSpacing: "0.04em" }}>
                 NOW — {archetypeName ? archetypeName.toUpperCase() : "STRATEGIST"}{(scoreTotal ?? authorityScore) != null ? ` · SCORE ${scoreTotal ?? authorityScore}` : ""}
@@ -808,7 +808,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   position: "absolute", left: -30, top: 0, width: 14, height: 14, borderRadius: "50%",
                   background: "var(--success, #2e7d32)", display: "flex", alignItems: "center", justifyContent: "center",
                 }}>
-                  <Check className="w-2 h-2" style={{ color: "#fff" }} strokeWidth={3} />
+                  <Check className="w-2 h-2" style={{ color: "var(--paper)" }} strokeWidth={3} />
                 </span>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                   <span style={{ fontSize: 12, fontWeight: 500, color: "var(--ink)" }}>{m.name}</span>
@@ -930,7 +930,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                       border: !isDone && !isCurrent ? "1.5px solid var(--ink-5)" : "none",
                       display: "flex", alignItems: "center", justifyContent: "center",
                     }}>
-                      {isDone && <Check style={{ color: "#fff", width: 9, height: 9 }} strokeWidth={3} />}
+                      {isDone && <Check style={{ color: "var(--paper)", width: 9, height: 9 }} strokeWidth={3} />}
                     </span>
                     <span style={{
                       fontSize: 9, marginTop: 6,
