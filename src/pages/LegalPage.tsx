@@ -202,7 +202,7 @@ const LegalPage = ({ title, updated, sections }: Props) => {
           <span>·</span>
           <Link to="/request-access" style={{ color: "var(--ink-4)" }}>Request access</Link>
           <span>·</span>
-          <a href="mailto:mohammad.mahafdhah@aura-intel.org" style={{ color: "var(--ink-4)" }}>Contact</a>
+          <a href="mailto:support@aura-intel.org" style={{ color: "var(--ink-4)" }}>Contact</a>
         </div>
         <p className="mt-3 text-xs" style={{ color: "var(--ink-5)" }}>
           © {new Date().getFullYear()} Aura Intelligence. All rights reserved.

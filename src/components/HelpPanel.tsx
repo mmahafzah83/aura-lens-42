@@ -205,7 +205,7 @@ export function HelpPanel({ open, onClose, activeTab }: { open: boolean; onClose
           <div style={{ marginTop: 10, textAlign: "center", fontSize: 12, color: "var(--ink-3)", lineHeight: 1.5 }}>
             Aura Private Beta · Questions?{" "}
             <a
-              href="mailto:mohammad.mahafdhah@aura-intel.org"
+              href="mailto:support@aura-intel.org"
               style={{ color: "var(--brand)", textDecoration: "none" }}
             >
               Reach out to your invite contact

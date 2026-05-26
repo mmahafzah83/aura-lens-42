@@ -603,6 +603,9 @@ const Landing = () => {
           <button onClick={() => navigate("/auth")} className="px-8 py-3 rounded-xl text-sm font-medium transition-all hover:brightness-90" style={{ background: "var(--ink)", color: "var(--ink-7)" }}>
             Get early access
           </button>
+          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", textAlign: "center", marginTop: 8 }}>
+            Free during closed beta · Invite-only access
+          </p>
         </div>
       </section>
 
@@ -680,7 +683,7 @@ const Landing = () => {
           </div>
           <div className="landing-footer-col-right">
             <p style={{ fontSize: 12, color: "var(--ink-4)" }}>
-              Contact: <a href="mailto:mohammad.mahafdhah@aura-intel.org">mohammad.mahafdhah@aura-intel.org</a>
+              Contact: <a href="mailto:support@aura-intel.org">support@aura-intel.org</a>
             </p>
             <p style={{ fontSize: 12, color: "var(--ink-4)", marginTop: 6 }}>
               Support: <a href="mailto:support@aura-intel.org">support@aura-intel.org</a>

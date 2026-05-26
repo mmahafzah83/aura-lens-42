@@ -331,7 +331,7 @@ const Guide = () => {
           </div>
           <div className="guide-footer-col-right" style={{ textAlign: "right" }}>
             <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>
-              Contact: <a href="mailto:mohammad.mahafdhah@aura-intel.org">mohammad.mahafdhah@aura-intel.org</a>
+              Contact: <a href="mailto:support@aura-intel.org">support@aura-intel.org</a>
             </p>
             <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 6 }}>
               Built in Riyadh for the world
