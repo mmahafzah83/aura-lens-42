@@ -1,14 +1,11 @@
-import { useState, useEffect, useMemo, useCallback, useRef, useLayoutEffect } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
-import { AnimatePresence } from "framer-motion";
 import {
-  Loader2, ThumbsUp, ThumbsDown, Archive, RefreshCw, Layers, Brain, Zap, AlertTriangle, ChevronDown,
+  Loader2, Archive, RefreshCw, Layers, Brain, AlertTriangle, ChevronDown,
+  EyeOff, Info, Lightbulb, TrendingUp, ExternalLink, Plus, BookOpen,
 } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import LinkedInDraftPanel from "@/components/LinkedInDraftPanel";
-import FrameworkBuilder from "@/components/FrameworkBuilder";
 import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
 import SourcesSubTab from "@/components/tabs/SourcesSubTab";
 import SectionError from "@/components/ui/section-error";
@@ -16,18 +13,10 @@ import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import { useJourneyState } from "@/hooks/useJourneyState";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import { showQueryErrorToast } from "@/lib/safeQuery";
-import { formatSmartDate } from "@/lib/formatDate";
 import { Button } from "@/components/ui/button";
-import { TabSlider } from "@/components/ui/TabSlider";
 import EmptyState from "@/components/ui/EmptyState";
-import { EMPTY_STATE } from "@/constants/language";
-import InfoTooltip from "@/components/ui/InfoTooltip";
-import { SectionHeader } from "@/components/ui/SectionHeader";
-import { CollapsibleList } from "@/components/ui/CollapsibleList";
 import type { Database } from "@/integrations/supabase/types";
-import { VelocityPill, VelocityTrend, ValidationBadge, daysUntilDormant } from "@/components/intelligence/VelocityIndicators";
-import MarketCoverageSection from "@/components/intelligence/MarketCoverageSection";
-import RecommendedReadingSection from "@/components/intelligence/RecommendedReadingSection";
+import { daysUntilDormant } from "@/components/intelligence/VelocityIndicators";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -74,26 +63,6 @@ interface Signal {
   commercial_validation_score?: number | null;
 }
 
-interface Insight {
-  id: string;
-  title: string;
-  content: string;
-  intelligence_type: string;
-  skill_pillars: string[];
-  tags: string[];
-  created_at: string;
-}
-
-interface Framework {
-  id: string;
-  title: string;
-  summary: string | null;
-  tags: string[];
-  framework_steps: any;
-  source_type: string;
-  created_at: string;
-}
-
 interface EvidenceFragmentRow {
   id: string;
   title: string;
@@ -101,11 +70,9 @@ interface EvidenceFragmentRow {
   created_at: string;
   source_kind?: "capture" | "aura" | "unknown";
   source_label?: string;
-  source_url?: string | null;
 }
 
 /* ── Helpers ── */
-
 function relativeTime(dateStr: string): string {
   const ms = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(ms / 60000);
@@ -116,85 +83,44 @@ function relativeTime(dateStr: string): string {
   const days = Math.floor(hrs / 24);
   if (days === 1) return "yesterday";
   if (days < 7) return `${days} days ago`;
-  const weeks = Math.floor(days / 7);
-  return `${weeks}w ago`;
+  return `${Math.floor(days / 7)}w ago`;
+}
+
+function domainFromUrl(url: string | null | undefined): string {
+  if (!url) return "";
+  try { return new URL(url).hostname.replace(/^www\./, ""); } catch { return ""; }
 }
 
 type SubTab = "signals" | "sources";
 
 /* ═══════════════════════════════════════════
-   AUTOMATION STRIP
+   EXPANDABLE TRANSPARENCY PANEL
    ═══════════════════════════════════════════ */
-
-const AutomationStrip = ({ signalCount = 0 }: { signalCount?: number }) => {
-  const [collapsed, setCollapsed] = useState(() => {
-    try { return localStorage.getItem("aura_automation_collapsed") === "true"; } catch { return false; }
-  });
-  const [moveTimeLeft, setMoveTimeLeft] = useState<string>("Ready");
-
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase
-        .from("recommended_moves")
-        .select("created_at")
-        .order("created_at", { ascending: false })
-        .limit(1);
-      if (data && data.length > 0) {
-        const created = new Date(data[0].created_at).getTime();
-        const nextCycle = created + 24 * 60 * 60 * 1000;
-        const remaining = nextCycle - Date.now();
-        if (remaining > 0) {
-          const hrs = Math.ceil(remaining / (60 * 60 * 1000));
-          setMoveTimeLeft(`${hrs}h remaining`);
-        } else {
-          setMoveTimeLeft("Ready");
-        }
-      }
-    })();
-  }, []);
-
-  const toggle = () => {
-    const next = !collapsed;
-    setCollapsed(next);
-    try { localStorage.setItem("aura_automation_collapsed", String(next)); } catch {}
-  };
-
-  const movesUnlocked = signalCount >= 3;
-  const cards = [
-    { iconBg: "var(--brand-ghost)", iconBorder: "var(--brand-line)", iconColor: "var(--brand)", icon: <Zap size={16} />, title: "Auto-detect on capture", desc: "New signal detected within 60s of every capture", status: "Active", statusColor: "var(--success)" },
-    { iconBg: "var(--paper-2)", iconBorder: "var(--brand-line)", iconColor: "var(--ink)", icon: "↻", title: "Weekly signal refresh", desc: "Signals recalculated every Sunday at midnight", status: "Scheduled", statusColor: "var(--info)" },
-    movesUnlocked
-      ? { iconBg: "var(--brand-ghost)", iconBorder: "var(--brand-line)", iconColor: "var(--ink)", icon: "✦", title: "Move generation", desc: "3 strategic moves refreshed every 24 hours", status: moveTimeLeft, statusColor: "var(--brand)" }
-      : { iconBg: "var(--paper-2)", iconBorder: "var(--brand-line)", iconColor: "var(--ink-3)", icon: "✦", title: "Move generation", desc: "Unlocks once you have 3 active signals", status: "Locked", statusColor: "var(--ink-3)" },
-  ];
-
+const ExpandablePanel = ({
+  label, children, align = "left",
+}: { label: string; children: React.ReactNode; align?: "left" | "right" }) => {
+  const [open, setOpen] = useState(false);
   return (
-    <div style={{ marginBottom: 14 }}>
-      <style>{`
-        [data-theme="light"] .intel-automation-title { color: var(--ink) !important; }
-        [data-theme="light"] .intel-automation-desc { color: var(--ink-5) !important; }
-      `}</style>
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4 }}>
-        <button onClick={toggle} style={{ background: "none", border: "none", color: "var(--ink-4)", fontSize: 12, cursor: "pointer", padding: "2px 0" }}>
-          {collapsed ? "Show automation ↓" : "Hide automation ↑"}
-        </button>
-      </div>
-      <div style={{ overflow: "hidden", maxHeight: collapsed ? 0 : 400, transition: "max-height 200ms ease-in-out" }}>
-        <div className="intel-automation-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-          {cards.map((c, i) => (
-            <div key={i} className="intel-automation-card" style={{ background: "var(--surface-ink-raised)", border: "0.5px solid var(--surface-ink-subtle)", borderRadius: 8, padding: "10px 12px", display: "flex", gap: 8, alignItems: "flex-start" }}>
-              <div className="intel-automation-icon" style={{ width: 36, height: 36, borderRadius: 8, background: c.iconBg, border: `1px solid ${c.iconBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0, color: c.iconColor, padding: 8, boxSizing: "border-box" }}>
-                {c.icon}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p className="intel-automation-title" style={{ fontSize: 12, fontWeight: 700, color: "var(--ink)", margin: 0 }}>{c.title}</p>
-                <p className="intel-automation-desc" style={{ fontSize: 12, color: "var(--ink-2)", margin: "2px 0 4px", lineHeight: 1.4 }}>{c.desc}</p>
-                <span style={{ fontSize: 12, fontWeight: 700, color: c.statusColor }}>
-                  <span className={c.status === "Active" ? "aura-pulse-dot" : undefined} style={{ display: "inline-block" }}>●</span> {c.status}
-                </span>
-              </div>
-            </div>
-          ))}
+    <div style={{ textAlign: align as any }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          background: "none", border: "none", padding: 0, cursor: "pointer",
+          display: "inline-flex", alignItems: "center", gap: 5,
+          fontSize: 12, color: "var(--ink-3)",
+        }}
+      >
+        <Info size={12} />
+        <span>{label}</span>
+        <ChevronDown size={12} style={{ transform: open ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s" }} />
+      </button>
+      <div style={{ maxHeight: open ? 600 : 0, overflow: "hidden", transition: "max-height .25s ease" }}>
+        <div style={{
+          marginTop: 10, padding: "14px 16px", borderRadius: 10,
+          background: "var(--surface-ink-raised)", border: "0.5px solid var(--surface-ink-subtle)",
+          fontSize: 12, color: "var(--ink-3)", lineHeight: 1.6, textAlign: "left",
+        }}>
+          {children}
         </div>
       </div>
     </div>
@@ -202,515 +128,594 @@ const AutomationStrip = ({ signalCount = 0 }: { signalCount?: number }) => {
 };
 
 /* ═══════════════════════════════════════════
-   SIGNAL DETAIL PANEL (left side of command center)
+   INTELLIGENCE RADAR
    ═══════════════════════════════════════════ */
+const IntelligenceRadar = ({ signals }: { signals: Signal[] }) => {
+  // Build unique themes with strongest signal per theme
+  const themeMap = new Map<string, Signal>();
+  signals.forEach(s => {
+    (s.theme_tags || []).forEach(t => {
+      const key = t.toLowerCase().trim();
+      if (!key) return;
+      const existing = themeMap.get(key);
+      if (!existing || s.confidence > existing.confidence) themeMap.set(key, s);
+    });
+  });
+  const themes = Array.from(themeMap.entries()).map(([k, s]) => ({ name: k, sig: s }));
+  if (themes.length < 3) return null;
 
-const SignalDetailPanel = ({
-  signal,
-  signalIndex,
-  totalSignals,
-  onDraft,
-  profile,
+  const cx = 130, cy = 130;
+  const topConfId = [...themes].sort((a, b) => b.sig.confidence - a.sig.confidence)[0].sig.id;
+
+  const nodes = themes.map((t, i) => {
+    const angle = (i / themes.length) * Math.PI * 2 - Math.PI / 2;
+    const r = 30 + Math.min(Math.max(t.sig.confidence, 0), 1) * 70;
+    const conf = t.sig.confidence;
+    const radius = conf > 0.5 ? 8 : conf > 0.3 ? 4 : 3;
+    const color = t.sig.id === topConfId
+      ? "var(--color-text-warning, var(--brand))"
+      : conf > 0.3
+        ? "var(--color-text-info, var(--info))"
+        : "var(--ink-3)";
+    const opacity = t.sig.id === topConfId ? 1 : conf > 0.3 ? 0.45 : 0.25;
+    const lx = cx + Math.cos(angle) * (r + 18);
+    const ly = cy + Math.sin(angle) * (r + 18);
+    return {
+      x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r,
+      lx, ly, radius, color, opacity,
+      name: t.name, isTop: t.sig.id === topConfId,
+    };
+  });
+
+  const polygonPts = nodes.map(n => `${n.x},${n.y}`).join(" ");
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", margin: "32px 0" }}>
+      <svg width={230} height={230} viewBox="0 0 260 260" style={{ overflow: "visible" }}>
+        {[110, 75, 40].map(r => (
+          <circle key={r} cx={cx} cy={cy} r={r}
+            fill="none" stroke="var(--color-border-tertiary, var(--surface-ink-subtle))"
+            strokeWidth={0.3} strokeDasharray="3 5" />
+        ))}
+        <line x1={cx} y1={cy - 110} x2={cx} y2={cy + 110} stroke="var(--surface-ink-subtle)" strokeWidth={0.2} />
+        <line x1={cx - 110} y1={cy} x2={cx + 110} y2={cy} stroke="var(--surface-ink-subtle)" strokeWidth={0.2} />
+        <line x1={cx - 78} y1={cy - 78} x2={cx + 78} y2={cy + 78} stroke="var(--surface-ink-subtle)" strokeWidth={0.2} />
+        <line x1={cx - 78} y1={cy + 78} x2={cx + 78} y2={cy - 78} stroke="var(--surface-ink-subtle)" strokeWidth={0.2} />
+
+        <polygon points={polygonPts}
+          fill="var(--color-text-warning, var(--brand))" fillOpacity={0.08}
+          stroke="var(--color-text-warning, var(--brand))" strokeOpacity={0.3} strokeWidth={0.7} />
+
+        <circle cx={cx} cy={cy} r={3} fill="var(--color-text-warning, var(--brand))">
+          <animate attributeName="opacity" values="0.3;0.7;0.3" dur="4s" repeatCount="indefinite" />
+        </circle>
+
+        {nodes.map((n, i) => (
+          <g key={i}>
+            <circle cx={n.x} cy={n.y} r={n.radius} fill={n.color} opacity={n.opacity}>
+              {n.isTop && <animate attributeName="r" values={`${n.radius};${n.radius + 1};${n.radius}`} dur="3s" repeatCount="indefinite" />}
+            </circle>
+            <text x={n.lx} y={n.ly} textAnchor="middle" dominantBaseline="middle"
+              fontSize={11} fill="var(--ink-4)"
+              style={{ textTransform: "capitalize" }}>
+              {n.name.length > 16 ? n.name.slice(0, 14) + "…" : n.name}
+            </text>
+          </g>
+        ))}
+      </svg>
+
+      <div style={{ display: "flex", gap: 18, marginTop: 16, fontSize: 11, color: "var(--ink-3)" }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--color-text-warning, var(--brand))" }} /> Strong
+        </span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--color-text-info, var(--info))", opacity: 0.5 }} /> Emerging
+        </span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ink-3)", opacity: 0.5 }} /> Weak
+        </span>
+      </div>
+
+      <div style={{ marginTop: 14, width: "100%", maxWidth: 520 }}>
+        <ExpandablePanel label="How does the radar work?" align="left">
+          <p style={{ margin: "0 0 10px" }}>Every article you capture is analysed for strategic patterns. When multiple captures share a theme, Aura detects a signal.</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 10 }}>
+            <div>Size = confidence level</div>
+            <div>Position = strength (outer = stronger)</div>
+            <div>Color = gold is actionable, blue is emerging, grey needs more data</div>
+          </div>
+          <div style={{ paddingTop: 8, borderTop: "0.5px solid var(--surface-ink-subtle)" }}>
+            <strong style={{ color: "var(--ink-5)" }}>Confidence:</strong> 40% AI analysis + 35% source diversity + 15% organisation breadth + 10% recency
+          </div>
+        </ExpandablePanel>
+      </div>
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════
+   SIGNAL HERO
+   ═══════════════════════════════════════════ */
+const SignalHero = ({
+  signal, onDraft, onOpenChat,
 }: {
   signal: Signal;
-  signalIndex: number;
-  totalSignals: number;
   onDraft: (s: Signal) => void;
-  profile: any;
+  onOpenChat?: (msg?: string) => void;
 }) => {
-  const [evidenceFragments, setEvidenceFragments] = useState<EvidenceFragmentRow[]>([]);
-  const [keyInsight, setKeyInsight] = useState<Insight | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [showAllEvidence, setShowAllEvidence] = useState(false);
-  const panelRef = useRef<HTMLDivElement>(null);
+  const [evidence, setEvidence] = useState<EvidenceFragmentRow[]>([]);
+  const [showEvidence, setShowEvidence] = useState(false);
 
   useEffect(() => {
-    setLoading(true);
-    setShowAllEvidence(false);
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (signal.supporting_evidence_ids?.length) {
-        const ef = await supabase
-          .from("evidence_fragments")
-          .select("id, title, content, created_at, source_registry_id")
-          .in("id", signal.supporting_evidence_ids)
-          .order("created_at", { ascending: false })
-          .limit(20);
-        const frags = (ef.data || []) as any[];
-        // Resolve to underlying entries via source_registry → entries
-        const registryIds = Array.from(new Set(frags.map(f => f.source_registry_id).filter(Boolean)));
-        let registryMap = new Map<string, { id: string; source_type: string; source_id: string | null; title: string | null }>();
-        let entryMap = new Map<string, { title: string | null; type: string | null; account_name: string | null }>();
-        if (registryIds.length) {
-          const sr = await supabase
-            .from("source_registry" as any)
-            .select("id, source_type, source_id, title")
-            .in("id", registryIds);
-          (sr.data || []).forEach((r: any) => registryMap.set(r.id as string, r as any));
-          const entryIds = Array.from(new Set(
-            (sr.data || []).filter((r: any) => r.source_type === "entry" && r.source_id).map((r: any) => r.source_id)
-          ));
-          if (entryIds.length) {
-            const ents = await supabase
-              .from("entries")
-              .select("id, title, type, account_name")
-              .in("id", entryIds);
-            (ents.data || []).forEach((e: any) => entryMap.set(e.id, e));
-          }
+      if (!signal.supporting_evidence_ids?.length) { setEvidence([]); return; }
+      const { data: frags } = await supabase
+        .from("evidence_fragments")
+        .select("id, title, content, created_at, source_registry_id")
+        .in("id", signal.supporting_evidence_ids)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      const fs = (frags || []) as any[];
+      const regIds = Array.from(new Set(fs.map(f => f.source_registry_id).filter(Boolean)));
+      let regMap = new Map<string, any>();
+      let entryMap = new Map<string, any>();
+      if (regIds.length) {
+        const sr = await supabase.from("source_registry" as any).select("id, source_type, source_id, title").in("id", regIds);
+        (sr.data || []).forEach((r: any) => regMap.set(r.id, r));
+        const entryIds = Array.from(new Set((sr.data || []).filter((r: any) => r.source_type === "entry" && r.source_id).map((r: any) => r.source_id)));
+        if (entryIds.length) {
+          const ents = await supabase.from("entries").select("id, title, type, account_name").in("id", entryIds);
+          (ents.data || []).forEach((e: any) => entryMap.set(e.id, e));
         }
-        // Dedupe by entry/registry, label by origin
-        const seen = new Set<string>();
-        const enriched: EvidenceFragmentRow[] = [];
-        for (const f of frags) {
-          const reg = f.source_registry_id ? registryMap.get(f.source_registry_id) : null;
-          let kind: "capture" | "aura" | "unknown" = "unknown";
-          let label = f.title || "Untitled source";
-          let dedupeKey = f.id;
-          if (reg) {
-            dedupeKey = reg.id;
-            if (reg.source_type === "entry" && reg.source_id) {
-              const ent = entryMap.get(reg.source_id);
-              if (ent) {
-                const isAura =
-                  (ent.account_name || "").toLowerCase().includes("aura") ||
-                  (ent.type || "").toLowerCase().includes("onboarding") ||
-                  (ent.type || "").toLowerCase().includes("exa");
-                kind = isAura ? "aura" : "capture";
-                label = ent.title || reg.title || label;
-                dedupeKey = reg.source_id;
-              }
-            } else if (reg.source_type === "document") {
-              kind = "capture";
-              label = reg.title || label;
+      }
+      const seen = new Set<string>();
+      const out: EvidenceFragmentRow[] = [];
+      for (const f of fs) {
+        const reg = f.source_registry_id ? regMap.get(f.source_registry_id) : null;
+        let kind: "capture" | "aura" | "unknown" = "unknown";
+        let label = f.title || "Untitled source";
+        let key = f.id;
+        if (reg) {
+          key = reg.id;
+          if (reg.source_type === "entry" && reg.source_id) {
+            const ent = entryMap.get(reg.source_id);
+            if (ent) {
+              const isAura = (ent.account_name || "").toLowerCase().includes("aura") || (ent.type || "").toLowerCase().includes("onboarding") || (ent.type || "").toLowerCase().includes("exa");
+              kind = isAura ? "aura" : "capture";
+              label = ent.title || reg.title || label;
+              key = reg.source_id;
             }
+          } else if (reg.source_type === "document") {
+            kind = "capture"; label = reg.title || label;
           }
-          if (seen.has(dedupeKey)) continue;
-          seen.add(dedupeKey);
-          enriched.push({
-            id: f.id,
-            title: label,
-            content: f.content,
-            created_at: f.created_at,
-            source_kind: kind,
-            source_label: kind === "aura" ? "Found by Aura" : kind === "capture" ? "Your capture" : null as any,
-          });
         }
-        setEvidenceFragments(enriched);
-      } else {
-        setEvidenceFragments([]);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push({
+          id: f.id, title: label, content: f.content, created_at: f.created_at,
+          source_kind: kind,
+          source_label: kind === "aura" ? "Extracted" : "Your capture",
+        });
       }
-
-      if (user && signal.theme_tags?.length > 0) {
-        const { data: insightsData } = await supabase
-          .from("learned_intelligence")
-          .select("id, title, content, intelligence_type, skill_pillars, tags, created_at")
-          .eq("user_id", user.id)
-          .or(`tags.ov.{${signal.theme_tags.join(",")}},skill_pillars.ov.{${signal.theme_tags.join(",")}}`)
-          .order("created_at", { ascending: false })
-          .limit(1);
-        setKeyInsight((insightsData?.[0] as unknown as Insight) || null);
-      } else {
-        setKeyInsight(null);
-      }
-
-      setLoading(false);
-      panelRef.current?.scrollTo({ top: 0 });
+      setEvidence(out);
     })();
   }, [signal.id]);
 
   const confPct = Math.round(signal.confidence * 100);
-
-  // Deduplicate evidence by title
-  const uniqueEvidence = evidenceFragments.reduce<EvidenceFragmentRow[]>((acc, frag) => {
-    const key = (frag.title || "").trim() || "Untitled source";
-    const existing = acc.find(f => ((f.title || "").trim() || "Untitled source") === key);
-    if (!existing) {
-      acc.push({ ...frag, title: frag.title || "Untitled source" });
-    } else if (frag.created_at > existing.created_at) {
-      acc[acc.indexOf(existing)] = { ...frag, title: frag.title || "Untitled source" };
-    }
-    return acc;
-  }, []);
-  const visibleEvidence = showAllEvidence ? uniqueEvidence : uniqueEvidence.slice(0, 5);
-  const hiddenCount = uniqueEvidence.length - 5;
-
-  // Theme group helper
-  const getThemeGroup = () => {
-    if (!profile) return "";
-    const tags = signal.theme_tags || [];
-    if (profile.sector_focus && tags.some((t: string) => t.toLowerCase().includes(profile.sector_focus?.toLowerCase()))) return "My Industry";
-    const pillars = [...(profile.brand_pillars || []), profile.core_practice].filter(Boolean);
-    if (pillars.some((p: string) => tags.some((t: string) => t.toLowerCase().includes(p.toLowerCase())))) return "My Expertise";
-    return "Wider Landscape";
-  };
+  const orgs = signal.unique_orgs || 1;
+  const fragCount = evidence.length || signal.supporting_evidence_ids?.length || signal.fragment_count || 0;
+  const isRising = signal.velocity_status === "accelerating";
+  const isFading = signal.velocity_status === "fading";
+  const velText = isRising ? "and rising" : isFading ? "and fading" : "and stable";
+  const velColor = isRising ? "var(--success, hsl(140 60% 45%))" : isFading ? "hsl(24 95% 53%)" : "var(--ink-5)";
 
   return (
-    <div ref={panelRef} style={{ padding: 24, overflowY: "auto", height: "100%" }}>
-      {loading ? (
-        <div>
-          <div style={{ height: 12, width: 120, background: "var(--surface-ink-subtle)", borderRadius: 4, marginBottom: 12 }} className="animate-pulse" />
-          <div style={{ height: 48, width: 100, background: "var(--surface-ink-subtle)", borderRadius: 6, marginBottom: 16 }} className="animate-pulse" />
-          <div style={{ height: 16, width: "80%", background: "var(--surface-ink-subtle)", borderRadius: 4, marginBottom: 8 }} className="animate-pulse" />
-          <div style={{ height: 10, width: "100%", background: "var(--surface-ink-subtle)", borderRadius: 4, marginBottom: 6 }} className="animate-pulse" />
-          <div style={{ height: 10, width: "70%", background: "var(--surface-ink-subtle)", borderRadius: 4 }} className="animate-pulse" />
+    <section style={{ marginTop: 32, paddingTop: 24, borderTop: "0.5px solid var(--color-border-tertiary, var(--surface-ink-subtle))" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+        <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".06em", color: "var(--brand)" }}>
+          ✦ YOUR STRONGEST SIGNAL
+        </span>
+        {isRising && (
+          <span style={{
+            fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 999,
+            background: "hsl(140 50% 40% / 0.12)", color: "var(--success, hsl(140 60% 45%))",
+            border: "0.5px solid var(--success, hsl(140 60% 45%))",
+          }}>Rising</span>
+        )}
+      </div>
+
+      <h2 style={{
+        fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
+        fontSize: 20, fontWeight: 500, color: "var(--ink)", lineHeight: 1.3, margin: "0 0 12px",
+      }}>
+        {signal.signal_title}
+      </h2>
+
+      <p style={{ fontSize: 12, color: "var(--ink-3)", lineHeight: 1.7, margin: "0 0 20px" }}>
+        You've captured <strong style={{ color: "var(--ink-6)", fontWeight: 500 }}>{fragCount} evidence fragments</strong> from{" "}
+        <strong style={{ color: "var(--ink-6)", fontWeight: 500 }}>{orgs} organisation{orgs === 1 ? "" : "s"}</strong>.{" "}
+        Confidence: <strong style={{ color: "var(--brand)", fontWeight: 500 }}>{confPct}%</strong>{" "}
+        <span style={{ color: velColor, fontWeight: 500 }}>{velText}</span>.
+        {orgs < 3 && " Two more sources from different organisations would push this above the publishing threshold."}
+      </p>
+
+      {signal.what_it_means_for_you && (
+        <div style={{
+          background: "var(--color-background-secondary, var(--surface-ink-raised))",
+          borderRadius: 12, padding: "16px 18px", marginBottom: 14,
+        }}>
+          <div style={{ fontSize: 11, letterSpacing: ".04em", fontWeight: 500, color: "var(--brand)", marginBottom: 8 }}>
+            WHY THIS MATTERS TO YOU
+          </div>
+          <p style={{
+            fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
+            fontSize: 14, color: "var(--ink)", lineHeight: 1.5, margin: 0,
+          }}>
+            {signal.what_it_means_for_you}
+          </p>
+        </div>
+      )}
+
+      {signal.strategic_implications && (
+        <p style={{ fontSize: 12, color: "var(--ink-3)", lineHeight: 1.6, margin: "0 0 18px" }}>
+          {signal.strategic_implications}{" "}
+          <span style={{ color: "var(--brand)", fontWeight: 500 }}>The window is open.</span>
+        </p>
+      )}
+
+      <div style={{ marginBottom: 18 }}>
+        <button
+          onClick={() => setShowEvidence(s => !s)}
+          style={{
+            background: "none", border: "none", padding: 0, cursor: "pointer",
+            display: "inline-flex", alignItems: "center", gap: 6,
+            fontSize: 12, color: "var(--ink-3)",
+          }}
+        >
+          <Layers size={12} />
+          See the evidence behind this signal ({fragCount} fragment{fragCount === 1 ? "" : "s"})
+          <ChevronDown size={12} style={{ transform: showEvidence ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s" }} />
+        </button>
+        {showEvidence && (
+          <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+            {evidence.length === 0 ? (
+              <p style={{ fontSize: 12, color: "var(--ink-3)" }}>No evidence linked yet.</p>
+            ) : evidence.map(f => (
+              <div key={f.id} style={{
+                display: "flex", gap: 10, padding: "8px 12px",
+                background: "var(--surface-ink-raised)", borderRadius: 8,
+                border: "0.5px solid var(--surface-ink-subtle)",
+                alignItems: "center", fontSize: 12,
+              }}>
+                <span style={{ flex: 1, color: "var(--ink-5)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.title}</span>
+                <span style={{ color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: 0.4, fontSize: 10 }}>{f.source_label}</span>
+                <span style={{ color: "var(--ink-3)" }}>{relativeTime(f.created_at)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <Button onClick={() => onDraft(signal)}>Write on this signal →</Button>
+        <Button variant="outline" onClick={() => onOpenChat?.("Show competitor intel on: " + signal.signal_title)}>
+          Ask Aura to analyze →
+        </Button>
+      </div>
+    </section>
+  );
+};
+
+/* ═══════════════════════════════════════════
+   EDITORIAL BLIND SPOTS
+   ═══════════════════════════════════════════ */
+type GapCategory = "covered" | "weak" | "gap" | "opportunity";
+interface CoverageItem {
+  trend_headline: string;
+  category: GapCategory;
+  recommendation: string;
+  source?: string | null;
+  final_score?: number | null;
+}
+interface CoverageResult { coverage_score: number; items: CoverageItem[]; narrative: string }
+
+const STORAGE_KEY = "market_coverage_cache_v1";
+
+const EditorialBlindSpots = ({
+  signals, onOpenCapture,
+}: { signals: Signal[]; onOpenCapture?: () => void }) => {
+  const [data, setData] = useState<(CoverageResult & { generated_at?: string }) | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      if (!sess.session) throw new Error("Not authenticated");
+      const { data: r, error } = await supabase.functions.invoke("detect-market-gaps", { body: {} });
+      if (error) throw error;
+      if (!r || r.error) throw new Error(r?.error || "No result");
+      const cached = { ...(r as CoverageResult), generated_at: new Date().toISOString() };
+      setData(cached);
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cached)); } catch {}
+    } catch (e) {
+      console.error("coverage error", e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) { setData(JSON.parse(raw)); return; }
+    } catch {}
+    void load();
+  }, [load]);
+
+  const gaps = (data?.items || []).filter(it => it.category === "gap" || it.category === "opportunity");
+  const coveragePct = data ? Math.round((data.coverage_score || 0) * 100) : 0;
+
+  return (
+    <section style={{ marginTop: 40, paddingTop: 24, borderTop: "0.5px solid var(--color-border-tertiary, var(--surface-ink-subtle))" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 14, flexWrap: "wrap" }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 500, letterSpacing: ".06em", color: "var(--danger, hsl(0 70% 55%))" }}>
+          <EyeOff size={12} />
+          WHAT YOU'RE NOT SEEING
+        </span>
+        <ExpandablePanel label="How are blind spots detected?" align="right">
+          Aura compares your captured themes against active conversations in your sector. Topics your peers discuss that you have zero captures on appear here.
+        </ExpandablePanel>
+      </div>
+
+      {!data && loading ? (
+        <p style={{ fontSize: 12, color: "var(--ink-3)" }}><Loader2 size={12} className="inline animate-spin" /> Analysing coverage…</p>
+      ) : !data || gaps.length === 0 ? (
+        <div style={{ padding: "20px 16px", background: "var(--surface-ink-raised)", border: "0.5px dashed var(--surface-ink-subtle)", borderRadius: 10, textAlign: "center" }}>
+          <p style={{ fontSize: 12, color: "var(--ink-3)", margin: "0 0 10px" }}>Your coverage analysis is building. Refresh after your next capture.</p>
+          <Button size="sm" variant="outline" onClick={load} disabled={loading}>
+            <RefreshCw size={12} className={loading ? "animate-spin mr-1" : "mr-1"} /> Refresh coverage
+          </Button>
         </div>
       ) : (
         <>
-          {/* Signal indicator */}
-          <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 6 }}>
-            Signal #{signalIndex + 1} of {totalSignals}
-          </p>
-
-          {/* Confidence number */}
-          <p style={{ fontSize: 64, fontWeight: 800, color: "var(--brand)", letterSpacing: -3, lineHeight: 1.5, margin: "0 0 4px" }}>
-            {confPct}%
-          </p>
-
-          {/* Velocity, trend, validation */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-            <VelocityPill status={signal.velocity_status} />
-            <VelocityTrend velocity={signal.signal_velocity} />
-            <ValidationBadge score={signal.commercial_validation_score} />
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
+            <div style={{ flex: 1, height: 6, background: "var(--surface-ink-subtle)", borderRadius: 3, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${coveragePct}%`, background: "var(--brand)" }} />
+            </div>
+            <span style={{ fontSize: 12, color: "var(--brand)", fontWeight: 500 }}>{coveragePct}%</span>
           </div>
+          <p style={{ fontSize: 12, color: "var(--ink-3)", margin: "0 0 18px", lineHeight: 1.5 }}>
+            Your radar covers {coveragePct}% of the active conversations in your sector.
+          </p>
 
-          {/* Title */}
-          <h3 style={{ fontSize: 18, fontWeight: 700, color: "var(--ink-7)", lineHeight: 1.3, margin: "0 0 16px" }}>
-            {signal.signal_title}
-          </h3>
-
-          {/* Divider */}
-          <div style={{ height: "0.5px", background: "var(--surface-ink-subtle)", margin: "0 0 14px" }} />
-
-          {/* What this means for you */}
-          {signal.what_it_means_for_you && (
-            <div style={{ marginBottom: 14 }}>
-              <p style={{ fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 6 }}>What this means for you</p>
-              <p style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.7, margin: 0 }}>{signal.what_it_means_for_you}</p>
-            </div>
-          )}
-
-          {/* Key insight */}
-          {keyInsight && (
-            <div style={{ marginBottom: 14 }}>
-              <p style={{ fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 6 }}>Key insight</p>
-              <div style={{ background: "var(--surface-ink-raised)", border: "0.5px solid var(--ink-3)", borderLeft: "2px solid var(--brand)", borderRadius: "0 6px 6px 0", padding: "10px 12px" }}>
-                <p style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-7)", margin: "0 0 3px" }}>{keyInsight.title}</p>
-                <p style={{ fontSize: 12, color: "var(--ink-5)", lineHeight: 1.5, margin: 0 }}>{keyInsight.content.slice(0, 200)}</p>
-              </div>
-            </div>
-          )}
-
-          {/* Built from these sources */}
-          <div id="signal-evidence-section" style={{ marginBottom: 20, scrollMarginTop: 12 }}>
-            <p style={{ fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 8 }}>
-              Built from {uniqueEvidence.length} source{uniqueEvidence.length === 1 ? "" : "s"}
-            </p>
-            {uniqueEvidence.length > 0 ? (
-              <div>
-                {visibleEvidence.map(frag => (
-                  <div key={frag.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0" }}>
-                    <div style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--brand)", flexShrink: 0 }} />
-                    <span style={{ fontSize: 12, color: "var(--ink-5)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{frag.title}</span>
-                    {frag.source_label && (
-                      <span style={{ fontSize: 12, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: 0.5, flexShrink: 0 }}>
-                        {frag.source_label}
-                      </span>
-                    )}
-                    <span style={{ fontSize: 12, color: "var(--ink-3)", marginLeft: "auto", flexShrink: 0 }}>{relativeTime(frag.created_at)}</span>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {gaps.map((it, idx) => {
+              const isOpp = it.category === "opportunity";
+              const accent = isOpp ? "var(--warning, hsl(35 90% 55%))" : "var(--danger, hsl(0 70% 55%))";
+              const urgency = isOpp
+                ? "This trend is gaining momentum. Your take is missing."
+                : "No one in your network is publishing on this yet.";
+              return (
+                <div key={idx} style={{
+                  display: "flex", gap: 14, padding: "14px 16px",
+                  background: "var(--surface-ink-raised)",
+                  borderRadius: 12, border: "0.5px solid var(--surface-ink-subtle)",
+                }}>
+                  <div style={{
+                    width: 36, height: 36, flexShrink: 0, borderRadius: "50%",
+                    background: `${accent}1A`, color: accent,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <EyeOff size={16} />
                   </div>
-                ))}
-                {!showAllEvidence && hiddenCount > 0 && (
-                  <button onClick={() => setShowAllEvidence(true)} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, cursor: "pointer", padding: 0, marginTop: 4 }}>+ {hiddenCount} more</button>
-                )}
-              </div>
-            ) : (
-              <p style={{ fontSize: 12, color: "var(--ink-3)" }}>No sources linked yet.</p>
-            )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <h4 style={{
+                      fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
+                      fontSize: 15, fontWeight: 500, color: "var(--ink)",
+                      margin: "0 0 4px", lineHeight: 1.3,
+                    }}>{it.trend_headline}</h4>
+                    <p style={{ fontSize: 12, color: "var(--ink-4)", lineHeight: 1.5, margin: "0 0 6px" }}>{it.recommendation}</p>
+                    <p style={{ fontStyle: "italic", fontSize: 11, color: accent, margin: "0 0 10px" }}>{urgency}</p>
+                    <button
+                      onClick={() => onOpenCapture?.()}
+                      style={{
+                        background: `${accent}1A`, color: accent, border: `0.5px solid ${accent}55`,
+                        borderRadius: 6, padding: "5px 11px", fontSize: 12, fontWeight: 500,
+                        cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5,
+                      }}
+                    >
+                      <Plus size={12} /> Start tracking this
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-
-          {/* Confidence formula */}
-          <p style={{ fontSize: 12, color: "var(--ink-3)", fontFamily: "monospace", marginBottom: 16 }}>
-            AI confidence ~{confPct}%, {signal.unique_orgs} organisation{signal.unique_orgs !== 1 ? "s" : ""}. Formula: (0.47 AI) + (diversity) + (recency)
-          </p>
-
-          {/* Action button */}
-          <Button onClick={() => onDraft(signal)} className="w-full">
-            Write on this
-          </Button>
         </>
       )}
-    </div>
+    </section>
   );
 };
 
 /* ═══════════════════════════════════════════
-   KEY INSIGHTS STRIP (below command center)
+   EDITORIAL READING LIST
    ═══════════════════════════════════════════ */
+interface Recommendation {
+  title: string;
+  author?: string;
+  url: string | null;
+  intelligence_value?: string;
+  skill_gap?: string;
+}
 
-const KeyInsightsStrip = ({ onDraftToStudio }: { onDraftToStudio?: (prefill: SignalDraftPrefill) => void }) => {
-  const [insights, setInsights] = useState<Insight[]>([]);
-  const [showAll, setShowAll] = useState(false);
+const readingCacheKey = () => `aura_reading_list_${new Date().toISOString().slice(0, 10)}`;
 
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase
-        .from("learned_intelligence")
-        .select("id, title, content, intelligence_type, skill_pillars, tags, created_at")
-        .order("created_at", { ascending: false })
-        .limit(6);
-      setInsights((data || []) as unknown as Insight[]);
-    })();
-  }, []);
-
-  if (insights.length === 0) return null;
-
-  const getBadge = (type: string) => {
-    switch (type) {
-      case "signal": case "pattern": return { label: "Signal", bg: "var(--paper-2)", border: "var(--brand-line)", color: "var(--info)" };
-      case "insight": case "principle": return { label: "Insight", bg: "var(--surface-ink-subtle)", border: "var(--brand-line)", color: "var(--brand)" };
-      case "recommendation": case "framework_step": return { label: "Recommendation", bg: "var(--brand-ghost)", border: "var(--brand-line)", color: "var(--success)" };
-      case "blind_spot": case "claim": return { label: "Blind spot", bg: "var(--paper-2)", border: "var(--brand-line)", color: "var(--danger)" };
-      default: return { label: "Insight", bg: "var(--surface-ink-subtle)", border: "var(--brand-line)", color: "var(--brand)" };
-    }
-  };
-
-  const visible = showAll ? insights : insights.slice(0, 3);
-
-  return (
-    <div style={{ marginTop: 20 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-        <p style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--ink-3)", fontWeight: 600, margin: 0 }}>Key insights from your captures</p>
-        {insights.length > 3 && (
-          <button onClick={() => setShowAll(!showAll)} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, cursor: "pointer" }}>
-            {showAll ? "Show less" : `View all ${insights.length} →`}
-          </button>
-        )}
-      </div>
-      <div className="intel-key-insights-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-        {visible.map(insight => {
-          const badge = getBadge(insight.intelligence_type);
-          return (
-            <div key={insight.id} style={{ background: "var(--surface-ink-raised)", border: "0.5px solid var(--surface-ink-subtle)", borderRadius: 8, padding: 12 }}>
-              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", padding: "2px 7px", borderRadius: 4, display: "inline-block", marginBottom: 6, background: badge.bg, border: `0.5px solid ${badge.border}`, color: badge.color }}>
-                {badge.label}
-              </span>
-              <p style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-7)", lineHeight: 1.4, margin: "0 0 4px" }}>{insight.title}</p>
-              <p style={{ fontSize: 12, color: "var(--ink-4)", lineHeight: 1.5, margin: "0 0 8px" }}>
-                {insight.content.slice(0, 120)}{insight.content.length > 120 ? "..." : ""}
-              </p>
-              <button
-                onClick={() => onDraftToStudio?.({ topic: insight.title, context: insight.content, sourceType: "insight", sourceTitle: insight.title })}
-                style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, fontWeight: 500, cursor: "pointer", padding: 0 }}
-              >
-                Write on this →
-              </button>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-/* ═══════════════════════════════════════════
-   FRAMEWORKS SUB-TAB
-   ═══════════════════════════════════════════ */
-
-const FrameworksSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?: string) => void; onDraftToStudio?: (prefill: SignalDraftPrefill) => void }) => {
-  const [frameworks, setFrameworks] = useState<Framework[]>([]);
+const EditorialReadingList = ({
+  signals, onOpenCapture,
+}: { signals: Signal[]; onOpenCapture?: () => void }) => {
+  const [recs, setRecs] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [builderData, setBuilderData] = useState<{ title: string; steps: string[]; summary?: string } | null>(null);
-  const [filter, setFilter] = useState<"all" | "approved" | "draft">("all");
-  const [showAll, setShowAll] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      const r = await supabase.from("master_frameworks").select("id, title, summary, tags, framework_steps, source_type, created_at").order("created_at", { ascending: false }).limit(50);
-      setFrameworks((r.data || []) as any);
-      setLoading(false);
-    })();
+  const load = useCallback(async (force = false) => {
+    setLoading(true); setError(false);
+    try {
+      if (!force) {
+        const cached = sessionStorage.getItem(readingCacheKey());
+        if (cached) { setRecs(JSON.parse(cached)); setLoading(false); return; }
+      }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { setError(true); return; }
+      const { data, error: err } = await supabase.functions.invoke("sovereign-reading-list", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (err || !data || data.error) { setError(true); setRecs([]); return; }
+      const list: Recommendation[] = data.recommendations || [];
+      setRecs(list);
+      try { sessionStorage.setItem(readingCacheKey(), JSON.stringify(list)); } catch {}
+    } catch { setError(true); }
+    finally { setLoading(false); }
   }, []);
 
-  const handleDelete = async (id: string) => {
-    await supabase.from("master_frameworks").delete().eq("id", id);
-    setFrameworks(prev => prev.filter(f => f.id !== id));
-    setDeleteTarget(null);
-    toast("Framework deleted");
+  useEffect(() => { void load(false); }, [load]);
+
+  const signalThemes = useMemo(() => {
+    const set = new Set<string>();
+    signals.forEach(s => (s.theme_tags || []).forEach(t => set.add(t.toLowerCase())));
+    return set;
+  }, [signals]);
+
+  const topSignal = signals[0];
+
+  const contextualMatter = (rec: Recommendation) => {
+    const haystack = `${rec.title} ${rec.intelligence_value || ""} ${rec.skill_gap || ""}`.toLowerCase();
+    const matchedTheme = Array.from(signalThemes).find(t => haystack.includes(t));
+    if (matchedTheme && topSignal) {
+      return {
+        icon: <TrendingUp size={12} style={{ color: "var(--success, hsl(140 60% 45%))" }} />,
+        label: "Strengthens top signal:",
+        text: rec.intelligence_value || `Adds depth to your "${topSignal.signal_title}" signal.`,
+        color: "var(--success, hsl(140 60% 45%))",
+      };
+    }
+    return {
+      icon: <Lightbulb size={12} style={{ color: "var(--brand)" }} />,
+      label: "Why this matters:",
+      text: rec.intelligence_value || rec.skill_gap || "Closes a blind spot in your radar.",
+      color: "var(--brand)",
+    };
   };
 
-  if (loading) return <div style={{ display: "flex", justifyContent: "center", padding: 40 }}><Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--brand)" }} /></div>;
-
-  const isApproved = (fw: Framework) => fw.source_type === "approved" || fw.source_type === "signal";
-  const filtered = filter === "all" ? frameworks : filter === "approved" ? frameworks.filter(isApproved) : frameworks.filter(f => !isApproved(f));
-  const approvedCount = frameworks.filter(isApproved).length;
-  const draftCount = frameworks.length - approvedCount;
-  const visible = showAll ? filtered : filtered.slice(0, 6);
-
   return (
-    <div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-        <div>
-          <h2 style={{ color: "var(--ink-7)", fontSize: 17, fontWeight: 700, margin: 0 }}>Frameworks</h2>
-          <p style={{ color: "var(--ink-4)", fontSize: 12, margin: "2px 0 0" }}>{frameworks.length} created · Your structured thinking library</p>
+    <section style={{ marginTop: 40, paddingTop: 24, borderTop: "0.5px solid var(--color-border-tertiary, var(--surface-ink-subtle))" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 10 }}>
+        <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".06em", color: "var(--ink-3)" }}>
+          READING INTELLIGENCE
+        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <ExpandablePanel label="How are these chosen?">
+            Aura scans publications from McKinsey, BCG, Gartner, Deloitte, and 50+ sector-specific sources. Articles are ranked by how much they would strengthen your existing signals or close your blind spots. This is not a generic feed — every article was selected because of your specific intelligence profile.
+          </ExpandablePanel>
+          <button
+            onClick={() => load(true)} disabled={loading}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 4,
+              background: "none", border: "0.5px solid var(--surface-ink-subtle)",
+              borderRadius: 6, padding: "4px 10px", fontSize: 12, color: "var(--ink-3)",
+              cursor: loading ? "default" : "pointer",
+            }}
+          >
+            {loading ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+            Refresh
+          </button>
         </div>
-        <button onClick={() => setBuilderData({ title: "", steps: [], summary: "" })} style={{ background: "var(--brand)", color: "#000", borderRadius: 6, padding: "7px 14px", fontSize: 12, fontWeight: 600, border: "none", cursor: "pointer" }}>+ New framework</button>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 14 }}>
-        {[
-          { key: "all" as const, label: `All (${frameworks.length})` },
-          { key: "approved" as const, label: `Approved (${approvedCount})` },
-          { key: "draft" as const, label: `Draft (${draftCount})` },
-        ].map(chip => (
-          <button key={chip.key} onClick={() => setFilter(chip.key)} style={{
-            padding: "5px 12px", borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: "pointer",
-            background: filter === chip.key ? "var(--surface-ink-subtle)" : "var(--surface-ink-raised)",
-            color: filter === chip.key ? "var(--brand)" : "var(--ink-5)",
-            border: `1px solid ${filter === chip.key ? "var(--brand-line)" : "var(--ink-3)"}`,
-          }}>{chip.label}</button>
-        ))}
-        <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--ink-4)" }}>Most recent ↓</span>
-      </div>
+      <p style={{ fontSize: 13, color: "var(--ink-4)", margin: "0 0 18px", lineHeight: 1.5 }}>
+        Articles selected to strengthen your radar. Each tells you what capturing it does for your intelligence.
+      </p>
 
-      {frameworks.length === 0 ? (
-        <div style={{ textAlign: "center", padding: 40 }}>
-          <Layers className="w-7 h-7 mx-auto mb-3" style={{ color: "var(--brand)", opacity: 0.3 }} />
-          <p style={{ color: "var(--ink-5)", fontSize: 14 }}>No frameworks created yet.</p>
+      {loading && recs.length === 0 ? (
+        <p style={{ fontSize: 12, color: "var(--ink-3)" }}><Loader2 size={12} className="inline animate-spin" /> Loading…</p>
+      ) : error || recs.length === 0 ? (
+        <div style={{
+          padding: 24, border: "0.5px dashed var(--surface-ink-subtle)", borderRadius: 10,
+          textAlign: "center", color: "var(--ink-3)", fontSize: 12,
+          display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
+        }}>
+          <BookOpen size={16} />
+          Reading recommendations unavailable
         </div>
       ) : (
-        <div className="intel-frameworks-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          {visible.map(fw => {
-            const steps = Array.isArray(fw.framework_steps) ? fw.framework_steps : [];
-            const approved = isApproved(fw);
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {recs.map((rec, i) => {
+            const ctx = contextualMatter(rec);
+            const domain = domainFromUrl(rec.url);
             return (
-              <div key={fw.id} style={{ background: "var(--surface-ink-raised)", border: "0.5px solid var(--ink-3)", borderTop: approved ? "2px solid var(--brand)" : "0.5px solid var(--ink-3)", borderRadius: 10, padding: 16 }}>
-                <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 4, display: "inline-block", marginBottom: 6, background: approved ? "var(--brand-ghost)" : "var(--paper-2)", border: `0.5px solid ${approved ? "var(--brand-line)" : "var(--ink-3)"}`, color: approved ? "var(--success)" : "var(--ink-5)" }}>
-                  {approved ? "Approved" : "Draft"}
-                </span>
-                <p style={{ color: "var(--ink-7)", fontSize: 12, fontWeight: 600, lineHeight: 1.4, margin: "0 0 6px" }}>{fw.title}</p>
-                {fw.summary && <p style={{ color: "var(--ink-5)", fontSize: 12, lineHeight: 1.5, margin: "0 0 8px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{fw.summary}</p>}
-                {steps.length > 0 && (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
-                    {steps.slice(0, 5).map((_: any, i: number) => (
-                      <span key={i} style={{ fontSize: 12, padding: "2px 7px", borderRadius: 4, background: "var(--surface-ink-subtle)", border: "1px solid var(--ink-3)", color: "var(--ink-5)" }}>Step {i + 1}</span>
-                    ))}
+              <div key={i} style={{
+                background: "var(--surface-ink-raised)", border: "0.5px solid var(--surface-ink-subtle)",
+                borderRadius: 12, padding: "16px 18px",
+              }}>
+                <h4 style={{
+                  fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
+                  fontSize: 16, fontWeight: 500, color: "var(--ink)",
+                  margin: "0 0 4px", lineHeight: 1.3,
+                }}>
+                  {rec.title}
+                </h4>
+                {domain && <p style={{ fontSize: 11, color: "var(--ink-3)", margin: "0 0 10px" }}>{domain}</p>}
+
+                <div style={{
+                  background: "var(--color-background-secondary, var(--surface-ink-raised))",
+                  border: "0.5px solid var(--surface-ink-subtle)",
+                  borderRadius: 8, padding: "10px 12px", marginBottom: 12,
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                    {ctx.icon}
+                    <span style={{ fontSize: 11, fontWeight: 500, color: ctx.color }}>{ctx.label}</span>
                   </div>
-                )}
-                <p style={{ color: "var(--ink-3)", fontSize: 12, margin: "0 0 8px" }}>{formatSmartDate(fw.created_at)}</p>
-                <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-                  {[
-                    { label: "View", action: () => setBuilderData({ title: fw.title, steps: steps.map((s: any) => typeof s === "string" ? s : s.title || s.name || ""), summary: fw.summary || "" }) },
-                    { label: "Refine", action: () => onOpenChat?.(`Refine framework: ${fw.title}`) },
-                    { label: "Draft content", action: () => onDraftToStudio?.({ topic: fw.title, context: fw.summary || "", sourceType: "framework", sourceTitle: fw.title }) },
-                  ].map(btn => (
-                    <button key={btn.label} onClick={btn.action} style={{ background: "transparent", border: "0.5px solid var(--ink-3)", borderRadius: 5, padding: "4px 9px", fontSize: 12, color: "var(--ink-5)", cursor: "pointer" }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--brand-line)"; e.currentTarget.style.color = "var(--brand)"; }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--ink-3)"; e.currentTarget.style.color = "var(--ink-5)"; }}
-                    >{btn.label}</button>
-                  ))}
-                  <button onClick={() => setDeleteTarget(fw.id)} style={{ background: "transparent", border: "0.5px solid var(--ink-3)", borderRadius: 5, padding: "4px 9px", fontSize: 12, color: "var(--ink-5)", cursor: "pointer", marginLeft: "auto" }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(255,68,68,0.2)"; e.currentTarget.style.color = "var(--danger)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--ink-3)"; e.currentTarget.style.color = "var(--ink-5)"; }}
-                  >✕</button>
+                  <p style={{ fontSize: 12, color: "var(--ink-4)", lineHeight: 1.5, margin: 0 }}>{ctx.text}</p>
+                </div>
+
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    onClick={() => onOpenCapture?.()}
+                    style={{
+                      background: "var(--brand)", color: "#fff", border: "none",
+                      borderRadius: 6, padding: "6px 12px", fontSize: 12, fontWeight: 500,
+                      cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5,
+                    }}
+                  >
+                    <Plus size={12} /> Capture
+                  </button>
+                  {rec.url && (
+                    <a
+                      href={rec.url} target="_blank" rel="noopener noreferrer"
+                      style={{
+                        display: "inline-flex", alignItems: "center", gap: 5,
+                        background: "transparent", color: "var(--ink-4)",
+                        border: "0.5px solid var(--surface-ink-subtle)",
+                        borderRadius: 6, padding: "6px 10px", fontSize: 12, textDecoration: "none",
+                      }}
+                    >
+                      <ExternalLink size={12} />
+                    </a>
+                  )}
                 </div>
               </div>
             );
           })}
         </div>
       )}
-
-      {filtered.length > 6 && (
-        <button onClick={() => setShowAll(!showAll)} style={{ display: "block", margin: "14px auto 0", background: "none", border: "none", color: "var(--ink-4)", fontSize: 12, cursor: "pointer" }}>
-          {showAll ? "Show less ↑" : `Show all ${filtered.length} frameworks ↓`}
-        </button>
-      )}
-
-      {/* Delete confirmation */}
-      {deleteTarget && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.8)" }} onClick={() => setDeleteTarget(null)} />
-          <div style={{ position: "relative", background: "var(--surface-ink-subtle)", borderRadius: 16, padding: 24, width: 360, maxWidth: "90vw", border: "1px solid var(--ink-3)" }}>
-            <p style={{ color: "var(--ink-7)", fontSize: 15, fontWeight: 600, margin: "0 0 8px" }}>Delete this framework?</p>
-            <p style={{ color: "var(--ink-5)", fontSize: 14, margin: "0 0 20px" }}>This cannot be undone.</p>
-            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-              <button onClick={() => setDeleteTarget(null)} style={{ padding: "8px 18px", borderRadius: 10, border: "1px solid var(--ink-3)", background: "transparent", color: "var(--ink-5)", fontSize: 14, cursor: "pointer" }}>Cancel</button>
-              <button onClick={() => handleDelete(deleteTarget)} style={{ padding: "8px 18px", borderRadius: 10, border: "none", background: "var(--danger)", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Delete</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {builderData && (
-        <FrameworkBuilder initialTitle={builderData.title} initialSteps={builderData.steps} initialDescription={builderData.summary || ""} open={!!builderData} onClose={() => setBuilderData(null)} onFrameworkCreated={() => setBuilderData(null)} />
-      )}
-    </div>
+    </section>
   );
 };
 
 /* ═══════════════════════════════════════════
-   Main Intelligence Tab
+   MAIN
    ═══════════════════════════════════════════ */
-
-/** Expandable text block for signal sidebar (Why now / Your move). */
-const ExpandableSignalText = ({ label, text }: { label: string; text: string }) => {
-  const ref = useRef<HTMLSpanElement>(null);
-  const [overflows, setOverflows] = useState(false);
-  const [expanded, setExpanded] = useState(false);
-
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    setOverflows(el.scrollHeight - 1 > el.clientHeight);
-  }, [text]);
-
-  const clampStyle: React.CSSProperties = expanded
-    ? { display: "block" }
-    : {
-        display: "-webkit-box",
-        WebkitLineClamp: 3,
-        WebkitBoxOrient: "vertical",
-        overflow: "hidden",
-      };
-
-  const interactive = overflows;
-
-  return (
-    <div
-      onClick={(e) => {
-        if (!interactive) return;
-        e.stopPropagation();
-        setExpanded((v) => !v);
-      }}
-      style={{
-        cursor: interactive ? "pointer" : "default",
-        transition: "opacity 0.15s",
-        marginTop: 2,
-      }}
-      onMouseEnter={(e) => { if (interactive) e.currentTarget.style.opacity = "0.85"; }}
-      onMouseLeave={(e) => { if (interactive) e.currentTarget.style.opacity = "1"; }}
-    >
-      <span
-        ref={ref}
-        className="leading-relaxed text-ink-7 dark:text-ink-3"
-        style={{ ...clampStyle, transition: "all 0.3s ease-in-out", fontSize: 12 }}
-      >
-        <span className="font-semibold text-ink-5">{label}: </span>
-        {text}
-        {interactive && (
-          <ChevronDown
-            size={14}
-            className="text-ink-5 inline-block align-middle ml-1"
-            style={{ transform: expanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.3s ease-in-out" }}
-          />
-        )}
-      </span>
-    </div>
-  );
-};
-
-const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraftToStudio }: IntelligenceTabProps) => {
+const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }: IntelligenceTabProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user: authUser } = useAuthReady();
   const journey = useJourneyState(authUser?.id ?? null);
@@ -719,85 +724,45 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
   const [selectedSignalId, setSelectedSignalId] = useState<string | null>(null);
   const [entryCount, setEntryCount] = useState(0);
   const [movesCount, setMovesCount] = useState(0);
-  const [draftData, setDraftData] = useState<{ title: string; hook?: string; angle?: string; context?: string } | null>(null);
   const [activeSubTab, setActiveSubTab] = useState<SubTab>("signals");
   const [detecting, setDetecting] = useState(false);
-  const [showAllSignals, setShowAllSignals] = useState(false);
-  const [profile, setProfile] = useState<any>(null);
-
-  useEffect(() => {
-    (async () => {
-      const { data } = await (supabase.from("diagnostic_profiles" as any) as any).select("sector_focus, core_practice, brand_pillars").maybeSingle();
-      setProfile(data);
-    })();
-  }, []);
-
-  useEffect(() => {
-    const signalParam = searchParams.get("signal");
-    if (signalParam && signals.length > 0) {
-      const found = signals.find(s => s.id === signalParam);
-      if (found) {
-        setSelectedSignalId(signalParam);
-        setActiveSubTab("signals");
-        searchParams.delete("signal");
-        setSearchParams(searchParams, { replace: true });
-      }
-    }
-  }, [signals, searchParams]);
-
   const [loadError, setLoadError] = useState(false);
 
   const loadSignals = useCallback(async () => {
-    setLoading(true);
-    setLoadError(false);
+    setLoading(true); setLoadError(false);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setLoading(false);
-        return;
-      }
+      if (!user) { setLoading(false); return; }
       const [signalsRes, entriesRes, documentsRes, movesRes] = await Promise.all([
-        supabase
-          .from("strategic_signals")
+        supabase.from("strategic_signals")
           .select("*, signal_velocity, velocity_status, commercial_validation_score")
-          .eq("status", "active")
-          .order("confidence", { ascending: false })
-          .limit(50),
+          .eq("status", "active").order("confidence", { ascending: false }).limit(50),
         supabase.from("entries").select("id", { count: "exact", head: true }),
         supabase.from("documents").select("id", { count: "exact", head: true }),
         supabase.from("recommended_moves").select("id", { count: "exact", head: true }).eq("status", "active").eq("user_id", user.id),
       ]);
-      const loadedSignals = (signalsRes.data || []) as unknown as Signal[];
-      setSignals(loadedSignals);
+      const loaded = (signalsRes.data || []) as unknown as Signal[];
+      setSignals(loaded);
       setEntryCount((entriesRes.count || 0) + (documentsRes.count || 0));
       setMovesCount(movesRes.count || 0);
-      // Auto-select first signal
-      if (loadedSignals.length > 0 && !selectedSignalId) {
-        setSelectedSignalId(loadedSignals[0].id);
-      }
-    } catch (err) {
-      console.error("[IntelligenceTab] loadSignals failed", err);
-      setLoadError(true);
-      showQueryErrorToast();
-    } finally {
-      setLoading(false);
-    }
+      if (loaded.length > 0 && !selectedSignalId) setSelectedSignalId(loaded[0].id);
+    } catch (e) {
+      console.error("[IntelligenceTab]", e);
+      setLoadError(true); showQueryErrorToast();
+    } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { loadSignals(); }, [loadSignals]);
 
-  // Refresh when a capture completes elsewhere in the app
   useEffect(() => {
-    const handler = () => { loadSignals(); };
+    const handler = () => loadSignals();
     window.addEventListener("capture-complete", handler);
     return () => window.removeEventListener("capture-complete", handler);
   }, [loadSignals]);
 
-  // Realtime: refetch counters when entries / signals / moves change
   useEffect(() => {
     if (!authUser?.id) return;
-    const channel = supabase
-      .channel(`intelligence-live-${authUser.id}`)
+    const channel = supabase.channel(`intelligence-live-${authUser.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "entries", filter: `user_id=eq.${authUser.id}` }, () => loadSignals())
       .on("postgres_changes", { event: "*", schema: "public", table: "documents", filter: `user_id=eq.${authUser.id}` }, () => loadSignals())
       .on("postgres_changes", { event: "*", schema: "public", table: "strategic_signals", filter: `user_id=eq.${authUser.id}` }, () => loadSignals())
@@ -805,6 +770,20 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [authUser?.id, loadSignals]);
+
+  // Deep link
+  useEffect(() => {
+    const sigParam = searchParams.get("signal");
+    if (sigParam && signals.length > 0) {
+      const found = signals.find(s => s.id === sigParam);
+      if (found) {
+        setSelectedSignalId(sigParam);
+        setActiveSubTab("signals");
+        searchParams.delete("signal");
+        setSearchParams(searchParams, { replace: true });
+      }
+    }
+  }, [signals, searchParams, setSearchParams]);
 
   const sortedByConfidence = useMemo(() => {
     const order: Record<string, number> = { fading: 0, accelerating: 1, stable: 2, dormant: 3 };
@@ -824,35 +803,21 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
     if (dormantSignals.length === 0) return;
     const ids = dormantSignals.map(s => s.id);
     const { error } = await supabase.from("strategic_signals").update({ status: "archived" } as any).in("id", ids);
-    if (error) {
-      toast.error("Couldn't archive signals");
-      return;
-    }
+    if (error) { toast.error("Couldn't archive signals"); return; }
     toast.success(`Archived ${ids.length} dormant signal${ids.length > 1 ? "s" : ""}`);
     await loadSignals();
   };
 
-  const selectedSignal = useMemo(() => {
-    return sortedByConfidence.find(s => s.id === selectedSignalId) || sortedByConfidence[0] || null;
-  }, [sortedByConfidence, selectedSignalId]);
-
-  const selectedIndex = useMemo(() => {
-    if (!selectedSignal) return 0;
-    return sortedByConfidence.findIndex(s => s.id === selectedSignal.id);
-  }, [sortedByConfidence, selectedSignal]);
+  const selectedSignal = useMemo(() =>
+    sortedByConfidence.find(s => s.id === selectedSignalId) || sortedByConfidence[0] || null,
+    [sortedByConfidence, selectedSignalId]);
 
   const draftFromSignal = async (s: Signal) => {
-    // Track signal preference — user chose to write about this signal
-    await supabase
-      .from("strategic_signals")
-      .update({ priority_score: (s.priority_score || 0) + 0.05 })
-      .eq("id", s.id);
-
+    await supabase.from("strategic_signals").update({ priority_score: (s.priority_score || 0) + 0.05 }).eq("id", s.id);
     onDraftToStudio?.({
       topic: s.signal_title,
       context: [s.explanation, s.strategic_implications, s.what_it_means_for_you].filter(Boolean).join("\n\n"),
-      signalId: s.id,
-      signalTitle: s.signal_title,
+      signalId: s.id, signalTitle: s.signal_title,
     });
   };
 
@@ -870,308 +835,126 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
       const data = await resp.json();
       toast.success(`Detected ${data.signals_created || 0} new signals`);
       await loadSignals();
-    } catch (e: any) {
-      toast.error(e.message);
-    } finally {
-      setDetecting(false);
-    }
+    } catch (e: any) { toast.error(e.message); }
+    finally { setDetecting(false); }
   };
 
-  // Theme group helper for right panel
-  const getThemeGroup = (s: Signal) => {
-    if (!profile) return "";
-    const tags = s.theme_tags || [];
-    if (profile.sector_focus && tags.some((t: string) => t.toLowerCase().includes(profile.sector_focus?.toLowerCase()))) return "My Industry";
-    const pillars = [...(profile.brand_pillars || []), profile.core_practice].filter(Boolean);
-    if (pillars.some((p: string) => tags.some((t: string) => t.toLowerCase().includes(p.toLowerCase())))) return "My Expertise";
-    return "Wider Landscape";
-  };
-
-  const visibleSignals = showAllSignals ? sortedByConfidence : sortedByConfidence.slice(0, 8);
+  const uniqueThemeCount = useMemo(() => {
+    const set = new Set<string>();
+    signals.forEach(s => (s.theme_tags || []).forEach(t => set.add(t.toLowerCase().trim())));
+    return set.size;
+  }, [signals]);
 
   if (loading) {
     return (
-      <div style={{ background: "transparent", padding: "16px" }}>
+      <div style={{ padding: 16 }}>
         <div style={{ maxWidth: 900, margin: "0 auto" }}>
           {[...Array(3)].map((_, i) => (
-            <div key={i} style={{ background: "var(--surface-ink-subtle)", borderRadius: 12, padding: 20, marginBottom: 12, border: "1px solid var(--ink-3)" }}>
-              <div style={{ height: 14, width: "60%", background: "var(--surface-ink-subtle)", borderRadius: 6, marginBottom: 10 }} className="animate-pulse" />
-              <div style={{ height: 10, width: "100%", background: "var(--surface-ink-subtle)", borderRadius: 4, marginBottom: 6 }} className="animate-pulse" />
-              <div style={{ height: 10, width: "70%", background: "var(--surface-ink-subtle)", borderRadius: 4 }} className="animate-pulse" />
-            </div>
+            <div key={i} style={{ background: "var(--surface-ink-subtle)", borderRadius: 12, padding: 20, marginBottom: 12 }} className="animate-pulse" />
           ))}
         </div>
       </div>
     );
   }
 
-  const SUB_TABS: { value: SubTab; label: string }[] = [
-    { value: "signals", label: "Signals" },
-    { value: "sources", label: "Sources" },
-  ];
+  /* Gate when nothing yet */
+  if (!journey.loading && signals.length === 0 && !journey.capturesReady) {
+    return (
+      <div style={{ minHeight: "100vh", paddingBottom: 80 }}>
+        <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 16px" }}>
+          <Header entryCount={entryCount} signalsCount={0} movesCount={0} />
+          <div style={{
+            marginTop: 40, padding: "28px 28px",
+            background: "var(--surface-ink-raised)", border: "0.5px solid var(--surface-ink-subtle)",
+            borderRadius: 12, textAlign: "center",
+          }}>
+            <p style={{ fontSize: 14, color: "var(--ink-2)", lineHeight: 1.6, margin: "0 0 16px" }}>
+              {entryCount === 0
+                ? "Your radar activates with your first capture. Paste a link to an article that made you think this week."
+                : "Aura is analysing your captures. Signals emerge when 3+ sources share a pattern. Keep capturing from different sources."}
+            </p>
+            <Button size="sm" onClick={() => onOpenCapture?.()}>
+              Capture {entryCount === 0 ? "an" : "another"} article →
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ background: "transparent", minHeight: "100vh", paddingBottom: 80 }}>
-      {loadError && (
-        <SectionError onRetry={loadSignals} message="Couldn't load intelligence. " />
-      )}
-      <style>{`
-          @media (max-width: 768px) {
-          .intel-counter-bar > div:last-child { border-right: none !important; }
-          .intel-automation-grid { grid-template-columns: 1fr !important; }
-          .intel-command-center { flex-direction: column-reverse !important; min-height: 0 !important; }
-          .intel-command-left { flex: 1 1 auto !important; border-right: none !important; border-top: 0.5px solid var(--surface-ink-subtle); }
-          .intel-command-right { flex: 1 1 auto !important; max-height: none !important; }
-          .intel-signal-row { min-height: 48px; }
-          .intel-key-insights-grid { grid-template-columns: 1fr !important; }
-          .intel-frameworks-grid { grid-template-columns: 1fr !important; }
-        }
-      `}</style>
-      <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 16px" }}>
-        {/* GATE: only block when we genuinely have nothing to show.
-            If any active signal exists, show the page regardless of source count. */}
-        {!journey.loading && signals.length === 0 && !journey.capturesReady ? (
-          <div>
-            <div style={{ marginBottom: 24 }}>
-              <div className="font-serif text-base font-medium tracking-wide text-ink-4" style={{ marginBottom: 6 }}>
-                Your strategic radar
-              </div>
-              <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
-                Intelligence
-              </h1>
-              <p style={{ fontSize: 14, color: "var(--ink-3)", marginTop: 8, lineHeight: 1.5, maxWidth: 640 }}>
-                You already see these patterns. Aura just makes them visible — so you can turn what you know into content that builds your name.
-              </p>
-            </div>
-            <div
-              data-testid="intel-locked"
-              style={{
-                background: "var(--surface-ink-raised)",
-                border: "0.5px solid var(--surface-ink-subtle)",
-                borderRadius: 12,
-                padding: "28px 28px",
-              }}
-            >
-              <div style={{ fontSize: 12, letterSpacing: "0.14em", fontWeight: 700, color: "var(--brand)", textTransform: "uppercase", marginBottom: 10 }}>
-                Your strategic radar
-              </div>
-              {entryCount >= 3 ? (
-                <p style={{ fontSize: 14, color: "var(--ink-2)", lineHeight: 1.625, margin: "0 0 18px", maxWidth: 600 }}>
-                  Aura is analyzing your captures. Signals typically appear within a few minutes after capture.
-                </p>
-              ) : (
-                <>
-                  <p style={{ fontSize: 14, color: "var(--ink-2)", lineHeight: 1.625, margin: "0 0 18px", maxWidth: 600 }}>
-                    Intelligence emerges from patterns across your captures. Aura needs at least 3 articles from different sources to start detecting meaningful signals. Aura reads what you read — every article you capture adds a layer of intelligence.
-                  </p>
-                  <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 16 }}>
-                    Current: {journey.distinctSources} of 3 sources
-                  </div>
-                  <Button size="sm" onClick={() => onOpenCapture?.()} style={{ borderRadius: 4 }}>
-                    Capture an article →
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-        ) : (
-        <>
+    <div style={{ minHeight: "100vh", paddingBottom: 80 }}>
+      {loadError && <SectionError onRetry={loadSignals} message="Couldn't load intelligence. " />}
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 16px 0" }}>
         {signals.length === 0 && <FirstVisitHint page="intelligence" />}
 
-        {/* ── Header: title + inline counters ── */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24, gap: 16, flexWrap: "wrap" }}>
-          <div>
-            <div className="font-serif text-base font-medium tracking-wide text-ink-4" style={{ marginBottom: 6 }}>
-                Your strategic radar
-              </div>
-            <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
-              Intelligence
-            </h1>
-            <p style={{ fontSize: 14, color: "var(--ink-3)", marginTop: 8, lineHeight: 1.5, maxWidth: 640 }}>
-              You already see these patterns. Aura just makes them visible — so you can turn what you know into content that builds your name.
-            </p>
-          </div>
-          <div data-testid="intel-stats" style={{ display: "flex", gap: 10, alignItems: "stretch" }}>
-            {[
-              { val: entryCount, label: "Sources", color: "var(--aura-accent3)" },
-              { val: signals.length, label: "Signals", color: "var(--aura-blue)" },
-              { val: movesCount, label: "Moves", color: "var(--aura-accent)" },
-            ].map(c => (
-              <div key={c.label} style={{
-                background: "var(--aura-card)",
-                border: "1px solid var(--aura-card-glass)",
-                borderRadius: 10,
-                padding: "10px 16px",
-                textAlign: "center",
-                minWidth: 88,
-              }}>
-                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 36, fontWeight: 600, color: c.color, lineHeight: 1.5 }}>
-                  {c.val}
-                </div>
-                <div style={{ fontSize: 12, letterSpacing: 1, color: "var(--aura-t1)", opacity: 0.6, textTransform: "uppercase", marginTop: 4 }}>
-                  {c.label}
-                </div>
-              </div>
-            ))}
-          </div>
+        {/* HEADER */}
+        <Header entryCount={entryCount} signalsCount={signals.length} movesCount={movesCount} />
+
+        {/* TAB SWITCHER */}
+        <div style={{
+          display: "flex", gap: 0,
+          borderBottom: "2px solid var(--color-border-tertiary, var(--surface-ink-subtle))",
+          marginTop: 28, marginBottom: 14,
+        }}>
+          {([
+            { value: "signals" as const, label: "Signals" },
+            { value: "sources" as const, label: `Sources ${entryCount}` },
+          ]).map(t => {
+            const active = activeSubTab === t.value;
+            return (
+              <button key={t.value}
+                data-testid={t.value === "signals" ? "intel-tab-signals" : "intel-tab-sources"}
+                onClick={() => setActiveSubTab(t.value)}
+                style={{
+                  padding: "10px 18px",
+                  fontSize: 13, fontWeight: active ? 500 : 400,
+                  color: active ? "var(--brand)" : "var(--ink-3)",
+                  background: "transparent", border: "none",
+                  borderBottom: active ? "2px solid var(--brand)" : "2px solid transparent",
+                  marginBottom: -2, cursor: "pointer",
+                }}
+              >
+                {t.label}
+              </button>
+            );
+          })}
         </div>
 
-        {/* ── Automation Strip ── */}
-        <AutomationStrip signalCount={signals.length} />
-
-        {/* ── Your Next Move (gated on 3+ signals) ── */}
-        {signals.length >= 3 ? (
-          <div data-testid="intel-next-move" className="aura-hero-card" style={{ marginBottom: 14 }}>
-            <StrategicAdvisorPanel context="strategy" compact onOpenChat={onOpenChat} onDraftToStudio={onDraftToStudio} />
-          </div>
-        ) : (
-          <div
-            data-testid="intel-growing"
-            className="aura-hero-card"
-            style={{
-              marginBottom: 14,
-              padding: "20px 22px",
-              background: "var(--surface-ink-raised)",
-              border: "0.5px solid var(--surface-ink-subtle)",
-              borderRadius: 10,
-            }}
-          >
-            <div style={{ fontSize: 12, letterSpacing: "0.14em", fontWeight: 700, color: "var(--brand)", textTransform: "uppercase", marginBottom: 8 }}>
-              Your intelligence is growing
-            </div>
-            <p style={{ fontSize: 14, color: "var(--ink-2)", lineHeight: 1.625, margin: "0 0 12px" }}>
-              Aura needs a broader view of your expertise before recommending strategic moves. Keep capturing articles from different sources — each one adds a new dimension to your intelligence map.
-            </p>
-            <Button size="sm" onClick={() => onOpenCapture?.()} style={{ borderRadius: 4 }}>
-              Capture another article →
-            </Button>
-            <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 10 }}>
-              {signals.length} of 3 signals · move generation unlocks at 3
-            </div>
-          </div>
-        )}
-
-        {/* ── Tab Bar ── */}
-        <div className="aura-tab-bar scrollbar-hide" style={{ display: "flex", gap: 0, borderBottom: "0.5px solid var(--ink-3)", marginBottom: 14, overflowX: "auto", flexWrap: "nowrap" }}>
-          {SUB_TABS.map(tab => (
-            <button key={tab.value} onClick={() => setActiveSubTab(tab.value)}
-              data-testid={tab.value === "signals" ? "intel-tab-signals" : tab.value === "sources" ? "intel-tab-sources" : undefined}
-              data-aura-tab="true"
-              data-aura-tab-active={activeSubTab === tab.value ? "true" : undefined}
-              style={{
-              padding: "10px 20px", fontSize: 14, fontWeight: 500,
-              color: activeSubTab === tab.value ? "var(--brand)" : "var(--ink-2)",
-              background: "transparent", border: "none",
-              borderBottom: activeSubTab === tab.value ? "2px solid var(--brand)" : "2px solid transparent",
-              cursor: "pointer", whiteSpace: "nowrap", transition: "color 0.2s, border-color 0.2s", flexShrink: 0,
-            }}>{tab.label}</button>
-          ))}
-          <TabSlider deps={[activeSubTab]} />
-        </div>
-
-        {/* ═══════════════════════════════════════════
-            INTELLIGENCE TAB — COMMAND CENTER
-           ═══════════════════════════════════════════ */}
         {activeSubTab === "signals" && (
           <>
-            <p
-              style={{ color: "var(--ink-4)", fontSize: 12, margin: "-4px 0 14px", display: "inline-flex", alignItems: "center" }}
-            >
-              Signals Aura detected across everything you've captured — ranked by strength.
-              <InfoTooltip
-                label="Signals"
-                text="Patterns from your captures. Higher confidence = more evidence from diverse sources."
-              />
-            </p>
-
-            {signals.length > 0 && (
-              <p
-                style={{
-                  color: "var(--ink-3)",
-                  fontSize: 14,
-                  margin: "0 0 14px",
-                  fontFamily: "var(--font-body)",
-                }}
-              >
-                {signals.length} signal{signals.length === 1 ? "" : "s"} detected from {entryCount} capture{entryCount === 1 ? "" : "s"} — more articles reveal more patterns
-              </p>
-            )}
-
-            {/* Fading-signal urgency alert */}
+            {/* Alerts */}
             {fadingSignals.length > 0 && topFading && (
-              <div
-                role="status"
-                style={{
-                  border: "1px solid hsl(24 95% 53% / 0.5)",
-                  background: "hsl(24 95% 53% / 0.06)",
-                  borderRadius: 10,
-                  padding: "12px 14px",
-                  marginBottom: 12,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 8,
-                }}
-              >
-                <div style={{ fontSize: 12, fontWeight: 600, color: "hsl(24 95% 53%)", display: "flex", alignItems: "center", gap: 6 }}>
-                  <AlertTriangle size={14} /> {fadingSignals.length} signal{fadingSignals.length > 1 ? "s are" : " is"} losing strength
+              <div role="status" style={{ marginBottom: 16, paddingTop: 14, paddingBottom: 14, borderTop: "0.5px solid hsl(24 95% 53% / 0.3)", borderBottom: "0.5px solid hsl(24 95% 53% / 0.3)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".06em", color: "hsl(24 95% 53%)", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                    <AlertTriangle size={12} /> FADING
+                  </span>
+                  <span style={{ fontSize: 12, color: "var(--ink-4)" }}>
+                    {fadingSignals.length} signal{fadingSignals.length > 1 ? "s" : ""} losing strength — new evidence in the next {daysUntilDormant(topFading.confidence)} days reverses the trend.
+                  </span>
+                  <button onClick={() => onOpenCapture?.()} style={{ background: "none", border: "none", color: "hsl(24 95% 53%)", fontSize: 12, fontWeight: 500, cursor: "pointer", padding: 0 }}>
+                    Capture for "{topFading.signal_title}" →
+                  </button>
                 </div>
-                <div style={{ fontSize: 12, color: "var(--ink-4)", lineHeight: 1.5 }}>
-                  <strong style={{ color: "var(--ink-6)" }}>{topFading.signal_title}</strong> dropped to {Math.round(topFading.confidence * 100)}% confidence.
-                  New evidence in the next {daysUntilDormant(topFading.confidence)} days will reverse the trend.
-                </div>
-                <button
-                  onClick={() => onOpenCapture?.()}
-                  style={{
-                    alignSelf: "flex-start",
-                    fontSize: 12, padding: "5px 12px", borderRadius: 6,
-                    background: "hsl(24 95% 53%)", color: "#fff", border: "none", cursor: "pointer", fontWeight: 500,
-                  }}
-                >
-                  Capture for "{topFading.signal_title}" →
-                </button>
               </div>
             )}
 
-            {/* Dormant signal alert */}
             {dormantSignals.length > 0 && (
-              <div
-                role="status"
-                style={{
-                  border: "0.5px solid var(--brand-line)",
-                  background: "var(--surface-ink-subtle)",
-                  borderRadius: 10,
-                  padding: "12px 14px",
-                  marginBottom: 12,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 8,
-                }}
-              >
-                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-5)" }}>
-                  ◌ {dormantSignals.length} signal{dormantSignals.length > 1 ? "s have" : " has"} gone dormant
-                </div>
-                <div style={{ fontSize: 12, color: "var(--ink-4)", lineHeight: 1.5 }}>
-                  These signals had no new evidence for 60+ days. Capture relevant intelligence to reactivate them, or archive signals that no longer represent your focus.
+              <div role="status" style={{ marginBottom: 16, padding: "12px 14px", border: "0.5px solid var(--surface-ink-subtle)", borderRadius: 10, background: "var(--surface-ink-raised)" }}>
+                <div style={{ fontSize: 12, color: "var(--ink-4)", marginBottom: 8 }}>
+                  ◌ {dormantSignals.length} signal{dormantSignals.length > 1 ? "s have" : " has"} gone dormant (60+ days without new evidence).
                 </div>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <button
-                      style={{
-                        alignSelf: "flex-start",
-                        fontSize: 12, padding: "5px 12px", borderRadius: 6,
-                        background: "transparent", color: "var(--ink-5)",
-                        border: "0.5px solid var(--brand-line)", cursor: "pointer", fontWeight: 500,
-                      }}
-                    >
-                      Archive Dormant Signals
+                    <button style={{ fontSize: 12, padding: "5px 12px", borderRadius: 6, background: "transparent", color: "var(--ink-5)", border: "0.5px solid var(--surface-ink-subtle)", cursor: "pointer" }}>
+                      <Archive size={11} className="inline mr-1" /> Archive dormant signals
                     </button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>Archive {dormantSignals.length} dormant signal{dormantSignals.length > 1 ? "s" : ""}?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Archived signals are removed from your active radar. You can still find them in your data.
-                      </AlertDialogDescription>
+                      <AlertDialogDescription>Archived signals are removed from your active radar. You can still find them in your data.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -1182,209 +965,97 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
               </div>
             )}
 
+            {/* StrategicAdvisorPanel for 3+ signals */}
+            {signals.length >= 3 && (
+              <div data-testid="intel-next-move" style={{ marginBottom: 16 }}>
+                <StrategicAdvisorPanel context="strategy" compact onOpenChat={onOpenChat} onDraftToStudio={onDraftToStudio} />
+              </div>
+            )}
+
             {signals.length === 0 ? (
               entryCount === 0 ? (
-                <EmptyState
-                  icon={Brain}
-                  title="Your radar is quiet"
+                <EmptyState icon={Brain} title="Your radar is quiet"
                   description="The market isn't. Capture one article about your sector and watch Aura detect what others miss."
-                  ctaLabel="Capture your first source →"
-                  ctaAction={() => onOpenCapture?.()}
-                />
+                  ctaLabel="Capture your first source →" ctaAction={() => onOpenCapture?.()} />
               ) : entryCount < 3 ? (
-                <EmptyState
-                  icon={Brain}
-                  title="Your radar is warming up"
+                <EmptyState icon={Brain} title="Your radar is warming up"
                   description={`Aura needs at least 3 captures to detect strategic patterns. You have ${entryCount}/3.`}
-                  ctaLabel="Capture another source →"
-                  ctaAction={() => onOpenCapture?.()}
-                />
+                  ctaLabel="Capture another source →" ctaAction={() => onOpenCapture?.()} />
               ) : (
-                <EmptyState
-                  icon={Brain}
-                  title="Your radar is quiet"
-                  description="The market isn't. Capture one more article about {sector} and Aura will surface the pattern."
-                  personalize
-                  ctaLabel={detecting ? "Detecting..." : "Detect signals"}
-                  ctaAction={detecting ? undefined : runPatternDetection}
-                />
+                <EmptyState icon={Brain} title="Your captures are being analysed"
+                  description="Signals are forming — check back soon or try detecting patterns manually."
+                  ctaLabel={detecting ? "Detecting..." : "Detect patterns →"}
+                  ctaAction={detecting ? undefined : runPatternDetection} />
               )
             ) : (
               <>
-                {/* Command Center container */}
-                <div data-testid="intel-signals" className="intel-command-center" style={{ background: "transparent", border: "none", borderRadius: 10, overflow: "hidden", display: "flex", minHeight: 500 }}>
-                  {/* LEFT PANEL — detail view (~58%) */}
-                  <div className="intel-command-left" style={{ flex: "0 0 58%", minWidth: 0, borderRight: "0.5px solid var(--surface-ink-subtle)" }}>
-                    {selectedSignal && (
-                      <SignalDetailPanel
-                        signal={selectedSignal}
-                        signalIndex={selectedIndex}
-                        totalSignals={sortedByConfidence.length}
-                        onDraft={draftFromSignal}
-                        profile={profile}
-                      />
-                    )}
-                  </div>
+                {/* RADAR (only when 3+ themes) */}
+                {uniqueThemeCount >= 3 && <IntelligenceRadar signals={signals} />}
 
-                  {/* RIGHT PANEL — signal list (~42%) */}
-                  <div className="intel-command-right" style={{ flex: "0 0 42%", minWidth: 0, background: "var(--surface-ink-raised)", overflowY: "auto", maxHeight: 600 }}>
-                    {/* Header */}
-                    <div style={{ padding: "14px 16px", borderBottom: "0.5px solid var(--surface-ink-subtle)", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                      <SectionHeader
-                        label="YOUR SIGNALS"
-                        subtitle="Patterns detected from your captures"
-                      />
-                      <span style={{ fontSize: 12, color: "var(--ink-3)" }}>{sortedByConfidence.length} total</span>
+                {/* SIGNAL HERO */}
+                {selectedSignal && (
+                  <SignalHero signal={selectedSignal} onDraft={draftFromSignal} onOpenChat={onOpenChat} />
+                )}
+
+                {/* SIGNAL SIDEBAR LIST */}
+                {sortedByConfidence.length > 1 && (
+                  <section style={{ marginTop: 36, paddingTop: 24, borderTop: "0.5px solid var(--color-border-tertiary, var(--surface-ink-subtle))" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                      <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".06em", color: "var(--ink-3)" }}>SIGNALS</span>
+                      <span style={{ fontSize: 11, color: "var(--ink-3)" }}>({sortedByConfidence.length})</span>
                     </div>
-
-                    {/* Signal rows */}
-                    <CollapsibleList
-                      items={sortedByConfidence}
-                      visibleCount={3}
-                      label="signals"
-                      renderItem={(s, idx) => {
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {sortedByConfidence.map(s => {
                         const confPct = Math.round(s.confidence * 100);
                         const isSelected = selectedSignal?.id === s.id;
-                        const themeGroup = getThemeGroup(s);
-                        const confColor =
-                          confPct > 70 ? "var(--aura-positive)"
-                          : confPct >= 40 ? "var(--aura-accent)"
-                          : "var(--aura-warning)";
-                        const velocity = s.velocity_status;
-                        const trendLabel = velocity === "accelerating" ? "Rising" : velocity === "fading" ? "Fading" : velocity === "dormant" ? "Dormant" : "Stable";
-                        const trendIcon = velocity === "accelerating" ? "↗" : velocity === "fading" ? "↘" : velocity === "dormant" ? "◌" : "→";
-                        const whyNow = s.strategic_implications || s.explanation || "";
-                        const yourMove = s.what_it_means_for_you || (s.theme_tags || [])[0] || "";
-                        // Top signal = highest priority_score across all sorted signals
-                        const topPriorityId = sortedByConfidence.reduce<{ id: string; p: number } | null>(
-                          (acc, x) => (acc === null || (x.priority_score ?? 0) > acc.p ? { id: x.id, p: x.priority_score ?? 0 } : acc),
-                          null
-                        )?.id;
-                        const isTop = topPriorityId === s.id;
-                        // Origin thread: signal created within last 10 min — find the nearest preceding capture
-                        const ageMs = Date.now() - new Date(s.created_at).getTime();
-                        let originTitle: string | null = null;
-                        if (ageMs < 10 * 60 * 1000 && Array.isArray(entries) && entries.length > 0) {
-                          const sigTime = new Date(s.created_at).getTime();
-                          const candidates = entries
-                            .map(e => ({ e, t: new Date((e as any).created_at).getTime() }))
-                            .filter(({ t }) => t <= sigTime && sigTime - t <= 30 * 60 * 1000)
-                            .sort((a, b) => b.t - a.t);
-                          if (candidates[0]) {
-                            const e: any = candidates[0].e;
-                            originTitle = e.title || e.url_title || e.source_title || "your capture";
-                          }
-                        }
+                        const confColor = confPct > 70 ? "var(--success, hsl(140 60% 45%))" : confPct >= 40 ? "var(--brand)" : "var(--ink-3)";
+                        const trend = s.velocity_status;
                         return (
-                        <div
-                          key={s.id}
-                          data-testid="intel-signal-card"
-                          className="intel-signal-row card-interactive animate-fade-up-in"
-                          onClick={() => setSelectedSignalId(s.id)}
-                          style={{
-                            display: "block", padding: isTop ? "16px" : "12px",
-                            margin: "8px 12px",
-                            border: "0.5px solid var(--surface-ink-subtle)",
-                            borderTop: isTop ? "2px solid var(--gold-dark)" : "0.5px solid var(--surface-ink-subtle)",
-                            borderLeft: `${isTop ? 4 : 3}px solid ${confColor}`,
-                            borderRadius: 8,
-                            cursor: "pointer", transition: "background 0.1s",
-                            background: isSelected ? "var(--surface-ink-subtle)" : "transparent",
-                            position: "relative",
-                            animationDelay: `${Math.min(idx * 50, 400)}ms`,
-                            animationFillMode: "both",
-                          }}
-                          onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = "var(--surface-ink-subtle)"; }}
-                          onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = "transparent"; }}
-                        >
-                          {isTop && (
-                            <div style={{ position: "absolute", top: 6, right: 10, fontSize: 10, fontWeight: 600, color: "var(--gold-dark)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                              Top signal
-                            </div>
-                          )}
-                          {/* Top row: title + confidence */}
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <p
-                                style={{ fontSize: 14, fontWeight: 500, color: "var(--ink-6)", margin: 0, lineHeight: 1.3, cursor: "pointer", transition: "opacity 0.15s" }}
-                                onMouseEnter={e => { e.currentTarget.style.opacity = "0.75"; e.currentTarget.style.textDecoration = "underline"; }}
-                                onMouseLeave={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.textDecoration = "none"; }}
-                              >
-                                {s.signal_title}
-                              </p>
-                              <p style={{ fontSize: 12, color: "var(--ink-3)", margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                {s.fragment_count} findings · {s.unique_orgs} orgs{themeGroup ? ` · ${themeGroup}` : ""}
-                              </p>
-                            </div>
-                            <div style={{ textAlign: "right", flexShrink: 0 }}>
-                              <div
-                                title="Evidence quality measure, not probability. Based on: AI analysis 40%, unique source articles 35%, source diversity 15%, recency 10%. Capture from more organizations to increase."
-                                style={{ fontSize: 24, fontWeight: 600, color: confColor, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.5, cursor: "help" }}
-                              >
-                                {confPct}%
+                          <div key={s.id} onClick={() => setSelectedSignalId(s.id)}
+                            data-testid="intel-signal-card"
+                            style={{
+                              padding: "12px 14px",
+                              border: "0.5px solid var(--surface-ink-subtle)",
+                              borderLeft: isSelected ? "3px solid var(--brand)" : "3px solid transparent",
+                              borderRadius: 8, cursor: "pointer",
+                              background: isSelected ? "var(--surface-ink-raised)" : "transparent",
+                              transition: "background .15s",
+                            }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <p style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-6)", margin: 0, lineHeight: 1.3 }}>{s.signal_title}</p>
+                                <p style={{ fontSize: 11, color: "var(--ink-3)", margin: "3px 0 0" }}>
+                                  {s.fragment_count} findings · {s.unique_orgs} org{s.unique_orgs === 1 ? "" : "s"}
+                                  {trend && trend !== "stable" ? ` · ${trend}` : ""}
+                                </p>
                               </div>
-                              <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 3, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                                {trendIcon} {trendLabel}
-                              </div>
+                              <div style={{
+                                fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
+                                fontSize: 20, fontWeight: 500, color: confColor, lineHeight: 1,
+                              }}>{confPct}%</div>
+                            </div>
+                            <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+                              <button onClick={(e) => { e.stopPropagation(); draftFromSignal(s); }}
+                                style={{ fontSize: 11, padding: "3px 9px", borderRadius: 4, background: "var(--brand)", color: "#fff", border: "none", cursor: "pointer" }}>
+                                Draft post →
+                              </button>
+                              <button onClick={(e) => { e.stopPropagation(); onOpenChat?.(`Show competitor intel on: ${s.signal_title}`); }}
+                                style={{ fontSize: 11, padding: "3px 9px", borderRadius: 4, background: "transparent", color: "var(--ink-4)", border: "0.5px solid var(--surface-ink-subtle)", cursor: "pointer" }}>
+                                Competitor intel
+                              </button>
                             </div>
                           </div>
-
-                          {/* Confidence bar */}
-                          <div style={{ height: 6, background: "var(--surface-ink-subtle)", borderRadius: 3, overflow: "hidden", margin: "8px 0" }}>
-                            <div style={{ height: "100%", width: `${confPct}%`, background: confColor, borderRadius: 3 }} />
-                          </div>
-
-                          {/* What / Why / Act */}
-                          {(whyNow || yourMove) && (
-                            <div style={{ margin: "6px 0 8px" }}>
-                              {whyNow && <ExpandableSignalText label="Why now" text={whyNow} />}
-                              {yourMove && <ExpandableSignalText label="Your move" text={yourMove} />}
-                            </div>
-                          )}
-
-                          {/* Action buttons */}
-                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); draftFromSignal(s); }}
-                              className="bg-brand text-white border border-brand dark:bg-transparent dark:text-brand dark:border-brand hover:opacity-90 transition-opacity"
-                              style={{ fontSize: 12, padding: "4px 10px", borderRadius: 4, cursor: "pointer" }}
-                            >
-                              Draft post →
-                            </button>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); onOpenChat?.(`Show competitor intel on: ${s.signal_title}`); }}
-                              className="text-ink-4 dark:text-ink-2 border border-[color:var(--surface-ink-subtle)] hover:opacity-90 transition-opacity"
-                              style={{ fontSize: 12, padding: "4px 10px", borderRadius: 4, background: "transparent", cursor: "pointer" }}
-                            >
-                              Competitor intel
-                            </button>
-                          </div>
-                          {originTitle && (
-                            <div
-                              style={{
-                                marginTop: 10,
-                                paddingLeft: 8,
-                                borderLeft: "2px dashed var(--gold-pale)",
-                                fontSize: 11,
-                                color: "var(--ink-5)",
-                                lineHeight: 1.5,
-                              }}
-                            >
-                              From your capture · {originTitle} · {relativeTime(s.created_at)}
-                            </div>
-                          )}
-                        </div>
                         );
-                      }}
-                    />
-                  </div>
-                </div>
-                <div data-testid="intel-coverage" style={{ marginTop: 32 }}>
-                  <MarketCoverageSection onOpenCapture={onOpenCapture} signals={signals} />
-                </div>
-                <div style={{ marginTop: 32 }}>
-                  <RecommendedReadingSection />
-                </div>
+                      })}
+                    </div>
+                  </section>
+                )}
+
+                {/* BLIND SPOTS */}
+                <EditorialBlindSpots signals={signals} onOpenCapture={onOpenCapture} />
+
+                {/* READING */}
+                <EditorialReadingList signals={signals} onOpenCapture={onOpenCapture} />
               </>
             )}
           </>
@@ -1399,13 +1070,49 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
             }}
           />
         )}
-        </>
-        )}
       </div>
-
-      <LinkedInDraftPanel open={!!draftData} onClose={() => setDraftData(null)} title={draftData?.title || ""} hook={draftData?.hook} angle={draftData?.angle} context={draftData?.context} />
     </div>
   );
 };
+
+/* Header with editorial title + inline stats */
+const Header = ({ entryCount, signalsCount, movesCount }: { entryCount: number; signalsCount: number; movesCount: number }) => (
+  <div style={{ textAlign: "center" }}>
+    <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".12em", color: "var(--ink-4)", textTransform: "uppercase" }}>
+      Your strategic radar
+    </div>
+    <h1 style={{
+      fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
+      fontSize: 26, fontWeight: 500, color: "var(--ink)",
+      margin: "8px 0 6px",
+    }}>
+      Intelligence
+    </h1>
+    <p style={{ fontSize: 13, color: "var(--ink-3)", margin: "0 0 16px", lineHeight: 1.5 }}>
+      What the market doesn't know you know.
+    </p>
+    <div data-testid="intel-stats" style={{ display: "inline-flex", alignItems: "center", gap: 20 }}>
+      {[
+        { val: entryCount, label: "sources", color: "var(--brand)" },
+        { val: signalsCount, label: "signals", color: "var(--info, var(--brand))" },
+        { val: movesCount, label: "moves", color: "var(--success, hsl(140 60% 45%))" },
+      ].map((s, i, arr) => (
+        <div key={s.label} style={{
+          display: "flex", flexDirection: "column", alignItems: "center",
+          paddingRight: i < arr.length - 1 ? 20 : 0,
+          borderRight: i < arr.length - 1 ? "0.5px solid var(--surface-ink-subtle)" : "none",
+        }}>
+          <div style={{
+            fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
+            fontSize: 20, fontWeight: 500, color: s.color, lineHeight: 1,
+          }}>{s.val}</div>
+          <div style={{ fontSize: 9, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: ".1em", marginTop: 4 }}>
+            {s.label}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
 
 export default IntelligenceTab;
