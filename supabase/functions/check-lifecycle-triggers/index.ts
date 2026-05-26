@@ -78,6 +78,54 @@ serve(async (req) => {
         }
       }
 
+      // Post ready but not published — nudge after 24h (window 24-48h)
+      const twentyFourHoursAgo = new Date(now - 24 * 60 * 60 * 1000).toISOString();
+      const fortyEightHoursAgo = new Date(now - 48 * 60 * 60 * 1000).toISOString();
+
+      const { data: unpublishedPost } = await admin
+        .from("linkedin_posts")
+        .select("id, post_text, source_signal_id")
+        .eq("user_id", userId)
+        .eq("source_type", "aura_generated")
+        .in("tracking_status", ["draft"])
+        .gte("created_at", fortyEightHoursAgo)
+        .lte("created_at", twentyFourHoursAgo)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (unpublishedPost) {
+        const recentPostReady = sent.some(
+          (s) => s.type === "post_ready" && now - new Date(s.sent_at).getTime() < 48 * dayMs / 24,
+        );
+        if (!recentPostReady) {
+          let postTitle = (unpublishedPost.post_text as string | null)?.slice(0, 50) + "..." || "your latest insight";
+          if (unpublishedPost.source_signal_id) {
+            const { data: sig } = await admin
+              .from("strategic_signals")
+              .select("signal_title")
+              .eq("id", unpublishedPost.source_signal_id)
+              .maybeSingle();
+            if ((sig as any)?.signal_title) postTitle = (sig as any).signal_title;
+          }
+          const postPreview = (unpublishedPost.post_text as string | null)?.slice(0, 120) || "";
+          try {
+            const r = await admin.functions.invoke("send-lifecycle-email", {
+              body: {
+                user_id: userId,
+                email_type: "post_ready",
+                post_id: unpublishedPost.id,
+                post_title: postTitle,
+                post_preview: postPreview,
+              },
+            });
+            results.push({ user_id: userId, type: "post_ready", ok: !r.error });
+          } catch (e: any) {
+            results.push({ user_id: userId, type: "post_ready", ok: false, error: e?.message });
+          }
+        }
+      }
+
       for (const type of toSend) {
         try {
           const r = await admin.functions.invoke("send-lifecycle-email", {
