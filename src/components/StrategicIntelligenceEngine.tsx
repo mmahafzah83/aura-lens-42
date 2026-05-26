@@ -60,7 +60,7 @@ const EvidenceBar = ({ label, count, max, color }: { label: string; count: numbe
     <div className="flex-1 h-1 bg-secondary/30 rounded-full overflow-hidden">
       <div className={`h-full rounded-full transition-all duration-700 ${color}`} style={{ width: `${Math.round((count / Math.max(max, 1)) * 100)}%` }} />
     </div>
-    <span className="text-xs text-muted-foreground/40 tabular-nums w-6 text-right">{count}</span>
+    <span className="text-xs text-muted-foreground/70 tabular-nums w-6 text-right">{count}</span>
   </div>
 );
 
@@ -162,7 +162,7 @@ const StrategicIntelligenceEngine = ({ onOpenChat, onDraftToStudio }: StrategicI
       <div className="glass-card rounded-2xl p-12 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-6 h-6 text-primary/40 animate-spin" />
-          <span className="text-sm text-muted-foreground/40">Loading Strategic Intelligence…</span>
+          <span className="text-sm text-muted-foreground/70">Loading Strategic Intelligence…</span>
         </div>
       </div>
     );
@@ -180,7 +180,7 @@ const StrategicIntelligenceEngine = ({ onOpenChat, onDraftToStudio }: StrategicI
             <h2 className="text-section-title text-foreground">
               Strategic Intelligence
             </h2>
-            <p className="text-xs text-muted-foreground/40 tracking-wide">Converting knowledge into strategic signals</p>
+            <p className="text-xs text-muted-foreground/70 tracking-wide">Converting knowledge into strategic signals</p>
           </div>
         </div>
         <button
@@ -197,7 +197,7 @@ const StrategicIntelligenceEngine = ({ onOpenChat, onDraftToStudio }: StrategicI
       <div className="glass-card rounded-2xl card-pad">
         <div className="flex items-center gap-2 mb-5">
           <Layers className="w-4 h-4 text-primary/60" />
-          <p className="text-xs font-semibold text-muted-foreground/40 uppercase tracking-[0.2em]">Knowledge Base</p>
+          <p className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-[0.2em]">Knowledge Base</p>
         </div>
 
         <div className="grid grid-cols-3 gap-4 mb-5">
@@ -217,7 +217,7 @@ const StrategicIntelligenceEngine = ({ onOpenChat, onDraftToStudio }: StrategicI
 
         {evidence.topTypes.length > 0 && (
           <div className="pt-4 border-t border-border/8 space-y-2">
-            <p className="text-xs text-muted-foreground/30 uppercase tracking-widest mb-2">Evidence Distribution</p>
+            <p className="text-xs text-muted-foreground/70 uppercase tracking-widest mb-2">Evidence Distribution</p>
             {evidence.topTypes.map(({ type, count }) => (
               <EvidenceBar
                 key={type}
@@ -262,7 +262,7 @@ const StrategicIntelligenceEngine = ({ onOpenChat, onDraftToStudio }: StrategicI
                 <Zap className="w-7 h-7 text-primary/30" />
               </div>
               <p className="text-sm text-muted-foreground/60 mb-1">No strategic signals detected yet.</p>
-              <p className="text-xs text-muted-foreground/40 mb-4">Capture more insights to fuel pattern detection.</p>
+              <p className="text-xs text-muted-foreground/70 mb-4">Capture more insights to fuel pattern detection.</p>
               <button
                 onClick={runPatternScan}
                 disabled={scanning}
@@ -310,11 +310,11 @@ const StrategicIntelligenceEngine = ({ onOpenChat, onDraftToStudio }: StrategicI
                           <FileText className="w-2.5 h-2.5" /> {signal.fragment_count} evidence
                         </span>
                         {signal.theme_tags.slice(0, 3).map((tag, i) => (
-                          <span key={i} className="text-xs bg-muted/30 text-muted-foreground/40 px-2 py-0.5 rounded-md">{tag}</span>
+                          <span key={i} className="text-xs bg-muted/30 text-muted-foreground/70 px-2 py-0.5 rounded-md">{tag}</span>
                         ))}
                       </div>
                     </div>
-                    {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground/30 shrink-0 mt-1" /> : <ChevronDown className="w-4 h-4 text-muted-foreground/30 shrink-0 mt-1" />}
+                    {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground/70 shrink-0 mt-1" /> : <ChevronDown className="w-4 h-4 text-muted-foreground/70 shrink-0 mt-1" />}
                   </button>
 
                   {/* Expanded Detail */}
@@ -386,7 +386,7 @@ const StrategicIntelligenceEngine = ({ onOpenChat, onDraftToStudio }: StrategicI
                         <button onClick={() => onDraftToStudio?.({ topic: signal.signal_title, context: `${signal.explanation}\n\n${signal.strategic_implications}`, signalTitle: signal.signal_title, contentFormat: "carousel" })} className="text-xs bg-primary/5 hover:bg-primary/10 text-primary/70 rounded-xl py-2.5 px-3 transition-colors flex items-center gap-1.5 font-medium">
                           <LayoutGrid className="w-3.5 h-3.5" /> Carousel
                         </button>
-                        <button onClick={() => dismissSignal(signal.id)} className="text-xs text-muted-foreground/30 hover:text-destructive/60 rounded-xl py-2.5 px-3 transition-colors flex items-center gap-1">
+                        <button onClick={() => dismissSignal(signal.id)} className="text-xs text-muted-foreground/70 hover:text-destructive/60 rounded-xl py-2.5 px-3 transition-colors flex items-center gap-1">
                           <X className="w-3 h-3" />
                         </button>
                       </div>

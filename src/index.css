@@ -5,6 +5,29 @@ html.dark  { background-color: var(--paper, #14110C); }
 @tailwind components;
 @tailwind utilities;
 
+/* ── Theme transitions ── */
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+html *:not(canvas):not(video):not(iframe) {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  html, html * {
+    transition: none !important;
+  }
+}
+
+/* ── Brand selection ── */
+::selection {
+  background: var(--bronze);
+  color: var(--paper);
+}
+::-moz-selection {
+  background: var(--bronze);
+  color: var(--paper);
+}
+
 /* Fonts (Cormorant Garamond, DM Sans, Cairo, JetBrains Mono) are loaded via <link> tags in index.html */
 
 /* ── Arabic typography (Cairo + RTL formatting) ── */
@@ -82,15 +105,15 @@ html.dark  { background-color: var(--paper, #14110C); }
   /* Paper & ink ramp — dark mode default */
   --paper: #14110C;
   --paper-2: #1C1812;
-  --paper-3: #2A2820;
-  --vellum: #3D362A;
+  --paper-3: #221E16;
+  --vellum: #282318;
   --vellum-2: #211C14;
   --ink: #FBF8F1;
   --ink-2: #E2D9C5;
   /* A11y: meet WCAG AA on --paper #14110C */
   --ink-3: #C9C0AC;
-  --ink-4: #A89F8A;
-  --ink-5: #5A5347;
+  --ink-4: #B8AE99;
+  --ink-5: #8A8170;
 
   /* Bronze (primary brand) — dark mode default */
   --bronze: #D4B056;
@@ -152,6 +175,12 @@ html.dark  { background-color: var(--paper, #14110C); }
   /* Motion */
   --ease: cubic-bezier(0.32, 0.72, 0.35, 1);
   --t-fast: 120ms; --t: 240ms; --t-slow: 480ms;
+
+  /* Missing-token shims (dark) */
+  --warning: #E8A832;
+  --color-text-warning: #E8A832;
+  --color-border-tertiary: rgba(212, 176, 86, 0.15);
+  --font-serif: var(--font-display);
 }
 
 [data-theme="light"] {
@@ -215,6 +244,12 @@ html.dark  { background-color: var(--paper, #14110C); }
   --shadow-rest: 0 1px 2px rgba(20,17,12,0.06), 0 0 0 0.5px rgba(20,17,12,0.04);
   --shadow-lift: 0 8px 24px -8px rgba(20,17,12,0.12), 0 0 0 0.5px rgba(20,17,12,0.04);
   --font-display: 'Cormorant Garamond', 'Cairo', Georgia, serif;
+
+  /* Missing-token shims (light) */
+  --warning: #B8860B;
+  --color-text-warning: #B8860B;
+  --color-border-tertiary: rgba(176, 141, 58, 0.15);
+  --font-serif: var(--font-display);
 }
 
 @keyframes skeleton-pulse {
