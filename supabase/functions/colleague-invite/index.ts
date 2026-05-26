@@ -126,7 +126,10 @@ serve(async (req) => {
   <circle cx="40" cy="40" r="11" stroke="${color}" stroke-width="2" fill="none"/>
   <circle cx="40" cy="40" r="4" fill="${color}"/>
 </svg>`;
-      const displayInviter = inviterName || "A colleague";
+      const escapeHtml = (s: string) =>
+        s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+      const displayInviter = escapeHtml(inviterName || "A colleague");
       const noteBlock = note
         ? `<blockquote style="margin:18px 0 22px;padding:14px 18px;border-left:2px solid #333;font-style:italic;color:#bbb;font-size:14px;line-height:1.75;">${displayInviter} added: "${note.replace(/</g, "&lt;")}"</blockquote>`
         : "";
@@ -168,7 +171,7 @@ serve(async (req) => {
           body: JSON.stringify({
             from: "Aura <Mohammad.Mahafdhah@aura-intel.org>",
             to: [email],
-            subject: `${displayInviter} thinks you should see this`,
+            subject: `${inviterName || "A colleague"} thinks you should see this`.replace(/[\r\n]/g, " "),
             reply_to: "mohammad.mahafdhah@aura-intel.org",
             html: referralHtml,
           }),

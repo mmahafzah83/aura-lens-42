@@ -51,24 +51,41 @@ Deno.serve(async (req) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const CRON_SECRET = Deno.env.get("CRON_SECRET") || "";
 
-    // Resolve user_id: prefer body, otherwise derive from Authorization header.
+    // Always authenticate first. Derive user_id from verified JWT.
+    // Body user_id is only honored for service-role / cron callers.
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const bearer = authHeader.replace("Bearer ", "");
+    const cronHeader = req.headers.get("x-cron-secret") || "";
+    const apiKeyHeader = req.headers.get("apikey") || req.headers.get("x-api-key") || "";
+    const isServiceRole = !!bearer && (bearer === SERVICE_ROLE || apiKeyHeader === SERVICE_ROLE);
+    const isCron = !!CRON_SECRET && cronHeader === CRON_SECRET;
+
+    let body: any = {};
+    try { body = await req.json(); } catch (_) { /* no body */ }
+
     let user_id: string | null = null;
-    try {
-      const body = await req.json();
+    if (isServiceRole || isCron) {
       if (body && typeof body.user_id === "string") user_id = body.user_id;
-    } catch (_) { /* no body */ }
-
-    if (!user_id) {
-      const authHeader = req.headers.get("Authorization") ?? "";
-      if (authHeader.startsWith("Bearer ")) {
-        const userClient = createClient(SUPABASE_URL, ANON_KEY, {
-          global: { headers: { Authorization: authHeader } },
-        });
-        const token = authHeader.replace("Bearer ", "");
-        const { data: { user } } = await userClient.auth.getUser(token);
-        if (user) user_id = user.id;
+    } else {
+      if (!bearer) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
       }
+      const userClient = createClient(SUPABASE_URL, ANON_KEY, {
+        global: { headers: { Authorization: `Bearer ${bearer}` } },
+      });
+      const { data: { user }, error: userErr } = await userClient.auth.getUser(bearer);
+      if (userErr || !user) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      user_id = user.id;
     }
 
     if (!user_id) {

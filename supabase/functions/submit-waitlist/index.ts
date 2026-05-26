@@ -182,13 +182,17 @@ serve(async (req) => {
   <circle cx="40" cy="40" r="11" stroke="${color}" stroke-width="2" fill="none"/>
   <circle cx="40" cy="40" r="4" fill="${color}"/>
 </svg>`;
+        const escapeHtml = (s: string) =>
+          s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+           .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+        const safeName = escapeHtml(name);
         const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>You're on the list</title></head>
 <body style="margin:0;padding:0;background:#0d0d0d;font-family:${BODY_FONT};color:#ededed;-webkit-font-smoothing:antialiased;">
 <div style="padding:32px 16px;background:#0d0d0d;">
   <div style="max-width:560px;margin:0 auto;background:#0d0d0d;border:1px solid #1f1f1f;border-radius:12px;overflow:hidden;">
     <div style="padding:36px 40px 0;">${eye(36, BRAND)}</div>
     <div style="padding:24px 40px 8px;">
-      <h1 style="font-family:${HEADING_FONT};font-size:24px;font-weight:500;line-height:1.3;color:#ffffff;margin:0 0 22px;">${name}, you're on the list.</h1>
+      <h1 style="font-family:${HEADING_FONT};font-size:24px;font-weight:500;line-height:1.3;color:#ffffff;margin:0 0 22px;">${safeName}, you're on the list.</h1>
       <p style="font-size:15px;line-height:1.75;color:#ededed;margin:0 0 16px;">We received your request.</p>
       <p style="font-size:15px;line-height:1.75;color:#ededed;margin:0 0 16px;">Aura is in private beta with fewer than 50 professionals. I review every application personally — not an algorithm, not a form filter. Me.</p>
       <p style="font-size:15px;line-height:1.75;color:#ededed;margin:0 0 16px;">I'll look at your background this week. If Aura is right for you, you'll receive an invitation with everything you need to get started.</p>
@@ -215,7 +219,7 @@ serve(async (req) => {
           body: JSON.stringify({
             from: "Aura <Mohammad.Mahafdhah@aura-intel.org>",
             to: [email],
-            subject: `You're on the list, ${name}`,
+            subject: `You're on the list, ${name}`.replace(/[\r\n]/g, " "),
             reply_to: "mohammad.mahafdhah@aura-intel.org",
             html,
           }),
