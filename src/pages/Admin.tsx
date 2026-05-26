@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Send, Trash2 } from "lucide-react";
+import { Check, Copy, Loader2, Send, Trash2 } from "lucide-react";
 import AuraLogo from "@/components/brand/AuraLogo";
 import {
   AlertDialog,
