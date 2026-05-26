@@ -273,10 +273,10 @@ const Guide = () => {
 
       {/* CTA */}
       <section className="px-5 sm:px-10 py-20 text-center" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-        <h2 className="mb-5" style={{ fontFamily: "var(--font-display)", fontSize: "clamp(28px, 4vw, 40px)", color: "var(--ink-7)", fontWeight: 500 }}>
+        <h2 className="mb-5" style={{ fontFamily: "var(--font-display)", fontSize: "clamp(28px, 4vw, 40px)", color: "var(--ink-2)", fontWeight: 500 }}>
           Ready to start?
         </h2>
-        <p className="mb-8 max-w-md mx-auto" style={{ fontSize: 15, color: "var(--ink-5)", lineHeight: 1.625 }}>
+        <p className="mb-8 max-w-md mx-auto" style={{ fontSize: 15, color: "var(--ink-3)", lineHeight: 1.625 }}>
           {authed ? "Jump back into your dashboard and keep building." : "Join the private beta. We review applications weekly."}
         </p>
         <button
