@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState, ReactNode, CSSProperties } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState, ReactNode, CSSProperties } from "react";
+import { createPortal } from "react-dom";
 
 export interface InfoTooltipProps {
   children?: ReactNode;
@@ -16,7 +17,7 @@ export interface InfoTooltipProps {
 
 export function InfoTooltip({
   children,
-  side = "bottom",
+  side = "top",
   width = 260,
   triggerSize = 17,
   text,
@@ -28,6 +29,17 @@ export function InfoTooltip({
   const [hover, setHover] = useState(false);
   const [triggerHover, setTriggerHover] = useState(false);
   const wrapRef = useRef<HTMLSpanElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number; effectiveSide: "top" | "bottom"; arrowLeft: number } | null>(null);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -41,6 +53,39 @@ export function InfoTooltip({
   }, [open]);
 
   const visible = open || hover || triggerHover;
+
+  // Compute viewport-aware position for floating panel (desktop)
+  useLayoutEffect(() => {
+    if (!visible || isMobile) return;
+    const trigger = triggerRef.current;
+    const panel = panelRef.current;
+    if (!trigger || !panel) return;
+
+    const tr = trigger.getBoundingClientRect();
+    const pad = 16;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const pw = Math.min(width, vw - pad * 2);
+    const ph = panel.offsetHeight || 120;
+
+    // Decide side: prefer requested side, flip if it clips
+    let eff: "top" | "bottom" = side;
+    if (eff === "top" && tr.top - ph - 12 < pad) eff = "bottom";
+    else if (eff === "bottom" && tr.bottom + ph + 12 > vh - pad) eff = "top";
+
+    const top = eff === "top" ? tr.top - ph - 12 : tr.bottom + 12;
+
+    // Center horizontally on trigger, clamp to viewport
+    const triggerCenter = tr.left + tr.width / 2;
+    let left = triggerCenter - pw / 2;
+    if (align === "left") left = tr.left;
+    else if (align === "right") left = tr.right - pw;
+    left = Math.max(pad, Math.min(left, vw - pw - pad));
+
+    const arrowLeft = Math.max(12, Math.min(triggerCenter - left, pw - 12));
+
+    setPos({ top, left, effectiveSide: eff, arrowLeft });
+  }, [visible, isMobile, side, width, align, children, text]);
 
   const triggerStyle: CSSProperties = {
     width: triggerSize,
@@ -61,9 +106,8 @@ export function InfoTooltip({
     lineHeight: 1.5,
   };
 
-  const panelStyle: CSSProperties = {
-    position: "absolute",
-    width,
+  const basePanelStyle: CSSProperties = {
+    position: "fixed",
     background: "var(--vellum, #FBF8F1)",
     border: "1px solid var(--brand-line)",
     borderRadius: 10,
@@ -72,56 +116,68 @@ export function InfoTooltip({
     color: "var(--ink-3)",
     lineHeight: 1.7,
     boxShadow: "var(--shadow-lift)",
-    zIndex: 50,
+    zIndex: 1000,
     opacity: visible ? 1 : 0,
     pointerEvents: visible ? "auto" : "none",
-    transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+    transition: "opacity 0.2s ease",
     textAlign: "left",
     fontFamily: "'DM Sans', sans-serif",
     fontWeight: 400,
     letterSpacing: "normal",
     textTransform: "none",
+    wordWrap: "break-word",
+    overflowWrap: "break-word",
+    whiteSpace: "normal",
   };
 
-  const xTransform =
-    align === "center" ? "translateX(-50%)" : "translateX(0)";
-  if (align === "center") panelStyle.left = "50%";
-  else if (align === "left") panelStyle.left = 0;
-  else panelStyle.right = 0;
+  let panelStyle: CSSProperties;
+  let arrowStyle: CSSProperties | null = null;
 
-  if (side === "bottom") {
-    panelStyle.top = "calc(100% + 12px)";
-    panelStyle.transform = `${xTransform} translateY(${visible ? 0 : 6}px)`;
+  if (isMobile) {
+    panelStyle = {
+      ...basePanelStyle,
+      left: 16,
+      right: 16,
+      bottom: 16,
+      width: "auto",
+      maxWidth: "calc(100vw - 32px)",
+      padding: "18px 20px",
+      fontSize: 13,
+    };
   } else {
-    panelStyle.bottom = "calc(100% + 12px)";
-    panelStyle.transform = `${xTransform} translateY(${visible ? 0 : -6}px)`;
+    const effSide = pos?.effectiveSide ?? side;
+    panelStyle = {
+      ...basePanelStyle,
+      top: pos?.top ?? -9999,
+      left: pos?.left ?? -9999,
+      width: Math.min(width, typeof window !== "undefined" ? window.innerWidth - 32 : width),
+      maxWidth: "calc(100vw - 32px)",
+    };
+    arrowStyle = {
+      position: "absolute",
+      width: 10,
+      height: 10,
+      background: "var(--vellum, #FBF8F1)",
+      transform: "rotate(45deg)",
+      left: (pos?.arrowLeft ?? 20) - 5,
+    };
+    if (effSide === "bottom") {
+      arrowStyle.top = -5;
+      arrowStyle.borderLeft = "1px solid var(--brand-line)";
+      arrowStyle.borderTop = "1px solid var(--brand-line)";
+    } else {
+      arrowStyle.bottom = -5;
+      arrowStyle.borderRight = "1px solid var(--brand-line)";
+      arrowStyle.borderBottom = "1px solid var(--brand-line)";
+    }
   }
 
-  const arrowStyle: CSSProperties = {
-    position: "absolute",
-    width: 10,
-    height: 10,
-    background: "var(--vellum, #FBF8F1)",
-    transform: "rotate(45deg)",
-    marginLeft: 0,
-  };
-  if (align === "center") {
-    arrowStyle.left = "50%";
-    arrowStyle.marginLeft = -5;
-  } else if (align === "left") {
-    arrowStyle.left = 20;
-  } else {
-    arrowStyle.right = 20;
-  }
-  if (side === "bottom") {
-    arrowStyle.top = -5;
-    arrowStyle.borderLeft = "1px solid var(--brand-line)";
-    arrowStyle.borderTop = "1px solid var(--brand-line)";
-  } else {
-    arrowStyle.bottom = -5;
-    arrowStyle.borderRight = "1px solid var(--brand-line)";
-    arrowStyle.borderBottom = "1px solid var(--brand-line)";
-  }
+  const panelNode = (
+    <div ref={panelRef} role="tooltip" style={panelStyle}>
+      {arrowStyle && <span aria-hidden style={arrowStyle} />}
+      {children ?? text}
+    </div>
+  );
 
   return (
     <span
@@ -133,6 +189,7 @@ export function InfoTooltip({
     >
       <button
         type="button"
+        ref={triggerRef}
         aria-label={label ? `Info: ${label}` : "More info"}
         style={triggerStyle}
         onMouseEnter={() => setTriggerHover(true)}
@@ -145,10 +202,7 @@ export function InfoTooltip({
       >
         ?
       </button>
-      <div role="tooltip" style={panelStyle}>
-        <span aria-hidden style={arrowStyle} />
-        {children ?? text}
-      </div>
+      {visible && typeof document !== "undefined" && createPortal(panelNode, document.body)}
     </span>
   );
 }
