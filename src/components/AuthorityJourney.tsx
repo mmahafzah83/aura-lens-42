@@ -39,8 +39,8 @@ const TIER_TOOLTIPS: Record<AuraScoreResponse["tier_name"], { title: string; bod
     body: "You are connecting signals to strategy. Start publishing posts that reference your detected signals to build authority.",
   },
   Authority: {
-    title: "Authority · 65–100",
-    body: "You are a recognized voice in your domain. Your signals and content compound into market credibility.",
+    title: "Presence · 65–100",
+    body: "You are a recognized voice in your domain. Your signals and content compound into lasting market presence.",
   },
 };
 
