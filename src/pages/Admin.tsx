@@ -129,6 +129,30 @@ const Admin = () => {
     }
   };
 
+  const seedCapture = async () => {
+    const url = seedUrl.trim();
+    if (!seedUserId) { toast.error("Pick a user"); return; }
+    if (!/^https?:\/\//i.test(url)) { toast.error("Enter a valid URL (https://…)"); return; }
+    setSeedSending(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || accessToken;
+      const { error } = await supabase.functions.invoke("ingest-capture", {
+        body: { type: "link", content: url, source_url: url, target_user_id: seedUserId },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (error) throw error;
+      const target = activeUsers.find((u) => u.user_id === seedUserId);
+      const label = target?.first_name || target?.email || "user";
+      toast.success(`Article seeded for ${label}`);
+      setSeedUrl("");
+    } catch (e: any) {
+      toast.error(e?.message || "Seed failed");
+    } finally {
+      setSeedSending(false);
+    }
+  };
+
   // Auth gate — first thing
   useEffect(() => {
     let cancelled = false;
