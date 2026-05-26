@@ -55,6 +55,15 @@ const formatDate = (iso: string | null) => {
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 };
 
+const relativeTime = (iso: string | null) => {
+  if (!iso) return "Never logged in";
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (days === 0) return "Today";
+  if (days === 1) return "1 day ago";
+  return `${days} days ago`;
+};
+
 const statusBadge = (status: string) => {
   const map: Record<string, string> = {
     pending: "bg-neutral-500/15 text-neutral-300 border-neutral-500/30",
