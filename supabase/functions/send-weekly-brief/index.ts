@@ -48,12 +48,13 @@ interface BuildHtmlOpts {
   worthReading: { title: string; url: string; author: string | null; readMinutes: number; why: string } | null;
   activeWeeks: number;
   rhythmCopy: string;
+  readyPost: string | null;
 }
 
 function buildHtml(opts: BuildHtmlOpts): string {
   const {
     firstName, dayDate, topSignals, postsThisWeek,
-    brand, brandFont, headline, marketPulse, yourMove, worthReading, activeWeeks, rhythmCopy,
+    brand, brandFont, headline, marketPulse, yourMove, worthReading, activeWeeks, rhythmCopy, readyPost,
   } = opts;
 
   const sectionHeader = (label: string) =>
@@ -78,6 +79,14 @@ function buildHtml(opts: BuildHtmlOpts): string {
        <p style="font-size:15px;line-height:1.6;color:#1a1a1a;margin:0 0 16px;font-family:'DM Sans',system-ui,sans-serif;">${escapeHtml(yourMove.copy)}</p>
        <a href="${escapeHtml(yourMove.ctaHref)}" style="display:inline-block;background:${brand};color:#ffffff;padding:11px 28px;border-radius:6px;font-weight:600;font-size:14px;text-decoration:none;font-family:'DM Sans',system-ui,sans-serif;">${escapeHtml(yourMove.ctaLabel)}</a>
      </div>`;
+
+  const readyPostHtml = readyPost
+    ? `<div style="margin:24px 0;padding:20px 24px;background:#f5f0e8;border-radius:10px;border-left:4px solid ${brand};">
+         <p style="font-size:11px;font-weight:600;color:${brand};letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px;">✦ YOUR POST IS READY</p>
+         <p style="font-size:14px;line-height:1.75;color:#1a1a1a;margin-bottom:16px;white-space:pre-line;">${escapeHtml(readyPost)}</p>
+         <a href="${APP_URL}/home?tab=authority" style="display:inline-block;background:${brand};color:#0d0d0d;padding:10px 20px;border-radius:6px;font-weight:600;font-size:13px;text-decoration:none;">Open in Publish tab →</a>
+       </div>`
+    : "";
 
   let signalsHtml = "";
   if (topSignals.length === 0) {
@@ -174,6 +183,7 @@ function buildHtml(opts: BuildHtmlOpts): string {
     <div class="content-pad" style="padding:36px 40px;color:#1a1a1a;">
       ${marketPulseHtml}
       ${yourMoveHtml}
+      ${readyPostHtml}
       ${signalsHtml}
       ${worthReadingHtml}
       ${rhythmHtml}
