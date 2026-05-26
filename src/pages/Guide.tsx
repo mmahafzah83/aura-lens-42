@@ -115,7 +115,7 @@ const Guide = () => {
             fontSize: "clamp(32px, 5vw, 48px)",
             lineHeight: 1.375,
             letterSpacing: "-0.02em",
-            color: "var(--ink-3)",
+            color: "var(--ink-2)",
             fontWeight: 500,
           }}
         >
