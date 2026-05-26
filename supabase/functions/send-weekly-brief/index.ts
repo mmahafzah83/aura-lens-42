@@ -556,6 +556,7 @@ Rules:
           worthReading,
           activeWeeks,
           rhythmCopy,
+          readyPost,
         });
 
         const resendRes = await fetch("https://api.resend.com/emails", {
