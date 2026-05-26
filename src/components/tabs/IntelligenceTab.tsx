@@ -1002,7 +1002,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
             ) : (
               <>
                 {/* RADAR (only when 3+ themes) */}
-                {uniqueThemeCount >= 3 && <IntelligenceRadar signals={signals} />}
+                {uniqueThemeCount >= 3 && <IntelligenceRadar signals={signals} captureCount={entryCount} />}
 
                 {/* SIGNAL HERO */}
                 {selectedSignal && (
