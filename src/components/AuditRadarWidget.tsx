@@ -57,8 +57,17 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores }: AuditRadarWidgetProp
   const [editMode, setEditMode] = useState(false);
   const [editScores, setEditScores] = useState<Record<string, number>>({});
   const [savingScores, setSavingScores] = useState(false);
+  const [themeTick, setThemeTick] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Re-render canvas on theme toggle
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const observer = new MutationObserver(() => setThemeTick((t) => t + 1));
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "class"] });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const load = async () => {
@@ -84,6 +93,12 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores }: AuditRadarWidgetProp
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+
+    const cs = getComputedStyle(document.documentElement);
+    const resolvedInk3 = cs.getPropertyValue("--ink-3").trim() || "#C9C0AC";
+    const resolvedInk5 = cs.getPropertyValue("--ink-5").trim() || "#8A8170";
+    const resolvedBrand = cs.getPropertyValue("--bronze").trim() || "#D4B056";
+    const resolvedBorder = cs.getPropertyValue("--brand-line").trim() || "rgba(212,176,86,0.28)";
 
     const dpr = window.devicePixelRatio || 1;
     const w = canvas.clientWidth;
@@ -113,7 +128,7 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores }: AuditRadarWidgetProp
         i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
       }
       ctx.closePath();
-      ctx.strokeStyle = "var(--surface-ink-subtle)";
+      ctx.strokeStyle = resolvedBorder;
       ctx.lineWidth = 1;
       ctx.stroke();
     }
@@ -124,7 +139,7 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores }: AuditRadarWidgetProp
       ctx.beginPath();
       ctx.moveTo(cx, cy);
       ctx.lineTo(cx + radius * Math.cos(angle), cy + radius * Math.sin(angle));
-      ctx.strokeStyle = "var(--surface-ink-subtle)";
+      ctx.strokeStyle = resolvedBorder;
       ctx.lineWidth = 1;
       ctx.stroke();
     }
@@ -139,12 +154,9 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores }: AuditRadarWidgetProp
       i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     }
     ctx.closePath();
-    const cs = getComputedStyle(document.documentElement);
-    const brand = cs.getPropertyValue("--brand").trim() || "#B08D3A";
-    const ink3 = cs.getPropertyValue("--ink-3").trim() || "#B8AE99";
     ctx.fillStyle = "rgba(197, 165, 90, 0.12)";
     ctx.fill();
-    ctx.strokeStyle = brand;
+    ctx.strokeStyle = resolvedBrand;
     ctx.lineWidth = 2;
     ctx.stroke();
 
@@ -156,12 +168,12 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores }: AuditRadarWidgetProp
       const y = cy + radius * val * Math.sin(angle);
       ctx.beginPath();
       ctx.arc(x, y, 3.5, 0, 2 * Math.PI);
-      ctx.fillStyle = brand;
+      ctx.fillStyle = resolvedBrand;
       ctx.fill();
     }
 
     // Draw labels — full names, positioned outside
-    ctx.fillStyle = ink3;
+    ctx.fillStyle = resolvedInk3;
     ctx.textBaseline = "middle";
     for (let i = 0; i < n; i++) {
       const angle = startAngle + i * angleStep;
@@ -189,7 +201,7 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores }: AuditRadarWidgetProp
       ctx.fillText(DIMENSION_SHORT_LABELS[DIMENSION_ORDER[i]] || DIMENSION_ORDER[i], 0, 0);
       ctx.restore();
     }
-  }, [auditResults]);
+  }, [auditResults, themeTick]);
 
   const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!auditResults || !canvasRef.current) return;
