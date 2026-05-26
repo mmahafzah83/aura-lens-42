@@ -666,7 +666,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           <p style={{ fontSize: 12, color: "var(--ink-5)", margin: "0 0 12px" }}>
             Three perspectives on your digital footprint — refreshed from your latest intelligence.
           </p>
-          <MarketMirror userId={authUser?.id ?? null} />
+          <MarketMirror userId={authUser?.id ?? null} hideHeader />
         </section>
       )}
 
