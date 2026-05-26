@@ -680,7 +680,7 @@ const Landing = () => {
           </div>
           <div className="landing-footer-col-right">
             <p style={{ fontSize: 12, color: "var(--ink-4)" }}>
-              Contact: <a href="mailto:mohammad.mahafdhah@aura-intel.org">mohammad.mahafdhah@aura-intel.org</a>
+              Contact: <a href="mailto:support@aura-intel.org">support@aura-intel.org</a>
             </p>
             <p style={{ fontSize: 12, color: "var(--ink-4)", marginTop: 6 }}>
               Support: <a href="mailto:support@aura-intel.org">support@aura-intel.org</a>

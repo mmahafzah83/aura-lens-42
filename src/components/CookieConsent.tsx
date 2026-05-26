@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 const STORAGE_KEY = "aura-cookie-consent";
 
@@ -46,7 +47,16 @@ const CookieConsent = () => {
           className="text-sm text-center sm:text-left"
           style={{ color: "var(--ink)", fontFamily: "var(--font-body)" }}
         >
-          Aura uses essential cookies for authentication and preferences.
+          Aura uses essential cookies for authentication and preferences.{" "}
+          <Link
+            to="/privacy"
+            style={{ color: "var(--bronze)", textDecoration: "none" }}
+            onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+            onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+          >
+            Read our Privacy Policy
+          </Link>
+          .
         </p>
         <button
           type="button"

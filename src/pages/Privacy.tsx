@@ -17,9 +17,9 @@ const Privacy = () => {
       { title: "Data Storage", body: "Your data is stored securely on cloud infrastructure hosted on AWS, with industry-standard encryption at rest and in transit." },
       { title: "Data Sharing", body: "We do not sell your data. We do not share with third parties except as required by law." },
       { title: "AI Processing", body: "Captures processed by Google Gemini AI per-request. We do not train AI models on your data." },
-      { title: "Your Rights", body: "Under the Saudi Personal Data Protection Law (PDPL) and applicable data protection regulations, you have the right to:\n- Request a copy of your personal data\n- Request correction of inaccurate data\n- Request deletion of your account and associated data\n- Withdraw consent for AI processing\n\nTo exercise these rights, contact: mohammad.mahafdhah@aura-intel.org" },
+      { title: "Your Rights", body: "Under the Saudi Personal Data Protection Law (PDPL) and applicable data protection regulations, you have the right to:\n- Request a copy of your personal data\n- Request correction of inaccurate data\n- Request deletion of your account and associated data\n- Withdraw consent for AI processing\n\nTo exercise these rights, contact: support@aura-intel.org" },
       { title: "Cookies", body: "Aura uses essential cookies for authentication and storing your theme preference. No advertising or tracking cookies are used." },
-      { title: "Contact", body: "mohammad.mahafdhah@aura-intel.org" },
+      { title: "Contact", body: "support@aura-intel.org" },
     ]}
   />
 );

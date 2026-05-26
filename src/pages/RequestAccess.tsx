@@ -319,7 +319,7 @@ export default function RequestAccess() {
               <SuccessCeremony
                 title="You're already on our list."
                 subline="We have your request. If I haven't reached out yet, I will soon."
-                companion="Want to check your status? Email me at mohammad.mahafdhah@aura-intel.org"
+                companion="Want to check your status? Email me at support@aura-intel.org"
                 ctaHref="/"
                 ctaLabel="Go back to explore Aura →"
               />
