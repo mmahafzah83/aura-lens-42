@@ -32,9 +32,10 @@ const DIMENSION_TIERS: Record<string, { tier: string; category: string }> = {
 
 interface AuditRadarWidgetProps {
   onStartAudit?: () => void;
+  hideEditScores?: boolean;
 }
 
-const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
+const AuditRadarWidget = ({ onStartAudit, hideEditScores }: AuditRadarWidgetProps) => {
   const [auditResults, setAuditResults] = useState<Record<string, number> | null>(null);
   const [completed, setCompleted] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -280,7 +281,7 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
     <div ref={containerRef} className="rounded-xl border border-ink-3 bg-surface-ink-raised p-4 mb-4 relative">
       <div className="flex items-center justify-between mb-2">
         <p className="text-sm font-medium text-ink-7">Your Capability Radar</p>
-        {!editMode ? (
+        {hideEditScores ? null : !editMode ? (
           <button
             onClick={startEdit}
             className="text-xs font-medium hover:underline"
