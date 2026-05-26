@@ -110,6 +110,24 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authReady, authUser]);
 
+  // Load milestones for the timeline (same source as MilestonesSection)
+  useEffect(() => {
+    if (!authReady || !authUser) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        await supabase.auth.getSession();
+        const { data: res, error } = await invokeEdgeFunction("calculate-aura-score", { body: {} });
+        if (!cancelled && !error && res && Array.isArray((res as any).milestones)) {
+          setMilestoneData((res as any).milestones);
+        }
+      } catch (e) {
+        console.warn("[IdentityTab] milestones load failed", e);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [authReady, authUser]);
+
   useEffect(() => {
     const openAssessment = () => setBrandOpen(true);
     const openProfileEditor = () => {
