@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, X } from "lucide-react";
 import { SECTORS } from "@/constants/sectors";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 
 interface Props {
   userId: string;
