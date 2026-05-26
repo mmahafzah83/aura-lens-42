@@ -1104,24 +1104,28 @@ const Header = ({ entryCount, signalsCount, movesCount }: { entryCount: number; 
     <p style={{ fontSize: 13, color: "var(--ink-3)", margin: "0 0 16px", lineHeight: 1.5 }}>
       What the market doesn't know you know.
     </p>
-    <div data-testid="intel-stats" style={{ display: "inline-flex", alignItems: "center", gap: 20 }}>
+    <div data-testid="intel-stats" style={{ display: "inline-flex", alignItems: "center", gap: 0, background: "none", border: "none" }}>
       {[
-        { val: entryCount, label: "sources", color: "var(--brand)" },
-        { val: signalsCount, label: "signals", color: "var(--info, var(--brand))" },
-        { val: movesCount, label: "moves", color: "var(--success, hsl(140 60% 45%))" },
+        { val: entryCount, label: entryCount === 1 ? "source" : "sources", color: "var(--brand)" },
+        { val: signalsCount, label: signalsCount === 1 ? "signal" : "signals", color: "var(--info, var(--brand))" },
+        { val: movesCount, label: movesCount === 1 ? "move" : "moves", color: "var(--success, hsl(140 60% 45%))" },
       ].map((s, i, arr) => (
-        <div key={s.label} style={{
-          display: "flex", flexDirection: "column", alignItems: "center",
-          paddingRight: i < arr.length - 1 ? 20 : 0,
-          borderRight: i < arr.length - 1 ? "0.5px solid var(--surface-ink-subtle)" : "none",
-        }}>
+        <div key={s.label} style={{ display: "inline-flex", alignItems: "center" }}>
           <div style={{
-            fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
-            fontSize: 20, fontWeight: 500, color: s.color, lineHeight: 1,
-          }}>{s.val}</div>
-          <div style={{ fontSize: 9, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: ".1em", marginTop: 4 }}>
-            {s.label}
+            display: "flex", flexDirection: "column", alignItems: "center",
+            padding: "0 18px", background: "none", border: "none",
+          }}>
+            <div style={{
+              fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
+              fontSize: 20, fontWeight: 500, color: s.color, lineHeight: 1,
+            }}>{s.val}</div>
+            <div style={{ fontSize: 9, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: ".06em", marginTop: 4 }}>
+              {s.label}
+            </div>
           </div>
+          {i < arr.length - 1 && (
+            <span style={{ width: 0.5, height: 20, background: "var(--surface-ink-subtle)" }} />
+          )}
         </div>
       ))}
     </div>
