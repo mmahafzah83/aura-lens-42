@@ -603,6 +603,9 @@ const Landing = () => {
           <button onClick={() => navigate("/auth")} className="px-8 py-3 rounded-xl text-sm font-medium transition-all hover:brightness-90" style={{ background: "var(--ink)", color: "var(--ink-7)" }}>
             Get early access
           </button>
+          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", textAlign: "center", marginTop: 8 }}>
+            Free during closed beta · Invite-only access
+          </p>
         </div>
       </section>
 

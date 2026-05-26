@@ -5,6 +5,7 @@ import { Loader2, Radio, PenLine, TrendingUp, Eye, EyeOff } from "lucide-react";
 import AuraLogo from "@/components/brand/AuraLogo";
 import { useToast } from "@/hooks/use-toast";
 import usePageMeta from "@/hooks/usePageMeta";
+import PublicFooter from "@/components/PublicFooter";
 
 const Auth = () => {
   usePageMeta({
@@ -226,7 +227,8 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex" style={{ backgroundColor: "var(--ink)", fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--ink)", fontFamily: "'DM Sans', sans-serif" }}>
+      <div className="flex-1 flex">
       {/* Scoped style overrides to defeat global input styles + autofill */}
       <style>{`
         .auth-input {
