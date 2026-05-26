@@ -11,7 +11,7 @@ const APP_URL = "https://aura-intel.org";
 const FROM = "Aura <Mohammad.Mahafdhah@aura-intel.org>";
 const REPLY_TO = "mohammad.mahafdhah@aura-intel.org";
 
-type EmailType = "welcome" | "day1" | "day3" | "day7" | "inactive" | "silence";
+type EmailType = "welcome" | "day1" | "day3" | "day7" | "inactive" | "silence" | "post_ready";
 
 const HEADING_FONT = "'Cormorant Garamond', Georgia, 'Times New Roman', serif";
 const BODY_FONT = "'DM Sans', -apple-system, BlinkMacSystemFont, Arial, sans-serif";
@@ -79,9 +79,11 @@ function buildEmail(
     fadingCount: number;
     publishedCount: number;
     recentTrend: { headline: string; source: string } | null;
+    postTitle?: string;
+    postPreview?: string;
   },
 ): { subject: string; html: string } {
-  const { BRAND, FONT, firstName, sectorFocus, level, entriesCount, topSignals, score, tier, signalCount, fadingSignals, fadingCount, publishedCount, recentTrend } = ctx;
+  const { BRAND, FONT, firstName, sectorFocus, level, entriesCount, topSignals, score, tier, signalCount, fadingSignals, fadingCount, publishedCount, recentTrend, postTitle, postPreview } = ctx;
   const name = firstName || "there";
   const focus = sectorFocus && sectorFocus.trim() ? sectorFocus.trim() : "your sector";
   const tierMessage = (() => {
