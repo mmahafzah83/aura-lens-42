@@ -11,7 +11,7 @@ const APP_URL = "https://aura-intel.org";
 const FROM = "Aura <Mohammad.Mahafdhah@aura-intel.org>";
 const REPLY_TO = "mohammad.mahafdhah@aura-intel.org";
 
-type EmailType = "welcome" | "day1" | "day3" | "day7" | "inactive" | "silence";
+type EmailType = "welcome" | "day1" | "day3" | "day7" | "inactive" | "silence" | "post_ready";
 
 const HEADING_FONT = "'Cormorant Garamond', Georgia, 'Times New Roman', serif";
 const BODY_FONT = "'DM Sans', -apple-system, BlinkMacSystemFont, Arial, sans-serif";
@@ -79,9 +79,11 @@ function buildEmail(
     fadingCount: number;
     publishedCount: number;
     recentTrend: { headline: string; source: string } | null;
+    postTitle?: string;
+    postPreview?: string;
   },
 ): { subject: string; html: string } {
-  const { BRAND, FONT, firstName, sectorFocus, level, entriesCount, topSignals, score, tier, signalCount, fadingSignals, fadingCount, publishedCount, recentTrend } = ctx;
+  const { BRAND, FONT, firstName, sectorFocus, level, entriesCount, topSignals, score, tier, signalCount, fadingSignals, fadingCount, publishedCount, recentTrend, postTitle, postPreview } = ctx;
   const name = firstName || "there";
   const focus = sectorFocus && sectorFocus.trim() ? sectorFocus.trim() : "your sector";
   const tierMessage = (() => {
@@ -158,6 +160,20 @@ function buildEmail(
     return { subject, html: shell(BRAND, FONT, body) };
   }
 
+  if (type === "post_ready") {
+    const title = postTitle || "your latest insight";
+    const preview = (postPreview || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const subject = `Your post about ${title} is ready to publish`;
+    const body = `
+      ${heading(`${name}, your post is waiting.`)}
+      <p style="margin:0 0 18px;">You generated a LinkedIn post yesterday — and it's still waiting.</p>
+      <p style="margin:0 0 18px;padding:16px 20px;background:#f5f1e8;border-left:3px solid ${BRAND};font-style:italic;color:#3a3530;">"${preview}${preview.length >= 120 ? "..." : ""}"</p>
+      <p style="margin:0 0 18px;">One tap and it's live. The professionals who build presence don't wait for the perfect moment.</p>
+      ${ctaButton(BRAND, "Open in Publish tab →", `${APP_URL}/home?tab=authority`)}
+      ${signoff(name, level)}`;
+    return { subject, html: shell(BRAND, FONT, body) };
+  }
+
   // silence / inactive — both paths use the same signal-decay framing
   const f1 = fadingSignals[0];
   const f2 = fadingSignals[1];
@@ -199,14 +215,15 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const { user_id, email_type } = await req.json();
+    const reqBody = await req.json();
+    const { user_id, email_type, post_id, post_title, post_preview } = reqBody;
     if (!user_id || !email_type) {
       return new Response(JSON.stringify({ error: "user_id and email_type required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const types: EmailType[] = ["welcome", "day1", "day3", "day7", "inactive", "silence"];
+    const types: EmailType[] = ["welcome", "day1", "day3", "day7", "inactive", "silence", "post_ready"];
     if (!types.includes(email_type)) {
       return new Response(JSON.stringify({ error: "invalid email_type" }), {
         status: 400,
@@ -227,17 +244,50 @@ serve(async (req) => {
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
     // De-dupe
-    const { data: existing } = await admin
-      .from("lifecycle_emails")
-      .select("id")
-      .eq("user_id", user_id)
-      .eq("email_type", email_type)
-      .limit(1);
-    if (existing && existing.length > 0 && email_type !== "inactive" && email_type !== "silence") {
-      return new Response(JSON.stringify({ skipped: "already_sent" }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (email_type === "post_ready") {
+      if (post_id) {
+        const { data: existingPost } = await admin
+          .from("lifecycle_emails")
+          .select("id")
+          .eq("user_id", user_id)
+          .eq("email_type", "post_ready")
+          .eq("metadata->>post_id", post_id)
+          .limit(1);
+        if (existingPost && existingPost.length > 0) {
+          return new Response(JSON.stringify({ skipped: "already_sent_for_post" }), {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
+      // Fallback: don't send if any post_ready was sent in last 48h
+      const fortyEightHrAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+      const { data: recentPR } = await admin
+        .from("lifecycle_emails")
+        .select("id")
+        .eq("user_id", user_id)
+        .eq("email_type", "post_ready")
+        .gte("sent_at", fortyEightHrAgo)
+        .limit(1);
+      if (recentPR && recentPR.length > 0) {
+        return new Response(JSON.stringify({ skipped: "recent_post_ready" }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } else {
+      const { data: existing } = await admin
+        .from("lifecycle_emails")
+        .select("id")
+        .eq("user_id", user_id)
+        .eq("email_type", email_type)
+        .limit(1);
+      if (existing && existing.length > 0 && email_type !== "inactive" && email_type !== "silence") {
+        return new Response(JSON.stringify({ skipped: "already_sent" }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // Recipient email
@@ -331,6 +381,8 @@ serve(async (req) => {
       fadingCount: fadingCount || 0,
       publishedCount: publishedCount || 0,
       recentTrend: trendRow ? { headline: (trendRow as any).headline, source: (trendRow as any).source } : null,
+      postTitle: post_title || undefined,
+      postPreview: post_preview || undefined,
     });
 
     const resendRes = await fetch("https://api.resend.com/emails", {
@@ -359,7 +411,12 @@ serve(async (req) => {
     await admin.from("lifecycle_emails").insert({
       user_id,
       email_type,
-      metadata: { subject, recipient, resend_id: (sendInfo as any)?.id || null },
+      metadata: {
+        subject,
+        recipient,
+        resend_id: (sendInfo as any)?.id || null,
+        ...(email_type === "post_ready" && post_id ? { post_id } : {}),
+      },
     });
 
     return new Response(JSON.stringify({ success: true }), {
