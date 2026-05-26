@@ -87,7 +87,7 @@ serve(async (req) => {
         .select("id, post_text, source_signal_id")
         .eq("user_id", userId)
         .eq("source_type", "aura_generated")
-        .in("tracking_status", ["draft"])
+        .or("tracking_status.eq.draft,tracking_status.is.null")
         .gte("created_at", fortyEightHoursAgo)
         .lte("created_at", twentyFourHoursAgo)
         .order("created_at", { ascending: false })
@@ -96,7 +96,7 @@ serve(async (req) => {
 
       if (unpublishedPost) {
         const recentPostReady = sent.some(
-          (s) => s.type === "post_ready" && now - new Date(s.sent_at).getTime() < 48 * dayMs / 24,
+          (s) => s.type === "post_ready" && now - new Date(s.sent_at).getTime() < 2 * dayMs,
         );
         if (!recentPostReady) {
           let postTitle = (unpublishedPost.post_text as string | null)?.slice(0, 50) + "..." || "your latest insight";
