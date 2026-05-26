@@ -96,6 +96,9 @@ const Admin = () => {
   const [seedUrl, setSeedUrl] = useState<string>("");
   const [seedSending, setSeedSending] = useState(false);
 
+  // Inactivity alert
+  const [copiedUser, setCopiedUser] = useState<string | null>(null);
+
   // Delete-user state
   const [confirmEmail, setConfirmEmail] = useState<string | null>(null);
   const [deletingEmail, setDeletingEmail] = useState<string | null>(null);
