@@ -587,7 +587,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         <div>
           <div
             style={{
-              background: "var(--surface-subtle, var(--aura-card))",
+              background: "var(--vellum, var(--paper-2))",
               borderRadius: 14,
               padding: "18px 20px",
               display: "flex",
