@@ -2379,17 +2379,16 @@ const ForceCard = ({
         </div>
       </div>
       <div
-        className="tabular-nums mt-1 inline-flex items-baseline gap-1.5"
+        className="text-metric mt-1 inline-flex items-baseline gap-1.5"
         style={{
-          fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-          fontSize: 30,
-          fontWeight: 700,
           color,
-          lineHeight: 1.375,
         }}
       >
         {weighted}
-        <span style={{ fontSize: 14, fontWeight: 500, color: "var(--aura-t3)" }}>
+        <span style={{
+          fontFamily: "'DM Sans', system-ui, sans-serif",
+          fontSize: 16, fontWeight: 400, color: "var(--aura-t3)",
+        }}>
           /{maxPoints}
         </span>
       </div>
