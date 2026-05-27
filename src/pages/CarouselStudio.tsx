@@ -869,10 +869,22 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
       return (
         <g>
           {slide.headline && (
-            <text x={startX} y={gridY - 40} textAnchor={sideAnchor}
-                  fontFamily={headingFont} fontSize={36} fontWeight={style.headingWeight ?? 700} fill={style.fg}>
-              {slide.headline}
-            </text>
+            (() => {
+              const hlLines = wrapText(slide.headline, isRTL ? 28 : 36);
+              const lineH = 42;
+              const firstY = gridY - 40 - (hlLines.length - 1) * lineH;
+              return (
+                <text x={startX} y={firstY} textAnchor={sideAnchor}
+                      fontFamily={headingFont} fontSize={36} fontWeight={style.headingWeight ?? 700}
+                      fill={style.fg} direction={isRTL ? "rtl" : undefined}>
+                  {hlLines.map((ln, i) => (
+                    <tspan key={i} x={startX} dy={i === 0 ? 0 : lineH}>
+                      {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.accent)}
+                    </tspan>
+                  ))}
+                </text>
+              );
+            })()
           )}
           {items.map((it, i) => {
             const r = Math.floor(i / cols);
