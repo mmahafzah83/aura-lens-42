@@ -897,6 +897,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
   const [activeSubTab, setActiveSubTab] = useState<SubTab>("signals");
   const [detecting, setDetecting] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
 
   const loadSignals = useCallback(async () => {
     setLoading(true); setLoadError(false);
