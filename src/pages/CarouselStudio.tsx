@@ -1130,7 +1130,7 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
       const headlineLines = wrapText(slide.headline || "", 26);
       const bodyLines = wrapText(slide.body || "", 38);
       const headLineH = 58;
-      const bodyLineH = 36;
+      const bodyLineH = isRTL ? 44 : 36;
       const blockH = headlineLines.length * headLineH + 40 + bodyLines.length * bodyLineH;
       const startY = cy - blockH / 2 + 40;
       // RTL right-aligns body content; LTR keeps the centered editorial feel.
@@ -1142,7 +1142,8 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
         <g>
           {headlineLines.map((ln, i) => (
             <text key={i} x={insightX} y={startY + i * headLineH} textAnchor={insightAnchor}
-                  fontFamily={headingFont} fontSize={isRTL ? 44 : 50} fontWeight={style.headingWeight ?? 700}>
+                  fontFamily={headingFont} fontSize={isRTL ? 44 : 50} fontWeight={style.headingWeight ?? 700}
+                  fill={style.fg} direction={isRTL ? "rtl" : undefined}>
               {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.accent)}
             </text>
           ))}
