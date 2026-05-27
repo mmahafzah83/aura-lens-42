@@ -347,7 +347,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               padding: "18px 22px",
               maxWidth: 380,
               boxShadow: "0 10px 32px rgba(0,0,0,0.35)",
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontFamily: "var(--font-display)",
               lineHeight: 1.5,
             }}
           >
@@ -355,7 +355,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               <span style={{ color: "#d4b056", fontSize: 18 }}>✦</span>
               <span style={{ fontSize: 18 }}>Welcome to your Aura.</span>
             </div>
-            <div style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "rgba(230,222,205,0.85)" }}>
+            <div style={{ fontSize: 13, color: "rgba(230,222,205,0.85)" }}>
               Your intelligence radar is live. Your first briefing arrives in 24 hours.
             </div>
           </div>
@@ -1146,7 +1146,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
           </div>
           <h1
             style={{
-              fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
+              fontFamily: "var(--font-display)",
               fontSize: 34,
               fontWeight: 500,
               color: "var(--ink)",
@@ -1329,16 +1329,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                 padding: "16px 18px",
               }}
             >
-              <div
-                style={{
-                  fontSize: 12,
-                  letterSpacing: "0.12em",
-                  textTransform: "uppercase",
-                  color: "var(--ink-3)",
-                  fontWeight: 600,
-                  marginBottom: 10,
-                }}
-              >
+              <div className="text-section-header" style={{ color: "var(--ink-3)", marginBottom: 10 }}>
                 Your captures
               </div>
               <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -1390,7 +1381,6 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
             justifyContent: "space-between",
             gap: 12,
             flexWrap: "wrap",
-            fontFamily: "'DM Sans', sans-serif",
           }}
         >
           <div style={{ flex: "1 1 280px", minWidth: 0 }}>
@@ -1513,7 +1503,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
             <div
               data-testid="home-return-greeting"
               style={{
-                fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
+                fontFamily: "var(--font-display)",
                 fontSize: 16,
                 color: "var(--ink-2, var(--ink))",
                 lineHeight: 1.4,
@@ -1625,9 +1615,9 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
             <div className="flex items-center" style={{ gap: 6 }}>
               <span
                 style={{
-                  fontFamily: "'Cormorant Garamond', serif",
+                  fontFamily: "var(--font-display)",
                   fontSize: 36,
-                  fontWeight: 700,
+                  fontWeight: 500,
                   color: "var(--ink-3)",
                   lineHeight: 1.5,
                 }}
@@ -1671,7 +1661,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               <div
                 data-testid="home-greeting"
                 style={{
-                  fontFamily: "'Cormorant Garamond', serif",
+                  fontFamily: "var(--font-display)",
                   fontSize: 22, fontWeight: 500,
                   color: "hsl(var(--foreground))",
                   lineHeight: 1.3, marginBottom: 4,
@@ -1719,7 +1709,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               >
                 <AnimatedScore value={score} />
               </div>
-              <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 14, color: "hsl(var(--muted-foreground))", letterSpacing: "0.05em", display: "inline-flex", alignItems: "center", gap: 4, marginTop: 4 }}>
+              <div style={{ fontSize: 14, color: "hsl(var(--muted-foreground))", letterSpacing: "0.05em", display: "inline-flex", alignItems: "center", gap: 4, marginTop: 4 }}>
                 <span>of 100</span>
                 <InfoTooltip
                   label="Digital Presence Score"
@@ -1769,14 +1759,11 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                         <span className="text-metric" style={{ color: f.color }}>
                           {f.weighted}
                         </span>
-                        <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 16, color: "hsl(var(--muted-foreground))" }}>
+                        <span className="text-denominator">
                           /{f.max}
                         </span>
                       </div>
-                      <div style={{
-                        fontSize: 12, color: "hsl(var(--muted-foreground))",
-                        marginBottom: 6,
-                      }}>
+                      <div className="text-section-header" style={{ marginBottom: 6 }}>
                         {f.label}
                       </div>
                       <div style={{
@@ -1882,7 +1869,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
           <div style={{ flex: 1, minWidth: 0 }}>
             {welcomeVariant === "first-signal" && (
               <>
-                <div style={{ fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--brand)", fontWeight: 600, marginBottom: 6 }}>
+                <div className="text-section-header" style={{ color: "var(--brand)", marginBottom: 6 }}>
                   Your first signal
                 </div>
                 <p style={{ fontSize: 14, color: "var(--ink-3)", margin: "0 0 6px", lineHeight: 1.5 }}>
@@ -1922,7 +1909,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
             )}
             {welcomeVariant === "building" && (
               <>
-                <div style={{ fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--brand)", fontWeight: 600, marginBottom: 6 }}>
+                <div className="text-section-header" style={{ color: "var(--brand)", marginBottom: 6 }}>
                   Building your radar
                 </div>
                 <p style={{ fontSize: 14, color: "var(--ink-3)", margin: "0 0 12px", lineHeight: 1.5 }}>
@@ -1988,10 +1975,10 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               transition: "all 400ms ease",
             }}
           >
-            <div style={{ fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--brand)", fontWeight: 600, marginBottom: 8 }}>
+            <div className="text-section-header" style={{ color: "var(--brand)", marginBottom: 8 }}>
               ✦ Revelation
             </div>
-            <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond', serif)", fontSize: 22, color: "var(--ink)", lineHeight: 1.2, marginBottom: 6 }}>
+            <div style={{ fontFamily: "var(--font-display)", fontSize: 22, color: "var(--ink)", lineHeight: 1.2, marginBottom: 6 }}>
               Your first signal has emerged.
             </div>
             <div style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)", marginBottom: 10 }}>
@@ -2114,7 +2101,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               <div className="flex items-center justify-between" style={{ marginBottom: 10 }}>
                 <div className="flex items-center" style={{ gap: 8 }}>
                   <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--danger)", display: "inline-block" }} />
-                  <span style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--danger)", fontWeight: 600 }}>
+                  <span className="text-section-header" style={{ color: "var(--danger)" }}>
                     Competitor alert
                   </span>
                 </div>
@@ -2122,7 +2109,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                   {competitorTimeAgo(competitorAlert!.fetchedAt)}
                 </span>
               </div>
-              <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.5)", marginBottom: 4 }}>
+              <div className="text-section-header" style={{ color: "rgba(255,255,255,0.5)", marginBottom: 4 }}>
                 They published
               </div>
               <div style={{ fontSize: 15, color: "#fff", lineHeight: 1.4, fontWeight: 500 }}>
@@ -2134,7 +2121,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
 
               {/* Zone 2 */}
               <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", margin: "14px 0 10px" }} />
-              <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.5)", marginBottom: 4 }}>
+              <div className="text-section-header" style={{ color: "rgba(255,255,255,0.5)", marginBottom: 4 }}>
                 Your signal on this topic
               </div>
               <div style={{ fontSize: 14, color: "var(--brand)", fontWeight: 500 }}>
@@ -2267,14 +2254,11 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                 paddingLeft: 16,
               }}
             >
-              <div style={{
-                fontSize: 11, fontWeight: 500, letterSpacing: "0.04em",
-                color: "var(--warning)", textTransform: "uppercase", marginBottom: 6,
-              }}>
+              <div className="text-section-header" style={{ color: "var(--warning)", marginBottom: 6 }}>
                 Briefing
               </div>
               <div style={{
-                fontFamily: "'Cormorant Garamond', serif",
+                fontFamily: "var(--font-display)",
                 fontSize: 15, fontWeight: 500,
                 color: "hsl(var(--foreground))",
                 lineHeight: 1.4, marginBottom: 6,
@@ -2379,14 +2363,11 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
             data-testid="home-urgent"
             style={{ borderTop: "0.5px solid hsl(var(--border) / 0.5)", paddingTop: 20 }}
           >
-            <div style={{
-              fontSize: 11, fontWeight: 500, letterSpacing: "0.04em",
-              color: "var(--danger)", textTransform: "uppercase", marginBottom: 6,
-            }}>
+            <div className="text-section-header" style={{ color: "var(--danger)", marginBottom: 6 }}>
               Urgent
             </div>
             <div style={{
-              fontFamily: "'Cormorant Garamond', serif",
+              fontFamily: "var(--font-display)",
               fontSize: 15, fontWeight: 500, color: "hsl(var(--foreground))",
               lineHeight: 1.4, marginBottom: 6,
             }}>
