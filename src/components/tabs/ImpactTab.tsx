@@ -1969,8 +1969,8 @@ const HeroStat = ({ value, label, color }: { value: string; label: string; color
     }}
   >
     <div
-      className="tabular-nums"
-      style={{ fontSize: 28, fontWeight: 700, color, fontFamily: "Inter, sans-serif", lineHeight: 1.375 }}
+      className="text-kpi"
+      style={{ color }}
     >
       {value}
     </div>
