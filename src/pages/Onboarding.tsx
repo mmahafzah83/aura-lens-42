@@ -835,7 +835,7 @@ const Onboarding = () => {
   }
 
   // ───── STEP 0 ─────
-  if (step === 0) {
+  if (step === 0 && !welcomeAcknowledged) {
     const items = [
       "Aura reads what you already read — and finds the signals you'd miss.",
       "It writes in your voice — because generic AI content damages your reputation.",
@@ -870,7 +870,7 @@ const Onboarding = () => {
           animate={{ opacity: revealCount >= 3 ? 1 : 0 }}
           transition={{ duration: 0.5, delay: revealCount >= 3 ? 0.6 : 0 }}
         >
-          {primaryBtn(<>Let's begin <ArrowRight className="w-4 h-4" /></>, () => goStep(1), { disabled: revealCount < 3 })}
+          {primaryBtn(<>Let's begin <ArrowRight className="w-4 h-4" /></>, () => setWelcomeAcknowledged(true), { disabled: revealCount < 3 })}
         </motion.div>
         <motion.p
           initial={{ opacity: 0 }}
@@ -879,17 +879,17 @@ const Onboarding = () => {
           className="text-center mt-4"
           style={{ fontSize: 13, color: "hsl(var(--muted-foreground))" }}
         >
-          5 steps. About 10 minutes. Worth every second.
+          4 steps. About 7 minutes. Worth every second.
         </motion.p>
       </>,
     );
   }
 
-  // ───── STEP 1 ─────
-  if (step === 1) {
+  // ───── STEP 0 (LinkedIn paste + profile form) ─────
+  if (step === 0 && welcomeAcknowledged) {
     return cardShell(
       <>
-        {eyebrow("Step 1 of 5 — Tell Aura who you are")}
+        {eyebrow("Step 1 of 4 — Tell Aura who you are")}
         {!showForm ? (
           <>
             {heading("Paste your LinkedIn headline and About section")}
