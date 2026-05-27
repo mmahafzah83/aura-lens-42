@@ -9,7 +9,7 @@ import BrandAssessmentModal from "@/components/BrandAssessmentModal";
 import CalibrationSliders from "@/components/CalibrationSliders";
 import { SECTORS, normalizeSector } from "@/constants/sectors";
 
-type Step = 0 | 1 | 2 | 3 | 4;
+type Step = 0 | 1 | 2 | 3;
 
 interface Prefill {
   first_name?: string;
@@ -48,7 +48,7 @@ const Onboarding = () => {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user?.id) {
           await (supabase.from("diagnostic_profiles" as any) as any)
-            .update({ onboarding_step: 5, onboarding_completed: true })
+            .update({ onboarding_step: 4, onboarding_completed: true })
             .eq("user_id", session.user.id);
         }
       } catch (e) { console.warn("final onboarding_step save failed:", e); }
@@ -84,7 +84,7 @@ const Onboarding = () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (session?.user?.id) {
               await (supabase.from("diagnostic_profiles" as any) as any)
-                .update({ onboarding_step: 5, onboarding_completed: true })
+                .update({ onboarding_step: 4, onboarding_completed: true })
                 .eq("user_id", session.user.id);
             }
           } catch (e) { console.warn("ceremony-mount completion save failed:", e); }
@@ -119,6 +119,8 @@ const Onboarding = () => {
 
   // Step 0
   const [revealCount, setRevealCount] = useState(0);
+  // Sub-state: within step 0, show welcome first, then LinkedIn paste + form.
+  const [welcomeAcknowledged, setWelcomeAcknowledged] = useState(false);
 
   // Step 1
   const [linkedinUrl, setLinkedinUrl] = useState("");
@@ -155,6 +157,9 @@ const Onboarding = () => {
   // Breathing transition between article capture (step 2) and calibration (step 3)
   const [breathing, setBreathing] = useState(false);
   const [breathingLeaving, setBreathingLeaving] = useState(false);
+  const [breathingMessage, setBreathingMessage] = useState<string>(
+    "Now let's map what makes you different.",
+  );
 
   // Auth + gate: if user already onboarded, send them home.
   useEffect(() => {
@@ -185,16 +190,17 @@ const Onboarding = () => {
         .eq("user_id", session.user.id)
         .maybeSingle();
       const p: any = profile || {};
-      // Completion redirect — Fix 10: any user with onboarding_step >= 5
+      // Completion redirect — any user with onboarding_step >= 4
       // (or the legacy onboarding_completed flag) can never accidentally restart.
-      if (p && ((p.onboarding_step ?? 0) >= 5 || (p.onboarding_completed && p.first_name))) {
+      if (p && ((p.onboarding_step ?? 0) >= 4 || (p.onboarding_completed && p.first_name))) {
         goHome();
         return;
       }
       // Resume from last saved step (Fix 1C)
       const savedStep = Number(p.onboarding_step ?? 0);
-      if (savedStep > 0 && savedStep <= 4) {
+      if (savedStep > 0 && savedStep <= 3) {
         setStep(savedStep as Step);
+        setWelcomeAcknowledged(true);
       }
       // Pre-populate calibration sliders with any partial scores (Fix 1D)
       if (p.skill_ratings && typeof p.skill_ratings === "object") {
