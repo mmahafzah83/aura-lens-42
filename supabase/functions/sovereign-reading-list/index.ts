@@ -7,6 +7,30 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+/** Validate a URL is a real deep article link (not homepage / 404). Returns true if reachable. */
+async function validateLink(url: string | null | undefined): Promise<boolean> {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url);
+    const segs = parsed.pathname.split("/").filter(Boolean);
+    if (segs.length < 1) return false; // homepage only
+    const res = await fetch(url, { method: "HEAD", redirect: "follow" });
+    if (!res.ok) return false;
+    const finalUrl = res.url || url;
+    const finalSegs = new URL(finalUrl).pathname.split("/").filter(Boolean);
+    if (finalSegs.length < 1) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const EMPTY_RESPONSE = {
+  recommendations: [],
+  source: "unavailable",
+  message: "Reading intelligence is refreshing. Check back shortly.",
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -98,43 +122,52 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Discover real articles via Perplexity (replaces Exa)
-    let discoveredArticles = "";
     const PERPLEXITY_KEY = Deno.env.get("PERPLEXITY_API_KEY");
-    if (PERPLEXITY_KEY && skillGaps.length > 0) {
-      try {
-        const sectorFocus = (profile as any)?.sector_focus || "consulting";
-        const gapNames = skillGaps.map((g: any) => g.name).join(", ");
-        const perpRes = await fetch("https://api.perplexity.ai/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${PERPLEXITY_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "sonar",
-            messages: [{
-              role: "user",
-              content: `Find 5 recent executive-level articles, whitepapers, or reports about ${gapNames} in the ${sectorFocus} sector. For each, provide the exact title, author/publisher, URL, and a one-sentence summary. Focus on sources like McKinsey, HBR, BCG, Deloitte, EY, Gartner, and industry-specific publications. Only include 2025-2026 content.`,
-            }],
-            search_recency_filter: "month",
-          }),
-        });
-        if (perpRes.ok) {
-          const perpData = await perpRes.json();
-          const content = perpData?.choices?.[0]?.message?.content || "";
-          const citations = perpData?.citations || [];
-          if (content) {
-            discoveredArticles = `\n\nREAL ARTICLES DISCOVERED (recommend FROM THESE — they are semantically relevant to the user's skill gaps. Include the URL so the user can read them. Explain WHY each fills a specific gap):\n${content}`;
-            if (citations.length > 0) {
-              discoveredArticles += `\n\nSOURCE URLs: ${citations.join(", ")}`;
-            }
-          }
-        }
-      } catch (e) {
-        console.warn("[sovereign-reading-list] Perplexity search failed:", (e as Error).message);
-      }
+    // Perplexity is REQUIRED — we will not fall back to pure Claude hallucination.
+    if (!PERPLEXITY_KEY) {
+      console.warn("[sovereign-reading-list] PERPLEXITY_API_KEY missing — returning empty");
+      return new Response(JSON.stringify(EMPTY_RESPONSE), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
+
+    let perplexityContent = "";
+    let perplexityCitations: string[] = [];
+    try {
+      const sectorFocus = (profile as any)?.sector_focus || "consulting";
+      const gapNames = skillGaps.map((g: any) => g.name).join(", ");
+      const perpRes = await fetch("https://api.perplexity.ai/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${PERPLEXITY_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "sonar",
+          messages: [{
+            role: "user",
+            content: `Find 5 recent executive-level articles, whitepapers, or reports about ${gapNames} in the ${sectorFocus} sector. For each, provide the exact title, author/publisher, URL, and a one-sentence summary. Focus on sources like McKinsey, HBR, BCG, Deloitte, EY, Gartner, and industry-specific publications. Only include 2025-2026 content.`,
+          }],
+          search_recency_filter: "month",
+        }),
+      });
+      if (perpRes.ok) {
+        const perpData = await perpRes.json();
+        perplexityContent = perpData?.choices?.[0]?.message?.content || "";
+        perplexityCitations = (perpData?.citations || [])
+          .filter((u: unknown): u is string => typeof u === "string" && u.startsWith("http"));
+      }
+    } catch (e) {
+      console.warn("[sovereign-reading-list] Perplexity search failed:", (e as Error).message);
+    }
+
+    if (perplexityCitations.length === 0) {
+      return new Response(JSON.stringify(EMPTY_RESPONSE), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const discoveredArticles = `\n\nCRITICAL URL RULE: You may ONLY use URLs from the VERIFIED URLS list below. Do NOT invent, modify, append paths to, or construct any URL yourself. If no verified URL matches a recommendation, set the url field to null.\n\nVERIFIED URLS:\n${perplexityCitations.map((u, i) => `${i + 1}. ${u}`).join("\n")}\n\nPERPLEXITY SUMMARIES (use to choose which verified URL fits each recommendation):\n${perplexityContent}`;
 
     const systemPrompt = `You are a Sovereign Learning Advisor for an elite executive coaching platform. You recommend precise, high-authority reading material.
 
@@ -194,9 +227,38 @@ Output valid JSON:
     const cleaned = aiText.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
     const parsed = JSON.parse(cleaned || "{}");
 
+    // Validate every URL: must be exact-match against Perplexity citations AND reachable.
+    const recommendations: any[] = Array.isArray(parsed.recommendations) ? parsed.recommendations : [];
+    for (const rec of recommendations) {
+      // Check 1: exact match against Perplexity citations
+      if (rec.url && !perplexityCitations.includes(rec.url)) {
+        rec.url = null;
+      }
+      // Check 2: HEAD-validate surviving URLs
+      if (rec.url) {
+        const ok = await validateLink(rec.url).catch(() => false);
+        if (!ok) rec.url = null;
+      }
+      // Check 3: fallback — try to find a citation whose URL contains keywords from the title
+      if (!rec.url && typeof rec.title === "string" && rec.title.trim()) {
+        const titleWords = rec.title.toLowerCase().split(/\s+/).filter((w: string) => w.length > 4).slice(0, 3);
+        if (titleWords.length >= 2) {
+          const matched = perplexityCitations.find((citUrl) => {
+            const lower = citUrl.toLowerCase();
+            return titleWords.filter((w: string) => lower.includes(w)).length >= 2;
+          });
+          if (matched) {
+            const ok = await validateLink(matched).catch(() => false);
+            if (ok) rec.url = matched;
+          }
+        }
+      }
+    }
+
     return new Response(JSON.stringify({
       skill_gaps: skillGaps,
-      recommendations: parsed.recommendations || [],
+      recommendations,
+      source: "perplexity+claude",
       boosts,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
