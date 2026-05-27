@@ -18,7 +18,7 @@ import { computeIntelligenceStage, type IntelligenceStage } from "@/components/u
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import GuidedJourney from "@/components/GuidedJourney";
 import { useJourneyState } from "@/hooks/useJourneyState";
-import ScoreBreakdown from "@/components/identity/ScoreBreakdown";
+
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
@@ -781,16 +781,13 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         </section>
       )}
 
-      {/* SECTION 6 — SCORE + RADAR (two-column) */}
+      {/* SECTION 6 — CAPABILITY RADAR */}
       {assessmentCompleted && (
         <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <ScoreBreakdown userId={authUser?.id ?? null} />
-            <div style={{ background: "var(--aura-card)", border: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", borderRadius: 12, padding: 14 }}>
-              <AuditRadarWidget onStartAudit={() => setAuditOpen(true)} hideEditScores />
-              <div style={{ fontSize: 10, color: "var(--ink-5)", marginTop: 6, textAlign: "center" }}>
-                From your assessment
-              </div>
+          <div style={{ background: "var(--aura-card)", border: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", borderRadius: 12, padding: 14 }}>
+            <AuditRadarWidget onStartAudit={() => setAuditOpen(true)} hideEditScores />
+            <div style={{ fontSize: 10, color: "var(--ink-5)", marginTop: 6, textAlign: "center" }}>
+              From your assessment
             </div>
           </div>
         </section>
