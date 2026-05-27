@@ -1196,7 +1196,8 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
         <g>
           {headlineLines.map((ln, i) => (
             <text key={i} x={cx} y={startY + i * headLineH} textAnchor="middle"
-                  fontFamily={headingFont} fontSize={isRTL ? 42 : 48} fontWeight={style.headingWeight ?? 700} fill={style.fg}>
+                  fontFamily={headingFont} fontSize={isRTL ? 42 : 48} fontWeight={style.headingWeight ?? 700} fill={style.fg}
+                  direction={isRTL ? "rtl" : undefined}>
               {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.accent)}
             </text>
           ))}
