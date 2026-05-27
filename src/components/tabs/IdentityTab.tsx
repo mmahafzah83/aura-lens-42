@@ -554,7 +554,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         <div style={{ fontSize: 11, letterSpacing: "0.08em", color: "var(--ink-5)", fontWeight: 500, textTransform: "uppercase" }}>
           Your professional identity
         </div>
-        <h1 style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 26, fontWeight: 500, color: "var(--ink)", margin: "8px 0 6px" }}>
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 500, color: "var(--ink)", margin: "8px 0 6px" }}>
           My Story
         </h1>
         <p style={{ fontSize: 13, color: "var(--ink-3)", margin: "0 auto", maxWidth: 560, lineHeight: 1.6 }}>
@@ -570,7 +570,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             <div style={{ fontSize: 12, letterSpacing: "0.16em", color: "var(--brand)", marginBottom: 8, fontWeight: 600 }}>
               Your professional identity
             </div>
-            <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color: "var(--paper)", margin: "0 0 12px", lineHeight: 1.375 }}>
+            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, color: "var(--paper)", margin: "0 0 12px", lineHeight: 1.375 }}>
               Tell Aura who you are in 5 minutes, and it'll show you how the market should see you.
             </h2>
             <button
