@@ -2037,14 +2037,14 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
               <div className="text-xs uppercase tracking-wider opacity-60">Edit · {slide?.slide_type}</div>
               <div className="text-xs opacity-50">Slide {activeIdx + 1} of {slides.length}</div>
             </div>
-            {slide && <EditPanel slide={slide} onChange={updateSlide} />}
+            {slide && <EditPanel slide={slide} onChange={updateSlide} lang={lang} />}
 
             <div className="pt-3 mt-3 border-t" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
               <div className="text-xs uppercase tracking-wider opacity-60 mb-2">Author & attribution</div>
-              <Field label="Name" value={carousel.author_name || ""} onChange={v => setCarousel({ ...carousel, author_name: v })} />
-              <Field label="Title" value={carousel.author_title || ""} onChange={v => setCarousel({ ...carousel, author_title: v })} />
-              <Field label="Handle" value={carousel.author_handle || ""} onChange={v => setCarousel({ ...carousel, author_handle: v })} />
-              <Field label="Signal attribution" value={carousel.signal_attribution || ""} onChange={v => setCarousel({ ...carousel, signal_attribution: v })} />
+              <Field lang={lang} label="Name" value={carousel.author_name || ""} onChange={v => setCarousel({ ...carousel, author_name: v })} />
+              <Field lang={lang} label="Title" value={carousel.author_title || ""} onChange={v => setCarousel({ ...carousel, author_title: v })} />
+              <Field lang={lang} label="Handle" value={carousel.author_handle || ""} onChange={v => setCarousel({ ...carousel, author_handle: v })} />
+              <Field lang={lang} label="Signal attribution" value={carousel.signal_attribution || ""} onChange={v => setCarousel({ ...carousel, signal_attribution: v })} />
             </div>
           </div>
 
@@ -2071,7 +2071,14 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                 value={carousel.linkedin_caption || ""}
                 onChange={e => setCarousel({ ...carousel, linkedin_caption: e.target.value })}
                 className="w-full px-2.5 py-1.5 text-sm rounded-lg bg-white/5 border focus:outline-none focus:border-amber-500"
-                style={{ borderColor: "rgba(255,255,255,0.1)", minHeight: 130, resize: "vertical" }}
+                dir={lang === "ar" ? "rtl" : "ltr"}
+                style={{
+                  borderColor: "rgba(255,255,255,0.1)",
+                  minHeight: 130,
+                  resize: "vertical",
+                  fontFamily: lang === "ar" ? "'Cairo', 'DM Sans', sans-serif" : undefined,
+                  textAlign: lang === "ar" ? "right" : "left",
+                }}
               />
               {carousel.hashtags && carousel.hashtags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 pt-1">
