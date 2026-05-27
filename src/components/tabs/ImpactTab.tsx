@@ -1360,13 +1360,26 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       <>
       {/* ─────────── 4 PILLARS ─────────── */}
       <section>
+        <div
+          className="text-xs uppercase font-medium mb-2"
+          style={{ letterSpacing: "0.08em", color: "var(--brand)" }}
+        >
+          YOUR LINKEDIN FOOTPRINT
+        </div>
         <h2 style={{
           fontFamily: "'Cormorant Garamond', Georgia, serif",
           fontSize: 18, fontWeight: 500, color: "var(--aura-t1)",
-          margin: "0 0 12px",
+          margin: "0 0 4px",
         }}>
-          The four pillars
+          Your LinkedIn footprint
         </h2>
+        <p style={{
+          fontSize: 13,
+          color: "var(--aura-t3)",
+          margin: "0 0 16px",
+        }}>
+          How your content performs in the market
+        </p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <PillarCard
             label="Visibility"
@@ -1410,7 +1423,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             color="var(--aura-accent3)"
             tooltip={{
               what: "Active strategic signals you're tracking.",
-              how: "Counts active signals × average confidence.",
+              how: "Active signals you're tracking. The count and average confidence are shown separately.",
               improve: "Capture from diverse sources to surface new signals.",
             }}
           />
