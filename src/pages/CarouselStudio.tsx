@@ -1179,13 +1179,31 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
       const btnH = 80;
       const iconRowH = 110;
       const headBlockH = headlineLines.length * headLineH;
-      const gapIcons = headBlockH ? 48 : 0;
-      const gapBtn = 56;
-      const totalH = headBlockH + gapIcons + iconRowH + gapBtn + btnH;
+      // Dynamic layout: optional cta_main slots between headline and icons,
+      // optional cta_sub slots between icons and the follow button.
+      const ctaMainText = (slide.cta_main || "").trim();
+      const ctaSubText  = (slide.cta_sub  || "").trim();
+      const mainLineH = 26;
+      const subLineH  = 22;
+      const mainLinesAll = ctaMainText ? wrapText(ctaMainText, isRTL ? 40 : 60) : [];
+      const mainLines = mainLinesAll.slice(0, 2);
+      const mainTruncated = mainLinesAll.length > mainLines.length;
+      const subLinesAll  = ctaSubText  ? wrapText(ctaSubText,  isRTL ? 48 : 72) : [];
+      const subLines  = subLinesAll.slice(0, 1);
+      const subTruncated = subLinesAll.length > subLines.length;
+      const mainBlockH = mainLines.length * mainLineH;
+      const subBlockH  = subLines.length  * subLineH;
+      const gapIcons   = headBlockH ? 48 : 0;
+      const gapMain    = mainBlockH ? 28 : 0;
+      const gapSub     = subBlockH ? 24 : 0;
+      const gapBtn     = 56;
+      const totalH = headBlockH + gapIcons + mainBlockH + gapMain + iconRowH + gapSub + subBlockH + gapBtn + btnH;
       const top = cy - totalH / 2;
       const startY = top + headLineH;
-      const iconRowY = top + headBlockH + gapIcons;
-      const btnY = iconRowY + iconRowH + gapBtn;
+      const mainY  = top + headBlockH + gapIcons;
+      const iconRowY = mainY + mainBlockH + gapMain;
+      const subY = iconRowY + iconRowH + gapSub;
+      const btnY = subY + subBlockH + gapBtn;
       const btnW = 420;
       const btnX = cx - btnW / 2;
       const actions = isRTL
@@ -1214,6 +1232,23 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
               {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.accent)}
             </text>
           ))}
+          {/* CTA main line(s) — actionable urgency text between headline and icons. */}
+          {mainLines.length > 0 && (() => {
+            const mainAnchor: "start" | "middle" | "end" = isRTL ? "end" : "start";
+            const mainX = isRTL ? (w - edgePad) : edgePad;
+            return (
+              <text x={mainX} y={mainY + mainLineH - 6} textAnchor={mainAnchor}
+                    fontFamily={bodyFont} fontSize={17} fill={style.muted}
+                    fontWeight={isRTL ? 600 : 400}
+                    direction={isRTL ? "rtl" : undefined}>
+                {mainLines.map((ln, i) => (
+                  <tspan key={i} x={mainX} dy={i === 0 ? 0 : mainLineH}>
+                    {ln}{i === mainLines.length - 1 && mainTruncated ? "…" : ""}
+                  </tspan>
+                ))}
+              </text>
+            );
+          })()}
           {/* Action icon row — Like / Comment / Share / Save */}
           {actions.map((a, i) => {
             // In RTL, reverse visual order so Like sits at the rightmost (first-read) slot.
@@ -1242,6 +1277,15 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
               </g>
             );
           })}
+          {/* CTA sub line — supporting reassurance text between icons and follow button. */}
+          {subLines.length > 0 && (
+            <text x={cx} y={subY + subLineH - 4} textAnchor="middle"
+                  fontFamily={bodyFont} fontSize={14} fill={style.muted} opacity={0.65}
+                  fontWeight={isRTL ? 600 : 400}
+                  direction={isRTL ? "rtl" : undefined}>
+              {subLines[0]}{subTruncated ? "…" : ""}
+            </text>
+          )}
           {(() => {
             // Prefer the user's real handle from the profile; fall back to any handle
             // mentioned in slide.cta_button; otherwise show a generic "Follow for more".
