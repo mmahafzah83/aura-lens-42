@@ -93,7 +93,7 @@ const Guide = () => {
           paddingTop: "max(env(safe-area-inset-top), 16px)",
         }}
       >
-        <Link to="/" className="text-lg font-bold tracking-[0.15em]" style={{ color: "var(--brand)", fontFamily: "var(--font-display)" }}>
+        <Link to="/" className="text-lg font-medium tracking-[0.15em]" style={{ color: "var(--brand)", fontFamily: "var(--font-display)" }}>
           AURA
         </Link>
         <button
@@ -311,7 +311,7 @@ const Guide = () => {
         >
           <div>
             <div className="flex items-center gap-2" style={{ height: 24 }}>
-              <span className="text-base font-bold tracking-[0.15em]" style={{ color: "var(--brand)", fontFamily: "var(--font-display)", lineHeight: "24px" }}>AURA</span>
+              <span className="text-base font-medium tracking-[0.15em]" style={{ color: "var(--brand)", fontFamily: "var(--font-display)", lineHeight: "24px" }}>AURA</span>
               <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>Strategic Intelligence OS</span>
             </div>
             <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 12 }}>
