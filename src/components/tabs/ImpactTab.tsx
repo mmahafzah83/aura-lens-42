@@ -1371,15 +1371,15 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           <PillarCard
             label="Visibility"
             value={(() => {
-              if (!periodImpressions || (postMetricsCount || 0) === 0) return "—";
-              const avg = Math.round(periodImpressions / Math.max(1, postMetricsCount));
+              if (!periodImpressions || windowedPostCount === 0) return "—";
+              const avg = Math.round(periodImpressions / windowedPostCount);
               return formatCompact(avg);
             })()}
             unit="avg/post"
             color="var(--aura-blue)"
             tooltip={{
-              what: "Average impressions per published post.",
-              how: "Total impressions ÷ posts in your selected window.",
+              what: "Average impressions per post in your selected time window.",
+              how: "Window impressions ÷ posts with metrics in the same window.",
               improve: "Publish more often and use hooks tied to live signals.",
             }}
           />
@@ -1398,8 +1398,8 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               return "var(--aura-negative)";
             })()}
             tooltip={{
-              what: "Engagement rate (reactions ÷ impressions).",
-              how: "Benchmarked against your follower tier.",
+              what: "Engagement rate (engagements ÷ impressions, includes reactions, comments, reposts).",
+              how: "Impression-weighted across days, benchmarked against your follower tier.",
               improve: "Open with a sharp POV; reply in the first hour.",
             }}
           />
