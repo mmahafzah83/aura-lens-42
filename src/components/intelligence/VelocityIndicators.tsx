@@ -46,7 +46,7 @@ export function VelocityTrend({ velocity }: { velocity?: number | null }) {
   const Icon = positive ? TrendingUp : TrendingDown;
   const color = positive ? "var(--success, hsl(140 60% 45%))" : "hsl(24 95% 53%)";
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 12, color, fontFamily: "var(--font-mono)" }}>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 12, color }}>
       <Icon size={10} strokeWidth={2.4} />
       {positive ? "+" : ""}{pct}% this week
     </span>
