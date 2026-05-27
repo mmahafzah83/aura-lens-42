@@ -381,6 +381,8 @@ serve(async (req) => {
       capture_score: captureScore,
       signal_score: signalScore,
       content_score: contentScore,
+      imported_count: importedCount ?? 0,
+      aura_published_count: auraPublishedCount ?? 0,
       score_status: scoreStatus,
       score_description: scoreDescription,
       score_trend: scoreTrend,

@@ -1288,7 +1288,13 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 status: signalScore >= 70 ? "Growing" : signalScore >= 40 ? "Build more" : "Needs action" },
               { key: "content", label: "Content", rawValue: contentScore, weight: 0.40, maxPoints: 40,
                 color: "var(--aura-blue)",
-                hint: `${contentPerf?.postCount ?? 0} posts analysed`,
+                hint: (() => {
+                  const imp = Number((auraData as any)?.imported_count ?? 0);
+                  const pub = Number((auraData as any)?.aura_published_count ?? 0);
+                  return imp > 0
+                    ? `${imp} imported · ${pub} published this month`
+                    : `${pub} published this month`;
+                })(),
                 tooltip: "Publishing activity. Imports = baseline (max 30pts). New Aura-published posts = active (max 70pts). Publish signal-driven content to grow.",
                 status: contentScore >= 70 ? "Growing" : contentScore >= 40 ? "Build more" : "Needs action" },
               { key: "consistency", label: "Consistency", rawValue: captureScore, weight: 0.20, maxPoints: 20,

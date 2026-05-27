@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Info } from "lucide-react";
 
@@ -7,9 +8,14 @@ interface Props {
   userId: string | null;
 }
 
+// 5-minute in-memory cache keyed by user id so tab switches don't re-call the EF.
+const SCORE_CACHE_TTL_MS = 5 * 60 * 1000;
+const scoreCache = new Map<string, { ts: number; signal: number; content: number; capture: number }>();
+
 /**
- * Score Breakdown — reads latest score_snapshots.components
- * and renders weighted contributions: Signal (×0.4 / 40), Content (×0.4 / 40),
+ * Score Breakdown — calls calculate-aura-score live so numbers match Home/Impact.
+ * Cached for 5 minutes per user to avoid re-calling on every tab switch.
+ * Renders weighted contributions: Signal (×0.4 / 40), Content (×0.4 / 40),
  * Consistency (×0.2 / 20).
  */
 export default function ScoreBreakdown({ userId }: Props) {
@@ -19,20 +25,29 @@ export default function ScoreBreakdown({ userId }: Props) {
 
   useEffect(() => {
     if (!userId) return;
+    let cancelled = false;
+    const cached = scoreCache.get(userId);
+    if (cached && Date.now() - cached.ts < SCORE_CACHE_TTL_MS) {
+      setComponents({ signal: cached.signal, content: cached.content, capture: cached.capture });
+      return;
+    }
     (async () => {
-      const { data } = await (supabase.from("score_snapshots") as any)
-        .select("components")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      const c = data?.components || {};
-      setComponents({
-        signal: Number(c.signal_score) || 0,
-        content: Number(c.content_score) || 0,
-        capture: Number(c.capture_score) || 0,
-      });
+      try {
+        await supabase.auth.getSession();
+        const { data, error } = await invokeEdgeFunction("calculate-aura-score", { body: {} });
+        if (cancelled || error || !data) return;
+        const next = {
+          signal: Number((data as any).signal_score) || 0,
+          content: Number((data as any).content_score) || 0,
+          capture: Number((data as any).capture_score) || 0,
+        };
+        scoreCache.set(userId, { ts: Date.now(), ...next });
+        setComponents(next);
+      } catch (e) {
+        console.error("ScoreBreakdown live load failed", e);
+      }
     })();
+    return () => { cancelled = true; };
   }, [userId]);
 
   const signalPts = Math.round(components.signal * 0.4);
