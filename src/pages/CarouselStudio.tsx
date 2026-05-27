@@ -2158,45 +2158,45 @@ function Field({ label, value, onChange, multiline = false, mono = false, lang =
 
 function EditPanel({ slide, onChange, lang = "en" }: { slide: Slide; onChange: (p: Partial<Slide>) => void; lang?: "en" | "ar" }) {
   const t = slide.slide_type;
-  const F = (props: React.ComponentProps<typeof Field>) => <Field {...props} lang={lang} />;
+  const F = (props: React.ComponentProps<typeof Field>) => <Field lang={lang} {...props} lang={lang} />;
   return (
     <div>
-      <Field label="Section label" value={slide.section_label || ""} onChange={v => onChange({ section_label: v })} />
+      <Field lang={lang} label="Section label" value={slide.section_label || ""} onChange={v => onChange({ section_label: v })} />
       {t !== "QUESTION" && t !== "BIG_NUMBER" && t !== "TERMINAL" && (
         <>
-          <Field label="Headline" value={slide.headline || ""} onChange={v => onChange({ headline: v })} multiline />
-          <Field label="Headline accent (word to highlight)" value={slide.headline_accent || ""} onChange={v => onChange({ headline_accent: v })} />
+          <Field lang={lang} label="Headline" value={slide.headline || ""} onChange={v => onChange({ headline: v })} multiline />
+          <Field lang={lang} label="Headline accent (word to highlight)" value={slide.headline_accent || ""} onChange={v => onChange({ headline_accent: v })} />
         </>
       )}
       {(t === "COVER" || t === "REFRAME" || t === "INSIGHT") && (
-        <Field label={t === "REFRAME" ? "The truth" : "Body / subtitle"} value={slide.body || ""} onChange={v => onChange({ body: v })} multiline />
+        <Field lang={lang} label={t === "REFRAME" ? "The truth" : "Body / subtitle"} value={slide.body || ""} onChange={v => onChange({ body: v })} multiline />
       )}
       {t === "BIG_NUMBER" && (
         <>
-          <Field label="Number" value={slide.number || ""} onChange={v => onChange({ number: v })} mono />
-          <Field label="Context" value={slide.number_context || ""} onChange={v => onChange({ number_context: v })} multiline />
-          <Field label="Source" value={slide.number_source || ""} onChange={v => onChange({ number_source: v })} />
+          <Field lang={lang} label="Number" value={slide.number || ""} onChange={v => onChange({ number: v })} mono />
+          <Field lang={lang} label="Context" value={slide.number_context || ""} onChange={v => onChange({ number_context: v })} multiline />
+          <Field lang={lang} label="Source" value={slide.number_source || ""} onChange={v => onChange({ number_source: v })} />
         </>
       )}
       {t === "TERMINAL" && (
         <>
-          <Field label="Filename" value={slide.terminal_file || ""} onChange={v => onChange({ terminal_file: v })} mono />
-          <Field label="Lines (one per line, [bracket] for accent)" value={(slide.terminal_lines || []).join("\n")}
+          <Field lang={lang} label="Filename" value={slide.terminal_file || ""} onChange={v => onChange({ terminal_file: v })} mono />
+          <Field lang={lang} label="Lines (one per line, [bracket] for accent)" value={(slide.terminal_lines || []).join("\n")}
                  onChange={v => onChange({ terminal_lines: v.split("\n") })} multiline mono />
-          <Field label="Punchline" value={slide.terminal_punchline || ""} onChange={v => onChange({ terminal_punchline: v })} mono />
+          <Field lang={lang} label="Punchline" value={slide.terminal_punchline || ""} onChange={v => onChange({ terminal_punchline: v })} mono />
         </>
       )}
       {t === "GRID" && (
-        <Field label="Grid items (one per line)" value={(slide.grid_items || []).join("\n")}
+        <Field lang={lang} label="Grid items (one per line)" value={(slide.grid_items || []).join("\n")}
                onChange={v => onChange({ grid_items: v.split("\n").filter(x => x.trim()) })} multiline />
       )}
       {t === "COMPARE" && (
         <>
-          <Field label="Left title" value={slide.compare_left_title || ""} onChange={v => onChange({ compare_left_title: v })} />
-          <Field label="Left items (one per line)" value={(slide.compare_left_items || []).join("\n")}
+          <Field lang={lang} label="Left title" value={slide.compare_left_title || ""} onChange={v => onChange({ compare_left_title: v })} />
+          <Field lang={lang} label="Left items (one per line)" value={(slide.compare_left_items || []).join("\n")}
                  onChange={v => onChange({ compare_left_items: v.split("\n").filter(x => x.trim()) })} multiline />
-          <Field label="Right title" value={slide.compare_right_title || ""} onChange={v => onChange({ compare_right_title: v })} />
-          <Field label="Right items (one per line)" value={(slide.compare_right_items || []).join("\n")}
+          <Field lang={lang} label="Right title" value={slide.compare_right_title || ""} onChange={v => onChange({ compare_right_title: v })} />
+          <Field lang={lang} label="Right items (one per line)" value={(slide.compare_right_items || []).join("\n")}
                  onChange={v => onChange({ compare_right_items: v.split("\n").filter(x => x.trim()) })} multiline />
         </>
       )}
@@ -2230,14 +2230,14 @@ function EditPanel({ slide, onChange, lang = "en" }: { slide: Slide; onChange: (
         </div>
       )}
       {t === "QUESTION" && (
-        <Field label="Question" value={slide.question_text || slide.headline || ""}
+        <Field lang={lang} label="Question" value={slide.question_text || slide.headline || ""}
                onChange={v => onChange({ question_text: v, headline: v })} multiline />
       )}
       {t === "CTA" && (
         <>
-          <Field label="Main CTA" value={slide.cta_main || ""} onChange={v => onChange({ cta_main: v })} />
-          <Field label="Sub CTA" value={slide.cta_sub || ""} onChange={v => onChange({ cta_sub: v })} />
-          <Field label="Button text" value={slide.cta_button || ""} onChange={v => onChange({ cta_button: v })} />
+          <Field lang={lang} label="Main CTA" value={slide.cta_main || ""} onChange={v => onChange({ cta_main: v })} />
+          <Field lang={lang} label="Sub CTA" value={slide.cta_sub || ""} onChange={v => onChange({ cta_sub: v })} />
+          <Field lang={lang} label="Button text" value={slide.cta_button || ""} onChange={v => onChange({ cta_button: v })} />
         </>
       )}
     </div>
