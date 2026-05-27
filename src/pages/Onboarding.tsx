@@ -513,7 +513,7 @@ const Onboarding = () => {
   // ─── Render helpers ───
   const ProgressDots = () => (
     <div className="flex items-center justify-center gap-2 mb-6">
-      {[0, 1, 2, 3, 4].map((i) => {
+      {[0, 1, 2, 3].map((i) => {
         const isCurrent = i === step;
         const isDone = i < step;
         return (
