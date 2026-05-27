@@ -711,8 +711,22 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     const firstDate = new Date(first.created_at).getTime();
     const lastDate = new Date(last.created_at).getTime();
     const daysBetween = Math.max(1, (lastDate - firstDate) / 86400000);
-    const avgDailyChange = (last.score - first.score) / daysBetween;
     const currentScore = last.score;
+    // Require at least 7 snapshots AND 7 days of history before projecting.
+    if (allSnapshots.length < 7 || daysBetween < 7) {
+      return {
+        insufficient: true as const,
+        currentScore,
+        forecast30: currentScore,
+        forecast60: currentScore,
+        forecast90: currentScore,
+        trendText: "Building your trajectory — check back after one week of activity.",
+        to95Text: null as string | null,
+        has30dHistory: false,
+        has90dHistory: false,
+      };
+    }
+    const avgDailyChange = (last.score - first.score) / daysBetween;
     let dailyChange: number;
     if (scenario === "stop") {
       // Stop capturing: capture component (~20pts) collapses, signals decay.
@@ -721,6 +735,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     } else {
       const mult = scenario === "publish2x" ? 1.4 : 1;
       dailyChange = avgDailyChange * mult;
+      // Cap aggressive projections at ±2.0 pts/day (0 → 100 in 50 days).
+      if (dailyChange > 2) dailyChange = 2;
+      if (dailyChange < -2) dailyChange = -2;
     }
     const clamp = (n: number) => Math.round(Math.min(100, Math.max(0, n)));
     const spanDays = daysBetween;
@@ -741,12 +758,17 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       const needed = 95 - currentScore;
       if (dailyChange > 0) {
         const days = Math.ceil(needed / dailyChange);
-        to95Text = `To reach 95: you need approximately ${needed} more points. At ${scenario === "current" ? "current pace" : scenario === "publish2x" ? "2× pace" : "this rate"}: ${days} days.`;
+        const paceLabel = scenario === "current" ? "current pace" : scenario === "publish2x" ? "2× pace" : "this rate";
+        if (days > 365) {
+          to95Text = `To reach 95: you need approximately ${needed} more points. Maintain your current pace — this is a long-term investment.`;
+        } else {
+          to95Text = `To reach 95: you need approximately ${needed} more points. At ${paceLabel}: ${days} ${days === 1 ? "day" : "days"}.`;
+        }
       } else {
         to95Text = `To reach 95: you need approximately ${needed} more points. At ${scenario === "stop" ? "this declining rate" : "current pace"}: not reachable.`;
       }
     }
-    return { currentScore, forecast30, forecast60, forecast90, trendText, to95Text, has30dHistory, has90dHistory };
+    return { insufficient: false as const, currentScore, forecast30, forecast60, forecast90, trendText, to95Text, has30dHistory, has90dHistory };
   }, [allSnapshots, scenario]);
 
   /* ── XLSX Upload ── */
