@@ -2610,17 +2610,16 @@ const MiniKPI = ({ label, rawValue, formatter, index = 0 }: {
     }}
   >
     <div
-      className="tabular-nums"
+      className="text-kpi"
       style={{
-        fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-        fontSize: 18, fontWeight: 700, color: "var(--aura-t1)", lineHeight: 1.375,
+        color: "var(--aura-t1)",
       }}
     >
       {display}
     </div>
     <div
       style={{
-        fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase",
+        fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase",
         color: "var(--aura-t2)", marginTop: 4,
       }}
     >
@@ -2678,10 +2677,9 @@ const PillarCard = ({
         </TooltipProvider>
       </div>
       <div
-        className="tabular-nums mt-1"
+        className="text-metric mt-1"
         style={{
-          fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-          fontSize: 26, fontWeight: 700, color, lineHeight: 1.375,
+          color,
         }}
       >
         {value}
