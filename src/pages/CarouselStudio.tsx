@@ -558,6 +558,16 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
         <text x={authorTextX} y={h - 64} textAnchor={authorAnchor}
               fontFamily={bodyFont} fontSize={16} fill={style.fg}>
           {displayAuthor}
+          {carousel.author_title && (() => {
+            const title = carousel.author_title;
+            const maxLen = 35;
+            const truncated = title.length > maxLen ? title.slice(0, maxLen) + "…" : title;
+            return (
+              <tspan fill={style.muted} fontWeight={400} fontSize={isRTL ? 15 : 13}>
+                {` · ${truncated}`}
+              </tspan>
+            );
+          })()}
         </text>
         <text x={urlX} y={h - 64} textAnchor={urlAnchor}
               fontFamily={bodyFont} fontSize={14} fill={style.muted}>
