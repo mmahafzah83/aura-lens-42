@@ -628,10 +628,12 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
       const lines = wrapText(slide.headline || "", 22);
       const lh = isRTL ? 84 : 72;
       const startY = cy - (lines.length * lh) / 2 + 24;
+      const claimAnchor: "start" | "middle" | "end" = isRTL ? "end" : "middle";
+      const claimX = isRTL ? (w - edgePad) : cx;
       return (
         <g>
           {lines.map((ln, i) => (
-            <text key={i} x={cx} y={startY + i * lh} textAnchor="middle"
+            <text key={i} x={claimX} y={startY + i * lh} textAnchor={claimAnchor}
                   fontFamily={headingFont} fontSize={isRTL ? 52 : 60} fontWeight={style.headingWeight ?? 700}>
               {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.emphasis)}
             </text>
@@ -1091,13 +1093,15 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
       const lh = isRTL ? 76 : 64;
       const startY = cy - (lines.length * lh) / 2 + 20;
       const watermark = isRTL ? "؟" : "?";
+      const qAnchor: "start" | "middle" | "end" = isRTL ? "end" : "middle";
+      const qX = isRTL ? (w - edgePad) : cx;
       return (
         <g>
           <text x={cx} y={cy + 80} textAnchor="middle" fontFamily={headingFont} fontSize={300} fill={style.accent} opacity={0.06}>
             {watermark}
           </text>
           {lines.map((ln, i) => (
-            <text key={i} x={cx} y={startY + i * lh} textAnchor="middle"
+            <text key={i} x={qX} y={startY + i * lh} textAnchor={qAnchor}
                   fontFamily={headingFont} fontSize={isRTL ? 42 : 48}
                   fontStyle={isRTL ? "normal" : "italic"} fontWeight={style.headingWeight ?? 700}
                   fill={style.fg}>
@@ -1114,11 +1118,11 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
       const bodyLineH = 36;
       const blockH = headlineLines.length * headLineH + 40 + bodyLines.length * bodyLineH;
       const startY = cy - blockH / 2 + 40;
-      // Center INSIGHT for both LTR and RTL — matches COVER/QUESTION feel.
-      const insightX = cx;
-      const insightAnchor: "start" | "middle" | "end" = "middle";
-      const dividerX1 = cx - 30;
-      const dividerX2 = cx + 30;
+      // RTL right-aligns body content; LTR keeps the centered editorial feel.
+      const insightAnchor: "start" | "middle" | "end" = isRTL ? "end" : "middle";
+      const insightX = isRTL ? (w - edgePad) : cx;
+      const dividerX1 = isRTL ? (w - edgePad - 60) : cx - 30;
+      const dividerX2 = isRTL ? (w - edgePad) : cx + 30;
       return (
         <g>
           {headlineLines.map((ln, i) => (
