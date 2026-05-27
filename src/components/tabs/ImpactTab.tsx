@@ -1400,10 +1400,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             </div>
             {auraData?.next_tier_name && auraData?.points_to_next ? (
               <>
-                <div style={{
-                  fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-                  fontSize: 22, fontWeight: 700, color: "var(--aura-t1)", lineHeight: 1.375,
-                }}>
+                <div className="text-metric" style={{ color: "var(--aura-t1)" }}>
                   {auraData.points_to_next} pts
                 </div>
                 <p style={{ fontSize: 14, color: "var(--aura-t2)", margin: "6px 0 0", lineHeight: 1.625 }}>
@@ -1839,25 +1836,12 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                   boxShadow: "var(--aura-shadow-sm, 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05))",
                 }}
               >
-                <div
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 600,
-                    letterSpacing: "0.1em",
-                    color: "var(--ink-4)",
-                  }}
-                >
+                <div className="text-section-header" style={{ color: "var(--ink-4)" }}>
                   Best day
                 </div>
                 <div
-                  className="tabular-nums mt-1"
-                  style={{
-                    fontFamily: "'DM Serif Display', Georgia, serif",
-                    fontSize: 28,
-                    color: "var(--success)",
-                    letterSpacing: "-0.02em",
-                    lineHeight: 1.375,
-                  }}
+                  className="text-metric mt-1"
+                  style={{ color: "var(--success)" }}
                 >
                   {only ? only.label : "—"} {delta > 0 ? `(+${delta})` : delta < 0 ? `(${delta})` : "(0)"}
                 </div>
@@ -2006,12 +1990,12 @@ const HeroStat = ({ value, label, color }: { value: string; label: string; color
 const Stat = ({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) => (
   <div>
     <div
-      className="text-xl font-semibold tabular-nums"
-      style={{ color: valueColor || "var(--color-text-primary)", fontFamily: "Inter, sans-serif" }}
+      className="text-kpi"
+      style={{ color: valueColor || "var(--color-text-primary)", fontSize: 20 }}
     >
       {value}
     </div>
-    <div className="text-xs tracking-widest mt-1" style={{ color: "var(--color-text-muted)" }}>
+    <div className="text-section-header mt-1" style={{ color: "var(--color-text-muted)" }}>
       {label}
     </div>
   </div>
@@ -2086,12 +2070,7 @@ const ForceCard = ({
     >
       <div className="flex items-baseline justify-between">
         <div className="inline-flex items-center gap-1.5">
-          <div
-            style={{
-              fontSize: 12, fontWeight: 600, letterSpacing: "0.1em",
-              color: "var(--ink-3)",
-            }}
-          >
+          <div className="text-section-header" style={{ color: "var(--ink-3)" }}>
             {label}
           </div>
           <TooltipProvider delayDuration={150}>
@@ -2125,10 +2104,7 @@ const ForceCard = ({
         }}
       >
         {weighted}
-        <span style={{
-          fontFamily: "'DM Sans', system-ui, sans-serif",
-          fontSize: 16, fontWeight: 400, color: "var(--aura-t3)",
-        }}>
+        <span className="text-denominator">
           /{maxPoints}
         </span>
       </div>
@@ -2279,7 +2255,7 @@ const ScoreHero = ({
               color: "var(--aura-t1)",
             }}
           >
-            <div style={{ fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--aura-accent)", opacity: 0.8 }}>
+            <div className="text-section-header" style={{ color: "var(--aura-accent)", opacity: 0.8 }}>
               Current tier
             </div>
             <div style={{ marginTop: 4, display: "inline-flex" }}>
@@ -2357,12 +2333,7 @@ const MiniKPI = ({ label, rawValue, formatter, index = 0 }: {
     >
       {display}
     </div>
-    <div
-      style={{
-        fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase",
-        color: "var(--aura-t2)", marginTop: 4,
-      }}
-    >
+    <div className="text-label mt-1" style={{ color: "var(--aura-t2)" }}>
       {label}
     </div>
   </div>
@@ -2394,7 +2365,7 @@ const PillarCard = ({
       }}
     >
       <div className="flex items-center justify-between">
-        <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", color: "var(--ink-3)" }}>
+        <div className="text-section-header" style={{ color: "var(--ink-3)" }}>
           {label}
         </div>
         <TooltipProvider delayDuration={150}>
