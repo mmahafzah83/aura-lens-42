@@ -201,18 +201,21 @@ function HorizonEye({ x, y, size = 20, color }: { x: number; y: number; size?: n
 
 /* Render headline with accent word highlighted */
 function renderHeadlineWithAccent(headline: string, accent: string | undefined, fg: string, accentColor: string, italic = false) {
-  if (!accent || !headline.toLowerCase().includes(accent.toLowerCase())) {
-    return <tspan fill={fg} fontStyle={italic ? "italic" : "normal"}>{headline}</tspan>;
-  }
+  // Render before/after as bare text nodes (no <tspan>) so the browser's
+  // BiDi algorithm sees the headline as a single paragraph with an inline
+  // color change. Wrapping each segment in its own <tspan> caused Arabic
+  // word order to break in RTL headlines.
+  if (!accent) return <>{headline}</>;
   const idx = headline.toLowerCase().indexOf(accent.toLowerCase());
+  if (idx < 0) return <>{headline}</>;
   const before = headline.slice(0, idx);
   const middle = headline.slice(idx, idx + accent.length);
   const after = headline.slice(idx + accent.length);
   return (
     <>
-      {before && <tspan fill={fg}>{before}</tspan>}
-      <tspan fill={accentColor} fontStyle="italic">{middle}</tspan>
-      {after && <tspan fill={fg}>{after}</tspan>}
+      {before}
+      <tspan fill={accentColor} fontStyle={italic ? "italic" : "normal"}>{middle}</tspan>
+      {after}
     </>
   );
 }
