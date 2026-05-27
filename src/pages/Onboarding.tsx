@@ -369,27 +369,9 @@ const Onboarding = () => {
       if (error) throw error;
       try { localStorage.setItem("aura_onboarding_complete", "true"); } catch {}
 
-      // Kick off article search in the background — don't await
-      articleSearchStartRef.current = Date.now();
-      setArticleSearchDone(false);
-      setFoundArticle(null);
-      supabase.functions
-        .invoke("onboarding-find-article", {
-          body: {
-            sector_focus: sectorFocus,
-            core_practice: corePractice.trim(),
-            firm: firm.trim(),
-            level: level.trim(),
-          },
-        })
-        .then(({ data }) => {
-          if (data?.found && data?.article) setFoundArticle(data.article);
-        })
-        .catch(() => {})
-        .finally(() => setArticleSearchDone(true));
-
       await saveProgress(1);
-      goStep(2);
+      // Breathing transition into Step 1 (Map your strengths).
+      startBreathingTo(1, "Now let's map what makes you different.");
     } catch (e: any) {
       toast.error(e.message || "Couldn't save profile — please try again");
     } finally {
@@ -443,7 +425,7 @@ const Onboarding = () => {
         // ingest-capture creates the entry server-side — no client-side insert needed.
         setCapturedTitle(articleMeta?.title || "");
         setCaptureSuccess(true);
-        window.setTimeout(() => startBreathingToCalibration(), 3000);
+        window.setTimeout(() => startBreathingToCeremony(), 3000);
       } catch (innerErr: any) {
         clearTimeout(timeoutId);
         if (innerErr?.name === "AbortError") {
@@ -451,7 +433,7 @@ const Onboarding = () => {
           toast.error("Taking too long — your article is saved. We'll process it in the background.");
           setCapturedTitle(articleMeta?.title || "");
           setCaptureSuccess(true);
-          window.setTimeout(() => startBreathingToCalibration(), 1500);
+          window.setTimeout(() => startBreathingToCeremony(), 1500);
         } else {
           throw innerErr;
         }
@@ -464,22 +446,35 @@ const Onboarding = () => {
     }
   };
 
-  // Breathing transition between step 2 (article) → step 3 (calibration)
-  const startBreathingToCalibration = () => {
+  // Generic breathing transition to any next step with a custom message.
+  const startBreathingTo = (nextStep: Step, message: string) => {
+    setBreathingMessage(message);
     setBreathing(true);
     setBreathingLeaving(false);
     window.setTimeout(() => setBreathingLeaving(true), 1700);
     window.setTimeout(() => {
       setBreathing(false);
       setBreathingLeaving(false);
-      saveProgress(2);
-      goStep(3);
+      goStep(nextStep);
     }, 2000);
   };
 
-  // Step 3: save calibration scores then advance to assessment (step 4)
+  // Post-capture breathing → ceremony (goHome).
+  const startBreathingToCeremony = () => {
+    setBreathingMessage("Perfect. Aura is building your first signal.");
+    setBreathing(true);
+    setBreathingLeaving(false);
+    window.setTimeout(() => setBreathingLeaving(true), 1700);
+    window.setTimeout(() => {
+      setBreathing(false);
+      setBreathingLeaving(false);
+      goHome();
+    }, 2000);
+  };
+
+  // Step 1: save calibration scores then advance to brand assessment (step 2).
   const handleCalibrationComplete = async (scores: Record<string, number>) => {
-    if (!userId) { goStep(4); return; }
+    if (!userId) { goStep(2); return; }
     try {
       // Map calibration dimensions to generated_skills format
       const dimensionCategories: Record<string, string> = {
@@ -511,8 +506,8 @@ const Onboarding = () => {
     } catch (e) {
       console.warn("Could not save calibration scores:", e);
     }
-    await saveProgress(3);
-    goStep(4);
+    await saveProgress(2);
+    goStep(2);
   };
 
   // ─── Render helpers ───
