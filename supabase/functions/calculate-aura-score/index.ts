@@ -112,10 +112,11 @@ serve(async (req) => {
 
     // --- score_status ---
     let scoreStatus: string;
-    if (auraScore >= 85) scoreStatus = "Authority";
-    else if (auraScore >= 65) scoreStatus = "Gaining momentum";
-    else if (auraScore >= 40) scoreStatus = "Rising";
-    else scoreStatus = "Dormant";
+    if (auraScore >= 80) scoreStatus = "Commanding presence";
+    else if (auraScore >= 60) scoreStatus = "Gaining voice";
+    else if (auraScore >= 35) scoreStatus = "Building strategy";
+    else if (auraScore >= 15) scoreStatus = "Exploring";
+    else scoreStatus = "Starting";
 
     // --- score_description ---
     let scoreDescription: string;
@@ -146,8 +147,9 @@ serve(async (req) => {
     const scoreTrend = prevScore !== null ? auraScore - prevScore : null;
 
     // ── Tier transition detection (O-2a) ──
-    const tierFromScore = (s: number): "observer" | "strategist" | "authority" =>
-      s < 35 ? "observer" : s < 65 ? "strategist" : "authority";
+    type TierKey = "observer" | "explorer" | "strategist" | "voice" | "presence";
+    const tierFromScore = (s: number): TierKey =>
+      s < 15 ? "observer" : s < 35 ? "explorer" : s < 60 ? "strategist" : s < 80 ? "voice" : "presence";
     const currentTier = tierFromScore(auraScore);
 
     const { data: lastSnap } = await admin
@@ -156,12 +158,15 @@ serve(async (req) => {
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1);
-    const previousTier: "observer" | "strategist" | "authority" | null =
+    // Re-derive previous tier from score so old 3-tier snapshots map to the new 5-tier system
+    const previousTier: TierKey | null =
       lastSnap && lastSnap.length > 0
-        ? ((lastSnap[0] as any).tier as any) || tierFromScore((lastSnap[0] as any).score ?? 0)
+        ? tierFromScore(Number((lastSnap[0] as any).score ?? 0))
         : null;
 
-    const tierRank = { observer: 1, strategist: 2, authority: 3 } as const;
+    const tierRank: Record<TierKey, number> = {
+      observer: 1, explorer: 2, strategist: 3, voice: 4, presence: 5,
+    };
     let tier_transition: { from: string; to: string; is_new: boolean } | null = null;
     if (previousTier && previousTier !== currentTier && tierRank[currentTier] > tierRank[previousTier]) {
       const milestoneId = `tier_${currentTier}`;
@@ -218,14 +223,18 @@ serve(async (req) => {
       });
     }
 
-    // ── G4 Tiers ──
+    // ── G4 Tiers (5-tier system) ──
     let tier_name: string, tier_number: number, next_tier_name: string | null, points_to_next: number | null;
-    if (auraScore < 35) {
-      tier_name = "Observer"; tier_number = 1; next_tier_name = "Strategist"; points_to_next = 35 - auraScore;
-    } else if (auraScore < 65) {
-      tier_name = "Strategist"; tier_number = 2; next_tier_name = "Authority"; points_to_next = 65 - auraScore;
+    if (auraScore < 15) {
+      tier_name = "Observer"; tier_number = 1; next_tier_name = "Explorer"; points_to_next = 15 - auraScore;
+    } else if (auraScore < 35) {
+      tier_name = "Explorer"; tier_number = 2; next_tier_name = "Strategist"; points_to_next = 35 - auraScore;
+    } else if (auraScore < 60) {
+      tier_name = "Strategist"; tier_number = 3; next_tier_name = "Voice"; points_to_next = 60 - auraScore;
+    } else if (auraScore < 80) {
+      tier_name = "Voice"; tier_number = 4; next_tier_name = "Presence"; points_to_next = 80 - auraScore;
     } else {
-      tier_name = "Authority"; tier_number = 3; next_tier_name = null; points_to_next = null;
+      tier_name = "Presence"; tier_number = 5; next_tier_name = null; points_to_next = null;
     }
 
     // ── G4 Personalized nudge ──
