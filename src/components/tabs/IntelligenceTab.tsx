@@ -298,7 +298,7 @@ const TerritoryPanel = ({
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{
-                    margin: 0, fontFamily: "'DM Sans', system-ui, sans-serif",
+                    margin: 0, 
                     fontSize: 14, fontWeight: 500, color: "var(--ink-6, var(--ink))",
                     lineHeight: 1.3, wordBreak: "break-word",
                   }}>{t.name}</p>
@@ -429,7 +429,7 @@ const SignalHero = ({
       </div>
 
       <h2 style={{
-        fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
+        fontFamily: "var(--font-display)",
         fontSize: 20, fontWeight: 500, color: "var(--ink)", lineHeight: 1.3, margin: "0 0 12px",
       }}>
         {signal.signal_title}
@@ -464,7 +464,7 @@ const SignalHero = ({
             WHY THIS MATTERS TO YOU
           </div>
           <p style={{
-            fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
+            fontFamily: "var(--font-display)",
             fontSize: 14, color: "var(--ink)", lineHeight: 1.5, margin: 0,
           }}>
             {signal.what_it_means_for_you}
@@ -635,7 +635,7 @@ const EditorialBlindSpots = ({
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <h4 style={{
-                      fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
+                      fontFamily: "var(--font-display)",
                       fontSize: 15, fontWeight: 500, color: "var(--ink)",
                       margin: "0 0 4px", lineHeight: 1.3,
                     }}>{it.trend_headline}</h4>
@@ -845,7 +845,7 @@ const EditorialReadingList = ({
                 borderRadius: 12, padding: "16px 18px",
               }}>
                 <h4 style={{
-                  fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
+                  fontFamily: "var(--font-display)",
                   fontSize: 16, fontWeight: 500, color: "var(--ink)",
                   margin: "0 0 4px", lineHeight: 1.3,
                 }}>
@@ -1259,7 +1259,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                                 </p>
                               </div>
                               <div style={{
-                                fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
+                                fontFamily: "var(--font-display)",
                                 fontSize: 20, fontWeight: 500, color: confColor, lineHeight: 1,
                               }}>{confPct}%</div>
                             </div>
@@ -1312,7 +1312,7 @@ const Header = ({ entryCount, signalsCount, movesCount }: { entryCount: number; 
       Your strategic radar
     </div>
     <h1 style={{
-      fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
+      fontFamily: "var(--font-display)",
       fontSize: 26, fontWeight: 500, color: "var(--ink)",
       margin: "8px 0 6px",
     }}>
