@@ -130,120 +130,210 @@ const ExpandablePanel = ({
 };
 
 /* ═══════════════════════════════════════════
-   INTELLIGENCE RADAR
+   TERRITORY PANEL — radar + sortable list
    ═══════════════════════════════════════════ */
-const IntelligenceRadar = ({ signals, captureCount = 0 }: { signals: Signal[]; captureCount?: number }) => {
-  // Build unique themes with strongest signal per theme
-  const themeMap = new Map<string, Signal>();
+type TerritoryStatus = "ready" | "building" | "new";
+interface Territory {
+  key: string;
+  name: string;
+  signalCount: number;
+  avgConfidence: number;
+  strength: number;
+  newestAt: string;
+  status: TerritoryStatus;
+}
+
+const humanizeTheme = (s: string) =>
+  s.replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim().replace(/\b\w/g, c => c.toUpperCase());
+
+function buildTerritories(signals: Signal[]): Territory[] {
+  const map = new Map<string, { confs: number[]; count: number; newest: string; name: string }>();
   signals.forEach(s => {
     (s.theme_tags || []).forEach(t => {
       const key = t.toLowerCase().trim();
       if (!key) return;
-      const existing = themeMap.get(key);
-      if (!existing || s.confidence > existing.confidence) themeMap.set(key, s);
+      const cur = map.get(key) || { confs: [], count: 0, newest: s.created_at, name: humanizeTheme(key) };
+      cur.confs.push(s.confidence);
+      cur.count += 1;
+      if (new Date(s.created_at) > new Date(cur.newest)) cur.newest = s.created_at;
+      map.set(key, cur);
     });
   });
-  const themes = Array.from(themeMap.entries()).map(([k, s]) => ({ name: k, sig: s }));
-  if (themes.length < 3) return null;
-
-  const cx = 130, cy = 130;
-  const topConfId = [...themes].sort((a, b) => b.sig.confidence - a.sig.confidence)[0].sig.id;
-
-  const nodes = themes.map((t, i) => {
-    const angle = (i / themes.length) * Math.PI * 2 - Math.PI / 2;
-    const r = 30 + Math.min(Math.max(t.sig.confidence, 0), 1) * 70;
-    const conf = t.sig.confidence;
-    const radius = conf > 0.5 ? 8 : conf > 0.3 ? 4 : 3;
-    const color = t.sig.id === topConfId
-      ? "var(--color-text-warning, var(--brand))"
-      : conf > 0.3
-        ? "var(--color-text-info, var(--info))"
-        : "var(--ink-3)";
-    const opacity = t.sig.id === topConfId ? 1 : conf > 0.3 ? 0.45 : 0.25;
-    const lx = cx + Math.cos(angle) * (r + 22);
-    const ly = cy + Math.sin(angle) * (r + 22);
-    // Humanise: underscores → spaces, title case
-    const human = t.name
-      .replace(/[_-]+/g, " ")
-      .replace(/\s+/g, " ")
-      .trim()
-      .replace(/\b\w/g, c => c.toUpperCase());
-    const display = human.length > 18 ? human.slice(0, 17) + "…" : human;
-    return {
-      x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r,
-      lx, ly, radius, color, opacity,
-      name: display, isTop: t.sig.id === topConfId,
-    };
+  const list: Territory[] = Array.from(map.entries()).map(([key, v]) => {
+    const avg = v.confs.reduce((a, b) => a + b, 0) / v.confs.length;
+    const days = (Date.now() - new Date(v.newest).getTime()) / (1000 * 60 * 60 * 24);
+    let status: TerritoryStatus;
+    if (v.count >= 2 && avg >= 0.6) status = "ready";
+    else if (days < 7) status = "new";
+    else status = "building";
+    return { key, name: v.name, signalCount: v.count, avgConfidence: avg, strength: v.count * avg, newestAt: v.newest, status };
   });
+  return list;
+}
 
-  const polygonPts = nodes.map(n => `${n.x},${n.y}`).join(" ");
+/** Wrapping tick for PolarAngleAxis so long theme names never truncate. */
+const WrappingTick = (props: any) => {
+  const { x, y, payload, textAnchor } = props;
+  const text: string = payload?.value ?? "";
+  const fill = "var(--aura-t2)";
+  if (text.length <= 25) {
+    return (
+      <text x={x} y={y} textAnchor={textAnchor} fill={fill} fontSize={12} dy={4}>
+        {text}
+      </text>
+    );
+  }
+  const words = text.split(" ");
+  const mid = Math.ceil(words.length / 2);
+  const line1 = words.slice(0, mid).join(" ");
+  const line2 = words.slice(mid).join(" ");
+  return (
+    <text x={x} y={y} textAnchor={textAnchor} fill={fill} fontSize={12}>
+      <tspan x={x} dy={0}>{line1}</tspan>
+      <tspan x={x} dy={14}>{line2}</tspan>
+    </text>
+  );
+};
+
+const StatusBadge = ({ status }: { status: TerritoryStatus }) => {
+  const styles: Record<TerritoryStatus, React.CSSProperties> = {
+    ready: { background: "var(--aura-accent)", color: "var(--aura-bg, #0b0b0c)" },
+    building: { background: "transparent", color: "hsl(38 90% 60%)", border: "0.5px solid hsl(38 90% 60% / 0.4)" },
+    new: { background: "transparent", color: "var(--info)", border: "0.5px solid var(--info)" },
+  };
+  const label = status === "ready" ? "Ready to publish" : status === "new" ? "New" : "Building";
+  return (
+    <span style={{
+      fontSize: 11, fontWeight: 500, padding: "3px 8px", borderRadius: 4,
+      whiteSpace: "nowrap", letterSpacing: ".02em", ...styles[status],
+    }}>{label}</span>
+  );
+};
+
+const TerritoryPanel = ({
+  signals,
+  selectedTheme,
+  onSelectTheme,
+}: {
+  signals: Signal[];
+  selectedTheme: string | null;
+  onSelectTheme: (key: string | null) => void;
+}) => {
+  const [expanded, setExpanded] = useState(false);
+
+  const territories = useMemo(() => buildTerritories(signals), [signals]);
+
+  const sorted = useMemo(() => {
+    const rank: Record<TerritoryStatus, number> = { ready: 0, new: 1, building: 2 };
+    return [...territories].sort((a, b) => {
+      const r = rank[a.status] - rank[b.status];
+      if (r !== 0) return r;
+      return b.strength - a.strength;
+    });
+  }, [territories]);
+
+  const top5 = useMemo(() => {
+    const byStrength = [...territories].sort((a, b) => b.strength - a.strength).slice(0, 5);
+    const maxStrength = byStrength[0]?.strength || 1;
+    return byStrength.map(t => ({
+      theme: t.name,
+      value: Math.round((t.strength / maxStrength) * 100),
+    }));
+  }, [territories]);
+
+  if (territories.length === 0) return null;
+
+  const visible = expanded ? sorted : sorted.slice(0, 8);
+  const showRadar = territories.length >= 3;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", margin: "32px 0" }}>
-      <svg width={230} height={230} viewBox="0 0 260 260" style={{ overflow: "visible" }}>
-        {[110, 75, 40].map(r => (
-          <circle key={r} cx={cx} cy={cy} r={r}
-            fill="none" stroke="var(--color-border-tertiary, var(--surface-ink-subtle))"
-            strokeWidth={0.3} strokeDasharray="3 5" />
-        ))}
-        <line x1={cx} y1={cy - 110} x2={cx} y2={cy + 110} stroke="var(--surface-ink-subtle)" strokeWidth={0.2} />
-        <line x1={cx - 110} y1={cy} x2={cx + 110} y2={cy} stroke="var(--surface-ink-subtle)" strokeWidth={0.2} />
-        <line x1={cx - 78} y1={cy - 78} x2={cx + 78} y2={cy + 78} stroke="var(--surface-ink-subtle)" strokeWidth={0.2} />
-        <line x1={cx - 78} y1={cy + 78} x2={cx + 78} y2={cy - 78} stroke="var(--surface-ink-subtle)" strokeWidth={0.2} />
-
-        <polygon points={polygonPts}
-          fill="var(--color-text-warning, var(--brand))" fillOpacity={0.08}
-          stroke="var(--color-text-warning, var(--brand))" strokeOpacity={0.3} strokeWidth={0.7} />
-
-        <circle cx={cx} cy={cy} r={3} fill="var(--color-text-warning, var(--brand))">
-          <animate attributeName="opacity" values="0.3;0.7;0.3" dur="4s" repeatCount="indefinite" />
-        </circle>
-
-        {nodes.map((n, i) => (
-          <g key={i}>
-            <circle cx={n.x} cy={n.y} r={n.radius} fill={n.color} opacity={n.opacity}>
-              {n.isTop && <animate attributeName="r" values={`${n.radius};${n.radius + 1};${n.radius}`} dur="3s" repeatCount="indefinite" />}
-            </circle>
-            <text x={n.lx} y={n.ly} textAnchor="middle" dominantBaseline="middle"
-              fontSize={11} fill="var(--ink-4)">
-              {n.name}
-            </text>
-          </g>
-        ))}
-      </svg>
-
-      <div style={{ display: "flex", gap: 18, marginTop: 16, fontSize: 11, color: "var(--ink-3)" }}>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--color-text-warning, var(--brand))" }} /> Strong
-        </span>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--color-text-info, var(--info))", opacity: 0.5 }} /> Emerging
-        </span>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-          <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ink-3)", opacity: 0.5 }} /> Weak
-        </span>
-      </div>
-
-      {captureCount > 0 && (
-        <p style={{ marginTop: 10, fontSize: 11, color: "var(--ink-3)", textAlign: "center" }}>
-          Themes detected from your {captureCount} capture{captureCount === 1 ? "" : "s"} — each node is a pattern Aura found.
-        </p>
+    <section style={{ margin: "32px 0" }}>
+      {showRadar && (
+        <div style={{ width: "100%", marginBottom: 24 }}>
+          <ResponsiveContainer width="100%" height={280}>
+            <RadarChart data={top5} cx="50%" cy="50%" outerRadius="65%">
+              <PolarGrid stroke="var(--color-border-tertiary, var(--surface-ink-subtle))" />
+              <PolarAngleAxis dataKey="theme" tick={WrappingTick as any} />
+              <Radar
+                dataKey="value"
+                stroke="var(--brand)"
+                fill="var(--brand)"
+                fillOpacity={0.25}
+              />
+            </RadarChart>
+          </ResponsiveContainer>
+          <p style={{ marginTop: 8, fontSize: 11, color: "var(--ink-3)", textAlign: "center" }}>
+            Top 5 territories by strength (signals × confidence).
+          </p>
+        </div>
       )}
 
-      <div style={{ marginTop: 14, width: "100%", maxWidth: 520 }}>
-        <ExpandablePanel label="How does the radar work?" align="left">
-          <p style={{ margin: "0 0 10px" }}>Every article you capture is analysed for strategic patterns. When multiple captures share a theme, Aura detects a signal.</p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 10 }}>
-            <div>Size = confidence level</div>
-            <div>Position = strength (outer = stronger)</div>
-            <div>Color = gold is actionable, blue is emerging, grey needs more data</div>
-          </div>
-          <div style={{ paddingTop: 8, borderTop: "0.5px solid var(--surface-ink-subtle)" }}>
-            <strong style={{ color: "var(--ink-5)" }}>Confidence:</strong> 40% AI analysis + 35% source diversity + 15% organisation breadth + 10% recency
-          </div>
-        </ExpandablePanel>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+        <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".06em", color: "var(--ink-3)" }}>
+          TERRITORIES
+        </span>
+        <span style={{ fontSize: 11, color: "var(--ink-3)" }}>({territories.length})</span>
       </div>
-    </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {visible.map(t => {
+          const isSelected = selectedTheme === t.key;
+          const confPct = Math.round(t.avgConfidence * 100);
+          return (
+            <button
+              key={t.key}
+              onClick={() => onSelectTheme(isSelected ? null : t.key)}
+              style={{
+                textAlign: "left",
+                padding: "12px 14px",
+                border: "0.5px solid var(--surface-ink-subtle)",
+                borderLeft: isSelected ? "3px solid var(--brand)" : "3px solid transparent",
+                borderRadius: 8,
+                background: isSelected ? "var(--surface-ink-raised)" : "transparent",
+                cursor: "pointer",
+                transition: "background .15s",
+                width: "100%",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{
+                    margin: 0, fontFamily: "'DM Sans', system-ui, sans-serif",
+                    fontSize: 14, fontWeight: 500, color: "var(--ink-6, var(--ink))",
+                    lineHeight: 1.3, wordBreak: "break-word",
+                  }}>{t.name}</p>
+                </div>
+                <span style={{ fontSize: 13, color: "var(--ink-3)", whiteSpace: "nowrap" }}>
+                  {t.signalCount} signal{t.signalCount === 1 ? "" : "s"}
+                </span>
+                <StatusBadge status={t.status} />
+              </div>
+              <div style={{
+                marginTop: 8, height: 4, borderRadius: 2,
+                background: "var(--surface-ink-subtle)", overflow: "hidden",
+              }}>
+                <div style={{
+                  height: "100%", width: `${confPct}%`,
+                  background: "var(--brand)", transition: "width .3s",
+                }} />
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {sorted.length > 8 && (
+        <button
+          onClick={() => setExpanded(e => !e)}
+          style={{
+            marginTop: 12, background: "none", border: "none", padding: 0,
+            color: "var(--brand)", fontSize: 12, cursor: "pointer",
+          }}
+        >
+          {expanded ? "Show fewer territories" : `Show all ${sorted.length} territories →`}
+        </button>
+      )}
+    </section>
   );
 };
 
