@@ -242,6 +242,29 @@ const Onboarding = () => {
     }
   };
 
+  // Fire the onboarding-find-article EF in the background. Called at the end of
+  // Step 2 (brand assessment) so results are ready by Step 3 (capture).
+  const triggerArticleSearch = () => {
+    if (articleSearchStartRef.current) return; // already fired this session
+    articleSearchStartRef.current = Date.now();
+    setArticleSearchDone(false);
+    setFoundArticle(null);
+    supabase.functions
+      .invoke("onboarding-find-article", {
+        body: {
+          sector_focus: sectorFocus,
+          core_practice: corePractice.trim(),
+          firm: firm.trim(),
+          level: level.trim(),
+        },
+      })
+      .then(({ data }) => {
+        if (data?.found && data?.article) setFoundArticle(data.article);
+      })
+      .catch(() => {})
+      .finally(() => setArticleSearchDone(true));
+  };
+
   const confirmIdentityYes = () => {
     if (!userId) return;
     try { sessionStorage.setItem(`aura_identity_confirmed_${userId}`, "true"); } catch {}
@@ -1355,7 +1378,7 @@ const ArticleManualPaste = ({
 
 export default Onboarding;
 
-const BreathingOverlay = ({ leaving }: { leaving: boolean }) => (
+const BreathingOverlay = ({ leaving, message }: { leaving: boolean; message?: string }) => (
   <div
     style={{
       position: "fixed", inset: 0, zIndex: 100,
@@ -1373,7 +1396,7 @@ const BreathingOverlay = ({ leaving }: { leaving: boolean }) => (
         textAlign: "center", maxWidth: 420, padding: "0 24px",
       }}
     >
-      Perfect. Now let's map what makes you different.{" "}
+      {message || "Now let's map what makes you different."}{" "}
       <span style={{ color: "#B08D3A" }}>◆</span>
     </p>
   </div>
