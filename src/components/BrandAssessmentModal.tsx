@@ -239,7 +239,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
     }
   }, [open]);
 
-  // Cinematic processing line cycling — 6 stages spanning the full ~110s EF window
+  // Cinematic processing line cycling — 9 stages spanning the full ~120s EF window
   useEffect(() => {
     if (!loading) { setLoadingStage(0); return; }
     setLoadingStage(0);
@@ -248,7 +248,10 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
     const t3 = window.setTimeout(() => setLoadingStage(3), 15000);
     const t4 = window.setTimeout(() => setLoadingStage(4), 25000);
     const t5 = window.setTimeout(() => setLoadingStage(5), 45000);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5); };
+    const t6 = window.setTimeout(() => setLoadingStage(6), 55000);
+    const t7 = window.setTimeout(() => setLoadingStage(7), 70000);
+    const t8 = window.setTimeout(() => setLoadingStage(8), 95000);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5); clearTimeout(t6); clearTimeout(t7); clearTimeout(t8); };
   }, [loading]);
 
   const persistAnswersOnly = async () => {
@@ -1153,8 +1156,14 @@ const PROCESSING_LINES = [
   "Building something worth waiting for...",
   "Almost there — depth takes a moment...",
   "Still with you — this is worth it...",
+  "Crafting your positioning with care...",
+  "Nearly there — great analysis takes a moment...",
+  "Just a few more seconds...",
 ];
 function CinematicLoading({ stage = 0 }: { stage?: number }) {
+  const lastIndex = PROCESSING_LINES.length - 1;
+  const clamped = Math.min(stage, lastIndex);
+  const isLast = clamped === lastIndex;
   return (
     <div
       style={{
@@ -1171,6 +1180,7 @@ function CinematicLoading({ stage = 0 }: { stage?: number }) {
         @keyframes aura-eye-in { from { opacity: 0; transform: scale(0.3); } to { opacity: 1; transform: scale(1); } }
         @keyframes aura-eye-pulse { 0%,100% { opacity: 0.7; } 50% { opacity: 1; } }
         @keyframes aura-line-cycle { 0% { opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
+        @keyframes aura-line-hold { from { opacity: 0; } to { opacity: 1; } }
       `}</style>
       <div
         style={{
@@ -1196,10 +1206,12 @@ function CinematicLoading({ stage = 0 }: { stage?: number }) {
           maxWidth: 420,
           margin: 0,
           opacity: 0,
-          animation: "aura-line-cycle 2700ms ease-in-out forwards",
+          animation: isLast
+            ? "aura-line-hold 800ms ease-out forwards"
+            : "aura-line-cycle 2700ms ease-in-out forwards",
         }}
       >
-        {PROCESSING_LINES[Math.min(stage, PROCESSING_LINES.length - 1)]}
+        {PROCESSING_LINES[clamped]}
       </p>
     </div>
   );
