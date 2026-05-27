@@ -43,7 +43,7 @@ export default function RecommendedMoveCard({
             {signalTitle}
           </span>
           {confidencePct != null && (
-            <span style={{ fontSize: 12, color: "var(--aura-t3)", fontFamily: "'JetBrains Mono', monospace" }}>
+            <span style={{ fontSize: 12, color: "var(--aura-t3)",  }}>
               {confidencePct}%
             </span>
           )}
