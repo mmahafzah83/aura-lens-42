@@ -74,17 +74,6 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
     ? `Completed a new milestone: ${d.name}.\n\n${safeContext}\n\nUnderstanding your positioning is the first step to being visible where it matters.\n\n#DigitalPresence #StrategicIntelligence`
     : `Building strategic intelligence with Aura.\n\n#DigitalPresence #StrategicIntelligence`;
 
-  const generateBlob = async (): Promise<Blob | null> => {
-    if (!cardRef.current) return null;
-    const canvas = await html2canvas(cardRef.current, {
-      backgroundColor: "#111118",
-      scale: 2,
-      useCORS: true,
-      logging: false,
-    });
-    return await new Promise(res => canvas.toBlob(b => res(b), "image/png"));
-  };
-
   const handleDownload = async () => {
     if (!cardRef.current) return;
     setBusy(true);
