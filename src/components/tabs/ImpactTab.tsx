@@ -122,6 +122,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const [topSignal, setTopSignal] = useState<string | null>(null);
 
   const [postMetricsCount, setPostMetricsCount] = useState(0);
+  const [windowedPostCount, setWindowedPostCount] = useState(0);
   const [topPosts, setTopPosts] = useState<PostMetricRow[]>([]);
 
   const [followerRows, setFollowerRows] = useState<FollowerRow[]>([]);
@@ -284,8 +285,17 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         .order("engagement_rate", { ascending: false })
         .limit(20);
       setTopPosts((topRes.data as any) || []);
+      // Distinct posts that have metrics within the selected window
+      const winRes = await supabase
+        .from("linkedin_post_metrics")
+        .select("post_id")
+        .eq("user_id", user.id)
+        .gte("snapshot_date", sinceDateOnly);
+      const uniq = new Set(((winRes.data as any[]) || []).map(r => r.post_id).filter(Boolean));
+      setWindowedPostCount(uniq.size);
     } else {
       setTopPosts([]);
+      setWindowedPostCount(0);
     }
 
     // Follower / influence snapshots from LinkedIn export (within range, followers > 0)
@@ -335,14 +345,18 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       .filter(p => p.published_at)
       .map(p => ({ published_at: p.published_at, post_text: p.post_text })));
 
-    // Period impressions + avg engagement rate
+    // Period impressions + impression-weighted engagement rate
+    // engagement_rate in DB is stored as a percentage (e.g. 4.09 = 4.09%),
+    // so to get absolute engagements per day we multiply impressions × rate / 100.
     const totalImp = folRowsAll.reduce((s, r) => s + Number(r.impressions || 0), 0);
     setPeriodImpressions(folRowsAll.length ? totalImp : null);
 
-    const erRows = folRowsAll.filter(r => Number(r.engagement_rate || 0) > 0);
-    if (erRows.length > 0) {
-      const avg = erRows.reduce((s, r) => s + Number(r.engagement_rate || 0), 0) / erRows.length;
-      setPeriodEngagementRate(avg);
+    const totalEng = folRowsAll.reduce(
+      (s, r) => s + (Number(r.impressions || 0) * Number(r.engagement_rate || 0)) / 100,
+      0,
+    );
+    if (totalImp > 0) {
+      setPeriodEngagementRate((totalEng / totalImp) * 100);
     } else {
       setPeriodEngagementRate(null);
     }
@@ -1357,15 +1371,15 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           <PillarCard
             label="Visibility"
             value={(() => {
-              if (!periodImpressions || (postMetricsCount || 0) === 0) return "—";
-              const avg = Math.round(periodImpressions / Math.max(1, postMetricsCount));
+              if (!periodImpressions || windowedPostCount === 0) return "—";
+              const avg = Math.round(periodImpressions / windowedPostCount);
               return formatCompact(avg);
             })()}
             unit="avg/post"
             color="var(--aura-blue)"
             tooltip={{
-              what: "Average impressions per published post.",
-              how: "Total impressions ÷ posts in your selected window.",
+              what: "Average impressions per post in your selected time window.",
+              how: "Window impressions ÷ posts with metrics in the same window.",
               improve: "Publish more often and use hooks tied to live signals.",
             }}
           />
@@ -1384,8 +1398,8 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               return "var(--aura-negative)";
             })()}
             tooltip={{
-              what: "Engagement rate (reactions ÷ impressions).",
-              how: "Benchmarked against your follower tier.",
+              what: "Engagement rate (engagements ÷ impressions, includes reactions, comments, reposts).",
+              how: "Impression-weighted across days, benchmarked against your follower tier.",
               improve: "Open with a sharp POV; reply in the first hour.",
             }}
           />
