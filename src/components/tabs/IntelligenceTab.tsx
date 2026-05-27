@@ -2,8 +2,9 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   Loader2, Archive, RefreshCw, Layers, Brain, AlertTriangle, ChevronDown,
-  EyeOff, Info, Lightbulb, TrendingUp, ExternalLink, Plus, BookOpen,
+  EyeOff, Info, Lightbulb, TrendingUp, ExternalLink, Plus, BookOpen, X,
 } from "lucide-react";
+import { PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
