@@ -9,7 +9,7 @@ import BrandAssessmentModal from "@/components/BrandAssessmentModal";
 import CalibrationSliders from "@/components/CalibrationSliders";
 import { SECTORS, normalizeSector } from "@/constants/sectors";
 
-type Step = 0 | 1 | 2 | 3 | 4;
+type Step = 0 | 1 | 2 | 3;
 
 interface Prefill {
   first_name?: string;
@@ -48,7 +48,7 @@ const Onboarding = () => {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user?.id) {
           await (supabase.from("diagnostic_profiles" as any) as any)
-            .update({ onboarding_step: 5, onboarding_completed: true })
+            .update({ onboarding_step: 4, onboarding_completed: true })
             .eq("user_id", session.user.id);
         }
       } catch (e) { console.warn("final onboarding_step save failed:", e); }
@@ -84,7 +84,7 @@ const Onboarding = () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (session?.user?.id) {
               await (supabase.from("diagnostic_profiles" as any) as any)
-                .update({ onboarding_step: 5, onboarding_completed: true })
+                .update({ onboarding_step: 4, onboarding_completed: true })
                 .eq("user_id", session.user.id);
             }
           } catch (e) { console.warn("ceremony-mount completion save failed:", e); }
@@ -119,6 +119,8 @@ const Onboarding = () => {
 
   // Step 0
   const [revealCount, setRevealCount] = useState(0);
+  // Sub-state: within step 0, show welcome first, then LinkedIn paste + form.
+  const [welcomeAcknowledged, setWelcomeAcknowledged] = useState(false);
 
   // Step 1
   const [linkedinUrl, setLinkedinUrl] = useState("");
@@ -155,6 +157,9 @@ const Onboarding = () => {
   // Breathing transition between article capture (step 2) and calibration (step 3)
   const [breathing, setBreathing] = useState(false);
   const [breathingLeaving, setBreathingLeaving] = useState(false);
+  const [breathingMessage, setBreathingMessage] = useState<string>(
+    "Now let's map what makes you different.",
+  );
 
   // Auth + gate: if user already onboarded, send them home.
   useEffect(() => {
@@ -185,16 +190,17 @@ const Onboarding = () => {
         .eq("user_id", session.user.id)
         .maybeSingle();
       const p: any = profile || {};
-      // Completion redirect — Fix 10: any user with onboarding_step >= 5
+      // Completion redirect — any user with onboarding_step >= 4
       // (or the legacy onboarding_completed flag) can never accidentally restart.
-      if (p && ((p.onboarding_step ?? 0) >= 5 || (p.onboarding_completed && p.first_name))) {
+      if (p && ((p.onboarding_step ?? 0) >= 4 || (p.onboarding_completed && p.first_name))) {
         goHome();
         return;
       }
       // Resume from last saved step (Fix 1C)
       const savedStep = Number(p.onboarding_step ?? 0);
-      if (savedStep > 0 && savedStep <= 4) {
+      if (savedStep > 0 && savedStep <= 3) {
         setStep(savedStep as Step);
+        setWelcomeAcknowledged(true);
       }
       // Pre-populate calibration sliders with any partial scores (Fix 1D)
       if (p.skill_ratings && typeof p.skill_ratings === "object") {
@@ -236,6 +242,29 @@ const Onboarding = () => {
     }
   };
 
+  // Fire the onboarding-find-article EF in the background. Called at the end of
+  // Step 2 (brand assessment) so results are ready by Step 3 (capture).
+  const triggerArticleSearch = () => {
+    if (articleSearchStartRef.current) return; // already fired this session
+    articleSearchStartRef.current = Date.now();
+    setArticleSearchDone(false);
+    setFoundArticle(null);
+    supabase.functions
+      .invoke("onboarding-find-article", {
+        body: {
+          sector_focus: sectorFocus,
+          core_practice: corePractice.trim(),
+          firm: firm.trim(),
+          level: level.trim(),
+        },
+      })
+      .then(({ data }) => {
+        if (data?.found && data?.article) setFoundArticle(data.article);
+      })
+      .catch(() => {})
+      .finally(() => setArticleSearchDone(true));
+  };
+
   const confirmIdentityYes = () => {
     if (!userId) return;
     try { sessionStorage.setItem(`aura_identity_confirmed_${userId}`, "true"); } catch {}
@@ -272,7 +301,7 @@ const Onboarding = () => {
   // Fix 3: force re-render to surface the "11pm article" fallback if the
   // onboarding-find-article EF stalls past ~12s.
   useEffect(() => {
-    if (step !== 2) return;
+    if (step !== 3) return;
     if (articleSearchDone) return;
     if (!articleSearchStartRef.current) return;
     const timer = window.setTimeout(() => {
@@ -363,27 +392,9 @@ const Onboarding = () => {
       if (error) throw error;
       try { localStorage.setItem("aura_onboarding_complete", "true"); } catch {}
 
-      // Kick off article search in the background — don't await
-      articleSearchStartRef.current = Date.now();
-      setArticleSearchDone(false);
-      setFoundArticle(null);
-      supabase.functions
-        .invoke("onboarding-find-article", {
-          body: {
-            sector_focus: sectorFocus,
-            core_practice: corePractice.trim(),
-            firm: firm.trim(),
-            level: level.trim(),
-          },
-        })
-        .then(({ data }) => {
-          if (data?.found && data?.article) setFoundArticle(data.article);
-        })
-        .catch(() => {})
-        .finally(() => setArticleSearchDone(true));
-
       await saveProgress(1);
-      goStep(2);
+      // Breathing transition into Step 1 (Map your strengths).
+      startBreathingTo(1, "Now let's map what makes you different.");
     } catch (e: any) {
       toast.error(e.message || "Couldn't save profile — please try again");
     } finally {
@@ -437,7 +448,7 @@ const Onboarding = () => {
         // ingest-capture creates the entry server-side — no client-side insert needed.
         setCapturedTitle(articleMeta?.title || "");
         setCaptureSuccess(true);
-        window.setTimeout(() => startBreathingToCalibration(), 3000);
+        window.setTimeout(() => startBreathingToCeremony(), 3000);
       } catch (innerErr: any) {
         clearTimeout(timeoutId);
         if (innerErr?.name === "AbortError") {
@@ -445,7 +456,7 @@ const Onboarding = () => {
           toast.error("Taking too long — your article is saved. We'll process it in the background.");
           setCapturedTitle(articleMeta?.title || "");
           setCaptureSuccess(true);
-          window.setTimeout(() => startBreathingToCalibration(), 1500);
+          window.setTimeout(() => startBreathingToCeremony(), 1500);
         } else {
           throw innerErr;
         }
@@ -458,22 +469,35 @@ const Onboarding = () => {
     }
   };
 
-  // Breathing transition between step 2 (article) → step 3 (calibration)
-  const startBreathingToCalibration = () => {
+  // Generic breathing transition to any next step with a custom message.
+  const startBreathingTo = (nextStep: Step, message: string) => {
+    setBreathingMessage(message);
     setBreathing(true);
     setBreathingLeaving(false);
     window.setTimeout(() => setBreathingLeaving(true), 1700);
     window.setTimeout(() => {
       setBreathing(false);
       setBreathingLeaving(false);
-      saveProgress(2);
-      goStep(3);
+      goStep(nextStep);
     }, 2000);
   };
 
-  // Step 3: save calibration scores then advance to assessment (step 4)
+  // Post-capture breathing → ceremony (goHome).
+  const startBreathingToCeremony = () => {
+    setBreathingMessage("Perfect. Aura is building your first signal.");
+    setBreathing(true);
+    setBreathingLeaving(false);
+    window.setTimeout(() => setBreathingLeaving(true), 1700);
+    window.setTimeout(() => {
+      setBreathing(false);
+      setBreathingLeaving(false);
+      goHome();
+    }, 2000);
+  };
+
+  // Step 1: save calibration scores then advance to brand assessment (step 2).
   const handleCalibrationComplete = async (scores: Record<string, number>) => {
-    if (!userId) { goStep(4); return; }
+    if (!userId) { goStep(2); return; }
     try {
       // Map calibration dimensions to generated_skills format
       const dimensionCategories: Record<string, string> = {
@@ -505,14 +529,14 @@ const Onboarding = () => {
     } catch (e) {
       console.warn("Could not save calibration scores:", e);
     }
-    await saveProgress(3);
-    goStep(4);
+    await saveProgress(2);
+    goStep(2);
   };
 
   // ─── Render helpers ───
   const ProgressDots = () => (
     <div className="flex items-center justify-center gap-2 mb-6">
-      {[0, 1, 2, 3, 4].map((i) => {
+      {[0, 1, 2, 3].map((i) => {
         const isCurrent = i === step;
         const isDone = i < step;
         return (
@@ -834,7 +858,7 @@ const Onboarding = () => {
   }
 
   // ───── STEP 0 ─────
-  if (step === 0) {
+  if (step === 0 && !welcomeAcknowledged) {
     const items = [
       "Aura reads what you already read — and finds the signals you'd miss.",
       "It writes in your voice — because generic AI content damages your reputation.",
@@ -869,7 +893,7 @@ const Onboarding = () => {
           animate={{ opacity: revealCount >= 3 ? 1 : 0 }}
           transition={{ duration: 0.5, delay: revealCount >= 3 ? 0.6 : 0 }}
         >
-          {primaryBtn(<>Let's begin <ArrowRight className="w-4 h-4" /></>, () => goStep(1), { disabled: revealCount < 3 })}
+          {primaryBtn(<>Let's begin <ArrowRight className="w-4 h-4" /></>, () => setWelcomeAcknowledged(true), { disabled: revealCount < 3 })}
         </motion.div>
         <motion.p
           initial={{ opacity: 0 }}
@@ -878,17 +902,17 @@ const Onboarding = () => {
           className="text-center mt-4"
           style={{ fontSize: 13, color: "hsl(var(--muted-foreground))" }}
         >
-          5 steps. About 10 minutes. Worth every second.
+          4 steps. About 7 minutes. Worth every second.
         </motion.p>
       </>,
     );
   }
 
-  // ───── STEP 1 ─────
-  if (step === 1) {
+  // ───── STEP 0 (LinkedIn paste + profile form) ─────
+  if (step === 0 && welcomeAcknowledged) {
     return cardShell(
       <>
-        {eyebrow("Step 1 of 5 — Tell Aura who you are")}
+        {eyebrow("Step 1 of 4 — Tell Aura who you are")}
         {!showForm ? (
           <>
             {heading("Paste your LinkedIn headline and About section")}
@@ -1030,15 +1054,15 @@ const Onboarding = () => {
     );
   }
 
-  // ───── STEP 2 ─────
-  if (step === 2) {
+  // ───── STEP 3: FIRST CAPTURE ─────
+  if (step === 3) {
     const elapsed = Date.now() - articleSearchStartRef.current;
     const stillSearching = !articleSearchDone && elapsed < 10000;
 
     if (captureSuccess) {
       return cardShell(
         <>
-          {eyebrow("Step 2 of 5 — Your first signal starts here")}
+          {eyebrow("Step 4 of 4 — Your first capture")}
           {heading("First capture complete.")}
           <p className="mb-3" style={{ fontSize: 15, lineHeight: 1.7, color: "hsl(var(--foreground))" }}>
             Aura is already detecting strategic patterns. After 3-5 more articles, your first signal emerges.
@@ -1060,14 +1084,14 @@ const Onboarding = () => {
               Aura is building your first signal.
             </p>
           </motion.div>
-          {primaryBtn(<>Continue → <ArrowRight className="w-4 h-4" /></>, () => startBreathingToCalibration())}
+          {primaryBtn(<>Continue → <ArrowRight className="w-4 h-4" /></>, () => startBreathingToCeremony())}
         </>,
       );
     }
 
     return cardShell(
       <>
-        {eyebrow("Step 2 of 5 — Your first signal starts here")}
+        {eyebrow("Step 4 of 4 — Your first capture")}
         {stillSearching ? (
           <>
             {heading("Finding something relevant in your sector...")}
@@ -1076,7 +1100,22 @@ const Onboarding = () => {
               <span className="text-sm">Aura is searching trusted sources...</span>
             </div>
             <ArticleManualPaste url={manualUrl} setUrl={setManualUrl} onSave={() => captureArticle(manualUrl)} loading={capturing} inputCls={inputCls} inputStyle={inputStyle} />
-            <div className="mt-3">{ghostLink("Skip for now", () => startBreathingToCalibration())}</div>
+            <div className="mt-4">
+              <button
+                onClick={() => goHome()}
+                className="w-full font-medium transition-all flex items-center justify-center gap-2"
+                style={{
+                  height: 44,
+                  background: "transparent",
+                  color: "hsl(var(--muted-foreground))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: 10,
+                  fontSize: 14,
+                }}
+              >
+                I'll capture later →
+              </button>
+            </div>
           </>
         ) : foundArticle ? (
           <>
@@ -1109,7 +1148,22 @@ const Onboarding = () => {
             </div>
             <div className="my-4 text-xs text-center" style={{ color: "hsl(var(--muted-foreground))" }}>Or paste your own URL:</div>
             <ArticleManualPaste url={manualUrl} setUrl={setManualUrl} onSave={() => captureArticle(manualUrl)} loading={capturing} inputCls={inputCls} inputStyle={inputStyle} compact />
-            <div className="mt-3">{ghostLink("Skip for now", () => startBreathingToCalibration())}</div>
+            <div className="mt-4">
+              <button
+                onClick={() => goHome()}
+                className="w-full font-medium transition-all flex items-center justify-center gap-2"
+                style={{
+                  height: 44,
+                  background: "transparent",
+                  color: "hsl(var(--muted-foreground))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: 10,
+                  fontSize: 14,
+                }}
+              >
+                I'll capture later →
+              </button>
+            </div>
           </>
         ) : (
           <>
@@ -1118,15 +1172,30 @@ const Onboarding = () => {
               The one you read at 11pm and thought 'this changes things'. Aura will turn it into your first signal.
             </p>
             <ArticleManualPaste url={manualUrl} setUrl={setManualUrl} onSave={() => captureArticle(manualUrl)} loading={capturing} inputCls={inputCls} inputStyle={inputStyle} />
-            <div className="mt-3">{ghostLink("I'll capture one later", () => startBreathingToCalibration())}</div>
+            <div className="mt-4">
+              <button
+                onClick={() => goHome()}
+                className="w-full font-medium transition-all flex items-center justify-center gap-2"
+                style={{
+                  height: 44,
+                  background: "transparent",
+                  color: "hsl(var(--muted-foreground))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: 10,
+                  fontSize: 14,
+                }}
+              >
+                I'll capture later →
+              </button>
+            </div>
           </>
         )}
       </>,
     );
   }
 
-  // ───── STEP 3: CALIBRATION ─────
-  if (step === 3) {
+  // ───── STEP 1: CALIBRATION ─────
+  if (step === 1) {
     return (
       <>
         <div
@@ -1153,26 +1222,26 @@ const Onboarding = () => {
             />
           </div>
         </div>
-        {breathing && <BreathingOverlay leaving={breathingLeaving} />}
+        {breathing && <BreathingOverlay leaving={breathingLeaving} message={breathingMessage} />}
       </>
     );
   }
 
-  // ───── STEP 4: BRAND ASSESSMENT ─────
+  // ───── STEP 2: BRAND ASSESSMENT ─────
   return (
     <>
       {cardShell(
         <>
-          {eyebrow("Step 4 of 5 — How the market sees you")}
+          {eyebrow("Step 3 of 4 — How the market sees you")}
           {heading("Discover your market position.")}
           <p className="mb-6" style={{ fontSize: 15, lineHeight: 1.7, color: "hsl(var(--muted-foreground))" }}>
             This 5-minute assessment reveals how a CIO in your sector would describe you to a colleague. It shapes how Aura writes your content and positions your expertise.
           </p>
           {primaryBtn(<>Discover my market position → <ArrowRight className="w-4 h-4" /></>, () => setAssessmentOpen(true))}
-          <div className="mt-3">{ghostLink("I'll do this later", () => goHome())}</div>
+          <div className="mt-3">{ghostLink("I'll do this later", () => { triggerArticleSearch(); saveProgress(3); goStep(3); })}</div>
         </>,
       )}
-      {breathing && <BreathingOverlay leaving={breathingLeaving} />}
+      {breathing && <BreathingOverlay leaving={breathingLeaving} message={breathingMessage} />}
       <BrandAssessmentModal
         open={assessmentOpen}
         onOpenChange={(o) => {
@@ -1183,7 +1252,9 @@ const Onboarding = () => {
         }}
         onNavigate={(_tab) => {
           setAssessmentOpen(false);
-          goHome();
+          triggerArticleSearch();
+          saveProgress(3);
+          goStep(3);
         }}
         sector={sectorFocus || corePractice || "your sector"}
         onComplete={async () => {
@@ -1197,7 +1268,11 @@ const Onboarding = () => {
             console.warn("welcome email failed:", e);
           }
           try { sessionStorage.setItem("aura-onboarding-just-completed", "1"); } catch {}
-          goHome();
+          // Fire the article search EF in background so results are ready by Step 3.
+          triggerArticleSearch();
+          await saveProgress(3);
+          setAssessmentOpen(false);
+          goStep(3);
         }}
       />
       {ceremony && (
@@ -1206,9 +1281,9 @@ const Onboarding = () => {
           role="dialog"
           aria-label="Aura sees who you are now"
         >
-          {/* 5 progress dots — all filled bronze */}
+          {/* 4 progress dots — all filled bronze */}
           <div style={{ display: "flex", gap: 8, marginBottom: 28 }}>
-            {[0, 1, 2, 3, 4].map((i) => (
+            {[0, 1, 2, 3].map((i) => (
               <span
                 key={i}
                 style={{
@@ -1303,7 +1378,7 @@ const ArticleManualPaste = ({
 
 export default Onboarding;
 
-const BreathingOverlay = ({ leaving }: { leaving: boolean }) => (
+const BreathingOverlay = ({ leaving, message }: { leaving: boolean; message?: string }) => (
   <div
     style={{
       position: "fixed", inset: 0, zIndex: 100,
@@ -1321,7 +1396,7 @@ const BreathingOverlay = ({ leaving }: { leaving: boolean }) => (
         textAlign: "center", maxWidth: 420, padding: "0 24px",
       }}
     >
-      Perfect. Now let's map what makes you different.{" "}
+      {message || "Now let's map what makes you different."}{" "}
       <span style={{ color: "#B08D3A" }}>◆</span>
     </p>
   </div>
