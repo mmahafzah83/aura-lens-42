@@ -70,6 +70,9 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
           skill_ratings: newRatings,
           generated_skills: skills,
           completed: true,
+          audit_results: newRatings,
+          audit_completed_at: new Date().toISOString(),
+          audit_method: "evidence_audit",
         })
         .eq("user_id", user.id);
 
