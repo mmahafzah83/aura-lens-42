@@ -31,45 +31,33 @@ serve(async (req) => {
     const userId = user.id;
     const now = new Date();
 
-    // --- capture_score: consistency — active weeks in the last 4 calendar weeks ---
+    // --- capture_score: blended recent (4-wk) + extended (12-wk) rhythm ---
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const fourWeeksAgoForCapture = new Date(now.getTime() - 4 * 7 * 24 * 60 * 60 * 1000);
+    const twelveWeeksAgoForCapture = new Date(now.getTime() - 12 * 7 * 24 * 60 * 60 * 1000);
     const { data: captureEntries } = await admin
       .from("entries")
       .select("created_at")
       .eq("user_id", userId)
-      .gte("created_at", fourWeeksAgoForCapture.toISOString());
-    let activeWeeksInLast4 = 0;
-    for (let i = 0; i < 4; i++) {
+      .gte("created_at", twelveWeeksAgoForCapture.toISOString());
+    const weekly_data: boolean[] = [];
+    for (let i = 0; i < 12; i++) {
       const wkEnd = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
       const wkStart = new Date(wkEnd.getTime() - 7 * 24 * 60 * 60 * 1000);
       const active = (captureEntries || []).some((e: any) => {
         const t = new Date(e.created_at).getTime();
         return t >= wkStart.getTime() && t < wkEnd.getTime();
       });
-      if (active) activeWeeksInLast4++;
-    }
-    const captureScore = Math.round((activeWeeksInLast4 / 4) * 100);
-
-    // --- weekly_rhythm: any entry counts (12-week window) ---
-    const twelveWeeksAgoForRhythm = new Date(now.getTime() - 12 * 7 * 24 * 60 * 60 * 1000);
-    const { data: rhythmEntries } = await admin
-      .from("entries")
-      .select("created_at")
-      .eq("user_id", userId)
-      .gte("created_at", twelveWeeksAgoForRhythm.toISOString());
-    const weekly_data: boolean[] = [];
-    for (let i = 0; i < 12; i++) {
-      const wkEnd = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
-      const wkStart = new Date(wkEnd.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const active = (rhythmEntries || []).some((e: any) => {
-        const t = new Date(e.created_at).getTime();
-        return t >= wkStart.getTime() && t < wkEnd.getTime();
-      });
       weekly_data.push(active);
     }
+    const activeWeeksLast4 = weekly_data.slice(0, 4).filter(Boolean).length;
+    const activeWeeksLast12 = weekly_data.filter(Boolean).length;
+    const captureScore = Math.round(
+      ((activeWeeksLast4 / 4) * 0.60 + (activeWeeksLast12 / 12) * 0.40) * 100
+    );
+
+    // --- weekly_rhythm: derived from same 12-week window ---
     const weekly_rhythm = {
-      active_weeks: weekly_data.filter(Boolean).length,
+      active_weeks: activeWeeksLast12,
       total_weeks: 12,
       weekly_data,
     };
