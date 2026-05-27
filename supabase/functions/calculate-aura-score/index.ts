@@ -98,7 +98,7 @@ serve(async (req) => {
       100,
     );
 
-    // --- content_score: split imported (≤30) vs active published (≤70) ---
+    // --- content_score: split imported (≤15 baseline) vs active published (≤85) ---
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
     // Imported = all non-user-published content (history baseline, no date filter)
     const { count: importedCount } = await admin
@@ -106,14 +106,18 @@ serve(async (req) => {
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
       .in("source_type", ["linkedin_export", "browser_capture", "search_discovery", "external_reference"]);
-    // Active = only posts the user published through Aura in the last 30 days
-    const { count: activeCount } = await admin
+    // Aura-published in last 30 days (MUST be published, not just drafted)
+    const { count: auraPublishedCount } = await admin
       .from("linkedin_posts")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
       .in("source_type", ["aura", "aura_generated"])
+      .eq("tracking_status", "published")
       .gte("created_at", thirtyDaysAgo);
-    const contentScore = Math.min((importedCount ?? 0) * 2, 30) + Math.min((activeCount ?? 0) * 10, 70);
+    const contentScore = Math.min(
+      Math.min(importedCount ?? 0, 15)
+      + Math.min((auraPublishedCount ?? 0) * 15, 85)
+    , 100);
 
     // --- aura_score: weights 40/40/20 (signal/content/capture) ---
     const auraScore = Math.round(signalScore * 0.40 + contentScore * 0.40 + captureScore * 0.20);
