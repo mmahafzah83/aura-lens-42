@@ -201,18 +201,21 @@ function HorizonEye({ x, y, size = 20, color }: { x: number; y: number; size?: n
 
 /* Render headline with accent word highlighted */
 function renderHeadlineWithAccent(headline: string, accent: string | undefined, fg: string, accentColor: string, italic = false) {
-  if (!accent || !headline.toLowerCase().includes(accent.toLowerCase())) {
-    return <tspan fill={fg} fontStyle={italic ? "italic" : "normal"}>{headline}</tspan>;
-  }
+  // Render before/after as bare text nodes (no <tspan>) so the browser's
+  // BiDi algorithm sees the headline as a single paragraph with an inline
+  // color change. Wrapping each segment in its own <tspan> caused Arabic
+  // word order to break in RTL headlines.
+  if (!accent) return <>{headline}</>;
   const idx = headline.toLowerCase().indexOf(accent.toLowerCase());
+  if (idx < 0) return <>{headline}</>;
   const before = headline.slice(0, idx);
   const middle = headline.slice(idx, idx + accent.length);
   const after = headline.slice(idx + accent.length);
   return (
     <>
-      {before && <tspan fill={fg}>{before}</tspan>}
-      <tspan fill={accentColor} fontStyle="italic">{middle}</tspan>
-      {after && <tspan fill={fg}>{after}</tspan>}
+      {before}
+      <tspan fill={accentColor} fontStyle={italic ? "italic" : "normal"}>{middle}</tspan>
+      {after}
     </>
   );
 }
@@ -555,6 +558,16 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
         <text x={authorTextX} y={h - 64} textAnchor={authorAnchor}
               fontFamily={bodyFont} fontSize={16} fill={style.fg}>
           {displayAuthor}
+          {carousel.author_title && (() => {
+            const title = carousel.author_title;
+            const maxLen = 35;
+            const truncated = title.length > maxLen ? title.slice(0, maxLen) + "…" : title;
+            return (
+              <tspan fill={style.muted} fontWeight={400} fontSize={isRTL ? 15 : 13}>
+                {` · ${truncated}`}
+              </tspan>
+            );
+          })()}
         </text>
         <text x={urlX} y={h - 64} textAnchor={urlAnchor}
               fontFamily={bodyFont} fontSize={14} fill={style.muted}>
@@ -611,7 +624,8 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
         <g>
           {lines.map((ln, i) => (
             <text key={i} x={cx} y={startY + i * lh} textAnchor="middle"
-                  fontFamily={headingFont} fontSize={isRTL ? 56 : 72} fontWeight={style.headingWeight ?? 700}>
+                  fontFamily={headingFont} fontSize={isRTL ? 56 : 72} fontWeight={style.headingWeight ?? 700}
+                  fill={style.fg} direction={isRTL ? "rtl" : undefined}>
               {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.accent)}
             </text>
           ))}
@@ -634,7 +648,8 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
         <g>
           {lines.map((ln, i) => (
             <text key={i} x={claimX} y={startY + i * lh} textAnchor={claimAnchor}
-                  fontFamily={headingFont} fontSize={isRTL ? 52 : 60} fontWeight={style.headingWeight ?? 700}>
+                  fontFamily={headingFont} fontSize={isRTL ? 52 : 60} fontWeight={style.headingWeight ?? 700}
+                  fill={style.fg} direction={isRTL ? "rtl" : undefined}>
               {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.emphasis)}
             </text>
           ))}
@@ -663,7 +678,7 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
             {L.myth}
           </text>
           {beliefLinesClean.map((ln, i) => (
-            <text key={i} x={startX} y={beliefStartY + i * 36} textAnchor={sideAnchor}
+            <text key={i} x={startX} y={beliefStartY + i * (isRTL ? 44 : 36)} textAnchor={sideAnchor}
                   fontFamily={bodyFont} fontSize={28} fill={style.muted} opacity={0.6}
                   fontWeight={isRTL ? 600 : 400}
                   textDecoration="line-through" style={{ textDecorationColor: `${style.muted}` }}>
@@ -686,7 +701,7 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
             const headBlockH = truthHeadlineLines.length * 56;
             return (
               <text key={`tb${i}`} x={startX}
-                    y={cy + 120 + headBlockH + 28 + i * 32}
+                    y={cy + 120 + headBlockH + 28 + i * (isRTL ? 40 : 32)}
                     textAnchor={sideAnchor}
                     fontFamily={bodyFont} fontSize={isRTL ? 22 : 22} fill={style.muted}
                     fontWeight={isRTL ? 600 : 400}>
@@ -718,7 +733,7 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
       const sourceY = cy + 100 + ctxLines.length * 36 + 24;
       return (
         <g>
-      <text x={cx} y={cy + 30} textAnchor="middle" fontFamily={style.headingFont} fontSize={200} fontWeight={900} fill={style.bigNumberColor ?? style.accent} direction="ltr">
+      <text x={cx} y={cy + 30} textAnchor="middle" fontFamily={style.headingFont} fontSize={200} fontWeight={900} fill={style.bigNumberColor ?? style.accent} direction="ltr" unicodeBidi="isolate">
             {slide.number || "—"}
           </text>
           {ctxLines.length > 0 && (
@@ -825,7 +840,7 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
           <circle cx={blockX + 56} cy={blockY + 32} r={8} fill={style.terminalDots?.[1] ?? "#eab308"} />
           <circle cx={blockX + 84} cy={blockY + 32} r={8} fill={style.terminalDots?.[2] ?? "#22c55e"} />
           {slide.terminal_file && (
-            <text x={blockX + blockW - 24} y={blockY + 38} textAnchor="end" fontFamily={style.monoFont} fontSize={18} fill={style.muted} direction="ltr">
+            <text x={blockX + blockW - 24} y={blockY + 38} textAnchor="end" fontFamily={style.monoFont} fontSize={18} fill={style.muted} direction="ltr" unicodeBidi="isolate">
               {slide.terminal_file}
             </text>
           )}
@@ -854,10 +869,22 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
       return (
         <g>
           {slide.headline && (
-            <text x={startX} y={gridY - 40} textAnchor={sideAnchor}
-                  fontFamily={headingFont} fontSize={36} fontWeight={style.headingWeight ?? 700} fill={style.fg}>
-              {slide.headline}
-            </text>
+            (() => {
+              const hlLines = wrapText(slide.headline, isRTL ? 28 : 36);
+              const lineH = 42;
+              const firstY = gridY - 40 - (hlLines.length - 1) * lineH;
+              return (
+                <text x={startX} y={firstY} textAnchor={sideAnchor}
+                      fontFamily={headingFont} fontSize={36} fontWeight={style.headingWeight ?? 700}
+                      fill={style.fg} direction={isRTL ? "rtl" : undefined}>
+                  {hlLines.map((ln, i) => (
+                    <tspan key={i} x={startX} dy={i === 0 ? 0 : lineH}>
+                      {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.accent)}
+                    </tspan>
+                  ))}
+                </text>
+              );
+            })()
           )}
           {items.map((it, i) => {
             const r = Math.floor(i / cols);
@@ -950,8 +977,9 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
                   y={headlineFirstY + i * headLineH}
                   textAnchor="middle"
                   fontFamily={headingFont} fontSize={isRTL ? 34 : 38}
-                  fontWeight={style.headingWeight ?? 700} fill={style.fg}>
-              {ln}
+                  fontWeight={style.headingWeight ?? 700} fill={style.fg}
+                  direction={isRTL ? "rtl" : undefined}>
+              {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.accent)}
             </text>
           ))}
           <line x1={cx} y1={blockTop} x2={cx} y2={blockTop + colBgH} stroke={style.border} strokeWidth={1} />
@@ -1115,7 +1143,7 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
       const headlineLines = wrapText(slide.headline || "", 26);
       const bodyLines = wrapText(slide.body || "", 38);
       const headLineH = 58;
-      const bodyLineH = 36;
+      const bodyLineH = isRTL ? 44 : 36;
       const blockH = headlineLines.length * headLineH + 40 + bodyLines.length * bodyLineH;
       const startY = cy - blockH / 2 + 40;
       // RTL right-aligns body content; LTR keeps the centered editorial feel.
@@ -1127,7 +1155,8 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
         <g>
           {headlineLines.map((ln, i) => (
             <text key={i} x={insightX} y={startY + i * headLineH} textAnchor={insightAnchor}
-                  fontFamily={headingFont} fontSize={isRTL ? 44 : 50} fontWeight={style.headingWeight ?? 700}>
+                  fontFamily={headingFont} fontSize={isRTL ? 44 : 50} fontWeight={style.headingWeight ?? 700}
+                  fill={style.fg} direction={isRTL ? "rtl" : undefined}>
               {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.accent)}
             </text>
           ))}
@@ -1150,13 +1179,31 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
       const btnH = 80;
       const iconRowH = 110;
       const headBlockH = headlineLines.length * headLineH;
-      const gapIcons = headBlockH ? 48 : 0;
-      const gapBtn = 56;
-      const totalH = headBlockH + gapIcons + iconRowH + gapBtn + btnH;
+      // Dynamic layout: optional cta_main slots between headline and icons,
+      // optional cta_sub slots between icons and the follow button.
+      const ctaMainText = (slide.cta_main || "").trim();
+      const ctaSubText  = (slide.cta_sub  || "").trim();
+      const mainLineH = 26;
+      const subLineH  = 22;
+      const mainLinesAll = ctaMainText ? wrapText(ctaMainText, isRTL ? 40 : 60) : [];
+      const mainLines = mainLinesAll.slice(0, 2);
+      const mainTruncated = mainLinesAll.length > mainLines.length;
+      const subLinesAll  = ctaSubText  ? wrapText(ctaSubText,  isRTL ? 48 : 72) : [];
+      const subLines  = subLinesAll.slice(0, 1);
+      const subTruncated = subLinesAll.length > subLines.length;
+      const mainBlockH = mainLines.length * mainLineH;
+      const subBlockH  = subLines.length  * subLineH;
+      const gapIcons   = headBlockH ? 48 : 0;
+      const gapMain    = mainBlockH ? 28 : 0;
+      const gapSub     = subBlockH ? 24 : 0;
+      const gapBtn     = 56;
+      const totalH = headBlockH + gapIcons + mainBlockH + gapMain + iconRowH + gapSub + subBlockH + gapBtn + btnH;
       const top = cy - totalH / 2;
       const startY = top + headLineH;
-      const iconRowY = top + headBlockH + gapIcons;
-      const btnY = iconRowY + iconRowH + gapBtn;
+      const mainY  = top + headBlockH + gapIcons;
+      const iconRowY = mainY + mainBlockH + gapMain;
+      const subY = iconRowY + iconRowH + gapSub;
+      const btnY = subY + subBlockH + gapBtn;
       const btnW = 420;
       const btnX = cx - btnW / 2;
       const actions = isRTL
@@ -1180,10 +1227,28 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
         <g>
           {headlineLines.map((ln, i) => (
             <text key={i} x={cx} y={startY + i * headLineH} textAnchor="middle"
-                  fontFamily={headingFont} fontSize={isRTL ? 42 : 48} fontWeight={style.headingWeight ?? 700} fill={style.fg}>
+                  fontFamily={headingFont} fontSize={isRTL ? 42 : 48} fontWeight={style.headingWeight ?? 700} fill={style.fg}
+                  direction={isRTL ? "rtl" : undefined}>
               {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.accent)}
             </text>
           ))}
+          {/* CTA main line(s) — actionable urgency text between headline and icons. */}
+          {mainLines.length > 0 && (() => {
+            const mainAnchor: "start" | "middle" | "end" = isRTL ? "end" : "start";
+            const mainX = isRTL ? (w - edgePad) : edgePad;
+            return (
+              <text x={mainX} y={mainY + mainLineH - 6} textAnchor={mainAnchor}
+                    fontFamily={bodyFont} fontSize={17} fill={style.muted}
+                    fontWeight={isRTL ? 600 : 400}
+                    direction={isRTL ? "rtl" : undefined}>
+                {mainLines.map((ln, i) => (
+                  <tspan key={i} x={mainX} dy={i === 0 ? 0 : mainLineH}>
+                    {ln}{i === mainLines.length - 1 && mainTruncated ? "…" : ""}
+                  </tspan>
+                ))}
+              </text>
+            );
+          })()}
           {/* Action icon row — Like / Comment / Share / Save */}
           {actions.map((a, i) => {
             // In RTL, reverse visual order so Like sits at the rightmost (first-read) slot.
@@ -1212,6 +1277,15 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
               </g>
             );
           })}
+          {/* CTA sub line — supporting reassurance text between icons and follow button. */}
+          {subLines.length > 0 && (
+            <text x={cx} y={subY + subLineH - 4} textAnchor="middle"
+                  fontFamily={bodyFont} fontSize={14} fill={style.muted} opacity={0.65}
+                  fontWeight={isRTL ? 600 : 400}
+                  direction={isRTL ? "rtl" : undefined}>
+              {subLines[0]}{subTruncated ? "…" : ""}
+            </text>
+          )}
           {(() => {
             // Prefer the user's real handle from the profile; fall back to any handle
             // mentioned in slide.cta_button; otherwise show a generic "Follow for more".
