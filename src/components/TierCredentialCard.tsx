@@ -371,7 +371,7 @@ export const ConceptC = forwardRef<HTMLDivElement, { data: CredentialData; size?
                   fontSize: 16,
                   color: GOLD,
                   letterSpacing: ".05em",
-                  fontFamily: "'JetBrains Mono', monospace",
+                  
                 }}
               >
                 {confPct}% confidence · growing

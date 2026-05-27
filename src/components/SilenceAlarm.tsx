@@ -161,7 +161,7 @@ const SilenceAlarm = ({ daysSinceCapture, onOpenCapture, onSwitchTab }: Props) =
                   <li key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: "var(--ink-2)" }}>
                     <span aria-hidden style={{ width: 8, height: 8, borderRadius: "50%", background: SIGNAL_ORANGE, flexShrink: 0 }} />
                     <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.title}</span>
-                    <span style={{ fontSize: 12, color: "var(--ink-3)", fontFamily: "var(--font-mono)" }}>
+                    <span style={{ fontSize: 12, color: "var(--ink-3)" }}>
                       {Math.round((s.confidence || 0) * 100)}%
                     </span>
                   </li>

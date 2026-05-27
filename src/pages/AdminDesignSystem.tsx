@@ -446,7 +446,7 @@ const AdminDesignSystem = () => {
             <div style={{ marginBottom: 8 }}>
               <AuraLogo size={28} variant="auto" withWordmark />
             </div>
-            <h1 style={{ fontSize: 28, fontWeight: 700, color: "var(--ink-7, #eee)" }}>Design system</h1>
+            <h1 style={{ fontSize: 28, fontWeight: 400, color: "var(--ink-7, #eee)" }}>Design system</h1>
             <p style={{ fontSize: 14, color: "var(--ink-5, #888)", marginTop: 4 }}>
               Edit, preview, and activate brand tokens. Reads from the design_system table.
             </p>
@@ -475,7 +475,7 @@ const AdminDesignSystem = () => {
               <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginBottom: 20 }}>
                 <div>
                   <div style={{ fontSize: 12, color: "var(--ink-5)" }}>Version</div>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: "var(--brand)" }}>v{active.version}</div>
+                  <div style={{ fontSize: 24, fontWeight: 400, color: "var(--brand)" }}>v{active.version}</div>
                 </div>
                 <div>
                   <div style={{ fontSize: 12, color: "var(--ink-5)" }}>Scope</div>

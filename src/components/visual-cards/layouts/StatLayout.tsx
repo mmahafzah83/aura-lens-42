@@ -14,12 +14,12 @@ export default function StatLayout({ style, props }: { style: CardStyleConfig; p
   return (
     <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', flex: 1, gap: 48 }}>
       <div style={{
-        fontFamily: FONTS.MONO, fontWeight: 600, fontSize: 180,
+        fontFamily: FONTS.COR, fontWeight: 400, fontSize: 180,
         lineHeight: 1, color: style.accent, letterSpacing: '-0.02em',
       }}>{value}</div>
       {unit && (
         <div style={{
-          fontFamily: FONTS.MONO, fontSize: 22, color: style.tagColor,
+          fontFamily: FONTS.DM, fontSize: 22, color: style.tagColor,
           letterSpacing: '0.2em', textTransform: 'uppercase',
         }}>{unit}</div>
       )}

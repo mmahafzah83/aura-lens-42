@@ -212,7 +212,7 @@ const CharHint = ({ value, ideal }: { value: string; ideal: number }) => {
   return (
     <div
       style={{
-        fontSize: 9,
+        fontSize: 10,
         color,
         textAlign: "right",
         marginTop: 2,
@@ -510,7 +510,7 @@ export default function ImageCardGenerator({
           <div style={{ marginBottom: 16 }}>
             {/* Title size */}
             <div style={{ marginBottom: 10 }}>
-              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ink-5)", marginBottom: 6 }}>
+              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ink-5)", marginBottom: 6 }}>
                 Title size
               </p>
               <div style={{ display: "flex", gap: 4 }}>
@@ -533,7 +533,7 @@ export default function ImageCardGenerator({
             </div>
             {/* Header size */}
             <div style={{ marginBottom: 10 }}>
-              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ink-5)", marginBottom: 6 }}>
+              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ink-5)", marginBottom: 6 }}>
                 Header size
               </p>
               <div style={{ display: "flex", gap: 4 }}>
@@ -556,7 +556,7 @@ export default function ImageCardGenerator({
             </div>
             {/* Body size */}
             <div style={{ marginBottom: 10 }}>
-              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ink-5)", marginBottom: 6 }}>
+              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ink-5)", marginBottom: 6 }}>
                 Body size
               </p>
               <div style={{ display: "flex", gap: 4 }}>
@@ -579,7 +579,7 @@ export default function ImageCardGenerator({
             </div>
             {/* Card preset */}
             <div style={{ marginBottom: 10 }}>
-              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ink-5)", marginBottom: 6 }}>
+              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ink-5)", marginBottom: 6 }}>
                 Style
               </p>
               <div style={{ display: "flex", gap: 4 }}>
@@ -589,7 +589,7 @@ export default function ImageCardGenerator({
                     onClick={() => updateCardStyle("preset", p)}
                     style={{
                       flex: 1, padding: "5px 0", borderRadius: 5, border: "0.5px solid",
-                      fontSize: 9, fontWeight: 600, cursor: "pointer",
+                      fontSize: 10, fontWeight: 600, cursor: "pointer",
                       background: activeStyle.preset === p ? "var(--brand-muted)" : "transparent",
                       borderColor: activeStyle.preset === p ? "var(--bronze-line)" : "var(--ink-3)",
                       color: activeStyle.preset === p ? "var(--brand)" : "var(--ink-5)",
@@ -603,7 +603,7 @@ export default function ImageCardGenerator({
             </div>
             {/* Accent color */}
             <div style={{ marginBottom: 10 }}>
-              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ink-5)", marginBottom: 6 }}>
+              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ink-5)", marginBottom: 6 }}>
                 Accent color
               </p>
               <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
@@ -638,7 +638,7 @@ export default function ImageCardGenerator({
             </div>
             {/* Font */}
             <div>
-              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ink-5)", marginBottom: 6 }}>
+              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ink-5)", marginBottom: 6 }}>
                 Font
               </p>
               <div style={{ display: "flex", gap: 4 }}>
@@ -871,7 +871,7 @@ function AuraWatermark({ position = "bottom-right" }: { position?: "bottom-right
   return (
     <p style={{
       position: "absolute", ...pos,
-      color: AURA.brandWatermark, fontSize: 8, fontWeight: 700,
+      color: AURA.brandWatermark, fontSize: 10, fontWeight: 700,
       letterSpacing: 3, textTransform: "uppercase",
       fontFamily: AURA.body,
     }}>AURA</p>
@@ -918,7 +918,7 @@ function NewspaperCard({ tag, hookText, editName, editRole, ledeText, isArabic }
   return (
     <div dir={arDir(isArabic)} style={auraShell}>
       <p style={{
-        fontFamily: AURA.body, fontSize: 9, fontWeight: 600, letterSpacing: "0.2em",
+        fontFamily: AURA.body, fontSize: 10, fontWeight: 600, letterSpacing: "0.2em",
         textTransform: "uppercase", color: AURA.brand, textAlign: arAlign(isArabic),
       }}>GCC Intelligence</p>
       <p style={{
@@ -950,7 +950,7 @@ function TensionSplitCard({ framePoints, editName, editRole, isArabic }: CardPro
       background: `linear-gradient(160deg, ${AURA.surface} 0%, ${AURA.surfaceAlt} 100%)`,
     }}>
       <p style={{
-        fontFamily: AURA.body, fontSize: 9, fontWeight: 600, letterSpacing: "0.2em",
+        fontFamily: AURA.body, fontSize: 10, fontWeight: 600, letterSpacing: "0.2em",
         textTransform: "uppercase", color: AURA.brand, marginBottom: 24, textAlign: arAlign(isArabic),
       }}>Three points of tension</p>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 18 }}>
@@ -1022,7 +1022,7 @@ function DarkEditorialCard({ tag, hookText, editName, editRole, bodyText, isArab
   return (
     <div dir={arDir(isArabic)} style={auraShell}>
       <p style={{
-        fontFamily: AURA.body, fontSize: 9, fontWeight: 600, letterSpacing: ".15em",
+        fontFamily: AURA.body, fontSize: 10, fontWeight: 600, letterSpacing: ".15em",
         textTransform: "uppercase", color: AURA.brand, textAlign: arAlign(isArabic),
       }}>01 / Key Insight</p>
       <p style={{
@@ -1050,7 +1050,7 @@ function ContrastFrameworkCard({ frameTitle, framePoints, editName, editRole, is
   return (
     <div dir={arDir(isArabic)} style={auraShell}>
       <p style={{
-        fontFamily: AURA.body, fontSize: 9, fontWeight: 600, letterSpacing: ".15em",
+        fontFamily: AURA.body, fontSize: 10, fontWeight: 600, letterSpacing: ".15em",
         textTransform: "uppercase", color: AURA.brand, textAlign: arAlign(isArabic),
       }}>Framework</p>
       <p style={{
@@ -1112,7 +1112,7 @@ function StatementLightCard({ tag, hookText, editName, editRole, isArabic }: Car
     <div dir={arDir(isArabic)} style={{ ...auraShell, position: "relative" }}>
       <div style={{ position: "absolute", top: 24, right: 24, width: 8, height: 8, background: AURA.brand }} />
       <p style={{
-        fontFamily: AURA.body, fontSize: 9, fontWeight: 600, letterSpacing: ".2em",
+        fontFamily: AURA.body, fontSize: 10, fontWeight: 600, letterSpacing: ".2em",
         textTransform: "uppercase", color: AURA.brand, textAlign: arAlign(isArabic),
       }}>{trunc(tag, 40)}</p>
       <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
@@ -1146,7 +1146,7 @@ function DataPointCard({ tag, hookText, editName, editRole, statValue, statConte
       <div style={{ marginTop: "auto", paddingTop: 12, background: preset.bg, padding: "20px 24px" }}>
         <p style={{ color: preset.text, fontSize: bodyFontSize, lineHeight: arBodyLh(isArabic, 1.5), marginBottom: 16, textAlign: arAlign(isArabic) }}>{trunc(hookText, 100)}</p>
         <p style={{ color: accentColor, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2, textAlign: arAlign(isArabic) }}>{trunc(editName, 30)}</p>
-        <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 2, textAlign: arAlign(isArabic) }}>{trunc(editRole, 45)}</p>
+        <p style={{ color: preset.roleCol, fontSize: 10, marginTop: 2, textAlign: arAlign(isArabic) }}>{trunc(editRole, 45)}</p>
       </div>
     </div>
   );
@@ -1158,7 +1158,7 @@ function ArabicCard({ tag, hookText, editName, editRole }: CardProps) {
     <div dir="rtl" style={{ ...auraShell, position: "relative" }}>
       <p style={{
         position: "absolute", top: 20, left: 24,
-        fontFamily: AURA.body, fontSize: 8, fontWeight: 700,
+        fontFamily: AURA.body, fontSize: 10, fontWeight: 700,
         letterSpacing: 3, textTransform: "uppercase", color: AURA.brand,
       }}>AURA</p>
       <p style={{

@@ -405,7 +405,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                       </p>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
                         {typeof item.confidence === "number" && (
-                          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: "var(--bronze)", fontWeight: 600 }}>
+                          <span style={{  fontSize: 12, color: "var(--bronze)", fontWeight: 600 }}>
                             {Math.round(item.confidence * 100)}%
                           </span>
                         )}

@@ -56,7 +56,7 @@ const Item = ({
     <div
       className="tabular-nums"
       style={{
-        fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+        
         fontSize: 22, fontWeight: 700,
         color: "var(--brand)", lineHeight: 1.375,
       }}
