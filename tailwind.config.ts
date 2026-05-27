@@ -31,6 +31,7 @@ export default {
         'body-sm': ['12px', { lineHeight: '1.5', fontWeight: '400' }],
         'label':   ['10px', { lineHeight: '1.4', letterSpacing: '0.1em', fontWeight: '600' }],
         'micro':   ['9px',  { lineHeight: '1.4', letterSpacing: '0.12em', fontWeight: '600' }],
+        'metric':  ['44px', { lineHeight: '1', letterSpacing: '-0.02em', fontWeight: '400' }],
       },
       colors: {
         border: {
