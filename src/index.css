@@ -466,6 +466,23 @@ html *:not(canvas):not(video):not(iframe) {
     letter-spacing: -0.01em;
     font-variant-numeric: tabular-nums;
   }
+  .text-section-header {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--aura-t2, hsl(var(--muted-foreground)));
+  }
+  .text-denominator {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    color: var(--aura-t3, hsl(var(--muted-foreground)));
+  }
+
+
 
   /* ── 8pt Grid Spacing ── */
   .section-gap { margin-bottom: 48px; }
@@ -1182,6 +1199,9 @@ aside .aura-theme-toggle {
   --radius-xl:  20px;
   --radius-2xl: 24px;
   --font-body:    'DM Sans', system-ui, sans-serif;
+  --font-display: 'Cormorant Garamond', serif;
+  --font-arabic:  'Cairo', 'DM Sans', sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
 
   /* DS-2 additions */
   --border:           rgba(0,0,0,0.12);
