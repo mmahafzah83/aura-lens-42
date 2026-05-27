@@ -35,6 +35,7 @@ import YourMoves, { type AuraItem } from "@/components/home/YourMoves";
 import MarketScan from "@/components/home/MarketScan";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
+import AuditCtaCard from "@/components/home/AuditCtaCard";
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
 
@@ -1847,6 +1848,9 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       )}
 
       <WeeklyIntelligenceLoopCard onSwitchTab={onSwitchTab} />
+
+      {/* Evidence Audit CTA — shows for users still on self_calibration within 14 days */}
+      <AuditCtaCard onNavigateToMyStory={() => onSwitchTab?.("identity")} />
 
       {/* Silence Alarm — substance-backed urgency when capture has paused 3+ days */}
       <div data-testid="home-silence-alarm">

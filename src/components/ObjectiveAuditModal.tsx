@@ -89,6 +89,29 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
 
       setFinalScores(newRatings);
       setShowResults(true);
+
+      // Re-run brand assessment with the freshly verified evidence scores,
+      // so positioning text reflects the new radar. Non-blocking — if this
+      // fails or stalls, the radar update is still saved.
+      (async () => {
+        try {
+          const { data: profile } = await (supabase.from("diagnostic_profiles" as any) as any)
+            .select("brand_assessment_answers")
+            .eq("user_id", user.id)
+            .maybeSingle();
+          if (profile?.brand_assessment_answers) {
+            await supabase.functions.invoke("brand-assessment", {
+              body: {
+                answers: profile.brand_assessment_answers,
+                auditScores: newRatings,
+              },
+            });
+          }
+        } catch (err) {
+          console.error("Brand assessment re-run failed:", err);
+        }
+      })();
+
       onComplete?.();
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
