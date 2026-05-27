@@ -2488,17 +2488,16 @@ const ScoreHero = ({
             }}
           >
             <div
-              className="tabular-nums"
+              className="text-metric"
               style={{
-                fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-                fontSize: 40, fontWeight: 700, color: "var(--aura-accent)", lineHeight: 1.5,
+                color: "var(--aura-accent)",
               }}
             >
               {animatedScore}
             </div>
             <div
               style={{
-                fontSize: 12, color: "var(--aura-t2)", marginTop: 4,
+                fontSize: 14, color: "var(--aura-t2)", marginTop: 4,
                 letterSpacing: "0.08em", textTransform: "uppercase",
                 display: "inline-flex", alignItems: "center", gap: 4,
               }}
