@@ -668,7 +668,7 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
             {L.myth}
           </text>
           {beliefLinesClean.map((ln, i) => (
-            <text key={i} x={startX} y={beliefStartY + i * 36} textAnchor={sideAnchor}
+            <text key={i} x={startX} y={beliefStartY + i * (isRTL ? 44 : 36)} textAnchor={sideAnchor}
                   fontFamily={bodyFont} fontSize={28} fill={style.muted} opacity={0.6}
                   fontWeight={isRTL ? 600 : 400}
                   textDecoration="line-through" style={{ textDecorationColor: `${style.muted}` }}>
@@ -691,7 +691,7 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
             const headBlockH = truthHeadlineLines.length * 56;
             return (
               <text key={`tb${i}`} x={startX}
-                    y={cy + 120 + headBlockH + 28 + i * 32}
+                    y={cy + 120 + headBlockH + 28 + i * (isRTL ? 40 : 32)}
                     textAnchor={sideAnchor}
                     fontFamily={bodyFont} fontSize={isRTL ? 22 : 22} fill={style.muted}
                     fontWeight={isRTL ? 600 : 400}>
@@ -723,7 +723,7 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
       const sourceY = cy + 100 + ctxLines.length * 36 + 24;
       return (
         <g>
-      <text x={cx} y={cy + 30} textAnchor="middle" fontFamily={style.headingFont} fontSize={200} fontWeight={900} fill={style.bigNumberColor ?? style.accent} direction="ltr">
+      <text x={cx} y={cy + 30} textAnchor="middle" fontFamily={style.headingFont} fontSize={200} fontWeight={900} fill={style.bigNumberColor ?? style.accent} direction="ltr" unicodeBidi="isolate">
             {slide.number || "—"}
           </text>
           {ctxLines.length > 0 && (
@@ -830,7 +830,7 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
           <circle cx={blockX + 56} cy={blockY + 32} r={8} fill={style.terminalDots?.[1] ?? "#eab308"} />
           <circle cx={blockX + 84} cy={blockY + 32} r={8} fill={style.terminalDots?.[2] ?? "#22c55e"} />
           {slide.terminal_file && (
-            <text x={blockX + blockW - 24} y={blockY + 38} textAnchor="end" fontFamily={style.monoFont} fontSize={18} fill={style.muted} direction="ltr">
+            <text x={blockX + blockW - 24} y={blockY + 38} textAnchor="end" fontFamily={style.monoFont} fontSize={18} fill={style.muted} direction="ltr" unicodeBidi="isolate">
               {slide.terminal_file}
             </text>
           )}
