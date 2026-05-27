@@ -977,8 +977,9 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
                   y={headlineFirstY + i * headLineH}
                   textAnchor="middle"
                   fontFamily={headingFont} fontSize={isRTL ? 34 : 38}
-                  fontWeight={style.headingWeight ?? 700} fill={style.fg}>
-              {ln}
+                  fontWeight={style.headingWeight ?? 700} fill={style.fg}
+                  direction={isRTL ? "rtl" : undefined}>
+              {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.accent)}
             </text>
           ))}
           <line x1={cx} y1={blockTop} x2={cx} y2={blockTop + colBgH} stroke={style.border} strokeWidth={1} />
