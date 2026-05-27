@@ -221,13 +221,13 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
 
   return (
     <div>
-      {/* Progress dots: 5 onboarding dots, step 3 active */}
+      {/* Progress dots: 4 onboarding dots, step 2 (index 1) active */}
       <div className="flex items-center justify-center gap-2 mb-4">
-        {[0, 1, 2, 3, 4].map((i) => (
+        {[0, 1, 2, 3].map((i) => (
           <div key={i} style={{
             width: 8, height: 8, borderRadius: 999,
-            background: i === 2 ? BRONZE : i < 2 ? "hsl(142 60% 45%)" : "transparent",
-            border: i > 2 ? "1px solid hsl(var(--border))" : "none",
+            background: i === 1 ? BRONZE : i < 1 ? "hsl(142 60% 45%)" : "transparent",
+            border: i > 1 ? "1px solid hsl(var(--border))" : "none",
           }} />
         ))}
       </div>
@@ -235,7 +235,7 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
         fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase",
         color: BRONZE, textAlign: "center", marginBottom: 24, fontWeight: 600,
       }}>
-        Step 3 of 5 — Map your strengths
+        Step 2 of 4 — Map your strengths
       </p>
 
       <AnimatePresence mode="wait" custom={direction} initial={false}>
