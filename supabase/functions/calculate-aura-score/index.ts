@@ -74,21 +74,29 @@ serve(async (req) => {
       weekly_data,
     };
 
-    // --- signal_score: count × 20 + avg confidence × 50 + theme breadth × 6 ---
-    const { data: signals } = await admin
+    // --- signal_score: quality-weighted count + theme breadth + strong-signal bonus ---
+    const { data: signalsData } = await admin
       .from("strategic_signals")
       .select("confidence, theme_tags")
       .eq("user_id", userId)
       .eq("status", "active");
-    const activeSignalCount = signals?.length ?? 0;
-    const avgConf = signals && signals.length > 0
-      ? signals.reduce((s: number, x: any) => s + Number(x.confidence || 0), 0) / signals.length
-      : 0;
-    const allTags = new Set<string>();
-    (signals || []).forEach((s: any) => (s.theme_tags || []).forEach((t: string) => allTags.add(t)));
-    const signalScore = Math.min(Math.round(
-      activeSignalCount * 20 + avgConf * 100 * 0.5 + Math.min(allTags.size, 5) * 6
-    ), 100);
+    const activeSignalsForScore = signalsData || [];
+    const confidenceSum = activeSignalsForScore.reduce(
+      (sum: number, s: any) => sum + Number(s.confidence || 0), 0,
+    );
+    const uniqueThemes = new Set<string>();
+    activeSignalsForScore.forEach((s: any) =>
+      (s.theme_tags || []).forEach((t: string) => uniqueThemes.add(t)),
+    );
+    const hasStrongSignal = activeSignalsForScore.some(
+      (s: any) => Number(s.confidence || 0) >= 0.7,
+    );
+    const signalScore = Math.min(
+      Math.round(confidenceSum * 12)
+      + Math.min(uniqueThemes.size, 5) * 4
+      + (hasStrongSignal ? 8 : 0),
+      100,
+    );
 
     // --- content_score: split imported (≤30) vs active published (≤70) ---
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
