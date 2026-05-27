@@ -1010,12 +1010,6 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
     finally { setDetecting(false); }
   };
 
-  const uniqueThemeCount = useMemo(() => {
-    const set = new Set<string>();
-    signals.forEach(s => (s.theme_tags || []).forEach(t => set.add(t.toLowerCase().trim())));
-    return set.size;
-  }, [signals]);
-
   if (loading) {
     return (
       <div style={{ padding: 16 }}>
