@@ -2387,7 +2387,7 @@ const ScoreHero = ({
   followers, impressions, engagementRate, trendLabel,
 }: {
   score: number;
-  tierName?: "Observer" | "Strategist" | "Authority" | null;
+  tierName?: "Observer" | "Explorer" | "Strategist" | "Voice" | "Presence" | null;
   nextTierName?: string | null;
   pointsToNext?: number | null;
   sector?: string | null;
@@ -2487,7 +2487,7 @@ const ScoreHero = ({
                     <p>Signal intelligence — 40%</p>
                     <p>Content presence — 40%</p>
                     <p>Capture consistency — 20%</p>
-                    <p className="mt-1 opacity-70">Observer → Strategist → Presence</p>
+                    <p className="mt-1 opacity-70">Observer → Explorer → Strategist → Voice → Presence</p>
                   </TooltipContent>
                 </UiTooltip>
               </TooltipProvider>
