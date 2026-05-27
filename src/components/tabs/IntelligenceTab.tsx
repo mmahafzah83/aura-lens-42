@@ -39,7 +39,7 @@ interface IntelligenceTabProps {
   entries: Entry[];
   onOpenChat?: (msg?: string) => void;
   onRefresh?: () => Promise<void> | void;
-  onOpenCapture?: () => void;
+  onOpenCapture?: (prefillUrl?: string) => void;
   onDraftToStudio?: (prefill: SignalDraftPrefill) => void;
 }
 
