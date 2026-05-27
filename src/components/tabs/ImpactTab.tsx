@@ -301,7 +301,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     );
     const folRowsAll = (folRes.data as any[]) || [];
     setFollowerRows(folRowsAll
-      .filter(r => Number(r.followers || 0) > 0)
+      .filter(r => Number(r.followers || 0) > 0 || r.follower_growth != null)
       .map(r => ({
         snapshot_date: r.snapshot_date,
         followers: Number(r.followers || 0),
