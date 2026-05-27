@@ -498,6 +498,8 @@ const Onboarding = () => {
           skill_ratings: scores,
           audit_results: scores,
           generated_skills: generatedSkills,
+          audit_completed_at: new Date().toISOString(),
+          audit_method: "self_calibration",
         })
         .eq("user_id", userId);
     } catch (e) {
