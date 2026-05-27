@@ -1176,8 +1176,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
   // Max engagement rate in topPosts (for inline bars)
   const maxErPct = topPosts.reduce((m, p) => {
-    const raw = Number(p.engagement_rate || 0);
-    const er = raw > 1 ? raw : raw * 100;
+    const er = Number(p.engagement_rate || 0);
     return er > m ? er : m;
   }, 0);
 
@@ -1749,9 +1748,8 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 }
               }
 
-              // Engagement rate normalization
-              const rawEr = Number(p.engagement_rate || 0);
-              const erPct = rawEr > 1 ? rawEr : rawEr * 100;
+              // Engagement rate from DB is already in percent units
+              const erPct = Number(p.engagement_rate || 0);
               const isTop = i === 0;
               const fillPct = maxErPct > 0 ? (erPct / maxErPct) * 100 : 0;
               const rankColor = isTop ? "var(--brand)" : "var(--color-text-muted)";
