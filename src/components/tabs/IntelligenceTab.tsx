@@ -1173,14 +1173,35 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                 )}
 
                 {/* SIGNAL SIDEBAR LIST */}
-                {sortedByConfidence.length > 1 && (
+                {sortedByConfidence.length > 1 && (() => {
+                  const filtered = selectedTheme
+                    ? sortedByConfidence.filter(s =>
+                        (s.theme_tags || []).some(t => t.toLowerCase().trim() === selectedTheme)
+                      )
+                    : sortedByConfidence;
+                  const selectedLabel = selectedTheme ? humanizeTheme(selectedTheme) : null;
+                  return (
                   <section style={{ marginTop: 36, paddingTop: 24, borderTop: "0.5px solid var(--color-border-tertiary, var(--surface-ink-subtle))" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
                       <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".06em", color: "var(--ink-3)" }}>SIGNALS</span>
-                      <span style={{ fontSize: 11, color: "var(--ink-3)" }}>({sortedByConfidence.length})</span>
+                      <span style={{ fontSize: 11, color: "var(--ink-3)" }}>({filtered.length}{selectedTheme ? ` of ${sortedByConfidence.length}` : ""})</span>
+                      {selectedLabel && (
+                        <button
+                          onClick={() => setSelectedTheme(null)}
+                          style={{
+                            display: "inline-flex", alignItems: "center", gap: 4,
+                            fontSize: 11, padding: "3px 8px", borderRadius: 999,
+                            background: "var(--surface-ink-raised)", color: "var(--ink-5, var(--ink))",
+                            border: "0.5px solid var(--surface-ink-subtle)", cursor: "pointer",
+                          }}
+                        >
+                          {selectedLabel}
+                          <X size={11} />
+                        </button>
+                      )}
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      {sortedByConfidence.map(s => {
+                      {filtered.map(s => {
                         const confPct = Math.round(s.confidence * 100);
                         const isSelected = selectedSignal?.id === s.id;
                         const confColor = confPct > 70 ? "var(--success, hsl(140 60% 45%))" : confPct >= 40 ? "var(--brand)" : "var(--ink-3)";
@@ -1224,7 +1245,8 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                       })}
                     </div>
                   </section>
-                )}
+                  );
+                })()}
 
                 {/* BLIND SPOTS */}
                 <EditorialBlindSpots signals={signals} onOpenCapture={onOpenCapture} />
