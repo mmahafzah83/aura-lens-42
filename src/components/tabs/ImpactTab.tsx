@@ -116,9 +116,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const [lastCaptureAll, setLastCaptureAll] = useState<Date | null>(null);
   const [totalCaptureCount, setTotalCaptureCount] = useState<number | null>(null);
 
-  // All snapshots (no range filter) for Authority Trajectory forecasting
-  const [allSnapshots, setAllSnapshots] = useState<{ score: number; created_at: string }[]>([]);
-  const [scenario, setScenario] = useState<"current" | "publish2x" | "stop">("current");
   const [topSignal, setTopSignal] = useState<string | null>(null);
 
   const [postMetricsCount, setPostMetricsCount] = useState(0);
@@ -131,7 +128,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const [showUpdateUpload, setShowUpdateUpload] = useState(false);
   const [sectorFocus, setSectorFocus] = useState<string | null>(null);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    narrative: true, forces: true, trajectory: true, content: true, posts: true, linkedin: true, followers: true,
+    narrative: true, forces: true, content: true, posts: true, linkedin: true, followers: true,
   });
   const toggleSection = (k: string) => setOpenSections(s => ({ ...s, [k]: !s[k] }));
   // Progressive disclosure: hide everything past "three forces" behind a master toggle.
