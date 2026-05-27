@@ -1031,15 +1031,15 @@ const Onboarding = () => {
     );
   }
 
-  // ───── STEP 2 ─────
-  if (step === 2) {
+  // ───── STEP 3: FIRST CAPTURE ─────
+  if (step === 3) {
     const elapsed = Date.now() - articleSearchStartRef.current;
     const stillSearching = !articleSearchDone && elapsed < 10000;
 
     if (captureSuccess) {
       return cardShell(
         <>
-          {eyebrow("Step 2 of 5 — Your first signal starts here")}
+          {eyebrow("Step 4 of 4 — Your first capture")}
           {heading("First capture complete.")}
           <p className="mb-3" style={{ fontSize: 15, lineHeight: 1.7, color: "hsl(var(--foreground))" }}>
             Aura is already detecting strategic patterns. After 3-5 more articles, your first signal emerges.
@@ -1061,14 +1061,14 @@ const Onboarding = () => {
               Aura is building your first signal.
             </p>
           </motion.div>
-          {primaryBtn(<>Continue → <ArrowRight className="w-4 h-4" /></>, () => startBreathingToCalibration())}
+          {primaryBtn(<>Continue → <ArrowRight className="w-4 h-4" /></>, () => startBreathingToCeremony())}
         </>,
       );
     }
 
     return cardShell(
       <>
-        {eyebrow("Step 2 of 5 — Your first signal starts here")}
+        {eyebrow("Step 4 of 4 — Your first capture")}
         {stillSearching ? (
           <>
             {heading("Finding something relevant in your sector...")}
@@ -1077,7 +1077,22 @@ const Onboarding = () => {
               <span className="text-sm">Aura is searching trusted sources...</span>
             </div>
             <ArticleManualPaste url={manualUrl} setUrl={setManualUrl} onSave={() => captureArticle(manualUrl)} loading={capturing} inputCls={inputCls} inputStyle={inputStyle} />
-            <div className="mt-3">{ghostLink("Skip for now", () => startBreathingToCalibration())}</div>
+            <div className="mt-4">
+              <button
+                onClick={() => goHome()}
+                className="w-full font-medium transition-all flex items-center justify-center gap-2"
+                style={{
+                  height: 44,
+                  background: "transparent",
+                  color: "hsl(var(--muted-foreground))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: 10,
+                  fontSize: 14,
+                }}
+              >
+                I'll capture later →
+              </button>
+            </div>
           </>
         ) : foundArticle ? (
           <>
@@ -1110,7 +1125,22 @@ const Onboarding = () => {
             </div>
             <div className="my-4 text-xs text-center" style={{ color: "hsl(var(--muted-foreground))" }}>Or paste your own URL:</div>
             <ArticleManualPaste url={manualUrl} setUrl={setManualUrl} onSave={() => captureArticle(manualUrl)} loading={capturing} inputCls={inputCls} inputStyle={inputStyle} compact />
-            <div className="mt-3">{ghostLink("Skip for now", () => startBreathingToCalibration())}</div>
+            <div className="mt-4">
+              <button
+                onClick={() => goHome()}
+                className="w-full font-medium transition-all flex items-center justify-center gap-2"
+                style={{
+                  height: 44,
+                  background: "transparent",
+                  color: "hsl(var(--muted-foreground))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: 10,
+                  fontSize: 14,
+                }}
+              >
+                I'll capture later →
+              </button>
+            </div>
           </>
         ) : (
           <>
@@ -1119,15 +1149,30 @@ const Onboarding = () => {
               The one you read at 11pm and thought 'this changes things'. Aura will turn it into your first signal.
             </p>
             <ArticleManualPaste url={manualUrl} setUrl={setManualUrl} onSave={() => captureArticle(manualUrl)} loading={capturing} inputCls={inputCls} inputStyle={inputStyle} />
-            <div className="mt-3">{ghostLink("I'll capture one later", () => startBreathingToCalibration())}</div>
+            <div className="mt-4">
+              <button
+                onClick={() => goHome()}
+                className="w-full font-medium transition-all flex items-center justify-center gap-2"
+                style={{
+                  height: 44,
+                  background: "transparent",
+                  color: "hsl(var(--muted-foreground))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: 10,
+                  fontSize: 14,
+                }}
+              >
+                I'll capture later →
+              </button>
+            </div>
           </>
         )}
       </>,
     );
   }
 
-  // ───── STEP 3: CALIBRATION ─────
-  if (step === 3) {
+  // ───── STEP 1: CALIBRATION ─────
+  if (step === 1) {
     return (
       <>
         <div
@@ -1154,26 +1199,26 @@ const Onboarding = () => {
             />
           </div>
         </div>
-        {breathing && <BreathingOverlay leaving={breathingLeaving} />}
+        {breathing && <BreathingOverlay leaving={breathingLeaving} message={breathingMessage} />}
       </>
     );
   }
 
-  // ───── STEP 4: BRAND ASSESSMENT ─────
+  // ───── STEP 2: BRAND ASSESSMENT ─────
   return (
     <>
       {cardShell(
         <>
-          {eyebrow("Step 4 of 5 — How the market sees you")}
+          {eyebrow("Step 3 of 4 — How the market sees you")}
           {heading("Discover your market position.")}
           <p className="mb-6" style={{ fontSize: 15, lineHeight: 1.7, color: "hsl(var(--muted-foreground))" }}>
             This 5-minute assessment reveals how a CIO in your sector would describe you to a colleague. It shapes how Aura writes your content and positions your expertise.
           </p>
           {primaryBtn(<>Discover my market position → <ArrowRight className="w-4 h-4" /></>, () => setAssessmentOpen(true))}
-          <div className="mt-3">{ghostLink("I'll do this later", () => goHome())}</div>
+          <div className="mt-3">{ghostLink("I'll do this later", () => { triggerArticleSearch(); saveProgress(3); goStep(3); })}</div>
         </>,
       )}
-      {breathing && <BreathingOverlay leaving={breathingLeaving} />}
+      {breathing && <BreathingOverlay leaving={breathingLeaving} message={breathingMessage} />}
       <BrandAssessmentModal
         open={assessmentOpen}
         onOpenChange={(o) => {
@@ -1184,7 +1229,9 @@ const Onboarding = () => {
         }}
         onNavigate={(_tab) => {
           setAssessmentOpen(false);
-          goHome();
+          triggerArticleSearch();
+          saveProgress(3);
+          goStep(3);
         }}
         sector={sectorFocus || corePractice || "your sector"}
         onComplete={async () => {
@@ -1198,7 +1245,11 @@ const Onboarding = () => {
             console.warn("welcome email failed:", e);
           }
           try { sessionStorage.setItem("aura-onboarding-just-completed", "1"); } catch {}
-          goHome();
+          // Fire the article search EF in background so results are ready by Step 3.
+          triggerArticleSearch();
+          await saveProgress(3);
+          setAssessmentOpen(false);
+          goStep(3);
         }}
       />
       {ceremony && (
@@ -1207,9 +1258,9 @@ const Onboarding = () => {
           role="dialog"
           aria-label="Aura sees who you are now"
         >
-          {/* 5 progress dots — all filled bronze */}
+          {/* 4 progress dots — all filled bronze */}
           <div style={{ display: "flex", gap: 8, marginBottom: 28 }}>
-            {[0, 1, 2, 3, 4].map((i) => (
+            {[0, 1, 2, 3].map((i) => (
               <span
                 key={i}
                 style={{
