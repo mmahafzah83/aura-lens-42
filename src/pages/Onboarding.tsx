@@ -301,7 +301,7 @@ const Onboarding = () => {
   // Fix 3: force re-render to surface the "11pm article" fallback if the
   // onboarding-find-article EF stalls past ~12s.
   useEffect(() => {
-    if (step !== 2) return;
+    if (step !== 3) return;
     if (articleSearchDone) return;
     if (!articleSearchStartRef.current) return;
     const timer = window.setTimeout(() => {
