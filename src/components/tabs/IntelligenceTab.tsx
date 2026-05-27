@@ -1181,11 +1181,10 @@ const Header = ({ entryCount, signalsCount, movesCount }: { entryCount: number; 
             display: "flex", flexDirection: "column", alignItems: "center",
             padding: "0 18px", background: "none", border: "none",
           }}>
-            <div style={{
-              fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
-              fontSize: 20, fontWeight: 500, color: s.color, lineHeight: 1,
-            }}>{s.val}</div>
-            <div style={{ fontSize: 9, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: ".06em", marginTop: 4 }}>
+            <div className="text-metric" style={{ color: s.val === 0 ? "var(--ink-3)" : s.color }}>
+              {s.val === 0 ? "—" : s.val}
+            </div>
+            <div style={{ fontSize: 11, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 4 }}>
               {s.label}
             </div>
           </div>

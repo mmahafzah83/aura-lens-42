@@ -431,7 +431,22 @@ html *:not(canvas):not(video):not(iframe) {
   .text-body { font-size: 16px; line-height: 1.6; }
   .text-meta { font-size: 14px; line-height: 1.5; color: hsl(var(--muted-foreground)); }
   .text-label { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: hsl(var(--muted-foreground) / 0.5); }
-  .text-metric { font-size: 32px; font-weight: 600; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .text-metric {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 44px;
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .text-kpi {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 36px;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+  }
 
   /* ── 8pt Grid Spacing ── */
   .section-gap { margin-bottom: 48px; }

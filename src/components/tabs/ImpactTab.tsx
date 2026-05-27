@@ -2379,17 +2379,16 @@ const ForceCard = ({
         </div>
       </div>
       <div
-        className="tabular-nums mt-1 inline-flex items-baseline gap-1.5"
+        className="text-metric mt-1 inline-flex items-baseline gap-1.5"
         style={{
-          fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-          fontSize: 30,
-          fontWeight: 700,
           color,
-          lineHeight: 1.375,
         }}
       >
         {weighted}
-        <span style={{ fontSize: 14, fontWeight: 500, color: "var(--aura-t3)" }}>
+        <span style={{
+          fontFamily: "'DM Sans', system-ui, sans-serif",
+          fontSize: 16, fontWeight: 400, color: "var(--aura-t3)",
+        }}>
           /{maxPoints}
         </span>
       </div>
@@ -2488,17 +2487,16 @@ const ScoreHero = ({
             }}
           >
             <div
-              className="tabular-nums"
+              className="text-metric"
               style={{
-                fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-                fontSize: 40, fontWeight: 700, color: "var(--aura-accent)", lineHeight: 1.5,
+                color: "var(--aura-accent)",
               }}
             >
               {animatedScore}
             </div>
             <div
               style={{
-                fontSize: 12, color: "var(--aura-t2)", marginTop: 4,
+                fontSize: 14, color: "var(--aura-t2)", marginTop: 4,
                 letterSpacing: "0.08em", textTransform: "uppercase",
                 display: "inline-flex", alignItems: "center", gap: 4,
               }}
@@ -2612,17 +2610,16 @@ const MiniKPI = ({ label, rawValue, formatter, index = 0 }: {
     }}
   >
     <div
-      className="tabular-nums"
+      className="text-kpi"
       style={{
-        fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-        fontSize: 18, fontWeight: 700, color: "var(--aura-t1)", lineHeight: 1.375,
+        color: "var(--aura-t1)",
       }}
     >
       {display}
     </div>
     <div
       style={{
-        fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase",
+        fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase",
         color: "var(--aura-t2)", marginTop: 4,
       }}
     >
@@ -2680,10 +2677,9 @@ const PillarCard = ({
         </TooltipProvider>
       </div>
       <div
-        className="tabular-nums mt-1"
+        className="text-metric mt-1"
         style={{
-          fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-          fontSize: 26, fontWeight: 700, color, lineHeight: 1.375,
+          color,
         }}
       >
         {value}
