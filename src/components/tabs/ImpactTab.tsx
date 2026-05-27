@@ -1176,8 +1176,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
   // Max engagement rate in topPosts (for inline bars)
   const maxErPct = topPosts.reduce((m, p) => {
-    const raw = Number(p.engagement_rate || 0);
-    const er = raw > 1 ? raw : raw * 100;
+    const er = Number(p.engagement_rate || 0);
     return er > m ? er : m;
   }, 0);
 
