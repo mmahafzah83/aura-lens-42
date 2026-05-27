@@ -558,7 +558,7 @@ const Landing = () => {
                   marginBottom: window.innerWidth <= 768 ? 24 : undefined,
                 }}
               >
-                <div className="font-bold shrink-0 w-12 text-[28px] md:text-[32px]" style={{ color: "var(--surface-ink-subtle)", fontFamily: "var(--font-display)" }}>{s.n}</div>
+                <div className="font-normal shrink-0 w-12 text-[28px] md:text-[32px]" style={{ color: "var(--surface-ink-subtle)", fontFamily: "var(--font-display)" }}>{s.n}</div>
                 <div>
                   <div className="text-[16px] md:text-[15px] font-medium mb-1" style={{ color: "var(--ink-7)" }}>{s.t}</div>
                   <div className="text-sm leading-[1.6]" style={{ color: "var(--ink-5)" }}>{s.d}</div>
