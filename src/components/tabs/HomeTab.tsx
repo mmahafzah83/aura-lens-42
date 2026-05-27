@@ -1710,16 +1710,15 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               </svg>
               <div
                 data-testid="home-score"
+                className="text-metric"
                 style={{
-                  fontFamily: "'Cormorant Garamond', serif",
-                  fontSize: 28, fontWeight: 500,
                   color: "hsl(var(--foreground))",
-                  lineHeight: 1.1, marginTop: -8,
+                  marginTop: -8,
                 }}
               >
                 <AnimatedScore value={score} />
               </div>
-              <div style={{ fontSize: 9, color: "hsl(var(--muted-foreground))", letterSpacing: "0.05em", display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 14, color: "hsl(var(--muted-foreground))", letterSpacing: "0.05em", display: "inline-flex", alignItems: "center", gap: 4, marginTop: 4 }}>
                 <span>of 100</span>
                 <InfoTooltip
                   label="Digital Presence Score"
@@ -1766,18 +1765,15 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                   <div key={f.key} style={{ display: "flex", flex: 1, minWidth: 0, gap: 20 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 4 }}>
-                        <span style={{
-                          fontFamily: "'Cormorant Garamond', serif",
-                          fontSize: 26, fontWeight: 500, color: f.color, lineHeight: 1,
-                        }}>
+                        <span className="text-metric" style={{ color: f.color }}>
                           {f.weighted}
                         </span>
-                        <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
+                        <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 16, color: "hsl(var(--muted-foreground))" }}>
                           /{f.max}
                         </span>
                       </div>
                       <div style={{
-                        fontSize: 11, color: "hsl(var(--muted-foreground))",
+                        fontSize: 12, color: "hsl(var(--muted-foreground))",
                         marginBottom: 6,
                       }}>
                         {f.label}
