@@ -12,10 +12,10 @@ export default function StatLayout({ style, props }: { style: CardStyleConfig; p
   const value = item.value;
   const unit = item?.label ?? '';
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', flex: 1, gap: 24 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', flex: 1, gap: 48 }}>
       <div style={{
-        fontFamily: FONTS.MONO, fontWeight: 600, fontSize: 220,
-        lineHeight: 1, color: style.accent, letterSpacing: '-0.04em',
+        fontFamily: FONTS.MONO, fontWeight: 600, fontSize: 180,
+        lineHeight: 1, color: style.accent, letterSpacing: '-0.02em',
       }}>{value}</div>
       {unit && (
         <div style={{
