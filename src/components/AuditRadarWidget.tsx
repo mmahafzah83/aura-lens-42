@@ -52,6 +52,7 @@ interface AuditRadarWidgetProps {
 const AuditRadarWidget = ({ onStartAudit, hideEditScores }: AuditRadarWidgetProps) => {
   const [auditResults, setAuditResults] = useState<Record<string, number> | null>(null);
   const [completed, setCompleted] = useState(false);
+  const [auditMethod, setAuditMethod] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; name: string; score: number; tier: string } | null>(null);
   const [editMode, setEditMode] = useState(false);
@@ -75,12 +76,18 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores }: AuditRadarWidgetProp
       if (!user) return;
 
       const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
-        .select("audit_results, audit_completed_at")
+        .select("audit_results, audit_completed_at, audit_method, skill_ratings")
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (data?.audit_completed_at && data?.audit_results) {
-        setAuditResults(data.audit_results as Record<string, number>);
+      const scores =
+        (data?.audit_results && Object.keys(data.audit_results || {}).length > 0
+          ? data.audit_results
+          : data?.skill_ratings) as Record<string, number> | null;
+      const hasScores = scores && Object.keys(scores).length > 0;
+      if (data?.audit_completed_at && hasScores) {
+        setAuditResults(scores);
+        setAuditMethod((data?.audit_method as string) || "self_calibration");
         setCompleted(true);
       }
       setLoading(false);
@@ -259,7 +266,7 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores }: AuditRadarWidgetProp
             <ShieldCheck className="w-6 h-6" style={{ color: "var(--brand)" }} />
           </div>
           <div>
-            <p className="text-sm font-medium" style={{ color: "var(--ink-7)" }}>Complete your Evidence Audit to reveal your capability radar</p>
+            <p className="text-sm font-medium" style={{ color: "var(--ink-7)" }}>Complete your capability diagnostic to reveal your radar</p>
             <p className="text-xs mt-1" style={{ color: "var(--ink-5)" }}>10 dimensions · 30 evidence questions · takes 5 minutes</p>
           </div>
           <button
@@ -267,7 +274,7 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores }: AuditRadarWidgetProp
             className="px-5 py-2.5 rounded-xl text-sm font-medium"
             style={{ background: "var(--brand)", color: "var(--ink)" }}
           >
-            Start Audit →
+            Start diagnostic →
           </button>
         </div>
       </div>
@@ -396,6 +403,28 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores }: AuditRadarWidgetProp
               <span className="w-2 h-2 rounded-full" style={{ background: "var(--ink-5)" }} />
               <span className="text-xs" style={{ color: "var(--ink-5)" }}>Mid Tier (Leadership / Commercial)</span>
             </div>
+          </div>
+
+          {/* Audit provenance */}
+          <div className="mt-3 flex items-center justify-between gap-3">
+            {auditMethod === "evidence_audit" ? (
+              <span className="text-xs font-medium inline-flex items-center gap-1.5" style={{ color: "var(--brand)" }}>
+                <ShieldCheck className="w-3.5 h-3.5" /> Evidence verified
+              </span>
+            ) : (
+              <>
+                <span className="text-xs" style={{ color: "var(--brand)" }}>Based on self-assessment</span>
+                {onStartAudit && (
+                  <button
+                    onClick={onStartAudit}
+                    className="text-xs font-medium hover:underline"
+                    style={{ color: "var(--brand)" }}
+                  >
+                    Verify with evidence →
+                  </button>
+                )}
+              </>
+            )}
           </div>
         </>
       )}
