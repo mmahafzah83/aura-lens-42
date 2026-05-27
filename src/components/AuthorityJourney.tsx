@@ -267,12 +267,12 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
                 label="Share your Presence status →"
                 ariaLabel="Share Presence tier on LinkedIn"
                 onClick={() => setShareData({
-                  name: `${data.tier_name} Tier`,
+                  name: `${data.tier_name || "New"} Tier`,
                   context: `Aura score ${data.aura_score}/100${sector ? ` · ${sector}` : ""}`,
                   earnedAt: new Date().toISOString(),
                   icon: "✦",
                   firstName,
-                  level: data.tier_name,
+                  level: data.tier_name || "New Tier",
                   sectorFocus: sector,
                 })}
               />
