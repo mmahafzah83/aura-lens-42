@@ -122,6 +122,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const [topSignal, setTopSignal] = useState<string | null>(null);
 
   const [postMetricsCount, setPostMetricsCount] = useState(0);
+  const [windowedPostCount, setWindowedPostCount] = useState(0);
   const [topPosts, setTopPosts] = useState<PostMetricRow[]>([]);
 
   const [followerRows, setFollowerRows] = useState<FollowerRow[]>([]);
