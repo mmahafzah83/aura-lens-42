@@ -188,17 +188,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     );
     setSnapshots((snapRes.data as Snapshot[]) || []);
 
-    // All-time snapshots for trajectory forecasting (no range filter)
-    const allSnapRes = await safeQuery(
-      () => supabase
-        .from("score_snapshots")
-        .select("score, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: true }),
-      { context: "Impact: all snapshots", silent: true }
-    );
-    setAllSnapshots((allSnapRes.data as { score: number; created_at: string }[]) || []);
-
     // Peak score in last 30 days for narrative
     const thirty = new Date();
     thirty.setDate(thirty.getDate() - 30);
