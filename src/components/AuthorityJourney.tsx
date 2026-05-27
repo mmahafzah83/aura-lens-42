@@ -110,7 +110,7 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
   const currentIdx = TIERS.indexOf(data.tier_name);
   const [tierMin, tierMax] = TIER_RANGES[data.tier_name];
   const inTierProgress = Math.max(0, Math.min(1, (data.aura_score - tierMin) / (tierMax - tierMin)));
-  const atAuthority = data.tier_name === "Authority";
+  const atAuthority = data.tier_name === "Presence";
 
   return (
     <section
@@ -229,7 +229,11 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
             name: `${data.tier_name} Tier`,
             context: `Aura score ${data.aura_score}/100${sector ? ` · ${sector}` : ""}`,
             earnedAt: new Date().toISOString(),
-            icon: data.tier_name === "Authority" ? "✦" : data.tier_name === "Strategist" ? "◆" : "◎",
+            icon: data.tier_name === "Presence" ? "✦"
+              : data.tier_name === "Voice" ? "✧"
+              : data.tier_name === "Strategist" ? "◆"
+              : data.tier_name === "Explorer" ? "◇"
+              : "◎",
             firstName,
             level: data.tier_name,
             sectorFocus: sector,
