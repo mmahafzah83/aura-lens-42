@@ -1160,8 +1160,12 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
               )
             ) : (
               <>
-                {/* RADAR (only when 3+ themes) */}
-                {uniqueThemeCount >= 3 && <IntelligenceRadar signals={signals} captureCount={entryCount} />}
+                {/* TERRITORY PANEL — radar (3+ themes) + sortable list */}
+                <TerritoryPanel
+                  signals={signals}
+                  selectedTheme={selectedTheme}
+                  onSelectTheme={setSelectedTheme}
+                />
 
                 {/* SIGNAL HERO */}
                 {selectedSignal && (
