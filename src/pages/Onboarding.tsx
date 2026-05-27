@@ -77,6 +77,18 @@ const Onboarding = () => {
       if (!alreadyPlayed) {
         localStorage.setItem("aura_onboarding_ceremony_seen", "true");
         setCeremony(true);
+        // Fix 4: persist completion immediately at ceremony mount so closing
+        // the tab mid-ceremony still marks onboarding complete.
+        (async () => {
+          try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user?.id) {
+              await (supabase.from("diagnostic_profiles" as any) as any)
+                .update({ onboarding_step: 5, onboarding_completed: true })
+                .eq("user_id", session.user.id);
+            }
+          } catch (e) { console.warn("ceremony-mount completion save failed:", e); }
+        })();
         return;
       }
     } catch { /* ignore — fall through to navigation */ }
@@ -257,6 +269,18 @@ const Onboarding = () => {
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [readingLi]);
 
+  // Fix 3: force re-render to surface the "11pm article" fallback if the
+  // onboarding-find-article EF stalls past ~12s.
+  useEffect(() => {
+    if (step !== 2) return;
+    if (articleSearchDone) return;
+    if (!articleSearchStartRef.current) return;
+    const timer = window.setTimeout(() => {
+      setArticleSearchDone(true);
+    }, 12000);
+    return () => clearTimeout(timer);
+  }, [step, articleSearchDone]);
+
   const goStep = (next: Step) => {
     setDirection(next > step ? 1 : -1);
     setStep(next);
@@ -380,33 +404,53 @@ const Onboarding = () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Session expired");
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-capture`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          type: "link",
-          content: url.trim(),
-          source_url: url.trim(),
-          metadata: articleMeta
-            ? {
-                title: articleMeta.title,
-                summary: articleMeta.summary,
-                source: "onboarding_exa",
-              }
-            : {},
-        }),
-      });
-      const data = await resp.json().catch(() => null);
-      if (!resp.ok && data?.error !== "duplicate_url") {
-        throw new Error(data?.error_message || data?.message || "Capture failed");
+      // Fix 1: 30s client-side timeout so a stalled EF can't trap the user.
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), 30000);
+      let timedOut = false;
+      try {
+        const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-capture`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            type: "link",
+            content: url.trim(),
+            source_url: url.trim(),
+            metadata: articleMeta
+              ? {
+                  title: articleMeta.title,
+                  summary: articleMeta.summary,
+                  source: "onboarding_exa",
+                }
+              : {},
+          }),
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        const data = await resp.json().catch(() => null);
+        if (!resp.ok && data?.error !== "duplicate_url") {
+          throw new Error(data?.error_message || data?.message || "Capture failed");
+        }
+        // ingest-capture creates the entry server-side — no client-side insert needed.
+        setCapturedTitle(articleMeta?.title || "");
+        setCaptureSuccess(true);
+        window.setTimeout(() => startBreathingToCalibration(), 3000);
+      } catch (innerErr: any) {
+        clearTimeout(timeoutId);
+        if (innerErr?.name === "AbortError") {
+          timedOut = true;
+          toast.error("Taking too long — your article is saved. We'll process it in the background.");
+          setCapturedTitle(articleMeta?.title || "");
+          setCaptureSuccess(true);
+          window.setTimeout(() => startBreathingToCalibration(), 1500);
+        } else {
+          throw innerErr;
+        }
       }
-      // ingest-capture creates the entry server-side — no client-side insert needed.
-      setCapturedTitle(articleMeta?.title || "");
-      setCaptureSuccess(true);
-      window.setTimeout(() => startBreathingToCalibration(), 3000);
+      void timedOut;
     } catch (e: any) {
       toast.error(e.message || "Couldn't capture that one");
     } finally {
