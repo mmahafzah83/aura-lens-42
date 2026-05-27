@@ -167,8 +167,8 @@ html *:not(canvas):not(video):not(iframe) {
   --shadow-bronze: 0 8px 24px -8px rgba(212,176,86,0.35);
 
   /* Type — fonts */
-  --font-display: 'Cormorant Garamond', 'Cairo', Georgia, serif;
-  --font-body: 'DM Sans', 'Cairo', system-ui, sans-serif;
+  --font-display: 'Cormorant Garamond', serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
   --font-arabic: 'Cairo', 'DM Sans', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
@@ -243,7 +243,7 @@ html *:not(canvas):not(video):not(iframe) {
   --semantic-info-light: #E6EDF3;
   --shadow-rest: 0 1px 2px rgba(20,17,12,0.06), 0 0 0 0.5px rgba(20,17,12,0.04);
   --shadow-lift: 0 8px 24px -8px rgba(20,17,12,0.12), 0 0 0 0.5px rgba(20,17,12,0.04);
-  --font-display: 'Cormorant Garamond', 'Cairo', Georgia, serif;
+  --font-display: 'Cormorant Garamond', serif;
 
   /* Missing-token shims (light) */
   --warning: #B8860B;
@@ -425,12 +425,31 @@ html *:not(canvas):not(video):not(iframe) {
 
 @layer utilities {
   /* ── Typography Scale ── */
-  .text-page-title { font-size: 34px; font-weight: 600; line-height: 1.2; font-family: var(--font-display); letter-spacing: -0.025em; }
-  .text-section-title { font-size: 24px; font-weight: 600; line-height: 1.3; font-family: var(--font-display); letter-spacing: -0.025em; }
+  .text-page-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 34px;
+    font-weight: 400;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+  }
+  .text-section-title {
+    font-size: 24px;
+    font-weight: 500;
+    line-height: 1.3;
+    font-family: var(--font-display);
+    letter-spacing: -0.025em;
+  }
   .text-card-title { font-size: 18px; font-weight: 500; line-height: 1.4; font-family: var(--font-display); letter-spacing: -0.02em; }
   .text-body { font-size: 16px; line-height: 1.6; }
   .text-meta { font-size: 14px; line-height: 1.5; color: hsl(var(--muted-foreground)); }
-  .text-label { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: hsl(var(--muted-foreground) / 0.5); }
+  .text-label {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
   .text-metric {
     font-family: 'Cormorant Garamond', serif;
     font-size: 44px;
@@ -447,6 +466,23 @@ html *:not(canvas):not(video):not(iframe) {
     letter-spacing: -0.01em;
     font-variant-numeric: tabular-nums;
   }
+  .text-section-header {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--aura-t2, hsl(var(--muted-foreground)));
+  }
+  .text-denominator {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    color: var(--aura-t3, hsl(var(--muted-foreground)));
+  }
+
+
 
   /* ── 8pt Grid Spacing ── */
   .section-gap { margin-bottom: 48px; }
@@ -1001,7 +1037,7 @@ html *:not(canvas):not(video):not(iframe) {
 }
 .aura-briefing-card > * { position: relative; z-index: 1; }
 .aura-briefing-label {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1163,6 +1199,9 @@ aside .aura-theme-toggle {
   --radius-xl:  20px;
   --radius-2xl: 24px;
   --font-body:    'DM Sans', system-ui, sans-serif;
+  --font-display: 'Cormorant Garamond', serif;
+  --font-arabic:  'Cairo', 'DM Sans', sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
 
   /* DS-2 additions */
   --border:           rgba(0,0,0,0.12);
@@ -1273,7 +1312,7 @@ html.dark .text-gray-500,
 .badge-base {
   display: inline-flex;
   align-items: center;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
