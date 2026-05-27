@@ -77,6 +77,18 @@ const Onboarding = () => {
       if (!alreadyPlayed) {
         localStorage.setItem("aura_onboarding_ceremony_seen", "true");
         setCeremony(true);
+        // Fix 4: persist completion immediately at ceremony mount so closing
+        // the tab mid-ceremony still marks onboarding complete.
+        (async () => {
+          try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user?.id) {
+              await (supabase.from("diagnostic_profiles" as any) as any)
+                .update({ onboarding_step: 5, onboarding_completed: true })
+                .eq("user_id", session.user.id);
+            }
+          } catch (e) { console.warn("ceremony-mount completion save failed:", e); }
+        })();
         return;
       }
     } catch { /* ignore — fall through to navigation */ }
