@@ -2132,24 +2132,33 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
 
 /* ============================ EDIT PANEL ============================ */
 
-function Field({ label, value, onChange, multiline = false, mono = false }:
-  { label: string; value: string; onChange: (v: string) => void; multiline?: boolean; mono?: boolean }) {
+function Field({ label, value, onChange, multiline = false, mono = false, lang = "en" }:
+  { label: string; value: string; onChange: (v: string) => void; multiline?: boolean; mono?: boolean; lang?: "en" | "ar" }) {
   const cls = "w-full mt-1 px-2.5 py-1.5 text-sm rounded-lg bg-white/5 border focus:outline-none focus:border-amber-500";
-  const style = { borderColor: "rgba(255,255,255,0.1)", fontFamily: mono ? "'JetBrains Mono', monospace" : undefined };
+  const isAr = lang === "ar";
+  const style: React.CSSProperties = {
+    borderColor: "rgba(255,255,255,0.1)",
+    fontFamily: mono
+      ? "'JetBrains Mono', monospace"
+      : (isAr ? "'Cairo', 'DM Sans', sans-serif" : undefined),
+    textAlign: isAr ? "right" : "left",
+  };
+  const dir = isAr ? "rtl" : "ltr";
   return (
     <label className="block mb-2">
       <span className="text-[11px] uppercase tracking-wider opacity-60">{label}</span>
       {multiline ? (
-        <textarea className={cls} style={{ ...style, minHeight: 70 }} value={value} onChange={e => onChange(e.target.value)} />
+        <textarea dir={dir} className={cls} style={{ ...style, minHeight: 70 }} value={value} onChange={e => onChange(e.target.value)} />
       ) : (
-        <input className={cls} style={style} value={value} onChange={e => onChange(e.target.value)} />
+        <input dir={dir} className={cls} style={style} value={value} onChange={e => onChange(e.target.value)} />
       )}
     </label>
   );
 }
 
-function EditPanel({ slide, onChange }: { slide: Slide; onChange: (p: Partial<Slide>) => void }) {
+function EditPanel({ slide, onChange, lang = "en" }: { slide: Slide; onChange: (p: Partial<Slide>) => void; lang?: "en" | "ar" }) {
   const t = slide.slide_type;
+  const F = (props: React.ComponentProps<typeof Field>) => <Field {...props} lang={lang} />;
   return (
     <div>
       <Field label="Section label" value={slide.section_label || ""} onChange={v => onChange({ section_label: v })} />
