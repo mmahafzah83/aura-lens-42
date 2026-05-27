@@ -161,7 +161,7 @@ const KnowledgeConstellation = ({ open, onClose }: KnowledgeConstellationProps) 
             <GitBranch className="w-4.5 h-4.5 text-primary" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-foreground" style={{ fontFamily: "var(--font-display)" }}>
+            <h2 className="text-lg font-normal text-foreground" style={{ fontFamily: "var(--font-display)" }}>
               Knowledge Constellation
             </h2>
             <p className="text-xs text-muted-foreground/40">Explore how your ideas connect</p>
