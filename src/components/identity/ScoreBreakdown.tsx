@@ -106,10 +106,7 @@ export default function ScoreBreakdown({ userId }: Props) {
         display: "flex", alignItems: "center", justifyContent: "space-between",
         marginBottom: 12,
       }}>
-        <div style={{
-          fontSize: 9.5, fontWeight: 600, letterSpacing: "0.12em",
-          color: "var(--ink)",
-        }}>
+        <div className="text-section-header" style={{ color: "var(--ink)" }}>
           Score breakdown
         </div>
         <TooltipProvider delayDuration={150}>
@@ -135,10 +132,7 @@ export default function ScoreBreakdown({ userId }: Props) {
             <div key={r.label}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
                 <span style={{ fontSize: 12, color: "var(--aura-t1)", opacity: 0.85 }}>{r.label}</span>
-                <span style={{
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: 12, fontWeight: 600, color: r.color,
-                }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: r.color }}>
                   {r.val}/{r.max}
                 </span>
               </div>
@@ -162,18 +156,11 @@ export default function ScoreBreakdown({ userId }: Props) {
         borderTop: "1px solid var(--vellum)",
         display: "flex", alignItems: "baseline", justifyContent: "space-between",
       }}>
-        <span style={{
-          fontSize: 12, letterSpacing: "0.12em",
-          color: "var(--ink-3)", fontWeight: 600,
-        }}>
+        <span className="text-section-header" style={{ color: "var(--ink-3)" }}>
           Total
         </span>
-        <span style={{
-          fontFamily: "'JetBrains Mono', monospace",
-          fontSize: 24, fontWeight: 700,
-          color: "var(--brand)",
-        }}>
-          {total}<span style={{ fontSize: 14, opacity: 0.6 }}>/100</span>
+        <span className="text-metric" style={{ color: "var(--brand)" }}>
+          {total}<span className="text-denominator">/100</span>
         </span>
       </div>
     </div>

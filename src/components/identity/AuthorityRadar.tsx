@@ -46,12 +46,7 @@ export default function AuthorityRadar(props: Props) {
         boxShadow: "var(--shadow-sm)",
       }}
     >
-      <div
-        style={{
-          fontSize: 9.5, fontWeight: 600, letterSpacing: "0.12em",
-          color: "var(--ink)", textTransform: "uppercase", marginBottom: 12,
-        }}
-      >
+      <div className="text-section-header" style={{ color: "var(--ink)", marginBottom: 12 }}>
         Authority radar
       </div>
       <div style={{ display: "flex", justifyContent: "center" }}>
@@ -88,9 +83,9 @@ export default function AuthorityRadar(props: Props) {
                 y={p.y}
                 textAnchor="middle"
                 dominantBaseline="middle"
-                fontSize={10}
+                fontSize={11}
                 fill="var(--ink-3)"
-                fontFamily="'JetBrains Mono', monospace"
+                fontFamily="var(--font-body)"
                 style={{ letterSpacing: "0.04em" }}
               >
                 {label.toUpperCase()}
