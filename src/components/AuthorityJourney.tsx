@@ -7,10 +7,11 @@ import InfoTooltip from "@/components/ui/InfoTooltip";
 import MilestoneShareModal, { type MilestoneShareData } from "@/components/MilestoneShareModal";
 import ShareLink from "@/components/ShareLink";
 
+type TierName = "Observer" | "Explorer" | "Strategist" | "Voice" | "Presence";
 interface AuraScoreResponse {
   aura_score: number;
-  tier_name: "Observer" | "Strategist" | "Authority";
-  tier_number: 1 | 2 | 3;
+  tier_name: TierName;
+  tier_number: 1 | 2 | 3 | 4 | 5;
   next_tier_name: string | null;
   points_to_next: number | null;
   personalized_nudge: string;
@@ -22,25 +23,35 @@ interface Props {
   data?: AuraScoreResponse | null;
 }
 
-const TIERS: AuraScoreResponse["tier_name"][] = ["Observer", "Strategist", "Authority"];
-const TIER_RANGES: Record<string, [number, number]> = {
-  Observer: [0, 35],
-  Strategist: [35, 65],
-  Authority: [65, 100],
+const TIERS: TierName[] = ["Observer", "Explorer", "Strategist", "Voice", "Presence"];
+const TIER_RANGES: Record<TierName, [number, number]> = {
+  Observer: [0, 15],
+  Explorer: [15, 35],
+  Strategist: [35, 60],
+  Voice: [60, 80],
+  Presence: [80, 100],
 };
 
-const TIER_TOOLTIPS: Record<AuraScoreResponse["tier_name"], { title: string; body: string }> = {
+const TIER_TOOLTIPS: Record<TierName, { title: string; body: string }> = {
   Observer: {
-    title: "Observer · 0–34",
-    body: "You are building your intelligence foundation. Capture articles and insights weekly to detect your first signals.",
+    title: "Observer · 0–14",
+    body: "Absorbing the market. Capture weekly to build your intelligence base.",
+  },
+  Explorer: {
+    title: "Explorer · 15–34",
+    body: "Finding patterns. Your first signals are forming from what you capture.",
   },
   Strategist: {
-    title: "Strategist · 35–64",
-    body: "You are connecting signals to strategy. Start publishing posts that reference your detected signals to build authority.",
+    title: "Strategist · 35–59",
+    body: "Connecting insights to action. Start drafting posts from your strongest signals.",
   },
-  Authority: {
-    title: "Presence · 65–100",
-    body: "You are a recognized voice in your domain. Your signals and content compound into lasting market presence.",
+  Voice: {
+    title: "Voice · 60–79",
+    body: "Shaping conversations. Your published work compounds into recognized expertise.",
+  },
+  Presence: {
+    title: "Presence · 80–100",
+    body: "The market knows you. Your signals and content sustain lasting authority.",
   },
 };
 
