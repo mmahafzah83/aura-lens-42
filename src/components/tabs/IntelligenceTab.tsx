@@ -692,13 +692,32 @@ const readingCacheKey = () => `aura_reading_list_${new Date().toISOString().slic
 
 const EditorialReadingList = ({
   signals, onOpenCapture,
-}: { signals: Signal[]; onOpenCapture?: () => void }) => {
+}: { signals: Signal[]; onOpenCapture?: (prefillUrl?: string) => void }) => {
   const [recs, setRecs] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [lastRefreshAt, setLastRefreshAt] = useState(0);
+  const [cooldownLeft, setCooldownLeft] = useState(0);
+
+  useEffect(() => {
+    if (cooldownLeft <= 0) return;
+    const t = setInterval(() => {
+      setCooldownLeft((s) => (s > 0 ? s - 1 : 0));
+    }, 1000);
+    return () => clearInterval(t);
+  }, [cooldownLeft]);
 
   const load = useCallback(async (force = false) => {
+    if (force) {
+      const since = Date.now() - lastRefreshAt;
+      if (since < 60_000) {
+        setCooldownLeft(Math.ceil((60_000 - since) / 1000));
+        return;
+      }
+      setLastRefreshAt(Date.now());
+      setCooldownLeft(60);
+    }
     setLoading(true); setError(false);
     try {
       if (!force) {
@@ -716,7 +735,7 @@ const EditorialReadingList = ({
       try { sessionStorage.setItem(readingCacheKey(), JSON.stringify(list)); } catch {}
     } catch { setError(true); }
     finally { setLoading(false); }
-  }, []);
+  }, [lastRefreshAt]);
 
   useEffect(() => { void load(false); }, [load]);
 
