@@ -40,7 +40,7 @@ const buildShareContext = (id: string, name: string, ctx: any, sectorFocus: stri
   if (id === "profile_complete") return `Professional identity configured for ${sector}`;
   if (id === "first_signal") return `First strategic signal: ${ctx?.signal_title || name}`;
   if (id === "voice_trained") return "AI voice model trained on my writing style";
-  if (id === "brand_assessment") return "Professional market position identified";
+  if (id === "brand_assessment") return "Market positioning assessed and strategic identity defined.";
   if (id === "five_signals") return `${ctx?.count ?? 5} active signals across ${sector}`;
   if (id === "sector_depth") {
     const t = Array.isArray(ctx?.themes) ? ctx.themes.length : (ctx?.theme_count ?? 5);
@@ -48,7 +48,7 @@ const buildShareContext = (id: string, name: string, ctx: any, sectorFocus: stri
   }
   if (id === "first_publish") return "First AI-assisted post published";
   if (id === "weekly_rhythm_4") return "4+ active capture weeks in the last 6 weeks";
-  return name;
+  return `Achieved: ${name}`;
 };
 
 const NEXT_DESCRIPTIONS: Record<string, string> = {

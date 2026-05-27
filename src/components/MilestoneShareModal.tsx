@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import html2canvas from "html2canvas";
-import { Download, Linkedin, X } from "lucide-react";
+import { Download, Linkedin, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export interface MilestoneShareData {
   /** Display name e.g. "Five Signals Achieved" */
@@ -37,6 +38,12 @@ const formatDate = (iso?: string | null) => {
 const MilestoneShareModal = ({ open, onClose, data }: Props) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState(false);
+  const stableData = useRef<MilestoneShareData>(data);
+  useEffect(() => {
+    if (data && data.name) {
+      stableData.current = data;
+    }
+  }, [data]);
 
   useEffect(() => {
     if (!open) return;
@@ -51,35 +58,52 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
   }, [open, onClose]);
 
   if (!open) return null;
+  if (!data && !stableData.current) return null;
+  const d: MilestoneShareData = (data && data.name) ? data : stableData.current;
 
-  const earnedLabel = data.earnedAt ? `Earned ${formatDate(data.earnedAt)}` : "";
-  const footerLine = [data.firstName, data.level].filter(Boolean).join(" · ");
-  const shareText = `I just earned the '${data.name}' milestone on Aura — ${data.context}. Building strategic intelligence in ${data.sectorFocus || "my field"}. #StrategicIntelligence #Aura`;
-
-  const generateBlob = async (): Promise<Blob | null> => {
-    if (!cardRef.current) return null;
-    const canvas = await html2canvas(cardRef.current, {
-      backgroundColor: "#111118",
-      scale: 2,
-      useCORS: true,
-      logging: false,
-    });
-    return await new Promise(res => canvas.toBlob(b => res(b), "image/png"));
-  };
+  const safeName = d.name || "Milestone achieved";
+  const safeContext = (d.context && d.context !== "undefined")
+    ? d.context
+    : "Building strategic intelligence, one step at a time.";
+  const earnedLabel = d.earnedAt
+    ? `Earned ${formatDate(d.earnedAt)}`
+    : `Earned ${new Date().toLocaleDateString()}`;
+  const footerLineRaw = [d.firstName, d.level].filter(Boolean).join(" · ");
+  const footerLine = footerLineRaw || "aura-intel.org";
+  const shareText = d.name
+    ? `Completed a new milestone: ${d.name}.\n\n${safeContext}\n\nUnderstanding your positioning is the first step to being visible where it matters.\n\n#DigitalPresence #StrategicIntelligence`
+    : `Building strategic intelligence with Aura.\n\n#DigitalPresence #StrategicIntelligence`;
 
   const handleDownload = async () => {
+    if (!cardRef.current) return;
     setBusy(true);
     try {
-      const blob = await generateBlob();
-      if (!blob) return;
+      await (document as any).fonts?.ready;
+      const canvas = await html2canvas(cardRef.current, {
+        scale: 2,
+        backgroundColor: "#111118",
+        useCORS: true,
+        logging: false,
+      });
+      const blob = await new Promise<Blob | null>(res =>
+        canvas.toBlob(b => res(b), "image/png")
+      );
+      if (!blob) {
+        toast.error("Couldn't generate the image. Try again.");
+        return;
+      }
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `aura-milestone-${data.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.png`;
+      a.download = `aura-milestone-${safeName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.png`;
       document.body.appendChild(a);
       a.click();
-      a.remove();
+      document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      toast.success("Image downloaded!");
+    } catch (err) {
+      console.error("Milestone download failed:", err);
+      toast.error("Download failed. Try again.");
     } finally {
       setBusy(false);
     }
@@ -89,6 +113,7 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
     try {
       await navigator.clipboard.writeText(shareText);
     } catch { /* ignore */ }
+    toast.success("Caption copied! LinkedIn is opening...");
     const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://aura-intel.org/request-access")}&text=${encodeURIComponent(shareText)}`;
     window.open(url, "_blank", "noopener,noreferrer");
   };
@@ -179,19 +204,17 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
               {/* Center block */}
               <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
                 <div style={{ fontSize: 48, lineHeight: 1, marginBottom: 22 }}>
-                  {data.icon || "✦"}
+                  {d.icon || "✦"}
                 </div>
                 <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, color: "#fff", fontWeight: 500, marginBottom: 14 }}>
-                  {data.name}
+                  {safeName}
                 </div>
                 <div style={{ fontSize: 14, color: "rgba(255,255,255,0.6)", maxWidth: 800, lineHeight: 1.5 }}>
-                  {data.context}
+                  {safeContext}
                 </div>
-                {earnedLabel && (
-                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 10 }}>
-                    {earnedLabel}
-                  </div>
-                )}
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 10 }}>
+                  {earnedLabel}
+                </div>
               </div>
 
               {/* Bottom: gold line + name */}
@@ -211,11 +234,77 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
           <ScaleSetter />
         </div>
 
+        {/* LinkedIn caption preview */}
+        <div style={{
+          marginTop: 16,
+          padding: "12px 16px",
+          background: "var(--color-background-secondary, #f5f3ee)",
+          borderRadius: 8,
+          position: "relative",
+        }}>
+          <div style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 8,
+          }}>
+            <span style={{
+              fontSize: 12,
+              fontWeight: 500,
+              color: "var(--ink-3, #666)",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+            }}>
+              LinkedIn caption
+            </span>
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(shareText);
+                  toast.success("Caption copied to clipboard!");
+                } catch {
+                  toast.error("Couldn't copy. Select the text manually.");
+                }
+              }}
+              style={{
+                fontSize: 12,
+                padding: "4px 12px",
+                borderRadius: 6,
+                border: "0.5px solid rgba(0,0,0,0.15)",
+                background: "transparent",
+                cursor: "pointer",
+                color: "var(--ink-3, #666)",
+              }}
+            >
+              Copy text
+            </button>
+          </div>
+          <p style={{
+            fontSize: 13,
+            lineHeight: 1.6,
+            color: "var(--ink, #111)",
+            margin: 0,
+            whiteSpace: "pre-line",
+          }}>
+            {shareText}
+          </p>
+        </div>
+
         {/* Actions */}
         <div style={{ display: "flex", gap: 10, marginTop: 18, justifyContent: "flex-end", flexWrap: "wrap" }}>
           <Button variant="outline" onClick={handleDownload} disabled={busy}>
-            <Download size={14} style={{ marginRight: 6 }} />
-            Download PNG
+            {busy ? (
+              <>
+                <Loader2 className="animate-spin" size={14} style={{ marginRight: 6 }} />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Download size={14} style={{ marginRight: 6 }} />
+                Download PNG
+              </>
+            )}
           </Button>
           <Button onClick={handleShare} disabled={busy} style={{ background: "#0A66C2", color: "#fff" }}>
             <Linkedin size={14} style={{ marginRight: 6 }} />
