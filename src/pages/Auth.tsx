@@ -374,7 +374,7 @@ const Auth = () => {
           line-height: 1;
         }
         .auth-wordmark-sub {
-          font-size: 9px;
+          font-size: 10px;
           font-weight: 600;
           letter-spacing: 0.12em;
           text-transform: uppercase;

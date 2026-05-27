@@ -455,7 +455,7 @@ function StepReveal({
     <div style={{ textAlign: "center", padding: "16px 4px 0" }}>
       <div
         style={{
-          fontSize: 9,
+          fontSize: 10,
           letterSpacing: ".3em",
           textTransform: "uppercase",
           color: GOLD,
@@ -769,7 +769,7 @@ function MoveRow({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: 9,
+          fontSize: 10,
           letterSpacing: ".15em",
           color: dot,
           fontWeight: 700,
