@@ -2158,7 +2158,6 @@ function Field({ label, value, onChange, multiline = false, mono = false, lang =
 
 function EditPanel({ slide, onChange, lang = "en" }: { slide: Slide; onChange: (p: Partial<Slide>) => void; lang?: "en" | "ar" }) {
   const t = slide.slide_type;
-  const F = (props: React.ComponentProps<typeof Field>) => <Field lang={lang} {...props} lang={lang} />;
   return (
     <div>
       <Field lang={lang} label="Section label" value={slide.section_label || ""} onChange={v => onChange({ section_label: v })} />
