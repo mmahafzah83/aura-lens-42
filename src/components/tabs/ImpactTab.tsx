@@ -116,9 +116,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const [lastCaptureAll, setLastCaptureAll] = useState<Date | null>(null);
   const [totalCaptureCount, setTotalCaptureCount] = useState<number | null>(null);
 
-  // All snapshots (no range filter) for Authority Trajectory forecasting
-  const [allSnapshots, setAllSnapshots] = useState<{ score: number; created_at: string }[]>([]);
-  const [scenario, setScenario] = useState<"current" | "publish2x" | "stop">("current");
   const [topSignal, setTopSignal] = useState<string | null>(null);
 
   const [postMetricsCount, setPostMetricsCount] = useState(0);
@@ -131,7 +128,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const [showUpdateUpload, setShowUpdateUpload] = useState(false);
   const [sectorFocus, setSectorFocus] = useState<string | null>(null);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    narrative: true, forces: true, trajectory: true, content: true, posts: true, linkedin: true, followers: true,
+    narrative: true, forces: true, content: true, posts: true, linkedin: true, followers: true,
   });
   const toggleSection = (k: string) => setOpenSections(s => ({ ...s, [k]: !s[k] }));
   // Progressive disclosure: hide everything past "three forces" behind a master toggle.
@@ -190,17 +187,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       { context: "Impact: snapshots", silent: true }
     );
     setSnapshots((snapRes.data as Snapshot[]) || []);
-
-    // All-time snapshots for trajectory forecasting (no range filter)
-    const allSnapRes = await safeQuery(
-      () => supabase
-        .from("score_snapshots")
-        .select("score, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: true }),
-      { context: "Impact: all snapshots", silent: true }
-    );
-    setAllSnapshots((allSnapRes.data as { score: number; created_at: string }[]) || []);
 
     // Peak score in last 30 days for narrative
     const thirty = new Date();
@@ -716,74 +702,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     }
     return Array.from(grouped.values());
   }, [followerSeries, publishedPosts]);
-
-  /* ── Authority Trajectory forecast ── */
-  const trajectory = useMemo(() => {
-    if (allSnapshots.length < 2) return null;
-    const first = allSnapshots[0];
-    const last = allSnapshots[allSnapshots.length - 1];
-    const firstDate = new Date(first.created_at).getTime();
-    const lastDate = new Date(last.created_at).getTime();
-    const daysBetween = Math.max(1, (lastDate - firstDate) / 86400000);
-    const currentScore = last.score;
-    // Require at least 7 snapshots AND 7 days of history before projecting.
-    if (allSnapshots.length < 7 || daysBetween < 7) {
-      return {
-        insufficient: true as const,
-        currentScore,
-        forecast30: currentScore,
-        forecast60: currentScore,
-        forecast90: currentScore,
-        trendText: "Building your trajectory — check back after one week of activity.",
-        to95Text: null as string | null,
-        has30dHistory: false,
-        has90dHistory: false,
-      };
-    }
-    const avgDailyChange = (last.score - first.score) / daysBetween;
-    let dailyChange: number;
-    if (scenario === "stop") {
-      // Stop capturing: capture component (~20pts) collapses, signals decay.
-      // Force a decline regardless of historical trend.
-      dailyChange = -Math.max(0.2, currentScore * 0.004);
-    } else {
-      const mult = scenario === "publish2x" ? 1.4 : 1;
-      dailyChange = avgDailyChange * mult;
-      // Cap aggressive projections at ±2.0 pts/day (0 → 100 in 50 days).
-      if (dailyChange > 2) dailyChange = 2;
-      if (dailyChange < -2) dailyChange = -2;
-    }
-    const clamp = (n: number) => Math.round(Math.min(100, Math.max(0, n)));
-    const spanDays = daysBetween;
-    const has30dHistory = spanDays >= 25;
-    const has90dHistory = spanDays >= 80;
-    const forecast30 = clamp(currentScore + dailyChange * 30);
-    const forecast60 = clamp(currentScore + dailyChange * 60);
-    const forecast90 = clamp(currentScore + dailyChange * 90);
-    const delta90 = forecast90 - currentScore;
-    let trendText: string;
-    if (delta90 > 0) trendText = `At current pace, your digital presence score will increase by ${delta90} pts in 90 days.`;
-    else if (delta90 < 0) trendText = `At current pace, your digital presence score will decrease by ${Math.abs(delta90)} pts in 90 days.`;
-    else trendText = `At current pace, your digital presence score will hold steady in 90 days.`;
-    if (scenario === "publish2x") trendText = trendText.replace("At current pace", "With 2× publishing");
-    if (scenario === "stop") trendText = trendText.replace("At current pace", "If you stop capturing");
-    let to95Text: string | null = null;
-    if (currentScore < 92) {
-      const needed = 95 - currentScore;
-      if (dailyChange > 0) {
-        const days = Math.ceil(needed / dailyChange);
-        const paceLabel = scenario === "current" ? "current pace" : scenario === "publish2x" ? "2× pace" : "this rate";
-        if (days > 365) {
-          to95Text = `To reach 95: you need approximately ${needed} more points. Maintain your current pace — this is a long-term investment.`;
-        } else {
-          to95Text = `To reach 95: you need approximately ${needed} more points. At ${paceLabel}: ${days} ${days === 1 ? "day" : "days"}.`;
-        }
-      } else {
-        to95Text = `To reach 95: you need approximately ${needed} more points. At ${scenario === "stop" ? "this declining rate" : "current pace"}: not reachable.`;
-      }
-    }
-    return { insufficient: false as const, currentScore, forecast30, forecast60, forecast90, trendText, to95Text, has30dHistory, has90dHistory };
-  }, [allSnapshots, scenario]);
 
   /* ── XLSX Upload ── */
   const handleUploadClick = () => fileInputRef.current?.click();
@@ -1349,7 +1267,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           </div>
           {!showDetailed && (
             <div style={{ fontSize: 12, color: "var(--ink-5)", marginTop: 4 }}>
-              6 more sections · Pillars · Trajectory · Content · Posts · Followers · Analytics
+              5 more sections · Pillars · Content · Posts · Followers · Analytics
             </div>
           )}
         </div>
@@ -1502,184 +1420,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         </div>
       </section>
 
-      {/* ─────────── TRAJECTORY SECTION (moved out of hero — relocated below Score Breakdown via render order) ─────────── */}
-      <section
-        data-impact-section="trajectory"
-        className="relative overflow-hidden"
-        style={{
-          background: "var(--surface-ink-raised)",
-          borderRadius: 14,
-          padding: "28px 28px 24px",
-          color: "var(--ink)",
-          border: "0.5px solid var(--brand-line)",
-          boxShadow: "var(--shadow-rest)",
-        }}
-      >
-
-        {/* Trajectory bar chart */}
-        {!isEmpty && trajectory && (() => {
-          // Build up to 10 bars from existing all-time snapshot scores (latest 10)
-          const recent = allSnapshots.slice(-10).map(s => s.score);
-          const bars = recent.length > 0 ? recent : [trajectory.currentScore];
-          const maxV = Math.max(...bars, 1);
-          // Color ramp: orange near-term → amber at 30d → red at 90d
-          const barColor = (i: number, n: number) => {
-            if (scenario === "stop") return "var(--danger)";
-            const t = n <= 1 ? 0 : i / (n - 1);
-            if (t < 0.5) return "var(--brand)";
-            if (t < 0.85) return "var(--warning)";
-            return "var(--danger)";
-          };
-          return (
-            <div className="relative mt-6">
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 12,
-                  marginBottom: 6,
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 600,
-                    letterSpacing: "0.1em",
-                    color: "var(--ink-3)",
-                    display: "inline-flex",
-                    alignItems: "center",
-                  }}
-                >
-                  Trajectory
-                  <InfoTooltip label="Trajectory" text="Your authority score over time." />
-                </div>
-                <div
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 2,
-                    padding: 3,
-                    borderRadius: 8,
-                    background: "var(--paper-2, rgba(255,255,255,0.04))",
-                    border: "0.5px solid var(--brand-line)",
-                  }}
-                >
-                  {ranges.map((r) => {
-                    const active = selectedDays === r;
-                    return (
-                      <button
-                        key={r}
-                        onClick={() => setSelectedDays(r)}
-                        style={{
-                          padding: "4px 10px",
-                          fontSize: 12,
-                          fontWeight: active ? 600 : 500,
-                          borderRadius: 6,
-                          background: active ? "var(--vellum)" : "transparent",
-                          color: active ? "var(--ink)" : "var(--ink-3)",
-                          boxShadow: active ? "var(--shadow-rest)" : "none",
-                          border: "none",
-                          cursor: "pointer",
-                          transition: "all 0.15s",
-                        }}
-                      >
-                        {r}D
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-              <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", marginTop: 0, marginBottom: 6, lineHeight: 1.5 }}>
-                Projected score growth based on your current activity
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "flex-end",
-                  gap: 4,
-                  height: 64,
-                }}
-              >
-                {bars.map((v, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      flex: 1,
-                      height: `${Math.max(6, (v / maxV) * 100)}%`,
-                      background: barColor(i, bars.length),
-                      borderRadius: 3,
-                      opacity: 0.92,
-                    }}
-                  />
-                ))}
-              </div>
-              <div
-                className="flex justify-between mt-2"
-                style={{ fontSize: 12, color: "var(--ink-3)" }}
-              >
-                <span>Now</span>
-                <span>30d · {trajectory.has30dHistory ? trajectory.forecast30 : "—"}</span>
-                <span>90d · {trajectory.has90dHistory ? trajectory.forecast90 : "—"}</span>
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* Scenario toggle */}
-        <div data-testid="impact-trajectory" className="relative flex flex-wrap gap-2 mt-5">
-          {([
-            { key: "current", label: "Current pace" },
-            { key: "publish2x", label: "2× publishing" },
-            { key: "stop", label: "Stop capturing" },
-          ] as const).map((b) => {
-            const active = scenario === b.key;
-            return (
-              <button
-                key={b.key}
-                type="button"
-                data-testid={
-                  b.key === "current" ? "impact-scenario-current"
-                  : b.key === "publish2x" ? "impact-scenario-2x"
-                  : "impact-scenario-stop"
-                }
-                data-active={active ? "true" : "false"}
-                onClick={() => setScenario(b.key)}
-                style={
-                  active
-                    ? {
-                        background: "var(--brand-ghost)",
-                        color: "var(--brand)",
-                        border: "0.5px solid var(--brand)",
-                        borderRadius: 8,
-                        padding: "5px 14px",
-                        fontSize: 12,
-                        fontWeight: 500,
-                      }
-                    : {
-                        background: "transparent",
-                        color: "var(--ink-3)",
-                        border: "0.5px solid var(--brand-line)",
-                        borderRadius: 8,
-                        padding: "5px 14px",
-                        fontSize: 12,
-                        fontWeight: 500,
-                      }
-                }
-              >
-                {b.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {trajectory && (
-          <div className="relative mt-4 text-[12px] space-y-1" style={{ color: "#9A958C" }}>
-            <div>{trajectory.trendText}</div>
-            {trajectory.to95Text && <div>{trajectory.to95Text}</div>}
-          </div>
-        )}
-      </section>
 
       {/* Capture Rhythm + Headline Stats removed — duplicated elsewhere. Mini KPIs now live in the Score Hero. */}
 
