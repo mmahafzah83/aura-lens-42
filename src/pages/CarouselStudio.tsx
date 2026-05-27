@@ -1186,7 +1186,9 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
           ))}
           {/* Action icon row — Like / Comment / Share / Save */}
           {actions.map((a, i) => {
-            const acx = iconStartX + i * iconStep;
+            // In RTL, reverse visual order so Like sits at the rightmost (first-read) slot.
+            const idx = isRTL ? (actions.length - 1 - i) : i;
+            const acx = iconStartX + idx * iconStep;
             const cyc = iconRowY + 30;
             return (
               <g key={`act-${i}`}>
