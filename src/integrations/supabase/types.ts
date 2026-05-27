@@ -421,6 +421,7 @@ export type Database = {
         Row: {
           audit_completed_at: string | null
           audit_interpretation: string | null
+          audit_method: string | null
           audit_results: Json | null
           avatar_url: string | null
           brand_assessment_answers: Json | null
@@ -458,6 +459,7 @@ export type Database = {
         Insert: {
           audit_completed_at?: string | null
           audit_interpretation?: string | null
+          audit_method?: string | null
           audit_results?: Json | null
           avatar_url?: string | null
           brand_assessment_answers?: Json | null
@@ -495,6 +497,7 @@ export type Database = {
         Update: {
           audit_completed_at?: string | null
           audit_interpretation?: string | null
+          audit_method?: string | null
           audit_results?: Json | null
           avatar_url?: string | null
           brand_assessment_answers?: Json | null
