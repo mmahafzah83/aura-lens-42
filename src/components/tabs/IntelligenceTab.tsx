@@ -792,16 +792,17 @@ const EditorialReadingList = ({
             Aura scans publications from McKinsey, BCG, Gartner, Deloitte, and 50+ sector-specific sources. Articles are ranked by how much they would strengthen your existing signals or close your blind spots. This is not a generic feed — every article was selected because of your specific intelligence profile.
           </ExpandablePanel>
           <button
-            onClick={() => load(true)} disabled={loading}
+            onClick={() => load(true)} disabled={loading || cooldownLeft > 0}
             style={{
               display: "inline-flex", alignItems: "center", gap: 4,
               background: "none", border: "0.5px solid var(--surface-ink-subtle)",
               borderRadius: 6, padding: "4px 10px", fontSize: 12, color: "var(--ink-3)",
-              cursor: loading ? "default" : "pointer",
+              cursor: (loading || cooldownLeft > 0) ? "default" : "pointer",
+              opacity: cooldownLeft > 0 ? 0.6 : 1,
             }}
           >
             {loading ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
-            Refresh
+            {loading ? "Refreshing…" : cooldownLeft > 0 ? `Refresh (${cooldownLeft}s)` : "Refresh"}
           </button>
         </div>
       </div>
@@ -814,18 +815,30 @@ const EditorialReadingList = ({
         <p style={{ fontSize: 12, color: "var(--ink-3)" }}><Loader2 size={12} className="inline animate-spin" /> Loading…</p>
       ) : error || recs.length === 0 ? (
         <div style={{
-          padding: 24, border: "0.5px dashed var(--surface-ink-subtle)", borderRadius: 10,
-          textAlign: "center", color: "var(--ink-3)", fontSize: 12,
-          display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
+          padding: "2rem 1rem", border: "0.5px dashed var(--surface-ink-subtle)", borderRadius: 10,
+          textAlign: "center",
+          display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
         }}>
-          <BookOpen size={16} />
-          Reading recommendations unavailable
+          <BookOpen size={16} style={{ color: "var(--ink-3)" }} />
+          <p style={{ color: "var(--aura-t2, var(--ink-3))", fontSize: 14, margin: 0, maxWidth: 420, lineHeight: 1.5 }}>
+            No verified articles found for your current intelligence gaps. Aura scans daily — check back tomorrow, or capture an article you've found yourself.
+          </p>
+          <button
+            onClick={() => onOpenCapture?.()}
+            style={{
+              background: "var(--brand)", color: "#fff", border: "none",
+              borderRadius: 6, padding: "6px 12px", fontSize: 12, fontWeight: 500, cursor: "pointer",
+            }}
+          >
+            Capture your own →
+          </button>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {recs.slice(0, expanded ? recs.length : 1).map((rec, i) => {
             const ctx = contextualMatter(rec, i);
             const domain = domainFromUrl(rec.url);
+            const titleHref = rec.url || `https://www.google.com/search?q=${encodeURIComponent(rec.title + (rec.author ? " " + rec.author : ""))}`;
             return (
               <div key={i} style={{
                 background: "var(--surface-ink-raised)", border: "0.5px solid var(--surface-ink-subtle)",
@@ -836,9 +849,16 @@ const EditorialReadingList = ({
                   fontSize: 16, fontWeight: 500, color: "var(--ink)",
                   margin: "0 0 4px", lineHeight: 1.3,
                 }}>
-                  {rec.title}
+                  <a
+                    href={titleHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: "inherit", textDecoration: "none" }}
+                  >
+                    {rec.title}
+                  </a>
                 </h4>
-                {domain && <p style={{ fontSize: 11, color: "var(--ink-3)", margin: "0 0 10px" }}>{domain}</p>}
+                {rec.url && domain && <p style={{ fontSize: 11, color: "var(--ink-3)", margin: "0 0 10px" }}>{domain}</p>}
 
                 <div style={{
                   background: "var(--color-background-secondary, var(--surface-ink-raised))",
@@ -854,7 +874,7 @@ const EditorialReadingList = ({
 
                 <div style={{ display: "flex", gap: 8 }}>
                   <button
-                    onClick={() => onOpenCapture?.()}
+                    onClick={() => onOpenCapture?.(rec.url || undefined)}
                     style={{
                       background: "var(--brand)", color: "#fff", border: "none",
                       borderRadius: 6, padding: "6px 12px", fontSize: 12, fontWeight: 500,
@@ -865,7 +885,7 @@ const EditorialReadingList = ({
                   </button>
                   {rec.url && (
                     <a
-                      href={rec.url} target="_blank" rel="noopener noreferrer"
+                      href={rec.url} target="_blank" rel="noopener noreferrer" title="Open article"
                       style={{
                         display: "inline-flex", alignItems: "center", gap: 5,
                         background: "transparent", color: "var(--ink-4)",
