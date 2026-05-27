@@ -628,10 +628,12 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
       const lines = wrapText(slide.headline || "", 22);
       const lh = isRTL ? 84 : 72;
       const startY = cy - (lines.length * lh) / 2 + 24;
+      const claimAnchor: "start" | "middle" | "end" = isRTL ? "end" : "middle";
+      const claimX = isRTL ? (w - edgePad) : cx;
       return (
         <g>
           {lines.map((ln, i) => (
-            <text key={i} x={cx} y={startY + i * lh} textAnchor="middle"
+            <text key={i} x={claimX} y={startY + i * lh} textAnchor={claimAnchor}
                   fontFamily={headingFont} fontSize={isRTL ? 52 : 60} fontWeight={style.headingWeight ?? 700}>
               {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.emphasis)}
             </text>
@@ -1091,13 +1093,15 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
       const lh = isRTL ? 76 : 64;
       const startY = cy - (lines.length * lh) / 2 + 20;
       const watermark = isRTL ? "؟" : "?";
+      const qAnchor: "start" | "middle" | "end" = isRTL ? "end" : "middle";
+      const qX = isRTL ? (w - edgePad) : cx;
       return (
         <g>
           <text x={cx} y={cy + 80} textAnchor="middle" fontFamily={headingFont} fontSize={300} fill={style.accent} opacity={0.06}>
             {watermark}
           </text>
           {lines.map((ln, i) => (
-            <text key={i} x={cx} y={startY + i * lh} textAnchor="middle"
+            <text key={i} x={qX} y={startY + i * lh} textAnchor={qAnchor}
                   fontFamily={headingFont} fontSize={isRTL ? 42 : 48}
                   fontStyle={isRTL ? "normal" : "italic"} fontWeight={style.headingWeight ?? 700}
                   fill={style.fg}>
@@ -1114,11 +1118,11 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
       const bodyLineH = 36;
       const blockH = headlineLines.length * headLineH + 40 + bodyLines.length * bodyLineH;
       const startY = cy - blockH / 2 + 40;
-      // Center INSIGHT for both LTR and RTL — matches COVER/QUESTION feel.
-      const insightX = cx;
-      const insightAnchor: "start" | "middle" | "end" = "middle";
-      const dividerX1 = cx - 30;
-      const dividerX2 = cx + 30;
+      // RTL right-aligns body content; LTR keeps the centered editorial feel.
+      const insightAnchor: "start" | "middle" | "end" = isRTL ? "end" : "middle";
+      const insightX = isRTL ? (w - edgePad) : cx;
+      const dividerX1 = isRTL ? (w - edgePad - 60) : cx - 30;
+      const dividerX2 = isRTL ? (w - edgePad) : cx + 30;
       return (
         <g>
           {headlineLines.map((ln, i) => (
@@ -1182,7 +1186,9 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
           ))}
           {/* Action icon row — Like / Comment / Share / Save */}
           {actions.map((a, i) => {
-            const acx = iconStartX + i * iconStep;
+            // In RTL, reverse visual order so Like sits at the rightmost (first-read) slot.
+            const idx = isRTL ? (actions.length - 1 - i) : i;
+            const acx = iconStartX + idx * iconStep;
             const cyc = iconRowY + 30;
             return (
               <g key={`act-${i}`}>
@@ -2031,14 +2037,14 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
               <div className="text-xs uppercase tracking-wider opacity-60">Edit · {slide?.slide_type}</div>
               <div className="text-xs opacity-50">Slide {activeIdx + 1} of {slides.length}</div>
             </div>
-            {slide && <EditPanel slide={slide} onChange={updateSlide} />}
+            {slide && <EditPanel slide={slide} onChange={updateSlide} lang={lang} />}
 
             <div className="pt-3 mt-3 border-t" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
               <div className="text-xs uppercase tracking-wider opacity-60 mb-2">Author & attribution</div>
-              <Field label="Name" value={carousel.author_name || ""} onChange={v => setCarousel({ ...carousel, author_name: v })} />
-              <Field label="Title" value={carousel.author_title || ""} onChange={v => setCarousel({ ...carousel, author_title: v })} />
-              <Field label="Handle" value={carousel.author_handle || ""} onChange={v => setCarousel({ ...carousel, author_handle: v })} />
-              <Field label="Signal attribution" value={carousel.signal_attribution || ""} onChange={v => setCarousel({ ...carousel, signal_attribution: v })} />
+              <Field lang={lang} label="Name" value={carousel.author_name || ""} onChange={v => setCarousel({ ...carousel, author_name: v })} />
+              <Field lang={lang} label="Title" value={carousel.author_title || ""} onChange={v => setCarousel({ ...carousel, author_title: v })} />
+              <Field lang={lang} label="Handle" value={carousel.author_handle || ""} onChange={v => setCarousel({ ...carousel, author_handle: v })} />
+              <Field lang={lang} label="Signal attribution" value={carousel.signal_attribution || ""} onChange={v => setCarousel({ ...carousel, signal_attribution: v })} />
             </div>
           </div>
 
@@ -2065,7 +2071,14 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                 value={carousel.linkedin_caption || ""}
                 onChange={e => setCarousel({ ...carousel, linkedin_caption: e.target.value })}
                 className="w-full px-2.5 py-1.5 text-sm rounded-lg bg-white/5 border focus:outline-none focus:border-amber-500"
-                style={{ borderColor: "rgba(255,255,255,0.1)", minHeight: 130, resize: "vertical" }}
+                dir={lang === "ar" ? "rtl" : "ltr"}
+                style={{
+                  borderColor: "rgba(255,255,255,0.1)",
+                  minHeight: 130,
+                  resize: "vertical",
+                  fontFamily: lang === "ar" ? "'Cairo', 'DM Sans', sans-serif" : undefined,
+                  textAlign: lang === "ar" ? "right" : "left",
+                }}
               />
               {carousel.hashtags && carousel.hashtags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 pt-1">
@@ -2126,62 +2139,70 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
 
 /* ============================ EDIT PANEL ============================ */
 
-function Field({ label, value, onChange, multiline = false, mono = false }:
-  { label: string; value: string; onChange: (v: string) => void; multiline?: boolean; mono?: boolean }) {
+function Field({ label, value, onChange, multiline = false, mono = false, lang = "en" }:
+  { label: string; value: string; onChange: (v: string) => void; multiline?: boolean; mono?: boolean; lang?: "en" | "ar" }) {
   const cls = "w-full mt-1 px-2.5 py-1.5 text-sm rounded-lg bg-white/5 border focus:outline-none focus:border-amber-500";
-  const style = { borderColor: "rgba(255,255,255,0.1)", fontFamily: mono ? "'JetBrains Mono', monospace" : undefined };
+  const isAr = lang === "ar";
+  const style: React.CSSProperties = {
+    borderColor: "rgba(255,255,255,0.1)",
+    fontFamily: mono
+      ? "'JetBrains Mono', monospace"
+      : (isAr ? "'Cairo', 'DM Sans', sans-serif" : undefined),
+    textAlign: isAr ? "right" : "left",
+  };
+  const dir = isAr ? "rtl" : "ltr";
   return (
     <label className="block mb-2">
       <span className="text-[11px] uppercase tracking-wider opacity-60">{label}</span>
       {multiline ? (
-        <textarea className={cls} style={{ ...style, minHeight: 70 }} value={value} onChange={e => onChange(e.target.value)} />
+        <textarea dir={dir} className={cls} style={{ ...style, minHeight: 70 }} value={value} onChange={e => onChange(e.target.value)} />
       ) : (
-        <input className={cls} style={style} value={value} onChange={e => onChange(e.target.value)} />
+        <input dir={dir} className={cls} style={style} value={value} onChange={e => onChange(e.target.value)} />
       )}
     </label>
   );
 }
 
-function EditPanel({ slide, onChange }: { slide: Slide; onChange: (p: Partial<Slide>) => void }) {
+function EditPanel({ slide, onChange, lang = "en" }: { slide: Slide; onChange: (p: Partial<Slide>) => void; lang?: "en" | "ar" }) {
   const t = slide.slide_type;
   return (
     <div>
-      <Field label="Section label" value={slide.section_label || ""} onChange={v => onChange({ section_label: v })} />
+      <Field lang={lang} label="Section label" value={slide.section_label || ""} onChange={v => onChange({ section_label: v })} />
       {t !== "QUESTION" && t !== "BIG_NUMBER" && t !== "TERMINAL" && (
         <>
-          <Field label="Headline" value={slide.headline || ""} onChange={v => onChange({ headline: v })} multiline />
-          <Field label="Headline accent (word to highlight)" value={slide.headline_accent || ""} onChange={v => onChange({ headline_accent: v })} />
+          <Field lang={lang} label="Headline" value={slide.headline || ""} onChange={v => onChange({ headline: v })} multiline />
+          <Field lang={lang} label="Headline accent (word to highlight)" value={slide.headline_accent || ""} onChange={v => onChange({ headline_accent: v })} />
         </>
       )}
       {(t === "COVER" || t === "REFRAME" || t === "INSIGHT") && (
-        <Field label={t === "REFRAME" ? "The truth" : "Body / subtitle"} value={slide.body || ""} onChange={v => onChange({ body: v })} multiline />
+        <Field lang={lang} label={t === "REFRAME" ? "The truth" : "Body / subtitle"} value={slide.body || ""} onChange={v => onChange({ body: v })} multiline />
       )}
       {t === "BIG_NUMBER" && (
         <>
-          <Field label="Number" value={slide.number || ""} onChange={v => onChange({ number: v })} mono />
-          <Field label="Context" value={slide.number_context || ""} onChange={v => onChange({ number_context: v })} multiline />
-          <Field label="Source" value={slide.number_source || ""} onChange={v => onChange({ number_source: v })} />
+          <Field lang={lang} label="Number" value={slide.number || ""} onChange={v => onChange({ number: v })} mono />
+          <Field lang={lang} label="Context" value={slide.number_context || ""} onChange={v => onChange({ number_context: v })} multiline />
+          <Field lang={lang} label="Source" value={slide.number_source || ""} onChange={v => onChange({ number_source: v })} />
         </>
       )}
       {t === "TERMINAL" && (
         <>
-          <Field label="Filename" value={slide.terminal_file || ""} onChange={v => onChange({ terminal_file: v })} mono />
-          <Field label="Lines (one per line, [bracket] for accent)" value={(slide.terminal_lines || []).join("\n")}
+          <Field lang={lang} label="Filename" value={slide.terminal_file || ""} onChange={v => onChange({ terminal_file: v })} mono />
+          <Field lang={lang} label="Lines (one per line, [bracket] for accent)" value={(slide.terminal_lines || []).join("\n")}
                  onChange={v => onChange({ terminal_lines: v.split("\n") })} multiline mono />
-          <Field label="Punchline" value={slide.terminal_punchline || ""} onChange={v => onChange({ terminal_punchline: v })} mono />
+          <Field lang={lang} label="Punchline" value={slide.terminal_punchline || ""} onChange={v => onChange({ terminal_punchline: v })} mono />
         </>
       )}
       {t === "GRID" && (
-        <Field label="Grid items (one per line)" value={(slide.grid_items || []).join("\n")}
+        <Field lang={lang} label="Grid items (one per line)" value={(slide.grid_items || []).join("\n")}
                onChange={v => onChange({ grid_items: v.split("\n").filter(x => x.trim()) })} multiline />
       )}
       {t === "COMPARE" && (
         <>
-          <Field label="Left title" value={slide.compare_left_title || ""} onChange={v => onChange({ compare_left_title: v })} />
-          <Field label="Left items (one per line)" value={(slide.compare_left_items || []).join("\n")}
+          <Field lang={lang} label="Left title" value={slide.compare_left_title || ""} onChange={v => onChange({ compare_left_title: v })} />
+          <Field lang={lang} label="Left items (one per line)" value={(slide.compare_left_items || []).join("\n")}
                  onChange={v => onChange({ compare_left_items: v.split("\n").filter(x => x.trim()) })} multiline />
-          <Field label="Right title" value={slide.compare_right_title || ""} onChange={v => onChange({ compare_right_title: v })} />
-          <Field label="Right items (one per line)" value={(slide.compare_right_items || []).join("\n")}
+          <Field lang={lang} label="Right title" value={slide.compare_right_title || ""} onChange={v => onChange({ compare_right_title: v })} />
+          <Field lang={lang} label="Right items (one per line)" value={(slide.compare_right_items || []).join("\n")}
                  onChange={v => onChange({ compare_right_items: v.split("\n").filter(x => x.trim()) })} multiline />
         </>
       )}
@@ -2215,14 +2236,14 @@ function EditPanel({ slide, onChange }: { slide: Slide; onChange: (p: Partial<Sl
         </div>
       )}
       {t === "QUESTION" && (
-        <Field label="Question" value={slide.question_text || slide.headline || ""}
+        <Field lang={lang} label="Question" value={slide.question_text || slide.headline || ""}
                onChange={v => onChange({ question_text: v, headline: v })} multiline />
       )}
       {t === "CTA" && (
         <>
-          <Field label="Main CTA" value={slide.cta_main || ""} onChange={v => onChange({ cta_main: v })} />
-          <Field label="Sub CTA" value={slide.cta_sub || ""} onChange={v => onChange({ cta_sub: v })} />
-          <Field label="Button text" value={slide.cta_button || ""} onChange={v => onChange({ cta_button: v })} />
+          <Field lang={lang} label="Main CTA" value={slide.cta_main || ""} onChange={v => onChange({ cta_main: v })} />
+          <Field lang={lang} label="Sub CTA" value={slide.cta_sub || ""} onChange={v => onChange({ cta_sub: v })} />
+          <Field lang={lang} label="Button text" value={slide.cta_button || ""} onChange={v => onChange({ cta_button: v })} />
         </>
       )}
     </div>
