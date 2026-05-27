@@ -1682,7 +1682,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                 <span>{sectorFocus ? `${sectorFocus} · ` : ""}{tier} tier</span>
                 <InfoTooltip
                   label="Your tier"
-                  text="Observer (0–34): building foundation. Strategist (35–64): patterns forming. Presence (65–100): recognized in your field."
+                  text="Observer (0–14): absorbing the market. Explorer (15–34): finding patterns. Strategist (35–59): connecting insights to action. Voice (60–79): shaping conversations. Presence (80–100): the market knows you."
                   side="bottom"
                   triggerSize={14}
                 />
