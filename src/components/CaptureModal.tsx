@@ -1144,7 +1144,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                   resize: "none",
                   outline: "none",
                   transition: "all 150ms ease",
-                  fontFamily: "'DM Sans', system-ui, sans-serif",
+                  
                 }}
               />
               {content.length > 12000 && (
@@ -1425,7 +1425,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                       color: "var(--ink)",
                       resize: "none",
                       outline: "none",
-                      fontFamily: "'DM Sans', system-ui, sans-serif",
+                      
                     }}
                   />
                 </div>
@@ -1452,7 +1452,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                 border: "none",
                 borderRadius: 12,
                 padding: 14,
-                fontFamily: "'DM Sans', system-ui, sans-serif",
+                
                 fontSize: 14,
                 fontWeight: 600,
                 display: "flex",
