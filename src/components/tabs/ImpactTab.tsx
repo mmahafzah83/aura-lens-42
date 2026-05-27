@@ -1298,7 +1298,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               { key: "signal", label: "Signal", rawValue: signalScore, weight: 0.40, maxPoints: 40,
                 color: "var(--aura-accent)",
                 hint: topSignal ? `Top: ${topSignal}` : "Build signals from diverse sources",
-                tooltip: "How deep your intelligence runs. Based on signals count, confidence, and territory breadth. Capture from diverse sources to grow.",
+                tooltip: "How deep your market intelligence runs. Based on how many signals you have, their strength, and how broadly they cover your territory. Having at least one strong signal gives a bonus.",
                 status: signalScore >= 70 ? "Growing" : signalScore >= 40 ? "Build more" : "Needs action" },
               { key: "content", label: "Content", rawValue: contentScore, weight: 0.40, maxPoints: 40,
                 color: "var(--aura-blue)",
@@ -1309,14 +1309,14 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     ? `${imp} imported · ${pub} published this month`
                     : `${pub} published this month`;
                 })(),
-                tooltip: "Publishing activity. Imports = baseline (max 30pts). New Aura-published posts = active (max 70pts). Publish signal-driven content to grow.",
+                tooltip: "Your publishing activity. Imported LinkedIn history is your foundation (up to 15 points). Publishing new content from your signals is what grows this score (up to 85 points). Resets monthly.",
                 status: contentScore >= 70 ? "Growing" : contentScore >= 40 ? "Build more" : "Needs action" },
               { key: "consistency", label: "Consistency", rawValue: captureScore, weight: 0.20, maxPoints: 20,
                 color: "var(--aura-positive)",
                 hint: daysSinceLastAll === null ? "No captures yet"
                   : daysSinceLastAll === 0 ? "Captured today"
                   : `${daysSinceLastAll}d since last capture`,
-                tooltip: "Weekly capture streak over last 4 weeks. 1 capture/week maintains it. Miss a week and it drops immediately.",
+                tooltip: "Your capture rhythm. Recent weeks count more (60%), but your long-term consistency also matters (40%). Capture at least once per week to keep your intelligence fresh.",
                 status: captureScore >= 70 ? "Growing" : captureScore >= 40 ? "Build more" : "Needs action" },
             ]).map(c => (
               <ForceCard key={c.key} {...c} />

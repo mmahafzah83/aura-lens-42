@@ -120,9 +120,9 @@ export default function ScoreBreakdown({ userId }: Props) {
               </button>
             </TooltipTrigger>
             <TooltipContent side="bottom" align="end" className="max-w-xs text-xs">
-              <p><strong>Signal (40%)</strong>: intelligence depth from captures.</p>
-              <p className="mt-1"><strong>Content (40%)</strong>: imports give baseline max 30, new posts give max 70.</p>
-              <p className="mt-1"><strong>Consistency (20%)</strong>: weekly capture streak over 4 weeks.</p>
+              <p><strong>Signal (40%)</strong>: how many signals you have, their strength, and territory breadth.</p>
+              <p className="mt-1"><strong>Content (40%)</strong>: imported history is your foundation (up to 15 points). New signal-driven content grows this (up to 85 points). Resets monthly.</p>
+              <p className="mt-1"><strong>Consistency (20%)</strong>: your capture rhythm. Recent weeks count more (60%), long-term consistency also matters (40%).</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

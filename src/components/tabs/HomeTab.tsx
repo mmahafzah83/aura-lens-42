@@ -1682,7 +1682,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                 <span>{sectorFocus ? `${sectorFocus} · ` : ""}{tier} tier</span>
                 <InfoTooltip
                   label="Your tier"
-                  text="Observer (0–14): absorbing the market. Explorer (15–34): finding patterns. Strategist (35–59): connecting insights to action. Voice (60–79): shaping conversations. Presence (80–100): the market knows you."
+                  text={"Your Digital Presence Score measures three forces: Signal strength (40%), Content published (40%), and Weekly rhythm (20%).\n\nObserver (0-14): absorbing the market.\n\nExplorer (15-34): finding patterns.\n\nStrategist (35-59): connecting insights to action.\n\nVoice (60-79): shaping conversations.\n\nPresence (80-100): the market knows you before they meet you."}
                   side="bottom"
                   triggerSize={14}
                 />
@@ -1723,7 +1723,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                 <span>of 100</span>
                 <InfoTooltip
                   label="Digital Presence Score"
-                  text="Combines signal depth (40%), published content (40%), and capture consistency (20%). Updates automatically as you use Aura."
+                  text="Your Digital Presence Score measures three forces: Signal strength (40%), Content published (40%), and Weekly rhythm (20%). Updates automatically as you use Aura."
                   side="bottom"
                   align="right"
                   triggerSize={13}
