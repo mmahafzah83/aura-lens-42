@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      audience_demographics: {
+        Row: {
+          category: string
+          id: string
+          imported_at: string | null
+          percentage: string
+          percentage_numeric: number | null
+          source_type: string | null
+          user_id: string
+          value: string
+        }
+        Insert: {
+          category: string
+          id?: string
+          imported_at?: string | null
+          percentage: string
+          percentage_numeric?: number | null
+          source_type?: string | null
+          user_id: string
+          value: string
+        }
+        Update: {
+          category?: string
+          id?: string
+          imported_at?: string | null
+          percentage?: string
+          percentage_numeric?: number | null
+          source_type?: string | null
+          user_id?: string
+          value?: string
+        }
+        Relationships: []
+      }
       aura_conversation_memory: {
         Row: {
           actions_committed: string[] | null
@@ -1006,6 +1039,7 @@ export type Database = {
           format_breakdown: Json
           id: string
           impressions: number
+          members_reached: number | null
           post_count: number
           posts_count: number
           reactions: number
@@ -1017,6 +1051,7 @@ export type Database = {
           tone_analysis: Json
           top_format: string | null
           top_topic: string | null
+          total_impressions_annual: number | null
           user_id: string
         }
         Insert: {
@@ -1031,6 +1066,7 @@ export type Database = {
           format_breakdown?: Json
           id?: string
           impressions?: number
+          members_reached?: number | null
           post_count?: number
           posts_count?: number
           reactions?: number
@@ -1042,6 +1078,7 @@ export type Database = {
           tone_analysis?: Json
           top_format?: string | null
           top_topic?: string | null
+          total_impressions_annual?: number | null
           user_id: string
         }
         Update: {
@@ -1056,6 +1093,7 @@ export type Database = {
           format_breakdown?: Json
           id?: string
           impressions?: number
+          members_reached?: number | null
           post_count?: number
           posts_count?: number
           reactions?: number
@@ -1067,6 +1105,7 @@ export type Database = {
           tone_analysis?: Json
           top_format?: string | null
           top_topic?: string | null
+          total_impressions_annual?: number | null
           user_id?: string
         }
         Relationships: []

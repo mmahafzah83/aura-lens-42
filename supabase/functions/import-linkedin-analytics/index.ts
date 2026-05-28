@@ -262,12 +262,113 @@ Deno.serve(async (req) => {
       }
     }
 
+    /* ───────── SHEET 4: DEMOGRAPHICS ───────── */
+    const demoSheet = findSheet("DEMOGRAPHICS", "Demographics");
+    let demoRows = 0;
+    if (demoSheet) {
+      const rows = XLSX.utils.sheet_to_json<any[]>(demoSheet, { header: 1, raw: true, defval: "" });
+
+      // Full replace on each upload
+      await admin.from("audience_demographics").delete().eq("user_id", userId);
+
+      const demoPayloads: Array<{
+        user_id: string;
+        category: string;
+        value: string;
+        percentage: string;
+        percentage_numeric: number;
+        source_type: string;
+      }> = [];
+
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        if (!row || row.length < 3) continue;
+        const category = String(row[0] ?? "").trim();
+        const value = String(row[1] ?? "").trim();
+        const pctStr = String(row[2] ?? "").trim();
+
+        if (!category || !value || !pctStr) continue;
+
+        let pctNum = 0.5;
+        if (pctStr.includes("<")) {
+          pctNum = 0.5;
+        } else {
+          const parsed = parseFloat(pctStr.replace("%", ""));
+          if (!isNaN(parsed)) pctNum = parsed;
+        }
+
+        demoPayloads.push({
+          user_id: userId,
+          category,
+          value,
+          percentage: pctStr,
+          percentage_numeric: pctNum,
+          source_type: "linkedin_export",
+        });
+      }
+
+      if (demoPayloads.length > 0) {
+        const { error: demoErr } = await admin
+          .from("audience_demographics")
+          .insert(demoPayloads);
+        if (!demoErr) demoRows = demoPayloads.length;
+      }
+    }
+
+    /* ───────── SHEET 5: DISCOVERY ───────── */
+    const discSheet = findSheet("DISCOVERY", "Discovery");
+    if (discSheet) {
+      const rows = XLSX.utils.sheet_to_json<any[]>(discSheet, { header: 1, raw: true, defval: "" });
+
+      let annualImpressions = 0;
+      let membersReached = 0;
+
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        if (!row) continue;
+        const label = String(row[0] ?? "").trim().toLowerCase();
+        const val = Math.round(toNum(row[1]));
+
+        if (label.includes("members") || label.includes("reached")) {
+          membersReached = val;
+        } else if (label.includes("impression")) {
+          annualImpressions = val;
+        }
+      }
+
+      if (annualImpressions > 0 || membersReached > 0) {
+        const { data: todayRow } = await admin
+          .from("influence_snapshots")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("snapshot_date", today)
+          .maybeSingle();
+
+        if (todayRow?.id) {
+          const discPayload: Record<string, unknown> = {};
+          if (membersReached > 0) discPayload.members_reached = membersReached;
+          if (annualImpressions > 0) discPayload.total_impressions_annual = annualImpressions;
+          await admin.from("influence_snapshots").update(discPayload).eq("id", todayRow.id);
+        } else {
+          const discPayload: Record<string, unknown> = {
+            user_id: userId,
+            snapshot_date: today,
+            source_type: "linkedin_export",
+          };
+          if (membersReached > 0) discPayload.members_reached = membersReached;
+          if (annualImpressions > 0) discPayload.total_impressions_annual = annualImpressions;
+          await admin.from("influence_snapshots").insert(discPayload);
+        }
+      }
+    }
+
     return json({
       success: true,
       imported: {
         engagement_rows: engagementRows,
         follower_rows: followerRows,
         post_rows: postRows,
+        demographics_rows: demoRows,
       },
       total_followers: totalFollowers,
     });
