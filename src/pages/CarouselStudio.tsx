@@ -1136,7 +1136,7 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
       const lh = isRTL ? 76 : 64;
       const startY = cy - (lines.length * lh) / 2 + 20;
       const watermark = isRTL ? "؟" : "?";
-      const qAnchor: "start" | "middle" | "end" = isRTL ? "end" : "middle";
+      const qAnchor: "start" | "middle" | "end" = isRTL ? "start" : "middle";
       const qX = isRTL ? (w - edgePad) : cx;
       return (
         <g>
@@ -1145,6 +1145,7 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
           </text>
           {lines.map((ln, i) => (
             <text key={i} x={qX} y={startY + i * lh} textAnchor={qAnchor}
+                  direction={isRTL ? "rtl" : undefined}
                   fontFamily={headingFont} fontSize={isRTL ? 42 : 48}
                   fontStyle={isRTL ? "normal" : "italic"} fontWeight={style.headingWeight ?? 700}
                   fill={style.fg}>
