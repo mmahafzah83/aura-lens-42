@@ -1341,6 +1341,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         impressions={periodImpressions}
         engagementRate={periodEngagementRate}
         trendLabel={trendLabel}
+        selectedDays={selectedDays}
+        impChange={impChange}
+        engChange={engChange}
       />
 
       {/* ─────────── 3. AI NARRATIVE BRIEFING ─────────── */}
