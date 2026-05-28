@@ -44,7 +44,7 @@ interface HomeTabProps {
   onOpenChat?: (msg?: string) => void;
   onRefresh?: () => Promise<void> | void;
   onNavigateToSignal?: (signalId: string) => void;
-  onOpenCapture?: () => void;
+  onOpenCapture?: (prefillUrl?: string, prefillText?: string) => void;
   onSwitchTab?: (tab: TabValue) => void;
   onDraftToStudio?: (prefill: any) => void;
 }
@@ -2439,7 +2439,18 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       </div>
 
       {/* TIER 2 — Market scan (from daily-briefing) */}
-      <MarketScan onOpenCapture={onOpenCapture} onSwitchTab={onSwitchTab} />
+      <MarketScan
+        onOpenCapture={onOpenCapture}
+        onSwitchTab={onSwitchTab}
+        onDraftPost={(prefill) => {
+          onDraftToStudio?.({
+            topic: prefill.topic,
+            context: prefill.context,
+            sourceType: "market_scan",
+            sourceTitle: "Market Scan",
+          });
+        }}
+      />
       </>)}
 
       {scoreJumpShareData && (
