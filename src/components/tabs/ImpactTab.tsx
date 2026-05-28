@@ -1345,6 +1345,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         selectedDays={selectedDays}
         impChange={impChange}
         engChange={engChange}
+        followerChange={followerChange}
       />
 
       {/* ─────────── 3. AI NARRATIVE BRIEFING ─────────── */}
@@ -2692,7 +2693,7 @@ const ForceCard = ({
 const ScoreHero = ({
   score, tierName, nextTierName, pointsToNext, sector,
   followers, impressions, engagementRate, trendLabel,
-  selectedDays, impChange, engChange,
+  selectedDays, impChange, engChange, followerChange,
 }: {
   score: number;
   tierName?: "Observer" | "Explorer" | "Strategist" | "Voice" | "Presence" | null;
@@ -2706,6 +2707,7 @@ const ScoreHero = ({
   selectedDays: RangeDays;
   impChange: number | null;
   engChange: number | null;
+  followerChange: number | null;
 }) => {
   const pct = Math.max(0, Math.min(100, Math.round(score)));
   const r = 64;
@@ -2855,7 +2857,7 @@ const ScoreHero = ({
           {/* Mini KPIs */}
           <div className="grid grid-cols-3 gap-2">
             <MiniKPI index={0} label="Followers" rawValue={followers} formatter={(n) => fmt(n)}
-              selectedDays={selectedDays} change={null} />
+              selectedDays={selectedDays} change={followerChange} />
             <MiniKPI index={1} label="Impressions" rawValue={impressions} formatter={(n) => fmt(n)}
               selectedDays={selectedDays} change={impChange} />
             <MiniKPI index={2} label="Avg Engagement" rawValue={engagementRate} formatter={(n) => `${n.toFixed(1)}%`}
@@ -2877,7 +2879,22 @@ const PeriodComparison = ({ change, selectedDays }: { change: number | null; sel
         <span style={{ color: "var(--color-text-secondary)" }}>● 0%</span>
       ) : (
         <span style={{ color: isUp ? "var(--success)" : "var(--danger)", fontWeight: 600 }}>
-          {isUp ? "▲" : "▼"} {change > 0 ? "+" : ""}{change.toFixed(1)}%
+          {(() => {
+            const abs = Math.abs(change);
+            if (abs > 999) {
+              const multiplier = (change > 0 ? change : -change) / 100;
+              return (
+                <>
+                  {isUp ? "▲" : "▼"} {multiplier.toFixed(0)}× {isUp ? "growth" : "decline"}
+                </>
+              );
+            }
+            return (
+              <>
+                {isUp ? "▲" : "▼"} {change > 0 ? "+" : ""}{change.toFixed(1)}%
+              </>
+            );
+          })()}
         </span>
       )}
       <span style={{ color: "var(--color-text-muted)" }}>vs. prior {selectedDays}d</span>
