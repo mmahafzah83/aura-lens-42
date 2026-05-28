@@ -84,6 +84,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [auditOpen, setAuditOpen] = useState(false);
+  const [credentialOpen, setCredentialOpen] = useState(false);
   const [brandOpen, setBrandOpen] = useState(false);
   const [fullProfileOpen, setFullProfileOpen] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
