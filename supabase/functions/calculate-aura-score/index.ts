@@ -102,9 +102,17 @@ serve(async (req) => {
       .in("source_type", ["aura", "aura_generated"])
       .eq("tracking_status", "published")
       .gte("created_at", thirtyDaysAgo);
+    // Count posts confirmed on LinkedIn via xlsx import in last 30 days
+    const { count: linkedinPublishedCount } = await admin
+      .from("linkedin_post_metrics")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .gte("snapshot_date", thirtyDaysAgo);
+    // Use max to avoid double-counting posts that exist in both sources
+    const totalPublishedCount = Math.max(auraPublishedCount ?? 0, linkedinPublishedCount ?? 0);
     const contentScore = Math.min(
       Math.min(importedCount ?? 0, 15)
-      + Math.min((auraPublishedCount ?? 0) * 15, 85)
+      + Math.min(totalPublishedCount * 15, 85)
     , 100);
 
     // --- aura_score: weights 40/40/20 (signal/content/capture) ---
@@ -383,6 +391,7 @@ serve(async (req) => {
       content_score: contentScore,
       imported_count: importedCount ?? 0,
       aura_published_count: auraPublishedCount ?? 0,
+      published_count: totalPublishedCount,
       score_status: scoreStatus,
       score_description: scoreDescription,
       score_trend: scoreTrend,
