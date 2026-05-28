@@ -937,6 +937,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
   const [detecting, setDetecting] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
+  const [showEmerging, setShowEmerging] = useState(false);
 
   const loadSignals = useCallback(async () => {
     setLoading(true); setLoadError(false);
@@ -1213,11 +1214,21 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                       )
                     : sortedByConfidence;
                   const selectedLabel = selectedTheme ? humanizeTheme(selectedTheme) : null;
+                  const readySignals = filtered.filter(s => s.confidence >= 0.30);
+                  const buildingSignals = filtered.filter(s => s.confidence >= 0.15 && s.confidence < 0.30);
+                  const emergingSignals = filtered.filter(s => s.confidence < 0.15);
                   return (
                   <section style={{ marginTop: 36, paddingTop: 24, borderTop: "0.5px solid var(--color-border-tertiary, var(--surface-ink-subtle))" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
                       <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".06em", color: "var(--ink-3)" }}>SIGNALS</span>
-                      <span style={{ fontSize: 11, color: "var(--ink-3)" }}>({filtered.length}{selectedTheme ? ` of ${sortedByConfidence.length}` : ""})</span>
+                      <span style={{ fontSize: 11, color: "var(--ink-3)" }}>
+                        {[
+                          readySignals.length > 0 ? `${readySignals.length} ready to publish` : null,
+                          buildingSignals.length > 0 ? `${buildingSignals.length} building` : null,
+                          emergingSignals.length > 0 ? `${emergingSignals.length} emerging` : null,
+                        ].filter(Boolean).join(" · ")}
+                        {selectedTheme ? ` · of ${sortedByConfidence.length}` : ""}
+                      </span>
                       {selectedLabel && (
                         <button
                           onClick={() => setSelectedTheme(null)}
@@ -1233,50 +1244,165 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                         </button>
                       )}
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      {filtered.map(s => {
-                        const confPct = Math.round(s.confidence * 100);
-                        const isSelected = selectedSignal?.id === s.id;
-                        const confColor = confPct > 70 ? "var(--success, hsl(140 60% 45%))" : confPct >= 40 ? "var(--brand)" : "var(--ink-3)";
-                        const trend = s.velocity_status;
-                        return (
-                          <div key={s.id} onClick={() => setSelectedSignalId(s.id)}
-                            data-testid="intel-signal-card"
-                            style={{
-                              padding: "12px 14px",
-                              border: "0.5px solid var(--surface-ink-subtle)",
-                              borderLeft: isSelected ? "3px solid var(--brand)" : "3px solid transparent",
-                              borderRadius: 8, cursor: "pointer",
-                              background: isSelected ? "var(--surface-ink-raised)" : "transparent",
-                              transition: "background .15s",
-                            }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <p style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-6)", margin: 0, lineHeight: 1.3 }}>{s.signal_title}</p>
-                                <p style={{ fontSize: 11, color: "var(--ink-3)", margin: "3px 0 0" }}>
-                                  {s.fragment_count} findings · {s.unique_orgs} org{s.unique_orgs === 1 ? "" : "s"}
-                                  {trend && trend !== "stable" ? ` · ${trend}` : ""}
-                                </p>
+
+                    {/* TIER 1 — Ready to publish */}
+                    {readySignals.length > 0 && (
+                      <div style={{ marginBottom: 20 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--brand, #B08D3A)", flexShrink: 0 }} />
+                          <span style={{ fontSize: 13, fontWeight: 500 }}>Ready to publish</span>
+                          <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>{readySignals.length} signals</span>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 1, borderRadius: "var(--radius, 8px)", overflow: "hidden", border: "0.5px solid hsl(var(--border))" }}>
+                          {readySignals.map((s) => (
+                            <div
+                              key={s.id}
+                              data-testid="intel-signal-card"
+                              onClick={() => setSelectedSignalId(s.id)}
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns: "1fr auto auto",
+                                gap: 12,
+                                alignItems: "center",
+                                padding: "12px 16px",
+                                background: selectedSignalId === s.id ? "hsl(var(--muted) / 0.5)" : "hsl(var(--background))",
+                                cursor: "pointer",
+                                transition: "background 0.15s",
+                              }}
+                              onMouseEnter={(e) => { if (selectedSignalId !== s.id) e.currentTarget.style.background = "hsl(var(--muted) / 0.3)"; }}
+                              onMouseLeave={(e) => { if (selectedSignalId !== s.id) e.currentTarget.style.background = "hsl(var(--background))"; }}
+                            >
+                              <div>
+                                <div style={{ fontSize: 14, fontWeight: 500, color: "hsl(var(--foreground))" }}>
+                                  {s.signal_title}
+                                </div>
+                                <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
+                                  {s.fragment_count || 0} sources
+                                  {s.velocity_status && s.velocity_status !== "stable" && ` · ${s.velocity_status}`}
+                                </div>
                               </div>
-                              <div style={{
-                                fontFamily: "var(--font-display)",
-                                fontSize: 20, fontWeight: 500, color: confColor, lineHeight: 1,
-                              }}>{confPct}%</div>
+                              <div style={{ textAlign: "right" }}>
+                                <span style={{ fontSize: 14, fontWeight: 500, color: "var(--brand, #B08D3A)", fontVariantNumeric: "tabular-nums" }}>
+                                  {Math.round(s.confidence * 100)}%
+                                </span>
+                              </div>
+                              <div>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); draftFromSignal(s); }}
+                                  style={{
+                                    fontSize: 12,
+                                    padding: "4px 10px",
+                                    borderRadius: "var(--radius, 6px)",
+                                    background: "none",
+                                    border: "0.5px solid hsl(var(--border))",
+                                    color: "hsl(var(--muted-foreground))",
+                                    cursor: "pointer",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  Write this →
+                                </button>
+                              </div>
                             </div>
-                            <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
-                              <button onClick={(e) => { e.stopPropagation(); draftFromSignal(s); }}
-                                style={{ fontSize: 11, padding: "3px 9px", borderRadius: 4, background: "var(--brand)", color: "#fff", border: "none", cursor: "pointer" }}>
-                                Draft post →
-                              </button>
-                              <button onClick={(e) => { e.stopPropagation(); onOpenChat?.(`Show competitor intel on: ${s.signal_title}`); }}
-                                style={{ fontSize: 11, padding: "3px 9px", borderRadius: 4, background: "transparent", color: "var(--ink-4)", border: "0.5px solid var(--surface-ink-subtle)", cursor: "pointer" }}>
-                                Competitor intel
-                              </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* TIER 2 — Building */}
+                    {buildingSignals.length > 0 && (
+                      <div style={{ marginBottom: 20 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "hsl(var(--info))", flexShrink: 0 }} />
+                          <span style={{ fontSize: 13, fontWeight: 500 }}>Building</span>
+                          <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>{buildingSignals.length} signals · need more evidence</span>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 1, borderRadius: "var(--radius, 8px)", overflow: "hidden", border: "0.5px solid hsl(var(--border))" }}>
+                          {buildingSignals.map((s) => (
+                            <div
+                              key={s.id}
+                              data-testid="intel-signal-card"
+                              onClick={() => setSelectedSignalId(s.id)}
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns: "1fr auto auto",
+                                gap: 12,
+                                alignItems: "center",
+                                padding: "10px 16px",
+                                background: selectedSignalId === s.id ? "hsl(var(--muted) / 0.5)" : "hsl(var(--background))",
+                                cursor: "pointer",
+                                transition: "background 0.15s",
+                              }}
+                              onMouseEnter={(e) => { if (selectedSignalId !== s.id) e.currentTarget.style.background = "hsl(var(--muted) / 0.3)"; }}
+                              onMouseLeave={(e) => { if (selectedSignalId !== s.id) e.currentTarget.style.background = "hsl(var(--background))"; }}
+                            >
+                              <div style={{ fontSize: 13, color: "hsl(var(--foreground))" }}>{s.signal_title}</div>
+                              <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", fontVariantNumeric: "tabular-nums" }}>
+                                {Math.round(s.confidence * 100)}%
+                              </div>
+                              <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
+                                {s.fragment_count || 0} sources
+                              </div>
                             </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* TIER 3 — Emerging */}
+                    {emergingSignals.length > 0 && (
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "hsl(var(--muted-foreground) / 0.4)", flexShrink: 0 }} />
+                            <span style={{ fontSize: 13, fontWeight: 500 }}>Emerging</span>
+                            <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>{emergingSignals.length} signals</span>
                           </div>
-                        );
-                      })}
-                    </div>
+                          <button
+                            onClick={() => setShowEmerging(!showEmerging)}
+                            style={{
+                              fontSize: 12,
+                              padding: "4px 10px",
+                              borderRadius: "var(--radius, 6px)",
+                              background: "none",
+                              border: "0.5px solid hsl(var(--border))",
+                              color: "hsl(var(--muted-foreground))",
+                              cursor: "pointer",
+                            }}
+                          >
+                            {showEmerging ? "Hide" : "Show"}
+                          </button>
+                        </div>
+                        {showEmerging && (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 1, borderRadius: "var(--radius, 8px)", overflow: "hidden", border: "0.5px solid hsl(var(--border))" }}>
+                            {emergingSignals.map((s) => (
+                              <div
+                                key={s.id}
+                                data-testid="intel-signal-card"
+                                onClick={() => setSelectedSignalId(s.id)}
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns: "1fr auto",
+                                  gap: 12,
+                                  alignItems: "center",
+                                  padding: "8px 16px",
+                                  background: selectedSignalId === s.id ? "hsl(var(--muted) / 0.5)" : "hsl(var(--background))",
+                                  cursor: "pointer",
+                                  transition: "background 0.15s",
+                                }}
+                                onMouseEnter={(e) => { if (selectedSignalId !== s.id) e.currentTarget.style.background = "hsl(var(--muted) / 0.3)"; }}
+                                onMouseLeave={(e) => { if (selectedSignalId !== s.id) e.currentTarget.style.background = "hsl(var(--background))"; }}
+                              >
+                                <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))" }}>{s.signal_title}</div>
+                                <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground) / 0.6)", fontVariantNumeric: "tabular-nums" }}>
+                                  {Math.round(s.confidence * 100)}%
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </section>
                   );
                 })()}
