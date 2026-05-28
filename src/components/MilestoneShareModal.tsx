@@ -78,7 +78,31 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
     if (!cardRef.current) return;
     setBusy(true);
     try {
-      await (document as any).fonts?.ready;
+      // Ensure the specific font faces we actually use are loaded — not just
+      // whatever was already in the document. Otherwise html2canvas may
+      // measure with the fallback and paint with the web font, producing
+      // garbled, overlapping text.
+      try {
+        const f: any = (document as any).fonts;
+        if (f) {
+          await Promise.all([
+            f.load("400 16px 'Cormorant Garamond'"),
+            f.load("500 16px 'Cormorant Garamond'"),
+            f.load("400 16px 'DM Sans'"),
+            f.load("500 16px 'DM Sans'"),
+            f.load("600 16px 'DM Sans'"),
+          ]);
+          if (f.ready) await f.ready;
+        }
+      } catch {}
+      // Force a reflow so html2canvas re-measures with the loaded fonts.
+      if (cardRef.current) {
+        cardRef.current.style.visibility = "hidden";
+        void cardRef.current.offsetHeight;
+        cardRef.current.style.visibility = "visible";
+        void cardRef.current.offsetHeight;
+        await new Promise((r) => setTimeout(r, 200));
+      }
       const canvas = await html2canvas(cardRef.current, {
         scale: 2,
         backgroundColor: "#111118",
