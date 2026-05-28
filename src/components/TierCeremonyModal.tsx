@@ -130,12 +130,12 @@ export default function TierCeremonyModal({ userId }: Props) {
   useEffect(() => {
     if (!tierMilestone || sessionGate) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close();
+      if (e.key === "Escape" && !busy) close();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tierMilestone, sessionGate]);
+  }, [tierMilestone, sessionGate, busy]);
 
   const tierName = useMemo(() => {
     if (!tierMilestone) return "";
@@ -167,11 +167,22 @@ export default function TierCeremonyModal({ userId }: Props) {
   };
 
   const close = () => {
-    if (dismissing || !tierMilestone) return;
+    if (dismissing || !tierMilestone || busy) return;
     setDismissing(true);
     setMounted(false);
     // Fire-and-forget — hook updates local state optimistically.
     void acknowledgeMilestone(tierMilestone.id);
+  };
+
+  // Close for the current session WITHOUT acknowledging — modal will
+  // re-appear next session so the user can return to their credential.
+  const closeForSession = () => {
+    if (busy || !tierMilestone) return;
+    try {
+      sessionStorage.setItem(`aura_tier_ceremony_seen_${tierMilestone.id}`, "1");
+    } catch {}
+    setMounted(false);
+    setSessionGate(true);
   };
 
   // --- Export refs (off-screen full-size cards we capture from) ---
@@ -310,7 +321,10 @@ export default function TierCeremonyModal({ userId }: Props) {
       role="dialog"
       aria-modal="true"
       aria-label={`You have reached ${tierName} tier`}
-      onClick={(e) => { if (e.target === e.currentTarget) close(); }}
+      onClick={(e) => {
+        if (e.target !== e.currentTarget || busy) return;
+        if (step === 0) closeForSession(); else close();
+      }}
       style={{
         position: "fixed",
         inset: 0,
@@ -358,7 +372,10 @@ export default function TierCeremonyModal({ userId }: Props) {
       >
         <button
           aria-label="Close"
-          onClick={close}
+          onClick={() => {
+            if (busy) return;
+            if (step === 0) closeForSession(); else close();
+          }}
           style={{
             position: "absolute",
             top: 14,
@@ -406,12 +423,29 @@ export default function TierCeremonyModal({ userId }: Props) {
         <div style={{ marginTop: 28, display: "flex", flexDirection: "column", gap: 18, alignItems: "center" }}>
           <Dots step={step} total={3} />
           {step === 0 && (
-            <button
-              onClick={() => setStep(1)}
-              style={primaryBtn}
-            >
-              See your credential →
-            </button>
+            <>
+              <button
+                onClick={() => setStep(1)}
+                style={primaryBtn}
+              >
+                See your credential →
+              </button>
+              <button
+                onClick={closeForSession}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "hsl(var(--muted-foreground))",
+                  fontSize: 13,
+                  cursor: "pointer",
+                  marginTop: 4,
+                  padding: "4px 8px",
+                  fontFamily: "inherit",
+                }}
+              >
+                Maybe later
+              </button>
+            </>
           )}
           {step === 1 && (
             <button onClick={() => setStep(2)} style={ghostBtn}>
