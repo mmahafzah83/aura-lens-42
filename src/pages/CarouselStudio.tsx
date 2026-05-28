@@ -1003,7 +1003,8 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
                 fill={correctOnLeft ? style.accent : style.muted}
                 opacity={correctOnLeft ? 1 : 0.4}
                 fontWeight={correctOnLeft ? (style.headingWeight ?? 700) : (isRTL ? 600 : 400)}
-                textAnchor={isRTL ? "end" : "start"}
+                textAnchor="start"
+                direction={isRTL ? "rtl" : undefined}
                 {...(isRTL ? { x: leftColX + leftColW } : {})}>
             {visLeftTitle.toUpperCase()}
           </text>
@@ -1012,7 +1013,8 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
                 fill={correctOnLeft ? style.muted : style.accent}
                 opacity={correctOnLeft ? 0.4 : 1}
                 fontWeight={correctOnLeft ? (isRTL ? 600 : 400) : (style.headingWeight ?? 700)}
-                textAnchor={isRTL ? "end" : "start"}>
+                textAnchor="start"
+                direction={isRTL ? "rtl" : undefined}>
             {visRightTitle.toUpperCase()}
           </text>
           {/* Visual LEFT column items */}
@@ -1020,7 +1022,7 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
             const lns = leftWrapped[i];
             const rowY = rowsStartY + leftLayout.offsets[i];
             const textXi = isRTL ? leftColX + leftColW : leftColX;
-            const anchor: "start" | "end" = isRTL ? "end" : "start";
+            const anchor: "start" = "start";
             if (correctOnLeft) {
               return (
                 <g key={`l${i}`}>
@@ -1033,6 +1035,7 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
                     stroke={style.accent} strokeWidth={2} />
                   {lns.map((ln, li) => (
                     <text key={li} x={textXi} y={rowY + li * itemLineH} textAnchor={anchor}
+                          direction={isRTL ? "rtl" : undefined}
                           fontFamily={bodyFont} fontSize={isRTL ? 20 : 22} fill={style.fg} fontWeight={isRTL ? 800 : 600}>
                       {ln}
                     </text>
@@ -1042,6 +1045,7 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
             }
             return lns.map((ln, li) => (
               <text key={`l${i}-${li}`} x={textXi} y={rowY + li * itemLineH} textAnchor={anchor}
+                    direction={isRTL ? "rtl" : undefined}
                     fontFamily={bodyFont} fontSize={isRTL ? 19 : 22} fill={style.fg} opacity={0.55}
                     fontWeight={isRTL ? 600 : 400}
                     textDecoration="line-through" style={{ textDecorationColor: style.fg, textDecorationThickness: 1.5 }}>
@@ -1054,7 +1058,7 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
             const lns = rightWrapped[i];
             const rowY = rowsStartY + rightLayout.offsets[i];
             const textXi = isRTL ? rightColX + rightColW : rightColX;
-            const anchor: "start" | "end" = isRTL ? "end" : "start";
+            const anchor: "start" = "start";
             if (!correctOnLeft) {
               return (
                 <g key={`rg${i}`}>
@@ -1062,6 +1066,7 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
                         stroke={style.accent} strokeWidth={2} />
                   {lns.map((ln, li) => (
                     <text key={li} x={textXi} y={rowY + li * itemLineH} textAnchor={anchor}
+                          direction={isRTL ? "rtl" : undefined}
                           fontFamily={bodyFont} fontSize={isRTL ? 20 : 22} fill={style.fg} fontWeight={isRTL ? 800 : 600}>
                       {ln}
                     </text>
@@ -1071,6 +1076,7 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
             }
             return lns.map((ln, li) => (
               <text key={`r${i}-${li}`} x={textXi} y={rowY + li * itemLineH} textAnchor={anchor}
+                    direction={isRTL ? "rtl" : undefined}
                     fontFamily={bodyFont} fontSize={isRTL ? 19 : 22} fill={style.fg} opacity={0.55}
                     fontWeight={isRTL ? 600 : 400}
                     textDecoration="line-through" style={{ textDecorationColor: style.fg, textDecorationThickness: 1.5 }}>
