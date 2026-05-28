@@ -21,7 +21,10 @@ export type Database = {
           imported_at: string | null
           percentage: string
           percentage_numeric: number | null
+          period_end: string | null
+          period_start: string | null
           source_type: string | null
+          upload_batch_id: string | null
           user_id: string
           value: string
         }
@@ -31,7 +34,10 @@ export type Database = {
           imported_at?: string | null
           percentage: string
           percentage_numeric?: number | null
+          period_end?: string | null
+          period_start?: string | null
           source_type?: string | null
+          upload_batch_id?: string | null
           user_id: string
           value: string
         }
@@ -41,7 +47,10 @@ export type Database = {
           imported_at?: string | null
           percentage?: string
           percentage_numeric?: number | null
+          period_end?: string | null
+          period_start?: string | null
           source_type?: string | null
+          upload_batch_id?: string | null
           user_id?: string
           value?: string
         }
