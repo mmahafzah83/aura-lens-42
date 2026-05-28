@@ -198,6 +198,16 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const [audienceInsightLoading, setAudienceInsightLoading] = useState(false);
   const [reachSnap, setReachSnap] = useState<{ members_reached: number | null; total_impressions_annual: number | null } | null>(null);
 
+  // AI-generated section interpretations (from generate-impact-narrative EF)
+  type ImpactNarrative = {
+    hero_narrative: string;
+    footprint_insight: string;
+    content_insight: string;
+    post_insight: string;
+    one_action: string;
+  };
+  const [impactNarrative, setImpactNarrative] = useState<ImpactNarrative | null>(null);
+
   const loadAll = async (rangeDays: RangeDays) => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
@@ -853,6 +863,62 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     return followerRows.reduce((acc, r) => (r.follower_growth > (acc?.follower_growth ?? -1) ? r : acc), followerRows[0]);
   }, [followerRows]);
 
+  // Load AI narrative interpretations (cached in impact_narratives table)
+  useEffect(() => {
+    if (!userId || !latestScore || periodImpressions === null) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: cached } = await supabase
+          .from("impact_narratives")
+          .select("*")
+          .eq("user_id", userId)
+          .order("generated_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (cached && !cancelled) {
+          setImpactNarrative(cached as any);
+          return;
+        }
+        const { data } = await supabase.functions.invoke("generate-impact-narrative", {
+          body: {
+            score: latestScore,
+            tierName: auraData?.tier_name || "Observer",
+            weekDelta: weekDelta || 0,
+            selectedDays,
+            followers: latestFollowers,
+            impressions: periodImpressions,
+            engagementRate: periodEngagementRate,
+            impChange, engChange, followerChange,
+            newFollowers: newFollowersPeriod,
+            bestDay: bestDay ? `+${bestDay.follower_growth} on ${fmtDateShort(bestDay.snapshot_date)}` : null,
+            signalScore: auraData?.signal_score || 0,
+            contentScore: auraData?.content_score || 0,
+            consistencyScore: auraData?.capture_score || 0,
+            visibility: windowedPostCount > 0 && postLevelImpressions ? Math.round(postLevelImpressions / windowedPostCount) : 0,
+            resonance: periodEngagementRate,
+            signalDepth: pillarSignalCount,
+            momentum: pillarWeeksActive,
+            topSignal: topSignal || null,
+            postCount: contentPerf?.postCount || 0,
+            avgPostEngagement: contentPerf?.avgEngagement || 0,
+            topPosts: (topPosts || []).slice(0, 5).map(p => ({
+              date: p.post?.published_at,
+              impressions: p.impressions,
+              reactions: p.reactions,
+              rate: p.engagement_rate,
+            })),
+          }
+        });
+        if (data && !cancelled) setImpactNarrative(data as any);
+      } catch (e) {
+        console.error("loadNarrative failed", e);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, latestScore, periodImpressions, selectedDays]);
+
   /* ── Published-post markers snapped to follower chart x-axis ── */
   const publishMarkers = useMemo(() => {
     if (followerSeries.length === 0 || publishedPosts.length === 0) return [];
@@ -1361,15 +1427,25 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       >
         <div>
             <p style={{ fontSize: 14, lineHeight: 1.7, color: "var(--color-text-secondary)" }}>
-              {narrative.map((p, i) => (
-                <span
-                  key={i}
-                  style={{ color: partColor(p.type), fontWeight: partWeight(p.type) }}
-                >
-                  {p.text}
-                </span>
-              ))}
+              {impactNarrative?.hero_narrative ? (
+                <span>{impactNarrative.hero_narrative}</span>
+              ) : (
+                narrative.map((p, i) => (
+                  <span
+                    key={i}
+                    style={{ color: partColor(p.type), fontWeight: partWeight(p.type) }}
+                  >
+                    {p.text}
+                  </span>
+                ))
+              )}
             </p>
+
+            {impactNarrative?.one_action && (
+              <div style={{ marginTop: 12, fontWeight: 500, color: "#B08D3A", fontSize: 15 }}>
+                → {impactNarrative.one_action}
+              </div>
+            )}
 
             {captureScore < 80 && (
               <div className="mt-4">
@@ -1902,6 +1978,10 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             )}
           </div>
         </div>
+        <SectionInsight
+          text={impactNarrative?.footprint_insight}
+          askAuraPrompt="Why is my engagement below the tier benchmark?"
+        />
       </section>
 
       {/* ─────────── 9. CONTENT PERFORMANCE ─────────── */}
@@ -1966,6 +2046,12 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 Restore from git history if quality data improves. */}
           </div>
         ))}
+        {openSections.content && contentPerf && contentPerf.postCount > 0 && (
+          <SectionInsight
+            text={impactNarrative?.content_insight}
+            askAuraPrompt="What content format works best for my audience?"
+          />
+        )}
       </section>
 
       {/* ─────────── 7. POST PERFORMANCE ─────────── */}
@@ -2135,6 +2221,12 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             })}
           </div>
         ))}
+        {openSections.posts && topPosts.length > 0 && (
+          <SectionInsight
+            text={impactNarrative?.post_insight}
+            askAuraPrompt="What should my next post be about?"
+          />
+        )}
       </section>
 
       {/* ─────────── 5b. LINKEDIN ANALYTICS (always visible) ─────────── */}
@@ -2949,6 +3041,69 @@ const MiniKPI = ({ label, rawValue, formatter, index = 0, selectedDays, change }
 };
 
 export default ImpactTab;
+
+/* ─── SectionInsight ─────────────────────────────────────────── */
+const SectionInsight = ({ text, askAuraPrompt }: { text?: string | null; askAuraPrompt?: string }) => {
+  const [expanded, setExpanded] = useState(false);
+  if (!text) {
+    return (
+      <div style={{ padding: "8px 0", fontSize: 13, color: "var(--color-text-tertiary)" }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <span style={{
+            width: 10, height: 10, borderRadius: "50%",
+            border: "1.5px solid var(--color-border)",
+            display: "inline-block",
+            animation: "pulse 1.5s infinite",
+          }} />
+          Reading your data…
+        </span>
+      </div>
+    );
+  }
+  return (
+    <div style={{ padding: "8px 0" }}>
+      <button
+        onClick={() => setExpanded(e => !e)}
+        style={{
+          background: "none", border: "none", cursor: "pointer", padding: 0,
+          fontSize: 13, color: "#B08D3A", display: "inline-flex", alignItems: "center", gap: 6,
+          fontFamily: "inherit", fontWeight: 500,
+        }}
+      >
+        <span style={{
+          transition: "transform 0.2s",
+          transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
+          display: "inline-block",
+        }}>→</span>
+        What this means
+      </button>
+      {expanded && (
+        <div style={{
+          marginTop: 8, padding: "12px 16px",
+          fontSize: 14, lineHeight: 1.7,
+          color: "var(--color-text-secondary)",
+          borderLeft: "3px solid #B08D3A",
+          background: "var(--color-background-secondary, var(--color-card))",
+        }}>
+          {text}
+          {askAuraPrompt && (
+            <button
+              onClick={() => { window.location.hash = "#ask-aura"; }}
+              style={{
+                display: "block", marginTop: 10,
+                fontSize: 12, color: "#B08D3A", background: "none",
+                border: "none", cursor: "pointer", padding: 0,
+                fontFamily: "inherit",
+              }}
+            >
+              Ask Aura to go deeper →
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 /* ─── PillarCard ─────────────────────────────────────────────── */
 const PillarCard = ({
