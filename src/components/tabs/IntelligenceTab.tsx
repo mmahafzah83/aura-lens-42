@@ -937,6 +937,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
   const [detecting, setDetecting] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
+  const [showEmerging, setShowEmerging] = useState(false);
 
   const loadSignals = useCallback(async () => {
     setLoading(true); setLoadError(false);
