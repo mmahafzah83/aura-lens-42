@@ -2295,6 +2295,75 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
       {/* ─────────── 6. FOLLOWER GROWTH ─────────── */}
       <section>
+        {impressionsSeries.length > 1 && (periodImpressions ?? 0) > 0 && (
+          <div style={{ marginBottom: 24 }}>
+            <div
+              className="text-xs uppercase font-medium mb-2"
+              style={{ letterSpacing: "0.08em", color: "var(--color-text-secondary)" }}
+            >
+              Impressions over time
+            </div>
+            <div
+              className="rounded-lg p-5"
+              style={{ background: "var(--color-card)", border: "0.5px solid var(--color-border)" }}
+            >
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 32, fontWeight: 500, color: "var(--ink)", lineHeight: 1 }}>
+                {formatNumber(periodImpressions ?? 0)}
+              </div>
+              <div style={{ fontSize: 11, color: "var(--color-text-muted)", marginTop: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                Cumulative impressions · last {selectedDays}d
+              </div>
+              <PeriodComparison change={impChange} selectedDays={selectedDays} />
+              <div style={{ height: 180, width: "100%", marginTop: 14 }}>
+                <ResponsiveContainer>
+                  <AreaChart data={impressionsSeries} margin={{ top: 6, right: 8, bottom: 4, left: -8 }}>
+                    <defs>
+                      <linearGradient id="impArea" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#B08D3A" stopOpacity={0.18} />
+                        <stop offset="100%" stopColor="#B08D3A" stopOpacity={0.02} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fontSize: 10, fill: "var(--color-text-muted)" }}
+                      axisLine={false}
+                      tickLine={false}
+                      interval={Math.max(0, Math.floor(impressionsSeries.length / 6) - 1)}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 10, fill: "var(--color-text-muted)" }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={40}
+                      tickFormatter={(v: number) => formatCompact(v)}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        background: "var(--color-card)",
+                        border: "0.5px solid var(--color-border)",
+                        borderRadius: 6,
+                        fontSize: 12,
+                        color: "var(--color-text-primary)",
+                      }}
+                      formatter={(value: any, name: string) => {
+                        if (name === "cumulative") return [formatNumber(Number(value)), "Cumulative"];
+                        if (name === "daily") return [formatNumber(Number(value)), "Daily"];
+                        return [value, name];
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="cumulative"
+                      stroke="#B08D3A"
+                      strokeWidth={1.5}
+                      fill="url(#impArea)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        )}
         <h2
           className="text-xs font-semibold tracking-[0.14em] mb-3"
           style={{ color: "var(--color-text-secondary)" }}
