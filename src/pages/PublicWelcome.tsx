@@ -344,8 +344,8 @@ const responseFor = (v: number) => {
 
 export default function PublicWelcome() {
   usePageMeta({
-    title: "Aura — Make your expertise visible",
-    description: "A strategic intelligence system for senior professionals. Turn what you already read into a digital presence that compounds.",
+    title: "Aura — Turns your expertise into presence",
+    description: "Turns your expertise into presence. A strategic intelligence system for senior professionals.",
     path: "/",
   });
 
@@ -801,7 +801,7 @@ export default function PublicWelcome() {
         <div style={{ fontSize: 12, color: "#a3a3a3", marginTop: 4 }}>Aura builder</div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 16 }}>
           <HorizonEye size={16} color="#8a8a8a" />
-          <span style={{ fontSize: 11, color: "#9a9a9a" }}>Aura · Strategic Intelligence · aura-intel.org</span>
+          <span style={{ fontSize: 11, color: "#9a9a9a" }}>Aura · Turns your expertise into presence · aura-intel.org</span>
         </div>
       </footer>
     </div>

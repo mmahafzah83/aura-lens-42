@@ -312,10 +312,10 @@ const Guide = () => {
           <div>
             <div className="flex items-center gap-2" style={{ height: 24 }}>
               <span className="text-base font-medium tracking-[0.15em]" style={{ color: "var(--brand)", fontFamily: "var(--font-display)", lineHeight: "24px" }}>AURA</span>
-              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>Strategic Intelligence OS</span>
+              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>Turns your expertise into presence</span>
             </div>
             <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 12 }}>
-              © 2026 Aura Intelligence. All rights reserved.
+              © 2026 Aura. All rights reserved.
             </p>
           </div>
           <div className="guide-footer-col-center" style={{ textAlign: "center" }}>

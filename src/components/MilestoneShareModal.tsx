@@ -64,7 +64,7 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
   const safeName = d.name || "Milestone achieved";
   const safeContext = (d.context && d.context !== "undefined")
     ? d.context
-    : "Building strategic intelligence, one step at a time.";
+    : "Building presence, one step at a time.";
   const earnedLabel = d.earnedAt
     ? `Earned ${formatDate(d.earnedAt)}`
     : `Earned ${new Date().toLocaleDateString()}`;
@@ -72,7 +72,7 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
   const footerLine = footerLineRaw || "aura-intel.org";
   const shareText = d.name
     ? `Completed a new milestone: ${d.name}.\n\n${safeContext}\n\nUnderstanding your positioning is the first step to being visible where it matters.\n\n#DigitalPresence #StrategicIntelligence`
-    : `Building strategic intelligence with Aura.\n\n#DigitalPresence #StrategicIntelligence`;
+    : `Building presence with Aura.\n\n#DigitalPresence`;
 
   const handleDownload = async () => {
     if (!cardRef.current) return;

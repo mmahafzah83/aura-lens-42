@@ -431,7 +431,7 @@ const Auth = () => {
           {/* Logo */}
           <div className="flex items-center gap-3 mb-2">
             <AuraLogo size={40} variant="dark" withWordmark />
-            <div className="auth-wordmark-sub" style={{ marginTop: 0 }}>Strategic Intelligence</div>
+            <div className="auth-wordmark-sub" style={{ marginTop: 0 }}>Turns your expertise into presence</div>
           </div>
 
           {/* Beta pill */}

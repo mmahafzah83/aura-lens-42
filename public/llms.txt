@@ -1,6 +1,6 @@
 # Aura
 
-> Aura is the strategic intelligence OS for senior professionals. It captures what you read, detects the patterns in your expertise, and helps you publish content that compounds authority.
+> Aura turns your expertise into presence. The strategic intelligence OS for senior professionals — it captures what you read, detects the patterns in your expertise, and helps you publish content that compounds authority.
 
 Aura is built for Directors, VPs, CIOs, and CDOs — especially in the GCC — who read extensively but don't publish enough. The platform turns daily reading into strategic signals, then generates LinkedIn-ready content grounded in those signals and the user's own voice. English and Arabic are both supported.
 
