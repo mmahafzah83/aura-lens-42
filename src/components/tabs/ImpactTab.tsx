@@ -2794,11 +2794,31 @@ const ScoreHero = ({
   );
 };
 
-const MiniKPI = ({ label, rawValue, formatter, index = 0 }: {
+const PeriodComparison = ({ change, selectedDays }: { change: number | null; selectedDays: number }) => {
+  if (change === null) return null;
+  const isFlat = Math.abs(change) < 0.5;
+  const isUp = change > 0;
+  return (
+    <div style={{ fontSize: 11, marginTop: 3, display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
+      {isFlat ? (
+        <span style={{ color: "var(--color-text-secondary)" }}>● 0%</span>
+      ) : (
+        <span style={{ color: isUp ? "var(--success)" : "var(--danger)", fontWeight: 600 }}>
+          {isUp ? "▲" : "▼"} {change > 0 ? "+" : ""}{change.toFixed(1)}%
+        </span>
+      )}
+      <span style={{ color: "var(--color-text-muted)" }}>vs. prior {selectedDays}d</span>
+    </div>
+  );
+};
+
+const MiniKPI = ({ label, rawValue, formatter, index = 0, selectedDays, change }: {
   label: string;
   rawValue: number | null;
   formatter: (n: number) => string;
   index?: number;
+  selectedDays?: RangeDays;
+  change?: number | null;
 }) => {
   // For decimals (engagement rate), scale by 10 so the count-up stays integer-safe.
   const isDecimal = formatter(0.1).includes(".");
@@ -2829,6 +2849,14 @@ const MiniKPI = ({ label, rawValue, formatter, index = 0 }: {
     <div className="text-label mt-1" style={{ color: "var(--aura-t2)" }}>
       {label}
     </div>
+    {selectedDays && (
+      <div style={{ fontSize: 10, marginTop: 2, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+        Last {selectedDays}d
+      </div>
+    )}
+    {change !== undefined && selectedDays && (
+      <PeriodComparison change={change ?? null} selectedDays={selectedDays} />
+    )}
   </div>
 );
 };
