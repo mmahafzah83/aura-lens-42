@@ -519,7 +519,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [userId]);
 
   // Load content performance (respects selected date range)
   useEffect(() => {
