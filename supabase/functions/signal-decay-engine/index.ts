@@ -129,7 +129,7 @@ Deno.serve(async (req) => {
           velocity = 0;
           velocityStatus = recentCount14d >= 2 ? "accelerating" : "stable";
         } else {
-          const decayFactor = Math.exp(-0.023 * daysSince);
+          const decayFactor = Math.exp(-0.010 * daysSince);
           newConf = Math.max(MIN_CONFIDENCE, currentConf * decayFactor);
           velocity = newConf - currentConf;
           if (velocity > 0.05) velocityStatus = "accelerating";
@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
           else velocityStatus = "dormant";
         }
 
-        if (newConf < 0.15) newStatus = "dormant";
+        if (newConf < 0.08) newStatus = "dormant";
         // Otherwise keep current status (fading is reflected via velocity_status)
       }
 
