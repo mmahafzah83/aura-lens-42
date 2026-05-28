@@ -198,6 +198,16 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const [audienceInsightLoading, setAudienceInsightLoading] = useState(false);
   const [reachSnap, setReachSnap] = useState<{ members_reached: number | null; total_impressions_annual: number | null } | null>(null);
 
+  // AI-generated section interpretations (from generate-impact-narrative EF)
+  type ImpactNarrative = {
+    hero_narrative: string;
+    footprint_insight: string;
+    content_insight: string;
+    post_insight: string;
+    one_action: string;
+  };
+  const [impactNarrative, setImpactNarrative] = useState<ImpactNarrative | null>(null);
+
   const loadAll = async (rangeDays: RangeDays) => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
