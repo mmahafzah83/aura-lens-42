@@ -153,7 +153,7 @@ serve(async (req) => {
     <div style="padding:16px 40px 28px;border-top:1px solid #1f1f1f;margin-top:24px;">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
         <td valign="middle" style="padding-right:10px;">${eye(16, "#555")}</td>
-        <td valign="middle" style="font-size:11px;letter-spacing:1px;color:#555;">Aura · Strategic Intelligence · aura-intel.org</td>
+        <td valign="middle" style="font-size:11px;letter-spacing:1px;color:#555;">Aura · Turns your expertise into presence · aura-intel.org</td>
       </tr></table>
     </div>
   </div>
