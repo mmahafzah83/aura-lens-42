@@ -879,7 +879,7 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
               const lineH = 42;
               const firstY = gridY - 40 - (hlLines.length - 1) * lineH;
               return (
-                <text x={startX} y={firstY} textAnchor={sideAnchor}
+                <text x={startX} y={firstY} textAnchor="start"
                       fontFamily={headingFont} fontSize={36} fontWeight={style.headingWeight ?? 700}
                       fill={style.fg} direction={isRTL ? "rtl" : undefined}>
                   {hlLines.map((ln, i) => (
@@ -903,7 +903,7 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
             const textStartY = y + cellH / 2 - textBlockH / 2 + 18;
             const numCx = isRTL ? x + cellW - 36 : x + 36;
             const textXi = isRTL ? x + cellW - 72 : x + 72;
-            const cellTextAnchor: "start" | "end" = isRTL ? "end" : "start";
+            const cellTextAnchor: "start" = "start";
             return (
               <g key={i}>
                 <rect x={x} y={y} width={cellW} height={cellH} rx={12} fill={style.gridCellBg ?? "none"} stroke={style.border} strokeWidth={1} />
@@ -916,6 +916,7 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
                 </text>
                 {wrapped.map((ln, li) => (
                   <text key={li} x={textXi} y={textStartY + li * lineH} textAnchor={cellTextAnchor}
+                        direction={isRTL ? "rtl" : undefined}
                         fontFamily={bodyFont} fontSize={isRTL ? 20 : 22} fill={style.fg} fontWeight={isRTL ? 700 : 600}>
                     {ln}
                   </text>
