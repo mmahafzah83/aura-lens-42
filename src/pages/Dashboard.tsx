@@ -63,6 +63,8 @@ const Dashboard = () => {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [activeTab, setActiveTab] = useState<TabValue>("home");
   const [captureOpen, setCaptureOpen] = useState(false);
+  const [capturePrefillUrl, setCapturePrefillUrl] = useState<string | null>(null);
+  const [capturePrefillText, setCapturePrefillText] = useState<string | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>();
   const [chatContext, setChatContext] = useState<ChatContext | undefined>();
@@ -853,7 +855,7 @@ const Dashboard = () => {
             {activeTab === "home" && (
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
-                  <HomeTab entries={entries} onOpenChat={openChat} onRefresh={fetchEntries} onNavigateToSignal={navigateToSignal} onOpenCapture={() => setCaptureOpen(true)} onSwitchTab={switchTab} onDraftToStudio={(prefill) => { setSignalDraftPrefill(prefill); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
+                  <HomeTab entries={entries} onOpenChat={openChat} onRefresh={fetchEntries} onNavigateToSignal={navigateToSignal} onOpenCapture={(prefillUrl?: string, prefillText?: string) => { setCapturePrefillUrl(prefillUrl || null); setCapturePrefillText(prefillText || null); setCaptureOpen(true); }} onSwitchTab={switchTab} onDraftToStudio={(prefill) => { setSignalDraftPrefill(prefill); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
                 </ErrorBoundary>
               </div>
             )}
@@ -1020,9 +1022,14 @@ const Dashboard = () => {
 
       <CaptureModal
         open={captureOpen}
-        onOpenChange={setCaptureOpen}
+        onOpenChange={(o) => {
+          setCaptureOpen(o);
+          if (!o) { setCapturePrefillUrl(null); setCapturePrefillText(null); }
+        }}
         onCaptured={fetchEntries}
         onOpenChat={openChat}
+        prefillUrl={capturePrefillUrl || undefined}
+        prefillText={capturePrefillText || undefined}
       />
       <AuraChatSidebar
         open={chatOpen}
