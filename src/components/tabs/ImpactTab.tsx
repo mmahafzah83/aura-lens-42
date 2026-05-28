@@ -2046,6 +2046,12 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 Restore from git history if quality data improves. */}
           </div>
         ))}
+        {openSections.content && contentPerf && contentPerf.postCount > 0 && (
+          <SectionInsight
+            text={impactNarrative?.content_insight}
+            askAuraPrompt="What content format works best for my audience?"
+          />
+        )}
       </section>
 
       {/* ─────────── 7. POST PERFORMANCE ─────────── */}
