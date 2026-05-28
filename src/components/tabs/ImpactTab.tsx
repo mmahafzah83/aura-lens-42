@@ -8,6 +8,7 @@ import { EMPTY_STATE } from "@/constants/language";
 import {
   ResponsiveContainer,
   BarChart, Bar,
+  AreaChart, Area,
   XAxis, YAxis, Tooltip, ReferenceLine,
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
