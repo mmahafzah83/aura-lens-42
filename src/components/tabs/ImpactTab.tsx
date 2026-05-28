@@ -591,7 +591,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         tones,
       });
     })();
-  }, [selectedDays]);
+  }, [selectedDays, topPosts]);
 
   // Load top strategic signal (highest priority/confidence among active signals)
   useEffect(() => {
