@@ -1978,6 +1978,10 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             )}
           </div>
         </div>
+        <SectionInsight
+          text={impactNarrative?.footprint_insight}
+          askAuraPrompt="Why is my engagement below the tier benchmark?"
+        />
       </section>
 
       {/* ─────────── 9. CONTENT PERFORMANCE ─────────── */}
