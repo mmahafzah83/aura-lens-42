@@ -2488,11 +2488,14 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             </div>
 
             <div className="grid grid-cols-2 gap-4 mt-4 pt-4" style={{ borderTop: "0.5px solid var(--color-border)" }}>
-              <Stat
-                label="New followers this period"
-                value={newFollowersPeriod > 0 ? `+${formatNumber(newFollowersPeriod)}` : "0"}
-                valueColor="var(--success)"
-              />
+              <div>
+                <Stat
+                  label={`New followers · last ${selectedDays}d`}
+                  value={newFollowersPeriod > 0 ? `+${formatNumber(newFollowersPeriod)}` : "0"}
+                  valueColor="var(--success)"
+                />
+                <PeriodComparison change={followerChange} selectedDays={selectedDays} />
+              </div>
               <Stat
                 label="Best single day"
                 value={bestDay && bestDay.follower_growth > 0
