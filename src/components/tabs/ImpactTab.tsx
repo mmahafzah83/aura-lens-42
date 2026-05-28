@@ -3016,6 +3016,69 @@ const MiniKPI = ({ label, rawValue, formatter, index = 0, selectedDays, change }
 
 export default ImpactTab;
 
+/* ─── SectionInsight ─────────────────────────────────────────── */
+const SectionInsight = ({ text, askAuraPrompt }: { text?: string | null; askAuraPrompt?: string }) => {
+  const [expanded, setExpanded] = useState(false);
+  if (!text) {
+    return (
+      <div style={{ padding: "8px 0", fontSize: 13, color: "var(--color-text-tertiary)" }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <span style={{
+            width: 10, height: 10, borderRadius: "50%",
+            border: "1.5px solid var(--color-border)",
+            display: "inline-block",
+            animation: "pulse 1.5s infinite",
+          }} />
+          Reading your data…
+        </span>
+      </div>
+    );
+  }
+  return (
+    <div style={{ padding: "8px 0" }}>
+      <button
+        onClick={() => setExpanded(e => !e)}
+        style={{
+          background: "none", border: "none", cursor: "pointer", padding: 0,
+          fontSize: 13, color: "#B08D3A", display: "inline-flex", alignItems: "center", gap: 6,
+          fontFamily: "inherit", fontWeight: 500,
+        }}
+      >
+        <span style={{
+          transition: "transform 0.2s",
+          transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
+          display: "inline-block",
+        }}>→</span>
+        What this means
+      </button>
+      {expanded && (
+        <div style={{
+          marginTop: 8, padding: "12px 16px",
+          fontSize: 14, lineHeight: 1.7,
+          color: "var(--color-text-secondary)",
+          borderLeft: "3px solid #B08D3A",
+          background: "var(--color-background-secondary, var(--color-card))",
+        }}>
+          {text}
+          {askAuraPrompt && (
+            <button
+              onClick={() => { window.location.hash = "#ask-aura"; }}
+              style={{
+                display: "block", marginTop: 10,
+                fontSize: 12, color: "#B08D3A", background: "none",
+                border: "none", cursor: "pointer", padding: 0,
+                fontFamily: "inherit",
+              }}
+            >
+              Ask Aura to go deeper →
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 /* ─── PillarCard ─────────────────────────────────────────────── */
 const PillarCard = ({
   label, value, unit, color, tooltip, dots,
