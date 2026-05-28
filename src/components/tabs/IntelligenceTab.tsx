@@ -937,6 +937,8 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
   const [detecting, setDetecting] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
+  const [showReady, setShowReady] = useState(true);
+  const [showBuilding, setShowBuilding] = useState(false);
   const [showEmerging, setShowEmerging] = useState(false);
 
   const loadSignals = useCallback(async () => {
@@ -1223,9 +1225,9 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                       <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".06em", color: "var(--ink-3)" }}>SIGNALS</span>
                       <span style={{ fontSize: 11, color: "var(--ink-3)" }}>
                         {[
-                          readySignals.length > 0 ? `${readySignals.length} ready to publish` : null,
-                          buildingSignals.length > 0 ? `${buildingSignals.length} building` : null,
-                          emergingSignals.length > 0 ? `${emergingSignals.length} emerging` : null,
+                          readySignals.length > 0 ? `${readySignals.length} publish-ready` : null,
+                          buildingSignals.length > 0 ? `${buildingSignals.length} gaining strength` : null,
+                          emergingSignals.length > 0 ? `${emergingSignals.length} on your radar` : null,
                         ].filter(Boolean).join(" · ")}
                         {selectedTheme ? ` · of ${sortedByConfidence.length}` : ""}
                       </span>
@@ -1245,136 +1247,187 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                       )}
                     </div>
 
-                    {/* TIER 1 — Ready to publish */}
+                    {/* TIER 1 — Publish-ready */}
                     {readySignals.length > 0 && (
                       <div style={{ marginBottom: 20 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--brand, #B08D3A)", flexShrink: 0 }} />
-                          <span style={{ fontSize: 13, fontWeight: 500 }}>Ready to publish</span>
-                          <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>{readySignals.length} signals</span>
+                        <div
+                          onClick={() => setShowReady(!showReady)}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            cursor: "pointer",
+                            userSelect: "none",
+                          }}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--brand, #B08D3A)", flexShrink: 0 }} />
+                            <span style={{ fontSize: 13, fontWeight: 500 }}>Publish-ready</span>
+                            <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
+                              {readySignals.length} signal{readySignals.length === 1 ? "" : "s"} · Strong enough to write from
+                            </span>
+                          </div>
+                          <ChevronDown
+                            size={14}
+                            style={{
+                              transform: showReady ? "rotate(180deg)" : "rotate(0)",
+                              transition: "transform .2s",
+                              color: "hsl(var(--muted-foreground))",
+                            }}
+                          />
                         </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 1, borderRadius: "var(--radius, 8px)", overflow: "hidden", border: "0.5px solid hsl(var(--border))" }}>
-                          {readySignals.map((s) => (
-                            <div
-                              key={s.id}
-                              data-testid="intel-signal-card"
-                              onClick={() => setSelectedSignalId(s.id)}
-                              style={{
-                                display: "grid",
-                                gridTemplateColumns: "1fr auto auto",
-                                gap: 12,
-                                alignItems: "center",
-                                padding: "12px 16px",
-                                background: selectedSignalId === s.id ? "hsl(var(--muted) / 0.5)" : "hsl(var(--background))",
-                                cursor: "pointer",
-                                transition: "background 0.15s",
-                              }}
-                              onMouseEnter={(e) => { if (selectedSignalId !== s.id) e.currentTarget.style.background = "hsl(var(--muted) / 0.3)"; }}
-                              onMouseLeave={(e) => { if (selectedSignalId !== s.id) e.currentTarget.style.background = "hsl(var(--background))"; }}
-                            >
-                              <div>
-                                <div style={{ fontSize: 14, fontWeight: 500, color: "hsl(var(--foreground))" }}>
-                                  {s.signal_title}
+                        {showReady && (
+                          <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 1, borderRadius: "var(--radius, 8px)", overflow: "hidden", border: "0.5px solid hsl(var(--border))" }}>
+                            {readySignals.map((s) => (
+                              <div
+                                key={s.id}
+                                data-testid="intel-signal-card"
+                                onClick={() => setSelectedSignalId(s.id)}
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns: "1fr auto auto",
+                                  gap: 12,
+                                  alignItems: "center",
+                                  padding: "12px 16px",
+                                  background: selectedSignalId === s.id ? "hsl(var(--muted) / 0.5)" : "hsl(var(--background))",
+                                  cursor: "pointer",
+                                  transition: "background 0.15s",
+                                }}
+                                onMouseEnter={(e) => { if (selectedSignalId !== s.id) e.currentTarget.style.background = "hsl(var(--muted) / 0.3)"; }}
+                                onMouseLeave={(e) => { if (selectedSignalId !== s.id) e.currentTarget.style.background = "hsl(var(--background))"; }}
+                              >
+                                <div>
+                                  <div style={{ fontSize: 14, fontWeight: 500, color: "hsl(var(--foreground))" }}>
+                                    {s.signal_title}
+                                  </div>
+                                  <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
+                                    {s.fragment_count || 0} sources
+                                    {s.velocity_status && s.velocity_status !== "stable" && ` · ${s.velocity_status}`}
+                                  </div>
                                 </div>
-                                <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
-                                  {s.fragment_count || 0} sources
-                                  {s.velocity_status && s.velocity_status !== "stable" && ` · ${s.velocity_status}`}
+                                <div style={{ textAlign: "right" }}>
+                                  <span style={{ fontSize: 14, fontWeight: 500, color: "var(--brand, #B08D3A)", fontVariantNumeric: "tabular-nums" }}>
+                                    {Math.round(s.confidence * 100)}%
+                                  </span>
+                                </div>
+                                <div>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); draftFromSignal(s); }}
+                                    style={{
+                                      fontSize: 12,
+                                      padding: "4px 10px",
+                                      borderRadius: "var(--radius, 6px)",
+                                      background: "none",
+                                      border: "0.5px solid hsl(var(--border))",
+                                      color: "hsl(var(--muted-foreground))",
+                                      cursor: "pointer",
+                                      whiteSpace: "nowrap",
+                                    }}
+                                  >
+                                    Write this →
+                                  </button>
                                 </div>
                               </div>
-                              <div style={{ textAlign: "right" }}>
-                                <span style={{ fontSize: 14, fontWeight: 500, color: "var(--brand, #B08D3A)", fontVariantNumeric: "tabular-nums" }}>
-                                  {Math.round(s.confidence * 100)}%
-                                </span>
-                              </div>
-                              <div>
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); draftFromSignal(s); }}
-                                  style={{
-                                    fontSize: 12,
-                                    padding: "4px 10px",
-                                    borderRadius: "var(--radius, 6px)",
-                                    background: "none",
-                                    border: "0.5px solid hsl(var(--border))",
-                                    color: "hsl(var(--muted-foreground))",
-                                    cursor: "pointer",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
-                                  Write this →
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
 
-                    {/* TIER 2 — Building */}
+                    {/* TIER 2 — Gaining strength */}
                     {buildingSignals.length > 0 && (
                       <div style={{ marginBottom: 20 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "hsl(var(--info))", flexShrink: 0 }} />
-                          <span style={{ fontSize: 13, fontWeight: 500 }}>Building</span>
-                          <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>{buildingSignals.length} signals · need more evidence</span>
+                        <div
+                          onClick={() => setShowBuilding(!showBuilding)}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            cursor: "pointer",
+                            userSelect: "none",
+                          }}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "hsl(var(--info))", flexShrink: 0 }} />
+                            <span style={{ fontSize: 13, fontWeight: 500 }}>Gaining strength</span>
+                            <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
+                              {buildingSignals.length} signal{buildingSignals.length === 1 ? "" : "s"} · Capture more to sharpen
+                            </span>
+                          </div>
+                          <ChevronDown
+                            size={14}
+                            style={{
+                              transform: showBuilding ? "rotate(180deg)" : "rotate(0)",
+                              transition: "transform .2s",
+                              color: "hsl(var(--muted-foreground))",
+                            }}
+                          />
                         </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 1, borderRadius: "var(--radius, 8px)", overflow: "hidden", border: "0.5px solid hsl(var(--border))" }}>
-                          {buildingSignals.map((s) => (
-                            <div
-                              key={s.id}
-                              data-testid="intel-signal-card"
-                              onClick={() => setSelectedSignalId(s.id)}
-                              style={{
-                                display: "grid",
-                                gridTemplateColumns: "1fr auto auto",
-                                gap: 12,
-                                alignItems: "center",
-                                padding: "10px 16px",
-                                background: selectedSignalId === s.id ? "hsl(var(--muted) / 0.5)" : "hsl(var(--background))",
-                                cursor: "pointer",
-                                transition: "background 0.15s",
-                              }}
-                              onMouseEnter={(e) => { if (selectedSignalId !== s.id) e.currentTarget.style.background = "hsl(var(--muted) / 0.3)"; }}
-                              onMouseLeave={(e) => { if (selectedSignalId !== s.id) e.currentTarget.style.background = "hsl(var(--background))"; }}
-                            >
-                              <div style={{ fontSize: 13, color: "hsl(var(--foreground))" }}>{s.signal_title}</div>
-                              <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", fontVariantNumeric: "tabular-nums" }}>
-                                {Math.round(s.confidence * 100)}%
+                        {showBuilding && (
+                          <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 1, borderRadius: "var(--radius, 8px)", overflow: "hidden", border: "0.5px solid hsl(var(--border))" }}>
+                            {buildingSignals.map((s) => (
+                              <div
+                                key={s.id}
+                                data-testid="intel-signal-card"
+                                onClick={() => setSelectedSignalId(s.id)}
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns: "1fr auto auto",
+                                  gap: 12,
+                                  alignItems: "center",
+                                  padding: "10px 16px",
+                                  background: selectedSignalId === s.id ? "hsl(var(--muted) / 0.5)" : "hsl(var(--background))",
+                                  cursor: "pointer",
+                                  transition: "background 0.15s",
+                                }}
+                                onMouseEnter={(e) => { if (selectedSignalId !== s.id) e.currentTarget.style.background = "hsl(var(--muted) / 0.3)"; }}
+                                onMouseLeave={(e) => { if (selectedSignalId !== s.id) e.currentTarget.style.background = "hsl(var(--background))"; }}
+                              >
+                                <div style={{ fontSize: 13, color: "hsl(var(--foreground))" }}>{s.signal_title}</div>
+                                <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", fontVariantNumeric: "tabular-nums" }}>
+                                  {Math.round(s.confidence * 100)}%
+                                </div>
+                                <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
+                                  {s.fragment_count || 0} sources
+                                </div>
                               </div>
-                              <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
-                                {s.fragment_count || 0} sources
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
 
-                    {/* TIER 3 — Emerging */}
+                    {/* TIER 3 — On your radar */}
                     {emergingSignals.length > 0 && (
                       <div>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                        <div
+                          onClick={() => setShowEmerging(!showEmerging)}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            cursor: "pointer",
+                            userSelect: "none",
+                          }}
+                        >
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                             <span style={{ width: 8, height: 8, borderRadius: "50%", background: "hsl(var(--muted-foreground) / 0.4)", flexShrink: 0 }} />
-                            <span style={{ fontSize: 13, fontWeight: 500 }}>Emerging</span>
-                            <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>{emergingSignals.length} signals</span>
+                            <span style={{ fontSize: 13, fontWeight: 500 }}>On your radar</span>
+                            <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
+                              {emergingSignals.length} signal{emergingSignals.length === 1 ? "" : "s"} · Early patterns forming
+                            </span>
                           </div>
-                          <button
-                            onClick={() => setShowEmerging(!showEmerging)}
+                          <ChevronDown
+                            size={14}
                             style={{
-                              fontSize: 12,
-                              padding: "4px 10px",
-                              borderRadius: "var(--radius, 6px)",
-                              background: "none",
-                              border: "0.5px solid hsl(var(--border))",
+                              transform: showEmerging ? "rotate(180deg)" : "rotate(0)",
+                              transition: "transform .2s",
                               color: "hsl(var(--muted-foreground))",
-                              cursor: "pointer",
                             }}
-                          >
-                            {showEmerging ? "Hide" : "Show"}
-                          </button>
+                          />
                         </div>
                         {showEmerging && (
-                          <div style={{ display: "flex", flexDirection: "column", gap: 1, borderRadius: "var(--radius, 8px)", overflow: "hidden", border: "0.5px solid hsl(var(--border))" }}>
+                          <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 1, borderRadius: "var(--radius, 8px)", overflow: "hidden", border: "0.5px solid hsl(var(--border))" }}>
                             {emergingSignals.map((s) => (
                               <div
                                 key={s.id}
