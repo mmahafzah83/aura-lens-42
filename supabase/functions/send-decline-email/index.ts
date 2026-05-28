@@ -34,6 +34,7 @@ function buildHtml(name: string) {
     <div style="margin-top:32px;padding-top:20px;border-top:1px solid #1f1e1c;">
       <div style="font-size:14px;color:#ededed;font-weight:500;">Mohammad Mahafzah</div>
       <div style="font-size:12px;color:#8a8478;margin-top:2px;">Aura builder</div>
+      <div style="font-size:11px;color:#6b665c;margin-top:14px;">Aura · Turns your expertise into presence · aura-intel.org</div>
     </div>
   </div>
 </div></body></html>`;

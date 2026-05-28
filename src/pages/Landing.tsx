@@ -180,7 +180,7 @@ const Landing = () => {
   const [showWelcome, setShowWelcome] = useState(false);
 
   usePageMeta({
-    title: "Aura — Strategic Intelligence OS",
+    title: "Aura — Turns your expertise into presence",
     description: "Capture what you read. Detect strategic patterns. Publish with authority on LinkedIn — in English and Arabic. Built for senior professionals.",
     path: "/",
     ogImage: "https://www.aura-intel.org/og-image.png",
@@ -663,11 +663,11 @@ const Landing = () => {
             <div className="flex items-center gap-3" style={{ height: 28 }}>
               <AuraLogo size={24} variant="dark" />
               <span style={{ fontSize: 12, color: "var(--ink-5)", fontFamily: "'DM Sans', sans-serif" }}>
-                Aura · Strategic Intelligence · aura-intel.org
+                Aura · Turns your expertise into presence · aura-intel.org
               </span>
             </div>
             <p style={{ fontSize: 12, color: "var(--ink-4)", marginTop: 12, fontFamily: "'DM Sans', sans-serif" }}>
-              © 2026 Aura Intelligence. All rights reserved.
+              © 2026 Aura. All rights reserved.
             </p>
           </div>
           <div className="landing-footer-col-center">

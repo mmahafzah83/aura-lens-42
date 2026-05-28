@@ -110,7 +110,7 @@ serve(async (req) => {
         </td></tr>
         <tr><td style="border-top:1px solid #EDE6D5;padding-top:18px;margin-top:24px;">
           <p style="font-size:11px;color:#8A8580;margin:18px 0 0;display:flex;align-items:center;gap:8px;">
-            ${horizonEye(16, BRAND)}<span style="margin-left:8px;">Aura · Strategic Intelligence · aura-intel.org</span>
+            ${horizonEye(16, BRAND)}<span style="margin-left:8px;">Aura · Turns your expertise into presence · aura-intel.org</span>
           </p>
         </td></tr>
       </table>

@@ -205,11 +205,19 @@ export default function VisualCardRenderer(props: VisualCardProps) {
                     {props.authorName}
                   </div>
                 </div>
-                <div style={{
-                  fontFamily: FONTS.MONO, fontSize: 14,
-                  color: style.footerColor, letterSpacing: '0.04em',
-                }}>
-                  aura-intel.org
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+                  <div style={{
+                    fontFamily: FONTS.MONO, fontSize: 14,
+                    color: style.footerColor, letterSpacing: '0.04em',
+                  }}>
+                    aura-intel.org
+                  </div>
+                  <div style={{
+                    fontFamily: isAr ? "'Cairo','DM Sans',sans-serif" : style.bodyFont,
+                    fontSize: 11, color: style.footerColor, opacity: 0.5,
+                  }}>
+                    {isAr ? "حوّل خبرتك إلى حضور" : "Turns your expertise into presence"}
+                  </div>
                 </div>
               </div>
             </div>

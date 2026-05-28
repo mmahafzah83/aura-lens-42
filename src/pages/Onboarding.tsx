@@ -866,7 +866,7 @@ const Onboarding = () => {
     ];
     return cardShell(
       <>
-        {eyebrow("Your intelligence OS is live")}
+        {eyebrow("Your intelligence is live")}
         {heading("Welcome to Aura.")}
         <div className="space-y-4 mb-8">
           {body(<>You have the expertise. The certificates. The years. But right now, to anyone who hasn't met you in person — you're invisible.</>)}

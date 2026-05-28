@@ -190,7 +190,7 @@ function buildHtml(opts: BuildHtmlOpts): string {
     </div>
 
     <div class="footer-pad" style="padding:28px 40px;background:#faf8f4;border-top:1px solid #ece8e0;">
-      <p style="font-size:12px;color:#888;line-height:1.6;text-align:center;margin-bottom:6px;font-family:'DM Sans',system-ui,sans-serif;">Aura · Strategic Intelligence for senior professionals.</p>
+      <p style="font-size:12px;color:#888;line-height:1.6;text-align:center;margin-bottom:6px;font-family:'DM Sans',system-ui,sans-serif;">Aura · Turns your expertise into presence · aura-intel.org</p>
       <p style="font-size:11px;color:#aaa;line-height:1.6;text-align:center;font-family:'DM Sans',system-ui,sans-serif;">Manage your preferences from your profile menu in Aura.</p>
     </div>
 

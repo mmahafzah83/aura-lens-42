@@ -1,7 +1,7 @@
 {
-  "name": "Aura — Executive Intelligence",
+  "name": "Aura — Turns your expertise into presence",
   "short_name": "Aura",
-  "description": "Premium executive intelligence and personal brand dashboard",
+  "description": "Turns your expertise into presence",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#121212",

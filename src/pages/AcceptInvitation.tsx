@@ -12,7 +12,7 @@ import usePageMeta from "@/hooks/usePageMeta";
 export default function AcceptInvitation() {
   usePageMeta({
     title: "Aura — Accept your invitation",
-    description: "You've been invited to join Aura, the strategic intelligence OS for senior professionals. Accept your invitation to set up your account.",
+    description: "You've been invited to join Aura — Aura turns your expertise into presence. Accept your invitation to set up your account.",
     path: "/accept-invitation",
   });
   const [params] = useSearchParams();
