@@ -18,6 +18,7 @@ import { computeIntelligenceStage, type IntelligenceStage } from "@/components/u
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import GuidedJourney from "@/components/GuidedJourney";
 import { useJourneyState } from "@/hooks/useJourneyState";
+import TierCeremonyModal from "@/components/TierCeremonyModal";
 
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
@@ -83,6 +84,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [auditOpen, setAuditOpen] = useState(false);
+  const [credentialOpen, setCredentialOpen] = useState(false);
   const [brandOpen, setBrandOpen] = useState(false);
   const [fullProfileOpen, setFullProfileOpen] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
@@ -828,6 +830,21 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   {identityIntel?.primary_role || positioningTitle}
                 </div>
               )}
+              <button
+                onClick={() => setCredentialOpen(true)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "var(--brand, #B08D3A)",
+                  fontSize: 12,
+                  cursor: "pointer",
+                  padding: 0,
+                  marginTop: 6,
+                  fontFamily: "inherit",
+                }}
+              >
+                View credential →
+              </button>
             </div>
 
             {/* Earned milestones */}
@@ -1019,6 +1036,11 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       {/* Modals */}
       <ObjectiveAuditModal open={auditOpen} onOpenChange={setAuditOpen} onNavigate={handleNavigate} />
       <BrandAssessmentModal open={brandOpen} onOpenChange={setBrandOpen} onNavigate={handleNavigate} />
+      <TierCeremonyModal
+        userId={authUser?.id ?? null}
+        forceOpen={credentialOpen}
+        onForceClose={() => setCredentialOpen(false)}
+      />
       {marketShareData && (
         <MilestoneShareModal
           open={!!marketShareData}

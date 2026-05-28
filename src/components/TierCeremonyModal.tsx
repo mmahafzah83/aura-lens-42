@@ -7,6 +7,7 @@ import { Download, Copy, FileText, X, Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import useMilestones, { type Milestone } from "@/hooks/useMilestones";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import {
   CONCEPTS,
   type ConceptKey,
@@ -15,6 +16,11 @@ import {
 
 interface Props {
   userId: string | null;
+  /** When true, open the credential chooser directly regardless of
+   *  whether a tier milestone is unacknowledged. Used for re-entry from
+   *  My Story so users can revisit their credential after dismissal. */
+  forceOpen?: boolean;
+  onForceClose?: () => void;
 }
 
 const TIER_QUOTES: Record<string, string> = {
@@ -36,26 +42,63 @@ const TEXT = "#f0ede8";
 const TEXT_MUTED = "rgba(240,237,232,.55)";
 const SERIF = "'Cormorant Garamond', 'Cairo', Georgia, serif";
 
-export default function TierCeremonyModal({ userId }: Props) {
+export default function TierCeremonyModal({ userId, forceOpen, onForceClose }: Props) {
   const { unacknowledgedMilestones, acknowledgeMilestone, shareMilestone } =
     useMilestones(userId);
 
-  const tierMilestone: Milestone | undefined = useMemo(
+  const realTierMilestone: Milestone | undefined = useMemo(
     () => unacknowledgedMilestones.find((m) => m.milestone_id?.startsWith("tier_")),
     [unacknowledgedMilestones]
   );
+
+  // Synthetic milestone used when forceOpen is set — represents the user's
+  // current tier (loaded from calculate-aura-score below) so the existing
+  // data-loading and render logic can run unchanged.
+  const [forcedTier, setForcedTier] = useState<string | null>(null);
+  useEffect(() => {
+    if (!forceOpen || !userId) { setForcedTier(null); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        await supabase.auth.getSession();
+        const { data: res } = await invokeEdgeFunction("calculate-aura-score", { body: {} });
+        if (cancelled) return;
+        const t = (res as any)?.tier_name || "Strategist";
+        setForcedTier(String(t));
+      } catch {
+        if (!cancelled) setForcedTier("Strategist");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [forceOpen, userId]);
+
+  const syntheticMilestone: Milestone | undefined = useMemo(() => {
+    if (!forceOpen || !forcedTier || !userId) return undefined;
+    return {
+      id: `forced_tier_${forcedTier.toLowerCase()}`,
+      user_id: userId,
+      milestone_id: `tier_${forcedTier.toLowerCase()}`,
+      milestone_name: `${forcedTier} Tier`,
+      context: {},
+      earned_at: new Date().toISOString(),
+      acknowledged: false,
+      shared: false,
+    } as Milestone;
+  }, [forceOpen, forcedTier, userId]);
+
+  const tierMilestone: Milestone | undefined = forceOpen ? syntheticMilestone : realTierMilestone;
 
   // Once-per-session gate so the modal doesn't reappear on rapid refreshes
   // before the optimistic acknowledgement is persisted.
   const [sessionGate, setSessionGate] = useState(false);
   useEffect(() => {
-    if (!tierMilestone) return;
+    if (!tierMilestone || forceOpen) return;
     try {
       const key = `aura_tier_ceremony_seen_${tierMilestone.id}`;
       if (sessionStorage.getItem(key) === "1") setSessionGate(true);
       else sessionStorage.setItem(key, "1");
     } catch {}
-  }, [tierMilestone]);
+  }, [tierMilestone, forceOpen]);
 
   const [profile, setProfile] = useState<{
     first_name?: string | null;
@@ -73,6 +116,12 @@ export default function TierCeremonyModal({ userId }: Props) {
   const [concept, setConcept] = useState<ConceptKey>("A");
   const [lang, setLang] = useState<"EN" | "AR">("EN");
   const [busy, setBusy] = useState<string | null>(null);
+
+  // When opened via forceOpen, jump straight to the credential chooser.
+  useEffect(() => {
+    if (forceOpen) setStep(1);
+    else setStep(0);
+  }, [forceOpen]);
 
   useEffect(() => {
     if (!tierMilestone || !userId) return;
@@ -167,7 +216,13 @@ export default function TierCeremonyModal({ userId }: Props) {
   };
 
   const close = () => {
-    if (dismissing || !tierMilestone || busy) return;
+    if (busy || !tierMilestone) return;
+    if (forceOpen) {
+      setMounted(false);
+      onForceClose?.();
+      return;
+    }
+    if (dismissing) return;
     setDismissing(true);
     setMounted(false);
     // Fire-and-forget — hook updates local state optimistically.
@@ -178,6 +233,11 @@ export default function TierCeremonyModal({ userId }: Props) {
   // re-appear next session so the user can return to their credential.
   const closeForSession = () => {
     if (busy || !tierMilestone) return;
+    if (forceOpen) {
+      setMounted(false);
+      onForceClose?.();
+      return;
+    }
     try {
       sessionStorage.setItem(`aura_tier_ceremony_seen_${tierMilestone.id}`, "1");
     } catch {}
@@ -337,7 +397,7 @@ export default function TierCeremonyModal({ userId }: Props) {
     }
   };
 
-  if (!tierMilestone || sessionGate) return null;
+  if (!tierMilestone || (sessionGate && !forceOpen)) return null;
 
   const next = TIER_NEXT[tierName.toLowerCase()];
 
