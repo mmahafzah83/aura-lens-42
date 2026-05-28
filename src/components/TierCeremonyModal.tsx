@@ -447,7 +447,6 @@ export default function TierCeremonyModal({ userId }: Props) {
               </button>
             </>
           )}
-          )}
           {step === 1 && (
             <button onClick={() => setStep(2)} style={ghostBtn}>
               Continue →
