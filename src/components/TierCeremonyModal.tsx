@@ -130,12 +130,12 @@ export default function TierCeremonyModal({ userId }: Props) {
   useEffect(() => {
     if (!tierMilestone || sessionGate) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close();
+      if (e.key === "Escape" && !busy) close();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tierMilestone, sessionGate]);
+  }, [tierMilestone, sessionGate, busy]);
 
   const tierName = useMemo(() => {
     if (!tierMilestone) return "";
@@ -167,11 +167,22 @@ export default function TierCeremonyModal({ userId }: Props) {
   };
 
   const close = () => {
-    if (dismissing || !tierMilestone) return;
+    if (dismissing || !tierMilestone || busy) return;
     setDismissing(true);
     setMounted(false);
     // Fire-and-forget — hook updates local state optimistically.
     void acknowledgeMilestone(tierMilestone.id);
+  };
+
+  // Close for the current session WITHOUT acknowledging — modal will
+  // re-appear next session so the user can return to their credential.
+  const closeForSession = () => {
+    if (busy || !tierMilestone) return;
+    try {
+      sessionStorage.setItem(`aura_tier_ceremony_seen_${tierMilestone.id}`, "1");
+    } catch {}
+    setMounted(false);
+    setSessionGate(true);
   };
 
   // --- Export refs (off-screen full-size cards we capture from) ---
