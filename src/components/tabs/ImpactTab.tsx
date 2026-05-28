@@ -708,6 +708,17 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     [followerRows]
   );
 
+  // Prior-period % changes (null = can't compute, e.g. no prior data)
+  const pctChange = (current: number, prior: number | null): number | null => {
+    if (prior === null) return null;
+    if (prior === 0 && current === 0) return 0;
+    if (prior === 0) return null;
+    return ((current - prior) / prior) * 100;
+  };
+  const impChange = pctChange(periodImpressions ?? 0, priorImpressions);
+  const engChange = pctChange(periodEngagementRate ?? 0, priorEngagementRate);
+  const followerChange = pctChange(newFollowersPeriod, priorNewFollowers);
+
   /* ── AI narrative ── */
   const narrative = useMemo(() => {
     type Part = { text: string; type: "neutral" | "primary" | "negative" | "positive" | "action" };
