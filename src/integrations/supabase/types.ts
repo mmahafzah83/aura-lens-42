@@ -56,6 +56,42 @@ export type Database = {
         }
         Relationships: []
       }
+      audience_insights: {
+        Row: {
+          audience_gaps: string[] | null
+          audience_strengths: string[] | null
+          demographics_hash: string | null
+          generated_at: string
+          id: string
+          insight_body: string
+          insight_headline: string
+          next_action: string | null
+          user_id: string
+        }
+        Insert: {
+          audience_gaps?: string[] | null
+          audience_strengths?: string[] | null
+          demographics_hash?: string | null
+          generated_at?: string
+          id?: string
+          insight_body: string
+          insight_headline: string
+          next_action?: string | null
+          user_id: string
+        }
+        Update: {
+          audience_gaps?: string[] | null
+          audience_strengths?: string[] | null
+          demographics_hash?: string | null
+          generated_at?: string
+          id?: string
+          insight_body?: string
+          insight_headline?: string
+          next_action?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       aura_conversation_memory: {
         Row: {
           actions_committed: string[] | null
