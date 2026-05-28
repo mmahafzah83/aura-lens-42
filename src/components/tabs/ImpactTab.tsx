@@ -1515,6 +1515,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         const seniorityTotal = seniorityRows.reduce(
           (sum, r) => sum + Number(r.percentage_numeric || 0), 0
         );
+        const maxPct = Math.max(...(seniorityRows || []).map(r => Number(r.percentage_numeric || 0)));
 
         const periodStart = demos[0]?.period_start;
         const periodEnd = demos[0]?.period_end;
