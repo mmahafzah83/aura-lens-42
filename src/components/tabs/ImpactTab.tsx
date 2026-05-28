@@ -863,6 +863,62 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     return followerRows.reduce((acc, r) => (r.follower_growth > (acc?.follower_growth ?? -1) ? r : acc), followerRows[0]);
   }, [followerRows]);
 
+  // Load AI narrative interpretations (cached in impact_narratives table)
+  useEffect(() => {
+    if (!userId || !latestScore || periodImpressions === null) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: cached } = await supabase
+          .from("impact_narratives")
+          .select("*")
+          .eq("user_id", userId)
+          .order("generated_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (cached && !cancelled) {
+          setImpactNarrative(cached as any);
+          return;
+        }
+        const { data } = await supabase.functions.invoke("generate-impact-narrative", {
+          body: {
+            score: latestScore,
+            tierName: auraData?.tier_name || "Observer",
+            weekDelta: weekDelta || 0,
+            selectedDays,
+            followers: latestFollowers,
+            impressions: periodImpressions,
+            engagementRate: periodEngagementRate,
+            impChange, engChange, followerChange,
+            newFollowers: newFollowersPeriod,
+            bestDay: bestDay ? `+${bestDay.follower_growth} on ${fmtDateShort(bestDay.snapshot_date)}` : null,
+            signalScore: auraData?.signal_score || 0,
+            contentScore: auraData?.content_score || 0,
+            consistencyScore: auraData?.capture_score || 0,
+            visibility: windowedPostCount > 0 && postLevelImpressions ? Math.round(postLevelImpressions / windowedPostCount) : 0,
+            resonance: periodEngagementRate,
+            signalDepth: pillarSignalCount,
+            momentum: pillarWeeksActive,
+            topSignal: topSignal || null,
+            postCount: contentPerf?.postCount || 0,
+            avgPostEngagement: contentPerf?.avgEngagement || 0,
+            topPosts: (topPosts || []).slice(0, 5).map(p => ({
+              date: p.post?.published_at,
+              impressions: p.impressions,
+              reactions: p.reactions,
+              rate: p.engagement_rate,
+            })),
+          }
+        });
+        if (data && !cancelled) setImpactNarrative(data as any);
+      } catch (e) {
+        console.error("loadNarrative failed", e);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, latestScore, periodImpressions, selectedDays]);
+
   /* ── Published-post markers snapped to follower chart x-axis ── */
   const publishMarkers = useMemo(() => {
     if (followerSeries.length === 0 || publishedPosts.length === 0) return [];
