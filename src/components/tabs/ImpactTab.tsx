@@ -1427,15 +1427,25 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       >
         <div>
             <p style={{ fontSize: 14, lineHeight: 1.7, color: "var(--color-text-secondary)" }}>
-              {narrative.map((p, i) => (
-                <span
-                  key={i}
-                  style={{ color: partColor(p.type), fontWeight: partWeight(p.type) }}
-                >
-                  {p.text}
-                </span>
-              ))}
+              {impactNarrative?.hero_narrative ? (
+                <span>{impactNarrative.hero_narrative}</span>
+              ) : (
+                narrative.map((p, i) => (
+                  <span
+                    key={i}
+                    style={{ color: partColor(p.type), fontWeight: partWeight(p.type) }}
+                  >
+                    {p.text}
+                  </span>
+                ))
+              )}
             </p>
+
+            {impactNarrative?.one_action && (
+              <div style={{ marginTop: 12, fontWeight: 500, color: "#B08D3A", fontSize: 15 }}>
+                → {impactNarrative.one_action}
+              </div>
+            )}
 
             {captureScore < 80 && (
               <div className="mt-4">
