@@ -1148,22 +1148,22 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat, prefillUrl, 
                 dir="auto"
                 onFocus={(e) => {
                   e.currentTarget.style.borderColor = "var(--brand)";
-                  e.currentTarget.style.background = "var(--aura-card)";
+                  e.currentTarget.style.background = "hsl(var(--background))";
                   e.currentTarget.style.boxShadow = "0 0 0 3px var(--brand-muted)";
                 }}
                 onBlur={(e) => {
                   e.currentTarget.style.borderColor = "var(--border)";
-                  e.currentTarget.style.background = "var(--surface-subtle)";
+                  e.currentTarget.style.background = "hsl(var(--background))";
                   e.currentTarget.style.boxShadow = "none";
                 }}
                 style={{
                   width: "100%",
-                  background: "var(--surface-subtle)",
-                  border: "0.5px solid var(--border)",
+                  background: "hsl(var(--background))",
+                  border: "0.5px solid hsl(var(--border))",
                   borderRadius: 12,
                   padding: "14px 16px",
                   fontSize: 14,
-                  color: "var(--ink)",
+                  color: "hsl(var(--foreground))",
                   minHeight: 120,
                   resize: "none",
                   outline: "none",
