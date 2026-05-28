@@ -2221,6 +2221,12 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             })}
           </div>
         ))}
+        {openSections.posts && topPosts.length > 0 && (
+          <SectionInsight
+            text={impactNarrative?.post_insight}
+            askAuraPrompt="What should my next post be about?"
+          />
+        )}
       </section>
 
       {/* ─────────── 5b. LINKEDIN ANALYTICS (always visible) ─────────── */}
