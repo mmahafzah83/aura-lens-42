@@ -1397,7 +1397,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               { key: "content", label: "Content", rawValue: contentScore, weight: 0.40, maxPoints: 40,
                 color: "var(--aura-blue)",
                 hint: (() => {
-                  const pub = Number((auraData as any)?.aura_published_count ?? 0);
+                  const pub = Number((auraData as any)?.published_count ?? (auraData as any)?.aura_published_count ?? 0);
                   return `${pub} published last 30d`;
                 })(),
                 tooltip: "Your publishing activity. Imported LinkedIn history is your foundation (up to 15 points). Publishing new content from your signals is what grows this score (up to 85 points). Resets monthly.",
