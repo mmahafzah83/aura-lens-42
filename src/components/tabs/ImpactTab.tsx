@@ -1418,183 +1418,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         )}
       </section>
 
-      {/* ─────────── PROGRESSIVE DISCLOSURE — master toggle for detailed breakdown ─────────── */}
-      <button
-        type="button"
-        onClick={() => setShowDetailed(v => !v)}
-        style={{
-          width: "100%",
-          background: "transparent",
-          border: "0.5px solid var(--brand-line)",
-          borderRadius: 10,
-          padding: "14px 18px",
-          textAlign: "left",
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 12,
-        }}
-      >
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 16, fontWeight: 500, color: "var(--ink)" }}>
-            {showDetailed ? "Hide detailed breakdown" : "See detailed breakdown"}
-          </div>
-          {!showDetailed && (
-            <div style={{ fontSize: 12, color: "var(--ink-5)", marginTop: 4 }}>
-              5 more sections · Pillars · Content · Posts · Followers · Analytics
-            </div>
-          )}
-        </div>
-        <span style={{ color: "var(--gold-dark)", fontSize: 18 }}>{showDetailed ? "▾" : "▸"}</span>
-      </button>
-
-      {showDetailed && (
-      <>
-      {/* ─────────── 4 PILLARS ─────────── */}
-      <section>
-        <div
-          className="text-xs uppercase font-medium mb-2"
-          style={{ letterSpacing: "0.08em", color: "var(--brand)" }}
-        >
-          YOUR LINKEDIN FOOTPRINT
-        </div>
-        <h2 style={{
-          fontFamily: "'Cormorant Garamond', Georgia, serif",
-          fontSize: 18, fontWeight: 500, color: "var(--aura-t1)",
-          margin: "0 0 4px",
-        }}>
-          Your LinkedIn footprint
-        </h2>
-        <p style={{
-          fontSize: 13,
-          color: "var(--aura-t3)",
-          margin: "0 0 16px",
-        }}>
-          How your content performs in the market
-        </p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <PillarCard
-            label="Visibility"
-            value={(() => {
-              if (!postLevelImpressions || windowedPostCount === 0) return "—";
-              const avg = Math.round(postLevelImpressions / windowedPostCount);
-              return formatCompact(avg);
-            })()}
-            unit="avg/post"
-            color="var(--aura-blue)"
-            tooltip={{
-              what: "Average impressions per tracked post in your selected period.",
-              how: "Calculated from individual post metrics.",
-              improve: "Publish more often and use hooks tied to live signals.",
-            }}
-          />
-          <PillarCard
-            label="Resonance"
-            value={periodEngagementRate != null ? `${periodEngagementRate.toFixed(1)}%` : "—"}
-            unit={(() => {
-              const b = tierBenchmark(latestFollowers);
-              return `tier ${b.low}–${b.high}%`;
-            })()}
-            color={(() => {
-              if (periodEngagementRate == null) return "var(--aura-t3)";
-              const b = tierBenchmark(latestFollowers);
-              if (periodEngagementRate >= b.high) return "var(--aura-positive)";
-              if (periodEngagementRate >= b.low) return "var(--aura-accent)";
-              return "var(--aura-negative)";
-            })()}
-            tooltip={{
-              what: "Engagement rate (engagements ÷ impressions, includes reactions, comments, reposts).",
-              how: "Impression-weighted across days, benchmarked against your follower tier.",
-              improve: "Open with a sharp POV; reply in the first hour.",
-            }}
-          />
-          <PillarCard
-            label="Signal Depth"
-            value={String(pillarSignalCount)}
-            unit={pillarAvgSignalConf > 0 ? `${pillarAvgSignalConf}% avg conf` : "no signals"}
-            color="var(--aura-accent3)"
-            tooltip={{
-              what: "Active strategic signals you're tracking.",
-              how: "Active signals you're tracking. The count and average confidence are shown separately.",
-              improve: "Capture from diverse sources to surface new signals.",
-            }}
-          />
-          <PillarCard
-            label="Momentum"
-            value={`${pillarWeeksActive}/4`}
-            unit="weeks active"
-            color="var(--aura-accent)"
-            dots={pillarWeeksActive}
-            tooltip={{
-              what: "How many of the last 4 weeks you captured at least once.",
-              how: "1 capture per week keeps the streak alive.",
-              improve: "Commit to a weekly capture rhythm — even 1 entry counts.",
-            }}
-          />
-        </div>
-      </section>
-
-      {/* ─────────── INSIGHTS + NEXT TIER ─────────── */}
-      <section>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div style={{
-            background: "var(--aura-card)", border: "1px solid var(--aura-border)",
-            borderRadius: 12, padding: "16px 18px",
-          }}>
-            <div style={{
-              fontSize: 12, letterSpacing: "0.1em",
-              color: "var(--aura-accent)", fontWeight: 600, marginBottom: 8,
-            }}>
-              Insight
-            </div>
-            <p style={{ fontSize: 14, lineHeight: 1.625, color: "var(--aura-t1)", margin: 0 }}>
-              {(() => {
-                if (pillarWeeksActive >= 4 && periodEngagementRate != null) {
-                  return "Consistent capture is paying off — your engagement is tracking above baseline. Double down on the formats that worked.";
-                }
-                if (pillarSignalCount > 0 && contentScore < 40) {
-                  return "You're sitting on strong signals but under-publishing. The fastest path to score growth is one post from your top signal this week.";
-                }
-                if (daysSinceLastAll !== null && daysSinceLastAll > 7) {
-                  return `It's been ${daysSinceLastAll} days since your last capture. A single source today restarts your weekly rhythm.`;
-                }
-                return "Your presence compounds when capture, signal, and publish cycle together. Keep the loop closed.";
-              })()}
-            </p>
-          </div>
-          <div style={{
-            background: "var(--aura-card)", border: "1px solid var(--aura-border)",
-            borderRadius: 12, padding: "16px 18px",
-          }}>
-            <div style={{
-              fontSize: 12, letterSpacing: "0.1em",
-              color: "var(--aura-accent2)", fontWeight: 600, marginBottom: 8,
-            }}>
-              Next tier
-            </div>
-            {auraData?.next_tier_name && auraData?.points_to_next ? (
-              <>
-                <div className="text-metric" style={{ color: "var(--aura-t1)" }}>
-                  {auraData.points_to_next} pts
-                </div>
-                <p style={{ fontSize: 14, color: "var(--aura-t2)", margin: "6px 0 0", lineHeight: 1.625 }}>
-                  to reach <span style={{ color: "var(--aura-accent)", fontWeight: 600 }}>{auraData.next_tier_name}</span>.
-                  Publishing from your top signal is the fastest mover.
-                </p>
-              </>
-            ) : (
-              <p style={{ fontSize: 14, color: "var(--aura-t2)", margin: 0, lineHeight: 1.625 }}>
-                You've reached the top tier — focus on maintaining cadence.
-              </p>
-            )}
-          </div>
-        </div>
-      </section>
-
-
-      {/* Capture Rhythm + Headline Stats removed — duplicated elsewhere. Mini KPIs now live in the Score Hero. */}
-
       {/* ─────────── YOUR AUDIENCE ─────────── */}
       {(() => {
         const SENIOR_LEVELS = new Set(["Senior", "Director", "CXO", "VP", "Partner", "Owner"]);
@@ -1906,6 +1729,180 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           </section>
         );
       })()}
+
+      {/* ─────────── PROGRESSIVE DISCLOSURE — master toggle for detailed breakdown ─────────── */}
+      <button
+        type="button"
+        onClick={() => setShowDetailed(v => !v)}
+        style={{
+          width: "100%",
+          background: "transparent",
+          border: "0.5px solid var(--brand-line)",
+          borderRadius: 10,
+          padding: "14px 18px",
+          textAlign: "left",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+        }}
+      >
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 16, fontWeight: 500, color: "var(--ink)" }}>
+            {showDetailed ? "Hide detailed breakdown" : "See detailed breakdown"}
+          </div>
+          {!showDetailed && (
+            <div style={{ fontSize: 12, color: "var(--ink-5)", marginTop: 4 }}>
+              5 more sections · Pillars · Content · Posts · Followers · Analytics
+            </div>
+          )}
+        </div>
+        <span style={{ color: "var(--gold-dark)", fontSize: 18 }}>{showDetailed ? "▾" : "▸"}</span>
+      </button>
+
+      {showDetailed && (
+      <>
+      {/* ─────────── 4 PILLARS ─────────── */}
+      <section>
+        <div
+          className="text-xs uppercase font-medium mb-2"
+          style={{ letterSpacing: "0.08em", color: "var(--brand)" }}
+        >
+          YOUR LINKEDIN FOOTPRINT
+        </div>
+        <h2 style={{
+          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontSize: 18, fontWeight: 500, color: "var(--aura-t1)",
+          margin: "0 0 4px",
+        }}>
+          Your LinkedIn footprint
+        </h2>
+        <p style={{
+          fontSize: 13,
+          color: "var(--aura-t3)",
+          margin: "0 0 16px",
+        }}>
+          How your content performs in the market
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <PillarCard
+            label="Visibility"
+            value={(() => {
+              if (!postLevelImpressions || windowedPostCount === 0) return "—";
+              const avg = Math.round(postLevelImpressions / windowedPostCount);
+              return formatCompact(avg);
+            })()}
+            unit="avg/post"
+            color="var(--aura-blue)"
+            tooltip={{
+              what: "Average impressions per tracked post in your selected period.",
+              how: "Calculated from individual post metrics.",
+              improve: "Publish more often and use hooks tied to live signals.",
+            }}
+          />
+          <PillarCard
+            label="Resonance"
+            value={periodEngagementRate != null ? `${periodEngagementRate.toFixed(1)}%` : "—"}
+            unit={(() => {
+              const b = tierBenchmark(latestFollowers);
+              return `tier ${b.low}–${b.high}%`;
+            })()}
+            color={(() => {
+              if (periodEngagementRate == null) return "var(--aura-t3)";
+              const b = tierBenchmark(latestFollowers);
+              if (periodEngagementRate >= b.high) return "var(--aura-positive)";
+              if (periodEngagementRate >= b.low) return "var(--aura-accent)";
+              return "var(--aura-negative)";
+            })()}
+            tooltip={{
+              what: "Engagement rate (engagements ÷ impressions, includes reactions, comments, reposts).",
+              how: "Impression-weighted across days, benchmarked against your follower tier.",
+              improve: "Open with a sharp POV; reply in the first hour.",
+            }}
+          />
+          <PillarCard
+            label="Signal Depth"
+            value={String(pillarSignalCount)}
+            unit={pillarAvgSignalConf > 0 ? `${pillarAvgSignalConf}% avg conf` : "no signals"}
+            color="var(--aura-accent3)"
+            tooltip={{
+              what: "Active strategic signals you're tracking.",
+              how: "Active signals you're tracking. The count and average confidence are shown separately.",
+              improve: "Capture from diverse sources to surface new signals.",
+            }}
+          />
+          <PillarCard
+            label="Momentum"
+            value={`${pillarWeeksActive}/4`}
+            unit="weeks active"
+            color="var(--aura-accent)"
+            dots={pillarWeeksActive}
+            tooltip={{
+              what: "How many of the last 4 weeks you captured at least once.",
+              how: "1 capture per week keeps the streak alive.",
+              improve: "Commit to a weekly capture rhythm — even 1 entry counts.",
+            }}
+          />
+        </div>
+      </section>
+
+      {/* ─────────── INSIGHTS + NEXT TIER ─────────── */}
+      <section>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div style={{
+            background: "var(--aura-card)", border: "1px solid var(--aura-border)",
+            borderRadius: 12, padding: "16px 18px",
+          }}>
+            <div style={{
+              fontSize: 12, letterSpacing: "0.1em",
+              color: "var(--aura-accent)", fontWeight: 600, marginBottom: 8,
+            }}>
+              Insight
+            </div>
+            <p style={{ fontSize: 14, lineHeight: 1.625, color: "var(--aura-t1)", margin: 0 }}>
+              {(() => {
+                if (pillarWeeksActive >= 4 && periodEngagementRate != null) {
+                  return "Consistent capture is paying off — your engagement is tracking above baseline. Double down on the formats that worked.";
+                }
+                if (pillarSignalCount > 0 && contentScore < 40) {
+                  return "You're sitting on strong signals but under-publishing. The fastest path to score growth is one post from your top signal this week.";
+                }
+                if (daysSinceLastAll !== null && daysSinceLastAll > 7) {
+                  return `It's been ${daysSinceLastAll} days since your last capture. A single source today restarts your weekly rhythm.`;
+                }
+                return "Your presence compounds when capture, signal, and publish cycle together. Keep the loop closed.";
+              })()}
+            </p>
+          </div>
+          <div style={{
+            background: "var(--aura-card)", border: "1px solid var(--aura-border)",
+            borderRadius: 12, padding: "16px 18px",
+          }}>
+            <div style={{
+              fontSize: 12, letterSpacing: "0.1em",
+              color: "var(--aura-accent2)", fontWeight: 600, marginBottom: 8,
+            }}>
+              Next tier
+            </div>
+            {auraData?.next_tier_name && auraData?.points_to_next ? (
+              <>
+                <div className="text-metric" style={{ color: "var(--aura-t1)" }}>
+                  {auraData.points_to_next} pts
+                </div>
+                <p style={{ fontSize: 14, color: "var(--aura-t2)", margin: "6px 0 0", lineHeight: 1.625 }}>
+                  to reach <span style={{ color: "var(--aura-accent)", fontWeight: 600 }}>{auraData.next_tier_name}</span>.
+                  Publishing from your top signal is the fastest mover.
+                </p>
+              </>
+            ) : (
+              <p style={{ fontSize: 14, color: "var(--aura-t2)", margin: 0, lineHeight: 1.625 }}>
+                You've reached the top tier — focus on maintaining cadence.
+              </p>
+            )}
+          </div>
+        </div>
+      </section>
 
       {/* ─────────── 9. CONTENT PERFORMANCE ─────────── */}
       <section>
