@@ -388,14 +388,20 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     return () => { cancelled = true; };
   }, []);
 
-  // Load content performance (independent of time range)
+  // Load content performance (respects selected date range)
   useEffect(() => {
     (async () => {
+      const sinceDate = new Date();
+      sinceDate.setDate(sinceDate.getDate() - selectedDays);
+      const sinceDateOnly = sinceDate.toISOString().slice(0, 10);
+
       const { data: allPosts } = await supabase
         .from("linkedin_posts")
         .select("theme, tone, format_type, engagement_score, like_count, comment_count, source_type, tracking_status, post_text, published_at")
         .in("source_type", ["linkedin_export", "external_reference", "aura_generated", "search_discovery"])
         .neq("tracking_status", "rejected")
+        .gte("published_at", sinceDateOnly)
+        .not("published_at", "is", null)
         .order("published_at", { ascending: false })
         .limit(500);
 
@@ -405,6 +411,17 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         p.tracking_status === "external_reference" ||
         (p.source_type === "aura_generated" && p.tracking_status === "published")
       );
+
+      if (analyzablePosts.length === 0) {
+        setContentPerf({
+          postCount: 0,
+          avgEngagement: 0,
+          topTheme: "—",
+          topFormat: "—",
+          tones: [],
+        });
+        return;
+      }
 
       const themeCounts: Record<string, number> = {};
       const toneCounts: Record<string, number> = {};
@@ -440,7 +457,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         tones,
       });
     })();
-  }, []);
+  }, [selectedDays]);
 
   // Load top strategic signal (highest priority/confidence among active signals)
   useEffect(() => {
@@ -1441,7 +1458,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         />
         {openSections.content && (!contentPerf || contentPerf.postCount === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No published content data yet. Posts published via Aura or imported from LinkedIn will appear here.
+            No posts in this period.
           </p>
         ) : (
           <div className="space-y-4">
