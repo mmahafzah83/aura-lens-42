@@ -265,20 +265,33 @@ Deno.serve(async (req) => {
     /* ───────── SHEET 4: DEMOGRAPHICS ───────── */
     const demoSheet = findSheet("DEMOGRAPHICS", "Demographics");
     let demoRows = 0;
+    const uploadBatchId = crypto.randomUUID();
+
+    // Parse period from DISCOVERY header first (needed for demographics rows)
+    let periodStart: string | null = null;
+    let periodEnd: string | null = null;
+    const discSheet = findSheet("DISCOVERY", "Discovery");
+    if (discSheet) {
+      const discRows = XLSX.utils.sheet_to_json<any[]>(discSheet, { header: 1, raw: true, defval: "" });
+      const periodStr = String(discRows[0]?.[1] ?? "");
+      const periodMatch = periodStr.match(/(\d{1,2}\/\d{1,2}\/\d{4})\s*-\s*(\d{1,2}\/\d{1,2}\/\d{4})/);
+      if (periodMatch) {
+        const parseUSDate = (s: string) => {
+          const [m, d, y] = s.split("/");
+          return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+        };
+        periodStart = parseUSDate(periodMatch[1]);
+        periodEnd = parseUSDate(periodMatch[2]);
+      }
+    }
+
     if (demoSheet) {
       const rows = XLSX.utils.sheet_to_json<any[]>(demoSheet, { header: 1, raw: true, defval: "" });
 
       // Full replace on each upload
       await admin.from("audience_demographics").delete().eq("user_id", userId);
 
-      const demoPayloads: Array<{
-        user_id: string;
-        category: string;
-        value: string;
-        percentage: string;
-        percentage_numeric: number;
-        source_type: string;
-      }> = [];
+      const demoPayloads: Array<Record<string, unknown>> = [];
 
       for (let i = 1; i < rows.length; i++) {
         const row = rows[i];
@@ -303,6 +316,9 @@ Deno.serve(async (req) => {
           value,
           percentage: pctStr,
           percentage_numeric: pctNum,
+          period_start: periodStart,
+          period_end: periodEnd,
+          upload_batch_id: uploadBatchId,
           source_type: "linkedin_export",
         });
       }
@@ -316,7 +332,6 @@ Deno.serve(async (req) => {
     }
 
     /* ───────── SHEET 5: DISCOVERY ───────── */
-    const discSheet = findSheet("DISCOVERY", "Discovery");
     if (discSheet) {
       const rows = XLSX.utils.sheet_to_json<any[]>(discSheet, { header: 1, raw: true, defval: "" });
 
@@ -371,6 +386,7 @@ Deno.serve(async (req) => {
         demographics_rows: demoRows,
       },
       total_followers: totalFollowers,
+      period: periodStart && periodEnd ? { start: periodStart, end: periodEnd } : null,
     });
   } catch (e) {
     console.error("import-linkedin-analytics error:", e);
