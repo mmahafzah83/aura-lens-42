@@ -573,6 +573,10 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
               fontFamily={bodyFont} fontSize={14} fill={style.muted}>
           aura-intel.org
         </text>
+        <text x={urlX} y={h - 48} textAnchor={urlAnchor}
+              fontFamily={bodyFont} fontSize={12} fill={style.muted} opacity={0.5}>
+          {isRTL ? "حوّل خبرتك إلى حضور" : "Turns your expertise into presence"}
+        </text>
       </g>
 
       {/* Progress bar */}
