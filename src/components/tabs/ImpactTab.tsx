@@ -136,6 +136,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const [publishedPosts, setPublishedPosts] = useState<{ published_at: string; post_text: string | null }[]>([]);
   const [periodImpressions, setPeriodImpressions] = useState<number | null>(null);
   const [periodEngagementRate, setPeriodEngagementRate] = useState<number | null>(null);
+  const [postLevelImpressions, setPostLevelImpressions] = useState<number | null>(null);
 
   // 4 Pillars supplementary data
   const [pillarSignalCount, setPillarSignalCount] = useState(0);
@@ -279,9 +280,20 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         .gte("snapshot_date", sinceDateOnly);
       const uniq = new Set(((winRes.data as any[]) || []).map(r => r.post_id).filter(Boolean));
       setWindowedPostCount(uniq.size);
+      // Post-level impressions sum (numerator for visibility calculation)
+      const postImpRes = await supabase
+        .from("linkedin_post_metrics")
+        .select("impressions")
+        .eq("user_id", user.id)
+        .gte("snapshot_date", sinceDateOnly);
+      const postImpSum = ((postImpRes.data as any[]) || []).reduce(
+        (sum, r) => sum + Number(r.impressions || 0), 0
+      );
+      setPostLevelImpressions(postImpSum);
     } else {
       setTopPosts([]);
       setWindowedPostCount(0);
+      setPostLevelImpressions(null);
     }
 
     // Follower / influence snapshots from LinkedIn export (within range, followers > 0)
@@ -1302,15 +1314,15 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           <PillarCard
             label="Visibility"
             value={(() => {
-              if (!periodImpressions || windowedPostCount === 0) return "—";
-              const avg = Math.round(periodImpressions / windowedPostCount);
+              if (!postLevelImpressions || windowedPostCount === 0) return "—";
+              const avg = Math.round(postLevelImpressions / windowedPostCount);
               return formatCompact(avg);
             })()}
             unit="avg/post"
             color="var(--aura-blue)"
             tooltip={{
-              what: "Average impressions per post in your selected time window.",
-              how: "Window impressions ÷ posts with metrics in the same window.",
+              what: "Average impressions per tracked post in your selected period.",
+              how: "Calculated from individual post metrics.",
               improve: "Publish more often and use hooks tied to live signals.",
             }}
           />
