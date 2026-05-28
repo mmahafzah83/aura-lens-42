@@ -514,9 +514,7 @@ const Dashboard = () => {
                   fontSize: 12,
                   letterSpacing: "0.08em",
                   color: "var(--ink-4)",
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
+                  lineHeight: 1.4,
                 }}
               >
                 Turns your expertise into presence
