@@ -1095,7 +1095,8 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
       return (
         <g>
           {slide.headline && (
-            <text x={startX} y={150} textAnchor={sideAnchor}
+            <text x={startX} y={150} textAnchor="start"
+                  direction={isRTL ? "rtl" : undefined}
                   fontFamily={headingFont} fontSize={42} fontWeight={style.headingWeight ?? 700} fill={style.fg}>
               {slide.headline}
             </text>
@@ -1107,16 +1108,18 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
             const textColor = isKill ? style.muted : style.fg;
             const labelX = isRTL ? w - edgePad : edgePad;
             const itemTextX = isRTL ? w - edgePad - 140 : edgePad + 140;
-            const listAnchor: "start" | "end" = isRTL ? "end" : "start";
+            const listAnchor: "start" = "start";
             const labelText = L[it.label] || it.label;
             return (
               <g key={i}>
                 <line x1={edgePad} y1={y - 30} x2={w - edgePad} y2={y - 30} stroke={style.border} />
                 <text x={labelX} y={y + 18} textAnchor={listAnchor}
+                      direction={isRTL ? "rtl" : undefined}
                       fontFamily={monoFont} fontSize={18} fontWeight={700} fill={labelColor}>
                   {labelText}
                 </text>
                 <text x={itemTextX} y={y + 18} textAnchor={listAnchor}
+                      direction={isRTL ? "rtl" : undefined}
                       fontFamily={bodyFont} fontSize={isRTL ? 22 : 26} fill={textColor} fontWeight={isRTL ? 600 : 400}
                       textDecoration={isKill ? "line-through" : "none"}>
                   {it.text}
