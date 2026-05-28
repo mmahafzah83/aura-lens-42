@@ -8,6 +8,7 @@ import { EMPTY_STATE } from "@/constants/language";
 import {
   ResponsiveContainer,
   BarChart, Bar,
+  AreaChart, Area,
   XAxis, YAxis, Tooltip, ReferenceLine,
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
@@ -137,6 +138,15 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const [periodImpressions, setPeriodImpressions] = useState<number | null>(null);
   const [periodEngagementRate, setPeriodEngagementRate] = useState<number | null>(null);
   const [postLevelImpressions, setPostLevelImpressions] = useState<number | null>(null);
+
+  // Prior-period comparison (vs. previous window of equal length)
+  const [priorImpressions, setPriorImpressions] = useState<number | null>(null);
+  const [priorEngagementRate, setPriorEngagementRate] = useState<number | null>(null);
+  const [priorNewFollowers, setPriorNewFollowers] = useState<number | null>(null);
+  // Cumulative impressions series for the "Impressions over time" chart
+  const [impressionsSeries, setImpressionsSeries] = useState<Array<{
+    date: string; label: string; daily: number; cumulative: number;
+  }>>([]);
 
   // 4 Pillars supplementary data
   const [pillarSignalCount, setPillarSignalCount] = useState(0);
@@ -379,6 +389,52 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     } else {
       setPeriodEngagementRate(null);
     }
+
+    // ── Prior-period comparison (window of equal length immediately before current) ──
+    const priorStart = new Date(sinceDate);
+    priorStart.setDate(priorStart.getDate() - rangeDays);
+    const priorStartOnly = priorStart.toISOString().slice(0, 10);
+    const priorRes = await safeQuery(
+      () => supabase
+        .from("influence_snapshots")
+        .select("impressions, engagement_rate, follower_growth")
+        .eq("user_id", user.id)
+        .eq("source_type", "linkedin_export")
+        .gte("snapshot_date", priorStartOnly)
+        .lt("snapshot_date", sinceDateOnly)
+        .order("snapshot_date", { ascending: true }),
+      { context: "Impact: prior-period snapshots", silent: true }
+    );
+    const priorRows = (priorRes.data as any[]) || [];
+    if (priorRows.length > 0) {
+      const pImp = priorRows.reduce((s, r) => s + Number(r.impressions || 0), 0);
+      const pEng = priorRows.reduce(
+        (s, r) => s + (Number(r.impressions || 0) * Number(r.engagement_rate || 0)) / 100, 0
+      );
+      const pFol = priorRows.reduce((s, r) => s + Number(r.follower_growth || 0), 0);
+      setPriorImpressions(pImp);
+      setPriorEngagementRate(pImp > 0 ? (pEng / pImp) * 100 : 0);
+      setPriorNewFollowers(pFol);
+    } else {
+      setPriorImpressions(null);
+      setPriorEngagementRate(null);
+      setPriorNewFollowers(null);
+    }
+
+    // ── Cumulative impressions series (asc-ordered folRowsAll) ──
+    const cum: Array<{ date: string; label: string; daily: number; cumulative: number }> = [];
+    let running = 0;
+    for (const row of folRowsAll) {
+      const daily = Number(row.impressions || 0);
+      running += daily;
+      cum.push({
+        date: row.snapshot_date,
+        label: new Date(row.snapshot_date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        daily,
+        cumulative: running,
+      });
+    }
+    setImpressionsSeries(cum);
 
     setLoading(false);
   };
@@ -651,6 +707,17 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     () => followerRows.reduce((s, r) => s + (r.follower_growth || 0), 0),
     [followerRows]
   );
+
+  // Prior-period % changes (null = can't compute, e.g. no prior data)
+  const pctChange = (current: number, prior: number | null): number | null => {
+    if (prior === null) return null;
+    if (prior === 0 && current === 0) return 0;
+    if (prior === 0) return null;
+    return ((current - prior) / prior) * 100;
+  };
+  const impChange = pctChange(periodImpressions ?? 0, priorImpressions);
+  const engChange = pctChange(periodEngagementRate ?? 0, priorEngagementRate);
+  const followerChange = pctChange(newFollowersPeriod, priorNewFollowers);
 
   /* ── AI narrative ── */
   const narrative = useMemo(() => {
@@ -1274,6 +1341,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         impressions={periodImpressions}
         engagementRate={periodEngagementRate}
         trendLabel={trendLabel}
+        selectedDays={selectedDays}
+        impChange={impChange}
+        engChange={engChange}
       />
 
       {/* ─────────── 3. AI NARRATIVE BRIEFING ─────────── */}
@@ -2225,6 +2295,75 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
       {/* ─────────── 6. FOLLOWER GROWTH ─────────── */}
       <section>
+        {impressionsSeries.length > 1 && (periodImpressions ?? 0) > 0 && (
+          <div style={{ marginBottom: 24 }}>
+            <div
+              className="text-xs uppercase font-medium mb-2"
+              style={{ letterSpacing: "0.08em", color: "var(--color-text-secondary)" }}
+            >
+              Impressions over time
+            </div>
+            <div
+              className="rounded-lg p-5"
+              style={{ background: "var(--color-card)", border: "0.5px solid var(--color-border)" }}
+            >
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 32, fontWeight: 500, color: "var(--ink)", lineHeight: 1 }}>
+                {formatNumber(periodImpressions ?? 0)}
+              </div>
+              <div style={{ fontSize: 11, color: "var(--color-text-muted)", marginTop: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                Cumulative impressions · last {selectedDays}d
+              </div>
+              <PeriodComparison change={impChange} selectedDays={selectedDays} />
+              <div style={{ height: 180, width: "100%", marginTop: 14 }}>
+                <ResponsiveContainer>
+                  <AreaChart data={impressionsSeries} margin={{ top: 6, right: 8, bottom: 4, left: -8 }}>
+                    <defs>
+                      <linearGradient id="impArea" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#B08D3A" stopOpacity={0.18} />
+                        <stop offset="100%" stopColor="#B08D3A" stopOpacity={0.02} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fontSize: 10, fill: "var(--color-text-muted)" }}
+                      axisLine={false}
+                      tickLine={false}
+                      interval={Math.max(0, Math.floor(impressionsSeries.length / 6) - 1)}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 10, fill: "var(--color-text-muted)" }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={40}
+                      tickFormatter={(v: number) => formatCompact(v)}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        background: "var(--color-card)",
+                        border: "0.5px solid var(--color-border)",
+                        borderRadius: 6,
+                        fontSize: 12,
+                        color: "var(--color-text-primary)",
+                      }}
+                      formatter={(value: any, name: string) => {
+                        if (name === "cumulative") return [formatNumber(Number(value)), "Cumulative"];
+                        if (name === "daily") return [formatNumber(Number(value)), "Daily"];
+                        return [value, name];
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="cumulative"
+                      stroke="#B08D3A"
+                      strokeWidth={1.5}
+                      fill="url(#impArea)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        )}
         <h2
           className="text-xs font-semibold tracking-[0.14em] mb-3"
           style={{ color: "var(--color-text-secondary)" }}
@@ -2349,11 +2488,14 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             </div>
 
             <div className="grid grid-cols-2 gap-4 mt-4 pt-4" style={{ borderTop: "0.5px solid var(--color-border)" }}>
-              <Stat
-                label="New followers this period"
-                value={newFollowersPeriod > 0 ? `+${formatNumber(newFollowersPeriod)}` : "0"}
-                valueColor="var(--success)"
-              />
+              <div>
+                <Stat
+                  label={`New followers · last ${selectedDays}d`}
+                  value={newFollowersPeriod > 0 ? `+${formatNumber(newFollowersPeriod)}` : "0"}
+                  valueColor="var(--success)"
+                />
+                <PeriodComparison change={followerChange} selectedDays={selectedDays} />
+              </div>
               <Stat
                 label="Best single day"
                 value={bestDay && bestDay.follower_growth > 0
@@ -2549,6 +2691,7 @@ const ForceCard = ({
 const ScoreHero = ({
   score, tierName, nextTierName, pointsToNext, sector,
   followers, impressions, engagementRate, trendLabel,
+  selectedDays, impChange, engChange,
 }: {
   score: number;
   tierName?: "Observer" | "Explorer" | "Strategist" | "Voice" | "Presence" | null;
@@ -2559,6 +2702,9 @@ const ScoreHero = ({
   impressions: number | null;
   engagementRate: number | null;
   trendLabel: string;
+  selectedDays: RangeDays;
+  impChange: number | null;
+  engChange: number | null;
 }) => {
   const pct = Math.max(0, Math.min(100, Math.round(score)));
   const r = 64;
@@ -2707,9 +2853,12 @@ const ScoreHero = ({
 
           {/* Mini KPIs */}
           <div className="grid grid-cols-3 gap-2">
-            <MiniKPI index={0} label="Followers" rawValue={followers} formatter={(n) => fmt(n)} />
-            <MiniKPI index={1} label="Impressions" rawValue={impressions} formatter={(n) => fmt(n)} />
-            <MiniKPI index={2} label="Avg Engagement" rawValue={engagementRate} formatter={(n) => `${n.toFixed(1)}%`} />
+            <MiniKPI index={0} label="Followers" rawValue={followers} formatter={(n) => fmt(n)}
+              selectedDays={selectedDays} change={null} />
+            <MiniKPI index={1} label="Impressions" rawValue={impressions} formatter={(n) => fmt(n)}
+              selectedDays={selectedDays} change={impChange} />
+            <MiniKPI index={2} label="Avg Engagement" rawValue={engagementRate} formatter={(n) => `${n.toFixed(1)}%`}
+              selectedDays={selectedDays} change={engChange} />
           </div>
         </div>
       </div>
@@ -2717,11 +2866,31 @@ const ScoreHero = ({
   );
 };
 
-const MiniKPI = ({ label, rawValue, formatter, index = 0 }: {
+const PeriodComparison = ({ change, selectedDays }: { change: number | null; selectedDays: number }) => {
+  if (change === null) return null;
+  const isFlat = Math.abs(change) < 0.5;
+  const isUp = change > 0;
+  return (
+    <div style={{ fontSize: 11, marginTop: 3, display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
+      {isFlat ? (
+        <span style={{ color: "var(--color-text-secondary)" }}>● 0%</span>
+      ) : (
+        <span style={{ color: isUp ? "var(--success)" : "var(--danger)", fontWeight: 600 }}>
+          {isUp ? "▲" : "▼"} {change > 0 ? "+" : ""}{change.toFixed(1)}%
+        </span>
+      )}
+      <span style={{ color: "var(--color-text-muted)" }}>vs. prior {selectedDays}d</span>
+    </div>
+  );
+};
+
+const MiniKPI = ({ label, rawValue, formatter, index = 0, selectedDays, change }: {
   label: string;
   rawValue: number | null;
   formatter: (n: number) => string;
   index?: number;
+  selectedDays?: RangeDays;
+  change?: number | null;
 }) => {
   // For decimals (engagement rate), scale by 10 so the count-up stays integer-safe.
   const isDecimal = formatter(0.1).includes(".");
@@ -2752,6 +2921,14 @@ const MiniKPI = ({ label, rawValue, formatter, index = 0 }: {
     <div className="text-label mt-1" style={{ color: "var(--aura-t2)" }}>
       {label}
     </div>
+    {selectedDays && (
+      <div style={{ fontSize: 10, marginTop: 2, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+        Last {selectedDays}d
+      </div>
+    )}
+    {change !== undefined && selectedDays && (
+      <PeriodComparison change={change ?? null} selectedDays={selectedDays} />
+    )}
   </div>
 );
 };
