@@ -830,6 +830,21 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   {identityIntel?.primary_role || positioningTitle}
                 </div>
               )}
+              <button
+                onClick={() => setCredentialOpen(true)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "var(--brand, #B08D3A)",
+                  fontSize: 12,
+                  cursor: "pointer",
+                  padding: 0,
+                  marginTop: 6,
+                  fontFamily: "inherit",
+                }}
+              >
+                View credential →
+              </button>
             </div>
 
             {/* Earned milestones */}
