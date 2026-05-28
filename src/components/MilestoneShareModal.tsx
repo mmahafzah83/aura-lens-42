@@ -78,37 +78,40 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
     if (!cardRef.current) return;
     setBusy(true);
     try {
-      // Ensure the specific font faces we actually use are loaded — not just
-      // whatever was already in the document. Otherwise html2canvas may
-      // measure with the fallback and paint with the web font, producing
-      // garbled, overlapping text.
+      // Render the card inside an isolated iframe so fonts are guaranteed
+      // loaded before html2canvas measures + paints. Fixes garbled,
+      // overlapping text caused by the html2canvas letter-spacing +
+      // custom-font measurement bug.
+      const cardHtml = cardRef.current.outerHTML;
+      const iframe = document.createElement("iframe");
+      iframe.style.cssText = "position:fixed;left:-9999px;top:0;width:1200px;height:630px;border:none;";
+      document.body.appendChild(iframe);
+      let canvas: HTMLCanvasElement;
       try {
-        const f: any = (document as any).fonts;
-        if (f) {
-          await Promise.all([
-            f.load("400 16px 'Cormorant Garamond'"),
-            f.load("500 16px 'Cormorant Garamond'"),
-            f.load("400 16px 'DM Sans'"),
-            f.load("500 16px 'DM Sans'"),
-            f.load("600 16px 'DM Sans'"),
-          ]);
-          if (f.ready) await f.ready;
-        }
-      } catch {}
-      // Force a reflow so html2canvas re-measures with the loaded fonts.
-      if (cardRef.current) {
-        cardRef.current.style.visibility = "hidden";
-        void cardRef.current.offsetHeight;
-        cardRef.current.style.visibility = "visible";
-        void cardRef.current.offsetHeight;
-        await new Promise((r) => setTimeout(r, 200));
+        const doc = iframe.contentDocument!;
+        doc.open();
+        doc.write(`<!DOCTYPE html>
+          <html><head>
+            <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+            <style>
+              * { margin: 0; padding: 0; box-sizing: border-box; }
+              body { width: 1200px; height: 630px; overflow: hidden; background: #111118; }
+            </style>
+          </head><body>${cardHtml}</body></html>`);
+        doc.close();
+        await iframe.contentWindow!.document.fonts.ready;
+        await new Promise((r) => setTimeout(r, 500));
+        canvas = await html2canvas(doc.body, {
+          width: 1200,
+          height: 630,
+          scale: 2,
+          useCORS: true,
+          backgroundColor: "#111118",
+          logging: false,
+        });
+      } finally {
+        document.body.removeChild(iframe);
       }
-      const canvas = await html2canvas(cardRef.current, {
-        scale: 2,
-        backgroundColor: "#111118",
-        useCORS: true,
-        logging: false,
-      });
       const blob = await new Promise<Blob | null>(res =>
         canvas.toBlob(b => res(b), "image/png")
       );
