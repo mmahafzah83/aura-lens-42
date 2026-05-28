@@ -206,7 +206,7 @@ const timeAgo = (iso: string) => formatSmartDate(iso);
 // Component
 // ────────────────────────────────────────────────
 
-const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
+const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeTabProps) => {
   // Local helper for the home score number — counts up once per session.
 
   const { user: authUser, session: authSession, isReady: authReady } = useAuthReady();
