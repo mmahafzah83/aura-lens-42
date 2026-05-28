@@ -912,6 +912,42 @@ export type Database = {
           },
         ]
       }
+      impact_narratives: {
+        Row: {
+          content_insight: string
+          data_hash: string | null
+          footprint_insight: string
+          generated_at: string | null
+          hero_narrative: string
+          id: string
+          one_action: string
+          post_insight: string
+          user_id: string
+        }
+        Insert: {
+          content_insight: string
+          data_hash?: string | null
+          footprint_insight: string
+          generated_at?: string | null
+          hero_narrative: string
+          id?: string
+          one_action: string
+          post_insight: string
+          user_id: string
+        }
+        Update: {
+          content_insight?: string
+          data_hash?: string | null
+          footprint_insight?: string
+          generated_at?: string | null
+          hero_narrative?: string
+          id?: string
+          one_action?: string
+          post_insight?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       import_jobs: {
         Row: {
           completed_at: string | null
