@@ -221,8 +221,13 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
               <div>
                 <div style={{ height: 1, background: "#B08D3A", width: 60, marginBottom: 12 }} />
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-                  <div style={{ fontSize: 12, color: "#B08D3A" }}>
-                    {footerLine}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    <div style={{ fontSize: 12, color: "#B08D3A" }}>
+                      {footerLine}
+                    </div>
+                    <div style={{ fontSize: 10, color: "rgba(255,255,255,0.45)" }}>
+                      Turns your expertise into presence
+                    </div>
                   </div>
                   <div style={{ fontSize: 10, letterSpacing: "0.2em", color: "rgba(197,165,90,0.25)", fontWeight: 600 }}>
                     AURA
