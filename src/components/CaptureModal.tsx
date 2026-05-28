@@ -16,6 +16,8 @@ interface CaptureModalProps {
   onOpenChange: (open: boolean) => void;
   onCaptured: () => void;
   onOpenChat?: (prefill: string) => void;
+  prefillUrl?: string;
+  prefillText?: string;
 }
 
 const isValidUrl = (s: string) => {
@@ -27,7 +29,7 @@ const isValidUrl = (s: string) => {
   }
 };
 
-const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureModalProps) => {
+const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat, prefillUrl, prefillText }: CaptureModalProps) => {
   const queryClient = useQueryClient();
   const [captureType, setCaptureType] = useState<CaptureType>("link");
   const [content, setContent] = useState("");
@@ -120,6 +122,18 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
     setLinkPreview(null);
     setSignalMatch(null);
   }, [open]);
+
+  // Apply prefill from external openers (e.g. Market Scan cards)
+  useEffect(() => {
+    if (!open) return;
+    if (prefillUrl) {
+      setCaptureType("link");
+      setContent(prefillUrl);
+    } else if (prefillText) {
+      setCaptureType("text");
+      setContent(prefillText);
+    }
+  }, [open, prefillUrl, prefillText]);
 
   const handleImageSelect = async (file: File) => {
     if (!file.type.startsWith("image/")) {
