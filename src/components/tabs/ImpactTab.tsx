@@ -2619,6 +2619,7 @@ const ForceCard = ({
 const ScoreHero = ({
   score, tierName, nextTierName, pointsToNext, sector,
   followers, impressions, engagementRate, trendLabel,
+  selectedDays, impChange, engChange,
 }: {
   score: number;
   tierName?: "Observer" | "Explorer" | "Strategist" | "Voice" | "Presence" | null;
@@ -2629,6 +2630,9 @@ const ScoreHero = ({
   impressions: number | null;
   engagementRate: number | null;
   trendLabel: string;
+  selectedDays: RangeDays;
+  impChange: number | null;
+  engChange: number | null;
 }) => {
   const pct = Math.max(0, Math.min(100, Math.round(score)));
   const r = 64;
@@ -2777,9 +2781,12 @@ const ScoreHero = ({
 
           {/* Mini KPIs */}
           <div className="grid grid-cols-3 gap-2">
-            <MiniKPI index={0} label="Followers" rawValue={followers} formatter={(n) => fmt(n)} />
-            <MiniKPI index={1} label="Impressions" rawValue={impressions} formatter={(n) => fmt(n)} />
-            <MiniKPI index={2} label="Avg Engagement" rawValue={engagementRate} formatter={(n) => `${n.toFixed(1)}%`} />
+            <MiniKPI index={0} label="Followers" rawValue={followers} formatter={(n) => fmt(n)}
+              selectedDays={selectedDays} change={null} />
+            <MiniKPI index={1} label="Impressions" rawValue={impressions} formatter={(n) => fmt(n)}
+              selectedDays={selectedDays} change={impChange} />
+            <MiniKPI index={2} label="Avg Engagement" rawValue={engagementRate} formatter={(n) => `${n.toFixed(1)}%`}
+              selectedDays={selectedDays} change={engChange} />
           </div>
         </div>
       </div>
