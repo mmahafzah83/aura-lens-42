@@ -11,8 +11,9 @@ interface BriefingItem {
 }
 
 interface MarketScanProps {
-  onOpenCapture?: (prefillUrl?: string) => void;
+  onOpenCapture?: (prefillUrl?: string, prefillText?: string) => void;
   onSwitchTab?: (tab: "home" | "identity" | "intelligence" | "authority" | "influence") => void;
+  onDraftPost?: (prefill: { topic: string; context: string }) => void;
 }
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
@@ -161,7 +162,7 @@ const Skel = () => (
   }} />
 );
 
-export default function MarketScan({ onOpenCapture, onSwitchTab }: MarketScanProps) {
+export default function MarketScan({ onOpenCapture, onSwitchTab, onDraftPost }: MarketScanProps) {
   const [items, setItems] = useState<BriefingItem[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -241,8 +242,26 @@ export default function MarketScan({ onOpenCapture, onSwitchTab }: MarketScanPro
             <Card
               key={i}
               item={it}
-              onCapture={() => onOpenCapture?.(it.url || undefined)}
-              onDraft={() => onSwitchTab?.("authority")}
+              onCapture={() => {
+                if (it.url) {
+                  onOpenCapture?.(it.url);
+                } else {
+                  onOpenCapture?.(undefined, `${it.title || ""}\n\n${it.bluf || ""}`.trim());
+                }
+              }}
+              onDraft={() => {
+                if (onDraftPost) {
+                  const context = it.bluf
+                    ? it.bluf
+                        .replace(/\[SIGNAL\]:\s*/i, "Signal: ")
+                        .replace(/\s*\|\s*\[ACTION\]:\s*/i, "\n\nAction: ")
+                        .replace(/\s*\|\s*\[VALUE\]:\s*/i, "\n\nValue: ")
+                    : "";
+                  onDraftPost({ topic: it.title || "", context });
+                } else {
+                  onSwitchTab?.("authority");
+                }
+              }}
             />
           ))
         )}
