@@ -1904,8 +1904,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         </div>
       </section>
 
-
-
       {/* ─────────── 9. CONTENT PERFORMANCE ─────────── */}
       <section>
         <SectionToggle
