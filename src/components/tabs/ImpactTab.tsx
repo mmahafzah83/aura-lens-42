@@ -2970,7 +2970,7 @@ const PeriodComparison = ({ change, selectedDays }: { change: number | null; sel
         <span style={{ color: isUp ? "var(--success)" : "var(--danger)", fontWeight: 600 }}>
           {(() => {
             const abs = Math.abs(change);
-            if (abs > 999) {
+            if (abs > 200) {
               const multiplier = (change > 0 ? change : -change) / 100;
               return (
                 <>
