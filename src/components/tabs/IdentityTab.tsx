@@ -1036,6 +1036,11 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       {/* Modals */}
       <ObjectiveAuditModal open={auditOpen} onOpenChange={setAuditOpen} onNavigate={handleNavigate} />
       <BrandAssessmentModal open={brandOpen} onOpenChange={setBrandOpen} onNavigate={handleNavigate} />
+      <TierCeremonyModal
+        userId={authUser?.id ?? null}
+        forceOpen={credentialOpen}
+        onForceClose={() => setCredentialOpen(false)}
+      />
       {marketShareData && (
         <MilestoneShareModal
           open={!!marketShareData}
