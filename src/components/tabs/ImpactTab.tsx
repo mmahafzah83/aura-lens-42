@@ -128,7 +128,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const [showUpdateUpload, setShowUpdateUpload] = useState(false);
   const [sectorFocus, setSectorFocus] = useState<string | null>(null);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    narrative: true, forces: true, content: true, posts: true, linkedin: true, followers: true,
+    narrative: true, forces: true, content: true, posts: true, linkedin: true, followers: true, audience: true,
   });
   const toggleSection = (k: string) => setOpenSections(s => ({ ...s, [k]: !s[k] }));
   // Progressive disclosure: hide everything past "three forces" behind a master toggle.
@@ -166,6 +166,27 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     avgEngagement: number;
     tones: Array<{ tone: string; count: number }>;
   } | null>(null);
+
+  // Audience
+  type DemoRow = {
+    category: string;
+    value: string;
+    percentage: string;
+    percentage_numeric: number | null;
+    period_start: string | null;
+    period_end: string | null;
+  };
+  type AudienceInsight = {
+    insight_headline: string;
+    insight_body: string;
+    audience_strengths: string[] | null;
+    audience_gaps: string[] | null;
+    next_action: string | null;
+  };
+  const [allDemographics, setAllDemographics] = useState<DemoRow[] | null>(null);
+  const [audienceInsight, setAudienceInsight] = useState<AudienceInsight | null>(null);
+  const [audienceInsightLoading, setAudienceInsightLoading] = useState(false);
+  const [reachSnap, setReachSnap] = useState<{ members_reached: number | null; total_impressions_annual: number | null } | null>(null);
 
   const loadAll = async (rangeDays: RangeDays) => {
     setLoading(true);
