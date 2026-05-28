@@ -568,8 +568,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         .slice(0, 4)
         .map(([tone, count]) => ({ tone, count }));
 
-      const avgEngagement = analyzablePosts.length > 0
-        ? Math.round((analyzablePosts.reduce((sum: number, p: any) => sum + (Number(p.engagement_score) || 0), 0) / analyzablePosts.length) * 10) / 10
+      const windowedPostsWithRate = (topPosts || []).filter((p: any) => Number(p.engagement_rate) > 0);
+      const avgEngagement = windowedPostsWithRate.length > 0
+        ? Math.round((windowedPostsWithRate.reduce((sum: number, p: any) => sum + Number(p.engagement_rate), 0) / windowedPostsWithRate.length) * 10) / 10
         : 0;
 
       const sorted = [...analyzablePosts].sort((a: any, b: any) =>
