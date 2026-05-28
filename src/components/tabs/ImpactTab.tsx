@@ -1937,7 +1937,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               <div className="glass-card rounded-xl p-5 border border-border/8">
                 {topSignal ? (
                   <>
-                    <div className="text-foreground font-bold text-lg leading-snug">{topSignal}</div>
+                    <div className="text-foreground font-bold text-lg leading-snug line-clamp-3">{topSignal}</div>
                     <div className="text-xs text-muted-foreground mt-1">Strongest territory</div>
                   </>
                 ) : contentPerf.topTheme && contentPerf.topTheme !== "—" ? (
@@ -2415,7 +2415,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           >
             <div style={{ height: 160, width: "100%" }}>
               <ResponsiveContainer>
-                <BarChart data={followerSeries} margin={{ top: 6, right: 8, bottom: 4, left: -8 }}>
+                <BarChart data={followerSeries} margin={{ top: 6, right: 8, bottom: 4, left: 4 }}>
                   <XAxis
                     dataKey="label"
                     tick={(p: any) => {
@@ -2437,7 +2437,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     tick={{ fontSize: 12, fill: "var(--color-text-muted)" }}
                     axisLine={false}
                     tickLine={false}
-                    width={30}
+                    width={40}
                   />
                   <Tooltip
                     cursor={{ fill: "var(--color-border)", opacity: 0.3 }}
