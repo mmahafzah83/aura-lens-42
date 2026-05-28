@@ -390,6 +390,52 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       setPeriodEngagementRate(null);
     }
 
+    // ── Prior-period comparison (window of equal length immediately before current) ──
+    const priorStart = new Date(sinceDate);
+    priorStart.setDate(priorStart.getDate() - rangeDays);
+    const priorStartOnly = priorStart.toISOString().slice(0, 10);
+    const priorRes = await safeQuery(
+      () => supabase
+        .from("influence_snapshots")
+        .select("impressions, engagement_rate, follower_growth")
+        .eq("user_id", user.id)
+        .eq("source_type", "linkedin_export")
+        .gte("snapshot_date", priorStartOnly)
+        .lt("snapshot_date", sinceDateOnly)
+        .order("snapshot_date", { ascending: true }),
+      { context: "Impact: prior-period snapshots", silent: true }
+    );
+    const priorRows = (priorRes.data as any[]) || [];
+    if (priorRows.length > 0) {
+      const pImp = priorRows.reduce((s, r) => s + Number(r.impressions || 0), 0);
+      const pEng = priorRows.reduce(
+        (s, r) => s + (Number(r.impressions || 0) * Number(r.engagement_rate || 0)) / 100, 0
+      );
+      const pFol = priorRows.reduce((s, r) => s + Number(r.follower_growth || 0), 0);
+      setPriorImpressions(pImp);
+      setPriorEngagementRate(pImp > 0 ? (pEng / pImp) * 100 : 0);
+      setPriorNewFollowers(pFol);
+    } else {
+      setPriorImpressions(null);
+      setPriorEngagementRate(null);
+      setPriorNewFollowers(null);
+    }
+
+    // ── Cumulative impressions series (asc-ordered folRowsAll) ──
+    const cum: Array<{ date: string; label: string; daily: number; cumulative: number }> = [];
+    let running = 0;
+    for (const row of folRowsAll) {
+      const daily = Number(row.impressions || 0);
+      running += daily;
+      cum.push({
+        date: row.snapshot_date,
+        label: new Date(row.snapshot_date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        daily,
+        cumulative: running,
+      });
+    }
+    setImpressionsSeries(cum);
+
     setLoading(false);
   };
 
