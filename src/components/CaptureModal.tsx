@@ -132,6 +132,16 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat, prefillUrl, 
     } else if (prefillText) {
       setCaptureType("text");
       setContent(prefillText);
+      // Auto-resize textarea to fit pre-filled content
+      requestAnimationFrame(() => {
+        const ta = document.querySelector<HTMLTextAreaElement>(
+          'textarea[placeholder="Write your thoughts..."]'
+        );
+        if (ta) {
+          ta.style.height = "auto";
+          ta.style.height = ta.scrollHeight + "px";
+        }
+      });
     }
   }, [open, prefillUrl, prefillText]);
 
@@ -1154,11 +1164,11 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat, prefillUrl, 
                   padding: "14px 16px",
                   fontSize: 14,
                   color: "var(--ink)",
-                  height: 100,
+                  minHeight: 120,
                   resize: "none",
                   outline: "none",
                   transition: "all 150ms ease",
-                  
+                  overflow: "hidden",
                 }}
               />
               {content.length > 12000 && (

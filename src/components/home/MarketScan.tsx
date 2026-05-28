@@ -246,7 +246,11 @@ export default function MarketScan({ onOpenCapture, onSwitchTab, onDraftPost }: 
                 if (it.url) {
                   onOpenCapture?.(it.url);
                 } else {
-                  onOpenCapture?.(undefined, `${it.title || ""}\n\n${it.bluf || ""}`.trim());
+                  const cleanBluf = (it.bluf || "")
+                    .replace(/\[SIGNAL\]:\s*/gi, "")
+                    .replace(/\s*\|\s*\[ACTION\]:\s*/gi, "\n\n")
+                    .replace(/\s*\|\s*\[VALUE\]:\s*/gi, "\n\n");
+                  onOpenCapture?.(undefined, `${it.title || ""}\n\n${cleanBluf}`.trim());
                 }
               }}
               onDraft={() => {
