@@ -1515,6 +1515,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         const seniorityTotal = seniorityRows.reduce(
           (sum, r) => sum + Number(r.percentage_numeric || 0), 0
         );
+        const maxPct = Math.max(...(seniorityRows || []).map(r => Number(r.percentage_numeric || 0)));
 
         const periodStart = demos[0]?.period_start;
         const periodEnd = demos[0]?.period_end;
@@ -1674,39 +1675,57 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                             of your followers are senior decision-makers
                           </span>
                         </div>
-                        <div style={{ display: "flex", width: "100%", height: 28, overflow: "hidden" }}>
-                          {seniorityRows.map((row, idx) => {
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          {(seniorityRows || []).map((row, i) => {
                             const pct = Number(row.percentage_numeric || 0);
-                            const widthPct = seniorityTotal > 0 ? (pct / seniorityTotal) * 100 : 0;
-                            const isSenior = SENIOR_LEVELS.has(row.value);
+                            const isStrategic = SENIOR_LEVELS.has(row.value);
+                            const barWidth = maxPct > 0 ? Math.max((pct / maxPct) * 100, 2) : 2;
                             return (
                               <div
-                                key={idx}
-                                title={`${row.value} ${row.percentage}`}
+                                key={row.value || i}
                                 style={{
-                                  width: `${widthPct}%`,
-                                  background: isSenior
-                                    ? "var(--aura-accent, #B08D3A)"
-                                    : "var(--color-border-tertiary, var(--aura-border))",
-                                  color: isSenior ? "#fff" : "var(--aura-t2)",
-                                  fontSize: 12,
-                                  fontFamily: "'DM Sans', system-ui, sans-serif",
-                                  display: "flex",
+                                  display: "grid",
+                                  gridTemplateColumns: "72px 1fr 36px",
                                   alignItems: "center",
-                                  justifyContent: "center",
-                                  borderRadius: 2,
-                                  marginRight: idx < seniorityRows.length - 1 ? 1 : 0,
-                                  overflow: "hidden",
-                                  whiteSpace: "nowrap",
-                                  paddingLeft: 6, paddingRight: 6,
+                                  gap: 8,
                                 }}
                               >
+                                {/* Label */}
                                 <span style={{
-                                  visibility: widthPct >= 8 ? "visible" : "hidden",
-                                  textOverflow: "ellipsis",
+                                  fontSize: 13,
+                                  textAlign: "right",
+                                  color: isStrategic ? "var(--aura-t1)" : "var(--aura-t3)",
+                                  fontWeight: isStrategic ? 500 : 400,
+                                  fontFamily: "'DM Sans', system-ui, sans-serif",
+                                }}>
+                                  {row.value}
+                                </span>
+                                {/* Bar track + fill */}
+                                <div style={{
+                                  height: 20,
+                                  borderRadius: 3,
+                                  backgroundColor: "var(--aura-border)",
                                   overflow: "hidden",
                                 }}>
-                                  {row.value} {row.percentage}
+                                  <div style={{
+                                    height: "100%",
+                                    width: `${barWidth}%`,
+                                    borderRadius: 3,
+                                    backgroundColor: isStrategic
+                                      ? "var(--aura-accent, #B08D3A)"
+                                      : "var(--aura-t3)",
+                                    opacity: isStrategic ? 1 : 0.35,
+                                    transition: "width 0.6s ease",
+                                  }} />
+                                </div>
+                                {/* Percentage */}
+                                <span style={{
+                                  fontSize: 12,
+                                  color: "var(--aura-t3)",
+                                  fontVariantNumeric: "tabular-nums",
+                                  fontFamily: "'DM Sans', system-ui, sans-serif",
+                                }}>
+                                  {row.percentage}
                                 </span>
                               </div>
                             );
