@@ -18,6 +18,7 @@ import { computeIntelligenceStage, type IntelligenceStage } from "@/components/u
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import GuidedJourney from "@/components/GuidedJourney";
 import { useJourneyState } from "@/hooks/useJourneyState";
+import TierCeremonyModal from "@/components/TierCeremonyModal";
 
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
