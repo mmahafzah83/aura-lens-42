@@ -642,7 +642,7 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
       const lines = wrapText(slide.headline || "", 22);
       const lh = isRTL ? 84 : 72;
       const startY = cy - (lines.length * lh) / 2 + 24;
-      const claimAnchor: "start" | "middle" | "end" = isRTL ? "end" : "middle";
+      const claimAnchor: "start" | "middle" | "end" = isRTL ? "start" : "middle";
       const claimX = isRTL ? (w - edgePad) : cx;
       return (
         <g>
@@ -672,13 +672,15 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
       const beliefStartY = cy - 160;
       return (
         <g>
-          <text x={startX} y={beliefStartY - 30} textAnchor={sideAnchor}
+          <text x={startX} y={beliefStartY - 30} textAnchor={isRTL ? "start" : "start"}
+                direction={isRTL ? "rtl" : undefined}
                 fontFamily={bodyFont} fontSize={isRTL ? 16 : 14} letterSpacing={isRTL ? 0 : 2} fill={style.muted}
                 fontWeight={isRTL ? 700 : 400}>
             {L.myth}
           </text>
           {beliefLinesClean.map((ln, i) => (
-            <text key={i} x={startX} y={beliefStartY + i * (isRTL ? 44 : 36)} textAnchor={sideAnchor}
+            <text key={i} x={startX} y={beliefStartY + i * (isRTL ? 44 : 36)} textAnchor="start"
+                  direction={isRTL ? "rtl" : undefined}
                   fontFamily={bodyFont} fontSize={28} fill={style.muted} opacity={0.6}
                   fontWeight={isRTL ? 600 : 400}
                   textDecoration="line-through" style={{ textDecorationColor: `${style.muted}` }}>
@@ -686,13 +688,15 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
             </text>
           ))}
           <line x1={edgePad} y1={cy} x2={w - edgePad} y2={cy} stroke={style.accent} strokeWidth={1.5} opacity={0.4} />
-          <text x={startX} y={cy + 60} textAnchor={sideAnchor}
+          <text x={startX} y={cy + 60} textAnchor="start"
+                direction={isRTL ? "rtl" : undefined}
                 fontFamily={bodyFont} fontSize={isRTL ? 16 : 14} letterSpacing={isRTL ? 0 : 2} fill={style.accent}
                 fontWeight={isRTL ? 800 : 400}>
             {L.truth}
           </text>
           {truthHeadlineLines.map((ln, i) => (
-            <text key={`th${i}`} x={startX} y={cy + 120 + i * 56} textAnchor={sideAnchor}
+            <text key={`th${i}`} x={startX} y={cy + 120 + i * 56} textAnchor="start"
+                  direction={isRTL ? "rtl" : undefined}
                   fontFamily={headingFont} fontSize={isRTL ? 38 : 48} fontWeight={style.headingWeight ?? 700} fill={style.fg}>
               {ln}
             </text>
@@ -702,7 +706,8 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
             return (
               <text key={`tb${i}`} x={startX}
                     y={cy + 120 + headBlockH + 28 + i * (isRTL ? 40 : 32)}
-                    textAnchor={sideAnchor}
+                    textAnchor="start"
+                    direction={isRTL ? "rtl" : undefined}
                     fontFamily={bodyFont} fontSize={isRTL ? 22 : 22} fill={style.muted}
                     fontWeight={isRTL ? 600 : 400}>
                 {ln}
