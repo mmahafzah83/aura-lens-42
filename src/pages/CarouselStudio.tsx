@@ -1251,7 +1251,7 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
           ))}
           {/* CTA main line(s) — actionable urgency text between headline and icons. */}
           {mainLines.length > 0 && (() => {
-            const mainAnchor: "start" | "middle" | "end" = isRTL ? "end" : "start";
+            const mainAnchor: "start" | "middle" | "end" = "start";
             const mainX = isRTL ? (w - edgePad) : edgePad;
             return (
               <text x={mainX} y={mainY + mainLineH - 6} textAnchor={mainAnchor}
