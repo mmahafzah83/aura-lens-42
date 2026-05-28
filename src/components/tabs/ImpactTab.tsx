@@ -139,6 +139,15 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const [periodEngagementRate, setPeriodEngagementRate] = useState<number | null>(null);
   const [postLevelImpressions, setPostLevelImpressions] = useState<number | null>(null);
 
+  // Prior-period comparison (vs. previous window of equal length)
+  const [priorImpressions, setPriorImpressions] = useState<number | null>(null);
+  const [priorEngagementRate, setPriorEngagementRate] = useState<number | null>(null);
+  const [priorNewFollowers, setPriorNewFollowers] = useState<number | null>(null);
+  // Cumulative impressions series for the "Impressions over time" chart
+  const [impressionsSeries, setImpressionsSeries] = useState<Array<{
+    date: string; label: string; daily: number; cumulative: number;
+  }>>([]);
+
   // 4 Pillars supplementary data
   const [pillarSignalCount, setPillarSignalCount] = useState(0);
   const [pillarAvgSignalConf, setPillarAvgSignalConf] = useState(0);
