@@ -151,7 +151,7 @@ function buildEmail(
     const trendLine = recentTrend ? `<strong>${recentTrend.headline}</strong> (${recentTrend.source}).` : "Quiet week in your tracked sources.";
     const body = `
       ${heading("One week with Aura. Here's your brief:")}
-      <p style="margin:0 0 14px;">${signalCount} active signal${signalCount === 1 ? "" : "s"}. ${topLine} ${fadingLine} ${publishedCount} post${publishedCount === 1 ? "" : "s"} published.</p>
+      <p style="margin:0 0 14px;">${signalCount} active signal${signalCount === 1 ? "" : "s"}. ${topLine} ${fadingLine} ${publishedCount} post${publishedCount === 1 ? "" : "s"} on LinkedIn.</p>
       <p style="margin:0 0 14px;">Authority score: <strong>${score ?? 0}</strong>${tier ? ` (${tier})` : ""}.</p>
       <p style="margin:0 0 18px;">This week's market movement: ${trendLine}</p>
       <p style="margin:0 0 18px;">The professionals who compound authority fastest publish from their signals weekly. Yours are ready.</p>
@@ -331,12 +331,13 @@ serve(async (req) => {
       .order("confidence", { ascending: true })
       .limit(3);
 
-    // Published post count
+    // Posts confirmed on LinkedIn in last 30 days (via xlsx import)
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
     const { count: publishedCount } = await admin
-      .from("linkedin_posts")
+      .from("linkedin_post_metrics")
       .select("id", { count: "exact", head: true })
       .eq("user_id", user_id)
-      .eq("tracking_status", "published");
+      .gte("snapshot_date", thirtyDaysAgo);
 
     // Recent trend (last 7 days, not dismissed, top by final_score)
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();

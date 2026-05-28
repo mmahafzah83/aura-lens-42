@@ -138,7 +138,9 @@ serve(async (req) => {
       } else if (captureScore <= minScore) {
         scoreDescription = "Your capture consistency has gaps — capture at least once per week to keep your intelligence fresh.";
       } else {
-        scoreDescription = "Signals are strong but you haven't published — draft content to push toward Authority.";
+        scoreDescription = totalPublishedCount > 0
+          ? `You have ${totalPublishedCount} LinkedIn posts in the last 30 days. Publishing from your top signal accelerates your score.`
+          : `Your signals are ready — draft a post from your top signal to start building content momentum.`;
       }
     }
 
