@@ -1250,11 +1250,8 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               { key: "content", label: "Content", rawValue: contentScore, weight: 0.40, maxPoints: 40,
                 color: "var(--aura-blue)",
                 hint: (() => {
-                  const imp = Number((auraData as any)?.imported_count ?? 0);
                   const pub = Number((auraData as any)?.aura_published_count ?? 0);
-                  return imp > 0
-                    ? `${imp} imported · ${pub} published this month`
-                    : `${pub} published this month`;
+                  return `${pub} published last 30d`;
                 })(),
                 tooltip: "Your publishing activity. Imported LinkedIn history is your foundation (up to 15 points). Publishing new content from your signals is what grows this score (up to 85 points). Resets monthly.",
                 status: contentScore >= 70 ? "Growing" : contentScore >= 40 ? "Build more" : "Needs action" },
@@ -1779,8 +1776,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 <div className="mt-3">
                   <p className="text-sm" style={{ color: "var(--color-text-primary)" }}>
                     <Check className="inline w-3.5 h-3.5 mr-1" style={{ color: "var(--brand)" }} />
-                    {postMetricsCount > 0 ? `${postMetricsCount} posts imported` : "Imported"}
-                    {latestFollowers != null ? ` · ${latestFollowers.toLocaleString()} followers tracked` : ""}
+                    {latestFollowers != null
+                      ? `${latestFollowers.toLocaleString()} followers tracked`
+                      : "Upload your LinkedIn data"}
                   </p>
                   <div className="mt-3">
                     <button
