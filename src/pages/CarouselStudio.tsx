@@ -672,7 +672,7 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
       const beliefStartY = cy - 160;
       return (
         <g>
-          <text x={startX} y={beliefStartY - 30} textAnchor={isRTL ? "start" : "start"}
+          <text x={startX} y={beliefStartY - 30} textAnchor="start"
                 direction={isRTL ? "rtl" : undefined}
                 fontFamily={bodyFont} fontSize={isRTL ? 16 : 14} letterSpacing={isRTL ? 0 : 2} fill={style.muted}
                 fontWeight={isRTL ? 700 : 400}>
