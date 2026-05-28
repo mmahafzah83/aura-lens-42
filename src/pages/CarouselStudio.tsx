@@ -1163,7 +1163,7 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
       const blockH = headlineLines.length * headLineH + 40 + bodyLines.length * bodyLineH;
       const startY = cy - blockH / 2 + 40;
       // RTL right-aligns body content; LTR keeps the centered editorial feel.
-      const insightAnchor: "start" | "middle" | "end" = isRTL ? "end" : "middle";
+      const insightAnchor: "start" | "middle" | "end" = isRTL ? "start" : "middle";
       const insightX = isRTL ? (w - edgePad) : cx;
       const dividerX1 = isRTL ? (w - edgePad - 60) : cx - 30;
       const dividerX2 = isRTL ? (w - edgePad) : cx + 30;
@@ -1182,6 +1182,7 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
           {bodyLines.map((ln, i) => (
             <text key={i} x={insightX} y={startY + headlineLines.length * headLineH + 56 + i * bodyLineH}
                   textAnchor={insightAnchor}
+                  direction={isRTL ? "rtl" : undefined}
                   fontFamily={bodyFont} fontSize={26} fill={style.muted} fontWeight={isRTL ? 600 : 400}>
               {ln}
             </text>
