@@ -1004,7 +1004,7 @@ const Onboarding = () => {
               </div>
             )}
             <div className="mt-4 mb-4">
-              {primaryBtn(<>Read my profile <ArrowRight className="w-4 h-4" /></>, handleReadLinkedIn, { loading: readingLi, disabled: linkedinText.trim().length < 10 })}
+              {primaryBtn(<>Calibrate my profile <ArrowRight className="w-4 h-4" /></>, handleReadLinkedIn, { loading: readingLi, disabled: linkedinText.trim().length < 10 })}
             </div>
             <div className="flex items-center gap-3 my-4" style={{ color: "hsl(var(--muted-foreground))", fontSize: 12 }}>
               <div className="flex-1 h-px" style={{ background: "hsl(var(--border))" }} />
