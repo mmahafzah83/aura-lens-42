@@ -1895,6 +1895,9 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
       {/* Mission control + optional journey cycle */}
       {authUser?.id && (
         <div data-tour="missions" className="flex flex-col" style={{ gap: 10 }}>
+          <FirstTimeHint hintKey="home-missions">
+            Your weekly actions. Each one strengthens a different pillar of your score. Start with the one marked Recommended.
+          </FirstTimeHint>
           {!hasAnySignals && (
             <JourneyCycle
               hasEntries={(entries?.length ?? 0) > 0 || journey.entryCount > 0}
