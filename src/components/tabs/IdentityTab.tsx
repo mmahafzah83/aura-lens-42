@@ -152,6 +152,34 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     };
   }, []);
 
+  // Auto-trigger the brand-assessment → identity-intelligence → market-mirror chain
+  // for users who just finished onboarding but haven't run the assessment yet.
+  useEffect(() => {
+    if (!profile || !authUser) return;
+    if (autoAssessTriggered.current) return;
+    const isOnboarded = !!profile.onboarding_completed;
+    const hasAssessment = !!profile.brand_assessment_completed_at;
+    if (!isOnboarded || hasAssessment) return;
+
+    autoAssessTriggered.current = true;
+    setAutoAssessing(true);
+    (async () => {
+      try {
+        setAssessmentStep("Analyzing your professional identity…");
+        await supabase.functions.invoke("brand-assessment", { body: {} });
+        setAssessmentStep("Mapping your expertise territories…");
+        await supabase.functions.invoke("generate-identity-intelligence", { body: {} });
+        setAssessmentStep("Generating how the market sees you…");
+        await supabase.functions.invoke("generate-market-mirror", { body: {} });
+        await loadAll(authUser.id);
+      } catch (err) {
+        console.error("[IdentityTab] Auto-assessment chain failed:", err);
+      } finally {
+        setAutoAssessing(false);
+      }
+    })();
+  }, [profile, authUser]);
+
   const loadAll = async (uid: string) => {
     console.log("[IdentityTab] loadAll started");
     setLoadError(false);
