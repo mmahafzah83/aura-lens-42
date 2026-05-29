@@ -314,15 +314,6 @@ const Onboarding = () => {
     navigate("/request-access", { replace: true });
   };
 
-  // Step 0: stagger reveal of the 3 bullet items
-  useEffect(() => {
-    if (step !== 0 || checking) return;
-    setRevealCount(0);
-    const timers = [300, 600, 900].map((ms, i) =>
-      window.setTimeout(() => setRevealCount(i + 1), ms),
-    );
-    return () => timers.forEach(clearTimeout);
-  }, [step, checking]);
 
   // Step 1: rotating loading status
   useEffect(() => {
