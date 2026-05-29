@@ -51,7 +51,7 @@ export function FirstTimeHint({ hintKey, children }: FirstTimeHintProps) {
     >
       <div style={{ display: "flex", alignItems: "flex-start", gap: 8, flex: 1, minWidth: 0 }}>
         <span style={{ color: "#B08D3A", fontSize: 13, lineHeight: "20px", flexShrink: 0 }}>✦</span>
-        <span style={{ fontSize: 13, lineHeight: 1.55, color: "hsl(var(--foreground))" }}>{children}</span>
+        <span style={{ fontSize: 13, lineHeight: 1.55, color: "hsl(var(--foreground))" }}>{displayText}</span>
       </div>
       <button
         type="button"
