@@ -9,6 +9,12 @@ interface FirstTimeHintProps {
 export function FirstTimeHint({ hintKey, children }: FirstTimeHintProps) {
   const storageKey = `aura_hint_${hintKey}`;
   const [visible, setVisible] = useState(false);
+  const { articles, loading } = useGuideArticles();
+
+  const corpusText = useMemo(
+    () => articles.find(a => a.slug === hintKey)?.answer_en,
+    [articles, hintKey]
+  );
 
   useEffect(() => {
     try {
@@ -24,6 +30,8 @@ export function FirstTimeHint({ hintKey, children }: FirstTimeHintProps) {
     setVisible(false);
     try { localStorage.setItem(storageKey, "1"); } catch {}
   };
+
+  const displayText = (!loading && corpusText) ? corpusText : children;
 
   return (
     <div
