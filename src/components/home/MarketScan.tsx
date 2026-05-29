@@ -14,6 +14,7 @@ interface MarketScanProps {
   onOpenCapture?: (prefillUrl?: string, prefillText?: string) => void;
   onSwitchTab?: (tab: "home" | "identity" | "intelligence" | "authority" | "influence") => void;
   onDraftPost?: (prefill: { topic: string; context: string }) => void;
+  defaultExpanded?: boolean;
 }
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
