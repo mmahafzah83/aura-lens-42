@@ -57,7 +57,7 @@ const applyThemeToRoot = (theme: "dark" | "light") => {
 const Dashboard = () => {
   usePageMeta({
     title: "Aura — Dashboard",
-    description: "Your strategic intelligence command center: signals, captures, content, and authority growth in one place.",
+    description: "Your strategic intelligence command center: signals, captures, content, and presence growth in one place.",
     path: "/dashboard",
   });
   const [entries, setEntries] = useState<Entry[]>([]);

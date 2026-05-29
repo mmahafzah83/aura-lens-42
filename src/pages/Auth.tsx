@@ -51,7 +51,7 @@ const Auth = () => {
   const dailyInsights = [
     "Your signals are watching the market for you.",
     "New intelligence may be waiting inside.",
-    "Your authority compounds while you're away.",
+    "Your presence compounds while you're away.",
     "The market moved today. Let's see what Aura found.",
     "Your next post could be one signal away.",
   ];
