@@ -46,7 +46,7 @@ const ProgressRing = ({ value, max, color, size = 80, strokeWidth = 6 }: {
 
 const KPIProgressRings = () => {
   const [rings, setRings] = useState<RingData[]>([
-    { label: "Authority Index", value: 0, max: 100, color: "hsl(43 72% 52%)" },
+    { label: "Presence Index", value: 0, max: 100, color: "hsl(43 72% 52%)" },
     { label: "Market Voice", value: 0, max: 100, color: "hsl(200 70% 55%)" },
     { label: "Intel Velocity", value: 0, max: 100, color: "hsl(150 60% 45%)" },
   ]);
@@ -89,7 +89,7 @@ const KPIProgressRings = () => {
       const velocityScore = Math.min(100, recentIntel * 10);
 
       setRings([
-        { label: "Authority Index", value: authorityIndex, max: 100, color: "hsl(43 72% 52%)" },
+        { label: "Presence Index", value: authorityIndex, max: 100, color: "hsl(43 72% 52%)" },
         { label: "Market Voice", value: voiceScore, max: 100, color: "hsl(200 70% 55%)" },
         { label: "Intel Velocity", value: velocityScore, max: 100, color: "hsl(150 60% 45%)" },
       ]);
