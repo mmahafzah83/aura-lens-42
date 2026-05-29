@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, Link, useNavigate } from "react-router-dom";
-import { HelpCircle, X, ChevronDown } from "lucide-react";
+import { HelpCircle, X, ChevronDown, Compass } from "lucide-react";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import AuraButton from "@/components/ui/AuraButton";
 
@@ -190,6 +190,33 @@ export function HelpPanel({ open, onClose, activeTab }: { open: boolean; onClose
           <div style={{ display: "flex", gap: 14, fontSize: 12 }}>
             <Link to="/terms" style={{ color: "var(--brand)", textDecoration: "none" }}>Terms</Link>
             <Link to="/privacy" style={{ color: "var(--brand)", textDecoration: "none" }}>Privacy</Link>
+          </div>
+
+          <div style={{
+            borderTop: "0.5px solid hsl(var(--border))",
+            paddingTop: 12,
+            marginTop: 16,
+          }}>
+            <button
+              onClick={() => {
+                onClose();
+                if ((window as any).auraReplayTour) (window as any).auraReplayTour();
+              }}
+              style={{
+                background: "none",
+                border: "none",
+                color: "#B08D3A",
+                fontSize: 13,
+                cursor: "pointer",
+                padding: 0,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              <Compass size={16} aria-hidden />
+              Replay product tour
+            </button>
           </div>
         </div>
 

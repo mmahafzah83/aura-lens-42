@@ -820,7 +820,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
     <div className="flex flex-col gap-6">
       <div className="flex flex-col lg:flex-row gap-6">
       {/* Main Editor */}
-      <div className="flex-1 min-w-0 space-y-6">
+      <div data-tour="content-generator" className="flex-1 min-w-0 space-y-6">
         {/* Hero CTA — top signal */}
         {(() => {
           if (contentType === "flash" || contentType === "framework_summary") return null;

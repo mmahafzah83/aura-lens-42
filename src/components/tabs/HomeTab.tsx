@@ -36,6 +36,7 @@ import MarketScan from "@/components/home/MarketScan";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
 import AuditCtaCard from "@/components/home/AuditCtaCard";
+import TourReminderBanner from "@/components/TourReminderBanner";
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
 
@@ -1370,6 +1371,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
       transition={{ duration: 0.35 }}
       className="space-y-6 max-w-3xl"
     >
+      <TourReminderBanner />
       {/* Onboarding checklist (auto-hides once all 5 steps complete) */}
       <OnboardingChecklist onOpenCapture={onOpenCapture} onSwitchTab={onSwitchTab} />
 
@@ -1609,6 +1611,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
           </div>
         </div>
       )}
+      <div data-tour="score-hero">
       {!auraLoading && isEmpty && (
         <div
           className="flex items-start justify-between gap-4 flex-wrap"
@@ -1823,10 +1826,11 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
           </div>
         );
       })()}
+      </div>
 
       {/* Mission control + optional journey cycle */}
       {authUser?.id && (
-        <div className="flex flex-col" style={{ gap: 10 }}>
+        <div data-tour="missions" className="flex flex-col" style={{ gap: 10 }}>
           {!hasAnySignals && (
             <JourneyCycle
               hasEntries={(entries?.length ?? 0) > 0 || journey.entryCount > 0}
@@ -2468,6 +2472,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
       </div>
 
       {/* TIER 2 — Market scan (from daily-briefing) */}
+      <div data-tour="market-scan">
       <MarketScan
         onOpenCapture={onOpenCapture}
         onSwitchTab={onSwitchTab}
@@ -2481,6 +2486,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
           });
         }}
       />
+      </div>
       </>)}
 
       {scoreJumpShareData && (

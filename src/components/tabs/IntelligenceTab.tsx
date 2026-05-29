@@ -1197,11 +1197,13 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
             ) : (
               <>
                 {/* TERRITORY PANEL — radar (3+ themes) + sortable list */}
-                <TerritoryPanel
-                  signals={signals}
-                  selectedTheme={selectedTheme}
-                  onSelectTheme={setSelectedTheme}
-                />
+                <div data-tour="signal-radar">
+                  <TerritoryPanel
+                    signals={signals}
+                    selectedTheme={selectedTheme}
+                    onSelectTheme={setSelectedTheme}
+                  />
+                </div>
 
                 {/* SIGNAL HERO */}
                 {selectedSignal && (
@@ -1220,7 +1222,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                   const buildingSignals = filtered.filter(s => s.confidence >= 0.15 && s.confidence < 0.30);
                   const emergingSignals = filtered.filter(s => s.confidence < 0.15);
                   return (
-                  <section style={{ marginTop: 36, paddingTop: 24, borderTop: "0.5px solid var(--color-border-tertiary, var(--surface-ink-subtle))" }}>
+                  <section data-tour="signal-list" style={{ marginTop: 36, paddingTop: 24, borderTop: "0.5px solid var(--color-border-tertiary, var(--surface-ink-subtle))" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
                       <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".06em", color: "var(--ink-3)" }}>SIGNALS</span>
                       <span style={{ fontSize: 11, color: "var(--ink-3)" }}>

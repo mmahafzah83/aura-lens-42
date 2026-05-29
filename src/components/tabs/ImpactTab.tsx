@@ -1398,6 +1398,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       {/* FirstVisitHint and Market Mirror removed — Impact is now a focused dashboard. */}
 
       {/* ─────────── SCORE HERO (compact: ring + tier card + KPIs) ─────────── */}
+      <div data-tour="impact-hero">
       <ScoreHero
         score={latestScore}
         tierName={auraData?.tier_name}
@@ -1413,6 +1414,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         engChange={engChange}
         followerChange={followerChange}
       />
+      </div>
 
       {/* ─────────── 3. AI NARRATIVE BRIEFING ─────────── */}
       <section
@@ -1544,7 +1546,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         };
 
         return (
-          <section>
+          <section data-tour="audience-section">
             <SectionToggle
               title="Your audience"
               open={openSections.audience}
