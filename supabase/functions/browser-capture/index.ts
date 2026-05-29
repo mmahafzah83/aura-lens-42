@@ -79,7 +79,7 @@ function inferTopicLabel(text: string | null | undefined): string | null {
     ["finance & deals", ["m&a", "merger", "acquisition", "valuation", "ipo", "private equity", "capital"]],
     ["risk & governance", ["risk", "governance", "compliance", "regulation", "audit", "cybersecurity"]],
     ["operations", ["operations", "supply chain", "efficiency", "lean", "process improvement", "transformation"]],
-    ["personal brand", ["personal brand", "thought leadership", "linkedin", "content strategy", "authority"]],
+    ["personal brand", ["personal brand", "thought leadership", "linkedin", "content strategy", "expertise"]],
   ];
 
   for (const [label, keywords] of topics) {

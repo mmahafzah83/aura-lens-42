@@ -121,14 +121,14 @@ ${posts.map((p: any, i: number) => `${i + 1}. "${p.hook || p.title || p.post_tex
 Your brief MUST follow this exact JSON structure with these 5 sections:
 
 {
-  "summary": "One sentence describing the week's authority trajectory.",
+  "summary": "One sentence describing the week's presence trajectory.",
   "what_changed": [
     { "signal": "Brief factual observation", "direction": "up|down|stable", "magnitude": "strong|moderate|subtle" }
   ],
-  "strategic_implication": "2-3 sentences explaining what the pattern means for the user's authority-building. Distinguish between attention, trust, authority, and compounding strategic resonance. Never give shallow advice.",
+  "strategic_implication": "2-3 sentences explaining what the pattern means for the user's presence-building. Distinguish between attention, trust, presence, and compounding strategic resonance. Never give shallow advice.",
   "recommended_move": {
     "action": "One specific publishable content asset to create next",
-    "reasoning": "Why this move compounds authority based on evidence",
+    "reasoning": "Why this move compounds presence based on evidence",
     "format_suggestion": "carousel|article|framework|pov_post|infographic",
     "theme_suggestion": "The topic to focus on"
   },
@@ -136,7 +136,7 @@ Your brief MUST follow this exact JSON structure with these 5 sections:
 }
 
 Rules:
-- Never optimize for vanity metrics. Prefer authority-building over reach.
+- Never optimize for vanity metrics. Prefer presence-building over reach.
 - Every recommendation must be grounded in evidence from the data.
 - Use calm, composed language. Sound like a strategy partner, not a social media coach.
 - "what_changed" should have 2-4 items maximum.

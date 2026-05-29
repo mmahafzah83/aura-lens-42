@@ -126,9 +126,9 @@ const ARABIC_VOICE_PROMPT = `أنت محرك توليد المحتوى لـ Aura
 الإخراج: البوست مباشرة فقط — بدون مقدمة أو عنوان أو تفسير.`;
 
 function buildVoiceContext(voiceProfile: any): string {
-  if (!voiceProfile) return "No voice profile set — use analytical, calm authority tone.";
+  if (!voiceProfile) return "No voice profile set — use analytical, calm confidence tone.";
   return `
-VOICE PROFILE — Write in this voice: ${voiceProfile.tone || "analytical, calm authority"}.
+VOICE PROFILE — Write in this voice: ${voiceProfile.tone || "analytical, calm confidence"}.
 Use these structural patterns: ${JSON.stringify(voiceProfile.preferred_structures || [])}.
 Mirror vocabulary from these examples: ${(voiceProfile.example_posts as any[] || []).map((p: any) => (p.content || "").substring(0, 500)).filter(Boolean).join("\n---\n")}
 Admired voice references: ${(voiceProfile.admired_posts as any[] || []).map((p: any) => (p.content || "").substring(0, 300)).filter(Boolean).join("\n---\n")}

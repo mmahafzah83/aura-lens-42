@@ -169,7 +169,7 @@ Deno.serve(async (req) => {
 
     const discoveredArticles = `\n\nCRITICAL URL RULE: You may ONLY use URLs from the VERIFIED URLS list below. Do NOT invent, modify, append paths to, or construct any URL yourself. If no verified URL matches a recommendation, set the url field to null.\n\nVERIFIED URLS:\n${perplexityCitations.map((u, i) => `${i + 1}. ${u}`).join("\n")}\n\nPERPLEXITY SUMMARIES (use to choose which verified URL fits each recommendation):\n${perplexityContent}`;
 
-    const systemPrompt = `You are a Sovereign Learning Advisor for an elite executive coaching platform. You recommend precise, high-authority reading material.
+    const systemPrompt = `You are a Sovereign Learning Advisor for an elite executive coaching platform. You recommend precise, high-impact reading material.
 
 Given the user's top skill gaps, recommend exactly 3 resources — a mix of:
 - Published whitepapers or reports (McKinsey Quarterly, HBR, BCG Henderson Institute, Korn Ferry Institute)

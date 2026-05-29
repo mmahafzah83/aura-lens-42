@@ -118,7 +118,7 @@ EXPLANATION PATTERN:
 LINE RHYTHM:
 - Alternate: Short statement → Explanation → Insight.
 
-AUTHORITY SIGNALS:
+EXPERTISE SIGNALS:
 - Include: numbers, experiments, personal experience, real outcomes.
 
 INSIGHT INSERTION:

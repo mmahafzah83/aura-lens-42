@@ -14,7 +14,7 @@ You will receive:
 - Recent industry trends (headline, impact_level, decision_label)
 - Captures this week (count)
 - Days since last LinkedIn post
-- Authority score direction (rising/declining)
+- Presence score direction (rising/declining)
 
 RULES — follow exactly:
 1. Return 2 or 3 items. NEVER return a LOW urgency item. If only 2 items are HIGH or MEDIUM, return 2.

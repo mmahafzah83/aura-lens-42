@@ -93,7 +93,7 @@ PERSPECTIVE 3 — THE CONFERENCE CURATOR: What a conference organizer would asse
 RULES:
 - Each perspective must be ~150 words.
 - Each must cite specific signal names + confidence percentages from the data.
-- Each must include EXACTLY ONE explicit authority gap.
+- Each must include EXACTLY ONE explicit expertise gap.
 - Gaps must reference industry trends when available.
 - Tone: direct, professional, observational. No flattery.
 
