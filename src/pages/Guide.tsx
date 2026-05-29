@@ -19,10 +19,11 @@ const FAQ_ITEMS: { q: string; a: string }[] = [
 ];
 
 const STEPS = [
-  { n: "01", Icon: Inbox, t: "Capture what you read", d: "Paste any URL, upload a document, or record a voice note. Aura extracts the intelligence and stores it." },
-  { n: "02", Icon: Radar, t: "Aura detects patterns", d: "As you capture more, Aura identifies strategic signals — recurring themes across your reading that form your expertise map." },
-  { n: "03", Icon: PenTool, t: "Create content from signals", d: "Generate LinkedIn posts in your voice, in English or Arabic. Each post is grounded in your real intelligence — not generic AI." },
-  { n: "04", Icon: TrendingUp, t: "Watch your presence grow", d: "Your Digital Presence Score tracks signal depth (40%), published content (40%), and capture rhythm (20%). Rise from Observer through Explorer, Strategist, and Voice to Presence." },
+  { n: "01", Icon: User, t: "Aura learns who you are", d: "Connect your LinkedIn, calibrate your expertise, and define your sector. Aura maps your professional identity — your level, your skills, your positioning gaps — so everything it generates is built for you, not for a generic user." },
+  { n: "02", Icon: Inbox, t: "Capture what you read", d: "Paste any URL, upload a document, or record a voice note. Aura extracts the intelligence and stores it." },
+  { n: "03", Icon: Radar, t: "Aura detects patterns", d: "As you capture more, Aura identifies strategic signals — recurring themes across your reading that form your expertise map." },
+  { n: "04", Icon: PenTool, t: "Create content from signals", d: "Generate LinkedIn posts in your voice, in English or Arabic. Each post is grounded in your real intelligence — not generic AI." },
+  { n: "05", Icon: TrendingUp, t: "Watch your presence grow", d: "Your Digital Presence Score tracks signal depth (40%), published content (40%), and capture rhythm (20%). Rise from Observer through Explorer, Strategist, and Voice to Presence." },
 ];
 
 const PAGES = [
@@ -122,13 +123,13 @@ const Guide = () => {
           How Aura works
         </h1>
         <p style={{ fontSize: 16, color: "var(--ink-3)", lineHeight: 1.625 }}>
-          From first capture to visible expertise — in 4 steps.
+          From first capture to visible expertise — in 5 steps.
         </p>
       </section>
 
-      {/* 4-step journey */}
+      {/* 5-step journey */}
       <section className="px-5 sm:px-10 pb-20">
-        <div className="max-w-6xl mx-auto grid gap-5 md:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+        <div className="max-w-6xl mx-auto grid gap-5 md:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-5">
           {STEPS.map(({ n, Icon, t, d }) => (
             <div
               key={n}
