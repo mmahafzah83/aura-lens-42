@@ -37,23 +37,21 @@ export async function shareToLinkedIn(opts: {
       : `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
 
   // 3. Persistent toast with clickable link (no auto window.open)
-  toast.success(
-    (t) => (
-      <div>
-        <div style={{ fontWeight: 500, marginBottom: 4 }}>
-          Caption copied to clipboard ✓
-        </div>
-        <a
-          href={target}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ color: "#B08D3A", textDecoration: "underline" }}
-          onClick={() => toast.dismiss(t)}
-        >
-          Open LinkedIn to paste →
-        </a>
+  const id = toast.success(
+    <div>
+      <div style={{ fontWeight: 500, marginBottom: 4 }}>
+        Caption copied to clipboard ✓
       </div>
-    ),
+      <a
+        href={target}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{ color: "#B08D3A", textDecoration: "underline" }}
+        onClick={() => toast.dismiss(id)}
+      >
+        Open LinkedIn to paste →
+      </a>
+    </div>,
     { duration: 10000 }
   );
 }
