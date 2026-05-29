@@ -20,5 +20,11 @@ export async function shareToLinkedIn(opts: {
     mode === "feed"
       ? `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(text)}`
       : `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
-  window.open(target, "_blank", "noopener,noreferrer");
+  const win = window.open(target, "_blank", "noopener,noreferrer");
+  if (!win || win.closed) {
+    toast.info(
+      "LinkedIn couldn't open automatically. The caption is copied to your clipboard — paste it on LinkedIn.",
+      { duration: 6000 }
+    );
+  }
 }
