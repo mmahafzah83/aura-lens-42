@@ -6,11 +6,11 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import AuraButton from "@/components/ui/AuraButton";
 
 const FAQ = [
-  { q: "How does the authority score work?", a: "Your score combines three components: Signal (40%) — how many active, high-confidence signals you've built from captures. Content (40%) — how many posts you've published through Aura in the last 30 days. Capture (20%) — how many of the last 12 weeks you captured at least one source. The formula rewards depth and consistency, not volume." },
+  { q: "How does the presence score work?", a: "Your digital presence score combines three components: Signal (40%) — how many active, high-confidence signals you've built from captures. Content (40%) — how many posts you've published through Aura in the last 30 days. Capture (20%) — how many of the last 12 weeks you captured at least one source. The formula rewards depth and consistency, not volume." },
   { q: "How do signals get stronger?", a: "Every time you capture something that relates to an existing signal, that signal's confidence increases. Signals also strengthen when evidence comes from multiple different organizations. Conversely, signals gradually fade if no new evidence arrives — this keeps your intelligence current." },
   { q: "What does the positioning statement mean?", a: "Your positioning statement is how the market would describe your expertise in 3 sentences. It starts based on your assessment answers, then evolves as your signal graph and content performance provide real evidence. A market-validated positioning means it's backed by both intelligence and audience engagement." },
   { q: "How does voice matching work?", a: "Aura analyzes your real LinkedIn posts to extract your writing DNA — your tone, sentence rhythm, structural patterns, and vocabulary. Every post Aura generates mirrors these patterns so the output sounds like you, not like AI. You can retrain your voice any time by adding more example posts." },
-  { q: "Why should I capture regularly?", a: "Captures are the fuel for everything. They feed signals, which feed content recommendations, which feed your authority score. Capturing 3-4 sources per week is more valuable than 20 in one day — the system rewards rhythm over volume. Each capture takes 10 seconds. The compounding effect takes weeks to feel, but it's real." },
+  { q: "Why should I capture regularly?", a: "Captures are the fuel for everything. They feed signals, which feed content recommendations, which feed your presence score. Capturing 3-4 sources per week is more valuable than 20 in one day — the system rewards rhythm over volume. Each capture takes 10 seconds. The compounding effect takes weeks to feel, but it's real." },
   { q: "How do I track my LinkedIn performance?", a: "Go to linkedin.com/analytics/creator, click Export, download the .xlsx file, then upload it on the Impact page. This takes 30 seconds and connects your publishing output to real engagement data. When a post performs well, the signal it was generated from gets a boost — closing the intelligence loop." },
 ];
 
@@ -19,7 +19,7 @@ type ContextKey = "home" | "identity" | "intelligence" | "authority" | "influenc
 const CONTEXT_COPY: Record<ContextKey, { title: string; body: string }> = {
   home: {
     title: "Your Command Center",
-    body: "This is your daily intelligence briefing. The score at the top reflects your authority momentum — it's built from three forces: signal depth, content output, and capture consistency. The card below your score tells you the single most impactful action you can take right now. Start there.",
+    body: "This is your daily intelligence briefing. The score at the top reflects your presence momentum — it's built from three forces: signal depth, content output, and capture consistency. The card below your score tells you the single most impactful action you can take right now. Start there.",
   },
   identity: {
     title: "Your Intelligence Portrait",
@@ -31,11 +31,11 @@ const CONTEXT_COPY: Record<ContextKey, { title: string; body: string }> = {
   },
   authority: {
     title: "Your Voice",
-    body: "Create content grounded in your real intelligence — not generic templates. The sidebar shows your strongest signals. Publishing from these builds authority fastest because the content is backed by evidence. Flash mode gives you 3 variations in 60 seconds. Every post is voice-matched to sound like you, not like AI.",
+    body: "Create content grounded in your real intelligence — not generic templates. The sidebar shows your strongest signals. Publishing from these builds presence fastest because the content is backed by evidence. Flash mode gives you 3 variations in 60 seconds. Every post is voice-matched to sound like you, not like AI.",
   },
   influence: {
-    title: "Your Authority Trajectory",
-    body: "This page shows how your authority compounds over time. The score formula weighs signal strength (40%), content output (40%), and capture consistency (20%). Upload your LinkedIn analytics to close the feedback loop — when you see which topics get the most engagement, you know where to double down.",
+    title: "Your Presence Growth",
+    body: "This page shows how your presence compounds over time. The score formula weighs signal strength (40%), content output (40%), and capture consistency (20%). Upload your LinkedIn analytics to close the feedback loop — when you see which topics get the most engagement, you know where to double down.",
   },
 };
 
