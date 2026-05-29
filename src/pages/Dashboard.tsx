@@ -325,16 +325,34 @@ const Dashboard = () => {
         // and finish remaining steps via the inline checklist (GuidedJourney).
         const hasProfile = !!profile;
         const hasFirstName = !!(profile && (profile as any).first_name && String((profile as any).first_name).trim());
-        const needsOnboarding = !hasProfile || !hasFirstName;
+        const onboardingDone = !!(profile && (profile as any).onboarding_completed);
         console.log("[Dashboard] onboarding gate", {
           uid: uid.slice(0, 8),
           hasProfile,
           hasFirstName,
           first_name: profile ? (profile as any).first_name : null,
-          onboarding_completed: profile ? (profile as any).onboarding_completed : null,
-          needsOnboarding,
+          onboarding_completed: onboardingDone,
         });
-        if (needsOnboarding) {
+        if (!hasProfile) {
+          // No profile row at all — create a minimal one so onboarding
+          // can reliably UPDATE instead of depending on a later INSERT.
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              await (supabase.from("diagnostic_profiles" as any) as any).upsert({
+                user_id: user.id,
+                first_name: (user.user_metadata as any)?.first_name || "",
+                onboarding_completed: false,
+                onboarding_step: 0,
+              }, { onConflict: "user_id" });
+            }
+          } catch (e) {
+            console.warn("[Dashboard] minimal profile create failed:", e);
+          }
+          navigate("/onboarding", { replace: true });
+          return;
+        }
+        if (!hasFirstName || !onboardingDone) {
           navigate("/onboarding", { replace: true });
           return;
         }
