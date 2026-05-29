@@ -69,7 +69,7 @@ const Dashboard = () => {
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>();
   const [chatContext, setChatContext] = useState<ChatContext | undefined>();
-  const [user, setUser] = useState<{ email?: string; fullName?: string | null; avatarUrl?: string | null } | null>(null);
+  const [user, setUser] = useState<{ email?: string; fullName?: string | null; firstName?: string | null; avatarUrl?: string | null } | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [newIntelSignalCount, setNewIntelSignalCount] = useState(0);
   const showOnboarding = false;
