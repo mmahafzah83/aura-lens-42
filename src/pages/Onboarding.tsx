@@ -118,7 +118,7 @@ const Onboarding = () => {
   const [settingPwd, setSettingPwd] = useState(false);
 
   // Step 0
-  const [revealCount, setRevealCount] = useState(0);
+  
   // Sub-state: within step 0, show welcome first, then LinkedIn paste + form.
   const [welcomeAcknowledged, setWelcomeAcknowledged] = useState(false);
 
