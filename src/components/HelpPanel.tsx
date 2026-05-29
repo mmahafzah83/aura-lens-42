@@ -1,42 +1,17 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, Link, useNavigate } from "react-router-dom";
-import { HelpCircle, X, ChevronDown, Compass } from "lucide-react";
+import { HelpCircle, X, ChevronDown } from "lucide-react";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import AuraButton from "@/components/ui/AuraButton";
+import { useGuideArticles, type GuideArticle } from "@/hooks/useGuideArticles";
 
-const FAQ = [
-  { q: "How does the presence score work?", a: "Your digital presence score combines three components: Signal (40%) — how many active, high-confidence signals you've built from captures. Content (40%) — how many posts you've published through Aura in the last 30 days. Capture (20%) — how many of the last 12 weeks you captured at least one source. The formula rewards depth and consistency, not volume." },
-  { q: "How do signals get stronger?", a: "Every time you capture something that relates to an existing signal, that signal's confidence increases. Signals also strengthen when evidence comes from multiple different organizations. Conversely, signals gradually fade if no new evidence arrives — this keeps your intelligence current." },
-  { q: "What does the positioning statement mean?", a: "Your positioning statement is how the market would describe your expertise in 3 sentences. It starts based on your assessment answers, then evolves as your signal graph and content performance provide real evidence. A market-validated positioning means it's backed by both intelligence and audience engagement." },
-  { q: "How does voice matching work?", a: "Aura analyzes your real LinkedIn posts to extract your writing DNA — your tone, sentence rhythm, structural patterns, and vocabulary. Every post Aura generates mirrors these patterns so the output sounds like you, not like AI. You can retrain your voice any time by adding more example posts." },
-  { q: "Why should I capture regularly?", a: "Captures are the fuel for everything. They feed signals, which feed content recommendations, which feed your presence score. Capturing 3-4 sources per week is more valuable than 20 in one day — the system rewards rhythm over volume. Each capture takes 10 seconds. The compounding effect takes weeks to feel, but it's real." },
-  { q: "How do I track my LinkedIn performance?", a: "Go to linkedin.com/analytics/creator, click Export, download the .xlsx file, then upload it on the Impact page. This takes 30 seconds and connects your publishing output to real engagement data. When a post performs well, the signal it was generated from gets a boost — closing the intelligence loop." },
-];
-
-type ContextKey = "home" | "identity" | "intelligence" | "authority" | "influence";
-
-const CONTEXT_COPY: Record<ContextKey, { title: string; body: string }> = {
-  home: {
-    title: "Your Command Center",
-    body: "This is your daily intelligence briefing. The score at the top reflects your presence momentum — it's built from three forces: signal depth, content output, and capture consistency. The card below your score tells you the single most impactful action you can take right now. Start there.",
-  },
-  identity: {
-    title: "Your Intelligence Portrait",
-    body: "Everything on this page is derived from your assessment, your captures, and your signals. The more you use Aura, the sharper this portrait becomes. Your positioning statement evolves as real evidence accumulates — it's not static. The focus areas and signal coverage sections show where your intelligence runs deepest.",
-  },
-  intelligence: {
-    title: "Your Strategic Radar",
-    body: "Every article, document, or insight you capture gets analyzed for strategic patterns. When multiple captures point to the same theme, a signal emerges. Signals grow stronger with more evidence and fade when no new evidence arrives. The stronger your signals, the more targeted your content recommendations become.",
-  },
-  authority: {
-    title: "Your Voice",
-    body: "Create content grounded in your real intelligence — not generic templates. The sidebar shows your strongest signals. Publishing from these builds presence fastest because the content is backed by evidence. Flash mode gives you 3 variations in 60 seconds. Every post is voice-matched to sound like you, not like AI.",
-  },
-  influence: {
-    title: "Your Presence Growth",
-    body: "This page shows how your presence compounds over time. The score formula weighs signal strength (40%), content output (40%), and capture consistency (20%). Upload your LinkedIn analytics to close the feedback loop — when you see which topics get the most engagement, you know where to double down.",
-  },
+const TAB_MAP: Record<string, string> = {
+  home: "home",
+  intelligence: "intelligence",
+  authority: "publish",
+  influence: "impact",
+  identity: "mystory",
 };
 
 function FaqItem({ q, a }: { q: string; a: string }) {
@@ -72,6 +47,21 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 export function HelpPanel({ open, onClose, activeTab }: { open: boolean; onClose: () => void; activeTab?: string }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { articles: allArticles, loading, error } = useGuideArticles();
+
+  const bySlug = (s: string) => allArticles.find(a => a.slug === s);
+  const disambig = bySlug("difference-guide-ask-aura");
+  const startHere: GuideArticle[] = ["what-is-aura", "how-to-start"]
+    .map(bySlug)
+    .filter(Boolean) as GuideArticle[];
+  const mappedTab = activeTab ? TAB_MAP[activeTab] : undefined;
+  const contextual = mappedTab
+    ? allArticles.filter(
+        a =>
+          a.tab === mappedTab &&
+          (a.surfaces?.includes("faq") || a.surfaces?.includes("guide")),
+      )
+    : [];
 
   useEffect(() => {
     if (open) onClose();
@@ -156,71 +146,67 @@ export function HelpPanel({ open, onClose, activeTab }: { open: boolean; onClose
 
         {/* Scrollable content */}
         <div style={{ overflowY: "auto", padding: "18px 18px", flex: 1 }}>
-          {/* Contextual section */}
-          {(() => {
-            const ctx = (activeTab && (CONTEXT_COPY as any)[activeTab]) || CONTEXT_COPY.home;
-            return (
-              <div
-                style={{
-                  background: "var(--surface-subtle, #fff)",
-                  border: "1px solid var(--brand-line)",
-                  borderRadius: 12,
-                  padding: "14px 16px",
-                  marginBottom: 22,
-                }}
-              >
-                <div style={{ fontFamily: "var(--font-display)", fontSize: 16, color: "#2D2820", lineHeight: 1.3 }}>
-                  {ctx.title}
-                </div>
-                <p style={{ fontSize: 14, color: "#5A5347", lineHeight: 1.7, marginTop: 8, marginBottom: 0 }}>
-                  {ctx.body}
-                </p>
-              </div>
-            );
-          })()}
-
-          {/* FAQ */}
-          <div style={{ marginBottom: 18 }}>
-            <SectionHeader label="Frequently asked" />
-            <div style={{ marginTop: 8 }}>
-              {FAQ.map(qa => <FaqItem key={qa.q} q={qa.q} a={qa.a} />)}
+          {loading && allArticles.length === 0 ? (
+            <div style={{ fontSize: 14, color: "var(--ink-3)", padding: "8px 2px" }}>Loading…</div>
+          ) : error && allArticles.length === 0 ? (
+            <div style={{ fontSize: 14, color: "var(--ink-3)", padding: "8px 2px" }}>
+              Help content is loading — try again in a moment.
             </div>
-          </div>
+          ) : (
+            <>
+              {/* Disambiguation: Guide vs Ask Aura */}
+              {disambig && (
+                <div
+                  style={{
+                    background: "var(--surface-subtle, #fff)",
+                    border: "1px solid var(--brand-line)",
+                    borderRadius: 12,
+                    padding: "14px 16px",
+                    marginBottom: 22,
+                  }}
+                >
+                  <div style={{ fontFamily: "var(--font-display)", fontSize: 16, color: "#2D2820", lineHeight: 1.3 }}>
+                    {disambig.question_en}
+                  </div>
+                  <p style={{ fontSize: 14, color: "#5A5347", lineHeight: 1.7, marginTop: 8, marginBottom: 0 }}>
+                    {disambig.answer_en}
+                  </p>
+                </div>
+              )}
+
+              {/* Start here */}
+              {startHere.length > 0 && (
+                <div style={{ marginBottom: 22 }}>
+                  <SectionHeader label="Start here" />
+                  <div style={{ marginTop: 8 }}>
+                    {startHere.map(a => (
+                      <FaqItem key={a.slug} q={a.question_en} a={a.answer_en} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Contextual FAQs for current tab */}
+              {contextual.length > 0 && (
+                <div style={{ marginBottom: 18 }}>
+                  <SectionHeader label="On this page" />
+                  <div style={{ marginTop: 8 }}>
+                    {contextual.map(a => (
+                      <FaqItem
+                        key={a.slug}
+                        q={a.question_en}
+                        a={a.formula_note_en ? `${a.answer_en}\n\n${a.formula_note_en}` : a.answer_en}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
 
           <div style={{ display: "flex", gap: 14, fontSize: 12 }}>
             <Link to="/terms" style={{ color: "var(--brand)", textDecoration: "none" }}>Terms</Link>
             <Link to="/privacy" style={{ color: "var(--brand)", textDecoration: "none" }}>Privacy</Link>
-          </div>
-
-          <div style={{
-            borderTop: "0.5px solid hsl(var(--border))",
-            paddingTop: 12,
-            marginTop: 16,
-          }}>
-            <button
-              onClick={() => {
-                onClose();
-                window.dispatchEvent(new CustomEvent("aura-open-chat", {
-                  detail: {
-                    prompt: "Give me a full walkthrough of Aura — what each page does, how the score works, and what I should focus on this week.",
-                  },
-                }));
-              }}
-              style={{
-                background: "none",
-                border: "none",
-                color: "#B08D3A",
-                fontSize: 13,
-                cursor: "pointer",
-                padding: 0,
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-              }}
-            >
-              <Compass size={16} aria-hidden />
-              Ask Aura for a walkthrough
-            </button>
           </div>
         </div>
 
