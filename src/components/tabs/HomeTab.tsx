@@ -1672,6 +1672,9 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
           </div>
         </div>
       )}
+      <FirstTimeHint hintKey="home-score">
+        This is your Digital Presence Score — it grows when you capture, publish, and stay consistent.
+      </FirstTimeHint>
       <div data-tour="score-hero">
       {!auraLoading && isEmpty && (
         <div
