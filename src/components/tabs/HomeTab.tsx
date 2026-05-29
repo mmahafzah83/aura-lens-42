@@ -36,6 +36,7 @@ import MarketScan from "@/components/home/MarketScan";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
 import AuditCtaCard from "@/components/home/AuditCtaCard";
+import TourReminderBanner from "@/components/TourReminderBanner";
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
 
@@ -1370,6 +1371,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
       transition={{ duration: 0.35 }}
       className="space-y-6 max-w-3xl"
     >
+      <TourReminderBanner />
       {/* Onboarding checklist (auto-hides once all 5 steps complete) */}
       <OnboardingChecklist onOpenCapture={onOpenCapture} onSwitchTab={onSwitchTab} />
 
