@@ -1133,12 +1133,37 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
     } catch { /* localStorage unavailable */ }
     briefTriggeredRef.current = true;
 
-    const briefPrompt = "Generate my proactive weekly intelligence brief. Include: (1) my top 2 signals by priority_score and exactly why they matter THIS week — name a recent development, (2) one specific publishing window open right now based on my last post date and signal momentum, (3) one uncomfortable truth about a gap in my expertise positioning, (4) one concrete next step with a specific deadline. Cite signal_titles by exact name in bold. Be direct and contrarian. End with NEXT STEP:.";
-
     (async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.access_token) return;
+
+        // Maturity-aware brief prompt
+        const uid = session.user.id;
+        const [{ count: publishedCount }, { data: authUser }] = await Promise.all([
+          supabase.from("linkedin_posts" as any).select("id", { count: "exact", head: true }).eq("user_id", uid).not("published_at", "is", null),
+          supabase.auth.getUser(),
+        ]);
+        const createdAt = authUser?.user?.created_at ? new Date(authUser.user.created_at).getTime() : Date.now();
+        const accountDays = Math.max(1, Math.floor((Date.now() - createdAt) / 86400000));
+        const isNewUser = accountDays < 14 || (publishedCount || 0) === 0;
+
+        const briefPrompt = isNewUser
+          ? `Generate my weekly intelligence brief. Include:
+(1) My strongest signal right now and why it matters this week — name a specific recent development.
+(2) The single best first post I could publish this week — give me the angle and why it would land.
+(3) One insight about my sector that most people in my position haven't noticed yet.
+(4) One concrete next step with a specific deadline.
+Cite signal titles by name in **bold**. Be direct but encouraging. I'm early in building my digital presence — help me take the first confident step, not catalog everything I haven't done yet.
+End with NEXT STEP:.`
+          : `Generate my proactive weekly intelligence brief. Include:
+(1) My top 2 signals by priority_score and why they matter THIS week — name a recent development.
+(2) One specific publishing window open right now based on what competitors haven't covered.
+(3) One honest observation about a gap in my positioning that I should address this week.
+(4) One concrete next step with a specific deadline.
+Cite signal titles by name in **bold**. Be direct and strategic.
+End with NEXT STEP:.`;
+
         // Push placeholder assistant message marked as brief
         setMessages(prev => prev.length === 0 ? [{ role: "assistant", content: "", isBrief: true }] : prev);
         setIsLoading(true);
