@@ -51,7 +51,7 @@ const TIER_TOOLTIPS: Record<TierName, { title: string; body: string }> = {
   },
   Presence: {
     title: "Presence · 80–100",
-    body: "The market knows you. Your signals and content sustain lasting authority.",
+    body: "The market knows you. Your signals and content sustain lasting presence.",
   },
 };
 
@@ -321,7 +321,7 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
       {(() => {
         const noSignals = signalCount === 0;
         let nudge = noSignals
-          ? "You're starting your authority journey. Capture articles in your area of expertise to detect your first signals."
+          ? "You're starting your presence journey. Capture articles in your area of expertise to detect your first signals."
           : (data.personalized_nudge || "");
         // Defensive: strip accidental duplicate leading "Your your" coming from
         // a top-signal title that itself starts with "your".
