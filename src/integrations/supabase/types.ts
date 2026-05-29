@@ -912,6 +912,51 @@ export type Database = {
           },
         ]
       }
+      guide_articles: {
+        Row: {
+          answer_en: string
+          category: string
+          created_at: string
+          formula_note_en: string | null
+          id: string
+          question_en: string | null
+          related_terms: string[]
+          slug: string
+          sort_order: number
+          surfaces: string[]
+          tab: string
+          updated_at: string
+        }
+        Insert: {
+          answer_en: string
+          category: string
+          created_at?: string
+          formula_note_en?: string | null
+          id?: string
+          question_en?: string | null
+          related_terms?: string[]
+          slug: string
+          sort_order?: number
+          surfaces?: string[]
+          tab: string
+          updated_at?: string
+        }
+        Update: {
+          answer_en?: string
+          category?: string
+          created_at?: string
+          formula_note_en?: string | null
+          id?: string
+          question_en?: string | null
+          related_terms?: string[]
+          slug?: string
+          sort_order?: number
+          surfaces?: string[]
+          tab?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       impact_narratives: {
         Row: {
           content_insight: string
