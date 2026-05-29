@@ -88,7 +88,7 @@ function buildEmail(
   const focus = sectorFocus && sectorFocus.trim() ? sectorFocus.trim() : "your sector";
   const tierMessage = (() => {
     const t = (tier || "").toLowerCase();
-    if (t.includes("authority")) return "You're in the top tier. Maintain your edge.";
+    if (t.includes("presence")) return "You're in the top tier. Maintain your edge.";
     if (t.includes("strategist")) return "You're reading the market — patterns are forming.";
     return "You're building your intelligence foundation.";
   })();
@@ -130,10 +130,10 @@ function buildEmail(
       ? `The market conversation in ${focus} shifted — '<strong>${recentTrend.headline}</strong>' (via ${recentTrend.source}). You have ${signalCount} active signal${signalCount === 1 ? "" : "s"} tracking this space.`
       : `Aura is watching ${focus} for fresh market movement. You have ${signalCount} active signal${signalCount === 1 ? "" : "s"} ready to anchor your next post.`;
     const body = `
-      ${heading(`${name}, your authority score is ${score ?? 0}.`)}
+      ${heading(`${name}, your presence score is ${score ?? 0}.`)}
       <p style="margin:0 0 18px;">${tierMessage}</p>
       <p style="margin:0 0 18px;">${trendLine}</p>
-      <p style="margin:0 0 18px;">Publishing from your strongest signal builds authority fastest. Your signals are ready.</p>
+      <p style="margin:0 0 18px;">Publishing from your strongest signal builds presence fastest. Your signals are ready.</p>
       ${ctaButton(BRAND, "Generate your first post →", `${APP_URL}/dashboard?tab=publish`)}
       ${signoff(name, level)}`;
     return { subject, html: shell(BRAND, FONT, body) };
