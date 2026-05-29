@@ -925,15 +925,15 @@ const Onboarding = () => {
   if (step === 0 && welcomeAcknowledged) {
     return cardShell(
       <>
-        {eyebrow("Step 1 of 4 — Tell Aura who you are")}
+        {eyebrow("Step 1 of 4 — Your starting point")}
         {!showForm ? (
           <>
-            {heading("Paste your LinkedIn headline and About section")}
+            {heading("Start with what LinkedIn already knows")}
             <p className="mb-4" style={{ fontSize: 15, lineHeight: 1.7, color: "hsl(var(--muted-foreground))" }}>
-              Aura extracts your profile in seconds.
+              Paste your headline and About section. Aura reads it in seconds and calibrates everything around your level, sector, and voice.
             </p>
             <label className="text-xs font-medium block mb-1" style={{ color: "hsl(var(--muted-foreground))" }}>
-              Paste your LinkedIn headline and About section
+              Your LinkedIn headline + About section
             </label>
             <div className="relative mb-2">
               <textarea
