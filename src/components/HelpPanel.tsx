@@ -200,7 +200,11 @@ export function HelpPanel({ open, onClose, activeTab }: { open: boolean; onClose
             <button
               onClick={() => {
                 onClose();
-                if ((window as any).auraReplayTour) (window as any).auraReplayTour();
+                window.dispatchEvent(new CustomEvent("aura-open-chat", {
+                  detail: {
+                    prompt: "Give me a full walkthrough of Aura — what each page does, how the score works, and what I should focus on this week.",
+                  },
+                }));
               }}
               style={{
                 background: "none",
@@ -215,7 +219,7 @@ export function HelpPanel({ open, onClose, activeTab }: { open: boolean; onClose
               }}
             >
               <Compass size={16} aria-hidden />
-              Replay product tour
+              Ask Aura for a walkthrough
             </button>
           </div>
         </div>
