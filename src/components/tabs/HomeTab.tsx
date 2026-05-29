@@ -2472,6 +2472,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
       </div>
 
       {/* TIER 2 — Market scan (from daily-briefing) */}
+      <div data-tour="market-scan">
       <MarketScan
         onOpenCapture={onOpenCapture}
         onSwitchTab={onSwitchTab}
@@ -2485,6 +2486,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
           });
         }}
       />
+      </div>
       </>)}
 
       {scoreJumpShareData && (
