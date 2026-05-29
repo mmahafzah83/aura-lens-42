@@ -117,7 +117,7 @@ function buildQuestions(sector?: string): Question[] {
     sub: "Pick one.",
     type: "single",
     options: [
-      "The definitive authority on a specific topic",
+      "The definitive expert on a specific topic",
       "A trusted advisor to C-suite and board leaders",
       "A published thought leader with a global audience",
       "A builder of practices or businesses",

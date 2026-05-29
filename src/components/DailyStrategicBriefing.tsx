@@ -127,7 +127,7 @@ const DailyStrategicBriefing = ({ onOpenChat, onDraftToStudio }: DailyStrategicB
     },
     {
       icon: Crown,
-      label: "Authority Opportunity",
+      label: "Signal Opportunity",
       title: briefing.authority_opportunity.title,
       body: briefing.authority_opportunity.hook,
       accent: "from-primary/20 to-primary/5",

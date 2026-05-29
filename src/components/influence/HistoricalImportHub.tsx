@@ -355,7 +355,7 @@ const HistoricalImportHub = ({ onImportComplete }: { onImportComplete?: () => vo
       ]);
       if ((snapCount.count || 0) >= 2) unlockedSections.push("Audience Momentum chart");
       if ((postCount.count || 0) > 0) unlockedSections.push("Content Performance table", "Theme Momentum", "Format Intelligence");
-      if ((snapCount.count || 0) > 0) unlockedSections.push("Authority Score");
+      if ((snapCount.count || 0) > 0) unlockedSections.push("Presence Score");
 
       setSummary({
         mode,

@@ -906,19 +906,19 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
     const parts: Part[] = [];
     // Sentence 1
     if (scoreDiff != null && scoreDiff < -5) {
-      parts.push({ text: "Your authority score is " });
+      parts.push({ text: "Your presence score is " });
       parts.push({ text: "declining", color: RED });
       parts.push({ text: " — down " });
       parts.push({ text: `${Math.abs(scoreDiff)} points`, bold: true });
       parts.push({ text: " this week. " });
     } else if (scoreDiff != null && scoreDiff > 5) {
-      parts.push({ text: "Your authority score is " });
+      parts.push({ text: "Your presence score is " });
       parts.push({ text: "growing", color: GREEN });
       parts.push({ text: " — up " });
       parts.push({ text: `${scoreDiff} points`, bold: true });
       parts.push({ text: " this week. " });
     } else {
-      parts.push({ text: "Your authority score is holding steady this week. " });
+      parts.push({ text: "Your presence score is holding steady this week. " });
     }
 
     // Sentence 2
@@ -948,7 +948,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
     } else if (daysSinceCapture != null && daysSinceCapture < 4 && (scoreDiff ?? 0) < 0) {
       parts.push({ text: "Keep capturing and publishing to reverse the decline." });
     } else {
-      parts.push({ text: "Keep your current pace — your authority is " });
+      parts.push({ text: "Keep your current pace — your presence is " });
       parts.push({ text: "compounding", color: GREEN });
       parts.push({ text: "." });
     }
@@ -1202,7 +1202,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
                 {
                   n: 2,
                   title: "Complete your brand assessment",
-                  body: "Discover how the market sees you — your market position, positioning, and authority territory. (5 minutes)",
+                  body: "Discover how the market sees you — your market position, positioning, and expertise territory. (5 minutes)",
                   done: assessDone,
                   locked: !profileDone,
                   cta: assessDone || !profileDone ? null : "assessment" as const,

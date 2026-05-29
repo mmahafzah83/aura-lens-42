@@ -353,9 +353,9 @@ const StrategicIntelligenceEngine = ({ onOpenChat, onDraftToStudio }: StrategicI
                         </OpportunitySection>
                       )}
 
-                      {/* Authority Opportunity */}
+                      {/* Signal Opportunity */}
                       {ct.title && (
-                        <OpportunitySection icon={Crown} label="Authority Opportunity" accentClass="text-amber-400/80">
+                        <OpportunitySection icon={Crown} label="Signal Opportunity" accentClass="text-amber-400/80">
                           <p className="text-xs font-semibold text-foreground/90 mb-1">{ct.title}</p>
                           {ct.hook && <p className="text-xs text-primary/60 italic leading-relaxed mb-1.5 pl-3 border-l-2 border-primary/15">"{ct.hook}"</p>}
                           {ct.angle && <p className="text-xs text-muted-foreground/55 leading-relaxed mb-2.5">{ct.angle}</p>}
@@ -412,7 +412,7 @@ const StrategicIntelligenceEngine = ({ onOpenChat, onDraftToStudio }: StrategicI
                 { step: "1", title: "Capture", desc: "Notes, articles, voice notes, and research are stored as knowledge inputs.", icon: FileText },
                 { step: "2", title: "Extract", desc: "AI breaks each capture into structured evidence fragments — claims, signals, frameworks, and insights.", icon: Layers },
                 { step: "3", title: "Detect", desc: "Pattern detection scans all evidence to find recurring themes and emerging signals.", icon: Search },
-                { step: "4", title: "Signal", desc: "Strong patterns become Strategic Signals with framework, authority, and consulting opportunities.", icon: Zap },
+                { step: "4", title: "Signal", desc: "Strong patterns become Strategic Signals with framework, expertise, and consulting opportunities.", icon: Zap },
               ].map(({ step, title, desc, icon: Icon }) => (
                 <div key={step} className="flex items-start gap-3">
                   <div className="w-7 h-7 rounded-full bg-primary/8 flex items-center justify-center flex-shrink-0 border border-primary/10">

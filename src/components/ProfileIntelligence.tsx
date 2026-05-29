@@ -48,7 +48,7 @@ const SECTION_CONFIG = [
   { key: "capabilities", label: "What sets you apart", icon: Star, color: "text-violet-400", dot: "var(--aura-purple)", subtitle: "The things you do that most people in your space can't. These show up in everything you write." },
   { key: "clients", label: "Target Clients", icon: Users, color: "text-sky-400", dot: "var(--aura-accent3)", subtitle: "The decision-makers your expertise serves" },
   { key: "values", label: "Core Values", icon: Compass, color: "text-rose-400", dot: "var(--aura-pink)", subtitle: "What drives your approach — these shape your voice and content tone" },
-  { key: "authority_ambitions", label: "Authority Ambitions", icon: Target, color: "text-primary", dot: "var(--aura-accent)", subtitle: "Where you are heading — Aura measures every action against these targets" },
+  { key: "authority_ambitions", label: "Presence Ambitions", icon: Target, color: "text-primary", dot: "var(--aura-accent)", subtitle: "Where you are heading — Aura measures every action against these targets" },
   { key: "strategic_goals", label: "Strategic Goals", icon: Target, color: "text-emerald-400", dot: "var(--aura-positive)", subtitle: "The outcomes that define success for you — your score reflects progress toward these" },
 ] as const;
 
@@ -284,7 +284,7 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null, hide
               {intelligenceStage && (
                 <div className="text-xs uppercase tracking-wider text-muted-foreground" style={{ letterSpacing: "0.08em" }}>
                   {intelligenceStage === 3
-                    ? "Your proven authority territories"
+                    ? "Your proven expertise territories"
                     : intelligenceStage === 2
                     ? "Emerging from your signals"
                     : "Suggested from your assessment"}

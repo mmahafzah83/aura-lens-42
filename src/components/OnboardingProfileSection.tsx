@@ -65,7 +65,7 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
   const generateLocalSummary = (p: ProfileData) => {
     const role = p.level || "professional";
     const industry = p.sector_focus || "your industry";
-    const goal = p.north_star_goal || "building authority";
+    const goal = p.north_star_goal || "building presence";
     const strength = p.primary_strength || "";
     const strengthLabel = strength.includes("strategically") ? "strategic thinking"
       : strength.includes("data") ? "evidence-based analysis"

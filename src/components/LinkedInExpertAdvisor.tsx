@@ -141,7 +141,7 @@ const LinkedInExpertAdvisor = ({ hasSnapshots, refreshTrigger = 0 }: LinkedInExp
 
   const tabs: { key: TabKey; label: string }[] = [
     { key: "overview", label: "Overview" },
-    { key: "themes", label: "Authority Themes" },
+    { key: "themes", label: "Signal Themes" },
     { key: "opportunities", label: "Opportunities" },
     { key: "content", label: "Content Ideas" },
   ];
