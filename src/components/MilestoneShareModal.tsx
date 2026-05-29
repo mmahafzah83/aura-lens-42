@@ -305,6 +305,27 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
           borderRadius: 8,
           position: "relative",
         }}>
+          <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
+            {(["en", "ar"] as const).map((l) => (
+              <button
+                key={l}
+                type="button"
+                onClick={() => setLang(l)}
+                style={{
+                  padding: "4px 12px",
+                  borderRadius: 20,
+                  fontSize: 12,
+                  cursor: "pointer",
+                  background: lang === l ? "var(--brand, #B08D3A)" : "transparent",
+                  color: lang === l ? "white" : "hsl(var(--muted-foreground))",
+                  border: "0.5px solid hsl(var(--border))",
+                  fontWeight: 500,
+                }}
+              >
+                {l.toUpperCase()}
+              </button>
+            ))}
+          </div>
           <div style={{
             display: "flex",
             justifyContent: "space-between",
@@ -349,6 +370,8 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
             color: "var(--ink, #111)",
             margin: 0,
             whiteSpace: "pre-line",
+            direction: lang === "ar" ? "rtl" : "ltr",
+            textAlign: lang === "ar" ? "right" : "left",
           }}>
             {shareText}
           </p>
