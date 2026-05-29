@@ -268,7 +268,7 @@ const Guide = () => {
                     />
                   </button>
                   {open && (
-                    <div style={{ fontSize: 14, lineHeight: 1.7, color: "rgba(255,255,255,0.65)", paddingBottom: 20, paddingRight: 34 }}>
+                    <div style={{ fontSize: 14, lineHeight: 1.7, color: "rgba(255,255,255,0.65)", paddingBottom: 20, paddingRight: 34, whiteSpace: "pre-line" }}>
                       {item.a}
                     </div>
                   )}
