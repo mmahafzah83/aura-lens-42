@@ -1372,7 +1372,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
       transition={{ duration: 0.35 }}
       className="space-y-6 max-w-3xl"
     >
-      <TourBanner />
+      
       {/* Onboarding checklist (auto-hides once all 5 steps complete) */}
       <OnboardingChecklist onOpenCapture={onOpenCapture} onSwitchTab={onSwitchTab} />
 
