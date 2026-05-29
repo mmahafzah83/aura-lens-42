@@ -14,6 +14,7 @@ interface MarketScanProps {
   onOpenCapture?: (prefillUrl?: string, prefillText?: string) => void;
   onSwitchTab?: (tab: "home" | "identity" | "intelligence" | "authority" | "influence") => void;
   onDraftPost?: (prefill: { topic: string; context: string }) => void;
+  defaultExpanded?: boolean;
 }
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
@@ -162,11 +163,11 @@ const Skel = () => (
   }} />
 );
 
-export default function MarketScan({ onOpenCapture, onSwitchTab, onDraftPost }: MarketScanProps) {
+export default function MarketScan({ onOpenCapture, onSwitchTab, onDraftPost, defaultExpanded = true }: MarketScanProps) {
   const [items, setItems] = useState<BriefingItem[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(defaultExpanded);
 
   useEffect(() => {
     const date = todayKey();
@@ -215,12 +216,22 @@ export default function MarketScan({ onOpenCapture, onSwitchTab, onDraftPost }: 
           cursor: "pointer", marginBottom: 6,
         }}
       >
-        <span style={{
-          fontSize: 11, fontWeight: 500, letterSpacing: "0.04em",
-          color: "hsl(var(--muted-foreground))", textTransform: "uppercase",
-        }}>
-          Market scan
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{
+            fontSize: 11, fontWeight: 500, letterSpacing: "0.04em",
+            color: "hsl(var(--muted-foreground))", textTransform: "uppercase",
+          }}>
+            Market scan
+          </span>
+          <span style={{
+            fontSize: 10, fontWeight: 600, letterSpacing: "0.03em",
+            color: "hsl(var(--muted-foreground))",
+            background: "hsl(var(--muted) / 0.5)",
+            borderRadius: 4, padding: "1px 6px",
+          }}>
+            {loading ? 0 : (items?.length ?? 0)}
+          </span>
+        </div>
         <ChevronDown
           size={14}
           style={{

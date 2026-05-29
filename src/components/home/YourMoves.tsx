@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Send, Plus, Eye, ChevronRight } from "lucide-react";
+import { Send, Plus, Eye, ChevronRight, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export type ActionType = "PUBLISH" | "CAPTURE" | "WATCH";
@@ -18,6 +18,7 @@ interface YourMovesProps {
   userId: string | null;
   items?: AuraItem[] | null;
   hideIfEmpty?: boolean;
+  defaultOpen?: boolean;
   onOpenCapture?: () => void;
   onSwitchTab?: (tab: "home" | "identity" | "intelligence" | "authority" | "influence") => void;
 }
@@ -78,11 +79,12 @@ const Skel = () => (
   }} />
 );
 
-export default function YourMoves({ userId, items: itemsProp, hideIfEmpty, onOpenCapture, onSwitchTab }: YourMovesProps) {
+export default function YourMoves({ userId, items: itemsProp, hideIfEmpty, defaultOpen = true, onOpenCapture, onSwitchTab }: YourMovesProps) {
   const navigate = useNavigate();
   const [items, setItems] = useState<AuraItem[] | null>(null);
   const [loading, setLoading] = useState(itemsProp === undefined);
   const [failed, setFailed] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
 
   useEffect(() => {
     if (itemsProp !== undefined) {
@@ -122,43 +124,69 @@ export default function YourMoves({ userId, items: itemsProp, hideIfEmpty, onOpe
     else navigate("/?tab=intelligence");
   };
 
-  if (hideIfEmpty && !loading && (failed || !items || items.length === 0)) return null;
+  const itemCount = loading ? 0 : (items?.length ?? 0);
+  const isEmpty = !loading && (failed || !items || items.length === 0);
+  if (hideIfEmpty && isEmpty) return null;
 
   return (
     <section style={{ borderTop: "0.5px solid hsl(var(--border) / 0.5)", paddingTop: 20 }}>
-      <div style={{
-        display: "flex", alignItems: "baseline", justifyContent: "space-between",
-        marginBottom: 4,
-      }}>
-        <span style={{
-          fontSize: 11, fontWeight: 500, letterSpacing: "0.04em",
-          color: "hsl(var(--muted-foreground))", textTransform: "uppercase",
-        }}>
-          Your moves
-        </span>
-        <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
-          Based on your signals
-        </span>
-      </div>
-      <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 12, lineHeight: 1.5 }}>
-        Actions Aura recommends based on your intelligence data. Each moves your score forward.
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {loading ? (
-          <>
-            <Skel /><Skel /><Skel />
-          </>
-        ) : failed || !items || items.length === 0 ? (
-          <div style={{
-            fontSize: 13, color: "hsl(var(--muted-foreground))",
-            padding: "16px 4px",
+      <button
+        type="button"
+        onClick={() => setOpen((s) => !s)}
+        style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          width: "100%", background: "transparent", border: 0, padding: 0,
+          cursor: "pointer", marginBottom: 4,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{
+            fontSize: 11, fontWeight: 500, letterSpacing: "0.04em",
+            color: "hsl(var(--muted-foreground))", textTransform: "uppercase",
           }}>
-            Aura is analyzing your signals. Check back after your next capture.
+            Your moves
+          </span>
+          <span style={{
+            fontSize: 10, fontWeight: 600, letterSpacing: "0.03em",
+            color: "hsl(var(--muted-foreground))",
+            background: "hsl(var(--muted) / 0.5)",
+            borderRadius: 4, padding: "1px 6px",
+          }}>
+            {itemCount}
+          </span>
+        </div>
+        <ChevronDown
+          size={14}
+          style={{
+            color: "hsl(var(--muted-foreground))",
+            transform: open ? "rotate(0deg)" : "rotate(-90deg)",
+            transition: "transform 200ms",
+          }}
+        />
+      </button>
+      {open && (
+        <>
+          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 12, lineHeight: 1.5 }}>
+            Actions Aura recommends based on your intelligence data. Each moves your score forward.
           </div>
-        ) : (
-          items.map((it, i) => <Row key={i} item={it} onClick={() => handleClick(it)} />)
-        )}
-      </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {loading ? (
+              <>
+                <Skel /><Skel /><Skel />
+              </>
+            ) : failed || !items || items.length === 0 ? (
+              <div style={{
+                fontSize: 13, color: "hsl(var(--muted-foreground))",
+                padding: "16px 4px",
+              }}>
+                Aura is analyzing your signals. Check back after your next capture.
+              </div>
+            ) : (
+              items.map((it, i) => <Row key={i} item={it} onClick={() => handleClick(it)} />)
+            )}
+          </div>
+        </>
+      )}
     </section>
   );
 }
