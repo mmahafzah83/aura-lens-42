@@ -1,5 +1,30 @@
 import React, { useEffect, useLayoutEffect, useRef, useState, ReactNode, CSSProperties } from "react";
 import { createPortal } from "react-dom";
+import { supabase } from "@/integrations/supabase/client";
+
+// Module-level shared cache so multiple InfoTooltip instances with `slug`
+// dedupe to a single network fetch of the guide_articles corpus.
+type GuideRow = { slug: string; answer_en: string; formula_note_en: string | null };
+let _guideCache: Record<string, GuideRow> | null = null;
+let _guidePromise: Promise<Record<string, GuideRow>> | null = null;
+const _subscribers = new Set<() => void>();
+
+function loadGuideCorpus(): Promise<Record<string, GuideRow>> {
+  if (_guideCache) return Promise.resolve(_guideCache);
+  if (_guidePromise) return _guidePromise;
+  _guidePromise = (async () => {
+    const { data, error } = await supabase
+      .from("guide_articles")
+      .select("slug,answer_en,formula_note_en");
+    if (error) throw error;
+    const map: Record<string, GuideRow> = {};
+    (data || []).forEach((r: any) => { map[r.slug] = r as GuideRow; });
+    _guideCache = map;
+    _subscribers.forEach((fn) => fn());
+    return map;
+  })();
+  return _guidePromise;
+}
 
 export interface InfoTooltipProps {
   children?: ReactNode;
@@ -13,6 +38,8 @@ export interface InfoTooltipProps {
   className?: string;
   /** Horizontal alignment of the panel relative to the trigger */
   align?: "center" | "left" | "right";
+  /** When set, body is loaded from guide_articles (answer_en + formula_note_en). */
+  slug?: string;
 }
 
 export function InfoTooltip({
@@ -24,6 +51,7 @@ export function InfoTooltip({
   label,
   className,
   align = "center",
+  slug,
 }: InfoTooltipProps) {
   const [open, setOpen] = useState(false);
   const [hover, setHover] = useState(false);
@@ -33,6 +61,19 @@ export function InfoTooltip({
   const panelRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number; effectiveSide: "top" | "bottom"; arrowLeft: number } | null>(null);
+  const [article, setArticle] = useState<GuideRow | null>(() => (slug && _guideCache ? _guideCache[slug] ?? null : null));
+
+  useEffect(() => {
+    if (!slug) return;
+    let cancelled = false;
+    const sync = () => {
+      if (cancelled) return;
+      if (_guideCache) setArticle(_guideCache[slug] ?? null);
+    };
+    _subscribers.add(sync);
+    loadGuideCorpus().then(sync).catch(() => {});
+    return () => { cancelled = true; _subscribers.delete(sync); };
+  }, [slug]);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 640);
@@ -85,7 +126,7 @@ export function InfoTooltip({
     const arrowLeft = Math.max(12, Math.min(triggerCenter - left, pw - 12));
 
     setPos({ top, left, effectiveSide: eff, arrowLeft });
-  }, [visible, isMobile, side, width, align, children, text]);
+  }, [visible, isMobile, side, width, align, children, text, article]);
 
   const triggerStyle: CSSProperties = {
     width: triggerSize,
@@ -172,10 +213,37 @@ export function InfoTooltip({
     }
   }
 
+  // Resolve body: corpus-backed when slug provided and loaded, else fallback to children/text.
+  let body: ReactNode = children ?? text;
+  if (slug && article) {
+    body = (
+      <>
+        <div>{article.answer_en}</div>
+        {article.formula_note_en && (
+          <div
+            style={{
+              marginTop: 10,
+              padding: "8px 10px",
+              borderRadius: 6,
+              background: "hsl(var(--brand) / 0.08)",
+              border: "1px solid var(--brand-line)",
+              fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+              fontSize: 11,
+              color: "var(--ink)",
+              lineHeight: 1.55,
+            }}
+          >
+            {article.formula_note_en}
+          </div>
+        )}
+      </>
+    );
+  }
+
   const panelNode = (
     <div ref={panelRef} role="tooltip" style={panelStyle}>
       {arrowStyle && <span aria-hidden style={arrowStyle} />}
-      {children ?? text}
+      {body}
     </div>
   );
 
