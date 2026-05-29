@@ -1611,6 +1611,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
           </div>
         </div>
       )}
+      <div data-tour="score-hero">
       {!auraLoading && isEmpty && (
         <div
           className="flex items-start justify-between gap-4 flex-wrap"
@@ -1825,10 +1826,11 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
           </div>
         );
       })()}
+      </div>
 
       {/* Mission control + optional journey cycle */}
       {authUser?.id && (
-        <div className="flex flex-col" style={{ gap: 10 }}>
+        <div data-tour="missions" className="flex flex-col" style={{ gap: 10 }}>
           {!hasAnySignals && (
             <JourneyCycle
               hasEntries={(entries?.length ?? 0) > 0 || journey.entryCount > 0}
