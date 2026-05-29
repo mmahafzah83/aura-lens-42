@@ -102,7 +102,7 @@ export function useQuestProgress(userId: string | null) {
 
     const phase3: Quest[] = [
       { id: "p3_five_signal_posts", label: "Publish 5+ posts from signals", done: postsFromSignal >= 5 },
-      { id: "p3_authority", label: "Reach Authority tier", done: authorityScore >= 65 },
+      { id: "p3_authority", label: "Reach Presence tier", done: authorityScore >= 65 },
       { id: "p3_mirror", label: "Complete Market Mirror", done: mirrorCount >= 1 },
       { id: "p3_track", label: "Track 3+ post performances", done: distinctMetricPosts >= 3 },
       { id: "p3_themes", label: "Build 5+ theme coverage", done: themeCount >= 5 },
@@ -119,7 +119,7 @@ export function useQuestProgress(userId: string | null) {
     setPhases([
       make("phase1", "Foundation", 1, phase1, true),
       make("phase2", "Intelligence", 2, phase2, p1Done),
-      make("phase3", "Authority", 3, phase3, p2Done),
+      make("phase3", "Presence", 3, phase3, p2Done),
     ]);
     setLoading(false);
   }, [userId]);
