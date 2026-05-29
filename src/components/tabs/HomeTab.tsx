@@ -37,11 +37,10 @@ import { shareToLinkedIn } from "@/lib/shareLinkedIn";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
 import AuditCtaCard from "@/components/home/AuditCtaCard";
 import { FirstTimeHint } from "@/components/FirstTimeHint";
-import { useState as useStateBanner, useEffect as useEffectBanner } from "react";
 
 function TourBanner() {
-  const [show, setShow] = useStateBanner(false);
-  useEffectBanner(() => {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
     try {
       const briefingDone = localStorage.getItem("aura_welcome_briefing_done");
       const loginCount = Number(localStorage.getItem("aura_tour_login_count") || "0");
