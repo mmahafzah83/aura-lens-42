@@ -596,6 +596,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         </p>
       </div>
       <FirstVisitHint page="story" />
+      <FirstTimeHint hintKey="mystory-profile">
+        Your professional identity as the market sees it — generated from your assessment and captures, not a template.
+      </FirstTimeHint>
 
       {/* Gated welcome for users without brand assessment */}
       {!assessmentCompleted && autoAssessing && (

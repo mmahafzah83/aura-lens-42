@@ -822,6 +822,9 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
       <div className="flex flex-col lg:flex-row gap-6">
       {/* Main Editor */}
       <div data-tour="content-generator" className="flex-1 min-w-0 space-y-6">
+        <FirstTimeHint hintKey="publish-create">
+          Pick a signal, choose a format, and generate a post in your voice. English or Arabic — one tap.
+        </FirstTimeHint>
         {/* Hero CTA — top signal */}
         {(() => {
           if (contentType === "flash" || contentType === "framework_summary") return null;
