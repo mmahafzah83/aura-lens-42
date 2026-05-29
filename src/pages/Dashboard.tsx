@@ -25,6 +25,7 @@ import BrandAssessmentModal from "@/components/BrandAssessmentModal";
 import FeedbackButton from "@/components/FeedbackButton";
 import InviteColleagueModal from "@/components/InviteColleagueModal";
 import NpsSurveyModal from "@/components/NpsSurveyModal";
+import FirstLoginWelcome from "@/components/FirstLoginWelcome";
 import HomeTab from "@/components/tabs/HomeTab";
 import IdentityTab from "@/components/tabs/IdentityTab";
 import IntelligenceTab from "@/components/tabs/IntelligenceTab";
