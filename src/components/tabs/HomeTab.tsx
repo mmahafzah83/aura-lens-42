@@ -2469,6 +2469,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
       <MarketScan
         onOpenCapture={onOpenCapture}
         onSwitchTab={onSwitchTab}
+        defaultExpanded={!isFirstWeek}
         onDraftPost={(prefill) => {
           onDraftToStudio?.({
             topic: prefill.topic,
