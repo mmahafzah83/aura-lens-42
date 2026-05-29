@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useGuideArticles } from "@/hooks/useGuideArticles";
 
 interface FirstTimeHintProps {
   hintKey: string;
@@ -8,6 +9,12 @@ interface FirstTimeHintProps {
 export function FirstTimeHint({ hintKey, children }: FirstTimeHintProps) {
   const storageKey = `aura_hint_${hintKey}`;
   const [visible, setVisible] = useState(false);
+  const { articles, loading } = useGuideArticles();
+
+  const corpusText = useMemo(
+    () => articles.find(a => a.slug === hintKey)?.answer_en,
+    [articles, hintKey]
+  );
 
   useEffect(() => {
     try {
@@ -23,6 +30,8 @@ export function FirstTimeHint({ hintKey, children }: FirstTimeHintProps) {
     setVisible(false);
     try { localStorage.setItem(storageKey, "1"); } catch {}
   };
+
+  const displayText = (!loading && corpusText) ? corpusText : children;
 
   return (
     <div
@@ -42,7 +51,7 @@ export function FirstTimeHint({ hintKey, children }: FirstTimeHintProps) {
     >
       <div style={{ display: "flex", alignItems: "flex-start", gap: 8, flex: 1, minWidth: 0 }}>
         <span style={{ color: "#B08D3A", fontSize: 13, lineHeight: "20px", flexShrink: 0 }}>✦</span>
-        <span style={{ fontSize: 13, lineHeight: 1.55, color: "hsl(var(--foreground))" }}>{children}</span>
+        <span style={{ fontSize: 13, lineHeight: 1.55, color: "hsl(var(--foreground))" }}>{displayText}</span>
       </div>
       <button
         type="button"
