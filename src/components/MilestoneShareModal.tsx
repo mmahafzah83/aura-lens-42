@@ -367,7 +367,7 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
           <p style={{
             fontSize: 13,
             lineHeight: 1.6,
-            color: "var(--ink, #111)",
+            color: "hsl(var(--foreground))",
             margin: 0,
             whiteSpace: "pre-line",
             direction: lang === "ar" ? "rtl" : "ltr",
