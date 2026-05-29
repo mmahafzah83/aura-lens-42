@@ -69,7 +69,7 @@ const Dashboard = () => {
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>();
   const [chatContext, setChatContext] = useState<ChatContext | undefined>();
-  const [user, setUser] = useState<{ email?: string; fullName?: string | null; avatarUrl?: string | null } | null>(null);
+  const [user, setUser] = useState<{ email?: string; fullName?: string | null; firstName?: string | null; avatarUrl?: string | null } | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [newIntelSignalCount, setNewIntelSignalCount] = useState(0);
   const showOnboarding = false;
@@ -316,6 +316,7 @@ const Dashboard = () => {
             ...(u || {}),
             email: session.user.email,
             fullName: (profile as any).first_name ?? null,
+            firstName: (profile as any).first_name ?? null,
             avatarUrl: (profile as any).avatar_url ?? null,
           }));
         }
@@ -892,7 +893,7 @@ const Dashboard = () => {
             {activeTab === "home" && (
               <div className="animate-tab-spring aura-page">
                 <FirstLoginWelcome
-                  firstName={user?.fullName}
+                  firstName={user?.firstName ?? null}
                   onOpenGuide={() => setHelpOpen(true)}
                   onDismiss={() => {
                     try { localStorage.setItem("aura_welcome_briefing_done", "1"); } catch {}
