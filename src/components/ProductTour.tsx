@@ -84,10 +84,20 @@ export function ProductTour({ activeTab, setActiveTab }: ProductTourProps) {
 
   useEffect(() => {
     const completed = localStorage.getItem("aura_tour_completed");
-    if (!completed) {
-      const t = setTimeout(() => setRun(true), 1500);
-      return () => clearTimeout(t);
-    }
+    if (completed) return;
+    let cancelled = false;
+    const tryStart = (attempt = 0) => {
+      if (cancelled) return;
+      const el = document.querySelector(TOUR_STEPS[0].target as string);
+      if (el) {
+        setStepIndex(0);
+        setRun(true);
+      } else if (attempt < 20) {
+        setTimeout(() => tryStart(attempt + 1), 500);
+      }
+    };
+    const t = setTimeout(() => tryStart(), 1500);
+    return () => { cancelled = true; clearTimeout(t); };
   }, []);
 
   const handleCallback = (data: CallBackProps) => {
@@ -119,9 +129,15 @@ export function ProductTour({ activeTab, setActiveTab }: ProductTourProps) {
 
   useEffect(() => {
     (window as any).auraReplayTour = () => {
+      setRun(false);
       setStepIndex(0);
       setActiveTab("home");
-      setTimeout(() => setRun(true), 500);
+      const waitFor = (attempt = 0) => {
+        const el = document.querySelector(TOUR_STEPS[0].target as string);
+        if (el) setRun(true);
+        else if (attempt < 20) setTimeout(() => waitFor(attempt + 1), 500);
+      };
+      setTimeout(() => waitFor(), 600);
     };
     return () => { delete (window as any).auraReplayTour; };
   }, [setActiveTab]);
