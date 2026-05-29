@@ -891,6 +891,13 @@ const Dashboard = () => {
             <AmbientOrbs theme={theme} pageKey={activeTab} />
             {activeTab === "home" && (
               <div className="animate-tab-spring aura-page">
+                <FirstLoginWelcome
+                  firstName={user?.fullName}
+                  onOpenGuide={() => setHelpOpen(true)}
+                  onDismiss={() => {
+                    try { localStorage.setItem("aura_welcome_briefing_done", "1"); } catch {}
+                  }}
+                />
                 <ErrorBoundary>
                   <HomeTab entries={entries} onOpenChat={openChat} onRefresh={fetchEntries} onNavigateToSignal={navigateToSignal} onOpenCapture={(prefillUrl?: string, prefillText?: string) => { setCapturePrefillUrl(prefillUrl || null); setCapturePrefillText(prefillText || null); setCaptureOpen(true); }} onSwitchTab={switchTab} onDraftToStudio={(prefill) => { setSignalDraftPrefill(prefill); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
                 </ErrorBoundary>
