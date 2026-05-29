@@ -152,9 +152,9 @@ function buildEmail(
     const body = `
       ${heading("One week with Aura. Here's your brief:")}
       <p style="margin:0 0 14px;">${signalCount} active signal${signalCount === 1 ? "" : "s"}. ${topLine} ${fadingLine} ${publishedCount} post${publishedCount === 1 ? "" : "s"} on LinkedIn.</p>
-      <p style="margin:0 0 14px;">Authority score: <strong>${score ?? 0}</strong>${tier ? ` (${tier})` : ""}.</p>
+      <p style="margin:0 0 14px;">Presence score: <strong>${score ?? 0}</strong>${tier ? ` (${tier})` : ""}.</p>
       <p style="margin:0 0 18px;">This week's market movement: ${trendLine}</p>
-      <p style="margin:0 0 18px;">The professionals who compound authority fastest publish from their signals weekly. Yours are ready.</p>
+      <p style="margin:0 0 18px;">The professionals who compound presence fastest publish from their signals weekly. Yours are ready.</p>
       ${ctaButton(BRAND, "Open your weekly brief →", `${APP_URL}/dashboard?tab=intelligence`)}
       ${signoff(name, level)}`;
     return { subject, html: shell(BRAND, FONT, body) };
