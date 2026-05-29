@@ -1784,8 +1784,26 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
                           /{f.max}{(f as any).unitSuffix || ""}
                         </span>
                       </div>
-                      <div className="text-section-header" style={{ marginBottom: 6 }}>
+                      <div className="text-section-header" style={{ marginBottom: 6, display: "flex", alignItems: "center", gap: 4 }}>
                         {f.label}
+                        {f.key === "signal" && (
+                          <InfoTooltip
+                            label="Signal strength"
+                            slug="signal-strength"
+                            text="Your signal strength measures how visible and relevant your professional presence is across your chosen channels."
+                            side="bottom"
+                            triggerSize={13}
+                          />
+                        )}
+                        {f.key === "content" && (
+                          <InfoTooltip
+                            label="Content published"
+                            slug="content-published"
+                            text="Content published tracks the volume and quality of insights you share that shape your professional narrative."
+                            side="bottom"
+                            triggerSize={13}
+                          />
+                        )}
                       </div>
                       <div style={{
                         height: 2, background: "hsl(var(--border) / 0.6)",
