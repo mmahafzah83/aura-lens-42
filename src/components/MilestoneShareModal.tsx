@@ -4,6 +4,7 @@ import html2canvas from "html2canvas";
 import { Download, Linkedin, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { shareToLinkedIn } from "@/lib/shareLinkedIn";
 
 export interface MilestoneShareData {
   /** Display name e.g. "Five Signals Achieved" */
@@ -162,18 +163,12 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
   };
 
   const handleShare = async () => {
-    try {
-      await navigator.clipboard.writeText(shareText);
-    } catch { /* ignore */ }
-    toast.success("Caption copied! LinkedIn is opening...");
-    const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://aura-intel.org/request-access")}&text=${encodeURIComponent(shareText)}`;
-    const win = window.open(url, "_blank", "noopener,noreferrer");
-    if (!win || win.closed) {
-      toast.info(
-        "LinkedIn couldn't open automatically. The caption is copied to your clipboard — paste it on LinkedIn.",
-        { duration: 6000 }
-      );
-    }
+    shareToLinkedIn({
+      text: shareText,
+      url: "https://aura-intel.org/request-access",
+      mode: "share",
+      toastMessage: "Caption copied!",
+    });
   };
 
   return createPortal(
