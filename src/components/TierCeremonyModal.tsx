@@ -179,12 +179,14 @@ export default function TierCeremonyModal({ userId, forceOpen, onForceClose }: P
   useEffect(() => {
     if (!tierMilestone || sessionGate) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !busy) close();
+      if (e.key === "Escape" && !busy) {
+        if (step === 0) closeForSession(); else close();
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tierMilestone, sessionGate, busy]);
+  }, [tierMilestone, sessionGate, busy, step]);
 
   const tierName = useMemo(() => {
     if (!tierMilestone) return "";
