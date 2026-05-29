@@ -1546,7 +1546,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         };
 
         return (
-          <section>
+          <section data-tour="audience-section">
             <SectionToggle
               title="Your audience"
               open={openSections.audience}
