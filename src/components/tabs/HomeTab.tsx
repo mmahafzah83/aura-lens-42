@@ -1433,9 +1433,6 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
       className="space-y-6 max-w-3xl"
     >
       <TourBanner />
-      <FirstTimeHint hintKey="home-score">
-        This is your Digital Presence Score — it grows when you capture, publish, and stay consistent.
-      </FirstTimeHint>
       {/* Onboarding checklist (auto-hides once all 5 steps complete) */}
       <OnboardingChecklist onOpenCapture={onOpenCapture} onSwitchTab={onSwitchTab} />
 
