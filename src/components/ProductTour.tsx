@@ -181,8 +181,9 @@ export function ProductTour({ activeTab, setActiveTab }: ProductTourProps) {
           fontSize: 13,
         },
         spotlight: {
-          borderRadius: 10,
-        },
+          rx: 10,
+          ry: 10,
+        } as any,
       }}
       floaterProps={{ disableAnimation: true }}
     />
