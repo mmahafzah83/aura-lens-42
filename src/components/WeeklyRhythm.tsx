@@ -23,6 +23,20 @@ const WeeklyRhythm = ({ userId, data: provided }: Props) => {
   const [data, setData] = useState<AuraScoreResponse | null>(provided ?? null);
   const [loading, setLoading] = useState(!provided);
   const [expanded, setExpanded] = useState(false);
+  const [isFirstWeek, setIsFirstWeek] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (cancelled || !user?.created_at) return;
+        const ageMs = Date.now() - new Date(user.created_at).getTime();
+        if (ageMs < 7 * 24 * 60 * 60 * 1000) setIsFirstWeek(true);
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, [userId]);
 
   useEffect(() => {
     if (provided) { setData(provided); setLoading(false); }
@@ -82,7 +96,9 @@ const WeeklyRhythm = ({ userId, data: provided }: Props) => {
   // Momentum copy (always against the full 12-week window).
   const totalActive = rhythm.active_weeks ?? allCells.filter(Boolean).length;
   let momentumCopy: string;
-  if (totalActive === 0) {
+  if (isFirstWeek) {
+    momentumCopy = "Your first week — capture again next week to build rhythm.";
+  } else if (totalActive === 0) {
     momentumCopy = "Start your rhythm — capture something you read this week.";
   } else if (totalActive <= 3) {
     momentumCopy = `Your rhythm is building. ${totalActive} ${totalActive === 1 ? "week" : "weeks"} and counting.`;
