@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
       const ratingValues = Object.values(ratings).filter((v): v is number => typeof v === "number");
       const avgRating = ratingValues.length > 0 ? Math.round(ratingValues.reduce((a, b) => a + b, 0) / ratingValues.length) : 0;
       const frameworkBonus = Math.min((frameworks || []).length * 5, 20);
-      const authorityIndex = Math.min(100, avgRating + frameworkBonus);
+      const presenceIndex = Math.min(100, avgRating + frameworkBonus);
 
       const strategicEntries = (entries || []).filter((e: any) => e.has_strategic_insight).length;
       const totalEntries = (entries || []).length;
@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
       const highlights: string[] = [];
       if (weeklyIntel > 0) highlights.push(`${weeklyIntel} new intelligence items captured`);
       if (weeklyHours > 0) highlights.push(`${weeklyHours.toFixed(1)}h training logged`);
-      if (authorityIndex >= 70) highlights.push(`Authority Index at ${authorityIndex}%`);
+      if (presenceIndex >= 70) highlights.push(`Presence Index at ${presenceIndex}%`);
       if (marketVoice >= 50) highlights.push(`Market Voice score: ${marketVoice}%`);
 
       const title = `Weekly Progress — ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
         title,
         body,
         type: "weekly_summary",
-        metadata: { authority_index: authorityIndex, market_voice: marketVoice, weekly_intel: weeklyIntel, weekly_hours: weeklyHours },
+        metadata: { presence_index: presenceIndex, market_voice: marketVoice, weekly_intel: weeklyIntel, weekly_hours: weeklyHours },
       });
     }
 
