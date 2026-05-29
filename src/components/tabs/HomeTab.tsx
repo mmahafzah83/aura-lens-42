@@ -1737,10 +1737,15 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
         const contentW = Math.round((auraData.content_score ?? 0) * 0.4);
         const captureW = Math.round((auraData.capture_score ?? 0) * 0.2);
 
+        const activeWeeks = auraData.weekly_rhythm?.active_weeks ?? 0;
+        const consistencyMax = isFirstWeek ? 4 : 20;
+        const consistencyVal = isFirstWeek ? Math.min(activeWeeks, 4) : captureW;
+        const consistencyUnit = isFirstWeek ? " weeks" : "";
+
         const forces = [
           { key: "signal", label: "Signal strength",  weighted: signalW,  max: 40, color: "var(--warning)" },
           { key: "content", label: "Content published", weighted: contentW, max: 40, color: "var(--color-info-text, var(--info))" },
-          { key: "consistency", label: "Weekly rhythm",  weighted: captureW, max: 20, color: "var(--success)" },
+          { key: "consistency", label: "Weekly rhythm",  weighted: consistencyVal, max: consistencyMax, color: "var(--success)", unitSuffix: consistencyUnit },
         ];
 
         const pcts = forces.map(f => f.max ? (f.weighted / f.max) : 0);
@@ -1767,7 +1772,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
                           {f.weighted}
                         </span>
                         <span className="text-denominator">
-                          /{f.max}
+                          /{f.max}{(f as any).unitSuffix || ""}
                         </span>
                       </div>
                       <div className="text-section-header" style={{ marginBottom: 6 }}>
