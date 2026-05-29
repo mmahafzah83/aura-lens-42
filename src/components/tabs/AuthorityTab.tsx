@@ -14,6 +14,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { Linkedin } from "lucide-react";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
+import { FirstTimeHint } from "@/components/FirstTimeHint";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

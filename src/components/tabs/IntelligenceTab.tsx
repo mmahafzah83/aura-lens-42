@@ -11,6 +11,7 @@ import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
 import SourcesSubTab from "@/components/tabs/SourcesSubTab";
 import SectionError from "@/components/ui/section-error";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
+import { FirstTimeHint } from "@/components/FirstTimeHint";
 import { useJourneyState } from "@/hooks/useJourneyState";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import { showQueryErrorToast } from "@/lib/safeQuery";
