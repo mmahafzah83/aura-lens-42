@@ -2240,6 +2240,20 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
 
         // Priority 2 — nudge card (BRIEFING)
         if (auraData?.personalized_nudge) {
+          // Hide briefing if URGENT card below points at the same signal
+          // (avoid duplicate "Draft post" cards on the home page).
+          const urgentForCompare = auraReadItems?.find(
+            (it) => it.action_type === "PUBLISH" && it.urgency === "HIGH"
+          );
+          if (urgentForCompare) {
+            const nudgeLower = (auraData.personalized_nudge || "").toLowerCase();
+            const titleWords = (urgentForCompare.title || "")
+              .toLowerCase()
+              .split(/\W+/)
+              .filter((w) => w.length >= 5);
+            const overlap = titleWords.filter((w) => nudgeLower.includes(w)).length;
+            if (overlap >= 1) return null;
+          }
           const subs = [
             { key: "capture", value: auraData.capture_score },
             { key: "signal", value: auraData.signal_score },
