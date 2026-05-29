@@ -2459,6 +2459,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
             return remaining.slice(0, 3);
           })()}
           hideIfEmpty
+          defaultOpen={!isFirstWeek}
           onOpenCapture={onOpenCapture}
           onSwitchTab={onSwitchTab}
         />
