@@ -134,6 +134,7 @@ const WeeklyRhythm = ({ userId, data: provided }: Props) => {
         Capture rhythm
         <InfoTooltip
           label="Capture Rhythm"
+          slug="weekly-rhythm"
           text="Your capture rhythm over the last 12 weeks. Consistent weekly captures compound your signal strength and keep your intelligence fresh."
         />
       </div>

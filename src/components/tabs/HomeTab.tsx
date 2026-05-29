@@ -1687,6 +1687,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
                 <span>{sectorFocus ? `${sectorFocus} · ` : ""}{tier} tier</span>
                 <InfoTooltip
                   label="Your tier"
+                  slug="tiers"
                   text={"Your Digital Presence Score measures three forces: Signal strength (40%), Content published (40%), and Weekly rhythm (20%).\n\nObserver (0-14): absorbing the market.\n\nExplorer (15-34): finding patterns.\n\nStrategist (35-59): connecting insights to action.\n\nVoice (60-79): shaping conversations.\n\nPresence (80-100): the market knows you before they meet you."}
                   side="bottom"
                   triggerSize={14}
