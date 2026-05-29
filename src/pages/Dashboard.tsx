@@ -316,6 +316,7 @@ const Dashboard = () => {
             ...(u || {}),
             email: session.user.email,
             fullName: (profile as any).first_name ?? null,
+            firstName: (profile as any).first_name ?? null,
             avatarUrl: (profile as any).avatar_url ?? null,
           }));
         }
@@ -892,7 +893,7 @@ const Dashboard = () => {
             {activeTab === "home" && (
               <div className="animate-tab-spring aura-page">
                 <FirstLoginWelcome
-                  firstName={user?.fullName}
+                  firstName={user?.firstName ?? null}
                   onOpenGuide={() => setHelpOpen(true)}
                   onDismiss={() => {
                     try { localStorage.setItem("aura_welcome_briefing_done", "1"); } catch {}
