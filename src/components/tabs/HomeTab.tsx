@@ -1849,7 +1849,9 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
       <WeeklyIntelligenceLoopCard onSwitchTab={onSwitchTab} />
 
       {/* Evidence Audit CTA — shows for users still on self_calibration within 14 days */}
-      <AuditCtaCard onNavigateToMyStory={() => onSwitchTab?.("identity")} />
+      {!isFirstWeek && (
+        <AuditCtaCard onNavigateToMyStory={() => onSwitchTab?.("identity")} />
+      )}
 
       {/* Silence Alarm — substance-backed urgency when capture has paused 3+ days */}
       <div data-testid="home-silence-alarm">
