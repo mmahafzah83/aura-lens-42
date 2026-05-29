@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { safeQuery } from "@/lib/safeQuery";
 import { ScoreRing } from "@/components/ui/ScoreRing";
 import InfoTooltip from "@/components/ui/InfoTooltip";
+import { FirstTimeHint } from "@/components/FirstTimeHint";
 import {
   Tooltip as UiTooltip,
   TooltipContent,
@@ -1399,6 +1400,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
       {/* ─────────── SCORE HERO (compact: ring + tier card + KPIs) ─────────── */}
       <div data-tour="impact-hero">
+      <FirstTimeHint hintKey="impact-score">
+        Your growth dashboard. Upload LinkedIn analytics to see who follows you and how your presence is compounding.
+      </FirstTimeHint>
       <ScoreHero
         score={latestScore}
         tierName={auraData?.tier_name}

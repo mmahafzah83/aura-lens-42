@@ -4,6 +4,7 @@ import { Pencil, Check, Eye, Zap, Map as MapIcon, Trophy, Target as TargetIcon, 
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import ProfileIntelligence from "@/components/ProfileIntelligence";
+import { FirstTimeHint } from "@/components/FirstTimeHint";
 import MilestonesSection from "@/components/MilestonesSection";
 import AuditRadarWidget from "@/components/AuditRadarWidget";
 import ObjectiveAuditModal from "@/components/ObjectiveAuditModal";
@@ -595,6 +596,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         </p>
       </div>
       <FirstVisitHint page="story" />
+      <FirstTimeHint hintKey="mystory-profile">
+        Your professional identity as the market sees it — generated from your assessment and captures, not a template.
+      </FirstTimeHint>
 
       {/* Gated welcome for users without brand assessment */}
       {!assessmentCompleted && autoAssessing && (
