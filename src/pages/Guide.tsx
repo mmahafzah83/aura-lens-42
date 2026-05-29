@@ -8,22 +8,24 @@ import {
 import usePageMeta from "@/hooks/usePageMeta";
 
 const FAQ_ITEMS: { q: string; a: string }[] = [
-  { q: "What does Aura actually do?", a: "Aura reads what you read. It detects the strategic patterns in your daily reading and turns them into signals — topics you're tracking more deeply than you realized. Then it generates LinkedIn content in your voice, grounded in your signals. The result: you build visible expertise from intelligence you already have." },
-  { q: "Where is my data stored?", a: "Your data is stored on Supabase infrastructure with industry-standard encryption. We do not sell, share, or monetize your data. AI processing is done per-request — we do not train models on your content." },
-  { q: "Who is Aura built for?", a: "Senior professionals in the GCC — Directors, VPs, CIOs, CDOs — who read extensively but don't publish enough. Especially those in digital transformation, utilities, critical infrastructure, and Vision 2030 programs." },
-  { q: "How is this different from ChatGPT?", a: "ChatGPT writes generic content from its training data. Aura writes in YOUR voice, from YOUR captures, grounded in YOUR strategic signals. Every post reflects what you actually read and know — not what the internet thinks about your topic." },
-  { q: "What languages does Aura support?", a: "English and Arabic. Content generation works in both, with dedicated Arabic writing patterns designed for Gulf professional audiences. You can switch between languages per post." },
-  { q: "How long before I see value?", a: "Most users see their first strategic signal within 3-5 captures. Your first AI-generated post can be ready in under 10 minutes. The Digital Presence Score starts moving from day one." },
-  { q: "Is this free during beta?", a: "Yes. Aura is currently in invite-only beta. All features are free during the beta period. Pricing will be introduced after beta with advance notice to all users." },
-  { q: "How do I get access?", a: "Aura is invite-only. Request access at aura-intel.org/request-access or ask someone who's already using it to invite you." },
+  { q: "What does Aura actually do?", a: "You read constantly. Articles, reports, market updates — you consume more intelligence in a week than most people do in a month. But none of it is visible.\n\nAura watches what you read, detects the patterns you're tracking deeper than you realized, and generates LinkedIn content in your voice — grounded in your real intelligence. Not a template. Not a prompt. Your signal, your tone, your sector.\n\nThe result? People start noticing what you know before you walk in the room." },
+  { q: "I barely have time to read — how is this not more work?", a: "That's the point. Aura doesn't ask you to write. It asks you to keep reading — which you already do. Paste one URL instead of closing the tab. That's the entire input.\n\nMost users spend under 10 minutes a week on Aura. The platform does the pattern detection, the writing, and the tracking. Your job is just to keep being curious." },
+  { q: "Will people know the content is AI-generated?", a: "Not if you're using Aura correctly. Every post is generated from YOUR captures, trained on YOUR writing style, and grounded in YOUR strategic signals. It doesn't sound like ChatGPT because it doesn't use ChatGPT's generic knowledge — it uses yours.\n\nThat said: always review before publishing. Aura writes the draft. The final voice is yours." },
+  { q: "How is this different from ChatGPT?", a: "ChatGPT writes from the internet's knowledge. Aura writes from yours.\n\nWhen you ask ChatGPT to write about digital transformation in GCC utilities, it gives you what every article on the internet says. When Aura generates the same post, it pulls from the 47 articles you captured about Value-Based P&L models, the Deloitte report you read last Tuesday, and the signal it detected about regulatory shifts in Q1 2026.\n\nSame topic. Completely different depth." },
+  { q: "Who is this built for?", a: "If you've spent 15+ years building real expertise but your LinkedIn is either silent or full of reposts — Aura is for you.\n\nSpecifically: Directors, VPs, CIOs, CDOs, and senior consultants in the GCC who know more than their digital presence shows. Especially in digital transformation, utilities, critical infrastructure, and Vision 2030.\n\nYou're not missing ideas. You're missing a system that turns what you already know into something the market can see." },
+  { q: "Where is my data stored?", a: "On Supabase infrastructure with industry-standard encryption at rest and in transit. We don't sell your data. We don't share it with advertisers. We don't use it to train AI models.\n\nWhen Aura processes your captures through AI (Anthropic Claude, Google Gemini, Perplexity), it's per-request only — nothing is retained by providers beyond standard processing.\n\nYour data is yours. Period." },
+  { q: "What languages does Aura support?", a: "English and Arabic — both for content generation, not just the interface. Arabic writing follows dedicated Gulf professional patterns: single-line breathing, story-first structure, contemplative tone. Not translated English. Arabic that reads like it was written by someone who thinks in Arabic.\n\nSwitch between languages per post, or use both." },
+  { q: "How long before I see value?", a: "Your first strategic signal appears within 3-5 captures — usually day one. Your first AI-generated post can be ready in under 10 minutes. Your Digital Presence Score starts moving immediately.\n\nWithin 2-3 weeks, Aura starts showing you patterns across your reading that you hadn't consciously connected. That's when it gets interesting." },
+  { q: "Is this free during beta?", a: "Yes. Aura is in invite-only beta. All features are free during beta. When we introduce pricing, every beta user gets advance notice and a founder's rate." },
+  { q: "How do I get access?", a: "Aura is invite-only. Request access at aura-intel.org/request-access. We review applications weekly. Or ask someone already using it — every user can invite one colleague." },
 ];
 
 const STEPS = [
-  { n: "01", Icon: User, t: "Aura learns who you are", d: "Connect your LinkedIn, calibrate your expertise, and define your sector. Aura maps your professional identity — your level, your skills, your positioning gaps — so everything it generates is built for you, not for a generic user." },
-  { n: "02", Icon: Inbox, t: "Capture what you read", d: "Paste any URL, upload a document, or record a voice note. Aura extracts the intelligence and stores it." },
-  { n: "03", Icon: Radar, t: "Aura detects patterns", d: "As you capture more, Aura identifies strategic signals — recurring themes across your reading that form your expertise map." },
-  { n: "04", Icon: PenTool, t: "Create content from signals", d: "Generate LinkedIn posts in your voice, in English or Arabic. Each post is grounded in your real intelligence — not generic AI." },
-  { n: "05", Icon: TrendingUp, t: "Watch your presence grow", d: "Your Digital Presence Score tracks signal depth (40%), published content (40%), and capture rhythm (20%). Rise from Observer through Explorer, Strategist, and Voice to Presence." },
+  { n: "01", Icon: User, t: "Aura learns who you are", d: "Connect your LinkedIn and answer a few calibration questions. Aura maps your seniority, your sector, your expertise gaps, and how you naturally communicate. Everything from this point forward is built around you — not a template." },
+  { n: "02", Icon: Inbox, t: "Capture what you already read", d: "You already read 10+ articles a week. Instead of letting that intelligence disappear in browser tabs, paste the URL into Aura. Or upload a document. Or record a 30-second voice note after a meeting. Aura extracts what matters and stores it." },
+  { n: "03", Icon: Radar, t: "Aura finds what you didn't notice", d: "As captures accumulate, Aura detects strategic signals — topics you're tracking more deeply than you realized. Patterns emerge across sources. Themes connect. What felt like scattered reading becomes a clear expertise map." },
+  { n: "04", Icon: PenTool, t: "Publish in your voice, not AI's", d: "One tap generates a LinkedIn post grounded in your signals, written in your tone — not generic AI. In English or Arabic. Every post sounds like you on your best day, because it's built from what you actually read and think." },
+  { n: "05", Icon: TrendingUp, t: "Watch the right people notice", d: "Your Digital Presence Score moves every time you capture, publish, or get engagement. Upload your LinkedIn analytics and see exactly who follows you — by seniority, industry, and company. The score tells you if you're visible. The audience data tells you if you're visible to the right people." },
 ];
 
 const PAGES = [
@@ -35,9 +37,9 @@ const PAGES = [
 ];
 
 const SCORE = [
-  { label: "Signal Intelligence", pct: 40, desc: "Depth and breadth of captured signals." },
-  { label: "Content Presence", pct: 40, desc: "Quality and cadence of published content." },
-  { label: "Capture Consistency", pct: 20, desc: "Regular rhythm of new captures." },
+  { label: "Signal Intelligence", pct: 40, desc: "How deep and diverse are the topics you're tracking? More captures from different sources on the same theme = higher confidence. Aura rewards depth, not volume." },
+  { label: "Content Presence", pct: 40, desc: "Are you publishing? Imported LinkedIn posts and Aura-generated content both count. The market can't see what you don't share." },
+  { label: "Capture Consistency", pct: 20, desc: "Are you showing up regularly? Weekly capture rhythm matters more than how much you capture at once. Consistency compounds." },
 ];
 
 const Guide = () => {
@@ -123,7 +125,7 @@ const Guide = () => {
           How Aura works
         </h1>
         <p style={{ fontSize: 16, color: "var(--ink-3)", lineHeight: 1.625 }}>
-          From first capture to visible expertise — in 5 steps.
+          From what you already know to what the market sees — in 5 steps.
         </p>
       </section>
 
@@ -187,10 +189,10 @@ const Guide = () => {
         <div className="max-w-3xl mx-auto">
           <p className="text-xs tracking-[0.2em] uppercase mb-4 text-center" style={{ color: "var(--bronze)" }}>The score</p>
           <h2 className="text-center mb-3" style={{ fontFamily: "var(--font-display)", fontSize: "clamp(26px, 3.5vw, 36px)", color: "var(--ink-2)", fontWeight: 500 }}>
-            How your score is calculated
+            How your score works
           </h2>
           <p className="text-center mb-12" style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.625 }}>
-            One number. Three components. Built from real activity, not vanity metrics.
+            One number that reflects whether your expertise is becoming visible — built from real activity, not vanity metrics.
           </p>
           <div className="space-y-7">
             {SCORE.map(({ label, pct, desc }) => (
@@ -209,10 +211,10 @@ const Guide = () => {
 
           <div className="mt-14 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             {[
-              { tier: "Observer", range: "0–14", desc: "Building your foundation.", accent: false },
-              { tier: "Explorer", range: "15–34", desc: "Patterns are forming.", accent: false },
-              { tier: "Strategist", range: "35–59", desc: "Your expertise is becoming visible.", accent: false },
-              { tier: "Voice", range: "60–79", desc: "The market recognizes your signal.", accent: false },
+              { tier: "Observer", range: "0–14", desc: "You're getting started. Aura is learning who you are.", accent: false },
+              { tier: "Explorer", range: "15–34", desc: "Patterns are forming. Your first signals have emerged.", accent: false },
+              { tier: "Strategist", range: "35–59", desc: "Your expertise is becoming visible. Keep publishing.", accent: false },
+              { tier: "Voice", range: "60–79", desc: "The market is starting to recognize your signal.", accent: false },
               { tier: "Presence", range: "80–100", desc: "You're known before you walk in the room.", accent: true },
             ].map((t) => (
               <div
@@ -266,7 +268,7 @@ const Guide = () => {
                     />
                   </button>
                   {open && (
-                    <div style={{ fontSize: 14, lineHeight: 1.7, color: "rgba(255,255,255,0.65)", paddingBottom: 20, paddingRight: 34 }}>
+                    <div style={{ fontSize: 14, lineHeight: 1.7, color: "rgba(255,255,255,0.65)", paddingBottom: 20, paddingRight: 34, whiteSpace: "pre-line" }}>
                       {item.a}
                     </div>
                   )}
