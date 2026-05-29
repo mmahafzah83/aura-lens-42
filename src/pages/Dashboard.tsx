@@ -9,7 +9,6 @@ import { useCardEntryAnimation } from "@/hooks/useCardEntryAnimation";
 import CaptureModal from "@/components/CaptureModal";
 import AuraChatSidebar, { type ChatContext } from "@/components/AuraChatSidebar";
 import AskAuraPresence from "@/components/AskAuraPresence";
-import ProductTour from "@/components/ProductTour";
 import AuraLogo from "@/components/brand/AuraLogo";
 // OnboardingSequence removed — replaced by /onboarding flow
 import ExecutiveDiagnostic from "@/components/ExecutiveDiagnostic";
