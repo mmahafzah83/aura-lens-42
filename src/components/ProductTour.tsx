@@ -1,4 +1,4 @@
-import Joyride, { CallBackProps, STATUS, Step, ACTIONS, EVENTS } from "react-joyride";
+import { Joyride, EventData, STATUS, Step, ACTIONS, EVENTS } from "react-joyride";
 import { useState, useEffect } from "react";
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
@@ -15,7 +15,6 @@ const TOUR_STEPS: (Step & { requiresTab?: TabValue })[] = [
     target: '[data-tour="score-hero"]',
     content: "This is your Digital Presence Score. It grows when you capture, publish, and stay consistent.",
     placement: "bottom",
-    disableBeacon: true,
     requiresTab: "home",
   },
   {
@@ -90,7 +89,7 @@ export function ProductTour({ activeTab, setActiveTab }: ProductTourProps) {
     }
   }, []);
 
-  const handleCallback = (data: CallBackProps) => {
+  const handleCallback = (data: EventData) => {
     const { action, index, status, type } = data;
 
     if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
