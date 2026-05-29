@@ -18,6 +18,7 @@ interface YourMovesProps {
   userId: string | null;
   items?: AuraItem[] | null;
   hideIfEmpty?: boolean;
+  defaultOpen?: boolean;
   onOpenCapture?: () => void;
   onSwitchTab?: (tab: "home" | "identity" | "intelligence" | "authority" | "influence") => void;
 }
