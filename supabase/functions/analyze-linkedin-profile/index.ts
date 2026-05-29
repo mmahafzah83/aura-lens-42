@@ -97,7 +97,7 @@ serve(async (req) => {
 
     const contentContext = pageText
       ? `Page content:\n${pageText}\n\n${structuredData ? `Structured data:\n${structuredData}` : ""}`
-      : "No page content was available (LinkedIn blocked the request). Analyze based on the URL username and your knowledge. Provide your best strategic analysis based on the LinkedIn username visible in the URL. If you cannot infer enough, provide general authority-building recommendations for a professional at this URL.";
+      : "No page content was available (LinkedIn blocked the request). Analyze based on the URL username and your knowledge. Provide your best strategic analysis based on the LinkedIn username visible in the URL. If you cannot infer enough, provide general presence-building recommendations for a professional at this URL.";
 
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -112,7 +112,7 @@ serve(async (req) => {
             type: "function",
             function: {
               name: "analyze_profile",
-              description: "Analyze a LinkedIn profile and extract strategic authority intelligence",
+              description: "Analyze a LinkedIn profile and extract strategic presence intelligence",
               parameters: {
                 type: "object",
                 properties: {
@@ -120,7 +120,7 @@ serve(async (req) => {
                   headline: { type: "string", description: "Their LinkedIn headline" },
                   strategic_positioning: {
                     type: "string",
-                    description: "A strategic authority positioning statement. Example: 'You are positioning yourself as a strategic authority at the intersection of Digital Transformation and Energy Infrastructure.'",
+                    description: "A strategic expertise positioning statement. Example: 'You are positioning yourself as a strategic expert at the intersection of Digital Transformation and Energy Infrastructure.'",
                   },
                   authority_themes: {
                     type: "array",
@@ -139,7 +139,7 @@ serve(async (req) => {
                       required: ["theme", "evidence_signals", "confidence", "stage"],
                       additionalProperties: false,
                     },
-                    description: "3-6 authority themes detected from the profile",
+                    description: "3-6 signal themes detected from the profile",
                   },
                   tone_profile: {
                     type: "array",
@@ -177,7 +177,7 @@ serve(async (req) => {
                   recommendations: {
                     type: "array",
                     items: { type: "string" },
-                    description: "3 strategic recommendations for strengthening authority positioning",
+                    description: "3 strategic recommendations for strengthening expertise positioning",
                   },
                 },
                 required: [
@@ -193,11 +193,11 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are a Senior Executive Authority Strategist. Analyze the LinkedIn profile content and extract strategic intelligence about this person's authority positioning.
+            content: `You are a Senior Executive Presence Strategist. Analyze the LinkedIn profile content and extract strategic intelligence about this person's expertise positioning.
 
 Focus on:
-1. What authority themes emerge from their headline, about section, experience, and any visible posts
-2. Their strategic positioning — what intersection of expertise are they building authority at
+1. What signal themes emerge from their headline, about section, experience, and any visible posts
+2. Their strategic positioning — what intersection of expertise are they building presence at
 3. Tone patterns in their writing
 4. Content formats if posts are visible
 5. Influence signals — consistency, frequency, industry positioning

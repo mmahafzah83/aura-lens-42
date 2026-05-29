@@ -487,7 +487,7 @@ function detectVaultType(content: string): string {
 }
 
 const QUICK_ACTIONS = [
-  { label: "LinkedIn Post", icon: Linkedin, mode: "linkedin-summary", prompt: "Summarize my most recent strategic insight into a high-authority LinkedIn post." },
+  { label: "LinkedIn Post", icon: Linkedin, mode: "linkedin-summary", prompt: "Summarize my most recent strategic insight into a high-impact LinkedIn post." },
   { label: "Identify Gaps", icon: Target, mode: "gap-analysis", prompt: "Analyze my Skill Radar gaps against the Partner benchmark and recommend 90-day actions." },
   { label: "Draft Memo", icon: FileText, mode: "draft-memo", prompt: "Draft an executive memo based on my most recent captures and strategic intelligence." },
   { label: "Meeting Prep", icon: Briefcase, mode: "meeting-prep", prompt: "Prepare a 1-page meeting prep memo for a VP meeting based on my most recent captures." },
@@ -1133,7 +1133,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
     } catch { /* localStorage unavailable */ }
     briefTriggeredRef.current = true;
 
-    const briefPrompt = "Generate my proactive weekly intelligence brief. Include: (1) my top 2 signals by priority_score and exactly why they matter THIS week — name a recent development, (2) one specific publishing window open right now based on my last post date and signal momentum, (3) one uncomfortable truth about a gap in my authority positioning, (4) one concrete next step with a specific deadline. Cite signal_titles by exact name in bold. Be direct and contrarian. End with NEXT STEP:.";
+    const briefPrompt = "Generate my proactive weekly intelligence brief. Include: (1) my top 2 signals by priority_score and exactly why they matter THIS week — name a recent development, (2) one specific publishing window open right now based on my last post date and signal momentum, (3) one uncomfortable truth about a gap in my expertise positioning, (4) one concrete next step with a specific deadline. Cite signal_titles by exact name in bold. Be direct and contrarian. End with NEXT STEP:.";
 
     (async () => {
       try {

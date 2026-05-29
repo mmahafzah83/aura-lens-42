@@ -169,15 +169,15 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         model: "claude-sonnet-4-5-20250929",
         max_tokens: 8192,
-        system: `You are an elite LinkedIn Expert Agent and Strategic Authority Advisor. You analyze the user's complete knowledge ecosystem — LinkedIn analytics, captures, documents, frameworks, and learned intelligence — to produce a continuous strategic advisory.
+        system: `You are an elite LinkedIn Expert Agent and Strategic Presence Advisor. You analyze the user's complete knowledge ecosystem — LinkedIn analytics, captures, documents, frameworks, and learned intelligence — to produce a continuous strategic advisory.
 
 Your role is to:
-1. Detect authority evolution trends across all sources
+1. Detect presence evolution trends across all sources
 2. Identify strategic opportunities and gaps
 3. Generate evidence-backed recommendations
 4. Track influence trajectory and momentum
 
-Be specific, cite actual data points, and write in a confident advisory tone. Every insight must be grounded in real data — never fabricate. If LinkedIn snapshots are unavailable, focus on cross-source authority signals from captures, documents, and frameworks.`,
+Be specific, cite actual data points, and write in a confident advisory tone. Every insight must be grounded in real data — never fabricate. If LinkedIn snapshots are unavailable, focus on cross-source presence signals from captures, documents, and frameworks.`,
         messages: [
           {
             role: "user",
@@ -186,7 +186,7 @@ Be specific, cite actual data points, and write in a confident advisory tone. Ev
         ],
         tools: [{
           name: "generate_expert_advisory",
-          description: "Generate a comprehensive strategic advisory from cross-source authority analysis",
+          description: "Generate a comprehensive strategic advisory from cross-source presence analysis",
           input_schema: {
               type: "object",
               properties: {
@@ -255,7 +255,7 @@ Be specific, cite actual data points, and write in a confident advisory tone. Ev
                   type: "object",
                   properties: {
                     trajectory: { type: "string", enum: ["accelerating", "steady", "emerging", "pivoting"] },
-                    summary: { type: "string", description: "2-3 sentence summary of how authority is evolving" },
+                    summary: { type: "string", description: "2-3 sentence summary of how presence is evolving" },
                     themeTrends: {
                       type: "array",
                       items: {
@@ -297,7 +297,7 @@ Be specific, cite actual data points, and write in a confident advisory tone. Ev
                     format: { type: "string" },
                     tone: { type: "string" },
                     reason: { type: "string", description: "Why this is the highest-impact next move" },
-                    themeReinforced: { type: "string", description: "Which authority theme this reinforces" },
+                    themeReinforced: { type: "string", description: "Which signal theme this reinforces" },
                   },
                   required: ["topic", "format", "tone", "reason", "themeReinforced"],
                   additionalProperties: false,
@@ -319,7 +319,7 @@ Be specific, cite actual data points, and write in a confident advisory tone. Ev
                 },
                 weeklyBrief: {
                   type: "string",
-                  description: "3-5 sentence strategic brief summarizing current authority position, momentum, and top priority. Written in second person.",
+                  description: "3-5 sentence strategic brief summarizing current presence position, momentum, and top priority. Written in second person.",
                 },
               },
               required: ["becomingKnownFor", "strongestThemes", "tonePerformance", "bestFormats", "authorityEvolution", "strategicOpportunities", "priorityMove", "writeNext", "weeklyBrief"],

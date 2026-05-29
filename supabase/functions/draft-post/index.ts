@@ -145,7 +145,7 @@ LINE RHYTHM:
   But the best posts are simple.
   Clear idea. Clear structure. Clear value.
 
-AUTHORITY SIGNALS:
+EXPERTISE SIGNALS:
 - Include whenever possible: numbers, experiments, personal experience, real outcomes.
 - Examples: "I tested every feature." "This took me two years." "We generated $100M pipeline."
 
@@ -192,7 +192,7 @@ LINE RHYTHM:
 - Alternate between: Short statement → Explanation → Insight.
 - Natural executive Arabic rhythm, not translated English.
 
-AUTHORITY SIGNALS:
+EXPERTISE SIGNALS:
 - Include numbers, real outcomes, specific experience when possible.
 
 FORMAT RULES:

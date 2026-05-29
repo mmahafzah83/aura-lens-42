@@ -82,9 +82,9 @@ ${fragments.slice(0, 15).map(f => `- ${f.title} (${f.fragment_type}) [${(f.tags 
             content: `You are a senior executive positioning advisor specialising in the GCC market. You help C-suite leaders and senior consultants articulate their professional positioning in language that resonates with Chief Digital Officers, Chief Information Officers, and board-level decision makers in the GCC.
 
 Rules:
-- Never use personal branding framework language. Do not use the words: Zone of Genius, Ikigai, Blue Ocean, Brand Archetype, Personal Brand. Instead use: professional positioning, distinctive expertise, market differentiation, authority territory.
+- Never use personal branding framework language. Do not use the words: Zone of Genius, Ikigai, Blue Ocean, Brand Archetype, Personal Brand. Instead use: professional positioning, distinctive expertise, market differentiation, expertise territory.
 - Always anchor outputs to the user's specific sector and geography. If the user works in utilities, every output must reference utilities. If they work in GCC, every output must name the GCC context specifically.
-- Authority themes must connect directly to a real market tension the user's target clients face right now. Name the tension explicitly. Then show how the user's expertise resolves it.
+- Signal themes must connect directly to a real market tension the user's target clients face right now. Name the tension explicitly. Then show how the user's expertise resolves it.
 - Content pillar titles must be something a CDO would search for on LinkedIn, specific to the user's sector.
 - Do not display any capability at 0% unless the user explicitly scored themselves 0. If a capability has no score, show it as 'Not yet assessed'.
 - Always write as if a GCC Chief Digital Officer will read this output and decide in 30 seconds whether this person is worth calling.
@@ -123,7 +123,7 @@ Analyze the user's data and generate their Executive Positioning Model. Return J
                     },
                     required: ["theme", "rationale"]
                   },
-                  description: "3-5 suggested authority themes with rationale"
+                  description: "3-5 suggested signal themes with rationale"
                 },
                 capabilities: { type: "array", items: { type: "string" }, description: "Core capabilities" },
                 clients: { type: "array", items: { type: "string" }, description: "Target client types" }

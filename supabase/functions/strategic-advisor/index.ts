@@ -68,7 +68,7 @@ serve(async (req) => {
       contextParts.push(`AUDIENCE: ${snapshot.followers} followers, ${snapshot.engagement_rate}% engagement, Top topic: ${snapshot.top_topic || "N/A"}`);
       const themes = (snapshot.authority_themes || []) as any[];
       if (themes.length > 0) {
-        contextParts.push(`AUTHORITY THEMES: ${themes.slice(0, 5).map((t: any) => typeof t === "string" ? t : t.theme || t.name).join(", ")}`);
+        contextParts.push(`SIGNAL THEMES: ${themes.slice(0, 5).map((t: any) => typeof t === "string" ? t : t.theme || t.name).join(", ")}`);
       }
     }
 
@@ -107,7 +107,7 @@ serve(async (req) => {
     } else if (context === "authority") {
       systemPrompt = `You are a Strategic Advisor for an executive thought leadership platform. Focus on CONTENT PUBLISHING recommendations: what to publish next, which topics to expand, which formats to use. Be specific and actionable.`;
     } else if (context === "influence") {
-      systemPrompt = `You are a Strategic Advisor for an executive thought leadership platform. Focus on AUDIENCE GROWTH interpretation: which themes are gaining authority, which ideas resonate, how to strengthen influence. Be specific and actionable.`;
+      systemPrompt = `You are a Strategic Advisor for an executive thought leadership platform. Focus on AUDIENCE GROWTH interpretation: which themes are gaining presence, which ideas resonate, how to strengthen influence. Be specific and actionable.`;
     } else {
       systemPrompt = `You are the AI Chief Strategy Officer for an executive thought leadership platform called Aura. Synthesize ALL available intelligence to provide strategic guidance.`;
     }

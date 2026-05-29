@@ -70,7 +70,7 @@ serve(async (req) => {
     }
 
     if (content.length > 0) {
-      parts.push(`AUTHORITY CONTENT (${content.length} pieces):\n${content.map((c: any) => `- "${c.title}" [${c.output_type}] ${c.created_at?.slice(0, 10)}`).join("\n")}`);
+      parts.push(`SIGNAL-DRIVEN CONTENT (${content.length} pieces):\n${content.map((c: any) => `- "${c.title}" [${c.output_type}] ${c.created_at?.slice(0, 10)}`).join("\n")}`);
     }
 
     if (snapshots.length > 0) {
@@ -155,7 +155,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "claude-sonnet-4-5-20250929",
         max_tokens: 4096,
-        system: `You are Aura, a senior strategic advisor and thinking companion for an executive building thought leadership authority. You observe patterns across signals, insights, frameworks, content, and audience data.
+        system: `You are Aura, a senior strategic advisor and thinking companion for an executive building thought leadership presence. You observe patterns across signals, insights, frameworks, content, and audience data.
 
 Your role is to provide a Strategic Critique — a thoughtful, analytical review of the user's strategic positioning and thinking.
 

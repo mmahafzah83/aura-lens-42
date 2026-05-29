@@ -374,7 +374,7 @@ COMPARE: right column = correct answer (RTL reading order = right first).
 
 ═══ USER VOICE PROFILE (adapt your writing to match) ═══
 ${voiceProfile ? `
-Voice tone: ${voiceProfile.tone || 'analytical, calm authority'}
+Voice tone: ${voiceProfile.tone || 'analytical, calm confidence'}
 Structural patterns this user prefers: ${JSON.stringify(voiceProfile.preferred_structures || [])}
 Storytelling patterns: ${JSON.stringify(voiceProfile.storytelling_patterns || [])}
 ${voiceProfile.vocabulary_preferences ? `Vocabulary notes: ${typeof voiceProfile.vocabulary_preferences === 'object' ? JSON.stringify(voiceProfile.vocabulary_preferences) : voiceProfile.vocabulary_preferences}` : ''}

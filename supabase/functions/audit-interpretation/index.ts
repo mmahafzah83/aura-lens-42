@@ -18,7 +18,7 @@ FRAMEWORK 4 — Purpose-Market Fit: The intersection of what they are demonstrab
 
 Based on all four lenses, provide exactly this structure with these exact section headers:
 
-YOUR DOMINANT GALLUP DOMAIN One sentence naming their strongest domain and what this means for how they build authority. One sentence on their weakest domain and the specific career risk this creates.
+YOUR DOMINANT GALLUP DOMAIN One sentence naming their strongest domain and what this means for how they build presence. One sentence on their weakest domain and the specific career risk this creates.
 
 YOUR DISTINCTIVE CAPABILITY One clear sentence describing their distinctive professional capability — what they do better than most peers, framed as a market-facing strength rather than a personality trait. Be specific to their actual top scores.
 

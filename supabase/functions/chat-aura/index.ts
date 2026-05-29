@@ -116,7 +116,7 @@ North star: ${liveProfile.north_star_goal || "—"}
 Top signals: ${signalsLine}
 Publishing: ${postCount} posts in last 30 days
 Latest hook: "${latestHook || "none"}"
-Authority score: ${latestScore.score ?? "—"}/100 (${latestScore.tier || "—"})
+Presence score: ${latestScore.score ?? "—"}/100 (${latestScore.tier || "—"})
 Days since last post: ${daysSinceLastPost === 999 ? "no posts on record" : daysSinceLastPost}
 
 PROACTIVE NUDGE RULE:
@@ -389,7 +389,7 @@ LANGUAGE RULE:
 If the user writes in English, respond in English. If the user writes in Arabic, respond in Arabic.
 
 FINAL PRINCIPLE:
-Aura helps ${userName}: think clearly, structure ideas, build authority, communicate insights effectively.${memoryContext}`;
+Aura helps ${userName}: think clearly, structure ideas, build presence, communicate insights effectively.${memoryContext}`;
 
     // Prepend live user context block to every system prompt
     const corePersonaWithContext = `${userContextBlock}\n\n${corePersona}`;
@@ -400,7 +400,7 @@ Aura helps ${userName}: think clearly, structure ideas, build authority, communi
       systemPrompt = `${corePersonaWithContext}
 
 MODE: LINKEDIN SUMMARY
-Distill the user's most recent strategic insight into a high-authority LinkedIn post. Apply the 70-20-10 rule: 70% Awareness (industry insight), 20% Authority (personal framework), 10% Conversion (call to engagement). Use strategic whitespace and a signature hook.
+Distill the user's most recent strategic insight into a high-impact LinkedIn post. Apply the 70-20-10 rule: 70% Awareness (industry insight), 20% Expertise (personal framework), 10% Conversion (call to engagement). Use strategic whitespace and a signature hook.
 
 VAULT STATS: ${totalStats.total} captures + ${totalStats.documents} documents | Pillars: ${totalStats.pillars.join(", ")}
 ${docList}
