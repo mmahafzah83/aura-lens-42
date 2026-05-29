@@ -181,7 +181,7 @@ const Landing = () => {
 
   usePageMeta({
     title: "Aura — Turns your expertise into presence",
-    description: "Capture what you read. Detect strategic patterns. Publish with authority on LinkedIn — in English and Arabic. Built for senior professionals.",
+    description: "Capture what you read. Detect strategic patterns. Publish with confidence on LinkedIn — in English and Arabic. Built for senior professionals.",
     path: "/",
     ogImage: "https://www.aura-intel.org/og-image.png",
   });
@@ -218,7 +218,7 @@ const Landing = () => {
   const testimonials = [
     { q: "I used to spend hours trying to write a LinkedIn post. Now I just capture what I read and Aura does the rest.", a: "— Sarah M. · Senior Consultant · Big Four · Riyadh" },
     { q: "It finally helped me see what I should be known for. I was an expert in too many things and known for none.", a: "— Khalid A. · VP Digital · Utilities · Dubai" },
-    { q: "I finally know what topics to own. Aura showed me exactly where I can be the authority in my field.", a: "— Nour K. · Transformation Director · Abu Dhabi" },
+    { q: "I finally know what topics to own. Aura showed me exactly where my expertise can be visible.", a: "— Nour K. · Transformation Director · Abu Dhabi" },
   ];
 
   const stepData = [
@@ -701,12 +701,12 @@ const Landing = () => {
 export default Landing;
 
 const FAQ_ITEMS: { q: string; a: string }[] = [
-  { q: "What does Aura actually do?", a: "Aura reads what you read. It detects the strategic patterns in your daily reading and turns them into signals — topics you're tracking more deeply than you realized. Then it generates LinkedIn content in your voice, grounded in your signals. The result: you build authority from intelligence you already have." },
+  { q: "What does Aura actually do?", a: "Aura reads what you read. It detects the strategic patterns in your daily reading and turns them into signals — topics you're tracking more deeply than you realized. Then it generates LinkedIn content in your voice, grounded in your signals. The result: you build visible expertise from intelligence you already have." },
   { q: "Where is my data stored?", a: "Your data is stored on Supabase (hosted on AWS) with industry-standard encryption. We do not sell, share, or monetize your data. AI processing is done per-request — we do not train models on your content." },
   { q: "Who is Aura built for?", a: "Senior professionals in the GCC — Directors, VPs, CIOs, CDOs — who read extensively but don't publish enough. Especially those in digital transformation, utilities, critical infrastructure, and Vision 2030 programs." },
   { q: "How is this different from ChatGPT?", a: "ChatGPT writes from general knowledge. Aura writes from YOUR knowledge — your captured articles, your detected signals, your professional voice. Every post references intelligence you've actually built, not generic AI output." },
   { q: "What languages does Aura support?", a: "English and Arabic. Arabic content uses contemporary formal Arabic with proper RTL formatting. Technical terms (AI, KPI, IoT) stay in English." },
-  { q: "How long before I see value?", a: "5 minutes. Capture 3 articles → Aura detects your first signal. Generate your first post from that signal. Your authority score starts moving immediately." },
+  { q: "How long before I see value?", a: "5 minutes. Capture 3 articles → Aura detects your first signal. Generate your first post from that signal. Your Digital Presence Score starts moving immediately." },
   { q: "Is this free during beta?", a: "Yes. The private beta is free. We'll introduce pricing ($49/month) after beta, with early access users receiving a founding member rate." },
   { q: "How do I get access?", a: "Apply at aura-intel.org/request-access. We review applications weekly. Current wait time: 3-5 business days." },
 ];

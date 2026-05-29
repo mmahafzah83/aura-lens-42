@@ -124,7 +124,7 @@ export const HEADERS = {
 
   // Impact
   threeForces: "THE THREE FORCES",
-  authorityTrajectory: "YOUR AUTHORITY TRAJECTORY",
+  authorityTrajectory: "YOUR PRESENCE GROWTH",
 
   // Intelligence
   strategicRadar: "YOUR STRATEGIC RADAR",
@@ -183,7 +183,7 @@ export const EMPTY_STATE = {
     placeholder: "What should I write about this week?",
   },
   readingList: {
-    text: "Your reading list builds itself from the gaps in your expertise. Save a few more articles and Aura will start showing you exactly what to read next — not random content, but the pieces that fill the blind spots in your authority.",
+    text: "Your reading list builds itself from the gaps in your expertise. Save a few more articles and Aura will start showing you exactly what to read next — not random content, but the pieces that fill the blind spots in your positioning.",
   },
 } as const;
 
