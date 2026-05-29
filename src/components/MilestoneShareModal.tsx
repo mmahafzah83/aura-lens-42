@@ -20,6 +20,8 @@ export interface MilestoneShareData {
   level?: string | null;
   /** Sector for share text */
   sectorFocus?: string | null;
+  /** Top strategic signal title for share caption */
+  topSignal?: string | null;
 }
 
 interface Props {
@@ -38,6 +40,7 @@ const formatDate = (iso?: string | null) => {
 const MilestoneShareModal = ({ open, onClose, data }: Props) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState(false);
+  const [lang, setLang] = useState<"en" | "ar">("en");
   const stableData = useRef<MilestoneShareData>(data);
   useEffect(() => {
     if (data && data.name) {
@@ -70,9 +73,31 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
     : `Earned ${new Date().toLocaleDateString()}`;
   const footerLineRaw = [d.firstName, d.level].filter(Boolean).join(" · ");
   const footerLine = footerLineRaw || "aura-intel.org";
-  const shareText = d.name
-    ? `Completed a new milestone: ${d.name}.\n\n${safeContext}\n\nUnderstanding your positioning is the first step to being visible where it matters.\n\n#DigitalPresence #StrategicIntelligence`
-    : `Building presence with Aura.\n\n#DigitalPresence`;
+  const shareText = lang === "ar"
+    ? [
+        `خطوة جديدة في رحلتي المهنية ✦`,
+        ``,
+        d.level ? `وصلت لمستوى ${d.level} في الحضور الرقمي` : `حققت إنجاز جديد`,
+        d.sectorFocus ? `في مجال ${d.sectorFocus}` : ``,
+        safeContext,
+        d.topSignal ? `أقوى إشارة: ${d.topSignal}` : ``,
+        ``,
+        `الخبرة لا تتحدث عن نفسها — لكن يمكنك أن تجعلها مرئية.`,
+        ``,
+        `#الحضور_الرقمي #التحول_الرقمي`,
+      ].filter(Boolean).join("\n")
+    : d.name
+      ? [
+          `Completed a new milestone: ${d.name}.`,
+          ``,
+          safeContext,
+          d.topSignal ? `Strongest signal: ${d.topSignal}` : ``,
+          ``,
+          `Understanding your positioning is the first step to being visible where it matters.`,
+          ``,
+          `#DigitalPresence #StrategicIntelligence`,
+        ].filter(Boolean).join("\n")
+      : `Building presence with Aura.\n\n#DigitalPresence`;
 
   const handleDownload = async () => {
     if (!cardRef.current) return;
@@ -142,7 +167,13 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
     } catch { /* ignore */ }
     toast.success("Caption copied! LinkedIn is opening...");
     const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://aura-intel.org/request-access")}&text=${encodeURIComponent(shareText)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
+    const win = window.open(url, "_blank", "noopener,noreferrer");
+    if (!win || win.closed) {
+      toast.info(
+        "LinkedIn couldn't open automatically. The caption is copied to your clipboard — paste it on LinkedIn.",
+        { duration: 6000 }
+      );
+    }
   };
 
   return createPortal(
@@ -274,6 +305,27 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
           borderRadius: 8,
           position: "relative",
         }}>
+          <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
+            {(["en", "ar"] as const).map((l) => (
+              <button
+                key={l}
+                type="button"
+                onClick={() => setLang(l)}
+                style={{
+                  padding: "4px 12px",
+                  borderRadius: 20,
+                  fontSize: 12,
+                  cursor: "pointer",
+                  background: lang === l ? "var(--brand, #B08D3A)" : "transparent",
+                  color: lang === l ? "white" : "hsl(var(--muted-foreground))",
+                  border: "0.5px solid hsl(var(--border))",
+                  fontWeight: 500,
+                }}
+              >
+                {l.toUpperCase()}
+              </button>
+            ))}
+          </div>
           <div style={{
             display: "flex",
             justifyContent: "space-between",
@@ -318,6 +370,8 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
             color: "var(--ink, #111)",
             margin: 0,
             whiteSpace: "pre-line",
+            direction: lang === "ar" ? "rtl" : "ltr",
+            textAlign: lang === "ar" ? "right" : "left",
           }}>
             {shareText}
           </p>

@@ -62,6 +62,7 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
   const [firstName, setFirstName] = useState<string | null>(null);
   const [signalCount, setSignalCount] = useState<number | null>(null);
   const [shareData, setShareData] = useState<MilestoneShareData | null>(null);
+  const [topSignal, setTopSignal] = useState<string>("");
 
   useEffect(() => {
     if (provided) { setData(provided); setLoading(false); }
@@ -94,6 +95,15 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
       });
     supabase.from("strategic_signals").select("id", { count: "exact", head: true }).eq("status", "active")
       .then(({ count }) => setSignalCount(count ?? 0));
+    supabase
+      .from("strategic_signals")
+      .select("signal_title")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .order("confidence", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data: sig }) => setTopSignal((sig as any)?.signal_title || ""));
   }, [userId]);
 
   if (loading) {
@@ -237,6 +247,7 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
             firstName,
             level: data.tier_name || "New Tier",
             sectorFocus: sector,
+            topSignal,
           })}
           style={{
             background: "transparent",
@@ -274,6 +285,7 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
                   firstName,
                   level: data.tier_name || "New Tier",
                   sectorFocus: sector,
+                topSignal,
                 })}
               />
             </div>
