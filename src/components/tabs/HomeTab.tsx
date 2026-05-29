@@ -1727,6 +1727,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
                 <span>of 100</span>
                 <InfoTooltip
                   label="Digital Presence Score"
+                  slug="score-overview"
                   text="Your Digital Presence Score measures three forces: Signal strength (40%), Content published (40%), and Weekly rhythm (20%). Updates automatically as you use Aura."
                   side="bottom"
                   align="right"
