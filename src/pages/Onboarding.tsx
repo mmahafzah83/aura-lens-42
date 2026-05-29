@@ -161,6 +161,39 @@ const Onboarding = () => {
     "Now let's map what makes you different.",
   );
 
+  // Loop-detection safety valve: if this session keeps bouncing back to
+  // /onboarding without ever completing, surface an escape hatch.
+  const [onboardingVisits, setOnboardingVisits] = useState<number>(0);
+  useEffect(() => {
+    try {
+      const key = "aura_onboarding_visits";
+      const next = Number(sessionStorage.getItem(key) || "0") + 1;
+      sessionStorage.setItem(key, String(next));
+      setOnboardingVisits(next);
+    } catch { /* ignore */ }
+  }, []);
+
+  const skipOnboardingEscape = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await (supabase.from("diagnostic_profiles" as any) as any).upsert({
+          user_id: user.id,
+          first_name: (user.user_metadata as any)?.first_name
+            || user.email?.split("@")[0]
+            || "User",
+          onboarding_completed: true,
+          onboarding_step: 4,
+          completed: true,
+        }, { onConflict: "user_id" });
+      }
+      sessionStorage.removeItem("aura_onboarding_visits");
+    } catch (e) {
+      console.warn("skip onboarding failed:", e);
+    }
+    navigate("/home", { replace: true });
+  };
+
   // Auth + gate: if user already onboarded, send them home.
   useEffect(() => {
     (async () => {
@@ -589,6 +622,24 @@ const Onboarding = () => {
             {children}
           </motion.div>
         </AnimatePresence>
+        {onboardingVisits >= 3 && (
+          <div style={{ marginTop: 16, textAlign: "center" }}>
+            <button
+              type="button"
+              onClick={skipOnboardingEscape}
+              style={{
+                background: "none",
+                border: "none",
+                color: "hsl(var(--muted-foreground))",
+                fontSize: 12,
+                cursor: "pointer",
+                textDecoration: "underline",
+              }}
+            >
+              Skip onboarding and go to dashboard →
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
