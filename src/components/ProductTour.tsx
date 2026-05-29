@@ -100,6 +100,12 @@ export function ProductTour({ activeTab, setActiveTab }: ProductTourProps) {
     return () => { cancelled = true; clearTimeout(t); };
   }, []);
 
+  const waitForTarget = (selector: string, cb: () => void, attempt = 0) => {
+    const el = document.querySelector(selector);
+    if (el) cb();
+    else if (attempt < 30) setTimeout(() => waitForTarget(selector, cb, attempt + 1), 300);
+  };
+
   const handleCallback = (data: CallBackProps) => {
     const { action, index, status, type } = data;
 
@@ -118,12 +124,27 @@ export function ProductTour({ activeTab, setActiveTab }: ProductTourProps) {
         const nextStep = TOUR_STEPS[nextIndex];
         const requiredTab = nextStep.requiresTab;
         if (requiredTab && requiredTab !== activeTab) {
+          setRun(false);
           setActiveTab(requiredTab);
-          setTimeout(() => setStepIndex(nextIndex), 600);
+          waitForTarget(nextStep.target as string, () => {
+            setStepIndex(nextIndex);
+            setRun(true);
+          });
         } else {
-          setStepIndex(nextIndex);
+          setRun(false);
+          waitForTarget(nextStep.target as string, () => {
+            setStepIndex(nextIndex);
+            setRun(true);
+          });
         }
       }
+      return;
+    }
+
+    if (type === EVENTS.TARGET_NOT_FOUND) {
+      setRun(false);
+      const step = TOUR_STEPS[index];
+      waitForTarget(step.target as string, () => setRun(true));
     }
   };
 
