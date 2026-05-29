@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useGuideArticles } from "@/hooks/useGuideArticles";
 
 interface FirstTimeHintProps {
   hintKey: string;
