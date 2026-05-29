@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Send, Plus, Eye, ChevronRight } from "lucide-react";
+import { Send, Plus, Eye, ChevronRight, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export type ActionType = "PUBLISH" | "CAPTURE" | "WATCH";
