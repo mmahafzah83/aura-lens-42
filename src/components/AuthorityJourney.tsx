@@ -149,6 +149,7 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
         Presence journey
         <InfoTooltip
           label="Presence Journey"
+          slug="tiers"
           text="Your path from Observer to Presence. Each tier unlocks with specific actions."
         />
       </div>
