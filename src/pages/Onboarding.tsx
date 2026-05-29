@@ -912,51 +912,20 @@ const Onboarding = () => {
 
   // ───── STEP 0 ─────
   if (step === 0 && !welcomeAcknowledged) {
-    const items = [
-      "Aura reads what you already read — and finds the signals you'd miss.",
-      "It writes in your voice — because generic AI content damages your reputation.",
-      "It tracks what matters — so the right people notice you before you even pitch.",
-    ];
+    const displayName = firstName || prefillFirstName;
     return cardShell(
       <>
-        {eyebrow("Your intelligence is live")}
-        {heading("Welcome to Aura.")}
-        <div className="space-y-4 mb-8">
-          {body(<>You have the expertise. The certificates. The years. But right now, to anyone who hasn't met you in person — you're invisible.</>)}
-          {body(<>That changes today.</>)}
-          {body(<>Here's why Aura is different:</>)}
+        {eyebrow("Private Beta")}
+        {heading(displayName ? `Welcome, ${displayName}.` : "Welcome.")}
+        <div className="text-center space-y-2 mb-10">
+          <p style={{ fontSize: 16, color: "hsl(var(--foreground))", lineHeight: 1.6 }}>
+            You were invited because someone believes the market should see what you know.
+          </p>
+          <p style={{ fontSize: 14, color: "hsl(var(--muted-foreground))", lineHeight: 1.6 }}>
+            Aura makes that happen — in about 7 minutes.
+          </p>
         </div>
-        <ul className="space-y-3 mb-8">
-          {items.map((it, i) => (
-            <motion.li
-              key={i}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: i < revealCount ? 1 : 0, y: i < revealCount ? 0 : 8 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-              className="flex items-start gap-3"
-              style={{ fontSize: 14, lineHeight: 1.625, color: "hsl(var(--foreground))" }}
-            >
-              <span style={{ color: "var(--brand)", fontSize: 14, lineHeight: 1.625 }}>◆</span>
-              <span>{it}</span>
-            </motion.li>
-          ))}
-        </ul>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: revealCount >= 3 ? 1 : 0 }}
-          transition={{ duration: 0.5, delay: revealCount >= 3 ? 0.6 : 0 }}
-        >
-          {primaryBtn(<>Let's begin <ArrowRight className="w-4 h-4" /></>, () => setWelcomeAcknowledged(true), { disabled: revealCount < 3 })}
-        </motion.div>
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: revealCount >= 3 ? 1 : 0 }}
-          transition={{ duration: 0.4, delay: revealCount >= 3 ? 0.9 : 0 }}
-          className="text-center mt-4"
-          style={{ fontSize: 13, color: "hsl(var(--muted-foreground))" }}
-        >
-          4 steps. About 7 minutes. Worth every second.
-        </motion.p>
+        {primaryBtn(<>Let's begin <ArrowRight className="w-4 h-4" /></>, () => setWelcomeAcknowledged(true))}
       </>,
     );
   }
