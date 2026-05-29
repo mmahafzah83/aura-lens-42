@@ -216,12 +216,22 @@ export default function MarketScan({ onOpenCapture, onSwitchTab, onDraftPost, de
           cursor: "pointer", marginBottom: 6,
         }}
       >
-        <span style={{
-          fontSize: 11, fontWeight: 500, letterSpacing: "0.04em",
-          color: "hsl(var(--muted-foreground))", textTransform: "uppercase",
-        }}>
-          Market scan
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{
+            fontSize: 11, fontWeight: 500, letterSpacing: "0.04em",
+            color: "hsl(var(--muted-foreground))", textTransform: "uppercase",
+          }}>
+            Market scan
+          </span>
+          <span style={{
+            fontSize: 10, fontWeight: 600, letterSpacing: "0.03em",
+            color: "hsl(var(--muted-foreground))",
+            background: "hsl(var(--muted) / 0.5)",
+            borderRadius: 4, padding: "1px 6px",
+          }}>
+            {loading ? 0 : (items?.length ?? 0)}
+          </span>
+        </div>
         <ChevronDown
           size={14}
           style={{
