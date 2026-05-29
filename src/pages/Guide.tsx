@@ -8,29 +8,29 @@ import {
 import usePageMeta from "@/hooks/usePageMeta";
 
 const FAQ_ITEMS: { q: string; a: string }[] = [
-  { q: "What does Aura actually do?", a: "Aura reads what you read. It detects the strategic patterns in your daily reading and turns them into signals — topics you're tracking more deeply than you realized. Then it generates LinkedIn content in your voice, grounded in your signals. The result: you build authority from intelligence you already have." },
-  { q: "Where is my data stored?", a: "Your data is stored on Supabase (hosted on AWS) with industry-standard encryption. We do not sell, share, or monetize your data. AI processing is done per-request — we do not train models on your content." },
+  { q: "What does Aura actually do?", a: "Aura reads what you read. It detects the strategic patterns in your daily reading and turns them into signals — topics you're tracking more deeply than you realized. Then it generates LinkedIn content in your voice, grounded in your signals. The result: you build visible expertise from intelligence you already have." },
+  { q: "Where is my data stored?", a: "Your data is stored on Supabase infrastructure with industry-standard encryption. We do not sell, share, or monetize your data. AI processing is done per-request — we do not train models on your content." },
   { q: "Who is Aura built for?", a: "Senior professionals in the GCC — Directors, VPs, CIOs, CDOs — who read extensively but don't publish enough. Especially those in digital transformation, utilities, critical infrastructure, and Vision 2030 programs." },
-  { q: "How is this different from ChatGPT?", a: "ChatGPT writes from general knowledge. Aura writes from YOUR knowledge — your captured articles, your detected signals, your professional voice. Every post references intelligence you've actually built, not generic AI output." },
-  { q: "What languages does Aura support?", a: "English and Arabic. Arabic content uses contemporary formal Arabic with proper RTL formatting. Technical terms (AI, KPI, IoT) stay in English." },
-  { q: "How long before I see value?", a: "5 minutes. Capture 3 articles → Aura detects your first signal. Generate your first post from that signal. Your authority score starts moving immediately." },
-  { q: "Is this free during beta?", a: "Yes. The private beta is free. We'll introduce pricing ($49/month) after beta, with early access users receiving a founding member rate." },
-  { q: "How do I get access?", a: "Apply at aura-intel.org/request-access. We review applications weekly. Current wait time: 3-5 business days." },
+  { q: "How is this different from ChatGPT?", a: "ChatGPT writes generic content from its training data. Aura writes in YOUR voice, from YOUR captures, grounded in YOUR strategic signals. Every post reflects what you actually read and know — not what the internet thinks about your topic." },
+  { q: "What languages does Aura support?", a: "English and Arabic. Content generation works in both, with dedicated Arabic writing patterns designed for Gulf professional audiences. You can switch between languages per post." },
+  { q: "How long before I see value?", a: "Most users see their first strategic signal within 3-5 captures. Your first AI-generated post can be ready in under 10 minutes. The Digital Presence Score starts moving from day one." },
+  { q: "Is this free during beta?", a: "Yes. Aura is currently in invite-only beta. All features are free during the beta period. Pricing will be introduced after beta with advance notice to all users." },
+  { q: "How do I get access?", a: "Aura is invite-only. Request access at aura-intel.org/request-access or ask someone who's already using it to invite you." },
 ];
 
 const STEPS = [
   { n: "01", Icon: Inbox, t: "Capture what you read", d: "Paste any URL, upload a document, or record a voice note. Aura extracts the intelligence and stores it." },
   { n: "02", Icon: Radar, t: "Aura detects patterns", d: "As you capture more, Aura identifies strategic signals — recurring themes across your reading that form your expertise map." },
   { n: "03", Icon: PenTool, t: "Create content from signals", d: "Generate LinkedIn posts in your voice, in English or Arabic. Each post is grounded in your real intelligence — not generic AI." },
-  { n: "04", Icon: TrendingUp, t: "Watch presence compound", d: "Your Digital Presence Score tracks signal depth (40%), published content (40%), and capture rhythm (20%). Rise from Observer to Strategist to Presence." },
+  { n: "04", Icon: TrendingUp, t: "Watch your presence grow", d: "Your Digital Presence Score tracks signal depth (40%), published content (40%), and capture rhythm (20%). Rise from Observer through Explorer, Strategist, and Voice to Presence." },
 ];
 
 const PAGES = [
   { Icon: HomeIcon, t: "Home", d: "Your daily command center" },
   { Icon: Compass, t: "Intelligence", d: "Your strategic radar" },
-  { Icon: Sparkles, t: "Publish", d: "Your voice" },
+  { Icon: Sparkles, t: "Publish", d: "Your content engine" },
   { Icon: BarChart3, t: "Impact", d: "Your digital presence growth" },
-  { Icon: User, t: "My Story", d: "Your market position" },
+  { Icon: User, t: "My Story", d: "Your professional identity" },
 ];
 
 const SCORE = [
@@ -122,7 +122,7 @@ const Guide = () => {
           How Aura works
         </h1>
         <p style={{ fontSize: 16, color: "var(--ink-3)", lineHeight: 1.625 }}>
-          From first capture to market authority — in 4 steps.
+          From first capture to visible expertise — in 4 steps.
         </p>
       </section>
 
@@ -186,7 +186,7 @@ const Guide = () => {
         <div className="max-w-3xl mx-auto">
           <p className="text-xs tracking-[0.2em] uppercase mb-4 text-center" style={{ color: "var(--bronze)" }}>The score</p>
           <h2 className="text-center mb-3" style={{ fontFamily: "var(--font-display)", fontSize: "clamp(26px, 3.5vw, 36px)", color: "var(--ink-2)", fontWeight: 500 }}>
-            How authority is calculated
+            How your score is calculated
           </h2>
           <p className="text-center mb-12" style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.625 }}>
             One number. Three components. Built from real activity, not vanity metrics.
@@ -206,16 +206,21 @@ const Guide = () => {
             ))}
           </div>
 
-          <div className="mt-14 grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="mt-14 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             {[
-              { tier: "Observer", range: "0–34", desc: "Building your foundation." },
-              { tier: "Strategist", range: "35–64", desc: "Patterns are forming." },
-              { tier: "Presence", range: "65–100", desc: "Recognized in your field." },
+              { tier: "Observer", range: "0–14", desc: "Building your foundation.", accent: false },
+              { tier: "Explorer", range: "15–34", desc: "Patterns are forming.", accent: false },
+              { tier: "Strategist", range: "35–59", desc: "Your expertise is becoming visible.", accent: false },
+              { tier: "Voice", range: "60–79", desc: "The market recognizes your signal.", accent: false },
+              { tier: "Presence", range: "80–100", desc: "You're known before you walk in the room.", accent: true },
             ].map((t) => (
               <div
                 key={t.tier}
                 className="rounded-xl p-5 text-center"
-                style={{ background: "var(--surface-ink-raised)", border: "1px solid rgba(255,255,255,0.08)" }}
+                style={{
+                  background: t.accent ? "rgba(197,165,90,0.08)" : "var(--surface-ink-raised)",
+                  border: t.accent ? "1px solid rgba(197,165,90,0.4)" : "1px solid rgba(255,255,255,0.08)",
+                }}
               >
                 <p style={{ fontFamily: "var(--font-display)", fontSize: 20, color: "var(--brand)", marginBottom: 4 }}>{t.tier}</p>
                 <p style={{ fontSize: 12, color: "var(--ink-4)", letterSpacing: "0.08em", marginBottom: 8 }}>{t.range}</p>
@@ -315,7 +320,7 @@ const Guide = () => {
               <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>Turns your expertise into presence</span>
             </div>
             <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 12 }}>
-              © 2026 Aura. All rights reserved.
+              © 2026 Aura Intelligence. All rights reserved.
             </p>
           </div>
           <div className="guide-footer-col-center" style={{ textAlign: "center" }}>
@@ -334,7 +339,7 @@ const Guide = () => {
               Contact: <a href="mailto:support@aura-intel.org">support@aura-intel.org</a>
             </p>
             <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 6 }}>
-              Built in Riyadh for the world
+              Built in Riyadh for the world.
             </p>
           </div>
         </div>
