@@ -217,6 +217,13 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
   const navigate = useNavigate();
   const journey = useJourneyState(authUser?.id ?? null);
   const [now, setNow] = useState(new Date());
+  const [isFirstWeek, setIsFirstWeek] = useState(false);
+  useEffect(() => {
+    const createdAt = (authUser as any)?.created_at;
+    if (!createdAt) return;
+    const ageMs = Date.now() - new Date(createdAt).getTime();
+    setIsFirstWeek(ageMs < 7 * 24 * 60 * 60 * 1000);
+  }, [authUser]);
   const [userName, setUserName] = useState<string>("");
   const [welcomeDismissed, setWelcomeDismissed] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
