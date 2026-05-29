@@ -1064,6 +1064,7 @@ const Dashboard = () => {
       />
       <FeedbackButton />
       <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} activeTab={activeTab} />
+      <ProductTour activeTab={activeTab} setActiveTab={setActiveTab} userId={userId} />
       <InviteColleagueModal open={inviteOpen} onClose={() => setInviteOpen(false)} />
       <NpsSurveyModal />
       <PreferencesPanel
