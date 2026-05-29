@@ -404,6 +404,47 @@ const Dashboard = () => {
     }
   };
 
+  // Listen for global "aura-open-chat" events (HelpPanel walkthrough, banners, hints)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail || {};
+      openChat(typeof detail.prompt === "string" ? detail.prompt : undefined);
+    };
+    window.addEventListener("aura-open-chat", handler as EventListener);
+    return () => window.removeEventListener("aura-open-chat", handler as EventListener);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatOpen]);
+
+  // First-login Ask Aura welcome briefing (auto-opens sidebar with personalized greeting)
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const briefingDone = localStorage.getItem("aura_welcome_briefing_done");
+        if (briefingDone) return;
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (!authUser?.created_at) return;
+        const ageDays = (Date.now() - new Date(authUser.created_at).getTime()) / 86400000;
+        if (ageDays >= 1) return;
+        if (cancelled) return;
+        // Mark done immediately so we never double-fire across reloads
+        try { localStorage.setItem("aura_welcome_briefing_done", "true"); } catch {}
+        try { localStorage.setItem("aura_tour_login_count", "1"); } catch {}
+        setTimeout(() => {
+          if (cancelled) return;
+          openChat(
+            "This is my first time opening Aura. Welcome me by name in one sentence, explain my current presence score in one sentence, then give me ONE specific first action I should take today based on my sector. End by inviting me to ask anything. Keep it short — 4-5 sentences total. Markdown only, no HTML. Be warm and encouraging — I'm a first-day user."
+          );
+        }, 2000);
+      } catch {
+        // localStorage / auth issue — skip silently
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
   const switchTab = (tab: TabValue) => {
     setActiveTab(tab);
     setMobileSidebarOpen(false);
