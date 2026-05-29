@@ -9,6 +9,7 @@ import { useCardEntryAnimation } from "@/hooks/useCardEntryAnimation";
 import CaptureModal from "@/components/CaptureModal";
 import AuraChatSidebar, { type ChatContext } from "@/components/AuraChatSidebar";
 import AskAuraPresence from "@/components/AskAuraPresence";
+import ProductTour from "@/components/ProductTour";
 import AuraLogo from "@/components/brand/AuraLogo";
 // OnboardingSequence removed — replaced by /onboarding flow
 import ExecutiveDiagnostic from "@/components/ExecutiveDiagnostic";
@@ -608,10 +609,13 @@ const Dashboard = () => {
           className="px-3 py-4 flex flex-col gap-2"
           style={{ borderTop: "0.5px solid var(--paper-3)" }}
         >
-          <AskAuraPresence collapsed={sidebarCollapsed} onOpen={() => openChat()} />
+          <div data-tour="nav-ask-aura">
+            <AskAuraPresence collapsed={sidebarCollapsed} onOpen={() => openChat()} />
+          </div>
           <button
             onClick={() => setCaptureOpen(true)}
             data-testid="nav-capture"
+            data-tour="nav-capture"
             className="w-full flex items-center gap-3 px-3 py-3 tactile-press group"
             style={{
               background: "transparent",
@@ -736,12 +740,15 @@ const Dashboard = () => {
               className="px-3 py-4 space-y-2"
               style={{ borderTop: "0.5px solid var(--paper-3)" }}
             >
-              <AskAuraPresence
-                onOpen={() => { setMobileSidebarOpen(false); openChat(); }}
-              />
+              <div data-tour="nav-ask-aura">
+                <AskAuraPresence
+                  onOpen={() => { setMobileSidebarOpen(false); openChat(); }}
+                />
+              </div>
               <button
                 onClick={() => { setMobileSidebarOpen(false); setCaptureOpen(true); }}
                 data-testid="nav-capture"
+                data-tour="nav-capture"
                 className="w-full flex items-center justify-center gap-2 px-3 py-2.5 transition-all text-xs"
                 style={{
                   color: "var(--aura-t3)",
