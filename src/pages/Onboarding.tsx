@@ -133,6 +133,7 @@ const Onboarding = () => {
   const [describeMode, setDescribeMode] = useState(false);
   const [helperOpen, setHelperOpen] = useState(false);
   const [firstName, setFirstName] = useState("");
+  const [prefillFirstName, setPrefillFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [firm, setFirm] = useState("");
   const [level, setLevel] = useState("");
