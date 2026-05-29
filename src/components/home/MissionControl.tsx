@@ -105,6 +105,17 @@ export default function MissionControl({ userId, entriesCount = 0, topSignalTitl
     .filter(m => m.status !== "completed")
     .reduce((s, m) => s + (m.points ?? 5), 0);
 
+  // Identify the highest-point pending mission to flag as "Recommended".
+  const recommendedId = (() => {
+    const pending = missions.filter(m => m.status !== "completed");
+    if (pending.length === 0) return null;
+    let top = pending[0];
+    for (const m of pending) {
+      if ((m.points ?? 5) > (top.points ?? 5)) top = m;
+    }
+    return top.id;
+  })();
+
   return (
     <section style={{ borderTop: "0.5px solid hsl(var(--border) / 0.5)", paddingTop: 20 }}>
       <div className="flex items-baseline justify-between" style={{ marginBottom: 4 }}>
@@ -142,6 +153,7 @@ export default function MissionControl({ userId, entriesCount = 0, topSignalTitl
           const isDone = m.status === "completed";
           const explanation = explainMission(m.title, m.mission_type, topSignalTitle, topSignalFragments);
           const pillarColor = TYPE_COLOR[m.mission_type] || "hsl(var(--muted-foreground))";
+          const isRecommended = m.id === recommendedId && !isDone;
           return (
             <div
               key={m.id}
@@ -149,6 +161,7 @@ export default function MissionControl({ userId, entriesCount = 0, topSignalTitl
               style={{
                 gap: 12, padding: "12px 14px",
                 border: "0.5px solid hsl(var(--border) / 0.5)",
+                borderLeft: isRecommended ? "3px solid var(--brand, #B08D3A)" : "0.5px solid hsl(var(--border) / 0.5)",
                 borderRadius: 8,
                 alignItems: "flex-start",
                 background: "hsl(var(--card))",
@@ -171,6 +184,15 @@ export default function MissionControl({ userId, entriesCount = 0, topSignalTitl
                 {isDone && <Check size={11} color="#fff" strokeWidth={3} />}
               </button>
               <div style={{ flex: 1, minWidth: 0 }}>
+                {isRecommended && (
+                  <div style={{
+                    fontSize: 11, fontWeight: 600, letterSpacing: "0.08em",
+                    color: "var(--brand, #B08D3A)", textTransform: "uppercase",
+                    marginBottom: 3,
+                  }}>
+                    Recommended
+                  </div>
+                )}
                 <div style={{
                   fontSize: 13, fontWeight: 500,
                   color: isDone ? "hsl(var(--muted-foreground))" : "hsl(var(--foreground))",

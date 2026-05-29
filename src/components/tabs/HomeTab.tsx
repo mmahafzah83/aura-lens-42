@@ -217,6 +217,13 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
   const navigate = useNavigate();
   const journey = useJourneyState(authUser?.id ?? null);
   const [now, setNow] = useState(new Date());
+  const [isFirstWeek, setIsFirstWeek] = useState(false);
+  useEffect(() => {
+    const createdAt = (authUser as any)?.created_at;
+    if (!createdAt) return;
+    const ageMs = Date.now() - new Date(createdAt).getTime();
+    setIsFirstWeek(ageMs < 7 * 24 * 60 * 60 * 1000);
+  }, [authUser]);
   const [userName, setUserName] = useState<string>("");
   const [welcomeDismissed, setWelcomeDismissed] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
@@ -1730,10 +1737,15 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
         const contentW = Math.round((auraData.content_score ?? 0) * 0.4);
         const captureW = Math.round((auraData.capture_score ?? 0) * 0.2);
 
+        const activeWeeks = auraData.weekly_rhythm?.active_weeks ?? 0;
+        const consistencyMax = isFirstWeek ? 4 : 20;
+        const consistencyVal = isFirstWeek ? Math.min(activeWeeks, 4) : captureW;
+        const consistencyUnit = isFirstWeek ? " weeks" : "";
+
         const forces = [
           { key: "signal", label: "Signal strength",  weighted: signalW,  max: 40, color: "var(--warning)" },
           { key: "content", label: "Content published", weighted: contentW, max: 40, color: "var(--color-info-text, var(--info))" },
-          { key: "consistency", label: "Weekly rhythm",  weighted: captureW, max: 20, color: "var(--success)" },
+          { key: "consistency", label: "Weekly rhythm",  weighted: consistencyVal, max: consistencyMax, color: "var(--success)", unitSuffix: consistencyUnit },
         ];
 
         const pcts = forces.map(f => f.max ? (f.weighted / f.max) : 0);
@@ -1760,7 +1772,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
                           {f.weighted}
                         </span>
                         <span className="text-denominator">
-                          /{f.max}
+                          /{f.max}{(f as any).unitSuffix || ""}
                         </span>
                       </div>
                       <div className="text-section-header" style={{ marginBottom: 6 }}>
@@ -2228,6 +2240,20 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
 
         // Priority 2 — nudge card (BRIEFING)
         if (auraData?.personalized_nudge) {
+          // Hide briefing if URGENT card below points at the same signal
+          // (avoid duplicate "Draft post" cards on the home page).
+          const urgentForCompare = auraReadItems?.find(
+            (it) => it.action_type === "PUBLISH" && it.urgency === "HIGH"
+          );
+          if (urgentForCompare) {
+            const nudgeLower = (auraData.personalized_nudge || "").toLowerCase();
+            const titleWords = (urgentForCompare.title || "")
+              .toLowerCase()
+              .split(/\W+/)
+              .filter((w) => w.length >= 5);
+            const overlap = titleWords.filter((w) => nudgeLower.includes(w)).length;
+            if (overlap >= 1) return null;
+          }
           const subs = [
             { key: "capture", value: auraData.capture_score },
             { key: "signal", value: auraData.signal_score },
