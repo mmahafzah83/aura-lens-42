@@ -1198,6 +1198,9 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
               <>
                 {/* TERRITORY PANEL — radar (3+ themes) + sortable list */}
                 <div data-tour="signal-radar">
+                  <FirstTimeHint hintKey="intel-radar">
+                    Your expertise map. Each node is a pattern Aura found across your captures — the bigger the node, the stronger the signal.
+                  </FirstTimeHint>
                   <TerritoryPanel
                     signals={signals}
                     selectedTheme={selectedTheme}
@@ -1223,6 +1226,9 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                   const emergingSignals = filtered.filter(s => s.confidence < 0.15);
                   return (
                   <section data-tour="signal-list" style={{ marginTop: 36, paddingTop: 24, borderTop: "0.5px solid var(--color-border-tertiary, var(--surface-ink-subtle))" }}>
+                    <FirstTimeHint hintKey="intel-signals">
+                      Your signals ranked by strength. When one reaches "Publish-ready," hit "Write this" to generate a LinkedIn post.
+                    </FirstTimeHint>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
                       <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".06em", color: "var(--ink-3)" }}>SIGNALS</span>
                       <span style={{ fontSize: 11, color: "var(--ink-3)" }}>
