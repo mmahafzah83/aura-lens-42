@@ -205,6 +205,7 @@ const Onboarding = () => {
       }
       setUserId(session.user.id);
       setUserEmail(session.user.email ?? null);
+      setPrefillFirstName((session.user.user_metadata as any)?.first_name || "");
       const passwordAlreadySet = Boolean((session.user.user_metadata as any)?.password_set);
       // Identity confirmation gate: anyone who just arrived via an invite
       // (no password set yet) must first confirm this is their email — prevents
