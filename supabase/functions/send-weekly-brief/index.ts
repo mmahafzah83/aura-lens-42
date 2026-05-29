@@ -169,7 +169,7 @@ function buildHtml(opts: BuildHtmlOpts): string {
 </style>
 </head>
 <body>
-<div style="display:none;max-height:0;overflow:hidden;">Your weekly Aura intelligence brief — what shifted in your authority landscape this week.</div>
+<div style="display:none;max-height:0;overflow:hidden;">Your weekly Aura intelligence brief — what shifted in your presence landscape this week.</div>
 
 <div class="email-wrapper" style="padding:24px;background-color:#f0ede8;">
   <div class="email-card" style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;">
@@ -515,7 +515,7 @@ Rules:
           };
         } else if (topSignals.length > 0) {
           yourMove = {
-            copy: `Your strongest signal is ready to publish. One post turns market intelligence into visible authority.`,
+            copy: `Your strongest signal is ready to publish. One post turns market intelligence into visible presence.`,
             ctaLabel: "Draft your post →",
             ctaHref: appendParams(`${APP_URL}/home`, { tab: "publish", signal: topSignals[0].id, email: emailParam }),
           };
