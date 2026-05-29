@@ -597,7 +597,26 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       <FirstVisitHint page="story" />
 
       {/* Gated welcome for users without brand assessment */}
-      {!assessmentCompleted && (
+      {!assessmentCompleted && autoAssessing && (
+        <div style={{ background: "var(--ink)", borderRadius: 16, padding: "32px 28px", border: "1px solid var(--brand-line, rgba(197,165,90,0.2))", display: "flex", flexDirection: "column", alignItems: "center", gap: 16, textAlign: "center" }}>
+          <div
+            style={{
+              width: 32, height: 32, borderRadius: "50%",
+              border: "2px solid rgba(197,165,90,0.25)",
+              borderTopColor: "var(--brand)",
+              animation: "aura-spin 0.9s linear infinite",
+            }}
+          />
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 20, color: "var(--paper)" }}>
+            Building your professional identity
+          </div>
+          <div style={{ fontSize: 13, color: "var(--ink-3)" }}>
+            {assessmentStep || "Getting started…"}
+          </div>
+          <style>{`@keyframes aura-spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      )}
+      {!assessmentCompleted && !autoAssessing && (
         <div style={{ background: "var(--ink)", borderRadius: 16, padding: "28px 28px 24px", position: "relative", overflow: "hidden", border: "1px solid var(--brand-line, rgba(197,165,90,0.2))" }}>
           <div className="relative">
             <div style={{ fontSize: 12, letterSpacing: "0.16em", color: "var(--brand)", marginBottom: 8, fontWeight: 600 }}>
