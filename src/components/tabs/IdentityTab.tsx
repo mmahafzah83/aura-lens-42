@@ -91,6 +91,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const [showFullPositioning, setShowFullPositioning] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loadError, setLoadError] = useState(false);
+  const [autoAssessing, setAutoAssessing] = useState(false);
+  const [assessmentStep, setAssessmentStep] = useState("");
+  const autoAssessTriggered = useRef(false);
   const [marketShareData, setMarketShareData] = useState<MilestoneShareData | null>(null);
   const [entryCount, setEntryCount] = useState<number>(0);
   const [trackedPostCount, setTrackedPostCount] = useState<number>(0);
@@ -148,6 +151,34 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       window.removeEventListener("aura:open-profile-editor", openProfileEditor);
     };
   }, []);
+
+  // Auto-trigger the brand-assessment → identity-intelligence → market-mirror chain
+  // for users who just finished onboarding but haven't run the assessment yet.
+  useEffect(() => {
+    if (!profile || !authUser) return;
+    if (autoAssessTriggered.current) return;
+    const isOnboarded = !!profile.onboarding_completed;
+    const hasAssessment = !!profile.brand_assessment_completed_at;
+    if (!isOnboarded || hasAssessment) return;
+
+    autoAssessTriggered.current = true;
+    setAutoAssessing(true);
+    (async () => {
+      try {
+        setAssessmentStep("Analyzing your professional identity…");
+        await supabase.functions.invoke("brand-assessment", { body: {} });
+        setAssessmentStep("Mapping your expertise territories…");
+        await supabase.functions.invoke("generate-identity-intelligence", { body: {} });
+        setAssessmentStep("Generating how the market sees you…");
+        await supabase.functions.invoke("generate-market-mirror", { body: {} });
+        await loadAll(authUser.id);
+      } catch (err) {
+        console.error("[IdentityTab] Auto-assessment chain failed:", err);
+      } finally {
+        setAutoAssessing(false);
+      }
+    })();
+  }, [profile, authUser]);
 
   const loadAll = async (uid: string) => {
     console.log("[IdentityTab] loadAll started");
@@ -566,7 +597,26 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       <FirstVisitHint page="story" />
 
       {/* Gated welcome for users without brand assessment */}
-      {!assessmentCompleted && (
+      {!assessmentCompleted && autoAssessing && (
+        <div style={{ background: "var(--ink)", borderRadius: 16, padding: "32px 28px", border: "1px solid var(--brand-line, rgba(197,165,90,0.2))", display: "flex", flexDirection: "column", alignItems: "center", gap: 16, textAlign: "center" }}>
+          <div
+            style={{
+              width: 32, height: 32, borderRadius: "50%",
+              border: "2px solid rgba(197,165,90,0.25)",
+              borderTopColor: "var(--brand)",
+              animation: "aura-spin 0.9s linear infinite",
+            }}
+          />
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 20, color: "var(--paper)" }}>
+            Building your professional identity
+          </div>
+          <div style={{ fontSize: 13, color: "var(--ink-3)" }}>
+            {assessmentStep || "Getting started…"}
+          </div>
+          <style>{`@keyframes aura-spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      )}
+      {!assessmentCompleted && !autoAssessing && (
         <div style={{ background: "var(--ink)", borderRadius: 16, padding: "28px 28px 24px", position: "relative", overflow: "hidden", border: "1px solid var(--brand-line, rgba(197,165,90,0.2))" }}>
           <div className="relative">
             <div style={{ fontSize: 12, letterSpacing: "0.16em", color: "var(--brand)", marginBottom: 8, fontWeight: 600 }}>
