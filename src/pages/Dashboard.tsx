@@ -25,6 +25,7 @@ import BrandAssessmentModal from "@/components/BrandAssessmentModal";
 import FeedbackButton from "@/components/FeedbackButton";
 import InviteColleagueModal from "@/components/InviteColleagueModal";
 import NpsSurveyModal from "@/components/NpsSurveyModal";
+import FirstLoginWelcome from "@/components/FirstLoginWelcome";
 import HomeTab from "@/components/tabs/HomeTab";
 import IdentityTab from "@/components/tabs/IdentityTab";
 import IntelligenceTab from "@/components/tabs/IntelligenceTab";
@@ -415,35 +416,6 @@ const Dashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatOpen]);
 
-  // First-login Ask Aura welcome briefing (auto-opens sidebar with personalized greeting)
-  useEffect(() => {
-    if (!userId) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const briefingDone = localStorage.getItem("aura_welcome_briefing_done");
-        if (briefingDone) return;
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        if (!authUser?.created_at) return;
-        const ageDays = (Date.now() - new Date(authUser.created_at).getTime()) / 86400000;
-        if (ageDays >= 1) return;
-        if (cancelled) return;
-        // Mark done immediately so we never double-fire across reloads
-        try { localStorage.setItem("aura_welcome_briefing_done", "true"); } catch {}
-        try { localStorage.setItem("aura_tour_login_count", "1"); } catch {}
-        setTimeout(() => {
-          if (cancelled) return;
-          openChat(
-            "This is my first time opening Aura. Welcome me by name in one sentence, explain my current presence score in one sentence, then give me ONE specific first action I should take today based on my sector. End by inviting me to ask anything. Keep it short — 4-5 sentences total. Markdown only, no HTML. Be warm and encouraging — I'm a first-day user."
-          );
-        }, 2000);
-      } catch {
-        // localStorage / auth issue — skip silently
-      }
-    })();
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
 
   const switchTab = (tab: TabValue) => {
     setActiveTab(tab);
@@ -919,6 +891,13 @@ const Dashboard = () => {
             <AmbientOrbs theme={theme} pageKey={activeTab} />
             {activeTab === "home" && (
               <div className="animate-tab-spring aura-page">
+                <FirstLoginWelcome
+                  firstName={user?.fullName}
+                  onOpenGuide={() => setHelpOpen(true)}
+                  onDismiss={() => {
+                    try { localStorage.setItem("aura_welcome_briefing_done", "1"); } catch {}
+                  }}
+                />
                 <ErrorBoundary>
                   <HomeTab entries={entries} onOpenChat={openChat} onRefresh={fetchEntries} onNavigateToSignal={navigateToSignal} onOpenCapture={(prefillUrl?: string, prefillText?: string) => { setCapturePrefillUrl(prefillUrl || null); setCapturePrefillText(prefillText || null); setCaptureOpen(true); }} onSwitchTab={switchTab} onDraftToStudio={(prefill) => { setSignalDraftPrefill(prefill); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
                 </ErrorBoundary>

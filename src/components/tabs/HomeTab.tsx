@@ -38,66 +38,6 @@ import BrandAssessmentModal from "@/components/BrandAssessmentModal";
 import AuditCtaCard from "@/components/home/AuditCtaCard";
 import { FirstTimeHint } from "@/components/FirstTimeHint";
 
-function TourBanner() {
-  const [show, setShow] = useState(false);
-  useEffect(() => {
-    try {
-      const briefingDone = localStorage.getItem("aura_welcome_briefing_done");
-      const loginCount = Number(localStorage.getItem("aura_tour_login_count") || "0");
-      if (!briefingDone || loginCount >= 3) return;
-      const sessionKey = `aura_tour_session_${new Date().toDateString()}`;
-      if (!sessionStorage.getItem(sessionKey)) {
-        sessionStorage.setItem(sessionKey, "1");
-        const newCount = loginCount + 1;
-        localStorage.setItem("aura_tour_login_count", String(newCount));
-      }
-      const currentCount = Number(localStorage.getItem("aura_tour_login_count") || "0");
-      if (currentCount <= 3) setShow(true);
-    } catch {}
-  }, []);
-  if (!show) return null;
-  return (
-    <div style={{
-      display: "flex", alignItems: "center", justifyContent: "space-between",
-      padding: "10px 16px", marginBottom: 16, borderRadius: 8,
-      background: "rgba(176,141,58,0.06)",
-      border: "0.5px solid hsl(var(--border))",
-    }}>
-      <div style={{ fontSize: 13, color: "hsl(var(--foreground))" }}>
-        Need a hand?{" "}
-        <button
-          type="button"
-          onClick={() => {
-            setShow(false);
-            window.dispatchEvent(new CustomEvent("aura-open-chat", {
-              detail: { prompt: "Give me a quick walkthrough of what each page does and what I should focus on this week." },
-            }));
-          }}
-          style={{
-            background: "none", border: "none", color: "#B08D3A",
-            fontSize: 13, fontWeight: 500, cursor: "pointer",
-            marginLeft: 4, padding: 0, textDecoration: "underline",
-          }}
-        >
-          Ask Aura for a walkthrough
-        </button>
-      </div>
-      <button
-        type="button"
-        aria-label="Dismiss"
-        onClick={() => {
-          setShow(false);
-          try { localStorage.setItem("aura_tour_login_count", "3"); } catch {}
-        }}
-        style={{
-          background: "none", border: "none",
-          color: "hsl(var(--muted-foreground))",
-          cursor: "pointer", fontSize: 16, padding: 0, lineHeight: 1,
-        }}
-      >×</button>
-    </div>
-  );
-}
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
 
@@ -1432,7 +1372,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
       transition={{ duration: 0.35 }}
       className="space-y-6 max-w-3xl"
     >
-      <TourBanner />
+      
       {/* Onboarding checklist (auto-hides once all 5 steps complete) */}
       <OnboardingChecklist onOpenCapture={onOpenCapture} onSwitchTab={onSwitchTab} />
 
