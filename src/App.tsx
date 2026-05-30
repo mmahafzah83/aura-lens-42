@@ -28,6 +28,7 @@ const Admin = lazy(() => import("./pages/Admin"));
 const AdminDesignSystem = lazy(() => import("./pages/AdminDesignSystem"));
 const AdminExperience = lazy(() => import("./pages/AdminExperience"));
 const AdminQA = lazy(() => import("./pages/AdminQA"));
+const AdminGuideHealth = lazy(() => import("./pages/AdminGuideHealth"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -87,6 +88,7 @@ const App = () => (
             <Route path="/admin/design-system" element={<PasswordGate><AdminDesignSystem /></PasswordGate>} />
             <Route path="/admin/experience" element={<PasswordGate><AdminExperience /></PasswordGate>} />
             <Route path="/admin/qa" element={<PasswordGate><AdminQA /></PasswordGate>} />
+            <Route path="/admin/guide-health" element={<PasswordGate><AdminGuideHealth /></PasswordGate>} />
             <Route path="/onboarding" element={<PasswordGate><Onboarding /></PasswordGate>} />
             <Route path="/api/auth/linkedin/callback" element={<LinkedInCallback />} />
             <Route path="/trends/:id" element={<PasswordGate><TrendDetail /></PasswordGate>} />
