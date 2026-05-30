@@ -1,22 +1,23 @@
 import { toast } from "sonner";
 
 /**
- * Copies share text to the clipboard and surfaces a clickable LinkedIn link.
- * We intentionally do NOT call window.open — sandboxed previews and aggressive
- * popup blockers swallow it silently. A persistent toast with an anchor tag
- * gives the user a reliable one-click path to LinkedIn.
+ * Copies share text to the clipboard and opens LinkedIn's working feed in a
+ * new tab so the user can click "Start a post" and paste.
+ *
+ * Why not a share URL? LinkedIn's share-offsite endpoint only shares a
+ * scrapeable webpage — it cannot prefill a text post nor attach a local
+ * image. The legacy `feed/?shareActive=true` URL is blocked
+ * (ERR_BLOCKED_BY_RESPONSE). Plain `/feed/` is the logged-in homepage and
+ * works reliably; the call is user-initiated so popup blockers allow it.
  */
 export async function shareToLinkedIn(opts: {
   text: string;
   toastMessage?: string;
   mode?: "share" | "feed";
   url?: string;
+  withImage?: boolean;
 }) {
-  // NOTE: the legacy `mode: "feed"` URL (linkedin.com/feed/?shareActive=true)
-  // is blocked by LinkedIn (ERR_BLOCKED_BY_RESPONSE). We always use the
-  // share-offsite endpoint regardless of `mode` so callers can never drift
-  // back to the blocked URL.
-  const { text, url = "https://aura-intel.org" } = opts;
+  const { text, withImage = false } = opts;
 
   // 1. Copy to clipboard (with textarea fallback)
   try {
@@ -34,25 +35,11 @@ export async function shareToLinkedIn(opts: {
     } catch { /* ignore */ }
   }
 
-  // 2. Build the LinkedIn URL (always share-offsite — feed URL is blocked)
-  const target = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
+  // 2. Open the working LinkedIn feed (user-initiated → not popup-blocked).
+  window.open("https://www.linkedin.com/feed/", "_blank", "noopener,noreferrer");
 
-  // 3. Persistent toast with clickable link (no auto window.open)
-  const id = toast.success(
-    <div>
-      <div style={{ fontWeight: 500, marginBottom: 4 }}>
-        Caption copied — paste it into your LinkedIn post.
-      </div>
-      <a
-        href={target}
-        target="_blank"
-        rel="noopener noreferrer"
-        style={{ color: "#B08D3A", textDecoration: "underline" }}
-        onClick={() => toast.dismiss(id)}
-      >
-        Open LinkedIn to paste →
-      </a>
-    </div>,
-    { duration: 10000 }
-  );
+  // 3. Tell the user exactly what to do next.
+  const base = "Your text is copied — in the LinkedIn tab, click 'Start a post' and paste (⌘/Ctrl+V)";
+  const msg = withImage ? `${base}, then attach the image you just downloaded.` : `${base}.`;
+  toast.success(msg, { duration: 10000 });
 }
