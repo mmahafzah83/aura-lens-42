@@ -250,6 +250,90 @@ interface PlanPrefill {
   planTitle: string;
 }
 
+/**
+ * Shared core for marking a post as published.
+ * Used by both the Library "mark published" flow (existing drafts) AND
+ * the Create-view "Mark as published" flow (no draft row yet).
+ *
+ * - Validates an optional LinkedIn URL.
+ * - Inserts a published linkedin_posts row.
+ * - Appends the published text to the user's voice example library (best-effort).
+ * - Triggers a non-blocking aura-score recalc.
+ *
+ * Throws on validation / insert errors so callers can surface a toast.
+ */
+async function insertPublishedLinkedInPost(opts: {
+  userId: string;
+  postText: string;
+  formatType?: string | null;
+  sourceMetadata?: any;
+  sourceSignalId?: string | null;
+  url?: string | null;
+}): Promise<void> {
+  const { userId, postText, formatType, sourceMetadata, sourceSignalId, url } = opts;
+  let cleanUrl: string | null = null;
+  if (url) {
+    const trimmed = url.trim();
+    if (trimmed && !/^https?:\/\/(www\.)?linkedin\.com\//i.test(trimmed)) {
+      throw new Error("URL must be a linkedin.com link");
+    }
+    cleanUrl = trimmed || null;
+  }
+  const { error } = await supabase
+    .from("linkedin_posts")
+    .insert({
+      user_id: userId,
+      post_text: postText || "",
+      format_type: formatType || "post",
+      tracking_status: "published",
+      source_type: "aura_generated",
+      published_at: new Date().toISOString(),
+      linkedin_url: cleanUrl,
+      published_confirmed_at: cleanUrl ? new Date().toISOString() : null,
+      like_count: 0,
+      comment_count: 0,
+      repost_count: 0,
+      engagement_score: 0,
+      source_trust: 100,
+      source_metadata: sourceMetadata || {},
+      source_signal_id: sourceSignalId || null,
+      enriched_by: [],
+      synced_at: new Date().toISOString(),
+    });
+  if (error) throw error;
+
+  // Voice learning loop — best-effort
+  try {
+    if (postText && postText.length > 50) {
+      const { data: voiceProfile } = await supabase
+        .from("authority_voice_profiles")
+        .select("example_posts")
+        .eq("user_id", userId)
+        .maybeSingle();
+      const existingExamples = Array.isArray(voiceProfile?.example_posts)
+        ? (voiceProfile!.example_posts as any[])
+        : [];
+      const updatedExamples = [...existingExamples, postText].slice(-10);
+      if (voiceProfile) {
+        await supabase
+          .from("authority_voice_profiles")
+          .update({ example_posts: updatedExamples })
+          .eq("user_id", userId);
+      } else {
+        await supabase
+          .from("authority_voice_profiles")
+          .insert({ user_id: userId, example_posts: updatedExamples });
+      }
+    }
+  } catch (voiceErr) {
+    console.warn("voice profile update failed:", voiceErr);
+  }
+
+  // Non-blocking score recalc
+  invokeEdgeFunction("calculate-aura-score", { body: { user_id: userId } })
+    .catch((e) => console.error("calculate-aura-score failed:", e));
+}
+
 const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { planPrefill?: PlanPrefill | null; signalPrefill?: SignalPrefill | null; onSignalPrefillConsumed?: () => void }) => {
   const navigate = useNavigate();
   const [topic, setTopic] = useState("");
@@ -264,6 +348,11 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
   const [copied, setCopied] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
+  // Mark-as-published (Create view) — lets users close the loop without saving a draft first.
+  const [publishing, setPublishing] = useState(false);
+  const [publishedFromCreate, setPublishedFromCreate] = useState(false);
+  const [pubUrlOpen, setPubUrlOpen] = useState(false);
+  const [pubUrl, setPubUrl] = useState("");
   const [selectedSignalId, setSelectedSignalId] = useState<string | null>(null);
   const [selectedSignalTitle, setSelectedSignalTitle] = useState<string | null>(null);
   const [selectedSignalInsight, setSelectedSignalInsight] = useState<string | null>(null);
@@ -671,6 +760,9 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
   // Reset "Saved" state whenever the post text changes (user edited or regenerated)
   useEffect(() => {
     setDraftSaved(false);
+    setPublishedFromCreate(false);
+    setPubUrlOpen(false);
+    setPubUrl("");
   }, [output]);
 
   const handleSaveDraft = async () => {
@@ -719,6 +811,41 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
       toast.error(e?.message || "Couldn't save. Please try again.");
     } finally {
       setSavingDraft(false);
+    }
+  };
+
+  // Mark the currently-generated post as published WITHOUT requiring a saved draft.
+  // Reuses insertPublishedLinkedInPost (same core as Library's markPublished).
+  const handleMarkPublishedFromCreate = async (urlArg?: string) => {
+    if (publishing || publishedFromCreate) return;
+    const body = stripMarkdown(output || fullVersion || shortVersion || "");
+    if (!body.trim()) { toast.error("Nothing to publish"); return; }
+    setPublishing(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) throw new Error("Not authenticated");
+      await insertPublishedLinkedInPost({
+        userId: session.user.id,
+        postText: body,
+        formatType: (contentType as string) === "carousel" ? "carousel" : "post",
+        sourceMetadata: {
+          source: "create_view",
+          topic: topic || null,
+          language: lang,
+          signal_ids: selectedSignalId ? [selectedSignalId] : [],
+          signal_titles: selectedSignalTitle ? [selectedSignalTitle] : [],
+        },
+        sourceSignalId: selectedSignalId,
+        url: urlArg ?? null,
+      });
+      setPublishedFromCreate(true);
+      setPubUrlOpen(false);
+      setPubUrl("");
+      toast.success("Marked as published — your aura score is updating");
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't mark as published");
+    } finally {
+      setPublishing(false);
     }
   };
 
@@ -1176,8 +1303,69 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                         <><Save className="w-3.5 h-3.5" /> Save Draft</>
                       )}
                     </Button>
+                    <Button
+                      data-testid="pub-mark-published-btn"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        if (publishedFromCreate || publishing) return;
+                        setPubUrlOpen((v) => !v);
+                      }}
+                      disabled={publishing || publishedFromCreate || !output.trim()}
+                      className={`h-7 gap-1.5 text-xs ${publishedFromCreate ? "border-emerald-500/40 text-emerald-500" : "border-border/15"}`}
+                    >
+                      {publishing ? (
+                        <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Marking…</>
+                      ) : publishedFromCreate ? (
+                        <><Check className="w-3.5 h-3.5" /> Published ✓</>
+                      ) : (
+                        <><Check className="w-3.5 h-3.5" /> Mark as published</>
+                      )}
+                    </Button>
                   </div>
                 </div>
+
+                {/* Mark-as-published URL prompt (optional) — mirrors the saved-card flow */}
+                {pubUrlOpen && !publishedFromCreate && (
+                  <div
+                    style={{
+                      marginTop: 4,
+                      padding: 10,
+                      background: "var(--bg-subtle)",
+                      borderRadius: 6,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <span style={{ fontSize: 13, color: "var(--ink)" }}>
+                      Did you post this on LinkedIn? Paste the URL (optional) to link engagement.
+                    </span>
+                    <Input
+                      value={pubUrl}
+                      onChange={(e) => setPubUrl(e.target.value)}
+                      placeholder="https://www.linkedin.com/posts/…"
+                      className="h-7 text-xs flex-1 min-w-[200px]"
+                    />
+                    <Button
+                      size="sm"
+                      onClick={() => handleMarkPublishedFromCreate(pubUrl.trim() || undefined)}
+                      disabled={publishing}
+                      className="h-7 text-xs"
+                    >
+                      Confirm
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => { setPubUrlOpen(false); setPubUrl(""); }}
+                      className="h-7 text-xs"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                )}
 
                 {/* Back to full version link */}
                 {showingShort && !generatingShort && (
@@ -2838,73 +3026,21 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.id) throw new Error("Not authenticated");
-      let cleanUrl: string | null = null;
-      if (url) {
-        const trimmed = url.trim();
-        if (trimmed && !/^https?:\/\/(www\.)?linkedin\.com\//i.test(trimmed)) {
-          toast.error("URL must be a linkedin.com link");
-          return;
-        }
-        cleanUrl = trimmed || null;
-      }
       const linkedSignalId = (item.source_metadata as any)?.source_signal_id
         || (item.source_metadata?.signal_ids?.[0])
         || null;
-      const { error } = await supabase
-        .from("linkedin_posts")
-        .insert({
-          user_id: session.user.id,
-          post_text: item.post_text || "",
-          format_type: item.format_type || "post",
-          tracking_status: "published",
-          source_type: "aura_generated",
-          published_at: new Date().toISOString(),
-          linkedin_url: cleanUrl,
-          published_confirmed_at: cleanUrl ? new Date().toISOString() : null,
-          like_count: 0,
-          comment_count: 0,
-          repost_count: 0,
-          engagement_score: 0,
-          source_trust: 100,
-          source_metadata: item.source_metadata || {},
-          source_signal_id: linkedSignalId,
-          enriched_by: [],
-          synced_at: new Date().toISOString(),
-        });
-      if (error) throw error;
+      await insertPublishedLinkedInPost({
+        userId: session.user.id,
+        postText: item.post_text || "",
+        formatType: item.format_type || "post",
+        sourceMetadata: item.source_metadata || {},
+        sourceSignalId: linkedSignalId,
+        url: url ?? null,
+      });
       await supabase
         .from("content_items")
         .update({ status: "published" })
         .eq("id", id);
-      // Voice learning loop — append the published post to the user's
-      // voice example library so future generations evolve toward their
-      // current style. Keep only the last 10 examples.
-      try {
-        const publishedPostText = item.post_text || "";
-        if (publishedPostText.length > 50) {
-          const { data: voiceProfile } = await supabase
-            .from("authority_voice_profiles")
-            .select("example_posts")
-            .eq("user_id", session.user.id)
-            .maybeSingle();
-          const existingExamples = Array.isArray(voiceProfile?.example_posts)
-            ? (voiceProfile!.example_posts as any[])
-            : [];
-          const updatedExamples = [...existingExamples, publishedPostText].slice(-10);
-          if (voiceProfile) {
-            await supabase
-              .from("authority_voice_profiles")
-              .update({ example_posts: updatedExamples })
-              .eq("user_id", session.user.id);
-          } else {
-            await supabase
-              .from("authority_voice_profiles")
-              .insert({ user_id: session.user.id, example_posts: updatedExamples });
-          }
-        }
-      } catch (voiceErr) {
-        console.warn("voice profile update failed:", voiceErr);
-      }
       setDrafts(prev => prev.filter(p => p.id !== id));
       // Fetch the related signal title to personalize the ceremony toast.
       let signalTitle = "strategic";
@@ -2951,10 +3087,6 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
         </div>
       ), { duration: 4000 });
       loadPosts();
-      // Trigger score recalc (non-blocking)
-      invokeEdgeFunction("calculate-aura-score", {
-        body: { user_id: session.user.id },
-      }).catch((e) => console.error("calculate-aura-score failed:", e));
     } catch (e: any) {
       toast.error(e.message || "Couldn't mark as published");
     }
