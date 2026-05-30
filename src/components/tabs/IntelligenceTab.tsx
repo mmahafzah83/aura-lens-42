@@ -701,7 +701,8 @@ const readingCacheKey = () => `aura_reading_list_${new Date().toISOString().slic
 
 const EditorialReadingList = ({
   signals, onOpenCapture,
-}: { signals: Signal[]; onOpenCapture?: (prefillUrl?: string, prefillText?: string) => void }) => {
+}: { signals: Signal[]; onOpenCapture?: (prefillUrl?: string, prefillText?: string, sourceKey?: string) => void }) => {
+  const { isCaptured } = useCapturedSources();
   const [recs, setRecs] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
