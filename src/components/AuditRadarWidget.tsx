@@ -47,9 +47,10 @@ const DIMENSION_TIERS: Record<string, { tier: string; category: string }> = {
 interface AuditRadarWidgetProps {
   onStartAudit?: () => void;
   hideEditScores?: boolean;
+  refreshKey?: number;
 }
 
-const AuditRadarWidget = ({ onStartAudit, hideEditScores }: AuditRadarWidgetProps) => {
+const AuditRadarWidget = ({ onStartAudit, hideEditScores, refreshKey = 0 }: AuditRadarWidgetProps) => {
   const [auditResults, setAuditResults] = useState<Record<string, number> | null>(null);
   const [completed, setCompleted] = useState(false);
   const [auditMethod, setAuditMethod] = useState<string | null>(null);
@@ -93,7 +94,7 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores }: AuditRadarWidgetProp
       setLoading(false);
     };
     load();
-  }, []);
+  }, [refreshKey]);
 
   useEffect(() => {
     if (!auditResults || !canvasRef.current) return;
@@ -406,26 +407,46 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores }: AuditRadarWidgetProp
           </div>
 
           {/* Audit provenance */}
-          <div className="mt-3 flex items-center justify-between gap-3">
-            {auditMethod === "evidence_audit" ? (
+          {auditMethod === "evidence_audit" ? (
+            <div className="mt-3 flex items-center justify-between gap-3">
               <span className="text-xs font-medium inline-flex items-center gap-1.5" style={{ color: "var(--brand)" }}>
                 <ShieldCheck className="w-3.5 h-3.5" /> Evidence verified
               </span>
-            ) : (
-              <>
-                <span className="text-xs" style={{ color: "var(--brand)" }}>Based on self-assessment</span>
-                {onStartAudit && (
-                  <button
-                    onClick={onStartAudit}
-                    className="text-xs font-medium hover:underline"
-                    style={{ color: "var(--brand)" }}
-                  >
-                    Verify with evidence →
-                  </button>
-                )}
-              </>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div
+              className="mt-4 rounded-lg p-3"
+              style={{
+                background: "rgba(197,165,90,0.06)",
+                border: "0.5px solid var(--brand-line, rgba(197,165,90,0.25))",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 10,
+                  fontWeight: 600,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "var(--brand)",
+                  marginBottom: 6,
+                }}
+              >
+                Based on self-assessment
+              </div>
+              <p style={{ fontSize: 12, lineHeight: 1.55, color: "var(--ink-3)", margin: 0 }}>
+                A quick evidence audit (about 5 minutes) verifies these scores against your own work. Evidence-verified scores carry more weight in how the market reads you, and they also strengthen your Market Position and your overall score.
+              </p>
+              {onStartAudit && (
+                <button
+                  onClick={onStartAudit}
+                  className="mt-2 text-xs font-medium hover:underline"
+                  style={{ color: "var(--brand)" }}
+                >
+                  Verify with evidence →
+                </button>
+              )}
+            </div>
+          )}
         </>
       )}
     </div>
