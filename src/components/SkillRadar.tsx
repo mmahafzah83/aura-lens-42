@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { EVIDENCE_MATRIX } from "@/components/diagnostic/EvidenceMatrix";
+import { formatSkillLabel } from "@/lib/formatSkillLabel";
 
 // Partner Gold Standard benchmarks
 const PARTNER_BENCHMARK: Record<string, number> = {
@@ -107,8 +108,11 @@ const SkillRadar = () => {
         }
 
         return {
-          skill: SHORT_LABELS[p] || (p.length > 12 ? p.slice(0, 10) + "…" : p),
-          fullName: p,
+          skill: SHORT_LABELS[p] || (() => {
+            const pretty = formatSkillLabel(p);
+            return pretty.length > 12 ? pretty.slice(0, 10) + "…" : pretty;
+          })(),
+          fullName: formatSkillLabel(p),
           current: baseScore,
           benchmark: PARTNER_BENCHMARK[p] || 90,
         };
@@ -329,7 +333,7 @@ const SkillRadar = () => {
           <div className="space-y-3 mt-2 max-h-[50vh] overflow-y-auto">
             {Object.keys(targets).map((p) => (
               <div key={p} className="flex items-center justify-between gap-4">
-                <span className="text-sm text-foreground">{p}</span>
+                <span className="text-sm text-foreground">{formatSkillLabel(p)}</span>
                 <Input
                   type="number"
                   min="1"
