@@ -658,25 +658,45 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             }}
           >
             {/* Avatar */}
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              title="Change photo"
-              style={{
-                width: 60, height: 60, borderRadius: "50%",
-                border: "2px solid var(--brand, var(--warning))",
-                background: "var(--aura-card)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                overflow: "hidden", flexShrink: 0, padding: 0, cursor: "pointer",
-              }}
-              aria-label="Change profile photo"
-            >
-              {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt={userName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              ) : (
-                <span style={{ color: "var(--brand)", fontFamily: "var(--font-display)", fontWeight: 500, fontSize: 18 }}>{initials}</span>
-              )}
-            </button>
+            <div style={{ position: "relative", flexShrink: 0 }}>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                title="Change photo"
+                style={{
+                  width: 60, height: 60, borderRadius: "50%",
+                  border: "2px solid var(--brand, var(--warning))",
+                  background: "var(--aura-card)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  overflow: "hidden", padding: 0, cursor: "pointer",
+                }}
+                aria-label="Change profile photo"
+              >
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt={userName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  <span style={{ color: "var(--brand)", fontFamily: "var(--font-display)", fontWeight: 500, fontSize: 18 }}>{initials}</span>
+                )}
+              </button>
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: -2,
+                  right: -2,
+                  width: 20,
+                  height: 20,
+                  borderRadius: "50%",
+                  background: "var(--brand)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  border: "2px solid var(--vellum, var(--paper-2))",
+                }}
+                aria-hidden="true"
+              >
+                <Camera className="w-2.5 h-2.5" style={{ color: "var(--paper)" }} />
+              </div>
+            </div>
             <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
 
             {/* Center */}
