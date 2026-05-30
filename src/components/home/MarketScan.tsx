@@ -169,6 +169,7 @@ const Skel = () => (
 );
 
 export default function MarketScan({ onOpenCapture, onSwitchTab, onDraftPost, defaultExpanded = true }: MarketScanProps) {
+  const { isCaptured } = useCapturedSources();
   const [items, setItems] = useState<BriefingItem[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
