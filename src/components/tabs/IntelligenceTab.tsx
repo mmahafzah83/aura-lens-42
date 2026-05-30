@@ -541,7 +541,8 @@ const STORAGE_KEY = "market_coverage_cache_v1";
 
 const EditorialBlindSpots = ({
   signals, onOpenCapture,
-}: { signals: Signal[]; onOpenCapture?: (prefillUrl?: string, prefillText?: string) => void }) => {
+}: { signals: Signal[]; onOpenCapture?: (prefillUrl?: string, prefillText?: string, sourceKey?: string) => void }) => {
+  const { isCaptured } = useCapturedSources();
   const [data, setData] = useState<(CoverageResult & { generated_at?: string }) | null>(null);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
