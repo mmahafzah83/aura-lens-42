@@ -903,6 +903,7 @@ const EditorialReadingList = ({
                   const sourceKey = (rec.url || rec.title || "").trim();
                   const captured = isCaptured(sourceKey);
                   return (
+                <>
                 <div style={{ display: "flex", gap: 8 }}>
                   <button
                     onClick={() => onOpenCapture?.(rec.url || undefined, undefined, sourceKey)}
@@ -942,6 +943,7 @@ const EditorialReadingList = ({
                     Can't open it? Search the title →
                   </a>
                 </p>
+                </>
                   );
                 })()}
               </div>
