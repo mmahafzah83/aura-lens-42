@@ -14,6 +14,7 @@ import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import { FirstTimeHint } from "@/components/FirstTimeHint";
 import { useJourneyState } from "@/hooks/useJourneyState";
 import { useAuthReady } from "@/hooks/useAuthReady";
+import { useCapturedSources } from "@/hooks/useCapturedSources";
 import { showQueryErrorToast } from "@/lib/safeQuery";
 import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/ui/EmptyState";
