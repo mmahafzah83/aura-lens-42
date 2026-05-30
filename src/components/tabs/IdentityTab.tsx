@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Pencil, Check, Eye, Zap, Map as MapIcon, Trophy, Target as TargetIcon, ChevronDown, Star } from "lucide-react";
+import { Pencil, Check, Eye, Zap, Map as MapIcon, Trophy, Target as TargetIcon, ChevronDown, Star, Camera } from "lucide-react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import ProfileIntelligence from "@/components/ProfileIntelligence";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import { FirstTimeHint } from "@/components/FirstTimeHint";
 import MilestonesSection from "@/components/MilestonesSection";
 import AuditRadarWidget from "@/components/AuditRadarWidget";
@@ -641,6 +642,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
 
       {/* SECTION 2 — PROFILE HERO CARD */}
       {assessmentCompleted && (
+        <SectionHeader label="Your Market Position" />
+      )}
+      {assessmentCompleted && (
         <div>
           <div
             style={{
@@ -654,25 +658,45 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             }}
           >
             {/* Avatar */}
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              title="Change photo"
-              style={{
-                width: 60, height: 60, borderRadius: "50%",
-                border: "2px solid var(--brand, var(--warning))",
-                background: "var(--aura-card)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                overflow: "hidden", flexShrink: 0, padding: 0, cursor: "pointer",
-              }}
-              aria-label="Change profile photo"
-            >
-              {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt={userName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              ) : (
-                <span style={{ color: "var(--brand)", fontFamily: "var(--font-display)", fontWeight: 500, fontSize: 18 }}>{initials}</span>
-              )}
-            </button>
+            <div style={{ position: "relative", flexShrink: 0 }}>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                title="Change photo"
+                style={{
+                  width: 60, height: 60, borderRadius: "50%",
+                  border: "2px solid var(--brand, var(--warning))",
+                  background: "var(--aura-card)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  overflow: "hidden", padding: 0, cursor: "pointer",
+                }}
+                aria-label="Change profile photo"
+              >
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt={userName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  <span style={{ color: "var(--brand)", fontFamily: "var(--font-display)", fontWeight: 500, fontSize: 18 }}>{initials}</span>
+                )}
+              </button>
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: -2,
+                  right: -2,
+                  width: 20,
+                  height: 20,
+                  borderRadius: "50%",
+                  background: "var(--brand)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  border: "2px solid var(--vellum, var(--paper-2))",
+                }}
+                aria-hidden="true"
+              >
+                <Camera className="w-2.5 h-2.5" style={{ color: "var(--paper)" }} />
+              </div>
+            </div>
             <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
 
             {/* Center */}
@@ -838,6 +862,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       )}
 
       {/* SECTION 6 — CAPABILITY RADAR */}
+      {assessmentCompleted && (
+        <SectionHeader label="Your Capability Radar" />
+      )}
       {assessmentCompleted && (
         <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }}>
           <div style={{ background: "var(--aura-card)", border: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", borderRadius: 12, padding: 14 }}>
