@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Pencil, Check, Eye, Zap, Map as MapIcon, Trophy, Target as TargetIcon, Star, Camera } from "lucide-react";
+import { Pencil, Check, Eye, Map as MapIcon, Trophy, Target as TargetIcon, Star, Camera } from "lucide-react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import ProfileIntelligence from "@/components/ProfileIntelligence";
@@ -537,9 +537,6 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     .slice(0, 8);
   const strongestTheme = themesForTerritory[0]?.theme || null;
 
-  const authorityThemes: { theme: string; rationale: string }[] = Array.isArray(identityIntel?.authority_themes)
-    ? identityIntel.authority_themes
-    : [];
 
   // Earned milestones merged with canonical defs
   const earnedById = new Map(milestoneData.filter((m) => m.earned).map((m) => [m.id, m]));
@@ -771,52 +768,6 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         </section>
       )}
 
-      {/* SECTION 4 — CLOSE THE GAP */}
-      {assessmentCompleted && authorityThemes.length > 0 && (
-        <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-            <Zap className="w-3.5 h-3.5" style={{ color: "var(--warning, var(--brand))" }} />
-            <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.06em", color: "var(--warning, var(--brand))", textTransform: "uppercase", display: "inline-flex", alignItems: "center", gap: 6 }}>
-              Close the gap
-              <InfoTooltip
-                label="Presence gap"
-                text="The gap between your current digital footprint and what the market expects from someone at your level."
-                side="bottom"
-                triggerSize={13}
-              />
-            </span>
-          </div>
-          <p style={{ fontSize: 12, color: "var(--ink-3)", margin: "0 0 12px" }}>
-            Publishing on these topics directly addresses the gaps the market sees.
-          </p>
-          <div className="space-y-2">
-            {authorityThemes.slice(0, 5).map((t, i) => (
-              <button
-                key={i}
-                onClick={() => handleGenerateContent(t.theme, t.rationale)}
-                style={{
-                  display: "flex", alignItems: "center", width: "100%",
-                  padding: "12px 14px", borderRadius: 10,
-                  border: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))",
-                  background: "transparent", cursor: "pointer", textAlign: "left",
-                }}
-              >
-                <span style={{
-                  width: 6, height: 6, borderRadius: "50%",
-                  background: i === 0 ? "var(--danger, #c0392b)" : "var(--warning, var(--brand))",
-                  marginRight: 12, flexShrink: 0,
-                }} />
-                <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>
-                  {t.theme}
-                </span>
-                <span style={{ fontSize: 11, color: "var(--warning, var(--brand))", marginLeft: 12 }}>
-                  Write this →
-                </span>
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
 
       {/* SECTION 5 — YOUR TERRITORY */}
       {assessmentCompleted && themesForTerritory.length > 0 && (
