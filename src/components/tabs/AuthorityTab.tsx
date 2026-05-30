@@ -250,6 +250,90 @@ interface PlanPrefill {
   planTitle: string;
 }
 
+/**
+ * Shared core for marking a post as published.
+ * Used by both the Library "mark published" flow (existing drafts) AND
+ * the Create-view "Mark as published" flow (no draft row yet).
+ *
+ * - Validates an optional LinkedIn URL.
+ * - Inserts a published linkedin_posts row.
+ * - Appends the published text to the user's voice example library (best-effort).
+ * - Triggers a non-blocking aura-score recalc.
+ *
+ * Throws on validation / insert errors so callers can surface a toast.
+ */
+async function insertPublishedLinkedInPost(opts: {
+  userId: string;
+  postText: string;
+  formatType?: string | null;
+  sourceMetadata?: any;
+  sourceSignalId?: string | null;
+  url?: string | null;
+}): Promise<void> {
+  const { userId, postText, formatType, sourceMetadata, sourceSignalId, url } = opts;
+  let cleanUrl: string | null = null;
+  if (url) {
+    const trimmed = url.trim();
+    if (trimmed && !/^https?:\/\/(www\.)?linkedin\.com\//i.test(trimmed)) {
+      throw new Error("URL must be a linkedin.com link");
+    }
+    cleanUrl = trimmed || null;
+  }
+  const { error } = await supabase
+    .from("linkedin_posts")
+    .insert({
+      user_id: userId,
+      post_text: postText || "",
+      format_type: formatType || "post",
+      tracking_status: "published",
+      source_type: "aura_generated",
+      published_at: new Date().toISOString(),
+      linkedin_url: cleanUrl,
+      published_confirmed_at: cleanUrl ? new Date().toISOString() : null,
+      like_count: 0,
+      comment_count: 0,
+      repost_count: 0,
+      engagement_score: 0,
+      source_trust: 100,
+      source_metadata: sourceMetadata || {},
+      source_signal_id: sourceSignalId || null,
+      enriched_by: [],
+      synced_at: new Date().toISOString(),
+    });
+  if (error) throw error;
+
+  // Voice learning loop — best-effort
+  try {
+    if (postText && postText.length > 50) {
+      const { data: voiceProfile } = await supabase
+        .from("authority_voice_profiles")
+        .select("example_posts")
+        .eq("user_id", userId)
+        .maybeSingle();
+      const existingExamples = Array.isArray(voiceProfile?.example_posts)
+        ? (voiceProfile!.example_posts as any[])
+        : [];
+      const updatedExamples = [...existingExamples, postText].slice(-10);
+      if (voiceProfile) {
+        await supabase
+          .from("authority_voice_profiles")
+          .update({ example_posts: updatedExamples })
+          .eq("user_id", userId);
+      } else {
+        await supabase
+          .from("authority_voice_profiles")
+          .insert({ user_id: userId, example_posts: updatedExamples });
+      }
+    }
+  } catch (voiceErr) {
+    console.warn("voice profile update failed:", voiceErr);
+  }
+
+  // Non-blocking score recalc
+  invokeEdgeFunction("calculate-aura-score", { body: { user_id: userId } })
+    .catch((e) => console.error("calculate-aura-score failed:", e));
+}
+
 const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { planPrefill?: PlanPrefill | null; signalPrefill?: SignalPrefill | null; onSignalPrefillConsumed?: () => void }) => {
   const navigate = useNavigate();
   const [topic, setTopic] = useState("");
