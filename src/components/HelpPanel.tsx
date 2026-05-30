@@ -47,7 +47,13 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 export function HelpPanel({ open, onClose, activeTab }: { open: boolean; onClose: () => void; activeTab?: string }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { articles: allArticles, loading, error } = useGuideArticles();
+  const { articles: allArticles, loading, error, refetch } = useGuideArticles();
+
+  // Force fresh fetch every time the drawer opens (TTL-bypass) so edits show immediately.
+  useEffect(() => {
+    if (open) refetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const bySlug = (s: string) => allArticles.find(a => a.slug === s);
   const disambig = bySlug("difference-guide-ask-aura");

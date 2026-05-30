@@ -5,25 +5,42 @@ import { supabase } from "@/integrations/supabase/client";
 // Module-level shared cache so multiple InfoTooltip instances with `slug`
 // dedupe to a single network fetch of the guide_articles corpus.
 type GuideRow = { slug: string; answer_en: string; formula_note_en: string | null };
+const TTL_MS = 5 * 60 * 1000;
 let _guideCache: Record<string, GuideRow> | null = null;
+let _guideCacheTs = 0;
 let _guidePromise: Promise<Record<string, GuideRow>> | null = null;
 const _subscribers = new Set<() => void>();
 
-function loadGuideCorpus(): Promise<Record<string, GuideRow>> {
-  if (_guideCache) return Promise.resolve(_guideCache);
+function fetchCorpus(): Promise<Record<string, GuideRow>> {
   if (_guidePromise) return _guidePromise;
   _guidePromise = (async () => {
-    const { data, error } = await supabase
-      .from("guide_articles")
-      .select("slug,answer_en,formula_note_en");
-    if (error) throw error;
-    const map: Record<string, GuideRow> = {};
-    (data || []).forEach((r: any) => { map[r.slug] = r as GuideRow; });
-    _guideCache = map;
-    _subscribers.forEach((fn) => fn());
-    return map;
+    try {
+      const { data, error } = await supabase
+        .from("guide_articles")
+        .select("slug,answer_en,formula_note_en");
+      if (error) throw error;
+      const map: Record<string, GuideRow> = {};
+      (data || []).forEach((r: any) => { map[r.slug] = r as GuideRow; });
+      _guideCache = map;
+      _guideCacheTs = Date.now();
+      _subscribers.forEach((fn) => fn());
+      return map;
+    } finally {
+      _guidePromise = null;
+    }
   })();
   return _guidePromise;
+}
+
+function loadGuideCorpus(): Promise<Record<string, GuideRow>> {
+  if (_guideCache) {
+    // Background refresh if stale, but resolve immediately with cached data.
+    if (Date.now() - _guideCacheTs > TTL_MS && !_guidePromise) {
+      fetchCorpus().catch(() => {});
+    }
+    return Promise.resolve(_guideCache);
+  }
+  return fetchCorpus();
 }
 
 export interface InfoTooltipProps {
