@@ -1804,6 +1804,15 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio }: HomeT
                             triggerSize={13}
                           />
                         )}
+                        {f.key === "consistency" && (
+                          <InfoTooltip
+                            label="Weekly rhythm"
+                            slug="weekly-rhythm"
+                            text="Weekly rhythm tracks how steadily you capture and publish — consistency compounds your presence."
+                            side="bottom"
+                            triggerSize={13}
+                          />
+                        )}
                       </div>
                       <div style={{
                         height: 2, background: "hsl(var(--border) / 0.6)",

@@ -25,11 +25,14 @@ export function FirstLoginWelcome({ firstName, onOpenGuide, onDismiss }: FirstLo
   if (!visible) return null;
 
   const handleExplore = () => {
+    try { localStorage.setItem("aura_welcome_briefing_done", "1"); } catch {}
+    setVisible(false);
     onOpenGuide();
     onDismiss();
   };
 
   const handleDismiss = () => {
+    try { localStorage.setItem("aura_welcome_briefing_done", "1"); } catch {}
     setVisible(false);
     onDismiss();
   };
@@ -79,7 +82,7 @@ export function FirstLoginWelcome({ firstName, onOpenGuide, onDismiss }: FirstLo
               maxWidth: 520,
             }}
           >
-            Aura turns your expertise into presence. It helps you share your thinking with your market, without adding work to your week. Your missions below are the best place to start.
+            Aura turns your expertise into presence. It helps you share your thinking with your market, without adding work to your week. The steps below are the best place to start.
           </p>
 
           <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>

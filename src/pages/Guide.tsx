@@ -182,7 +182,7 @@ const Guide = () => {
           How Aura works
         </h1>
         <p style={{ fontSize: 16, color: "var(--ink-3)", lineHeight: 1.625 }}>
-          From what you already know to what the market sees — in 5 steps.
+          From what you already know to what the market sees.
         </p>
       </section>
 
