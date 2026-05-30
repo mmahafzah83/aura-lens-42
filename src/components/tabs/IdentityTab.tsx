@@ -1091,25 +1091,6 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         })()}
       </section>
 
-      {/* SECTION 9 — VIEW FULL PROFILE (collapsed by default) */}
-      <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 16 }}>
-        <button
-          onClick={() => setFullProfileExpanded((v) => !v)}
-          style={{
-            display: "flex", alignItems: "center", gap: 6,
-            fontSize: 12, color: "var(--ink-3)",
-            background: "transparent", border: 0, padding: 0, cursor: "pointer",
-          }}
-        >
-          {fullProfileExpanded ? "Hide full profile" : "View full profile"}
-          <ChevronDown className="w-3.5 h-3.5" style={{ transform: fullProfileExpanded ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
-        </button>
-        {fullProfileExpanded && assessmentCompleted && (
-          <div className="mt-4" data-testid="story-strategic-identity">
-            <ProfileIntelligence onGenerateContent={handleGenerateContent} intelligenceStage={intelligenceStage} hideSuggestedTopics />
-          </div>
-        )}
-      </section>
 
       {/* Hidden — still mounted for data refresh logic of milestones share */}
       <div className="hidden">
