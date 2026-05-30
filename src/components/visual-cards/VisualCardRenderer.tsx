@@ -206,15 +206,19 @@ export default function VisualCardRenderer(props: VisualCardProps) {
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+                  {/* Brand line in the palette gold (footerAccentColor) so it
+                      differs from the tagline; tagline drops the 0.5 opacity
+                      multiplier and uses style.footerColor at full alpha
+                      (palette alpha values raised in cardStyles.ts). */}
                   <div style={{
                     fontFamily: FONTS.MONO, fontSize: 14,
-                    color: style.footerColor, letterSpacing: '0.04em',
+                    color: style.footerAccentColor, letterSpacing: '0.04em',
                   }}>
                     aura-intel.org
                   </div>
                   <div style={{
                     fontFamily: isAr ? "'Cairo','DM Sans',sans-serif" : style.bodyFont,
-                    fontSize: 11, color: style.footerColor, opacity: 0.5,
+                    fontSize: 11, color: style.footerColor,
                   }}>
                     {isAr ? "حوّل خبرتك إلى حضور" : "Turns your expertise into presence"}
                   </div>

@@ -569,12 +569,15 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
             );
           })()}
         </text>
+        {/* Brand line uses the palette accent so it visually differs from the
+            tagline; tagline drops opacity entirely (was 0.5 → near invisible
+            on muted-heavy palettes) and relies on style.muted at full alpha. */}
         <text x={urlX} y={h - 64} textAnchor={urlAnchor}
-              fontFamily={bodyFont} fontSize={14} fill={style.muted}>
+              fontFamily={bodyFont} fontSize={14} fill={style.accent}>
           aura-intel.org
         </text>
         <text x={urlX} y={h - 48} textAnchor={urlAnchor}
-              fontFamily={bodyFont} fontSize={12} fill={style.muted} opacity={0.5}>
+              fontFamily={bodyFont} fontSize={12} fill={style.muted}>
           {isRTL ? "حوّل خبرتك إلى حضور" : "Turns your expertise into presence"}
         </text>
       </g>
