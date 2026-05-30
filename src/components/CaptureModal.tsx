@@ -354,13 +354,31 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat, prefillUrl, 
         }
         const finalText = content.trim();
         const title = "Voice note — " + new Date().toLocaleDateString();
+        // Entries-level dedupe guard (mirrors ingest-capture entries guard).
+        const dedupeKey = finalText.replace(/\s+/g, " ");
+        if (dedupeKey) {
+          const { data: existingEntries } = await supabase
+            .from("entries")
+            .select("id, created_at")
+            .eq("user_id", session.user.id)
+            .eq("content", dedupeKey)
+            .limit(1);
+          if (existingEntries && existingEntries.length > 0) {
+            setDuplicateInfo({
+              id: existingEntries[0].id,
+              date: new Date(existingEntries[0].created_at).toLocaleDateString(),
+            });
+            setSaving(false);
+            return;
+          }
+        }
         const { data: entryRow, error: entryError } = await supabase
           .from("entries")
           .insert({
             user_id: session.user.id,
             type: "voice",
             title,
-            content: finalText,
+            content: dedupeKey,
             summary: finalText.slice(0, 200),
             ...(voiceAudioUrl && { image_url: voiceAudioUrl }),
           })
