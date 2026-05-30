@@ -88,7 +88,7 @@ const Guide = () => {
   const [search, setSearch] = useState("");
   const [openSlug, setOpenSlug] = useState<string | null>(null);
 
-  const { articles, loading, error } = useGuideArticles({ surface: "guide" });
+  const { articles, loading, error } = useGuideArticles({ surface: "guide", forceFresh: true });
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
