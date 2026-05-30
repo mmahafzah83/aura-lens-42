@@ -66,6 +66,11 @@ const Dashboard = () => {
   const [captureOpen, setCaptureOpen] = useState(false);
   const [capturePrefillUrl, setCapturePrefillUrl] = useState<string | null>(null);
   const [capturePrefillText, setCapturePrefillText] = useState<string | null>(null);
+  const handleOpenCapture = (url?: string, text?: string) => {
+    setCapturePrefillUrl(url ?? null);
+    setCapturePrefillText(text ?? null);
+    setCaptureOpen(true);
+  };
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>();
   const [chatContext, setChatContext] = useState<ChatContext | undefined>();
@@ -900,7 +905,7 @@ const Dashboard = () => {
                   }}
                 />
                 <ErrorBoundary>
-                  <HomeTab entries={entries} onOpenChat={openChat} onRefresh={fetchEntries} onNavigateToSignal={navigateToSignal} onOpenCapture={(prefillUrl?: string, prefillText?: string) => { setCapturePrefillUrl(prefillUrl || null); setCapturePrefillText(prefillText || null); setCaptureOpen(true); }} onSwitchTab={switchTab} onDraftToStudio={(prefill) => { setSignalDraftPrefill(prefill); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
+                  <HomeTab entries={entries} onOpenChat={openChat} onRefresh={fetchEntries} onNavigateToSignal={navigateToSignal} onOpenCapture={handleOpenCapture} onSwitchTab={switchTab} onDraftToStudio={(prefill) => { setSignalDraftPrefill(prefill); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
                 </ErrorBoundary>
               </div>
             )}
@@ -928,7 +933,7 @@ const Dashboard = () => {
                     entries={entries}
                     onOpenChat={openChat}
                     onRefresh={fetchEntries}
-                    onOpenCapture={() => setCaptureOpen(true)}
+                    onOpenCapture={handleOpenCapture}
                     onDraftToStudio={(prefill) => {
                       setSignalDraftPrefill(prefill);
                       setActiveTab("authority");
@@ -950,7 +955,7 @@ const Dashboard = () => {
             {activeTab === "influence" && (
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
-                  <ImpactTab onOpenCapture={() => setCaptureOpen(true)} />
+                  <ImpactTab onOpenCapture={handleOpenCapture} />
                 </ErrorBoundary>
               </div>
             )}

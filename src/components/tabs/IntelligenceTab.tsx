@@ -40,7 +40,7 @@ interface IntelligenceTabProps {
   entries: Entry[];
   onOpenChat?: (msg?: string) => void;
   onRefresh?: () => Promise<void> | void;
-  onOpenCapture?: (prefillUrl?: string) => void;
+  onOpenCapture?: (prefillUrl?: string, prefillText?: string) => void;
   onDraftToStudio?: (prefill: SignalDraftPrefill) => void;
 }
 
@@ -541,7 +541,7 @@ const STORAGE_KEY = "market_coverage_cache_v1";
 
 const EditorialBlindSpots = ({
   signals, onOpenCapture,
-}: { signals: Signal[]; onOpenCapture?: () => void }) => {
+}: { signals: Signal[]; onOpenCapture?: (prefillUrl?: string, prefillText?: string) => void }) => {
   const [data, setData] = useState<(CoverageResult & { generated_at?: string }) | null>(null);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -642,8 +642,8 @@ const EditorialBlindSpots = ({
                     }}>{it.trend_headline}</h4>
                     <p style={{ fontSize: 12, color: "var(--ink-4)", lineHeight: 1.5, margin: "0 0 6px" }}>{it.recommendation}</p>
                     <p style={{ fontStyle: "italic", fontSize: 11, color: accent, margin: "0 0 10px" }}>{urgency}</p>
-                    <button
-                      onClick={() => onOpenCapture?.()}
+                     <button
+                      onClick={() => onOpenCapture?.(undefined, it.recommendation)}
                       style={{
                         background: `${accent}1A`, color: accent, border: `0.5px solid ${accent}55`,
                         borderRadius: 6, padding: "5px 11px", fontSize: 12, fontWeight: 500,
@@ -693,7 +693,7 @@ const readingCacheKey = () => `aura_reading_list_${new Date().toISOString().slic
 
 const EditorialReadingList = ({
   signals, onOpenCapture,
-}: { signals: Signal[]; onOpenCapture?: (prefillUrl?: string) => void }) => {
+}: { signals: Signal[]; onOpenCapture?: (prefillUrl?: string, prefillText?: string) => void }) => {
   const [recs, setRecs] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
