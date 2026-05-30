@@ -410,7 +410,8 @@ const SignalHero = ({
 
   const confPct = Math.round(signal.confidence * 100);
   const orgs = signal.unique_orgs || 1;
-  const fragCount = evidence.length || (signal as any).evidenceCount || signal.supporting_evidence_ids?.length || signal.fragment_count || 0;
+  const fragCount = (signal as any).evidenceCount ?? signal.supporting_evidence_ids?.length ?? signal.fragment_count ?? 0;
+  const sourceCount = (signal as any).sourceCount ?? evidence.length ?? 0;
   const isRising = signal.velocity_status === "accelerating";
   const isFading = signal.velocity_status === "fading";
   const velText = isRising ? "and rising" : isFading ? "and fading" : "and stable";
@@ -439,8 +440,8 @@ const SignalHero = ({
       </h2>
 
       <p style={{ fontSize: 12, color: "var(--ink-3)", lineHeight: 1.7, margin: "0 0 20px" }}>
-        You've captured <strong style={{ color: "var(--ink-6)", fontWeight: 500 }}>{fragCount} evidence fragments</strong> from{" "}
-        <strong style={{ color: "var(--ink-6)", fontWeight: 500 }}>{orgs} organisation{orgs === 1 ? "" : "s"}</strong>.{" "}
+        You've captured <strong style={{ color: "var(--ink-6)", fontWeight: 500 }}>{fragCount} piece{fragCount === 1 ? "" : "s"} of evidence</strong> from{" "}
+        <strong style={{ color: "var(--ink-6)", fontWeight: 500 }}>{sourceCount} source{sourceCount === 1 ? "" : "s"}</strong>.{" "}
         Confidence: <strong style={{ color: "var(--brand)", fontWeight: 500 }}>{confPct}%</strong>
         <InfoTooltip
           label="Confidence"
@@ -493,7 +494,7 @@ const SignalHero = ({
           }}
         >
           <Layers size={12} />
-          See the evidence behind this signal ({fragCount} fragment{fragCount === 1 ? "" : "s"})
+          See the evidence behind this signal ({fragCount} piece{fragCount === 1 ? "" : "s"})
           <ChevronDown size={12} style={{ transform: showEvidence ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s" }} />
         </button>
         {showEvidence && (
@@ -1010,20 +1011,41 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
       const allIds = Array.from(new Set(
         loadedRaw.flatMap((s) => (s.supporting_evidence_ids || []) as string[]),
       ));
-      let existingSet = new Set<string>();
+      // Map fragment_id -> source_registry_id (for existing fragments only).
+      const fragToReg = new Map<string, string>();
       if (allIds.length) {
         const { data: existRows } = await supabase
           .from("evidence_fragments")
-          .select("id")
+          .select("id, source_registry_id")
           .eq("user_id", user.id)
           .in("id", allIds);
-        existingSet = new Set((existRows || []).map((r: any) => r.id));
+        (existRows || []).forEach((r: any) => fragToReg.set(r.id, r.source_registry_id));
       }
-      const loaded = loadedRaw.map((s) => ({
-        ...s,
-        evidenceCount: ((s.supporting_evidence_ids || []) as string[])
-          .filter((id) => existingSet.has(id)).length,
-      })) as unknown as Signal[];
+      // Map source_registry.id -> stable source key (source_id when present, else registry id).
+      const regIds = Array.from(new Set(Array.from(fragToReg.values()).filter(Boolean))) as string[];
+      const regToSource = new Map<string, string>();
+      if (regIds.length) {
+        const { data: regRows } = await supabase
+          .from("source_registry" as any)
+          .select("id, source_id")
+          .in("id", regIds);
+        (regRows || []).forEach((r: any) => regToSource.set(r.id, r.source_id || r.id));
+      }
+      const loaded = loadedRaw.map((s) => {
+        const liveIds = ((s.supporting_evidence_ids || []) as string[])
+          .filter((id) => fragToReg.has(id));
+        const sourceKeys = new Set<string>();
+        liveIds.forEach((id) => {
+          const reg = fragToReg.get(id);
+          if (!reg) return;
+          sourceKeys.add(regToSource.get(reg) || reg);
+        });
+        return {
+          ...s,
+          evidenceCount: liveIds.length,
+          sourceCount: sourceKeys.size,
+        };
+      }) as unknown as Signal[];
       setSignals(loaded);
       setEntryCount((entriesRes.count || 0) + (documentsRes.count || 0));
       setMovesCount(movesRes.count || 0);
@@ -1378,7 +1400,11 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                                     {s.signal_title}
                                   </div>
                                   <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
-                                    {(s as any).evidenceCount ?? s.fragment_count ?? 0} sources
+                                    {(() => {
+                                      const ec = (s as any).evidenceCount ?? s.fragment_count ?? 0;
+                                      const sc = (s as any).sourceCount ?? 0;
+                                      return `${ec} piece${ec === 1 ? "" : "s"} of evidence · ${sc} source${sc === 1 ? "" : "s"}`;
+                                    })()}
                                     {s.velocity_status && s.velocity_status !== "stable" && ` · ${s.velocity_status}`}
                                   </div>
                                 </div>
@@ -1465,7 +1491,11 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                                   {Math.round(s.confidence * 100)}%
                                 </div>
                                 <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
-                                  {(s as any).evidenceCount ?? s.fragment_count ?? 0} sources
+                                  {(() => {
+                                    const ec = (s as any).evidenceCount ?? s.fragment_count ?? 0;
+                                    const sc = (s as any).sourceCount ?? 0;
+                                    return `${ec} piece${ec === 1 ? "" : "s"} of evidence · ${sc} source${sc === 1 ? "" : "s"}`;
+                                  })()}
                                 </div>
                               </div>
                             ))}
