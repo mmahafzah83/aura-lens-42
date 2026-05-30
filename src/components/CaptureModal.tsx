@@ -491,7 +491,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat, prefillUrl, 
 
       const data = await resp.json().catch(() => null);
 
-      if (data?.error === "duplicate_url") {
+      if (data?.error === "duplicate_url" || data?.error === "duplicate_entry") {
         setDuplicateInfo({
           id: data.existing_id,
           date: new Date(data.created_at).toLocaleDateString(),
