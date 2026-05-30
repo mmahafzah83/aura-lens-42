@@ -799,7 +799,7 @@ const EditorialReadingList = ({
         </span>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <ExpandablePanel label="How are these chosen?">
-            Aura scans publications from McKinsey, BCG, Gartner, Deloitte, and 50+ sector-specific sources. Articles are ranked by how much they would strengthen your existing signals or close your blind spots. This is not a generic feed — every article was selected because of your specific intelligence profile.
+            Aura scans publications from McKinsey, BCG, Gartner, Deloitte, and 50+ sector-specific sources. Articles are ranked by how much they would strengthen your existing signals or close your blind spots. This is not a generic feed — every article was selected because of your specific intelligence profile. Links are AI-curated and checked when suggested; if one has moved, use the "Search the title" fallback on the card.
           </ExpandablePanel>
           <button
             onClick={() => load(true)} disabled={loading || cooldownLeft > 0}
@@ -848,7 +848,8 @@ const EditorialReadingList = ({
           {recs.slice(0, expanded ? recs.length : 1).map((rec, i) => {
             const ctx = contextualMatter(rec, i);
             const domain = domainFromUrl(rec.url);
-            const titleHref = rec.url || `https://www.google.com/search?q=${encodeURIComponent(rec.title + (rec.author ? " " + rec.author : ""))}`;
+            const searchHref = `https://www.google.com/search?q=${encodeURIComponent(rec.title + (rec.author ? " " + rec.author : ""))}`;
+            const hasUrl = Boolean(rec.url);
             return (
               <div key={i} style={{
                 background: "var(--surface-ink-raised)", border: "0.5px solid var(--surface-ink-subtle)",
@@ -859,16 +860,32 @@ const EditorialReadingList = ({
                   fontSize: 16, fontWeight: 500, color: "var(--ink)",
                   margin: "0 0 4px", lineHeight: 1.3,
                 }}>
-                  <a
-                    href={titleHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: "inherit", textDecoration: "none" }}
-                  >
-                    {rec.title}
-                  </a>
+                  {hasUrl ? (
+                    <a
+                      href={rec.url!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: "inherit", textDecoration: "none" }}
+                    >
+                      {rec.title}
+                    </a>
+                  ) : (
+                    <span style={{ color: "inherit" }}>{rec.title}</span>
+                  )}
                 </h4>
                 {rec.url && domain && <p style={{ fontSize: 11, color: "var(--ink-3)", margin: "0 0 10px" }}>{domain}</p>}
+                {!hasUrl && (
+                  <p style={{ fontSize: 11, color: "var(--ink-3)", margin: "0 0 10px" }}>
+                    <a
+                      href={searchHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: "var(--ink-3)", textDecoration: "underline" }}
+                    >
+                      Search for this →
+                    </a>
+                  </p>
+                )}
 
                 <div style={{
                   background: "var(--color-background-secondary, var(--surface-ink-raised))",
@@ -915,6 +932,16 @@ const EditorialReadingList = ({
                     </a>
                   )}
                 </div>
+                <p style={{ fontSize: 11, color: "var(--ink-3)", margin: "8px 0 0" }}>
+                  <a
+                    href={searchHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: "var(--ink-3)", textDecoration: "underline" }}
+                  >
+                    Can't open it? Search the title →
+                  </a>
+                </p>
                   );
                 })()}
               </div>
