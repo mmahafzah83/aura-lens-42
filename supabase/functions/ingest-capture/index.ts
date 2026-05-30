@@ -225,15 +225,48 @@ Deno.serve(async (req) => {
 
     let newEntryId: string | null = null;
     try {
+      // Entries-level dedupe guard (in addition to the captures-table dedupe above).
+      // Link path: match the same value we'd write to image_url.
+      // Non-link path: match trimmed, whitespace-collapsed content.
+      const entryImageUrl = (type === "link") ? (source_url || content) : null;
+      const entryContent = extracted_text?.slice(0, 10000) || content;
+      const dedupeKey = type === "link"
+        ? (entryImageUrl || "").trim()
+        : (entryContent || "").trim().replace(/\s+/g, " ");
+
+      if (dedupeKey) {
+        const dedupeQuery = supabase
+          .from("entries")
+          .select("id, created_at")
+          .eq("user_id", effectiveUserId)
+          .limit(1);
+        const { data: existingEntry } = type === "link"
+          ? await dedupeQuery.eq("image_url", dedupeKey)
+          : await dedupeQuery.eq("content", dedupeKey);
+
+        if (existingEntry && existingEntry.length > 0) {
+          return new Response(JSON.stringify({
+            error: "duplicate_entry",
+            processing_status: "duplicate",
+            message: `You already captured this on ${new Date(existingEntry[0].created_at).toLocaleDateString()}.`,
+            existing_id: existingEntry[0].id,
+            created_at: existingEntry[0].created_at,
+          }), {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
+
       const { data: entryRow, error: entryErr } = await supabase
         .from("entries")
         .insert({
           user_id: effectiveUserId,
           type: type === "link" ? "link" : type,
           title: extracted_title || null,
-          content: extracted_text?.slice(0, 10000) || content,
+          content: entryContent,
           summary: finalCapture?.metadata?.summary || null,
-          image_url: (type === "link") ? (source_url || content) : null,
+          image_url: entryImageUrl,
           skill_pillar: finalCapture?.metadata?.skill_pillar || null,
         })
         .select("id")
