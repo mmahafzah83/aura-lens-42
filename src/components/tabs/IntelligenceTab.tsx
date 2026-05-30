@@ -16,6 +16,7 @@ import { useJourneyState } from "@/hooks/useJourneyState";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import { useCapturedSources } from "@/hooks/useCapturedSources";
 import { showQueryErrorToast } from "@/lib/safeQuery";
+import { formatSkillLabel } from "@/lib/formatSkillLabel";
 import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/ui/EmptyState";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
@@ -771,7 +772,7 @@ const EditorialReadingList = ({
     if (rec.skill_gap && rec.skill_gap.trim()) {
       return {
         icon: <EyeOff size={12} style={{ color: "var(--danger, hsl(0 70% 55%))" }} />,
-        label: `Closes a blind spot: ${rec.skill_gap.trim()}`,
+        label: `Closes a blind spot: ${formatSkillLabel(rec.skill_gap)}`,
         text: rec.intelligence_value || "",
         color: "var(--danger, hsl(0 70% 55%))",
       };
