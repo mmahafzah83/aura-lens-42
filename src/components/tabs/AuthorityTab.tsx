@@ -760,6 +760,9 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
   // Reset "Saved" state whenever the post text changes (user edited or regenerated)
   useEffect(() => {
     setDraftSaved(false);
+    setPublishedFromCreate(false);
+    setPubUrlOpen(false);
+    setPubUrl("");
   }, [output]);
 
   const handleSaveDraft = async () => {
