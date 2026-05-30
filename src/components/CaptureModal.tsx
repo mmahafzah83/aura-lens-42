@@ -378,7 +378,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat, prefillUrl, 
             user_id: session.user.id,
             type: "voice",
             title,
-            content: dedupeKey,
+            content: finalText,
             summary: finalText.slice(0, 200),
             ...(voiceAudioUrl && { image_url: voiceAudioUrl }),
           })
