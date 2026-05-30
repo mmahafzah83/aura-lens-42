@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Pencil, Check, Eye, Zap, Map as MapIcon, Trophy, Target as TargetIcon, ChevronDown, Star, Camera } from "lucide-react";
+import { Pencil, Check, Eye, Zap, Map as MapIcon, Trophy, Target as TargetIcon, Star, Camera } from "lucide-react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import ProfileIntelligence from "@/components/ProfileIntelligence";
