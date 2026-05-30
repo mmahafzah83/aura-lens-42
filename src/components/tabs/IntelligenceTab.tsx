@@ -16,6 +16,7 @@ import { useJourneyState } from "@/hooks/useJourneyState";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import { useCapturedSources } from "@/hooks/useCapturedSources";
 import { showQueryErrorToast } from "@/lib/safeQuery";
+import { formatSkillLabel } from "@/lib/formatSkillLabel";
 import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/ui/EmptyState";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
