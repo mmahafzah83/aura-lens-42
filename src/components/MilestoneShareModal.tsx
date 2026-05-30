@@ -408,6 +408,7 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
             Share on LinkedIn
           </Button>
         </div>
+        <LinkedInPostSteps withImage shareLabel="Share on LinkedIn" downloadLabel="Download PNG" />
       </div>
     </div>,
     document.body,
