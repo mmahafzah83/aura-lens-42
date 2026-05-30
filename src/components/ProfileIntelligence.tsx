@@ -68,6 +68,7 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null, hide
   const [editItems, setEditItems] = useState<string[]>([]);
   const [newItem, setNewItem] = useState("");
   const [saving, setSaving] = useState(false);
+  const [level, setLevel] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -78,12 +79,13 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null, hide
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     const { data: profile } = await (supabase.from("diagnostic_profiles" as any) as any)
-      .select("identity_intelligence")
+      .select("identity_intelligence, level")
       .eq("user_id", user.id)
       .maybeSingle();
     if (profile?.identity_intelligence && Object.keys(profile.identity_intelligence).length > 0) {
       setIdentity({ ...EMPTY_IDENTITY, ...profile.identity_intelligence });
     }
+    setLevel(profile?.level || null);
     setLoading(false);
   };
 
