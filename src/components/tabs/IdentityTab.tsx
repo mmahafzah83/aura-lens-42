@@ -86,6 +86,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [auditOpen, setAuditOpen] = useState(false);
+  const [radarRefreshKey, setRadarRefreshKey] = useState(0);
   const [credentialOpen, setCredentialOpen] = useState(false);
   const [brandOpen, setBrandOpen] = useState(false);
   const [fullProfileOpen, setFullProfileOpen] = useState(false);
@@ -868,10 +869,11 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       {assessmentCompleted && (
         <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }}>
           <div style={{ background: "var(--aura-card)", border: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", borderRadius: 12, padding: 14 }}>
-            <AuditRadarWidget onStartAudit={() => setAuditOpen(true)} hideEditScores />
-            <div style={{ fontSize: 10, color: "var(--ink-5)", marginTop: 6, textAlign: "center" }}>
-              From your assessment
-            </div>
+            <AuditRadarWidget
+              onStartAudit={() => setAuditOpen(true)}
+              hideEditScores
+              refreshKey={radarRefreshKey}
+            />
           </div>
         </section>
       )}
@@ -1115,7 +1117,15 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       </div>
 
       {/* Modals */}
-      <ObjectiveAuditModal open={auditOpen} onOpenChange={setAuditOpen} onNavigate={handleNavigate} />
+      <ObjectiveAuditModal
+        open={auditOpen}
+        onOpenChange={setAuditOpen}
+        onNavigate={handleNavigate}
+        onComplete={() => {
+          setRadarRefreshKey((k) => k + 1);
+          if (authUser?.id) loadAll(authUser.id);
+        }}
+      />
       <BrandAssessmentModal open={brandOpen} onOpenChange={setBrandOpen} onNavigate={handleNavigate} />
       <TierCeremonyModal
         userId={authUser?.id ?? null}
