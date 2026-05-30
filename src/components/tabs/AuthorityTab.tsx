@@ -1303,8 +1303,69 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                         <><Save className="w-3.5 h-3.5" /> Save Draft</>
                       )}
                     </Button>
+                    <Button
+                      data-testid="pub-mark-published-btn"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        if (publishedFromCreate || publishing) return;
+                        setPubUrlOpen((v) => !v);
+                      }}
+                      disabled={publishing || publishedFromCreate || !output.trim()}
+                      className={`h-7 gap-1.5 text-xs ${publishedFromCreate ? "border-emerald-500/40 text-emerald-500" : "border-border/15"}`}
+                    >
+                      {publishing ? (
+                        <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Marking…</>
+                      ) : publishedFromCreate ? (
+                        <><Check className="w-3.5 h-3.5" /> Published ✓</>
+                      ) : (
+                        <><Check className="w-3.5 h-3.5" /> Mark as published</>
+                      )}
+                    </Button>
                   </div>
                 </div>
+
+                {/* Mark-as-published URL prompt (optional) — mirrors the saved-card flow */}
+                {pubUrlOpen && !publishedFromCreate && (
+                  <div
+                    style={{
+                      marginTop: 4,
+                      padding: 10,
+                      background: "var(--bg-subtle)",
+                      borderRadius: 6,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <span style={{ fontSize: 13, color: "var(--ink)" }}>
+                      Did you post this on LinkedIn? Paste the URL (optional) to link engagement.
+                    </span>
+                    <Input
+                      value={pubUrl}
+                      onChange={(e) => setPubUrl(e.target.value)}
+                      placeholder="https://www.linkedin.com/posts/…"
+                      className="h-7 text-xs flex-1 min-w-[200px]"
+                    />
+                    <Button
+                      size="sm"
+                      onClick={() => handleMarkPublishedFromCreate(pubUrl.trim() || undefined)}
+                      disabled={publishing}
+                      className="h-7 text-xs"
+                    >
+                      Confirm
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => { setPubUrlOpen(false); setPubUrl(""); }}
+                      className="h-7 text-xs"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                )}
 
                 {/* Back to full version link */}
                 {showingShort && !generatingShort && (
