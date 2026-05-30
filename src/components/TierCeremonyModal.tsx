@@ -753,6 +753,13 @@ function StepCredential({
         >
           {busy === "share" ? "Preparing…" : `Share on LinkedIn (${lang})`}
         </button>
+        <LinkedInPostSteps
+          withImage
+          variant="dark"
+          lang={lang === "AR" ? "ar" : "en"}
+          shareLabel={`Share on LinkedIn (${lang})`}
+          downloadLabel="PNG"
+        />
       </div>
 
       <div style={{ marginTop: 12, textAlign: "center" }}>
