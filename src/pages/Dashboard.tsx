@@ -1085,9 +1085,10 @@ const Dashboard = () => {
         open={captureOpen}
         onOpenChange={(o) => {
           setCaptureOpen(o);
-          if (!o) { setCapturePrefillUrl(null); setCapturePrefillText(null); }
+          if (!o) { setCapturePrefillUrl(null); setCapturePrefillText(null); pendingCaptureKeyRef.current = null; }
         }}
-        onCaptured={fetchEntries}
+        onCaptured={handleCaptureOutcome}
+        onDuplicate={handleCaptureOutcome}
         onOpenChat={openChat}
         prefillUrl={capturePrefillUrl || undefined}
         prefillText={capturePrefillText || undefined}
