@@ -772,7 +772,7 @@ const EditorialReadingList = ({
       return {
         icon: <EyeOff size={12} style={{ color: "var(--danger, hsl(0 70% 55%))" }} />,
         label: "Closes a blind spot:",
-        text: rec.skill_gap || rec.intelligence_value || "",
+        text: rec.intelligence_value || rec.skill_gap || "",
         color: "var(--danger, hsl(0 70% 55%))",
       };
     }
