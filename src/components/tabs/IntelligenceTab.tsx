@@ -410,7 +410,7 @@ const SignalHero = ({
 
   const confPct = Math.round(signal.confidence * 100);
   const orgs = signal.unique_orgs || 1;
-  const fragCount = evidence.length || signal.supporting_evidence_ids?.length || signal.fragment_count || 0;
+  const fragCount = evidence.length || (signal as any).evidenceCount || signal.supporting_evidence_ids?.length || signal.fragment_count || 0;
   const isRising = signal.velocity_status === "accelerating";
   const isFading = signal.velocity_status === "fading";
   const velText = isRising ? "and rising" : isFading ? "and fading" : "and stable";
@@ -1378,7 +1378,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                                     {s.signal_title}
                                   </div>
                                   <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
-                                    {s.fragment_count || 0} sources
+                                    {(s as any).evidenceCount ?? s.fragment_count ?? 0} sources
                                     {s.velocity_status && s.velocity_status !== "stable" && ` · ${s.velocity_status}`}
                                   </div>
                                 </div>
@@ -1465,7 +1465,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                                   {Math.round(s.confidence * 100)}%
                                 </div>
                                 <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
-                                  {s.fragment_count || 0} sources
+                                  {(s as any).evidenceCount ?? s.fragment_count ?? 0} sources
                                 </div>
                               </div>
                             ))}
