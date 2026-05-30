@@ -863,6 +863,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
 
       {/* SECTION 6 — CAPABILITY RADAR */}
       {assessmentCompleted && (
+        <SectionHeader label="Your Capability Radar" />
+      )}
+      {assessmentCompleted && (
         <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }}>
           <div style={{ background: "var(--aura-card)", border: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", borderRadius: 12, padding: 14 }}>
             <AuditRadarWidget onStartAudit={() => setAuditOpen(true)} hideEditScores />
