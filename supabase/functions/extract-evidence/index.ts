@@ -206,11 +206,44 @@ Extract 3-8 fragments. Focus on ACTIONABLE, STRATEGIC content.`;
     const parsed = parseAiJson(aiData.choices?.[0]?.message?.content || "{}");
     const fragments = parsed.fragments || [];
 
+    // Capture OLD fragment ids BEFORE deletion so we can prune signals that
+    // reference them (uuid[] has no FK, so stale ids would otherwise linger).
+    const { data: oldFragRows } = await adminClient
+      .from("evidence_fragments")
+      .select("id")
+      .eq("source_registry_id", registryId);
+    const oldFragmentIds: string[] = (oldFragRows || []).map((r: any) => r.id);
+
     // Delete old fragments for this source (re-processing)
     await adminClient
       .from("evidence_fragments")
       .delete()
       .eq("source_registry_id", registryId);
+
+    // Prune stale ids from signals' supporting_evidence_ids + recompute fragment_count DOWN.
+    // NEW fragment ids are re-added downstream by detect-signals-v2's union path.
+    if (oldFragmentIds.length) {
+      const removedSet = new Set(oldFragmentIds);
+      const { data: sigs } = await adminClient
+        .from("strategic_signals")
+        .select("id, supporting_evidence_ids")
+        .eq("user_id", registry.user_id)
+        .overlaps("supporting_evidence_ids", oldFragmentIds);
+      for (const s of (sigs || []) as any[]) {
+        const current: string[] = s.supporting_evidence_ids || [];
+        const pruned = current.filter((fid) => !removedSet.has(fid));
+        if (pruned.length === current.length) continue;
+        await adminClient
+          .from("strategic_signals")
+          .update({
+            supporting_evidence_ids: pruned,
+            fragment_count: pruned.length,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", s.id)
+          .eq("user_id", registry.user_id);
+      }
+    }
 
     // Insert new fragments
     const inserted = [];
