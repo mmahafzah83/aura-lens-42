@@ -25,11 +25,14 @@ export function FirstLoginWelcome({ firstName, onOpenGuide, onDismiss }: FirstLo
   if (!visible) return null;
 
   const handleExplore = () => {
+    try { localStorage.setItem("aura_welcome_briefing_done", "1"); } catch {}
+    setVisible(false);
     onOpenGuide();
     onDismiss();
   };
 
   const handleDismiss = () => {
+    try { localStorage.setItem("aura_welcome_briefing_done", "1"); } catch {}
     setVisible(false);
     onDismiss();
   };
