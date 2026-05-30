@@ -281,23 +281,36 @@ const ExpandedSource = ({
 
   useEffect(() => {
     (async () => {
-      // Find evidence_fragments that reference this entry via source_registry
-      const { data: fragments } = await supabase
-        .from("evidence_fragments")
-        .select("tags")
-        .limit(5);
+      // entry → source_registry → evidence_fragments → strategic_signals.supporting_evidence_ids
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLinkedSignals([]); setLoadingSignals(false); return; }
 
-      // Find signals that have this entry's id in supporting_evidence_ids
+      const sourceType = entry.type === "document" ? "document" : "entry";
+      const { data: regs } = await supabase
+        .from("source_registry" as any)
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("source_type", sourceType)
+        .eq("source_id", entry.id);
+      const regIds = (regs || []).map((r: any) => r.id);
+      if (!regIds.length) { setLinkedSignals([]); setLoadingSignals(false); return; }
+
+      const { data: frags } = await supabase
+        .from("evidence_fragments")
+        .select("id")
+        .eq("user_id", user.id)
+        .in("source_registry_id", regIds);
+      const fragIds = (frags || []).map((f: any) => f.id);
+      if (!fragIds.length) { setLinkedSignals([]); setLoadingSignals(false); return; }
+
       const { data: signals } = await supabase
         .from("strategic_signals")
         .select("id, signal_title, supporting_evidence_ids")
+        .eq("user_id", user.id)
         .eq("status", "active")
-        .limit(50);
+        .overlaps("supporting_evidence_ids", fragIds);
 
-      const linked = (signals || []).filter(
-        s => (s.supporting_evidence_ids || []).includes(entry.id),
-      );
-      setLinkedSignals(linked as any);
+      setLinkedSignals(((signals || []) as any[]).map(s => ({ id: s.id, signal_title: s.signal_title })));
       setLoadingSignals(false);
     })();
   }, [entry.id]);
