@@ -386,7 +386,7 @@ export default function TierCeremonyModal({ userId, forceOpen, onForceClose }: P
       }
       await shareToLinkedIn({
         text: buildPost(lang),
-        mode: "feed",
+        url: "https://aura-intel.org",
         toastMessage: "Text copied and image downloaded — paste both into LinkedIn",
       });
       if (tierMilestone) void shareMilestone(tierMilestone.id);

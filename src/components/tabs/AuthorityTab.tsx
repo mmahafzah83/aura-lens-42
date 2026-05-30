@@ -2822,16 +2822,9 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
 
   const handleCopy = async (id: string, text: string) => {
     try {
-      if (!navigator.clipboard?.writeText) throw new Error("Couldn't copy — try selecting the text manually");
-      await navigator.clipboard.writeText(text);
       setCopiedId(id);
       setTimeout(() => setCopiedId(null), 1500);
-      window.open(
-        `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(text)}`,
-        "_blank",
-        "noopener,noreferrer"
-      );
-      toast.success("Opening LinkedIn with your post pre-filled.");
+      await shareToLinkedIn({ text, url: "https://aura-intel.org" });
     } catch (err) {
       console.error("[Library] copy failed", err);
       toast.error("Could not copy — please select and copy manually");
