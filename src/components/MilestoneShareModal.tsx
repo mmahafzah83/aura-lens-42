@@ -5,6 +5,14 @@ import { Download, Linkedin, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
+import {
+  EXPORT_GOLD,
+  EXPORT_TAGLINE_EN,
+  EXPORT_TAGLINE_AR,
+  EXPORT_AR_FONT,
+  EXPORT_FOOTER_SIZE_BRAND,
+  EXPORT_FOOTER_SIZE_TAGLINE,
+} from "@/lib/exportBrand";
 
 export interface MilestoneShareData {
   /** Display name e.g. "Five Signals Achieved" */
@@ -270,20 +278,27 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
                 </div>
               </div>
 
-              {/* Bottom: gold line + name */}
+              {/* Bottom: gold line + brand + bilingual tagline */}
               <div>
-                <div style={{ height: 1, background: "#B08D3A", width: 60, marginBottom: 12 }} />
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                    <div style={{ fontSize: 12, color: "#B08D3A" }}>
-                      {footerLine}
-                    </div>
-                    <div style={{ fontSize: 10, color: "rgba(255,255,255,0.45)" }}>
-                      Turns your expertise into presence
-                    </div>
+                <div style={{ height: 1, background: EXPORT_GOLD, width: 60, marginBottom: 12 }} />
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  <div style={{ fontSize: EXPORT_FOOTER_SIZE_BRAND, color: EXPORT_GOLD, fontWeight: 500 }}>
+                    {footerLine}
                   </div>
-                  <div style={{ fontSize: 10, letterSpacing: "0.2em", color: "rgba(197,165,90,0.25)", fontWeight: 600 }}>
-                    AURA
+                  <div style={{ fontSize: EXPORT_FOOTER_SIZE_TAGLINE, color: "rgba(255,255,255,0.8)" }}>
+                    {EXPORT_TAGLINE_EN}
+                  </div>
+                  <div
+                    dir="rtl"
+                    lang="ar"
+                    style={{
+                      fontSize: EXPORT_FOOTER_SIZE_TAGLINE,
+                      color: "rgba(255,255,255,0.8)",
+                      fontFamily: EXPORT_AR_FONT,
+                      textAlign: "right",
+                    }}
+                  >
+                    {EXPORT_TAGLINE_AR}
                   </div>
                 </div>
               </div>
