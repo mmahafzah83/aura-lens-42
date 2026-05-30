@@ -645,14 +645,20 @@ const EditorialBlindSpots = ({
                     <p style={{ fontSize: 12, color: "var(--ink-4)", lineHeight: 1.5, margin: "0 0 6px" }}>{it.recommendation}</p>
                     <p style={{ fontStyle: "italic", fontSize: 11, color: accent, margin: "0 0 10px" }}>{urgency}</p>
                      <button
-                      onClick={() => onOpenCapture?.(undefined, it.recommendation)}
+                      onClick={() => onOpenCapture?.(undefined, it.recommendation, (it.recommendation || "").trim())}
+                      disabled={isCaptured((it.recommendation || "").trim())}
                       style={{
-                        background: `${accent}1A`, color: accent, border: `0.5px solid ${accent}55`,
+                        background: isCaptured((it.recommendation || "").trim()) ? `${accent}0F` : `${accent}1A`,
+                        color: accent, border: `0.5px solid ${accent}55`,
                         borderRadius: 6, padding: "5px 11px", fontSize: 12, fontWeight: 500,
-                        cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5,
+                        cursor: isCaptured((it.recommendation || "").trim()) ? "default" : "pointer",
+                        opacity: isCaptured((it.recommendation || "").trim()) ? 0.75 : 1,
+                        display: "inline-flex", alignItems: "center", gap: 5,
                       }}
                     >
-                      <Plus size={12} /> Start tracking this
+                      {isCaptured((it.recommendation || "").trim())
+                        ? <>✓ Captured</>
+                        : <><Plus size={12} /> Start tracking this</>}
                     </button>
                   </div>
                 </div>
