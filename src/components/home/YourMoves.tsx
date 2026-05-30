@@ -84,6 +84,7 @@ const Skel = () => (
 );
 
 export default function YourMoves({ userId, items: itemsProp, hideIfEmpty, defaultOpen = true, onOpenCapture, onSwitchTab }: YourMovesProps) {
+  const { isCaptured } = useCapturedSources();
   const navigate = useNavigate();
   const [items, setItems] = useState<AuraItem[] | null>(null);
   const [loading, setLoading] = useState(itemsProp === undefined);
