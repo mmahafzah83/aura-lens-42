@@ -7,6 +7,7 @@ import { Download, Copy, FileText, X, Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import useMilestones, { type Milestone } from "@/hooks/useMilestones";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
+import LinkedInPostSteps from "@/components/LinkedInPostSteps";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import {
   CONCEPTS,
