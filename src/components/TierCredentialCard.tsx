@@ -1,4 +1,13 @@
 import { forwardRef } from "react";
+import {
+  EXPORT_GOLD,
+  EXPORT_URL,
+  EXPORT_TAGLINE_EN,
+  EXPORT_TAGLINE_AR,
+  EXPORT_AR_FONT,
+  EXPORT_FOOTER_SIZE_BRAND,
+  EXPORT_FOOTER_SIZE_TAGLINE,
+} from "@/lib/exportBrand";
 
 /**
  * Credential surface components used by TierCeremonyModal.
@@ -21,7 +30,7 @@ export interface CredentialData {
 }
 
 const BG = "#0c0b0a";
-const GOLD = "#D4B056";
+const GOLD = EXPORT_GOLD;
 const GOLD_LINE = "rgba(212,176,86,.25)";
 const TEXT = "#f0ede8";
 const TEXT_MUTED = "rgba(240,237,232,.4)";
@@ -67,14 +76,38 @@ function Footer({ size }: { size: Size }) {
         left: 0,
         right: 0,
         textAlign: "center",
-        fontSize: size === "wide" ? 9 : 11,
-        letterSpacing: ".25em",
-        textTransform: "uppercase",
-        color: TEXT_HINT,
         fontFamily: SANS,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 4,
       }}
     >
-      aura-intel.org
+      <div
+        style={{
+          fontSize: EXPORT_FOOTER_SIZE_BRAND,
+          letterSpacing: ".25em",
+          textTransform: "uppercase",
+          color: GOLD,
+          fontWeight: 500,
+        }}
+      >
+        {EXPORT_URL}
+      </div>
+      <div style={{ fontSize: EXPORT_FOOTER_SIZE_TAGLINE, color: TEXT }}>
+        {EXPORT_TAGLINE_EN}
+      </div>
+      <div
+        dir="rtl"
+        lang="ar"
+        style={{
+          fontSize: EXPORT_FOOTER_SIZE_TAGLINE,
+          color: TEXT,
+          fontFamily: EXPORT_AR_FONT,
+        }}
+      >
+        {EXPORT_TAGLINE_AR}
+      </div>
     </div>
   );
 }
