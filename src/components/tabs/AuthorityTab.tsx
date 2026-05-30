@@ -3178,6 +3178,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
+                  <LinkedInPostSteps shareLabel="Post on LinkedIn" />
 
                   {/* Inline confirmation (M-1-1) */}
                   {confirmingId === p.id && (
