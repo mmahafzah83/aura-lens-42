@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useGuideArticles } from "@/hooks/useGuideArticles";
+import { recordGuideMiss } from "@/lib/recordGuideMiss";
 
 interface FirstTimeHintProps {
   hintKey: string;
@@ -15,6 +16,14 @@ export function FirstTimeHint({ hintKey, children }: FirstTimeHintProps) {
     () => articles.find(a => a.slug === hintKey)?.answer_en,
     [articles, hintKey]
   );
+
+  useEffect(() => {
+    if (loading) return;
+    if (!articles || articles.length === 0) return;
+    if (!articles.some(a => a.slug === hintKey)) {
+      recordGuideMiss(hintKey, "hint");
+    }
+  }, [loading, articles, hintKey]);
 
   useEffect(() => {
     try {
