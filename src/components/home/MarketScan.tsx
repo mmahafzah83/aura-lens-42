@@ -255,19 +255,22 @@ export default function MarketScan({ onOpenCapture, onSwitchTab, onDraftPost, de
         {loading ? (
           <><Skel /><Skel /><Skel /></>
         ) : (
-          (items || []).slice(0, 3).map((it, i) => (
+          (items || []).slice(0, 3).map((it, i) => {
+            const sourceKey = (it.url || it.title || "").trim();
+            return (
             <Card
               key={i}
               item={it}
+              captured={isCaptured(sourceKey)}
               onCapture={() => {
                 if (it.url) {
-                  onOpenCapture?.(it.url);
+                  onOpenCapture?.(it.url, undefined, sourceKey);
                 } else {
                   const cleanBluf = (it.bluf || "")
                     .replace(/\[SIGNAL\]:\s*/gi, "")
                     .replace(/\s*\|\s*\[ACTION\]:\s*/gi, "\n\n")
                     .replace(/\s*\|\s*\[VALUE\]:\s*/gi, "\n\n");
-                  onOpenCapture?.(undefined, `${it.title || ""}\n\n${cleanBluf}`.trim());
+                  onOpenCapture?.(undefined, `${it.title || ""}\n\n${cleanBluf}`.trim(), sourceKey);
                 }
               }}
               onDraft={() => {
@@ -284,7 +287,8 @@ export default function MarketScan({ onOpenCapture, onSwitchTab, onDraftPost, de
                 }
               }}
             />
-          ))
+            );
+          })
         )}
       </div>
       )}
