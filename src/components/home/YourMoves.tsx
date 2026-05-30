@@ -19,7 +19,7 @@ interface YourMovesProps {
   items?: AuraItem[] | null;
   hideIfEmpty?: boolean;
   defaultOpen?: boolean;
-  onOpenCapture?: () => void;
+  onOpenCapture?: (prefillUrl?: string, prefillText?: string) => void;
   onSwitchTab?: (tab: "home" | "identity" | "intelligence" | "authority" | "influence") => void;
 }
 
@@ -119,7 +119,7 @@ export default function YourMoves({ userId, items: itemsProp, hideIfEmpty, defau
       else navigate("/?tab=authority", { state: { prefill_topic: item.title } });
       return;
     }
-    if (item.action_type === "CAPTURE") { onOpenCapture?.(); return; }
+    if (item.action_type === "CAPTURE") { onOpenCapture?.(undefined, `${item.title}\n\n${item.reason}`); return; }
     if (onSwitchTab) onSwitchTab("intelligence");
     else navigate("/?tab=intelligence");
   };
