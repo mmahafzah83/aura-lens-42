@@ -410,7 +410,7 @@ const SignalHero = ({
 
   const confPct = Math.round(signal.confidence * 100);
   const orgs = signal.unique_orgs || 1;
-  const fragCount = evidence.length || signal.supporting_evidence_ids?.length || signal.fragment_count || 0;
+  const fragCount = evidence.length || (signal as any).evidenceCount || signal.supporting_evidence_ids?.length || signal.fragment_count || 0;
   const isRising = signal.velocity_status === "accelerating";
   const isFading = signal.velocity_status === "fading";
   const velText = isRising ? "and rising" : isFading ? "and fading" : "and stable";
@@ -1004,7 +1004,26 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
         supabase.from("documents").select("id", { count: "exact", head: true }),
         supabase.from("recommended_moves").select("id", { count: "exact", head: true }).eq("status", "active").eq("user_id", user.id),
       ]);
-      const loaded = (signalsRes.data || []) as unknown as Signal[];
+      const loadedRaw = (signalsRes.data || []) as any[];
+      // W2-A-2: compute LIVE evidence count per signal in ONE batched query.
+      // Stored fragment_count is grow-only; this reflects only fragments that still exist.
+      const allIds = Array.from(new Set(
+        loadedRaw.flatMap((s) => (s.supporting_evidence_ids || []) as string[]),
+      ));
+      let existingSet = new Set<string>();
+      if (allIds.length) {
+        const { data: existRows } = await supabase
+          .from("evidence_fragments")
+          .select("id")
+          .eq("user_id", user.id)
+          .in("id", allIds);
+        existingSet = new Set((existRows || []).map((r: any) => r.id));
+      }
+      const loaded = loadedRaw.map((s) => ({
+        ...s,
+        evidenceCount: ((s.supporting_evidence_ids || []) as string[])
+          .filter((id) => existingSet.has(id)).length,
+      })) as unknown as Signal[];
       setSignals(loaded);
       setEntryCount((entriesRes.count || 0) + (documentsRes.count || 0));
       setMovesCount(movesRes.count || 0);
@@ -1359,7 +1378,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                                     {s.signal_title}
                                   </div>
                                   <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
-                                    {s.fragment_count || 0} sources
+                                    {(s as any).evidenceCount ?? s.fragment_count ?? 0} sources
                                     {s.velocity_status && s.velocity_status !== "stable" && ` · ${s.velocity_status}`}
                                   </div>
                                 </div>
@@ -1446,7 +1465,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                                   {Math.round(s.confidence * 100)}%
                                 </div>
                                 <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
-                                  {s.fragment_count || 0} sources
+                                  {(s as any).evidenceCount ?? s.fragment_count ?? 0} sources
                                 </div>
                               </div>
                             ))}
