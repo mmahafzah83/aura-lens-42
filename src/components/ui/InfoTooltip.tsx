@@ -78,7 +78,7 @@ export function InfoTooltip({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [pos, setPos] = useState<{ top: number; left: number; effectiveSide: "top" | "bottom"; arrowLeft: number } | null>(null);
+  const [pos, setPos] = useState<{ top: number; left: number; effectiveSide: "top" | "bottom"; arrowLeft: number; maxHeight: number } | null>(null);
   const [article, setArticle] = useState<GuideRow | null>(() => (slug && _guideCache ? _guideCache[slug] ?? null : null));
 
   useEffect(() => {
@@ -115,6 +115,19 @@ export function InfoTooltip({
     return () => document.removeEventListener("mousedown", onDoc);
   }, [open]);
 
+  // Close tooltip on scroll/resize so it never strands away from its trigger.
+  useEffect(() => {
+    if (!visible || isMobile) return;
+    const close = () => setOpen(false);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, isMobile]);
+
   const visible = open || hover || triggerHover;
 
   // Compute viewport-aware position for floating panel (desktop)
@@ -131,12 +144,19 @@ export function InfoTooltip({
     const pw = Math.min(width, vw - pad * 2);
     const ph = panel.offsetHeight || 120;
 
-    // Decide side: prefer requested side, flip if it clips
-    let eff: "top" | "bottom" = side;
-    if (eff === "top" && tr.top - ph - 12 < pad) eff = "bottom";
-    else if (eff === "bottom" && tr.bottom + ph + 12 > vh - pad) eff = "top";
+    // Available room above / below the trigger
+    const spaceAbove = tr.top - pad - 12;
+    const spaceBelow = vh - tr.bottom - pad - 12;
 
-    const top = eff === "top" ? tr.top - ph - 12 : tr.bottom + 12;
+    // Decide side: prefer requested side; flip if it clips and the other side has more room.
+    let eff: "top" | "bottom" = side;
+    if (eff === "top" && ph > spaceAbove && spaceBelow > spaceAbove) eff = "bottom";
+    else if (eff === "bottom" && ph > spaceBelow && spaceAbove > spaceBelow) eff = "top";
+
+    // Clamp panel height to the available side; content scrolls inside.
+    const maxHeight = Math.max(120, eff === "top" ? spaceAbove : spaceBelow);
+    const effectiveHeight = Math.min(ph, maxHeight);
+    const top = eff === "top" ? tr.top - effectiveHeight - 12 : tr.bottom + 12;
 
     // Center horizontally on trigger, clamp to viewport
     const triggerCenter = tr.left + tr.width / 2;
@@ -147,7 +167,7 @@ export function InfoTooltip({
 
     const arrowLeft = Math.max(12, Math.min(triggerCenter - left, pw - 12));
 
-    setPos({ top, left, effectiveSide: eff, arrowLeft });
+    setPos({ top, left, effectiveSide: eff, arrowLeft, maxHeight });
   }, [visible, isMobile, side, width, align, children, text, article]);
 
   const triggerStyle: CSSProperties = {
@@ -179,7 +199,7 @@ export function InfoTooltip({
     color: "var(--ink-3)",
     lineHeight: 1.7,
     boxShadow: "var(--shadow-lift)",
-    zIndex: 1000,
+    zIndex: 9999,
     opacity: visible ? 1 : 0,
     pointerEvents: visible ? "auto" : "none",
     transition: "opacity 0.2s ease",
@@ -206,6 +226,8 @@ export function InfoTooltip({
       maxWidth: "calc(100vw - 32px)",
       padding: "18px 20px",
       fontSize: 13,
+      maxHeight: "calc(100vh - 32px)",
+      overflowY: "auto",
     };
   } else {
     const effSide = pos?.effectiveSide ?? side;
@@ -215,6 +237,8 @@ export function InfoTooltip({
       left: pos?.left ?? -9999,
       width: Math.min(width, typeof window !== "undefined" ? window.innerWidth - 32 : width),
       maxWidth: "calc(100vw - 32px)",
+      maxHeight: pos?.maxHeight ?? "calc(100vh - 32px)",
+      overflowY: "auto",
     };
     arrowStyle = {
       position: "absolute",
