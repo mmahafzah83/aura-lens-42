@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Send, Plus, Eye, ChevronRight, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useCapturedSources } from "@/hooks/useCapturedSources";
 
 export type ActionType = "PUBLISH" | "CAPTURE" | "WATCH";
 export type Urgency = "HIGH" | "MEDIUM";
@@ -19,7 +20,7 @@ interface YourMovesProps {
   items?: AuraItem[] | null;
   hideIfEmpty?: boolean;
   defaultOpen?: boolean;
-  onOpenCapture?: (prefillUrl?: string, prefillText?: string) => void;
+  onOpenCapture?: (prefillUrl?: string, prefillText?: string, sourceKey?: string) => void;
   onSwitchTab?: (tab: "home" | "identity" | "intelligence" | "authority" | "influence") => void;
 }
 
@@ -34,15 +35,17 @@ const URGENCY_STYLE: Record<Urgency, { bg: string; color: string }> = {
   MEDIUM: { bg: "hsl(var(--warning) / 0.12)", color: "var(--warning)" },
 };
 
-const Row = ({ item, onClick }: { item: AuraItem; onClick: () => void }) => {
+const Row = ({ item, onClick, captured }: { item: AuraItem; onClick: () => void; captured?: boolean }) => {
   const t = TYPE_STYLE[item.action_type] || TYPE_STYLE.WATCH;
   const Icon = t.Icon;
+  const isDisabled = !!captured;
   return (
     <div
       role="button"
-      tabIndex={0}
-      onClick={onClick}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }}
+      tabIndex={isDisabled ? -1 : 0}
+      aria-disabled={isDisabled || undefined}
+      onClick={isDisabled ? undefined : onClick}
+      onKeyDown={(e) => { if (isDisabled) return; if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }}
       style={{
         display: "flex",
         alignItems: "center",
@@ -50,7 +53,8 @@ const Row = ({ item, onClick }: { item: AuraItem; onClick: () => void }) => {
         background: "hsl(var(--muted) / 0.4)",
         borderRadius: 8,
         padding: "10px 12px",
-        cursor: "pointer",
+        cursor: isDisabled ? "default" : "pointer",
+        opacity: isDisabled ? 0.7 : 1,
       }}
     >
       <span style={{
@@ -58,7 +62,7 @@ const Row = ({ item, onClick }: { item: AuraItem; onClick: () => void }) => {
         padding: "3px 8px", borderRadius: 4,
         background: t.bg, color: t.color, flexShrink: 0,
       }}>
-        {item.action_type}
+        {isDisabled ? "CAPTURED ✓" : item.action_type}
       </span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
@@ -80,6 +84,7 @@ const Skel = () => (
 );
 
 export default function YourMoves({ userId, items: itemsProp, hideIfEmpty, defaultOpen = true, onOpenCapture, onSwitchTab }: YourMovesProps) {
+  const { isCaptured } = useCapturedSources();
   const navigate = useNavigate();
   const [items, setItems] = useState<AuraItem[] | null>(null);
   const [loading, setLoading] = useState(itemsProp === undefined);
@@ -119,7 +124,11 @@ export default function YourMoves({ userId, items: itemsProp, hideIfEmpty, defau
       else navigate("/?tab=authority", { state: { prefill_topic: item.title } });
       return;
     }
-    if (item.action_type === "CAPTURE") { onOpenCapture?.(undefined, `${item.title}\n\n${item.reason}`); return; }
+    if (item.action_type === "CAPTURE") {
+      const sourceKey = (item.title || "").trim();
+      onOpenCapture?.(undefined, `${item.title}\n\n${item.reason}`, sourceKey);
+      return;
+    }
     if (onSwitchTab) onSwitchTab("intelligence");
     else navigate("/?tab=intelligence");
   };
@@ -182,7 +191,14 @@ export default function YourMoves({ userId, items: itemsProp, hideIfEmpty, defau
                 Aura is analyzing your signals. Check back after your next capture.
               </div>
             ) : (
-              items.map((it, i) => <Row key={i} item={it} onClick={() => handleClick(it)} />)
+              items.map((it, i) => (
+                <Row
+                  key={i}
+                  item={it}
+                  onClick={() => handleClick(it)}
+                  captured={it.action_type === "CAPTURE" && isCaptured((it.title || "").trim())}
+                />
+              ))
             )}
           </div>
         </>

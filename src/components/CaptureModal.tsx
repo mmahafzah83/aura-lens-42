@@ -15,6 +15,7 @@ interface CaptureModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCaptured: () => void;
+  onDuplicate?: () => void;
   onOpenChat?: (prefill: string) => void;
   prefillUrl?: string;
   prefillText?: string;
@@ -29,7 +30,7 @@ const isValidUrl = (s: string) => {
   }
 };
 
-const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat, prefillUrl, prefillText }: CaptureModalProps) => {
+const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat, prefillUrl, prefillText }: CaptureModalProps) => {
   const queryClient = useQueryClient();
   const [captureType, setCaptureType] = useState<CaptureType>("link");
   const [content, setContent] = useState("");
@@ -368,6 +369,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat, prefillUrl, 
               id: existingEntries[0].id,
               date: new Date(existingEntries[0].created_at).toLocaleDateString(),
             });
+            onDuplicate?.();
             setSaving(false);
             return;
           }
@@ -496,6 +498,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat, prefillUrl, 
           id: data.existing_id,
           date: new Date(data.created_at).toLocaleDateString(),
         });
+        onDuplicate?.();
         setSaving(false);
         return;
       }

@@ -14,6 +14,7 @@ import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import { FirstTimeHint } from "@/components/FirstTimeHint";
 import { useJourneyState } from "@/hooks/useJourneyState";
 import { useAuthReady } from "@/hooks/useAuthReady";
+import { useCapturedSources } from "@/hooks/useCapturedSources";
 import { showQueryErrorToast } from "@/lib/safeQuery";
 import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/ui/EmptyState";
@@ -541,7 +542,8 @@ const STORAGE_KEY = "market_coverage_cache_v1";
 
 const EditorialBlindSpots = ({
   signals, onOpenCapture,
-}: { signals: Signal[]; onOpenCapture?: (prefillUrl?: string, prefillText?: string) => void }) => {
+}: { signals: Signal[]; onOpenCapture?: (prefillUrl?: string, prefillText?: string, sourceKey?: string) => void }) => {
+  const { isCaptured } = useCapturedSources();
   const [data, setData] = useState<(CoverageResult & { generated_at?: string }) | null>(null);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -643,14 +645,20 @@ const EditorialBlindSpots = ({
                     <p style={{ fontSize: 12, color: "var(--ink-4)", lineHeight: 1.5, margin: "0 0 6px" }}>{it.recommendation}</p>
                     <p style={{ fontStyle: "italic", fontSize: 11, color: accent, margin: "0 0 10px" }}>{urgency}</p>
                      <button
-                      onClick={() => onOpenCapture?.(undefined, it.recommendation)}
+                      onClick={() => onOpenCapture?.(undefined, it.recommendation, (it.recommendation || "").trim())}
+                      disabled={isCaptured((it.recommendation || "").trim())}
                       style={{
-                        background: `${accent}1A`, color: accent, border: `0.5px solid ${accent}55`,
+                        background: isCaptured((it.recommendation || "").trim()) ? `${accent}0F` : `${accent}1A`,
+                        color: accent, border: `0.5px solid ${accent}55`,
                         borderRadius: 6, padding: "5px 11px", fontSize: 12, fontWeight: 500,
-                        cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5,
+                        cursor: isCaptured((it.recommendation || "").trim()) ? "default" : "pointer",
+                        opacity: isCaptured((it.recommendation || "").trim()) ? 0.75 : 1,
+                        display: "inline-flex", alignItems: "center", gap: 5,
                       }}
                     >
-                      <Plus size={12} /> Start tracking this
+                      {isCaptured((it.recommendation || "").trim())
+                        ? <>✓ Captured</>
+                        : <><Plus size={12} /> Start tracking this</>}
                     </button>
                   </div>
                 </div>
@@ -693,7 +701,8 @@ const readingCacheKey = () => `aura_reading_list_${new Date().toISOString().slic
 
 const EditorialReadingList = ({
   signals, onOpenCapture,
-}: { signals: Signal[]; onOpenCapture?: (prefillUrl?: string, prefillText?: string) => void }) => {
+}: { signals: Signal[]; onOpenCapture?: (prefillUrl?: string, prefillText?: string, sourceKey?: string) => void }) => {
+  const { isCaptured } = useCapturedSources();
   const [recs, setRecs] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -873,16 +882,24 @@ const EditorialReadingList = ({
                   <p style={{ fontSize: 12, color: "var(--ink-4)", lineHeight: 1.5, margin: 0 }}>{ctx.text}</p>
                 </div>
 
+                {(() => {
+                  const sourceKey = (rec.url || rec.title || "").trim();
+                  const captured = isCaptured(sourceKey);
+                  return (
                 <div style={{ display: "flex", gap: 8 }}>
                   <button
-                    onClick={() => onOpenCapture?.(rec.url || undefined)}
+                    onClick={() => onOpenCapture?.(rec.url || undefined, undefined, sourceKey)}
+                    disabled={captured}
                     style={{
-                      background: "var(--brand)", color: "#fff", border: "none",
+                      background: captured ? "hsl(var(--muted) / 0.5)" : "var(--brand)",
+                      color: captured ? "hsl(var(--muted-foreground))" : "#fff", border: "none",
                       borderRadius: 6, padding: "6px 12px", fontSize: 12, fontWeight: 500,
-                      cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5,
+                      cursor: captured ? "default" : "pointer",
+                      opacity: captured ? 0.85 : 1,
+                      display: "inline-flex", alignItems: "center", gap: 5,
                     }}
                   >
-                    <Plus size={12} /> Capture
+                    {captured ? <>✓ Captured</> : <><Plus size={12} /> Capture</>}
                   </button>
                   {rec.url && (
                     <a
@@ -898,6 +915,8 @@ const EditorialReadingList = ({
                     </a>
                   )}
                 </div>
+                  );
+                })()}
               </div>
             );
           })}
