@@ -642,6 +642,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
 
       {/* SECTION 2 — PROFILE HERO CARD */}
       {assessmentCompleted && (
+        <SectionHeader label="Your Market Position" />
+      )}
+      {assessmentCompleted && (
         <div>
           <div
             style={{
