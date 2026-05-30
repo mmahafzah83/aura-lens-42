@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { EVIDENCE_MATRIX } from "@/components/diagnostic/EvidenceMatrix";
+import { formatSkillLabel } from "@/lib/formatSkillLabel";
 
 interface Skill {
   name: string;
@@ -324,7 +325,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
                   <div key={skill.name} className="p-3 rounded-xl bg-secondary/30 space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-sm text-foreground">{skill.name}</span>
+                        <span className="text-sm text-foreground">{formatSkillLabel(skill.name)}</span>
                         {isObjective && <span title="Verified via Objective Diagnostic"><ShieldCheck className="w-3.5 h-3.5 text-primary" /></span>}
                       </div>
                       <div className="flex items-center gap-2">
