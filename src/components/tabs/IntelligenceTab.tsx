@@ -882,16 +882,24 @@ const EditorialReadingList = ({
                   <p style={{ fontSize: 12, color: "var(--ink-4)", lineHeight: 1.5, margin: 0 }}>{ctx.text}</p>
                 </div>
 
+                {(() => {
+                  const sourceKey = (rec.url || rec.title || "").trim();
+                  const captured = isCaptured(sourceKey);
+                  return (
                 <div style={{ display: "flex", gap: 8 }}>
                   <button
-                    onClick={() => onOpenCapture?.(rec.url || undefined)}
+                    onClick={() => onOpenCapture?.(rec.url || undefined, undefined, sourceKey)}
+                    disabled={captured}
                     style={{
-                      background: "var(--brand)", color: "#fff", border: "none",
+                      background: captured ? "hsl(var(--muted) / 0.5)" : "var(--brand)",
+                      color: captured ? "hsl(var(--muted-foreground))" : "#fff", border: "none",
                       borderRadius: 6, padding: "6px 12px", fontSize: 12, fontWeight: 500,
-                      cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5,
+                      cursor: captured ? "default" : "pointer",
+                      opacity: captured ? 0.85 : 1,
+                      display: "inline-flex", alignItems: "center", gap: 5,
                     }}
                   >
-                    <Plus size={12} /> Capture
+                    {captured ? <>✓ Captured</> : <><Plus size={12} /> Capture</>}
                   </button>
                   {rec.url && (
                     <a
@@ -907,6 +915,8 @@ const EditorialReadingList = ({
                     </a>
                   )}
                 </div>
+                  );
+                })()}
               </div>
             );
           })}
