@@ -957,6 +957,30 @@ export type Database = {
         }
         Relationships: []
       }
+      guide_slug_misses: {
+        Row: {
+          count: number
+          first_seen: string
+          last_seen: string
+          slug: string
+          surface: string
+        }
+        Insert: {
+          count?: number
+          first_seen?: string
+          last_seen?: string
+          slug: string
+          surface: string
+        }
+        Update: {
+          count?: number
+          first_seen?: string
+          last_seen?: string
+          slug?: string
+          surface?: string
+        }
+        Relationships: []
+      }
       impact_narratives: {
         Row: {
           content_insight: string

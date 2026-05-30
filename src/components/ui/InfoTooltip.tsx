@@ -1,6 +1,7 @@
 import React, { useEffect, useLayoutEffect, useRef, useState, ReactNode, CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { recordGuideMiss } from "@/lib/recordGuideMiss";
 
 // Module-level shared cache so multiple InfoTooltip instances with `slug`
 // dedupe to a single network fetch of the guide_articles corpus.
@@ -85,7 +86,11 @@ export function InfoTooltip({
     let cancelled = false;
     const sync = () => {
       if (cancelled) return;
-      if (_guideCache) setArticle(_guideCache[slug] ?? null);
+      if (_guideCache) {
+        const row = _guideCache[slug] ?? null;
+        setArticle(row);
+        if (!row) recordGuideMiss(slug, "tooltip");
+      }
     };
     _subscribers.add(sync);
     loadGuideCorpus().then(sync).catch(() => {});
