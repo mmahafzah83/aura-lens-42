@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { FileText, TrendingUp, Lightbulb, Plus, ExternalLink, ArrowRight, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useCapturedSources } from "@/hooks/useCapturedSources";
 
 interface BriefingItem {
   title?: string;
@@ -11,7 +12,7 @@ interface BriefingItem {
 }
 
 interface MarketScanProps {
-  onOpenCapture?: (prefillUrl?: string, prefillText?: string) => void;
+  onOpenCapture?: (prefillUrl?: string, prefillText?: string, sourceKey?: string) => void;
   onSwitchTab?: (tab: "home" | "identity" | "intelligence" | "authority" | "influence") => void;
   onDraftPost?: (prefill: { topic: string; context: string }) => void;
   defaultExpanded?: boolean;
@@ -41,10 +42,11 @@ function parseBLUF(bluf: string): { signal: string; action: string; value: strin
   return out;
 }
 
-const Card = ({ item, onCapture, onDraft }: {
+const Card = ({ item, onCapture, onDraft, captured }: {
   item: BriefingItem;
   onCapture: () => void;
   onDraft: () => void;
+  captured?: boolean;
 }) => {
   const meta = TYPE_META[item.type || ""] || TYPE_META.deep_dive;
   const Icon = meta.Icon;
@@ -122,15 +124,18 @@ const Card = ({ item, onCapture, onDraft }: {
           <>
             <button
               type="button"
-              onClick={onCapture}
+              onClick={captured ? undefined : onCapture}
+              disabled={!!captured}
               style={{
                 fontSize: 11, padding: "4px 10px", borderRadius: 6,
-                background: "hsl(var(--muted) / 0.6)",
-                color: "hsl(var(--foreground))", border: 0, cursor: "pointer",
+                background: captured ? "hsl(var(--muted) / 0.35)" : "hsl(var(--muted) / 0.6)",
+                color: captured ? "hsl(var(--muted-foreground))" : "hsl(var(--foreground))",
+                border: 0, cursor: captured ? "default" : "pointer",
+                opacity: captured ? 0.85 : 1,
                 display: "inline-flex", alignItems: "center", gap: 4,
               }}
             >
-              <Plus size={12} /> Capture
+              {captured ? <>✓ Captured</> : <><Plus size={12} /> Capture</>}
             </button>
             {hasUrl && (
               <a
