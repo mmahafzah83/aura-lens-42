@@ -42,14 +42,14 @@ const EMPTY_IDENTITY: IdentityModel = {
 };
 
 const SECTION_CONFIG = [
-  { key: "expertise_areas", label: "Expertise Areas", icon: Layers, color: "text-primary", dot: "var(--aura-accent)", subtitle: "Where your captured intelligence shows real depth" },
+  { key: "expertise_areas", label: "Expertise areas", icon: Layers, color: "text-primary", dot: "var(--aura-accent)", subtitle: "Where your captured intelligence shows real depth" },
   { key: "industries", label: "Industries", icon: Globe, color: "text-emerald-400", dot: "var(--aura-positive)", subtitle: "The sectors your signals consistently track" },
   { key: "knowledge_domains", label: "Your deep expertise", icon: Lightbulb, color: "text-amber-400", dot: "var(--aura-accent)", subtitle: "The fields where your captured intelligence runs deepest" },
   { key: "capabilities", label: "What sets you apart", icon: Star, color: "text-violet-400", dot: "var(--aura-purple)", subtitle: "The things you do that most people in your space can't. These show up in everything you write." },
-  { key: "clients", label: "Target Clients", icon: Users, color: "text-sky-400", dot: "var(--aura-accent3)", subtitle: "The decision-makers your expertise serves" },
-  { key: "values", label: "Core Values", icon: Compass, color: "text-rose-400", dot: "var(--aura-pink)", subtitle: "What drives your approach — these shape your voice and content tone" },
-  { key: "authority_ambitions", label: "Presence Ambitions", icon: Target, color: "text-primary", dot: "var(--aura-accent)", subtitle: "Where you are heading — Aura measures every action against these targets" },
-  { key: "strategic_goals", label: "Strategic Goals", icon: Target, color: "text-emerald-400", dot: "var(--aura-positive)", subtitle: "The outcomes that define success for you — your score reflects progress toward these" },
+  { key: "clients", label: "Target clients", icon: Users, color: "text-sky-400", dot: "var(--aura-accent3)", subtitle: "The decision-makers your expertise serves" },
+  { key: "values", label: "Core values", icon: Compass, color: "text-rose-400", dot: "var(--aura-pink)", subtitle: "What drives your approach — these shape your voice and content tone" },
+  { key: "authority_ambitions", label: "Presence ambitions", icon: Target, color: "text-primary", dot: "var(--aura-accent)", subtitle: "Where you are heading — Aura measures every action against these targets" },
+  { key: "strategic_goals", label: "Strategic goals", icon: Target, color: "text-emerald-400", dot: "var(--aura-positive)", subtitle: "The outcomes that define success for you — your score reflects progress toward these" },
 ] as const;
 
 type EditableArrayKey = typeof SECTION_CONFIG[number]["key"];
@@ -68,6 +68,7 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null, hide
   const [editItems, setEditItems] = useState<string[]>([]);
   const [newItem, setNewItem] = useState("");
   const [saving, setSaving] = useState(false);
+  const [level, setLevel] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -78,12 +79,13 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null, hide
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     const { data: profile } = await (supabase.from("diagnostic_profiles" as any) as any)
-      .select("identity_intelligence")
+      .select("identity_intelligence, level")
       .eq("user_id", user.id)
       .maybeSingle();
     if (profile?.identity_intelligence && Object.keys(profile.identity_intelligence).length > 0) {
       setIdentity({ ...EMPTY_IDENTITY, ...profile.identity_intelligence });
     }
+    setLevel(profile?.level || null);
     setLoading(false);
   };
 
@@ -196,6 +198,21 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null, hide
         </div>
       ) : (
         <div className="space-y-6">
+          {/* Provenance, guidance, and personalization */}
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">
+              Built by Aura from your captures, assessments, and signals.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              These shape your content and voice. Publish on your themes using the suggestions below.
+            </p>
+            {level && (
+              <p className="text-xs text-muted-foreground">
+                Built for your level: {level}
+              </p>
+            )}
+          </div>
+
           {/* Identity Summary Card */}
           <div className="p-5 rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20">
             <div className="flex items-start gap-3">
