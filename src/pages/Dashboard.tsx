@@ -7,6 +7,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { useCardEntryAnimation } from "@/hooks/useCardEntryAnimation";
 import CaptureModal from "@/components/CaptureModal";
+import { useCapturedSources } from "@/hooks/useCapturedSources";
 import AuraChatSidebar, { type ChatContext } from "@/components/AuraChatSidebar";
 import AskAuraPresence from "@/components/AskAuraPresence";
 import AuraLogo from "@/components/brand/AuraLogo";
@@ -66,10 +67,20 @@ const Dashboard = () => {
   const [captureOpen, setCaptureOpen] = useState(false);
   const [capturePrefillUrl, setCapturePrefillUrl] = useState<string | null>(null);
   const [capturePrefillText, setCapturePrefillText] = useState<string | null>(null);
-  const handleOpenCapture = (url?: string, text?: string) => {
+  const pendingCaptureKeyRef = useRef<string | null>(null);
+  const { markCaptured } = useCapturedSources();
+  const handleOpenCapture = (url?: string, text?: string, sourceKey?: string) => {
     setCapturePrefillUrl(url ?? null);
     setCapturePrefillText(text ?? null);
+    pendingCaptureKeyRef.current = sourceKey ?? null;
     setCaptureOpen(true);
+  };
+  const handleCaptureOutcome = () => {
+    if (pendingCaptureKeyRef.current) {
+      markCaptured(pendingCaptureKeyRef.current);
+      pendingCaptureKeyRef.current = null;
+    }
+    fetchEntries();
   };
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>();
