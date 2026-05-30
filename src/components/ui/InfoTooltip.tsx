@@ -115,6 +115,8 @@ export function InfoTooltip({
     return () => document.removeEventListener("mousedown", onDoc);
   }, [open]);
 
+  const visible = open || hover || triggerHover;
+
   // Close tooltip on scroll/resize so it never strands away from its trigger.
   useEffect(() => {
     if (!visible || isMobile) return;
@@ -125,10 +127,7 @@ export function InfoTooltip({
       window.removeEventListener("scroll", close, true);
       window.removeEventListener("resize", close);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, isMobile]);
-
-  const visible = open || hover || triggerHover;
 
   // Compute viewport-aware position for floating panel (desktop)
   useLayoutEffect(() => {
