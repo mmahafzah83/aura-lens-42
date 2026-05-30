@@ -175,7 +175,7 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
     <div
       role="dialog"
       aria-modal="true"
-      onClick={onClose}
+      onClick={(e) => { if (e.target !== e.currentTarget || busy) return; onClose(); }}
       style={{
         position: "fixed", inset: 0,
         background: "rgba(0,0,0,0.65)",
