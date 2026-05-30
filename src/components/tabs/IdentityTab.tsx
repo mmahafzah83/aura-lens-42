@@ -4,6 +4,7 @@ import { Pencil, Check, Eye, Zap, Map as MapIcon, Trophy, Target as TargetIcon, 
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import ProfileIntelligence from "@/components/ProfileIntelligence";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import { FirstTimeHint } from "@/components/FirstTimeHint";
 import MilestonesSection from "@/components/MilestonesSection";
 import AuditRadarWidget from "@/components/AuditRadarWidget";
