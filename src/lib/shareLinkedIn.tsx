@@ -12,7 +12,11 @@ export async function shareToLinkedIn(opts: {
   mode?: "share" | "feed";
   url?: string;
 }) {
-  const { text, mode = "share", url = "https://aura-intel.org" } = opts;
+  // NOTE: the legacy `mode: "feed"` URL (linkedin.com/feed/?shareActive=true)
+  // is blocked by LinkedIn (ERR_BLOCKED_BY_RESPONSE). We always use the
+  // share-offsite endpoint regardless of `mode` so callers can never drift
+  // back to the blocked URL.
+  const { text, url = "https://aura-intel.org" } = opts;
 
   // 1. Copy to clipboard (with textarea fallback)
   try {
@@ -30,11 +34,8 @@ export async function shareToLinkedIn(opts: {
     } catch { /* ignore */ }
   }
 
-  // 2. Build the LinkedIn URL
-  const target =
-    mode === "feed"
-      ? `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(text)}`
-      : `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
+  // 2. Build the LinkedIn URL (always share-offsite — feed URL is blocked)
+  const target = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
 
   // 3. Persistent toast with clickable link (no auto window.open)
   const id = toast.success(
