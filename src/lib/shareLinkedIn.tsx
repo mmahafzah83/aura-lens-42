@@ -41,7 +41,7 @@ export async function shareToLinkedIn(opts: {
   const id = toast.success(
     <div>
       <div style={{ fontWeight: 500, marginBottom: 4 }}>
-        Caption copied to clipboard ✓
+        Caption copied — paste it into your LinkedIn post.
       </div>
       <a
         href={target}
