@@ -5,6 +5,7 @@ import { Download, Linkedin, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
+import LinkedInPostSteps from "@/components/LinkedInPostSteps";
 import {
   EXPORT_GOLD,
   EXPORT_TAGLINE_EN,
@@ -407,6 +408,7 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
             Share on LinkedIn
           </Button>
         </div>
+        <LinkedInPostSteps withImage shareLabel="Share on LinkedIn" downloadLabel="Download PNG" />
       </div>
     </div>,
     document.body,

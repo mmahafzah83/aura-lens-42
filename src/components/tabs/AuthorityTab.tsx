@@ -16,6 +16,7 @@ import { Linkedin } from "lucide-react";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { FirstTimeHint } from "@/components/FirstTimeHint";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
+import LinkedInPostSteps from "@/components/LinkedInPostSteps";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -3177,6 +3178,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
+                  <LinkedInPostSteps shareLabel="Post on LinkedIn" />
 
                   {/* Inline confirmation (M-1-1) */}
                   {confirmingId === p.id && (
@@ -3306,6 +3308,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
+                  <LinkedInPostSteps shareLabel="Post on LinkedIn" />
 
                   {/* LinkedIn URL tracker (M-1-1) */}
                   {p._source === "linkedin_posts" && (

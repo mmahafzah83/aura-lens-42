@@ -7,6 +7,7 @@ import { Download, Copy, FileText, X, Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import useMilestones, { type Milestone } from "@/hooks/useMilestones";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
+import LinkedInPostSteps from "@/components/LinkedInPostSteps";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import {
   CONCEPTS,
@@ -752,6 +753,13 @@ function StepCredential({
         >
           {busy === "share" ? "Preparing…" : `Share on LinkedIn (${lang})`}
         </button>
+        <LinkedInPostSteps
+          withImage
+          variant="dark"
+          lang={lang === "AR" ? "ar" : "en"}
+          shareLabel={`Share on LinkedIn (${lang})`}
+          downloadLabel="PNG"
+        />
       </div>
 
       <div style={{ marginTop: 12, textAlign: "center" }}>
