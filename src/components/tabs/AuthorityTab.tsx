@@ -814,6 +814,41 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
     }
   };
 
+  // Mark the currently-generated post as published WITHOUT requiring a saved draft.
+  // Reuses insertPublishedLinkedInPost (same core as Library's markPublished).
+  const handleMarkPublishedFromCreate = async (urlArg?: string) => {
+    if (publishing || publishedFromCreate) return;
+    const body = stripMarkdown(output || fullVersion || shortVersion || "");
+    if (!body.trim()) { toast.error("Nothing to publish"); return; }
+    setPublishing(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) throw new Error("Not authenticated");
+      await insertPublishedLinkedInPost({
+        userId: session.user.id,
+        postText: body,
+        formatType: (contentType as string) === "carousel" ? "carousel" : "post",
+        sourceMetadata: {
+          source: "create_view",
+          topic: topic || null,
+          language: lang,
+          signal_ids: selectedSignalId ? [selectedSignalId] : [],
+          signal_titles: selectedSignalTitle ? [selectedSignalTitle] : [],
+        },
+        sourceSignalId: selectedSignalId,
+        url: urlArg ?? null,
+      });
+      setPublishedFromCreate(true);
+      setPubUrlOpen(false);
+      setPubUrl("");
+      toast.success("Marked as published — your aura score is updating");
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't mark as published");
+    } finally {
+      setPublishing(false);
+    }
+  };
+
   const displayedOutput = output;
   const isGeneratingAny = generating || generatingShort;
 
