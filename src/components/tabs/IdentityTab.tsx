@@ -100,7 +100,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const [marketShareData, setMarketShareData] = useState<MilestoneShareData | null>(null);
   const [entryCount, setEntryCount] = useState<number>(0);
   const [trackedPostCount, setTrackedPostCount] = useState<number>(0);
-  const [fullProfileExpanded, setFullProfileExpanded] = useState(false);
+  
   const [milestoneData, setMilestoneData] = useState<{ id: string; name: string; earned: boolean; earned_at: string | null; context: any }[]>([]);
   const [radarInputs, setRadarInputs] = useState({
     avgEngagement: 0,
