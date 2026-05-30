@@ -348,6 +348,11 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
   const [copied, setCopied] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
+  // Mark-as-published (Create view) — lets users close the loop without saving a draft first.
+  const [publishing, setPublishing] = useState(false);
+  const [publishedFromCreate, setPublishedFromCreate] = useState(false);
+  const [pubUrlOpen, setPubUrlOpen] = useState(false);
+  const [pubUrl, setPubUrl] = useState("");
   const [selectedSignalId, setSelectedSignalId] = useState<string | null>(null);
   const [selectedSignalTitle, setSelectedSignalTitle] = useState<string | null>(null);
   const [selectedSignalInsight, setSelectedSignalInsight] = useState<string | null>(null);
