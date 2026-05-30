@@ -1123,7 +1123,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         onNavigate={handleNavigate}
         onComplete={() => {
           setRadarRefreshKey((k) => k + 1);
-          loadProfile();
+          if (authUser?.id) loadAll(authUser.id);
         }}
       />
       <BrandAssessmentModal open={brandOpen} onOpenChange={setBrandOpen} onNavigate={handleNavigate} />
