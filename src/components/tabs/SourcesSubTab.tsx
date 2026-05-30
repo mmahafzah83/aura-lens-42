@@ -621,8 +621,12 @@ const SourcesSubTab = ({
 
   const handleDelete = async (id: string) => {
     const target = entries.find(e => e.id === id);
-    const table = target?.type === "document" ? "documents" : "entries";
-    const { error } = await supabase.from(table).delete().eq("id", id);
+    const kind = target?.type === "document" ? "document" : "entry";
+    // Ensure auth token is fresh before invocation
+    await supabase.auth.getSession();
+    const { error } = await supabase.functions.invoke("delete-source", {
+      body: { id, kind },
+    });
     if (error) { toast.error("Couldn't delete"); return; }
     setEntries(prev => prev.filter(e => e.id !== id));
     setTotalCount(prev => prev - 1);
