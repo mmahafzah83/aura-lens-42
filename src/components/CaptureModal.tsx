@@ -369,6 +369,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
               id: existingEntries[0].id,
               date: new Date(existingEntries[0].created_at).toLocaleDateString(),
             });
+            onDuplicate?.();
             setSaving(false);
             return;
           }
@@ -497,6 +498,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
           id: data.existing_id,
           date: new Date(data.created_at).toLocaleDateString(),
         });
+        onDuplicate?.();
         setSaving(false);
         return;
       }
