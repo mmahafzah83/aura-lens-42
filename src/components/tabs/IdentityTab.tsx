@@ -878,6 +878,16 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         </section>
       )}
 
+      {/* SECTION 6b — PROFILE INTELLIGENCE */}
+      {assessmentCompleted && (
+        <SectionHeader label="Profile Intelligence" />
+      )}
+      {assessmentCompleted && (
+        <div data-testid="story-strategic-identity">
+          <ProfileIntelligence onGenerateContent={handleGenerateContent} intelligenceStage={intelligenceStage} hideSuggestedTopics={false} />
+        </div>
+      )}
+
       {/* SECTION 7 — YOUR JOURNEY (timeline) */}
       {assessmentCompleted && milestoneData.length > 0 && (
         <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }}>
