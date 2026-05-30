@@ -15,6 +15,7 @@ interface CaptureModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCaptured: () => void;
+  onDuplicate?: () => void;
   onOpenChat?: (prefill: string) => void;
   prefillUrl?: string;
   prefillText?: string;
@@ -29,7 +30,7 @@ const isValidUrl = (s: string) => {
   }
 };
 
-const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat, prefillUrl, prefillText }: CaptureModalProps) => {
+const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat, prefillUrl, prefillText }: CaptureModalProps) => {
   const queryClient = useQueryClient();
   const [captureType, setCaptureType] = useState<CaptureType>("link");
   const [content, setContent] = useState("");
