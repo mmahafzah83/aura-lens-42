@@ -101,7 +101,7 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
   // If cached row's persona_set doesn't match user's current rank, refresh.
   // Legacy rows had no marker and were always "director" content.
   useEffect(() => {
-    if (!row || !userId || generating) return;
+    if (!row || !userId || generating || !currentRank) return;
     const rowRank: RankBucket = row.gaps?.persona_set ?? "director";
     if (rowRank !== currentRank) {
       generate();
