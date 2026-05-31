@@ -2452,8 +2452,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
                   <span style={{ color: "hsl(var(--foreground))", fontWeight: 500 }}>{frags} evidence fragments</span>
                   {" · "}
                   <span style={{ color: "var(--danger)", fontWeight: 500 }}>{daysSinceCapture} days</span>
-                  {" since your last capture · "}
-                  <span style={{ color: "var(--success)", fontWeight: 500 }}>+8 points</span>
+                  {" since your last capture"}
                 </>
               )}
             </div>
