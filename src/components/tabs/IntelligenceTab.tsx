@@ -1050,6 +1050,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
       }) as unknown as Signal[];
       setSignals(loaded);
       setEntryCount((entriesRes.count || 0) + (documentsRes.count || 0));
+      setEvidenceCount(evidenceRes.count || 0);
       setMovesCount(movesRes.count || 0);
       if (loaded.length > 0 && !selectedSignalId) setSelectedSignalId(loaded[0].id);
     } catch (e) {
