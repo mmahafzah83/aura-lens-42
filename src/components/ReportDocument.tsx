@@ -113,6 +113,7 @@ function Sheet({ children }: { children: React.ReactNode }) {
   return (
     <div
       className="aura-report-sheet"
+      data-report-page
       style={{
         width: SHEET_W,
         minHeight: SHEET_H,
