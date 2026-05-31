@@ -2959,7 +2959,6 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
   if (!hasAnyContent) {
     return (
       <div className="space-y-6">
-        <VoiceTrainer />
         {topSignal ? (
           <EmptyState
             icon={PenTool}
