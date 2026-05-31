@@ -2460,7 +2460,18 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <button
                 type="button"
-                onClick={() => onSwitchTab?.("authority")}
+                onClick={() => {
+                  if (urgent.signal_id && onDraftToStudio) {
+                    onDraftToStudio({
+                      topic: urgent.title,
+                      context: urgent.reason,
+                      signalId: urgent.signal_id,
+                      signalTitle: urgent.signal_title ?? undefined,
+                    });
+                  } else {
+                    onSwitchTab?.("authority");
+                  }
+                }}
                 style={{
                   fontSize: 12, fontWeight: 500, padding: "8px 16px", borderRadius: 6,
                   background: "var(--danger)", color: "#fff", border: 0, cursor: "pointer",
@@ -2470,7 +2481,13 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
               </button>
               <button
                 type="button"
-                onClick={() => onSwitchTab?.("intelligence")}
+                onClick={() => {
+                  if (urgent.signal_id && onNavigateToSignal) {
+                    onNavigateToSignal(urgent.signal_id);
+                  } else {
+                    onSwitchTab?.("intelligence");
+                  }
+                }}
                 style={{
                   fontSize: 12, fontWeight: 500, padding: "8px 16px", borderRadius: 6,
                   background: "transparent",
@@ -2504,6 +2521,8 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
           defaultOpen={!isFirstWeek}
           onOpenCapture={onOpenCapture}
           onSwitchTab={onSwitchTab}
+          onNavigateToSignal={onNavigateToSignal}
+          onDraftToStudio={onDraftToStudio}
         />
       </div>
 
