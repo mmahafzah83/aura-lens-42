@@ -334,7 +334,7 @@ function Page1({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
               }}
             >
               <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                <span style={{ fontFamily: DISPLAY, fontSize: 58, fontWeight: 500, color: INK, lineHeight: 1 }}>
+                <span style={{ fontFamily: DISPLAY, fontSize: 58, fontWeight: 500, color: INK, lineHeight: 1.15 }}>
                   {data.score.score}
                 </span>
                 <span style={{ fontFamily: DISPLAY, fontSize: 20, color: INK_4 }}>/100</span>
@@ -347,7 +347,7 @@ function Page1({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
                     color: BRONZE_DEEP,
                     letterSpacing: "0.14em",
                     textTransform: "uppercase",
-                    marginTop: 8,
+                    marginTop: 10,
                     display: "flex",
                     alignItems: "center",
                     gap: 6,
@@ -604,8 +604,8 @@ function Page4({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
               { n: data.footprint.themes, l: "Themes\nOwned" },
             ].map((s, i) => (
               <div key={i} style={{ padding: "14px 12px", border: `1px solid ${RULE}`, borderTop: `2px solid ${BRONZE}`, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                <div style={{ fontFamily: DISPLAY, fontSize: 32, fontWeight: 500, color: INK, lineHeight: 1 }}>{s.n}</div>
-                <div style={{ marginTop: 12, fontSize: 10, color: INK_3, letterSpacing: "0.1em", textTransform: "uppercase", whiteSpace: "pre-line" }}>
+                <div style={{ fontFamily: DISPLAY, fontSize: 32, fontWeight: 500, color: INK, lineHeight: 1.1 }}>{s.n}</div>
+                <div style={{ marginTop: 8, fontSize: 10, color: INK_3, letterSpacing: "0.1em", textTransform: "uppercase", whiteSpace: "pre-line" }}>
                   {s.l}
                 </div>
               </div>
@@ -635,15 +635,15 @@ function Page4({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
           {showVoice ? (
             <div style={{ padding: "14px 16px", border: `1px solid ${RULE}`, borderTop: `2px solid ${BRONZE}` }}>
               <SectionLabel>Voice Signature</SectionLabel>
-              {data.voice!.tone ? <Row label="Tone" value={data.voice!.tone} valueAlign="left" /> : null}
+              {data.voice!.tone ? <StackedRow label="Tone" value={data.voice!.tone} /> : null}
               {data.voice!.preferred_structures.length > 0 ? (
-                <Row label="Structure" value={shortSnippet(data.voice!.preferred_structures.join(" · "))} valueAlign="left" />
+                <StackedRow label="Structure" value={data.voice!.preferred_structures.join(" · ")} />
               ) : null}
               {data.voice!.storytelling_patterns.length > 0 ? (
-                <Row label="Patterns" value={shortSnippet(data.voice!.storytelling_patterns.join(" · "))} valueAlign="left" />
+                <StackedRow label="Patterns" value={data.voice!.storytelling_patterns.join(" · ")} />
               ) : null}
               {data.voice!.vocabulary_preferences.prefer && data.voice!.vocabulary_preferences.prefer.length > 0 ? (
-                <Row label="Prefers" value={data.voice!.vocabulary_preferences.prefer.join(", ")} />
+                <StackedRow label="Prefers" value={data.voice!.vocabulary_preferences.prefer.join(", ")} />
               ) : null}
             </div>
           ) : null}
@@ -660,6 +660,20 @@ function Row({ label, value, valueAlign = "right" }: { label: string; value: str
     <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${RULE}`, fontSize: 12 }}>
       <span style={{ color: INK_3, letterSpacing: "0.04em" }}>{label}</span>
       <span style={{ color: INK, fontWeight: 500, textAlign: valueAlign, maxWidth: "60%" }} dir="auto">{value}</span>
+    </div>
+  );
+}
+
+// Stacked variant: label on its own line, value left-aligned full-width below.
+function StackedRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ padding: "8px 0", borderBottom: `1px solid ${RULE}` }}>
+      <div style={{ fontSize: 10, color: BRONZE_DEEP, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 4 }}>
+        {label}
+      </div>
+      <div style={{ fontSize: 12, color: INK, fontWeight: 500, lineHeight: 1.5, textAlign: "left" }} dir="auto">
+        {value}
+      </div>
     </div>
   );
 }
