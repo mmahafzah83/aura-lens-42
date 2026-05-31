@@ -198,16 +198,14 @@ Deno.serve(async (req) => {
     distillation.posts_analyzed = filtered.length;
     distillation.distilled_at = new Date().toISOString();
 
-    const vocabulary_preferences = {
-      use: distillation?.vocabulary?.signature_phrases ?? [],
-      avoid: distillation?.vocabulary?.avoided_patterns ?? [],
-      rhythm: distillation?.vocabulary?.sentence_rhythm ?? "",
-    };
+    const newUse: string[] = distillation?.vocabulary?.signature_phrases ?? [];
+    const newAvoid: string[] = distillation?.vocabulary?.avoided_patterns ?? [];
+    const newRhythm: string = distillation?.vocabulary?.sentence_rhythm ?? "";
 
-    // Step 5 — Upsert authority_voice_profiles
+    // Step 5 — Read existing row so we can MERGE (preserve user feedback)
     const { data: existing, error: existErr } = await supabase
       .from("authority_voice_profiles")
-      .select("id")
+      .select("id, tone, vocabulary_preferences")
       .eq("user_id", user_id)
       .maybeSingle();
 
@@ -219,11 +217,58 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Normalize an "avoid" entry to a comparable string key for dedupe.
+    const norm = (v: any): string => {
+      if (v == null) return "";
+      if (typeof v === "string") return v.trim().toLowerCase();
+      if (typeof v === "object") {
+        const s = (v as any).phrase ?? (v as any).text ?? (v as any).content ?? "";
+        return String(s).trim().toLowerCase();
+      }
+      return String(v).trim().toLowerCase();
+    };
+
+    const existingVocab: any =
+      (existing && typeof existing.vocabulary_preferences === "object" && existing.vocabulary_preferences) || {};
+    const existingAvoidRaw: any[] = Array.isArray(existingVocab.avoid) ? existingVocab.avoid : [];
+    const existingNotes = existingVocab.notes;
+    const existingTone: string = typeof existing?.tone === "string" ? existing.tone : "";
+
+    // UNION existing avoid (user feedback + prior AI) with new AI-derived avoid, dedupe by normalized key.
+    // Existing entries come first so user-feedback objects are preserved as-is.
+    const seen = new Set<string>();
+    const mergedAvoid: any[] = [];
+    for (const entry of existingAvoidRaw) {
+      const k = norm(entry);
+      if (!k || seen.has(k)) continue;
+      seen.add(k);
+      mergedAvoid.push(entry);
+    }
+    for (const entry of newAvoid) {
+      const k = norm(entry);
+      if (!k || seen.has(k)) continue;
+      seen.add(k);
+      mergedAvoid.push(entry);
+    }
+
+    const mergedVocabulary: Record<string, unknown> = {
+      ...existingVocab,
+      use: newUse,
+      avoid: mergedAvoid,
+      rhythm: newRhythm,
+    };
+    if (existingNotes !== undefined) mergedVocabulary.notes = existingNotes;
+
+    // Preserve user-set tone if present; otherwise take the distilled tone.
+    const mergedTone = existingTone && existingTone.trim().length > 0
+      ? existingTone
+      : (distillation.tone ?? "");
+
     const writePayload = {
-      tone: distillation.tone ?? "",
+      tone: mergedTone,
       preferred_structures: distillation.preferred_structures ?? [],
       storytelling_patterns: distillation.storytelling_patterns ?? [],
-      vocabulary_preferences,
+      vocabulary_preferences: mergedVocabulary,
       updated_at: new Date().toISOString(),
     };
 
