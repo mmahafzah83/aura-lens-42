@@ -1595,7 +1595,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
 };
 
 /* Header with editorial title + inline stats */
-const Header = ({ entryCount, signalsCount, movesCount }: { entryCount: number; signalsCount: number; movesCount: number }) => (
+const Header = ({ entryCount, evidenceCount, signalsCount, movesCount }: { entryCount: number; evidenceCount: number; signalsCount: number; movesCount: number }) => (
   <div style={{ textAlign: "center" }}>
     <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".12em", color: "var(--ink-4)", textTransform: "uppercase" }}>
       Your strategic radar
@@ -1610,16 +1610,17 @@ const Header = ({ entryCount, signalsCount, movesCount }: { entryCount: number; 
     <p style={{ fontSize: 13, color: "var(--ink-3)", margin: "0 0 16px", lineHeight: 1.5 }}>
       What the market doesn't know you know.
     </p>
-    <div data-testid="intel-stats" style={{ display: "inline-flex", alignItems: "center", gap: 0, background: "none", border: "none" }}>
+    <div data-testid="intel-stats" style={{ display: "inline-flex", alignItems: "center", gap: 0, background: "none", border: "none", flexWrap: "wrap", justifyContent: "center" }}>
+      {/* Funnel: Sources → Evidence → Signals */}
       {[
         { val: entryCount, label: entryCount === 1 ? "source" : "sources", color: "var(--brand)" },
+        { val: evidenceCount, label: "evidence", color: "var(--info, var(--brand))" },
         { val: signalsCount, label: signalsCount === 1 ? "signal" : "signals", color: "var(--info, var(--brand))" },
-        { val: movesCount, label: movesCount === 1 ? "move" : "moves", color: "var(--success, hsl(140 60% 45%))" },
       ].map((s, i, arr) => (
         <div key={s.label} style={{ display: "inline-flex", alignItems: "center" }}>
           <div style={{
             display: "flex", flexDirection: "column", alignItems: "center",
-            padding: "0 18px", background: "none", border: "none",
+            padding: "0 10px", background: "none", border: "none",
           }}>
             <div className="text-metric" style={{ color: s.val === 0 ? "var(--ink-3)" : s.color }}>
               {s.val === 0 ? "—" : s.val}
@@ -1629,10 +1630,25 @@ const Header = ({ entryCount, signalsCount, movesCount }: { entryCount: number; 
             </div>
           </div>
           {i < arr.length - 1 && (
-            <span style={{ width: 0.5, height: 20, background: "var(--surface-ink-subtle)" }} />
+            <ChevronRight size={14} style={{ color: "var(--ink-3)", margin: "0 2px", flexShrink: 0 }} />
           )}
         </div>
       ))}
+      {/* Divider + Moves (separate from funnel) */}
+      <span style={{ width: 0.5, height: 20, background: "var(--surface-ink-subtle)", margin: "0 8px" }} />
+      <div style={{ display: "inline-flex", alignItems: "center" }}>
+        <div style={{
+          display: "flex", flexDirection: "column", alignItems: "center",
+          padding: "0 10px", background: "none", border: "none",
+        }}>
+          <div className="text-metric" style={{ color: movesCount === 0 ? "var(--ink-3)" : "var(--success, hsl(140 60% 45%))" }}>
+            {movesCount === 0 ? "—" : movesCount}
+          </div>
+          <div style={{ fontSize: 11, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 4 }}>
+            {movesCount === 1 ? "move" : "moves"}
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 );
