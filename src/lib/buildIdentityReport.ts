@@ -320,7 +320,14 @@ export async function buildIdentityReport(userId: string): Promise<ReportData> {
       : p?.audit_results) || {};
   const filled: { name: string; score: number }[] = [];
   for (const dim of CAPABILITY_DIMENSIONS) {
-    const v = (ratingsRaw as any)[dim];
+    // Some users have keys in snake_case slug form (e.g. "value_based_pnl");
+    // others in canonical form ("Value-Based P&L"). Try canonical first, then slug.
+    const slug = dim
+      .toLowerCase()
+      .replace(/[-&]/g, "")
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "");
+    const v = (ratingsRaw as any)[dim] ?? (ratingsRaw as any)[slug];
     if (typeof v === "number" && !Number.isNaN(v)) {
       filled.push({ name: dim, score: Math.round(v) });
     }
