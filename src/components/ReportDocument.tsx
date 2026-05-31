@@ -176,9 +176,9 @@ function Chip({ children }: { children: React.ReactNode }) {
 // ── Radar (generic N-axis) ──────────────────────────────────────────────
 function CapabilityRadar({ data }: { data: CapabilitiesSection }) {
   const N = data.length;
-  const cx = 210;
+  const cx = 260;
   const cy = 150;
-  const R = 110;
+  const R = 100;
   const angles = data.map((_, i) => (-90 + (360 / N) * i) * (Math.PI / 180));
 
   const rings = [0.25, 0.5, 0.75, 1].map((k, i) => (
@@ -217,7 +217,7 @@ function CapabilityRadar({ data }: { data: CapabilitiesSection }) {
   });
 
   return (
-    <svg viewBox="0 0 420 300" width="100%" style={{ maxWidth: 420 }}>
+    <svg viewBox="0 0 520 300" width="100%" style={{ maxWidth: 520 }}>
       {rings}
       {axes}
       <polygon points={path} fill={BRONZE} fillOpacity={0.18} stroke={BRONZE} strokeWidth={1.5} />
