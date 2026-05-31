@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
-import { ChevronDown, ChevronRight, Mic, Loader2, Save, Check } from "lucide-react";
+import { ChevronDown, ChevronRight, Mic, Loader2, Save, Check, Upload, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,6 +18,10 @@ const VoiceEngineSection = () => {
   // preserved verbatim across saves; never shown in the textarea.
   const [preservedExamples, setPreservedExamples] = useState<any[]>([]);
   const [pulse, setPulse] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [distilling, setDistilling] = useState(false);
+  const [distilledOnce, setDistilledOnce] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -64,45 +68,135 @@ const VoiceEngineSection = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  useEffect(() => {
-    if (!open) return;
+  const loadProfile = useCallback(async () => {
     setLoading(true);
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session?.user?.id) { setLoading(false); return; }
-      supabase
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) return;
+      const { data } = await supabase
         .from("authority_voice_profiles")
         .select("example_posts, admired_posts, vocabulary_preferences, tone")
         .eq("user_id", session.user.id)
-        .maybeSingle()
-        .then(({ data }) => {
-          if (data) {
-            const examples = data.example_posts as any[];
-            const admired = data.admired_posts as any[];
-            const vocab = data.vocabulary_preferences as any;
-            const exArr = Array.isArray(examples) ? examples : [];
-            // Manual = explicit source:"manual" OR legacy entries (no source field, or string).
-            const isManual = (p: any) => {
-              if (typeof p === "string") return true;
-              if (!p || typeof p !== "object") return false;
-              return !("source" in p) || p.source === "manual" || p.source == null;
-            };
-            const manualEntries = exArr.filter(isManual);
-            const tagged = exArr.filter((p) => !isManual(p));
-            setPreservedExamples(tagged);
-            setWritingSamples(
-              manualEntries.map((p: any) => (typeof p === "string" ? p : p.content || "")).join("\n\n---\n\n")
-            );
-            setAdmiredPosts(
-              Array.isArray(admired) ? admired.map((p: any) => p.content || p).join("\n\n---\n\n") : ""
-            );
-            setVocabNotes(
-              typeof vocab === "object" && vocab?.notes ? vocab.notes : (data.tone || "")
-            );
-          }
-          setLoading(false);
-        });
-    });
-  }, [open]);
+        .maybeSingle();
+      if (!data) return;
+      const examples = data.example_posts as any[];
+      const admired = data.admired_posts as any[];
+      const vocab = data.vocabulary_preferences as any;
+      const exArr = Array.isArray(examples) ? examples : [];
+      // Manual = explicit source:"manual" OR legacy entries (no source field, or string).
+      const isManual = (p: any) => {
+        if (typeof p === "string") return true;
+        if (!p || typeof p !== "object") return false;
+        return !("source" in p) || p.source === "manual" || p.source == null;
+      };
+      const manualEntries = exArr.filter(isManual);
+      const tagged = exArr.filter((p) => !isManual(p));
+      setPreservedExamples(tagged);
+      setWritingSamples(
+        manualEntries.map((p: any) => (typeof p === "string" ? p : p.content || "")).join("\n\n---\n\n")
+      );
+      setAdmiredPosts(
+        Array.isArray(admired) ? admired.map((p: any) => p.content || p).join("\n\n---\n\n") : ""
+      );
+      setVocabNotes(
+        typeof vocab === "object" && vocab?.notes ? vocab.notes : (data.tone || "")
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    loadProfile();
+  }, [open, loadProfile]);
+
+  // Append an entry to example_posts with a given source tag (non-destructive).
+  const appendTaggedExample = async (content: string, source: string) => {
+    const trimmed = content.trim();
+    if (!trimmed) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.id) throw new Error("Not authenticated");
+    const uid = session.user.id;
+    const { data: existing } = await supabase
+      .from("authority_voice_profiles")
+      .select("id, example_posts")
+      .eq("user_id", uid)
+      .maybeSingle();
+    const current = Array.isArray((existing as any)?.example_posts)
+      ? ((existing as any).example_posts as any[])
+      : [];
+    const updated = [...current, { content: trimmed, source, added_at: new Date().toISOString() }];
+    if (existing) {
+      const { error } = await supabase
+        .from("authority_voice_profiles")
+        .update({ example_posts: updated, updated_at: new Date().toISOString() })
+        .eq("user_id", uid);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase
+        .from("authority_voice_profiles")
+        .insert({ user_id: uid, example_posts: updated, updated_at: new Date().toISOString() });
+      if (error) throw error;
+    }
+  };
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      let text = "";
+      if (file.name.endsWith(".txt") || file.type === "text/plain") {
+        text = await file.text();
+      } else if (file.name.endsWith(".pdf") || file.type === "application/pdf") {
+        const arrayBuf = await file.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuf);
+        const raw = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+        const readable = raw.match(/[\x20-\x7E\n\r]{20,}/g) || [];
+        text = readable.join("\n").slice(0, 10000);
+        if (!text.trim()) {
+          text = `[PDF uploaded: ${file.name}]`;
+          toast.info("PDF text extraction was limited. For best results, paste the text directly.");
+        }
+      } else {
+        toast.error("Please upload a PDF or TXT file");
+        return;
+      }
+      if (text.trim()) {
+        await appendTaggedExample(text.slice(0, 10000), "upload");
+        toast.success("Document added to your voice engine");
+        await loadProfile();
+      }
+    } catch (err: any) {
+      console.error("Voice upload error:", err);
+      toast.error(err.message || "Couldn't process file");
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  const handleDistill = async () => {
+    setDistilling(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) throw new Error("Not authenticated");
+      const { data, error } = await supabase.functions.invoke("voice-distill", {
+        body: { user_id: session.user.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success("Voice locked in. From now on, every post sounds like the best version of you.");
+      setDistilledOnce(true);
+      await loadProfile();
+    } catch (err: any) {
+      console.error("Voice distill error:", err);
+      toast.error(err.message || "Couldn't distill voice");
+    } finally {
+      setDistilling(false);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -307,6 +401,52 @@ const VoiceEngineSection = () => {
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 Save voice profile
               </Button>
+
+              <div className="pt-4 border-t border-border/8 space-y-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Add more, learn faster
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      accept=".pdf,.txt,application/pdf,text/plain"
+                      onChange={handleFile}
+                      className="hidden"
+                      id="voice-engine-file"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={uploading}
+                      onClick={() => fileRef.current?.click()}
+                      className="w-full gap-2"
+                    >
+                      {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                      Upload PDF or TXT
+                    </Button>
+                    <p className="text-[11px] text-muted-foreground/60 mt-1.5">
+                      Adds to your samples — your typed text is never overwritten.
+                    </p>
+                  </div>
+                  <div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={distilling}
+                      onClick={handleDistill}
+                      className="w-full gap-2"
+                    >
+                      {distilling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                      {distilledOnce ? "Re-distill voice from my posts" : "Distill voice from my posts"}
+                    </Button>
+                    <p className="text-[11px] text-muted-foreground/60 mt-1.5">
+                      Refines tone and patterns from your LinkedIn posts. Your feedback and notes are preserved.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </>
           )}
         </div>
