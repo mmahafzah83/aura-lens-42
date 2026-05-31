@@ -62,6 +62,13 @@ function calcConfidence(
   return buildConfidenceExplanation(aiBaseScore, fragmentCount, uniqueOrgs, newestFragmentDate);
 }
 
+/* Derived strength: breadth-led with diminishing returns. Fixed reference ceilings. */
+function computeStrength(breadth: number, depth: number): number {
+  const b = Math.log(1 + Math.max(0, breadth)) / Math.log(16); // breadth, ref ceiling 15
+  const d = Math.log(1 + Math.max(0, depth))   / Math.log(51); // depth,  ref ceiling 50
+  return Math.min(1, Math.max(0, 0.60 * b + 0.40 * d));
+}
+
 /* Count unique sources via source_registry_id (one row per distinct source) */
 async function countUniqueOrgs(
   admin: any,
