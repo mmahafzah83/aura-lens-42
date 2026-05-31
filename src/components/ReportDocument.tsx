@@ -538,7 +538,7 @@ function Page4({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
             ].map((s, i) => (
               <div key={i} style={{ padding: "14px 12px", border: `1px solid ${RULE}`, borderTop: `2px solid ${BRONZE}`, textAlign: "center" }}>
                 <div style={{ fontFamily: DISPLAY, fontSize: 32, fontWeight: 500, color: INK, lineHeight: 1 }}>{s.n}</div>
-                <div style={{ marginTop: 6, fontSize: 10, color: INK_3, letterSpacing: "0.1em", textTransform: "uppercase", whiteSpace: "pre-line" }}>
+                <div style={{ marginTop: 12, fontSize: 10, color: INK_3, letterSpacing: "0.1em", textTransform: "uppercase", whiteSpace: "pre-line" }}>
                   {s.l}
                 </div>
               </div>
