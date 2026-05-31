@@ -1163,7 +1163,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
     return (
       <div style={{ minHeight: "100vh", paddingBottom: 80 }}>
         <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 16px" }}>
-          <Header entryCount={entryCount} signalsCount={0} movesCount={0} />
+          <Header entryCount={entryCount} evidenceCount={0} signalsCount={0} movesCount={0} />
           <div style={{
             marginTop: 40, padding: "28px 28px",
             background: "var(--surface-ink-raised)", border: "0.5px solid var(--surface-ink-subtle)",
