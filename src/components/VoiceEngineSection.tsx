@@ -266,6 +266,11 @@ const VoiceEngineSection = () => {
                   placeholder="Paste your best LinkedIn posts, articles, or writing samples here..."
                   className="min-h-[120px] bg-secondary/30 border-border/20 text-sm"
                 />
+                {preservedExamples.length > 0 && (
+                  <p className="text-[11px] text-muted-foreground/60 mt-2 italic">
+                    + {preservedExamples.length} {preservedExamples.length === 1 ? "post" : "posts"} learned from your uploads and feedback (kept automatically)
+                  </p>
+                )}
               </div>
 
               <div>
