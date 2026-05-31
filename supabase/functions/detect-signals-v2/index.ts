@@ -62,7 +62,7 @@ function calcConfidence(
   return buildConfidenceExplanation(aiBaseScore, fragmentCount, uniqueOrgs, newestFragmentDate);
 }
 
-/* Count unique orgs from evidence fragment content */
+/* Count unique sources via source_registry_id (one row per distinct source) */
 async function countUniqueOrgs(
   admin: any,
   fragmentIds: string[],
@@ -70,18 +70,13 @@ async function countUniqueOrgs(
   if (fragmentIds.length === 0) return 1;
   const { data: frags } = await admin
     .from("evidence_fragments")
-    .select("content, metadata")
+    .select("source_registry_id")
     .in("id", fragmentIds);
-  const domains = new Set<string>();
+  const sources = new Set<string>();
   (frags || []).forEach((f: any) => {
-    const d = extractDomain(f.content || "");
-    if (d) domains.add(d);
-    // Also check metadata.source_title for URL domains
-    const metaTitle = f.metadata?.source_title || "";
-    const md = extractDomain(metaTitle);
-    if (md) domains.add(md);
+    if (f.source_registry_id) sources.add(f.source_registry_id);
   });
-  return Math.max(domains.size, 1);
+  return Math.max(sources.size, 1);
 }
 
 /* Count unique underlying sources (entries/documents) for a set of fragment IDs */
