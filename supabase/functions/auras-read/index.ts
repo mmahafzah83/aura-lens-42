@@ -23,6 +23,7 @@ RULES — follow exactly:
 4. Reasons must be specific and action-oriented — name the actual signal or trend. NEVER say "existing content not ready" or "more input needed" — those are not actions.
 5. action_type must be one of: PUBLISH | CAPTURE | WATCH
 6. urgency must be HIGH or MEDIUM only. Never LOW or MONITOR.
+7. For PUBLISH and WATCH items, you MUST set "signal_id" to the EXACT id of the source signal from top_signals (copy it verbatim — do not invent, modify, or guess). If no specific signal applies (e.g. CAPTURE items, or generic nudges), set "signal_id": null. NEVER fabricate an id.
 
 GOOD reason examples:
 - "Your Digital Transformation signal has 9 fragments — strongest it's been. Publish today."
@@ -43,7 +44,8 @@ Return valid JSON only:
       "title": "max 8 words — the specific thing to do",
       "reason": "max 15 words — specific, names the signal or trend, action-oriented",
       "urgency": "HIGH",
-      "destination": "/publish"
+      "destination": "/publish",
+      "signal_id": "uuid-from-top_signals-or-null"
     }
   ]
 }
@@ -95,7 +97,7 @@ serve(async (req) => {
 
     const [signalsRes, trendsRes, entriesRes, postRes, scoreRes] = await Promise.all([
       supabase.from("strategic_signals")
-        .select("signal_title, confidence, fragment_count, status, theme_tags")
+        .select("id, signal_title, confidence, fragment_count, status, theme_tags")
         .eq("user_id", user.id)
         .eq("status", "active")
         .order("confidence", { ascending: false })
@@ -204,20 +206,28 @@ serve(async (req) => {
     }
 
     const rawItems = Array.isArray(parsed.items) ? parsed.items : [];
+    const signalsList = (signalsRes.data || []) as Array<{ id: string; signal_title: string }>;
+    const validSignalMap = new Map(signalsList.map((s) => [s.id, s.signal_title]));
     const items = rawItems
       .filter((it: any) => it && (it.urgency === "HIGH" || it.urgency === "MEDIUM"))
       .filter((it: any) => ["PUBLISH", "CAPTURE", "WATCH"].includes(it.action_type))
       .slice(0, 3)
-      .map((it: any) => ({
-        ...it,
-        destination:
-          it.destination ||
-          (it.action_type === "PUBLISH"
-            ? "/publish"
-            : it.action_type === "CAPTURE"
-            ? "capture_modal"
-            : "/intelligence"),
-      }));
+      .map((it: any) => {
+        const echoed = typeof it.signal_id === "string" ? it.signal_id : null;
+        const validId = echoed && validSignalMap.has(echoed) ? echoed : null;
+        return {
+          ...it,
+          signal_id: validId,
+          signal_title: validId ? validSignalMap.get(validId) ?? null : null,
+          destination:
+            it.destination ||
+            (it.action_type === "PUBLISH"
+              ? "/publish"
+              : it.action_type === "CAPTURE"
+              ? "capture_modal"
+              : "/intelligence"),
+        };
+      });
 
     return new Response(JSON.stringify({ items, context_summary: {
       signals: context.top_signals.length,
