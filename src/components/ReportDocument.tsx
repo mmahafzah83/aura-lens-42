@@ -50,15 +50,19 @@ function stripParenTail(s: string): string {
   return s.replace(/\s*\([^)]*\)\s*$/, "").trim();
 }
 
-// Condense a multi-item " · " joined list or a long string into a signature snippet.
-function shortSnippet(value: string, maxItems = 2, maxLen = 110): string {
+// Condense to a true one-liner: take first 1–2 items from a " · " joined list,
+// then hard-cap the final string to ~90 chars + "…" regardless of item count.
+function shortSnippet(value: string, maxItems = 2, maxLen = 90): string {
   if (!value) return "";
-  if (value.includes(" · ")) {
-    const parts = value.split(" · ").map((p) => p.trim()).filter(Boolean);
-    return parts.slice(0, maxItems).join(" · ");
+  let out = value;
+  if (out.includes(" · ")) {
+    const parts = out.split(" · ").map((p) => p.trim()).filter(Boolean);
+    out = parts.slice(0, maxItems).join(" · ");
   }
-  if (value.length > maxLen) return value.slice(0, maxLen).replace(/\s+\S*$/, "") + "…";
-  return value;
+  if (out.length > maxLen) {
+    out = out.slice(0, maxLen).replace(/\s+\S*$/, "") + "…";
+  }
+  return out;
 }
 
 // ── Shared chrome ───────────────────────────────────────────────────────
@@ -304,8 +308,8 @@ function Page1({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
       {data.score ? (
         <div style={{ marginTop: 28, padding: 18, border: `1px solid ${RULE}`, borderTop: `2px solid ${BRONZE}` }}>
           <SectionLabel>Digital Presence Score</SectionLabel>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginBottom: 14 }}>
-            <div style={{ fontFamily: DISPLAY, fontSize: 56, fontWeight: 500, color: INK, lineHeight: 1 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginBottom: 18 }}>
+            <div style={{ fontFamily: DISPLAY, fontSize: 56, fontWeight: 500, color: INK, lineHeight: 1.1 }}>
               {data.score.score}
               <span style={{ fontSize: 22, color: INK_4 }}>/100</span>
             </div>
@@ -315,7 +319,7 @@ function Page1({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
               </div>
             ) : null}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+          <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
             {[
               { label: "Signal 40%", v: data.score.components.signal, w: 40 },
               { label: "Content 40%", v: data.score.components.content, w: 40 },
@@ -534,7 +538,7 @@ function Page4({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
             ].map((s, i) => (
               <div key={i} style={{ padding: "14px 12px", border: `1px solid ${RULE}`, borderTop: `2px solid ${BRONZE}`, textAlign: "center" }}>
                 <div style={{ fontFamily: DISPLAY, fontSize: 32, fontWeight: 500, color: INK, lineHeight: 1 }}>{s.n}</div>
-                <div style={{ marginTop: 6, fontSize: 10, color: INK_3, letterSpacing: "0.1em", textTransform: "uppercase", whiteSpace: "pre-line" }}>
+                <div style={{ marginTop: 12, fontSize: 10, color: INK_3, letterSpacing: "0.1em", textTransform: "uppercase", whiteSpace: "pre-line" }}>
                   {s.l}
                 </div>
               </div>
