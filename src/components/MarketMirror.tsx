@@ -2,6 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { Loader2, RefreshCw, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  PERSONA_LABELS,
+  rankFromLevel,
+  type RankBucket,
+} from "@/lib/marketPersonas";
 
 interface MirrorRow {
   id: string;
@@ -19,32 +24,6 @@ interface MirrorRow {
 }
 
 type TabKey = "headhunter" | "client_cio" | "curator";
-
-type RankBucket = "c_suite" | "partner" | "director";
-
-// Positional slot keys (slot1/slot2/slot3) map to existing columns —
-// only the visible labels change per rank. Must match the EF.
-const PERSONA_LABELS: Record<RankBucket, { slot1: string; slot2: string; slot3: string; gap1: string; gap2: string; gap3: string }> = {
-  c_suite: {
-    slot1: "Board member", slot2: "Peer CEO", slot3: "Industry analyst",
-    gap1: "board member", gap2: "peer CEO", gap3: "industry analyst",
-  },
-  partner: {
-    slot1: "Prospective client", slot2: "Practice leadership", slot3: "Top talent recruit",
-    gap1: "prospective client", gap2: "practice leader", gap3: "top recruit",
-  },
-  director: {
-    slot1: "Headhunter", slot2: "Client CIO", slot3: "Conference curator",
-    gap1: "headhunter", gap2: "CIO", gap3: "curator",
-  },
-};
-
-function rankFromLevel(level: string | null | undefined): RankBucket {
-  const l = (level || "").toLowerCase();
-  if (/chief|c-suite|c-level|ceo|cfo|cio|cto|cdo/.test(l)) return "c_suite";
-  if (/partner|managing director/.test(l)) return "partner";
-  return "director";
-}
 
 const ORANGE = "var(--bronze)"; // bronze — was orange; restricted to signal/status only
 
