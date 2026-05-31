@@ -8,6 +8,8 @@ import { AuraCard } from "@/components/ui/AuraCard";
 import { AuraButton } from "@/components/ui/AuraButton";
 import { downloadBlob } from "@/lib/download";
 import usePageMeta from "@/hooks/usePageMeta";
+import ReportDocument from "@/components/ReportDocument";
+import { buildIdentityReport, type ReportData } from "@/lib/buildIdentityReport";
 
 interface ProfileData {
   first_name: string | null;
@@ -44,6 +46,8 @@ export default function Settings() {
   const [error, setError] = useState<string | null>(null);
   const [exportingJson, setExportingJson] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
+  const [report, setReport] = useState<ReportData | null>(null);
+  const [reportLoading, setReportLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -54,6 +58,7 @@ export default function Settings() {
           if (!cancelled) {
             setLoading(false);
             setError("Not signed in.");
+            setReportLoading(false);
           }
           return;
         }
@@ -67,8 +72,17 @@ export default function Settings() {
         if (cancelled) return;
         if (qErr) throw qErr;
         setProfile((data as ProfileData) || null);
+        try {
+          const r = await buildIdentityReport(session.user.id);
+          if (!cancelled) setReport(r);
+        } catch (re) {
+          console.error("[Settings] buildIdentityReport failed", re);
+        } finally {
+          if (!cancelled) setReportLoading(false);
+        }
       } catch (e: any) {
         if (!cancelled) setError(e?.message || "Failed to load profile.");
+        if (!cancelled) setReportLoading(false);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -423,6 +437,27 @@ export default function Settings() {
               </AuraButton>
             </div>
           </AuraCard>
+        </div>
+
+        {/* TEMP (W2-G-2a): visible four-page Strategic Identity Report.
+            Moves off-screen in W2-G-2b for export-only rendering. */}
+        <div className="mt-10">
+          <SectionHeader
+            label="Strategic Identity Report — preview"
+            subtitle="Temporary visible mount for W2-G-2a verification."
+          />
+          {reportLoading ? (
+            <div className="flex items-center gap-2 text-sm" style={{ color: "var(--ink-4)" }}>
+              <Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--brand)" }} />
+              Assembling report…
+            </div>
+          ) : report ? (
+            <ReportDocument data={report} />
+          ) : (
+            <p className="text-sm" style={{ color: "var(--ink-4)" }}>
+              Report data unavailable.
+            </p>
+          )}
         </div>
       </div>
     </div>
