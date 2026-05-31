@@ -109,23 +109,24 @@ const VoiceEngineSection = () => {
         .filter(Boolean)
         .map(content => ({ content }));
 
-      const toneValue = vocabNotes.slice(0, 200);
+      // Check if row exists
+      const { data: existing } = await supabase
+        .from("authority_voice_profiles")
+        .select("id, vocabulary_preferences, tone")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+
+      const existingVocab = (existing as any)?.vocabulary_preferences || {};
+      const existingTone = (existing as any)?.tone || "";
 
       const row = {
         user_id: session.user.id,
         example_posts: examplePosts,
         admired_posts: admiredPostsArr,
-        vocabulary_preferences: { notes: vocabNotes },
-        tone: toneValue,
+        vocabulary_preferences: { ...existingVocab, notes: vocabNotes },
+        tone: existingTone.trim().length > 0 ? existingTone : vocabNotes.slice(0, 200),
         updated_at: new Date().toISOString(),
       };
-
-      // Check if row exists
-      const { data: existing } = await supabase
-        .from("authority_voice_profiles")
-        .select("id")
-        .eq("user_id", session.user.id)
-        .maybeSingle();
 
       if (existing) {
         const { error } = await supabase
