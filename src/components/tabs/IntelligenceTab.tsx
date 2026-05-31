@@ -998,12 +998,13 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
-      const [signalsRes, entriesRes, documentsRes, movesRes] = await Promise.all([
+      const [signalsRes, entriesRes, documentsRes, evidenceRes, movesRes] = await Promise.all([
         supabase.from("strategic_signals")
           .select("*, signal_velocity, velocity_status, commercial_validation_score")
           .eq("status", "active").order("confidence", { ascending: false }).limit(50),
         supabase.from("entries").select("id", { count: "exact", head: true }),
         supabase.from("documents").select("id", { count: "exact", head: true }),
+        supabase.from("evidence_fragments").select("id", { count: "exact", head: true }).eq("user_id", user.id),
         supabase.from("recommended_moves").select("id", { count: "exact", head: true }).eq("status", "active").eq("user_id", user.id),
       ]);
       const loadedRaw = (signalsRes.data || []) as any[];
