@@ -23,6 +23,7 @@ RULES — follow exactly:
 4. Reasons must be specific and action-oriented — name the actual signal or trend. NEVER say "existing content not ready" or "more input needed" — those are not actions.
 5. action_type must be one of: PUBLISH | CAPTURE | WATCH
 6. urgency must be HIGH or MEDIUM only. Never LOW or MONITOR.
+7. For PUBLISH and WATCH items, you MUST set "signal_id" to the EXACT id of the source signal from top_signals (copy it verbatim — do not invent, modify, or guess). If no specific signal applies (e.g. CAPTURE items, or generic nudges), set "signal_id": null. NEVER fabricate an id.
 
 GOOD reason examples:
 - "Your Digital Transformation signal has 9 fragments — strongest it's been. Publish today."
@@ -43,7 +44,8 @@ Return valid JSON only:
       "title": "max 8 words — the specific thing to do",
       "reason": "max 15 words — specific, names the signal or trend, action-oriented",
       "urgency": "HIGH",
-      "destination": "/publish"
+      "destination": "/publish",
+      "signal_id": "uuid-from-top_signals-or-null"
     }
   ]
 }
