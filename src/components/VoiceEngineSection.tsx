@@ -302,7 +302,7 @@ const VoiceEngineSection = () => {
           lineHeight: 1.625,
         }}
       >
-        Teach Aura your voice. Paste examples of your best posts below — Aura will learn your tone, structure, and vocabulary.
+        Aura learns your voice from everything you give it — your posts, uploads, and your feedback — and keeps refining over time.
       </p>
       <button
         onClick={() => setOpen(!open)}
