@@ -1882,6 +1882,8 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
             entriesCount={Array.isArray(entries) ? entries.length : 0}
             topSignalTitle={topSignal?.signal_title}
             topSignalFragments={(topSignal as any)?.fragment_count ?? (topSignal as any)?.fragmentCount}
+            onOpenCapture={onOpenCapture}
+            onSwitchTab={onSwitchTab}
           />
         </div>
       )}
