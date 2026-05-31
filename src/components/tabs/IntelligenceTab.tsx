@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
-  Loader2, Archive, RefreshCw, Layers, Brain, AlertTriangle, ChevronDown,
+  Loader2, Archive, RefreshCw, Layers, Brain, AlertTriangle, ChevronDown, ChevronRight,
   EyeOff, Info, Lightbulb, TrendingUp, ExternalLink, Plus, BookOpen, X,
 } from "lucide-react";
 import { PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer } from "recharts";
