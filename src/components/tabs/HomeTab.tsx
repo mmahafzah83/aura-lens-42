@@ -1882,6 +1882,8 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
             entriesCount={Array.isArray(entries) ? entries.length : 0}
             topSignalTitle={topSignal?.signal_title}
             topSignalFragments={(topSignal as any)?.fragment_count ?? (topSignal as any)?.fragmentCount}
+            onOpenCapture={onOpenCapture}
+            onSwitchTab={onSwitchTab}
           />
         </div>
       )}
@@ -2452,8 +2454,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
                   <span style={{ color: "hsl(var(--foreground))", fontWeight: 500 }}>{frags} evidence fragments</span>
                   {" · "}
                   <span style={{ color: "var(--danger)", fontWeight: 500 }}>{daysSinceCapture} days</span>
-                  {" since your last capture · "}
-                  <span style={{ color: "var(--success)", fontWeight: 500 }}>+8 points</span>
+                  {" since your last capture"}
                 </>
               )}
             </div>

@@ -3,118 +3,105 @@ import { Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 
-interface Mission {
-  id: string;
+interface RhythmItem {
+  id: "capture" | "publish" | "voice";
   title: string;
-  description: string | null;
-  mission_type: string;
-  points: number;
-  status: string;
+  description: string;
+  done: boolean;
 }
-
-const TYPE_LABEL: Record<string, string> = {
-  signal: "Signal", content: "Content", rhythm: "Rhythm", voice: "Voice", baseline: "Baseline",
-};
-
-const TYPE_COLOR: Record<string, string> = {
-  signal: "var(--warning)",
-  content: "var(--color-info-text, var(--info))",
-  voice: "var(--success)",
-  rhythm: "var(--success)",
-  baseline: "hsl(var(--muted-foreground))",
-};
-
-const explainMission = (
-  title: string,
-  type: string,
-  topSignalTitle?: string,
-  topSignalFragments?: number,
-): string => {
-  const t = title.toLowerCase();
-  if (t.includes("capture")) {
-    return "Find an article about your sector and save it. Aura will extract the strategic pattern.";
-  }
-  if (t.includes("publish")) {
-    const sig = topSignalTitle || "strongest";
-    const frags = topSignalFragments ?? 0;
-    return `Your ${sig} signal has ${frags} fragment${frags === 1 ? "" : "s"}. Draft a LinkedIn post and share your perspective.`;
-  }
-  if (t.includes("voice") || type === "voice") {
-    return "Paste 2 LinkedIn posts you've written before. Aura learns your tone so generated content sounds like you.";
-  }
-  return "";
-};
-
-const DEFAULT_MISSIONS: Mission[] = [
-  { id: "default-1", title: "Capture a new source", description: null, mission_type: "signal", points: 5, status: "pending" },
-  { id: "default-2", title: "Publish from your strongest signal", description: null, mission_type: "content", points: 8, status: "pending" },
-  { id: "default-3", title: "Train your voice with 2 posts", description: null, mission_type: "voice", points: 6, status: "pending" },
-];
 
 interface MissionControlProps {
   userId: string | null;
   entriesCount?: number;
   topSignalTitle?: string;
   topSignalFragments?: number;
+  onOpenCapture?: (prefillUrl?: string, prefillText?: string) => void;
+  onSwitchTab?: (tab: any) => void;
 }
 
-export default function MissionControl({ userId, entriesCount = 0, topSignalTitle, topSignalFragments }: MissionControlProps) {
-  const [missions, setMissions] = useState<Mission[]>([]);
+export default function MissionControl({
+  userId,
+  entriesCount = 0,
+  topSignalTitle,
+  topSignalFragments,
+  onOpenCapture,
+  onSwitchTab,
+}: MissionControlProps) {
+  const [items, setItems] = useState<RhythmItem[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from("weekly_missions" as any)
-        .select("id, title, description, mission_type, points, status")
-        .eq("user_id", userId)
-        .neq("status", "expired")
-        .order("created_at", { ascending: true })
-        .limit(8);
-      if (!cancelled) {
-        const rows = ((data as any) || []) as Mission[];
-        if (rows.length === 0 && entriesCount > 0) {
-          setMissions(DEFAULT_MISSIONS);
-        } else {
-          setMissions(rows);
-        }
-        setLoaded(true);
-      }
+      // Rolling 7-day window, user-scoped.
+      const weekStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+      const [entriesRes, postsRes, voiceRes] = await Promise.all([
+        supabase
+          .from("entries")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", userId)
+          .gte("created_at", weekStart),
+        supabase
+          .from("linkedin_posts")
+          .select("id, published_confirmed_at, published_at, tracking_status")
+          .eq("user_id", userId)
+          .eq("tracking_status", "published")
+          .or(`published_confirmed_at.gte.${weekStart},published_at.gte.${weekStart}`)
+          .limit(1),
+        supabase
+          .from("authority_voice_profiles")
+          .select("example_posts")
+          .eq("user_id", userId)
+          .maybeSingle(),
+      ]);
+
+      if (cancelled) return;
+
+      const capturedThisWeek = (entriesRes.count ?? 0) > 0;
+      const publishedThisWeek = Array.isArray(postsRes.data) && postsRes.data.length > 0;
+      const examples = (voiceRes.data as any)?.example_posts;
+      const voiceTrained = Array.isArray(examples) && examples.length >= 2;
+
+      const publishDesc = topSignalTitle
+        ? `Your ${topSignalTitle} signal has ${topSignalFragments ?? 0} fragment${(topSignalFragments ?? 0) === 1 ? "" : "s"}. Share your perspective.`
+        : "Draft a LinkedIn post from your strongest signal.";
+
+      setItems([
+        {
+          id: "capture",
+          title: "Capture a source",
+          description: "Save an article about your sector. Aura extracts the strategic pattern.",
+          done: capturedThisWeek,
+        },
+        {
+          id: "publish",
+          title: "Publish a post",
+          description: publishDesc,
+          done: publishedThisWeek,
+        },
+        {
+          id: "voice",
+          title: "Train your voice",
+          description: "Paste 2 LinkedIn posts you've written before so generated content sounds like you.",
+          done: voiceTrained,
+        },
+      ]);
+      setLoaded(true);
     })();
     return () => { cancelled = true; };
-  }, [userId, entriesCount]);
+  }, [userId, entriesCount, topSignalTitle, topSignalFragments]);
 
-  const toggle = async (m: Mission) => {
-    if (m.id.startsWith("default-")) {
-      // Defaults are placeholders only; flip local state without DB write
-      setMissions(prev => prev.map(x => x.id === m.id ? { ...x, status: x.status === "completed" ? "pending" : "completed" } : x));
-      return;
-    }
-    const next = m.status === "completed" ? "pending" : "completed";
-    setMissions(prev => prev.map(x => x.id === m.id ? { ...x, status: next } : x));
-    await supabase.from("weekly_missions" as any)
-      .update({ status: next, completed_at: next === "completed" ? new Date().toISOString() : null })
-      .eq("id", m.id);
+  const handleNudge = (item: RhythmItem) => {
+    if (item.done) return;
+    if (item.id === "capture") onOpenCapture?.();
+    else if (item.id === "publish") onSwitchTab?.("authority");
+    else if (item.id === "voice") onSwitchTab?.("identity");
   };
 
-  const done = missions.filter(m => m.status === "completed").length;
-  const total = missions.length;
-  const pointsAvailable = missions
-    .filter(m => m.status !== "completed")
-    .reduce((s, m) => s + (m.points ?? 5), 0);
-
-  // Identify the highest-point pending mission to flag as "Recommended".
-  const recommendedId = (() => {
-    const pending = missions.filter(m => m.status !== "completed");
-    if (pending.length === 0) return null;
-    let top = pending[0];
-    for (const m of pending) {
-      if ((m.points ?? 5) > (top.points ?? 5)) top = m;
-    }
-    return top.id;
-  })();
+  const done = items.filter(i => i.done).length;
+  const total = items.length;
 
   return (
     <section style={{ borderTop: "0.5px solid hsl(var(--border) / 0.5)", paddingTop: 20 }}>
@@ -124,114 +111,80 @@ export default function MissionControl({ userId, entriesCount = 0, topSignalTitl
           color: "hsl(var(--muted-foreground))", textTransform: "uppercase",
           display: "inline-flex", alignItems: "center", gap: 6,
         }}>
-          This week's missions
+          This Week's Rhythm
           <InfoTooltip
-            label="Priority actions"
-            text="Your highest-impact next moves, ranked by urgency. Completing these advances your score fastest."
+            label="Weekly rhythm"
+            text="Three habits that compound your presence. Ticks automatically as you capture, publish, and train your voice."
             side="bottom"
             triggerSize={14}
           />
         </span>
         {total > 0 && (
           <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
-            {done} of {total} ·{" "}
-            <span style={{ color: "var(--success)", fontWeight: 500 }}>+{pointsAvailable} pts available</span>
+            {done} of {total}
           </span>
         )}
       </div>
       <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 12, lineHeight: 1.5 }}>
-        Complete these to grow your presence score. Each one strengthens a different pillar.
+        Three habits that compound your presence. Each ticks automatically when you do it.
       </div>
 
-      {loaded && missions.length === 0 ? (
-        <div style={{ padding: "16px 4px", fontSize: 12, color: "hsl(var(--muted-foreground))", textAlign: "center" }}>
-          Your first missions will appear after your first capture.
-        </div>
-      ) : (
+      {!loaded ? null : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {missions.map((m, i) => {
-          const isDone = m.status === "completed";
-          const explanation = explainMission(m.title, m.mission_type, topSignalTitle, topSignalFragments);
-          const pillarColor = TYPE_COLOR[m.mission_type] || "hsl(var(--muted-foreground))";
-          const isRecommended = m.id === recommendedId && !isDone;
-          return (
-            <div
-              key={m.id}
-              className="flex animate-fade-up-in"
-              style={{
-                gap: 12, padding: "12px 14px",
-                border: "0.5px solid hsl(var(--border) / 0.5)",
-                borderLeft: isRecommended ? "3px solid var(--brand, #B08D3A)" : "0.5px solid hsl(var(--border) / 0.5)",
-                borderRadius: 8,
-                alignItems: "flex-start",
-                background: "hsl(var(--card))",
-                animationDelay: `${Math.min(i * 60, 480)}ms`,
-                animationFillMode: "backwards",
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => toggle(m)}
-                aria-label={isDone ? "Mark as pending" : "Mark complete"}
+          {items.map((item, i) => {
+            const clickable = !item.done && (
+              (item.id === "capture" && !!onOpenCapture) ||
+              (item.id !== "capture" && !!onSwitchTab)
+            );
+            return (
+              <div
+                key={item.id}
+                className="flex animate-fade-up-in"
+                onClick={clickable ? () => handleNudge(item) : undefined}
+                role={clickable ? "button" : undefined}
+                tabIndex={clickable ? 0 : undefined}
                 style={{
-                  width: 18, height: 18, borderRadius: "50%",
-                  border: isDone ? "0" : "1.5px solid var(--ink-4)",
-                  background: isDone ? "var(--success)" : "transparent",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  cursor: "pointer", flexShrink: 0, marginTop: 1,
+                  gap: 12, padding: "12px 14px",
+                  border: "0.5px solid hsl(var(--border) / 0.5)",
+                  borderRadius: 8,
+                  alignItems: "flex-start",
+                  background: "hsl(var(--card))",
+                  animationDelay: `${Math.min(i * 60, 480)}ms`,
+                  animationFillMode: "backwards",
+                  cursor: clickable ? "pointer" : "default",
                 }}
               >
-                {isDone && <Check size={11} color="#fff" strokeWidth={3} />}
-              </button>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                {isRecommended && (
-                  <div style={{
-                    fontSize: 11, fontWeight: 600, letterSpacing: "0.08em",
-                    color: "var(--brand, #B08D3A)", textTransform: "uppercase",
-                    marginBottom: 3,
-                  }}>
-                    Recommended
-                  </div>
-                )}
-                <div style={{
-                  fontSize: 13, fontWeight: 500,
-                  color: isDone ? "hsl(var(--muted-foreground))" : "hsl(var(--foreground))",
-                  textDecoration: isDone ? "line-through" : "none",
-                  lineHeight: 1.4,
-                }}>
-                  {m.title}
+                <div
+                  aria-label={item.done ? "Completed" : "Pending"}
+                  style={{
+                    width: 18, height: 18, borderRadius: "50%",
+                    border: item.done ? "0" : "1.5px solid var(--ink-4)",
+                    background: item.done ? "var(--success)" : "transparent",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    flexShrink: 0, marginTop: 1,
+                  }}
+                >
+                  {item.done && <Check size={11} color="#fff" strokeWidth={3} />}
                 </div>
-                {explanation && (
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{
+                    fontSize: 13, fontWeight: 500,
+                    color: item.done ? "hsl(var(--muted-foreground))" : "hsl(var(--foreground))",
+                    textDecoration: item.done ? "line-through" : "none",
+                    lineHeight: 1.4,
+                  }}>
+                    {item.title}
+                  </div>
                   <div style={{
                     fontSize: 11, color: "hsl(var(--muted-foreground))",
                     marginTop: 2, lineHeight: 1.45,
                   }}>
-                    {explanation}
+                    {item.description}
                   </div>
-                )}
+                </div>
               </div>
-              <div style={{
-                display: "flex", flexDirection: "column", alignItems: "flex-end",
-                gap: 4, flexShrink: 0,
-              }}>
-                <span style={{
-                  fontSize: 11, fontWeight: 600,
-                  color: "var(--success)",
-                  background: "hsl(var(--success) / 0.12)",
-                  padding: "2px 7px", borderRadius: 4,
-                }}>
-                  +{m.points ?? 5}
-                </span>
-                <span style={{
-                  fontSize: 10, fontWeight: 500, letterSpacing: "0.04em",
-                  color: pillarColor, textTransform: "uppercase",
-                }}>
-                  {TYPE_LABEL[m.mission_type] || m.mission_type}
-                </span>
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
         </div>
       )}
     </section>
