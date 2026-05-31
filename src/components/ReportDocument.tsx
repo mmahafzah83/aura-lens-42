@@ -333,29 +333,54 @@ function Page1({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
                 paddingTop: 2,
               }}
             >
-              <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                <span style={{ fontFamily: DISPLAY, fontSize: 58, fontWeight: 500, color: INK, lineHeight: 1.15 }}>
-                  {data.score.score}
-                </span>
-                <span style={{ fontFamily: DISPLAY, fontSize: 20, color: INK_4 }}>/100</span>
-              </div>
-              {data.score.tier ? (
-                <div
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "baseline",
+                  gap: 12,
+                  flexWrap: "nowrap",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <span
                   style={{
-                    fontFamily: BODY,
-                    fontSize: 11,
-                    color: BRONZE_DEEP,
-                    letterSpacing: "0.14em",
-                    textTransform: "uppercase",
-                    marginTop: 10,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
+                    fontFamily: DISPLAY,
+                    fontSize: 52,
+                    fontWeight: 500,
+                    color: INK,
+                    lineHeight: 1,
+                    margin: 0,
                   }}
                 >
-                  <Diamond size={7} /> {titleCase(data.score.tier)} Tier
-                </div>
-              ) : null}
+                  {data.score.score}
+                </span>
+                <span
+                  style={{
+                    fontFamily: DISPLAY,
+                    fontSize: 20,
+                    color: INK_4,
+                    lineHeight: 1,
+                    margin: 0,
+                  }}
+                >
+                  /100
+                </span>
+                {data.score.tier ? (
+                  <span
+                    style={{
+                      fontFamily: BODY,
+                      fontSize: 11,
+                      color: BRONZE_DEEP,
+                      letterSpacing: "0.14em",
+                      textTransform: "uppercase",
+                      lineHeight: 1,
+                      margin: "0 0 0 10px",
+                    }}
+                  >
+                    ◆ {titleCase(data.score.tier)} Tier
+                  </span>
+                ) : null}
+              </div>
             </div>
             {/* RIGHT: stacked component bars */}
             <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 12, paddingTop: 14 }}>
