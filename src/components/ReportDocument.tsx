@@ -45,6 +45,22 @@ function todayLabel(iso: string): string {
   }
 }
 
+// Strip trailing parenthetical like "18y total / 7y consulting (Industry Expert Pivot)".
+function stripParenTail(s: string): string {
+  return s.replace(/\s*\([^)]*\)\s*$/, "").trim();
+}
+
+// Condense a multi-item " · " joined list or a long string into a signature snippet.
+function shortSnippet(value: string, maxItems = 2, maxLen = 110): string {
+  if (!value) return "";
+  if (value.includes(" · ")) {
+    const parts = value.split(" · ").map((p) => p.trim()).filter(Boolean);
+    return parts.slice(0, maxItems).join(" · ");
+  }
+  if (value.length > maxLen) return value.slice(0, maxLen).replace(/\s+\S*$/, "") + "…";
+  return value;
+}
+
 // ── Shared chrome ───────────────────────────────────────────────────────
 function PageHeader({ subtitle }: { subtitle?: string }) {
   return (
