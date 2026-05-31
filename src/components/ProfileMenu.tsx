@@ -1,4 +1,5 @@
-import { User, LogOut, Settings2 } from "lucide-react";
+import { User, LogOut, Settings2, Settings } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import UserAvatar from "@/components/ui/UserAvatar";
 import {
   DropdownMenu,
