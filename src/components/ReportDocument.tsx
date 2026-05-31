@@ -50,15 +50,19 @@ function stripParenTail(s: string): string {
   return s.replace(/\s*\([^)]*\)\s*$/, "").trim();
 }
 
-// Condense a multi-item " · " joined list or a long string into a signature snippet.
-function shortSnippet(value: string, maxItems = 2, maxLen = 110): string {
+// Condense to a true one-liner: take first 1–2 items from a " · " joined list,
+// then hard-cap the final string to ~90 chars + "…" regardless of item count.
+function shortSnippet(value: string, maxItems = 2, maxLen = 90): string {
   if (!value) return "";
-  if (value.includes(" · ")) {
-    const parts = value.split(" · ").map((p) => p.trim()).filter(Boolean);
-    return parts.slice(0, maxItems).join(" · ");
+  let out = value;
+  if (out.includes(" · ")) {
+    const parts = out.split(" · ").map((p) => p.trim()).filter(Boolean);
+    out = parts.slice(0, maxItems).join(" · ");
   }
-  if (value.length > maxLen) return value.slice(0, maxLen).replace(/\s+\S*$/, "") + "…";
-  return value;
+  if (out.length > maxLen) {
+    out = out.slice(0, maxLen).replace(/\s+\S*$/, "") + "…";
+  }
+  return out;
 }
 
 // ── Shared chrome ───────────────────────────────────────────────────────
