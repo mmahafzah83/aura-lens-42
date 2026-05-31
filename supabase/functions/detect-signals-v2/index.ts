@@ -350,6 +350,7 @@ ${identityCtx}`;
         supporting_evidence_ids: mergedEvidence,
         fragment_count: newFragCount,
         unique_orgs: newUniqueOrgs,
+        strength_score: computeStrength(newUniqueOrgs, newFragCount),
         confidence,
         confidence_explanation,
         what_it_means_for_you: whatItMeans,
@@ -392,6 +393,7 @@ ${identityCtx}`;
         supporting_evidence_ids: targetFragmentIds,
         fragment_count: targetFragmentIds.length,
         unique_orgs: initialUniqueOrgs,
+        strength_score: computeStrength(initialUniqueOrgs, targetFragmentIds.length),
       }).select("id").single();
 
       if (insErr) throw new Error(`Insert: ${insErr.message}`);
