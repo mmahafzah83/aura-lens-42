@@ -45,6 +45,22 @@ function todayLabel(iso: string): string {
   }
 }
 
+// Strip trailing parenthetical like "18y total / 7y consulting (Industry Expert Pivot)".
+function stripParenTail(s: string): string {
+  return s.replace(/\s*\([^)]*\)\s*$/, "").trim();
+}
+
+// Condense a multi-item " · " joined list or a long string into a signature snippet.
+function shortSnippet(value: string, maxItems = 2, maxLen = 110): string {
+  if (!value) return "";
+  if (value.includes(" · ")) {
+    const parts = value.split(" · ").map((p) => p.trim()).filter(Boolean);
+    return parts.slice(0, maxItems).join(" · ");
+  }
+  if (value.length > maxLen) return value.slice(0, maxLen).replace(/\s+\S*$/, "") + "…";
+  return value;
+}
+
 // ── Shared chrome ───────────────────────────────────────────────────────
 function PageHeader({ subtitle }: { subtitle?: string }) {
   return (
@@ -176,9 +192,9 @@ function Chip({ children }: { children: React.ReactNode }) {
 // ── Radar (generic N-axis) ──────────────────────────────────────────────
 function CapabilityRadar({ data }: { data: CapabilitiesSection }) {
   const N = data.length;
-  const cx = 210;
+  const cx = 260;
   const cy = 150;
-  const R = 110;
+  const R = 100;
   const angles = data.map((_, i) => (-90 + (360 / N) * i) * (Math.PI / 180));
 
   const rings = [0.25, 0.5, 0.75, 1].map((k, i) => (
@@ -217,7 +233,7 @@ function CapabilityRadar({ data }: { data: CapabilitiesSection }) {
   });
 
   return (
-    <svg viewBox="0 0 420 300" width="100%" style={{ maxWidth: 420 }}>
+    <svg viewBox="0 0 520 300" width="100%" style={{ maxWidth: 520 }}>
       {rings}
       {axes}
       <polygon points={path} fill={BRONZE} fillOpacity={0.18} stroke={BRONZE} strokeWidth={1.5} />
@@ -244,7 +260,7 @@ function Page1({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
   const items: { label: string; value: string }[] = [];
   if (p?.core_practice) items.push({ label: "Core Practice", value: p.core_practice });
   if (p?.sector_focus) items.push({ label: "Sector Focus", value: p.sector_focus });
-  if (p?.years_experience_raw) items.push({ label: "Experience", value: p.years_experience_raw });
+  if (p?.years_experience_raw) items.push({ label: "Experience", value: stripParenTail(p.years_experience_raw) });
   if (p?.linkedin_handle) items.push({ label: "LinkedIn", value: `/in/${p.linkedin_handle.replace(/^\/?in\//, "")}` });
 
   const goals = p?.north_star_goals ?? [];
@@ -380,15 +396,26 @@ function Page2({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
         <div>
           <SectionLabel>Capability Radar</SectionLabel>
           <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: 24, alignItems: "center" }}>
-            <CapabilityRadar data={data.capabilities} />
-            <div>
-              {data.capabilities.map((c) => (
-                <div key={c.name} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${RULE}`, fontSize: 12 }}>
-                  <span style={{ color: INK_2 }}>{c.name}</span>
-                  <span style={{ fontFamily: DISPLAY, fontSize: 14, color: BRONZE_DEEP, fontWeight: 600 }}>{c.score}</span>
-                </div>
-              ))}
-            </div>
+            {(() => {
+              const assessed = data.capabilities.filter((c) => (c.score ?? 0) > 0);
+              return (
+                <>
+                  {assessed.length >= 3 ? (
+                    <CapabilityRadar data={assessed} />
+                  ) : (
+                    <div />
+                  )}
+                  <div>
+                    {assessed.map((c) => (
+                      <div key={c.name} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${RULE}`, fontSize: 12 }}>
+                        <span style={{ color: INK_2 }}>{c.name}</span>
+                        <span style={{ fontFamily: DISPLAY, fontSize: 14, color: BRONZE_DEEP, fontWeight: 600 }}>{c.score}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       ) : null}
@@ -442,28 +469,6 @@ function Page3({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
         <div style={{ fontFamily: DISPLAY, fontSize: 28, fontWeight: 500 }}>Market Position</div>
         {name ? <div style={{ fontSize: 12, color: INK_4, letterSpacing: "0.06em", marginTop: 4 }}>{name}</div> : null}
       </div>
-
-      {data.brand_position && (data.brand_position.statement || data.brand_position.pillars.length > 0) ? (
-        <div>
-          <SectionLabel>Brand Position</SectionLabel>
-          {data.brand_position.statement ? (
-            <div
-              style={{
-                fontFamily: DISPLAY,
-                fontStyle: "italic",
-                fontSize: 19,
-                color: INK_2,
-                lineHeight: 1.4,
-                borderLeft: `2px solid ${BRONZE}`,
-                paddingLeft: 14,
-                marginBottom: 22,
-              }}
-            >
-              “{data.brand_position.statement}”
-            </div>
-          ) : null}
-        </div>
-      ) : null}
 
       {data.market_mirror ? (
         <div>
@@ -560,10 +565,10 @@ function Page4({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
               <SectionLabel>Voice Signature</SectionLabel>
               {data.voice!.tone ? <Row label="Tone" value={data.voice!.tone} /> : null}
               {data.voice!.preferred_structures.length > 0 ? (
-                <Row label="Structure" value={data.voice!.preferred_structures.join(" · ")} />
+                <Row label="Structure" value={shortSnippet(data.voice!.preferred_structures.join(" · "))} />
               ) : null}
               {data.voice!.storytelling_patterns.length > 0 ? (
-                <Row label="Patterns" value={data.voice!.storytelling_patterns.join(" · ")} />
+                <Row label="Patterns" value={shortSnippet(data.voice!.storytelling_patterns.join(" · "))} />
               ) : null}
               {data.voice!.vocabulary_preferences.prefer && data.voice!.vocabulary_preferences.prefer.length > 0 ? (
                 <Row label="Prefers" value={data.voice!.vocabulary_preferences.prefer.join(", ")} />
@@ -597,11 +602,12 @@ function hasPage2(d: ReportData): boolean {
   return Boolean(d.capabilities || d.profile_intelligence);
 }
 function hasPage3(d: ReportData): boolean {
-  // Market Mirror omitted entirely if stale (cached set !== current rank).
-  const mirrorOk =
+  // Page 3 is the Market Mirror page only. Brand statement lives on page 1.
+  // Mirror is omitted entirely if stale (cached set !== current rank).
+  return (
     !!d.market_mirror &&
-    d.market_mirror.persona_set === rankFromLevel(d.profile?.level);
-  return Boolean(d.brand_position?.statement || mirrorOk);
+    d.market_mirror.persona_set === rankFromLevel(d.profile?.level)
+  );
 }
 function hasPage4(d: ReportData): boolean {
   return Boolean(d.territories || d.footprint || d.content || d.voice);
