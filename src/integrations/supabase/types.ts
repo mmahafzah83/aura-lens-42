@@ -2076,6 +2076,7 @@ export type Database = {
       }
       strategic_signals: {
         Row: {
+          base_confidence: number | null
           commercial_validation_score: number | null
           confidence: number
           confidence_explanation: string | null
@@ -2087,6 +2088,9 @@ export type Database = {
           framework_opportunity: Json | null
           id: string
           last_decay_at: string | null
+          last_evidence_at: string | null
+          lifecycle_tier: string | null
+          momentum: number | null
           priority_score: number
           signal_title: string
           signal_velocity: number | null
@@ -2103,6 +2107,7 @@ export type Database = {
           what_it_means_for_you: string | null
         }
         Insert: {
+          base_confidence?: number | null
           commercial_validation_score?: number | null
           confidence?: number
           confidence_explanation?: string | null
@@ -2114,6 +2119,9 @@ export type Database = {
           framework_opportunity?: Json | null
           id?: string
           last_decay_at?: string | null
+          last_evidence_at?: string | null
+          lifecycle_tier?: string | null
+          momentum?: number | null
           priority_score?: number
           signal_title: string
           signal_velocity?: number | null
@@ -2130,6 +2138,7 @@ export type Database = {
           what_it_means_for_you?: string | null
         }
         Update: {
+          base_confidence?: number | null
           commercial_validation_score?: number | null
           confidence?: number
           confidence_explanation?: string | null
@@ -2141,6 +2150,9 @@ export type Database = {
           framework_opportunity?: Json | null
           id?: string
           last_decay_at?: string | null
+          last_evidence_at?: string | null
+          lifecycle_tier?: string | null
+          momentum?: number | null
           priority_score?: number
           signal_title?: string
           signal_velocity?: number | null
@@ -2155,6 +2167,33 @@ export type Database = {
           user_signal_feedback?: string | null
           velocity_status?: string | null
           what_it_means_for_you?: string | null
+        }
+        Relationships: []
+      }
+      strategic_signals_lifecycle_backup_20260531: {
+        Row: {
+          backed_up_at: string | null
+          confidence: number | null
+          fragment_count: number | null
+          id: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          backed_up_at?: string | null
+          confidence?: number | null
+          fragment_count?: number | null
+          id?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          backed_up_at?: string | null
+          confidence?: number | null
+          fragment_count?: number | null
+          id?: string | null
+          status?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
