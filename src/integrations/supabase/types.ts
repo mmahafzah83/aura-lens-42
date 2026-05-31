@@ -2097,6 +2097,7 @@ export type Database = {
           skill_pillars: string[]
           status: string
           strategic_implications: string
+          strength_score: number | null
           supporting_evidence_ids: string[]
           theme_tags: string[]
           unique_orgs: number
@@ -2128,6 +2129,7 @@ export type Database = {
           skill_pillars?: string[]
           status?: string
           strategic_implications: string
+          strength_score?: number | null
           supporting_evidence_ids?: string[]
           theme_tags?: string[]
           unique_orgs?: number
@@ -2159,6 +2161,7 @@ export type Database = {
           skill_pillars?: string[]
           status?: string
           strategic_implications?: string
+          strength_score?: number | null
           supporting_evidence_ids?: string[]
           theme_tags?: string[]
           unique_orgs?: number

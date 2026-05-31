@@ -1,0 +1,1 @@
+ALTER TABLE public.strategic_signals ADD COLUMN IF NOT EXISTS strength_score numeric;
