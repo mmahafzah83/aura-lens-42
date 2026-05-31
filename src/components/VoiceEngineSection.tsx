@@ -14,6 +14,9 @@ const VoiceEngineSection = () => {
   const [admiredPosts, setAdmiredPosts] = useState("");
   const [vocabNotes, setVocabNotes] = useState("");
   const [trained, setTrained] = useState(false);
+  // Entries with an explicit non-"manual" source tag (feedback, upload, etc.) —
+  // preserved verbatim across saves; never shown in the textarea.
+  const [preservedExamples, setPreservedExamples] = useState<any[]>([]);
   const [pulse, setPulse] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -76,8 +79,18 @@ const VoiceEngineSection = () => {
             const examples = data.example_posts as any[];
             const admired = data.admired_posts as any[];
             const vocab = data.vocabulary_preferences as any;
+            const exArr = Array.isArray(examples) ? examples : [];
+            // Manual = explicit source:"manual" OR legacy entries (no source field, or string).
+            const isManual = (p: any) => {
+              if (typeof p === "string") return true;
+              if (!p || typeof p !== "object") return false;
+              return !("source" in p) || p.source === "manual" || p.source == null;
+            };
+            const manualEntries = exArr.filter(isManual);
+            const tagged = exArr.filter((p) => !isManual(p));
+            setPreservedExamples(tagged);
             setWritingSamples(
-              Array.isArray(examples) ? examples.map((p: any) => p.content || p).join("\n\n---\n\n") : ""
+              manualEntries.map((p: any) => (typeof p === "string" ? p : p.content || "")).join("\n\n---\n\n")
             );
             setAdmiredPosts(
               Array.isArray(admired) ? admired.map((p: any) => p.content || p).join("\n\n---\n\n") : ""
@@ -97,11 +110,28 @@ const VoiceEngineSection = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.id) throw new Error("Not authenticated");
 
-      const examplePosts = writingSamples
+      const manualExamples = writingSamples
         .split(/\n---\n/)
         .map(s => s.trim())
         .filter(Boolean)
-        .map(content => ({ content }));
+        .map(content => ({ content, source: "manual" as const, updated_at: new Date().toISOString() }));
+
+      // Re-read preserved tagged entries fresh to avoid stale state if feedback
+      // landed between open and save.
+      const { data: freshRow } = await supabase
+        .from("authority_voice_profiles")
+        .select("example_posts")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+      const freshArr = Array.isArray((freshRow as any)?.example_posts)
+        ? ((freshRow as any).example_posts as any[])
+        : [];
+      const freshTagged = freshArr.filter((p) => {
+        if (typeof p === "string") return false;
+        if (!p || typeof p !== "object") return false;
+        return "source" in p && p.source && p.source !== "manual";
+      });
+      const examplePosts = [...freshTagged, ...manualExamples];
 
       const admiredPostsArr = admiredPosts
         .split(/\n---\n/)
@@ -143,6 +173,7 @@ const VoiceEngineSection = () => {
 
       toast.success("Voice profile saved! Your next generated post will match your style.");
       setTrained(true);
+      setPreservedExamples(freshTagged);
     } catch (e: any) {
       toast.error(e.message || "Couldn't save voice profile");
     } finally {
