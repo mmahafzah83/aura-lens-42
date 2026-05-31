@@ -7,7 +7,9 @@ const corsHeaders = {
 };
 
 const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
-const MIN_CONFIDENCE = 0.05;
+const HALF_LIFE_DAYS = 30;       // days of no new evidence until "stale"
+const STRONG_THRESHOLD = 0.5;    // base_confidence at/above this = strong
+const FRESH_THRESHOLD = 0.5;     // momentum at/above this = fresh
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -57,7 +59,7 @@ Deno.serve(async (req) => {
       const { data: rows } = await admin
         .from("strategic_signals")
         .select("user_id")
-        .eq("status", "active");
+        .in("status", ["active", "dormant"]);
       userIds = Array.from(new Set((rows || []).map((r: any) => r.user_id).filter(Boolean)));
     } else {
       const single = (isServiceRole || isCron) ? requested : authedUserId;
@@ -78,9 +80,9 @@ Deno.serve(async (req) => {
     for (const user_id of userIds) {
     const { data: signals, error } = await admin
       .from("strategic_signals")
-      .select("id, confidence, supporting_evidence_ids, last_decay_at, status, velocity_status")
+      .select("id, confidence, base_confidence, fragment_count, supporting_evidence_ids, last_decay_at, last_evidence_at, status, velocity_status")
       .eq("user_id", user_id)
-      .eq("status", "active");
+      .in("status", ["active", "dormant"]);
 
     if (error) throw new Error(error.message);
 
@@ -93,68 +95,55 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const evidenceIds: string[] = s.supporting_evidence_ids || [];
+      // Find newest supporting fragment date
       let newestDate: Date | null = null;
-      let recentCount14d = 0;
-
+      const evidenceIds: string[] = s.supporting_evidence_ids || [];
       if (evidenceIds.length > 0) {
-        const { data: frags } = await admin
-          .from("evidence_fragments")
-          .select("created_at")
-          .in("id", evidenceIds)
-          .order("created_at", { ascending: false });
-        if (frags && frags.length > 0) {
-          newestDate = new Date(frags[0].created_at);
-          const cutoff14 = now - 14 * 86400000;
-          recentCount14d = frags.filter((f: any) => new Date(f.created_at).getTime() >= cutoff14).length;
-        }
+        const { data: frags } = await admin.from("evidence_fragments")
+          .select("created_at").in("id", evidenceIds)
+          .order("created_at", { ascending: false }).limit(1);
+        if (frags && frags.length > 0) newestDate = new Date(frags[0].created_at);
       }
 
-      const currentConf = Number(s.confidence) || 0;
-      let newConf = currentConf;
-      let velocity = 0;
-      let velocityStatus: "accelerating" | "stable" | "fading" | "dormant" = "stable";
-      let newStatus = s.status;
-
-      if (!newestDate) {
-        // No fragments at all
-        newConf = 0.10;
-        velocity = newConf - currentConf;
-        velocityStatus = "dormant";
-        newStatus = "dormant";
-      } else {
+      // Momentum: ABSOLUTE function of age (NOT compounding). null if no evidence date.
+      let momentum: number | null = null;
+      if (newestDate) {
         const daysSince = Math.max(0, (now - newestDate.getTime()) / 86400000);
-        if (daysSince < 7) {
-          newConf = currentConf;
-          velocity = 0;
-          velocityStatus = recentCount14d >= 2 ? "accelerating" : "stable";
-        } else {
-          const decayFactor = Math.exp(-0.010 * daysSince);
-          newConf = Math.max(MIN_CONFIDENCE, currentConf * decayFactor);
-          velocity = newConf - currentConf;
-          if (velocity > 0.05) velocityStatus = "accelerating";
-          else if (velocity > -0.05) velocityStatus = "stable";
-          else if (newConf >= 0.30) velocityStatus = "fading";
-          else velocityStatus = "dormant";
-        }
-
-        if (newConf < 0.08) newStatus = "dormant";
-        // Otherwise keep current status (fading is reflected via velocity_status)
+        momentum = Math.exp((-Math.LN2 / HALF_LIFE_DAYS) * daysSince); // 0..1
       }
 
-      newConf = Math.max(MIN_CONFIDENCE, Math.min(1, newConf));
+      const strength = Number(s.base_confidence) || 0;
+      const isStrong = strength >= STRONG_THRESHOLD;
+      const isFresh  = momentum !== null && momentum >= FRESH_THRESHOLD;
+
+      // Strength-first tiering — strong signals are NEVER hidden
+      let lifecycle_tier: "live" | "evergreen" | "emerging" | "faded";
+      if (isStrong) {
+        lifecycle_tier = isFresh ? "live" : "evergreen";
+      } else {
+        if (momentum === null || momentum < 0.25) lifecycle_tier = "faded";
+        else lifecycle_tier = isFresh ? "emerging" : "faded";
+      }
+
+      const newStatus = lifecycle_tier === "faded" ? "dormant" : "active";
+      const velocityMap: Record<string, "accelerating" | "stable" | "dormant"> = {
+        live: "accelerating", evergreen: "stable", emerging: "stable", faded: "dormant",
+      };
+      const velocity_status = velocityMap[lifecycle_tier];
 
       const { error: upErr } = await admin.from("strategic_signals").update({
-        confidence: newConf,
-        signal_velocity: velocity,
-        velocity_status: velocityStatus,
+        confidence: strength,
+        momentum: momentum,
+        lifecycle_tier: lifecycle_tier,
+        velocity_status: velocity_status,
+        last_evidence_at: newestDate ? newestDate.toISOString() : s.last_evidence_at,
         last_decay_at: nowIso,
         status: newStatus,
       }).eq("id", s.id);
 
       if (!upErr) {
         processed++;
-        counts[velocityStatus]++;
+        if (velocity_status in counts) (counts as any)[velocity_status]++;
       }
     }
 
