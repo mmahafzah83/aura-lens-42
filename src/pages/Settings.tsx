@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, Settings as SettingsIcon } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { AuraCard } from "@/components/ui/AuraCard";
+import { AuraButton } from "@/components/ui/AuraButton";
+import { downloadBlob } from "@/lib/download";
 import usePageMeta from "@/hooks/usePageMeta";
 
 interface ProfileData {
@@ -39,6 +42,8 @@ export default function Settings() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [exportingJson, setExportingJson] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -80,6 +85,158 @@ export default function Settings() {
         (k) => typeof (profile.skill_ratings as Record<string, unknown>)[k] === "number"
       ).length
     : 0;
+
+  const today = () => new Date().toISOString().slice(0, 10);
+  const baseName = () =>
+    `aura-data-${(profile?.first_name || "profile")
+      .toString()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "") || "profile"}-${today()}`;
+
+  const buildExportPayload = () => {
+    if (!profile) return {};
+    return {
+      profile: {
+        first_name: profile.first_name,
+        last_name: profile.last_name,
+        level: profile.level,
+        firm: profile.firm,
+        core_practice: profile.core_practice,
+        sector_focus: profile.sector_focus,
+        north_star_goal: profile.north_star_goal,
+        linkedin_handle: profile.linkedin_handle,
+        linkedin_url: profile.linkedin_url,
+        years_experience: profile.years_experience,
+        leadership_style: profile.leadership_style,
+        primary_strength: profile.primary_strength,
+      },
+      brand: {
+        brand_pillars: profile.brand_pillars,
+        identity_intelligence: profile.identity_intelligence,
+        brand_assessment_results: profile.brand_assessment_results,
+      },
+      capabilities: {
+        skill_ratings: profile.skill_ratings,
+        generated_skills: profile.generated_skills,
+        audit_results: profile.audit_results,
+      },
+    };
+  };
+
+  const handleExportJson = async () => {
+    if (!profile) return;
+    setExportingJson(true);
+    try {
+      const payload = buildExportPayload();
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {
+        type: "application/json",
+      });
+      downloadBlob(blob, `${baseName()}.json`);
+      toast.success("JSON downloaded");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to export JSON");
+    } finally {
+      setExportingJson(false);
+    }
+  };
+
+  const handleExportPdf = async () => {
+    if (!profile) return;
+    setExportingPdf(true);
+    let node: HTMLDivElement | null = null;
+    try {
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf"),
+      ]);
+
+      node = document.createElement("div");
+      node.style.cssText =
+        "position:absolute;left:-9999px;top:0;width:720px;padding:48px;background:#ffffff;color:#1a1a1a;font-family:var(--font-body,'DM Sans',sans-serif);";
+      const skills = profile.skill_ratings as Record<string, unknown> | null;
+      const skillRows = skills
+        ? Object.entries(skills)
+            .filter(([, v]) => typeof v === "number")
+            .map(
+              ([k, v]) =>
+                `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #eee;font-size:13px;"><span dir="auto">${escapeHtml(
+                  k
+                )}</span><span>${v}</span></div>`
+            )
+            .join("")
+        : '<p style="font-size:13px;color:#666;">No capability ratings.</p>';
+
+      const pillars =
+        profile.brand_pillars && profile.brand_pillars.length > 0
+          ? `<ul style="margin:0;padding-left:18px;font-size:13px;">${profile.brand_pillars
+              .map((p) => `<li dir="auto" style="margin:2px 0;">${escapeHtml(p)}</li>`)
+              .join("")}</ul>`
+          : '<p style="font-size:13px;color:#666;">No brand pillars.</p>';
+
+      const row = (label: string, value: string | null | undefined) =>
+        value
+          ? `<div style="margin:4px 0;font-size:13px;"><strong style="color:#555;">${label}:</strong> <span dir="auto">${escapeHtml(
+              String(value)
+            )}</span></div>`
+          : "";
+
+      node.innerHTML = `
+        <h1 style="font-family:var(--font-display,'Cormorant Garamond'),Georgia,serif;font-size:28px;font-weight:500;margin:0 0 8px;">Aura — Your Data</h1>
+        <div style="font-size:12px;color:#888;margin-bottom:24px;">Exported ${today()}</div>
+        <h2 style="font-size:14px;text-transform:uppercase;letter-spacing:0.12em;margin:24px 0 8px;color:#333;">Profile</h2>
+        ${row("Name", [profile.first_name, profile.last_name].filter(Boolean).join(" "))}
+        ${row("Level", profile.level)}
+        ${row("Firm", profile.firm)}
+        ${row("Core practice", profile.core_practice)}
+        ${row("Sector focus", profile.sector_focus)}
+        ${row("North star", profile.north_star_goal)}
+        ${row("LinkedIn", profile.linkedin_url || profile.linkedin_handle)}
+        ${row("Years experience", profile.years_experience)}
+        <h2 style="font-size:14px;text-transform:uppercase;letter-spacing:0.12em;margin:24px 0 8px;color:#333;">Brand pillars</h2>
+        ${pillars}
+        <h2 style="font-size:14px;text-transform:uppercase;letter-spacing:0.12em;margin:24px 0 8px;color:#333;">Capabilities</h2>
+        ${skillRows}
+      `;
+      document.body.appendChild(node);
+
+      if ((document as any).fonts?.ready) {
+        await (document as any).fonts.ready;
+      }
+
+      const canvas = await html2canvas(node, { scale: 2, backgroundColor: "#ffffff" });
+      const imgData = canvas.toDataURL("image/png");
+
+      const pdf = new jsPDF({ unit: "pt", format: "a4" });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pageWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      if (imgHeight <= pageHeight) {
+        pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+      } else {
+        let remaining = imgHeight;
+        let position = 0;
+        while (remaining > 0) {
+          pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+          remaining -= pageHeight;
+          if (remaining > 0) {
+            pdf.addPage();
+            position -= pageHeight;
+          }
+        }
+      }
+
+      downloadBlob(pdf.output("blob"), `${baseName()}.pdf`);
+      toast.success("PDF downloaded");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to export PDF");
+    } finally {
+      if (node && node.parentNode) node.parentNode.removeChild(node);
+      setExportingPdf(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -233,8 +390,50 @@ export default function Settings() {
               </p>
             )}
           </AuraCard>
+
+          {/* Export actions */}
+          <AuraCard variant="default" hover="none">
+            <div
+              className="text-xs font-semibold uppercase tracking-[0.12em] mb-2"
+              style={{ color: "var(--ink)" }}
+            >
+              Export
+            </div>
+            <p className="text-sm mb-4" style={{ color: "var(--ink-3)" }}>
+              Download a copy of your Aura profile, brand, and capabilities.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <AuraButton
+                variant="primary"
+                size="sm"
+                onClick={handleExportJson}
+                loading={exportingJson}
+                disabled={exportingJson || exportingPdf}
+              >
+                Download JSON
+              </AuraButton>
+              <AuraButton
+                variant="secondary"
+                size="sm"
+                onClick={handleExportPdf}
+                loading={exportingPdf}
+                disabled={exportingJson || exportingPdf}
+              >
+                Download PDF
+              </AuraButton>
+            </div>
+          </AuraCard>
         </div>
       </div>
     </div>
   );
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
