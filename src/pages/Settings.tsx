@@ -99,13 +99,16 @@ export default function Settings() {
       ).length
     : 0;
 
-  const today = () => new Date().toISOString().slice(0, 10);
-  const baseName = () =>
-    `aura-data-${(profile?.first_name || "profile")
-      .toString()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "") || "profile"}-${today()}`;
+  const reportFileName = () => {
+    const slug =
+      (profile?.first_name || "profile")
+        .toString()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "") || "profile";
+    const date = new Date().toISOString().slice(0, 10);
+    return `aura-report-${slug}-${date}.pdf`;
+  };
 
   const reportMountRef = useRef<HTMLDivElement | null>(null);
 
@@ -154,7 +157,7 @@ export default function Settings() {
         pdf.addImage(imgData, "PNG", x, y, w, h);
       }
 
-      downloadBlob(pdf.output("blob"), `aura-report-${baseName().replace(/^aura-data-/, "").replace(/-\d{4}-\d{2}-\d{2}$/, "")}-${today()}.pdf`);
+      downloadBlob(pdf.output("blob"), reportFileName());
       toast.success("Report downloaded");
     } catch (e: any) {
       toast.error(e?.message || "Failed to download report");
