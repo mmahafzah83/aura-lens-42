@@ -304,8 +304,8 @@ function Page1({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
       {data.score ? (
         <div style={{ marginTop: 28, padding: 18, border: `1px solid ${RULE}`, borderTop: `2px solid ${BRONZE}` }}>
           <SectionLabel>Digital Presence Score</SectionLabel>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginBottom: 14 }}>
-            <div style={{ fontFamily: DISPLAY, fontSize: 56, fontWeight: 500, color: INK, lineHeight: 1 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginBottom: 18 }}>
+            <div style={{ fontFamily: DISPLAY, fontSize: 56, fontWeight: 500, color: INK, lineHeight: 1.1 }}>
               {data.score.score}
               <span style={{ fontSize: 22, color: INK_4 }}>/100</span>
             </div>
@@ -315,7 +315,7 @@ function Page1({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
               </div>
             ) : null}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+          <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
             {[
               { label: "Signal 40%", v: data.score.components.signal, w: 40 },
               { label: "Content 40%", v: data.score.components.content, w: 40 },
