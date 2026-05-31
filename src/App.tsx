@@ -96,6 +96,7 @@ const App = () => (
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/guide" element={<Guide />} />
+            <Route path="/settings" element={<PasswordGate><Settings /></PasswordGate>} />
             <Route path="/carousel-studio" element={<PasswordGate><CarouselStudio /></PasswordGate>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
