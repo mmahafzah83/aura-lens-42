@@ -3299,9 +3299,6 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
 
       {/* ── Section 3: Frameworks ── */}
       <FrameworkLibrarySection pendingDeleteId={pendingDeleteId} setPendingDeleteId={setPendingDeleteId} expandedCards={expandedCards} toggleCardExpand={toggleCardExpand} />
-
-      {/* ── Section 4: Voice Trainer ── */}
-      <VoiceTrainer />
     </div>
   );
 };
