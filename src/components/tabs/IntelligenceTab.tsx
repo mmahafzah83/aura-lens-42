@@ -1190,7 +1190,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
         {signals.length === 0 && <FirstVisitHint page="intelligence" />}
 
         {/* HEADER */}
-        <Header entryCount={entryCount} signalsCount={signals.length} movesCount={movesCount} />
+        <Header entryCount={entryCount} evidenceCount={evidenceCount} signalsCount={signals.length} movesCount={movesCount} />
 
         {/* TAB SWITCHER */}
         <div style={{
