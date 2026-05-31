@@ -8,8 +8,10 @@ const corsHeaders = {
 
 const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
 const HALF_LIFE_DAYS = 30;       // days of no new evidence until "stale"
-const STRONG_THRESHOLD = 0.5;    // base_confidence at/above this = strong
 const FRESH_THRESHOLD = 0.5;     // momentum at/above this = fresh
+const STRENGTH_FLOOR  = 0.45;    // normal visibility threshold on strength_score
+const TOP_N_GUARANTEE = 6;       // cold-start: always show a user's top 6
+const MAX_VISIBLE     = 20;      // power-user cap: never surface more than this as strong
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -80,7 +82,7 @@ Deno.serve(async (req) => {
     for (const user_id of userIds) {
     const { data: signals, error } = await admin
       .from("strategic_signals")
-      .select("id, confidence, base_confidence, fragment_count, supporting_evidence_ids, last_decay_at, last_evidence_at, status, velocity_status")
+      .select("id, confidence, base_confidence, strength_score, fragment_count, supporting_evidence_ids, last_decay_at, last_evidence_at, status, velocity_status")
       .eq("user_id", user_id)
       .in("status", ["active", "dormant"]);
 
@@ -88,6 +90,13 @@ Deno.serve(async (req) => {
 
     let processed = 0;
     const counts = { fading: 0, dormant: 0, accelerating: 0, stable: 0 };
+
+    // Rank by strength so visibility guarantees a healthy set even for light users
+    const ranked = [...(signals || [])].sort(
+      (a: any, b: any) => (Number(b.strength_score) || 0) - (Number(a.strength_score) || 0)
+    );
+    const rankById = new Map<string, number>();
+    ranked.forEach((s: any, i: number) => rankById.set(s.id, i + 1));
 
     for (const s of signals || []) {
       // Guard: skip if last_decay_at < 6h ago
@@ -112,18 +121,16 @@ Deno.serve(async (req) => {
         momentum = Math.exp((-Math.LN2 / HALF_LIFE_DAYS) * daysSince); // 0..1
       }
 
-      const strength = Number(s.base_confidence) || 0;
-      const isStrong = strength >= STRONG_THRESHOLD;
-      const isFresh  = momentum !== null && momentum >= FRESH_THRESHOLD;
+      const strength = Number(s.strength_score) || 0;
+      const rank = rankById.get(s.id) || 9999;
+      const isFresh = momentum !== null && momentum >= FRESH_THRESHOLD;
+      const visibleStrong =
+        (strength >= STRENGTH_FLOOR || rank <= TOP_N_GUARANTEE) && rank <= MAX_VISIBLE;
 
-      // Strength-first tiering — strong signals are NEVER hidden
       let lifecycle_tier: "live" | "evergreen" | "emerging" | "faded";
-      if (isStrong) {
-        lifecycle_tier = isFresh ? "live" : "evergreen";
-      } else {
-        if (momentum === null || momentum < 0.25) lifecycle_tier = "faded";
-        else lifecycle_tier = isFresh ? "emerging" : "faded";
-      }
+      if (visibleStrong) lifecycle_tier = isFresh ? "live" : "evergreen";
+      else if (isFresh)  lifecycle_tier = "emerging";
+      else               lifecycle_tier = "faded";
 
       const newStatus = lifecycle_tier === "faded" ? "dormant" : "active";
       const velocityMap: Record<string, "accelerating" | "stable" | "dormant"> = {
