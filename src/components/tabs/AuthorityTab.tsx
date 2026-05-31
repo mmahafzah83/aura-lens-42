@@ -6,10 +6,10 @@ import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { EMPTY_STATE } from "@/constants/language";
 import {
-  Loader2, Save, Plus, X, Send, Copy, Check, Trash2, Search,
+  Loader2, Save, X, Send, Copy, Check, Trash2, Search,
   PenTool, LayoutGrid, FileText, BookOpen, Lightbulb,
   Sparkles, Zap, Target, ArrowRight, Layers,
-  Calendar, TrendingUp, BarChart3, Upload, Mic, ChevronLeft, ChevronDown, Image as ImageIcon, Download
+  Calendar, TrendingUp, BarChart3, ChevronLeft, ChevronDown, Image as ImageIcon, Download
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Linkedin } from "lucide-react";
