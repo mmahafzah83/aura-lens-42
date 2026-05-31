@@ -62,25 +62,30 @@ serve(async (req) => {
       weekly_data,
     };
 
-    // --- signal_score: quality-weighted count + theme breadth + strong-signal bonus ---
+    // --- signal_score: tier-weighted strength + theme breadth + strong-signal bonus ---
     const { data: signalsData } = await admin
       .from("strategic_signals")
-      .select("confidence, theme_tags")
+      .select("strength_score, lifecycle_tier, theme_tags")
       .eq("user_id", userId)
       .eq("status", "active");
     const activeSignalsForScore = signalsData || [];
-    const confidenceSum = activeSignalsForScore.reduce(
-      (sum: number, s: any) => sum + Number(s.confidence || 0), 0,
-    );
+
+    const TIER_WEIGHT: Record<string, number> = { live: 1.0, evergreen: 0.6, emerging: 0.3 };
+    const weightedStrengthSum = activeSignalsForScore.reduce((sum: number, s: any) => {
+      const w = TIER_WEIGHT[s.lifecycle_tier] ?? 0.6; // default evergreen-equivalent
+      return sum + (Number(s.strength_score) || 0) * w;
+    }, 0);
+
     const uniqueThemes = new Set<string>();
     activeSignalsForScore.forEach((s: any) =>
       (s.theme_tags || []).forEach((t: string) => uniqueThemes.add(t)),
     );
     const hasStrongSignal = activeSignalsForScore.some(
-      (s: any) => Number(s.confidence || 0) >= 0.7,
+      (s: any) => (Number(s.strength_score) || 0) >= 0.7,
     );
+
     const signalScore = Math.min(
-      Math.round(confidenceSum * 12)
+      Math.round(weightedStrengthSum * 18)
       + Math.min(uniqueThemes.size, 5) * 4
       + (hasStrongSignal ? 8 : 0),
       100,
