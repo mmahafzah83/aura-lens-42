@@ -177,10 +177,12 @@ function Chip({ children }: { children: React.ReactNode }) {
       style={{
         display: "inline-flex",
         alignItems: "center",
-        padding: "6px 12px",
+        gap: 6,
+        padding: "6px 14px 6px 10px",
         marginRight: 8,
         marginBottom: 8,
         fontSize: 12,
+        lineHeight: 1,
         fontFamily: BODY,
         color: INK_2,
         background: BRONZE_FAINT,
@@ -188,7 +190,17 @@ function Chip({ children }: { children: React.ReactNode }) {
         borderRadius: 999,
       }}
     >
-      <Diamond size={6} />
+      <span
+        aria-hidden
+        style={{
+          display: "inline-block",
+          width: 6,
+          height: 6,
+          background: BRONZE,
+          transform: "rotate(45deg)",
+          flexShrink: 0,
+        }}
+      />
       {children}
     </span>
   );
@@ -308,16 +320,17 @@ function Page1({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
       {data.score ? (
         <div style={{ marginTop: 28, padding: 18, border: `1px solid ${RULE}`, borderTop: `2px solid ${BRONZE}` }}>
           <SectionLabel>Digital Presence Score</SectionLabel>
-          <div style={{ display: "flex", alignItems: "stretch", gap: 32, marginTop: 16 }}>
+          <div style={{ display: "flex", alignItems: "stretch", gap: 32, marginTop: 12 }}>
             {/* LEFT: number + tier */}
             <div
               style={{
                 flex: "none",
                 display: "flex",
                 flexDirection: "column",
-                justifyContent: "center",
+                justifyContent: "flex-start",
                 borderRight: `1px solid ${RULE}`,
                 paddingRight: 32,
+                paddingTop: 2,
               }}
             >
               <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
@@ -345,7 +358,7 @@ function Page1({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
               ) : null}
             </div>
             {/* RIGHT: stacked component bars */}
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 12 }}>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 12, paddingTop: 14 }}>
               {[
                 { label: "Signal", weight: 40, v: data.score.components.signal },
                 { label: "Content", weight: 40, v: data.score.components.content },
@@ -590,7 +603,7 @@ function Page4({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
               { n: data.footprint.signals, l: "Strategic\nSignals" },
               { n: data.footprint.themes, l: "Themes\nOwned" },
             ].map((s, i) => (
-              <div key={i} style={{ padding: "14px 12px", border: `1px solid ${RULE}`, borderTop: `2px solid ${BRONZE}`, textAlign: "center" }}>
+              <div key={i} style={{ padding: "14px 12px", border: `1px solid ${RULE}`, borderTop: `2px solid ${BRONZE}`, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
                 <div style={{ fontFamily: DISPLAY, fontSize: 32, fontWeight: 500, color: INK, lineHeight: 1 }}>{s.n}</div>
                 <div style={{ marginTop: 12, fontSize: 10, color: INK_3, letterSpacing: "0.1em", textTransform: "uppercase", whiteSpace: "pre-line" }}>
                   {s.l}
@@ -622,12 +635,12 @@ function Page4({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
           {showVoice ? (
             <div style={{ padding: "14px 16px", border: `1px solid ${RULE}`, borderTop: `2px solid ${BRONZE}` }}>
               <SectionLabel>Voice Signature</SectionLabel>
-              {data.voice!.tone ? <Row label="Tone" value={data.voice!.tone} /> : null}
+              {data.voice!.tone ? <Row label="Tone" value={data.voice!.tone} valueAlign="left" /> : null}
               {data.voice!.preferred_structures.length > 0 ? (
-                <Row label="Structure" value={shortSnippet(data.voice!.preferred_structures.join(" · "))} />
+                <Row label="Structure" value={shortSnippet(data.voice!.preferred_structures.join(" · "))} valueAlign="left" />
               ) : null}
               {data.voice!.storytelling_patterns.length > 0 ? (
-                <Row label="Patterns" value={shortSnippet(data.voice!.storytelling_patterns.join(" · "))} />
+                <Row label="Patterns" value={shortSnippet(data.voice!.storytelling_patterns.join(" · "))} valueAlign="left" />
               ) : null}
               {data.voice!.vocabulary_preferences.prefer && data.voice!.vocabulary_preferences.prefer.length > 0 ? (
                 <Row label="Prefers" value={data.voice!.vocabulary_preferences.prefer.join(", ")} />
@@ -642,11 +655,11 @@ function Page4({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value, valueAlign = "right" }: { label: string; value: string; valueAlign?: "left" | "right" }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${RULE}`, fontSize: 12 }}>
       <span style={{ color: INK_3, letterSpacing: "0.04em" }}>{label}</span>
-      <span style={{ color: INK, fontWeight: 500, textAlign: "right", maxWidth: "60%" }} dir="auto">{value}</span>
+      <span style={{ color: INK, fontWeight: 500, textAlign: valueAlign, maxWidth: "60%" }} dir="auto">{value}</span>
     </div>
   );
 }
