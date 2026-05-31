@@ -308,33 +308,87 @@ function Page1({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
       {data.score ? (
         <div style={{ marginTop: 28, padding: 18, border: `1px solid ${RULE}`, borderTop: `2px solid ${BRONZE}` }}>
           <SectionLabel>Digital Presence Score</SectionLabel>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 16, marginBottom: 18 }}>
-            <div style={{ fontFamily: DISPLAY, fontSize: 56, fontWeight: 500, color: INK, lineHeight: 1.1 }}>
-              {data.score.score}
-              <span style={{ fontSize: 22, color: INK_4 }}>/100</span>
+          <div style={{ display: "flex", alignItems: "stretch", gap: 32, marginTop: 16 }}>
+            {/* LEFT: number + tier */}
+            <div
+              style={{
+                flex: "none",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                borderRight: `1px solid ${RULE}`,
+                paddingRight: 32,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                <span style={{ fontFamily: DISPLAY, fontSize: 58, fontWeight: 500, color: INK, lineHeight: 1 }}>
+                  {data.score.score}
+                </span>
+                <span style={{ fontFamily: DISPLAY, fontSize: 20, color: INK_4 }}>/100</span>
+              </div>
+              {data.score.tier ? (
+                <div
+                  style={{
+                    fontFamily: BODY,
+                    fontSize: 11,
+                    color: BRONZE_DEEP,
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase",
+                    marginTop: 8,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
+                  <Diamond size={7} /> {titleCase(data.score.tier)} Tier
+                </div>
+              ) : null}
             </div>
-            {data.score.tier ? (
-              <div style={{ fontFamily: BODY, fontSize: 12, color: BRONZE_DEEP, letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                <Diamond size={7} /> {titleCase(data.score.tier)} Tier
-              </div>
-            ) : null}
-          </div>
-          <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
-            {[
-              { label: "Signal 40%", v: data.score.components.signal, w: 40 },
-              { label: "Content 40%", v: data.score.components.content, w: 40 },
-              { label: "Capture 20%", v: data.score.components.capture, w: 20 },
-            ].map((b) => (
-              <div key={b.label}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: INK_3, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>
-                  <span>{b.label}</span>
-                  <span style={{ fontFamily: DISPLAY, fontSize: 14, color: INK }}>{Math.round(b.v)}</span>
+            {/* RIGHT: stacked component bars */}
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 12 }}>
+              {[
+                { label: "Signal", weight: 40, v: data.score.components.signal },
+                { label: "Content", weight: 40, v: data.score.components.content },
+                { label: "Capture", weight: 20, v: data.score.components.capture },
+              ].map((b) => (
+                <div
+                  key={b.label}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "110px 1fr 30px",
+                    alignItems: "center",
+                    gap: 12,
+                  }}
+                >
+                  <div style={{ fontSize: 11, color: INK_2, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                    {b.label}
+                    <span style={{ color: INK_4, marginLeft: 6 }}>{b.weight}%</span>
+                  </div>
+                  <div style={{ height: 7, background: RULE, borderRadius: 4, position: "relative", overflow: "hidden" }}>
+                    <div
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        width: `${Math.max(0, Math.min(100, b.v))}%`,
+                        background: `linear-gradient(90deg, ${BRONZE}, ${BRONZE_DEEP})`,
+                        borderRadius: 4,
+                      }}
+                    />
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: DISPLAY,
+                      fontSize: 14,
+                      color: BRONZE_DEEP,
+                      textAlign: "right",
+                      fontVariantNumeric: "tabular-nums",
+                    }}
+                  >
+                    {Math.round(b.v)}
+                  </div>
                 </div>
-                <div style={{ height: 4, background: RULE, position: "relative" }}>
-                  <div style={{ position: "absolute", inset: 0, width: `${Math.max(0, Math.min(100, b.v))}%`, background: BRONZE }} />
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       ) : null}
