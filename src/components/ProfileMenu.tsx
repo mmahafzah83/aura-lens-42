@@ -45,6 +45,8 @@ export default function ProfileMenu({
         ? parts[0][0]?.toUpperCase()
         : "";
 
+  const navigate = useNavigate();
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
