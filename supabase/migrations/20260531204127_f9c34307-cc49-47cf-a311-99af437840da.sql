@@ -1,0 +1,3 @@
+ALTER TABLE public.strategic_signals_lifecycle_backup_20260531 ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.strategic_signals_lifecycle_backup_20260531 FROM anon, authenticated;
+GRANT ALL ON public.strategic_signals_lifecycle_backup_20260531 TO service_role;
