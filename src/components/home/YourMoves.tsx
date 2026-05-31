@@ -13,6 +13,8 @@ export interface AuraItem {
   reason: string;
   urgency: Urgency;
   destination?: string;
+  signal_id?: string | null;
+  signal_title?: string | null;
 }
 
 interface YourMovesProps {
@@ -22,6 +24,8 @@ interface YourMovesProps {
   defaultOpen?: boolean;
   onOpenCapture?: (prefillUrl?: string, prefillText?: string, sourceKey?: string) => void;
   onSwitchTab?: (tab: "home" | "identity" | "intelligence" | "authority" | "influence") => void;
+  onNavigateToSignal?: (signalId: string) => void;
+  onDraftToStudio?: (prefill: any) => void;
 }
 
 const TYPE_STYLE: Record<ActionType, { bg: string; color: string; Icon: typeof Send }> = {
@@ -83,7 +87,7 @@ const Skel = () => (
   }} />
 );
 
-export default function YourMoves({ userId, items: itemsProp, hideIfEmpty, defaultOpen = true, onOpenCapture, onSwitchTab }: YourMovesProps) {
+export default function YourMoves({ userId, items: itemsProp, hideIfEmpty, defaultOpen = true, onOpenCapture, onSwitchTab, onNavigateToSignal, onDraftToStudio }: YourMovesProps) {
   const { isCaptured } = useCapturedSources();
   const navigate = useNavigate();
   const [items, setItems] = useState<AuraItem[] | null>(null);
@@ -120,6 +124,15 @@ export default function YourMoves({ userId, items: itemsProp, hideIfEmpty, defau
 
   const handleClick = (item: AuraItem) => {
     if (item.action_type === "PUBLISH") {
+      if (item.signal_id && onDraftToStudio) {
+        onDraftToStudio({
+          topic: item.title,
+          context: item.reason,
+          signalId: item.signal_id,
+          signalTitle: item.signal_title ?? undefined,
+        });
+        return;
+      }
       if (onSwitchTab) onSwitchTab("authority");
       else navigate("/?tab=authority", { state: { prefill_topic: item.title } });
       return;
@@ -127,6 +140,10 @@ export default function YourMoves({ userId, items: itemsProp, hideIfEmpty, defau
     if (item.action_type === "CAPTURE") {
       const sourceKey = (item.title || "").trim();
       onOpenCapture?.(undefined, `${item.title}\n\n${item.reason}`, sourceKey);
+      return;
+    }
+    if (item.signal_id && onNavigateToSignal) {
+      onNavigateToSignal(item.signal_id);
       return;
     }
     if (onSwitchTab) onSwitchTab("intelligence");
