@@ -95,7 +95,7 @@ serve(async (req) => {
 
     const [signalsRes, trendsRes, entriesRes, postRes, scoreRes] = await Promise.all([
       supabase.from("strategic_signals")
-        .select("signal_title, confidence, fragment_count, status, theme_tags")
+        .select("id, signal_title, confidence, fragment_count, status, theme_tags")
         .eq("user_id", user.id)
         .eq("status", "active")
         .order("confidence", { ascending: false })
