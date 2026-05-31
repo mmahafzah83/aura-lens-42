@@ -319,15 +319,22 @@ export async function buildIdentityReport(userId: string): Promise<ReportData> {
       ? p.skill_ratings
       : p?.audit_results) || {};
   const filled: { name: string; score: number }[] = [];
+  const SLUG_MAP: Record<string, string> = {
+    "Strategic Architecture": "strategic_architecture",
+    "C-Suite Stewardship": "csuite_stewardship",
+    "Sector Foresight": "sector_foresight",
+    "Digital Synthesis": "digital_synthesis",
+    "Executive Presence": "executive_presence",
+    "Commercial Velocity": "commercial_velocity",
+    "Human-Centric Leadership": "human_centric_leadership",
+    "Operational Resilience": "operational_resilience",
+    "Geopolitical Fluency": "geopolitical_fluency",
+    "Value-Based P&L": "value_based_pnl",
+  };
   for (const dim of CAPABILITY_DIMENSIONS) {
     // Some users have keys in snake_case slug form (e.g. "value_based_pnl");
     // others in canonical form ("Value-Based P&L"). Try canonical first, then slug.
-    const slug = dim
-      .toLowerCase()
-      .replace(/[-&]/g, "")
-      .replace(/[^a-z0-9]+/g, "_")
-      .replace(/^_+|_+$/g, "");
-    const v = (ratingsRaw as any)[dim] ?? (ratingsRaw as any)[slug];
+    const v = (ratingsRaw as any)[dim] ?? (ratingsRaw as any)[SLUG_MAP[dim]];
     if (typeof v === "number" && !Number.isNaN(v)) {
       filled.push({ name: dim, score: Math.round(v) });
     }
