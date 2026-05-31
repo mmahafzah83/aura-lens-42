@@ -9,17 +9,42 @@ interface MirrorRow {
   headhunter_text: string | null;
   client_cio_text: string | null;
   curator_text: string | null;
-  gaps: { headhunter_gap?: string; client_cio_gap?: string; curator_gap?: string } | null;
+  gaps: {
+    headhunter_gap?: string;
+    client_cio_gap?: string;
+    curator_gap?: string;
+    persona_set?: RankBucket;
+  } | null;
   generated_at: string;
 }
 
 type TabKey = "headhunter" | "client_cio" | "curator";
 
-const TABS: { key: TabKey; label: string }[] = [
-  { key: "headhunter", label: "Headhunter" },
-  { key: "client_cio", label: "Client CIO" },
-  { key: "curator", label: "Conference curator" },
-];
+type RankBucket = "c_suite" | "partner" | "director";
+
+// Positional slot keys (slot1/slot2/slot3) map to existing columns —
+// only the visible labels change per rank. Must match the EF.
+const PERSONA_LABELS: Record<RankBucket, { slot1: string; slot2: string; slot3: string; gap1: string; gap2: string; gap3: string }> = {
+  c_suite: {
+    slot1: "Board member", slot2: "Peer CEO", slot3: "Industry analyst",
+    gap1: "board member", gap2: "peer CEO", gap3: "industry analyst",
+  },
+  partner: {
+    slot1: "Prospective client", slot2: "Practice leadership", slot3: "Top talent recruit",
+    gap1: "prospective client", gap2: "practice leader", gap3: "top recruit",
+  },
+  director: {
+    slot1: "Headhunter", slot2: "Client CIO", slot3: "Conference curator",
+    gap1: "headhunter", gap2: "CIO", gap3: "curator",
+  },
+};
+
+function rankFromLevel(level: string | null | undefined): RankBucket {
+  const l = (level || "").toLowerCase();
+  if (/chief|c-suite|c-level|ceo|cfo|cio|cto|cdo/.test(l)) return "c_suite";
+  if (/partner|managing director/.test(l)) return "partner";
+  return "director";
+}
 
 const ORANGE = "var(--bronze)"; // bronze — was orange; restricted to signal/status only
 
@@ -38,6 +63,23 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [tab, setTab] = useState<TabKey>("headhunter");
+  const [currentRank, setCurrentRank] = useState<RankBucket>("director");
+
+  // Fetch the user's level for currentRank — source: diagnostic_profiles.level
+  // (not previously available in this component).
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("diagnostic_profiles" as any)
+        .select("level")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (!cancelled) setCurrentRank(rankFromLevel((data as any)?.level));
+    })();
+    return () => { cancelled = true; };
+  }, [userId]);
 
   const load = async () => {
     if (!userId) return;
@@ -77,10 +119,30 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
     }
   };
 
+  // If cached row's persona_set doesn't match user's current rank, refresh.
+  // Legacy rows had no marker and were always "director" content.
+  useEffect(() => {
+    if (!row || !userId || generating) return;
+    const rowRank: RankBucket = row.gaps?.persona_set ?? "director";
+    if (rowRank !== currentRank) {
+      generate();
+    }
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, [row, currentRank, userId]);
+
   const canRefresh = useMemo(() => {
     if (!row) return true;
     return Date.now() - new Date(row.generated_at).getTime() >= 7 * 24 * 60 * 60 * 1000;
   }, [row]);
+
+  // Label by the row's content (what the cached personas WERE generated for).
+  const personaSet: RankBucket = row?.gaps?.persona_set ?? "director";
+  const labels = PERSONA_LABELS[personaSet];
+  const TABS: { key: TabKey; label: string }[] = [
+    { key: "headhunter", label: labels.slot1 },
+    { key: "client_cio", label: labels.slot2 },
+    { key: "curator", label: labels.slot3 },
+  ];
 
   const text = row ? (row as any)[`${tab}_text`] as string | null : null;
   const gap = row?.gaps?.[`${tab}_gap` as keyof MirrorRow["gaps"]] as string | undefined;
@@ -222,7 +284,7 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
           </p>
 
           {gap && (() => {
-            const persona = tab === "headhunter" ? "headhunter" : tab === "client_cio" ? "CIO" : "curator";
+            const persona = tab === "headhunter" ? labels.gap1 : tab === "client_cio" ? labels.gap2 : labels.gap3;
             const ALERT = "var(--signal, #F97316)";
             return (
               <div
