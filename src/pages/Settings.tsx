@@ -125,9 +125,9 @@ export default function Settings() {
         await (document as any).fonts.ready;
       }
 
-      const pageNodes = Array.from(
-        reportMountRef.current.querySelectorAll<HTMLElement>("[data-report-page]")
-      );
+      const pageNodes: HTMLElement[] = Array.from(
+        reportMountRef.current.querySelectorAll("[data-report-page]")
+      ) as HTMLElement[];
       if (pageNodes.length === 0) throw new Error("No report pages to export.");
 
       const pdf = new jsPDF({ unit: "pt", format: "a4", orientation: "portrait" });
