@@ -2128,18 +2128,6 @@ const AnalyzeTab = () => {
   );
 };
 
-/* ═══════════════════════════════════════════
-   VOICE TRAINER — inline in Library tab
-   ═══════════════════════════════════════════ */
-
-const VoiceTrainer = () => {
-  const [pasteText, setPasteText] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [distilling, setDistilling] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  const appendToVoice = async (newText: string) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user?.id) throw new Error("Not authenticated");
     const uid = session.user.id;
