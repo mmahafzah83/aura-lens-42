@@ -206,20 +206,28 @@ serve(async (req) => {
     }
 
     const rawItems = Array.isArray(parsed.items) ? parsed.items : [];
+    const signalsList = (signalsRes.data || []) as Array<{ id: string; signal_title: string }>;
+    const validSignalMap = new Map(signalsList.map((s) => [s.id, s.signal_title]));
     const items = rawItems
       .filter((it: any) => it && (it.urgency === "HIGH" || it.urgency === "MEDIUM"))
       .filter((it: any) => ["PUBLISH", "CAPTURE", "WATCH"].includes(it.action_type))
       .slice(0, 3)
-      .map((it: any) => ({
-        ...it,
-        destination:
-          it.destination ||
-          (it.action_type === "PUBLISH"
-            ? "/publish"
-            : it.action_type === "CAPTURE"
-            ? "capture_modal"
-            : "/intelligence"),
-      }));
+      .map((it: any) => {
+        const echoed = typeof it.signal_id === "string" ? it.signal_id : null;
+        const validId = echoed && validSignalMap.has(echoed) ? echoed : null;
+        return {
+          ...it,
+          signal_id: validId,
+          signal_title: validId ? validSignalMap.get(validId) ?? null : null,
+          destination:
+            it.destination ||
+            (it.action_type === "PUBLISH"
+              ? "/publish"
+              : it.action_type === "CAPTURE"
+              ? "capture_modal"
+              : "/intelligence"),
+        };
+      });
 
     return new Response(JSON.stringify({ items, context_summary: {
       signals: context.top_signals.length,
