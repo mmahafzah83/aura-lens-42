@@ -85,7 +85,7 @@ serve(async (req) => {
     );
 
     const signalScore = Math.min(
-      Math.round(weightedStrengthSum * 18)
+      Math.round(weightedStrengthSum * 11)
       + Math.min(uniqueThemes.size, 5) * 4
       + (hasStrongSignal ? 8 : 0),
       100,
