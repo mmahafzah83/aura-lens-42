@@ -84,11 +84,50 @@ serve(async (req) => {
       ? themes.map((t) => `- ${t.theme} (${t.count} posts)`).join("\n")
       : "(no published themes)";
 
-    const systemPrompt = `You are analyzing a professional's market positioning. Generate three perspectives:
+    // Rank bucket from free-text level (case-insensitive match).
+    const levelLower = String(level).toLowerCase();
+    const rankBucket: "c_suite" | "partner" | "director" =
+      /\b(chief|c-suite|c level|c-level|ceo|cfo|cio|cto|cdo)\b/.test(levelLower)
+        ? "c_suite"
+        : /\b(partner|managing director)\b/.test(levelLower)
+        ? "partner"
+        : "director";
 
-PERSPECTIVE 1 — THE HEADHUNTER: What a headhunter for '${level}' in '${sector}' would find when they research this person.
-PERSPECTIVE 2 — THE CLIENT CIO: What a CIO evaluating advisory partners would see.
-PERSPECTIVE 3 — THE CONFERENCE CURATOR: What a conference organizer would assess for speaker selection.
+    // Persona trio per rank — POSITIONAL (slot 1/2/3 maps to existing
+    // headhunter_text / client_cio_text / curator_text columns).
+    const PERSONAS: Record<typeof rankBucket, { slot1: string; slot2: string; slot3: string; p1Desc: string; p2Desc: string; p3Desc: string }> = {
+      c_suite: {
+        slot1: "BOARD MEMBER",
+        slot2: "PEER CEO",
+        slot3: "INDUSTRY ANALYST",
+        p1Desc: `What a board member assessing a '${level}' in '${sector}' would conclude about this person's strategic judgement, governance posture, and external credibility.`,
+        p2Desc: `What a peer CEO in '${sector}' would think when sizing this person up as an equal — leadership signal, market read, and willingness to take a position.`,
+        p3Desc: `What an industry analyst covering '${sector}' would write about this person's positioning, thesis, and visibility against the field.`,
+      },
+      partner: {
+        slot1: "PROSPECTIVE CLIENT",
+        slot2: "PRACTICE LEADERSHIP",
+        slot3: "TOP TALENT RECRUIT",
+        p1Desc: `What a prospective client evaluating a '${level}' in '${sector}' would conclude about this person's expertise, point of view, and fit for a serious engagement.`,
+        p2Desc: `What practice leadership inside the firm would see when reviewing this person's market footprint, thought leadership, and book-of-business signal in '${sector}'.`,
+        p3Desc: `What a top talent recruit weighing joining this practice would notice about this person's voice, the brand they project, and what working with them would look like.`,
+      },
+      director: {
+        slot1: "HEADHUNTER",
+        slot2: "CLIENT CIO",
+        slot3: "CONFERENCE CURATOR",
+        p1Desc: `What a headhunter recruiting for '${level}' roles in '${sector}' would find when they research this person.`,
+        p2Desc: `What a CIO in '${sector}' evaluating advisory partners would see.`,
+        p3Desc: `What a conference curator in '${sector}' would assess for speaker selection.`,
+      },
+    };
+    const personaSet = PERSONAS[rankBucket];
+
+    const systemPrompt = `You are analyzing a professional's market positioning. Generate three perspectives, written FROM each persona's point of view:
+
+PERSPECTIVE 1 — THE ${personaSet.slot1}: ${personaSet.p1Desc}
+PERSPECTIVE 2 — THE ${personaSet.slot2}: ${personaSet.p2Desc}
+PERSPECTIVE 3 — THE ${personaSet.slot3}: ${personaSet.p3Desc}
 
 RULES:
 - Each perspective must be ~150 words.
@@ -99,13 +138,13 @@ RULES:
 
 Return STRICT JSON ONLY (no markdown, no prose) with this exact shape:
 {
-  "headhunter": "string ~150 words",
-  "client_cio": "string ~150 words",
-  "curator": "string ~150 words",
+  "perspective_1": "string ~150 words — from THE ${personaSet.slot1}'s POV",
+  "perspective_2": "string ~150 words — from THE ${personaSet.slot2}'s POV",
+  "perspective_3": "string ~150 words — from THE ${personaSet.slot3}'s POV",
   "gaps": {
-    "headhunter_gap": "string, one sentence",
-    "client_cio_gap": "string, one sentence",
-    "curator_gap": "string, one sentence"
+    "perspective_1_gap": "string, one sentence — what THE ${personaSet.slot1} would call out",
+    "perspective_2_gap": "string, one sentence — what THE ${personaSet.slot2} would call out",
+    "perspective_3_gap": "string, one sentence — what THE ${personaSet.slot3} would call out"
   }
 }`;
 
@@ -194,10 +233,22 @@ ${trendLines}`;
       parsed = m ? JSON.parse(m[0]) : {};
     }
 
-    const headhunter_text = String(parsed.headhunter || "").trim();
-    const client_cio_text = String(parsed.client_cio || "").trim();
-    const curator_text = String(parsed.curator || "").trim();
-    const gaps = parsed.gaps || {};
+    // Read positionally, with legacy-key fallback in case the model emits old keys.
+    const slot1Text = String(parsed.perspective_1 ?? parsed.headhunter ?? "").trim();
+    const slot2Text = String(parsed.perspective_2 ?? parsed.client_cio ?? "").trim();
+    const slot3Text = String(parsed.perspective_3 ?? parsed.curator ?? "").trim();
+    const rawGaps = parsed.gaps || {};
+    // Map positional → existing column-friendly keys. Stamp persona_set.
+    const gaps = {
+      headhunter_gap: String(rawGaps.perspective_1_gap ?? rawGaps.headhunter_gap ?? "").trim(),
+      client_cio_gap: String(rawGaps.perspective_2_gap ?? rawGaps.client_cio_gap ?? "").trim(),
+      curator_gap: String(rawGaps.perspective_3_gap ?? rawGaps.curator_gap ?? "").trim(),
+      persona_set: rankBucket,
+    };
+    // Reuse columns as POSITIONAL slots (slot1 → headhunter_text, etc.).
+    const headhunter_text = slot1Text;
+    const client_cio_text = slot2Text;
+    const curator_text = slot3Text;
 
     const { data: upserted, error: upErr } = await admin
       .from("market_mirror_cache")
