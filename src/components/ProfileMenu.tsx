@@ -179,6 +179,32 @@ export default function ProfileMenu({
           </button>
         )}
 
+        {/* SETTINGS */}
+        <button
+          type="button"
+          onClick={() => navigate("/settings")}
+          style={{
+            width: "100%",
+            minHeight: 44,
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "10px 12px",
+            marginTop: 4,
+            background: "transparent",
+            border: "none",
+            borderRadius: 8,
+            cursor: "pointer",
+            color: "var(--foreground)",
+            fontSize: 14,
+            fontWeight: 500,
+          }}
+          className="hover:bg-[var(--brand-ghost,rgba(0,0,0,0.04))] transition-colors"
+        >
+          <Settings className="w-4 h-4" />
+          Settings
+        </button>
+
         {/* SIGN OUT */}
         <button
           type="button"
