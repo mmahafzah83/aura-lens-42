@@ -98,17 +98,17 @@ Deno.serve(async (req) => {
     }
     const token = authHeader.replace("Bearer ", "");
     const authClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
+      global: { headers: { Authorization: `Bearer ${token}` } },
     });
-    const { data: claimsData, error: claimsErr } = await authClient.auth.getClaims(token);
-    if (claimsErr || !claimsData?.claims?.sub) {
-      console.error("detect-patterns auth failed:", claimsErr?.message);
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+    const { data: { user }, error: userErr } = await authClient.auth.getUser(token);
+    if (userErr || !user) {
+      console.error("detect-patterns auth failed:", userErr?.message, "token_len:", token.length);
+      return new Response(JSON.stringify({ error: "Unauthorized", detail: userErr?.message }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const userId = claimsData.claims.sub as string;
+    const userId = user.id;
     const user_id = userId; // alias for downstream references; identity is JWT-only
     // body.user_id is intentionally ignored
     try { await req.json(); } catch { /* body optional */ }
