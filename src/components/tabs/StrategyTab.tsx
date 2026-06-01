@@ -17,6 +17,25 @@ import LinkedInDraftPanel from "@/components/LinkedInDraftPanel";
 import SignalGraph from "@/components/SignalGraph";
 import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
 
+async function invokeDetectPatterns(userId: string) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error("Not authenticated");
+
+  const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/detect-patterns`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.access_token}`,
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+    },
+    body: JSON.stringify({ user_id: userId }),
+  });
+
+  const data = await resp.json().catch(() => null);
+  if (!resp.ok) throw new Error(data?.detail || data?.error || "Detection failed");
+  return data;
+}
+
 /* ── Types ── */
 interface StrategicSignal {
   id: string;
@@ -108,17 +127,7 @@ const StrategyTab = ({ onOpenChat }: StrategyTabProps) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/detect-patterns`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-        },
-        body: JSON.stringify({ user_id: session.user.id }),
-      });
-      if (!resp.ok) throw new Error("Detection failed");
-      const data = await resp.json();
+      const data = await invokeDetectPatterns(session.user.id);
       toast.success(`Detected ${data.signals_created || 0} new signals`);
       await fetchAll();
     } catch (e: any) {
