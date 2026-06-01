@@ -108,6 +108,7 @@ Deno.serve(async (req) => {
       });
     }
     const userId = userData.user.id;
+    const user_id = userId; // alias for downstream references; identity is JWT-only
     // body.user_id is intentionally ignored
     try { await req.json(); } catch { /* body optional */ }
 
