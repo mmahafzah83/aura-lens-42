@@ -100,14 +100,15 @@ Deno.serve(async (req) => {
     const authClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: userData, error: userErr } = await authClient.auth.getUser(token);
-    if (userErr || !userData?.user) {
+    const { data: claimsData, error: claimsErr } = await authClient.auth.getClaims(token);
+    if (claimsErr || !claimsData?.claims?.sub) {
+      console.error("detect-patterns auth failed:", claimsErr?.message);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const userId = userData.user.id;
+    const userId = claimsData.claims.sub as string;
     const user_id = userId; // alias for downstream references; identity is JWT-only
     // body.user_id is intentionally ignored
     try { await req.json(); } catch { /* body optional */ }
