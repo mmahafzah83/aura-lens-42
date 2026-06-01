@@ -1,0 +1,10 @@
+Pre-migration snapshot of supabase_realtime publication tables:
+- public.documents
+- public.entries
+- public.industry_trends
+- public.learned_intelligence
+- public.linkedin_posts
+- public.master_frameworks
+- public.notifications
+
+About to add: strategic_signals, evidence_fragments, score_snapshots, recommended_moves
