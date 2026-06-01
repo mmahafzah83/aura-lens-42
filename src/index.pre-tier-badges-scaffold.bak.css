@@ -136,17 +136,6 @@ html *:not(canvas):not(video):not(iframe) {
   --signal-pale: rgba(255,138,61,0.10);
   --signal-line: rgba(255,138,61,0.30);
 
-  /* Signal lifecycle tiers (dark mode) — Live reuses existing orange signal token. */
-  --tier-live: var(--signal);
-  --tier-live-pale: var(--signal-pale);
-  --tier-live-line: var(--signal-line);
-  --tier-evergreen: #7FB37A;
-  --tier-evergreen-pale: rgba(127,179,122,0.12);
-  --tier-evergreen-line: rgba(127,179,122,0.32);
-  --tier-emerging: #7AA7D1;
-  --tier-emerging-pale: rgba(122,167,209,0.12);
-  --tier-emerging-line: rgba(122,167,209,0.32);
-
   /* Signal orange (time-sensitive accent — canonical) */
   --signal-orange: #F4845F;
   --signal-orange-light: #2D1108;
@@ -255,17 +244,6 @@ html *:not(canvas):not(video):not(iframe) {
   --shadow-rest: 0 1px 2px rgba(20,17,12,0.06), 0 0 0 0.5px rgba(20,17,12,0.04);
   --shadow-lift: 0 8px 24px -8px rgba(20,17,12,0.12), 0 0 0 0.5px rgba(20,17,12,0.04);
   --font-display: 'Cormorant Garamond', serif;
-
-  /* Signal lifecycle tiers (light mode) */
-  --tier-live: var(--signal);
-  --tier-live-pale: var(--signal-pale);
-  --tier-live-line: var(--signal-line);
-  --tier-evergreen: #5C8A52;
-  --tier-evergreen-pale: rgba(92,138,82,0.10);
-  --tier-evergreen-line: rgba(92,138,82,0.28);
-  --tier-emerging: #4A7AB0;
-  --tier-emerging-pale: rgba(74,122,176,0.10);
-  --tier-emerging-line: rgba(74,122,176,0.28);
 
   /* Missing-token shims (light) */
   --warning: #B8860B;
