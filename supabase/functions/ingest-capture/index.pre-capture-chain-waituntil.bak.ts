@@ -276,23 +276,15 @@ Deno.serve(async (req) => {
         newEntryId = entryRow.id;
         console.log("[ingest-capture] entries insert ok:", newEntryId);
         // Wire the full pipeline: extract-evidence creates fragments, then chains to detect-signals-v2
-        // @ts-ignore EdgeRuntime.waitUntil is available in Supabase Edge Functions
-        EdgeRuntime.waitUntil((async () => {
-          try {
-            const { error: extractError } = await supabase.functions.invoke("extract-evidence", {
-              body: {
-                source_type: "entry",
-                source_id: newEntryId,
-                user_id: effectiveUserId,
-              },
-            });
-            if (extractError) {
-              console.warn("[ingest-capture] extract-evidence invoke failed:", extractError);
-            }
-          } catch (e: any) {
-            console.warn("[ingest-capture] extract-evidence invoke threw:", e?.message);
-          }
-        })());
+        supabase.functions.invoke("extract-evidence", {
+          body: {
+            source_type: "entry",
+            source_id: newEntryId,
+            user_id: effectiveUserId,
+          },
+        }).catch((e: any) =>
+          console.warn("[ingest-capture] extract-evidence invoke failed:", e?.message)
+        );
         console.log("[ingest-capture] extract-evidence invoked for entry:", newEntryId);
       }
     } catch (entryWriteErr: any) {

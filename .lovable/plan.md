@@ -1,87 +1,108 @@
 ## Goal
 
-HomeTab's hero (score arc + 7d diff), top-signal + count, evidence count, and top-move + count don't auto-refresh after a capture. Extend the existing realtime block (currently only `industry_trends`, L884–897) to subscribe to the four user tables and re-invoke the existing loaders.
+Stop silent capture loss caused by fire-and-forget `.invoke()` in the ingest-capture → extract-evidence → detect-signals-v2 chain. Mirror the proven `EdgeRuntime.waitUntil` pattern from `ingest-document/index.ts` (L376–391) at both sites so the isolate is kept alive until the background work finishes, while the HTTP response still returns promptly.
 
-## Mapping: table → existing loader → Home value
+## Snapshots first
 
-Verified against `src/components/tabs/HomeTab.tsx`:
+- `supabase/functions/ingest-capture/index.ts` → `supabase/functions/ingest-capture/index.pre-capture-chain-waituntil.bak.ts`
+- `supabase/functions/extract-evidence/index.ts` → `supabase/functions/extract-evidence/index.pre-capture-chain-waituntil.bak.ts`
 
-- `score_snapshots` → `loadBriefing(uid)` (L433, sets `latestScore` L451 + `score7dAgo` L452 → score arc + 7d diff)
-- `strategic_signals` → `loadBriefing(uid)` + `loadCompetitorAlert(uid)` (sets `topSignal` L462, total signal count L463–467, and `fragment_count` for the evidence number L626/L687)
-- `evidence_fragments` → `loadBriefing(uid)` + `loadCompetitorAlert(uid)` (HomeTab reads fragment counts off `strategic_signals`; re-running these reloads the derived evidence count)
-- `recommended_moves` → `loadBriefing(uid)` (sets `topMove` L468) + `loadMoves(uid)` (sets `moves` list L498)
+## Site 1 — ingest-capture/index.ts (L278–288)
 
-Reusing existing loaders only — no rewrites.
-
-## Snapshot first
-
-Copy `src/components/tabs/HomeTab.tsx` → `src/components/tabs/HomeTab.pre-hometab-realtime.bak.tsx` before editing.
-
-## Edit (single, surgical)
-
-In the existing `useEffect` at L883–899, add one extra channel alongside the current `industry_trends_${uid}` channel. Do not modify the trends channel.
-
+Before:
 ```ts
-// Coalesce bursts: a single capture writes to several of these tables.
-let homeReloadTimer: ReturnType<typeof setTimeout> | null = null;
-const scheduleHomeReload = () => {
-  if (homeReloadTimer) clearTimeout(homeReloadTimer);
-  homeReloadTimer = setTimeout(() => {
-    loadBriefing(uid);
-    loadMoves(uid);
-    loadCompetitorAlert(uid);
-  }, 750);
-};
-
-const homeLive = supabase
-  .channel(`home-live-${uid}`)
-  .on('postgres_changes',
-    { event: 'INSERT', schema: 'public', table: 'score_snapshots', filter: `user_id=eq.${uid}` },
-    scheduleHomeReload)
-  .on('postgres_changes',
-    { event: 'UPDATE', schema: 'public', table: 'score_snapshots', filter: `user_id=eq.${uid}` },
-    scheduleHomeReload)
-  .on('postgres_changes',
-    { event: 'INSERT', schema: 'public', table: 'strategic_signals', filter: `user_id=eq.${uid}` },
-    scheduleHomeReload)
-  .on('postgres_changes',
-    { event: 'UPDATE', schema: 'public', table: 'strategic_signals', filter: `user_id=eq.${uid}` },
-    scheduleHomeReload)
-  .on('postgres_changes',
-    { event: 'INSERT', schema: 'public', table: 'evidence_fragments', filter: `user_id=eq.${uid}` },
-    scheduleHomeReload)
-  .on('postgres_changes',
-    { event: 'UPDATE', schema: 'public', table: 'evidence_fragments', filter: `user_id=eq.${uid}` },
-    scheduleHomeReload)
-  .on('postgres_changes',
-    { event: 'INSERT', schema: 'public', table: 'recommended_moves', filter: `user_id=eq.${uid}` },
-    scheduleHomeReload)
-  .on('postgres_changes',
-    { event: 'UPDATE', schema: 'public', table: 'recommended_moves', filter: `user_id=eq.${uid}` },
-    scheduleHomeReload)
-  .subscribe();
+supabase.functions.invoke("extract-evidence", {
+  body: {
+    source_type: "entry",
+    source_id: newEntryId,
+    user_id: effectiveUserId,
+  },
+}).catch((e: any) =>
+  console.warn("[ingest-capture] extract-evidence invoke failed:", e?.message)
+);
+console.log("[ingest-capture] extract-evidence invoked for entry:", newEntryId);
 ```
 
-Extend the existing cleanup to remove the new channel and clear the timer:
-
+After:
 ```ts
-return () => {
-  if (homeReloadTimer) clearTimeout(homeReloadTimer);
-  supabase.removeChannel(channel);
-  supabase.removeChannel(homeLive);
-};
+// @ts-ignore EdgeRuntime.waitUntil is available in Supabase Edge Functions
+EdgeRuntime.waitUntil((async () => {
+  try {
+    const { error: extractError } = await supabase.functions.invoke("extract-evidence", {
+      body: {
+        source_type: "entry",
+        source_id: newEntryId,
+        user_id: effectiveUserId,
+      },
+    });
+    if (extractError) {
+      console.warn("[ingest-capture] extract-evidence invoke failed:", extractError);
+    }
+  } catch (e: any) {
+    console.warn("[ingest-capture] extract-evidence invoke threw:", e?.message);
+  }
+})());
+console.log("[ingest-capture] extract-evidence invoked for entry:", newEntryId);
 ```
 
-**Deps array: leave unchanged (uid-gated).** Do NOT add `loadCompetitorAlert` or any other loaders to the existing deps. The closure captures them; the effect should only re-subscribe when uid changes.
+Payload unchanged. Response continues to return at the existing `return new Response(...)` below — `waitUntil` does not block it.
+
+## Site 2 — extract-evidence/index.ts (L320–331)
+
+Before:
+```ts
+if (inserted.length > 0) {
+  const fragmentIds = inserted.map((f: any) => f.id);
+  adminClient.functions.invoke("detect-signals-v2", {
+    body: {
+      fragment_ids: fragmentIds,
+      source_registry_id: registryId,
+      user_id: registry.user_id,
+    },
+  }).catch((e: any) =>
+    console.warn("[extract-evidence] detect-signals-v2 chain failed:", e?.message)
+  );
+  console.log("[extract-evidence] chained detect-signals-v2 with", fragmentIds.length, "fragments");
+}
+```
+
+After:
+```ts
+if (inserted.length > 0) {
+  const fragmentIds = inserted.map((f: any) => f.id);
+  // @ts-ignore EdgeRuntime.waitUntil is available in Supabase Edge Functions
+  EdgeRuntime.waitUntil((async () => {
+    try {
+      const { error: sigError } = await adminClient.functions.invoke("detect-signals-v2", {
+        body: {
+          fragment_ids: fragmentIds,
+          source_registry_id: registryId,
+          user_id: registry.user_id,
+        },
+      });
+      if (sigError) {
+        console.warn("[extract-evidence] detect-signals-v2 chain failed:", sigError);
+      }
+    } catch (e: any) {
+      console.warn("[extract-evidence] detect-signals-v2 chain threw:", e?.message);
+    }
+  })());
+  console.log("[extract-evidence] chained detect-signals-v2 with", fragmentIds.length, "fragments");
+}
+```
+
+Payload unchanged. Response at L334 continues to return immediately.
 
 ## Notes
 
-- INSERT + UPDATE only (skipping DELETE — RLS-on-delete edge case).
-- One channel, unique name `home-live-${uid}` → no duplicates on re-render.
-- ~750ms debounce coalesces the capture burst into a single triplet of loader calls.
-- All 4 tables already in `supabase_realtime` publication (prior migration).
-- Preview only — no publish. Latency diagnostic to follow.
+- Each link wraps its own `waitUntil` so the chain is kept alive end to end (ingest-capture keeps the extract step alive; extract-evidence independently keeps the signal-detect step alive).
+- Nothing else changes: no payload edits, no response-shape changes, no awaits added to the response path, no new error handling beyond logging.
+- Preview only — do not publish.
 
 ## Self-check (after edit)
 
-Run `rg -n "home-live-|scheduleHomeReload|removeChannel" src/components/tabs/HomeTab.tsx` and report the subscription block plus cleanup, confirming: (a) all 4 tables subscribed and user-filtered, (b) INSERT + UPDATE only, (c) debounced via `scheduleHomeReload`, (d) `removeChannel(homeLive)` + `clearTimeout` in cleanup, (e) deps array unchanged.
+```
+rg -n "EdgeRuntime.waitUntil|extract-evidence|detect-signals-v2" supabase/functions/ingest-capture/index.ts supabase/functions/extract-evidence/index.ts
+```
+
+Confirm: (a) both invokes wrapped in `EdgeRuntime.waitUntil`, (b) the `return new Response(...)` in each file is not awaiting the background chain, (c) payload bodies byte-identical to before. Report the before/after blocks for both sites.
