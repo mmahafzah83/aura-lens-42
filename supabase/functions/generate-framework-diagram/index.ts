@@ -90,13 +90,42 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { framework_id, diagram_description, framework_title, mode, exclude_archetype, exclude_style } = await req.json();
-    if (!framework_id) throw new Error("framework_id required");
-
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const CRON_SECRET = Deno.env.get("CRON_SECRET");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+
+    // ── Auth guard (ownership-check pattern) ──
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const apiKeyHeader = req.headers.get("apikey") ?? "";
+    const cronHeader = req.headers.get("x-cron-secret") ?? "";
+    const bearer = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+    const isServiceRole = bearer === serviceRoleKey || apiKeyHeader === serviceRoleKey;
+    const isCron = !!CRON_SECRET && cronHeader === CRON_SECRET;
+
+    let callerUserId: string | null = null;
+    if (!isServiceRole && !isCron) {
+      if (!bearer) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const userClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: { user }, error: userErr } = await userClient.auth.getUser(bearer);
+      if (userErr || !user) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      callerUserId = user.id;
+    }
+
+    const { framework_id, diagram_description, framework_title, mode, exclude_archetype, exclude_style } = await req.json();
+    if (!framework_id) throw new Error("framework_id required");
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
@@ -113,6 +142,14 @@ Deno.serve(async (req) => {
       .single();
 
     if (!fw) throw new Error("Framework not found");
+
+    // ── Ownership check: user callers may only generate diagrams for their own frameworks ──
+    if (!isServiceRole && !isCron && (fw as any).user_id !== callerUserId) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     title = fw.title || title;
     summary = fw.summary || "";
     const steps = (fw.framework_steps as any[]) || [];
