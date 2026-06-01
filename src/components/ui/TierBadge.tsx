@@ -26,7 +26,7 @@ const TIER_META: Record<Exclude<SignalTier, "faded">, { label: string; Icon: typ
  * Uses logical properties (margin-inline-*) so it flips cleanly in RTL.
  */
 export function TierBadge({ tier, hideTooltip = false, className }: TierBadgeProps) {
-  if (tier === "faded") return null;
+  if (!tier || !DISPLAYABLE_TIERS.includes(tier as DisplayableTier)) return null;
   const meta = TIER_META[tier];
   const { Icon, label, varName } = meta;
 
