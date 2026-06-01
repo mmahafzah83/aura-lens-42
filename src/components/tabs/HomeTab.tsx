@@ -895,7 +895,37 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
         },
       )
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+
+    // Realtime: live-update hero (score arc + 7d diff), top signal + count,
+    // evidence count, and top move + count whenever the user's own rows change.
+    // A single capture writes to several tables in a burst — coalesce with
+    // a short debounce so each loader fires once per burst, not 3–4×.
+    let homeReloadTimer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleHomeReload = () => {
+      if (homeReloadTimer) clearTimeout(homeReloadTimer);
+      homeReloadTimer = setTimeout(() => {
+        loadBriefing(uid);
+        loadMoves(uid);
+        loadCompetitorAlert(uid);
+      }, 750);
+    };
+    const homeLive = supabase
+      .channel(`home-live-${uid}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "score_snapshots", filter: `user_id=eq.${uid}` }, scheduleHomeReload)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "score_snapshots", filter: `user_id=eq.${uid}` }, scheduleHomeReload)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "strategic_signals", filter: `user_id=eq.${uid}` }, scheduleHomeReload)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "strategic_signals", filter: `user_id=eq.${uid}` }, scheduleHomeReload)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "evidence_fragments", filter: `user_id=eq.${uid}` }, scheduleHomeReload)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "evidence_fragments", filter: `user_id=eq.${uid}` }, scheduleHomeReload)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "recommended_moves", filter: `user_id=eq.${uid}` }, scheduleHomeReload)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "recommended_moves", filter: `user_id=eq.${uid}` }, scheduleHomeReload)
+      .subscribe();
+
+    return () => {
+      if (homeReloadTimer) clearTimeout(homeReloadTimer);
+      supabase.removeChannel(channel);
+      supabase.removeChannel(homeLive);
+    };
   }, [authReady, authUser, authSession?.access_token, loadBriefing, loadMoves, loadTrends, loadTrendsBadge]);
 
   // ─── Derived ───
