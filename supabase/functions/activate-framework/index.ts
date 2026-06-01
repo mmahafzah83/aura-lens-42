@@ -34,13 +34,34 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { framework_id, user_id } = await req.json();
-    if (!framework_id || !user_id) throw new Error("framework_id and user_id required");
-
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+
+    // ── Caller verification: require a valid Supabase JWT ──
+    const authHeader = req.headers.get("Authorization") || "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const token = authHeader.replace("Bearer ", "");
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: userData, error: authErr } = await userClient.auth.getUser(token);
+    if (authErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const userId = userData.user.id;
+
+    // body.user_id is intentionally ignored — userId comes from the verified JWT
+    const { framework_id } = await req.json();
+    if (!framework_id) throw new Error("framework_id required");
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
@@ -48,7 +69,7 @@ Deno.serve(async (req) => {
     const { data: profile } = await adminClient
       .from("diagnostic_profiles")
       .select("first_name, firm, level, sector_focus, core_practice")
-      .eq("user_id", user_id)
+      .eq("user_id", userId)
       .maybeSingle();
     const p: any = profile || {};
     const persona = `${p.level || "Senior professional"} at ${p.firm || "a leading organization"} specializing in ${p.sector_focus || p.core_practice || "their field"}`;
@@ -142,7 +163,7 @@ Keep everything concise and slide-appropriate. No paragraphs.`,
     const outputs = [
       {
         framework_id,
-        user_id,
+        user_id: userId,
         output_type: "linkedin_post",
         title: `LinkedIn Post: ${fw.title}`,
         content: linkedinPost,
@@ -150,7 +171,7 @@ Keep everything concise and slide-appropriate. No paragraphs.`,
       },
       {
         framework_id,
-        user_id,
+        user_id: userId,
         output_type: "consulting_opportunity",
         title: `Consulting Opportunity: ${fw.title}`,
         content: consultingOpp,
@@ -158,7 +179,7 @@ Keep everything concise and slide-appropriate. No paragraphs.`,
       },
       {
         framework_id,
-        user_id,
+        user_id: userId,
         output_type: "strategy_brief",
         title: `Strategy Brief: ${fw.title}`,
         content: strategyBrief,
@@ -166,7 +187,7 @@ Keep everything concise and slide-appropriate. No paragraphs.`,
       },
       {
         framework_id,
-        user_id,
+        user_id: userId,
         output_type: "strategy_slide",
         title: `Strategy Slide: ${fw.title}`,
         content: slideContent,
