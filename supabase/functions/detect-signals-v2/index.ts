@@ -427,6 +427,7 @@ ${identityCtx}`;
         what_it_means_for_you: whatItMeans,
         priority_score: priorityScore,
         status: "active",
+        lifecycle_tier: "emerging",
         supporting_evidence_ids: targetFragmentIds,
         fragment_count: targetFragmentIds.length,
         unique_orgs: initialUniqueOrgs,
