@@ -27,6 +27,25 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
+async function invokeDetectPatterns(userId: string) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error("Not authenticated");
+
+  const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/detect-patterns`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.access_token}`,
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+    },
+    body: JSON.stringify({ user_id: userId }),
+  });
+
+  const data = await resp.json().catch(() => null);
+  if (!resp.ok) throw new Error(data?.detail || data?.error || "Detection failed");
+  return data;
+}
+
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
 interface SignalDraftPrefill {
@@ -1133,13 +1152,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/detect-patterns`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}`, apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
-        body: JSON.stringify({ user_id: session.user.id }),
-      });
-      if (!resp.ok) throw new Error("Detection failed");
-      const data = await resp.json();
+      const data = await invokeDetectPatterns(session.user.id);
       toast.success(`Detected ${data.signals_created || 0} new signals`);
       await loadSignals();
     } catch (e: any) { toast.error(e.message); }
