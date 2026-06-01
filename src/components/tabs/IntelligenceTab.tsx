@@ -20,6 +20,7 @@ import { formatSkillLabel } from "@/lib/formatSkillLabel";
 import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/ui/EmptyState";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
+import TierBadge from "@/components/ui/TierBadge";
 import type { Database } from "@/integrations/supabase/types";
 import { daysUntilDormant } from "@/components/intelligence/VelocityIndicators";
 import {
@@ -85,6 +86,8 @@ interface Signal {
   signal_velocity?: number | null;
   velocity_status?: "accelerating" | "stable" | "fading" | "dormant" | null;
   commercial_validation_score?: number | null;
+  lifecycle_tier?: "live" | "evergreen" | "emerging" | "faded" | null;
+  strength_score?: number | null;
 }
 
 interface EvidenceFragmentRow {
@@ -1008,9 +1011,6 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
   const [detecting, setDetecting] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
-  const [showReady, setShowReady] = useState(true);
-  const [showBuilding, setShowBuilding] = useState(false);
-  const [showEmerging, setShowEmerging] = useState(false);
 
   const loadSignals = useCallback(async () => {
     setLoading(true); setLoadError(false);
@@ -1118,6 +1118,19 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
       const bo = order[b.velocity_status || "stable"] ?? 2;
       if (ao !== bo) return ao - bo;
       return b.confidence - a.confidence;
+    });
+  }, [signals]);
+
+  const sortedByTier = useMemo(() => {
+    const tierOrder: Record<string, number> = { live: 0, evergreen: 1, emerging: 2 };
+    return [...signals].sort((a, b) => {
+      const ao = tierOrder[a.lifecycle_tier || ""] ?? 3;
+      const bo = tierOrder[b.lifecycle_tier || ""] ?? 3;
+      if (ao !== bo) return ao - bo;
+      if (a.lifecycle_tier === "live") return 0;
+      const aScore = a.strength_score ?? a.confidence;
+      const bScore = b.strength_score ?? b.confidence;
+      return bScore - aScore;
     });
   }, [signals]);
 
@@ -1321,12 +1334,12 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                 )}
 
                 {/* SIGNAL SIDEBAR LIST */}
-                {sortedByConfidence.length > 1 && (() => {
+                {sortedByTier.length > 1 && (() => {
                   const filtered = selectedTheme
-                    ? sortedByConfidence.filter(s =>
+                    ? sortedByTier.filter(s =>
                         (s.theme_tags || []).some(t => t.toLowerCase().trim() === selectedTheme)
                       )
-                    : sortedByConfidence;
+                    : sortedByTier;
                   const selectedLabel = selectedTheme ? humanizeTheme(selectedTheme) : null;
                   const readySignals = filtered.filter(s => s.confidence >= 0.30);
                   const buildingSignals = filtered.filter(s => s.confidence >= 0.15 && s.confidence < 0.30);
@@ -1344,7 +1357,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                           buildingSignals.length > 0 ? `${buildingSignals.length} gaining strength` : null,
                           emergingSignals.length > 0 ? `${emergingSignals.length} on your radar` : null,
                         ].filter(Boolean).join(" · ")}
-                        {selectedTheme ? ` · of ${sortedByConfidence.length}` : ""}
+                        {selectedTheme ? ` · of ${sortedByTier.length}` : ""}
                       </span>
                       {selectedLabel && (
                         <button
