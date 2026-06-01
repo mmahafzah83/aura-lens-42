@@ -319,15 +319,23 @@ Extract 3-8 fragments. Focus on ACTIONABLE, STRATEGIC content.`;
     // Chain: trigger signal detection on the newly created fragments
     if (inserted.length > 0) {
       const fragmentIds = inserted.map((f: any) => f.id);
-      adminClient.functions.invoke("detect-signals-v2", {
-        body: {
-          fragment_ids: fragmentIds,
-          source_registry_id: registryId,
-          user_id: registry.user_id,
-        },
-      }).catch((e: any) =>
-        console.warn("[extract-evidence] detect-signals-v2 chain failed:", e?.message)
-      );
+      // @ts-ignore EdgeRuntime.waitUntil is available in Supabase Edge Functions
+      EdgeRuntime.waitUntil((async () => {
+        try {
+          const { error: sigError } = await adminClient.functions.invoke("detect-signals-v2", {
+            body: {
+              fragment_ids: fragmentIds,
+              source_registry_id: registryId,
+              user_id: registry.user_id,
+            },
+          });
+          if (sigError) {
+            console.warn("[extract-evidence] detect-signals-v2 chain failed:", sigError);
+          }
+        } catch (e: any) {
+          console.warn("[extract-evidence] detect-signals-v2 chain threw:", e?.message);
+        }
+      })());
       console.log("[extract-evidence] chained detect-signals-v2 with", fragmentIds.length, "fragments");
     }
 
