@@ -20,6 +20,7 @@ import { formatSkillLabel } from "@/lib/formatSkillLabel";
 import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/ui/EmptyState";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
+import TierBadge from "@/components/ui/TierBadge";
 import type { Database } from "@/integrations/supabase/types";
 import { daysUntilDormant } from "@/components/intelligence/VelocityIndicators";
 import {
@@ -85,6 +86,8 @@ interface Signal {
   signal_velocity?: number | null;
   velocity_status?: "accelerating" | "stable" | "fading" | "dormant" | null;
   commercial_validation_score?: number | null;
+  lifecycle_tier?: "live" | "evergreen" | "emerging" | "faded" | null;
+  strength_score?: number | null;
 }
 
 interface EvidenceFragmentRow {
@@ -1008,9 +1011,6 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
   const [detecting, setDetecting] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
-  const [showReady, setShowReady] = useState(true);
-  const [showBuilding, setShowBuilding] = useState(false);
-  const [showEmerging, setShowEmerging] = useState(false);
 
   const loadSignals = useCallback(async () => {
     setLoading(true); setLoadError(false);
@@ -1118,6 +1118,19 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
       const bo = order[b.velocity_status || "stable"] ?? 2;
       if (ao !== bo) return ao - bo;
       return b.confidence - a.confidence;
+    });
+  }, [signals]);
+
+  const sortedByTier = useMemo(() => {
+    const tierOrder: Record<string, number> = { live: 0, evergreen: 1, emerging: 2 };
+    return [...signals].sort((a, b) => {
+      const ao = tierOrder[a.lifecycle_tier || ""] ?? 3;
+      const bo = tierOrder[b.lifecycle_tier || ""] ?? 3;
+      if (ao !== bo) return ao - bo;
+      if (a.lifecycle_tier === "live") return 0;
+      const aScore = a.strength_score ?? a.confidence;
+      const bScore = b.strength_score ?? b.confidence;
+      return bScore - aScore;
     });
   }, [signals]);
 
@@ -1321,12 +1334,12 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                 )}
 
                 {/* SIGNAL SIDEBAR LIST */}
-                {sortedByConfidence.length > 1 && (() => {
+                {sortedByTier.length > 1 && (() => {
                   const filtered = selectedTheme
-                    ? sortedByConfidence.filter(s =>
+                    ? sortedByTier.filter(s =>
                         (s.theme_tags || []).some(t => t.toLowerCase().trim() === selectedTheme)
                       )
-                    : sortedByConfidence;
+                    : sortedByTier;
                   const selectedLabel = selectedTheme ? humanizeTheme(selectedTheme) : null;
                   const readySignals = filtered.filter(s => s.confidence >= 0.30);
                   const buildingSignals = filtered.filter(s => s.confidence >= 0.15 && s.confidence < 0.30);
@@ -1344,7 +1357,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                           buildingSignals.length > 0 ? `${buildingSignals.length} gaining strength` : null,
                           emergingSignals.length > 0 ? `${emergingSignals.length} on your radar` : null,
                         ].filter(Boolean).join(" · ")}
-                        {selectedTheme ? ` · of ${sortedByConfidence.length}` : ""}
+                        {selectedTheme ? ` · of ${sortedByTier.length}` : ""}
                       </span>
                       {selectedLabel && (
                         <button
@@ -1362,223 +1375,66 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                       )}
                     </div>
 
-                    {/* TIER 1 — Publish-ready */}
-                    {readySignals.length > 0 && (
-                      <div style={{ marginBottom: 20 }}>
+                    <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 1, borderRadius: "var(--radius, 8px)", overflow: "hidden", border: "0.5px solid hsl(var(--border))" }}>
+                      {filtered.map((s) => (
                         <div
-                          onClick={() => setShowReady(!showReady)}
+                          key={s.id}
+                          data-testid="intel-signal-card"
+                          onClick={() => setSelectedSignalId(s.id)}
                           style={{
-                            display: "flex",
+                            display: "grid",
+                            gridTemplateColumns: "1fr auto auto",
+                            gap: 12,
                             alignItems: "center",
-                            justifyContent: "space-between",
+                            padding: "12px 16px",
+                            background: selectedSignalId === s.id ? "hsl(var(--muted) / 0.5)" : "hsl(var(--background))",
                             cursor: "pointer",
-                            userSelect: "none",
+                            transition: "background 0.15s",
                           }}
+                          onMouseEnter={(e) => { if (selectedSignalId !== s.id) e.currentTarget.style.background = "hsl(var(--muted) / 0.3)"; }}
+                          onMouseLeave={(e) => { if (selectedSignalId !== s.id) e.currentTarget.style.background = "hsl(var(--background))"; }}
                         >
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--brand, #B08D3A)", flexShrink: 0 }} />
-                            <span style={{ fontSize: 13, fontWeight: 500 }}>Publish-ready</span>
-                            <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
-                              {readySignals.length} signal{readySignals.length === 1 ? "" : "s"} · Strong enough to write from
+                          <div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                              <span style={{ fontSize: 14, fontWeight: 500, color: "hsl(var(--foreground))" }}>
+                                {s.signal_title}
+                              </span>
+                              <TierBadge tier={s.lifecycle_tier} />
+                            </div>
+                            <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
+                              {(() => {
+                                const ec = (s as any).evidenceCount ?? s.fragment_count ?? 0;
+                                const sc = (s as any).sourceCount ?? 0;
+                                return `${ec} piece${ec === 1 ? "" : "s"} of evidence · ${sc} source${sc === 1 ? "" : "s"}`;
+                              })()}
+                              {s.velocity_status && s.velocity_status !== "stable" && ` · ${s.velocity_status}`}
+                            </div>
+                          </div>
+                          <div style={{ textAlign: "right" }}>
+                            <span style={{ fontSize: 14, fontWeight: 500, color: "var(--brand, #B08D3A)", fontVariantNumeric: "tabular-nums" }}>
+                              {Math.round(s.confidence * 100)}%
                             </span>
                           </div>
-                          <ChevronDown
-                            size={14}
-                            style={{
-                              transform: showReady ? "rotate(180deg)" : "rotate(0)",
-                              transition: "transform .2s",
-                              color: "hsl(var(--muted-foreground))",
-                            }}
-                          />
+                          <div>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); draftFromSignal(s); }}
+                              style={{
+                                fontSize: 12,
+                                padding: "4px 10px",
+                                borderRadius: "var(--radius, 6px)",
+                                background: "none",
+                                border: "0.5px solid hsl(var(--border))",
+                                color: "hsl(var(--muted-foreground))",
+                                cursor: "pointer",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              Write this →
+                            </button>
+                          </div>
                         </div>
-                        {showReady && (
-                          <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 1, borderRadius: "var(--radius, 8px)", overflow: "hidden", border: "0.5px solid hsl(var(--border))" }}>
-                            {readySignals.map((s) => (
-                              <div
-                                key={s.id}
-                                data-testid="intel-signal-card"
-                                onClick={() => setSelectedSignalId(s.id)}
-                                style={{
-                                  display: "grid",
-                                  gridTemplateColumns: "1fr auto auto",
-                                  gap: 12,
-                                  alignItems: "center",
-                                  padding: "12px 16px",
-                                  background: selectedSignalId === s.id ? "hsl(var(--muted) / 0.5)" : "hsl(var(--background))",
-                                  cursor: "pointer",
-                                  transition: "background 0.15s",
-                                }}
-                                onMouseEnter={(e) => { if (selectedSignalId !== s.id) e.currentTarget.style.background = "hsl(var(--muted) / 0.3)"; }}
-                                onMouseLeave={(e) => { if (selectedSignalId !== s.id) e.currentTarget.style.background = "hsl(var(--background))"; }}
-                              >
-                                <div>
-                                  <div style={{ fontSize: 14, fontWeight: 500, color: "hsl(var(--foreground))" }}>
-                                    {s.signal_title}
-                                  </div>
-                                  <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
-                                    {(() => {
-                                      const ec = (s as any).evidenceCount ?? s.fragment_count ?? 0;
-                                      const sc = (s as any).sourceCount ?? 0;
-                                      return `${ec} piece${ec === 1 ? "" : "s"} of evidence · ${sc} source${sc === 1 ? "" : "s"}`;
-                                    })()}
-                                    {s.velocity_status && s.velocity_status !== "stable" && ` · ${s.velocity_status}`}
-                                  </div>
-                                </div>
-                                <div style={{ textAlign: "right" }}>
-                                  <span style={{ fontSize: 14, fontWeight: 500, color: "var(--brand, #B08D3A)", fontVariantNumeric: "tabular-nums" }}>
-                                    {Math.round(s.confidence * 100)}%
-                                  </span>
-                                </div>
-                                <div>
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); draftFromSignal(s); }}
-                                    style={{
-                                      fontSize: 12,
-                                      padding: "4px 10px",
-                                      borderRadius: "var(--radius, 6px)",
-                                      background: "none",
-                                      border: "0.5px solid hsl(var(--border))",
-                                      color: "hsl(var(--muted-foreground))",
-                                      cursor: "pointer",
-                                      whiteSpace: "nowrap",
-                                    }}
-                                  >
-                                    Write this →
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* TIER 2 — Gaining strength */}
-                    {buildingSignals.length > 0 && (
-                      <div style={{ marginBottom: 20 }}>
-                        <div
-                          onClick={() => setShowBuilding(!showBuilding)}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            cursor: "pointer",
-                            userSelect: "none",
-                          }}
-                        >
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "hsl(var(--info))", flexShrink: 0 }} />
-                            <span style={{ fontSize: 13, fontWeight: 500 }}>Gaining strength</span>
-                            <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
-                              {buildingSignals.length} signal{buildingSignals.length === 1 ? "" : "s"} · Capture more to sharpen
-                            </span>
-                          </div>
-                          <ChevronDown
-                            size={14}
-                            style={{
-                              transform: showBuilding ? "rotate(180deg)" : "rotate(0)",
-                              transition: "transform .2s",
-                              color: "hsl(var(--muted-foreground))",
-                            }}
-                          />
-                        </div>
-                        {showBuilding && (
-                          <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 1, borderRadius: "var(--radius, 8px)", overflow: "hidden", border: "0.5px solid hsl(var(--border))" }}>
-                            {buildingSignals.map((s) => (
-                              <div
-                                key={s.id}
-                                data-testid="intel-signal-card"
-                                onClick={() => setSelectedSignalId(s.id)}
-                                style={{
-                                  display: "grid",
-                                  gridTemplateColumns: "1fr auto auto",
-                                  gap: 12,
-                                  alignItems: "center",
-                                  padding: "10px 16px",
-                                  background: selectedSignalId === s.id ? "hsl(var(--muted) / 0.5)" : "hsl(var(--background))",
-                                  cursor: "pointer",
-                                  transition: "background 0.15s",
-                                }}
-                                onMouseEnter={(e) => { if (selectedSignalId !== s.id) e.currentTarget.style.background = "hsl(var(--muted) / 0.3)"; }}
-                                onMouseLeave={(e) => { if (selectedSignalId !== s.id) e.currentTarget.style.background = "hsl(var(--background))"; }}
-                              >
-                                <div style={{ fontSize: 13, color: "hsl(var(--foreground))" }}>{s.signal_title}</div>
-                                <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", fontVariantNumeric: "tabular-nums" }}>
-                                  {Math.round(s.confidence * 100)}%
-                                </div>
-                                <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
-                                  {(() => {
-                                    const ec = (s as any).evidenceCount ?? s.fragment_count ?? 0;
-                                    const sc = (s as any).sourceCount ?? 0;
-                                    return `${ec} piece${ec === 1 ? "" : "s"} of evidence · ${sc} source${sc === 1 ? "" : "s"}`;
-                                  })()}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* TIER 3 — On your radar */}
-                    {emergingSignals.length > 0 && (
-                      <div>
-                        <div
-                          onClick={() => setShowEmerging(!showEmerging)}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            cursor: "pointer",
-                            userSelect: "none",
-                          }}
-                        >
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "hsl(var(--muted-foreground) / 0.4)", flexShrink: 0 }} />
-                            <span style={{ fontSize: 13, fontWeight: 500 }}>On your radar</span>
-                            <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
-                              {emergingSignals.length} signal{emergingSignals.length === 1 ? "" : "s"} · Early patterns forming
-                            </span>
-                          </div>
-                          <ChevronDown
-                            size={14}
-                            style={{
-                              transform: showEmerging ? "rotate(180deg)" : "rotate(0)",
-                              transition: "transform .2s",
-                              color: "hsl(var(--muted-foreground))",
-                            }}
-                          />
-                        </div>
-                        {showEmerging && (
-                          <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 1, borderRadius: "var(--radius, 8px)", overflow: "hidden", border: "0.5px solid hsl(var(--border))" }}>
-                            {emergingSignals.map((s) => (
-                              <div
-                                key={s.id}
-                                data-testid="intel-signal-card"
-                                onClick={() => setSelectedSignalId(s.id)}
-                                style={{
-                                  display: "grid",
-                                  gridTemplateColumns: "1fr auto",
-                                  gap: 12,
-                                  alignItems: "center",
-                                  padding: "8px 16px",
-                                  background: selectedSignalId === s.id ? "hsl(var(--muted) / 0.5)" : "hsl(var(--background))",
-                                  cursor: "pointer",
-                                  transition: "background 0.15s",
-                                }}
-                                onMouseEnter={(e) => { if (selectedSignalId !== s.id) e.currentTarget.style.background = "hsl(var(--muted) / 0.3)"; }}
-                                onMouseLeave={(e) => { if (selectedSignalId !== s.id) e.currentTarget.style.background = "hsl(var(--background))"; }}
-                              >
-                                <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))" }}>{s.signal_title}</div>
-                                <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground) / 0.6)", fontVariantNumeric: "tabular-nums" }}>
-                                  {Math.round(s.confidence * 100)}%
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
+                      ))}
+                    </div>
                   </section>
                   );
                 })()}
