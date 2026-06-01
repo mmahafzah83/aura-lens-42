@@ -4,8 +4,11 @@ import { InfoTooltip } from "./InfoTooltip";
 
 export type SignalTier = "live" | "evergreen" | "emerging" | "faded";
 
+const DISPLAYABLE_TIERS = ["live", "evergreen", "emerging"] as const;
+type DisplayableTier = (typeof DISPLAYABLE_TIERS)[number];
+
 export interface TierBadgeProps {
-  tier: SignalTier;
+  tier: SignalTier | null | undefined;
   /** Hide the explanatory tooltip trigger. Defaults to false (tooltip shown). */
   hideTooltip?: boolean;
   className?: string;
