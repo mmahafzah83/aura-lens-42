@@ -4,8 +4,11 @@ import { InfoTooltip } from "./InfoTooltip";
 
 export type SignalTier = "live" | "evergreen" | "emerging" | "faded";
 
+const DISPLAYABLE_TIERS = ["live", "evergreen", "emerging"] as const;
+type DisplayableTier = (typeof DISPLAYABLE_TIERS)[number];
+
 export interface TierBadgeProps {
-  tier: SignalTier;
+  tier: SignalTier | null | undefined;
   /** Hide the explanatory tooltip trigger. Defaults to false (tooltip shown). */
   hideTooltip?: boolean;
   className?: string;
@@ -23,7 +26,7 @@ const TIER_META: Record<Exclude<SignalTier, "faded">, { label: string; Icon: typ
  * Uses logical properties (margin-inline-*) so it flips cleanly in RTL.
  */
 export function TierBadge({ tier, hideTooltip = false, className }: TierBadgeProps) {
-  if (tier === "faded") return null;
+  if (!tier || !DISPLAYABLE_TIERS.includes(tier as DisplayableTier)) return null;
   const meta = TIER_META[tier];
   const { Icon, label, varName } = meta;
 
