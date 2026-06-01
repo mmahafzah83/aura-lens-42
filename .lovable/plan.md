@@ -1,39 +1,87 @@
 ## Goal
-Add a service-role / cron auth override to `calculate-aura-score` (mirroring `voice-distill` L51–95) so server-side callers — specifically `detect-signals-v2` L408–412, which currently 401s — succeed. This is the wiring fix: the capture → signals → score loop starts working the moment this deploys.
 
-## Why no dedup/debounce
-Diagnostic confirmed the function is already idempotent:
-- `score_snapshots` is gated to 1/day per user (L218–232).
-- `user_milestones` inserts are gated by `earnedMap` (L322–344) and `existingTierMs` (L162–198).
-- No other per-call writes.
+HomeTab's hero (score arc + 7d diff), top-signal + count, evidence count, and top-move + count don't auto-refresh after a capture. Extend the existing realtime block (currently only `industry_trends`, L884–897) to subscribe to the four user tables and re-invoke the existing loaders.
 
-Expectation for the UI: the visible score moves on a **once-a-day cadence**, not instantly per capture, because the UI reads from `score_snapshots` and that table is 1/day-gated. By design, not a bug.
+## Mapping: table → existing loader → Home value
 
-## Pre-change
+Verified against `src/components/tabs/HomeTab.tsx`:
 
-1. **Snapshot the file** — copy `supabase/functions/calculate-aura-score/index.ts` to `supabase/functions/calculate-aura-score/index.pre-fix-calc-aura-score-auth.ts.bak` before editing. Standing discipline.
+- `score_snapshots` → `loadBriefing(uid)` (L433, sets `latestScore` L451 + `score7dAgo` L452 → score arc + 7d diff)
+- `strategic_signals` → `loadBriefing(uid)` + `loadCompetitorAlert(uid)` (sets `topSignal` L462, total signal count L463–467, and `fragment_count` for the evidence number L626/L687)
+- `evidence_fragments` → `loadBriefing(uid)` + `loadCompetitorAlert(uid)` (HomeTab reads fragment counts off `strategic_signals`; re-running these reloads the derived evidence count)
+- `recommended_moves` → `loadBriefing(uid)` (sets `topMove` L468) + `loadMoves(uid)` (sets `moves` list L498)
 
-## Change (single file)
+Reusing existing loaders only — no rewrites.
 
-**`supabase/functions/calculate-aura-score/index.ts` — replace the auth block (current L12–31)** with the voice-distill L51–95 pattern:
+## Snapshot first
 
-1. Read `Authorization`, `apikey` / `x-api-key`, and `x-cron-secret` headers.
-2. `isServiceRole = bearer === SERVICE_ROLE || apiKeyHeader === SERVICE_ROLE`.
-3. `isCron = CRON_SECRET && cronHeader === CRON_SECRET`.
-4. Parse JSON body once (tolerate missing body).
-5. If `isServiceRole || isCron`: take `userId` from `body.user_id`; 400 if missing/invalid.
-6. Else (user path): keep current `userClient.auth.getUser(token)` flow → 401 on failure → `userId = authUser.id`.
-7. Continue with existing `admin` client (service-role) and all downstream logic unchanged.
+Copy `src/components/tabs/HomeTab.tsx` → `src/components/tabs/HomeTab.pre-hometab-realtime.bak.tsx` before editing.
 
-Nothing else changes. No SQL, no other functions, no frontend. Same security posture as the four prior applications of this pattern (service-role key isn't forgeable; browser path still goes through `getUser`).
+## Edit (single, surgical)
 
-## Out of scope
-- Scoring math, milestones, snapshots, response shape — unchanged.
+In the existing `useEffect` at L883–899, add one extra channel alongside the current `industry_trends_${uid}` channel. Do not modify the trends channel.
 
-## Verification (post-deploy)
+```ts
+// Coalesce bursts: a single capture writes to several of these tables.
+let homeReloadTimer: ReturnType<typeof setTimeout> | null = null;
+const scheduleHomeReload = () => {
+  if (homeReloadTimer) clearTimeout(homeReloadTimer);
+  homeReloadTimer = setTimeout(() => {
+    loadBriefing(uid);
+    loadMoves(uid);
+    loadCompetitorAlert(uid);
+  }, 750);
+};
 
-1. Browser call with user JWT → 200, payload identical to today.
-2. `curl_edge_functions` with `Authorization: Bearer <service-role>` + `{ "user_id": "<uuid>" }` → 200.
-3. `x-cron-secret: <CRON_SECRET>` + body `{ "user_id": "<uuid>" }` → 200.
-4. No auth → 401. Service-role with missing `user_id` → 400.
-5. **End-to-end proof:** perform a real capture in the preview, then check `detect-signals-v2` logs and confirm its `calculate-aura-score` invocation at L408–412 returns **200, not 401**. This is the proof the no-op chain call is fixed.
+const homeLive = supabase
+  .channel(`home-live-${uid}`)
+  .on('postgres_changes',
+    { event: 'INSERT', schema: 'public', table: 'score_snapshots', filter: `user_id=eq.${uid}` },
+    scheduleHomeReload)
+  .on('postgres_changes',
+    { event: 'UPDATE', schema: 'public', table: 'score_snapshots', filter: `user_id=eq.${uid}` },
+    scheduleHomeReload)
+  .on('postgres_changes',
+    { event: 'INSERT', schema: 'public', table: 'strategic_signals', filter: `user_id=eq.${uid}` },
+    scheduleHomeReload)
+  .on('postgres_changes',
+    { event: 'UPDATE', schema: 'public', table: 'strategic_signals', filter: `user_id=eq.${uid}` },
+    scheduleHomeReload)
+  .on('postgres_changes',
+    { event: 'INSERT', schema: 'public', table: 'evidence_fragments', filter: `user_id=eq.${uid}` },
+    scheduleHomeReload)
+  .on('postgres_changes',
+    { event: 'UPDATE', schema: 'public', table: 'evidence_fragments', filter: `user_id=eq.${uid}` },
+    scheduleHomeReload)
+  .on('postgres_changes',
+    { event: 'INSERT', schema: 'public', table: 'recommended_moves', filter: `user_id=eq.${uid}` },
+    scheduleHomeReload)
+  .on('postgres_changes',
+    { event: 'UPDATE', schema: 'public', table: 'recommended_moves', filter: `user_id=eq.${uid}` },
+    scheduleHomeReload)
+  .subscribe();
+```
+
+Extend the existing cleanup to remove the new channel and clear the timer:
+
+```ts
+return () => {
+  if (homeReloadTimer) clearTimeout(homeReloadTimer);
+  supabase.removeChannel(channel);
+  supabase.removeChannel(homeLive);
+};
+```
+
+**Deps array: leave unchanged (uid-gated).** Do NOT add `loadCompetitorAlert` or any other loaders to the existing deps. The closure captures them; the effect should only re-subscribe when uid changes.
+
+## Notes
+
+- INSERT + UPDATE only (skipping DELETE — RLS-on-delete edge case).
+- One channel, unique name `home-live-${uid}` → no duplicates on re-render.
+- ~750ms debounce coalesces the capture burst into a single triplet of loader calls.
+- All 4 tables already in `supabase_realtime` publication (prior migration).
+- Preview only — no publish. Latency diagnostic to follow.
+
+## Self-check (after edit)
+
+Run `rg -n "home-live-|scheduleHomeReload|removeChannel" src/components/tabs/HomeTab.tsx` and report the subscription block plus cleanup, confirming: (a) all 4 tables subscribed and user-filtered, (b) INSERT + UPDATE only, (c) debounced via `scheduleHomeReload`, (d) `removeChannel(homeLive)` + `clearTimeout` in cleanup, (e) deps array unchanged.
