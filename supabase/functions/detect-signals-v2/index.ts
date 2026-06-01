@@ -143,17 +143,54 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { fragment_ids, source_registry_id, user_id } = await req.json();
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const CRON_SECRET = Deno.env.get("CRON_SECRET") || "";
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+
+    // Always authenticate first. Derive user_id from verified JWT.
+    // Body user_id is only honored for service-role / cron callers.
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const bearer = authHeader.replace("Bearer ", "");
+    const cronHeader = req.headers.get("x-cron-secret") || "";
+    const apiKeyHeader = req.headers.get("apikey") || req.headers.get("x-api-key") || "";
+    const isServiceRole = !!bearer && (bearer === serviceKey || apiKeyHeader === serviceKey);
+    const isCron = !!CRON_SECRET && cronHeader === CRON_SECRET;
+
+    let body: any = {};
+    try { body = await req.json(); } catch (_) { /* no body */ }
+
+    let user_id: string | null = null;
+    if (isServiceRole || isCron) {
+      if (body && typeof body.user_id === "string") user_id = body.user_id;
+    } else {
+      if (!bearer) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      const userClient = createClient(supabaseUrl, ANON_KEY, {
+        global: { headers: { Authorization: `Bearer ${bearer}` } },
+      });
+      const { data: { user }, error: userErr } = await userClient.auth.getUser(bearer);
+      if (userErr || !user) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      user_id = user.id;
+    }
+
+    const { fragment_ids, source_registry_id } = body || {};
     if (!user_id) {
       return new Response(JSON.stringify({ error: "user_id required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const admin = createClient(supabaseUrl, serviceKey);
 
