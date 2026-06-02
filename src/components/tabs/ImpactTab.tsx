@@ -990,6 +990,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       setPipeline({ voice: "pending", positioning: "pending", score: "pending" });
       await runPostImportPipeline(setPipeline);
       await loadAll(selectedDays);
+      await loadAudience();
       setSuccessData({ posts, days });
       setShowSuccessCard(true);
       setTimeout(() => setShowSuccessCard(false), 2500);
