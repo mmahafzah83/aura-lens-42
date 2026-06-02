@@ -628,6 +628,8 @@ function StepCredential({
   setConcept,
   lang,
   setLang,
+  caption,
+  setCaption,
   busy,
   onDownloadPng,
   onDownloadPdf,
@@ -640,6 +642,8 @@ function StepCredential({
   setConcept: (k: ConceptKey) => void;
   lang: "EN" | "AR";
   setLang: (l: "EN" | "AR") => void;
+  caption: string;
+  setCaption: (v: string) => void;
   busy: string | null;
   onDownloadPng: () => void;
   onDownloadPdf: () => void;
