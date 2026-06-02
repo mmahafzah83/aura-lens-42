@@ -3126,7 +3126,7 @@ const SectionInsight = ({ text, askAuraPrompt }: { text?: string | null; askAura
 
 /* ─── PillarCard ─────────────────────────────────────────────── */
 const PillarCard = ({
-  label, value, unit, color, tooltip, dots,
+  label, value, unit, color, tooltip, dots, slug,
 }: {
   label: string;
   value: string;
@@ -3134,6 +3134,7 @@ const PillarCard = ({
   color: string;
   tooltip: { what: string; how: string; improve: string };
   dots?: number;
+  slug?: string;
 }) => {
   return (
     <div
@@ -3150,6 +3151,9 @@ const PillarCard = ({
         <div className="text-section-header" style={{ color: "var(--ink-3)" }}>
           {label}
         </div>
+        {slug ? (
+          <InfoTooltip slug={slug} label={label} side="bottom" triggerSize={12} />
+        ) : (
         <TooltipProvider delayDuration={150}>
           <UiTooltip>
             <TooltipTrigger asChild>
@@ -3168,6 +3172,7 @@ const PillarCard = ({
             </TooltipContent>
           </UiTooltip>
         </TooltipProvider>
+        )}
       </div>
       <div
         className="text-metric mt-1"
