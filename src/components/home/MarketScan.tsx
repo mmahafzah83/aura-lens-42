@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { FileText, TrendingUp, Lightbulb, Plus, ExternalLink, ArrowRight, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCapturedSources } from "@/hooks/useCapturedSources";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 
 interface BriefingItem {
   title?: string;
@@ -229,6 +230,7 @@ export default function MarketScan({ onOpenCapture, onSwitchTab, onDraftPost, de
           }}>
             Market scan
           </span>
+          <InfoTooltip slug="home-market-scan" label="Market scan" side="bottom" triggerSize={13} />
           <span style={{
             fontSize: 10, fontWeight: 600, letterSpacing: "0.03em",
             color: "hsl(var(--muted-foreground))",
