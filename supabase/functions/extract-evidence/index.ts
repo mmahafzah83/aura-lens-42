@@ -179,6 +179,13 @@ Deno.serve(async (req) => {
       .single();
     if (!registry) throw new Error("Registry entry not found");
 
+    // ── Ownership guard: JWT callers may only extract from their own registry ──
+    if (!isServiceRole && !isCron && registry.user_id !== user_id) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Fetch source content
     const { content, title } = await fetchSourceContent(adminClient, registry.source_type, registry.source_id);
 
