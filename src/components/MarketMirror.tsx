@@ -4,7 +4,6 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
   PERSONA_LABELS,
-  rankFromLevel,
   type RankBucket,
 } from "@/lib/marketPersonas";
 
@@ -42,23 +41,6 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [tab, setTab] = useState<TabKey>("headhunter");
-  const [currentRank, setCurrentRank] = useState<RankBucket>("director");
-
-  // Fetch the user's level for currentRank — source: diagnostic_profiles.level
-  // (not previously available in this component).
-  useEffect(() => {
-    if (!userId) return;
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase
-        .from("diagnostic_profiles" as any)
-        .select("level")
-        .eq("user_id", userId)
-        .maybeSingle();
-      if (!cancelled) setCurrentRank(rankFromLevel((data as any)?.level));
-    })();
-    return () => { cancelled = true; };
-  }, [userId]);
 
   const load = async () => {
     if (!userId) return;
@@ -97,17 +79,6 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
       setGenerating(false);
     }
   };
-
-  // If cached row's persona_set doesn't match user's current rank, refresh.
-  // Legacy rows had no marker and were always "director" content.
-  useEffect(() => {
-    if (!row || !userId || generating || !currentRank) return;
-    const rowRank: RankBucket = row.gaps?.persona_set ?? "director";
-    if (rowRank !== currentRank && canRefresh) {
-      generate();
-    }
-    /* eslint-disable-next-line react-hooks/exhaustive-deps */
-  }, [row, currentRank, userId]);
 
   const canRefresh = useMemo(() => {
     if (!row) return true;
