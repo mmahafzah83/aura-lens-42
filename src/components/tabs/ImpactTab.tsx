@@ -477,59 +477,61 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   }, []);
 
   // Load audience demographics + cached insight (and trigger generation if missing)
-  useEffect(() => {
+  const loadAudience = async () => {
     let cancelled = false;
-    (async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-        const [demoRes, insightRes, reachRes] = await Promise.all([
-          supabase
-            .from("audience_demographics")
-            .select("category, value, percentage, percentage_numeric, period_start, period_end")
-            .eq("user_id", user.id)
-            .order("percentage_numeric", { ascending: false }),
-          supabase
-            .from("audience_insights")
-            .select("insight_headline, insight_body, audience_strengths, audience_gaps, next_action")
-            .eq("user_id", user.id)
-            .order("generated_at", { ascending: false })
-            .limit(1)
-            .maybeSingle(),
-          supabase
-            .from("influence_snapshots")
-            .select("members_reached, total_impressions_annual")
-            .eq("user_id", user.id)
-            .gt("members_reached", 0)
-            .order("snapshot_date", { ascending: false })
-            .limit(1)
-            .maybeSingle(),
-        ]);
+      const [demoRes, insightRes, reachRes] = await Promise.all([
+        supabase
+          .from("audience_demographics")
+          .select("category, value, percentage, percentage_numeric, period_start, period_end")
+          .eq("user_id", user.id)
+          .order("percentage_numeric", { ascending: false }),
+        supabase
+          .from("audience_insights")
+          .select("insight_headline, insight_body, audience_strengths, audience_gaps, next_action")
+          .eq("user_id", user.id)
+          .order("generated_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from("influence_snapshots")
+          .select("members_reached, total_impressions_annual")
+          .eq("user_id", user.id)
+          .gt("members_reached", 0)
+          .order("snapshot_date", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
 
-        if (cancelled) return;
-        const demos = (demoRes.data as DemoRow[] | null) || [];
-        setAllDemographics(demos);
-        setAudienceInsight((insightRes.data as AudienceInsight | null) ?? null);
-        setReachSnap((reachRes.data as any) ?? null);
+      if (cancelled) return;
+      const demos = (demoRes.data as DemoRow[] | null) || [];
+      setAllDemographics(demos);
+      setAudienceInsight((insightRes.data as AudienceInsight | null) ?? null);
+      setReachSnap((reachRes.data as any) ?? null);
 
-        if (demos.length > 0 && !insightRes.data) {
-          setAudienceInsightLoading(true);
-          await supabase.auth.getSession();
-          supabase.functions
-            .invoke("generate-audience-insight", { body: {} })
-            .then(({ data }) => {
-              if (cancelled) return;
-              if (data) setAudienceInsight(data as AudienceInsight);
-            })
-            .catch((e) => console.error("generate-audience-insight failed", e))
-            .finally(() => { if (!cancelled) setAudienceInsightLoading(false); });
-        }
-      } catch (e) {
-        console.error("ImpactTab: audience load failed", e);
+      if (demos.length > 0 && !insightRes.data) {
+        setAudienceInsightLoading(true);
+        await supabase.auth.getSession();
+        supabase.functions
+          .invoke("generate-audience-insight", { body: {} })
+          .then(({ data }) => {
+            if (cancelled) return;
+            if (data) setAudienceInsight(data as AudienceInsight);
+          })
+          .catch((e) => console.error("generate-audience-insight failed", e))
+          .finally(() => { if (!cancelled) setAudienceInsightLoading(false); });
       }
-    })();
-    return () => { cancelled = true; };
+    } catch (e) {
+      console.error("ImpactTab: audience load failed", e);
+    }
+  };
+
+  useEffect(() => {
+    loadAudience();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
   // Load content performance (respects selected date range)
