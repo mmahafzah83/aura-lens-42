@@ -2907,26 +2907,6 @@ const ScoreHero = ({
             >
               of 100
               <InfoTooltip slug="score-overview" label="Digital presence score" side="bottom" triggerSize={11} className="ml-1" />
-              <TooltipProvider delayDuration={150}>
-                <UiTooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      aria-label="About your digital presence score"
-                      style={{ background: "transparent", border: 0, cursor: "help", color: "var(--aura-t3)", padding: 0, display: "inline-flex" }}
-                    >
-                      <HelpCircle size={11} />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" align="center" className="max-w-xs text-xs">
-                    <p className="font-semibold mb-1">Digital Presence Score</p>
-                    <p>Signal intelligence — 40%</p>
-                    <p>Content presence — 40%</p>
-                    <p>Capture consistency — 20%</p>
-                    <p className="mt-1 opacity-70">Observer → Explorer → Strategist → Voice → Presence</p>
-                  </TooltipContent>
-                </UiTooltip>
-              </TooltipProvider>
             </div>
           </div>
         </div>
