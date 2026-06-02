@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { AuraCard } from "@/components/ui/AuraCard";
 import { AuraButton } from "@/components/ui/AuraButton";
+import { Link } from "react-router-dom";
 import { downloadBlob } from "@/lib/download";
 import usePageMeta from "@/hooks/usePageMeta";
 import ReportDocument from "@/components/ReportDocument";
