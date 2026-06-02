@@ -2732,10 +2732,10 @@ const SectionToggle = ({
 
 /* ─── ForceCard ─────────────────────────────────────────────── */
 const ForceCard = ({
-  label, rawValue, weight, maxPoints, color, hint, status, tooltip,
+  label, rawValue, weight, maxPoints, color, hint, status, tooltip, slug,
 }: {
   label: string; rawValue: number; weight: number; maxPoints: number;
-  color: string; hint: string; status: string; tooltip: string;
+  color: string; hint: string; status: string; tooltip: string; slug?: string;
 }) => {
   const raw = Math.max(0, Math.min(100, Math.round(rawValue)));
   const weighted = Math.round(raw * weight);
@@ -2756,6 +2756,9 @@ const ForceCard = ({
           <div className="text-section-header" style={{ color: "var(--ink-3)" }}>
             {label}
           </div>
+          {slug ? (
+            <InfoTooltip slug={slug} label={label} side="bottom" triggerSize={12} />
+          ) : (
           <TooltipProvider delayDuration={150}>
             <UiTooltip>
               <TooltipTrigger asChild>
@@ -2772,6 +2775,7 @@ const ForceCard = ({
               </TooltipContent>
             </UiTooltip>
           </TooltipProvider>
+          )}
         </div>
         <div
           className="text-xs tracking-wider px-1.5 py-0.5 rounded"
