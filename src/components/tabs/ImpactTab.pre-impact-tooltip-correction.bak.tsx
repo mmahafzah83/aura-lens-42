@@ -1469,17 +1469,17 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           title="The three forces"
           open={openSections.forces}
           onToggle={() => toggleSection("forces")}
-          right={null}
+          right={<InfoTooltip slug="impact-three-forces" label="The three forces" side="bottom" triggerSize={13} />}
         />
         {openSections.forces && (
           <div data-testid="impact-breakdown" className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
             {([
-              { key: "signal", label: "Signal", slug: "signal-strength", rawValue: signalScore, weight: 0.40, maxPoints: 40,
+              { key: "signal", label: "Signal", rawValue: signalScore, weight: 0.40, maxPoints: 40,
                 color: "var(--aura-accent)",
                 hint: topSignal ? `Top: ${topSignal}` : "Build signals from diverse sources",
                 tooltip: "How deep your market intelligence runs. Based on how many signals you have, their strength, and how broadly they cover your territory. Having at least one strong signal gives a bonus.",
                 status: signalScore >= 70 ? "Growing" : signalScore >= 40 ? "Build more" : "Needs action" },
-              { key: "content", label: "Content", slug: "content-published", rawValue: contentScore, weight: 0.40, maxPoints: 40,
+              { key: "content", label: "Content", rawValue: contentScore, weight: 0.40, maxPoints: 40,
                 color: "var(--aura-blue)",
                 hint: (() => {
                   const pub = Number((auraData as any)?.published_count ?? (auraData as any)?.aura_published_count ?? 0);
@@ -1487,7 +1487,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 })(),
                 tooltip: "Your publishing activity. Imported LinkedIn history is your foundation (up to 15 points). Publishing new content from your signals is what grows this score (up to 85 points). Resets monthly.",
                 status: contentScore >= 70 ? "Growing" : contentScore >= 40 ? "Build more" : "Needs action" },
-              { key: "consistency", label: "Consistency", slug: "weekly-rhythm", rawValue: captureScore, weight: 0.20, maxPoints: 20,
+              { key: "consistency", label: "Consistency", rawValue: captureScore, weight: 0.20, maxPoints: 20,
                 color: "var(--aura-positive)",
                 hint: daysSinceLastAll === null ? "No captures yet"
                   : daysSinceLastAll === 0 ? "Captured today"
@@ -1879,6 +1879,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           margin: "0 0 4px",
         }}>
           Your LinkedIn footprint
+          <InfoTooltip slug="impact-footprint" label="LinkedIn footprint" side="bottom" triggerSize={13} className="ml-1.5 align-middle" />
         </h2>
         <p style={{
           fontSize: 13,
@@ -1890,7 +1891,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <PillarCard
             label="Visibility"
-            slug="footprint-visibility"
             value={(() => {
               if (!postLevelImpressions || windowedPostCount === 0) return "—";
               const avg = Math.round(postLevelImpressions / windowedPostCount);
@@ -1906,7 +1906,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           />
           <PillarCard
             label="Resonance"
-            slug="footprint-resonance"
             value={periodEngagementRate != null ? `${periodEngagementRate.toFixed(1)}%` : "—"}
             unit={(() => {
               const b = tierBenchmark(latestFollowers);
@@ -1927,7 +1926,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           />
           <PillarCard
             label="Signal Depth"
-            slug="footprint-signal-depth"
             value={String(pillarSignalCount)}
             unit={pillarAvgSignalConf > 0 ? `${pillarAvgSignalConf}% avg conf` : "no signals"}
             color="var(--aura-accent3)"
@@ -1939,7 +1937,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           />
           <PillarCard
             label="Momentum"
-            slug="footprint-momentum"
             value={`${pillarWeeksActive}/4`}
             unit="weeks active"
             color="var(--aura-accent)"
@@ -2732,10 +2729,10 @@ const SectionToggle = ({
 
 /* ─── ForceCard ─────────────────────────────────────────────── */
 const ForceCard = ({
-  label, rawValue, weight, maxPoints, color, hint, status, tooltip, slug,
+  label, rawValue, weight, maxPoints, color, hint, status, tooltip,
 }: {
   label: string; rawValue: number; weight: number; maxPoints: number;
-  color: string; hint: string; status: string; tooltip: string; slug?: string;
+  color: string; hint: string; status: string; tooltip: string;
 }) => {
   const raw = Math.max(0, Math.min(100, Math.round(rawValue)));
   const weighted = Math.round(raw * weight);
@@ -2756,9 +2753,6 @@ const ForceCard = ({
           <div className="text-section-header" style={{ color: "var(--ink-3)" }}>
             {label}
           </div>
-          {slug ? (
-            <InfoTooltip slug={slug} label={label} side="bottom" triggerSize={12} />
-          ) : (
           <TooltipProvider delayDuration={150}>
             <UiTooltip>
               <TooltipTrigger asChild>
@@ -2775,7 +2769,6 @@ const ForceCard = ({
               </TooltipContent>
             </UiTooltip>
           </TooltipProvider>
-          )}
         </div>
         <div
           className="text-xs tracking-wider px-1.5 py-0.5 rounded"
@@ -2911,6 +2904,26 @@ const ScoreHero = ({
             >
               of 100
               <InfoTooltip slug="score-overview" label="Digital presence score" side="bottom" triggerSize={11} className="ml-1" />
+              <TooltipProvider delayDuration={150}>
+                <UiTooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label="About your digital presence score"
+                      style={{ background: "transparent", border: 0, cursor: "help", color: "var(--aura-t3)", padding: 0, display: "inline-flex" }}
+                    >
+                      <HelpCircle size={11} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" align="center" className="max-w-xs text-xs">
+                    <p className="font-semibold mb-1">Digital Presence Score</p>
+                    <p>Signal intelligence — 40%</p>
+                    <p>Content presence — 40%</p>
+                    <p>Capture consistency — 20%</p>
+                    <p className="mt-1 opacity-70">Observer → Explorer → Strategist → Voice → Presence</p>
+                  </TooltipContent>
+                </UiTooltip>
+              </TooltipProvider>
             </div>
           </div>
         </div>
@@ -3126,7 +3139,7 @@ const SectionInsight = ({ text, askAuraPrompt }: { text?: string | null; askAura
 
 /* ─── PillarCard ─────────────────────────────────────────────── */
 const PillarCard = ({
-  label, value, unit, color, tooltip, dots, slug,
+  label, value, unit, color, tooltip, dots,
 }: {
   label: string;
   value: string;
@@ -3134,7 +3147,6 @@ const PillarCard = ({
   color: string;
   tooltip: { what: string; how: string; improve: string };
   dots?: number;
-  slug?: string;
 }) => {
   return (
     <div
@@ -3151,9 +3163,6 @@ const PillarCard = ({
         <div className="text-section-header" style={{ color: "var(--ink-3)" }}>
           {label}
         </div>
-        {slug ? (
-          <InfoTooltip slug={slug} label={label} side="bottom" triggerSize={12} />
-        ) : (
         <TooltipProvider delayDuration={150}>
           <UiTooltip>
             <TooltipTrigger asChild>
@@ -3172,7 +3181,6 @@ const PillarCard = ({
             </TooltipContent>
           </UiTooltip>
         </TooltipProvider>
-        )}
       </div>
       <div
         className="text-metric mt-1"
