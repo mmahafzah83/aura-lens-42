@@ -1398,6 +1398,48 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             Every week you show up, your name reaches rooms you've never been in. That's how advisory calls, board invitations, and speaking slots find you.
           </p>
         </div>
+        {/* Analytics period picker — drives selectedDays for chart / deltas / footprint only */}
+        <div
+          role="group"
+          aria-label="Analytics period"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 2,
+            padding: 3,
+            borderRadius: 8,
+            border: "1px solid var(--line-1)",
+            background: "var(--color-card)",
+            fontFamily: "var(--font-sans)",
+          }}
+        >
+          {ranges.map((d) => {
+            const label = d === 7 ? "7d" : d === 30 ? "30d" : d === 90 ? "90d" : "1y";
+            const active = selectedDays === d;
+            return (
+              <button
+                key={d}
+                type="button"
+                onClick={() => setSelectedDays(d)}
+                aria-pressed={active}
+                style={{
+                  padding: "5px 10px",
+                  fontSize: 12,
+                  fontWeight: active ? 600 : 500,
+                  letterSpacing: "0.02em",
+                  borderRadius: 6,
+                  border: "none",
+                  cursor: "pointer",
+                  background: active ? "var(--bronze-soft, rgba(197,165,90,0.14))" : "transparent",
+                  color: active ? "var(--bronze, #C5A55A)" : "var(--ink-3)",
+                  transition: "background 0.15s ease, color 0.15s ease",
+                }}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
       </div>
       {/* FirstVisitHint and Market Mirror removed — Impact is now a focused dashboard. */}
 
@@ -1406,6 +1448,18 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       <FirstTimeHint hintKey="impact-score">
         Your growth dashboard. Upload LinkedIn analytics to see who follows you and how your presence is compounding.
       </FirstTimeHint>
+      <div
+        style={{
+          fontFamily: "var(--font-sans)",
+          fontSize: 11,
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          color: "var(--ink-4)",
+          marginBottom: 6,
+        }}
+      >
+        Overall · all-time
+      </div>
       <ScoreHero
         score={latestScore}
         tierName={auraData?.tier_name}
