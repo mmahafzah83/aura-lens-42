@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   Loader2, Archive, RefreshCw, Layers, Brain, AlertTriangle, ChevronDown, ChevronRight,
