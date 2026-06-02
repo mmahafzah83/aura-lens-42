@@ -227,7 +227,26 @@ export default function Settings() {
           </h1>
         </div>
 
-        {/* Your data */}
+        {/* Your data — trust statement */}
+        <SectionHeader
+          label="Your data"
+          subtitle="What's private, what we can see, and how we protect it."
+        />
+        <div className="mb-8">
+          <AuraCard variant="default" hover="none">
+            <p style={{ fontSize: 14, lineHeight: 1.7, color: "var(--ink-2)" }}>
+              Your captures, drafts, and signals are private to your account — no other user can see them, and nothing in Aura shows them to us. We don't sell your data, and the providers that power Aura operate under business terms that don't use it to train their models by default. Aura isn't end-to-end encrypted — the system has to read your content to turn it into signals — so we protect it with strict per-account isolation instead.{" "}
+              <Link
+                to="/guide"
+                style={{ color: "var(--brand)", fontWeight: 500, textDecoration: "none" }}
+              >
+                Full details →
+              </Link>
+            </p>
+          </AuraCard>
+        </div>
+
+        {/* Profile summary */}
         <SectionHeader
           label="Your data"
           subtitle="A read-only summary of what Aura knows about your profile, brand, and capabilities."
