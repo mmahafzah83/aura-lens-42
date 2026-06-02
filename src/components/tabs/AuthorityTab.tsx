@@ -1516,7 +1516,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                             })}
                           </div>
                           {gate!.overall_score < 70 ? (
-                            <Button
+                            <><Button
                               size="sm"
                               variant="outline"
                               disabled={isGeneratingAny || !!actionLoading}
@@ -1542,7 +1542,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                             >
                               {actionLoading === "strengthen" ? "Strengthening…" : "Strengthen before publishing →"}
                             </Button>
-                            <InfoTooltip slug="strengthen-post" label="Strengthen" side="top" triggerSize={13} className="ml-1.5 align-middle" />
+                            <InfoTooltip slug="strengthen-post" label="Strengthen" side="top" triggerSize={13} className="ml-1.5 align-middle" /></>
                           ) : (
                             <div className="text-xs text-amber-600/80 dark:text-amber-400/80">
                               Ready to publish — quality threshold met.
