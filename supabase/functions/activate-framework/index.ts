@@ -83,6 +83,13 @@ Deno.serve(async (req) => {
       .single();
     if (fwErr || !fw) throw new Error("Framework not found");
 
+    // ── Ownership guard: callers may only activate their own frameworks ──
+    if ((fw as any).user_id !== userId) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const steps = (fw.framework_steps as any[]) || [];
     const stepsText = steps
       .map((s: any) => `${s.step_number}. ${s.step_title}: ${s.step_description}`)
