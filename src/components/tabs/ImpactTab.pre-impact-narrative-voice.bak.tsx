@@ -1434,21 +1434,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-          <h2
-            style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
-              fontSize: 18,
-              fontWeight: 500,
-              color: "var(--color-text-primary)",
-              letterSpacing: "-0.01em",
-              margin: 0,
-            }}
-          >
-            What your numbers say
-          </h2>
-          <InfoTooltip slug="impact-briefing" />
-        </div>
         <div>
             <p style={{ fontSize: 14, lineHeight: 1.7, color: "var(--color-text-secondary)" }}>
               {impactNarrative?.hero_narrative ? (

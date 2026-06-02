@@ -1,8 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.99.3";
 
-const PROMPT_VERSION = "v2";
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -43,8 +41,7 @@ serve(async (req) => {
     } = body;
 
     const hashInput = JSON.stringify({
-      score, followers, impressions, engagementRate, postCount, selectedDays,
-      promptVersion: PROMPT_VERSION,
+      score, followers, impressions, engagementRate, postCount, selectedDays
     });
     const dataHash = hashInput.slice(0, 200);
 
@@ -109,11 +106,8 @@ Return ONLY valid JSON:
 Rules:
 - Start hero_narrative with ${name}'s name
 - Reference at least one specific number in every field
-- Never use: authority, trajectory, personal brand, thought leader, thought leadership, leverage, utilize, facilitate
+- Never use: leverage, utilize, facilitate, trajectory, thought leader, personal brand, zone of genius
 - Tone: direct, commercial, peer-to-peer — like a board advisor, not a marketing coach
-- Write to move a senior leader, not just inform one — name what the numbers reveal about where they stand, with respect and clarity. Never flattery, never alarm, never a coaching or cheerleading tone.
-- Plain, human language a busy executive respects. Every claim anchored to a real number from the data.
-- Close with one clear, doable next move — direction, not a lecture.
 - If engagement is below the tier benchmark, say so directly
 - If momentum is low (1/4 or 2/4), name the urgency`;
 
