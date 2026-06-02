@@ -1,108 +1,67 @@
-## Goal
 
-Stop silent capture loss caused by fire-and-forget `.invoke()` in the ingest-capture → extract-evidence → detect-signals-v2 chain. Mirror the proven `EdgeRuntime.waitUntil` pattern from `ingest-document/index.ts` (L376–391) at both sites so the isolate is kept alive until the background work finishes, while the HTTP response still returns promptly.
+# Persona source + mapping fix
 
-## Snapshots first
+Snapshot label: `pre-persona-source-and-mapping`. Single concern: make `generate-market-mirror` resolve the user's rank from `beta_allowlist.seniority` (with fallbacks), widen the seniority→bucket mapping at both authoritative sites, and stop the client-side auto-regenerate loop. No onboarding changes.
 
-- `supabase/functions/ingest-capture/index.ts` → `supabase/functions/ingest-capture/index.pre-capture-chain-waituntil.bak.ts`
-- `supabase/functions/extract-evidence/index.ts` → `supabase/functions/extract-evidence/index.pre-capture-chain-waituntil.bak.ts`
+## Step 1 — Widen shared helper (client)
 
-## Site 1 — ingest-capture/index.ts (L278–288)
+File: `src/lib/marketPersonas.ts` (`rankFromLevel`)
 
-Before:
-```ts
-supabase.functions.invoke("extract-evidence", {
-  body: {
-    source_type: "entry",
-    source_id: newEntryId,
-    user_id: effectiveUserId,
-  },
-}).catch((e: any) =>
-  console.warn("[ingest-capture] extract-evidence invoke failed:", e?.message)
-);
-console.log("[ingest-capture] extract-evidence invoked for entry:", newEntryId);
-```
+Keep `PERSONA_LABELS` unchanged. Replace the regex bodies:
 
-After:
-```ts
-// @ts-ignore EdgeRuntime.waitUntil is available in Supabase Edge Functions
-EdgeRuntime.waitUntil((async () => {
-  try {
-    const { error: extractError } = await supabase.functions.invoke("extract-evidence", {
-      body: {
-        source_type: "entry",
-        source_id: newEntryId,
-        user_id: effectiveUserId,
-      },
-    });
-    if (extractError) {
-      console.warn("[ingest-capture] extract-evidence invoke failed:", extractError);
-    }
-  } catch (e: any) {
-    console.warn("[ingest-capture] extract-evidence invoke threw:", e?.message);
-  }
-})());
-console.log("[ingest-capture] extract-evidence invoked for entry:", newEntryId);
-```
+- **c_suite**: `chief|c-suite|c-level|ceo|cfo|cio|cto|cdo|cmo|coo|chro|\b(vp|svp|evp)\b|vice[\s-]?president|\bhead of\b|advisor|board member|chairman`
+- **partner**: `\bpartner\b|managing director|associate partner`
+- else → `director`
 
-Payload unchanged. Response continues to return at the existing `return new Response(...)` below — `waitUntil` does not block it.
+Add a comment above the function:
+`// KEEP IN SYNC with supabase/functions/generate-market-mirror/index.ts persona regex.`
 
-## Site 2 — extract-evidence/index.ts (L320–331)
+## Step 2 — Resolver + mapping in the EF (authoritative)
 
-Before:
-```ts
-if (inserted.length > 0) {
-  const fragmentIds = inserted.map((f: any) => f.id);
-  adminClient.functions.invoke("detect-signals-v2", {
-    body: {
-      fragment_ids: fragmentIds,
-      source_registry_id: registryId,
-      user_id: registry.user_id,
-    },
-  }).catch((e: any) =>
-    console.warn("[extract-evidence] detect-signals-v2 chain failed:", e?.message)
-  );
-  console.log("[extract-evidence] chained detect-signals-v2 with", fragmentIds.length, "fragments");
-}
-```
+File: `supabase/functions/generate-market-mirror/index.ts`
 
-After:
-```ts
-if (inserted.length > 0) {
-  const fragmentIds = inserted.map((f: any) => f.id);
-  // @ts-ignore EdgeRuntime.waitUntil is available in Supabase Edge Functions
-  EdgeRuntime.waitUntil((async () => {
-    try {
-      const { error: sigError } = await adminClient.functions.invoke("detect-signals-v2", {
-        body: {
-          fragment_ids: fragmentIds,
-          source_registry_id: registryId,
-          user_id: registry.user_id,
-        },
-      });
-      if (sigError) {
-        console.warn("[extract-evidence] detect-signals-v2 chain failed:", sigError);
-      }
-    } catch (e: any) {
-      console.warn("[extract-evidence] detect-signals-v2 chain threw:", e?.message);
-    }
-  })());
-  console.log("[extract-evidence] chained detect-signals-v2 with", fragmentIds.length, "fragments");
-}
-```
+1. **Resolve email**: use the authenticated user from the JWT (already validated in the EF); fall back to `auth.admin.getUserById(user_id)` if email isn't on the claims.
+2. **Resolve seniority** via service-role client, in precedence order:
+   - (a) `beta_allowlist.seniority` — `ilike(email, …)`, `order(requested_at desc nulls last)`, `limit(1)`, when non-null/non-empty
+   - (b) `diagnostic_profiles.level`
+   - (c) literal `"senior leader"`
+3. **Replace inlined regex (~lines 87–94)** with the SAME widened patterns from Step 1, applied to the resolved seniority string. Add comment:
+   `// KEEP IN SYNC with src/lib/marketPersonas.ts rankFromLevel.`
+4. **Stamp** `gaps.persona_set` with the resolved bucket (unchanged behavior, new source).
 
-Payload unchanged. Response at L334 continues to return immediately.
+No other EF logic touched (cache TTL, generation prompt, response shape all unchanged).
 
-## Notes
+## Step 3 — Stop the client regenerate loop
 
-- Each link wraps its own `waitUntil` so the chain is kept alive end to end (ingest-capture keeps the extract step alive; extract-evidence independently keeps the signal-detect step alive).
-- Nothing else changes: no payload edits, no response-shape changes, no awaits added to the response path, no new error handling beyond logging.
-- Preview only — do not publish.
+File: `src/components/MarketMirror.tsx` (~lines 103–110)
 
-## Self-check (after edit)
+Remove the `useEffect` that calls `generate()` when `rowRank !== currentRank`. The client cannot read `beta_allowlist` (admin RLS), so its locally-computed rank can disagree with the EF-stamped value indefinitely and trigger refresh on every mount until the 7-day cooldown blocks it. Also drop the now-unused `currentRank` state + the `diagnostic_profiles.level` fetch effect (~lines 49–62) since nothing else consumes it.
 
-```
-rg -n "EdgeRuntime.waitUntil|extract-evidence|detect-signals-v2" supabase/functions/ingest-capture/index.ts supabase/functions/extract-evidence/index.ts
-```
+Keep untouched: no-cache first-load generation, the explicit Refresh button, any cron path.
 
-Confirm: (a) both invokes wrapped in `EdgeRuntime.waitUntil`, (b) the `return new Response(...)` in each file is not awaiting the background chain, (c) payload bodies byte-identical to before. Report the before/after blocks for both sites.
+## Step 4 — Request-access option
+
+File: `src/pages/RequestAccess.tsx`
+
+Add `"Partner"` to the `SENIORITY` array immediately after `"VP"`.
+
+## Step 5 — Report (read-only)
+
+Run a single SELECT (no writes) joining `auth.users` → `beta_allowlist` (by email, case-insensitive) → `market_mirror_cache` to list users whose stamped `gaps->>'persona_set'` would change under the new resolver. Output: `user_id, email, current_persona_set, new_persona_set, source (beta_allowlist|diagnostic_profiles|default)`. Hand the list back so you can selectively clear `market_mirror_cache` rows yourself. No mass-delete, no `user_id` backfill.
+
+## Self-check before reporting
+
+- Quote both regex blocks (`marketPersonas.ts` and EF) and confirm character-for-character match.
+- Confirm resolver precedence in EF: `beta_allowlist.seniority` → `diagnostic_profiles.level` → `"senior leader"`.
+- Confirm `MarketMirror.tsx` no longer contains any effect that calls `generate()` based on a recomputed rank.
+- Confirm `"Partner"` appears in `SENIORITY` after `"VP"`.
+- Trace a synthetic user with `beta_allowlist.seniority='VP'` through the EF resolver and confirm it returns `c_suite`.
+
+## Files touched
+
+- `src/lib/marketPersonas.ts` (regex widen + sync comment)
+- `supabase/functions/generate-market-mirror/index.ts` (resolver + widened regex + sync comment)
+- `src/components/MarketMirror.tsx` (remove auto-regenerate effect + unused level fetch)
+- `src/pages/RequestAccess.tsx` (add "Partner")
+
+Snapshot `.bak` copies created for each edited file before changes.

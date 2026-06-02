@@ -71,35 +71,8 @@ serve(async (req) => {
       .map(([theme, count]) => ({ theme, count }));
 
     const p = (profile as any) || {};
+    const level = p.level || "senior leader";
     const sector = p.sector_focus || "their sector";
-
-    // Resolve seniority by precedence:
-    //   (a) beta_allowlist.seniority (admin/service-role read; client cannot)
-    //   (b) diagnostic_profiles.level
-    //   (c) "senior leader"
-    let resolvedSeniority: string | null = null;
-    let seniorityCameFrom: "beta_allowlist" | "diagnostic_profiles" | "default" = "default";
-    const userEmail = (user.email || "").trim();
-    if (userEmail) {
-      const { data: allowRow } = await admin
-        .from("beta_allowlist")
-        .select("seniority,requested_at")
-        .ilike("email", userEmail)
-        .order("requested_at", { ascending: false, nullsFirst: false })
-        .limit(1)
-        .maybeSingle();
-      const s = (allowRow as any)?.seniority;
-      if (s && String(s).trim()) {
-        resolvedSeniority = String(s).trim();
-        seniorityCameFrom = "beta_allowlist";
-      }
-    }
-    if (!resolvedSeniority && p.level && String(p.level).trim()) {
-      resolvedSeniority = String(p.level).trim();
-      seniorityCameFrom = "diagnostic_profiles";
-    }
-    const level = resolvedSeniority || "senior leader";
-    console.log("[market-mirror] seniority resolved", { source: seniorityCameFrom, level });
 
     const signalLines = (signals || []).map((s: any) =>
       `- ${s.signal_title} (${Math.round(Number(s.confidence) * 100)}% confidence, ${s.velocity_status || "stable"})`
@@ -112,12 +85,11 @@ serve(async (req) => {
       : "(no published themes)";
 
     // Rank bucket from free-text level (case-insensitive match).
-    // KEEP IN SYNC with src/lib/marketPersonas.ts rankFromLevel.
     const levelLower = String(level).toLowerCase();
     const rankBucket: "c_suite" | "partner" | "director" =
-      /chief|c-suite|c-level|ceo|cfo|cio|cto|cdo|cmo|coo|chro|\b(vp|svp|evp)\b|vice[\s-]?president|\bhead of\b|advisor|board member|chairman/.test(levelLower)
+      /\b(chief|c-suite|c level|c-level|ceo|cfo|cio|cto|cdo)\b/.test(levelLower)
         ? "c_suite"
-        : /\bpartner\b|managing director|associate partner/.test(levelLower)
+        : /\b(partner|managing director)\b/.test(levelLower)
         ? "partner"
         : "director";
 
