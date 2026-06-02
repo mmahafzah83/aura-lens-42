@@ -724,6 +724,74 @@ interface Recommendation {
 
 const readingCacheKey = () => `aura_reading_list_${new Date().toISOString().slice(0, 10)}`;
 
+/* ═══════════════════════════════════════════
+   TIER SECTION — collapsible per-tier group
+   ═══════════════════════════════════════════ */
+type TierKey = "live" | "evergreen" | "emerging" | "other";
+
+const TIER_SECTION_META: Record<TierKey, { label: string; Icon: typeof Zap; varName: string }> = {
+  live: { label: "Live", Icon: Zap, varName: "--tier-live" },
+  evergreen: { label: "Evergreen", Icon: Leaf, varName: "--tier-evergreen" },
+  emerging: { label: "Emerging", Icon: Sprout, varName: "--tier-emerging" },
+  other: { label: "Other", Icon: HelpCircle, varName: "--ink-3" },
+};
+
+const TierSection = ({
+  tierKey, signals, defaultOpen, renderRow,
+}: {
+  tierKey: TierKey;
+  signals: Signal[];
+  defaultOpen: boolean;
+  renderRow: (s: Signal) => ReactNode;
+}) => {
+  const [open, setOpen] = useState(defaultOpen);
+  if (signals.length === 0) return null;
+  const { label, Icon, varName } = TIER_SECTION_META[tierKey];
+  const color = `var(${varName})`;
+  return (
+    <div style={{ marginTop: 16 }}>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
+        style={{
+          display: "flex", alignItems: "center", gap: 8,
+          background: "none", border: "none", padding: "6px 0",
+          cursor: "pointer", width: "100%", textAlign: "start",
+        }}
+      >
+        <Icon size={14} strokeWidth={2.25} style={{ color }} aria-hidden />
+        <span style={{
+          fontSize: 12, fontWeight: 600, letterSpacing: ".04em",
+          color, textTransform: "uppercase",
+        }}>
+          {label} · {signals.length}
+        </span>
+        <ChevronDown
+          size={14}
+          style={{
+            color: "var(--ink-3)",
+            marginInlineStart: "auto",
+            transform: open ? "rotate(180deg)" : "rotate(0)",
+            transition: "transform .2s",
+          }}
+          aria-hidden
+        />
+      </button>
+      {open && (
+        <div style={{
+          marginTop: 8,
+          display: "flex", flexDirection: "column", gap: 1,
+          borderRadius: "var(--radius, 8px)", overflow: "hidden",
+          border: "0.5px solid hsl(var(--border))",
+        }}>
+          {signals.map(renderRow)}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const EditorialReadingList = ({
   signals, onOpenCapture,
 }: { signals: Signal[]; onOpenCapture?: (prefillUrl?: string, prefillText?: string, sourceKey?: string) => void }) => {
