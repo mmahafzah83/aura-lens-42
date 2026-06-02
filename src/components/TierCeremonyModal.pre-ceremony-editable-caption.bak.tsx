@@ -117,7 +117,6 @@ export default function TierCeremonyModal({ userId, forceOpen, onForceClose }: P
   const [concept, setConcept] = useState<ConceptKey>("A");
   const [lang, setLang] = useState<"EN" | "AR">("EN");
   const [busy, setBusy] = useState<string | null>(null);
-  const [caption, setCaption] = useState<string>("");
 
   // When opened via forceOpen, jump straight to the credential chooser.
   useEffect(() => {
@@ -370,13 +369,6 @@ export default function TierCeremonyModal({ userId, forceOpen, onForceClose }: P
     return `Scored ${sc} on Aura.\n\nNot a test. A signal tracker. It reads what I read, finds the patterns I miss, and tells me when the market is moving before I notice.\n\nRight now it's tracking ${sig}. ${confPct}% confidence. Still growing.\n\nIf you're a senior professional whose expertise is invisible to the market — you'll want to see this.\n\naura-intel.org`;
   };
 
-  // Seed/reseed the editable caption when language toggles or when
-  // score/topSignal data finishes loading. Edits are replaced on switch.
-  useEffect(() => {
-    setCaption(buildPost(lang));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lang, score, topSignal?.title, topSignal?.confidence]);
-
   const shareLinkedIn = async () => {
     setBusy("share");
     try {
@@ -394,7 +386,7 @@ export default function TierCeremonyModal({ userId, forceOpen, onForceClose }: P
         }
       }
       await shareToLinkedIn({
-        text: caption || buildPost(lang),
+        text: buildPost(lang),
         withImage: true,
       });
       if (tierMilestone) void shareMilestone(tierMilestone.id);
@@ -497,8 +489,6 @@ export default function TierCeremonyModal({ userId, forceOpen, onForceClose }: P
               setConcept={setConcept}
               lang={lang}
               setLang={setLang}
-              caption={caption}
-              setCaption={setCaption}
               busy={busy}
               onDownloadPng={() => downloadPng(false)}
               onDownloadPdf={downloadPdf}
@@ -628,8 +618,6 @@ function StepCredential({
   setConcept,
   lang,
   setLang,
-  caption,
-  setCaption,
   busy,
   onDownloadPng,
   onDownloadPdf,
@@ -642,8 +630,6 @@ function StepCredential({
   setConcept: (k: ConceptKey) => void;
   lang: "EN" | "AR";
   setLang: (l: "EN" | "AR") => void;
-  caption: string;
-  setCaption: (v: string) => void;
   busy: string | null;
   onDownloadPng: () => void;
   onDownloadPdf: () => void;
@@ -760,26 +746,6 @@ function StepCredential({
             ))}
           </div>
         </div>
-        <textarea
-          value={caption}
-          onChange={(e) => setCaption(e.target.value)}
-          dir={lang === "AR" ? "rtl" : "ltr"}
-          rows={8}
-          style={{
-            width: "100%",
-            background: "rgba(255,255,255,0.03)",
-            color: TEXT,
-            border: `1px solid ${GOLD_LINE}`,
-            borderRadius: 8,
-            padding: 10,
-            fontFamily: "inherit",
-            fontSize: 12,
-            lineHeight: 1.5,
-            resize: "vertical",
-            marginBottom: 10,
-            outline: "none",
-          }}
-        />
         <button
           onClick={onShare}
           disabled={!!busy}
