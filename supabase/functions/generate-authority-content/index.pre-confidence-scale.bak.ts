@@ -422,17 +422,8 @@ Rewrite any sentence that uses these with concrete, specific language.${postType
         content,
         success: true,
         quality_gate: gateResult ? {
-          overall_score: (() => {
-            const o = Number(gateResult.overall ?? 0);
-            // Model returns a weighted average of 0–10 sub-scores; rescale to 0–100.
-            const scaled = o <= 10 ? Math.round(o * 10) : Math.round(o);
-            return Math.min(100, Math.max(0, scaled));
-          })(),
-          pass: (() => {
-            const o = Number(gateResult.overall ?? 0);
-            const scaled = o <= 10 ? Math.round(o * 10) : Math.round(o);
-            return Math.min(100, Math.max(0, scaled)) >= 70;
-          })(),
+          overall_score: gateResult.overall,
+          pass: gateResult.pass,
           scores: gateResult.scores,
           verdict: gateResult.verdict,
           weaknesses: Array.isArray(gateResult.weaknesses) ? gateResult.weaknesses : [],
