@@ -130,7 +130,7 @@ const Guide = () => {
 
   return (
     <div
-      className="min-h-screen"
+      className="min-h-screen bg-neutral-950"
       style={{ background: "var(--ink)", color: "var(--ink-7)", fontFamily: "var(--font-body)" }}
     >
       <style>{`
