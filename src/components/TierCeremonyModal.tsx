@@ -1,10 +1,9 @@
-import { ChevronLeft } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { toast } from "sonner";
-import { Download, Copy, FileText, X, Target } from "lucide-react";
+import { ChevronLeft, Download, Copy, FileText, X, Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import useMilestones, { type Milestone } from "@/hooks/useMilestones";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
