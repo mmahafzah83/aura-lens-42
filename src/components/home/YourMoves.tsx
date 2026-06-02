@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Send, Plus, Eye, ChevronRight, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCapturedSources } from "@/hooks/useCapturedSources";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 
 export type ActionType = "PUBLISH" | "CAPTURE" | "WATCH";
 export type Urgency = "HIGH" | "MEDIUM";
@@ -172,6 +173,7 @@ export default function YourMoves({ userId, items: itemsProp, hideIfEmpty, defau
           }}>
             Your moves
           </span>
+          <InfoTooltip slug="home-your-moves" label="Your moves" side="bottom" triggerSize={13} />
           <span style={{
             fontSize: 10, fontWeight: 600, letterSpacing: "0.03em",
             color: "hsl(var(--muted-foreground))",
