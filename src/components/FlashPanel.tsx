@@ -586,6 +586,9 @@ export default function FlashPanel() {
             <RefreshCw className="w-4 h-4" />
             <span style={lang === "ar" ? arabicFontStyle : undefined}>{t.newVariations}</span>
           </Button>
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <InfoTooltip slug="variations" label="Variations" side="top" triggerSize={13} />
+          </div>
         </div>
       )}
     </div>
