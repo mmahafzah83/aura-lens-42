@@ -815,7 +815,10 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
 
       {/* SECTION 6 — CAPABILITY RADAR */}
       {assessmentCompleted && (
-        <SectionHeader label="Your Capability Radar" />
+        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+          <SectionHeader label="Your Capability Radar" />
+          <InfoTooltip slug="capability-radar" label="Capability Radar" side="top" triggerSize={13} />
+        </div>
       )}
       {assessmentCompleted && (
         <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }}>
