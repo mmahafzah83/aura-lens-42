@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import {
   Loader2, Archive, RefreshCw, Layers, Brain, AlertTriangle, ChevronDown, ChevronRight,
   EyeOff, Info, Lightbulb, TrendingUp, ExternalLink, Plus, BookOpen, X,
+  Zap, Leaf, Sprout, HelpCircle,
 } from "lucide-react";
 import { PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
