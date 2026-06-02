@@ -1155,8 +1155,8 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
               <p className="text-label uppercase tracking-wider text-xs font-semibold mb-1" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
                 Structure
                 <InfoTooltip
+                  slug="post-format"
                   label="Structure"
-                  text="The argument pattern your post follows. Auto picks the best fit. Choose manually to control the narrative shape."
                   side="top"
                   triggerSize={13}
                 />
@@ -1228,14 +1228,8 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
 
             {/* Language */}
             <div className="flex items-center gap-3">
-              <p className="text-label uppercase tracking-wider text-xs font-semibold" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <p className="text-label uppercase tracking-wider text-xs font-semibold">
                 Language
-                <InfoTooltip
-                  label="Language"
-                  text="Generate your post in English or Arabic. Arabic posts use Gulf executive writing patterns."
-                  side="top"
-                  triggerSize={13}
-                />
               </p>
               <div data-testid="pub-lang-toggle" className="flex gap-1 bg-secondary/30 rounded-lg p-0.5 border border-border/10">
                 <button onClick={() => setLang("en")} className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${lang === "en" ? "bg-primary text-primary-foreground" : "text-foreground"}`}>English</button>
@@ -1303,6 +1297,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                         <><Save className="w-3.5 h-3.5" /> Save Draft</>
                       )}
                     </Button>
+                    <InfoTooltip slug="save-draft" label="Save Draft" side="top" triggerSize={13} />
                     <Button
                       data-testid="pub-mark-published-btn"
                       size="sm"
@@ -1322,6 +1317,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                         <><Check className="w-3.5 h-3.5" /> Mark as published</>
                       )}
                     </Button>
+                    <InfoTooltip slug="mark-published" label="Mark as published" side="top" triggerSize={13} />
                   </div>
                 </div>
 
@@ -1452,7 +1448,10 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                         <span className="text-xs uppercase tracking-[0.14em] text-muted-foreground font-semibold">
                           How this was built
                         </span>
-                        <span className="text-xs text-muted-foreground/70">{provenanceOpen ? "−" : "+"}</span>
+                        <span className="inline-flex items-center gap-2">
+                          <InfoTooltip slug="how-built" label="How this was built" side="top" triggerSize={13} />
+                          <span className="text-xs text-muted-foreground/70">{provenanceOpen ? "−" : "+"}</span>
+                        </span>
                       </button>
                       {provenanceOpen && (
                         <div className="px-4 pb-3 space-y-1.5 text-xs text-muted-foreground/90 leading-relaxed">
@@ -1485,6 +1484,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                           <div className="flex items-center justify-between">
                             <span className="text-xs uppercase tracking-[0.14em] text-muted-foreground font-semibold">
                               Publish confidence
+                              <InfoTooltip slug="publish-confidence" label="Publish confidence" side="top" triggerSize={13} className="ml-1.5 align-middle" />
                             </span>
                             <span className={`text-xs font-semibold tabular-nums ${gate!.overall_score >= 70 ? "text-amber-500" : "text-muted-foreground"}`}>
                               {gate!.overall_score}%
@@ -1542,6 +1542,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                             >
                               {actionLoading === "strengthen" ? "Strengthening…" : "Strengthen before publishing →"}
                             </Button>
+                            <InfoTooltip slug="strengthen-post" label="Strengthen" side="top" triggerSize={13} className="ml-1.5 align-middle" />
                           ) : (
                             <div className="text-xs text-amber-600/80 dark:text-amber-400/80">
                               Ready to publish — quality threshold met.
@@ -1633,6 +1634,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                   <div className="mb-2">
                     <p className="text-xs uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--ink-2)" }}>
                       Variations
+                      <InfoTooltip slug="variations" label="Variations" side="top" triggerSize={13} className="ml-1.5 align-middle" />
                     </p>
                     <p className="text-xs" style={{ color: "var(--ink-3)" }}>
                       Different angles on the same signal
