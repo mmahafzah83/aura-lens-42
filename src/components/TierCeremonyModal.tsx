@@ -486,6 +486,29 @@ export default function TierCeremonyModal({ userId, forceOpen, onForceClose }: P
           <X size={18} />
         </button>
 
+        {step > 0 && (
+          <button
+            aria-label="Back"
+            onClick={() => {
+              if (busy) return;
+              setStep((s) => Math.max(0, s - 1));
+            }}
+            style={{
+              position: "absolute",
+              top: 14,
+              left: 14,
+              background: "transparent",
+              border: 0,
+              color: TEXT_MUTED,
+              cursor: "pointer",
+              padding: 6,
+              borderRadius: 6,
+            }}
+          >
+            <ChevronLeft size={18} />
+          </button>
+        )}
+
         <div key={step} className="aura-step-fade" style={{ animation: "auraFade 280ms ease-out" }}>
           {step === 0 && (
             <StepReveal tierName={tierName} quote={quote} fullName={fullName} role={role} />
