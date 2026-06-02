@@ -117,6 +117,7 @@ export default function TierCeremonyModal({ userId, forceOpen, onForceClose }: P
   const [concept, setConcept] = useState<ConceptKey>("A");
   const [lang, setLang] = useState<"EN" | "AR">("EN");
   const [busy, setBusy] = useState<string | null>(null);
+  const [caption, setCaption] = useState<string>("");
 
   // When opened via forceOpen, jump straight to the credential chooser.
   useEffect(() => {
