@@ -760,6 +760,26 @@ function StepCredential({
             ))}
           </div>
         </div>
+        <textarea
+          value={caption}
+          onChange={(e) => setCaption(e.target.value)}
+          dir={lang === "AR" ? "rtl" : "ltr"}
+          rows={8}
+          style={{
+            width: "100%",
+            background: "rgba(255,255,255,0.03)",
+            color: TEXT,
+            border: `1px solid ${GOLD_LINE}`,
+            borderRadius: 8,
+            padding: 10,
+            fontFamily: "inherit",
+            fontSize: 12,
+            lineHeight: 1.5,
+            resize: "vertical",
+            marginBottom: 10,
+            outline: "none",
+          }}
+        />
         <button
           onClick={onShare}
           disabled={!!busy}
