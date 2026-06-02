@@ -248,7 +248,7 @@ export default function Settings() {
 
         {/* Profile summary */}
         <SectionHeader
-          label="Your data"
+          label="Profile summary"
           subtitle="A read-only summary of what Aura knows about your profile, brand, and capabilities."
         />
 
