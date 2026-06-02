@@ -1929,7 +1929,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
   };
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--background, #0F0E0C)", color: "var(--foreground, #F5F0E6)", paddingBottom: 100 }}>
+    <div className="min-h-screen bg-neutral-950" style={{ background: "var(--background, #0F0E0C)", color: "var(--foreground, #F5F0E6)", paddingBottom: 100 }}>
       {/* Top bar */}
       <div className="px-4 md:px-8 py-4 border-b" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
         <div className="flex flex-wrap items-center gap-3 mb-3">
