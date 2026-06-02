@@ -2465,7 +2465,6 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
           >
             <div className="text-section-header" style={{ color: "var(--danger)", marginBottom: 6 }}>
               Urgent
-              <InfoTooltip slug="home-urgent" label="Urgent" side="bottom" triggerSize={13} className="ml-1.5 align-middle" />
             </div>
             <div style={{
               fontFamily: "var(--font-display)",

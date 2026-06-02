@@ -298,7 +298,6 @@ const TerritoryPanel = ({
         <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".06em", color: "var(--ink-3)" }}>
           TERRITORIES
         </span>
-        <InfoTooltip slug="intel-territories" label="Territories" side="top" triggerSize={13} />
         <span style={{ fontSize: 11, color: "var(--ink-3)" }}>({territories.length})</span>
       </div>
 
@@ -447,7 +446,6 @@ const SignalHero = ({
         <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".06em", color: "var(--brand)" }}>
           ✦ YOUR STRONGEST SIGNAL
         </span>
-        <InfoTooltip slug="intel-strongest-signal" label="Your strongest signal" side="top" triggerSize={13} />
         {isRising && (
           <span style={{
             fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 999,
@@ -1488,7 +1486,6 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                       </FirstTimeHint>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
                         <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".06em", color: "var(--ink-3)" }}>SIGNALS</span>
-                        <InfoTooltip slug="intel-signals" label="Signals" side="top" triggerSize={13} />
                         <span style={{ fontSize: 11, color: "var(--ink-3)" }}>
                           {filtered.length}
                           {selectedTheme ? ` · of ${sortedByTier.length}` : ""}
