@@ -109,8 +109,11 @@ Return ONLY valid JSON:
 Rules:
 - Start hero_narrative with ${name}'s name
 - Reference at least one specific number in every field
-- Never use: leverage, utilize, facilitate, trajectory, thought leader, personal brand, zone of genius
+- Never use: authority, trajectory, personal brand, thought leader, thought leadership, leverage, utilize, facilitate
 - Tone: direct, commercial, peer-to-peer — like a board advisor, not a marketing coach
+- Write to move a senior leader, not just inform one — name what the numbers reveal about where they stand, with respect and clarity. Never flattery, never alarm, never a coaching or cheerleading tone.
+- Plain, human language a busy executive respects. Every claim anchored to a real number from the data.
+- Close with one clear, doable next move — direction, not a lecture.
 - If engagement is below the tier benchmark, say so directly
 - If momentum is low (1/4 or 2/4), name the urgency`;
 
