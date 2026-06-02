@@ -1508,6 +1508,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       {(() => {
         const SENIOR_LEVELS = new Set(["Senior", "Director", "CXO", "VP", "Partner", "Owner"]);
         const demos = allDemographics || [];
+        const isLoadingAudience = allDemographics === null;
         const demoByCategory = demos.reduce((acc, row) => {
           (acc[row.category] = acc[row.category] || []).push(row);
           return acc;
@@ -1572,7 +1573,30 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
             {openSections.audience && (
               <div style={{ marginTop: 12 }}>
-                {!hasData ? (
+                {isLoadingAudience ? (
+                  <div style={{ ...cardStyle, textAlign: "center", padding: "32px 18px" }}>
+                    <div
+                      style={{
+                        height: 14,
+                        width: "60%",
+                        margin: "0 auto 10px",
+                        background: "var(--aura-border)",
+                        borderRadius: 6,
+                        opacity: 0.6,
+                      }}
+                    />
+                    <div
+                      style={{
+                        height: 12,
+                        width: "40%",
+                        margin: "0 auto",
+                        background: "var(--aura-border)",
+                        borderRadius: 6,
+                        opacity: 0.4,
+                      }}
+                    />
+                  </div>
+                ) : !hasData ? (
                   <div style={{ ...cardStyle, textAlign: "center", padding: "32px 18px" }}>
                     <p style={{ fontSize: 14, color: "var(--aura-t2)", margin: 0 }}>
                       Upload your LinkedIn analytics to see who follows you
