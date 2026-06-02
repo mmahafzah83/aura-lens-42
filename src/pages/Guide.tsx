@@ -6,7 +6,7 @@ import usePageMeta from "@/hooks/usePageMeta";
 import { useGuideArticles } from "@/hooks/useGuideArticles";
 import type { GuideArticle } from "@/hooks/useGuideArticles";
 
-const SECTION_ORDER = ["getting-started", "tabs", "scoring", "terms", "how-to"];
+const SECTION_ORDER = ["getting-started", "tabs", "scoring", "terms", "how-to", "trust"];
 
 const SECTION_LABELS: Record<string, string> = {
   "getting-started": "Getting started",
@@ -14,6 +14,7 @@ const SECTION_LABELS: Record<string, string> = {
   scoring: "Your score & formulas",
   terms: "Key terms",
   "how-to": "How to…",
+  trust: "Trust & privacy",
 };
 
 function groupByCategory(articles: GuideArticle[]) {
