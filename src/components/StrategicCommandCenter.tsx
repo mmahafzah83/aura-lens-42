@@ -10,6 +10,7 @@ import { formatSmartDate } from "@/lib/formatDate";
 import FrameworkBuilder from "@/components/FrameworkBuilder";
 import LinkedInDraftPanel from "@/components/LinkedInDraftPanel";
 import SignalExplorer from "@/components/SignalExplorer";
+import TierBadge, { SignalTier } from "@/components/ui/TierBadge";
 
 /* ── Types ── */
 interface CommandData {
@@ -20,8 +21,9 @@ interface CommandData {
   opportunityExplanation: string;
   confidence: number;
   sourceCount: number;
+  opportunityTier: SignalTier;
   pipeline: { label: string; icon: React.ElementType; count: number }[];
-  momentum: Array<{ title: string; type: string; created_at: string }>;
+  momentum: Array<{ title: string; type: string; created_at: string; lifecycle_tier?: SignalTier }>;
 }
 
 const getGreeting = () => {
@@ -39,6 +41,7 @@ const EMPTY: CommandData = {
   opportunityExplanation: "",
   confidence: 0,
   sourceCount: 0,
+  opportunityTier: null,
   pipeline: [],
   momentum: [],
 };
@@ -59,7 +62,7 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
       const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "";
 
       const [signalsRes, profileRes, frameworksRes, intelligenceRes, suggestionsRes] = await Promise.all([
-        supabase.from("strategic_signals").select("signal_title, confidence, supporting_evidence_ids, strategic_implications, explanation, content_opportunity").eq("status", "active").order("confidence", { ascending: false }).limit(5),
+        supabase.from("strategic_signals").select("signal_title, confidence, supporting_evidence_ids, strategic_implications, explanation, content_opportunity, lifecycle_tier").eq("status", "active").order("confidence", { ascending: false }).limit(5),
         (supabase.from("diagnostic_profiles" as any) as any).select("core_practice, sector_focus, brand_pillars, identity_intelligence, north_star_goal").maybeSingle(),
         supabase.from("master_frameworks").select("id", { count: "exact", head: true }),
         supabase.from("learned_intelligence").select("id", { count: "exact", head: true }),
@@ -90,6 +93,7 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
       let opportunityExplanation = "";
       let confidence = 0;
       let sourceCount = 0;
+      let opportunityTier: SignalTier = null;
 
       if (suggestions.length > 0) {
         const s = suggestions[0] as any;
@@ -106,6 +110,7 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
         }
         confidence = Math.round((Number(topSignal.confidence) || 0) * 100);
         sourceCount = topSignal.supporting_evidence_ids?.length || 0;
+        opportunityTier = (topSignal.lifecycle_tier as SignalTier) ?? null;
       }
 
       // Pipeline counts
@@ -129,15 +134,15 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
       ];
 
       // Recent momentum
-      const { data: recentSignals } = await supabase.from("strategic_signals").select("signal_title, created_at").eq("status", "active").order("created_at", { ascending: false }).limit(3);
+      const { data: recentSignals } = await supabase.from("strategic_signals").select("signal_title, created_at, lifecycle_tier").eq("status", "active").order("created_at", { ascending: false }).limit(3);
       const { data: recentFrameworks } = await supabase.from("master_frameworks").select("title, created_at").order("created_at", { ascending: false }).limit(2);
 
       const momentum = [
-        ...(recentSignals || []).map((s: any) => ({ title: s.signal_title, type: "signal", created_at: s.created_at })),
+        ...(recentSignals || []).map((s: any) => ({ title: s.signal_title, type: "signal", created_at: s.created_at, lifecycle_tier: (s.lifecycle_tier as SignalTier) ?? null })),
         ...(recentFrameworks || []).map((f: any) => ({ title: f.title, type: "framework", created_at: f.created_at })),
       ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 4);
 
-      setData({ userName, identityStatement, northStar, opportunityTitle, opportunityExplanation, confidence, sourceCount, pipeline, momentum });
+      setData({ userName, identityStatement, northStar, opportunityTitle, opportunityExplanation, confidence, sourceCount, opportunityTier, pipeline, momentum });
     } catch (err) {
       console.error("Command center load error:", err);
     }
@@ -203,6 +208,11 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
                  style={{ fontFamily: "var(--font-display)" }}
                >
                  {data.opportunityTitle}
+                 {data.opportunityTier ? (
+                   <span className="ms-2 align-middle inline-block">
+                     <TierBadge tier={data.opportunityTier} />
+                   </span>
+                 ) : null}
                </h2>
 
               <div className="flex flex-wrap items-center gap-3 sm:gap-5 text-sm text-muted-foreground">
@@ -300,6 +310,7 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
                   {item.type === "signal" ? <Zap className="w-3 h-3 text-primary/50" /> : <BookOpen className="w-3 h-3 text-primary/50" />}
                 </div>
                 <p className="text-sm text-foreground truncate flex-1 min-w-0">{item.title}</p>
+                {item.type === "signal" ? <TierBadge tier={item.lifecycle_tier ?? null} /> : null}
                 <span className="text-xs text-muted-foreground/50 shrink-0 hidden sm:flex items-center gap-1">
                   <Clock className="w-3 h-3" />
                   {formatSmartDate(item.created_at)}
