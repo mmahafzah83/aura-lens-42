@@ -370,6 +370,13 @@ export default function TierCeremonyModal({ userId, forceOpen, onForceClose }: P
     return `Scored ${sc} on Aura.\n\nNot a test. A signal tracker. It reads what I read, finds the patterns I miss, and tells me when the market is moving before I notice.\n\nRight now it's tracking ${sig}. ${confPct}% confidence. Still growing.\n\nIf you're a senior professional whose expertise is invisible to the market — you'll want to see this.\n\naura-intel.org`;
   };
 
+  // Seed/reseed the editable caption when language toggles or when
+  // score/topSignal data finishes loading. Edits are replaced on switch.
+  useEffect(() => {
+    setCaption(buildPost(lang));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang, score, topSignal?.title, topSignal?.confidence]);
+
   const shareLinkedIn = async () => {
     setBusy("share");
     try {
@@ -387,7 +394,7 @@ export default function TierCeremonyModal({ userId, forceOpen, onForceClose }: P
         }
       }
       await shareToLinkedIn({
-        text: buildPost(lang),
+        text: caption || buildPost(lang),
         withImage: true,
       });
       if (tierMilestone) void shareMilestone(tierMilestone.id);
