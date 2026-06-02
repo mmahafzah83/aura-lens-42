@@ -115,7 +115,7 @@ serve(async (req) => {
     // KEEP IN SYNC with src/lib/marketPersonas.ts rankFromLevel.
     const levelLower = String(level).toLowerCase();
     const rankBucket: "c_suite" | "partner" | "director" =
-      /\bchief\b|c-suite|c-level|\b(ceo|cfo|cio|cto|cdo|cmo|coo|chro)\b|\b(vp|svp|evp)\b|\bvice[\s-]?president|\bhead of\b|\badvisor|\bboard member|\bchairman\b/.test(levelLower)
+      /chief|c-suite|c-level|ceo|cfo|cio|cto|cdo|cmo|coo|chro|\b(vp|svp|evp)\b|vice[\s-]?president|\bhead of\b|advisor|board member|chairman/.test(levelLower)
         ? "c_suite"
         : /\bpartner\b|managing director|associate partner/.test(levelLower)
         ? "partner"
