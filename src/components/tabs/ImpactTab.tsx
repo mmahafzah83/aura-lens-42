@@ -1469,6 +1469,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           title="The three forces"
           open={openSections.forces}
           onToggle={() => toggleSection("forces")}
+          right={<InfoTooltip slug="impact-three-forces" label="The three forces" side="bottom" triggerSize={13} />}
         />
         {openSections.forces && (
           <div data-testid="impact-breakdown" className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
@@ -1878,6 +1879,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           margin: "0 0 4px",
         }}>
           Your LinkedIn footprint
+          <InfoTooltip slug="impact-footprint" label="LinkedIn footprint" side="bottom" triggerSize={13} className="ml-1.5 align-middle" />
         </h2>
         <p style={{
           fontSize: 13,
@@ -1985,6 +1987,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               color: "var(--aura-accent2)", fontWeight: 600, marginBottom: 8,
             }}>
               Next tier
+              <InfoTooltip slug="next-tier" label="Next tier" side="bottom" triggerSize={13} className="ml-1.5 align-middle" />
             </div>
             {auraData?.next_tier_name && auraData?.points_to_next ? (
               <>
@@ -2003,10 +2006,13 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             )}
           </div>
         </div>
-        <SectionInsight
-          text={impactNarrative?.footprint_insight}
-          askAuraPrompt="Why is my engagement below the tier benchmark?"
-        />
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <SectionInsight
+            text={impactNarrative?.footprint_insight}
+            askAuraPrompt="Why is my engagement below the tier benchmark?"
+          />
+          <InfoTooltip slug="impact-footprint-insight" label="Footprint insight" side="top" triggerSize={13} />
+        </div>
       </section>
 
       {/* ─────────── 9. CONTENT PERFORMANCE ─────────── */}
@@ -2897,6 +2903,7 @@ const ScoreHero = ({
               }}
             >
               of 100
+              <InfoTooltip slug="score-overview" label="Digital presence score" side="bottom" triggerSize={11} className="ml-1" />
               <TooltipProvider delayDuration={150}>
                 <UiTooltip>
                   <TooltipTrigger asChild>
