@@ -17,6 +17,7 @@ const SENIORITY = [
   "C-Suite",
   "SVP / EVP",
   "VP",
+  "Partner",
   "Senior Director",
   "Director",
   "Senior Manager",
