@@ -244,7 +244,7 @@ const AlwaysContextStrip = () => {
     <div className="mt-1.5 w-full max-w-[85%]">
       <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
         <ChevronDown className="w-3 h-3" />
-        <span>Context used</span>
+        <span className="text-[#a4a4a2]">Context used</span>
       </div>
       <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 6 }}>
         {/* Signals row */}
