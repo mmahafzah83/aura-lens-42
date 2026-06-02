@@ -497,6 +497,8 @@ export default function TierCeremonyModal({ userId, forceOpen, onForceClose }: P
               setConcept={setConcept}
               lang={lang}
               setLang={setLang}
+              caption={caption}
+              setCaption={setCaption}
               busy={busy}
               onDownloadPng={() => downloadPng(false)}
               onDownloadPdf={downloadPdf}
