@@ -583,11 +583,11 @@ const VoiceEngineSection = () => {
                     </p>
 
                     {/* Phrases that are yours */}
-                    {useCap.length > 0 && (
+                    {useArr.length > 0 && (
                       <div style={{ marginTop: 18 }}>
                         <div style={eyebrowStyle}>Phrases that are yours</div>
                         <ul style={{ listStyle: "none", padding: 0, margin: "8px 0 0" }}>
-                          {useCap.map((phrase, i) => (
+                          {(showAllPhrases ? useArr : useCap).map((phrase, i) => (
                             <li
                               key={i}
                               style={{
@@ -603,9 +603,25 @@ const VoiceEngineSection = () => {
                           ))}
                         </ul>
                         {useMore > 0 && (
-                          <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 12, color: "#8A8170", marginTop: 6, marginBottom: 0 }}>
-                            +{useMore} more
-                          </p>
+                          <button
+                            type="button"
+                            onClick={() => setShowAllPhrases((s) => !s)}
+                            style={{
+                              fontFamily: "'DM Sans', system-ui, sans-serif",
+                              fontSize: 12,
+                              color: "#8A8170",
+                              marginTop: 6,
+                              marginBottom: 0,
+                              background: "transparent",
+                              border: "none",
+                              padding: 0,
+                              cursor: "pointer",
+                              textDecoration: "underline",
+                              textUnderlineOffset: 2,
+                            }}
+                          >
+                            {showAllPhrases ? "Show less" : `+${useMore} more`}
+                          </button>
                         )}
                       </div>
                     )}
