@@ -35,6 +35,10 @@ const VoiceEngineSection = () => {
   const [toneDraft, setToneDraft] = useState("");
   const [savingTone, setSavingTone] = useState(false);
 
+  // Toggle states for voice-signature card vocabulary lists
+  const [showAllPhrases, setShowAllPhrases] = useState(false);
+  const [showAllAvoid, setShowAllAvoid] = useState(false);
+
   // Detect existing trained state on mount
   useEffect(() => {
     let cancelled = false;
