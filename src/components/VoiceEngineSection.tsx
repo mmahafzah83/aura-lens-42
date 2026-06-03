@@ -139,6 +139,7 @@ const VoiceEngineSection = () => {
       .from("authority_voice_profiles")
       .select("id, example_posts")
       .eq("user_id", uid)
+      .eq("is_primary", true)
       .maybeSingle();
     const current = Array.isArray((existing as any)?.example_posts)
       ? ((existing as any).example_posts as any[])
@@ -148,12 +149,13 @@ const VoiceEngineSection = () => {
       const { error } = await supabase
         .from("authority_voice_profiles")
         .update({ example_posts: updated, updated_at: new Date().toISOString() })
-        .eq("user_id", uid);
+        .eq("user_id", uid)
+        .eq("is_primary", true);
       if (error) throw error;
     } else {
       const { error } = await supabase
         .from("authority_voice_profiles")
-        .insert({ user_id: uid, example_posts: updated, updated_at: new Date().toISOString() });
+        .insert({ user_id: uid, example_posts: updated, updated_at: new Date().toISOString(), language: "en", is_primary: true });
       if (error) throw error;
     }
   };
@@ -262,17 +264,19 @@ const VoiceEngineSection = () => {
         .from("authority_voice_profiles")
         .select("id")
         .eq("user_id", uid)
+        .eq("is_primary", true)
         .maybeSingle();
       if (existing) {
         const { error } = await supabase
           .from("authority_voice_profiles")
           .update({ tone: next, updated_at: new Date().toISOString() })
-          .eq("user_id", uid);
+          .eq("user_id", uid)
+          .eq("is_primary", true);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from("authority_voice_profiles")
-          .insert({ user_id: uid, tone: next, updated_at: new Date().toISOString() });
+          .insert({ user_id: uid, tone: next, updated_at: new Date().toISOString(), language: "en", is_primary: true });
         if (error) throw error;
       }
       setProfile((p: any) => ({ ...(p || {}), tone: next }));
@@ -321,6 +325,7 @@ const VoiceEngineSection = () => {
         .from("authority_voice_profiles")
         .select("example_posts")
         .eq("user_id", session.user.id)
+        .eq("is_primary", true)
         .maybeSingle();
       const freshArr = Array.isArray((freshRow as any)?.example_posts)
         ? ((freshRow as any).example_posts as any[])
@@ -343,12 +348,13 @@ const VoiceEngineSection = () => {
         .from("authority_voice_profiles")
         .select("id, vocabulary_preferences, tone")
         .eq("user_id", session.user.id)
+        .eq("is_primary", true)
         .maybeSingle();
 
       const existingVocab = (existing as any)?.vocabulary_preferences || {};
       const existingTone = (existing as any)?.tone || "";
 
-      const row = {
+      const row: any = {
         user_id: session.user.id,
         example_posts: examplePosts,
         admired_posts: admiredPostsArr,
@@ -361,12 +367,13 @@ const VoiceEngineSection = () => {
         const { error } = await supabase
           .from("authority_voice_profiles")
           .update(row)
-          .eq("user_id", session.user.id);
+          .eq("user_id", session.user.id)
+          .eq("is_primary", true);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from("authority_voice_profiles")
-          .insert(row);
+          .insert({ ...row, language: "en", is_primary: true });
         if (error) throw error;
       }
 
