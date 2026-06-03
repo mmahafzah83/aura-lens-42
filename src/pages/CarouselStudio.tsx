@@ -2139,6 +2139,35 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                 </div>
               </div>
 
+              {/* Voice parity: indicator + feedback (mirrors AuthorityTab post pattern) */}
+              {slides.length > 0 && !generating && (
+                <div className="flex flex-wrap items-center justify-center gap-3 text-xs">
+                  {hasVoiceProfile && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-white/10 bg-white/5 text-white/70">
+                      <Sparkles className="w-3 h-3" style={{ color: "#C5A55A" }} />
+                      Shaped by your voice
+                    </span>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <span className="text-white/50">Does this sound like you?</span>
+                    <button
+                      onClick={handleVoiceSoundsLikeMe}
+                      disabled={voiceFeedbackBusy}
+                      className="px-2.5 py-1 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 disabled:opacity-50"
+                    >
+                      Sounds like me
+                    </button>
+                    <button
+                      onClick={handleVoiceDoesntSoundLikeMe}
+                      disabled={voiceFeedbackBusy}
+                      className="px-2.5 py-1 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 disabled:opacity-50"
+                    >
+                      Doesn't sound like me
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Nav */}
               <div className="flex items-center justify-center gap-3">
                 <button onClick={() => setActiveIdx(Math.max(0, activeIdx - 1))} disabled={activeIdx === 0}
