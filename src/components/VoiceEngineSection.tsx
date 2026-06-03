@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
-import { ChevronDown, ChevronRight, Mic, Loader2, Save, Check, Upload, Sparkles } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { ChevronDown, ChevronRight, Mic, Loader2, Save, Check, Upload, Sparkles, Pencil, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,6 +27,13 @@ const VoiceEngineSection = () => {
   const [teaching, setTeaching] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+
+  // Full profile row for the "Your voice signature" card.
+  const [profile, setProfile] = useState<any>(null);
+  const [editingTone, setEditingTone] = useState(false);
+  const [toneDraft, setToneDraft] = useState("");
+  const [savingTone, setSavingTone] = useState(false);
 
   // Detect existing trained state on mount
   useEffect(() => {
@@ -78,10 +85,11 @@ const VoiceEngineSection = () => {
       if (!session?.user?.id) return;
       const { data } = await supabase
         .from("authority_voice_profiles")
-        .select("example_posts, admired_posts, vocabulary_preferences, tone")
+        .select("example_posts, admired_posts, vocabulary_preferences, tone, updated_at")
         .eq("user_id", session.user.id)
         .maybeSingle();
       if (!data) return;
+      setProfile(data);
       const examples = data.example_posts as any[];
       const admired = data.admired_posts as any[];
       const vocab = data.vocabulary_preferences as any;
