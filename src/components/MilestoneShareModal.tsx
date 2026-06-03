@@ -47,6 +47,39 @@ const formatDate = (iso?: string | null) => {
   } catch { return ""; }
 };
 
+const buildShareText = (lang: "en" | "ar", milestone: MilestoneShareData): string => {
+  const safeContext = (milestone.context && milestone.context !== "undefined")
+    ? milestone.context
+    : "Building presence, one step at a time.";
+  if (lang === "ar") {
+    return [
+      `خطوة جديدة في رحلتي المهنية ✦`,
+      ``,
+      milestone.level ? `وصلت لمستوى ${milestone.level} في الحضور الرقمي` : `حققت إنجاز جديد`,
+      milestone.sectorFocus ? `في مجال ${milestone.sectorFocus}` : ``,
+      safeContext,
+      milestone.topSignal ? `أقوى إشارة: ${milestone.topSignal}` : ``,
+      ``,
+      `الخبرة لا تتحدث عن نفسها — لكن يمكنك أن تجعلها مرئية.`,
+      ``,
+      `#الحضور_الرقمي #التحول_الرقمي`,
+    ].filter(Boolean).join("\n");
+  }
+  if (milestone.name) {
+    return [
+      `Completed a new milestone: ${milestone.name}.`,
+      ``,
+      safeContext,
+      milestone.topSignal ? `Strongest signal: ${milestone.topSignal}` : ``,
+      ``,
+      `Understanding your positioning is the first step to being visible where it matters.`,
+      ``,
+      `#DigitalPresence #StrategicIntelligence`,
+    ].filter(Boolean).join("\n");
+  }
+  return `Building presence with Aura.\n\n#DigitalPresence`;
+};
+
 const MilestoneShareModal = ({ open, onClose, data }: Props) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState(false);
