@@ -707,6 +707,7 @@ const VoiceEngineSection = () => {
                       <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 12.5, color: "#8A8170" }}>
                         Shaped from {examplesArr.length} of your posts.
                       </span>
+                      <InfoTooltip slug="voice-sharpen" triggerSize={13} side="top" />
                       <button
                         type="button"
                         onClick={handleDistill}
