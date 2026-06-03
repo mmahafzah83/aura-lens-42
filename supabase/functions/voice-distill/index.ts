@@ -97,27 +97,38 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
 
-    // Step 1 — Fetch posts
-    const { data: posts, error: postsErr } = await supabase
-      .from("linkedin_posts")
-      .select("post_text, engagement_score, like_count, comment_count, source_type")
-      .eq("user_id", user_id)
-      .not("post_text", "is", null)
-      .order("engagement_score", { ascending: false, nullsFirst: false })
-      .order("created_at", { ascending: false })
-      .limit(200);
+    // Step 1 — Gather posts. Optional ad-hoc branch: body.posts as string[].
+    const adHocPosts: string[] = Array.isArray(body?.posts)
+      ? body.posts.filter((t: any) => typeof t === "string" && t.trim().length > 0)
+      : [];
+    const useAdHoc = adHocPosts.length > 0;
 
-    if (postsErr) {
-      console.error("voice-distill: fetch posts error", postsErr);
-      return new Response(
-        JSON.stringify({ error: "db_read_failed", details: postsErr.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+    let filtered: Array<{ post_text: string; engagement_score?: number | null }> = [];
+
+    if (useAdHoc) {
+      filtered = adHocPosts.slice(0, 40).map((t) => ({ post_text: t, engagement_score: null }));
+    } else {
+      const { data: posts, error: postsErr } = await supabase
+        .from("linkedin_posts")
+        .select("post_text, engagement_score, like_count, comment_count, source_type")
+        .eq("user_id", user_id)
+        .not("post_text", "is", null)
+        .order("engagement_score", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false })
+        .limit(200);
+
+      if (postsErr) {
+        console.error("voice-distill: fetch posts error", postsErr);
+        return new Response(
+          JSON.stringify({ error: "db_read_failed", details: postsErr.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      filtered = (posts || []).filter(
+        (p: any) => p.post_text && String(p.post_text).trim().length > 0,
+      ).slice(0, 40);
     }
-
-    const filtered = (posts || []).filter(
-      (p: any) => p.post_text && String(p.post_text).trim().length > 0,
-    ).slice(0, 40);
 
     if (filtered.length === 0) {
       // Imported analytics rows can lack post_text. Treat as a graceful skip
@@ -132,11 +143,10 @@ Deno.serve(async (req) => {
     // Step 2 — Build prompt
     const formatted = filtered
       .map((p: any) => {
-        const eng =
-          p.engagement_score != null
-            ? `${Number(p.engagement_score).toFixed(1)}%`
-            : "—";
-        return `[Engagement: ${eng}] ${String(p.post_text).trim()}`;
+        if (p.engagement_score != null) {
+          return `[Engagement: ${Number(p.engagement_score).toFixed(1)}%] ${String(p.post_text).trim()}`;
+        }
+        return String(p.post_text).trim();
       })
       .join("\n\n---\n\n");
 
