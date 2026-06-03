@@ -47,44 +47,10 @@ const formatDate = (iso?: string | null) => {
   } catch { return ""; }
 };
 
-const buildShareText = (lang: "en" | "ar", milestone: MilestoneShareData): string => {
-  const safeContext = (milestone.context && milestone.context !== "undefined")
-    ? milestone.context
-    : "Building presence, one step at a time.";
-  if (lang === "ar") {
-    return [
-      `خطوة جديدة في رحلتي المهنية ✦`,
-      ``,
-      milestone.level ? `وصلت لمستوى ${milestone.level} في الحضور الرقمي` : `حققت إنجاز جديد`,
-      milestone.sectorFocus ? `في مجال ${milestone.sectorFocus}` : ``,
-      safeContext,
-      milestone.topSignal ? `أقوى إشارة: ${milestone.topSignal}` : ``,
-      ``,
-      `الخبرة لا تتحدث عن نفسها — لكن يمكنك أن تجعلها مرئية.`,
-      ``,
-      `#الحضور_الرقمي #التحول_الرقمي`,
-    ].filter(Boolean).join("\n");
-  }
-  if (milestone.name) {
-    return [
-      `Completed a new milestone: ${milestone.name}.`,
-      ``,
-      safeContext,
-      milestone.topSignal ? `Strongest signal: ${milestone.topSignal}` : ``,
-      ``,
-      `Understanding your positioning is the first step to being visible where it matters.`,
-      ``,
-      `#DigitalPresence #StrategicIntelligence`,
-    ].filter(Boolean).join("\n");
-  }
-  return `Building presence with Aura.\n\n#DigitalPresence`;
-};
-
 const MilestoneShareModal = ({ open, onClose, data }: Props) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState(false);
   const [lang, setLang] = useState<"en" | "ar">("en");
-  const [caption, setCaption] = useState("");
   const stableData = useRef<MilestoneShareData>(data);
   useEffect(() => {
     if (data && data.name) {
@@ -104,14 +70,8 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
     };
   }, [open, onClose]);
 
-  useEffect(() => {
-    setCaption(buildShareText(lang, data));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lang]);
-
   if (!open) return null;
   if (!data && !stableData.current) return null;
-
   const d: MilestoneShareData = (data && data.name) ? data : stableData.current;
 
   const safeName = d.name || "Milestone achieved";
@@ -213,7 +173,7 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
 
   const handleShare = async () => {
     shareToLinkedIn({
-      text: caption,
+      text: shareText,
       url: "https://aura-intel.org/request-access",
       mode: "share",
       toastMessage: "Caption copied!",
@@ -396,7 +356,7 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
               type="button"
               onClick={async () => {
                 try {
-                  await navigator.clipboard.writeText(caption);
+                  await navigator.clipboard.writeText(shareText);
                   toast.success("Caption copied to clipboard!");
                 } catch {
                   toast.error("Couldn't copy. Select the text manually.");
@@ -415,25 +375,17 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
               Copy text
             </button>
           </div>
-          <textarea
-            value={caption}
-            onChange={(e) => setCaption(e.target.value)}
-            style={{
-              width: "100%",
-              minHeight: 80,
-              background: "transparent",
-              border: "1px solid rgba(0,0,0,0.12)",
-              borderRadius: 6,
-              padding: "8px 12px",
-              fontSize: 13,
-              lineHeight: 1.6,
-              color: "hsl(var(--foreground))",
-              resize: "vertical",
-              fontFamily: "inherit",
-              direction: lang === "ar" ? "rtl" : "ltr",
-              textAlign: lang === "ar" ? "right" : "left",
-            }}
-          />
+          <p style={{
+            fontSize: 13,
+            lineHeight: 1.6,
+            color: "hsl(var(--foreground))",
+            margin: 0,
+            whiteSpace: "pre-line",
+            direction: lang === "ar" ? "rtl" : "ltr",
+            textAlign: lang === "ar" ? "right" : "left",
+          }}>
+            {shareText}
+          </p>
         </div>
 
         {/* Actions */}
