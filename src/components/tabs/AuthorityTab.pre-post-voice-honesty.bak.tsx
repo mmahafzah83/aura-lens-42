@@ -1412,7 +1412,6 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                       </div>
                     );
                   }
-                  if (voiceWords.length === 0) return null;
                   return (
                     <div
                       className="text-xs"
@@ -1587,9 +1586,9 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                       const newExample = { content: snippet, added_at: new Date().toISOString(), source: "voice_feedback" };
                       if (existing) {
                         const posts = Array.isArray(existing.example_posts) ? [...(existing.example_posts as any[]), newExample] : [newExample];
-                        await supabase.from("authority_voice_profiles").update({ example_posts: posts, tone: existing.tone || "analytical, calm confidence" }).eq("id", existing.id);
+                        await supabase.from("authority_voice_profiles").update({ example_posts: posts, tone: existing.tone || "analytical, calm authority" }).eq("id", existing.id);
                       } else {
-                        await supabase.from("authority_voice_profiles").insert({ user_id: uid, example_posts: [newExample], tone: "analytical, calm confidence" });
+                        await supabase.from("authority_voice_profiles").insert({ user_id: uid, example_posts: [newExample], tone: "analytical, calm authority" });
                       }
                       toast.success("Voice engine updated");
                     } catch { toast.error("Couldn't update voice engine"); }
