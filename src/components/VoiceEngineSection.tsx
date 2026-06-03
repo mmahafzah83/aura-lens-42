@@ -595,7 +595,7 @@ const VoiceEngineSection = () => {
                     {/* Phrases that are yours */}
                     {useArr.length > 0 && (
                       <div style={{ marginTop: 18 }}>
-                        <div style={eyebrowStyle}>Phrases that are yours</div>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><div style={eyebrowStyle}>Phrases that are yours</div><InfoTooltip slug="voice-phrases" triggerSize={13} side="top" /></span>
                         <ul style={{ listStyle: "none", padding: 0, margin: "8px 0 0" }}>
                           {(showAllPhrases ? useArr : useCap).map((phrase, i) => (
                             <li
