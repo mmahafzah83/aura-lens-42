@@ -322,7 +322,7 @@ serve(async (req) => {
     activeSignals.forEach((s: any) => (s.theme_tags || []).forEach((t: string) => themeSet.add(t)));
 
     const [{ data: voiceProfile }, { data: publishedPost }, { count: lpCount }] = await Promise.all([
-      admin.from("authority_voice_profiles").select("tone").eq("user_id", userId).eq("is_primary", true).maybeSingle(),
+      admin.from("authority_voice_profiles").select("tone").eq("user_id", userId).maybeSingle(),
       admin.from("linkedin_posts").select("id").eq("user_id", userId)
         .or("source_type.eq.aura,content_engine_output_type.not.is.null").limit(1),
       admin.from("linkedin_posts").select("id", { count: "exact", head: true }).eq("user_id", userId),
