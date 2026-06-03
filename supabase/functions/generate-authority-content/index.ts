@@ -246,7 +246,7 @@ serve(async (req) => {
 
 Never open with 'I am excited', 'In today's world', or a generic statistic. Structure: Hook (1-2 lines) → Re-hook (1 sentence deepening tension) → Insight (3-5 non-obvious points) → Close (specific question, not 'what do you think?'). Write in short paragraphs. One idea per line. No dense blocks.
 
-FORMATTING RULES (mandatory, both languages):
+FORMATTING RULES (mandatory):
 - NEVER start the post with a format label like "POST", "LinkedIn Post", "منشور LinkedIn", or "BOOST". The very first line must be the hook content itself.
 - Do NOT use "---" or "***" as section separators. Use a single blank line.
 - Do NOT use "#" markdown headers. LinkedIn does not render markdown headers.
