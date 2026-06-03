@@ -213,6 +213,7 @@ serve(async (req) => {
 
     if (action === "generate_content") {
       const { content_type, topic, context, language, framework, extra_instruction, flash, stream, variation, lang, sector, post_type, theme } = params;
+      const effectiveLanguage = language || lang;
       const isFlash = flash === true;
       const isNonStream = stream === false;
 
@@ -246,7 +247,7 @@ serve(async (req) => {
 
 Never open with 'I am excited', 'In today's world', or a generic statistic. Structure: Hook (1-2 lines) → Re-hook (1 sentence deepening tension) → Insight (3-5 non-obvious points) → Close (specific question, not 'what do you think?'). Write in short paragraphs. One idea per line. No dense blocks.
 
-FORMATTING RULES (mandatory):
+FORMATTING RULES (mandatory, both languages):
 - NEVER start the post with a format label like "POST", "LinkedIn Post", "منشور LinkedIn", or "BOOST". The very first line must be the hook content itself.
 - Do NOT use "---" or "***" as section separators. Use a single blank line.
 - Do NOT use "#" markdown headers. LinkedIn does not render markdown headers.
@@ -330,9 +331,7 @@ Rewrite any sentence that uses these with concrete, specific language.${postType
     ? (variationNum === 1
         ? "\n\nWrite as a CONTRARIAN — challenge what the sector believes. Open with a provocative claim."
         : variationNum === 2
-        ? (effectiveLanguage === "ar"
-            ? "\n\nWrite as a PATTERN REVEALER — expose a hidden structural pattern. Open with 'هناك نمط لم يلاحظه أحد...'"
-            : "\n\nWrite as a PATTERN REVEALER — expose a hidden structural pattern. Open with 'There's a pattern no one has noticed...'")
+        ? "\n\nWrite as a PATTERN REVEALER — expose a hidden structural pattern. Open with 'هناك نمط لم يلاحظه أحد...'"
         : variationNum === 3
         ? "\n\nWrite as a PRACTITIONER — share a specific operational tension from real project experience. Open with a scene."
         : "")
