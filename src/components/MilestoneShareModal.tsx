@@ -71,6 +71,10 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
     };
   }, [open, onClose]);
 
+  useEffect(() => {
+    setCaption(shareText);
+  }, [lang, shareText]);
+
   if (!open) return null;
   if (!data && !stableData.current) return null;
   const d: MilestoneShareData = (data && data.name) ? data : stableData.current;
@@ -174,7 +178,7 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
 
   const handleShare = async () => {
     shareToLinkedIn({
-      text: shareText,
+      text: caption,
       url: "https://aura-intel.org/request-access",
       mode: "share",
       toastMessage: "Caption copied!",
@@ -357,7 +361,7 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
               type="button"
               onClick={async () => {
                 try {
-                  await navigator.clipboard.writeText(shareText);
+                  await navigator.clipboard.writeText(caption);
                   toast.success("Caption copied to clipboard!");
                 } catch {
                   toast.error("Couldn't copy. Select the text manually.");
@@ -376,17 +380,25 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
               Copy text
             </button>
           </div>
-          <p style={{
-            fontSize: 13,
-            lineHeight: 1.6,
-            color: "hsl(var(--foreground))",
-            margin: 0,
-            whiteSpace: "pre-line",
-            direction: lang === "ar" ? "rtl" : "ltr",
-            textAlign: lang === "ar" ? "right" : "left",
-          }}>
-            {shareText}
-          </p>
+          <textarea
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            style={{
+              width: "100%",
+              minHeight: 80,
+              background: "transparent",
+              border: "1px solid rgba(0,0,0,0.12)",
+              borderRadius: 6,
+              padding: "8px 12px",
+              fontSize: 13,
+              lineHeight: 1.6,
+              color: "hsl(var(--foreground))",
+              resize: "vertical",
+              fontFamily: "inherit",
+              direction: lang === "ar" ? "rtl" : "ltr",
+              textAlign: lang === "ar" ? "right" : "left",
+            }}
+          />
         </div>
 
         {/* Actions */}
