@@ -182,6 +182,8 @@ export type Database = {
           created_at: string
           example_posts: Json
           id: string
+          is_primary: boolean
+          language: string
           preferred_structures: Json
           storytelling_patterns: Json
           tone: string
@@ -194,6 +196,8 @@ export type Database = {
           created_at?: string
           example_posts?: Json
           id?: string
+          is_primary?: boolean
+          language?: string
           preferred_structures?: Json
           storytelling_patterns?: Json
           tone?: string
@@ -206,6 +210,8 @@ export type Database = {
           created_at?: string
           example_posts?: Json
           id?: string
+          is_primary?: boolean
+          language?: string
           preferred_structures?: Json
           storytelling_patterns?: Json
           tone?: string
