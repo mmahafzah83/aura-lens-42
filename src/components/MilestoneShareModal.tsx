@@ -79,7 +79,6 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
   if (!data && !stableData.current) return null;
 
   const d: MilestoneShareData = (data && data.name) ? data : stableData.current;
-  const d: MilestoneShareData = (data && data.name) ? data : stableData.current;
 
   const safeName = d.name || "Milestone achieved";
   const safeContext = (d.context && d.context !== "undefined")
