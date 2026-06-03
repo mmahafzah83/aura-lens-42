@@ -195,12 +195,13 @@ serve(async (req) => {
     if (authError || !user) throw new Error("Unauthorized");
 
     const { action, ...params } = await req.json();
+    const effectiveLanguage = (params.language || params.lang || "en") as string;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     // Load voice profile and diagnostic profile in parallel
     const [voiceRes, profileRes] = await Promise.all([
-      supabase.from("authority_voice_profiles").select("*").eq("user_id", user.id).maybeSingle(),
+      supabase.from("authority_voice_profiles").select("*").eq("user_id", user.id).eq("language", effectiveLanguage).maybeSingle(),
       supabase.from("diagnostic_profiles")
         .select("identity_intelligence, brand_pillars, core_practice, sector_focus, north_star_goal, level, audit_interpretation, brand_assessment_results")
         .eq("user_id", user.id).maybeSingle(),
