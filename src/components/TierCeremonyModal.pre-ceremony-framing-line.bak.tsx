@@ -710,19 +710,8 @@ function StepCredential({
       >
         Your Credential
       </div>
-      <div style={{ fontFamily: SERIF, fontSize: 22, color: TEXT, textAlign: "center", marginBottom: 6 }}>
+      <div style={{ fontFamily: SERIF, fontSize: 22, color: TEXT, textAlign: "center", marginBottom: 18 }}>
         Choose a style
-      </div>
-      <div
-        style={{
-          fontFamily: SERIF,
-          fontSize: 15,
-          color: TEXT_MUTED,
-          textAlign: "center",
-          marginBottom: 18,
-        }}
-      >
-        You earned this — choose how the right people see it.
       </div>
 
       {/* Concept selector */}
