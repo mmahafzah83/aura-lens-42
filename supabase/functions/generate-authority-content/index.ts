@@ -213,7 +213,6 @@ serve(async (req) => {
 
     if (action === "generate_content") {
       const { content_type, topic, context, language, framework, extra_instruction, flash, stream, variation, lang, sector, post_type, theme } = params;
-      const effectiveLanguage = language || lang;
       const isFlash = flash === true;
       const isNonStream = stream === false;
 
