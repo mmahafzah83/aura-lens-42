@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Pencil, Check, Eye, Map as MapIcon, Trophy, Target as TargetIcon, Star, Camera, ChevronDown, Mic } from "lucide-react";
+import { Pencil, Check, Eye, Map as MapIcon, Trophy, Target as TargetIcon, Star, Camera } from "lucide-react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import ProfileIntelligence from "@/components/ProfileIntelligence";
@@ -21,7 +21,6 @@ import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import GuidedJourney from "@/components/GuidedJourney";
 import { useJourneyState } from "@/hooks/useJourneyState";
 import TierCeremonyModal from "@/components/TierCeremonyModal";
-import VoiceEngineSection from "@/components/VoiceEngineSection";
 
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
@@ -89,7 +88,6 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const [auditOpen, setAuditOpen] = useState(false);
   const [radarRefreshKey, setRadarRefreshKey] = useState(0);
   const [credentialOpen, setCredentialOpen] = useState(false);
-  const [voiceOpen, setVoiceOpen] = useState(false);
   const [brandOpen, setBrandOpen] = useState(false);
   const [fullProfileOpen, setFullProfileOpen] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
@@ -770,48 +768,6 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         </section>
       )}
 
-      {/* SECTION 4 — YOUR VOICE */}
-      {assessmentCompleted && (
-        <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }} data-testid="story-voice-section">
-          <button
-            type="button"
-            onClick={() => setVoiceOpen((v) => !v)}
-            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", background: "none", border: "none", padding: 0, cursor: "pointer" }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <Mic className="w-3.5 h-3.5" style={{ color: "var(--ink-5)" }} />
-              <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.06em", color: "var(--ink-5)", textTransform: "uppercase" }}>
-                Your voice
-              </span>
-              <span
-                style={{
-                  fontSize: 10,
-                  fontWeight: 500,
-                  padding: "2px 8px",
-                  borderRadius: 10,
-                  background: radarInputs.voiceTrained ? "rgba(46, 125, 50, 0.12)" : "var(--brand-pale, rgba(176,141,58,0.12))",
-                  color: radarInputs.voiceTrained ? "var(--success, #2e7d32)" : "var(--warning, var(--brand))",
-                }}
-              >
-                {radarInputs.voiceTrained ? "Trained" : "Not yet"}
-              </span>
-            </div>
-            <ChevronDown
-              className="w-4 h-4"
-              style={{
-                color: "var(--ink-5)",
-                transition: "transform 0.2s ease",
-                transform: voiceOpen ? "rotate(180deg)" : "rotate(0deg)",
-              }}
-            />
-          </button>
-          {voiceOpen && (
-            <div style={{ marginTop: 12 }}>
-              <VoiceEngineSection />
-            </div>
-          )}
-        </section>
-      )}
 
       {/* SECTION 5 — YOUR TERRITORY */}
       {assessmentCompleted && themesForTerritory.length > 0 && (
