@@ -144,25 +144,6 @@ Avoid patterns not present in the user's examples. Match their sentence length, 
 `;
 }
 
-function buildArabicVoiceContext(voiceProfile: any): string {
-  if (!voiceProfile) return "";
-  const vp = typeof voiceProfile.vocabulary_preferences === "object" && voiceProfile.vocabulary_preferences ? voiceProfile.vocabulary_preferences : {};
-  const sp = voiceProfile.storytelling_patterns;
-  const useArr = Array.isArray(vp.use) ? vp.use : [];
-  const avoidArr = Array.isArray(vp.avoid) ? vp.avoid : [];
-  const examples = (voiceProfile.example_posts as any[] || []).map((p: any) => (p.content || "").substring(0, 500)).filter(Boolean).join("\n---\n");
-  const admired = (voiceProfile.admired_posts as any[] || []).map((p: any) => (p.content || "").substring(0, 300)).filter(Boolean).join("\n---\n");
-  return `ملف الصوت — اكتب بهذا الصوت تحديداً: ${voiceProfile.tone || ""}
-استخدم هذه الأنماط البنيوية: ${JSON.stringify(voiceProfile.preferred_structures || [])}
-${Array.isArray(sp) && sp.length ? `أنماط السرد والإقناع: ${JSON.stringify(sp)}` : ""}
-${examples ? `حاكِ المفردات والإيقاع من هذه الأمثلة:\n${examples}` : ""}
-${admired ? `مراجع صوتية يُقتدى بها:\n${admired}` : ""}
-${useArr.length ? `وظّف هذه العبارات والمفردات: ${JSON.stringify(useArr)}` : ""}
-${avoidArr.length ? `تجنّب هذه الأنماط التي حدّدها المستخدم: ${JSON.stringify(avoidArr)}` : ""}
-${vp.notes ? `ملاحظات حول المفردات: ${vp.notes}` : ""}
-اكتب بحيث يعكس الناتج هذا الصوت تحديداً، لا صوتاً عاماً.`;
-}
-
 function buildIdentityContext(profile: any): string {
   if (!profile) return "";
   const brandResults = profile.brand_assessment_results as any;
@@ -251,9 +232,7 @@ serve(async (req) => {
       let voiceSection: string;
       if (effectiveLanguage === "ar") {
         // Arabic-native prompt replaces voice section
-        voiceSection = voiceProfile
-          ? ARABIC_VOICE_PROMPT + "\n\n" + buildArabicVoiceContext(voiceProfile)
-          : ARABIC_VOICE_PROMPT;
+        voiceSection = ARABIC_VOICE_PROMPT;
         // If a specific framework is selected, use it; otherwise Arabic defaults to PAS/BAB (already in ARABIC_VOICE_PROMPT)
       } else {
         voiceSection = buildVoiceContext(voiceProfile);
