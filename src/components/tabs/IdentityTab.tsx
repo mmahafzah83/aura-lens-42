@@ -89,6 +89,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const [auditOpen, setAuditOpen] = useState(false);
   const [radarRefreshKey, setRadarRefreshKey] = useState(0);
   const [credentialOpen, setCredentialOpen] = useState(false);
+  const [voiceOpen, setVoiceOpen] = useState(false);
   const [brandOpen, setBrandOpen] = useState(false);
   const [fullProfileOpen, setFullProfileOpen] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
