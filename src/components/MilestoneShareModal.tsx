@@ -51,6 +51,7 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState(false);
   const [lang, setLang] = useState<"en" | "ar">("en");
+  const [caption, setCaption] = useState("");
   const stableData = useRef<MilestoneShareData>(data);
   useEffect(() => {
     if (data && data.name) {
