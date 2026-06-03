@@ -640,7 +640,7 @@ const VoiceEngineSection = () => {
                     {/* See a post in this voice */}
                     <button
                       type="button"
-                      onClick={() => navigate("/dashboard?tab=authority")}
+                      onClick={() => window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "authority" } }))}
                       style={{
                         marginTop: 18,
                         display: "inline-flex",
