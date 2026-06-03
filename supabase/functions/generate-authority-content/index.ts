@@ -251,7 +251,9 @@ serve(async (req) => {
       let voiceSection: string;
       if (effectiveLanguage === "ar") {
         // Arabic-native prompt replaces voice section
-        voiceSection = ARABIC_VOICE_PROMPT;
+        voiceSection = voiceProfile
+          ? ARABIC_VOICE_PROMPT + "\n\n" + buildArabicVoiceContext(voiceProfile)
+          : ARABIC_VOICE_PROMPT;
         // If a specific framework is selected, use it; otherwise Arabic defaults to PAS/BAB (already in ARABIC_VOICE_PROMPT)
       } else {
         voiceSection = buildVoiceContext(voiceProfile);
