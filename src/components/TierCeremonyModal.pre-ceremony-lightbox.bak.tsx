@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { toast } from "sonner";
-import { ChevronLeft, Download, Copy, FileText, X, Target, Maximize2 } from "lucide-react";
+import { ChevronLeft, Download, Copy, FileText, X, Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import useMilestones, { type Milestone } from "@/hooks/useMilestones";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
@@ -676,26 +676,6 @@ function StepCredential({
 }) {
   const PREVIEW_W = 200;
   const scale = PREVIEW_W / 1200;
-  const [lightbox, setLightbox] = useState<ConceptKey | null>(null);
-
-  useEffect(() => {
-    if (!lightbox) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.stopImmediatePropagation();
-        e.preventDefault();
-        setLightbox(null);
-      }
-    };
-    window.addEventListener("keydown", onKey, true);
-    return () => window.removeEventListener("keydown", onKey, true);
-  }, [lightbox]);
-
-  const lightboxConcept = lightbox
-    ? CONCEPTS.find((c) => c.key === lightbox)
-    : null;
-  const LB_W = 600;
-  const lbScale = LB_W / 1200;
   return (
     <div>
       <div
@@ -747,32 +727,6 @@ function StepCredential({
                 <div style={{ transform: `scale(${scale})`, transformOrigin: "top left" }}>
                   <Cmp data={data} size="wide" />
                 </div>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setLightbox(key);
-                  }}
-                  aria-label="Enlarge preview"
-                  style={{
-                    position: "absolute",
-                    top: 4,
-                    right: 4,
-                    width: 24,
-                    height: 24,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    background: "rgba(12,11,10,.7)",
-                    border: `1px solid ${GOLD_LINE}`,
-                    borderRadius: 4,
-                    color: GOLD,
-                    cursor: "pointer",
-                    padding: 0,
-                  }}
-                >
-                  <Maximize2 size={12} />
-                </button>
               </div>
               <div
                 style={{
@@ -788,75 +742,6 @@ function StepCredential({
           );
         })}
       </div>
-
-      {lightboxConcept && (() => {
-        const LbCmp = lightboxConcept.component;
-        return createPortal(
-          <div
-            onClick={(e) => {
-              e.stopPropagation();
-              setLightbox(null);
-            }}
-            style={{
-              position: "fixed",
-              inset: 0,
-              zIndex: 100000,
-              background: "rgba(0,0,0,.85)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: 24,
-            }}
-          >
-            <div
-              onClick={(e) => e.stopPropagation()}
-              style={{ position: "relative" }}
-            >
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setLightbox(null);
-                }}
-                aria-label="Close preview"
-                style={{
-                  position: "absolute",
-                  top: -36,
-                  right: 0,
-                  width: 28,
-                  height: 28,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: "transparent",
-                  border: `1px solid ${GOLD_LINE}`,
-                  borderRadius: 4,
-                  color: TEXT,
-                  cursor: "pointer",
-                  padding: 0,
-                }}
-              >
-                <X size={14} />
-              </button>
-              <div
-                style={{
-                  width: LB_W,
-                  height: LB_W * (628 / 1200),
-                  overflow: "hidden",
-                  borderRadius: 6,
-                  background: BG,
-                  border: `1px solid ${GOLD_LINE}`,
-                }}
-              >
-                <div style={{ transform: `scale(${lbScale})`, transformOrigin: "top left" }}>
-                  <LbCmp data={data} size="wide" />
-                </div>
-              </div>
-            </div>
-          </div>,
-          document.body
-        );
-      })()}
 
       {/* Subtle action buttons */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", marginBottom: 14 }}>
