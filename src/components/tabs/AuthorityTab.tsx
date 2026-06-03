@@ -2871,6 +2871,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
         sourceMetadata: item.source_metadata || {},
         sourceSignalId: linkedSignalId,
         url: url ?? null,
+        language: ((item.source_metadata as any)?.language === "ar" ? "ar" : "en"),
       });
       await supabase
         .from("content_items")
