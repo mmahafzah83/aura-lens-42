@@ -269,10 +269,8 @@ async function insertPublishedLinkedInPost(opts: {
   sourceMetadata?: any;
   sourceSignalId?: string | null;
   url?: string | null;
-  language?: "en" | "ar";
 }): Promise<void> {
   const { userId, postText, formatType, sourceMetadata, sourceSignalId, url } = opts;
-  const lang: "en" | "ar" = opts.language === "ar" ? "ar" : "en";
   let cleanUrl: string | null = null;
   if (url) {
     const trimmed = url.trim();
@@ -311,7 +309,6 @@ async function insertPublishedLinkedInPost(opts: {
         .from("authority_voice_profiles")
         .select("example_posts")
         .eq("user_id", userId)
-        .eq("language", lang)
         .maybeSingle();
       const existingExamples = Array.isArray(voiceProfile?.example_posts)
         ? (voiceProfile!.example_posts as any[])
@@ -321,18 +318,11 @@ async function insertPublishedLinkedInPost(opts: {
         await supabase
           .from("authority_voice_profiles")
           .update({ example_posts: updatedExamples })
-          .eq("user_id", userId)
-          .eq("language", lang);
+          .eq("user_id", userId);
       } else {
-        const { data: anyRow } = await supabase
-          .from("authority_voice_profiles")
-          .select("id")
-          .eq("user_id", userId)
-          .limit(1);
-        const isFirst = !anyRow || anyRow.length === 0;
         await supabase
           .from("authority_voice_profiles")
-          .insert({ user_id: userId, example_posts: updatedExamples, language: lang, is_primary: isFirst });
+          .insert({ user_id: userId, example_posts: updatedExamples });
       }
     }
   } catch (voiceErr) {
@@ -847,7 +837,6 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
         },
         sourceSignalId: selectedSignalId,
         url: urlArg ?? null,
-        language: lang,
       });
       setPublishedFromCreate(true);
       setPubUrlOpen(false);
@@ -1594,15 +1583,13 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                       if (!session?.user?.id) return;
                       const uid = session.user.id;
                       const snippet = output.slice(0, 300);
-                      const { data: existing } = await supabase.from("authority_voice_profiles").select("id, example_posts, tone").eq("user_id", uid).eq("language", lang).maybeSingle();
+                      const { data: existing } = await supabase.from("authority_voice_profiles").select("id, example_posts, tone").eq("user_id", uid).maybeSingle();
                       const newExample = { content: snippet, added_at: new Date().toISOString(), source: "voice_feedback" };
                       if (existing) {
                         const posts = Array.isArray(existing.example_posts) ? [...(existing.example_posts as any[]), newExample] : [newExample];
                         await supabase.from("authority_voice_profiles").update({ example_posts: posts, tone: existing.tone || "analytical, calm confidence" }).eq("id", existing.id);
                       } else {
-                        const { data: anyRow } = await supabase.from("authority_voice_profiles").select("id").eq("user_id", uid).limit(1);
-                        const isFirst = !anyRow || anyRow.length === 0;
-                        await supabase.from("authority_voice_profiles").insert({ user_id: uid, example_posts: [newExample], tone: "analytical, calm confidence", language: lang, is_primary: isFirst });
+                        await supabase.from("authority_voice_profiles").insert({ user_id: uid, example_posts: [newExample], tone: "analytical, calm confidence" });
                       }
                       toast.success("Voice engine updated");
                     } catch { toast.error("Couldn't update voice engine"); }
@@ -1621,15 +1608,13 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                       const uid = session.user.id;
                       const first10 = output.split(/\s+/).slice(0, 10).join(" ");
                       const avoidNote = `Avoid this pattern: ${first10}`;
-                      const { data: existing } = await supabase.from("authority_voice_profiles").select("id, vocabulary_preferences").eq("user_id", uid).eq("language", lang).maybeSingle();
+                      const { data: existing } = await supabase.from("authority_voice_profiles").select("id, vocabulary_preferences").eq("user_id", uid).maybeSingle();
                       if (existing) {
                         const prefs = (typeof existing.vocabulary_preferences === "object" && existing.vocabulary_preferences) ? { ...(existing.vocabulary_preferences as any) } : {};
                         const avoidList = Array.isArray(prefs.avoid) ? [...prefs.avoid, avoidNote] : [avoidNote];
                         await supabase.from("authority_voice_profiles").update({ vocabulary_preferences: { ...prefs, avoid: avoidList } }).eq("id", existing.id);
                       } else {
-                        const { data: anyRow } = await supabase.from("authority_voice_profiles").select("id").eq("user_id", uid).limit(1);
-                        const isFirst = !anyRow || anyRow.length === 0;
-                        await supabase.from("authority_voice_profiles").insert({ user_id: uid, vocabulary_preferences: { avoid: [avoidNote] }, language: lang, is_primary: isFirst });
+                        await supabase.from("authority_voice_profiles").insert({ user_id: uid, vocabulary_preferences: { avoid: [avoidNote] } });
                       }
                       toast.success("Noted. Aura will adjust.");
                     } catch { toast.error("Couldn't save preference"); }
@@ -2875,7 +2860,6 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
         sourceMetadata: item.source_metadata || {},
         sourceSignalId: linkedSignalId,
         url: url ?? null,
-        language: ((item.source_metadata as any)?.language === "ar" ? "ar" : "en"),
       });
       await supabase
         .from("content_items")
