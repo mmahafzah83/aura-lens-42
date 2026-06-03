@@ -54,6 +54,7 @@ export default function MissionControl({
           .from("authority_voice_profiles")
           .select("example_posts")
           .eq("user_id", userId)
+          .eq("is_primary", true)
           .maybeSingle(),
       ]);
 

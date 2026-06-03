@@ -221,6 +221,7 @@ export async function buildIdentityReport(userId: string): Promise<ReportData> {
       .from("authority_voice_profiles")
       .select("tone, preferred_structures, storytelling_patterns, vocabulary_preferences")
       .eq("user_id", userId)
+      .eq("is_primary", true)
       .maybeSingle(),
   ]);
 

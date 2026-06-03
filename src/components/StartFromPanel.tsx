@@ -136,7 +136,9 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
             .eq("user_id", user.id).maybeSingle(),
           (supabase.from("authority_voice_profiles" as any) as any)
             .select("tone_summary, example_posts")
-            .eq("user_id", user.id).maybeSingle(),
+            .eq("user_id", user.id)
+            .eq("is_primary", true)
+            .maybeSingle(),
         ]);
         const examplePosts = (voiceRes?.data as any)?.example_posts;
         let sample: string | null = null;
