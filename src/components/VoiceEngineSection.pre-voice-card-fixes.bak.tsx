@@ -35,10 +35,6 @@ const VoiceEngineSection = () => {
   const [toneDraft, setToneDraft] = useState("");
   const [savingTone, setSavingTone] = useState(false);
 
-  // Toggle states for voice-signature card vocabulary lists
-  const [showAllPhrases, setShowAllPhrases] = useState(false);
-  const [showAllAvoid, setShowAllAvoid] = useState(false);
-
   // Detect existing trained state on mount
   useEffect(() => {
     let cancelled = false;
@@ -583,11 +579,11 @@ const VoiceEngineSection = () => {
                     </p>
 
                     {/* Phrases that are yours */}
-                    {useArr.length > 0 && (
+                    {useCap.length > 0 && (
                       <div style={{ marginTop: 18 }}>
                         <div style={eyebrowStyle}>Phrases that are yours</div>
                         <ul style={{ listStyle: "none", padding: 0, margin: "8px 0 0" }}>
-                          {(showAllPhrases ? useArr : useCap).map((phrase, i) => (
+                          {useCap.map((phrase, i) => (
                             <li
                               key={i}
                               style={{
@@ -603,35 +599,19 @@ const VoiceEngineSection = () => {
                           ))}
                         </ul>
                         {useMore > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => setShowAllPhrases((s) => !s)}
-                            style={{
-                              fontFamily: "'DM Sans', system-ui, sans-serif",
-                              fontSize: 12,
-                              color: "#8A8170",
-                              marginTop: 6,
-                              marginBottom: 0,
-                              background: "transparent",
-                              border: "none",
-                              padding: 0,
-                              cursor: "pointer",
-                              textDecoration: "underline",
-                              textUnderlineOffset: 2,
-                            }}
-                          >
-                            {showAllPhrases ? "Show less" : `+${useMore} more`}
-                          </button>
+                          <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 12, color: "#8A8170", marginTop: 6, marginBottom: 0 }}>
+                            +{useMore} more
+                          </p>
                         )}
                       </div>
                     )}
 
                     {/* Words you keep out */}
-                    {avoidArr.length > 0 && (
+                    {avoidCap.length > 0 && (
                       <div style={{ marginTop: 18 }}>
                         <div style={eyebrowStyle}>Words you keep out</div>
                         <ul style={{ listStyle: "disc", paddingInlineStart: 18, margin: "8px 0 0" }}>
-                          {(showAllAvoid ? avoidArr : avoidCap).map((w, i) => (
+                          {avoidCap.map((w, i) => (
                             <li
                               key={i}
                               style={{
@@ -646,25 +626,9 @@ const VoiceEngineSection = () => {
                           ))}
                         </ul>
                         {avoidMore > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => setShowAllAvoid((s) => !s)}
-                            style={{
-                              fontFamily: "'DM Sans', system-ui, sans-serif",
-                              fontSize: 12,
-                              color: "#8A8170",
-                              marginTop: 6,
-                              marginBottom: 0,
-                              background: "transparent",
-                              border: "none",
-                              padding: 0,
-                              cursor: "pointer",
-                              textDecoration: "underline",
-                              textUnderlineOffset: 2,
-                            }}
-                          >
-                            {showAllAvoid ? "Show less" : `+${avoidMore} more`}
-                          </button>
+                          <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 12, color: "#8A8170", marginTop: 6, marginBottom: 0 }}>
+                            +{avoidMore} more
+                          </p>
                         )}
                       </div>
                     )}
@@ -672,7 +636,7 @@ const VoiceEngineSection = () => {
                     {/* See a post in this voice */}
                     <button
                       type="button"
-                      onClick={() => window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "authority" } }))}
+                      onClick={() => navigate("/dashboard?tab=authority")}
                       style={{
                         marginTop: 18,
                         display: "inline-flex",
