@@ -70,6 +70,7 @@ serve(async (req) => {
       .from("authority_voice_profiles")
       .select("tone, preferred_structures, storytelling_patterns, vocabulary_preferences, example_posts")
       .eq("user_id", targetUserId)
+      .eq("language", lang)
       .maybeSingle();
 
     const isArabic = lang === "ar";
