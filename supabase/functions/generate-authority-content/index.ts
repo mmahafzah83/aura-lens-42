@@ -330,7 +330,9 @@ Rewrite any sentence that uses these with concrete, specific language.${postType
     ? (variationNum === 1
         ? "\n\nWrite as a CONTRARIAN — challenge what the sector believes. Open with a provocative claim."
         : variationNum === 2
-        ? "\n\nWrite as a PATTERN REVEALER — expose a hidden structural pattern. Open with 'هناك نمط لم يلاحظه أحد...'"
+        ? (effectiveLanguage === "ar"
+            ? "\n\nWrite as a PATTERN REVEALER — expose a hidden structural pattern. Open with 'هناك نمط لم يلاحظه أحد...'"
+            : "\n\nWrite as a PATTERN REVEALER — expose a hidden structural pattern. Open with 'There's a pattern no one has noticed...'")
         : variationNum === 3
         ? "\n\nWrite as a PRACTITIONER — share a specific operational tension from real project experience. Open with a scene."
         : "")
