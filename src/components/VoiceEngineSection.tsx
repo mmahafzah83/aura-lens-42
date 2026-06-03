@@ -48,6 +48,7 @@ const VoiceEngineSection = () => {
         .from("authority_voice_profiles")
         .select("example_posts, admired_posts, vocabulary_preferences, tone")
         .eq("user_id", session.user.id)
+        .eq("is_primary", true)
         .maybeSingle()
         .then(({ data }) => {
           if (cancelled || !data) return;
@@ -91,6 +92,7 @@ const VoiceEngineSection = () => {
         .from("authority_voice_profiles")
         .select("example_posts, admired_posts, vocabulary_preferences, tone, updated_at")
         .eq("user_id", session.user.id)
+        .eq("is_primary", true)
         .maybeSingle();
       if (!data) return;
       setProfile(data);
