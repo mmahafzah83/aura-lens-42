@@ -269,8 +269,10 @@ async function insertPublishedLinkedInPost(opts: {
   sourceMetadata?: any;
   sourceSignalId?: string | null;
   url?: string | null;
+  language?: "en" | "ar";
 }): Promise<void> {
   const { userId, postText, formatType, sourceMetadata, sourceSignalId, url } = opts;
+  const lang: "en" | "ar" = opts.language === "ar" ? "ar" : "en";
   let cleanUrl: string | null = null;
   if (url) {
     const trimmed = url.trim();
@@ -309,6 +311,7 @@ async function insertPublishedLinkedInPost(opts: {
         .from("authority_voice_profiles")
         .select("example_posts")
         .eq("user_id", userId)
+        .eq("language", lang)
         .maybeSingle();
       const existingExamples = Array.isArray(voiceProfile?.example_posts)
         ? (voiceProfile!.example_posts as any[])
@@ -318,11 +321,18 @@ async function insertPublishedLinkedInPost(opts: {
         await supabase
           .from("authority_voice_profiles")
           .update({ example_posts: updatedExamples })
-          .eq("user_id", userId);
+          .eq("user_id", userId)
+          .eq("language", lang);
       } else {
+        const { data: anyRow } = await supabase
+          .from("authority_voice_profiles")
+          .select("id")
+          .eq("user_id", userId)
+          .limit(1);
+        const isFirst = !anyRow || anyRow.length === 0;
         await supabase
           .from("authority_voice_profiles")
-          .insert({ user_id: userId, example_posts: updatedExamples });
+          .insert({ user_id: userId, example_posts: updatedExamples, language: lang, is_primary: isFirst });
       }
     }
   } catch (voiceErr) {
