@@ -161,10 +161,9 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
           .upsert(
             {
               user_id: userId,
-              language: "en",
               example_posts: posts.map((content) => ({ content, source: "onboarding" })),
             },
-            { onConflict: "user_id,language" },
+            { onConflict: "user_id" },
           );
       }
 
