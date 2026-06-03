@@ -127,12 +127,19 @@ const ARABIC_VOICE_PROMPT = `أنت محرك توليد المحتوى لـ Aura
 
 function buildVoiceContext(voiceProfile: any): string {
   if (!voiceProfile) return "No voice profile set — use analytical, calm confidence tone.";
+  const vp = typeof voiceProfile.vocabulary_preferences === "object" && voiceProfile.vocabulary_preferences ? voiceProfile.vocabulary_preferences : {};
+  const sp = voiceProfile.storytelling_patterns;
+  const useArr = Array.isArray(vp.use) ? vp.use : [];
+  const avoidArr = Array.isArray(vp.avoid) ? vp.avoid : [];
   return `
 VOICE PROFILE — Write in this voice: ${voiceProfile.tone || "analytical, calm confidence"}.
 Use these structural patterns: ${JSON.stringify(voiceProfile.preferred_structures || [])}.
+${Array.isArray(sp) && sp.length ? `Storytelling patterns: ${JSON.stringify(sp)}.` : ""}
 Mirror vocabulary from these examples: ${(voiceProfile.example_posts as any[] || []).map((p: any) => (p.content || "").substring(0, 500)).filter(Boolean).join("\n---\n")}
 Admired voice references: ${(voiceProfile.admired_posts as any[] || []).map((p: any) => (p.content || "").substring(0, 300)).filter(Boolean).join("\n---\n")}
-Vocabulary notes: ${typeof voiceProfile.vocabulary_preferences === "object" ? (voiceProfile.vocabulary_preferences as any)?.notes || "" : ""}
+${useArr.length ? `Lean into this vocabulary: ${JSON.stringify(useArr)}.` : ""}
+${avoidArr.length ? `Avoid these patterns the user flagged: ${JSON.stringify(avoidArr)}.` : ""}
+Vocabulary notes: ${vp.notes || ""}
 Avoid patterns not present in the user's examples. Match their sentence length, paragraph density, and rhetorical style.
 `;
 }
