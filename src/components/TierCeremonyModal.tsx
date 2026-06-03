@@ -789,8 +789,9 @@ function StepCredential({
         })}
       </div>
 
-      {lightboxConcept &&
-        createPortal(
+      {lightboxConcept && (() => {
+        const LbCmp = lightboxConcept.component;
+        return createPortal(
           <div
             onClick={(e) => {
               e.stopPropagation();
@@ -848,13 +849,14 @@ function StepCredential({
                 }}
               >
                 <div style={{ transform: `scale(${lbScale})`, transformOrigin: "top left" }}>
-                  <lightboxConcept.component data={data} size="wide" />
+                  <LbCmp data={data} size="wide" />
                 </div>
               </div>
             </div>
           </div>,
           document.body
-        )}
+        );
+      })()}
 
       {/* Subtle action buttons */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", marginBottom: 14 }}>
