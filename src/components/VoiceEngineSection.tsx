@@ -639,7 +639,7 @@ const VoiceEngineSection = () => {
                     {/* Words you keep out */}
                     {avoidArr.length > 0 && (
                       <div style={{ marginTop: 18 }}>
-                        <div style={eyebrowStyle}>Words you keep out</div>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><div style={eyebrowStyle}>Words you keep out</div><InfoTooltip slug="voice-avoid" triggerSize={13} side="top" /></span>
                         <ul style={{ listStyle: "disc", paddingInlineStart: 18, margin: "8px 0 0" }}>
                           {(showAllAvoid ? avoidArr : avoidCap).map((w, i) => (
                             <li
