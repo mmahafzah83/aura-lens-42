@@ -245,6 +245,40 @@ const VoiceEngineSection = () => {
     teachFromPosts(parsePostsBlock(teachText));
   };
 
+  const handleSaveTone = async () => {
+    const next = toneDraft.trim();
+    setSavingTone(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) throw new Error("Not authenticated");
+      const uid = session.user.id;
+      const { data: existing } = await supabase
+        .from("authority_voice_profiles")
+        .select("id")
+        .eq("user_id", uid)
+        .maybeSingle();
+      if (existing) {
+        const { error } = await supabase
+          .from("authority_voice_profiles")
+          .update({ tone: next, updated_at: new Date().toISOString() })
+          .eq("user_id", uid);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("authority_voice_profiles")
+          .insert({ user_id: uid, tone: next, updated_at: new Date().toISOString() });
+        if (error) throw error;
+      }
+      setProfile((p: any) => ({ ...(p || {}), tone: next }));
+      setEditingTone(false);
+      toast.success("Voice identity updated");
+    } catch (e: any) {
+      toast.error(e.message || "Couldn't save tone");
+    } finally {
+      setSavingTone(false);
+    }
+  };
+
   const handleTeachFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -412,6 +446,247 @@ const VoiceEngineSection = () => {
             </div>
           ) : (
             <>
+              {(() => {
+                const tone: string = typeof profile?.tone === "string" ? profile.tone : "";
+                const vocab: any = (profile?.vocabulary_preferences && typeof profile.vocabulary_preferences === "object") ? profile.vocabulary_preferences : {};
+                const useArr: string[] = Array.isArray(vocab.use) ? vocab.use.filter((s: any) => typeof s === "string" && s.trim()) : [];
+                const avoidArrRaw: any[] = Array.isArray(vocab.avoid) ? vocab.avoid : [];
+                const avoidArr: string[] = avoidArrRaw
+                  .map((v) => {
+                    if (typeof v === "string") return v;
+                    if (v && typeof v === "object") return String(v.phrase ?? v.text ?? v.content ?? "");
+                    return "";
+                  })
+                  .map((s) => s.trim())
+                  .filter(Boolean);
+                const examplesArr: any[] = Array.isArray(profile?.example_posts) ? profile.example_posts : [];
+                const hasVoiceCard = !!tone.trim() || useArr.length > 0 || avoidArr.length > 0;
+
+                const cardStyle: React.CSSProperties = {
+                  background: "#F8F5F0",
+                  border: "0.5px solid #E3D9C5",
+                  borderRadius: 14,
+                  padding: "22px 24px",
+                  color: "#2A2418",
+                };
+                const eyebrowStyle: React.CSSProperties = {
+                  fontFamily: "'DM Sans', system-ui, sans-serif",
+                  fontSize: 12,
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
+                  color: "#A98F4E",
+                  fontWeight: 600,
+                };
+
+                if (!hasVoiceCard) {
+                  return (
+                    <div style={cardStyle}>
+                      <div style={eyebrowStyle}>Your voice signature</div>
+                      <p style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 22, marginTop: 10, marginBottom: 6, color: "#2A2418", lineHeight: 1.35 }}>
+                        Your voice signature isn't formed yet.
+                      </p>
+                      <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 13, color: "#6E6555", margin: 0 }}>
+                        Teach Aura a few of your posts below and watch it take shape.
+                      </p>
+                    </div>
+                  );
+                }
+
+                const useCap = useArr.slice(0, 5);
+                const useMore = Math.max(0, useArr.length - useCap.length);
+                const avoidCap = avoidArr.slice(0, 5);
+                const avoidMore = Math.max(0, avoidArr.length - avoidCap.length);
+
+                return (
+                  <div style={cardStyle}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                      <div style={eyebrowStyle}>Your voice signature</div>
+                    </div>
+
+                    {/* Identity / tone line */}
+                    <div
+                      style={{
+                        border: "0.5px solid #E3D9C5",
+                        borderRadius: 10,
+                        padding: "14px 16px",
+                        background: "rgba(255,255,255,0.4)",
+                        position: "relative",
+                      }}
+                    >
+                      {editingTone ? (
+                        <div>
+                          <Textarea
+                            value={toneDraft}
+                            onChange={(e) => setToneDraft(e.target.value)}
+                            className="min-h-[88px] text-sm"
+                            style={{ background: "#fff", color: "#2A2418", border: "0.5px solid #E3D9C5" }}
+                          />
+                          <div style={{ display: "flex", gap: 8, marginTop: 10, justifyContent: "flex-end" }}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => { setEditingTone(false); setToneDraft(tone); }}
+                              disabled={savingTone}
+                              style={{ color: "#6E6555" }}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={handleSaveTone}
+                              disabled={savingTone}
+                              style={{ background: "#B08D3A", color: "#fff" }}
+                            >
+                              {savingTone ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save"}
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                          <p
+                            style={{
+                              fontFamily: "'Cormorant Garamond', Georgia, serif",
+                              fontSize: 24,
+                              lineHeight: 1.35,
+                              color: "#2A2418",
+                              margin: 0,
+                              flex: 1,
+                            }}
+                          >
+                            {tone || <span style={{ color: "#8A8170", fontStyle: "italic" }}>No tone captured yet.</span>}
+                          </p>
+                          <button
+                            type="button"
+                            aria-label="Edit voice identity"
+                            onClick={() => { setToneDraft(tone); setEditingTone(true); }}
+                            style={{
+                              border: "0.5px solid #E3D9C5",
+                              background: "transparent",
+                              borderRadius: 8,
+                              padding: 6,
+                              cursor: "pointer",
+                              color: "#A98F4E",
+                              flexShrink: 0,
+                            }}
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 12.5, color: "#6E6555", marginTop: 8, marginBottom: 0 }}>
+                      Aura's first take — edit it to make it yours.
+                    </p>
+
+                    {/* Phrases that are yours */}
+                    {useCap.length > 0 && (
+                      <div style={{ marginTop: 18 }}>
+                        <div style={eyebrowStyle}>Phrases that are yours</div>
+                        <ul style={{ listStyle: "none", padding: 0, margin: "8px 0 0" }}>
+                          {useCap.map((phrase, i) => (
+                            <li
+                              key={i}
+                              style={{
+                                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                                fontStyle: "italic",
+                                fontSize: 18,
+                                lineHeight: 1.5,
+                                color: "#2A2418",
+                              }}
+                            >
+                              &ldquo;{phrase}&rdquo;
+                            </li>
+                          ))}
+                        </ul>
+                        {useMore > 0 && (
+                          <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 12, color: "#8A8170", marginTop: 6, marginBottom: 0 }}>
+                            +{useMore} more
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Words you keep out */}
+                    {avoidCap.length > 0 && (
+                      <div style={{ marginTop: 18 }}>
+                        <div style={eyebrowStyle}>Words you keep out</div>
+                        <ul style={{ listStyle: "disc", paddingInlineStart: 18, margin: "8px 0 0" }}>
+                          {avoidCap.map((w, i) => (
+                            <li
+                              key={i}
+                              style={{
+                                fontFamily: "'DM Sans', system-ui, sans-serif",
+                                fontSize: 14,
+                                color: "#6E6555",
+                                lineHeight: 1.6,
+                              }}
+                            >
+                              {w}
+                            </li>
+                          ))}
+                        </ul>
+                        {avoidMore > 0 && (
+                          <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 12, color: "#8A8170", marginTop: 6, marginBottom: 0 }}>
+                            +{avoidMore} more
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* See a post in this voice */}
+                    <button
+                      type="button"
+                      onClick={() => navigate("/dashboard?tab=authority")}
+                      style={{
+                        marginTop: 18,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 8,
+                        border: "0.5px solid #B08D3A",
+                        borderRadius: 999,
+                        padding: "8px 14px",
+                        background: "transparent",
+                        color: "#B08D3A",
+                        fontFamily: "'DM Sans', system-ui, sans-serif",
+                        fontSize: 13,
+                        fontWeight: 500,
+                        cursor: "pointer",
+                      }}
+                    >
+                      See a post written in this voice <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+
+                    {/* Footer */}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 18, paddingTop: 14, borderTop: "0.5px solid #E3D9C5" }}>
+                      <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 12.5, color: "#8A8170" }}>
+                        Shaped from {examplesArr.length} of your posts.
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleDistill}
+                        disabled={distilling}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6,
+                          background: "transparent",
+                          border: "none",
+                          color: "#B08D3A",
+                          fontFamily: "'DM Sans', system-ui, sans-serif",
+                          fontSize: 13,
+                          fontWeight: 600,
+                          cursor: distilling ? "default" : "pointer",
+                          opacity: distilling ? 0.6 : 1,
+                        }}
+                      >
+                        {distilling ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                        {distilling ? "Sharpening…" : "Sharpen now"}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div>
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
                   Your writing samples
