@@ -160,6 +160,41 @@ Deno.serve(async (req) => {
         temperature: 0.3,
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: userMessage }],
+        tools: [
+          {
+            name: "return_voice_distillation",
+            description: "Return the structured voice distillation as a JSON object.",
+            input_schema: {
+              type: "object",
+              properties: {
+                tone: { type: "string" },
+                preferred_structures: { type: "array", items: { type: "string" } },
+                storytelling_patterns: { type: "array", items: { type: "string" } },
+                vocabulary: {
+                  type: "object",
+                  properties: {
+                    signature_phrases: { type: "array", items: { type: "string" } },
+                    avoided_patterns: { type: "array", items: { type: "string" } },
+                    sentence_rhythm: { type: "string" },
+                  },
+                },
+                top_themes: { type: "array", items: { type: "string" } },
+                what_makes_them_distinct: { type: "string" },
+                best_performing_patterns: { type: "string" },
+              },
+              required: [
+                "tone",
+                "preferred_structures",
+                "storytelling_patterns",
+                "vocabulary",
+                "top_themes",
+                "what_makes_them_distinct",
+                "best_performing_patterns",
+              ],
+            },
+          },
+        ],
+        tool_choice: { type: "tool", name: "return_voice_distillation" },
       }),
       signal: aiAbort.signal,
     }).finally(() => clearTimeout(aiTimer));
@@ -174,23 +209,34 @@ Deno.serve(async (req) => {
     }
 
     const aiJson = await aiResp.json();
-    const raw = (aiJson?.content || []).map((c: any) => c.text || "").join("") || "";
 
-    // Step 4 — Parse
-    let distillation: any;
-    try {
-      const cleaned = String(raw)
-        .replace(/^```json\s*/i, "")
-        .replace(/^```\s*/i, "")
-        .replace(/```\s*$/i, "")
-        .trim();
-      distillation = JSON.parse(cleaned);
-    } catch (e) {
-      console.error("voice-distill: JSON parse failed", e, "raw:", raw);
-      return new Response(
-        JSON.stringify({ error: "distillation_failed" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+    // Step 4 — Extract structured tool_use input (preferred), fall back to text JSON parse.
+    let distillation: any = null;
+    const blocks: any[] = Array.isArray(aiJson?.content) ? aiJson.content : [];
+    const toolBlock = blocks.find(
+      (b: any) => b?.type === "tool_use" && b?.name === "return_voice_distillation",
+    );
+    if (toolBlock && toolBlock.input && typeof toolBlock.input === "object") {
+      distillation = toolBlock.input;
+    } else {
+      const raw = blocks.map((c: any) => c?.text || "").join("") || "";
+      try {
+        const cleaned = String(raw)
+          .replace(/^```json\s*/i, "")
+          .replace(/^```\s*/i, "")
+          .replace(/```\s*$/i, "")
+          .trim();
+        const first = cleaned.indexOf("{");
+        const last = cleaned.lastIndexOf("}");
+        const slice = first >= 0 && last > first ? cleaned.slice(first, last + 1) : cleaned;
+        distillation = JSON.parse(slice);
+      } catch (e) {
+        console.error("voice-distill: JSON parse failed", e, "raw:", raw);
+        return new Response(
+          JSON.stringify({ error: "distillation_failed" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
     }
 
     // Ensure required meta fields
