@@ -797,7 +797,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
 
       const { error } = await supabase.from("content_items").insert({
         user_id: session.user.id,
-        type: (contentType as string) === "carousel" ? "carousel" : (contentType as string) === "framework_summary" ? "framework" : "post",
+        type: (contentType as string) === "carousel" ? "carousel" : (contentType as string) === "framework_summary" ? "framework" : "linkedin_post",
         body,
         language: lang,
         status: "draft",
@@ -2148,10 +2148,13 @@ interface SavedPost {
 
 const FORMAT_BADGE: Record<string, { label: string; cls: string }> = {
   post: { label: "Post", cls: "bg-amber-500/15 text-amber-400 border-amber-500/20" },
+  linkedin_post: { label: "Post", cls: "bg-amber-500/15 text-amber-400 border-amber-500/20" },
   post_short: { label: "Short", cls: "bg-[#B08D3A]/15 text-[#B08D3A] border-[#B08D3A]/20" },
   carousel: { label: "Carousel", cls: "bg-blue-500/15 text-blue-400 border-blue-500/20" },
   framework: { label: "Framework", cls: "bg-purple-500/15 text-purple-400 border-purple-500/20" },
   essay: { label: "Essay", cls: "bg-muted/30 text-muted-foreground border-border/20" },
+  article: { label: "Article", cls: "bg-muted/30 text-muted-foreground border-border/20" },
+  whitepaper: { label: "Whitepaper", cls: "bg-muted/30 text-muted-foreground border-border/20" },
 };
 
 /* ── Library Card with Performance Logger ── */
