@@ -847,6 +847,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
         },
         sourceSignalId: selectedSignalId,
         url: urlArg ?? null,
+        language: lang,
       });
       setPublishedFromCreate(true);
       setPubUrlOpen(false);
