@@ -105,8 +105,9 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
   }, [open, onClose]);
 
   useEffect(() => {
-    setCaption(shareText);
-  }, [lang, shareText]);
+    setCaption(buildShareText(lang, data));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang]);
 
   if (!open) return null;
   if (!data && !stableData.current) return null;
