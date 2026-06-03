@@ -433,7 +433,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
       supabase.from("strategic_signals").select("id, signal_title, explanation, content_opportunity, confidence, strategic_implications, fragment_count, unique_orgs, theme_tags")
         .eq("status", "active").gte("confidence", 0.6).order("confidence", { ascending: false }).limit(5),
       supabase.from("master_frameworks").select("id, title, summary, tags").order("created_at", { ascending: false }).limit(5),
-      supabase.from("authority_voice_profiles").select("vocabulary_preferences, example_posts, preferred_structures").eq("language", lang).limit(1).maybeSingle(),
+      supabase.from("authority_voice_profiles").select("vocabulary_preferences, example_posts, preferred_structures").limit(1).single(),
       supabase.from("diagnostic_profiles").select("first_name, level, firm").limit(1).maybeSingle(),
     ]).then(([sRes, fRes, vRes, pRes]) => {
       setSignals((sRes.data || []) as any);
