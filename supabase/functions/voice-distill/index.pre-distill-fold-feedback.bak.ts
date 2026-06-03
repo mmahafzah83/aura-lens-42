@@ -128,42 +128,6 @@ Deno.serve(async (req) => {
       filtered = (posts || []).filter(
         (p: any) => p.post_text && String(p.post_text).trim().length > 0,
       ).slice(0, 40);
-
-      // Fold in user-endorsed samples from authority_voice_profiles.example_posts
-      // so re-distill also learns from "sounds like me" feedback, not only scraped posts.
-      try {
-        const { data: prof } = await supabase
-          .from("authority_voice_profiles")
-          .select("example_posts")
-          .eq("user_id", user_id)
-          .maybeSingle();
-        const examples: any[] = Array.isArray(prof?.example_posts) ? prof!.example_posts : [];
-        const exampleTexts: string[] = examples
-          .map((e: any) => {
-            if (typeof e === "string") return e;
-            if (e && typeof e === "object") return String(e.content ?? "");
-            return "";
-          })
-          .map((s) => s.trim())
-          .filter((s) => s.length > 0);
-
-        const normKey = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
-        const seenTexts = new Set<string>();
-        for (const p of filtered) {
-          const k = normKey(String(p.post_text || ""));
-          if (k) seenTexts.add(k);
-        }
-        const CAP = 40;
-        for (const t of exampleTexts) {
-          if (filtered.length >= CAP) break;
-          const k = normKey(t);
-          if (!k || seenTexts.has(k)) continue;
-          seenTexts.add(k);
-          filtered.push({ post_text: t, engagement_score: null });
-        }
-      } catch (e) {
-        console.warn("voice-distill: example_posts fold-in skipped", e);
-      }
     }
 
     if (filtered.length === 0) {
