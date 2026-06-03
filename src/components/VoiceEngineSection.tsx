@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ChevronDown, ChevronRight, Mic, Loader2, Save, Check, Upload, Sparkles, Pencil, ArrowRight } from "lucide-react";
+import InfoTooltip from "@/components/ui/InfoTooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -494,7 +495,7 @@ const VoiceEngineSection = () => {
                 if (!hasVoiceCard) {
                   return (
                     <div style={cardStyle}>
-                      <div style={eyebrowStyle}>Your voice signature</div>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><div style={eyebrowStyle}>Your voice signature</div><InfoTooltip slug="voice-signature" triggerSize={13} side="top" /></span>
                       <p style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 22, marginTop: 10, marginBottom: 6, color: "#2A2418", lineHeight: 1.35 }}>
                         Your voice signature isn't formed yet.
                       </p>
@@ -513,7 +514,7 @@ const VoiceEngineSection = () => {
                 return (
                   <div style={cardStyle}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                      <div style={eyebrowStyle}>Your voice signature</div>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><div style={eyebrowStyle}>Your voice signature</div><InfoTooltip slug="voice-signature" triggerSize={13} side="top" /></span>
                     </div>
 
                     {/* Identity / tone line */}
@@ -594,7 +595,7 @@ const VoiceEngineSection = () => {
                     {/* Phrases that are yours */}
                     {useArr.length > 0 && (
                       <div style={{ marginTop: 18 }}>
-                        <div style={eyebrowStyle}>Phrases that are yours</div>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><div style={eyebrowStyle}>Phrases that are yours</div><InfoTooltip slug="voice-phrases" triggerSize={13} side="top" /></span>
                         <ul style={{ listStyle: "none", padding: 0, margin: "8px 0 0" }}>
                           {(showAllPhrases ? useArr : useCap).map((phrase, i) => (
                             <li
@@ -638,7 +639,7 @@ const VoiceEngineSection = () => {
                     {/* Words you keep out */}
                     {avoidArr.length > 0 && (
                       <div style={{ marginTop: 18 }}>
-                        <div style={eyebrowStyle}>Words you keep out</div>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><div style={eyebrowStyle}>Words you keep out</div><InfoTooltip slug="voice-avoid" triggerSize={13} side="top" /></span>
                         <ul style={{ listStyle: "disc", paddingInlineStart: 18, margin: "8px 0 0" }}>
                           {(showAllAvoid ? avoidArr : avoidCap).map((w, i) => (
                             <li
@@ -706,6 +707,7 @@ const VoiceEngineSection = () => {
                       <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 12.5, color: "#8A8170" }}>
                         Shaped from {examplesArr.length} of your posts.
                       </span>
+                      <InfoTooltip slug="voice-sharpen" triggerSize={13} side="top" />
                       <button
                         type="button"
                         onClick={handleDistill}
