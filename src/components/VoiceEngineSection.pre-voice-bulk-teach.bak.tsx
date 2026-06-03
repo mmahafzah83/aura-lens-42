@@ -22,9 +22,6 @@ const VoiceEngineSection = () => {
   const [distilling, setDistilling] = useState(false);
   const [distilledOnce, setDistilledOnce] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  const teachFileRef = useRef<HTMLInputElement>(null);
-  const [teachText, setTeachText] = useState("");
-  const [teaching, setTeaching] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -198,60 +195,6 @@ const VoiceEngineSection = () => {
       toast.error(err.message || "Couldn't distill voice");
     } finally {
       setDistilling(false);
-    }
-  };
-
-  const parsePostsBlock = (text: string): string[] =>
-    text
-      .split(/\n---\n/)
-      .map((s) => s.trim())
-      .filter(Boolean);
-
-  const teachFromPosts = async (postsArr: string[]) => {
-    if (postsArr.length === 0) {
-      toast.error("Add at least one post to teach Aura from.");
-      return;
-    }
-    setTeaching(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user?.id) throw new Error("Not authenticated");
-      const { data, error } = await supabase.functions.invoke("voice-distill", {
-        body: { posts: postsArr },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      toast.success(`Learned from ${postsArr.length} ${postsArr.length === 1 ? "post" : "posts"} — your voice profile is updated.`);
-      setTeachText("");
-      setDistilledOnce(true);
-      await loadProfile();
-    } catch (err: any) {
-      console.error("Voice teach error:", err);
-      toast.error(err.message || "Couldn't learn from those posts");
-    } finally {
-      setTeaching(false);
-    }
-  };
-
-  const handleTeachSubmit = () => {
-    teachFromPosts(parsePostsBlock(teachText));
-  };
-
-  const handleTeachFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      if (!(file.name.endsWith(".txt") || file.type === "text/plain")) {
-        toast.error("Please upload a .txt file with posts separated by --- on a new line.");
-        return;
-      }
-      const text = await file.text();
-      await teachFromPosts(parsePostsBlock(text));
-    } catch (err: any) {
-      console.error("Voice teach file error:", err);
-      toast.error(err.message || "Couldn't read that file");
-    } finally {
-      if (teachFileRef.current) teachFileRef.current.value = "";
     }
   };
 
@@ -501,53 +444,6 @@ const VoiceEngineSection = () => {
                     <p className="text-[11px] text-muted-foreground/60 mt-1.5">
                       Refines tone and patterns from your LinkedIn posts. Your feedback and notes are preserved.
                     </p>
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t border-border/8">
-                  <p className="text-xs font-semibold text-foreground mb-2">
-                    Teach Aura from your posts
-                  </p>
-                  <p className="text-xs text-muted-foreground/60 mb-2">
-                    Paste several of your posts (separate with --- on a new line) or upload a .txt file. These are distilled into your voice profile and are not stored as samples.
-                  </p>
-                  <Textarea
-                    value={teachText}
-                    onChange={(e) => setTeachText(e.target.value)}
-                    placeholder={"Post 1...\n---\nPost 2...\n---\nPost 3..."}
-                    className="min-h-[120px] bg-secondary/30 border-border/20 text-sm"
-                    disabled={teaching}
-                  />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-                    <Button
-                      type="button"
-                      onClick={handleTeachSubmit}
-                      disabled={teaching || teachText.trim().length === 0}
-                      className="w-full gap-2"
-                    >
-                      {teaching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                      Teach Aura from these posts
-                    </Button>
-                    <div>
-                      <input
-                        ref={teachFileRef}
-                        type="file"
-                        accept=".txt,text/plain"
-                        onChange={handleTeachFile}
-                        className="hidden"
-                        id="voice-teach-file"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        disabled={teaching}
-                        onClick={() => teachFileRef.current?.click()}
-                        className="w-full gap-2"
-                      >
-                        {teaching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                        Upload .txt of posts
-                      </Button>
-                    </div>
                   </div>
                 </div>
               </div>
