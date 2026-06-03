@@ -514,7 +514,7 @@ const VoiceEngineSection = () => {
                 return (
                   <div style={cardStyle}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                      <div style={eyebrowStyle}>Your voice signature</div>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><div style={eyebrowStyle}>Your voice signature</div><InfoTooltip slug="voice-signature" triggerSize={13} side="top" /></span>
                     </div>
 
                     {/* Identity / tone line */}
