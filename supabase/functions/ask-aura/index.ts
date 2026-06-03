@@ -120,6 +120,7 @@ serve(async (req) => {
           .from("authority_voice_profiles")
           .select("tone, preferred_structures, storytelling_patterns")
           .eq("user_id", user_id)
+          .eq("is_primary", true)
           .maybeSingle() as any,
       ),
       safe(
