@@ -495,7 +495,7 @@ const VoiceEngineSection = () => {
                 if (!hasVoiceCard) {
                   return (
                     <div style={cardStyle}>
-                      <div style={eyebrowStyle}>Your voice signature</div>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><div style={eyebrowStyle}>Your voice signature</div><InfoTooltip slug="voice-signature" triggerSize={13} side="top" /></span>
                       <p style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 22, marginTop: 10, marginBottom: 6, color: "#2A2418", lineHeight: 1.35 }}>
                         Your voice signature isn't formed yet.
                       </p>
