@@ -1556,7 +1556,6 @@ export default function CarouselStudio() {
         .from("authority_voice_profiles")
         .select("tone, example_posts")
         .eq("user_id", uid)
-        .eq("language", lang)
         .maybeSingle();
       const tone = (data as any)?.tone;
       const examples = (data as any)?.example_posts;
@@ -1564,7 +1563,7 @@ export default function CarouselStudio() {
         (Array.isArray(examples) && examples.length > 0);
       setHasVoiceProfile(!!present);
     })();
-  }, [lang]);
+  }, []);
 
   const handleVoiceSoundsLikeMe = async () => {
     if (voiceFeedbackBusy) return;
@@ -1582,7 +1581,6 @@ export default function CarouselStudio() {
         .from("authority_voice_profiles")
         .select("id, example_posts, tone")
         .eq("user_id", uid)
-        .eq("language", lang)
         .maybeSingle();
       if (existing?.id) {
         const arr = Array.isArray((existing as any).example_posts) ? (existing as any).example_posts : [];
@@ -1595,20 +1593,12 @@ export default function CarouselStudio() {
           .eq("id", (existing as any).id);
         if (error) throw error;
       } else {
-        const { data: anyRow } = await supabase
-          .from("authority_voice_profiles")
-          .select("id")
-          .eq("user_id", uid)
-          .limit(1);
-        const isFirst = !anyRow || anyRow.length === 0;
         const { error } = await supabase
           .from("authority_voice_profiles")
           .insert({
             user_id: uid,
             example_posts: [entry],
             tone: "analytical, calm confidence",
-            language: lang,
-            is_primary: isFirst,
           });
         if (error) throw error;
       }
@@ -1634,7 +1624,6 @@ export default function CarouselStudio() {
         .from("authority_voice_profiles")
         .select("id, vocabulary_preferences")
         .eq("user_id", uid)
-        .eq("language", lang)
         .maybeSingle();
       if (existing?.id) {
         const vp: any = (existing as any).vocabulary_preferences || {};
@@ -1645,20 +1634,12 @@ export default function CarouselStudio() {
           .eq("id", (existing as any).id);
         if (error) throw error;
       } else {
-        const { data: anyRow } = await supabase
-          .from("authority_voice_profiles")
-          .select("id")
-          .eq("user_id", uid)
-          .limit(1);
-        const isFirst = !anyRow || anyRow.length === 0;
         const { error } = await supabase
           .from("authority_voice_profiles")
           .insert({
             user_id: uid,
             vocabulary_preferences: { avoid: [avoidNote] },
             tone: "analytical, calm confidence",
-            language: lang,
-            is_primary: isFirst,
           });
         if (error) throw error;
       }
