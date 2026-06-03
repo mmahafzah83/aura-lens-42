@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { detectLang, groupByLang } from "../_shared/lang.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -97,16 +98,16 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
 
-    // Step 1 — Gather posts. Optional ad-hoc branch: body.posts as string[].
+    // Step 1 — Gather raw post objects. Optional ad-hoc branch: body.posts as string[].
     const adHocPosts: string[] = Array.isArray(body?.posts)
       ? body.posts.filter((t: any) => typeof t === "string" && t.trim().length > 0)
       : [];
     const useAdHoc = adHocPosts.length > 0;
 
-    let filtered: Array<{ post_text: string; engagement_score?: number | null }> = [];
+    let rawPosts: Array<{ post_text: string; engagement_score?: number | null }> = [];
 
     if (useAdHoc) {
-      filtered = adHocPosts.slice(0, 40).map((t) => ({ post_text: t, engagement_score: null }));
+      rawPosts = adHocPosts.slice(0, 40).map((t) => ({ post_text: t, engagement_score: null }));
     } else {
       const { data: posts, error: postsErr } = await supabase
         .from("linkedin_posts")
@@ -125,48 +126,12 @@ Deno.serve(async (req) => {
         );
       }
 
-      filtered = (posts || []).filter(
+      rawPosts = (posts || []).filter(
         (p: any) => p.post_text && String(p.post_text).trim().length > 0,
       ).slice(0, 40);
-
-      // Fold in user-endorsed samples from authority_voice_profiles.example_posts
-      // so re-distill also learns from "sounds like me" feedback, not only scraped posts.
-      try {
-        const { data: prof } = await supabase
-          .from("authority_voice_profiles")
-          .select("example_posts")
-          .eq("user_id", user_id)
-          .maybeSingle();
-        const examples: any[] = Array.isArray(prof?.example_posts) ? prof!.example_posts : [];
-        const exampleTexts: string[] = examples
-          .map((e: any) => {
-            if (typeof e === "string") return e;
-            if (e && typeof e === "object") return String(e.content ?? "");
-            return "";
-          })
-          .map((s) => s.trim())
-          .filter((s) => s.length > 0);
-
-        const normKey = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
-        const seenTexts = new Set<string>();
-        for (const p of filtered) {
-          const k = normKey(String(p.post_text || ""));
-          if (k) seenTexts.add(k);
-        }
-        const CAP = 40;
-        for (const t of exampleTexts) {
-          if (filtered.length >= CAP) break;
-          const k = normKey(t);
-          if (!k || seenTexts.has(k)) continue;
-          seenTexts.add(k);
-          filtered.push({ post_text: t, engagement_score: null });
-        }
-      } catch (e) {
-        console.warn("voice-distill: example_posts fold-in skipped", e);
-      }
     }
 
-    if (filtered.length === 0) {
+    if (rawPosts.length === 0) {
       // Imported analytics rows can lack post_text. Treat as a graceful skip
       // (not an error) so the post-import pipeline doesn't show red ❗.
       console.warn("voice-distill: no posts with text — skipping distillation for", user_id);
@@ -176,138 +141,42 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Step 2 — Build prompt
-    const formatted = filtered
-      .map((p: any) => {
-        if (p.engagement_score != null) {
-          return `[Engagement: ${Number(p.engagement_score).toFixed(1)}%] ${String(p.post_text).trim()}`;
-        }
-        return String(p.post_text).trim();
-      })
-      .join("\n\n---\n\n");
+    // Step 2 — Group posts by language
+    const grouped: { en: typeof rawPosts; ar: typeof rawPosts } = { en: [], ar: [] };
+    for (const p of rawPosts) {
+      const L = detectLang(String(p.post_text || ""));
+      grouped[L].push(p);
+    }
 
-    const userMessage = `Here are the posts to analyze:\n\n${formatted}`;
+    if (grouped.en.length === 0 && grouped.ar.length === 0) {
+      console.warn("voice-distill: no posts with text — skipping distillation for", user_id);
+      return new Response(
+        JSON.stringify({ success: true, skipped: true, reason: "no_posts_with_text", posts_analyzed: 0 }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
-    // Step 3 — Call Anthropic (Claude Sonnet)
+    // Step 3 — Determine DOMINANT language. Tie → user's current primary, else "en".
+    let dominant: "en" | "ar";
+    if (grouped.en.length > grouped.ar.length) dominant = "en";
+    else if (grouped.ar.length > grouped.en.length) dominant = "ar";
+    else {
+      const { data: primaryRow } = await supabase
+        .from("authority_voice_profiles")
+        .select("language")
+        .eq("user_id", user_id)
+        .eq("is_primary", true)
+        .maybeSingle();
+      dominant = (primaryRow?.language === "ar" ? "ar" : "en");
+    }
+
+    // Step 4 — Determine which languages to distill: dominant always; minority only if >=3 posts.
+    const minority: "en" | "ar" = dominant === "en" ? "ar" : "en";
+    const toDistill: Array<"en" | "ar"> = [dominant];
+    if (grouped[minority].length >= 3) toDistill.push(minority);
+
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
-    const aiAbort = new AbortController();
-    const aiTimer = setTimeout(() => aiAbort.abort(), 90000);
-    const aiResp = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-5-20250929",
-        max_tokens: 4096,
-        temperature: 0.3,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: "user", content: userMessage }],
-        tools: [
-          {
-            name: "return_voice_distillation",
-            description: "Return the structured voice distillation as a JSON object.",
-            input_schema: {
-              type: "object",
-              properties: {
-                tone: { type: "string" },
-                preferred_structures: { type: "array", items: { type: "string" } },
-                storytelling_patterns: { type: "array", items: { type: "string" } },
-                vocabulary: {
-                  type: "object",
-                  properties: {
-                    signature_phrases: { type: "array", items: { type: "string" } },
-                    avoided_patterns: { type: "array", items: { type: "string" } },
-                    sentence_rhythm: { type: "string" },
-                  },
-                },
-                top_themes: { type: "array", items: { type: "string" } },
-                what_makes_them_distinct: { type: "string" },
-                best_performing_patterns: { type: "string" },
-              },
-              required: [
-                "tone",
-                "preferred_structures",
-                "storytelling_patterns",
-                "vocabulary",
-                "top_themes",
-                "what_makes_them_distinct",
-                "best_performing_patterns",
-              ],
-            },
-          },
-        ],
-        tool_choice: { type: "tool", name: "return_voice_distillation" },
-      }),
-      signal: aiAbort.signal,
-    }).finally(() => clearTimeout(aiTimer));
-
-    if (!aiResp.ok) {
-      const t = await aiResp.text();
-      console.error("voice-distill: AI gateway error", aiResp.status, t);
-      return new Response(
-        JSON.stringify({ error: "ai_gateway_error", details: aiResp.status }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    const aiJson = await aiResp.json();
-
-    // Step 4 — Extract structured tool_use input (preferred), fall back to text JSON parse.
-    let distillation: any = null;
-    const blocks: any[] = Array.isArray(aiJson?.content) ? aiJson.content : [];
-    const toolBlock = blocks.find(
-      (b: any) => b?.type === "tool_use" && b?.name === "return_voice_distillation",
-    );
-    if (toolBlock && toolBlock.input && typeof toolBlock.input === "object") {
-      distillation = toolBlock.input;
-    } else {
-      const raw = blocks.map((c: any) => c?.text || "").join("") || "";
-      try {
-        const cleaned = String(raw)
-          .replace(/^```json\s*/i, "")
-          .replace(/^```\s*/i, "")
-          .replace(/```\s*$/i, "")
-          .trim();
-        const first = cleaned.indexOf("{");
-        const last = cleaned.lastIndexOf("}");
-        const slice = first >= 0 && last > first ? cleaned.slice(first, last + 1) : cleaned;
-        distillation = JSON.parse(slice);
-      } catch (e) {
-        console.error("voice-distill: JSON parse failed", e, "raw:", raw);
-        return new Response(
-          JSON.stringify({ error: "distillation_failed" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
-    }
-
-    // Ensure required meta fields
-    distillation.distillation_version = "v1";
-    distillation.posts_analyzed = filtered.length;
-    distillation.distilled_at = new Date().toISOString();
-
-    const newUse: string[] = distillation?.vocabulary?.signature_phrases ?? [];
-    const newAvoid: string[] = distillation?.vocabulary?.avoided_patterns ?? [];
-    const newRhythm: string = distillation?.vocabulary?.sentence_rhythm ?? "";
-
-    // Step 5 — Read existing row so we can MERGE (preserve user feedback)
-    const { data: existing, error: existErr } = await supabase
-      .from("authority_voice_profiles")
-      .select("id, tone, vocabulary_preferences")
-      .eq("user_id", user_id)
-      .maybeSingle();
-
-    if (existErr) {
-      console.error("voice-distill: existence check failed", existErr);
-      return new Response(
-        JSON.stringify({ error: "db_write_failed", details: existErr.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
 
     // Normalize an "avoid" entry to a comparable string key for dedupe.
     const norm = (v: any): string => {
@@ -319,73 +188,275 @@ Deno.serve(async (req) => {
       }
       return String(v).trim().toLowerCase();
     };
+    const normKey = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
 
-    const existingVocab: any =
-      (existing && typeof existing.vocabulary_preferences === "object" && existing.vocabulary_preferences) || {};
-    const existingAvoidRaw: any[] = Array.isArray(existingVocab.avoid) ? existingVocab.avoid : [];
-    const existingNotes = existingVocab.notes;
-    const existingTone: string = typeof existing?.tone === "string" ? existing.tone : "";
+    const distilledLanguages: Array<"en" | "ar"> = [];
+    let lastDistillation: any = null;
+    let lastPostsAnalyzed = 0;
 
-    // UNION existing avoid (user feedback + prior AI) with new AI-derived avoid, dedupe by normalized key.
-    // Existing entries come first so user-feedback objects are preserved as-is.
-    const seen = new Set<string>();
-    const mergedAvoid: any[] = [];
-    for (const entry of existingAvoidRaw) {
-      const k = norm(entry);
-      if (!k || seen.has(k)) continue;
-      seen.add(k);
-      mergedAvoid.push(entry);
-    }
-    for (const entry of newAvoid) {
-      const k = norm(entry);
-      if (!k || seen.has(k)) continue;
-      seen.add(k);
-      mergedAvoid.push(entry);
-    }
+    for (const L of toDistill) {
+      let postsForL: typeof rawPosts = [...grouped[L]];
 
-    const mergedVocabulary: Record<string, unknown> = {
-      ...existingVocab,
-      use: newUse,
-      avoid: mergedAvoid,
-      rhythm: newRhythm,
-    };
-    if (existingNotes !== undefined) mergedVocabulary.notes = existingNotes;
+      // LINKEDIN branch only: fold in same-language samples from example_posts of the (user, L) row.
+      if (!useAdHoc) {
+        try {
+          const { data: profL } = await supabase
+            .from("authority_voice_profiles")
+            .select("example_posts")
+            .eq("user_id", user_id)
+            .eq("language", L)
+            .maybeSingle();
+          const examples: any[] = Array.isArray(profL?.example_posts) ? profL!.example_posts : [];
+          const exampleTexts: string[] = examples
+            .map((e: any) => {
+              if (typeof e === "string") return e;
+              if (e && typeof e === "object") return String(e.content ?? "");
+              return "";
+            })
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0);
 
-    // Preserve user-set tone if present; otherwise take the distilled tone.
-    const mergedTone = existingTone && existingTone.trim().length > 0
-      ? existingTone
-      : (distillation.tone ?? "");
+          const seenTexts = new Set<string>();
+          for (const p of postsForL) {
+            const k = normKey(String(p.post_text || ""));
+            if (k) seenTexts.add(k);
+          }
+          const CAP = 40;
+          for (const t of exampleTexts) {
+            if (postsForL.length >= CAP) break;
+            const k = normKey(t);
+            if (!k || seenTexts.has(k)) continue;
+            seenTexts.add(k);
+            postsForL.push({ post_text: t, engagement_score: null });
+          }
+        } catch (e) {
+          console.warn(`voice-distill[${L}]: example_posts fold-in skipped`, e);
+        }
+      }
 
-    const writePayload = {
-      tone: mergedTone,
-      preferred_structures: distillation.preferred_structures ?? [],
-      storytelling_patterns: distillation.storytelling_patterns ?? [],
-      vocabulary_preferences: mergedVocabulary,
-      updated_at: new Date().toISOString(),
-    };
+      if (postsForL.length === 0) continue;
 
-    if (existing) {
-      const { error: updErr } = await supabase
-        .from("authority_voice_profiles")
-        .update(writePayload)
-        .eq("user_id", user_id);
-      if (updErr) {
-        console.error("voice-distill: update failed", updErr);
+      // Build prompt with existing engagement formatting + language directive.
+      const formatted = postsForL
+        .map((p: any) => {
+          if (p.engagement_score != null) {
+            return `[Engagement: ${Number(p.engagement_score).toFixed(1)}%] ${String(p.post_text).trim()}`;
+          }
+          return String(p.post_text).trim();
+        })
+        .join("\n\n---\n\n");
+
+      const langDirective = L === "ar"
+        ? `\n\nLANGUAGE DIRECTIVE: The posts are in Arabic. Write tone, preferred_structures, storytelling_patterns, and vocabulary.sentence_rhythm in professional Arabic, keeping technical terms in English where the writer uses them (e.g. AI, KPI, dashboard, SCADA). Quote vocabulary.signature_phrases and vocabulary.avoided_patterns in their original source language exactly as they appear.`
+        : ``;
+
+      const userMessage = `Here are the posts to analyze:\n\n${formatted}${langDirective}`;
+      const systemMessage = SYSTEM_PROMPT + langDirective;
+
+      const aiAbort = new AbortController();
+      const aiTimer = setTimeout(() => aiAbort.abort(), 90000);
+      const aiResp = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-5-20250929",
+          max_tokens: 4096,
+          temperature: 0.3,
+          system: systemMessage,
+          messages: [{ role: "user", content: userMessage }],
+          tools: [
+            {
+              name: "return_voice_distillation",
+              description: "Return the structured voice distillation as a JSON object.",
+              input_schema: {
+                type: "object",
+                properties: {
+                  tone: { type: "string" },
+                  preferred_structures: { type: "array", items: { type: "string" } },
+                  storytelling_patterns: { type: "array", items: { type: "string" } },
+                  vocabulary: {
+                    type: "object",
+                    properties: {
+                      signature_phrases: { type: "array", items: { type: "string" } },
+                      avoided_patterns: { type: "array", items: { type: "string" } },
+                      sentence_rhythm: { type: "string" },
+                    },
+                  },
+                  top_themes: { type: "array", items: { type: "string" } },
+                  what_makes_them_distinct: { type: "string" },
+                  best_performing_patterns: { type: "string" },
+                },
+                required: [
+                  "tone",
+                  "preferred_structures",
+                  "storytelling_patterns",
+                  "vocabulary",
+                  "top_themes",
+                  "what_makes_them_distinct",
+                  "best_performing_patterns",
+                ],
+              },
+            },
+          ],
+          tool_choice: { type: "tool", name: "return_voice_distillation" },
+        }),
+        signal: aiAbort.signal,
+      }).finally(() => clearTimeout(aiTimer));
+
+      if (!aiResp.ok) {
+        const t = await aiResp.text();
+        console.error(`voice-distill[${L}]: AI gateway error`, aiResp.status, t);
         return new Response(
-          JSON.stringify({ error: "db_write_failed", details: updErr.message }),
+          JSON.stringify({ error: "ai_gateway_error", details: aiResp.status }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
-    } else {
-      const { error: insErr } = await supabase
+
+      const aiJson = await aiResp.json();
+      let distillation: any = null;
+      const blocks: any[] = Array.isArray(aiJson?.content) ? aiJson.content : [];
+      const toolBlock = blocks.find(
+        (b: any) => b?.type === "tool_use" && b?.name === "return_voice_distillation",
+      );
+      if (toolBlock && toolBlock.input && typeof toolBlock.input === "object") {
+        distillation = toolBlock.input;
+      } else {
+        const raw = blocks.map((c: any) => c?.text || "").join("") || "";
+        try {
+          const cleaned = String(raw)
+            .replace(/^```json\s*/i, "")
+            .replace(/^```\s*/i, "")
+            .replace(/```\s*$/i, "")
+            .trim();
+          const first = cleaned.indexOf("{");
+          const last = cleaned.lastIndexOf("}");
+          const slice = first >= 0 && last > first ? cleaned.slice(first, last + 1) : cleaned;
+          distillation = JSON.parse(slice);
+        } catch (e) {
+          console.error(`voice-distill[${L}]: JSON parse failed`, e, "raw:", raw);
+          return new Response(
+            JSON.stringify({ error: "distillation_failed" }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+      }
+
+      distillation.distillation_version = "v1";
+      distillation.posts_analyzed = postsForL.length;
+      distillation.distilled_at = new Date().toISOString();
+
+      const newUse: string[] = distillation?.vocabulary?.signature_phrases ?? [];
+      const newAvoid: string[] = distillation?.vocabulary?.avoided_patterns ?? [];
+      const newRhythm: string = distillation?.vocabulary?.sentence_rhythm ?? "";
+
+      // MERGE into the (user_id, L) row.
+      const { data: existing, error: existErr } = await supabase
         .from("authority_voice_profiles")
-        .insert({ user_id, ...writePayload });
-      if (insErr) {
-        console.error("voice-distill: insert failed", insErr);
+        .select("id, tone, vocabulary_preferences")
+        .eq("user_id", user_id)
+        .eq("language", L)
+        .maybeSingle();
+
+      if (existErr) {
+        console.error(`voice-distill[${L}]: existence check failed`, existErr);
         return new Response(
-          JSON.stringify({ error: "db_write_failed", details: insErr.message }),
+          JSON.stringify({ error: "db_write_failed", details: existErr.message }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
+      }
+
+      const existingVocab: any =
+        (existing && typeof existing.vocabulary_preferences === "object" && existing.vocabulary_preferences) || {};
+      const existingAvoidRaw: any[] = Array.isArray(existingVocab.avoid) ? existingVocab.avoid : [];
+      const existingNotes = existingVocab.notes;
+      const existingTone: string = typeof existing?.tone === "string" ? existing.tone : "";
+
+      const seen = new Set<string>();
+      const mergedAvoid: any[] = [];
+      for (const entry of existingAvoidRaw) {
+        const k = norm(entry);
+        if (!k || seen.has(k)) continue;
+        seen.add(k);
+        mergedAvoid.push(entry);
+      }
+      for (const entry of newAvoid) {
+        const k = norm(entry);
+        if (!k || seen.has(k)) continue;
+        seen.add(k);
+        mergedAvoid.push(entry);
+      }
+
+      const mergedVocabulary: Record<string, unknown> = {
+        ...existingVocab,
+        use: newUse,
+        avoid: mergedAvoid,
+        rhythm: newRhythm,
+      };
+      if (existingNotes !== undefined) mergedVocabulary.notes = existingNotes;
+
+      const mergedTone = existingTone && existingTone.trim().length > 0
+        ? existingTone
+        : (distillation.tone ?? "");
+
+      const writePayload = {
+        tone: mergedTone,
+        preferred_structures: distillation.preferred_structures ?? [],
+        storytelling_patterns: distillation.storytelling_patterns ?? [],
+        vocabulary_preferences: mergedVocabulary,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (existing) {
+        const { error: updErr } = await supabase
+          .from("authority_voice_profiles")
+          .update(writePayload)
+          .eq("user_id", user_id)
+          .eq("language", L);
+        if (updErr) {
+          console.error(`voice-distill[${L}]: update failed`, updErr);
+          return new Response(
+            JSON.stringify({ error: "db_write_failed", details: updErr.message }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+      } else {
+        const { error: insErr } = await supabase
+          .from("authority_voice_profiles")
+          .insert({ user_id, language: L, is_primary: false, ...writePayload });
+        if (insErr) {
+          console.error(`voice-distill[${L}]: insert failed`, insErr);
+          return new Response(
+            JSON.stringify({ error: "db_write_failed", details: insErr.message }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+      }
+
+      distilledLanguages.push(L);
+      lastDistillation = distillation;
+      lastPostsAnalyzed += postsForL.length;
+    }
+
+    // Step 5 — Primary assignment: demote-all-then-promote-dominant (required by one-primary index).
+    if (distilledLanguages.length > 0) {
+      const { error: demoteErr } = await supabase
+        .from("authority_voice_profiles")
+        .update({ is_primary: false })
+        .eq("user_id", user_id);
+      if (demoteErr) {
+        console.error("voice-distill: demote-all failed", demoteErr);
+      }
+      const { error: promErr } = await supabase
+        .from("authority_voice_profiles")
+        .update({ is_primary: true })
+        .eq("user_id", user_id)
+        .eq("language", dominant);
+      if (promErr) {
+        console.error("voice-distill: promote-dominant failed", promErr);
       }
     }
 
@@ -408,10 +479,12 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        posts_analyzed: filtered.length,
-        tone_extracted: distillation.tone,
-        top_themes: distillation.top_themes ?? [],
-        distilled_at: distillation.distilled_at,
+        posts_analyzed: lastPostsAnalyzed,
+        distilled_languages: distilledLanguages,
+        primary_language: distilledLanguages.length > 0 ? dominant : null,
+        tone_extracted: lastDistillation?.tone,
+        top_themes: lastDistillation?.top_themes ?? [],
+        distilled_at: lastDistillation?.distilled_at,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
