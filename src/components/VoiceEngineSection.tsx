@@ -627,11 +627,11 @@ const VoiceEngineSection = () => {
                     )}
 
                     {/* Words you keep out */}
-                    {avoidCap.length > 0 && (
+                    {avoidArr.length > 0 && (
                       <div style={{ marginTop: 18 }}>
                         <div style={eyebrowStyle}>Words you keep out</div>
                         <ul style={{ listStyle: "disc", paddingInlineStart: 18, margin: "8px 0 0" }}>
-                          {avoidCap.map((w, i) => (
+                          {(showAllAvoid ? avoidArr : avoidCap).map((w, i) => (
                             <li
                               key={i}
                               style={{
@@ -646,9 +646,25 @@ const VoiceEngineSection = () => {
                           ))}
                         </ul>
                         {avoidMore > 0 && (
-                          <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 12, color: "#8A8170", marginTop: 6, marginBottom: 0 }}>
-                            +{avoidMore} more
-                          </p>
+                          <button
+                            type="button"
+                            onClick={() => setShowAllAvoid((s) => !s)}
+                            style={{
+                              fontFamily: "'DM Sans', system-ui, sans-serif",
+                              fontSize: 12,
+                              color: "#8A8170",
+                              marginTop: 6,
+                              marginBottom: 0,
+                              background: "transparent",
+                              border: "none",
+                              padding: 0,
+                              cursor: "pointer",
+                              textDecoration: "underline",
+                              textUnderlineOffset: 2,
+                            }}
+                          >
+                            {showAllAvoid ? "Show less" : `+${avoidMore} more`}
+                          </button>
                         )}
                       </div>
                     )}
