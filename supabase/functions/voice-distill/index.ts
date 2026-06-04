@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
         .select("post_text, engagement_score, like_count, comment_count, source_type")
         .eq("user_id", user_id)
         .not("post_text", "is", null)
-        .order("engagement_score", { ascending: false, nullsFirst: false })
+        .order("published_at", { ascending: false, nullsFirst: false })
         .order("created_at", { ascending: false })
         .limit(200);
 

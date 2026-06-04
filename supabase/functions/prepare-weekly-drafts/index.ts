@@ -159,13 +159,14 @@ Deno.serve(async (req) => {
         // Fetch up to 30 recent posts, classify per language, compute secondary share.
         let secondarySlots = 0;
         if (secondaryLang) {
-          const { data: recentPosts } = await admin
-            .from("linkedin_posts")
-            .select("post_text")
-            .eq("user_id", userId)
-            .not("post_text", "is", null)
-            .order("created_at", { ascending: false })
-            .limit(30);
+        const { data: recentPosts } = await admin
+          .from("linkedin_posts")
+          .select("post_text")
+          .eq("user_id", userId)
+          .not("post_text", "is", null)
+          .order("published_at", { ascending: false, nullsFirst: false })
+          .order("created_at", { ascending: false })
+          .limit(30);
           const texts = (recentPosts || [])
             .map((p: any) => String(p?.post_text || "").trim())
             .filter((t: string) => t.length > 0);
