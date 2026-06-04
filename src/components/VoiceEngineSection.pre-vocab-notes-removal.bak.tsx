@@ -13,6 +13,7 @@ const VoiceEngineSection = () => {
   const [saving, setSaving] = useState(false);
   const [writingSamples, setWritingSamples] = useState("");
   const [admiredPosts, setAdmiredPosts] = useState("");
+  const [vocabNotes, setVocabNotes] = useState("");
   const [trained, setTrained] = useState(false);
   // Entries with an explicit non-"manual" source tag (feedback, upload, etc.) —
   // preserved verbatim across saves; never shown in the textarea.
@@ -144,6 +145,9 @@ const VoiceEngineSection = () => {
       );
       setAdmiredPosts(
         Array.isArray(admired) ? admired.map((p: any) => p.content || p).join("\n\n---\n\n") : ""
+      );
+      setVocabNotes(
+        typeof vocab === "object" && vocab?.notes ? vocab.notes : (data.tone || "")
       );
     } finally {
       setLoading(false);
@@ -330,15 +334,20 @@ const VoiceEngineSection = () => {
       // Check if row exists
       const { data: existing } = await supabase
         .from("authority_voice_profiles")
-        .select("id")
+        .select("id, vocabulary_preferences, tone")
         .eq("user_id", session.user.id)
         .eq("is_primary", true)
         .maybeSingle();
+
+      const existingVocab = (existing as any)?.vocabulary_preferences || {};
+      const existingTone = (existing as any)?.tone || "";
 
       const row: any = {
         user_id: session.user.id,
         example_posts: examplePosts,
         admired_posts: admiredPostsArr,
+        vocabulary_preferences: { ...existingVocab, notes: vocabNotes },
+        tone: existingTone.trim().length > 0 ? existingTone : vocabNotes.slice(0, 200),
         updated_at: new Date().toISOString(),
       };
 
@@ -1056,11 +1065,27 @@ const VoiceEngineSection = () => {
                   placeholder="Paste posts by thought leaders you admire..."
                   className="min-h-[120px] bg-secondary/30 border-border/20 text-sm"
                 />
-                <Button onClick={handleSave} disabled={saving} className="w-full gap-2 mt-3">
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                  Save admired posts
-                </Button>
               </div>
+
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                  Vocabulary & tone notes
+                </label>
+                <p className="text-xs text-muted-foreground/50 mb-2">
+                  Describe how you write — e.g. "direct, no jargon, short sentences, always end with a question"
+                </p>
+                <Textarea
+                  value={vocabNotes}
+                  onChange={(e) => setVocabNotes(e.target.value)}
+                  placeholder="Direct, analytical, short paragraphs, avoid buzzwords..."
+                  className="min-h-[80px] bg-secondary/30 border-border/20 text-sm"
+                />
+              </div>
+
+              <Button onClick={handleSave} disabled={saving} className="w-full gap-2">
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Save voice profile
+              </Button>
 
               <div className="pt-4 border-t border-border/8 space-y-3">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
