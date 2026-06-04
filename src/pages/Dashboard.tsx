@@ -965,7 +965,15 @@ const Dashboard = () => {
             {activeTab === "authority" && (
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
-                  <AuthorityTab entries={entries} onRefresh={fetchEntries} signalPrefill={signalDraftPrefill} onSignalPrefillConsumed={() => setSignalDraftPrefill(null)} draftPrefill={draftPrefill} onDraftPrefillConsumed={() => setDraftPrefill(null)} />
+                  <AuthorityTab
+                    entries={entries}
+                    onRefresh={fetchEntries}
+                    signalPrefill={signalDraftPrefill}
+                    onSignalPrefillConsumed={() => setSignalDraftPrefill(null)}
+                    draftPrefill={draftPrefill}
+                    onDraftPrefillConsumed={() => setDraftPrefill(null)}
+                    onOpenDraft={(d) => setDraftPrefill(d)}
+                  />
                 </ErrorBoundary>
               </div>
             )}
