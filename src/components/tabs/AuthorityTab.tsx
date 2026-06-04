@@ -3011,6 +3011,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
   };
 
   const markPublished = async (id: string, url?: string) => {
+    const trimmedUrl = url ? url.trim() : undefined;
     const item = drafts.find(p => p.id === id);
     if (!item) return;
     try {
@@ -3025,7 +3026,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
         formatType: item.format_type || "post",
         sourceMetadata: item.source_metadata || {},
         sourceSignalId: linkedSignalId,
-        url: url ?? null,
+        url: trimmedUrl ?? null,
         language: ((item.source_metadata as any)?.language === "ar" ? "ar" : "en"),
       });
       await supabase
@@ -3286,7 +3287,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                       {copiedId === p.id ? "Copied" : "Post on LinkedIn →"}
                     </button>
                     <button
-                      onClick={() => setConfirmingId(p.id)}
+                      onClick={() => { setConfirmingId(p.id); setConfirmPubUrl(""); setConfirmPubUrlError(""); }}
                       style={{ fontSize: 14, color: "var(--color-muted)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
                       className="hover:text-foreground transition-colors"
                     >
