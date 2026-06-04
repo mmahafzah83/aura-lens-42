@@ -3426,6 +3426,7 @@ interface AuthorityTabProps {
   onSignalPrefillConsumed?: () => void;
   draftPrefill?: DraftPrefill | null;
   onDraftPrefillConsumed?: () => void;
+  onOpenDraft?: (draft: { id: string; body: string; language: "en" | "ar"; type: "carousel" | "framework" | "linkedin_post"; topic?: string | null }) => void;
 }
 
 const TABS: { key: AuthoritySubTab; label: string; icon: typeof PenTool }[] = [
@@ -3434,7 +3435,7 @@ const TABS: { key: AuthoritySubTab; label: string; icon: typeof PenTool }[] = [
   { key: "plan", label: "Plan", icon: Calendar },
 ];
 
-const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsumed, draftPrefill, onDraftPrefillConsumed }: AuthorityTabProps) => {
+const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsumed, draftPrefill, onDraftPrefillConsumed, onOpenDraft }: AuthorityTabProps) => {
   const [activeTab, setActiveTab] = useState<AuthoritySubTab>("create");
   const [brandDone, setBrandDone] = useState<boolean | null>(null);
   const [planPrefill, setPlanPrefill] = useState<PlanPrefill | null>(null);
@@ -3537,7 +3538,7 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
 
       {activeTab === "create" && <CreateTab planPrefill={planPrefill} signalPrefill={signalPrefill} onSignalPrefillConsumed={onSignalPrefillConsumed} draftPrefill={draftPrefill} onDraftPrefillConsumed={onDraftPrefillConsumed} />}
       {activeTab === "plan" && <PlanTab onGenerateFromPlan={handleGenerateFromPlan} />}
-      {activeTab === "library" && <LibraryTab onSwitchToCreate={() => setActiveTab("create")} />}
+      {activeTab === "library" && <LibraryTab onSwitchToCreate={() => setActiveTab("create")} onOpenDraft={onOpenDraft} />}
     </div>
   );
 };
