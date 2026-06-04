@@ -1061,26 +1061,6 @@ const VoiceEngineSection = () => {
 
               <div>
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
-                  Your writing samples
-                </label>
-                <p className="text-xs text-muted-foreground/50 mb-2">
-                  Paste examples of your best posts or writing. Separate multiple samples with --- on a new line.
-                </p>
-                <Textarea
-                  value={writingSamples}
-                  onChange={(e) => setWritingSamples(e.target.value)}
-                  placeholder="Paste your best LinkedIn posts, articles, or writing samples here..."
-                  className="min-h-[120px] bg-secondary/30 border-border/20 text-sm"
-                />
-                {preservedExamples.length > 0 && (
-                  <p className="text-[11px] text-muted-foreground/60 mt-2 italic">
-                    + {preservedExamples.length} {preservedExamples.length === 1 ? "post" : "posts"} learned from your uploads and feedback (kept automatically)
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
                   Admired posts
                 </label>
                 <p className="text-xs text-muted-foreground/50 mb-2">
@@ -1118,30 +1098,7 @@ const VoiceEngineSection = () => {
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Add more, learn faster
                 </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <input
-                      ref={fileRef}
-                      type="file"
-                      accept=".pdf,.txt,application/pdf,text/plain"
-                      onChange={handleFile}
-                      className="hidden"
-                      id="voice-engine-file"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={uploading}
-                      onClick={() => fileRef.current?.click()}
-                      className="w-full gap-2"
-                    >
-                      {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                      Upload PDF or TXT
-                    </Button>
-                    <p className="text-[11px] text-muted-foreground/60 mt-1.5">
-                      Adds to your samples — your typed text is never overwritten.
-                    </p>
-                  </div>
+                <div className="grid grid-cols-1 gap-3">
                   <div>
                     <Button
                       type="button"
@@ -1161,10 +1118,10 @@ const VoiceEngineSection = () => {
 
                 <div className="pt-3 border-t border-border/8">
                   <p className="text-xs font-semibold text-foreground mb-2">
-                    Teach Aura from your posts
+                    Teach Aura your writing
                   </p>
                   <p className="text-xs text-muted-foreground/60 mb-2">
-                    Paste several of your posts (separate with --- on a new line) or upload a .txt file. These are distilled into your voice profile and are not stored as samples.
+                    Paste a few of your posts (separate with ---) or upload a file — Aura detects the language and refines your voice automatically.
                   </p>
                   <Textarea
                     value={teachText}
@@ -1174,20 +1131,11 @@ const VoiceEngineSection = () => {
                     disabled={teaching}
                   />
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-                    <Button
-                      type="button"
-                      onClick={handleTeachSubmit}
-                      disabled={teaching || teachText.trim().length === 0}
-                      className="w-full gap-2"
-                    >
-                      {teaching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                      Teach Aura from these posts
-                    </Button>
                     <div>
                       <input
                         ref={teachFileRef}
                         type="file"
-                        accept=".txt,text/plain"
+                        accept=".pdf,.txt,application/pdf,text/plain"
                         onChange={handleTeachFile}
                         className="hidden"
                         id="voice-teach-file"
@@ -1195,14 +1143,23 @@ const VoiceEngineSection = () => {
                       <Button
                         type="button"
                         variant="outline"
-                        disabled={teaching}
+                        disabled={teaching || uploading}
                         onClick={() => teachFileRef.current?.click()}
                         className="w-full gap-2"
                       >
-                        {teaching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                        Upload .txt of posts
+                        {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                        Upload PDF or TXT
                       </Button>
                     </div>
+                    <Button
+                      type="button"
+                      onClick={handleTeachSubmit}
+                      disabled={teaching || uploading || teachText.trim().length === 0}
+                      className="w-full gap-2"
+                    >
+                      {teaching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                      Teach Aura
+                    </Button>
                   </div>
                 </div>
               </div>
