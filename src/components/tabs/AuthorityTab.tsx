@@ -362,6 +362,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
   const [lang, setLang] = useState<"en" | "ar">("en");
   const [output, setOutput] = useState("");
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
+  const [isEditingBody, setIsEditingBody] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [showSlowHint, setShowSlowHint] = useState(false);
   const [copied, setCopied] = useState(false);
