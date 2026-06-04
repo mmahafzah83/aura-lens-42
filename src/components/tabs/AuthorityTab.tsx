@@ -375,6 +375,9 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
   const [publishedFromCreate, setPublishedFromCreate] = useState(false);
   const [pubUrlOpen, setPubUrlOpen] = useState(false);
   const [pubUrl, setPubUrl] = useState("");
+  const [pubUrlError, setPubUrlError] = useState("");
+  const [confirmPubUrl, setConfirmPubUrl] = useState("");
+  const [confirmPubUrlError, setConfirmPubUrlError] = useState("");
   const [selectedSignalId, setSelectedSignalId] = useState<string | null>(null);
   const [selectedSignalTitle, setSelectedSignalTitle] = useState<string | null>(null);
   const [selectedSignalInsight, setSelectedSignalInsight] = useState<string | null>(null);
@@ -399,6 +402,14 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [translatedPost, setTranslatedPost] = useState<string | null>(null);
   const [translatedLang, setTranslatedLang] = useState<"en" | "ar" | null>(null);
+
+  function validateLinkedInUrl(url: string): string {
+    const trimmed = url.trim();
+    if (trimmed && !trimmed.toLowerCase().includes("linkedin.com/")) {
+      return "That doesn't look like a LinkedIn link";
+    }
+    return "";
+  }
 
   // Free-tier generation limit
   const [monthlyGenerationCount, setMonthlyGenerationCount] = useState(0);
