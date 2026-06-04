@@ -687,7 +687,7 @@ ${insightsSummary}`
       const { suggestions } = JSON.parse(toolCall.function.arguments);
 
       const rows = suggestions.map((s: any) => ({
-        user_id: user.id,
+        user_id: effectiveUserId,
         topic: s.topic,
         angle: s.angle,
         recommended_format: s.recommended_format,
