@@ -201,29 +201,52 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header");
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const CRON_SECRET = Deno.env.get("CRON_SECRET") || "";
+    const authHeader = req.headers.get("Authorization") || "";
+    const bearer = authHeader.replace("Bearer ", "");
+    const apiKey = req.headers.get("apikey") || req.headers.get("x-api-key") || "";
+    const cronHeader = req.headers.get("x-cron-secret") || "";
+    const isCron = !!CRON_SECRET && cronHeader === CRON_SECRET;
+    const isServiceRole = !!SERVICE_ROLE && (bearer === SERVICE_ROLE || apiKey === SERVICE_ROLE);
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
+    const body = await req.json();
+    const { action, ...params } = body;
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) throw new Error("Unauthorized");
+    let supabase: ReturnType<typeof createClient>;
+    let effectiveUserId: string;
 
-    const { action, ...params } = await req.json();
+    if (isCron || isServiceRole) {
+      const bodyUserId = typeof body.user_id === "string" ? body.user_id : null;
+      if (!bodyUserId) {
+        return new Response(JSON.stringify({ error: "Unauthorized: user_id required for service/cron call" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
+      effectiveUserId = bodyUserId;
+    } else {
+      if (!authHeader) throw new Error("No authorization header");
+      supabase = createClient(SUPABASE_URL, ANON_KEY, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) throw new Error("Unauthorized");
+      effectiveUserId = user.id;
+    }
+
     const effectiveLanguage = (params.language || params.lang || "en") as string;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     // Load voice profile and diagnostic profile in parallel
     const [voiceRes, profileRes] = await Promise.all([
-      supabase.from("authority_voice_profiles").select("*").eq("user_id", user.id).eq("language", effectiveLanguage).maybeSingle(),
+      supabase.from("authority_voice_profiles").select("*").eq("user_id", effectiveUserId).eq("language", effectiveLanguage).maybeSingle(),
       supabase.from("diagnostic_profiles")
         .select("identity_intelligence, brand_pillars, core_practice, sector_focus, north_star_goal, level, audit_interpretation, brand_assessment_results")
-        .eq("user_id", user.id).maybeSingle(),
+        .eq("user_id", effectiveUserId).maybeSingle(),
     ]);
 
     const voiceProfile = voiceRes.data;
