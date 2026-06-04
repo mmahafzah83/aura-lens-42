@@ -1448,14 +1448,44 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                   </button>
                 )}
 
-                 <div
-                   dir={lang === "ar" || isArabicText(displayedOutput) ? "rtl" : "ltr"}
-                   className={`p-5 rounded-xl bg-secondary/20 border border-border/10 text-sm text-foreground/90 leading-relaxed max-h-[500px] overflow-y-auto ${
-                     lang === "ar" || isArabicText(displayedOutput) ? "arabic-text" : ""
-                   }`}
-                 >
-                  {renderMarkdown(fixArabicDirectionalSymbols(displayedOutput))}
-                  {isGeneratingAny && <span className="inline-block w-1.5 h-4 bg-primary/60 ml-1 animate-pulse rounded-sm" />}
+                <div className="relative">
+                  {isEditingBody && output.trim() ? (
+                    <textarea
+                      value={output}
+                      onChange={(e) => setOutput(e.target.value)}
+                      dir={lang === "ar" || isArabicText(displayedOutput) ? "rtl" : "ltr"}
+                      className={`w-full p-5 rounded-xl bg-secondary/20 border border-border/10 text-sm text-foreground/90 max-h-[500px] overflow-y-auto resize-none focus:outline-none focus:ring-1 focus:ring-primary/30 ${
+                        lang === "ar" || isArabicText(displayedOutput)
+                          ? "arabic-text font-cairo text-right leading-[1.9]"
+                          : "leading-relaxed"
+                      }`}
+                      style={{ minHeight: 280 }}
+                    />
+                  ) : (
+                    <div
+                      dir={lang === "ar" || isArabicText(displayedOutput) ? "rtl" : "ltr"}
+                      className={`p-5 rounded-xl bg-secondary/20 border border-border/10 text-sm text-foreground/90 leading-relaxed max-h-[500px] overflow-y-auto ${
+                        lang === "ar" || isArabicText(displayedOutput) ? "arabic-text" : ""
+                      }`}
+                    >
+                      {renderMarkdown(fixArabicDirectionalSymbols(displayedOutput))}
+                      {isGeneratingAny && <span className="inline-block w-1.5 h-4 bg-primary/60 ml-1 animate-pulse rounded-sm" />}
+                    </div>
+                  )}
+                  {output.trim() && !isGeneratingAny && (
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingBody((v) => !v)}
+                      className="absolute top-2 right-2 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-background/70 backdrop-blur border border-border/20 text-[11px] text-foreground/70 hover:text-foreground hover:bg-background/90 transition"
+                      aria-label={isEditingBody ? "Done editing" : "Edit post body"}
+                    >
+                      {isEditingBody ? (
+                        <><Check className="w-3 h-3" /> Done</>
+                      ) : (
+                        <><Pencil className="w-3 h-3" /> Edit</>
+                      )}
+                    </button>
+                  )}
                 </div>
                 {output.trim() && !isGeneratingAny && (
                   <>
