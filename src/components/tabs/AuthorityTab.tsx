@@ -250,6 +250,14 @@ interface PlanPrefill {
   planTitle: string;
 }
 
+interface DraftPrefill {
+  id: string;
+  body: string;
+  language: "en" | "ar";
+  type: "carousel" | "framework" | "linkedin_post";
+  topic?: string | null;
+}
+
 /**
  * Shared core for marking a post as published.
  * Used by both the Library "mark published" flow (existing drafts) AND
@@ -344,7 +352,7 @@ async function insertPublishedLinkedInPost(opts: {
     .catch((e) => console.error("calculate-aura-score failed:", e));
 }
 
-const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { planPrefill?: PlanPrefill | null; signalPrefill?: SignalPrefill | null; onSignalPrefillConsumed?: () => void }) => {
+const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftPrefill, onDraftPrefillConsumed }: { planPrefill?: PlanPrefill | null; signalPrefill?: SignalPrefill | null; onSignalPrefillConsumed?: () => void; draftPrefill?: DraftPrefill | null; onDraftPrefillConsumed?: () => void }) => {
   const navigate = useNavigate();
   const [topic, setTopic] = useState("");
   const [context, setContext] = useState("");
@@ -353,6 +361,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
   const [framework, setFramework] = useState<ContentFramework>("auto");
   const [lang, setLang] = useState<"en" | "ar">("en");
   const [output, setOutput] = useState("");
+  const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [showSlowHint, setShowSlowHint] = useState(false);
   const [copied, setCopied] = useState(false);
