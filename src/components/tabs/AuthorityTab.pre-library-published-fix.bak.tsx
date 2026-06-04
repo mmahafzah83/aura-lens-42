@@ -938,12 +938,8 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
         const update: Record<string, any> = {
           post_text: body,
           tracking_status: "published",
-          published_at: new Date().toISOString(),
         };
-        if (urlArg) {
-          update.linkedin_url = urlArg;
-          update.published_confirmed_at = new Date().toISOString();
-        }
+        if (urlArg) update.url = urlArg;
         const { error } = await supabase
           .from("linkedin_posts")
           .update(update as any)
@@ -2965,6 +2961,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
       supabase
         .from("linkedin_posts")
         .select("id, title, post_text, format_type, tracking_status, topic_label, created_at, source_metadata, source_type, published_at, linkedin_url, source_signal_id")
+        .neq("source_type", "aura_generated")
         .order("created_at", { ascending: false })
         .limit(100),
       supabase
@@ -3331,7 +3328,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                             language: ((p.source_metadata as any)?._language === "ar" ? "ar" : "en"),
                             type: mappedType,
                             topic: (p.source_metadata as any)?.topic || null,
-                            _source: "content_items",
+                            _source: "linkedin_posts",
                           });
                         }}
                         title="Edit draft"
