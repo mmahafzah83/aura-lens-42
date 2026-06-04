@@ -9,7 +9,7 @@ import {
   Loader2, Save, X, Send, Copy, Check, Trash2, Search,
   PenTool, LayoutGrid, FileText, BookOpen, Lightbulb,
   Sparkles, Zap, Target, ArrowRight, Layers,
-  Calendar, TrendingUp, BarChart3, ChevronLeft, ChevronDown, Image as ImageIcon, Download
+  Calendar, TrendingUp, BarChart3, ChevronLeft, ChevronDown, Image as ImageIcon, Download, Pencil
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Linkedin } from "lucide-react";
@@ -2777,7 +2777,7 @@ const LinkedInPreview = ({
   );
 };
 
-const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
+const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () => void; onOpenDraft?: (draft: { id: string; body: string; language: "en" | "ar"; type: "carousel" | "framework" | "linkedin_post"; topic?: string | null }) => void }) => {
   const [drafts, setDrafts] = useState<SavedPost[]>([]);
   const [publishedPosts, setPublishedPosts] = useState<SavedPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -3207,6 +3207,30 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                     >
                       <Check className="w-3.5 h-3.5" /> Published ✓
                     </button>
+                    {onOpenDraft && (
+                      <button
+                        onClick={() => {
+                          const rawType = p.format_type || "linkedin_post";
+                          const mappedType: "carousel" | "framework" | "linkedin_post" =
+                            rawType === "carousel" ? "carousel" :
+                            rawType === "framework" ? "framework" :
+                            "linkedin_post";
+                          onOpenDraft({
+                            id: p.id,
+                            body: p.post_text || "",
+                            language: ((p.source_metadata as any)?._language === "ar" ? "ar" : "en"),
+                            type: mappedType,
+                            topic: (p.source_metadata as any)?.topic || null,
+                          });
+                        }}
+                        title="Edit draft"
+                        aria-label="Edit draft"
+                        style={{ fontSize: 14, color: "var(--color-muted)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
+                        className="hover:text-foreground transition-colors"
+                      >
+                        <Pencil className="w-3.5 h-3.5" /> Edit
+                      </button>
+                    )}
                     <button
                       onClick={() => setPendingDeleteId(p.id)}
                       style={{ fontSize: 14, color: "var(--danger)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
@@ -3402,6 +3426,7 @@ interface AuthorityTabProps {
   onSignalPrefillConsumed?: () => void;
   draftPrefill?: DraftPrefill | null;
   onDraftPrefillConsumed?: () => void;
+  onOpenDraft?: (draft: { id: string; body: string; language: "en" | "ar"; type: "carousel" | "framework" | "linkedin_post"; topic?: string | null }) => void;
 }
 
 const TABS: { key: AuthoritySubTab; label: string; icon: typeof PenTool }[] = [
@@ -3410,7 +3435,7 @@ const TABS: { key: AuthoritySubTab; label: string; icon: typeof PenTool }[] = [
   { key: "plan", label: "Plan", icon: Calendar },
 ];
 
-const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsumed, draftPrefill, onDraftPrefillConsumed }: AuthorityTabProps) => {
+const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsumed, draftPrefill, onDraftPrefillConsumed, onOpenDraft }: AuthorityTabProps) => {
   const [activeTab, setActiveTab] = useState<AuthoritySubTab>("create");
   const [brandDone, setBrandDone] = useState<boolean | null>(null);
   const [planPrefill, setPlanPrefill] = useState<PlanPrefill | null>(null);
@@ -3513,7 +3538,7 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
 
       {activeTab === "create" && <CreateTab planPrefill={planPrefill} signalPrefill={signalPrefill} onSignalPrefillConsumed={onSignalPrefillConsumed} draftPrefill={draftPrefill} onDraftPrefillConsumed={onDraftPrefillConsumed} />}
       {activeTab === "plan" && <PlanTab onGenerateFromPlan={handleGenerateFromPlan} />}
-      {activeTab === "library" && <LibraryTab onSwitchToCreate={() => setActiveTab("create")} />}
+      {activeTab === "library" && <LibraryTab onSwitchToCreate={() => setActiveTab("create")} onOpenDraft={onOpenDraft} />}
     </div>
   );
 };
