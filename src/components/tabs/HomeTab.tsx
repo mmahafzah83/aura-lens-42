@@ -1920,6 +1920,16 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
         </div>
       )}
 
+      {/* Your week, ready — surfaces this week's prepared drafts above intelligence sections. */}
+      {onOpenDraft && (
+        <WeekReadyCard
+          onOpenDraft={(d) => {
+            onOpenDraft(d);
+            onSwitchTab?.("authority");
+          }}
+        />
+      )}
+
       <WeeklyIntelligenceLoopCard onSwitchTab={onSwitchTab} />
 
       {/* Evidence Audit CTA — shows for users still on self_calibration within 14 days */}
