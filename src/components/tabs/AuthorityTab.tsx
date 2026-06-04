@@ -2886,6 +2886,15 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
   const toggleCardExpand = (id: string) => setExpandedCards(prev => { const next = new Set(prev); if (next.has(id)) { next.delete(id); } else { next.add(id); } return next; });
   // M-1-1: confirm-publish + URL tracking + preview
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [confirmPubUrl, setConfirmPubUrl] = useState("");
+  const [confirmPubUrlError, setConfirmPubUrlError] = useState("");
+  function validateLinkedInUrl(url: string): string {
+    const trimmed = url.trim();
+    if (trimmed && !trimmed.toLowerCase().includes("linkedin.com/")) {
+      return "That doesn't look like a LinkedIn link";
+    }
+    return "";
+  }
   const [urlDrafts, setUrlDrafts] = useState<Record<string, string>>({});
   const [savedUrls, setSavedUrls] = useState<Record<string, string>>({});
   const [signalTitleMap, setSignalTitleMap] = useState<Record<string, string>>({});
