@@ -159,74 +159,6 @@ const VoiceEngineSection = () => {
     loadProfile();
   }, [open, loadProfile]);
 
-  // Append an entry to example_posts with a given source tag (non-destructive).
-  const appendTaggedExample = async (content: string, source: string) => {
-    const trimmed = content.trim();
-    if (!trimmed) return;
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user?.id) throw new Error("Not authenticated");
-    const uid = session.user.id;
-    const { data: existing } = await supabase
-      .from("authority_voice_profiles")
-      .select("id, example_posts")
-      .eq("user_id", uid)
-      .eq("is_primary", true)
-      .maybeSingle();
-    const current = Array.isArray((existing as any)?.example_posts)
-      ? ((existing as any).example_posts as any[])
-      : [];
-    const updated = [...current, { content: trimmed, source, added_at: new Date().toISOString() }];
-    if (existing) {
-      const { error } = await supabase
-        .from("authority_voice_profiles")
-        .update({ example_posts: updated, updated_at: new Date().toISOString() })
-        .eq("user_id", uid)
-        .eq("is_primary", true);
-      if (error) throw error;
-    } else {
-      const { error } = await supabase
-        .from("authority_voice_profiles")
-        .insert({ user_id: uid, example_posts: updated, updated_at: new Date().toISOString(), language: "en", is_primary: true });
-      if (error) throw error;
-    }
-  };
-
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    try {
-      let text = "";
-      if (file.name.endsWith(".txt") || file.type === "text/plain") {
-        text = await file.text();
-      } else if (file.name.endsWith(".pdf") || file.type === "application/pdf") {
-        const arrayBuf = await file.arrayBuffer();
-        const bytes = new Uint8Array(arrayBuf);
-        const raw = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
-        const readable = raw.match(/[\x20-\x7E\n\r]{20,}/g) || [];
-        text = readable.join("\n").slice(0, 10000);
-        if (!text.trim()) {
-          text = `[PDF uploaded: ${file.name}]`;
-          toast.info("PDF text extraction was limited. For best results, paste the text directly.");
-        }
-      } else {
-        toast.error("Please upload a PDF or TXT file");
-        return;
-      }
-      if (text.trim()) {
-        await appendTaggedExample(text.slice(0, 10000), "upload");
-        toast.success("Document added to your voice engine");
-        await loadProfile();
-      }
-    } catch (err: any) {
-      console.error("Voice upload error:", err);
-      toast.error(err.message || "Couldn't process file");
-    } finally {
-      setUploading(false);
-      if (fileRef.current) fileRef.current.value = "";
-    }
-  };
-
   const handleDistill = async () => {
     setDistilling(true);
     try {
@@ -264,17 +196,17 @@ const VoiceEngineSection = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.id) throw new Error("Not authenticated");
       const { data, error } = await supabase.functions.invoke("voice-distill", {
-        body: { posts: postsArr },
+        body: { posts: postsArr, store_samples: true },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      toast.success(`Learned from ${postsArr.length} ${postsArr.length === 1 ? "post" : "posts"} — your voice profile is updated.`);
+      toast.success(`Voice sharpened from ${postsArr.length} ${postsArr.length === 1 ? "post" : "posts"}.`);
       setTeachText("");
       setDistilledOnce(true);
       await loadProfile();
     } catch (err: any) {
       console.error("Voice teach error:", err);
-      toast.error(err.message || "Couldn't learn from those posts");
+      toast.error(err.message || "Couldn't teach Aura from those posts");
     } finally {
       setTeaching(false);
     }
@@ -340,17 +272,32 @@ const VoiceEngineSection = () => {
   const handleTeachFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setUploading(true);
     try {
-      if (!(file.name.endsWith(".txt") || file.type === "text/plain")) {
-        toast.error("Please upload a .txt file with posts separated by --- on a new line.");
+      let text = "";
+      if (file.name.endsWith(".txt") || file.type === "text/plain") {
+        text = await file.text();
+      } else if (file.name.endsWith(".pdf") || file.type === "application/pdf") {
+        const arrayBuf = await file.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuf);
+        const raw = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+        const readable = raw.match(/[\x20-\x7E\n\r]{20,}/g) || [];
+        text = readable.join("\n").slice(0, 10000);
+        if (!text.trim()) {
+          toast.info("PDF text extraction was limited. For best results, paste the text directly.");
+          return;
+        }
+      } else {
+        toast.error("Please upload a PDF or TXT file");
         return;
       }
-      const text = await file.text();
-      await teachFromPosts(parsePostsBlock(text));
+      const truncated = text.slice(0, 10000);
+      await teachFromPosts(parsePostsBlock(truncated));
     } catch (err: any) {
       console.error("Voice teach file error:", err);
       toast.error(err.message || "Couldn't read that file");
     } finally {
+      setUploading(false);
       if (teachFileRef.current) teachFileRef.current.value = "";
     }
   };
