@@ -22,7 +22,7 @@ const VoiceEngineSection = () => {
   const [uploading, setUploading] = useState(false);
   const [distilling, setDistilling] = useState(false);
   const [distilledOnce, setDistilledOnce] = useState(false);
-  
+  const fileRef = useRef<HTMLInputElement>(null);
   const teachFileRef = useRef<HTMLInputElement>(null);
   const [teachText, setTeachText] = useState("");
   const [teaching, setTeaching] = useState(false);
@@ -274,11 +274,23 @@ const VoiceEngineSection = () => {
     if (!file) return;
     setUploading(true);
     try {
-      if (!file.name.endsWith(".txt") && file.type !== "text/plain") {
-        toast.error("Text files only for now — or paste your posts directly.");
+      let text = "";
+      if (file.name.endsWith(".txt") || file.type === "text/plain") {
+        text = await file.text();
+      } else if (file.name.endsWith(".pdf") || file.type === "application/pdf") {
+        const arrayBuf = await file.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuf);
+        const raw = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+        const readable = raw.match(/[\x20-\x7E\n\r]{20,}/g) || [];
+        text = readable.join("\n").slice(0, 10000);
+        if (!text.trim()) {
+          toast.info("PDF text extraction was limited. For best results, paste the text directly.");
+          return;
+        }
+      } else {
+        toast.error("Please upload a PDF or TXT file");
         return;
       }
-      const text = await file.text();
       const truncated = text.slice(0, 10000);
       await teachFromPosts(parsePostsBlock(truncated));
     } catch (err: any) {
@@ -1109,7 +1121,7 @@ const VoiceEngineSection = () => {
                     Teach Aura your writing
                   </p>
                   <p className="text-xs text-muted-foreground/60 mb-2">
-                    Paste a few of your posts (separate with ---) or upload a .txt file — Aura detects the language and refines your voice automatically.
+                    Paste a few of your posts (separate with ---) or upload a file — Aura detects the language and refines your voice automatically.
                   </p>
                   <Textarea
                     value={teachText}
@@ -1123,7 +1135,7 @@ const VoiceEngineSection = () => {
                       <input
                         ref={teachFileRef}
                         type="file"
-                        accept=".txt"
+                        accept=".pdf,.txt,application/pdf,text/plain"
                         onChange={handleTeachFile}
                         className="hidden"
                         id="voice-teach-file"
@@ -1136,7 +1148,7 @@ const VoiceEngineSection = () => {
                         className="w-full gap-2"
                       >
                         {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                        Upload .txt of posts
+                        Upload PDF or TXT
                       </Button>
                     </div>
                     <Button
