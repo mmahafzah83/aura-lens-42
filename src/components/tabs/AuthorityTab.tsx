@@ -3207,6 +3207,30 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                     >
                       <Check className="w-3.5 h-3.5" /> Published ✓
                     </button>
+                    {onOpenDraft && (
+                      <button
+                        onClick={() => {
+                          const rawType = p.format_type || "linkedin_post";
+                          const mappedType: "carousel" | "framework" | "linkedin_post" =
+                            rawType === "carousel" ? "carousel" :
+                            rawType === "framework" ? "framework" :
+                            "linkedin_post";
+                          onOpenDraft({
+                            id: p.id,
+                            body: p.post_text || "",
+                            language: ((p.source_metadata as any)?._language === "ar" ? "ar" : "en"),
+                            type: mappedType,
+                            topic: (p.source_metadata as any)?.topic || null,
+                          });
+                        }}
+                        title="Edit draft"
+                        aria-label="Edit draft"
+                        style={{ fontSize: 14, color: "var(--color-muted)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
+                        className="hover:text-foreground transition-colors"
+                      >
+                        <Pencil className="w-3.5 h-3.5" /> Edit
+                      </button>
+                    )}
                     <button
                       onClick={() => setPendingDeleteId(p.id)}
                       style={{ fontSize: 14, color: "var(--danger)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
