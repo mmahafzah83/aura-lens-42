@@ -9,7 +9,7 @@ import {
   Loader2, Save, X, Send, Copy, Check, Trash2, Search,
   PenTool, LayoutGrid, FileText, BookOpen, Lightbulb,
   Sparkles, Zap, Target, ArrowRight, Layers,
-  Calendar, TrendingUp, BarChart3, ChevronLeft, ChevronDown, Image as ImageIcon, Download
+  Calendar, TrendingUp, BarChart3, ChevronLeft, ChevronDown, Image as ImageIcon, Download, Pencil
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Linkedin } from "lucide-react";
