@@ -37,6 +37,7 @@ import { shareToLinkedIn } from "@/lib/shareLinkedIn";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
 import AuditCtaCard from "@/components/home/AuditCtaCard";
 import { FirstTimeHint } from "@/components/FirstTimeHint";
+import WeekReadyCard, { type WeekReadyDraft } from "@/components/home/WeekReadyCard";
 
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
@@ -49,6 +50,7 @@ interface HomeTabProps {
   onOpenCapture?: (prefillUrl?: string, prefillText?: string) => void;
   onSwitchTab?: (tab: TabValue) => void;
   onDraftToStudio?: (prefill: any) => void;
+  onOpenDraft?: (draft: WeekReadyDraft) => void;
 }
 
 interface ScoreSnap {
@@ -208,7 +210,7 @@ const timeAgo = (iso: string) => formatSmartDate(iso);
 // Component
 // ────────────────────────────────────────────────
 
-const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavigateToSignal }: HomeTabProps) => {
+const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavigateToSignal, onOpenDraft }: HomeTabProps) => {
   // Local helper for the home score number — counts up once per session.
 
   const { user: authUser, session: authSession, isReady: authReady } = useAuthReady();
