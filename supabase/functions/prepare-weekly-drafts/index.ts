@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { detectLang } from "../_shared/lang.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -154,12 +155,38 @@ Deno.serve(async (req) => {
         );
         const secondaryLang: string | null = secondaryRow?.language || null;
 
+        // 4b) Behavioral mix: mirror how the user actually posts.
+        // Fetch up to 30 recent posts, classify per language, compute secondary share.
+        let secondarySlots = 0;
+        if (secondaryLang) {
+          const { data: recentPosts } = await admin
+            .from("linkedin_posts")
+            .select("post_text")
+            .eq("user_id", userId)
+            .not("post_text", "is", null)
+            .order("created_at", { ascending: false })
+            .limit(30);
+          const texts = (recentPosts || [])
+            .map((p: any) => String(p?.post_text || "").trim())
+            .filter((t: string) => t.length > 0);
+          if (texts.length > 0) {
+            let secondaryCount = 0;
+            for (const t of texts) {
+              if (detectLang(t) === secondaryLang) secondaryCount++;
+            }
+            const secondaryShare = secondaryCount / texts.length;
+            if (secondaryShare >= 0.25) secondarySlots = 1;
+          }
+        }
+
         // 5+6) Generate + insert
         for (let i = 0; i < candidates.length; i++) {
           const signal = candidates[i];
           const isLast = i === candidates.length - 1;
           const draftLang =
-            isLast && secondaryLang ? secondaryLang : primaryLang;
+            isLast && secondarySlots === 1 && secondaryLang
+              ? secondaryLang
+              : primaryLang;
 
           // Build context (trim to ~1500 chars)
           const parts: string[] = [];
