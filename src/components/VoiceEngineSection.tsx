@@ -366,9 +366,14 @@ const VoiceEngineSection = () => {
           .eq("is_primary", true);
         if (error) throw error;
       } else {
+        const primaryLang = (profiles.find((r: any) => r.is_primary)?.language === "ar" ? "ar" : "en");
         const { error } = await supabase
           .from("authority_voice_profiles")
-          .insert({ ...row, language: "en", is_primary: true });
+          .insert({
+            ...row,
+            language: primaryLang,
+            is_primary: profiles.length === 0,
+          });
         if (error) throw error;
       }
 
