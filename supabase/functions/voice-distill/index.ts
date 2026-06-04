@@ -442,7 +442,21 @@ Deno.serve(async (req) => {
     }
 
     // Step 5 — Primary assignment: demote-all-then-promote-dominant (required by one-primary index).
-    if (distilledLanguages.length > 0) {
+    // Gating: full re-distill (linkedin branch) always reassigns primary.
+    // Ad-hoc bulk-teach branch (useAdHoc) must NOT touch an existing primary —
+    // only assign primary when the user has no primary row at all (first-ever teach).
+    let shouldAssignPrimary = distilledLanguages.length > 0 && !useAdHoc;
+    if (distilledLanguages.length > 0 && useAdHoc) {
+      const { data: primaryCheck } = await supabase
+        .from("authority_voice_profiles")
+        .select("id")
+        .eq("user_id", user_id)
+        .eq("is_primary", true)
+        .limit(1)
+        .maybeSingle();
+      if (!primaryCheck) shouldAssignPrimary = true;
+    }
+    if (shouldAssignPrimary) {
       const { error: demoteErr } = await supabase
         .from("authority_voice_profiles")
         .update({ is_primary: false })
