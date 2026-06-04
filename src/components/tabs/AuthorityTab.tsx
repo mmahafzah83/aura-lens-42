@@ -439,44 +439,49 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
   }, []);
 
   useEffect(() => {
-    Promise.all([
-      supabase.from("strategic_signals").select("id, signal_title, explanation, content_opportunity, confidence, strategic_implications, fragment_count, unique_orgs, theme_tags")
-        .eq("status", "active").gte("confidence", 0.6).order("confidence", { ascending: false }).limit(5),
-      supabase.from("master_frameworks").select("id, title, summary, tags").order("created_at", { ascending: false }).limit(5),
-      supabase.from("authority_voice_profiles").select("vocabulary_preferences, example_posts, preferred_structures").eq("language", lang).limit(1).maybeSingle(),
-      supabase.from("diagnostic_profiles").select("first_name, level, firm").limit(1).maybeSingle(),
-    ]).then(([sRes, fRes, vRes, pRes]) => {
-      setSignals((sRes.data || []) as any);
-      setFrameworks((fRes.data || []) as any);
-      setSuggestionsLoading(false);
-      if (pRes?.data) {
-        setProfileName(pRes.data.first_name || "");
-        setProfileRole([pRes.data.level, pRes.data.firm].filter(Boolean).join(" · "));
-      }
-      if (vRes.data) {
-        const words: string[] = [];
-        const vp = vRes.data.vocabulary_preferences;
-        if (vp && typeof vp === "object") {
-          Object.values(vp).forEach((v: any) => {
-            if (typeof v === "string" && v.trim()) words.push(...v.toLowerCase().split(/\s+/));
-            if (Array.isArray(v)) v.forEach((s: any) => { if (typeof s === "string" && s.trim()) words.push(...s.toLowerCase().split(/\s+/)); });
-          });
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const uid = session?.user?.id;
+      if (!uid) return;
+      Promise.all([
+        supabase.from("strategic_signals").select("id, signal_title, explanation, content_opportunity, confidence, strategic_implications, fragment_count, unique_orgs, theme_tags")
+          .eq("status", "active").gte("confidence", 0.6).order("confidence", { ascending: false }).limit(5),
+        supabase.from("master_frameworks").select("id, title, summary, tags").order("created_at", { ascending: false }).limit(5),
+        supabase.from("authority_voice_profiles").select("vocabulary_preferences, example_posts, preferred_structures").eq("user_id", uid).eq("language", lang).limit(1).maybeSingle(),
+        supabase.from("diagnostic_profiles").select("first_name, level, firm").limit(1).maybeSingle(),
+      ]).then(([sRes, fRes, vRes, pRes]) => {
+        setSignals((sRes.data || []) as any);
+        setFrameworks((fRes.data || []) as any);
+        setSuggestionsLoading(false);
+        if (pRes?.data) {
+          setProfileName(pRes.data.first_name || "");
+          setProfileRole([pRes.data.level, pRes.data.firm].filter(Boolean).join(" · "));
         }
-        const ep = vRes.data.example_posts;
-        if (Array.isArray(ep)) {
-          ep.forEach((p: any) => {
-            const text = typeof p === "string" ? p : p?.content || p?.text || "";
-            if (text) words.push(...text.toLowerCase().split(/\s+/).filter((w: string) => w.length > 4).slice(0, 20));
-          });
+        if (vRes.data) {
+          const words: string[] = [];
+          const vp = vRes.data.vocabulary_preferences;
+          if (vp && typeof vp === "object") {
+            Object.values(vp).forEach((v: any) => {
+              if (typeof v === "string" && v.trim()) words.push(...v.toLowerCase().split(/\s+/));
+              if (Array.isArray(v)) v.forEach((s: any) => { if (typeof s === "string" && s.trim()) words.push(...s.toLowerCase().split(/\s+/)); });
+            });
+          }
+          const ep = vRes.data.example_posts;
+          if (Array.isArray(ep)) {
+            ep.forEach((p: any) => {
+              const text = typeof p === "string" ? p : p?.content || p?.text || "";
+              if (text) words.push(...text.toLowerCase().split(/\s+/).filter((w: string) => w.length > 4).slice(0, 20));
+            });
+          }
+          setVoiceWords(Array.from(new Set(words.filter(w => w.length > 3))));
+          // preferred structures
+          const ps = vRes.data.preferred_structures;
+          if (Array.isArray(ps)) setPreferredStructures(ps.map((s: any) => typeof s === "string" ? s : JSON.stringify(s)));
+          else if (typeof ps === "string") setPreferredStructures([ps]);
         }
-        setVoiceWords(Array.from(new Set(words.filter(w => w.length > 3))));
-        // preferred structures
-        const ps = vRes.data.preferred_structures;
-        if (Array.isArray(ps)) setPreferredStructures(ps.map((s: any) => typeof s === "string" ? s : JSON.stringify(s)));
-        else if (typeof ps === "string") setPreferredStructures([ps]);
-      }
-    });
-  }, []);
+      });
+    })();
+  }, [lang]);
 
   const selectSuggestion = (t: string, ctx: string, format: ContentType, signalTitle?: string, signalInsight?: string) => {
     setTopic(t);
