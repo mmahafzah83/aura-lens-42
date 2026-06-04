@@ -923,7 +923,16 @@ const Dashboard = () => {
                   }}
                 />
                 <ErrorBoundary>
-                  <HomeTab entries={entries} onOpenChat={openChat} onRefresh={fetchEntries} onNavigateToSignal={navigateToSignal} onOpenCapture={handleOpenCapture} onSwitchTab={switchTab} onDraftToStudio={(prefill) => { setSignalDraftPrefill(prefill); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
+                  <HomeTab
+                    entries={entries}
+                    onOpenChat={openChat}
+                    onRefresh={fetchEntries}
+                    onNavigateToSignal={navigateToSignal}
+                    onOpenCapture={handleOpenCapture}
+                    onSwitchTab={switchTab}
+                    onDraftToStudio={(prefill) => { setSignalDraftPrefill(prefill); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                    onOpenDraft={(d) => { setDraftPrefill(d); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                  />
                 </ErrorBoundary>
               </div>
             )}
