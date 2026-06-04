@@ -256,6 +256,7 @@ interface DraftPrefill {
   language: "en" | "ar";
   type: "carousel" | "framework" | "linkedin_post";
   topic?: string | null;
+  _source?: "content_items" | "linkedin_posts";
 }
 
 /**
@@ -2808,7 +2809,7 @@ const LinkedInPreview = ({
   );
 };
 
-const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () => void; onOpenDraft?: (draft: { id: string; body: string; language: "en" | "ar"; type: "carousel" | "framework" | "linkedin_post"; topic?: string | null }) => void }) => {
+const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () => void; onOpenDraft?: (draft: { id: string; body: string; language: "en" | "ar"; type: "carousel" | "framework" | "linkedin_post"; topic?: string | null; _source?: "content_items" | "linkedin_posts" }) => void }) => {
   const [drafts, setDrafts] = useState<SavedPost[]>([]);
   const [publishedPosts, setPublishedPosts] = useState<SavedPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -3252,6 +3253,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                             language: ((p.source_metadata as any)?._language === "ar" ? "ar" : "en"),
                             type: mappedType,
                             topic: (p.source_metadata as any)?.topic || null,
+                            _source: "linkedin_posts",
                           });
                         }}
                         title="Edit draft"
@@ -3457,7 +3459,7 @@ interface AuthorityTabProps {
   onSignalPrefillConsumed?: () => void;
   draftPrefill?: DraftPrefill | null;
   onDraftPrefillConsumed?: () => void;
-  onOpenDraft?: (draft: { id: string; body: string; language: "en" | "ar"; type: "carousel" | "framework" | "linkedin_post"; topic?: string | null }) => void;
+  onOpenDraft?: (draft: { id: string; body: string; language: "en" | "ar"; type: "carousel" | "framework" | "linkedin_post"; topic?: string | null; _source?: "content_items" | "linkedin_posts" }) => void;
 }
 
 const TABS: { key: AuthoritySubTab; label: string; icon: typeof PenTool }[] = [

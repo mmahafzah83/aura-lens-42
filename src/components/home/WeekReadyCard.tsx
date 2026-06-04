@@ -20,6 +20,7 @@ export interface WeekReadyDraft {
   language: "en" | "ar";
   type: DraftType;
   topic?: string | null;
+  _source?: "content_items" | "linkedin_posts";
 }
 
 interface ContentItemRow {
@@ -260,6 +261,7 @@ export default function WeekReadyCard({ onOpenDraft }: WeekReadyCardProps) {
                             language: lang,
                             type: mapType(row.type),
                             topic: row?.generation_params?.topic || null,
+                            _source: "content_items",
                           })
                         }
                       >
