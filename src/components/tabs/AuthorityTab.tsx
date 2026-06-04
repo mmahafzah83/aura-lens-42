@@ -564,6 +564,31 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
     }
   }, [signalPrefill]);
 
+  // Apply draft prefill — opens an existing content_items draft in the editor.
+  // Mirrors the signalPrefill channel: hydrate state, then notify parent to clear.
+  useEffect(() => {
+    if (draftPrefill) {
+      const mappedType: ContentType =
+        draftPrefill.type === "carousel" ? "carousel" :
+        draftPrefill.type === "framework" ? "framework_summary" :
+        "post";
+      setEditingDraftId(draftPrefill.id);
+      setTopic(draftPrefill.topic || "");
+      setContext("");
+      setContentType(mappedType);
+      setLang(draftPrefill.language === "ar" ? "ar" : "en");
+      setOutput(draftPrefill.body || "");
+      setFullVersion("");
+      setShortVersion("");
+      setShowingShort(false);
+      setPlanRef(null);
+      setCardRecommendation(null);
+      setDraftSaved(false);
+      setPublishedFromCreate(false);
+      onDraftPrefillConsumed?.();
+    }
+  }, [draftPrefill]);
+
   // Auto-detect best card style/type after content is generated
   const displayedOutputForDetect = output;
   useEffect(() => {
