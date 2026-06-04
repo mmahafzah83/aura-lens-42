@@ -567,6 +567,7 @@ Return ONLY a JSON object matching this exact schema:
               { role: "user", content: userMessage },
             ],
             response_format: { type: "json_object" },
+            max_tokens: 8192,
           }),
         });
 
@@ -597,9 +598,40 @@ Return ONLY a JSON object matching this exact schema:
         try {
           parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
         } catch (err) {
-          // Tolerate code-fence wrapping
-          const cleaned = String(raw).replace(/^```(?:json)?\s*|\s*```$/g, "").trim();
-          parsed = JSON.parse(cleaned);
+          // Tolerate code-fence wrapping and truncated JSON
+          let cleaned = String(raw).replace(/^```(?:json)?\s*|\s*```$/g, "").trim();
+          try {
+            parsed = JSON.parse(cleaned);
+          } catch {
+            // Extract the largest balanced JSON object prefix; close any open
+            // strings/braces/brackets so a truncated response still parses.
+            const start = cleaned.indexOf("{");
+            if (start >= 0) cleaned = cleaned.slice(start);
+            let inStr = false, esc = false, depthObj = 0, depthArr = 0, lastGood = -1;
+            for (let i = 0; i < cleaned.length; i++) {
+              const c = cleaned[i];
+              if (esc) { esc = false; continue; }
+              if (c === "\\") { esc = true; continue; }
+              if (c === '"') { inStr = !inStr; continue; }
+              if (inStr) continue;
+              if (c === "{") depthObj++;
+              else if (c === "}") { depthObj--; if (depthObj === 0 && depthArr === 0) lastGood = i; }
+              else if (c === "[") depthArr++;
+              else if (c === "]") depthArr--;
+            }
+            if (lastGood > 0) {
+              parsed = JSON.parse(cleaned.slice(0, lastGood + 1));
+            } else {
+              // Best-effort: trim to last comma, close open structures
+              let s = cleaned;
+              if (inStr) s += '"';
+              const lastComma = s.lastIndexOf(",");
+              if (lastComma > 0) s = s.slice(0, lastComma);
+              while (depthArr-- > 0) s += "]";
+              while (depthObj-- > 0) s += "}";
+              parsed = JSON.parse(s);
+            }
+          }
         }
 
         return new Response(JSON.stringify({ success: true, cards: parsed }), {
