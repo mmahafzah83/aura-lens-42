@@ -256,7 +256,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         const fourWeeksAgo = new Date(); fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
         const [voiceRes, postsRes, recentEntriesRes] = await Promise.all([
           (supabase.from("authority_voice_profiles") as any)
-            .select("tone, example_posts").eq("user_id", uid).maybeSingle(),
+            .select("tone, example_posts").eq("user_id", uid).eq("is_primary", true).maybeSingle(),
           (supabase.from("linkedin_posts") as any)
             .select("engagement_score").eq("user_id", uid).limit(200),
           (supabase.from("entries") as any)
