@@ -161,10 +161,19 @@ const VoiceEngineSection = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.id) throw new Error("Not authenticated");
       const { data, error } = await supabase.functions.invoke("voice-distill", {
-        body: { user_id: session.user.id },
+        body: { user_id: session.user.id, language: activeLang },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      if (data?.skipped) {
+        toast(
+          activeLang === "ar"
+            ? "علّم Aura المزيد من منشوراتك بهذه اللغة أولاً"
+            : "Teach Aura a few more posts in this language first."
+        );
+        await loadProfile();
+        return;
+      }
       toast.success("Voice locked in. From now on, every post sounds like the best version of you.");
       setDistilledOnce(true);
       await loadProfile();
