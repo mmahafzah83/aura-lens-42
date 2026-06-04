@@ -844,18 +844,36 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
         timestamp: generationTimestamp || new Date().toISOString(),
       };
 
-      const { error } = await supabase.from("content_items").insert({
-        user_id: session.user.id,
-        type: (contentType as string) === "carousel" ? "carousel" : (contentType as string) === "framework_summary" ? "framework" : "linkedin_post",
-        body,
-        language: lang,
-        status: "draft",
-        generation_params: generationParams,
-      });
-      if (error) throw error;
-      setMonthlyGenerationCount(prev => prev + 1);
-      setDraftSaved(true);
-      toast.success("Draft saved to Library");
+      const mappedType = (contentType as string) === "carousel" ? "carousel" : (contentType as string) === "framework_summary" ? "framework" : "linkedin_post";
+      if (editingDraftId) {
+        // Update the existing draft row — no new content_items row is created.
+        const { error } = await supabase
+          .from("content_items")
+          .update({
+            body,
+            language: lang,
+            type: mappedType,
+            generation_params: generationParams,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", editingDraftId);
+        if (error) throw error;
+        setDraftSaved(true);
+        toast.success("Draft updated in Library");
+      } else {
+        const { error } = await supabase.from("content_items").insert({
+          user_id: session.user.id,
+          type: mappedType,
+          body,
+          language: lang,
+          status: "draft",
+          generation_params: generationParams,
+        });
+        if (error) throw error;
+        setMonthlyGenerationCount(prev => prev + 1);
+        setDraftSaved(true);
+        toast.success("Draft saved to Library");
+      }
     } catch (e: any) {
       toast.error(e?.message || "Couldn't save. Please try again.");
     } finally {
