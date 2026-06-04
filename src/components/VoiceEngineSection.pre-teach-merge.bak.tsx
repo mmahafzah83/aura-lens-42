@@ -159,6 +159,74 @@ const VoiceEngineSection = () => {
     loadProfile();
   }, [open, loadProfile]);
 
+  // Append an entry to example_posts with a given source tag (non-destructive).
+  const appendTaggedExample = async (content: string, source: string) => {
+    const trimmed = content.trim();
+    if (!trimmed) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.id) throw new Error("Not authenticated");
+    const uid = session.user.id;
+    const { data: existing } = await supabase
+      .from("authority_voice_profiles")
+      .select("id, example_posts")
+      .eq("user_id", uid)
+      .eq("is_primary", true)
+      .maybeSingle();
+    const current = Array.isArray((existing as any)?.example_posts)
+      ? ((existing as any).example_posts as any[])
+      : [];
+    const updated = [...current, { content: trimmed, source, added_at: new Date().toISOString() }];
+    if (existing) {
+      const { error } = await supabase
+        .from("authority_voice_profiles")
+        .update({ example_posts: updated, updated_at: new Date().toISOString() })
+        .eq("user_id", uid)
+        .eq("is_primary", true);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase
+        .from("authority_voice_profiles")
+        .insert({ user_id: uid, example_posts: updated, updated_at: new Date().toISOString(), language: "en", is_primary: true });
+      if (error) throw error;
+    }
+  };
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      let text = "";
+      if (file.name.endsWith(".txt") || file.type === "text/plain") {
+        text = await file.text();
+      } else if (file.name.endsWith(".pdf") || file.type === "application/pdf") {
+        const arrayBuf = await file.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuf);
+        const raw = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+        const readable = raw.match(/[\x20-\x7E\n\r]{20,}/g) || [];
+        text = readable.join("\n").slice(0, 10000);
+        if (!text.trim()) {
+          text = `[PDF uploaded: ${file.name}]`;
+          toast.info("PDF text extraction was limited. For best results, paste the text directly.");
+        }
+      } else {
+        toast.error("Please upload a PDF or TXT file");
+        return;
+      }
+      if (text.trim()) {
+        await appendTaggedExample(text.slice(0, 10000), "upload");
+        toast.success("Document added to your voice engine");
+        await loadProfile();
+      }
+    } catch (err: any) {
+      console.error("Voice upload error:", err);
+      toast.error(err.message || "Couldn't process file");
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
   const handleDistill = async () => {
     setDistilling(true);
     try {
@@ -196,17 +264,17 @@ const VoiceEngineSection = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.id) throw new Error("Not authenticated");
       const { data, error } = await supabase.functions.invoke("voice-distill", {
-        body: { posts: postsArr, store_samples: true },
+        body: { posts: postsArr },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      toast.success(`Voice sharpened from ${postsArr.length} ${postsArr.length === 1 ? "post" : "posts"}.`);
+      toast.success(`Learned from ${postsArr.length} ${postsArr.length === 1 ? "post" : "posts"} — your voice profile is updated.`);
       setTeachText("");
       setDistilledOnce(true);
       await loadProfile();
     } catch (err: any) {
       console.error("Voice teach error:", err);
-      toast.error(err.message || "Couldn't teach Aura from those posts");
+      toast.error(err.message || "Couldn't learn from those posts");
     } finally {
       setTeaching(false);
     }
@@ -272,32 +340,17 @@ const VoiceEngineSection = () => {
   const handleTeachFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setUploading(true);
     try {
-      let text = "";
-      if (file.name.endsWith(".txt") || file.type === "text/plain") {
-        text = await file.text();
-      } else if (file.name.endsWith(".pdf") || file.type === "application/pdf") {
-        const arrayBuf = await file.arrayBuffer();
-        const bytes = new Uint8Array(arrayBuf);
-        const raw = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
-        const readable = raw.match(/[\x20-\x7E\n\r]{20,}/g) || [];
-        text = readable.join("\n").slice(0, 10000);
-        if (!text.trim()) {
-          toast.info("PDF text extraction was limited. For best results, paste the text directly.");
-          return;
-        }
-      } else {
-        toast.error("Please upload a PDF or TXT file");
+      if (!(file.name.endsWith(".txt") || file.type === "text/plain")) {
+        toast.error("Please upload a .txt file with posts separated by --- on a new line.");
         return;
       }
-      const truncated = text.slice(0, 10000);
-      await teachFromPosts(parsePostsBlock(truncated));
+      const text = await file.text();
+      await teachFromPosts(parsePostsBlock(text));
     } catch (err: any) {
       console.error("Voice teach file error:", err);
       toast.error(err.message || "Couldn't read that file");
     } finally {
-      setUploading(false);
       if (teachFileRef.current) teachFileRef.current.value = "";
     }
   };
@@ -366,14 +419,9 @@ const VoiceEngineSection = () => {
           .eq("is_primary", true);
         if (error) throw error;
       } else {
-        const primaryLang = (profiles.find((r: any) => r.is_primary)?.language === "ar" ? "ar" : "en");
         const { error } = await supabase
           .from("authority_voice_profiles")
-          .insert({
-            ...row,
-            language: primaryLang,
-            is_primary: profiles.length === 0,
-          });
+          .insert({ ...row, language: "en", is_primary: true });
         if (error) throw error;
       }
 
@@ -1061,6 +1109,26 @@ const VoiceEngineSection = () => {
 
               <div>
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
+                  Your writing samples
+                </label>
+                <p className="text-xs text-muted-foreground/50 mb-2">
+                  Paste examples of your best posts or writing. Separate multiple samples with --- on a new line.
+                </p>
+                <Textarea
+                  value={writingSamples}
+                  onChange={(e) => setWritingSamples(e.target.value)}
+                  placeholder="Paste your best LinkedIn posts, articles, or writing samples here..."
+                  className="min-h-[120px] bg-secondary/30 border-border/20 text-sm"
+                />
+                {preservedExamples.length > 0 && (
+                  <p className="text-[11px] text-muted-foreground/60 mt-2 italic">
+                    + {preservedExamples.length} {preservedExamples.length === 1 ? "post" : "posts"} learned from your uploads and feedback (kept automatically)
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
                   Admired posts
                 </label>
                 <p className="text-xs text-muted-foreground/50 mb-2">
@@ -1098,7 +1166,30 @@ const VoiceEngineSection = () => {
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Add more, learn faster
                 </p>
-                <div className="grid grid-cols-1 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      accept=".pdf,.txt,application/pdf,text/plain"
+                      onChange={handleFile}
+                      className="hidden"
+                      id="voice-engine-file"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={uploading}
+                      onClick={() => fileRef.current?.click()}
+                      className="w-full gap-2"
+                    >
+                      {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                      Upload PDF or TXT
+                    </Button>
+                    <p className="text-[11px] text-muted-foreground/60 mt-1.5">
+                      Adds to your samples — your typed text is never overwritten.
+                    </p>
+                  </div>
                   <div>
                     <Button
                       type="button"
@@ -1118,10 +1209,10 @@ const VoiceEngineSection = () => {
 
                 <div className="pt-3 border-t border-border/8">
                   <p className="text-xs font-semibold text-foreground mb-2">
-                    Teach Aura your writing
+                    Teach Aura from your posts
                   </p>
                   <p className="text-xs text-muted-foreground/60 mb-2">
-                    Paste a few of your posts (separate with ---) or upload a file — Aura detects the language and refines your voice automatically.
+                    Paste several of your posts (separate with --- on a new line) or upload a .txt file. These are distilled into your voice profile and are not stored as samples.
                   </p>
                   <Textarea
                     value={teachText}
@@ -1131,11 +1222,20 @@ const VoiceEngineSection = () => {
                     disabled={teaching}
                   />
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                    <Button
+                      type="button"
+                      onClick={handleTeachSubmit}
+                      disabled={teaching || teachText.trim().length === 0}
+                      className="w-full gap-2"
+                    >
+                      {teaching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                      Teach Aura from these posts
+                    </Button>
                     <div>
                       <input
                         ref={teachFileRef}
                         type="file"
-                        accept=".pdf,.txt,application/pdf,text/plain"
+                        accept=".txt,text/plain"
                         onChange={handleTeachFile}
                         className="hidden"
                         id="voice-teach-file"
@@ -1143,23 +1243,14 @@ const VoiceEngineSection = () => {
                       <Button
                         type="button"
                         variant="outline"
-                        disabled={teaching || uploading}
+                        disabled={teaching}
                         onClick={() => teachFileRef.current?.click()}
                         className="w-full gap-2"
                       >
-                        {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                        Upload PDF or TXT
+                        {teaching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                        Upload .txt of posts
                       </Button>
                     </div>
-                    <Button
-                      type="button"
-                      onClick={handleTeachSubmit}
-                      disabled={teaching || uploading || teachText.trim().length === 0}
-                      className="w-full gap-2"
-                    >
-                      {teaching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                      Teach Aura
-                    </Button>
                   </div>
                 </div>
               </div>
