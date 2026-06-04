@@ -161,19 +161,10 @@ const VoiceEngineSection = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.id) throw new Error("Not authenticated");
       const { data, error } = await supabase.functions.invoke("voice-distill", {
-        body: { user_id: session.user.id, language: activeLang },
+        body: { user_id: session.user.id },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      if (data?.skipped) {
-        toast(
-          activeLang === "ar"
-            ? "علّم Aura المزيد من منشوراتك بهذه اللغة أولاً"
-            : "Teach Aura a few more posts in this language first."
-        );
-        await loadProfile();
-        return;
-      }
       toast.success("Voice locked in. From now on, every post sounds like the best version of you.");
       setDistilledOnce(true);
       await loadProfile();
@@ -1071,10 +1062,32 @@ const VoiceEngineSection = () => {
                 </Button>
               </div>
 
-              <div className="pt-4 border-t border-border/8">
-                <p className="text-xs font-semibold text-foreground mb-2">
-                  Teach Aura your writing
+              <div className="pt-4 border-t border-border/8 space-y-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Add more, learn faster
                 </p>
+                <div className="grid grid-cols-1 gap-3">
+                  <div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={distilling}
+                      onClick={handleDistill}
+                      className="w-full gap-2"
+                    >
+                      {distilling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                      {distilledOnce ? "Re-distill voice from my posts" : "Distill voice from my posts"}
+                    </Button>
+                    <p className="text-[11px] text-muted-foreground/60 mt-1.5">
+                      Refines tone and patterns from your LinkedIn posts. Your feedback and notes are preserved.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-border/8">
+                  <p className="text-xs font-semibold text-foreground mb-2">
+                    Teach Aura your writing
+                  </p>
                   <p className="text-xs text-muted-foreground/60 mb-2">
                     Paste a few of your posts (separate with ---) or upload a .txt file — Aura detects the language and refines your voice automatically.
                   </p>
@@ -1116,6 +1129,7 @@ const VoiceEngineSection = () => {
                       Teach Aura
                     </Button>
                   </div>
+                </div>
               </div>
             </>
           )}

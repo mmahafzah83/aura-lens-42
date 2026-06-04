@@ -256,50 +256,6 @@ Deno.serve(async (req) => {
     };
     const normKey = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
 
-    // ---- Language-aware sharpen branch ----
-    // When the caller specifies a language, distill ONLY that language and
-    // never touch the primary (✦) assignment. Min-corpus guard: 3 items
-    // across (same-language LinkedIn posts) ∪ (same-language example_posts).
-    const requestedLang: "en" | "ar" | null =
-      body?.language === "ar" ? "ar" : body?.language === "en" ? "en" : null;
-
-    if (requestedLang) {
-      let exampleCount = 0;
-      try {
-        const { data: profL } = await supabase
-          .from("authority_voice_profiles")
-          .select("example_posts")
-          .eq("user_id", user_id)
-          .eq("language", requestedLang)
-          .maybeSingle();
-        const examples: any[] = Array.isArray(profL?.example_posts) ? profL!.example_posts : [];
-        const seen = new Set<string>();
-        for (const p of grouped[requestedLang]) {
-          const k = normKey(String(p.post_text || ""));
-          if (k) seen.add(k);
-        }
-        for (const e of examples) {
-          const txt = typeof e === "string" ? e : String((e as any)?.content ?? "");
-          const k = normKey(txt);
-          if (!k || seen.has(k)) continue;
-          seen.add(k);
-          exampleCount += 1;
-        }
-      } catch (e) {
-        console.warn(`voice-distill[${requestedLang}]: corpus count skipped`, e);
-      }
-      const corpusCount = grouped[requestedLang].length + exampleCount;
-      if (corpusCount < 3) {
-        return new Response(
-          JSON.stringify({ skipped: true, reason: "insufficient_samples", count: corpusCount }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
-      // Restrict the distill loop to this language only.
-      toDistill.length = 0;
-      toDistill.push(requestedLang);
-    }
-
     const distilledLanguages: Array<"en" | "ar"> = [];
     let lastDistillation: any = null;
     let lastPostsAnalyzed = 0;
@@ -555,11 +511,8 @@ Deno.serve(async (req) => {
     // Gating: full re-distill (linkedin branch) always reassigns primary.
     // Ad-hoc bulk-teach branch (useAdHoc) must NOT touch an existing primary —
     // only assign primary when the user has no primary row at all (first-ever teach).
-    // GUARD: when a specific language was requested, sharpening must never
-    // move the ✦ primary marker. This makes the demote/promote block below
-    // provably unreachable for language-scoped sharpens.
-    let shouldAssignPrimary = distilledLanguages.length > 0 && !useAdHoc && !requestedLang;
-    if (distilledLanguages.length > 0 && useAdHoc && !requestedLang) {
+    let shouldAssignPrimary = distilledLanguages.length > 0 && !useAdHoc;
+    if (distilledLanguages.length > 0 && useAdHoc) {
       const { data: primaryCheck } = await supabase
         .from("authority_voice_profiles")
         .select("id")
