@@ -13,7 +13,6 @@ const VoiceEngineSection = () => {
   const [saving, setSaving] = useState(false);
   const [writingSamples, setWritingSamples] = useState("");
   const [admiredPosts, setAdmiredPosts] = useState("");
-  const [vocabNotes, setVocabNotes] = useState("");
   const [trained, setTrained] = useState(false);
   // Entries with an explicit non-"manual" source tag (feedback, upload, etc.) —
   // preserved verbatim across saves; never shown in the textarea.
@@ -145,9 +144,6 @@ const VoiceEngineSection = () => {
       );
       setAdmiredPosts(
         Array.isArray(admired) ? admired.map((p: any) => p.content || p).join("\n\n---\n\n") : ""
-      );
-      setVocabNotes(
-        typeof vocab === "object" && vocab?.notes ? vocab.notes : (data.tone || "")
       );
     } finally {
       setLoading(false);
@@ -334,20 +330,15 @@ const VoiceEngineSection = () => {
       // Check if row exists
       const { data: existing } = await supabase
         .from("authority_voice_profiles")
-        .select("id, vocabulary_preferences, tone")
+        .select("id")
         .eq("user_id", session.user.id)
         .eq("is_primary", true)
         .maybeSingle();
-
-      const existingVocab = (existing as any)?.vocabulary_preferences || {};
-      const existingTone = (existing as any)?.tone || "";
 
       const row: any = {
         user_id: session.user.id,
         example_posts: examplePosts,
         admired_posts: admiredPostsArr,
-        vocabulary_preferences: { ...existingVocab, notes: vocabNotes },
-        tone: existingTone.trim().length > 0 ? existingTone : vocabNotes.slice(0, 200),
         updated_at: new Date().toISOString(),
       };
 
