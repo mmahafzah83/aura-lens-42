@@ -126,6 +126,7 @@ const Dashboard = () => {
     language: "en" | "ar";
     type: "carousel" | "framework" | "linkedin_post";
     topic?: string | null;
+    _source?: "content_items" | "linkedin_posts";
   } | null>(null);
   const navigate = useNavigate();
   const location = useLocation();

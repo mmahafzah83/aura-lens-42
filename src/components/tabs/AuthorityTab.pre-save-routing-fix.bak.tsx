@@ -256,7 +256,6 @@ interface DraftPrefill {
   language: "en" | "ar";
   type: "carousel" | "framework" | "linkedin_post";
   topic?: string | null;
-  _source?: "content_items" | "linkedin_posts";
 }
 
 /**
@@ -363,7 +362,6 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
   const [lang, setLang] = useState<"en" | "ar">("en");
   const [output, setOutput] = useState("");
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
-  const [editingSource, setEditingSource] = useState<"content_items" | "linkedin_posts">("content_items");
   const [isEditingBody, setIsEditingBody] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [showSlowHint, setShowSlowHint] = useState(false);
@@ -576,7 +574,6 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
         draftPrefill.type === "framework" ? "framework_summary" :
         "post";
       setEditingDraftId(draftPrefill.id);
-      setEditingSource(draftPrefill._source === "linkedin_posts" ? "linkedin_posts" : "content_items");
       setTopic(draftPrefill.topic || "");
       setContext("");
       setContentType(mappedType);
@@ -850,46 +847,20 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
 
       const mappedType = (contentType as string) === "carousel" ? "carousel" : (contentType as string) === "framework_summary" ? "framework" : "linkedin_post";
       if (editingDraftId) {
-        if (editingSource === "linkedin_posts") {
-          // Library draft card — backed by linkedin_posts, not content_items.
-          const { error } = await supabase
-            .from("linkedin_posts")
-            .update({ post_text: body })
-            .eq("id", editingDraftId);
-          if (error) throw error;
-          setDraftSaved(true);
-          toast.success("Draft updated in Library");
-        } else {
-          // Merge generation_params so provenance keys (source: "weekly_ready",
-          // source_signal_id, etc.) survive an edit-save and Home filters still match.
-          const { data: existing } = await supabase
-            .from("content_items")
-            .select("generation_params")
-            .eq("id", editingDraftId)
-            .maybeSingle();
-          const prevParams = (existing?.generation_params as Record<string, any>) || {};
-          const mergedParams: Record<string, any> = {
-            ...prevParams,
-            ...generationParams,
-          };
-          if (prevParams.source !== undefined) mergedParams.source = prevParams.source;
-          if (prevParams.source_signal_id !== undefined && !generationParams.source_signal_id) {
-            mergedParams.source_signal_id = prevParams.source_signal_id;
-          }
-          const { error } = await supabase
-            .from("content_items")
-            .update({
-              body,
-              language: lang,
-              type: mappedType,
-              generation_params: mergedParams,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", editingDraftId);
-          if (error) throw error;
-          setDraftSaved(true);
-          toast.success("Draft updated in Library");
-        }
+        // Update the existing draft row — no new content_items row is created.
+        const { error } = await supabase
+          .from("content_items")
+          .update({
+            body,
+            language: lang,
+            type: mappedType,
+            generation_params: generationParams,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", editingDraftId);
+        if (error) throw error;
+        setDraftSaved(true);
+        toast.success("Draft updated in Library");
       } else {
         const { error } = await supabase.from("content_items").insert({
           user_id: session.user.id,
@@ -921,43 +892,29 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.id) throw new Error("Not authenticated");
-      if (editingDraftId && editingSource === "linkedin_posts") {
-        // The draft IS the linkedin_posts row — flip it to published in place
-        // instead of inserting a duplicate.
-        const update: Record<string, any> = {
-          post_text: body,
-          tracking_status: "published",
-        };
-        if (urlArg) update.url = urlArg;
-        const { error } = await supabase
-          .from("linkedin_posts")
-          .update(update as any)
-          .eq("id", editingDraftId);
-        if (error) throw error;
-      } else {
-        await insertPublishedLinkedInPost({
-          userId: session.user.id,
-          postText: body,
-          formatType: (contentType as string) === "carousel" ? "carousel" : "post",
-          sourceMetadata: {
-            source: "create_view",
-            topic: topic || null,
-            language: lang,
-            signal_ids: selectedSignalId ? [selectedSignalId] : [],
-            signal_titles: selectedSignalTitle ? [selectedSignalTitle] : [],
-          },
-          sourceSignalId: selectedSignalId,
-          url: urlArg ?? null,
+      await insertPublishedLinkedInPost({
+        userId: session.user.id,
+        postText: body,
+        formatType: (contentType as string) === "carousel" ? "carousel" : "post",
+        sourceMetadata: {
+          source: "create_view",
+          topic: topic || null,
           language: lang,
-        });
-        // If this Create session is editing an existing content_items draft,
-        // mark the source row as published so it counts as shipped.
-        if (editingDraftId) {
-          await supabase
-            .from("content_items")
-            .update({ status: "published" })
-            .eq("id", editingDraftId);
-        }
+          signal_ids: selectedSignalId ? [selectedSignalId] : [],
+          signal_titles: selectedSignalTitle ? [selectedSignalTitle] : [],
+        },
+        sourceSignalId: selectedSignalId,
+        url: urlArg ?? null,
+        language: lang,
+      });
+      // If this Create session is editing an existing draft, mark the source
+      // content_items row as published (mirrors Library's markPublished flow),
+      // so a reviewed weekly draft counts as shipped instead of lingering.
+      if (editingDraftId) {
+        await supabase
+          .from("content_items")
+          .update({ status: "published" })
+          .eq("id", editingDraftId);
       }
       setPublishedFromCreate(true);
       setPubUrlOpen(false);
@@ -2851,7 +2808,7 @@ const LinkedInPreview = ({
   );
 };
 
-const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () => void; onOpenDraft?: (draft: { id: string; body: string; language: "en" | "ar"; type: "carousel" | "framework" | "linkedin_post"; topic?: string | null; _source?: "content_items" | "linkedin_posts" }) => void }) => {
+const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () => void; onOpenDraft?: (draft: { id: string; body: string; language: "en" | "ar"; type: "carousel" | "framework" | "linkedin_post"; topic?: string | null }) => void }) => {
   const [drafts, setDrafts] = useState<SavedPost[]>([]);
   const [publishedPosts, setPublishedPosts] = useState<SavedPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -3295,7 +3252,6 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                             language: ((p.source_metadata as any)?._language === "ar" ? "ar" : "en"),
                             type: mappedType,
                             topic: (p.source_metadata as any)?.topic || null,
-                            _source: "linkedin_posts",
                           });
                         }}
                         title="Edit draft"
@@ -3501,7 +3457,7 @@ interface AuthorityTabProps {
   onSignalPrefillConsumed?: () => void;
   draftPrefill?: DraftPrefill | null;
   onDraftPrefillConsumed?: () => void;
-  onOpenDraft?: (draft: { id: string; body: string; language: "en" | "ar"; type: "carousel" | "framework" | "linkedin_post"; topic?: string | null; _source?: "content_items" | "linkedin_posts" }) => void;
+  onOpenDraft?: (draft: { id: string; body: string; language: "en" | "ar"; type: "carousel" | "framework" | "linkedin_post"; topic?: string | null }) => void;
 }
 
 const TABS: { key: AuthoritySubTab; label: string; icon: typeof PenTool }[] = [
