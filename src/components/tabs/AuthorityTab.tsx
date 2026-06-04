@@ -931,7 +931,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
         if (urlArg) update.url = urlArg;
         const { error } = await supabase
           .from("linkedin_posts")
-          .update(update)
+          .update(update as any)
           .eq("id", editingDraftId);
         if (error) throw error;
       } else {
