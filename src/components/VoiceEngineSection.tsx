@@ -508,8 +508,14 @@ const VoiceEngineSection = () => {
           ) : (
             <>
               {(() => {
-                const tone: string = typeof profile?.tone === "string" ? profile.tone : "";
-                const vocab: any = (profile?.vocabulary_preferences && typeof profile.vocabulary_preferences === "object") ? profile.vocabulary_preferences : {};
+                // Resolve the active row from `profiles` based on activeLang.
+                const activeRow: any =
+                  profiles.find((r) => r?.language === activeLang) ||
+                  null;
+                const primaryLang: "en" | "ar" =
+                  (profiles.find((r) => r?.is_primary)?.language === "ar" ? "ar" : "en");
+                const tone: string = typeof activeRow?.tone === "string" ? activeRow.tone : "";
+                const vocab: any = (activeRow?.vocabulary_preferences && typeof activeRow.vocabulary_preferences === "object") ? activeRow.vocabulary_preferences : {};
                 const useArr: string[] = Array.isArray(vocab.use) ? vocab.use.filter((s: any) => typeof s === "string" && s.trim()) : [];
                 const avoidArrRaw: any[] = Array.isArray(vocab.avoid) ? vocab.avoid : [];
                 const avoidArr: string[] = avoidArrRaw
@@ -520,7 +526,7 @@ const VoiceEngineSection = () => {
                   })
                   .map((s) => s.trim())
                   .filter(Boolean);
-                const examplesArr: any[] = Array.isArray(profile?.example_posts) ? profile.example_posts : [];
+                const examplesArr: any[] = Array.isArray(activeRow?.example_posts) ? activeRow.example_posts : [];
                 const hasVoiceCard = !!tone.trim() || useArr.length > 0 || avoidArr.length > 0;
 
                 const cardStyle: React.CSSProperties = {
@@ -539,26 +545,345 @@ const VoiceEngineSection = () => {
                   fontWeight: 600,
                 };
 
-                if (!hasVoiceCard) {
-                  return (
-                    <div style={cardStyle}>
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><div style={eyebrowStyle}>Your voice signature</div><InfoTooltip slug="voice-signature" triggerSize={13} side="top" /></span>
-                      <p style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 22, marginTop: 10, marginBottom: 6, color: "#2A2418", lineHeight: 1.35 }}>
-                        Your voice signature isn't formed yet.
-                      </p>
-                      <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 13, color: "#6E6555", margin: 0 }}>
-                        Teach Aura a few of your posts below and watch it take shape.
-                      </p>
-                    </div>
-                  );
-                }
-
                 const useCap = useArr.slice(0, 5);
                 const useMore = Math.max(0, useArr.length - useCap.length);
                 const avoidCap = avoidArr.slice(0, 5);
                 const avoidMore = Math.max(0, avoidArr.length - avoidCap.length);
 
+                // ---------- Tabs strip (always above card) ----------
+                const tabs: Array<{ lang: "en" | "ar"; label: string; font: string }> = [
+                  { lang: "ar", label: "العربية", font: "'Cairo', 'DM Sans', sans-serif" },
+                  { lang: "en", label: "English", font: "'DM Sans', system-ui, sans-serif" },
+                ];
+                const tabsStrip = (
+                  <div
+                    role="tablist"
+                    aria-label="Voice signature language"
+                    style={{
+                      display: "flex",
+                      gap: 6,
+                      marginBottom: 10,
+                      borderBottom: "0.5px solid #E3D9C5",
+                    }}
+                  >
+                    {tabs.map((t) => {
+                      const isActive = activeLang === t.lang;
+                      const isPrimary = primaryLang === t.lang;
+                      return (
+                        <button
+                          key={t.lang}
+                          type="button"
+                          role="tab"
+                          aria-selected={isActive}
+                          onClick={() => setActiveLang(t.lang)}
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            padding: "8px 12px",
+                            cursor: "pointer",
+                            fontFamily: t.font,
+                            fontSize: 13,
+                            fontWeight: isActive ? 600 : 500,
+                            color: isActive ? "#B08D3A" : "#8A8170",
+                            borderBottom: isActive ? "2px solid #B08D3A" : "2px solid transparent",
+                            marginBottom: -1,
+                            direction: t.lang === "ar" ? "rtl" : "ltr",
+                          }}
+                          dir={t.lang === "ar" ? "rtl" : "ltr"}
+                          lang={t.lang}
+                        >
+                          {t.label}
+                          {isPrimary && (
+                            <span style={{ marginInlineStart: 6, color: "#B08D3A" }}>✦</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+
+                // ---------- ARABIC BRANCH ----------
+                if (activeLang === "ar") {
+                  const arEmpty = (
+                    <div style={cardStyle} dir="rtl" lang="ar">
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                        <div style={{ ...eyebrowStyle, letterSpacing: "normal" }}>بصمة صوتك</div>
+                        <InfoTooltip slug="voice-signature" triggerSize={13} side="top" />
+                      </span>
+                      <p style={{ fontSize: 22, fontWeight: 600, marginTop: 10, marginBottom: 6, color: "#2A2418", lineHeight: 1.5 }}>
+                        بصمة صوتك لم تتشكل بعد.
+                      </p>
+                      <p style={{ fontSize: 13, fontWeight: 500, color: "#6E6555", margin: 0, lineHeight: 1.7 }}>
+                        علّم Aura بعضاً من منشوراتك وشاهد بصمتك تتشكل.
+                      </p>
+                    </div>
+                  );
+
+                  return (
+                    <div>
+                      {tabsStrip}
+                      {!hasVoiceCard ? arEmpty : (
+                      <div style={cardStyle} dir="rtl" lang="ar">
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                            <div style={{ ...eyebrowStyle, letterSpacing: "normal" }}>بصمة صوتك</div>
+                            <InfoTooltip slug="voice-signature" triggerSize={13} side="top" />
+                          </span>
+                        </div>
+
+                        {/* Tone line */}
+                        <div
+                          style={{
+                            border: "0.5px solid #E3D9C5",
+                            borderRadius: 10,
+                            padding: "14px 16px",
+                            background: "rgba(255,255,255,0.4)",
+                            position: "relative",
+                          }}
+                        >
+                          {editingTone ? (
+                            <div>
+                              <Textarea
+                                value={toneDraft}
+                                onChange={(e) => setToneDraft(e.target.value)}
+                                className="min-h-[88px] text-sm"
+                                dir="rtl"
+                                lang="ar"
+                                style={{ background: "#fff", color: "#2A2418", border: "0.5px solid #E3D9C5", fontWeight: 500 }}
+                              />
+                              <div style={{ display: "flex", gap: 8, marginTop: 10, justifyContent: "flex-start" }}>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => { setEditingTone(false); setToneDraft(tone); }}
+                                  disabled={savingTone}
+                                  style={{ color: "#6E6555" }}
+                                >
+                                  إلغاء
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={handleSaveTone}
+                                  disabled={savingTone}
+                                  style={{ background: "#B08D3A", color: "#fff" }}
+                                >
+                                  {savingTone ? <Loader2 className="w-3 h-3 animate-spin" /> : "حفظ"}
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                              <p
+                                style={{
+                                  fontSize: 24,
+                                  fontWeight: 600,
+                                  lineHeight: 1.6,
+                                  color: "#2A2418",
+                                  margin: 0,
+                                  flex: 1,
+                                }}
+                              >
+                                {tone || <span style={{ color: "#8A8170", fontWeight: 500 }}>لم تُلتقط النبرة بعد.</span>}
+                              </p>
+                              <button
+                                type="button"
+                                aria-label="تعديل بصمة الصوت"
+                                onClick={() => { setToneDraft(tone); setEditingTone(true); }}
+                                style={{
+                                  border: "0.5px solid #E3D9C5",
+                                  background: "transparent",
+                                  borderRadius: 8,
+                                  padding: 6,
+                                  cursor: "pointer",
+                                  color: "#A98F4E",
+                                  flexShrink: 0,
+                                }}
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        <p style={{ fontSize: 12.5, fontWeight: 500, color: "#6E6555", marginTop: 8, marginBottom: 0, lineHeight: 1.7 }}>
+                          أول قراءة من Aura — عدّلها لتشبهك.
+                        </p>
+
+                        {/* Phrases — inline flowing with guillemets and interpuncts */}
+                        {useArr.length > 0 && (
+                          <div style={{ marginTop: 18 }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                              <div style={{ ...eyebrowStyle, letterSpacing: "normal" }}>عبارات هي أنت</div>
+                              <InfoTooltip slug="voice-phrases" triggerSize={13} side="top" />
+                            </span>
+                            <p
+                              style={{
+                                fontSize: 18,
+                                fontWeight: 500,
+                                lineHeight: 2,
+                                color: "#2A2418",
+                                margin: "8px 0 0",
+                              }}
+                            >
+                              {(showAllPhrases ? useArr : useCap).map((phrase, i, arr) => (
+                                <span key={i}>
+                                  <span>«{phrase}»</span>
+                                  {i < arr.length - 1 && (
+                                    <span style={{ color: "#A98F4E", margin: "0 8px" }}>·</span>
+                                  )}
+                                </span>
+                              ))}
+                            </p>
+                            {useMore > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => setShowAllPhrases((s) => !s)}
+                                style={{
+                                  fontSize: 12,
+                                  fontWeight: 500,
+                                  color: "#8A8170",
+                                  marginTop: 6,
+                                  marginBottom: 0,
+                                  background: "transparent",
+                                  border: "none",
+                                  padding: 0,
+                                  cursor: "pointer",
+                                  textDecoration: "underline",
+                                  textUnderlineOffset: 2,
+                                }}
+                              >
+                                {showAllPhrases ? "عرض أقل" : `+${useMore} أخرى`}
+                              </button>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Keep-out words — ◆ prefixed list, RTL */}
+                        {avoidArr.length > 0 && (
+                          <div style={{ marginTop: 18 }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                              <div style={{ ...eyebrowStyle, letterSpacing: "normal" }}>كلمات تُبقيها خارجاً</div>
+                              <InfoTooltip slug="voice-avoid" triggerSize={13} side="top" />
+                            </span>
+                            <ul style={{ listStyle: "none", paddingInlineStart: 0, margin: "8px 0 0" }}>
+                              {(showAllAvoid ? avoidArr : avoidCap).map((w, i) => (
+                                <li
+                                  key={i}
+                                  style={{
+                                    fontSize: 14,
+                                    fontWeight: 500,
+                                    color: "#6E6555",
+                                    lineHeight: 1.9,
+                                    paddingInlineStart: 4,
+                                  }}
+                                >
+                                  <span style={{ color: "#A98F4E", marginInlineEnd: 8 }}>◆</span>
+                                  {w}
+                                </li>
+                              ))}
+                            </ul>
+                            {avoidMore > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => setShowAllAvoid((s) => !s)}
+                                style={{
+                                  fontSize: 12,
+                                  fontWeight: 500,
+                                  color: "#8A8170",
+                                  marginTop: 6,
+                                  marginBottom: 0,
+                                  background: "transparent",
+                                  border: "none",
+                                  padding: 0,
+                                  cursor: "pointer",
+                                  textDecoration: "underline",
+                                  textUnderlineOffset: 2,
+                                }}
+                              >
+                                {showAllAvoid ? "عرض أقل" : `+${avoidMore} أخرى`}
+                              </button>
+                            )}
+                          </div>
+                        )}
+
+                        {/* CTA pill */}
+                        <button
+                          type="button"
+                          onClick={() => window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "authority" } }))}
+                          style={{
+                            marginTop: 18,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 8,
+                            border: "0.5px solid #B08D3A",
+                            borderRadius: 999,
+                            padding: "8px 14px",
+                            background: "transparent",
+                            color: "#B08D3A",
+                            fontFamily: "'Cairo', 'DM Sans', sans-serif",
+                            fontSize: 13,
+                            fontWeight: 600,
+                            cursor: "pointer",
+                          }}
+                        >
+                          <ArrowRight className="w-3.5 h-3.5" style={{ transform: "scaleX(-1)" }} />
+                          اقرأ منشوراً مكتوباً بهذا الصوت
+                        </button>
+
+                        {/* Footer */}
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 18, paddingTop: 14, borderTop: "0.5px solid #E3D9C5" }}>
+                          <span style={{ fontSize: 12.5, fontWeight: 500, color: "#8A8170" }}>
+                            صيغت من {examplesArr.length} من منشوراتك
+                          </span>
+                          <InfoTooltip slug="voice-sharpen" triggerSize={13} side="top" />
+                          <button
+                            type="button"
+                            onClick={handleDistill}
+                            disabled={distilling}
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 6,
+                              background: "transparent",
+                              border: "none",
+                              color: "#B08D3A",
+                              fontFamily: "'Cairo', 'DM Sans', sans-serif",
+                              fontSize: 13,
+                              fontWeight: 600,
+                              cursor: distilling ? "default" : "pointer",
+                              opacity: distilling ? 0.6 : 1,
+                            }}
+                          >
+                            {distilling ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                            {distilling ? "جارٍ الشحذ…" : "اشحذها الآن"}
+                          </button>
+                        </div>
+                      </div>
+                      )}
+                    </div>
+                  );
+                }
+
+                // ---------- ENGLISH BRANCH (pixel-untouched) ----------
+                if (!hasVoiceCard) {
+                  return (
+                    <div>
+                      {tabsStrip}
+                      <div style={cardStyle}>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><div style={eyebrowStyle}>Your voice signature</div><InfoTooltip slug="voice-signature" triggerSize={13} side="top" /></span>
+                        <p style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 22, marginTop: 10, marginBottom: 6, color: "#2A2418", lineHeight: 1.35 }}>
+                          Your voice signature isn't formed yet.
+                        </p>
+                        <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 13, color: "#6E6555", margin: 0 }}>
+                          Teach Aura a few of your posts below and watch it take shape.
+                        </p>
+                      </div>
+                    </div>
+                  );
+                }
+
                 return (
+                  <div>
+                  {tabsStrip}
                   <div style={cardStyle}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><div style={eyebrowStyle}>Your voice signature</div><InfoTooltip slug="voice-signature" triggerSize={13} side="top" /></span>
@@ -777,6 +1102,7 @@ const VoiceEngineSection = () => {
                         {distilling ? "Sharpening…" : "Sharpen now"}
                       </button>
                     </div>
+                  </div>
                   </div>
                 );
               })()}
