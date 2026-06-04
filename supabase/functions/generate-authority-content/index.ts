@@ -299,7 +299,7 @@ FORMATTING RULES (mandatory):
 
       const langLabel = effectiveLanguage === "ar"
         ? `اكتب المنشور بالكامل باللغة العربية. لا تستخدم أي كلمة إنجليزية.`
-        : `Write in English.`;
+        : `Write the post ENTIRELY in English. Do not use any Arabic words or script, even if the examples or profile material contain Arabic.`;
 
       // Flash addendum (variation-aware)
       const variationNum = Number.isFinite(Number(variation)) ? Number(variation) : 1;
