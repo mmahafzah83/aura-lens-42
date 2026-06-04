@@ -180,16 +180,11 @@ const VoiceEngineSection = () => {
     }
   };
 
-  const parsePostsBlock = (text: string): string[] => {
-    const posts: string[] = [];
-    let cur: string[] = [];
-    for (const line of text.split(/\r?\n/)) {
-      if (/^\s*-{3,}\s*$/.test(line)) { posts.push(cur.join("\n")); cur = []; }
-      else cur.push(line);
-    }
-    posts.push(cur.join("\n"));
-    return posts.map((s) => s.trim()).filter(Boolean);
-  };
+  const parsePostsBlock = (text: string): string[] =>
+    text
+      .split(/\n---\n/)
+      .map((s) => s.trim())
+      .filter(Boolean);
 
   const teachFromPosts = async (postsArr: string[]) => {
     if (postsArr.length === 0) {
