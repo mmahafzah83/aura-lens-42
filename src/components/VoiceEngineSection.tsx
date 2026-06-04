@@ -295,22 +295,39 @@ const VoiceEngineSection = () => {
         .from("authority_voice_profiles")
         .select("id")
         .eq("user_id", uid)
-        .eq("is_primary", true)
+        .eq("language", activeLang)
         .maybeSingle();
       if (existing) {
         const { error } = await supabase
           .from("authority_voice_profiles")
           .update({ tone: next, updated_at: new Date().toISOString() })
           .eq("user_id", uid)
-          .eq("is_primary", true);
+          .eq("language", activeLang);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from("authority_voice_profiles")
-          .insert({ user_id: uid, tone: next, updated_at: new Date().toISOString(), language: "en", is_primary: true });
+          .insert({
+            user_id: uid,
+            tone: next,
+            updated_at: new Date().toISOString(),
+            language: activeLang,
+            is_primary: profiles.length === 0,
+          });
         if (error) throw error;
       }
       setProfile((p: any) => ({ ...(p || {}), tone: next }));
+      // Reflect the change locally in the per-language rows so the active tab
+      // updates immediately without a full reload.
+      setProfiles((rows) => {
+        const idx = rows.findIndex((r) => r.language === activeLang);
+        if (idx >= 0) {
+          const copy = rows.slice();
+          copy[idx] = { ...copy[idx], tone: next };
+          return copy;
+        }
+        return [...rows, { language: activeLang, is_primary: rows.length === 0, tone: next, example_posts: [], admired_posts: [], vocabulary_preferences: {} }];
+      });
       setEditingTone(false);
       toast.success("Voice identity updated");
     } catch (e: any) {
