@@ -375,9 +375,6 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
   const [publishedFromCreate, setPublishedFromCreate] = useState(false);
   const [pubUrlOpen, setPubUrlOpen] = useState(false);
   const [pubUrl, setPubUrl] = useState("");
-  const [pubUrlError, setPubUrlError] = useState("");
-  const [confirmPubUrl, setConfirmPubUrl] = useState("");
-  const [confirmPubUrlError, setConfirmPubUrlError] = useState("");
   const [selectedSignalId, setSelectedSignalId] = useState<string | null>(null);
   const [selectedSignalTitle, setSelectedSignalTitle] = useState<string | null>(null);
   const [selectedSignalInsight, setSelectedSignalInsight] = useState<string | null>(null);
@@ -402,14 +399,6 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [translatedPost, setTranslatedPost] = useState<string | null>(null);
   const [translatedLang, setTranslatedLang] = useState<"en" | "ar" | null>(null);
-
-  function validateLinkedInUrl(url: string): string {
-    const trimmed = url.trim();
-    if (trimmed && !trimmed.toLowerCase().includes("linkedin.com/")) {
-      return "That doesn't look like a LinkedIn link";
-    }
-    return "";
-  }
 
   // Free-tier generation limit
   const [monthlyGenerationCount, setMonthlyGenerationCount] = useState(0);
@@ -1462,48 +1451,36 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                       background: "var(--bg-subtle)",
                       borderRadius: 6,
                       display: "flex",
-                      flexDirection: "column",
-                      gap: 6,
+                      alignItems: "center",
+                      gap: 8,
+                      flexWrap: "wrap",
                     }}
                   >
                     <span style={{ fontSize: 13, color: "var(--ink)" }}>
                       Did you post this on LinkedIn? Paste the URL (optional) to link engagement.
                     </span>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                      <Input
-                        value={pubUrl}
-                        onChange={(e) => { setPubUrl(e.target.value); setPubUrlError(""); }}
-                        placeholder="https://www.linkedin.com/posts/…"
-                        className="h-7 text-xs flex-1 min-w-[200px]"
-                      />
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          const err = validateLinkedInUrl(pubUrl);
-                          if (err) { setPubUrlError(err); return; }
-                          handleMarkPublishedFromCreate(pubUrl.trim() || undefined);
-                        }}
-                        disabled={publishing}
-                        className="h-7 text-xs"
-                      >
-                        Confirm
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => { setPubUrlOpen(false); setPubUrl(""); setPubUrlError(""); }}
-                        className="h-7 text-xs"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                    {pubUrlError ? (
-                      <span style={{ fontSize: 12, color: "var(--warning)" }}>{pubUrlError}</span>
-                    ) : (
-                      <span style={{ fontSize: 12, color: "var(--color-muted)" }}>
-                        Optional — paste the post's link so Aura can track how it performs and learn from it.
-                      </span>
-                    )}
+                    <Input
+                      value={pubUrl}
+                      onChange={(e) => setPubUrl(e.target.value)}
+                      placeholder="https://www.linkedin.com/posts/…"
+                      className="h-7 text-xs flex-1 min-w-[200px]"
+                    />
+                    <Button
+                      size="sm"
+                      onClick={() => handleMarkPublishedFromCreate(pubUrl.trim() || undefined)}
+                      disabled={publishing}
+                      className="h-7 text-xs"
+                    >
+                      Confirm
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => { setPubUrlOpen(false); setPubUrl(""); }}
+                      className="h-7 text-xs"
+                    >
+                      Cancel
+                    </Button>
                   </div>
                 )}
 
@@ -3023,7 +3000,6 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
   };
 
   const markPublished = async (id: string, url?: string) => {
-    const trimmedUrl = url ? url.trim() : undefined;
     const item = drafts.find(p => p.id === id);
     if (!item) return;
     try {
@@ -3038,7 +3014,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
         formatType: item.format_type || "post",
         sourceMetadata: item.source_metadata || {},
         sourceSignalId: linkedSignalId,
-        url: trimmedUrl ?? null,
+        url: url ?? null,
         language: ((item.source_metadata as any)?.language === "ar" ? "ar" : "en"),
       });
       await supabase
@@ -3299,7 +3275,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                       {copiedId === p.id ? "Copied" : "Post on LinkedIn →"}
                     </button>
                     <button
-                      onClick={() => { setConfirmingId(p.id); setConfirmPubUrl(""); setConfirmPubUrlError(""); }}
+                      onClick={() => setConfirmingId(p.id)}
                       style={{ fontSize: 14, color: "var(--color-muted)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
                       className="hover:text-foreground transition-colors"
                     >
@@ -3342,36 +3318,17 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
 
                   {/* Inline confirmation (M-1-1) */}
                   {confirmingId === p.id && (
-                    <div style={{ marginTop: 12, padding: 10, background: "var(--bg-subtle)", borderRadius: 6, display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ marginTop: 12, padding: 10, background: "var(--bg-subtle)", borderRadius: 6, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                       <span style={{ fontSize: 14, color: "var(--ink)" }}>Did you publish this on LinkedIn?</span>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                        <Input
-                          value={confirmPubUrl}
-                          onChange={(e) => { setConfirmPubUrl(e.target.value); setConfirmPubUrlError(""); }}
-                          placeholder="https://www.linkedin.com/posts/…"
-                          className="h-7 text-xs flex-1 min-w-[200px]"
-                        />
-                        <button
-                          onClick={async () => {
-                            const err = validateLinkedInUrl(confirmPubUrl);
-                            if (err) { setConfirmPubUrlError(err); return; }
-                            setConfirmingId(null);
-                            await markPublished(p.id, confirmPubUrl.trim() || undefined);
-                          }}
-                          style={{ fontSize: 12, fontWeight: 600, color: "#fff", background: "var(--brand)", border: 0, borderRadius: 4, padding: "5px 10px", cursor: "pointer" }}
-                        >Yes, it's live</button>
-                        <button
-                          onClick={() => { setConfirmingId(null); setConfirmPubUrl(""); setConfirmPubUrlError(""); }}
-                          style={{ fontSize: 12, color: "var(--color-muted)", background: "transparent", border: 0, cursor: "pointer" }}
-                        >Not yet</button>
-                      </div>
-                      {confirmPubUrlError ? (
-                        <span style={{ fontSize: 12, color: "var(--warning)" }}>{confirmPubUrlError}</span>
-                      ) : (
-                        <span style={{ fontSize: 12, color: "var(--color-muted)" }}>
-                          Optional — paste the post's link so Aura can track how it performs and learn from it.
-                        </span>
-                      )}
+                      <div style={{ flex: 1 }} />
+                      <button
+                        onClick={async () => { setConfirmingId(null); await markPublished(p.id); }}
+                        style={{ fontSize: 12, fontWeight: 600, color: "#fff", background: "var(--brand)", border: 0, borderRadius: 4, padding: "5px 10px", cursor: "pointer" }}
+                      >Yes, it's live</button>
+                      <button
+                        onClick={() => setConfirmingId(null)}
+                        style={{ fontSize: 12, color: "var(--color-muted)", background: "transparent", border: 0, cursor: "pointer" }}
+                      >Not yet</button>
                     </div>
                   )}
                 </motion.div>
