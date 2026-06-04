@@ -906,6 +906,15 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
         url: urlArg ?? null,
         language: lang,
       });
+      // If this Create session is editing an existing draft, mark the source
+      // content_items row as published (mirrors Library's markPublished flow),
+      // so a reviewed weekly draft counts as shipped instead of lingering.
+      if (editingDraftId) {
+        await supabase
+          .from("content_items")
+          .update({ status: "published" })
+          .eq("id", editingDraftId);
+      }
       setPublishedFromCreate(true);
       setPubUrlOpen(false);
       setPubUrl("");
