@@ -40,6 +40,29 @@ const VoiceEngineSection = () => {
   const [showAllPhrases, setShowAllPhrases] = useState(false);
   const [showAllAvoid, setShowAllAvoid] = useState(false);
 
+  // All voice rows for language-aware signature card.
+  // NOTE: the legacy single-row `profile` state above is intentionally kept —
+  // other sections of this file still consume it.
+  const [profiles, setProfiles] = useState<any[]>([]);
+  const [activeLang, setActiveLang] = useState<"en" | "ar">("en");
+  const [activeLangInitialized, setActiveLangInitialized] = useState(false);
+
+  const rowHasContent = (r: any): boolean => {
+    if (!r) return false;
+    const ex = r.example_posts;
+    const ad = r.admired_posts;
+    const vocab = (r.vocabulary_preferences && typeof r.vocabulary_preferences === "object") ? r.vocabulary_preferences : {};
+    const tone = typeof r.tone === "string" ? r.tone : "";
+    return (
+      (Array.isArray(ex) && ex.length > 0) ||
+      (Array.isArray(ad) && ad.length > 0) ||
+      (typeof vocab?.notes === "string" && vocab.notes.trim().length > 0) ||
+      (Array.isArray(vocab?.use) && vocab.use.length > 0) ||
+      (Array.isArray(vocab?.avoid) && vocab.avoid.length > 0) ||
+      tone.trim().length > 0
+    );
+  };
+
   // Detect existing trained state on mount
   useEffect(() => {
     let cancelled = false;
@@ -47,23 +70,23 @@ const VoiceEngineSection = () => {
       if (!session?.user?.id) return;
       supabase
         .from("authority_voice_profiles")
-        .select("example_posts, admired_posts, vocabulary_preferences, tone")
+        .select("language, is_primary, example_posts, admired_posts, vocabulary_preferences, tone, updated_at")
         .eq("user_id", session.user.id)
-        .eq("is_primary", true)
-        .maybeSingle()
         .then(({ data }) => {
-          if (cancelled || !data) return;
-          const ex = data.example_posts as any[];
-          const ad = data.admired_posts as any[];
-          const vocab = (data.vocabulary_preferences as any)?.notes || data.tone || "";
-          const hasContent =
-            (Array.isArray(ex) && ex.length > 0) ||
-            (Array.isArray(ad) && ad.length > 0) ||
-            (typeof vocab === "string" && vocab.trim().length > 0);
-          if (hasContent) setTrained(true);
+          if (cancelled) return;
+          const rows = Array.isArray(data) ? data : [];
+          setProfiles(rows);
+          if (rows.some(rowHasContent)) setTrained(true);
+          if (!activeLangInitialized) {
+            const primary = rows.find((r: any) => r.is_primary);
+            const lang = (primary?.language === "ar" ? "ar" : primary?.language === "en" ? "en" : "en") as "en" | "ar";
+            setActiveLang(lang);
+            setActiveLangInitialized(true);
+          }
         });
     });
     return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Respond to ?focus=voice — open, scroll, pulse
