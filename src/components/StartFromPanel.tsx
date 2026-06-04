@@ -135,7 +135,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
             .select("first_name, avatar_url")
             .eq("user_id", user.id).maybeSingle(),
           (supabase.from("authority_voice_profiles" as any) as any)
-            .select("tone_summary, example_posts")
+            .select("tone, example_posts")
             .eq("user_id", user.id)
             .eq("is_primary", true)
             .maybeSingle(),
@@ -151,7 +151,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
         setVoice({
           fullName: (profileRes?.data as any)?.first_name || null,
           avatarUrl: (profileRes?.data as any)?.avatar_url || null,
-          tone: (voiceRes?.data as any)?.tone_summary || null,
+          tone: (voiceRes?.data as any)?.tone || null,
           sample,
         });
       } catch (e) {
