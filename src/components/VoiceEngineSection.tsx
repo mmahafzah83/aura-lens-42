@@ -118,6 +118,13 @@ const VoiceEngineSection = () => {
         .eq("user_id", session.user.id)
         .eq("is_primary", true)
         .maybeSingle();
+      // Refresh all rows for the language-aware signature card (does not
+      // touch the legacy single-row `profile` state below).
+      const { data: allRows } = await supabase
+        .from("authority_voice_profiles")
+        .select("language, is_primary, example_posts, admired_posts, vocabulary_preferences, tone, updated_at")
+        .eq("user_id", session.user.id);
+      setProfiles(Array.isArray(allRows) ? allRows : []);
       if (!data) return;
       setProfile(data);
       const examples = data.example_posts as any[];
