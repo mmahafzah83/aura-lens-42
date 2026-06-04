@@ -156,6 +156,72 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Step 2b — Optionally store the supplied posts as example_posts on the
+    // per-language row (cap 20, oldest dropped). Only honored for the ad-hoc
+    // /teach path so the LinkedIn re-distill branch can't bloat example_posts.
+    const storeSamples = useAdHoc && body?.store_samples === true;
+    if (storeSamples) {
+      const SAMPLE_CAP = 20;
+      for (const L of ["en", "ar"] as const) {
+        const langPosts = grouped[L];
+        if (langPosts.length === 0) continue;
+        try {
+          const { data: rowL } = await supabase
+            .from("authority_voice_profiles")
+            .select("id, example_posts")
+            .eq("user_id", user_id)
+            .eq("language", L)
+            .maybeSingle();
+          const existingSamples: any[] = Array.isArray(rowL?.example_posts)
+            ? (rowL!.example_posts as any[])
+            : [];
+          const newEntries = langPosts.map((p) => ({
+            content: String(p.post_text).trim(),
+            source: "teach",
+            added_at: new Date().toISOString(),
+          }));
+          // Keep the 20 most recent by added_at (oldest dropped).
+          const combined = [...existingSamples, ...newEntries];
+          const sorted = combined.slice().sort((a: any, b: any) => {
+            const ta = Date.parse(a?.added_at ?? a?.updated_at ?? "") || 0;
+            const tb = Date.parse(b?.added_at ?? b?.updated_at ?? "") || 0;
+            return ta - tb; // oldest first
+          });
+          const trimmed = sorted.slice(Math.max(0, sorted.length - SAMPLE_CAP));
+          if (rowL) {
+            const { error: upErr } = await supabase
+              .from("authority_voice_profiles")
+              .update({ example_posts: trimmed, updated_at: new Date().toISOString() })
+              .eq("user_id", user_id)
+              .eq("language", L);
+            if (upErr) console.warn(`voice-distill[${L}]: store_samples update failed`, upErr.message);
+          } else {
+            // Mirror the distill-target insert rules: is_primary only when the
+            // user has no primary row at all.
+            const { data: primaryCheck } = await supabase
+              .from("authority_voice_profiles")
+              .select("id")
+              .eq("user_id", user_id)
+              .eq("is_primary", true)
+              .limit(1)
+              .maybeSingle();
+            const { error: insErr } = await supabase
+              .from("authority_voice_profiles")
+              .insert({
+                user_id,
+                language: L,
+                is_primary: !primaryCheck,
+                example_posts: trimmed,
+                updated_at: new Date().toISOString(),
+              });
+            if (insErr) console.warn(`voice-distill[${L}]: store_samples insert failed`, insErr.message);
+          }
+        } catch (e) {
+          console.warn(`voice-distill[${L}]: store_samples skipped`, e);
+        }
+      }
+    }
+
     // Step 3 — Determine DOMINANT language. Tie → user's current primary, else "en".
     let dominant: "en" | "ar";
     if (grouped.en.length > grouped.ar.length) dominant = "en";
