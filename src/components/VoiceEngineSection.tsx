@@ -1056,27 +1056,11 @@ const VoiceEngineSection = () => {
                   placeholder="Paste posts by thought leaders you admire..."
                   className="min-h-[120px] bg-secondary/30 border-border/20 text-sm"
                 />
+                <Button onClick={handleSave} disabled={saving} className="w-full gap-2 mt-3">
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  Save admired posts
+                </Button>
               </div>
-
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
-                  Vocabulary & tone notes
-                </label>
-                <p className="text-xs text-muted-foreground/50 mb-2">
-                  Describe how you write — e.g. "direct, no jargon, short sentences, always end with a question"
-                </p>
-                <Textarea
-                  value={vocabNotes}
-                  onChange={(e) => setVocabNotes(e.target.value)}
-                  placeholder="Direct, analytical, short paragraphs, avoid buzzwords..."
-                  className="min-h-[80px] bg-secondary/30 border-border/20 text-sm"
-                />
-              </div>
-
-              <Button onClick={handleSave} disabled={saving} className="w-full gap-2">
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                Save voice profile
-              </Button>
 
               <div className="pt-4 border-t border-border/8 space-y-3">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
