@@ -3348,6 +3348,8 @@ interface AuthorityTabProps {
   onRefresh?: () => void;
   signalPrefill?: SignalPrefill | null;
   onSignalPrefillConsumed?: () => void;
+  draftPrefill?: DraftPrefill | null;
+  onDraftPrefillConsumed?: () => void;
 }
 
 const TABS: { key: AuthoritySubTab; label: string; icon: typeof PenTool }[] = [
@@ -3356,7 +3358,7 @@ const TABS: { key: AuthoritySubTab; label: string; icon: typeof PenTool }[] = [
   { key: "plan", label: "Plan", icon: Calendar },
 ];
 
-const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsumed }: AuthorityTabProps) => {
+const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsumed, draftPrefill, onDraftPrefillConsumed }: AuthorityTabProps) => {
   const [activeTab, setActiveTab] = useState<AuthoritySubTab>("create");
   const [brandDone, setBrandDone] = useState<boolean | null>(null);
   const [planPrefill, setPlanPrefill] = useState<PlanPrefill | null>(null);
@@ -3377,6 +3379,13 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
       setActiveTab("create");
     }
   }, [signalPrefill]);
+
+  // When draftPrefill arrives (user opened an existing draft), switch to create tab
+  useEffect(() => {
+    if (draftPrefill) {
+      setActiveTab("create");
+    }
+  }, [draftPrefill]);
 
   return (
     <div className="space-y-8">
@@ -3450,7 +3459,7 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
         })}
       </div>
 
-      {activeTab === "create" && <CreateTab planPrefill={planPrefill} signalPrefill={signalPrefill} onSignalPrefillConsumed={onSignalPrefillConsumed} />}
+      {activeTab === "create" && <CreateTab planPrefill={planPrefill} signalPrefill={signalPrefill} onSignalPrefillConsumed={onSignalPrefillConsumed} draftPrefill={draftPrefill} onDraftPrefillConsumed={onDraftPrefillConsumed} />}
       {activeTab === "plan" && <PlanTab onGenerateFromPlan={handleGenerateFromPlan} />}
       {activeTab === "library" && <LibraryTab onSwitchToCreate={() => setActiveTab("create")} />}
     </div>
