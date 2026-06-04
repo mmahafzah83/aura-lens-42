@@ -2777,7 +2777,7 @@ const LinkedInPreview = ({
   );
 };
 
-const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
+const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () => void; onOpenDraft?: (draft: { id: string; body: string; language: "en" | "ar"; type: "carousel" | "framework" | "linkedin_post"; topic?: string | null }) => void }) => {
   const [drafts, setDrafts] = useState<SavedPost[]>([]);
   const [publishedPosts, setPublishedPosts] = useState<SavedPost[]>([]);
   const [loading, setLoading] = useState(true);
