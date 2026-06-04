@@ -250,6 +250,14 @@ interface PlanPrefill {
   planTitle: string;
 }
 
+interface DraftPrefill {
+  id: string;
+  body: string;
+  language: "en" | "ar";
+  type: "carousel" | "framework" | "linkedin_post";
+  topic?: string | null;
+}
+
 /**
  * Shared core for marking a post as published.
  * Used by both the Library "mark published" flow (existing drafts) AND
@@ -344,7 +352,7 @@ async function insertPublishedLinkedInPost(opts: {
     .catch((e) => console.error("calculate-aura-score failed:", e));
 }
 
-const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { planPrefill?: PlanPrefill | null; signalPrefill?: SignalPrefill | null; onSignalPrefillConsumed?: () => void }) => {
+const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftPrefill, onDraftPrefillConsumed }: { planPrefill?: PlanPrefill | null; signalPrefill?: SignalPrefill | null; onSignalPrefillConsumed?: () => void; draftPrefill?: DraftPrefill | null; onDraftPrefillConsumed?: () => void }) => {
   const navigate = useNavigate();
   const [topic, setTopic] = useState("");
   const [context, setContext] = useState("");
@@ -353,6 +361,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
   const [framework, setFramework] = useState<ContentFramework>("auto");
   const [lang, setLang] = useState<"en" | "ar">("en");
   const [output, setOutput] = useState("");
+  const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [showSlowHint, setShowSlowHint] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -554,6 +563,31 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
       onSignalPrefillConsumed?.();
     }
   }, [signalPrefill]);
+
+  // Apply draft prefill — opens an existing content_items draft in the editor.
+  // Mirrors the signalPrefill channel: hydrate state, then notify parent to clear.
+  useEffect(() => {
+    if (draftPrefill) {
+      const mappedType: ContentType =
+        draftPrefill.type === "carousel" ? "carousel" :
+        draftPrefill.type === "framework" ? "framework_summary" :
+        "post";
+      setEditingDraftId(draftPrefill.id);
+      setTopic(draftPrefill.topic || "");
+      setContext("");
+      setContentType(mappedType);
+      setLang(draftPrefill.language === "ar" ? "ar" : "en");
+      setOutput(draftPrefill.body || "");
+      setFullVersion("");
+      setShortVersion("");
+      setShowingShort(false);
+      setPlanRef(null);
+      setCardRecommendation(null);
+      setDraftSaved(false);
+      setPublishedFromCreate(false);
+      onDraftPrefillConsumed?.();
+    }
+  }, [draftPrefill]);
 
   // Auto-detect best card style/type after content is generated
   const displayedOutputForDetect = output;
@@ -810,18 +844,36 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
         timestamp: generationTimestamp || new Date().toISOString(),
       };
 
-      const { error } = await supabase.from("content_items").insert({
-        user_id: session.user.id,
-        type: (contentType as string) === "carousel" ? "carousel" : (contentType as string) === "framework_summary" ? "framework" : "linkedin_post",
-        body,
-        language: lang,
-        status: "draft",
-        generation_params: generationParams,
-      });
-      if (error) throw error;
-      setMonthlyGenerationCount(prev => prev + 1);
-      setDraftSaved(true);
-      toast.success("Draft saved to Library");
+      const mappedType = (contentType as string) === "carousel" ? "carousel" : (contentType as string) === "framework_summary" ? "framework" : "linkedin_post";
+      if (editingDraftId) {
+        // Update the existing draft row — no new content_items row is created.
+        const { error } = await supabase
+          .from("content_items")
+          .update({
+            body,
+            language: lang,
+            type: mappedType,
+            generation_params: generationParams,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", editingDraftId);
+        if (error) throw error;
+        setDraftSaved(true);
+        toast.success("Draft updated in Library");
+      } else {
+        const { error } = await supabase.from("content_items").insert({
+          user_id: session.user.id,
+          type: mappedType,
+          body,
+          language: lang,
+          status: "draft",
+          generation_params: generationParams,
+        });
+        if (error) throw error;
+        setMonthlyGenerationCount(prev => prev + 1);
+        setDraftSaved(true);
+        toast.success("Draft saved to Library");
+      }
     } catch (e: any) {
       toast.error(e?.message || "Couldn't save. Please try again.");
     } finally {
@@ -854,6 +906,15 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
         url: urlArg ?? null,
         language: lang,
       });
+      // If this Create session is editing an existing draft, mark the source
+      // content_items row as published (mirrors Library's markPublished flow),
+      // so a reviewed weekly draft counts as shipped instead of lingering.
+      if (editingDraftId) {
+        await supabase
+          .from("content_items")
+          .update({ status: "published" })
+          .eq("id", editingDraftId);
+      }
       setPublishedFromCreate(true);
       setPubUrlOpen(false);
       setPubUrl("");
@@ -3339,6 +3400,8 @@ interface AuthorityTabProps {
   onRefresh?: () => void;
   signalPrefill?: SignalPrefill | null;
   onSignalPrefillConsumed?: () => void;
+  draftPrefill?: DraftPrefill | null;
+  onDraftPrefillConsumed?: () => void;
 }
 
 const TABS: { key: AuthoritySubTab; label: string; icon: typeof PenTool }[] = [
@@ -3347,7 +3410,7 @@ const TABS: { key: AuthoritySubTab; label: string; icon: typeof PenTool }[] = [
   { key: "plan", label: "Plan", icon: Calendar },
 ];
 
-const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsumed }: AuthorityTabProps) => {
+const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsumed, draftPrefill, onDraftPrefillConsumed }: AuthorityTabProps) => {
   const [activeTab, setActiveTab] = useState<AuthoritySubTab>("create");
   const [brandDone, setBrandDone] = useState<boolean | null>(null);
   const [planPrefill, setPlanPrefill] = useState<PlanPrefill | null>(null);
@@ -3368,6 +3431,13 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
       setActiveTab("create");
     }
   }, [signalPrefill]);
+
+  // When draftPrefill arrives (user opened an existing draft), switch to create tab
+  useEffect(() => {
+    if (draftPrefill) {
+      setActiveTab("create");
+    }
+  }, [draftPrefill]);
 
   return (
     <div className="space-y-8">
@@ -3441,7 +3511,7 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
         })}
       </div>
 
-      {activeTab === "create" && <CreateTab planPrefill={planPrefill} signalPrefill={signalPrefill} onSignalPrefillConsumed={onSignalPrefillConsumed} />}
+      {activeTab === "create" && <CreateTab planPrefill={planPrefill} signalPrefill={signalPrefill} onSignalPrefillConsumed={onSignalPrefillConsumed} draftPrefill={draftPrefill} onDraftPrefillConsumed={onDraftPrefillConsumed} />}
       {activeTab === "plan" && <PlanTab onGenerateFromPlan={handleGenerateFromPlan} />}
       {activeTab === "library" && <LibraryTab onSwitchToCreate={() => setActiveTab("create")} />}
     </div>

@@ -120,6 +120,13 @@ const Dashboard = () => {
     contentFormat?: "post" | "carousel" | "framework_summary";
     trendHeadline?: string;
   } | null>(null);
+  const [draftPrefill, setDraftPrefill] = useState<{
+    id: string;
+    body: string;
+    language: "en" | "ar";
+    type: "carousel" | "framework" | "linkedin_post";
+    topic?: string | null;
+  } | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -958,7 +965,7 @@ const Dashboard = () => {
             {activeTab === "authority" && (
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
-                  <AuthorityTab entries={entries} onRefresh={fetchEntries} signalPrefill={signalDraftPrefill} onSignalPrefillConsumed={() => setSignalDraftPrefill(null)} />
+                  <AuthorityTab entries={entries} onRefresh={fetchEntries} signalPrefill={signalDraftPrefill} onSignalPrefillConsumed={() => setSignalDraftPrefill(null)} draftPrefill={draftPrefill} onDraftPrefillConsumed={() => setDraftPrefill(null)} />
                 </ErrorBoundary>
               </div>
             )}
