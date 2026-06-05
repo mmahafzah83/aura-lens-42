@@ -154,9 +154,10 @@ html *:not(canvas):not(video):not(iframe) {
   /* Functional semantics */
   --success-pale: rgba(122,182,72,0.12);
   /* --danger removed (Wave-A cleanup #7) — consumers migrated to --error */
-  --danger-pale: rgba(196,80,80,0.12);
-  --error-pale: var(--danger-pale);
+  --error-pale: rgba(196,80,80,0.12);            /* canonical (A6 GRAMMAR-1 flip) */
+  --danger-pale: var(--error-pale);              /* legacy alias — migrate consumers */
   --info-pale: rgba(107,157,196,0.12);
+  --color-info-text: var(--info);                /* A6 TOKEN-2 — alias for info-text semantic */
 
   /* Semantic — canonical tokens (dark mode) */
   --semantic-success: #9BD66A;
@@ -255,9 +256,10 @@ html *:not(canvas):not(video):not(iframe) {
   --shadow-brand: 0 4px 20px rgba(176,141,58,0.35);
   --success-pale: #E8EFD6;
   /* --danger removed (Wave-A cleanup #7) — consumers migrated to --error */
-  --danger-pale: #F4DDD8;
-  --error-pale: var(--danger-pale);
+  --error-pale: #F4DDD8;                         /* canonical (A6 GRAMMAR-1 flip) */
+  --danger-pale: var(--error-pale);              /* legacy alias — migrate consumers */
   --info-pale: #DCE5EE;
+  --color-info-text: var(--info);                /* A6 TOKEN-2 — alias for info-text semantic */
   --semantic-success: #5C7A3A;
   --semantic-success-light: #EAF3DE;
   --semantic-danger: #A8392E;
@@ -1237,8 +1239,8 @@ aside .aura-theme-toggle {
   --border-strong:    rgba(0,0,0,0.2);
   --success-pale:     #EAF4EB;
   /* --danger removed (Wave-A cleanup #7) — consumers migrated to --error */
-  --danger-pale:      #FDECEA;
-  --error-pale:       var(--danger-pale);
+  --error-pale:       #FDECEA;                   /* canonical (A6 GRAMMAR-1 flip) */
+  --danger-pale:      var(--error-pale);         /* legacy alias — migrate consumers */
   --warning-pale:     #FEF3C7;
   --shadow-card:      0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
   --shadow-card-hover:0 2px 8px rgba(0,0,0,0.08), 0 12px 32px rgba(0,0,0,0.07);
