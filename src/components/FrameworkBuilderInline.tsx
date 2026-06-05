@@ -268,8 +268,8 @@ const FrameworkBuilderInline = ({
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-3 mb-2">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-500/5 flex items-center justify-center">
-          <Target className="w-4 h-4 text-blue-400" />
+        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[color-mix(in_srgb,var(--info)_20%,transparent)] to-[color-mix(in_srgb,var(--info)_5%,transparent)] flex items-center justify-center">
+          <Target className="w-4 h-4 text-[color:var(--info)]" />
         </div>
         <h3 className="text-base font-semibold text-foreground" style={{ fontFamily: "var(--font-display)" }}>
           {createdId ? "Refine Framework" : "Build Framework"}

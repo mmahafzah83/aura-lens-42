@@ -204,7 +204,7 @@ export default function Settings() {
 
   return (
     <div
-      className="min-h-screen bg-neutral-950"
+      className="min-h-screen bg-[color:var(--paper)]"
       style={{
         background: "var(--paper)",
         color: "var(--ink)",

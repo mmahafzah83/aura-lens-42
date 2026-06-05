@@ -48,8 +48,8 @@ function percentileFor(avg: number): string {
   return "a unique profile";
 }
 
-const BRONZE = "#B08D3A";
-const TRACK = "#333";
+const BRONZE = "var(--bronze)";
+const TRACK = "var(--hairline)";
 
 interface CustomSliderProps {
   value: number;

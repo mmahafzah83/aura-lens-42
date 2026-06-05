@@ -2254,7 +2254,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                 </select>
                 <button onClick={() => moveSlide(-1)} className="p-1.5 rounded bg-white/5"><ArrowUp className="w-3.5 h-3.5" /></button>
                 <button onClick={() => moveSlide(1)} className="p-1.5 rounded bg-white/5"><ArrowDown className="w-3.5 h-3.5" /></button>
-                <button onClick={deleteSlide} className="p-1.5 rounded bg-white/5 text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
+                <button onClick={deleteSlide} className="p-1.5 rounded bg-white/5 text-[color:var(--error)]"><Trash2 className="w-3.5 h-3.5" /></button>
               </div>
             </div>
           </div>
@@ -2325,7 +2325,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
               <textarea
                 value={carousel.linkedin_caption || ""}
                 onChange={e => setCarousel({ ...carousel, linkedin_caption: e.target.value })}
-                className="w-full px-2.5 py-1.5 text-sm rounded-lg bg-white/5 border focus:outline-none focus:border-amber-500"
+                className="w-full px-2.5 py-1.5 text-sm rounded-lg bg-white/5 border focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-[color:var(--bronze-text)]"
                 dir={lang === "ar" ? "rtl" : "ltr"}
                 style={{
                   borderColor: "rgba(255,255,255,0.1)",
@@ -2396,7 +2396,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
 
 function Field({ label, value, onChange, multiline = false, mono = false, lang = "en" }:
   { label: string; value: string; onChange: (v: string) => void; multiline?: boolean; mono?: boolean; lang?: "en" | "ar" }) {
-  const cls = "w-full mt-1 px-2.5 py-1.5 text-sm rounded-lg bg-white/5 border focus:outline-none focus:border-amber-500";
+  const cls = "w-full mt-1 px-2.5 py-1.5 text-sm rounded-lg bg-white/5 border focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-[color:var(--bronze-text)]";
   const isAr = lang === "ar";
   const style: React.CSSProperties = {
     borderColor: "rgba(255,255,255,0.1)",
