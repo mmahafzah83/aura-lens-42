@@ -74,6 +74,10 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const [authorityScore, setAuthorityScore] = useState<number | null>(null);
   const [scoreTotal, setScoreTotal] = useState<number | null>(null);
   const [tierName, setTierName] = useState<string | null>(null);
+  // Score components + tier-boundary inputs for live Journey derivation
+  const [scoreComponents, setScoreComponents] = useState<{ signal: number; content: number; capture: number } | null>(null);
+  const [thisWeekEntries, setThisWeekEntries] = useState<number>(0);
+  const [topApproachingLive, setTopApproachingLive] = useState<{ title: string; strength: number } | null>(null);
   const [signalStats, setSignalStats] = useState({
     count: 0,
     topConfidence: 0,
@@ -199,7 +203,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           .select("authority_score").eq("user_id", uid)
           .order("snapshot_date", { ascending: false }).limit(1).maybeSingle(),
         (supabase.from("strategic_signals") as any)
-          .select("signal_title, confidence, unique_orgs, theme_tags, supporting_evidence_ids")
+          .select("signal_title, confidence, unique_orgs, theme_tags, supporting_evidence_ids, strength_score, lifecycle_tier")
           .eq("user_id", uid).eq("status", "active")
           .order("confidence", { ascending: false }).limit(40),
       ]), 12000);
@@ -234,6 +238,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           setScoreTotal(total || Number((snap as any).composite_score) || null);
           const t = (snap as any).tier;
           if (t && typeof t === "string") setTierName(t);
+          setScoreComponents({ signal: sig, content: con, capture: cap });
         }
       } catch (e) {
         console.warn("[IdentityTab] score snapshot load failed", e);
@@ -274,17 +279,34 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         const voice = voiceRes.data || {};
         const voiceTrained = !!(voice?.tone || (Array.isArray(voice?.example_posts) && voice.example_posts.length > 0));
         const weeks = new Set<number>();
+        let wk0 = 0;
         ((recentEntriesRes.data || []) as any[]).forEach((e) => {
           const d = new Date(e.created_at);
           const week = Math.floor((Date.now() - d.getTime()) / (7 * 86400000));
           if (week >= 0 && week < 4) weeks.add(week);
+          if (week === 0) wk0 += 1;
         });
         setRadarInputs({ avgEngagement, totalPosts, voiceTrained, weeksActive: weeks.size });
+        setThisWeekEntries(wk0);
       } catch (e) {
         console.warn("[IdentityTab] radar inputs failed", e);
       }
       if (signalsRes.data) {
         const signals = signalsRes.data as any[];
+        // Predicate: "approaching Live" = lifecycle_tier in {emerging, evergreen} AND strength_score >= 0.7
+        const approaching = signals.find((s: any) => {
+          const tier = String(s?.lifecycle_tier || "").toLowerCase();
+          const strength = Number(s?.strength_score) || 0;
+          return (tier === "emerging" || tier === "evergreen") && strength >= 0.7;
+        });
+        if (approaching) {
+          setTopApproachingLive({
+            title: approaching.signal_title || "",
+            strength: Number(approaching.strength_score) || 0,
+          });
+        } else {
+          setTopApproachingLive(null);
+        }
         const seen = new Set<string>();
         const topTags: string[] = [];
         for (const sig of signals) {
