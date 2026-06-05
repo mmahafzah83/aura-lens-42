@@ -1415,12 +1415,11 @@ End with NEXT STEP:.`;
             50% { box-shadow: 0 0 12px 2px rgba(176,141,58,0.12); }
             100% { box-shadow: 0 0 0 0 rgba(176,141,58,0); }
           }
+          /* Border tint stays bronze; bg/text/placeholder are token-driven on the
+             element so they resolve correctly in BOTH light and dark themes. */
           .aura-chat-dark textarea, .aura-chat-dark input[type="text"] {
-            background: rgba(255,255,255,0.04) !important;
-            color: rgba(230,222,205,0.95) !important;
-            border-color: rgba(176,141,58,0.25) !important;
+            border-color: color-mix(in srgb, var(--bronze) 25%, transparent) !important;
           }
-          .aura-chat-dark textarea::placeholder { color: rgba(230,222,205,0.4) !important; }
           .aura-chat-dark .aura-msg .serif-insight {
             font-family: 'Cormorant Garamond', Georgia, serif;
             font-size: 16px;
@@ -2130,7 +2129,7 @@ End with NEXT STEP:.`;
                   onKeyDown={handleKeyDown}
                   placeholder="Ask Aura anything…"
                   rows={1}
-                  className="flex-1 border-[color:var(--bronze)] resize-none text-sm min-h-[44px] max-h-[120px] text-foreground placeholder:text-muted-foreground bg-[color:var(--paper-2)]"
+                  className="flex-1 border-[color:var(--bronze)] resize-none text-sm min-h-[44px] max-h-[120px] text-[color:var(--ink)] caret-[color:var(--ink)] placeholder:text-[color:var(--muted-foreground)] bg-[color:var(--paper-2)]"
                 />
                 <Button
                   data-testid="aura-send-btn"
