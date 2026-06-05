@@ -30,6 +30,11 @@ const BRONZE_FAINT = "rgba(176,141,58,0.12)"; // decorative chip wash
 const DISPLAY = "'Cormorant Garamond', Georgia, 'Times New Roman', serif";
 const BODY = "'DM Sans', system-ui, -apple-system, sans-serif";
 const ARABIC = "'Cairo', 'DM Sans', sans-serif";
+// §18.5: data digits use a mono face so columns of numbers (score bars,
+// capability values, footprint stats, content-engine counts) align and read
+// as data, not display. The hero brand numeral (Page 1 score) stays Cormorant.
+const MONO = "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace";
+const NUM_RE = /^\s*-?\d[\d,.\s]*\s*$/;
 
 const SHEET_W = 794;   // A4 @ 96dpi
 const SHEET_H = 1123;  // A4 @ 96dpi
