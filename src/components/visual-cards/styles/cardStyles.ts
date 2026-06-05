@@ -113,7 +113,7 @@ export const CARD_STYLES: Record<CardStyleName, CardStyleConfig> = {
       position: 'top',
       size: 4,
       length: '100%',
-      background: 'linear-gradient(90deg, #E85D24, #F4845F, transparent)',
+      background: `linear-gradient(90deg, ${C.SIGNAL}, ${C.SIGNAL_LIGHT}, transparent)`,
     },
     tagColor: C.SIGNAL_LIGHT,
     tagFont: MONO,
