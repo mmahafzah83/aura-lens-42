@@ -158,7 +158,9 @@ export default function Settings() {
           backgroundColor: "#ffffff",
           useCORS: true,
         });
-        const imgData = canvas.toDataURL("image/png");
+        // §6 export budget: JPEG @ 0.82 keeps a 4-page report well under 4MB.
+        // PNG was producing ~45MB / page from full-bleed parchment + chip washes.
+        const imgData = canvas.toDataURL("image/jpeg", 0.82);
         // Fit to width; if too tall, fit to height instead.
         let w = pageW;
         let h = (canvas.height * w) / canvas.width;
@@ -169,7 +171,7 @@ export default function Settings() {
         const x = (pageW - w) / 2;
         const y = 0;
         if (i > 0) pdf.addPage();
-        pdf.addImage(imgData, "PNG", x, y, w, h);
+        pdf.addImage(imgData, "JPEG", x, y, w, h);
       }
 
       downloadBlob(pdf.output("blob"), reportFileName());

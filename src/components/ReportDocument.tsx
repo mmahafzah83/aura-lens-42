@@ -30,6 +30,11 @@ const BRONZE_FAINT = "rgba(176,141,58,0.12)"; // decorative chip wash
 const DISPLAY = "'Cormorant Garamond', Georgia, 'Times New Roman', serif";
 const BODY = "'DM Sans', system-ui, -apple-system, sans-serif";
 const ARABIC = "'Cairo', 'DM Sans', sans-serif";
+// §18.5: data digits use a mono face so columns of numbers (score bars,
+// capability values, footprint stats, content-engine counts) align and read
+// as data, not display. The hero brand numeral (Page 1 score) stays Cormorant.
+const MONO = "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace";
+const NUM_RE = /^\s*-?\d[\d,.\s]*\s*$/;
 
 const SHEET_W = 794;   // A4 @ 96dpi
 const SHEET_H = 1123;  // A4 @ 96dpi
@@ -61,7 +66,11 @@ function renderBidi(value: string): React.ReactNode {
   if (!hasArabic(value)) return value;
   // Split into runs: Arabic-or-neutral vs Latin. Wrap each Latin run in <bdi>.
   const parts: React.ReactNode[] = [];
-  const RUN = /([A-Za-z][A-Za-z0-9'’\-\.&/ ]{0,80}[A-Za-z0-9])/g;
+  // Match a full embedded Latin run — letters, digits, common punctuation —
+  // so an entire English sentence wrapped inside an Arabic paragraph stays in
+  // ONE <bdi>, keeping line-wrapping and bidi-resolution coherent. The cap is
+  // generous so a full quoted sentence is captured as a single run.
+  const RUN = /([A-Za-z][A-Za-z0-9 '’"“”\-\.,;:!\?\(\)&/]{0,400}[A-Za-z0-9\.\?!"”\)])/g;
   let last = 0;
   let m: RegExpExecArray | null;
   let i = 0;
@@ -159,7 +168,8 @@ function Sheet({ children }: { children: React.ReactNode }) {
       data-theme="light"
       style={{
         width: SHEET_W,
-        minHeight: SHEET_H,
+        height: SHEET_H,
+        overflow: "hidden",
         background: PAPER,
         color: INK,
         fontFamily: BODY,
@@ -220,11 +230,14 @@ function Chip({ children }: { children: React.ReactNode }) {
         display: "inline-flex",
         alignItems: "center",
         gap: 6,
-        padding: "6px 14px 6px 10px",
+        padding: "7px 14px 7px 12px",
         marginRight: 8,
         marginBottom: 8,
         fontSize: 12,
         lineHeight: 1,
+        verticalAlign: "middle",
+        boxSizing: "border-box",
+        whiteSpace: "nowrap",
         fontFamily: BODY,
         color: INK_2,
         background: BRONZE_FAINT,
@@ -243,7 +256,7 @@ function Chip({ children }: { children: React.ReactNode }) {
           flexShrink: 0,
         }}
       />
-      {children}
+      <span style={{ display: "inline-block", lineHeight: 1 }}>{children}</span>
     </span>
   );
 }
@@ -419,7 +432,7 @@ function Page1({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
                       margin: "0 0 0 10px",
                     }}
                   >
-                    ◆ {titleCase(data.score.tier)} Tier
+                    ◆ {titleCase(data.score.tier)}
                   </span>
                 ) : null}
               </div>
@@ -457,8 +470,8 @@ function Page1({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
                   </div>
                   <div
                     style={{
-                      fontFamily: DISPLAY,
-                      fontSize: 14,
+                      fontFamily: MONO,
+                      fontSize: 13,
                       color: BRONZE_DEEP,
                       textAlign: "right",
                       fontVariantNumeric: "tabular-nums",
@@ -548,7 +561,7 @@ function Page2({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
                     {assessed.map((c) => (
                       <div key={c.name} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${RULE}`, fontSize: 12 }}>
                         <span style={{ color: INK_2 }}>{c.name}</span>
-                        <span style={{ fontFamily: DISPLAY, fontSize: 14, color: BRONZE_DEEP, fontWeight: 600 }}>{c.score}</span>
+                        <span style={{ fontFamily: MONO, fontSize: 13, color: BRONZE_DEEP, fontWeight: 500, fontVariantNumeric: "tabular-nums" }}>{c.score}</span>
                       </div>
                     ))}
                   </div>
@@ -671,7 +684,7 @@ function Page4({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
               { n: data.footprint.themes, l: "Themes\nOwned" },
             ].map((s, i) => (
               <div key={i} style={{ padding: "14px 12px", border: `1px solid ${RULE}`, borderTop: `2px solid ${BRONZE}`, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                <div style={{ fontFamily: DISPLAY, fontSize: 32, fontWeight: 500, color: INK, lineHeight: 1.1 }}>{s.n}</div>
+                <div style={{ fontFamily: MONO, fontSize: 28, fontWeight: 500, color: INK, lineHeight: 1.1, fontVariantNumeric: "tabular-nums" }}>{s.n}</div>
                 <div style={{ marginTop: 8, fontSize: 10, color: INK_3, letterSpacing: "0.1em", textTransform: "uppercase", whiteSpace: "pre-line" }}>
                   {s.l}
                 </div>
@@ -702,6 +715,19 @@ function Page4({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
           {showVoice ? (
             <div style={{ padding: "14px 16px", border: `1px solid ${RULE}`, borderTop: `2px solid ${BRONZE}` }}>
               <SectionLabel>Voice Signature</SectionLabel>
+              <div
+                style={{
+                  fontSize: 10,
+                  color: MUTED,
+                  lineHeight: 1.6,
+                  marginTop: -6,
+                  marginBottom: 8,
+                }}
+              >
+                Captured in the language of your primary voice
+                <span style={{ margin: "0 6px", color: BRONZE }}>·</span>
+                <span style={{ fontFamily: ARABIC }} dir="rtl" lang="ar">بلغة صوتك الأساسي</span>
+              </div>
               {data.voice!.tone ? <StackedRow label="Tone" value={data.voice!.tone} /> : null}
               {data.voice!.preferred_structures.length > 0 ? (
                 <StackedRow label="Structure" value={data.voice!.preferred_structures.join(" · ")} />
@@ -724,6 +750,7 @@ function Page4({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
 
 function Row({ label, value, valueAlign = "right" }: { label: string; value: string; valueAlign?: "left" | "right" }) {
   const ar = hasArabic(value);
+  const num = !ar && NUM_RE.test(value);
   return (
     <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${RULE}`, fontSize: 12 }}>
       <span style={{ color: INK_3, letterSpacing: "0.04em" }}>{label}</span>
@@ -733,7 +760,8 @@ function Row({ label, value, valueAlign = "right" }: { label: string; value: str
           fontWeight: 500,
           textAlign: valueAlign,
           maxWidth: "60%",
-          fontFamily: ar ? ARABIC : BODY,
+          fontFamily: ar ? ARABIC : num ? MONO : BODY,
+          fontVariantNumeric: num ? "tabular-nums" : undefined,
           letterSpacing: ar ? "normal" : undefined,
         }}
         dir={ar ? "rtl" : "auto"}
@@ -749,7 +777,11 @@ function Row({ label, value, valueAlign = "right" }: { label: string; value: str
 function StackedRow({ label, value }: { label: string; value: string }) {
   const ar = hasArabic(value);
   return (
-    <div style={{ padding: "8px 0", borderBottom: `1px solid ${RULE}` }}>
+    <div
+      style={{ padding: "8px 0", borderBottom: `1px solid ${RULE}` }}
+      dir={ar ? "rtl" : undefined}
+      lang={ar ? "ar" : undefined}
+    >
       <div style={{ fontSize: 10, color: BRONZE_DEEP, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 4 }}>
         {label}
       </div>
@@ -758,8 +790,8 @@ function StackedRow({ label, value }: { label: string; value: string }) {
           fontSize: 12,
           color: INK,
           fontWeight: 500,
-          lineHeight: 1.65,
-          textAlign: ar ? "right" : "left",
+          lineHeight: ar ? 1.85 : 1.65,
+          textAlign: "start",
           fontFamily: ar ? ARABIC : BODY,
           letterSpacing: ar ? "normal" : undefined,
         }}
