@@ -603,6 +603,128 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     if (cta && onSwitchTab) onSwitchTab(cta.tab);
   };
 
+  // ============================================================
+  // JOURNEY DERIVATION — live NEXT/Then steps from real data.
+  // Anti-flap: compute once per session and memoize via ref; never
+  // recompute while user is on the page.
+  // Predicates (named, validated against real fields):
+  //   • posts_published == 0           → trackedPostCount === 0
+  //   • weekly rhythm incomplete       → thisWeekEntries < 3
+  //   • approaching Live               → signal.lifecycle_tier ∈ {emerging, evergreen}
+  //                                       AND signal.strength_score >= 0.7
+  //   • within reach of next tier      → pointsToNext != null && pointsToNext <= 5
+  // Thresholds (mirror calculate-aura-score):
+  //   Observer<15 ≤ Explorer<35 ≤ Strategist<60 ≤ Voice<80 ≤ Presence
+  // ============================================================
+  type JourneyStep = {
+    id: string;
+    label: string;
+    detail?: string;
+    action?: { label: string; tab: string };
+  };
+  const journeyRef = useRef<{ next: JourneyStep; then: JourneyStep | null } | null>(null);
+
+  const nextTierBoundary = (() => {
+    const s = scoreTotal ?? authorityScore ?? null;
+    if (s == null) return null;
+    if (s < 15) return { name: "Explorer", pointsToNext: 15 - s };
+    if (s < 35) return { name: "Strategist", pointsToNext: 35 - s };
+    if (s < 60) return { name: "Voice", pointsToNext: 60 - s };
+    if (s < 80) return { name: "Presence", pointsToNext: 80 - s };
+    return null;
+  })();
+
+  const lowestComponentLabel = (() => {
+    if (!scoreComponents) return null;
+    const entries: Array<[string, number, string]> = [
+      ["capture", scoreComponents.capture, "intelligence"],
+      ["signal", scoreComponents.signal, "intelligence"],
+      ["content", scoreComponents.content, "authority"],
+    ];
+    entries.sort((a, b) => a[1] - b[1]);
+    return entries[0];
+  })();
+
+  const nextMondayLabel = (() => {
+    const d = new Date();
+    const day = d.getDay();
+    const delta = (8 - day) % 7 || 7;
+    d.setDate(d.getDate() + delta);
+    return d.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
+  })();
+
+  const derived = (() => {
+    if (journeyRef.current) return journeyRef.current;
+    // Only derive after the page's data has settled enough to be meaningful.
+    if (loading) return null;
+    if (scoreTotal == null && authorityScore == null) return null;
+
+    const steps: JourneyStep[] = [];
+
+    // 1) First publish
+    if (trackedPostCount === 0) {
+      steps.push({
+        id: "first_publish",
+        label: "First publish",
+        detail: "Your first post sets the baseline Aura measures from.",
+        action: { label: "Draft this post →", tab: "authority" },
+      });
+    }
+
+    // 2) This week's rhythm
+    if (thisWeekEntries < 3) {
+      steps.push({
+        id: "weekly_rhythm",
+        label: `This week's rhythm: ${thisWeekEntries}/3`,
+        detail: "Capture three sources this week to keep the rhythm intact.",
+        action: { label: "Capture an article →", tab: "intelligence" },
+      });
+    }
+
+    // 3) Signal approaching Live
+    if (topApproachingLive && topApproachingLive.title) {
+      steps.push({
+        id: "approaching_live",
+        label: `Signal "${topApproachingLive.title}" is approaching Live`,
+        detail: "One more source confirms it.",
+        action: { label: "Capture an article →", tab: "intelligence" },
+      });
+    }
+
+    // 4) Within 5 points of next tier
+    if (nextTierBoundary && nextTierBoundary.pointsToNext <= 5 && nextTierBoundary.pointsToNext > 0) {
+      const comp = lowestComponentLabel;
+      const compName = comp ? comp[0] : "capture";
+      const tab = comp ? comp[2] : "intelligence";
+      const actionLabel =
+        compName === "content" ? "Draft this post →"
+        : compName === "signal" ? "Strengthen a signal →"
+        : "Capture an article →";
+      steps.push({
+        id: "tier_boundary",
+        label: `${nextTierBoundary.pointsToNext} points from ${nextTierBoundary.name}`,
+        detail: `Your ${compName} score is the lowest — lift it to cross.`,
+        action: { label: actionLabel, tab },
+      });
+    }
+
+    // 5) Fallback rhythm anchor — never empty.
+    steps.push({
+      id: "rhythm_anchor",
+      label: `Keep the rhythm: ${nextMondayLabel} briefing`,
+      detail: "Aura's weekly briefing lands on Monday.",
+      action: { label: "Open intelligence →", tab: "intelligence" },
+    });
+
+    const result = { next: steps[0], then: steps[1] || null };
+    journeyRef.current = result;
+    return result;
+  })();
+
+  const handleDerivedAction = (step: JourneyStep) => {
+    if (step.action && onSwitchTab) onSwitchTab(step.action.tab);
+  };
+
   return (
     <div className="space-y-6">
       {loadError && (
