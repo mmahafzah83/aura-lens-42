@@ -723,23 +723,50 @@ function Page4({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
 }
 
 function Row({ label, value, valueAlign = "right" }: { label: string; value: string; valueAlign?: "left" | "right" }) {
+  const ar = hasArabic(value);
   return (
     <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${RULE}`, fontSize: 12 }}>
       <span style={{ color: INK_3, letterSpacing: "0.04em" }}>{label}</span>
-      <span style={{ color: INK, fontWeight: 500, textAlign: valueAlign, maxWidth: "60%" }} dir="auto">{value}</span>
+      <span
+        style={{
+          color: INK,
+          fontWeight: 500,
+          textAlign: valueAlign,
+          maxWidth: "60%",
+          fontFamily: ar ? ARABIC : BODY,
+          letterSpacing: ar ? "normal" : undefined,
+        }}
+        dir={ar ? "rtl" : "auto"}
+        lang={ar ? "ar" : undefined}
+      >
+        {ar ? renderBidi(value) : value}
+      </span>
     </div>
   );
 }
 
 // Stacked variant: label on its own line, value left-aligned full-width below.
 function StackedRow({ label, value }: { label: string; value: string }) {
+  const ar = hasArabic(value);
   return (
     <div style={{ padding: "8px 0", borderBottom: `1px solid ${RULE}` }}>
       <div style={{ fontSize: 10, color: BRONZE_DEEP, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 4 }}>
         {label}
       </div>
-      <div style={{ fontSize: 12, color: INK, fontWeight: 500, lineHeight: 1.5, textAlign: "left" }} dir="auto">
-        {value}
+      <div
+        style={{
+          fontSize: 12,
+          color: INK,
+          fontWeight: 500,
+          lineHeight: 1.65,
+          textAlign: ar ? "right" : "left",
+          fontFamily: ar ? ARABIC : BODY,
+          letterSpacing: ar ? "normal" : undefined,
+        }}
+        dir={ar ? "rtl" : "auto"}
+        lang={ar ? "ar" : undefined}
+      >
+        {ar ? renderBidi(value) : value}
       </div>
     </div>
   );
