@@ -127,6 +127,7 @@ function Sheet({ children }: { children: React.ReactNode }) {
     <div
       className="aura-report-sheet"
       data-report-page
+      data-theme="light"
       style={{
         width: SHEET_W,
         minHeight: SHEET_H,
@@ -139,6 +140,9 @@ function Sheet({ children }: { children: React.ReactNode }) {
         flexDirection: "column",
         boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 12px 32px rgba(0,0,0,0.08)",
         margin: "0 auto 32px",
+        // Defensive: zero out any inherited Arabic-breaking tracking from
+        // a parent dark-shell. Per-element tracking is set explicitly below.
+        letterSpacing: "normal",
       }}
     >
       {children}
@@ -302,7 +306,7 @@ function Page1({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
         <div style={{ fontFamily: BODY, fontSize: 11, color: INK_4 }}>{todayLabel(data.generated_at)}</div>
       </div>
 
-      <h1 style={{ fontFamily: DISPLAY, fontSize: 44, fontWeight: 500, margin: "20px 0 6px", letterSpacing: "0.005em" }}>
+      <h1 style={{ fontFamily: DISPLAY, fontSize: 44, fontWeight: 500, margin: "20px 0 6px", letterSpacing: "0.005em", color: INK }}>
         {name || "Your Strategic Identity"}
       </h1>
       {role ? (
