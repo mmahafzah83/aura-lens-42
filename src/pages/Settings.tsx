@@ -359,6 +359,19 @@ export default function Settings() {
             >
               Download Report (PDF)
             </AuraButton>
+            {/* §16.1 trust line — quiet, caption, muted; bilingual stack */}
+            <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 2 }}>
+              <p style={{ fontSize: 11, lineHeight: 1.6, color: "var(--ink-4)", margin: 0 }}>
+                The report is built from your data alone — and leaves only by your hand.
+              </p>
+              <p
+                dir="rtl"
+                lang="ar"
+                style={{ fontSize: 11, lineHeight: 1.6, color: "var(--ink-4)", margin: 0, fontFamily: "'Cairo', 'DM Sans', sans-serif" }}
+              >
+                التقرير يُبنى من بياناتك وحدها — ولا يغادر إلا بيدك.
+              </p>
+            </div>
           </AuraCard>
         </div>
 

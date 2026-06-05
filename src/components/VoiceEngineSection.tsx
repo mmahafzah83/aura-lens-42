@@ -1238,6 +1238,20 @@ const VoiceEngineSection = () => {
                     className="min-h-[120px] bg-secondary/30 border-border/20 text-sm"
                     disabled={teaching}
                   />
+                  {/* §16.1 trust line — quiet, caption, muted; bilingual stack */}
+                  <div className="mt-2 space-y-1">
+                    <p className="text-[11px] leading-relaxed text-muted-foreground/70">
+                      Your posts are yours alone — used only to refine your voice, never shared.
+                    </p>
+                    <p
+                      dir="rtl"
+                      lang="ar"
+                      className="text-[11px] leading-relaxed text-muted-foreground/70"
+                      style={{ fontFamily: "'Cairo', 'DM Sans', sans-serif" }}
+                    >
+                      منشوراتك لك وحدك — تُستخدم لصقل صوتك فقط، ولا تُشارك مع أحد.
+                    </p>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
                     <div>
                       <input
