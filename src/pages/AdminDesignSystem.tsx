@@ -437,7 +437,7 @@ const AdminDesignSystem = () => {
       style={{
         backgroundColor: "var(--ink)",
         color: "var(--ink-7, #eee)",
-        fontFamily: "Inter, system-ui, sans-serif",
+        fontFamily: "DM Sans, system-ui, sans-serif",
       }}
     >
       <div className="max-w-6xl mx-auto px-6 py-10">

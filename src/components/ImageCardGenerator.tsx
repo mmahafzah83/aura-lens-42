@@ -194,7 +194,7 @@ const DEFAULT_CARD_STYLE: CardStyleConfig = {
   titleSize: "m",
   headerSize: "m",
   accentColor: "var(--brand)",
-  cardFont: "Inter, sans-serif",
+  cardFont: "var(--font-body)",
   preset: "default",
 };
 
@@ -643,9 +643,10 @@ export default function ImageCardGenerator({
               </p>
               <div style={{ display: "flex", gap: 4 }}>
                 {[
-                  { label: "Inter", value: "Inter, sans-serif" },
-                  { label: "Serif", value: "Georgia, serif" },
-                  { label: "Mono", value: "monospace" },
+                  { label: "Display", value: "var(--font-display)" },
+                  { label: "Body", value: "var(--font-body)" },
+                  { label: "Arabic", value: "var(--font-arabic)" },
+                  { label: "Mono", value: "var(--font-mono)" },
                 ].map((f) => (
                   <button
                     key={f.value}

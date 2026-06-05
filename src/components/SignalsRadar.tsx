@@ -127,7 +127,7 @@ const SignalsRadar = () => {
                   fontSize={isHovered ? 11 : 10}
                   fontWeight={isHovered ? 600 : 400}
                   className="transition-all duration-200"
-                  style={{ fontFamily: "Inter, sans-serif" }}
+                  style={{ fontFamily: "var(--font-body)" }}
                 >
                   {s.signal_title.length > 22 ? s.signal_title.slice(0, 20) + "…" : s.signal_title}
                 </text>

@@ -399,7 +399,7 @@ const Admin = () => {
   return (
     <div
       className="min-h-screen w-full"
-      style={{ backgroundColor: "var(--ink)", color: "var(--ink-7)", fontFamily: "Inter, system-ui, sans-serif" }}
+      style={{ backgroundColor: "var(--ink)", color: "var(--ink-7)", fontFamily: "DM Sans, system-ui, sans-serif" }}
     >
       <div className="max-w-5xl mx-auto px-6 py-10">
         {/* Header */}
