@@ -200,6 +200,9 @@ html *:not(canvas):not(video):not(iframe) {
   --error:         #C96A5B; /* 5.11:1 */
   --info:          #7E9CC4; /* 6.67:1 */
   --ink-on-brand:  #191613; /* dark ink for use on lighter night --bronze */
+
+  /* Canonical hairline divider (dark) */
+  --hairline: rgba(255,255,255,0.10);
 }
 
 [data-theme="light"] {
@@ -285,6 +288,9 @@ html *:not(canvas):not(video):not(iframe) {
   --error:         #B3402E;
   --info:          #5B7DA8;
   --ink-on-brand:  #FFFFFF;
+
+  /* Canonical hairline divider (light) */
+  --hairline: rgba(43,39,35,0.14);
 }
 
 @keyframes skeleton-pulse {
