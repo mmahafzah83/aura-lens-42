@@ -2263,13 +2263,13 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
         </div>
         {/* Right column: signals (collapsible) + edit panel */}
         <aside className="space-y-4 lg:sticky lg:top-4 self-start" style={{ maxHeight: "calc(100vh - 32px)", overflowY: "auto" }}>
-          <div className="rounded-2xl" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+          <div className="rounded-2xl" style={{ background: "var(--paper-2)", border: "1px solid var(--hairline)" }}>
             <button
               onClick={() => setShowSignals(s => !s)}
               className="w-full flex items-center justify-between px-4 py-3 text-left"
             >
-              <span className="text-xs uppercase tracking-wider opacity-70 font-semibold">Your publishing window</span>
-              {showSignals ? <ChevronUp className="w-4 h-4 opacity-60" /> : <ChevronDown className="w-4 h-4 opacity-60" />}
+              <span className="text-xs uppercase tracking-wider font-semibold" style={{ color: "var(--ink-3)" }}>Your publishing window</span>
+              {showSignals ? <ChevronUp className="w-4 h-4" style={{ color: "hsl(var(--muted-foreground))" }} /> : <ChevronDown className="w-4 h-4" style={{ color: "hsl(var(--muted-foreground))" }} />}
             </button>
             {showSignals && (
               <div style={{ maxHeight: 320, overflowY: "auto" }} className="px-1 pb-2">
@@ -2289,15 +2289,15 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
           </div>
 
           {/* Edit panel */}
-          <div className="space-y-3 p-4 rounded-2xl" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+          <div className="space-y-3 p-4 rounded-2xl" style={{ background: "var(--paper-2)", border: "1px solid var(--hairline)" }}>
             <div className="flex items-center justify-between">
-              <div className="text-xs uppercase tracking-wider opacity-60">Edit · {slide?.slide_type}</div>
-              <div className="text-xs opacity-50">Slide {activeIdx + 1} of {slides.length}</div>
+              <div className="text-xs uppercase tracking-wider" style={{ color: "hsl(var(--muted-foreground))" }}>Edit · {slide?.slide_type}</div>
+              <div className="text-xs" style={{ color: "hsl(var(--muted-foreground))" }}>Slide {activeIdx + 1} of {slides.length}</div>
             </div>
             {slide && <EditPanel slide={slide} onChange={updateSlide} lang={lang} />}
 
-            <div className="pt-3 mt-3 border-t" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
-              <div className="text-xs uppercase tracking-wider opacity-60 mb-2">Author & attribution</div>
+            <div className="pt-3 mt-3 border-t" style={{ borderColor: "var(--hairline)" }}>
+              <div className="text-xs uppercase tracking-wider mb-2" style={{ color: "hsl(var(--muted-foreground))" }}>Author & attribution</div>
               <Field lang={lang} label="Name" value={carousel.author_name || ""} onChange={v => setCarousel({ ...carousel, author_name: v })} />
               <Field lang={lang} label="Title" value={carousel.author_title || ""} onChange={v => setCarousel({ ...carousel, author_title: v })} />
               <Field lang={lang} label="Handle" value={carousel.author_handle || ""} onChange={v => setCarousel({ ...carousel, author_handle: v })} />
@@ -2307,9 +2307,9 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
 
           {/* LinkedIn caption + hashtags */}
           {(carousel.linkedin_caption || (carousel.hashtags && carousel.hashtags.length > 0)) && (
-            <div className="space-y-3 p-4 rounded-2xl" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <div className="space-y-3 p-4 rounded-2xl" style={{ background: "var(--paper-2)", border: "1px solid var(--hairline)" }}>
               <div className="flex items-center justify-between">
-                <div className="text-xs uppercase tracking-wider opacity-60">LinkedIn caption</div>
+                <div className="text-xs uppercase tracking-wider" style={{ color: "hsl(var(--muted-foreground))" }}>LinkedIn caption</div>
                 <button
                   onClick={() => {
                     const tags = (carousel.hashtags || []).map(h => h.startsWith("#") ? h : "#" + h).join(" ");
@@ -2319,7 +2319,8 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                       () => toast.error("Copy failed"),
                     );
                   }}
-                  className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10"
+                  className="flex items-center gap-1 text-xs px-2 py-1 rounded"
+                  style={{ background: "var(--paper-3)", color: "var(--ink)" }}
                 >
                   <Copy className="w-3 h-3" /> Copy
                 </button>
@@ -2327,10 +2328,12 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
               <textarea
                 value={carousel.linkedin_caption || ""}
                 onChange={e => setCarousel({ ...carousel, linkedin_caption: e.target.value })}
-                className="w-full px-2.5 py-1.5 text-sm rounded-lg bg-white/5 border focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-[color:var(--bronze-text)]"
+                className="w-full px-2.5 py-1.5 text-sm rounded-lg border focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-[color:var(--bronze-text)] placeholder:text-[color:hsl(var(--muted-foreground))]"
                 dir={lang === "ar" ? "rtl" : "ltr"}
                 style={{
-                  borderColor: "rgba(255,255,255,0.1)",
+                  background: "var(--paper)",
+                  color: "var(--ink)",
+                  borderColor: "var(--hairline)",
                   minHeight: 130,
                   resize: "vertical",
                   fontFamily: lang === "ar" ? "'Cairo', 'DM Sans', sans-serif" : undefined,
@@ -2341,7 +2344,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {carousel.hashtags.map((h, i) => (
                     <span key={i} className="text-xs px-2 py-0.5 rounded-full"
-                          style={{ background: "rgba(197,165,90,0.12)", color: "#B08D3A", border: "1px solid rgba(197,165,90,0.25)" }}>
+                          style={{ background: "var(--bronze-pale)", color: "var(--bronze-text)", border: "1px solid var(--bronze-line)" }}>
                       {h.startsWith("#") ? h : "#" + h}
                     </span>
                   ))}
@@ -2354,8 +2357,8 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
 
       {/* Sticky bottom bar */}
       <div className="fixed bottom-0 left-0 right-0 px-4 py-3 backdrop-blur-md flex flex-wrap items-center gap-2 justify-center"
-           style={{ background: "rgba(15,14,12,0.85)", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-        <span className="w-full text-center text-[11px]" style={{ color: "rgba(255,255,255,0.55)", letterSpacing: "0.02em" }}>
+           style={{ background: "color-mix(in srgb, var(--paper) 85%, transparent)", borderTop: "1px solid var(--hairline)" }}>
+        <span className="w-full text-center text-[11px]" style={{ color: "hsl(var(--muted-foreground))", letterSpacing: "0.02em" }}>
           ✦ AI-generated slides · Review before sharing
         </span>
         <div className="flex items-center gap-1 mr-2">
@@ -2363,8 +2366,8 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
             <button key={d} onClick={() => setDim(d)}
                     className="px-2.5 py-1 text-xs rounded"
                     style={{
-                      background: dim === d ? "#B08D3A" : "rgba(255,255,255,0.06)",
-                      color: dim === d ? "#0A0908" : "inherit",
+                      background: dim === d ? "var(--bronze)" : "var(--paper-2)",
+                      color: dim === d ? "var(--ink-on-brand)" : "var(--ink)",
                     }}>
               {d.replace("x", "×")}
             </button>
@@ -2372,15 +2375,15 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
         </div>
         <button onClick={exportPdf} disabled={exporting}
                 className="px-3 py-1.5 text-xs rounded-lg flex items-center gap-1.5"
-                style={{ background: "#B08D3A", color: "#0A0908" }}>
+                style={{ background: "var(--bronze)", color: "var(--ink-on-brand)" }}>
           {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />} PDF
         </button>
         <button onClick={saveToLibrary} disabled={saving || savedToLibrary || !slides.length}
                 className="px-3 py-1.5 text-xs rounded-lg flex items-center gap-1.5"
                 style={{
-                  background: savedToLibrary ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.1)",
-                  color: savedToLibrary ? "#22c55e" : "inherit",
-                  border: savedToLibrary ? "1px solid rgba(34,197,94,0.4)" : "1px solid transparent",
+                  background: savedToLibrary ? "var(--success-pale)" : "var(--paper-2)",
+                  color: savedToLibrary ? "var(--success)" : "var(--ink)",
+                  border: savedToLibrary ? "1px solid var(--success)" : "1px solid transparent",
                 }}>
           {saving ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving…</>
             : savedToLibrary ? <><Check className="w-3.5 h-3.5" /> Saved to Library</>
