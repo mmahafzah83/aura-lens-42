@@ -581,8 +581,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
           () => (
             <div
               style={{
-                background: "var(--ink, #1C1812)",
-                color: "var(--ink-on-brand, #f5efe1)",
+                background: "var(--ink)",
+                color: "var(--ink-on-brand)",
                 border: "1px solid var(--brand-muted, rgba(197,165,90,0.4))",
                 borderRadius: 12,
                 padding: "14px 18px",
@@ -590,7 +590,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                 maxWidth: 380,
               }}
             >
-              <div style={{ fontSize: 12, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--brand, #B08D3A)", fontWeight: 600, marginBottom: 6 }}>
+              <div style={{ fontSize: 12, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--bronze-text)", fontWeight: 600, marginBottom: 6 }}>
                 ✦ Captured
               </div>
               <div style={{ fontSize: 14, lineHeight: 1.5, opacity: 0.9 }}>
@@ -707,7 +707,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
             maxWidth: 460,
             padding: "44px 36px 32px",
             textAlign: "center",
-            background: "var(--paper, #14110C)",
+            background: "var(--paper)",
             border: "1px solid var(--brand-line, rgba(176,141,58,0.28))",
             borderRadius: 16,
             boxShadow: "0 30px 80px -20px rgba(0,0,0,0.5)",
@@ -727,7 +727,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
             className="aura-gold-pulse"
             style={{
               position: "relative", fontSize: 42, lineHeight: 1,
-              color: "var(--gold-dark, #B08D3A)",
+              color: "var(--bronze)",
               marginBottom: 18,
             }}
           >✦</div>
@@ -735,7 +735,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
             style={{
               fontFamily: "'Cormorant Garamond', Georgia, serif",
               fontSize: 26, fontWeight: 500,
-              color: "var(--ink, #FBF8F1)",
+              color: "var(--ink)",
               letterSpacing: "-0.01em",
               margin: "0 0 12px",
             }}
@@ -745,7 +745,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
           <p
             style={{
               fontSize: 14, lineHeight: 1.65,
-              color: "var(--ink-3, #B8AE99)",
+              color: "var(--ink-3)",
               margin: "0 auto 20px", maxWidth: 360,
             }}
           >
@@ -760,8 +760,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                 window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "intelligence" } }));
               }}
               style={{
-                background: "var(--gold-dark, #B08D3A)",
-                color: "var(--paper, #14110C)",
+                background: "var(--bronze)",
+                color: "var(--paper)",
                 border: 0, borderRadius: 8,
                 padding: "10px 22px",
                 fontSize: 14, fontWeight: 600,
@@ -778,7 +778,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
             style={{
               position: "absolute", top: 12, right: 12,
               background: "transparent", border: 0,
-              color: "var(--ink-4, #8A8170)", cursor: "pointer",
+              color: "var(--ink-4)", cursor: "pointer",
             }}
           >
             <X size={16} />
@@ -856,7 +856,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
               className="flex items-center justify-center shrink-0"
               style={{ width: 36, height: 36, background: "var(--brand)", borderRadius: 11 }}
             >
-              <Plus className="w-5 h-5" style={{ color: "#FFFFFF" }} strokeWidth={2.5} />
+              <Plus className="w-5 h-5" style={{ color: "var(--ink-on-brand)" }} strokeWidth={2.5} />
             </div>
             <div>
               <h2
@@ -1335,7 +1335,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                               flexShrink: 0,
                             }}
                           >
-                            <FileText className="w-4 h-4" style={{ color: "#FFFFFF" }} />
+                            <FileText className="w-4 h-4" style={{ color: "var(--ink-on-brand)" }} />
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: 12, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -1423,9 +1423,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                     aria-label={isRecording ? "Stop recording" : "Start recording"}
                   >
                     {isRecording ? (
-                      <Square className="w-6 h-6" style={{ color: "#FFFFFF" }} fill="#FFFFFF" />
+                      <Square className="w-6 h-6" style={{ color: "var(--ink-on-brand)" }} fill="currentColor" />
                     ) : (
-                      <Mic className="w-7 h-7" style={{ color: "#FFFFFF" }} />
+                      <Mic className="w-7 h-7" style={{ color: "var(--ink-on-brand)" }} />
                     )}
                   </button>
                   <div

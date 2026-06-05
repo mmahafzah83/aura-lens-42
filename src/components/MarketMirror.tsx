@@ -104,13 +104,13 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
         border: "1px solid var(--brand-line, rgba(197,165,90,0.2))",
         borderRadius: 14,
         padding: 20,
-        color: "var(--ink, #f5efe1)",
+        color: "var(--ink)",
       }}
     >
       {!hideHeader && (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Eye size={16} style={{ color: "var(--brand, #B08D3A)" }} />
+          <Eye size={16} style={{ color: "var(--bronze)" }} />
           <h3 style={{ fontFamily: "var(--font-display, 'Cormorant Garamond', serif)", fontSize: 20, margin: 0 }}>
             Market Mirror
           </h3>
@@ -129,7 +129,7 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
                 padding: "6px 10px", borderRadius: 8,
                 background: "transparent",
                 border: "1px solid var(--brand-line, rgba(197,165,90,0.3))",
-                color: canRefresh ? "var(--brand, #B08D3A)" : "var(--ink-muted, rgba(245,239,225,0.4))",
+                color: canRefresh ? "var(--bronze-text)" : "var(--ink-muted)",
                 fontSize: 12, cursor: canRefresh && !generating ? "pointer" : "not-allowed",
               }}
             >
@@ -157,8 +157,8 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
             disabled={generating || !userId}
             style={{
               padding: "10px 18px", borderRadius: 8,
-              background: "var(--brand, #B08D3A)",
-              color: "var(--ink-on-brand, #1a160f)",
+              background: "var(--bronze)",
+              color: "var(--ink-on-brand)",
               border: "none", fontWeight: 600, fontSize: 14,
               cursor: generating ? "wait" : "pointer",
               display: "inline-flex", alignItems: "center", gap: 8,
@@ -191,7 +191,7 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
                   display: "inline-flex", alignItems: "center", justifyContent: "center",
                   width: 24, height: 24, borderRadius: 6,
                   background: "transparent", border: 0,
-                  color: canRefresh ? "var(--brand, #B08D3A)" : "var(--ink-5, var(--ink-muted))",
+                  color: canRefresh ? "var(--bronze-text)" : "var(--ink-muted)",
                   cursor: canRefresh && !generating ? "pointer" : "not-allowed",
                 }}
               >
@@ -216,8 +216,8 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
                     padding: "8px 12px",
                     background: "transparent",
                     border: "none",
-                    borderBottom: active ? "2px solid var(--brand, #B08D3A)" : "2px solid transparent",
-                    color: active ? "var(--brand, #B08D3A)" : "var(--ink, rgba(245,239,225,0.85))",
+                    borderBottom: active ? "2px solid var(--bronze)" : "2px solid transparent",
+                    color: active ? "var(--bronze-text)" : "var(--ink)",
                     fontSize: 14, fontWeight: active ? 600 : 600,
                     opacity: active ? 1 : 0.85,
                     cursor: "pointer",
@@ -229,13 +229,14 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
             })}
           </div>
 
-          <p style={{ fontSize: 15, lineHeight: 1.65, color: "var(--ink, #f5efe1)", whiteSpace: "pre-wrap", margin: "0 0 14px", fontFamily: "var(--font-display, 'Cormorant Garamond', serif)", fontStyle: "italic" }}>
+          <p style={{ fontSize: 15, lineHeight: 1.65, color: "var(--ink)", whiteSpace: "pre-wrap", margin: "0 0 14px", fontFamily: "var(--font-display, 'Cormorant Garamond', serif)", fontStyle: text && /[\u0600-\u06FF]/.test(text) ? "normal" : "italic" }}>
             {text || "No perspective generated."}
           </p>
 
           {gap && (() => {
             const persona = tab === "headhunter" ? labels.gap1 : tab === "client_cio" ? labels.gap2 : labels.gap3;
-            const ALERT = "var(--signal, #F97316)";
+            const ALERT = "var(--signal)";
+            const gapIsArabic = /[\u0600-\u06FF]/.test(gap);
             return (
               <div
                 style={{
@@ -245,13 +246,14 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
                   borderRadius: 6,
                 }}
               >
-                <div style={{ fontSize: 12, letterSpacing: 1.5, textTransform: "uppercase", color: ALERT, fontWeight: 600, marginBottom: 6 }}>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12, letterSpacing: 1.5, textTransform: "uppercase", color: "var(--ink)", fontWeight: 600, marginBottom: 6 }}>
+                  <span aria-hidden style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: ALERT }} />
                   Authority gap
                 </div>
-                <div style={{ fontSize: 14, color: "var(--ink, #f5efe1)", lineHeight: 1.625 }}>
+                <div style={{ fontSize: 14, color: "var(--ink)", lineHeight: 1.625 }}>
                   A {persona} would notice: {gap}
                 </div>
-                <div style={{ fontSize: 14, color: "var(--ink, #f5efe1)", lineHeight: 1.625, marginTop: 6, fontStyle: "italic", opacity: 0.85 }}>
+                <div style={{ fontSize: 14, color: "var(--ink)", lineHeight: 1.625, marginTop: 6, fontStyle: gapIsArabic ? "normal" : "italic", opacity: 0.85 }}>
                   Is that a choice?
                 </div>
               </div>
