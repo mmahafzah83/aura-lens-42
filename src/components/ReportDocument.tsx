@@ -7,6 +7,7 @@
 import { rankFromLevel } from "@/lib/marketPersonas";
 import { formatSkillLabel } from "@/lib/formatSkillLabel";
 import type { ReportData, CapabilitiesSection } from "@/lib/buildIdentityReport";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 
 // ── Design tokens (locked to literals for export fidelity) ──────────────
 // §18: exports are LIGHT-CANONICAL and SELF-CONTAINED. html2canvas runs on a
