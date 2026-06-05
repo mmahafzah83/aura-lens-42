@@ -9,15 +9,24 @@ import { formatSkillLabel } from "@/lib/formatSkillLabel";
 import type { ReportData, CapabilitiesSection } from "@/lib/buildIdentityReport";
 
 // ── Design tokens (locked to literals for export fidelity) ──────────────
-const BRONZE = "#C5A55A";
-const BRONZE_DEEP = "#9C7E3E";
-const BRONZE_FAINT = "rgba(197,165,90,0.12)";
-const INK = "#1a1a1a";
-const INK_2 = "#3a3a3a";
-const INK_3 = "#6b6b6b";
-const INK_4 = "#8a8a8a";
-const RULE = "#e6e1d6";
-const PAPER = "#ffffff";
+// §18: exports are LIGHT-CANONICAL and SELF-CONTAINED. html2canvas runs on a
+// node that may live inside a dark-themed Settings shell whose global rules
+// (e.g. `[data-theme="dark"] h1 { color: var(--ink) }`) would otherwise repaint
+// our headings cream. Every visible element therefore sets `color` inline from
+// these literals, never from CSS vars or inheritance alone. Each constant is
+// annotated with the Standard token it mirrors (same pattern as cardStyles.ts).
+const INK         = "#2B2723";              // mirrors light var(--ink)
+const PAPER       = "#F8F5F0";              // mirrors light var(--paper)
+const BRONZE      = "#B08D3A";              // mirrors var(--bronze)
+const BRONZE_TEXT = "#8A6D2A";              // mirrors light var(--bronze-text) (AA on paper)
+const BRONZE_DEEP = BRONZE_TEXT;            // alias kept for existing call-sites
+const MUTED       = "#7A7164";              // mirrors light var(--ink-3)
+const INK_2       = INK;                    // body copy uses canonical INK
+const INK_3       = MUTED;                  // secondary copy
+const INK_4       = "#9A9286";              // caption/meta (decorative, no token)
+const HAIRLINE    = "rgba(43,39,35,0.14)";  // mirrors var(--hairline) on paper
+const RULE        = HAIRLINE;               // alias kept for existing call-sites
+const BRONZE_FAINT = "rgba(176,141,58,0.12)"; // decorative chip wash
 const DISPLAY = "'Cormorant Garamond', Georgia, 'Times New Roman', serif";
 const BODY = "'DM Sans', system-ui, -apple-system, sans-serif";
 const ARABIC = "'Cairo', 'DM Sans', sans-serif";
