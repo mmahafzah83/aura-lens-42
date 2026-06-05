@@ -192,6 +192,17 @@ html *:not(canvas):not(video):not(iframe) {
   --color-text-warning: #E8A832;
   --color-border-tertiary: rgba(212, 176, 86, 0.15);
   --font-serif: var(--font-display);
+
+  /* ── Aura Standard V2.0 semantic palette (dark mode) ──
+     Added Wave A; existing tokens above are preserved. Cascade resolves
+     these as the active values for the listed names. Contrast verified
+     ≥3:1 against --paper #14110C (see commit notes). */
+  --bronze-text:   #D4B056; /* 9.10:1 vs --paper */
+  --success:       #5BAE8B; /* 7.06:1 */
+  --warning:       #D98F4A; /* 7.15:1 */
+  --error:         #C96A5B; /* 5.11:1 */
+  --info:          #7E9CC4; /* 6.67:1 */
+  --ink-on-brand:  #191613; /* dark ink for use on lighter night --bronze */
 }
 
 [data-theme="light"] {
