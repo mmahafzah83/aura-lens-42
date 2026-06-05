@@ -648,49 +648,244 @@ function StackedRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-// ── Page-presence gating ────────────────────────────────────────────────
-function hasPage1(d: ReportData): boolean {
-  if (!d.profile) return false;
-  const name = [d.profile.first_name, d.profile.last_name].filter(Boolean).join(" ").trim();
-  return Boolean(name || d.score || d.positioning || d.brand_position?.pillars.length);
+// ── Dynamic measure-then-pack paginator ─────────────────────────────────
+// 1. Build atomic blocks per section.
+// 2. Render them once into an offscreen container at the exact sheet
+//    content width (CONTENT_W) to measure each one's offsetHeight.
+// 3. Pack blocks sequentially into sheets of fixed CONTENT_H. A block
+//    that doesn't fit the remaining space moves WHOLE to the next sheet.
+//    A section change always forces a fresh sheet. Continuation sheets
+//    keep the same header subtitle; the page-title block is NOT repeated.
+// 4. Number sheets as 0N / 0M using the final sheet count.
+
+type SectionKey = "identity" | "capability" | "market" | "footprint";
+const SECTION_SUBTITLE: Record<SectionKey, string> = {
+  identity: "Strategic Identity Report",
+  capability: "Capability & Intelligence",
+  market: "Market Position",
+  footprint: "Strategic Footprint",
+};
+
+interface Block {
+  key: string;
+  section: SectionKey;
+  spacing: number; // top margin if not first block on the sheet
+  node: React.ReactNode;
 }
-function hasPage2(d: ReportData): boolean {
-  return Boolean(d.capabilities || d.profile_intelligence);
+
+// Content width = sheet width minus padding on both sides.
+const CONTENT_W = SHEET_W - 2 * PAGE_PAD; // 682
+// Reserve header (~60) + footer (~40) + safety inside the padding box.
+const HEADER_RESERVE = 60;
+const FOOTER_RESERVE = 44;
+const CONTENT_H = SHEET_H - 2 * PAGE_PAD - HEADER_RESERVE - FOOTER_RESERVE - 6; // ≈ 901
+
+function buildBlocks(d: ReportData): Block[] {
+  const blocks: Block[] = [];
+  const name = [d.profile?.first_name, d.profile?.last_name].filter(Boolean).join(" ").trim();
+
+  // ── IDENTITY ─────────────────────────────────────────────────────────
+  const identityShown =
+    !!d.profile && Boolean(name || d.score || d.positioning || d.brand_position?.pillars.length);
+  if (identityShown) {
+    blocks.push({ key: "i-hero", section: "identity", spacing: 18, node: <HeroIntro data={d} /> });
+    if (d.score) blocks.push({ key: "i-score", section: "identity", spacing: 24, node: <ScoreCard score={d.score} /> });
+    const p = d.profile!;
+    const items: { label: string; value: string }[] = [];
+    if (p.core_practice) items.push({ label: "Core Practice", value: p.core_practice });
+    if (p.sector_focus) items.push({ label: "Sector Focus", value: p.sector_focus });
+    if (p.years_experience_raw) items.push({ label: "Experience", value: stripParenTail(p.years_experience_raw) });
+    if (p.linkedin_handle) items.push({ label: "LinkedIn", value: `/in/${p.linkedin_handle.replace(/^\/?in\//, "")}` });
+    if (items.length > 0) blocks.push({ key: "i-grid", section: "identity", spacing: 22, node: <ProfileGrid items={items} /> });
+    const goals = p.north_star_goals ?? [];
+    const pillars = d.brand_position?.pillars ?? [];
+    if (goals.length > 0) blocks.push({ key: "i-northstar", section: "identity", spacing: 22, node: <NorthStarBlock goals={goals} /> });
+    if (pillars.length > 0) blocks.push({ key: "i-pillars", section: "identity", spacing: 22, node: <PillarsBlock pillars={pillars} /> });
+  }
+
+  // ── CAPABILITY ───────────────────────────────────────────────────────
+  if (d.capabilities || d.profile_intelligence) {
+    blocks.push({ key: "c-title", section: "capability", spacing: 20, node: <SectionTitle title="Capability & Intelligence" name={name} /> });
+    if (d.capabilities) blocks.push({ key: "c-radar", section: "capability", spacing: 18, node: <CapabilityBlock data={d.capabilities} /> });
+    const intel = d.profile_intelligence;
+    if (intel) {
+      blocks.push({ key: "c-intel-label", section: "capability", spacing: 26, node: <SectionLabel>Profile Intelligence</SectionLabel> });
+      if (intel.identity_summary) {
+        blocks.push({ key: "c-intel-summary", section: "capability", spacing: 4, node: <IntelSummary text={intel.identity_summary} /> });
+      }
+      if (intel.authority_themes.length > 0) {
+        intel.authority_themes.forEach((t, i) =>
+          blocks.push({ key: `c-theme-${i}`, section: "capability", spacing: 10, node: <ThemeCard t={t} /> })
+        );
+      } else if (intel.expertise_areas.length > 0) {
+        blocks.push({ key: "c-chips", section: "capability", spacing: 10, node: <ChipRow items={intel.expertise_areas} /> });
+      }
+    }
+  }
+
+  // ── MARKET ───────────────────────────────────────────────────────────
+  const showMarket =
+    !!d.market_mirror && d.market_mirror.persona_set === rankFromLevel(d.profile?.level);
+  if (showMarket) {
+    blocks.push({ key: "m-title", section: "market", spacing: 20, node: <SectionTitle title="Market Position" name={name} /> });
+    blocks.push({ key: "m-label", section: "market", spacing: 20, node: <SectionLabel>How the Market Reads You</SectionLabel> });
+    d.market_mirror!.perspectives.forEach((p, i) =>
+      blocks.push({ key: `m-persona-${i}`, section: "market", spacing: 14, node: <PersonaCard p={p} /> })
+    );
+  }
+
+  // ── FOOTPRINT ────────────────────────────────────────────────────────
+  if (d.territories || d.footprint || d.content || d.voice) {
+    blocks.push({ key: "f-title", section: "footprint", spacing: 20, node: <SectionTitle title="Strategic Footprint" name={name} /> });
+    if (d.territories) blocks.push({ key: "f-terr", section: "footprint", spacing: 20, node: <TerritoriesBlock items={d.territories} /> });
+    if (d.footprint) blocks.push({ key: "f-fp", section: "footprint", spacing: 24, node: <FootprintBlock fp={d.footprint} /> });
+    if (d.content) blocks.push({ key: "f-content", section: "footprint", spacing: 22, node: <ContentEngineCard c={d.content} /> });
+    if (d.voice) {
+      blocks.push({ key: "f-v-h", section: "footprint", spacing: 22, node: <VoiceHeader /> });
+      if (d.voice.tone) blocks.push({ key: "f-v-tone", section: "footprint", spacing: 6, node: <StackedRow label="Tone" value={d.voice.tone} /> });
+      if (d.voice.preferred_structures.length > 0) blocks.push({ key: "f-v-struct", section: "footprint", spacing: 0, node: <StackedRow label="Structure" value={d.voice.preferred_structures.join(" · ")} /> });
+      if (d.voice.storytelling_patterns.length > 0) blocks.push({ key: "f-v-pat", section: "footprint", spacing: 0, node: <StackedRow label="Patterns" value={d.voice.storytelling_patterns.join(" · ")} /> });
+      if (d.voice.vocabulary_preferences.prefer && d.voice.vocabulary_preferences.prefer.length > 0) {
+        blocks.push({ key: "f-v-pref", section: "footprint", spacing: 0, node: <StackedRow label="Prefers" value={d.voice.vocabulary_preferences.prefer.join(", ")} /> });
+      }
+    }
+  }
+
+  return blocks;
 }
-function hasPage3(d: ReportData): boolean {
-  // Page 3 is the Market Mirror page only. Brand statement lives on page 1.
-  // Mirror is omitted entirely if stale (cached set !== current rank).
-  return (
-    !!d.market_mirror &&
-    d.market_mirror.persona_set === rankFromLevel(d.profile?.level)
-  );
+
+interface PackedBlock extends Block {
+  height: number;
+  effectiveSpacing: number;
 }
-function hasPage4(d: ReportData): boolean {
-  return Boolean(d.territories || d.footprint || d.content || d.voice);
+interface PackedSheet {
+  section: SectionKey;
+  blocks: PackedBlock[];
+}
+
+function packSheets(blocks: Block[], heights: number[]): PackedSheet[] {
+  const sheets: PackedSheet[] = [];
+  let cur: PackedSheet | null = null;
+  let used = 0;
+
+  for (let i = 0; i < blocks.length; i++) {
+    const b = blocks[i];
+    const h = heights[i] || 0;
+
+    // Section break → always start a new sheet.
+    if (!cur || cur.section !== b.section) {
+      cur = { section: b.section, blocks: [] };
+      sheets.push(cur);
+      used = 0;
+    }
+
+    const isFirst = cur.blocks.length === 0;
+    const spacing = isFirst ? 0 : b.spacing;
+
+    // Doesn't fit remaining space — overflow to a continuation sheet.
+    if (!isFirst && used + spacing + h > CONTENT_H) {
+      cur = { section: b.section, blocks: [] };
+      sheets.push(cur);
+      used = 0;
+      cur.blocks.push({ ...b, height: h, effectiveSpacing: 0 });
+      used = h;
+      continue;
+    }
+
+    cur.blocks.push({ ...b, height: h, effectiveSpacing: spacing });
+    used += spacing + h;
+  }
+
+  return sheets;
 }
 
 // ── Root ────────────────────────────────────────────────────────────────
 export default function ReportDocument({ data }: { data: ReportData }) {
-  // Pre-strip stale market mirror so Page3 doesn't render persona-mismatched cards.
-  const safeData: ReportData = (() => {
+  // Pre-strip stale market mirror so persona-mismatched cards never render.
+  const safeData: ReportData = useMemo(() => {
     if (!data.market_mirror) return data;
     const wanted = rankFromLevel(data.profile?.level);
     if (data.market_mirror.persona_set !== wanted) {
       return { ...data, market_mirror: null };
     }
     return data;
-  })();
+  }, [data]);
 
-  const pages: Array<(n: number, total: number) => React.ReactNode> = [];
-  if (hasPage1(safeData)) pages.push((n, t) => <Page1 key="p1" data={safeData} pageN={n} pageTotal={t} />);
-  if (hasPage2(safeData)) pages.push((n, t) => <Page2 key="p2" data={safeData} pageN={n} pageTotal={t} />);
-  if (hasPage3(safeData)) pages.push((n, t) => <Page3 key="p3" data={safeData} pageN={n} pageTotal={t} />);
-  if (hasPage4(safeData)) pages.push((n, t) => <Page4 key="p4" data={safeData} pageN={n} pageTotal={t} />);
+  const blocks = useMemo(() => buildBlocks(safeData), [safeData]);
 
-  const total = pages.length;
+  return <Paginated key={safeData.user_id + ":" + safeData.generated_at} blocks={blocks} />;
+}
+
+function Paginated({ blocks }: { blocks: Block[] }) {
+  const measureRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [heights, setHeights] = useState<number[] | null>(null);
+
+  useLayoutEffect(() => {
+    if (heights !== null) return;
+    const next = blocks.map((_, i) => measureRefs.current[i]?.offsetHeight ?? 0);
+    // Guard: if any block is still 0 (fonts not ready, layout not done), retry next tick.
+    if (next.some((h) => h === 0)) {
+      const t = setTimeout(() => {
+        const retry = blocks.map((_, i) => measureRefs.current[i]?.offsetHeight ?? 0);
+        setHeights(retry);
+      }, 80);
+      return () => clearTimeout(t);
+    }
+    setHeights(next);
+  }, [blocks, heights]);
+
+  // Phase 1 — invisible measurement pass.
+  if (!heights) {
+    return (
+      <div
+        aria-hidden
+        data-theme="light"
+        style={{
+          position: "fixed",
+          left: -99999,
+          top: 0,
+          width: CONTENT_W,
+          background: PAPER,
+          color: INK,
+          fontFamily: BODY,
+          letterSpacing: "normal",
+          visibility: "hidden",
+        }}
+      >
+        {blocks.map((b, i) => (
+          <div
+            key={b.key}
+            ref={(el) => {
+              measureRefs.current[i] = el;
+            }}
+            style={{ width: CONTENT_W }}
+          >
+            {b.node}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Phase 2 — pack and render real sheets.
+  const sheets = packSheets(blocks, heights);
+  const total = sheets.length;
+
   return (
-    <div style={{ background: "#f5f3ee", padding: "24px 0" }}>
-      {pages.map((render, i) => render(i + 1, total))}
+    <div style={{ background: "#f5f3ee", padding: "24px 0" }} data-report-ready="true">
+      {sheets.map((sheet, i) => (
+        <Sheet key={i}>
+          <PageHeader subtitle={SECTION_SUBTITLE[sheet.section]} />
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+            {sheet.blocks.map((b) => (
+              <div key={b.key} style={{ marginTop: b.effectiveSpacing, width: "100%" }}>
+                {b.node}
+              </div>
+            ))}
+          </div>
+          <PageFooter n={i + 1} total={total} />
+        </Sheet>
+      ))}
     </div>
   );
 }
