@@ -594,6 +594,62 @@ const VoiceEngineSection = () => {
                 );
 
                 // ---------- Primary-voice subtitle (under tabs) ----------
+                const langName = (l: "en" | "ar"): string =>
+                  activeLang === "ar"
+                    ? (l === "ar" ? "العربية" : "English")
+                    : (l === "ar" ? "Arabic" : "English");
+                const changeNotice = primaryChangeNotice ? (
+                  <div
+                    role="status"
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 10,
+                      marginTop: 4,
+                      marginBottom: 10,
+                      padding: "10px 12px",
+                      border: "0.5px solid #E3D9C5",
+                      background: "rgba(197,165,90,0.08)",
+                      borderRadius: 8,
+                    }}
+                    dir={activeLang === "ar" ? "rtl" : "ltr"}
+                    lang={activeLang}
+                  >
+                    <span
+                      style={{
+                        flex: 1,
+                        fontFamily: activeLang === "ar" ? "'Cairo', 'DM Sans', sans-serif" : "'DM Sans', system-ui, sans-serif",
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: "#2A2418",
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      {activeLang === "ar"
+                        ? `أصبح صوتك الأساسي ${langName(primaryChangeNotice.to)} بناءً على منشوراتك الأخيرة.`
+                        : `Your primary voice is now ${langName(primaryChangeNotice.to)}, based on your recent posts.`}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={dismissPrimaryChangeNotice}
+                      aria-label={activeLang === "ar" ? "إخفاء" : "Dismiss"}
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        color: "#8A8170",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        padding: "0 4px",
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      {activeLang === "ar" ? "إخفاء" : "Dismiss"}
+                    </button>
+                  </div>
+                ) : null;
+
+                // ---------- Primary-voice subtitle (D7 line, under tabs) ----------
                 const primarySubtitle = (
                   <div
                     style={{
