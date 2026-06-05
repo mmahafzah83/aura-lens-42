@@ -547,51 +547,6 @@ const VoiceEngineSection = () => {
                   </div>
                 );
 
-                // ---------- Primary-voice subtitle (under tabs) ----------
-                const primarySubtitle = (
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 6,
-                      marginTop: -2,
-                      marginBottom: 12,
-                    }}
-                    dir={activeLang === "ar" ? "rtl" : "ltr"}
-                    lang={activeLang}
-                  >
-                    <span
-                      style={{
-                        fontFamily: activeLang === "ar" ? "'Cairo', 'DM Sans', sans-serif" : "'DM Sans', system-ui, sans-serif",
-                        fontSize: 12,
-                        fontWeight: 500,
-                        color: "#8A8170",
-                        letterSpacing: activeLang === "ar" ? "normal" : "0.01em",
-                        lineHeight: 1.6,
-                      }}
-                    >
-                      {activeLang === "ar"
-                        ? "الصوت الأساسي — مُحدد من منشوراتك الأخيرة"
-                        : "Primary voice — set by your recent posts"}
-                    </span>
-                    <InfoTooltip
-                      triggerSize={13}
-                      side="bottom"
-                      label="voice-primary"
-                    >
-                      {activeLang === "ar" ? (
-                        <span dir="rtl" lang="ar" style={{ fontFamily: "'Cairo', 'DM Sans', sans-serif" }}>
-                          مكتبتك تحدد الصوت الأساسي. التعليم يصقله. المنشورات المُعجَب بها تشكّل الأسلوب فقط. ملاحظاتك تضبطه.
-                        </span>
-                      ) : (
-                        <span>
-                          Your library decides the primary voice. Teaching refines it. Admired posts shape style only. Your feedback tunes it.
-                        </span>
-                      )}
-                    </InfoTooltip>
-                  </div>
-                );
-
                 // ---------- ARABIC BRANCH ----------
                 if (activeLang === "ar") {
                   const arEmpty = (
@@ -612,7 +567,6 @@ const VoiceEngineSection = () => {
                   return (
                     <div>
                       {tabsStrip}
-                      {primarySubtitle}
                       {!hasVoiceCard ? arEmpty : (
                       <div style={cardStyle} dir="rtl" lang="ar">
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
@@ -859,7 +813,6 @@ const VoiceEngineSection = () => {
                   return (
                     <div>
                       {tabsStrip}
-                      {primarySubtitle}
                       <div style={cardStyle}>
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><div style={eyebrowStyle}>Your voice signature</div><InfoTooltip slug="voice-signature" triggerSize={13} side="top" /></span>
                         <p style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 22, marginTop: 10, marginBottom: 6, color: "#2A2418", lineHeight: 1.35 }}>
@@ -876,7 +829,6 @@ const VoiceEngineSection = () => {
                 return (
                   <div>
                   {tabsStrip}
-                  {primarySubtitle}
                   <div style={cardStyle}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><div style={eyebrowStyle}>Your voice signature</div><InfoTooltip slug="voice-signature" triggerSize={13} side="top" /></span>
