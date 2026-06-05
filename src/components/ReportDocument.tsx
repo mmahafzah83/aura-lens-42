@@ -321,434 +321,236 @@ function CapabilityRadar({ data }: { data: CapabilitiesSection }) {
   );
 }
 
-// ── PAGE 1 — Identity ───────────────────────────────────────────────────
-function Page1({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pageTotal: number }) {
+// ── Atomic block sub-renderers ─────────────────────────────────────────
+// Each component below renders ONE atomic block. The paginator measures
+// each one's height in an offscreen pass, then packs them sequentially
+// into A4 sheets. No block knows its sheet index — all chrome (header,
+// footer, page numbers) is added by <Paginated/>.
+
+function HeroIntro({ data }: { data: ReportData }) {
   const p = data.profile;
   const name = [p?.first_name, p?.last_name].filter(Boolean).join(" ").trim();
-  const role = p?.level
-    ? p.firm
-      ? `${p.level}  ·  ${p.firm}`
-      : p.level
-    : "";
+  const role = p?.level ? (p.firm ? `${p.level}  ·  ${p.firm}` : p.level) : "";
   const statement = data.positioning?.statement || data.positioning?.title || "";
-
-  // Profile grid
-  const items: { label: string; value: string }[] = [];
-  if (p?.core_practice) items.push({ label: "Core Practice", value: p.core_practice });
-  if (p?.sector_focus) items.push({ label: "Sector Focus", value: p.sector_focus });
-  if (p?.years_experience_raw) items.push({ label: "Experience", value: stripParenTail(p.years_experience_raw) });
-  if (p?.linkedin_handle) items.push({ label: "LinkedIn", value: `/in/${p.linkedin_handle.replace(/^\/?in\//, "")}` });
-
-  const goals = p?.north_star_goals ?? [];
-  const pillars = data.brand_position?.pillars ?? [];
-
   return (
-    <Sheet>
-      <PageHeader subtitle="Strategic Identity Report" />
-      <div style={{ marginTop: 18, display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
         <div style={{ fontFamily: DISPLAY, fontSize: 14, color: INK_3, letterSpacing: "0.04em" }}>
           Strategic Identity Report
         </div>
         <div style={{ fontFamily: BODY, fontSize: 11, color: INK_4 }}>{todayLabel(data.generated_at)}</div>
       </div>
-
-      <h1 style={{ fontFamily: DISPLAY, fontSize: 44, fontWeight: 500, margin: "20px 0 6px", letterSpacing: "0.005em", color: INK }}>
+      <h1 style={{ fontFamily: DISPLAY, fontSize: 44, fontWeight: 500, margin: "16px 0 6px", letterSpacing: "0.005em", color: INK }}>
         {name || "Your Strategic Identity"}
       </h1>
       {role ? (
         <div style={{ fontFamily: BODY, fontSize: 13, color: INK_3, letterSpacing: "0.04em" }}>{role}</div>
       ) : null}
       {statement ? (
-        <div
-          style={{
-            fontFamily: DISPLAY,
-            fontStyle: "italic",
-            fontSize: 19,
-            color: INK_2,
-            margin: "22px 0 6px",
-            lineHeight: 1.4,
-            borderLeft: `2px solid ${BRONZE}`,
-            paddingLeft: 14,
-          }}
-        >
+        <div style={{ fontFamily: DISPLAY, fontStyle: "italic", fontSize: 19, color: INK_2, margin: "18px 0 0", lineHeight: 1.4, borderLeft: `2px solid ${BRONZE}`, paddingLeft: 14 }}>
           “{statement}”
         </div>
       ) : null}
+    </div>
+  );
+}
 
-      {/* SCORE */}
-      {data.score ? (
-        <div style={{ marginTop: 28, padding: 18, border: `1px solid ${RULE}`, borderTop: `2px solid ${BRONZE}` }}>
-          <SectionLabel>Digital Presence Score</SectionLabel>
-          <div style={{ display: "flex", alignItems: "stretch", gap: 32, marginTop: 12 }}>
-            {/* LEFT: number + tier */}
-            <div
-              style={{
-                flex: "none",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "flex-start",
-                borderRight: `1px solid ${RULE}`,
-                paddingRight: 32,
-                paddingTop: 2,
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "baseline",
-                  gap: 12,
-                  flexWrap: "nowrap",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                <span
-                  style={{
-                    fontFamily: DISPLAY,
-                    fontSize: 52,
-                    fontWeight: 500,
-                    color: INK,
-                    lineHeight: 1,
-                    margin: 0,
-                  }}
-                >
-                  {data.score.score}
-                </span>
-                <span
-                  style={{
-                    fontFamily: DISPLAY,
-                    fontSize: 20,
-                    color: INK_4,
-                    lineHeight: 1,
-                    margin: 0,
-                  }}
-                >
-                  /100
-                </span>
-                {data.score.tier ? (
-                  <span
-                    style={{
-                      fontFamily: BODY,
-                      fontSize: 11,
-                      color: BRONZE_DEEP,
-                      letterSpacing: "0.14em",
-                      textTransform: "uppercase",
-                      lineHeight: 1,
-                      margin: "0 0 0 10px",
-                    }}
-                  >
-                    ◆ {titleCase(data.score.tier)}
-                  </span>
-                ) : null}
-              </div>
-            </div>
-            {/* RIGHT: stacked component bars */}
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 12, paddingTop: 14 }}>
-              {[
-                { label: "Signal", weight: 40, v: data.score.components.signal },
-                { label: "Content", weight: 40, v: data.score.components.content },
-                { label: "Capture", weight: 20, v: data.score.components.capture },
-              ].map((b) => (
-                <div
-                  key={b.label}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "110px 1fr 30px",
-                    alignItems: "center",
-                    gap: 12,
-                  }}
-                >
-                  <div style={{ fontSize: 11, color: INK_2, letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                    {b.label}
-                    <span style={{ color: INK_4, marginLeft: 6 }}>{b.weight}%</span>
-                  </div>
-                  <div style={{ height: 7, background: RULE, borderRadius: 4, position: "relative", overflow: "hidden" }}>
-                    <div
-                      style={{
-                        position: "absolute",
-                        inset: 0,
-                        width: `${Math.max(0, Math.min(100, b.v))}%`,
-                        background: `linear-gradient(90deg, ${BRONZE}, ${BRONZE_DEEP})`,
-                        borderRadius: 4,
-                      }}
-                    />
-                  </div>
-                  <div
-                    style={{
-                      fontFamily: MONO,
-                      fontSize: 13,
-                      color: BRONZE_DEEP,
-                      textAlign: "right",
-                      fontVariantNumeric: "tabular-nums",
-                    }}
-                  >
-                    {Math.round(b.v)}
-                  </div>
-                </div>
-              ))}
-            </div>
+function ScoreCard({ score }: { score: NonNullable<ReportData["score"]> }) {
+  return (
+    <div style={{ padding: 18, border: `1px solid ${RULE}`, borderTop: `2px solid ${BRONZE}` }}>
+      <SectionLabel>Digital Presence Score</SectionLabel>
+      <div style={{ display: "flex", alignItems: "stretch", gap: 32, marginTop: 12 }}>
+        <div style={{ flex: "none", display: "flex", flexDirection: "column", justifyContent: "flex-start", borderRight: `1px solid ${RULE}`, paddingRight: 32, paddingTop: 2 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "nowrap", whiteSpace: "nowrap" }}>
+            <span style={{ fontFamily: DISPLAY, fontSize: 52, fontWeight: 500, color: INK, lineHeight: 1, margin: 0 }}>{score.score}</span>
+            <span style={{ fontFamily: DISPLAY, fontSize: 20, color: INK_4, lineHeight: 1, margin: 0 }}>/100</span>
+            {score.tier ? (
+              <span style={{ fontFamily: BODY, fontSize: 11, color: BRONZE_DEEP, letterSpacing: "0.14em", textTransform: "uppercase", lineHeight: 1, margin: "0 0 0 10px" }}>
+                ◆ {titleCase(score.tier)}
+              </span>
+            ) : null}
           </div>
         </div>
-      ) : null}
-
-      {/* PROFILE GRID */}
-      {items.length > 0 ? (
-        <div style={{ marginTop: 24, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px 32px" }}>
-          {items.map((it) => (
-            <div key={it.label}>
-              <div style={{ fontSize: 10, color: BRONZE_DEEP, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 2 }}>
-                {it.label}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 12, paddingTop: 14 }}>
+          {[
+            { label: "Signal", weight: 40, v: score.components.signal },
+            { label: "Content", weight: 40, v: score.components.content },
+            { label: "Capture", weight: 20, v: score.components.capture },
+          ].map((b) => (
+            <div key={b.label} style={{ display: "grid", gridTemplateColumns: "110px 1fr 30px", alignItems: "center", gap: 12 }}>
+              <div style={{ fontSize: 11, color: INK_2, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                {b.label}<span style={{ color: INK_4, marginLeft: 6 }}>{b.weight}%</span>
               </div>
-              <div style={{ fontSize: 13, color: INK }}>{it.value}</div>
+              <div style={{ height: 7, background: RULE, borderRadius: 4, position: "relative", overflow: "hidden" }}>
+                <div style={{ position: "absolute", inset: 0, width: `${Math.max(0, Math.min(100, b.v))}%`, background: `linear-gradient(90deg, ${BRONZE}, ${BRONZE_DEEP})`, borderRadius: 4 }} />
+              </div>
+              <div style={{ fontFamily: MONO, fontSize: 13, color: BRONZE_DEEP, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{Math.round(b.v)}</div>
             </div>
           ))}
         </div>
-      ) : null}
-
-      {/* NORTH STAR + PILLARS row */}
-      {(goals.length > 0 || pillars.length > 0) ? (
-        <div style={{ marginTop: 26, display: "grid", gridTemplateColumns: goals.length && pillars.length ? "1.2fr 1fr" : "1fr", gap: 24 }}>
-          {goals.length > 0 ? (
-            <div>
-              <SectionLabel>North Star</SectionLabel>
-              <ol style={{ listStyle: "none", margin: 0, padding: 0 }}>
-                {goals.map((g, i) => (
-                  <li key={i} style={{ display: "flex", gap: 10, padding: "6px 0", borderBottom: `1px solid ${RULE}`, fontSize: 13 }}>
-                    <span style={{ fontFamily: DISPLAY, fontSize: 14, color: BRONZE_DEEP, minWidth: 22 }}>
-                      {String(i + 1).padStart(2, "0")}
-                    </span>
-                    <span style={{ color: INK }}>{g}</span>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          ) : null}
-          {pillars.length > 0 ? (
-            <div>
-              <SectionLabel>Brand Pillars</SectionLabel>
-              <div>{pillars.map((p2) => <Chip key={p2}>{p2}</Chip>)}</div>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-
-      <PageFooter n={pageN} total={pageTotal} />
-    </Sheet>
+      </div>
+    </div>
   );
 }
 
-// ── PAGE 2 — Capability & Intelligence ──────────────────────────────────
-function Page2({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pageTotal: number }) {
-  const name = [data.profile?.first_name, data.profile?.last_name].filter(Boolean).join(" ").trim();
-  const intel = data.profile_intelligence;
+function ProfileGrid({ items }: { items: { label: string; value: string }[] }) {
   return (
-    <Sheet>
-      <PageHeader subtitle="Capability & Intelligence" />
-      <div style={{ marginTop: 20, marginBottom: 18 }}>
-        <div style={{ fontFamily: DISPLAY, fontSize: 28, fontWeight: 500, color: INK }}>Capability & Intelligence</div>
-        {name ? <div style={{ fontSize: 12, color: INK_4, letterSpacing: "0.06em", marginTop: 4 }}>{name}</div> : null}
-      </div>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px 32px" }}>
+      {items.map((it) => (
+        <div key={it.label}>
+          <div style={{ fontSize: 10, color: BRONZE_DEEP, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 2 }}>{it.label}</div>
+          <div style={{ fontSize: 13, color: INK }}>{it.value}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
-      {data.capabilities ? (
+function NorthStarBlock({ goals }: { goals: string[] }) {
+  return (
+    <div>
+      <SectionLabel>North Star</SectionLabel>
+      <ol style={{ listStyle: "none", margin: 0, padding: 0 }}>
+        {goals.map((g, i) => (
+          <li key={i} style={{ display: "flex", gap: 10, padding: "6px 0", borderBottom: `1px solid ${RULE}`, fontSize: 13 }}>
+            <span style={{ fontFamily: DISPLAY, fontSize: 14, color: BRONZE_DEEP, minWidth: 22 }}>{String(i + 1).padStart(2, "0")}</span>
+            <span style={{ color: INK }}>{g}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+function PillarsBlock({ pillars }: { pillars: string[] }) {
+  return (
+    <div>
+      <SectionLabel>Brand Pillars</SectionLabel>
+      <div>{pillars.map((p2) => <Chip key={p2}>{p2}</Chip>)}</div>
+    </div>
+  );
+}
+
+function SectionTitle({ title, name }: { title: string; name?: string }) {
+  return (
+    <div>
+      <div style={{ fontFamily: DISPLAY, fontSize: 28, fontWeight: 500, color: INK }}>{title}</div>
+      {name ? <div style={{ fontSize: 12, color: INK_4, letterSpacing: "0.06em", marginTop: 4 }}>{name}</div> : null}
+    </div>
+  );
+}
+
+function CapabilityBlock({ data }: { data: CapabilitiesSection }) {
+  const assessed = data.filter((c) => (c.score ?? 0) > 0);
+  return (
+    <div>
+      <SectionLabel>Capability Radar</SectionLabel>
+      <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: 24, alignItems: "center" }}>
+        {assessed.length >= 3 ? <CapabilityRadar data={assessed} /> : <div />}
         <div>
-          <SectionLabel>Capability Radar</SectionLabel>
-          <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: 24, alignItems: "center" }}>
-            {(() => {
-              const assessed = data.capabilities.filter((c) => (c.score ?? 0) > 0);
-              return (
-                <>
-                  {assessed.length >= 3 ? (
-                    <CapabilityRadar data={assessed} />
-                  ) : (
-                    <div />
-                  )}
-                  <div>
-                    {assessed.map((c) => (
-                      <div key={c.name} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${RULE}`, fontSize: 12 }}>
-                        <span style={{ color: INK_2 }}>{c.name}</span>
-                        <span style={{ fontFamily: MONO, fontSize: 13, color: BRONZE_DEEP, fontWeight: 500, fontVariantNumeric: "tabular-nums" }}>{c.score}</span>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              );
-            })()}
-          </div>
-        </div>
-      ) : null}
-
-      {intel ? (
-        <div style={{ marginTop: 28 }}>
-          <SectionLabel>Profile Intelligence</SectionLabel>
-          {intel.identity_summary ? (
-            <div
-              style={{
-                fontFamily: DISPLAY,
-                fontStyle: "italic",
-                fontSize: 17,
-                color: INK_2,
-                lineHeight: 1.45,
-                borderLeft: `2px solid ${BRONZE}`,
-                paddingLeft: 14,
-                marginBottom: 14,
-              }}
-            >
-              {intel.identity_summary}
+          {assessed.map((c) => (
+            <div key={c.name} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${RULE}`, fontSize: 12 }}>
+              <span style={{ color: INK_2 }}>{c.name}</span>
+              <span style={{ fontFamily: MONO, fontSize: 13, color: BRONZE_DEEP, fontWeight: 500, fontVariantNumeric: "tabular-nums" }}>{c.score}</span>
             </div>
-          ) : null}
-          {intel.authority_themes.length > 0 ? (
-            <div style={{ display: "grid", gap: 10 }}>
-              {intel.authority_themes.map((t, i) => (
-                <div key={i} style={{ padding: "10px 12px", border: `1px solid ${RULE}`, borderLeft: `2px solid ${BRONZE}` }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: INK, marginBottom: 2 }}>{t.theme}</div>
-                  <div style={{ fontSize: 12, color: INK_3, lineHeight: 1.5 }}>{t.rationale}</div>
-                </div>
-              ))}
-            </div>
-          ) : intel.expertise_areas.length > 0 ? (
-            <div>{intel.expertise_areas.map((e) => <Chip key={e}>{e}</Chip>)}</div>
-          ) : null}
+          ))}
         </div>
-      ) : null}
-
-      <PageFooter n={pageN} total={pageTotal} />
-    </Sheet>
+      </div>
+    </div>
   );
 }
 
-// ── PAGE 3 — Market Position ────────────────────────────────────────────
-function Page3({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pageTotal: number }) {
-  const name = [data.profile?.first_name, data.profile?.last_name].filter(Boolean).join(" ").trim();
+function IntelSummary({ text }: { text: string }) {
   return (
-    <Sheet>
-      <PageHeader subtitle="Market Position" />
-      <div style={{ marginTop: 20, marginBottom: 18 }}>
-        <div style={{ fontFamily: DISPLAY, fontSize: 28, fontWeight: 500, color: INK }}>Market Position</div>
-        {name ? <div style={{ fontSize: 12, color: INK_4, letterSpacing: "0.06em", marginTop: 4 }}>{name}</div> : null}
-      </div>
-
-      {data.market_mirror ? (
-        <div>
-          <SectionLabel>How the Market Reads You</SectionLabel>
-          <div style={{ display: "grid", gap: 14 }}>
-            {data.market_mirror.perspectives.map((p, i) => (
-              <div key={i} style={{ padding: "14px 16px", border: `1px solid ${RULE}`, borderTop: `2px solid ${BRONZE}` }}>
-                <div style={{ fontSize: 11, color: BRONZE_DEEP, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 6 }}>
-                  The {p.who}
-                </div>
-                {p.sees ? (
-                  <div style={{ fontSize: 12.5, color: INK_2, lineHeight: 1.55, marginBottom: p.gap ? 8 : 0 }}>{p.sees}</div>
-                ) : null}
-                {p.gap ? (
-                  <div style={{ fontSize: 12, color: INK_3, lineHeight: 1.5, paddingLeft: 12, borderLeft: `1px solid ${BRONZE}` }}>
-                    <span style={{ color: BRONZE_DEEP, fontWeight: 600 }}>Would notice: </span>
-                    {p.gap}
-                  </div>
-                ) : null}
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
-      <PageFooter n={pageN} total={pageTotal} />
-    </Sheet>
+    <div style={{ fontFamily: DISPLAY, fontStyle: "italic", fontSize: 17, color: INK_2, lineHeight: 1.45, borderLeft: `2px solid ${BRONZE}`, paddingLeft: 14 }}>
+      {text}
+    </div>
   );
 }
 
-// ── PAGE 4 — Strategic Footprint ────────────────────────────────────────
-function Page4({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pageTotal: number }) {
-  const name = [data.profile?.first_name, data.profile?.last_name].filter(Boolean).join(" ").trim();
-  const showContent = !!data.content;
-  const showVoice = !!data.voice;
-  const showDuo = showContent || showVoice;
-
+function ThemeCard({ t }: { t: { theme: string; rationale: string } }) {
   return (
-    <Sheet>
-      <PageHeader subtitle="Strategic Footprint" />
-      <div style={{ marginTop: 20, marginBottom: 18 }}>
-        <div style={{ fontFamily: DISPLAY, fontSize: 28, fontWeight: 500, color: INK }}>Strategic Footprint</div>
-        {name ? <div style={{ fontSize: 12, color: INK_4, letterSpacing: "0.06em", marginTop: 4 }}>{name}</div> : null}
+    <div style={{ padding: "10px 12px", border: `1px solid ${RULE}`, borderLeft: `2px solid ${BRONZE}` }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: INK, marginBottom: 2 }}>{t.theme}</div>
+      <div style={{ fontSize: 12, color: INK_3, lineHeight: 1.5 }}>{t.rationale}</div>
+    </div>
+  );
+}
+
+function ChipRow({ items }: { items: string[] }) {
+  return <div>{items.map((e) => <Chip key={e}>{e}</Chip>)}</div>;
+}
+
+function PersonaCard({ p }: { p: { who: string; sees: string; gap: string } }) {
+  return (
+    <div style={{ padding: "14px 16px", border: `1px solid ${RULE}`, borderTop: `2px solid ${BRONZE}` }}>
+      <div style={{ fontSize: 11, color: BRONZE_DEEP, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 6 }}>
+        The {p.who}
       </div>
-
-      {data.territories ? (
-        <div style={{ marginBottom: 24 }}>
-          <SectionLabel>Strategic Territories</SectionLabel>
-          <div>{data.territories.map((t) => <Chip key={t}>{formatSkillLabel(t)}</Chip>)}</div>
+      {p.sees ? <div style={{ fontSize: 12.5, color: INK_2, lineHeight: 1.55, marginBottom: p.gap ? 8 : 0 }}>{p.sees}</div> : null}
+      {p.gap ? (
+        <div style={{ fontSize: 12, color: INK_3, lineHeight: 1.5, paddingLeft: 12, borderLeft: `1px solid ${BRONZE}` }}>
+          <span style={{ color: BRONZE_DEEP, fontWeight: 600 }}>Would notice: </span>{p.gap}
         </div>
       ) : null}
+    </div>
+  );
+}
 
-      {data.footprint ? (
-        <div style={{ marginBottom: 28 }}>
-          <SectionLabel>Intelligence Footprint</SectionLabel>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
-            {[
-              { n: data.footprint.sources, l: "Sources\nCaptured" },
-              { n: data.footprint.evidence, l: "Pieces of\nEvidence" },
-              { n: data.footprint.signals, l: "Strategic\nSignals" },
-              { n: data.footprint.themes, l: "Themes\nOwned" },
-            ].map((s, i) => (
-              <div key={i} style={{ padding: "14px 12px", border: `1px solid ${RULE}`, borderTop: `2px solid ${BRONZE}`, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                <div style={{ fontFamily: MONO, fontSize: 28, fontWeight: 500, color: INK, lineHeight: 1.1, fontVariantNumeric: "tabular-nums" }}>{s.n}</div>
-                <div style={{ marginTop: 8, fontSize: 10, color: INK_3, letterSpacing: "0.1em", textTransform: "uppercase", whiteSpace: "pre-line" }}>
-                  {s.l}
-                </div>
-              </div>
-            ))}
+function TerritoriesBlock({ items }: { items: string[] }) {
+  return (
+    <div>
+      <SectionLabel>Strategic Territories</SectionLabel>
+      <div>{items.map((t) => <Chip key={t}>{formatSkillLabel(t)}</Chip>)}</div>
+    </div>
+  );
+}
+
+function FootprintBlock({ fp }: { fp: NonNullable<ReportData["footprint"]> }) {
+  return (
+    <div>
+      <SectionLabel>Intelligence Footprint</SectionLabel>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+        {[
+          { n: fp.sources, l: "Sources\nCaptured" },
+          { n: fp.evidence, l: "Pieces of\nEvidence" },
+          { n: fp.signals, l: "Strategic\nSignals" },
+          { n: fp.themes, l: "Themes\nOwned" },
+        ].map((s, i) => (
+          <div key={i} style={{ padding: "14px 12px", border: `1px solid ${RULE}`, borderTop: `2px solid ${BRONZE}`, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ fontFamily: MONO, fontSize: 28, fontWeight: 500, color: INK, lineHeight: 1.1, fontVariantNumeric: "tabular-nums" }}>{s.n}</div>
+            <div style={{ marginTop: 8, fontSize: 10, color: INK_3, letterSpacing: "0.1em", textTransform: "uppercase", whiteSpace: "pre-line" }}>{s.l}</div>
           </div>
-        </div>
-      ) : null}
+        ))}
+      </div>
+    </div>
+  );
+}
 
-      {showDuo ? (
-        <div style={{ display: "grid", gridTemplateColumns: showContent && showVoice ? "1fr 1fr" : "1fr", gap: 16 }}>
-          {showContent ? (
-            <div style={{ padding: "14px 16px", border: `1px solid ${RULE}`, borderTop: `2px solid ${BRONZE}` }}>
-              <SectionLabel>Content Engine</SectionLabel>
-              <Row label="Posts published" value={String(data.content!.publishedCount)} />
-              {data.content!.frameworks[0] ? (
-                <Row label="Lead framework" value={data.content!.frameworks[0].framework_type} />
-              ) : null}
-              {data.content!.frameworks.length > 1 ? (
-                <Row
-                  label="Also using"
-                  value={data.content!.frameworks.slice(1, 4).map((f) => f.framework_type).join(" · ")}
-                />
-              ) : null}
-              <Row label="Tracked posts" value={String(data.content!.trackedCount)} />
-            </div>
-          ) : null}
-          {showVoice ? (
-            <div style={{ padding: "14px 16px", border: `1px solid ${RULE}`, borderTop: `2px solid ${BRONZE}` }}>
-              <SectionLabel>Voice Signature</SectionLabel>
-              <div
-                style={{
-                  fontSize: 10,
-                  color: MUTED,
-                  lineHeight: 1.6,
-                  marginTop: -6,
-                  marginBottom: 8,
-                }}
-              >
-                Captured in the language of your primary voice
-                <span style={{ margin: "0 6px", color: BRONZE }}>·</span>
-                <span style={{ fontFamily: ARABIC }} dir="rtl" lang="ar">بلغة صوتك الأساسي</span>
-              </div>
-              {data.voice!.tone ? <StackedRow label="Tone" value={data.voice!.tone} /> : null}
-              {data.voice!.preferred_structures.length > 0 ? (
-                <StackedRow label="Structure" value={data.voice!.preferred_structures.join(" · ")} />
-              ) : null}
-              {data.voice!.storytelling_patterns.length > 0 ? (
-                <StackedRow label="Patterns" value={data.voice!.storytelling_patterns.join(" · ")} />
-              ) : null}
-              {data.voice!.vocabulary_preferences.prefer && data.voice!.vocabulary_preferences.prefer.length > 0 ? (
-                <StackedRow label="Prefers" value={data.voice!.vocabulary_preferences.prefer.join(", ")} />
-              ) : null}
-            </div>
-          ) : null}
-        </div>
+function ContentEngineCard({ c }: { c: NonNullable<ReportData["content"]> }) {
+  return (
+    <div style={{ padding: "14px 16px", border: `1px solid ${RULE}`, borderTop: `2px solid ${BRONZE}` }}>
+      <SectionLabel>Content Engine</SectionLabel>
+      <Row label="Posts published" value={String(c.publishedCount)} />
+      {c.frameworks[0] ? <Row label="Lead framework" value={c.frameworks[0].framework_type} /> : null}
+      {c.frameworks.length > 1 ? (
+        <Row label="Also using" value={c.frameworks.slice(1, 4).map((f) => f.framework_type).join(" · ")} />
       ) : null}
+      <Row label="Tracked posts" value={String(c.trackedCount)} />
+    </div>
+  );
+}
 
-      <PageFooter n={pageN} total={pageTotal} />
-    </Sheet>
+function VoiceHeader() {
+  return (
+    <div>
+      <SectionLabel>Voice Signature</SectionLabel>
+      <div style={{ fontSize: 10, color: MUTED, lineHeight: 1.6, marginTop: -6 }}>
+        Captured in the language of your primary voice
+        <span style={{ margin: "0 6px", color: BRONZE }}>·</span>
+        <span style={{ fontFamily: ARABIC }} dir="rtl" lang="ar">بلغة صوتك الأساسي</span>
+      </div>
+    </div>
   );
 }
 
