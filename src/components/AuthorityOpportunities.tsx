@@ -53,9 +53,9 @@ const AuthorityOpportunities = ({ onDraftToStudio }: AuthorityOpportunitiesProps
 
   if (loading) {
     return (
-      <div className="glass-card rounded-2xl p-6 border border-amber-500/[0.08]">
+      <div className="glass-card rounded-2xl p-6 border border-[color-mix(in_srgb,var(--bronze)_8%,transparent)]">
         <div className="flex items-center gap-3 justify-center py-3">
-          <Loader2 className="w-4 h-4 text-amber-400/60 animate-spin" />
+          <Loader2 className="w-4 h-4 text-[color:var(--bronze)] opacity-60 animate-spin" />
           <span className="text-sm text-muted-foreground">Looking for opportunities…</span>
         </div>
       </div>
@@ -67,14 +67,14 @@ const AuthorityOpportunities = ({ onDraftToStudio }: AuthorityOpportunitiesProps
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2.5">
-        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-500/20 to-amber-500/5 flex items-center justify-center">
-          <Crown className="w-3.5 h-3.5 text-amber-400" />
+        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[color-mix(in_srgb,var(--bronze)_20%,transparent)] to-[color-mix(in_srgb,var(--bronze)_5%,transparent)] flex items-center justify-center">
+          <Crown className="w-3.5 h-3.5 text-[color:var(--bronze)]" />
         </div>
         <div>
           <h3 className="text-sm font-semibold text-foreground tracking-tight">Content Opportunities</h3>
           <p className="text-xs text-muted-foreground/50">Ideas strong enough to publish</p>
         </div>
-        <span className="text-xs bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full font-semibold ml-auto">
+        <span className="text-xs bg-[color-mix(in_srgb,var(--bronze)_15%,transparent)] text-[color:var(--bronze)] px-2 py-0.5 rounded-full font-semibold ml-auto">
           {opps.length}
         </span>
       </div>
@@ -84,18 +84,18 @@ const AuthorityOpportunities = ({ onDraftToStudio }: AuthorityOpportunitiesProps
         const confidencePct = Math.round(opp.confidence * 100);
 
         return (
-          <div key={opp.id} className="glass-card rounded-xl border border-amber-500/10 overflow-hidden hover:border-amber-500/20 transition-colors">
-            <div className="h-0.5 bg-gradient-to-r from-amber-500/40 to-transparent" />
+          <div key={opp.id} className="glass-card rounded-xl border border-[color-mix(in_srgb,var(--bronze)_10%,transparent)] overflow-hidden hover:border-[color-mix(in_srgb,var(--bronze)_20%,transparent)] transition-colors">
+            <div className="h-0.5 bg-gradient-to-r from-[color-mix(in_srgb,var(--bronze)_40%,transparent)] to-transparent" />
             <div className="p-4">
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500/15 to-amber-500/5 flex items-center justify-center flex-shrink-0">
-                  <Sparkles className="w-4 h-4 text-amber-400" />
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[color-mix(in_srgb,var(--bronze)_15%,transparent)] to-[color-mix(in_srgb,var(--bronze)_5%,transparent)] flex items-center justify-center flex-shrink-0">
+                  <Sparkles className="w-4 h-4 text-[color:var(--bronze)]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <p className="text-xs font-semibold text-foreground leading-snug">{ct.title || opp.signal_title}</p>
                     <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold flex-shrink-0 ${
-                      confidencePct >= 85 ? "bg-green-500/15 text-green-400" : "bg-amber-500/15 text-amber-400"
+                      confidencePct >= 85 ? "bg-[color-mix(in_srgb,var(--success)_15%,transparent)] text-[color:var(--success)]" : "bg-[color-mix(in_srgb,var(--bronze)_15%,transparent)] text-[color:var(--bronze)]"
                     }`}>
                       {confidencePct}%
                     </span>
@@ -133,7 +133,7 @@ const AuthorityOpportunities = ({ onDraftToStudio }: AuthorityOpportunitiesProps
                         signalTitle: ct.title || opp.signal_title,
                         contentFormat: "carousel",
                       })}
-                      className="text-xs text-amber-400/60 hover:text-amber-400 flex items-center gap-1 transition-colors bg-amber-500/5 hover:bg-amber-500/10 rounded-lg px-2.5 py-1"
+                      className="text-xs text-[color:var(--bronze)] opacity-70 hover:opacity-100 flex items-center gap-1 transition-colors bg-[color-mix(in_srgb,var(--bronze)_5%,transparent)] hover:bg-[color-mix(in_srgb,var(--bronze)_10%,transparent)] rounded-lg px-2.5 py-1"
                     >
                       <LayoutGrid className="w-3 h-3" /> Carousel
                     </button>

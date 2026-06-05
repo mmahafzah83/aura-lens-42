@@ -216,7 +216,7 @@ const StrategicSignals = ({ onOpenChat, onDraftToStudio }: StrategicSignalsProps
                     <div className="flex items-center gap-2 mb-1.5">
                       <h4 className="text-sm font-bold text-foreground">{signal.signal_title}</h4>
                       <span className={`text-xs px-2 py-0.5 rounded-full font-semibold flex-shrink-0 ${
-                        confidencePct >= 80 ? "bg-green-500/15 text-green-400" :
+                        confidencePct >= 80 ? "bg-[color-mix(in_srgb,var(--success)_15%,transparent)] text-[color:var(--success)]" :
                         confidencePct >= 60 ? "bg-primary/15 text-primary" :
                         "bg-muted/50 text-muted-foreground/60"
                       }`}>
@@ -224,7 +224,7 @@ const StrategicSignals = ({ onOpenChat, onDraftToStudio }: StrategicSignalsProps
                       </span>
                       {typeof signal.commercial_validation_score === "number" && (
                         signal.commercial_validation_score > 1.5 ? (
-                          <span className="text-xs px-2 py-0.5 rounded-full font-semibold flex-shrink-0 bg-green-500/15 text-green-400">
+                          <span className="text-xs px-2 py-0.5 rounded-full font-semibold flex-shrink-0 bg-[color-mix(in_srgb,var(--success)_15%,transparent)] text-[color:var(--success)]">
                             ✦ Market validated · {signal.commercial_validation_score.toFixed(1)}× avg
                           </span>
                         ) : signal.commercial_validation_score >= 1.0 ? (
@@ -279,7 +279,7 @@ const StrategicSignals = ({ onOpenChat, onDraftToStudio }: StrategicSignalsProps
 
                     {/* Framework Opportunity */}
                     {fw.title && (
-                      <OpportunitySection icon={Target} label="Framework Opportunity" accentClass="text-blue-400/80">
+                      <OpportunitySection icon={Target} label="Framework Opportunity" accentClass="text-[color:var(--info)]">
                         <p className="text-xs font-semibold text-foreground/90 mb-1">{fw.title}</p>
                         <p className="text-xs text-muted-foreground/60 mb-2.5 leading-relaxed">{fw.description}</p>
                         {fw.potential_steps?.length > 0 && (
@@ -309,7 +309,7 @@ const StrategicSignals = ({ onOpenChat, onDraftToStudio }: StrategicSignalsProps
 
                     {/* Authority / Content Opportunity */}
                     {ct.title && (
-                      <OpportunitySection icon={Crown} label="Content Opportunity" accentClass="text-amber-400/80">
+                      <OpportunitySection icon={Crown} label="Content Opportunity" accentClass="text-[color:var(--warning)]">
                         <p className="text-xs font-semibold text-foreground/90 mb-1">{ct.title}</p>
                         {ct.hook && (
                           <p className="text-xs text-primary/60 italic leading-relaxed mb-1.5 pl-3 border-l-2 border-primary/15">
@@ -362,7 +362,7 @@ const StrategicSignals = ({ onOpenChat, onDraftToStudio }: StrategicSignalsProps
                           signalTitle: signal.signal_title,
                           contentFormat: "carousel",
                         })}
-                        className="text-xs bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 rounded-xl py-2.5 px-3 transition-colors flex items-center gap-1.5 font-medium"
+                        className="text-xs bg-[color-mix(in_srgb,var(--warning)_10%,transparent)] hover:bg-[color-mix(in_srgb,var(--warning)_20%,transparent)] text-[color:var(--warning)] rounded-xl py-2.5 px-3 transition-colors flex items-center gap-1.5 font-medium"
                       >
                         <LayoutGrid className="w-3.5 h-3.5" /> Carousel
                       </button>
