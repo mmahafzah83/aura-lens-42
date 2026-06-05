@@ -752,8 +752,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       {assessmentCompleted && (
         <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }} data-testid="story-market-mirror">
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-            <Eye className="w-3.5 h-3.5" style={{ color: "var(--danger, #c0392b)" }} />
-            <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.06em", color: "var(--danger, #c0392b)", textTransform: "uppercase", display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <Eye className="w-3.5 h-3.5" style={{ color: "var(--error, #c0392b)" }} />
+            <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.06em", color: "var(--error, #c0392b)", textTransform: "uppercase", display: "inline-flex", alignItems: "center", gap: 6 }}>
               How the market sees you
               <InfoTooltip
                 label="Market Mirror"

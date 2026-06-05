@@ -187,7 +187,7 @@ export default function Settings() {
         className="min-h-screen flex flex-col items-center justify-center gap-3 px-6"
         style={{ background: "var(--paper)" }}
       >
-        <p className="text-sm" style={{ color: "var(--danger)" }}>
+        <p className="text-sm" style={{ color: "var(--error)" }}>
           {error || "No profile found."}
         </p>
         <button

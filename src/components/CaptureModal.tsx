@@ -979,7 +979,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                     e.currentTarget.style.boxShadow = "0 0 0 3px var(--brand-muted)";
                   }}
                   onBlur={async (e) => {
-                    e.currentTarget.style.borderColor = urlError ? "var(--danger)" : "var(--brand-line)";
+                    e.currentTarget.style.borderColor = urlError ? "var(--error)" : "var(--brand-line)";
                     e.currentTarget.style.background = "var(--vellum)";
                     e.currentTarget.style.boxShadow = "none";
                     const url = e.target.value.trim();
@@ -1004,7 +1004,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                   style={{
                     width: "100%",
                     background: "var(--vellum)",
-                    border: urlError ? "0.5px solid var(--danger)" : "0.5px solid var(--brand-line)",
+                    border: urlError ? "0.5px solid var(--error)" : "0.5px solid var(--brand-line)",
                     borderRadius: 12,
                     padding: "13px 76px 13px 16px",
                     fontSize: 14,
@@ -1044,7 +1044,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                 </button>
               </div>
 
-              {urlError && <p style={{ fontSize: 12, color: "var(--danger)", margin: 0 }}>{urlError}</p>}
+              {urlError && <p style={{ fontSize: 12, color: "var(--error)", margin: 0 }}>{urlError}</p>}
 
               {linkPreview && (
                 <div
@@ -1308,7 +1308,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                     {recentDocs.map((d) => {
                       const ext = (d.filename || "").split(".").pop()?.toLowerCase() || "";
                       const isPdf = ext === "pdf";
-                      const iconBg = isPdf ? "var(--danger)" : "var(--color-indigo)";
+                      const iconBg = isPdf ? "var(--error)" : "var(--color-indigo)";
                       const isProcessed = d.status === "processed";
                       return (
                         <div
@@ -1414,7 +1414,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      background: isRecording ? "var(--danger)" : "var(--brand)",
+                      background: isRecording ? "var(--error)" : "var(--brand)",
                       boxShadow: isRecording
                         ? "0 4px 20px rgba(184,48,37,0.4)" /* danger glow */
                         : "var(--shadow-brand)",

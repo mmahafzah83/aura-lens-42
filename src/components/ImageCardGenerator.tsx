@@ -208,7 +208,7 @@ const PRESETS = (accent: string) => ({
 
 const CharHint = ({ value, ideal }: { value: string; ideal: number }) => {
   const len = value.length;
-  const color = len <= ideal ? "var(--success)" : len <= ideal * 1.4 ? "var(--warning)" : "var(--danger)";
+  const color = len <= ideal ? "var(--success)" : len <= ideal * 1.4 ? "var(--warning)" : "var(--error)";
   return (
     <div
       style={{
@@ -607,7 +607,7 @@ export default function ImageCardGenerator({
                 Accent color
               </p>
               <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-                {["var(--brand)", "var(--danger)", "var(--success)", "#378ADD", "#7F77DD", "#1D9E75", "var(--warning)", "#ffffff"].map((c) => (
+                {["var(--brand)", "var(--error)", "var(--success)", "#378ADD", "#7F77DD", "#1D9E75", "var(--warning)", "#ffffff"].map((c) => (
                   <div
                     key={c}
                     onClick={() => updateCardStyle("accentColor", c)}

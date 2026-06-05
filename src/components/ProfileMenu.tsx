@@ -221,7 +221,7 @@ export default function ProfileMenu({
             border: "none",
             borderRadius: 8,
             cursor: "pointer",
-            color: "var(--danger, #c0392b)",
+            color: "var(--error, #c0392b)",
             fontSize: 14,
             fontWeight: 500,
           }}

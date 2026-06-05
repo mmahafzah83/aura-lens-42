@@ -605,7 +605,7 @@ const Auth = () => {
                 className="auth-input"
               />
               {emailError && (
-                <p className="mt-1.5 text-xs" style={{ color: "var(--danger)" }}>{emailError}</p>
+                <p className="mt-1.5 text-xs" style={{ color: "var(--error)" }}>{emailError}</p>
               )}
             </div>
 

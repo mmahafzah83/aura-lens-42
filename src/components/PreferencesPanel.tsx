@@ -85,7 +85,7 @@ const Row = ({
       border: "none",
       borderTop: "0.5px solid var(--color-border-tertiary, var(--brand-line, rgba(0,0,0,0.06)))",
       cursor: onClick ? "pointer" : "default",
-      color: danger ? "var(--danger, #c0392b)" : "var(--foreground)",
+      color: danger ? "var(--error, #c0392b)" : "var(--foreground)",
       fontFamily: "'DM Sans', system-ui, sans-serif",
     }}
     onMouseEnter={(e) => {

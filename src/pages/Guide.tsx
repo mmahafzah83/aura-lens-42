@@ -234,7 +234,7 @@ const Guide = () => {
           )}
 
           {error && (
-            <p style={{ fontSize: 14, color: "var(--danger)", textAlign: "center", padding: "40px 0" }}>
+            <p style={{ fontSize: 14, color: "var(--error)", textAlign: "center", padding: "40px 0" }}>
               The guide is loading — try again in a moment.
             </p>
           )}
