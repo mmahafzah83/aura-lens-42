@@ -667,7 +667,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     const steps: JourneyStep[] = [];
 
     // 1) First publish
-    if (trackedPostCount === 0) {
+    if (publishedPostCount === 0) {
       steps.push({
         id: "first_publish",
         label: "First publish",
