@@ -258,7 +258,7 @@ const KnowledgeConstellation = ({ open, onClose }: KnowledgeConstellationProps) 
                       fontSize={highlight ? 9 : 7}
                       fontWeight={highlight ? 600 : 400}
                       opacity={highlight ? 1 : 0.5}
-                      style={{ fontFamily: "Inter, sans-serif" }}
+                      style={{ fontFamily: "var(--font-body)" }}
                     >
                       {node.label.length > 20 ? node.label.slice(0, 18) + "…" : node.label}
                     </text>

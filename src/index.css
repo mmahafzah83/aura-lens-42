@@ -152,11 +152,9 @@ html *:not(canvas):not(video):not(iframe) {
   --signal-orange-light: #2D1108;
 
   /* Functional semantics */
-  --success: #9BD66A;
   --success-pale: rgba(122,182,72,0.12);
   --danger: #E47878;
   --danger-pale: rgba(196,80,80,0.12);
-  --info: #8FBCE0;
   --info-pale: rgba(107,157,196,0.12);
 
   /* Semantic — canonical tokens (dark mode) */
@@ -188,7 +186,6 @@ html *:not(canvas):not(video):not(iframe) {
   --t-fast: 120ms; --t: 240ms; --t-slow: 480ms;
 
   /* Missing-token shims (dark) */
-  --warning: #E8A832;
   --color-text-warning: #E8A832;
   --color-border-tertiary: rgba(212, 176, 86, 0.15);
   --font-serif: var(--font-display);
@@ -249,11 +246,9 @@ html *:not(canvas):not(video):not(iframe) {
   --signal-orange: #E85D24;
   --signal-orange-light: #FEF0E6;
   --shadow-brand: 0 4px 20px rgba(176,141,58,0.35);
-  --success: #5C7A3A;
   --success-pale: #E8EFD6;
   --danger: #A8392E;
   --danger-pale: #F4DDD8;
-  --info: #3A5A7A;
   --info-pale: #DCE5EE;
   --semantic-success: #5C7A3A;
   --semantic-success-light: #EAF3DE;
@@ -279,7 +274,6 @@ html *:not(canvas):not(video):not(iframe) {
   --tier-emerging-line: rgba(74,122,176,0.28);
 
   /* Missing-token shims (light) */
-  --warning: #B8860B;
   --color-text-warning: #B8860B;
   --color-border-tertiary: rgba(176, 141, 58, 0.15);
   --font-serif: var(--font-display);
@@ -1230,11 +1224,9 @@ aside .aura-theme-toggle {
   --ink-7:            #B4B0AA;
   --border-subtle:    rgba(0,0,0,0.07);
   --border-strong:    rgba(0,0,0,0.2);
-  --success:          #2E7D38;
   --success-pale:     #EAF4EB;
   --danger:           #B83025;
   --danger-pale:      #FDECEA;
-  --warning:          #92400E;
   --warning-pale:     #FEF3C7;
   --shadow-card:      0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
   --shadow-card-hover:0 2px 8px rgba(0,0,0,0.08), 0 12px 32px rgba(0,0,0,0.07);
