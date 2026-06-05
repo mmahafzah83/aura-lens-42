@@ -66,7 +66,11 @@ function renderBidi(value: string): React.ReactNode {
   if (!hasArabic(value)) return value;
   // Split into runs: Arabic-or-neutral vs Latin. Wrap each Latin run in <bdi>.
   const parts: React.ReactNode[] = [];
-  const RUN = /([A-Za-z][A-Za-z0-9'’\-\.&/ ]{0,80}[A-Za-z0-9])/g;
+  // Match a full embedded Latin run — letters, digits, common punctuation —
+  // so an entire English sentence wrapped inside an Arabic paragraph stays in
+  // ONE <bdi>, keeping line-wrapping and bidi-resolution coherent. The cap is
+  // generous so a full quoted sentence is captured as a single run.
+  const RUN = /([A-Za-z][A-Za-z0-9 '’"“”\-\.,;:!\?\(\)&/]{0,400}[A-Za-z0-9\.\?!"”\)])/g;
   let last = 0;
   let m: RegExpExecArray | null;
   let i = 0;
