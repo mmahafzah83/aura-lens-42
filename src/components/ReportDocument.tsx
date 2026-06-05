@@ -733,6 +733,7 @@ function Page4({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
 
 function Row({ label, value, valueAlign = "right" }: { label: string; value: string; valueAlign?: "left" | "right" }) {
   const ar = hasArabic(value);
+  const num = !ar && NUM_RE.test(value);
   return (
     <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${RULE}`, fontSize: 12 }}>
       <span style={{ color: INK_3, letterSpacing: "0.04em" }}>{label}</span>
@@ -742,7 +743,8 @@ function Row({ label, value, valueAlign = "right" }: { label: string; value: str
           fontWeight: 500,
           textAlign: valueAlign,
           maxWidth: "60%",
-          fontFamily: ar ? ARABIC : BODY,
+          fontFamily: ar ? ARABIC : num ? MONO : BODY,
+          fontVariantNumeric: num ? "tabular-nums" : undefined,
           letterSpacing: ar ? "normal" : undefined,
         }}
         dir={ar ? "rtl" : "auto"}
@@ -758,7 +760,11 @@ function Row({ label, value, valueAlign = "right" }: { label: string; value: str
 function StackedRow({ label, value }: { label: string; value: string }) {
   const ar = hasArabic(value);
   return (
-    <div style={{ padding: "8px 0", borderBottom: `1px solid ${RULE}` }}>
+    <div
+      style={{ padding: "8px 0", borderBottom: `1px solid ${RULE}` }}
+      dir={ar ? "rtl" : undefined}
+      lang={ar ? "ar" : undefined}
+    >
       <div style={{ fontSize: 10, color: BRONZE_DEEP, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 4 }}>
         {label}
       </div>
@@ -767,8 +773,8 @@ function StackedRow({ label, value }: { label: string; value: string }) {
           fontSize: 12,
           color: INK,
           fontWeight: 500,
-          lineHeight: 1.65,
-          textAlign: ar ? "right" : "left",
+          lineHeight: ar ? 1.85 : 1.65,
+          textAlign: "start",
           fontFamily: ar ? ARABIC : BODY,
           letterSpacing: ar ? "normal" : undefined,
         }}
