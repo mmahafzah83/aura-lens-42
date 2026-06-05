@@ -2057,15 +2057,15 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
   };
 
   return (
-    <div className="min-h-screen bg-neutral-950" style={{ background: "var(--background, #0F0E0C)", color: "var(--foreground, #F5F0E6)", paddingBottom: 100 }}>
+    <div className="min-h-screen" style={{ background: "var(--paper)", color: "var(--ink)", paddingBottom: 100 }}>
       {/* Top bar */}
-      <div className="px-4 md:px-8 py-4 border-b" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
+      <div className="px-4 md:px-8 py-4 border-b" style={{ borderColor: "var(--hairline)" }}>
         <div className="flex flex-wrap items-center gap-3 mb-3">
           <button onClick={() => navigate("/home?tab=authority")} className="flex items-center gap-1 text-sm opacity-70 hover:opacity-100">
             <ArrowLeft className="w-4 h-4" /> Back to Publish
           </button>
           <div className="ml-auto flex items-center gap-2">
-            <Sparkles className="w-4 h-4" style={{ color: "#B08D3A" }} />
+            <Sparkles className="w-4 h-4" style={{ color: "var(--bronze-text)" }} />
             <span className="text-sm font-medium">Carousel Studio</span>
           </div>
         </div>
@@ -2076,8 +2076,8 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                     className="px-3 py-1.5 rounded-full text-xs font-medium border"
                     style={{
                       background: styleKey === k ? STYLES[k].accent : "transparent",
-                      color: styleKey === k ? "#0A0908" : "inherit",
-                      borderColor: styleKey === k ? STYLES[k].accent : "rgba(255,255,255,0.15)",
+                      color: styleKey === k ? "var(--ink-on-brand)" : "var(--ink)",
+                      borderColor: styleKey === k ? STYLES[k].accent : "var(--hairline)",
                     }}>
               {STYLES[k].name}
             </button>
@@ -2085,14 +2085,14 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
         </div>
 
         <div className="flex flex-wrap items-center gap-2 mb-3">
-          <span className="text-xs opacity-60 mr-1">Language</span>
+          <span className="text-xs mr-1" style={{ color: "hsl(var(--muted-foreground))" }}>Language</span>
           {(["en", "ar"] as const).map(l => (
             <button key={l} onClick={() => setLang(l)}
                     className="px-3 py-1.5 rounded-full text-xs font-medium border"
                     style={{
-                      background: lang === l ? "#B08D3A" : "transparent",
-                      color: lang === l ? "#0A0908" : "inherit",
-                      borderColor: lang === l ? "#B08D3A" : "rgba(255,255,255,0.15)",
+                      background: lang === l ? "var(--bronze)" : "transparent",
+                      color: lang === l ? "var(--ink-on-brand)" : "var(--ink)",
+                      borderColor: lang === l ? "var(--bronze)" : "var(--hairline)",
                       fontFamily: l === "ar" ? "'Cairo', sans-serif" : undefined,
                     }}>
               {l === "ar" ? "العربية" : "English"}
@@ -2106,12 +2106,12 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
             onChange={e => setTopic(e.target.value)}
             placeholder="Topic — e.g. Why comprehensive transformations outperform incremental change"
             dir={lang === "ar" ? "rtl" : "ltr"}
-            className="flex-1 min-w-[260px] px-3 py-2 rounded-lg bg-white/5 border text-sm"
-            style={{ borderColor: "rgba(255,255,255,0.12)", fontFamily: lang === "ar" ? "'Cairo', sans-serif" : undefined }}
+            className="flex-1 min-w-[260px] px-3 py-2 rounded-lg border text-sm placeholder:text-[color:hsl(var(--muted-foreground))]"
+            style={{ background: "var(--paper-2)", color: "var(--ink)", borderColor: "var(--hairline)", fontFamily: lang === "ar" ? "'Cairo', sans-serif" : undefined }}
           />
           <button onClick={generate} disabled={generating}
                   className="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
-                  style={{ background: "#B08D3A", color: "#0A0908" }}>
+                  style={{ background: "var(--bronze)", color: "var(--ink-on-brand)" }}>
             {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
             Generate Carousel
           </button>
