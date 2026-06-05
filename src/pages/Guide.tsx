@@ -6,14 +6,23 @@ import usePageMeta from "@/hooks/usePageMeta";
 import { useGuideArticles } from "@/hooks/useGuideArticles";
 import type { GuideArticle } from "@/hooks/useGuideArticles";
 
-const SECTION_ORDER = ["getting-started", "tabs", "scoring", "terms", "how-to", "trust"];
+const SECTION_ORDER = [
+  "getting-started",
+  "tabs",
+  "how-to",
+  "tips",
+  "scoring",
+  "terms",
+  "trust",
+];
 
 const SECTION_LABELS: Record<string, string> = {
   "getting-started": "Getting started",
   tabs: "Your pages",
+  "how-to": "How to…",
+  tips: "Tips & lessons",
   scoring: "Your score & formulas",
   terms: "Key terms",
-  "how-to": "How to…",
   trust: "Trust & privacy",
 };
 
@@ -43,7 +52,7 @@ function CollapsibleItem({
         onClick={onToggle}
         aria-expanded={open}
         className="w-full flex items-center justify-between text-left py-5"
-        style={{ background: "transparent", border: 0, cursor: "pointer", color: "var(--ink-2)" }}
+        style={{ background: "transparent", border: 0, cursor: "pointer", color: "hsl(var(--foreground))" }}
       >
         <span style={{ fontSize: 15, fontWeight: 500 }}>{item.question_en}</span>
         <ChevronDown
@@ -58,7 +67,7 @@ function CollapsibleItem({
         />
       </button>
       {open && (
-        <div style={{ fontSize: 14, lineHeight: 1.7, color: "rgba(255,255,255,0.65)", paddingBottom: 20, paddingRight: 34, whiteSpace: "pre-line" }}>
+        <div style={{ fontSize: 14, lineHeight: 1.7, color: "hsl(var(--muted-foreground))", paddingBottom: 20, paddingRight: 34, whiteSpace: "pre-line" }}>
           {item.answer_en}
           {item.formula_note_en && (
             <div
