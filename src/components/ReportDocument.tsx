@@ -711,6 +711,19 @@ function Page4({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
           {showVoice ? (
             <div style={{ padding: "14px 16px", border: `1px solid ${RULE}`, borderTop: `2px solid ${BRONZE}` }}>
               <SectionLabel>Voice Signature</SectionLabel>
+              <div
+                style={{
+                  fontSize: 10,
+                  color: MUTED,
+                  lineHeight: 1.6,
+                  marginTop: -6,
+                  marginBottom: 8,
+                }}
+              >
+                Captured in the language of your primary voice
+                <span style={{ margin: "0 6px", color: BRONZE }}>·</span>
+                <span style={{ fontFamily: ARABIC }} dir="rtl" lang="ar">بلغة صوتك الأساسي</span>
+              </div>
               {data.voice!.tone ? <StackedRow label="Tone" value={data.voice!.tone} /> : null}
               {data.voice!.preferred_structures.length > 0 ? (
                 <StackedRow label="Structure" value={data.voice!.preferred_structures.join(" · ")} />
