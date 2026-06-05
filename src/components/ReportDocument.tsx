@@ -557,7 +557,7 @@ function Page2({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
                     {assessed.map((c) => (
                       <div key={c.name} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${RULE}`, fontSize: 12 }}>
                         <span style={{ color: INK_2 }}>{c.name}</span>
-                        <span style={{ fontFamily: DISPLAY, fontSize: 14, color: BRONZE_DEEP, fontWeight: 600 }}>{c.score}</span>
+                        <span style={{ fontFamily: MONO, fontSize: 13, color: BRONZE_DEEP, fontWeight: 500, fontVariantNumeric: "tabular-nums" }}>{c.score}</span>
                       </div>
                     ))}
                   </div>
@@ -680,7 +680,7 @@ function Page4({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
               { n: data.footprint.themes, l: "Themes\nOwned" },
             ].map((s, i) => (
               <div key={i} style={{ padding: "14px 12px", border: `1px solid ${RULE}`, borderTop: `2px solid ${BRONZE}`, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                <div style={{ fontFamily: DISPLAY, fontSize: 32, fontWeight: 500, color: INK, lineHeight: 1.1 }}>{s.n}</div>
+                <div style={{ fontFamily: MONO, fontSize: 28, fontWeight: 500, color: INK, lineHeight: 1.1, fontVariantNumeric: "tabular-nums" }}>{s.n}</div>
                 <div style={{ marginTop: 8, fontSize: 10, color: INK_3, letterSpacing: "0.1em", textTransform: "uppercase", whiteSpace: "pre-line" }}>
                   {s.l}
                 </div>
