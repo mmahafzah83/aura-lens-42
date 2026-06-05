@@ -125,9 +125,23 @@ export default function Settings() {
         import("jspdf"),
       ]);
 
+      // Force-request Cairo (used by Arabic blocks in the report) BEFORE
+      // awaiting fonts.ready — otherwise the promise can resolve before the
+      // browser has noticed the offscreen Arabic nodes need Cairo, and
+      // html2canvas rasterises with the DM Sans fallback, breaking shaping.
+      try {
+        if ((document as any).fonts?.load) {
+          await Promise.all([
+            (document as any).fonts.load("400 12px Cairo"),
+            (document as any).fonts.load("600 12px Cairo"),
+          ]);
+        }
+      } catch { /* ignore */ }
       if ((document as any).fonts?.ready) {
         await (document as any).fonts.ready;
       }
+      // Settle for offscreen Arabic glyph runs to apply.
+      await new Promise((r) => setTimeout(r, 150));
 
       const pageNodes: HTMLElement[] = Array.from(
         reportMountRef.current.querySelectorAll("[data-report-page]")

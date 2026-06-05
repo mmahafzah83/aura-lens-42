@@ -9,15 +9,24 @@ import { formatSkillLabel } from "@/lib/formatSkillLabel";
 import type { ReportData, CapabilitiesSection } from "@/lib/buildIdentityReport";
 
 // ── Design tokens (locked to literals for export fidelity) ──────────────
-const BRONZE = "#C5A55A";
-const BRONZE_DEEP = "#9C7E3E";
-const BRONZE_FAINT = "rgba(197,165,90,0.12)";
-const INK = "#1a1a1a";
-const INK_2 = "#3a3a3a";
-const INK_3 = "#6b6b6b";
-const INK_4 = "#8a8a8a";
-const RULE = "#e6e1d6";
-const PAPER = "#ffffff";
+// §18: exports are LIGHT-CANONICAL and SELF-CONTAINED. html2canvas runs on a
+// node that may live inside a dark-themed Settings shell whose global rules
+// (e.g. `[data-theme="dark"] h1 { color: var(--ink) }`) would otherwise repaint
+// our headings cream. Every visible element therefore sets `color` inline from
+// these literals, never from CSS vars or inheritance alone. Each constant is
+// annotated with the Standard token it mirrors (same pattern as cardStyles.ts).
+const INK         = "#2B2723";              // mirrors light var(--ink)
+const PAPER       = "#F8F5F0";              // mirrors light var(--paper)
+const BRONZE      = "#B08D3A";              // mirrors var(--bronze)
+const BRONZE_TEXT = "#8A6D2A";              // mirrors light var(--bronze-text) (AA on paper)
+const BRONZE_DEEP = BRONZE_TEXT;            // alias kept for existing call-sites
+const MUTED       = "#7A7164";              // mirrors light var(--ink-3)
+const INK_2       = INK;                    // body copy uses canonical INK
+const INK_3       = MUTED;                  // secondary copy
+const INK_4       = "#9A9286";              // caption/meta (decorative, no token)
+const HAIRLINE    = "rgba(43,39,35,0.14)";  // mirrors var(--hairline) on paper
+const RULE        = HAIRLINE;               // alias kept for existing call-sites
+const BRONZE_FAINT = "rgba(176,141,58,0.12)"; // decorative chip wash
 const DISPLAY = "'Cormorant Garamond', Georgia, 'Times New Roman', serif";
 const BODY = "'DM Sans', system-ui, -apple-system, sans-serif";
 const ARABIC = "'Cairo', 'DM Sans', sans-serif";
@@ -34,6 +43,35 @@ function titleCase(s: string | null | undefined): string {
     .split(/\s+/)
     .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : ""))
     .join(" ");
+}
+
+// ── Bidi rendering ──────────────────────────────────────────────────────
+// html2canvas rasterises CSS letter-spacing literally and uses the resolved
+// font-family at the leaf element — both of those break Arabic shaping when
+// the value inherits DM Sans + non-zero tracking. We:
+//   (1) detect Arabic presence,
+//   (2) force Cairo + dir="rtl" + lang="ar" + letterSpacing:"normal",
+//   (3) wrap embedded Latin runs in <bdi> so bidi reordering can't fracture
+//       the surrounding Arabic shaping around parentheses or quoted English.
+const AR_RE = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+function hasArabic(s: string | null | undefined): boolean {
+  return !!s && AR_RE.test(s);
+}
+function renderBidi(value: string): React.ReactNode {
+  if (!hasArabic(value)) return value;
+  // Split into runs: Arabic-or-neutral vs Latin. Wrap each Latin run in <bdi>.
+  const parts: React.ReactNode[] = [];
+  const RUN = /([A-Za-z][A-Za-z0-9'’\-\.&/ ]{0,80}[A-Za-z0-9])/g;
+  let last = 0;
+  let m: RegExpExecArray | null;
+  let i = 0;
+  while ((m = RUN.exec(value)) !== null) {
+    if (m.index > last) parts.push(value.slice(last, m.index));
+    parts.push(<bdi key={`b${i++}`}>{m[0]}</bdi>);
+    last = m.index + m[0].length;
+  }
+  if (last < value.length) parts.push(value.slice(last));
+  return parts;
 }
 
 function todayLabel(iso: string): string {
@@ -118,6 +156,7 @@ function Sheet({ children }: { children: React.ReactNode }) {
     <div
       className="aura-report-sheet"
       data-report-page
+      data-theme="light"
       style={{
         width: SHEET_W,
         minHeight: SHEET_H,
@@ -130,6 +169,9 @@ function Sheet({ children }: { children: React.ReactNode }) {
         flexDirection: "column",
         boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 12px 32px rgba(0,0,0,0.08)",
         margin: "0 auto 32px",
+        // Defensive: zero out any inherited Arabic-breaking tracking from
+        // a parent dark-shell. Per-element tracking is set explicitly below.
+        letterSpacing: "normal",
       }}
     >
       {children}
@@ -293,7 +335,7 @@ function Page1({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
         <div style={{ fontFamily: BODY, fontSize: 11, color: INK_4 }}>{todayLabel(data.generated_at)}</div>
       </div>
 
-      <h1 style={{ fontFamily: DISPLAY, fontSize: 44, fontWeight: 500, margin: "20px 0 6px", letterSpacing: "0.005em" }}>
+      <h1 style={{ fontFamily: DISPLAY, fontSize: 44, fontWeight: 500, margin: "20px 0 6px", letterSpacing: "0.005em", color: INK }}>
         {name || "Your Strategic Identity"}
       </h1>
       {role ? (
@@ -485,7 +527,7 @@ function Page2({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
     <Sheet>
       <PageHeader subtitle="Capability & Intelligence" />
       <div style={{ marginTop: 20, marginBottom: 18 }}>
-        <div style={{ fontFamily: DISPLAY, fontSize: 28, fontWeight: 500 }}>Capability & Intelligence</div>
+        <div style={{ fontFamily: DISPLAY, fontSize: 28, fontWeight: 500, color: INK }}>Capability & Intelligence</div>
         {name ? <div style={{ fontSize: 12, color: INK_4, letterSpacing: "0.06em", marginTop: 4 }}>{name}</div> : null}
       </div>
 
@@ -563,7 +605,7 @@ function Page3({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
     <Sheet>
       <PageHeader subtitle="Market Position" />
       <div style={{ marginTop: 20, marginBottom: 18 }}>
-        <div style={{ fontFamily: DISPLAY, fontSize: 28, fontWeight: 500 }}>Market Position</div>
+        <div style={{ fontFamily: DISPLAY, fontSize: 28, fontWeight: 500, color: INK }}>Market Position</div>
         {name ? <div style={{ fontSize: 12, color: INK_4, letterSpacing: "0.06em", marginTop: 4 }}>{name}</div> : null}
       </div>
 
@@ -607,7 +649,7 @@ function Page4({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
     <Sheet>
       <PageHeader subtitle="Strategic Footprint" />
       <div style={{ marginTop: 20, marginBottom: 18 }}>
-        <div style={{ fontFamily: DISPLAY, fontSize: 28, fontWeight: 500 }}>Strategic Footprint</div>
+        <div style={{ fontFamily: DISPLAY, fontSize: 28, fontWeight: 500, color: INK }}>Strategic Footprint</div>
         {name ? <div style={{ fontSize: 12, color: INK_4, letterSpacing: "0.06em", marginTop: 4 }}>{name}</div> : null}
       </div>
 
@@ -681,23 +723,50 @@ function Page4({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
 }
 
 function Row({ label, value, valueAlign = "right" }: { label: string; value: string; valueAlign?: "left" | "right" }) {
+  const ar = hasArabic(value);
   return (
     <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${RULE}`, fontSize: 12 }}>
       <span style={{ color: INK_3, letterSpacing: "0.04em" }}>{label}</span>
-      <span style={{ color: INK, fontWeight: 500, textAlign: valueAlign, maxWidth: "60%" }} dir="auto">{value}</span>
+      <span
+        style={{
+          color: INK,
+          fontWeight: 500,
+          textAlign: valueAlign,
+          maxWidth: "60%",
+          fontFamily: ar ? ARABIC : BODY,
+          letterSpacing: ar ? "normal" : undefined,
+        }}
+        dir={ar ? "rtl" : "auto"}
+        lang={ar ? "ar" : undefined}
+      >
+        {ar ? renderBidi(value) : value}
+      </span>
     </div>
   );
 }
 
 // Stacked variant: label on its own line, value left-aligned full-width below.
 function StackedRow({ label, value }: { label: string; value: string }) {
+  const ar = hasArabic(value);
   return (
     <div style={{ padding: "8px 0", borderBottom: `1px solid ${RULE}` }}>
       <div style={{ fontSize: 10, color: BRONZE_DEEP, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 4 }}>
         {label}
       </div>
-      <div style={{ fontSize: 12, color: INK, fontWeight: 500, lineHeight: 1.5, textAlign: "left" }} dir="auto">
-        {value}
+      <div
+        style={{
+          fontSize: 12,
+          color: INK,
+          fontWeight: 500,
+          lineHeight: 1.65,
+          textAlign: ar ? "right" : "left",
+          fontFamily: ar ? ARABIC : BODY,
+          letterSpacing: ar ? "normal" : undefined,
+        }}
+        dir={ar ? "rtl" : "auto"}
+        lang={ar ? "ar" : undefined}
+      >
+        {ar ? renderBidi(value) : value}
       </div>
     </div>
   );
