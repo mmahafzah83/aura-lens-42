@@ -70,7 +70,7 @@ const LinkedInIntelligence = () => {
   if (!latestSnapshot) {
     return (
       <div className="glass-card rounded-2xl p-6 sm:p-8 text-center py-12">
-        <Linkedin className="w-10 h-10 text-[color:var(--brand-linkedin)]/30 mx-auto mb-3" />
+        <Linkedin className="w-10 h-10 text-[color:color-mix(in_srgb,var(--brand-linkedin)_30%,transparent)] mx-auto mb-3" />
         <p className="text-sm font-medium text-foreground mb-1">LinkedIn connected — awaiting first sync</p>
         <p className="text-xs text-muted-foreground/50">Click "Sync Now" in the connection panel to pull analytics.</p>
       </div>
@@ -93,7 +93,7 @@ const LinkedInIntelligence = () => {
     <div className="space-y-6">
       <div className="glass-card rounded-2xl p-6 sm:p-8">
         <div className="flex items-center gap-3 mb-1">
-          <div className="w-8 h-8 rounded-xl bg-[color:var(--brand-linkedin)]/15 flex items-center justify-center border border-[color:var(--brand-linkedin)]/20">
+          <div className="w-8 h-8 rounded-xl bg-[color-mix(in_srgb,var(--brand-linkedin)_15%,transparent)] flex items-center justify-center border border-[color-mix(in_srgb,var(--brand-linkedin)_20%,transparent)]">
             <Linkedin className="w-4 h-4 text-[color:var(--brand-linkedin)]" />
           </div>
           <h2 className="text-lg font-semibold text-foreground" style={{ fontFamily: "var(--font-display)" }}>
