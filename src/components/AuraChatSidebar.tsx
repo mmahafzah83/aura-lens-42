@@ -2129,7 +2129,7 @@ End with NEXT STEP:.`;
                   onKeyDown={handleKeyDown}
                   placeholder="Ask Aura anything…"
                   rows={1}
-                  className="flex-1 border-[color:var(--bronze)] resize-none text-sm min-h-[44px] max-h-[120px] text-foreground placeholder:text-muted-foreground bg-[color:var(--paper-2)]"
+                  className="flex-1 border-[color:var(--bronze)] resize-none text-sm min-h-[44px] max-h-[120px] text-[color:var(--ink)] caret-[color:var(--ink)] placeholder:text-[color:var(--muted-foreground)] bg-[color:var(--paper-2)]"
                 />
                 <Button
                   data-testid="aura-send-btn"
