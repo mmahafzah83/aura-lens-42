@@ -214,7 +214,7 @@ const VoiceEngineSection = () => {
       if (data?.skipped) {
         toast(
           activeLang === "ar"
-            ? "علّم Aura المزيد من منشوراتك بهذه اللغة أولاً"
+            ? "المزيد من منشوراتك بهذه اللغة أولاً — ثم الصقل."
             : "Teach Aura a few more posts in this language first."
         );
         await loadProfile();
@@ -706,7 +706,7 @@ const VoiceEngineSection = () => {
                         بصمة صوتك لم تتشكل بعد.
                       </p>
                       <p style={{ fontSize: 13, fontWeight: 500, color: "#6E6555", margin: 0, lineHeight: 1.7 }}>
-                        علّم Aura بعضاً من منشوراتك وشاهد بصمتك تتشكل.
+                        منشوراتك تعلّم Aura — وبصمتك تتشكل مع كل منشور.
                       </p>
                     </div>
                   );
@@ -920,7 +920,7 @@ const VoiceEngineSection = () => {
                           }}
                         >
                           <ArrowRight className="w-3.5 h-3.5" style={{ transform: "scaleX(-1)" }} />
-                          اقرأ منشوراً مكتوباً بهذا الصوت
+                          قراءة منشور بهذا الصوت
                         </button>
 
                         {/* Footer */}
@@ -948,7 +948,7 @@ const VoiceEngineSection = () => {
                             }}
                           >
                             {distilling ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                            {distilling ? "جارٍ الشحذ…" : "اشحذها الآن"}
+                            {distilling ? "جارٍ الصقل…" : "صقل البصمة"}
                           </button>
                         </div>
                       </div>
