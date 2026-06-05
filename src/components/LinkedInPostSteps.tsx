@@ -29,8 +29,8 @@ export default function LinkedInPostSteps({
     ? isRTL
       ? [
           `حمّل الصورة (${download}).`,
-          `اضغط "${share}" — يُنسخ النص ويفتح LinkedIn.`,
-          `في LinkedIn، اضغط "Start a post" والصق (⌘/Ctrl+V).`,
+          `النقر على "${share}" — يُنسخ النص ويفتح LinkedIn.`,
+          `في LinkedIn، النقر على "Start a post" واللصق (⌘/Ctrl+V).`,
           `أرفق الصورة المحمّلة، ثم انشر.`,
         ]
       : [
@@ -41,8 +41,8 @@ export default function LinkedInPostSteps({
         ]
     : isRTL
       ? [
-          `اضغط "${share}" — يُنسخ النص ويفتح LinkedIn.`,
-          `اضغط "Start a post" والصق (⌘/Ctrl+V).`,
+          `النقر على "${share}" — يُنسخ النص ويفتح LinkedIn.`,
+          `النقر على "Start a post" واللصق (⌘/Ctrl+V).`,
           `انشر.`,
         ]
       : [

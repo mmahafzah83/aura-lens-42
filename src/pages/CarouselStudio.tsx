@@ -1255,9 +1255,9 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
       const actions = isRTL
         ? [
             { icon: "♡", label: "أعجبني", sub: "دعمنا" },
-            { icon: "✎", label: "علّق",  sub: "رأيك يهم" },
-            { icon: "↗", label: "شارك",  sub: "انشر الفائدة" },
-            { icon: "❒", label: "احفظ",  sub: "للرجوع لاحقًا" },
+            { icon: "✎", label: "تعليق", sub: "رأيك يهم" },
+            { icon: "↗", label: "مشاركة", sub: "انشر الفائدة" },
+            { icon: "❒", label: "حفظ",   sub: "للرجوع لاحقًا" },
           ]
         : [
             { icon: "♡", label: "Like",    sub: "Show support" },
