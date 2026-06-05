@@ -2133,7 +2133,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                          style={{ background: style.bg, color: style.fg }}>
                       {generating ? (
                         <>
-                          <Loader2 className="w-10 h-10 animate-spin mb-4" style={{ color: "#B08D3A" }} />
+                          <Loader2 className="w-10 h-10 animate-spin mb-4" style={{ color: style.accent }} />
                           <div className="text-base font-semibold mb-1">Generating your carousel…</div>
                           <div
                             key={genMessageIdx}
