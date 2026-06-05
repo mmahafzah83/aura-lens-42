@@ -535,7 +535,7 @@ export default function FlashPanel() {
                 className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap pt-4"
                 style={lang === "ar"
                   ? { fontFamily: "Cairo, sans-serif", textAlign: "right", direction: "rtl" }
-                  : { fontFamily: "Inter, sans-serif" }}
+                  : { fontFamily: "var(--font-body)" }}
               >
                 {displayText(r.text)}
               </div>
