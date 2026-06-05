@@ -226,11 +226,14 @@ function Chip({ children }: { children: React.ReactNode }) {
         display: "inline-flex",
         alignItems: "center",
         gap: 6,
-        padding: "6px 14px 6px 10px",
+        padding: "7px 14px 7px 12px",
         marginRight: 8,
         marginBottom: 8,
         fontSize: 12,
         lineHeight: 1,
+        verticalAlign: "middle",
+        boxSizing: "border-box",
+        whiteSpace: "nowrap",
         fontFamily: BODY,
         color: INK_2,
         background: BRONZE_FAINT,
@@ -249,7 +252,7 @@ function Chip({ children }: { children: React.ReactNode }) {
           flexShrink: 0,
         }}
       />
-      {children}
+      <span style={{ display: "inline-block", lineHeight: 1 }}>{children}</span>
     </span>
   );
 }
