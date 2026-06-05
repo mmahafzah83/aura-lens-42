@@ -247,7 +247,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       }
       // Stage counts — entries + tracked LinkedIn posts (lightweight head queries)
       try {
-        const [entriesCountRes, postsCountRes] = await Promise.all([
+        const [entriesCountRes, postsCountRes, publishedCountRes] = await Promise.all([
           (supabase.from("entries") as any)
             .select("id", { count: "exact", head: true })
             .eq("user_id", uid),
@@ -255,9 +255,14 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             .select("id", { count: "exact", head: true })
             .eq("user_id", uid)
             .not("tracking_status", "is", null),
+          (supabase.from("linkedin_posts") as any)
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", uid)
+            .eq("tracking_status", "published"),
         ]);
         setEntryCount(entriesCountRes.count || 0);
         setTrackedPostCount(postsCountRes.count || 0);
+        setPublishedPostCount(publishedCountRes.count || 0);
       } catch (e) {
         console.warn("[IdentityTab] stage counts failed", e);
       }
