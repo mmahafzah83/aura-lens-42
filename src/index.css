@@ -72,7 +72,7 @@ html *:not(canvas):not(video):not(iframe) {
   --aura-purple: var(--brand);
   --aura-pink: var(--brand);
   --aura-positive: var(--success);
-  --aura-negative: var(--danger);
+  --aura-negative: var(--error);
   --aura-warning: var(--warning, var(--semantic-warning));
 }
 
@@ -153,8 +153,9 @@ html *:not(canvas):not(video):not(iframe) {
 
   /* Functional semantics */
   --success-pale: rgba(122,182,72,0.12);
-  --danger: #E47878;
+  /* --danger removed (Wave-A cleanup #7) — consumers migrated to --error */
   --danger-pale: rgba(196,80,80,0.12);
+  --error-pale: var(--danger-pale);
   --info-pale: rgba(107,157,196,0.12);
 
   /* Semantic — canonical tokens (dark mode) */
@@ -203,6 +204,9 @@ html *:not(canvas):not(video):not(iframe) {
 
   /* Canonical hairline divider (dark) */
   --hairline: rgba(255,255,255,0.10);
+
+  /* LinkedIn brand token (canonical) */
+  --brand-linkedin: #0A66C2;
 }
 
 [data-theme="light"] {
