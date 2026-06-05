@@ -108,6 +108,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const [marketShareData, setMarketShareData] = useState<MilestoneShareData | null>(null);
   const [entryCount, setEntryCount] = useState<number>(0);
   const [trackedPostCount, setTrackedPostCount] = useState<number>(0);
+  const [publishedPostCount, setPublishedPostCount] = useState<number>(0);
   
   const [milestoneData, setMilestoneData] = useState<{ id: string; name: string; earned: boolean; earned_at: string | null; context: any }[]>([]);
   const [radarInputs, setRadarInputs] = useState({
@@ -246,7 +247,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       }
       // Stage counts — entries + tracked LinkedIn posts (lightweight head queries)
       try {
-        const [entriesCountRes, postsCountRes] = await Promise.all([
+        const [entriesCountRes, postsCountRes, publishedCountRes] = await Promise.all([
           (supabase.from("entries") as any)
             .select("id", { count: "exact", head: true })
             .eq("user_id", uid),
@@ -254,9 +255,14 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             .select("id", { count: "exact", head: true })
             .eq("user_id", uid)
             .not("tracking_status", "is", null),
+          (supabase.from("linkedin_posts") as any)
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", uid)
+            .eq("tracking_status", "published"),
         ]);
         setEntryCount(entriesCountRes.count || 0);
         setTrackedPostCount(postsCountRes.count || 0);
+        setPublishedPostCount(publishedCountRes.count || 0);
       } catch (e) {
         console.warn("[IdentityTab] stage counts failed", e);
       }
@@ -609,7 +615,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   // Anti-flap: compute once per session and memoize via ref; never
   // recompute while user is on the page.
   // Predicates (named, validated against real fields):
-  //   • posts_published == 0           → trackedPostCount === 0
+  //   • posts_published == 0           → publishedPostCount === 0
   //   • weekly rhythm incomplete       → thisWeekEntries < 3
   //   • approaching Live               → signal.lifecycle_tier ∈ {emerging, evergreen}
   //                                       AND signal.strength_score >= 0.7
@@ -661,7 +667,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     const steps: JourneyStep[] = [];
 
     // 1) First publish
-    if (trackedPostCount === 0) {
+    if (publishedPostCount === 0) {
       steps.push({
         id: "first_publish",
         label: "First publish",
