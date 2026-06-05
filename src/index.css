@@ -283,6 +283,14 @@ html *:not(canvas):not(video):not(iframe) {
   --color-text-warning: #B8860B;
   --color-border-tertiary: rgba(176, 141, 58, 0.15);
   --font-serif: var(--font-display);
+
+  /* ── Aura Standard V2.0 semantic palette (light mode) ── */
+  --bronze-text:   #8A6D2A;
+  --success:       #2E7D58;
+  --warning:       #B45309;
+  --error:         #B3402E;
+  --info:          #5B7DA8;
+  --ink-on-brand:  #FFFFFF;
 }
 
 @keyframes skeleton-pulse {
