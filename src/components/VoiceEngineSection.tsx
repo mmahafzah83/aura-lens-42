@@ -46,6 +46,11 @@ const VoiceEngineSection = () => {
   const [activeLang, setActiveLang] = useState<"en" | "ar">("en");
   const [activeLangInitialized, setActiveLangInitialized] = useState(false);
 
+  // Primary-voice-change notification (from voice-distill EF).
+  const [primaryChangeNotice, setPrimaryChangeNotice] = useState<
+    { ids: string[]; from: "en" | "ar"; to: "en" | "ar" } | null
+  >(null);
+
   const rowHasContent = (r: any): boolean => {
     if (!r) return false;
     const ex = r.example_posts;
@@ -87,6 +92,47 @@ const VoiceEngineSection = () => {
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Load unacknowledged primary-voice-change milestones.
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) return;
+      const { data } = await supabase
+        .from("user_milestones")
+        .select("id, context, earned_at")
+        .eq("user_id", session.user.id)
+        .eq("milestone_id", "voice_primary_changed")
+        .eq("acknowledged", false)
+        .order("earned_at", { ascending: false });
+      if (cancelled) return;
+      const rows = Array.isArray(data) ? data : [];
+      if (rows.length === 0) { setPrimaryChangeNotice(null); return; }
+      const latest = rows[0];
+      const ctx: any = latest.context || {};
+      const from = ctx.from === "ar" ? "ar" : ctx.from === "en" ? "en" : null;
+      const to = ctx.to === "ar" ? "ar" : ctx.to === "en" ? "en" : null;
+      if (!from || !to) return;
+      setPrimaryChangeNotice({ ids: rows.map((r: any) => r.id), from, to });
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [profiles]);
+
+  const dismissPrimaryChangeNotice = async () => {
+    const notice = primaryChangeNotice;
+    if (!notice) return;
+    setPrimaryChangeNotice(null);
+    try {
+      await supabase
+        .from("user_milestones")
+        .update({ acknowledged: true })
+        .in("id", notice.ids);
+    } catch (e) {
+      console.warn("Couldn't acknowledge primary-change notice", e);
+    }
+  };
 
   // Respond to ?focus=voice — open, scroll, pulse
   useEffect(() => {
