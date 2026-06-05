@@ -1735,7 +1735,9 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                             const minutes = Math.max(1, Math.ceil(words / 200));
                             const over = chars > 3000;
                             return (
-                              <div className={`text-xs tabular-nums pt-1 ${over ? "text-orange-500 font-medium" : "text-muted-foreground/60"}`}>
+                              <div
+                                className={`text-xs tabular-nums pt-1 ${over ? "font-medium text-[color:var(--error)]" : "text-[color:hsl(var(--muted-foreground))]"}`}
+                              >
                                 {chars.toLocaleString()} / 3,000 chars · ~{minutes} min read
                               </div>
                             );

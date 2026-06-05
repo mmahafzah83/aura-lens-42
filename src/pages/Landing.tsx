@@ -212,7 +212,7 @@ const Landing = () => {
     document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" });
   };
 
-  if (loading) return <div className="min-h-screen bg-neutral-950" style={{ background: "var(--ink)" }} />;
+  if (loading) return <div className="min-h-screen bg-[color:var(--paper)]" style={{ background: "var(--ink)" }} />;
   if (showWelcome) return <PublicWelcome />;
 
   const testimonials = [
