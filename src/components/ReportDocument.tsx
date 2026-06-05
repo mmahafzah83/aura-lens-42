@@ -428,7 +428,7 @@ function Page1({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
                       margin: "0 0 0 10px",
                     }}
                   >
-                    ◆ {titleCase(data.score.tier)} Tier
+                    ◆ {titleCase(data.score.tier)}
                   </span>
                 ) : null}
               </div>
@@ -466,8 +466,8 @@ function Page1({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
                   </div>
                   <div
                     style={{
-                      fontFamily: DISPLAY,
-                      fontSize: 14,
+                      fontFamily: MONO,
+                      fontSize: 13,
                       color: BRONZE_DEEP,
                       textAlign: "right",
                       fontVariantNumeric: "tabular-nums",
