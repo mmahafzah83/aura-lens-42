@@ -74,6 +74,10 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const [authorityScore, setAuthorityScore] = useState<number | null>(null);
   const [scoreTotal, setScoreTotal] = useState<number | null>(null);
   const [tierName, setTierName] = useState<string | null>(null);
+  // Score components + tier-boundary inputs for live Journey derivation
+  const [scoreComponents, setScoreComponents] = useState<{ signal: number; content: number; capture: number } | null>(null);
+  const [thisWeekEntries, setThisWeekEntries] = useState<number>(0);
+  const [topApproachingLive, setTopApproachingLive] = useState<{ title: string; strength: number } | null>(null);
   const [signalStats, setSignalStats] = useState({
     count: 0,
     topConfidence: 0,
@@ -199,7 +203,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           .select("authority_score").eq("user_id", uid)
           .order("snapshot_date", { ascending: false }).limit(1).maybeSingle(),
         (supabase.from("strategic_signals") as any)
-          .select("signal_title, confidence, unique_orgs, theme_tags, supporting_evidence_ids")
+          .select("signal_title, confidence, unique_orgs, theme_tags, supporting_evidence_ids, strength_score, lifecycle_tier")
           .eq("user_id", uid).eq("status", "active")
           .order("confidence", { ascending: false }).limit(40),
       ]), 12000);
@@ -234,6 +238,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           setScoreTotal(total || Number((snap as any).composite_score) || null);
           const t = (snap as any).tier;
           if (t && typeof t === "string") setTierName(t);
+          setScoreComponents({ signal: sig, content: con, capture: cap });
         }
       } catch (e) {
         console.warn("[IdentityTab] score snapshot load failed", e);
@@ -274,17 +279,34 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         const voice = voiceRes.data || {};
         const voiceTrained = !!(voice?.tone || (Array.isArray(voice?.example_posts) && voice.example_posts.length > 0));
         const weeks = new Set<number>();
+        let wk0 = 0;
         ((recentEntriesRes.data || []) as any[]).forEach((e) => {
           const d = new Date(e.created_at);
           const week = Math.floor((Date.now() - d.getTime()) / (7 * 86400000));
           if (week >= 0 && week < 4) weeks.add(week);
+          if (week === 0) wk0 += 1;
         });
         setRadarInputs({ avgEngagement, totalPosts, voiceTrained, weeksActive: weeks.size });
+        setThisWeekEntries(wk0);
       } catch (e) {
         console.warn("[IdentityTab] radar inputs failed", e);
       }
       if (signalsRes.data) {
         const signals = signalsRes.data as any[];
+        // Predicate: "approaching Live" = lifecycle_tier in {emerging, evergreen} AND strength_score >= 0.7
+        const approaching = signals.find((s: any) => {
+          const tier = String(s?.lifecycle_tier || "").toLowerCase();
+          const strength = Number(s?.strength_score) || 0;
+          return (tier === "emerging" || tier === "evergreen") && strength >= 0.7;
+        });
+        if (approaching) {
+          setTopApproachingLive({
+            title: approaching.signal_title || "",
+            strength: Number(approaching.strength_score) || 0,
+          });
+        } else {
+          setTopApproachingLive(null);
+        }
         const seen = new Set<string>();
         const topTags: string[] = [];
         for (const sig of signals) {
@@ -579,6 +601,128 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     if (!nextMilestone) return;
     const cta = nextMilestone.cta;
     if (cta && onSwitchTab) onSwitchTab(cta.tab);
+  };
+
+  // ============================================================
+  // JOURNEY DERIVATION — live NEXT/Then steps from real data.
+  // Anti-flap: compute once per session and memoize via ref; never
+  // recompute while user is on the page.
+  // Predicates (named, validated against real fields):
+  //   • posts_published == 0           → trackedPostCount === 0
+  //   • weekly rhythm incomplete       → thisWeekEntries < 3
+  //   • approaching Live               → signal.lifecycle_tier ∈ {emerging, evergreen}
+  //                                       AND signal.strength_score >= 0.7
+  //   • within reach of next tier      → pointsToNext != null && pointsToNext <= 5
+  // Thresholds (mirror calculate-aura-score):
+  //   Observer<15 ≤ Explorer<35 ≤ Strategist<60 ≤ Voice<80 ≤ Presence
+  // ============================================================
+  type JourneyStep = {
+    id: string;
+    label: string;
+    detail?: string;
+    action?: { label: string; tab: string };
+  };
+  const journeyRef = useRef<{ next: JourneyStep; then: JourneyStep | null } | null>(null);
+
+  const nextTierBoundary = (() => {
+    const s = scoreTotal ?? authorityScore ?? null;
+    if (s == null) return null;
+    if (s < 15) return { name: "Explorer", pointsToNext: 15 - s };
+    if (s < 35) return { name: "Strategist", pointsToNext: 35 - s };
+    if (s < 60) return { name: "Voice", pointsToNext: 60 - s };
+    if (s < 80) return { name: "Presence", pointsToNext: 80 - s };
+    return null;
+  })();
+
+  const lowestComponentLabel = (() => {
+    if (!scoreComponents) return null;
+    const entries: Array<[string, number, string]> = [
+      ["capture", scoreComponents.capture, "intelligence"],
+      ["signal", scoreComponents.signal, "intelligence"],
+      ["content", scoreComponents.content, "authority"],
+    ];
+    entries.sort((a, b) => a[1] - b[1]);
+    return entries[0];
+  })();
+
+  const nextMondayLabel = (() => {
+    const d = new Date();
+    const day = d.getDay();
+    const delta = (8 - day) % 7 || 7;
+    d.setDate(d.getDate() + delta);
+    return d.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
+  })();
+
+  const derived = (() => {
+    if (journeyRef.current) return journeyRef.current;
+    // Only derive after the page's data has settled enough to be meaningful.
+    if (loading) return null;
+    if (scoreTotal == null && authorityScore == null) return null;
+
+    const steps: JourneyStep[] = [];
+
+    // 1) First publish
+    if (trackedPostCount === 0) {
+      steps.push({
+        id: "first_publish",
+        label: "First publish",
+        detail: "Your first post sets the baseline Aura measures from.",
+        action: { label: "Draft this post →", tab: "authority" },
+      });
+    }
+
+    // 2) This week's rhythm
+    if (thisWeekEntries < 3) {
+      steps.push({
+        id: "weekly_rhythm",
+        label: `This week's rhythm: ${thisWeekEntries}/3`,
+        detail: "Capture three sources this week to keep the rhythm intact.",
+        action: { label: "Capture an article →", tab: "intelligence" },
+      });
+    }
+
+    // 3) Signal approaching Live
+    if (topApproachingLive && topApproachingLive.title) {
+      steps.push({
+        id: "approaching_live",
+        label: `Signal "${topApproachingLive.title}" is approaching Live`,
+        detail: "One more source confirms it.",
+        action: { label: "Capture an article →", tab: "intelligence" },
+      });
+    }
+
+    // 4) Within 5 points of next tier
+    if (nextTierBoundary && nextTierBoundary.pointsToNext <= 5 && nextTierBoundary.pointsToNext > 0) {
+      const comp = lowestComponentLabel;
+      const compName = comp ? comp[0] : "capture";
+      const tab = comp ? comp[2] : "intelligence";
+      const actionLabel =
+        compName === "content" ? "Draft this post →"
+        : compName === "signal" ? "Strengthen a signal →"
+        : "Capture an article →";
+      steps.push({
+        id: "tier_boundary",
+        label: `${nextTierBoundary.pointsToNext} points from ${nextTierBoundary.name}`,
+        detail: `Your ${compName} score is the lowest — lift it to cross.`,
+        action: { label: actionLabel, tab },
+      });
+    }
+
+    // 5) Fallback rhythm anchor — never empty.
+    steps.push({
+      id: "rhythm_anchor",
+      label: `Keep the rhythm: ${nextMondayLabel} briefing`,
+      detail: "Aura's weekly briefing lands on Monday.",
+      action: { label: "Open intelligence →", tab: "intelligence" },
+    });
+
+    const result = { next: steps[0], then: steps[1] || null };
+    journeyRef.current = result;
+    return result;
+  })();
+
+  const handleDerivedAction = (step: JourneyStep) => {
+    if (step.action && onSwitchTab) onSwitchTab(step.action.tab);
   };
 
   return (
@@ -957,43 +1101,45 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               </div>
             )}
 
-            {/* NEXT */}
-            {nextMilestone && (
+            {/* NEXT — live, derived from real data (session-memoized) */}
+            {derived?.next && (
               <div style={{ position: "relative", paddingBottom: 16 }}>
                 <span style={{
                   position: "absolute", left: -30, top: 0, width: 14, height: 14, borderRadius: "50%",
                   background: "var(--aura-card)", border: "2px dashed var(--warning, var(--brand))",
                 }} />
                 <div style={{ fontSize: 12, fontWeight: 500, color: "var(--warning, var(--brand))" }}>
-                  Next: {nextMilestone.name}
+                  Next: {derived.next.label}
                 </div>
-                <div style={{ fontSize: 11, color: "var(--ink-5)", marginTop: 3, lineHeight: 1.5 }}>
-                  This milestone strengthens your market presence.
-                </div>
-                {nextMilestone.cta && (
+                {derived.next.detail && (
+                  <div style={{ fontSize: 11, color: "var(--ink-5)", marginTop: 3, lineHeight: 1.5 }}>
+                    {derived.next.detail}
+                  </div>
+                )}
+                {derived.next.action && (
                   <button
-                    onClick={handleNextMilestoneCTA}
+                    onClick={() => handleDerivedAction(derived.next)}
                     style={{
                       marginTop: 8, padding: "6px 12px", borderRadius: 8,
                       background: "var(--warning, var(--brand))", color: "var(--ink-on-brand, #fff)",
                       border: 0, fontSize: 12, fontWeight: 500, cursor: "pointer",
                     }}
                   >
-                    {nextMilestone.cta.label}
+                    {derived.next.action.label}
                   </button>
                 )}
               </div>
             )}
 
-            {/* FUTURE */}
-            {futureMilestones.length > 0 && (
+            {/* THEN — second derived step (never the static MILESTONE_DEFS list) */}
+            {derived?.then && (
               <div style={{ position: "relative" }}>
                 <span style={{
                   position: "absolute", left: -30, top: 0, width: 14, height: 14, borderRadius: "50%",
                   background: "var(--aura-card)", border: "2px solid var(--ink-5)", opacity: 0.4,
                 }} />
                 <div style={{ fontSize: 11, color: "var(--ink-5)" }}>
-                  Then: {futureMilestones.join(", ")}
+                  Then: {derived.then.label}
                 </div>
               </div>
             )}
