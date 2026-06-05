@@ -498,7 +498,7 @@ function Page2({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
     <Sheet>
       <PageHeader subtitle="Capability & Intelligence" />
       <div style={{ marginTop: 20, marginBottom: 18 }}>
-        <div style={{ fontFamily: DISPLAY, fontSize: 28, fontWeight: 500 }}>Capability & Intelligence</div>
+        <div style={{ fontFamily: DISPLAY, fontSize: 28, fontWeight: 500, color: INK }}>Capability & Intelligence</div>
         {name ? <div style={{ fontSize: 12, color: INK_4, letterSpacing: "0.06em", marginTop: 4 }}>{name}</div> : null}
       </div>
 
@@ -576,7 +576,7 @@ function Page3({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
     <Sheet>
       <PageHeader subtitle="Market Position" />
       <div style={{ marginTop: 20, marginBottom: 18 }}>
-        <div style={{ fontFamily: DISPLAY, fontSize: 28, fontWeight: 500 }}>Market Position</div>
+        <div style={{ fontFamily: DISPLAY, fontSize: 28, fontWeight: 500, color: INK }}>Market Position</div>
         {name ? <div style={{ fontSize: 12, color: INK_4, letterSpacing: "0.06em", marginTop: 4 }}>{name}</div> : null}
       </div>
 
@@ -620,7 +620,7 @@ function Page4({ data, pageN, pageTotal }: { data: ReportData; pageN: number; pa
     <Sheet>
       <PageHeader subtitle="Strategic Footprint" />
       <div style={{ marginTop: 20, marginBottom: 18 }}>
-        <div style={{ fontFamily: DISPLAY, fontSize: 28, fontWeight: 500 }}>Strategic Footprint</div>
+        <div style={{ fontFamily: DISPLAY, fontSize: 28, fontWeight: 500, color: INK }}>Strategic Footprint</div>
         {name ? <div style={{ fontSize: 12, color: INK_4, letterSpacing: "0.06em", marginTop: 4 }}>{name}</div> : null}
       </div>
 
