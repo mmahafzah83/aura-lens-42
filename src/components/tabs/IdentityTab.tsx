@@ -1101,43 +1101,45 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               </div>
             )}
 
-            {/* NEXT */}
-            {nextMilestone && (
+            {/* NEXT — live, derived from real data (session-memoized) */}
+            {derived?.next && (
               <div style={{ position: "relative", paddingBottom: 16 }}>
                 <span style={{
                   position: "absolute", left: -30, top: 0, width: 14, height: 14, borderRadius: "50%",
                   background: "var(--aura-card)", border: "2px dashed var(--warning, var(--brand))",
                 }} />
                 <div style={{ fontSize: 12, fontWeight: 500, color: "var(--warning, var(--brand))" }}>
-                  Next: {nextMilestone.name}
+                  Next: {derived.next.label}
                 </div>
-                <div style={{ fontSize: 11, color: "var(--ink-5)", marginTop: 3, lineHeight: 1.5 }}>
-                  This milestone strengthens your market presence.
-                </div>
-                {nextMilestone.cta && (
+                {derived.next.detail && (
+                  <div style={{ fontSize: 11, color: "var(--ink-5)", marginTop: 3, lineHeight: 1.5 }}>
+                    {derived.next.detail}
+                  </div>
+                )}
+                {derived.next.action && (
                   <button
-                    onClick={handleNextMilestoneCTA}
+                    onClick={() => handleDerivedAction(derived.next)}
                     style={{
                       marginTop: 8, padding: "6px 12px", borderRadius: 8,
                       background: "var(--warning, var(--brand))", color: "var(--ink-on-brand, #fff)",
                       border: 0, fontSize: 12, fontWeight: 500, cursor: "pointer",
                     }}
                   >
-                    {nextMilestone.cta.label}
+                    {derived.next.action.label}
                   </button>
                 )}
               </div>
             )}
 
-            {/* FUTURE */}
-            {futureMilestones.length > 0 && (
+            {/* THEN — second derived step (never the static MILESTONE_DEFS list) */}
+            {derived?.then && (
               <div style={{ position: "relative" }}>
                 <span style={{
                   position: "absolute", left: -30, top: 0, width: 14, height: 14, borderRadius: "50%",
                   background: "var(--aura-card)", border: "2px solid var(--ink-5)", opacity: 0.4,
                 }} />
                 <div style={{ fontSize: 11, color: "var(--ink-5)" }}>
-                  Then: {futureMilestones.join(", ")}
+                  Then: {derived.then.label}
                 </div>
               </div>
             )}
