@@ -73,6 +73,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const [loading, setLoading] = useState(true);
   const [authorityScore, setAuthorityScore] = useState<number | null>(null);
   const [scoreTotal, setScoreTotal] = useState<number | null>(null);
+  const [tierName, setTierName] = useState<string | null>(null);
   const [signalStats, setSignalStats] = useState({
     count: 0,
     topConfidence: 0,
@@ -219,7 +220,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       // Same total as ScoreBreakdown: components from latest score_snapshots row.
       try {
         const { data: snap } = await (supabase.from("score_snapshots" as any) as any)
-          .select("components, composite_score")
+          .select("components, composite_score, tier")
           .eq("user_id", uid)
           .order("created_at", { ascending: false })
           .limit(1)
@@ -231,6 +232,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           const cap = Number(c.capture_score) || 0;
           const total = Math.round(sig * 0.4) + Math.round(con * 0.4) + Math.round(cap * 0.2);
           setScoreTotal(total || Number((snap as any).composite_score) || null);
+          const t = (snap as any).tier;
+          if (t && typeof t === "string") setTierName(t);
         }
       } catch (e) {
         console.warn("[IdentityTab] score snapshot load failed", e);
@@ -914,7 +917,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 <Star className="w-2 h-2" style={{ color: "var(--paper)" }} fill="currentColor" />
               </span>
               <div style={{ fontSize: 11, fontWeight: 500, color: "var(--warning, var(--brand))", letterSpacing: "0.04em" }}>
-                NOW — {archetypeName ? archetypeName.toUpperCase() : "STRATEGIST"}{(scoreTotal ?? authorityScore) != null ? ` · SCORE ${scoreTotal ?? authorityScore}` : ""}
+                NOW{tierName ? ` — ${tierName.toUpperCase()}` : ""}{(scoreTotal ?? authorityScore) != null ? ` · SCORE ${scoreTotal ?? authorityScore}` : ""}
               </div>
               {(identityIntel?.primary_role || positioningTitle) && (
                 <div style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 500, color: "var(--ink)", marginTop: 3 }}>
@@ -938,34 +941,21 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               </button>
             </div>
 
-            {/* Earned milestones */}
-            {earnedSorted.map((m) => (
-              <div key={m.id} style={{ position: "relative", paddingBottom: 16 }}>
+            {/* Earned milestones — collapsed to one quiet line */}
+            {earnedSorted.length > 0 && (
+              <div style={{ position: "relative", paddingBottom: 16 }}>
                 <span style={{
                   position: "absolute", left: -30, top: 0, width: 14, height: 14, borderRadius: "50%",
                   background: "var(--success, #2e7d32)", display: "flex", alignItems: "center", justifyContent: "center",
                 }}>
                   <Check className="w-2 h-2" style={{ color: "var(--paper)" }} strokeWidth={3} />
                 </span>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 12, fontWeight: 500, color: "var(--ink)" }}>{m.name}</span>
-                  {m.earned_at && (
-                    <span style={{ fontSize: 10, color: "var(--ink-5)" }}>{fmtDate(m.earned_at)}</span>
-                  )}
-                  <button
-                    onClick={() => handleMilestoneShare(m)}
-                    style={{ fontSize: 10, color: "var(--brand)", background: "transparent", border: 0, padding: 0, cursor: "pointer", marginLeft: "auto" }}
-                  >
-                    Share
-                  </button>
+                <div style={{ fontSize: 12, color: "var(--ink-3)" }}>
+                  {earnedSorted.length} milestone{earnedSorted.length === 1 ? "" : "s"} completed
+                  {earnedSorted[0]?.earned_at ? ` · ${fmtDate(earnedSorted[0].earned_at)}` : ""}
                 </div>
-                {(m.context?.signal_title || m.context?.tone) && (
-                  <div style={{ fontSize: 11, color: "var(--ink-5)", marginTop: 2 }}>
-                    {m.context?.signal_title || (m.context?.tone ? `Tone: ${m.context.tone}` : "")}
-                  </div>
-                )}
               </div>
-            ))}
+            )}
 
             {/* NEXT */}
             {nextMilestone && (
