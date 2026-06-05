@@ -575,9 +575,9 @@ const VoiceEngineSection = () => {
                         : "Primary voice — set by your recent posts"}
                     </span>
                     <InfoTooltip
-                      slug="voice-primary"
                       triggerSize={13}
                       side="bottom"
+                      label="voice-primary"
                     >
                       {activeLang === "ar" ? (
                         <span dir="rtl" lang="ar" style={{ fontFamily: "'Cairo', 'DM Sans', sans-serif" }}>
