@@ -72,7 +72,7 @@ html *:not(canvas):not(video):not(iframe) {
   --aura-purple: var(--brand);
   --aura-pink: var(--brand);
   --aura-positive: var(--success);
-  --aura-negative: var(--danger);
+  --aura-negative: var(--error);
   --aura-warning: var(--warning, var(--semantic-warning));
 }
 
@@ -153,8 +153,9 @@ html *:not(canvas):not(video):not(iframe) {
 
   /* Functional semantics */
   --success-pale: rgba(122,182,72,0.12);
-  --danger: #E47878;
+  /* --danger removed (Wave-A cleanup #7) — consumers migrated to --error */
   --danger-pale: rgba(196,80,80,0.12);
+  --error-pale: var(--danger-pale);
   --info-pale: rgba(107,157,196,0.12);
 
   /* Semantic — canonical tokens (dark mode) */
@@ -203,6 +204,9 @@ html *:not(canvas):not(video):not(iframe) {
 
   /* Canonical hairline divider (dark) */
   --hairline: rgba(255,255,255,0.10);
+
+  /* LinkedIn brand token (canonical) */
+  --brand-linkedin: #0A66C2;
 }
 
 [data-theme="light"] {
@@ -250,8 +254,9 @@ html *:not(canvas):not(video):not(iframe) {
   --signal-orange-light: #FEF0E6;
   --shadow-brand: 0 4px 20px rgba(176,141,58,0.35);
   --success-pale: #E8EFD6;
-  --danger: #A8392E;
+  /* --danger removed (Wave-A cleanup #7) — consumers migrated to --error */
   --danger-pale: #F4DDD8;
+  --error-pale: var(--danger-pale);
   --info-pale: #DCE5EE;
   --semantic-success: #5C7A3A;
   --semantic-success-light: #EAF3DE;
@@ -1231,8 +1236,9 @@ aside .aura-theme-toggle {
   --border-subtle:    rgba(0,0,0,0.07);
   --border-strong:    rgba(0,0,0,0.2);
   --success-pale:     #EAF4EB;
-  --danger:           #B83025;
+  /* --danger removed (Wave-A cleanup #7) — consumers migrated to --error */
   --danger-pale:      #FDECEA;
+  --error-pale:       var(--danger-pale);
   --warning-pale:     #FEF3C7;
   --shadow-card:      0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
   --shadow-card-hover:0 2px 8px rgba(0,0,0,0.08), 0 12px 32px rgba(0,0,0,0.07);

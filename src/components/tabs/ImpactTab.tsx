@@ -691,7 +691,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   let trendColor = "var(--color-text-secondary)";
   if (weekDelta !== null) {
     if (weekDelta > 0) { trendLabel = `↑ +${weekDelta} this week`; trendColor = "var(--success)"; }
-    else if (weekDelta < 0) { trendLabel = `↓ −${Math.abs(weekDelta)} this week`; trendColor = "var(--danger)"; }
+    else if (weekDelta < 0) { trendLabel = `↓ −${Math.abs(weekDelta)} this week`; trendColor = "var(--error)"; }
   }
 
   const daysSinceLastAll = lastCaptureAll ? daysBetween(new Date(), lastCaptureAll) : null;
@@ -786,7 +786,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const partColor = (t: string) => {
     switch (t) {
       case "primary": return "var(--color-text-primary)";
-      case "negative": return "var(--danger)";
+      case "negative": return "var(--error)";
       case "positive": return "var(--success)";
       case "action": return "var(--brand)";
       default: return "var(--color-text-secondary)";
@@ -826,7 +826,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     ? "var(--color-text-muted)"
     : daysSinceLastAll === 0 ? "var(--success)"
       : daysSinceLastAll <= 3 ? "var(--warning)"
-        : "var(--danger)";
+        : "var(--error)";
 
   /* (score chart removed — only sub-score cards remain) */
 
@@ -835,17 +835,17 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     if (kind === "capture") {
       if (value >= 90) return { color: "var(--success)", border: "rgba(46,125,56,0.27)", tag: "Healthy" };
       if (value >= 70) return { color: "var(--brand)", border: "var(--bronze-line)", tag: "Good" };
-      return { color: "var(--danger)", border: "rgba(184,48,37,0.27)", tag: "Needs action" };
+      return { color: "var(--error)", border: "rgba(184,48,37,0.27)", tag: "Needs action" };
     }
     if (kind === "content") {
       if (value === 100) return { color: "var(--success)", border: "rgba(46,125,56,0.27)", tag: "Perfect" };
       if (value >= 70) return { color: "var(--brand)", border: "var(--bronze-line)", tag: "Good" };
-      return { color: "var(--danger)", border: "rgba(184,48,37,0.27)", tag: "Needs action" };
+      return { color: "var(--error)", border: "rgba(184,48,37,0.27)", tag: "Needs action" };
     }
     // signal
     if (value >= 85) return { color: "var(--success)", border: "rgba(46,125,56,0.27)", tag: "Strong" };
     if (value >= 70) return { color: "var(--brand)", border: "var(--bronze-line)", tag: "Good" };
-    return { color: "var(--danger)", border: "rgba(184,48,37,0.27)", tag: "Build signals" };
+    return { color: "var(--error)", border: "rgba(184,48,37,0.27)", tag: "Build signals" };
   };
 
   /* ── Follower chart series ── */
@@ -3082,7 +3082,7 @@ const PeriodComparison = ({ change, selectedDays }: { change: number | null; sel
       {isFlat ? (
         <span style={{ color: "var(--color-text-secondary)" }}>● 0%</span>
       ) : (
-        <span style={{ color: isUp ? "var(--success)" : "var(--danger)", fontWeight: 600 }}>
+        <span style={{ color: isUp ? "var(--success)" : "var(--error)", fontWeight: 600 }}>
           {(() => {
             const abs = Math.abs(change);
             if (abs > 200) {

@@ -57,7 +57,7 @@ export default function AdminStandard() {
         width: "100vw",
         height: "100vh",
         border: 0,
-        background: "#F8F5F0",
+        background: "var(--paper)",
       }}
     />
   );

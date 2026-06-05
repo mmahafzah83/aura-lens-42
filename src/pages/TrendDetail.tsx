@@ -59,12 +59,12 @@ const isTrusted = (s: string | null) => {
 };
 
 const impactColor = (level: string | null) => {
-  if (level === "High") return "var(--danger)";
+  if (level === "High") return "var(--error)";
   if (level === "Emerging") return "var(--brand)";
   return "hsl(var(--muted-foreground))";
 };
 const decisionStyle = (label: string | null): { color: string; bg: string } => {
-  if (label === "Act Now") return { color: "var(--danger)", bg: "#E24B4A12" };
+  if (label === "Act Now") return { color: "var(--error)", bg: "#E24B4A12" };
   if (label === "Early Opportunity") return { color: "var(--brand)", bg: "var(--brand-muted)" };
   return { color: "hsl(var(--muted-foreground))", bg: "hsl(var(--muted) / 0.3)" };
 };

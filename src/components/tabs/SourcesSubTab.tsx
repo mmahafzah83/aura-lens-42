@@ -148,7 +148,7 @@ const DeleteDialog = ({ onConfirm, onCancel }: { onConfirm: () => void; onCancel
         <p style={{ color: "var(--ink-5)", fontSize: 14, margin: "0 0 20px" }}>This cannot be undone.</p>
         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
           <button onClick={onCancel} style={{ padding: "8px 18px", borderRadius: 10, border: "1px solid var(--ink-3)", background: "transparent", color: "var(--ink-5)", fontSize: 14, cursor: "pointer" }}>Cancel</button>
-          <button onClick={onConfirm} style={{ padding: "8px 18px", borderRadius: 10, border: "none", background: "var(--danger)", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Delete</button>
+          <button onClick={onConfirm} style={{ padding: "8px 18px", borderRadius: 10, border: "none", background: "var(--error)", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Delete</button>
         </div>
       </div>
     </div>,
@@ -441,7 +441,7 @@ const ExpandedSource = ({
             <button onClick={() => setEditing(true)} style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid var(--ink-3)", background: "transparent", color: "var(--ink-5)", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
               <Pencil size={14} /> Edit
             </button>
-            <button onClick={() => setDeleteTarget(true)} style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid var(--ink-3)", background: "transparent", color: "var(--danger)", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+            <button onClick={() => setDeleteTarget(true)} style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid var(--ink-3)", background: "transparent", color: "var(--error)", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
               <Trash2 size={14} /> Delete
             </button>
           </div>
@@ -838,7 +838,7 @@ const SourcesSubTab = ({
                         </div>
                       ) : isErrored ? (
                         <div style={{ margin: "0 0 6px" }}>
-                          <p style={{ color: "var(--danger)", fontSize: 12, lineHeight: 1.5, margin: 0, fontWeight: 500 }}>
+                          <p style={{ color: "var(--error)", fontSize: 12, lineHeight: 1.5, margin: 0, fontWeight: 500 }}>
                             {humanizeDocError(entry.error_message).headline}
                           </p>
                           {humanizeDocError(entry.error_message).detail && (

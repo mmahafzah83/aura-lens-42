@@ -30,14 +30,15 @@ interface YourMovesProps {
 }
 
 const TYPE_STYLE: Record<ActionType, { bg: string; color: string; Icon: typeof Send }> = {
-  PUBLISH: { bg: "hsl(var(--danger) / 0.12)",  color: "var(--danger)", Icon: Send },
-  CAPTURE: { bg: "hsl(var(--warning) / 0.12)", color: "var(--warning)", Icon: Plus },
-  WATCH:   { bg: "hsl(var(--info) / 0.12)",    color: "var(--color-info-text, var(--info))", Icon: Eye },
+  PUBLISH: { bg: "color-mix(in srgb, var(--error) calc(0.12 * 100%), transparent)",  color: "var(--error)", Icon: Send },
+  // TOKEN-FORMAT-1: Standard semantic tokens are hex — use color-mix, not hsl(var()/n).
+  CAPTURE: { bg: "color-mix(in srgb, var(--warning) 12%, transparent)", color: "var(--warning)", Icon: Plus },
+  WATCH:   { bg: "color-mix(in srgb, var(--info) 12%, transparent)",    color: "var(--color-info-text, var(--info))", Icon: Eye },
 };
 
 const URGENCY_STYLE: Record<Urgency, { bg: string; color: string }> = {
-  HIGH:   { bg: "hsl(var(--danger) / 0.12)",  color: "var(--danger)" },
-  MEDIUM: { bg: "hsl(var(--warning) / 0.12)", color: "var(--warning)" },
+  HIGH:   { bg: "color-mix(in srgb, var(--error) calc(0.12 * 100%), transparent)",  color: "var(--error)" },
+  MEDIUM: { bg: "color-mix(in srgb, var(--warning) 12%, transparent)", color: "var(--warning)" },
 };
 
 const Row = ({ item, onClick, captured }: { item: AuraItem; onClick: () => void; captured?: boolean }) => {

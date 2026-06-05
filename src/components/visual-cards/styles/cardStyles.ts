@@ -1,5 +1,44 @@
 export type CardStyleName = 'blackboard' | 'ember' | 'teal' | 'paper' | 'navy' | 'sand';
 
+/* ──────────────────────────────────────────────────────────────────────
+ * Canvas-export palette constants (single source of truth).
+ * html2canvas runs inside an isolated iframe that cannot read CSS vars,
+ * so these MUST stay as literal hex. Each constant is annotated with
+ * the Standard token it mirrors and matches the canonical Wave-A values.
+ * ────────────────────────────────────────────────────────────────────── */
+const C = {
+  // Brand / bronze family
+  BRONZE:        '#B08D3A', // mirrors var(--bronze)
+  BRONZE_TEXT:   '#D4B056', // mirrors dark-mode var(--bronze-text) (AA on dark)
+  BRONZE_DEEP:   '#8a7440', // mirrors var(--bronze-deep)
+  // Signal orange — Wave-A canonical --signal family
+  SIGNAL:        '#F97316', // mirrors light var(--signal)
+  SIGNAL_LIGHT:  '#FB923C', // signal-400 (decorative gradient stop)
+  // Paper / ink (light-mode export backgrounds)
+  PAPER:         '#FAF6EE', // mirrors light var(--paper)
+  INK:           '#1C1812', // mirrors var(--ink) (export ink)
+  INK_MUTED:     '#6B6456', // mirrors var(--ink-3)
+  // Editorial gold (teal-card display accent — dark surface only)
+  GOLD_LIGHT:    '#D4B056', // mirrors var(--bronze-text) / gold-light
+  CREAM:         '#F4EFE2', // mirrors var(--paper-2) on warm dark surface
+  // Dark display surfaces (no light-mode equivalent — decorative)
+  BOARD:         '#0d0d0d',
+  EMBER_DEEP:    '#1a0a04',
+  EMBER_MID:     '#2d1108',
+  EMBER_RIM:     '#3d1a0c',
+  TEAL_DEEP:     '#1C1812',
+  TEAL_MID:      '#2A1F14',
+  NAVY_DEEP:     '#060E1A',
+  NAVY_MID:      '#0C1B33',
+  NAVY_RIM:      '#122848',
+  NAVY_ACCENT:   '#4A9EE0', // mirrors var(--info)
+  SAND_HI:       '#F5F0E4',
+  SAND_MID:      '#E8DCC8',
+  SAND_LO:       '#DDD2BC',
+  SAND_INK:      '#1C1812',
+  SAND_INK_MUTED:'#4A4236',
+};
+
 export interface CardStyleConfig {
   name: CardStyleName;
   background: string;
@@ -69,14 +108,14 @@ export const CARD_STYLES: Record<CardStyleName, CardStyleConfig> = {
     name: 'ember',
     background: 'linear-gradient(145deg, #1a0a04, #2d1108 30%, #3d1a0c 60%, #1a0a04)',
     overlay: 'radial-gradient(circle at 80% 20%, rgba(232,93,36,0.15), transparent 60%)',
-    accent: '#E85D24',
+    accent: C.SIGNAL,
     accentBar: {
       position: 'top',
       size: 4,
       length: '100%',
-      background: 'linear-gradient(90deg, #E85D24, #F4845F, transparent)',
+      background: `linear-gradient(90deg, ${C.SIGNAL}, ${C.SIGNAL_LIGHT}, transparent)`,
     },
-    tagColor: '#F4845F',
+    tagColor: C.SIGNAL_LIGHT,
     tagFont: MONO,
     headlineFont: DM,
     headlineWeight: 700,
@@ -86,7 +125,7 @@ export const CARD_STYLES: Record<CardStyleName, CardStyleConfig> = {
     bodySize: 14,
     bodyColor: 'rgba(255,255,255,0.6)',
     footerColor: 'rgba(255,255,255,0.7)',
-    footerAccentColor: '#F4845F',
+    footerAccentColor: C.SIGNAL_LIGHT,
     footerBorder: '1px solid rgba(232,93,36,0.15)',
     grain: true,
     grainOpacity: 0.12,

@@ -49,7 +49,7 @@ function variantBase(variant: AuraButtonVariant): CSSProperties {
       };
     case "danger":
       return {
-        background: "var(--danger)",
+        background: "var(--error)",
         color: "#fff",
         border: "none",
       };

@@ -540,6 +540,9 @@ const Landing = () => {
       {/* Section 7 — How it works (Improvement 7: tighter mobile spacing) */}
       <section id="how-it-works" className="landing-compact relative py-16 px-5 sm:px-10" style={{ borderTop: "1px solid var(--surface-ink-subtle)" }}>
         <div className="absolute inset-0 pointer-events-none" style={{
+          // #0a0e18 is a deeper navy-ink used only here as a hero gradient
+          // depth-stop between two var(--ink) edges — kept inline because
+          // there is no canonical token for "ink-deeper" and it never appears elsewhere.
           background: "linear-gradient(180deg, var(--ink) 0%, #0a0e18 40%, #0a0e18 60%, var(--ink) 100%)",
         }} />
         <div className="relative max-w-2xl mx-auto">

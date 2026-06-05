@@ -88,7 +88,7 @@ interface Trend {
 }
 
 const decisionStyle = (label?: string | null): { color: string; bg: string } => {
-  if (label === "Act Now") return { color: "var(--danger)", bg: "hsl(var(--danger) / 0.07)" };
+  if (label === "Act Now") return { color: "var(--error)", bg: "color-mix(in srgb, var(--error) calc(0.07 * 100%), transparent)" };
   if (label === "Early Opportunity") return { color: "var(--brand)", bg: "hsl(var(--bronze) / 0.07)" };
   return { color: "hsl(var(--muted-foreground))", bg: "transparent" };
 };
@@ -101,7 +101,7 @@ const freshnessOf = (iso: string): { label: string; color: string } => {
 };
 
 const impactStyle = (level?: string | null): { color: string } => {
-  if (level === "High") return { color: "var(--danger)" };
+  if (level === "High") return { color: "var(--error)" };
   if (level === "Emerging") return { color: "var(--brand)" };
   return { color: "hsl(var(--muted-foreground))" };
 };
@@ -185,7 +185,7 @@ const competitorTimeAgo = (iso: string): string => {
 
 const ACCENT = "var(--brand)";
 const GREEN = "var(--success)";
-const RED = "var(--danger)";
+const RED = "var(--error)";
 const SIGNAL = "var(--signal)";
 
 // ────────────────────────────────────────────────
@@ -2198,8 +2198,8 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
               {/* Zone 1 */}
               <div className="flex items-center justify-between" style={{ marginBottom: 10 }}>
                 <div className="flex items-center" style={{ gap: 8 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--danger)", display: "inline-block" }} />
-                  <span className="text-section-header" style={{ color: "var(--danger)" }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--error)", display: "inline-block" }} />
+                  <span className="text-section-header" style={{ color: "var(--error)" }}>
                     Competitor alert
                   </span>
                 </div>
@@ -2475,7 +2475,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
             data-testid="home-urgent"
             style={{ borderTop: "0.5px solid hsl(var(--border) / 0.5)", paddingTop: 20 }}
           >
-            <div className="text-section-header" style={{ color: "var(--danger)", marginBottom: 6 }}>
+            <div className="text-section-header" style={{ color: "var(--error)", marginBottom: 6 }}>
               Urgent
               <InfoTooltip slug="home-urgent" label="Urgent" side="bottom" triggerSize={13} className="ml-1.5 align-middle" />
             </div>
@@ -2496,7 +2496,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
                   {" "}
                   <span style={{ color: "hsl(var(--foreground))", fontWeight: 500 }}>{frags} evidence fragments</span>
                   {" · "}
-                  <span style={{ color: "var(--danger)", fontWeight: 500 }}>{daysSinceCapture} days</span>
+                  <span style={{ color: "var(--error)", fontWeight: 500 }}>{daysSinceCapture} days</span>
                   {" since your last capture"}
                 </>
               )}
@@ -2518,7 +2518,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
                 }}
                 style={{
                   fontSize: 12, fontWeight: 500, padding: "8px 16px", borderRadius: 6,
-                  background: "var(--danger)", color: "#fff", border: 0, cursor: "pointer",
+                  background: "var(--error)", color: "#fff", border: 0, cursor: "pointer",
                 }}
               >
                 Draft this post →

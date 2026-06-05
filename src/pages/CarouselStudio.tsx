@@ -39,6 +39,28 @@ interface StylePalette {
   terminalDots?: [string, string, string]; // macOS dot colors per style
 }
 
+/* ──────────────────────────────────────────────────────────────────────
+ * STYLE / STRIP_COLORS palette constants — canvas export single source.
+ * The Carousel renderer rasterizes via SVG → canvas; the export pipeline
+ * cannot resolve CSS vars. The literal hex below MIRROR Standard tokens
+ * (Wave-A canonical values) and must stay in sync with index.css:
+ *   #D4B056 → dark var(--bronze-text) / --gold-light  (bronze accent on dark)
+ *   #B49030 → mid-bronze shade between bronze-text and bronze-deep
+ *   #C4A040 → bronze hover state
+ *   #B08D3A / #8B6F3D / #AB8F5D → var(--bronze) family (executive_briefing)
+ *   #6B4F1D → dark bronze ink on cream
+ *   #1A1714 / #241D16 → executive-dark surface gradient
+ *   #F5F0E6 / #F5F0E8 / #FAFAF8 → var(--paper) / paper-2 (export light)
+ *   #1A1A1A / #2A2419 → var(--ink) family (export ink)
+ *   #4A4A4A / #5C5347 / #C4B89A → var(--ink-3..ink-5) muted-ink scale
+ *   #58A6FF → var(--info) (terminal style accent)
+ *   #3FB950 / #27C93F → success greens (terminal chrome only)
+ *   #FF5F56 / #FFBD2E → macOS traffic-light dot decorations (terminal)
+ *   #EF9F27 → mirrors var(--semantic-warning) (BIG_NUMBER / REFRAME)
+ *   #5DCAA5 → mirrors --semantic-success teal-mint (GRID / COMPARE)
+ *   #85B7EB → mirrors var(--semantic-info) (QUESTION / INSIGHT)
+ *   #000/#FFF/#CCC → high_contrast preset, decorative-only by design
+ * ────────────────────────────────────────────────────────────────────── */
 const STYLES: Record<StyleKey, StylePalette> = {
   clean_paper: {
     key: "clean_paper", name: "Clean Paper",

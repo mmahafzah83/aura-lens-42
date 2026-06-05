@@ -607,7 +607,7 @@ const EditorialBlindSpots = ({
   return (
     <section style={{ marginTop: 40, paddingTop: 24, borderTop: "0.5px solid var(--color-border-tertiary, var(--surface-ink-subtle))" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 14, flexWrap: "wrap" }}>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 500, letterSpacing: ".06em", color: "var(--danger, hsl(0 70% 55%))" }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 500, letterSpacing: ".06em", color: "var(--error, hsl(0 70% 55%))" }}>
           <EyeOff size={12} />
           WHAT YOU'RE NOT SEEING
           <InfoTooltip
@@ -646,7 +646,7 @@ const EditorialBlindSpots = ({
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {gaps.slice(0, expanded ? 3 : 1).map((it, idx) => {
               const isOpp = it.category === "opportunity";
-              const accent = isOpp ? "var(--warning, hsl(35 90% 55%))" : "var(--danger, hsl(0 70% 55%))";
+              const accent = isOpp ? "var(--warning, hsl(35 90% 55%))" : "var(--error, hsl(0 70% 55%))";
               const urgency = isOpp
                 ? "This trend is gaining momentum. Your take is missing."
                 : "No one in your network is publishing on this yet.";
@@ -865,10 +865,10 @@ const EditorialReadingList = ({
     }
     if (rec.skill_gap && rec.skill_gap.trim()) {
       return {
-        icon: <EyeOff size={12} style={{ color: "var(--danger, hsl(0 70% 55%))" }} />,
+        icon: <EyeOff size={12} style={{ color: "var(--error, hsl(0 70% 55%))" }} />,
         label: `Closes a blind spot: ${formatSkillLabel(rec.skill_gap)}`,
         text: rec.intelligence_value || "",
-        color: "var(--danger, hsl(0 70% 55%))",
+        color: "var(--error, hsl(0 70% 55%))",
       };
     }
     // Default rotation to avoid monotony

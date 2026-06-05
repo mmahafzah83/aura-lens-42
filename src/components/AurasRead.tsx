@@ -23,7 +23,7 @@ const NUMBER_GLYPHS = ["①", "②", "③"];
 
 const urgencyStyle = (u: AuraItem["urgency"]): { bg: string; color: string } => {
   switch (u) {
-    case "HIGH":   return { bg: "var(--danger-pale)", color: "var(--danger)" };
+    case "HIGH":   return { bg: "var(--danger-pale)", color: "var(--error)" };
     case "MEDIUM":
     default:       return { bg: "var(--warning-pale)", color: "var(--warning)" };
   }

@@ -887,6 +887,15 @@ function ResultsView({
     }).join("");
     const html = `<!doctype html><html><head><meta charset="utf-8"/><title>Aura — ${archetype}</title>
       <style>
+        /* Print stylesheet runs in a popup window with no access to app CSS vars.
+           Hex values below mirror canonical light-mode Standard tokens:
+             #1a1a1a  → var(--ink)            (body text)
+             #8b6f2a  → var(--bronze-text)    (light-mode bronze, AA on paper)
+             #B08D3A  → var(--bronze)         (canonical brand accent)
+             #fbf7ec  → var(--bronze-mist)    (warm tinted surface)
+             #e6dcc4  → var(--bronze-line)    (hairline divider)
+             #666     → var(--ink-3)          (secondary text)
+             #999     → var(--ink-4)          (muted footer text)                       */
         body{font-family:Georgia,serif;max-width:720px;margin:40px auto;padding:0 24px;color:#1a1a1a;line-height:1.6}
         .label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#8b6f2a}
         h1{font-family:'Cormorant Garamond',Georgia,serif;font-size:32px;color:#8b6f2a;margin:8px 0 4px;font-weight:500}
