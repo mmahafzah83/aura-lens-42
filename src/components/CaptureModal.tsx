@@ -1205,6 +1205,19 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                   {content.length.toLocaleString()} / 15,000
                 </div>
               )}
+              {/* §16.1 trust line — quiet, caption, muted; bilingual stack */}
+              <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 2 }}>
+                <p style={{ fontSize: 11, lineHeight: 1.6, color: "var(--ink-4)", margin: 0 }}>
+                  What you capture stays yours — used only to build your signals.
+                </p>
+                <p
+                  dir="rtl"
+                  lang="ar"
+                  style={{ fontSize: 11, lineHeight: 1.6, color: "var(--ink-4)", margin: 0, fontFamily: "'Cairo', 'DM Sans', sans-serif" }}
+                >
+                  ما تلتقطه يبقى لك وحدك — يُستخدم لبناء إشاراتك فقط.
+                </p>
+              </div>
             </div>
           )}
 
