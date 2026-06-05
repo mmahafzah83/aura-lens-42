@@ -45,6 +45,35 @@ function titleCase(s: string | null | undefined): string {
     .join(" ");
 }
 
+// ── Bidi rendering ──────────────────────────────────────────────────────
+// html2canvas rasterises CSS letter-spacing literally and uses the resolved
+// font-family at the leaf element — both of those break Arabic shaping when
+// the value inherits DM Sans + non-zero tracking. We:
+//   (1) detect Arabic presence,
+//   (2) force Cairo + dir="rtl" + lang="ar" + letterSpacing:"normal",
+//   (3) wrap embedded Latin runs in <bdi> so bidi reordering can't fracture
+//       the surrounding Arabic shaping around parentheses or quoted English.
+const AR_RE = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+function hasArabic(s: string | null | undefined): boolean {
+  return !!s && AR_RE.test(s);
+}
+function renderBidi(value: string): React.ReactNode {
+  if (!hasArabic(value)) return value;
+  // Split into runs: Arabic-or-neutral vs Latin. Wrap each Latin run in <bdi>.
+  const parts: React.ReactNode[] = [];
+  const RUN = /([A-Za-z][A-Za-z0-9'’\-\.&/ ]{0,80}[A-Za-z0-9])/g;
+  let last = 0;
+  let m: RegExpExecArray | null;
+  let i = 0;
+  while ((m = RUN.exec(value)) !== null) {
+    if (m.index > last) parts.push(value.slice(last, m.index));
+    parts.push(<bdi key={`b${i++}`}>{m[0]}</bdi>);
+    last = m.index + m[0].length;
+  }
+  if (last < value.length) parts.push(value.slice(last));
+  return parts;
+}
+
 function todayLabel(iso: string): string {
   try {
     const d = new Date(iso);
