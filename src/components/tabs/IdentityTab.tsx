@@ -104,6 +104,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const [autoAssessing, setAutoAssessing] = useState(false);
   const [assessmentStep, setAssessmentStep] = useState("");
   const autoAssessTriggered = useRef(false);
+  const journeyRef = useRef<{ next: any; then: any | null } | null>(null);
   const [marketShareData, setMarketShareData] = useState<MilestoneShareData | null>(null);
   const [entryCount, setEntryCount] = useState<number>(0);
   const [trackedPostCount, setTrackedPostCount] = useState<number>(0);
@@ -622,8 +623,6 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     detail?: string;
     action?: { label: string; tab: string };
   };
-  const journeyRef = useRef<{ next: JourneyStep; then: JourneyStep | null } | null>(null);
-
   const nextTierBoundary = (() => {
     const s = scoreTotal ?? authorityScore ?? null;
     if (s == null) return null;
