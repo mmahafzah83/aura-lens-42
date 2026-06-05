@@ -73,6 +73,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const [loading, setLoading] = useState(true);
   const [authorityScore, setAuthorityScore] = useState<number | null>(null);
   const [scoreTotal, setScoreTotal] = useState<number | null>(null);
+  const [tierName, setTierName] = useState<string | null>(null);
   const [signalStats, setSignalStats] = useState({
     count: 0,
     topConfidence: 0,
@@ -219,7 +220,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       // Same total as ScoreBreakdown: components from latest score_snapshots row.
       try {
         const { data: snap } = await (supabase.from("score_snapshots" as any) as any)
-          .select("components, composite_score")
+          .select("components, composite_score, tier")
           .eq("user_id", uid)
           .order("created_at", { ascending: false })
           .limit(1)
@@ -231,6 +232,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           const cap = Number(c.capture_score) || 0;
           const total = Math.round(sig * 0.4) + Math.round(con * 0.4) + Math.round(cap * 0.2);
           setScoreTotal(total || Number((snap as any).composite_score) || null);
+          const t = (snap as any).tier;
+          if (t && typeof t === "string") setTierName(t);
         }
       } catch (e) {
         console.warn("[IdentityTab] score snapshot load failed", e);
