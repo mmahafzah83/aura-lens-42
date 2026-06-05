@@ -623,8 +623,6 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     detail?: string;
     action?: { label: string; tab: string };
   };
-  const journeyRef = useRef<{ next: JourneyStep; then: JourneyStep | null } | null>(null);
-
   const nextTierBoundary = (() => {
     const s = scoreTotal ?? authorityScore ?? null;
     if (s == null) return null;
