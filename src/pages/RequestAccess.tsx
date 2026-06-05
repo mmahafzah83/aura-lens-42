@@ -7,11 +7,20 @@ import PublicFooter from "@/components/PublicFooter";
 
 type Status = "idle" | "loading" | "success" | "duplicate" | "error";
 
-const BRONZE = "#B08D3A";
-const LEFT_BG = "#0a0a08";
-const RIGHT_BG = "#0f0e0c";
-const FIELD_BG = "#1a1917";
-const FIELD_BORDER = "#2a2a28";
+// A6 token pass — constants annotated with the token each mirrors.
+// String literals are required because these are React inline styles + raw
+// CSS strings in the <style> block; both can safely reference CSS vars.
+const BRONZE = "var(--bronze)";              // mirrors --bronze
+const BRONZE_TEXT = "var(--bronze-text)";    // mirrors --bronze-text
+const LEFT_BG = "var(--paper)";              // mirrors --paper
+const RIGHT_BG = "var(--paper-2)";           // mirrors --paper-2
+const FIELD_BG = "var(--vellum)";            // mirrors --vellum
+const FIELD_BORDER = "var(--hairline)";      // mirrors --hairline
+// Raw hex retained only inside the CSS `<style>` autofill block where
+// `-webkit-text-fill-color` and `-webkit-box-shadow` don't reliably resolve
+// var() values across browsers. Mirrors --vellum / --ink.
+const FIELD_BG_RAW = "#1a1917";              /* mirrors --vellum (dark) */
+const INK_RAW = "#ededed";                   /* mirrors --ink (dark) */
 
 const SENIORITY = [
   "C-Suite",
@@ -61,7 +70,7 @@ function usePositionCount(target: number, start: boolean, duration = 800) {
 }
 
 const HorizonEye = ({ size = 48, color = BRONZE }: { size?: number; color?: string }) => (
-  <svg width={size} height={size * 0.55} viewBox="0 0 60 33" fill="none" aria-hidden>
+  <svg width={size} height={size * 0.55} viewBox="0 0 60 33" fill="none" aria-hidden="true">
     <path d="M2 16.5 C 12 4, 48 4, 58 16.5 C 48 29, 12 29, 2 16.5 Z" stroke={color} strokeWidth="1.5" fill="none" />
     <circle cx="30" cy="16.5" r="9" stroke={color} strokeWidth="1" fill="none" opacity="0.55" />
     <circle cx="30" cy="16.5" r="5" fill={color} />
@@ -121,11 +130,12 @@ export default function RequestAccess() {
 
   const isDone = status === "success" || status === "duplicate";
 
+  // SVG data URI requires literal hex; mirrors --ink-muted.
   const selectArrow =
     "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>\")";
 
   return (
-    <div style={{ minHeight: "100vh", background: LEFT_BG, color: "#ededed", fontFamily: "'DM Sans', sans-serif", display: "flex", flexDirection: "column" }}>
+    <div style={{ minHeight: "100vh", background: LEFT_BG, color: "var(--ink)", fontFamily: "'DM Sans', sans-serif", display: "flex", flexDirection: "column" }}>
       <style>{RA_CSS}</style>
 
       <main className="ra-grid" style={{ flex: 1 }}>
@@ -139,13 +149,13 @@ export default function RequestAccess() {
             </div>
             <h1 className="ra-anim ra-d2" style={{
               fontFamily: "'Cormorant Garamond', Georgia, serif",
-              fontWeight: 400, fontSize: 28, color: "#fff",
+              fontWeight: 400, fontSize: 28, color: "var(--ink)",
               margin: "0 0 16px", lineHeight: 1.25,
             }}>
               Your expertise deserves an audience.
             </h1>
             <p className="ra-anim ra-d3" style={{
-              fontSize: 15, color: "#aaa", lineHeight: 1.65,
+              fontSize: 15, color: "var(--ink-2)", lineHeight: 1.65,
               maxWidth: 340, margin: 0,
             }}>
               Aura is in closed beta with fewer than 50 professionals. We review every application personally.
@@ -160,8 +170,8 @@ export default function RequestAccess() {
                 "Every application reviewed by the builder personally",
                 "10-minute setup. A career of visibility.",
               ].map((line) => (
-                <li key={line} style={{ fontSize: 13, color: "#999", display: "flex", gap: 10, alignItems: "flex-start" }}>
-                  <span style={{ color: BRONZE, lineHeight: 1.5 }}>✦</span>
+                <li key={line} style={{ fontSize: 13, color: "var(--ink-muted)", display: "flex", gap: 10, alignItems: "flex-start" }}>
+                  <span aria-hidden="true" style={{ color: BRONZE, lineHeight: 1.5 }}>✦</span>
                   <span style={{ lineHeight: 1.5 }}>{line}</span>
                 </li>
               ))}
@@ -175,12 +185,12 @@ export default function RequestAccess() {
                 fontFamily: "'Cairo', 'DM Sans', sans-serif",
               }}
             >
-              حتى السوق يعرفك قبل ما يشوفك ✦
+              حتى السوق يعرفك قبل ما يشوفك <span aria-hidden="true">✦</span>
             </p>
             <Link
               to="/"
               style={{
-                fontSize: 12, color: "#666", textDecoration: "none",
+                fontSize: 12, color: "var(--ink-5)", textDecoration: "none",
                 marginTop: 16, display: "block",
               }}
             >
@@ -199,22 +209,22 @@ export default function RequestAccess() {
                   className="ra-back-link"
                   style={{
                     display: "inline-flex", alignItems: "center", gap: 4,
-                    fontSize: 13, color: "#888", textDecoration: "none",
+                    fontSize: 13, color: "var(--ink-muted)", textDecoration: "none",
                     marginBottom: 20, transition: "color 0.2s ease",
                   }}
                   onMouseEnter={(e) => (e.currentTarget.style.color = BRONZE)}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "#888")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "var(--ink-muted)")}
                 >
                   ← Back to Aura
                 </Link>
                 <h2 style={{
                   fontFamily: "'Cormorant Garamond', Georgia, serif",
-                  fontWeight: 400, fontSize: 24, color: "#fff",
+                  fontWeight: 400, fontSize: 24, color: "var(--ink)",
                   margin: "0 0 8px",
                 }}>
                   Tell us about you.
                 </h2>
-                <p style={{ fontSize: 14, color: "#aaa", margin: "0 0 28px", lineHeight: 1.6 }}>
+                <p style={{ fontSize: 14, color: "var(--ink-2)", margin: "0 0 28px", lineHeight: 1.6 }}>
                   This takes 30 seconds. We'll be in touch within a week.
                 </p>
 
@@ -264,9 +274,9 @@ export default function RequestAccess() {
                   {status === "error" && (
                     <div style={{
                       padding: 12, borderRadius: 8,
-                      background: "rgba(220,70,70,0.1)",
-                      border: "1px solid rgba(220,70,70,0.4)",
-                      color: "#e89c9c", fontSize: 14,
+                      background: "var(--error-pale)",
+                      border: "1px solid color-mix(in srgb, var(--error) 40%, transparent)",
+                      color: "var(--error)", fontSize: 14,
                     }}>
                       Didn't connect. Try once more.
                     </div>
@@ -277,7 +287,7 @@ export default function RequestAccess() {
                     disabled={status === "loading"}
                     className="ra-cta"
                     style={{
-                      background: BRONZE, color: "#fff",
+                      background: BRONZE, color: "var(--ink-on-brand)",
                       height: 48, width: "100%",
                       borderRadius: 8, fontSize: 15, fontWeight: 600,
                       border: 0, cursor: status === "loading" ? "default" : "pointer",
@@ -294,16 +304,16 @@ export default function RequestAccess() {
                   </button>
                 </form>
 
-                <p style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", textAlign: "center", marginTop: 12 }}>
+                <p style={{ fontSize: 11, color: "var(--ink-muted)", textAlign: "center", marginTop: 12 }}>
                   Your data is protected under Saudi PDPL. See our{" "}
-                  <Link to="/privacy" style={{ color: "#D4B056", textDecoration: "none" }}>
+                  <Link to="/privacy" style={{ color: BRONZE_TEXT, textDecoration: "none" }}>
                     Privacy Policy
                   </Link>
                   .
                 </p>
 
                 <div style={{ textAlign: "center", marginTop: 24 }}>
-                  <span style={{ fontSize: 14, color: "#999" }}>
+                  <span style={{ fontSize: 14, color: "var(--ink-muted)" }}>
                     Already have access?{" "}
                     <Link to="/auth" style={{ color: BRONZE, fontWeight: 500, textDecoration: "none" }}>
                       Sign in →
@@ -400,9 +410,9 @@ function Select({
           paddingRight: 36,
         }}
       >
-        <option value="" style={{ background: FIELD_BG, color: "#555" }}>{placeholder}</option>
+        <option value="" style={{ background: FIELD_BG, color: "var(--ink-muted)" }}>{placeholder}</option>
         {options.map((o) => (
-          <option key={o} value={o} style={{ background: FIELD_BG, color: "#ededed" }}>{o}</option>
+          <option key={o} value={o} style={{ background: FIELD_BG, color: "var(--ink)" }}>{o}</option>
         ))}
       </select>
       {error && <p style={errorStyle}>{error}</p>}
@@ -420,10 +430,10 @@ function SuccessCeremony({
   const counted = usePositionCount(position ?? 0, position != null);
   return (
     <div style={{ textAlign: "center", padding: "16px 0" }}>
-      <div className="ra-star" style={{ fontSize: 32, color: BRONZE, lineHeight: 1 }}>✦</div>
+      <div aria-hidden="true" className="ra-star" style={{ fontSize: 32, color: BRONZE, lineHeight: 1 }}>✦</div>
       <h2 className="ra-anim-in ra-in-1" style={{
         fontFamily: "'Cormorant Garamond', Georgia, serif",
-        fontWeight: 400, fontSize: 24, color: "#fff",
+        fontWeight: 400, fontSize: 24, color: "var(--ink)",
         margin: "24px 0 14px", lineHeight: 1.3,
       }}>
         {title}
@@ -436,29 +446,29 @@ function SuccessCeremony({
         </p>
       )}
       <p className="ra-anim-in ra-in-2" style={{
-        fontSize: 15, color: "#bdbdbd", lineHeight: 1.7,
+        fontSize: 15, color: "var(--ink-2)", lineHeight: 1.7,
         maxWidth: 380, margin: "0 auto",
       }}>
         {subline}
       </p>
       {companion && (
         <p className="ra-anim-in ra-in-3" style={{
-          fontSize: 13, color: "#9a9a9a", lineHeight: 1.7,
+          fontSize: 13, color: "var(--ink-muted)", lineHeight: 1.7,
           maxWidth: 380, margin: "20px auto 0", fontStyle: "italic",
         }}>
           {companion}
         </p>
       )}
       <p className="ra-anim-in ra-in-3" style={{
-        fontSize: 12, color: "#666", lineHeight: 1.6,
+        fontSize: 12, color: "var(--ink-5)", lineHeight: 1.6,
         maxWidth: 380, margin: "12px auto 0",
       }}>
         Check your inbox (and spam folder) for a confirmation from Aura.
       </p>
       {withSignature && (
         <div className="ra-anim-in ra-in-4" style={{ marginTop: 36 }}>
-          <div style={{ fontSize: 14, color: "#ededed", fontWeight: 500 }}>Mohammad Mahafzah</div>
-          <div style={{ fontSize: 12, color: "#9a9a9a", marginTop: 2 }}>Aura builder</div>
+          <div style={{ fontSize: 14, color: "var(--ink)", fontWeight: 500 }}>Mohammad Mahafzah</div>
+          <div style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 2 }}>Aura builder</div>
         </div>
       )}
       {ctaHref && ctaLabel && (
@@ -473,14 +483,14 @@ function SuccessCeremony({
 }
 
 const labelStyle: React.CSSProperties = {
-  display: "block", fontSize: 13, color: "#bdbdbd", fontWeight: 500, marginBottom: 6,
+  display: "block", fontSize: 13, color: "var(--ink-2)", fontWeight: 500, marginBottom: 6,
 };
 
 const fieldStyle: React.CSSProperties = {
   width: "100%",
   background: FIELD_BG,
   border: `1px solid ${FIELD_BORDER}`,
-  color: "#fff",
+  color: "var(--ink)",
   fontSize: 15,
   padding: "14px 16px",
   borderRadius: 8,
@@ -490,7 +500,7 @@ const fieldStyle: React.CSSProperties = {
 };
 
 const errorStyle: React.CSSProperties = {
-  marginTop: 6, fontSize: 12, color: "#e89c9c",
+  marginTop: 6, fontSize: 12, color: "var(--error)",
 };
 
 const RA_CSS = `
@@ -513,26 +523,28 @@ const RA_CSS = `
   .ra-left-inner { width: 100%; max-width: 380px; }
   .ra-right-inner { width: 100%; max-width: 420px; }
 
-  .ra-field::placeholder { color: #555; }
+  .ra-field::placeholder { color: var(--ink-muted); }
   .ra-field:focus {
     border-color: ${BRONZE} !important;
-    box-shadow: 0 0 0 3px rgba(176,141,58,0.15) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--bronze) 15%, transparent) !important;
   }
 
   /* Kill the yellow autofill background that browsers force on inputs/selects */
+  /* Raw hex required: -webkit-box-shadow / -webkit-text-fill-color do not
+     resolve var() reliably across all browsers in autofill state. */
   input:-webkit-autofill,
   input:-webkit-autofill:hover,
   input:-webkit-autofill:focus,
   select:-webkit-autofill {
-    -webkit-box-shadow: 0 0 0px 1000px ${FIELD_BG} inset !important;
-    -webkit-text-fill-color: #ededed !important;
-    caret-color: #ededed !important;
+    -webkit-box-shadow: 0 0 0px 1000px ${FIELD_BG_RAW} inset !important; /* mirrors --vellum */
+    -webkit-text-fill-color: ${INK_RAW} !important;                       /* mirrors --ink */
+    caret-color: ${INK_RAW} !important;                                   /* mirrors --ink */
     transition: background-color 5000s ease-in-out 0s;
   }
 
   .ra-cta:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(176,141,58,0.2);
+    box-shadow: 0 4px 16px color-mix(in srgb, var(--bronze) 20%, transparent);
   }
   .ra-pulse { animation: ra-pulse 1.4s ease-in-out infinite; }
   @keyframes ra-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }

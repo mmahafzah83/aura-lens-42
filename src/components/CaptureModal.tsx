@@ -719,7 +719,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
             style={{
               position: "absolute", top: 14, left: "50%",
               width: 220, height: 220, transform: "translateX(-50%)",
-              background: "radial-gradient(circle, rgba(176,141,58,0.25) 0%, transparent 65%)",
+              background: "radial-gradient(circle, color-mix(in srgb, var(--bronze) 25%, transparent) 0%, transparent 65%)",
               pointerEvents: "none",
             }}
           />
@@ -946,7 +946,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                       width: 22,
                       height: 22,
                       borderRadius: 6,
-                      background: active ? "rgba(255,255,255,0.15)" : "var(--vellum)",
+                      background: active ? "var(--hairline)" : "var(--vellum)",
                     }}
                   >
                     <Icon className="w-3.5 h-3.5" />
@@ -1091,8 +1091,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
               {duplicateInfo && (
                 <div
                   style={{
-                    background: "rgba(239, 159, 39, 0.1)" /* warning-pale tint */,
-                    border: "0.5px solid rgba(239, 159, 39, 0.4)" /* warning border */,
+                    background: "var(--warning-pale)",
+                    border: "0.5px solid color-mix(in srgb, var(--warning) 40%, transparent)",
                     borderRadius: 10,
                     padding: "10px 14px",
                   }}
@@ -1416,7 +1416,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                       justifyContent: "center",
                       background: isRecording ? "var(--error)" : "var(--brand)",
                       boxShadow: isRecording
-                        ? "0 4px 20px rgba(184,48,37,0.4)" /* danger glow */
+                        ? "0 4px 20px color-mix(in srgb, var(--error) 40%, transparent)" /* danger glow */
                         : "var(--shadow-brand)",
                       transition: "background 200ms ease",
                     }}

@@ -241,7 +241,7 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
               <div
                 style={{
                   marginTop: 8, padding: "12px 14px",
-                  background: "rgba(249,115,22,0.04)",
+                  background: "color-mix(in srgb, var(--signal) 4%, transparent)",
                   borderLeft: `3px solid ${ALERT}`,
                   borderRadius: 6,
                 }}
