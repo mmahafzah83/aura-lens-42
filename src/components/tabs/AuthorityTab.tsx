@@ -1144,7 +1144,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                   onClick={() => setLang("en")}
                   style={{
                     background: lang === "en" ? "rgba(0,0,0,0.10)" : "transparent",
-                    color: lang === "en" ? "var(--paper)" : "rgba(0,0,0,0.55)",
+                    color: lang === "en" ? "var(--paper)" : "color-mix(in srgb, var(--paper) 60%, transparent)",
                     border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 500, cursor: "pointer",
                   }}
                 >EN</button>
@@ -1152,7 +1152,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                   onClick={() => setLang("ar")}
                   style={{
                     background: lang === "ar" ? "rgba(0,0,0,0.10)" : "transparent",
-                    color: lang === "ar" ? "var(--paper)" : "rgba(0,0,0,0.55)",
+                    color: lang === "ar" ? "var(--paper)" : "color-mix(in srgb, var(--paper) 60%, transparent)",
                     border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 500, cursor: "pointer",
                   }}
                 >العربية</button>
@@ -1665,7 +1665,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                               Publish confidence
                               <InfoTooltip slug="publish-confidence" label="Publish confidence" side="top" triggerSize={13} className="ml-1.5 align-middle" />
                             </span>
-                            <span className={`text-xs font-semibold tabular-nums ${gate!.overall_score >= 70 ? "text-amber-500" : "text-muted-foreground"}`}>
+                            <span className={`text-xs font-semibold tabular-nums ${gate!.overall_score >= 70 ? "text-[color:var(--warning)]" : "text-muted-foreground"}`}>
                               {gate!.overall_score}%
                             </span>
                           </div>
@@ -1674,7 +1674,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                               initial={{ width: 0 }}
                               animate={{ width: `${Math.max(0, Math.min(100, gate!.overall_score))}%` }}
                               transition={{ duration: 0.6 }}
-                              className={`h-full rounded-full ${gate!.overall_score >= 70 ? "bg-amber-500" : "bg-muted-foreground/40"}`}
+                              className={`h-full rounded-full ${gate!.overall_score >= 70 ? "bg-[color:var(--warning)]" : "bg-muted-foreground/40"}`}
                             />
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 pt-1">
@@ -1685,11 +1685,11 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                                   <span className="text-xs text-muted-foreground w-20 shrink-0">{d.label}</span>
                                   <div className="flex-1 bg-secondary/30 rounded-full h-1 overflow-hidden">
                                     <div
-                                      className={`h-full rounded-full ${d.raw >= 7 ? "bg-amber-500" : "bg-muted-foreground/30"}`}
+                                      className={`h-full rounded-full ${d.raw >= 7 ? "bg-[color:var(--warning)]" : "bg-muted-foreground/30"}`}
                                       style={{ width: `${pct}%` }}
                                     />
                                   </div>
-                                  <span className={`text-xs tabular-nums w-8 text-right ${d.raw >= 7 ? "text-amber-500" : "text-muted-foreground/60"}`}>{pct}%</span>
+                                  <span className={`text-xs tabular-nums w-8 text-right ${d.raw >= 7 ? "text-[color:var(--warning)]" : "text-muted-foreground/60"}`}>{pct}%</span>
                                 </div>
                               );
                             })}
@@ -1699,7 +1699,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                               size="sm"
                               variant="outline"
                               disabled={isGeneratingAny || !!actionLoading}
-                              className="h-8 w-full text-xs gap-1.5 border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+                              className="h-8 w-full text-xs gap-1.5 border-[color:var(--warning)]/40 text-[color:var(--warning)] hover:bg-[color-mix(in_srgb,var(--warning)_10%,transparent)]"
                               onClick={async () => {
                                 const weak = (gate!.weaknesses || []).filter(Boolean);
                                 const instruction = weak.length
@@ -1723,7 +1723,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                             </Button>
                             <InfoTooltip slug="strengthen-post" label="Strengthen" side="top" triggerSize={13} className="ml-1.5 align-middle" /></>
                           ) : (
-                            <div className="text-xs text-amber-600/80 dark:text-amber-400/80">
+                            <div className="text-xs text-[color:var(--warning)]">
                               Ready to publish — quality threshold met.
                             </div>
                           )}
@@ -2332,9 +2332,9 @@ interface SavedPost {
 }
 
 const FORMAT_BADGE: Record<string, { label: string; cls: string }> = {
-  post: { label: "Post", cls: "bg-amber-500/15 text-amber-400 border-amber-500/20" },
-  linkedin_post: { label: "Post", cls: "bg-amber-500/15 text-amber-400 border-amber-500/20" },
-  post_short: { label: "Short", cls: "bg-[#B08D3A]/15 text-[#B08D3A] border-[#B08D3A]/20" },
+  post: { label: "Post", cls: "bg-[color-mix(in_srgb,var(--warning)_15%,transparent)] text-[color:var(--warning)] border-[color-mix(in_srgb,var(--warning)_20%,transparent)]" },
+  linkedin_post: { label: "Post", cls: "bg-[color-mix(in_srgb,var(--warning)_15%,transparent)] text-[color:var(--warning)] border-[color-mix(in_srgb,var(--warning)_20%,transparent)]" },
+  post_short: { label: "Short", cls: "bg-[color:var(--bronze-pale)] text-[color:var(--bronze-text)] border-[color:var(--bronze-line)]" },
   carousel: { label: "Carousel", cls: "bg-blue-500/15 text-blue-400 border-blue-500/20" },
   framework: { label: "Framework", cls: "bg-purple-500/15 text-purple-400 border-purple-500/20" },
   essay: { label: "Essay", cls: "bg-muted/30 text-muted-foreground border-border/20" },
@@ -2441,7 +2441,7 @@ const LibraryCard = ({
           </span>
           <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${
             isDraft
-              ? "bg-amber-500/15 text-amber-400 border-amber-500/20"
+              ? "bg-[color-mix(in_srgb,var(--warning)_15%,transparent)] text-[color:var(--warning)] border-[color-mix(in_srgb,var(--warning)_20%,transparent)]"
               : "bg-emerald-500/15 text-emerald-400 border-emerald-500/20"
           }`}>
             {isDraft ? "Draft" : "Published"}
@@ -3259,7 +3259,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                   <LinkedInPreview text={p.post_text} profile={profile} />
 
                   {/* Body text */}
-                  <p style={{ fontSize: 14, color: "var(--color-foreground, var(--ink-7))", lineHeight: 1.625 }} className={expandedCards.has(p.id) ? "" : "line-clamp-4"} dir="auto">
+                  <p style={{ fontSize: 14, color: "var(--ink)", lineHeight: 1.625 }} className={expandedCards.has(p.id) ? "" : "line-clamp-4"} dir="auto">
                     {p.post_text || "Untitled draft"}
                   </p>
                   {(p.post_text?.split("\n").length || 0) > 4 || (p.post_text?.length || 0) > 280 ? (
@@ -3347,7 +3347,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                     <button
                       onClick={() => setPendingDeleteId(p.id)}
                       style={{ fontSize: 14, color: "var(--danger)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
-                      className="hover:text-red-400 transition-colors"
+                      className="hover:text-[color:var(--error)] transition-colors"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -3372,7 +3372,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                             setConfirmingId(null);
                             await markPublished(p.id, confirmPubUrl.trim() || undefined);
                           }}
-                          style={{ fontSize: 12, fontWeight: 600, color: "#fff", background: "var(--brand)", border: 0, borderRadius: 4, padding: "5px 10px", cursor: "pointer" }}
+                          style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-on-brand)", background: "var(--brand)", border: 0, borderRadius: 4, padding: "5px 10px", cursor: "pointer" }}
                         >Yes, it's live</button>
                         <button
                           onClick={() => { setConfirmingId(null); setConfirmPubUrl(""); setConfirmPubUrlError(""); }}
@@ -3403,7 +3403,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
           style={{ borderLeft: "1px solid var(--ink-7)", paddingLeft: 12, marginBottom: showPublished ? 12 : 0, background: "none", border: "none", cursor: "pointer", borderLeftWidth: 1, borderLeftStyle: "solid", borderLeftColor: "var(--ink-7)" }}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <h3 style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-7)", margin: 0 }}>
+            <h3 style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)", margin: 0 }}>
               Published Posts
             </h3>
             <span style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", lineHeight: 1.4 }}>
@@ -3415,7 +3415,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
           </span>
           <ChevronDown
             className="ml-auto transition-transform duration-200 group-hover:text-primary"
-            style={{ width: 16, height: 16, color: "var(--ink-5)", transform: showPublished ? "rotate(0deg)" : "rotate(-90deg)" }}
+            style={{ width: 16, height: 16, color: "var(--ink-3)", transform: showPublished ? "rotate(0deg)" : "rotate(-90deg)" }}
           />
         </button>
         {showPublished && (
@@ -3434,11 +3434,11 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   style={{ background: "var(--bg-card)", borderRadius: 8, padding: 16, border: "1px solid var(--color-border)", transition: "border-color 0.2s" }}
-                  className="hover:border-[rgba(255,255,255,0.08)]"
+                  className="hover:border-[color:var(--hairline)]"
                 >
                   <div className="flex items-start gap-3">
                     <div className="flex-1 min-w-0">
-                      <p style={{ fontSize: 14, color: "var(--color-foreground, var(--ink-7))", lineHeight: 1.5 }} className={expandedCards.has(p.id) ? "" : "line-clamp-2"} dir="auto">
+                      <p style={{ fontSize: 14, color: "var(--ink)", lineHeight: 1.5 }} className={expandedCards.has(p.id) ? "" : "line-clamp-2"} dir="auto">
                         {p.post_text}
                       </p>
                       {(p.post_text?.split("\n").length || 0) > 2 || (p.post_text?.length || 0) > 140 ? (
@@ -3471,7 +3471,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                         {badge.label}
                       </span>
                       {isExternal ? (
-                        <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "rgba(59,130,246,0.15)", color: "rgb(96,165,250)" }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--info-pale)", color: "var(--info)" }}>
                           LinkedIn
                         </span>
                       ) : (
@@ -3496,7 +3496,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                     <button
                       onClick={() => setPendingDeleteId(p.id)}
                       style={{ fontSize: 14, color: "var(--danger)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
-                      className="hover:text-red-400 transition-colors"
+                      className="hover:text-[color:var(--error)] transition-colors"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
