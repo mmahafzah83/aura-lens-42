@@ -615,7 +615,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   // Anti-flap: compute once per session and memoize via ref; never
   // recompute while user is on the page.
   // Predicates (named, validated against real fields):
-  //   • posts_published == 0           → trackedPostCount === 0
+  //   • posts_published == 0           → publishedPostCount === 0
   //   • weekly rhythm incomplete       → thisWeekEntries < 3
   //   • approaching Live               → signal.lifecycle_tier ∈ {emerging, evergreen}
   //                                       AND signal.strength_score >= 0.7
