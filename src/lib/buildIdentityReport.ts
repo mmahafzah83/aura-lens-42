@@ -369,10 +369,19 @@ export async function buildIdentityReport(userId: string): Promise<ReportData> {
 
   // 8. TERRITORIES — distinct theme_tags by frequency, cap 5
   const themeCounts = new Map<string, number>();
+  // Defensive dedupe key: lowercased + trimmed + whitespace-collapsed.
+  // Root cause of duplicates (e.g. "Digital Transformation" twice) is dirty
+  // theme_tags upstream; tracked separately. The report must still render
+  // a clean list regardless.
+  const seenKeys = new Map<string, string>(); // key → canonical display
   for (const r of (signalsRes.data || []) as any[]) {
     for (const t of (r.theme_tags || []) as string[]) {
       if (!t) continue;
-      themeCounts.set(t, (themeCounts.get(t) || 0) + 1);
+      const key = t.trim().toLowerCase().replace(/\s+/g, " ");
+      if (!key) continue;
+      const display = seenKeys.get(key) ?? t.trim();
+      if (!seenKeys.has(key)) seenKeys.set(key, display);
+      themeCounts.set(display, (themeCounts.get(display) || 0) + 1);
     }
   }
   const territoriesList = Array.from(themeCounts.entries())
