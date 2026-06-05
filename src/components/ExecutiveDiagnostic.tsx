@@ -299,9 +299,9 @@ const ExecutiveDiagnostic = ({ onComplete }: { onComplete: () => void }) => {
 
   const categoryColor = (cat: string) => {
     const map: Record<string, string> = {
-      Strategic: "text-amber-400",
+      Strategic: "text-[color:var(--warning)]",
       Commercial: "text-emerald-400",
-      Leadership: "text-blue-400",
+      Leadership: "text-[color:var(--info)]",
       Technical: "text-purple-400",
     };
     return map[cat] || "text-muted-foreground";
@@ -309,7 +309,7 @@ const ExecutiveDiagnostic = ({ onComplete }: { onComplete: () => void }) => {
 
   const levelBadge = (level: string) => {
     if (level === "Base") return "bg-emerald-500/20 text-emerald-400";
-    if (level === "Intermediate") return "bg-amber-500/20 text-amber-400";
+    if (level === "Intermediate") return "bg-[color-mix(in_srgb,var(--warning)_20%,transparent)] text-[color:var(--warning)]";
     return "bg-rose-500/20 text-rose-400";
   };
 
@@ -390,9 +390,9 @@ const ExecutiveDiagnostic = ({ onComplete }: { onComplete: () => void }) => {
                   />
                 </div>
                 {parseInt(totalExp) > 15 && parseInt(consultingExp) < 10 && (
-                  <div className="px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                    <p className="text-sm text-amber-400 font-medium flex items-center gap-2"><Tag className="w-4 h-4" /> Industry expert pivot detected</p>
-                    <p className="text-xs text-amber-400/60 mt-1">Your deep industry experience will shape a unique consulting trajectory.</p>
+                  <div className="px-4 py-3 rounded-xl bg-[color-mix(in_srgb,var(--warning)_10%,transparent)] border border-[color-mix(in_srgb,var(--warning)_20%,transparent)]">
+                    <p className="text-sm text-[color:var(--warning)] font-medium flex items-center gap-2"><Tag className="w-4 h-4" /> Industry expert pivot detected</p>
+                    <p className="text-xs text-[color:var(--warning)] opacity-70 mt-1">Your deep industry experience will shape a unique consulting trajectory.</p>
                   </div>
                 )}
                 <button

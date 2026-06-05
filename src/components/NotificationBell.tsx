@@ -25,11 +25,11 @@ const TYPE_ICONS: Record<string, typeof Bell> = {
 };
 
 const TYPE_COLORS: Record<string, string> = {
-  opportunity: "text-amber-400",
-  insight_ready: "text-blue-400",
+  opportunity: "text-[color:var(--warning)]",
+  insight_ready: "text-[color:var(--info)]",
   pattern: "text-emerald-400",
   momentum: "text-[#B08D3A]",
-  drift: "text-red-400",
+  drift: "text-[color:var(--error)]",
   nudge: "text-primary",
   strategic: "text-primary",
 };
@@ -164,7 +164,7 @@ const NotificationBell = () => {
 
                       {/* Alert urgency badge */}
                       {n.metadata?.urgency === "high" && (
-                        <span className="inline-block mt-1.5 text-xs uppercase font-bold tracking-wider text-red-400/70 bg-red-500/10 px-1.5 py-0.5 rounded">
+                        <span className="inline-block mt-1.5 text-xs uppercase font-bold tracking-wider text-[color:var(--error)] bg-[color-mix(in_srgb,var(--error)_10%,transparent)] px-1.5 py-0.5 rounded">
                           High Priority
                         </span>
                       )}
@@ -174,7 +174,7 @@ const NotificationBell = () => {
                         <div className="flex gap-3 mt-2">
                           {[
                             { label: "Auth", value: n.metadata.authority_index, color: "bg-primary" },
-                            { label: "Voice", value: n.metadata.market_voice, color: "bg-blue-500" },
+                            { label: "Voice", value: n.metadata.market_voice, color: "bg-[color:var(--info)]" },
                           ].map((kpi) => (
                             <div key={kpi.label} className="flex items-center gap-1.5">
                               <span className="text-xs text-muted-foreground">{kpi.label}</span>

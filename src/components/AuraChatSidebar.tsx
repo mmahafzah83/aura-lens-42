@@ -496,9 +496,9 @@ const QUICK_ACTIONS = [
 ];
 
 const LINKED_TYPE_COLORS: Record<string, string> = {
-  signal: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20",
+  signal: "text-[color:var(--warning)] bg-[color-mix(in_srgb,var(--warning)_10%,transparent)] border-[color-mix(in_srgb,var(--warning)_20%,transparent)]",
   insight: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20",
-  framework: "text-blue-400 bg-blue-400/10 border-blue-400/20",
+  framework: "text-[color:var(--info)] bg-[color-mix(in_srgb,var(--info)_10%,transparent)] border-[color-mix(in_srgb,var(--info)_20%,transparent)]",
   content: "text-purple-400 bg-purple-400/10 border-purple-400/20",
 };
 
@@ -2130,7 +2130,7 @@ End with NEXT STEP:.`;
                   onKeyDown={handleKeyDown}
                   placeholder="Ask Aura anything…"
                   rows={1}
-                  className="flex-1 bg-secondary border-border/30 resize-none text-sm min-h-[44px] max-h-[120px] text-foreground placeholder:text-muted-foreground bg-amber-400 text-neutral-950"
+                  className="flex-1 border-[color:var(--bronze)] resize-none text-sm min-h-[44px] max-h-[120px] text-foreground placeholder:text-muted-foreground bg-[color:var(--paper-2)]"
                 />
                 <Button
                   data-testid="aura-send-btn"
@@ -2190,7 +2190,7 @@ const ConversationRow = ({
         </button>
         <button
           onClick={e => { e.stopPropagation(); onDelete(conv.id); }}
-          className="p-1.5 text-muted-foreground hover:text-red-400 transition-colors rounded-md"
+          className="p-1.5 text-muted-foreground hover:text-[color:var(--error)] transition-colors rounded-md"
           title="Delete"
         >
           <Trash2 className="w-3.5 h-3.5" />
