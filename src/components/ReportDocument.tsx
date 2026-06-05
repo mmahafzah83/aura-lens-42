@@ -164,7 +164,8 @@ function Sheet({ children }: { children: React.ReactNode }) {
       data-theme="light"
       style={{
         width: SHEET_W,
-        minHeight: SHEET_H,
+        height: SHEET_H,
+        overflow: "hidden",
         background: PAPER,
         color: INK,
         fontFamily: BODY,
