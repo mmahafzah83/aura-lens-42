@@ -714,6 +714,7 @@ const VoiceEngineSection = () => {
                   return (
                     <div>
                       {tabsStrip}
+                      {changeNotice}
                       {primarySubtitle}
                       {!hasVoiceCard ? arEmpty : (
                       <div style={cardStyle} dir="rtl" lang="ar">
@@ -961,6 +962,7 @@ const VoiceEngineSection = () => {
                   return (
                     <div>
                       {tabsStrip}
+                      {changeNotice}
                       {primarySubtitle}
                       <div style={cardStyle}>
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><div style={eyebrowStyle}>Your voice signature</div><InfoTooltip slug="voice-signature" triggerSize={13} side="top" /></span>
@@ -978,7 +980,8 @@ const VoiceEngineSection = () => {
                 return (
                   <div>
                   {tabsStrip}
-                  {primarySubtitle}
+                  {changeNotice}
+                      {primarySubtitle}
                   <div style={cardStyle}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><div style={eyebrowStyle}>Your voice signature</div><InfoTooltip slug="voice-signature" triggerSize={13} side="top" /></span>
