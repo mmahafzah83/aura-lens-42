@@ -479,7 +479,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
           height: "88vh",
           display: "flex",
           flexDirection: "column",
-          background: "#0d0d0b",
+          background: "var(--paper)",
           borderRadius: 16,
           border: "1px solid var(--ink-3)",
           overflow: "hidden",
@@ -635,8 +635,8 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
                           borderTop: "1px solid rgba(212,176,86,0.2)",
                           borderRight: "1px solid rgba(212,176,86,0.2)",
                           borderBottom: "1px solid rgba(212,176,86,0.2)",
-                          borderLeft: sel ? "3px solid #d4b056" : "1px solid rgba(212,176,86,0.2)",
-                          color: sel ? "#ffe896" : "rgba(230, 222, 205, 0.9)",
+                          borderLeft: sel ? "3px solid var(--bronze-text)" : "1px solid color-mix(in srgb, var(--bronze-text) 20%, transparent)",
+                          color: sel ? "var(--bronze-text)" : "var(--ink)",
                           borderRadius: 12,
                           padding: sel ? "16px 20px 16px 18px" : "16px 20px",
                           fontSize: 15,
@@ -650,7 +650,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
                         <span
                           aria-hidden="true"
                           style={{
-                            color: "#d4b056",
+                            color: "var(--bronze-text)",
                             fontSize: 10,
                             opacity: sel ? 1 : 0,
                             transition: "opacity 200ms ease",
@@ -690,7 +690,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
           <div
             className="shrink-0"
             style={{
-              background: "#0d0d0b",
+              background: "var(--paper)",
               borderTop: "0.5px solid var(--surface-ink-subtle)",
               padding: "12px 16px",
               animation: "aura-fade-up 300ms ease-out forwards",
@@ -723,19 +723,19 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
           }}
         >
           <div style={{ textAlign: "center", maxWidth: 360 }}>
-            <div style={{ color: "#B08D3A", fontSize: 16, marginBottom: 18, letterSpacing: "0.3em" }}>{interlude.dots}</div>
+            <div style={{ color: "var(--bronze-text)", fontSize: 16, marginBottom: 18 }}>{interlude.dots}</div>
             <p
               style={{
                 fontFamily: "'Cormorant Garamond', Georgia, serif",
                 fontSize: 18,
-                color: "#B08D3A",
+                color: "var(--bronze-text)",
                 lineHeight: 1.55,
                 margin: 0,
               }}
             >
               {interlude.text}
             </p>
-            <div style={{ color: "#B08D3A", fontSize: 16, marginTop: 18, letterSpacing: "0.3em" }}>{interlude.dots}</div>
+            <div style={{ color: "var(--bronze-text)", fontSize: 16, marginTop: 18 }}>{interlude.dots}</div>
           </div>
         </div>
       )}
@@ -936,7 +936,7 @@ function ResultsView({
             fontSize: 11,
             letterSpacing: "2px",
             textTransform: "uppercase",
-            color: "#B08D3A",
+            color: "var(--bronze-text)",
             fontWeight: 600,
             marginBottom: 16,
             opacity: 0,
