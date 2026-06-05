@@ -230,7 +230,10 @@ function Chip({ children }: { children: React.ReactNode }) {
         display: "inline-flex",
         alignItems: "center",
         gap: 6,
-        padding: "7px 14px 7px 12px",
+        // §18: symmetric vertical padding + lineHeight:1 keeps the glyph
+        // optically centred in the pill at html2canvas raster time
+        // (asymmetric padding pushed descenders into the bottom border).
+        padding: "6px 14px",
         marginRight: 8,
         marginBottom: 8,
         fontSize: 12,
@@ -776,6 +779,24 @@ function Row({ label, value, valueAlign = "right" }: { label: string; value: str
 // Stacked variant: label on its own line, value left-aligned full-width below.
 function StackedRow({ label, value }: { label: string; value: string }) {
   const ar = hasArabic(value);
+  // §18 — Long embedded Latin runs (e.g. a signature English quote inside an
+  // Arabic paragraph) cannot survive html2canvas line-wrap reordering when
+  // wrapped only in <bdi>: the quote fragments across lines. Detect any Latin
+  // run ≥ 40 chars and promote it to its OWN block-level element rendered
+  // LTR below the Arabic sentence that introduces it.
+  let arHead = value;
+  let latinBlock: string | null = null;
+  if (ar) {
+    const LONG_LATIN = /[A-Za-z][A-Za-z0-9 '’"“”\-\.,;:!\?\(\)&/]{40,}[A-Za-z0-9\.\?!"”\)]/;
+    const m = value.match(LONG_LATIN);
+    if (m && typeof m.index === "number") {
+      latinBlock = m[0];
+      arHead = (value.slice(0, m.index) + value.slice(m.index + m[0].length))
+        .replace(/\s+/g, " ")
+        .replace(/\s*[:،,]\s*$/, "")
+        .trim();
+    }
+  }
   return (
     <div
       style={{ padding: "8px 0", borderBottom: `1px solid ${RULE}` }}
@@ -798,8 +819,28 @@ function StackedRow({ label, value }: { label: string; value: string }) {
         dir={ar ? "rtl" : "auto"}
         lang={ar ? "ar" : undefined}
       >
-        {ar ? renderBidi(value) : value}
+        {ar ? (arHead ? renderBidi(arHead) : null) : value}
       </div>
+      {latinBlock ? (
+        <div
+          dir="ltr"
+          lang="en"
+          style={{
+            display: "block",
+            marginTop: 6,
+            fontSize: 12,
+            color: INK_2,
+            fontWeight: 500,
+            fontStyle: "italic",
+            lineHeight: 1.55,
+            textAlign: ar ? "right" : "left",
+            fontFamily: BODY,
+            letterSpacing: "normal",
+          }}
+        >
+          {latinBlock}
+        </div>
+      ) : null}
     </div>
   );
 }

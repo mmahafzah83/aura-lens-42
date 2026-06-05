@@ -156,6 +156,37 @@ function nonEmpty<T>(v: T | null | undefined): v is T {
   return v !== null && v !== undefined && v !== "";
 }
 
+// §18 — Voice Signature column on page 4 has a hard pixel ceiling.
+// Clamp each field at a SENTENCE boundary (« · » or period before the cap)
+// so the rendered column ends well clear of the page footer. Caps chosen so
+// each rendered field stays under ~6 lines at Cairo lineHeight 1.85, giving
+// ≥24px clearance above the footer hairline.
+function clampAtSentence(s: string, max: number): string {
+  if (!s || s.length <= max) return s;
+  const slice = s.slice(0, max);
+  const boundary = Math.max(slice.lastIndexOf(" · "), slice.lastIndexOf(". "), slice.lastIndexOf("。"));
+  let cut = boundary > Math.floor(max * 0.5) ? slice.slice(0, boundary) : slice.replace(/\s+\S*$/, "");
+  cut = cut.replace(/[\s·\.,،;:]+$/u, "");
+  return cut + "…";
+}
+
+// Clamp a list whose final rendering is `items.join(sep)` to `max` chars.
+// Drops trailing items that wouldn't fit, appends a clean "…" sentinel item.
+function clampJoinedList(items: string[], sep: string, max: number): string[] {
+  const out: string[] = [];
+  let total = 0;
+  for (const raw of items) {
+    const it = raw.trim();
+    if (!it) continue;
+    const add = out.length ? sep.length + it.length : it.length;
+    if (total + add > max) break;
+    out.push(it);
+    total += add;
+  }
+  if (out.length < items.filter(Boolean).length) out.push("…");
+  return out;
+}
+
 // ── Builder ──
 export async function buildIdentityReport(userId: string): Promise<ReportData> {
   const thirtyDaysAgo = new Date(Date.now() - 30 * 86400_000).toISOString();
@@ -421,9 +452,9 @@ export async function buildIdentityReport(userId: string): Promise<ReportData> {
   const vp: any = (voiceRes as any)?.data || null;
   let voice: VoiceSection | null = null;
   if (vp) {
-    const tone = (vp.tone || "").toString();
-    const preferred_structures = asStrArr(vp.preferred_structures);
-    const storytelling_patterns = asStrArr(vp.storytelling_patterns);
+    const tone = clampAtSentence((vp.tone || "").toString(), 140);
+    const preferred_structures = clampJoinedList(asStrArr(vp.preferred_structures), " · ", 240);
+    const storytelling_patterns = clampJoinedList(asStrArr(vp.storytelling_patterns), " · ", 240);
     const vpRaw: any = vp.vocabulary_preferences || {};
     const vocabulary_preferences = {
       prefer: asStrArr(vpRaw.prefer),
