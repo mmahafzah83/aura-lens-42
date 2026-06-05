@@ -160,12 +160,12 @@ export default function FlashPanel() {
     modeSpark: lang === "ar" ? "بكلماتك" : "Your Spark",
     sectorLabel: lang === "ar" ? "القطاع" : "Sector",
     themeSelectLabel: lang === "ar" ? "الموضوع" : "Theme",
-    themePlaceholder: lang === "ar" ? "اختر موضوعاً" : "Select a theme",
+    themePlaceholder: lang === "ar" ? "اختيار موضوع" : "Select a theme",
     postTypeLabel: lang === "ar" ? "نوع البوست" : "Post type",
     themesLabel: lang === "ar" ? "المواضيع" : "Themes",
     sparkLabel: lang === "ar" ? "شرارة" : "Your spark",
     sparkPlaceholder: lang === "ar"
-      ? "اكتب 3-10 كلمات... مثال: اجتماعات كثيرة ونتائج قليلة"
+      ? "3-10 كلمات... مثال: اجتماعات كثيرة ونتائج قليلة"
       : "Write 3-10 words... e.g. too many meetings, no results",
     generate: lang === "ar" ? "توليد 3 نسخ" : "Generate 3 versions",
     generating: lang === "ar" ? "جاري الكتابة..." : "Writing...",

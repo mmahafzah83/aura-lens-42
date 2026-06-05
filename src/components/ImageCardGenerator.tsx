@@ -1172,7 +1172,7 @@ function ArabicCard({ tag, hookText, editName, editRole }: CardProps) {
           fontFamily: AURA.arabic, fontSize: 22, fontWeight: 600, color: AURA.text,
           lineHeight: 1.9, textAlign: "right",
         }}>
-          {trunc(hookText || "اكتب النص العربي هنا...", 110)}
+          {trunc(hookText || "النص العربي هنا...", 110)}
         </p>
       </div>
       <div style={{ marginTop: "auto" }}>
