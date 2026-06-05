@@ -570,6 +570,20 @@ Deno.serve(async (req) => {
       if (!primaryCheck) shouldAssignPrimary = true;
     }
     if (shouldAssignPrimary) {
+      // Capture the previous primary language BEFORE demote-all so we can
+      // notify the user if the primary language actually changes.
+      const { data: prevPrimaryRow } = await supabase
+        .from("authority_voice_profiles")
+        .select("language")
+        .eq("user_id", user_id)
+        .eq("is_primary", true)
+        .limit(1)
+        .maybeSingle();
+      const prevPrimaryLang: string | null =
+        prevPrimaryRow?.language === "ar" || prevPrimaryRow?.language === "en"
+          ? prevPrimaryRow.language
+          : null;
+
       const { error: demoteErr } = await supabase
         .from("authority_voice_profiles")
         .update({ is_primary: false })
@@ -584,6 +598,23 @@ Deno.serve(async (req) => {
         .eq("language", dominant);
       if (promErr) {
         console.error("voice-distill: promote-dominant failed", promErr);
+      }
+
+      // Notify ONLY on an actual change (from !== to). Never on first-ever
+      // assignment (no previous primary → no notice).
+      if (prevPrimaryLang && prevPrimaryLang !== dominant) {
+        const { error: notifyErr } = await supabase
+          .from("user_milestones")
+          .insert({
+            user_id,
+            milestone_id: "voice_primary_changed",
+            milestone_name: "Primary voice changed",
+            context: { from: prevPrimaryLang, to: dominant },
+            acknowledged: false,
+          });
+        if (notifyErr) {
+          console.warn("voice-distill: primary-change notify skipped", notifyErr.message);
+        }
       }
     }
 
