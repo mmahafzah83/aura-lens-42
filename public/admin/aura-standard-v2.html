@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Aura Standard V2.0 — دستور أورا</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@300;400;500;600&family=Cairo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bronze:#B08D3A; --bronze-text:#8A6D2A; --bronze-night:#D4B056; --parchment:#F8F5F0; --surface:#FFFFFF;
+    --ink:#2B2723; --muted:#7A7164; --faint:#A89F90; --signal:#F97316;
+    --ok:#2E7D58; --warn:#B45309; --err:#B3402E; --info:#5B7DA8;
+    --tier-live:#2E7D58; --tier-evergreen:#B08D3A; --tier-emerging:#5B7DA8; --tier-faded:#A89F90;
+    --hairline:rgba(43,39,35,.14);
+    --serif:'Cormorant Garamond',Georgia,serif; --sans:'DM Sans',sans-serif;
+    --arabic:'Cairo',sans-serif; --mono:'JetBrains Mono',monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--parchment);color:var(--ink);font-family:var(--sans);font-weight:300;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .page{max-width:1000px;margin:0 auto;padding:72px 40px 96px}
+  .eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--bronze-text);font-weight:500}
+  section{padding:46px 0;border-bottom:.5px solid var(--hairline)}
+  h2{font-family:var(--serif);font-weight:500;font-size:29px;margin:8px 0 2px}
+  .law-ar{font-family:var(--arabic);direction:rtl;text-align:right;font-size:14.5px;font-weight:600;color:var(--bronze-text);line-height:1.9;margin-top:2px}
+  .part{padding:58px 0 6px}
+  .part .pn{font-family:var(--mono);font-size:12px;color:var(--faint);letter-spacing:.2em}
+  .part h2{font-size:23px;margin-top:4px}
+  .part .pa{font-family:var(--arabic);font-weight:600;color:var(--bronze-text);font-size:15px;margin-top:2px}
+
+  header.mast{padding:20px 0 54px;border-bottom:.5px solid var(--hairline)}
+  .brandline{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+  .logo{font-family:var(--serif);font-size:22px;letter-spacing:.32em;font-weight:500}
+  .ver{font-family:var(--mono);font-size:11px;color:var(--faint)}
+  h1{font-family:var(--serif);font-weight:500;font-size:54px;line-height:1.08}
+  h1 .star{color:var(--bronze)}
+  .mast-ar{font-family:var(--arabic);font-size:20px;font-weight:600;color:var(--bronze-text);margin-top:8px}
+  .mast-rule{color:var(--muted);font-size:15.5px;max-width:620px;margin-top:12px}
+
+  .laws{margin-top:18px}
+  .law{display:grid;grid-template-columns:44px 1fr;gap:14px;padding:11px 0;border-top:.5px solid var(--hairline);font-size:14px;align-items:baseline}
+  .law:first-child{border-top:none}
+  .law .n{font-family:var(--mono);font-size:11.5px;color:var(--bronze-text)}
+  .law b{font-weight:500}
+  .law .ar{font-family:var(--arabic);direction:rtl;display:block;text-align:right;font-size:13px;color:var(--muted);font-weight:500;line-height:1.9;margin-top:3px}
+  .law .mono{font-family:var(--mono);font-size:11.5px;color:var(--bronze-text)}
+
+  table.t{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:16px}
+  table.t th{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:var(--muted);text-align:left;padding:8px;border-bottom:.5px solid var(--hairline)}
+  table.t td{padding:8px;border-bottom:.5px solid var(--hairline);vertical-align:top}
+  table.t td.ar{font-family:var(--arabic);font-weight:500;direction:rtl;text-align:right;line-height:1.9;font-size:13.5px}
+  table.t .nm{font-family:var(--mono);font-size:11px;color:var(--bronze-text)}
+  .swd{display:inline-block;width:13px;height:13px;border-radius:4px;border:.5px solid var(--hairline);vertical-align:-2px;margin-right:7px}
+
+  .chipline{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px}
+  .c{display:inline-flex;align-items:center;gap:7px;border:.5px solid var(--hairline);background:var(--surface);border-radius:999px;padding:5px 14px;font-size:12px}
+  .c .dot{width:7px;height:7px;border-radius:50%}
+  .c.ar{font-family:var(--arabic);font-weight:500}
+  .vt{font-size:12.5px;border-radius:999px;padding:6px 14px;border:.5px solid var(--hairline);background:var(--surface);display:inline-block;margin:3px 4px 3px 0}
+  .vt.lock{color:var(--bronze-text);border-color:rgba(176,141,58,.45)}
+  .vt.ban{color:var(--faint);text-decoration:line-through}
+
+  .toc{columns:2;column-gap:40px;margin-top:18px;font-size:13.5px}
+  .toc a{display:block;color:var(--ink);text-decoration:none;padding:6px 0;border-bottom:.5px solid var(--hairline)}
+  .toc a span{font-family:var(--mono);font-size:10.5px;color:var(--bronze-text);margin-right:10px}
+  .toc a:hover{color:var(--bronze-text)}
+
+  .cov{width:100%;border-collapse:collapse;font-size:11px;margin-top:16px}
+  .cov th{font-family:var(--mono);font-size:9px;letter-spacing:.08em;color:var(--muted);padding:7px 5px;border-bottom:.5px solid var(--hairline);text-align:center}
+  .cov th:first-child{text-align:left}
+  .cov td{padding:6px 5px;border-bottom:.5px solid var(--hairline);text-align:center}
+  .cov td:first-child{text-align:left;font-size:11.5px}
+  .cov .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--bronze)}
+  .cov .fut{font-family:var(--mono);font-size:8.5px;color:var(--faint)}
+  .cov tr.fr td{color:var(--faint)}
+
+  .night{background:#191613;color:#EDE6D8;border-radius:18px;padding:34px 36px;margin-top:18px}
+  .night .eyebrow{color:var(--bronze-night)}
+  .night h3{font-family:var(--serif);font-weight:500;font-size:24px;margin:6px 0 4px;color:#F3EDDF}
+  .night .law{border-color:rgba(212,176,86,.18);color:#CBC1AC}
+  .night .law .n{color:var(--bronze-night)}
+  .night .law b{color:#F3EDDF}
+  .night .law .ar{color:#A99F8D}
+
+  .plaque{border:.5px solid rgba(176,141,58,.45);border-radius:16px;padding:22px;background:var(--surface);margin-top:18px}
+  .plaque h5{font-family:var(--serif);font-size:19px;font-weight:500;margin-bottom:6px}
+  .plaque .ah{font-family:var(--arabic);font-weight:600;color:var(--bronze-text);font-size:14px;margin-bottom:10px}
+
+  .chg{width:100%;border-collapse:collapse;font-size:12px;margin-top:14px}
+  .chg td{padding:8px;border-bottom:.5px solid var(--hairline)}
+  .chg .v{font-family:var(--mono);font-size:10.5px;color:var(--bronze-text);white-space:nowrap}
+
+  footer{padding:60px 0 0;text-align:center}
+  footer .fa{font-family:var(--arabic);font-size:18px;font-weight:600;color:var(--bronze-text)}
+  footer .fe{font-family:var(--serif);font-style:italic;font-size:15.5px;color:var(--muted);margin-top:6px}
+
+  @media print{
+    body{background:#fff}
+    .night{background:#fff;border:.5px solid #999;color:#000}
+    section,.part{break-inside:avoid-page}
+    .toc{display:none}
+  }
+  @media(max-width:760px){.page{padding:48px 22px 72px}h1{font-size:36px}.toc{columns:1}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="mast">
+  <div class="brandline">
+    <div class="logo">A U R A</div>
+    <div class="ver">THE COMPLETE STANDARD · V2.0 · JUNE 2026</div>
+  </div>
+  <h1>The constitution.<br>One page is always the whole law. <span class="star">✦</span></h1>
+  <div class="mast-ar">دستور أورا — هذه الصفحة وحدها هي القانون الكامل، وما قبلها تاريخ</div>
+  <p class="mast-rule">Smelted from five review boards, one concordance, and the owner's amendments. This page is written in the system it defines: if a screen in Aura doesn't feel like this page, the screen is wrong. Previous versions are history, not alternatives. Every Build prompt cites this document.</p>
+</header>
+
+<section>
+  <div class="eyebrow">PAGE ONE · THE COVERAGE MAP</div>
+  <h2>Every surface × every body of law</h2>
+  <div class="law-ar">خريطة التغطية — كل شاشة في أورا تحت القانون، والشاشات الجديدة تولد داخل الخريطة أو لا تولد</div>
+  <table class="cov">
+    <thead><tr><th>SURFACE</th><th>FOUNDATION §1–4</th><th>COMPONENTS §5–9</th><th>LANGUAGE §10–13</th><th>CONDUCT §14–17</th><th>BEYOND §18</th><th>GATES §19–20</th></tr></thead>
+    <tbody>
+      <tr><td>Home · score · weekly card</td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td><td>—</td><td><span class="dot"></span></td></tr>
+      <tr><td>Identity · voice · teach</td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td><td>—</td><td><span class="dot"></span></td></tr>
+      <tr><td>Intelligence · signals · radar</td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td><td>—</td><td><span class="dot"></span></td></tr>
+      <tr><td>Publish · studio · drafts</td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td></tr>
+      <tr><td>Impact · milestones · Market Mirror</td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td></tr>
+      <tr><td>Library · Briefing</td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td><td>—</td><td><span class="dot"></span></td></tr>
+      <tr><td>Ask Aura</td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td><td>—</td><td><span class="dot"></span></td></tr>
+      <tr><td>Onboarding · assessment</td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td><td>—</td><td><span class="dot"></span></td></tr>
+      <tr><td>Capture flow</td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td><td>—</td><td><span class="dot"></span></td></tr>
+      <tr><td>Settings · trust · data rights</td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td><td>—</td><td><span class="dot"></span></td></tr>
+      <tr><td>Guide · tooltips</td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td><td>—</td><td><span class="dot"></span></td></tr>
+      <tr><td>Auth · request-access</td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td><td>—</td><td><span class="dot"></span></td></tr>
+      <tr><td>Landing page</td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td></tr>
+      <tr><td>Emails (three lanes)</td><td><span class="dot"></span></td><td>—</td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td></tr>
+      <tr><td>Exports · Report · carousel · OG</td><td><span class="dot"></span></td><td>—</td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td></tr>
+      <tr><td>Admin (clause)</td><td><span class="dot"></span></td><td><span class="dot"></span></td><td>—</td><td>—</td><td>—</td><td><span class="dot"></span></td></tr>
+      <tr class="fr"><td>Chrome extension <span class="fut">(Sprint Q)</span></td><td>INHERITS</td><td>INHERITS</td><td>INHERITS</td><td>INHERITS</td><td>INHERITS</td><td>INHERITS</td></tr>
+    </tbody>
+  </table>
+  <div class="toc">
+    <a href="#s1"><span>§1</span>Color</a>
+    <a href="#s2"><span>§2</span>Typography & Space</a>
+    <a href="#s3"><span>§3</span>Icons & Marks</a>
+    <a href="#s4"><span>§4</span>Numbers, Dates & Register</a>
+    <a href="#s5"><span>§5</span>The Five Primitives & States</a>
+    <a href="#s6"><span>§6</span>Chips & Badges</a>
+    <a href="#s7"><span>§7</span>Motion, Layout & Waiting</a>
+    <a href="#s8"><span>§8</span>Forms</a>
+    <a href="#s9"><span>§9</span>Overlays, Undo & Confirm</a>
+    <a href="#s10"><span>§10</span>Bidirectional by Birth</a>
+    <a href="#s11"><span>§11</span>Voice & Microcopy</a>
+    <a href="#s12"><span>§12</span>The Content Surface</a>
+    <a href="#s13"><span>§13</span>Locked & Banned Words</a>
+    <a href="#s14"><span>§14</span>Peaks, Valleys & Moments</a>
+    <a href="#s15"><span>§15</span>Two Modes & Fresh Versions</a>
+    <a href="#s16"><span>§16</span>Trust Surfaces</a>
+    <a href="#s17"><span>§17</span>The Living Product</a>
+    <a href="#s18"><span>§18</span>Beyond the App</a>
+    <a href="#s19"><span>§19</span>The Four Gates</a>
+    <a href="#s20"><span>§20</span>Governance & Non-Goals</a>
+  </div>
+</section>
+
+<div class="part"><div class="pn">PART I</div><h2>Foundation</h2><div class="pa">الأساس — اللون والحرف والعلامة والرقم</div></div>
+
+<section id="s1">
+  <div class="eyebrow">§1 · Color</div>
+  <h2>Color is law, not choice</h2>
+  <div class="law-ar">اللون قانون لا اختيار: لوحة مرجعية في الأسفل، وأسماء دلالية في الأعلى، ولا قيمة لونية خام داخل أي مكوّن — أبداً</div>
+  <table class="t">
+    <thead><tr><th>TOKEN</th><th>LIGHT</th><th>NIGHT</th><th>LAW</th></tr></thead>
+    <tbody>
+      <tr><td class="nm">--bronze</td><td><span class="swd" style="background:#B08D3A"></span>#B08D3A</td><td><span class="swd" style="background:#D4B056"></span>#D4B056</td><td>Identity at display size; decorative marks; sparingly.</td></tr>
+      <tr><td class="nm">--bronze-text</td><td><span class="swd" style="background:#8A6D2A"></span>#8A6D2A</td><td><span class="swd" style="background:#D4B056"></span>#D4B056</td><td>Any bronze that forms words below display size (4.5:1).</td></tr>
+      <tr><td class="nm">--parchment / --surface</td><td><span class="swd" style="background:#F8F5F0"></span>/ <span class="swd" style="background:#fff"></span></td><td><span class="swd" style="background:#191613"></span>#191613</td><td>The canvas. Paper, not pixels.</td></tr>
+      <tr><td class="nm">--ink / --muted / --faint</td><td><span class="swd" style="background:#2B2723"></span>#2B2723 …</td><td><span class="swd" style="background:#F3EDDF"></span>#F3EDDF …</td><td>Text hierarchy. Muted ≥3:1 both modes. Never pure black.</td></tr>
+      <tr><td class="nm">--signal</td><td><span class="swd" style="background:#F97316"></span>#F97316</td><td>same</td><td>Time-sensitive only. Never decoration. Never carries text — dot or fill beside ink words.</td></tr>
+      <tr><td class="nm">--success/--warning/--error/--info</td><td colspan="2">paired</td><td>Feedback moments only. Destructive red appears only on irreversible confirms.</td></tr>
+      <tr><td class="nm">--tier-*</td><td colspan="2">live · evergreen · emerging · faded</td><td>Chip dots only — never floods. Alias the same base values as feedback greens/blues (one value, many names).</td></tr>
+    </tbody>
+  </table>
+  <div class="laws">
+    <div class="law"><div class="n">1.1</div><div><b>Tokens only.</b> A raw hex or fixed palette class on a user surface is a build failure, not a style choice.<span class="ar">القيمة اللونية الخام داخل أي مكوّن خطأ بنائي يُرفض، لا ذوق يُناقش.</span></div></div>
+    <div class="law"><div class="n">1.2</div><div><b>Two layers, one grammar.</b> Reference palette beneath (bronze-500, green-700 — never used directly); semantic tokens above (role-property-variant) — the only names components speak. New tokens require a need no existing token serves, an alias into the palette, and both mode values at birth.</div></div>
+    <div class="law"><div class="n">1.3</div><div><b>The mark test.</b> If removing it changes the meaning, it's text or icon — contrast and label apply. If not, it's decoration — brand bronze, exempt, silent (§3).</div></div>
+  </div>
+</section>
+
+<section id="s2">
+  <div class="eyebrow">§2 · Typography & Space</div>
+  <h2>Four voices, a numbered ramp, eight steps of air</h2>
+  <div class="law-ar">أربعة خطوط لا خامس لها، وسلّم مقاسات مُسمّى، وثمانية مقادير للمسافة — و«تقريباً صحيح» تقاعدت</div>
+  <table class="t">
+    <thead><tr><th>RAMP</th><th>EN (DM SANS / CORMORANT)</th><th>AR (CAIRO — +1px, taller leading)</th><th>DUTY</th></tr></thead>
+    <tbody>
+      <tr><td class="nm">display</td><td>56 · 34 / 1.15 — Cormorant 500</td><td>— (Arabic titles are Cairo 600, never Cormorant)</td><td>Headlines, the score numeral, ceremony</td></tr>
+      <tr><td class="nm">title</td><td>22 / 1.3</td><td class="ar">٢٣ / ١٫٧</td><td>Section and card titles</td></tr>
+      <tr><td class="nm">body</td><td>15 / 1.65</td><td class="ar">١٦ / ١٫٩</td><td>Reading text, UI copy</td></tr>
+      <tr><td class="nm">caption</td><td>12.5 / 1.5</td><td class="ar">١٣ / ١٫٨</td><td>Helpers, captions, chips</td></tr>
+    </tbody>
+  </table>
+  <div class="laws">
+    <div class="law"><div class="n">2.1</div><div><b>Duties are exclusive.</b> Cormorant: display only, never UI controls, never Arabic. DM Sans: body and interface. Cairo: all Arabic, 500/600, never italic, never letter-spaced. JetBrains Mono: data only, never sentences. A fifth font is a bug.</div></div>
+    <div class="law"><div class="n">2.2</div><div><b>Space steps:</b> 4 · 8 · 12 · 16 · 24 · 32 · 48 · 64. Off-step gaps fail review. Touch targets ≥44pt.</div></div>
+    <div class="law"><div class="n">2.3</div><div><b>Cairo parity.</b> Bilingual surfaces pair sizes from the ramp's Arabic column so both scripts sit optically even.</div></div>
+    <div class="law"><div class="n">2.4</div><div><b>Font delivery is design.</b> The four families preloaded, <span class="mono">font-display: swap</span>, Arabic subset for Cairo — the brand arrives with the page, on every connection.</div></div>
+  </div>
+</section>
+
+<section id="s3">
+  <div class="eyebrow">§3 · Icons & Marks</div>
+  <h2>One icon library. Four sacred marks. Two of them have direction.</h2>
+  <div class="law-ar">مكتبة أيقونات واحدة وأربع علامات: ما يحمل معنى يلتزم بالتباين وينطق، وما يزيّن يلبس البرونز ويصمت</div>
+  <div class="laws">
+    <div class="law"><div class="n">3.1</div><div><b>Lucide only.</b> Stroke 1.6 · sizes 16/20/24 · ink or muted, never bronze. No second set, no filled variants, no emojis as structural icons.</div></div>
+    <div class="law"><div class="n">3.2</div><div><b>The mirror list.</b> Flips in RTL: arrows, chevrons, send, undo/redo, list-indent. Never flips: clock, search, download, person, settings — anything physical or symmetric. One CSS rule keyed to <span class="mono">dir</span>.</div></div>
+    <div class="law"><div class="n">3.3</div><div><b>Marks.</b> ✦ ◆ · are symmetric and never change. ↳ is directional: Arabic content uses ↲ (U+21B2). Marks are typography in <span class="mono">--bronze</span>, used sparsely: ✦ ceremony and primary voice; ◆ Arabic list points and keep-outs; · joins «phrases».<span class="ar">↳ للإنجليزية و↲ للعربية — السهم يتبع لغة جملته.</span></div></div>
+    <div class="law"><div class="n">3.4</div><div><b>Marks are silent; icons speak.</b> In Aura's UI every mark carries <span class="mono">aria-hidden="true"</span>; meaningful icons carry <span class="mono">aria-label</span> in the surface's language. (Marks inside exported posts are punctuation — §12.)</div></div>
+    <div class="law"><div class="n">3.5</div><div>In Arabic posts only: 📍⚠️✅❌ as section markers, max 2–3 per post, never in the hook or the closing question.</div></div>
+  </div>
+</section>
+
+<section id="s4">
+  <div class="eyebrow">§4 · Numbers, Dates & Register</div>
+  <h2>Digits follow their sentence; Arabic follows the Gulf</h2>
+  <div class="law-ar">الرقم يتبع لغة جملته، والعربية هنا خليجية مهنية معاصرة — يونيو لا حزيران، و«٪» قبل الرقم</div>
+  <div class="laws">
+    <div class="law"><div class="n">4.1</div><div><b>The sentence rule.</b> Standalone data — scores, counters, ratios, IDs, chip timestamps — is Western + Mono in every language: <span class="mono">SCORE 77 · 3/3</span>. A number inside running Arabic text is Arabic-Indic in Cairo: «منذ ٣ أيام». One question decides: does it sit inside Arabic prose?</div></div>
+    <div class="law"><div class="n">4.2</div><div><b>Number agreement.</b> 1 = singular «يوم واحد» · 2 = dual, no numeral «يومين، منشوران» · 3–10 = plural «٣ أيام» · 11+ = singular accusative «١١ يوماً». Every templated count string follows the table. «منذ ٢ أيام» is machine Arabic and forbidden.</div></div>
+    <div class="law"><div class="n">4.3</div><div><b>Gulf register.</b> Contemporary Gulf professional Arabic. Months: يناير، فبراير… يونيو، أكتوبر — never حزيران، تشرين. Percentages inside Arabic prose: ٨٢٪. Time displays Asia/Riyadh by default.</div></div>
+  </div>
+</section>
+
+<div class="part"><div class="pn">PART II</div><h2>Components</h2><div class="pa">المكوّنات — تُبنى مرة، ولكل منها خمس حالات، ولا تُتجاوز</div></div>
+
+<section id="s5">
+  <div class="eyebrow">§5 · The Five Primitives & Their States</div>
+  <h2>Built once, bypassed never — and a component is five states, not one picture</h2>
+  <div class="law-ar">خمسة مكوّنات أساسية لا تُتجاوز، ولكل مكوّن خمس حالات مكتملة: عادي، تحويم، تركيز، ضغط، معطّل</div>
+  <div class="laws">
+    <div class="law"><div class="n">5.1</div><div><b>SectionHeader</b> — 11px tracked uppercase in <span class="mono">--bronze-text</span>, hairline below. Arabic eyebrows: Cairo 600, untracked, no uppercase concept.</div></div>
+    <div class="law"><div class="n">5.2</div><div><b>AuraCard</b> — hairline border, 14px+ radius, one idea per card. No decorative shadows; depth is earned by hierarchy.</div></div>
+    <div class="law"><div class="n">5.3</div><div><b>AuraButton</b> — one bronze primary per view, verbs not nouns. States: hover deepens 8% · focus 2px <span class="mono">--bronze-text</span> ring offset 2px · active scale .98 · disabled 40% opacity, no pointer. The same state grammar applies to cards, chips, and rows.</div></div>
+    <div class="law"><div class="n">5.4</div><div><b>CollapsibleList + InfoTooltip</b> — tooltips answer from the guide corpus, one source of truth. Instructions never live in placeholders.</div></div>
+    <div class="law"><div class="n">5.5</div><div>A sixth primitive changes the Standard first — the surface doesn't improvise.</div></div>
+  </div>
+</section>
+
+<section id="s6">
+  <div class="eyebrow">§6 · Chips & Badges</div>
+  <h2>One chip anatomy; color never speaks alone</h2>
+  <div class="law-ar">شكل واحد لكل وسم: إطار شعري، نص ١٢، نقطة دلالية اختيارية — واللون لا يتكلم وحده أبداً</div>
+  <div class="chipline">
+    <span class="c"><span class="dot" style="background:var(--tier-live)"></span>Live</span>
+    <span class="c"><span class="dot" style="background:var(--tier-evergreen)"></span>Evergreen</span>
+    <span class="c"><span class="dot" style="background:var(--tier-emerging)"></span>Emerging</span>
+    <span class="c"><span class="dot" style="background:var(--tier-faded)"></span>Faded</span>
+    <span class="c ar">العربية ✦</span><span class="c">English</span>
+    <span class="c">Draft</span><span class="c">Shipped</span>
+  </div>
+  <div class="laws">
+    <div class="law"><div class="n">6.1</div><div><b>Anatomy:</b> hairline border, 999px radius, 12px label, optional leading dot carrying the semantic color. Dot always paired with the label — never color alone.</div></div>
+    <div class="law"><div class="n">6.2</div><div><b>Max three per row,</b> then "+N". The ✦ travels with the primary. Confidence stored 0–1, displayed ×100 — "82", never "0.82".</div></div>
+  </div>
+</section>
+
+<section id="s7">
+  <div class="eyebrow">§7 · Motion, Layout & Waiting</div>
+  <h2>Calm that responds — and thinking that narrates</h2>
+  <div class="law-ar">حركة تؤكد ولا تستعرض، وتفكير يروي ما يفعله — الزر لا يتجمد أبداً، والانتظار يصبح عرضاً للعمل</div>
+  <div class="laws">
+    <div class="law"><div class="n">7.1</div><div><b>Motion:</b> 150–300ms native easing · tap feedback ≤120ms · one staggered reveal per page load, then stillness · <span class="mono">prefers-reduced-motion</span> honored.</div></div>
+    <div class="law"><div class="n">7.2</div><div><b>Layout:</b> hairlines .5px · radius 14px+/999px · ONE visualization per page · breakpoints ≤480 / ≤768 / desktop · columns stack in reading order · the view's primary action lives in the thumb zone on mobile.</div></div>
+    <div class="law"><div class="n">7.3</div><div><b>The Waiting Law.</b> Any operation &gt;2s narrates honest stages in the user's language («كتابة المسودة بأسلوبك…»); &gt;10s shows true progress; the trigger disables on first tap — no duplicates. Loading uses parchment skeletons, never bare spinners.</div></div>
+  </div>
+</section>
+
+<section id="s8">
+  <div class="eyebrow">§8 · Forms</div>
+  <h2>One recipe, both directions</h2>
+  <div class="law-ar">وصفة واحدة لكل نموذج: التسمية فوق، فالحقل، فالمساعدة، فالخطأ الذي يسمّي الحل — والحقول اللاتينية جزر LTR</div>
+  <div class="laws">
+    <div class="law"><div class="n">8.1</div><div><b>Anatomy:</b> label above (start-aligned) → input → helper below → error that names the fix («الرابط لا يحتوي linkedin.com — تأكد من نسخه كاملاً»). Placeholders never carry instructions.</div></div>
+    <div class="law"><div class="n">8.2</div><div><b>LTR islands.</b> URL, email, phone and code fields carry <span class="mono">dir="ltr"</span> always — an island with an Arabic shore. Label and helper remain RTL.</div></div>
+    <div class="law"><div class="n">8.3</div><div><b>Errors</b> use <span class="mono">--error</span> and §11's no-blame grammar. Validation on blur or submit, never per keystroke.</div></div>
+  </div>
+</section>
+
+<section id="s9">
+  <div class="eyebrow">§9 · Overlays, Undo & Confirm</div>
+  <h2>Stop interrogating users about reversible actions</h2>
+  <div class="law-ar">ما يمكن التراجع عنه يحدث فوراً مع «تراجع» — وما لا يمكن، يسمّي الشيء وعاقبته، والإلغاء هو الافتراضي</div>
+  <div class="laws">
+    <div class="law"><div class="n">9.1</div><div><b>Layers:</b> scrim = ink @40% · z-ladder: scrim 40, sheet 50, dialog 60, toast 70 · toasts anchor bottom-end and mirror with direction.</div></div>
+    <div class="law"><div class="n">9.2</div><div><b>Undo over confirm.</b> Reversible → instant + undo toast (6s): «تمت الأرشفة · تراجع». Irreversible → a confirm that names the object and the real consequence: «حذف ‹تقرير ديلويت›؟ ستفقد إشارتان أحد روافدهما.» Cancel holds focus. Destructive red appears only here.</div></div>
+  </div>
+</section>
+
+<div class="part"><div class="pn">PART III</div><h2>Language</h2><div class="pa">اللغة — العربية وُلدت هنا، والكلمة جزء من الواجهة، والمحتوى لا يخترع رقماً</div></div>
+
+<section id="s10">
+  <div class="eyebrow">§10 · Bidirectional by Birth</div>
+  <h2>Arabic is a first language here</h2>
+  <div class="law-ar">ليست ترجمة لاحقة: كل شاشة تنعكس وتتنفس وتقتبس صحيحاً بحكم البناء، والاتجاهان يلتقيان دون أن يتصادما</div>
+  <div class="laws">
+    <div class="law"><div class="n">10.1</div><div><b>Mechanics:</b> <span class="mono">dir</span>+<span class="mono">lang</span> set together (Cairo arrives by itself) · logical properties only (<span class="mono">paddingInlineStart</span>, never left/right) · SVG: <span class="mono">textAnchor</span> stays "start", the <span class="mono">x</span> flips.</div></div>
+    <div class="law"><div class="n">10.2</div><div><b>Punctuation:</b> Arabic strings end with Arabic marks — ؟ ، ؛ — never Latin. Embedded English terms sit in bidi isolation (<span class="mono">&lt;bdi&gt;</span>). English terms stay English inside Arabic: AI, dashboard, KPI.</div></div>
+    <div class="law"><div class="n">10.3</div><div><b>Typesetting:</b> no italics in Arabic — emphasis is weight 600 · no kashida justification — Arabic text aligns start, never justify · quotes are «هكذا», phrases joined by interpuncts ( · ).</div></div>
+    <div class="law"><div class="n">10.4</div><div><b>Both at once:</b> two sanctioned layouts — language tabs (the voice card pattern, ✦ on the primary) or side-by-side cards. Each block carries its own <span class="mono">dir/lang</span>, so mixing is structurally safe.</div></div>
+  </div>
+</section>
+
+<section id="s11">
+  <div class="eyebrow">§11 · Voice & Microcopy</div>
+  <h2>The interface speaks like a person of standing — to everyone</h2>
+  <div class="law-ar">الواجهة تتكلم بكرامة: تسمّي الواقع ولا تتّهم، وتترك باباً مفتوحاً — وبصيغة محايدة لا تفترض جنس من تخاطب</div>
+  <div class="laws">
+    <div class="law"><div class="n">11.1</div><div><b>Empty states invite:</b> «بصمة صوتك لم تتشكل بعد. منشوراتك تعلّم أورا — وبصمتك تتشكل مع كل منشور.» Name what isn't yet + one concrete step. Bureaucratic MSA banned.</div></div>
+    <div class="law"><div class="n">11.2</div><div><b>Errors blame the system:</b> "That didn't go through — your draft is safe. Try once more." The user is never the subject of a failure sentence.</div></div>
+    <div class="law"><div class="n">11.3</div><div><b>Success is proof, not confetti:</b> «صُقلت البصمة من ٩ منشورات.» The number is the celebration; ceremony belongs to §14's moments.</div></div>
+    <div class="law"><div class="n">11.4</div><div><b>Gender-neutral by default.</b> CTAs and instructions use masdar nouns and nominal sentences — «صقل البصمة», «تعليم أورا» — addressing no one and welcoming everyone. Fully gendered address is permitted only when <span class="mono">diagnostic_profiles</span> carries gender. Suffixes addressing the object, not the person («عدّلها لتشبهك»), survive.</div></div>
+    <div class="law"><div class="n">11.5</div><div><b>The Valley voice:</b> declines in ink (never red), plainly stated, the smallest way back in the same breath: «إيقاعك هدأ هذا الأسبوع — منشور واحد يعيده ✦». No guilt, no FOMO, no dying streaks.</div></div>
+    <div class="law"><div class="n">11.6</div><div><b>Hooks never imply the reader is failing.</b> The reframe pattern: «أنت لا تعاني من X، أنت فقط لم…»</div></div>
+  </div>
+</section>
+
+<section id="s12">
+  <div class="eyebrow">§12 · The Content Surface</div>
+  <h2>What Aura writes under your name</h2>
+  <div class="law-ar">كل رقم له أب من مقتطفاتك، والمنشور ينجو من رحلة اللصق، والوسمان من القائمة المعتمدة في السطر الأخير</div>
+  <div class="laws">
+    <div class="law"><div class="n">12.1</div><div><b>The Integrity Law.</b> Every figure, quote and named source in generated content traces to a captured fragment, shown as a provenance chip in the draft view. No fragment → no number; the post asks instead of asserts. Generation EFs are forbidden from improvising statistics.</div></div>
+    <div class="law"><div class="n">12.2</div><div><b>Post anatomy (locked):</b> hook without emoji → tension → one specific number mid-post → uncomfortable closing question → signature line → two hashtags.</div></div>
+    <div class="law"><div class="n">12.3</div><div><b>Hashtags:</b> exactly two, last line only, from the canon — #التحول_الرقمي #قطاع_المياه #قطاع_المرافق #حوكمة_التحول #تحقيق_القيمة #إدارة_التغيير #رؤية_2030 + English twins — in the post's own language. #mmahafzah reserved as the personal mark.</div></div>
+    <div class="law"><div class="n">12.4</div><div><b>The Paste Test.</b> Copy outputs plain text: <span class="mono">\n</span> preserved, ◆ ↲ as real characters, zero markdown. A post's meaning must survive with its marks stripped — marks decorate structure, never replace words.</div></div>
+    <div class="law"><div class="n">12.5</div><div><b>Ask Aura's grounding contract:</b> the signal cited in bold · why this week · a required next step · Chief-of-Staff register, both languages. Generic encouragement is a contract violation.</div></div>
+  </div>
+</section>
+
+<section id="s13">
+  <div class="eyebrow">§13 · Locked & Banned Words</div>
+  <h2>Vocabulary is part of the interface</h2>
+  <div class="law-ar">المفردات جزء من الواجهة: «صقل» لا «شحذ»، و«حضور» لا «سلطة» — والممنوعات ممنوعة في كل اللغات</div>
+  <div style="margin-top:14px">
+    <span class="vt lock">capture</span><span class="vt lock">entry</span><span class="vt lock">fragment</span><span class="vt lock">signal</span><span class="vt lock">presence</span><span class="vt lock">This Week's Rhythm</span><span class="vt lock">صقل البصمة</span><span class="vt lock">جارٍ الصقل…</span><span class="vt lock">تعليم أورا</span><span class="vt lock">قراءة منشور بهذا الصوت</span>
+  </div>
+  <div style="margin-top:10px">
+    <span class="vt ban">authority</span><span class="vt ban">trajectory</span><span class="vt ban">personal brand</span><span class="vt ban">thought leader</span><span class="vt ban">Zone of Genius</span><span class="vt ban">leverage</span><span class="vt ban">utilize</span><span class="vt ban">facilitate</span><span class="vt ban">اشحذ</span><span class="vt ban">حزيران</span>
+  </div>
+  <div class="laws">
+    <div class="law"><div class="n">13.1</div><div>"Digital" appears on the score, growth, and headline — nowhere else.</div></div>
+    <div class="law"><div class="n">13.2</div><div>Word changes follow §20's amendment process — old and new enumerated, as اشحذ → صقل was.</div></div>
+  </div>
+</section>
+
+<div class="part"><div class="pn">PART IV</div><h2>Conduct</h2><div class="pa">السلوك — المشاعر ميزانية، والثقة تُقال لحظة الانكشاف، والمنتج الحي يروي ويُنصت</div></div>
+
+<section id="s14">
+  <div class="eyebrow">§14 · Peaks, Valleys & Moments</div>
+  <h2>Emotion is a budget — spent at five peaks, six milestones, and the Gulf calendar</h2>
+  <div class="law-ar">خمس قمم تنال الاحتفاء، وستة إنجازات فقط تقاطع، والتقويم الخليجي حاضر — وما بينها هدوء فندقٍ باهظ</div>
+  <div class="laws">
+    <div class="law"><div class="n">14.1</div><div><b>The Five Peaks:</b> first signal · Monday's "your week, ready" · the moment of shipping · a milestone falls · the Report leaves the building. These get the ✦, the ceremony, the crafted Arabic. Everywhere else stays deliberately quiet.</div></div>
+    <div class="law"><div class="n">14.2</div><div><b>The Milestone Canon (exhaustive):</b> first signal detected · first post shipped · first signal reaches Live · primary voice forms or changes · score crosses a tier boundary · first Report exported. <span class="mono">user_milestones</span> accepts no id outside the canon without an amendment.</div></div>
+    <div class="law"><div class="n">14.3</div><div><b>The Valley Law</b> governs every decline — §11.5's voice, never red, never a goad.</div></div>
+    <div class="law"><div class="n">14.4</div><div><b>The cultural calendar:</b> Ramadan (cadence shifts post-iftar), the two Eids (greeting + pause: «عيدكم مبارك — الأسبوع جاهز متى ما جهزت»), Saudi National Day Sep 23, UAE Union Day Dec 2. Aura knows what day it is, in the Hijri sense.</div></div>
+    <div class="law"><div class="n">14.5</div><div><b>The Interruption Budget</b> — three lanes: <b>Transactional</b> (user-caused: auth, invites) — always allowed, unbudgeted. <b>Rhythm</b> — one scheduled email, Monday. <b>Moments</b> — canon milestones + calendar, immediate but rare; Eid greetings are in-app by default. Never: guilt, FOMO, "we miss you". The caps are law, not settings.</div></div>
+  </div>
+</section>
+
+<section id="s15">
+  <div class="eyebrow">§15 · Two Modes & Fresh Versions</div>
+  <div class="night">
+    <div class="eyebrow">After sunset · بعد الغروب</div>
+    <h3>Night is derived, never designed — and yesterday's build never haunts today</h3>
+    <div class="laws">
+      <div class="law"><div class="n">15.1</div><div><b>Light canonical.</b> Every surface designed, reviewed, demoed in light. Night exists because tokens exist — verified on every changed surface, never hand-crafted. After the token purge, a mode switch is a variable swap: discrepancy impossible by construction.<span class="ar">النهاري هو الأصل، والليلي مشتق يُتحقق منه — والتبديل بينهما تبديل متغيرات لا إعادة تصميم.</span></div></div>
+      <div class="law"><div class="n">15.2</div><div><b>The Fresh Version Law.</b> The PWA detects a new build and offers a quiet refresh — «نسخة أحدث جاهزة · تحديث» — so no user lives in a cached yesterday, seeing bugs already fixed.</div></div>
+      <div class="law"><div class="n">15.3</div><div><b>The tripwire stands:</b> one more dark-mode legibility bug in production → the toggle hides, light-only launch, dark returns after.</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="s16">
+  <div class="eyebrow">§16 · Trust Surfaces</div>
+  <h2>Trust is said at the moment of exposure</h2>
+  <div class="law-ar">الثقة تُقال لحظة الانكشاف لا في سياسة مدفونة: سطر هادئ عند الالتقاط والتعليم والتصدير، وحقوق البيانات في متناول اليد</div>
+  <div class="laws">
+    <div class="law"><div class="n">16.1</div><div><b>The three exposure lines.</b> Capture, teach, and report export each carry one quiet lock-line: «منشوراتك لك وحدك — تُستخدم لصقل صوتك فقط، ولا تُشارك مع أحد.»</div></div>
+    <div class="law"><div class="n">16.2</div><div><b>Data rights findable:</b> export-my-data and delete-everything live in Settings, working, one tap deep.</div></div>
+    <div class="law"><div class="n">16.3</div><div><b>The subprocessor list tells the whole truth.</b> Every provider that touches user data is named in the privacy policy before it ships — an unlisted provider in production is a Standard violation. PDPL-aligned by design.</div></div>
+  </div>
+</section>
+
+<section id="s17">
+  <div class="eyebrow">§17 · The Living Product</div>
+  <h2>The first five minutes, the heartbeat, and the numbers that explain themselves</h2>
+  <div class="law-ar">الدقائق الخمس الأولى لها قانون، ولا شيء يدخل أورا بصمت، والرقم الذي يتحرك يشرح نفسه، وكلمة المستخدم لا تضيع أبداً</div>
+  <div class="laws">
+    <div class="law"><div class="n">17.1</div><div><b>Onboarding:</b> progress always visible («٣ / ٧ · باقي دقيقتان») · the «لماذا نسأل؟» line under every question · the time promise honest and measured by Gate 4.</div></div>
+    <div class="law"><div class="n">17.2</div><div><b>The Capture Receipt.</b> Receipt within one second («وصل — جارٍ القراءة ✦») · disposition when processing completes — which signal it fed, or with dignity, «قُرئ — لم يلتقِ بإشارة بعد». Nothing enters Aura silently. Lineage runs both ways: fragments know their signals, signals their fragments.</div></div>
+    <div class="law"><div class="n">17.3</div><div><b>Score Attribution.</b> Every score movement carries its top cause, one line: «+٣ — إشارة دخلت مستوى Live أمس». The numeral stays Mono-Western (data); the cause's digits follow §4.1.</div></div>
+    <div class="law"><div class="n">17.4</div><div><b>Session Safety.</b> Every editing surface autosaves (≤10s) · re-auth restores exact state · leaving with unsaved changes warns once. «مسودتك محفوظة» must always be true. No user text is ever lost to auth, network, or navigation.</div></div>
+    <div class="law"><div class="n">17.5</div><div><b>Four content states per surface:</b> loading, empty, partial, error — all designed, each obeying §11. Gate 2 fails any surface missing one.</div></div>
+  </div>
+</section>
+
+<div class="part"><div class="pn">PART V</div><h2>Beyond the App</h2><div class="pa">خارج التطبيق — أعلن البيكسلات وأكثرها غربةً عن سيطرتك تحمل أشد القوانين</div></div>
+
+<section id="s18">
+  <div class="eyebrow">§18 · Exports, Email, Logo, Imagery & Charts</div>
+  <h2>The most public pixels carry the strictest law</h2>
+  <div class="law-ar">التقرير والشرائح وبطاقة المشاركة والبريد: أبعاد ثابتة، خطوط مدمجة، شعار له حرمه — ولا مصافحات مسرحية</div>
+  <div class="laws">
+    <div class="law"><div class="n">18.1</div><div><b>The export kit:</b> OG/share card, Report PDF, carousel, credential cards — fixed dimensions, embedded fonts, the headline pair ("Your expertise is invisible. Aura fixes that." / «حتى السوق يعرفك قبل ما يشوفك»), bronze ✦. The LinkedIn paste of aura-intel.org is a pitch, not a gray rectangle.</div></div>
+    <div class="law"><div class="n">18.2</div><div><b>Email-safe stacks:</b> Georgia for display, Tahoma/'Segoe UI' for Arabic (line-height 1.9 preserved), hex constants from §1, single column 600px, bulletproof buttons. Designed for the worst client, beautiful in the best.</div></div>
+    <div class="law"><div class="n">18.3</div><div><b>The logo law:</b> three variants (bronze · ink · night-bronze) · clear space = ✦ height on all sides · min 24px UI / 12mm print · never on signal orange, photos, stretched, or recolored.</div></div>
+    <div class="law"><div class="n">18.4</div><div><b>Imagery:</b> the only people pictured are real (the user). Decorative imagery is abstract, parchment-bronze duotone. Banned by name: stock handshakes, fake skylines, staged boardrooms. Avatars: circle, 1.5px bronze ring, Cormorant initial fallback (Cairo for Arabic names).</div></div>
+    <div class="law"><div class="n">18.5</div><div><b>Chart grammar:</b> the point of the chart wears bronze, everything else muted ink · hairline gridlines · Mono axes, horizontal labels, Western digits (charts are data) · time flows LTR on every surface · one viz per page · every chart ships its empty state.</div></div>
+  </div>
+</section>
+
+<div class="part"><div class="pn">PART VI</div><h2>Governance & Gates</h2><div class="pa">الحوكمة والبوابات — الجودة بوابة تُعبر لا أمنية، والتعديل يسمّي ما يمسه أو يُرفض</div></div>
+
+<section id="s19">
+  <div class="eyebrow">§19 · The Four Gates</div>
+  <h2>Quality is a checkpoint, not a hope — artifacts, never testimony</h2>
+  <div class="law-ar">أربع بوابات: لكل أمر بنائي، ولكل شاشة، ولكل نشر، ولكل إثنين — ولا تُعبر بوابة بشهادة، بل بدليل ملموس</div>
+  <div class="laws">
+    <div class="law"><div class="n">G1</div><div><b>Every prompt</b> — Definition of Done: named snapshot · diagnose before fixing (code & DB quoted) · one concern, holistic across shared-data surfaces · tokens only · real <span class="mono">tsc</span> output pasted (exit 0 is a fact, "clean" is a claim) · SELECT-with-count before any DELETE, confirmed separately.</div></div>
+    <div class="law"><div class="n">G2</div><div><b>Every surface</b> — the Surface Pass: both modes (light canonical, night verified) · both directions (Arabic verified as Arabic) · contrast ≥4.5:1 text / ≥3:1 secondary · primitives only · all four content states (§17.5) · microcopy passes §11. <b>Admin clause:</b> back-office surfaces use the tokens and ramp, skip peaks and marks, pass a lighter G2 (contrast + tokens).</div></div>
+    <div class="law"><div class="n">G3</div><div><b>Every publish</b> — the Smoke Path: preview verified first → publish → Empty Cache &amp; Hard Reload · golden path walked (Home → draft → edit → ship) · one Arabic + one English generation read aloud · one real paste into LinkedIn · prod spot-check.</div></div>
+    <div class="law"><div class="n">G4</div><div><b>Every Monday</b> — the Stopwatch: time-to-shipped &lt;15 min, in Arabic and in English, switching mid-session · every hesitation written down · two users hit it → fix; three → P0 · week-two unprompted return is the "like" metric.</div></div>
+  </div>
+</section>
+
+<section id="s20">
+  <div class="eyebrow">§20 · Governance & Non-Goals</div>
+  <h2>How the law changes — and what Aura refuses to become</h2>
+  <div class="law-ar">القانون يتغير باسم ما يمسه فقط: أي تعديل يسمّي المواد والنصوص والرموز التي يطالها — وإلا يسقط عند البوابة</div>
+  <div class="laws">
+    <div class="law"><div class="n">20.1</div><div><b>The Precedence Law.</b> Later supersedes earlier — but must say so by name: every amendment declares the sections it touches, the locked strings it rewrites (old and new side by side), and the tokens it adds through §1.2's grammar. A silent amendment fails the gate.</div></div>
+    <div class="law"><div class="n">20.2</div><div><b>One living page.</b> The current version at <span class="mono">/admin/design-system</span> is always the whole law; previous versions are history. One changelog. Print stylesheet included for partner-facing copies.</div></div>
+    <div class="law"><div class="n">20.3</div><div><b>New surfaces are born inside the Coverage Map</b> or they don't ship.</div></div>
+  </div>
+
+  <div class="plaque">
+    <h5>Aura will not</h5>
+    <div class="ah">ما لن تفعله أورا — والرفض جزء من المعيار</div>
+    <div class="laws">
+      <div class="law"><div class="n">✕</div><div><b>Two languages.</b> Arabic and English, both with dignity — not five done poorly.</div></div>
+      <div class="law"><div class="n">✕</div><div><b>Two modes.</b> Light canonical, night derived. No third theme, no picker.</div></div>
+      <div class="law"><div class="n">✕</div><div><b>Rhythm, not points.</b> No leaderboards, streaks, or fire emojis.</div></div>
+      <div class="law"><div class="n">✕</div><div><b>Counsel, not a feed.</b> Aura is where presence is made, not scrolled.</div></div>
+      <div class="law"><div class="n">✕</div><div><b>Four fonts, forever.</b> The fifth font request is always denied.</div></div>
+    </div>
+  </div>
+
+  <table class="chg">
+    <tr><td class="v">V1.0</td><td>First draft — 8 sections</td><td class="v">JUN 5</td></tr>
+    <tr><td class="v">V1.1</td><td>Holistic edition — 14 sections; icons, chips, hashtags, gates</td><td class="v">JUN 5</td></tr>
+    <tr><td class="v">V2.0</td><td>The Complete Standard — Boards I–V (F1–F43, C1–C2) + Concordance R1–R6 smelted; constitution canonized</td><td class="v">JUN 5</td></tr>
+  </table>
+</section>
+
+<footer>
+  <div class="fa">المعيار هو ما يحرس الجمال وأنت نائم ✦</div>
+  <div class="fe">The standard is what guards the beauty while you sleep.</div>
+</footer>
+
+</div>
+</body>
+</html>

@@ -467,30 +467,6 @@ const AdminDesignSystem = () => {
           </button>
         </div>
 
-        {/* Constitution link — the Aura Standard V2.0 */}
-        <section
-          style={{
-            ...sectionCard,
-            marginBottom: 16,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 16,
-            cursor: "pointer",
-          }}
-          onClick={() => navigate("/admin/standard")}
-        >
-          <div>
-            <div style={labelStyle}>The Aura Standard V2.0 — the constitution</div>
-            <div style={{ fontSize: 13, color: "var(--ink-5, #888)", marginTop: 4 }}>
-              One page is always the whole law. Every Build prompt cites this document.
-            </div>
-          </div>
-          <div style={{ fontSize: 13, color: "var(--brand)", whiteSpace: "nowrap" }}>
-            Open /admin/standard →
-          </div>
-        </section>
-
         {/* SECTION 1 — Active version */}
         <section style={sectionCard}>
           <div style={labelStyle}>Section 1 · Current active version</div>
