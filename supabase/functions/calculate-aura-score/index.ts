@@ -436,8 +436,10 @@ serve(async (req) => {
       const themes = new Set<string>();
       (signalsFull || []).forEach((s: any) => (s.theme_tags || []).forEach((t: string) => themes.add(t)));
       personalized_nudge = `You have ${signalsFull?.length || 0} signals across ${themes.size} themes. Capture from a new topic area in ${sectorFocus} to broaden coverage.`;
+    } else if (topSignal && Number(topSignal.confidence) >= 0.6) {
+      personalized_nudge = `Your signal "${topTitle}" (${topConf}%) is ready — draft a post from it to lift your content score.`;
     } else {
-      personalized_nudge = `Your ${topTitle} signal (${topConf}%) is ready to publish. Draft a post from this signal to boost your content score.`;
+      personalized_nudge = `Your sector is moving. Paste one link about ${sectorFocus} and see what Aura finds that you didn't notice.`;
     }
 
     // ── G4 Milestones ──
