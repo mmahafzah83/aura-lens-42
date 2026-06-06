@@ -1480,11 +1480,14 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
           at once. See FirstVisitHint regression guard. */}
       <FirstVisitHint page="home" suppress={suppressHint} />
 
-      {/* Milestone notification (G7) — shows newly_earned from calculate-aura-score */}
-      <MilestoneNotification userId={authUser?.id ?? null} />
+      {/* Milestone notification (G7) — newly_earned comes from HomeTab's aura-score fetch */}
+      <MilestoneNotification userId={authUser?.id ?? null} auraData={auraData} />
 
       {/* O-2b — Tier transition ceremony (modal renders when unacknowledged tier_* exists) */}
-      <TierCeremonyModal userId={authUser?.id ?? null} />
+      <TierCeremonyModal
+        userId={authUser?.id ?? null}
+        forcedTierName={auraData?.tier_name ?? null}
+      />
 
       {/* M3-4 — identity drift suggestion (frontend-only, session-scoped) */}
       <IdentityDriftBanner />
