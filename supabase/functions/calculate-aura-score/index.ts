@@ -518,6 +518,7 @@ serve(async (req) => {
       imported_count: importedCount ?? 0,
       aura_published_count: auraPublishedCount ?? 0,
       published_count: totalPublishedCount,
+      signal_detail: { depth: Math.round(depth), breadth: Math.round(breadth), liveness: Math.round(liveness) },
       content_detail: { foundation, base: Math.round(base), quality },
       score_status: scoreStatus,
       score_description: scoreDescription,
