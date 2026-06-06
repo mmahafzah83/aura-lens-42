@@ -66,6 +66,9 @@ export interface ScoreSection {
     content: number;
     capture: number;
     weights: { signal: 40; content: 40; capture: 20 };
+    signal_weighted: number | null;
+    content_weighted: number | null;
+    capture_weighted: number | null;
   };
   snapshot_at: string;
 }
