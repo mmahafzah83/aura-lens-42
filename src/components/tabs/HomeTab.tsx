@@ -935,7 +935,12 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
       supabase.removeChannel(channel);
       supabase.removeChannel(homeLive);
     };
-  }, [authReady, authUser, authSession?.access_token, loadBriefing, loadMoves, loadTrends, loadTrendsBadge]);
+  // Fire once per auth-ready mount per user. The four loaders are stable
+  // (useCallback with [] deps) so they don't need to appear here, and
+  // access_token churn from background auth refresh must NOT re-run this
+  // effect — that caused calculate-aura-score to be invoked ~13× per /home load.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authReady, authUser?.id]);
 
   // ─── Derived ───
   const scoreDiff = useMemo(() => {
