@@ -88,7 +88,7 @@ serve(async (req) => {
       weekly_data,
     };
 
-    // --- signal_score: tier-weighted strength + theme breadth + strong-signal bonus ---
+    // --- signal_score: depth + breadth + liveness ---
     const { data: signalsData } = await admin
       .from("strategic_signals")
       .select("strength_score, lifecycle_tier, theme_tags")
@@ -97,25 +97,30 @@ serve(async (req) => {
     const activeSignalsForScore = signalsData || [];
 
     const TIER_WEIGHT: Record<string, number> = { live: 1.0, evergreen: 0.6, emerging: 0.3 };
+    let liveEvergreenStrengthSum = 0;
     const weightedStrengthSum = activeSignalsForScore.reduce((sum: number, s: any) => {
       const w = TIER_WEIGHT[s.lifecycle_tier] ?? 0.6; // default evergreen-equivalent
-      return sum + (Number(s.strength_score) || 0) * w;
+      const strength = (Number(s.strength_score) || 0) * w;
+      if (s.lifecycle_tier === "live" || s.lifecycle_tier === "evergreen") {
+        liveEvergreenStrengthSum += strength;
+      }
+      return sum + strength;
     }, 0);
 
     const uniqueThemes = new Set<string>();
     activeSignalsForScore.forEach((s: any) =>
       (s.theme_tags || []).forEach((t: string) => uniqueThemes.add(t)),
     );
-    const hasStrongSignal = activeSignalsForScore.some(
-      (s: any) => (Number(s.strength_score) || 0) >= 0.7,
-    );
 
-    const signalScore = Math.min(
-      Math.round(weightedStrengthSum * 11)
-      + Math.min(uniqueThemes.size, 5) * 4
-      + (hasStrongSignal ? 8 : 0),
-      100,
-    );
+    // depth 0–60: weightedStrengthSum normalized; D* calibration constant, initial 5.5
+    const D_STAR = 5.5;
+    const depth = 60 * Math.min(weightedStrengthSum / D_STAR, 1);
+    // breadth 0–30: soft saturation over distinct themes, no hard cap
+    const breadth = 30 * (1 - Math.exp(-uniqueThemes.size / 4));
+    // liveness 0–10: continuous share of strength in live/evergreen tiers
+    const liveShare = liveEvergreenStrengthSum / Math.max(weightedStrengthSum, 0.0001);
+    const liveness = 10 * Math.min(liveShare, 1);
+    const signalScore = Math.min(Math.round(depth + breadth + liveness), 100);
 
     // --- content_score: split imported (≤15 baseline) vs active published (≤85) ---
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
