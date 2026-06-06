@@ -800,6 +800,15 @@ function buildBlocks(d: ReportData): Block[] {
         blocks.push({ key: "f-v-pref", section: "footprint", spacing: 0, node: <StackedRow label="Prefers" value={d.voice.vocabulary_preferences.prefer.join(", ")} /> });
       }
     }
+    // Closing guidance — reposition the three market-mirror gap strings as
+    // actionable content moves (only when the mirror data is present and
+    // persona-matched; safeData already strips stale mirrors).
+    if (d.market_mirror) {
+      const gaps = d.market_mirror.perspectives.map((p) => p.gap).filter(Boolean);
+      if (gaps.length > 0) {
+        blocks.push({ key: "f-next90", section: "footprint", spacing: 24, node: <Next90Block gaps={gaps} /> });
+      }
+    }
   }
 
   return blocks;
