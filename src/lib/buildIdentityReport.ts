@@ -313,6 +313,11 @@ export async function buildIdentityReport(userId: string): Promise<ReportData> {
         content: Number(c.content_score) || 0,
         capture: Number(c.capture_score) || 0,
         weights: { signal: 40, content: 40, capture: 20 },
+        // EF-provided weighted points (additive; consumers should prefer these
+        // over local raw * weight math).
+        signal_weighted: Number.isFinite(Number(c.signal_weighted)) ? Number(c.signal_weighted) : null,
+        content_weighted: Number.isFinite(Number(c.content_weighted)) ? Number(c.content_weighted) : null,
+        capture_weighted: Number.isFinite(Number(c.capture_weighted)) ? Number(c.capture_weighted) : null,
       },
       snapshot_at: snap.created_at,
     };
