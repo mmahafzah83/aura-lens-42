@@ -541,6 +541,49 @@ function ContentEngineCard({ c }: { c: NonNullable<ReportData["content"]> }) {
   );
 }
 
+function ProvenanceLine({ sources, evidence }: { sources: number; evidence: number }) {
+  return (
+    <div style={{ fontSize: 11, color: INK_4, lineHeight: 1.5, fontFamily: BODY }}>
+      Built from your{" "}
+      <span style={{ fontFamily: MONO, fontVariantNumeric: "tabular-nums" }}>{sources}</span>{" "}
+      sources and{" "}
+      <span style={{ fontFamily: MONO, fontVariantNumeric: "tabular-nums" }}>{evidence}</span>{" "}
+      evidence fragments
+      <span style={{ margin: "0 6px", color: BRONZE }}>·</span>
+      <span style={{ fontFamily: ARABIC }} dir="rtl" lang="ar">بُني من بياناتك وحدها</span>
+    </div>
+  );
+}
+
+function Next90Block({ gaps }: { gaps: string[] }) {
+  return (
+    <div>
+      <SectionLabel>Where to Point the Next 90 Days</SectionLabel>
+      <div style={{ fontSize: 11, color: INK_3, lineHeight: 1.6, marginBottom: 14 }}>
+        Three gaps the market would notice — each one is a content move.
+      </div>
+      {gaps.map((g, i) => (
+        <div
+          key={i}
+          style={{
+            display: "flex",
+            alignItems: "baseline",
+            gap: 10,
+            padding: "8px 0",
+            borderBottom: `1px solid ${RULE}`,
+            fontSize: 12.5,
+            color: INK,
+            lineHeight: 1.55,
+          }}
+        >
+          <Diamond size={6} color={BRONZE} />
+          <span>{g}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function VoiceHeader() {
   return (
     <div>
