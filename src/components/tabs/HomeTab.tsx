@@ -1780,7 +1780,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
                 <InfoTooltip
                   label="Digital Presence Score"
                   slug="score-overview"
-                  text="Your Digital Presence Score measures three forces: Signal strength (40%), Content published (40%), and Weekly rhythm (20%). Updates automatically as you use Aura."
+                  text="One number out of 100. Signal strength 40%, content published 40%, weekly rhythm 20%. Every point comes from a real action you took — and the parts always add up to the total."
                   side="bottom"
                   align="right"
                   triggerSize={13}
@@ -1844,7 +1844,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
                           <InfoTooltip
                             label="Signal strength"
                             slug="signal-strength"
-                            text="Your signal strength measures how visible and relevant your professional presence is across your chosen channels."
+                            text="How solid your captured thinking is, how wide it ranges, and how alive it is right now."
                             side="bottom"
                             triggerSize={13}
                           />
@@ -1853,7 +1853,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
                           <InfoTooltip
                             label="Content published"
                             slug="content-published"
-                            text="Content published tracks the volume and quality of insights you share that shape your professional narrative."
+                            text="How much of your thinking you actually shared — and whether the market responded. Quality counts more than volume: posting more stops helping after a point."
                             side="bottom"
                             triggerSize={13}
                           />
@@ -1862,7 +1862,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
                           <InfoTooltip
                             label="Weekly rhythm"
                             slug="weekly-rhythm"
-                            text="Weekly rhythm tracks how steadily you capture and publish — consistency compounds your presence."
+                            text="Your weekly habit, not your total output. Showing up a little each week beats posting a lot and going quiet. It is 20% of your score."
                             side="bottom"
                             triggerSize={13}
                           />
