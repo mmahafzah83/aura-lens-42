@@ -8,7 +8,6 @@ import { supabase } from "@/integrations/supabase/client";
 import useMilestones, { type Milestone } from "@/hooks/useMilestones";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
 import LinkedInPostSteps from "@/components/LinkedInPostSteps";
-import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import {
   CONCEPTS,
   type ConceptKey,
@@ -22,6 +21,9 @@ interface Props {
    *  My Story so users can revisit their credential after dismissal. */
   forceOpen?: boolean;
   onForceClose?: () => void;
+  /** Current tier name (from parent's calculate-aura-score payload).
+   *  Used when forceOpen is true to skip an independent EF call. */
+  forcedTierName?: string | null;
 }
 
 // One short, dignified ceremony line per tier. Vocabulary mirrors
@@ -51,7 +53,7 @@ const TEXT = "#f0ede8";
 const TEXT_MUTED = "rgba(240,237,232,.55)";
 const SERIF = "'Cormorant Garamond', 'Cairo', Georgia, serif";
 
-export default function TierCeremonyModal({ userId, forceOpen, onForceClose }: Props) {
+export default function TierCeremonyModal({ userId, forceOpen, onForceClose, forcedTierName }: Props) {
   const { unacknowledgedMilestones, acknowledgeMilestone, shareMilestone } =
     useMilestones(userId);
 
@@ -66,20 +68,9 @@ export default function TierCeremonyModal({ userId, forceOpen, onForceClose }: P
   const [forcedTier, setForcedTier] = useState<string | null>(null);
   useEffect(() => {
     if (!forceOpen || !userId) { setForcedTier(null); return; }
-    let cancelled = false;
-    (async () => {
-      try {
-        await supabase.auth.getSession();
-        const { data: res } = await invokeEdgeFunction("calculate-aura-score", { body: {} });
-        if (cancelled) return;
-        const t = (res as any)?.tier_name || "Strategist";
-        setForcedTier(String(t));
-      } catch {
-        if (!cancelled) setForcedTier("Strategist");
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [forceOpen, userId]);
+    // Tier comes from the parent's existing aura-score payload — no extra EF call.
+    setForcedTier(forcedTierName ? String(forcedTierName) : "Strategist");
+  }, [forceOpen, userId, forcedTierName]);
 
   const syntheticMilestone: Milestone | undefined = useMemo(() => {
     if (!forceOpen || !forcedTier || !userId) return undefined;
