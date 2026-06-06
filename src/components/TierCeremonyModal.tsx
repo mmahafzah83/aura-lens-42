@@ -24,16 +24,24 @@ interface Props {
   onForceClose?: () => void;
 }
 
+// One short, dignified ceremony line per tier. Vocabulary mirrors
+// calculate-aura-score (Observer/Explorer/Strategist/Voice/Presence).
 const TIER_QUOTES: Record<string, string> = {
   observer: "Every signal starts with one capture.",
+  explorer: "Patterns are surfacing — keep reading the market.",
   strategist: "The market is starting to see what you already know.",
-  authority: "Your sector watches you before you speak.",
+  voice: "Your perspective is shaping the conversation.",
+  presence: "Your sector watches you before you speak.",
 };
 
+// Next-tier metadata. Thresholds mirror the EF for display only; the EF
+// remains the source of truth (passed in via next_tier_name / points_to_next).
 const TIER_NEXT: Record<string, { name: string; threshold: number } | null> = {
-  observer: { name: "Strategist", threshold: 35 },
-  strategist: { name: "Authority", threshold: 65 },
-  authority: null,
+  observer: { name: "Explorer", threshold: 15 },
+  explorer: { name: "Strategist", threshold: 35 },
+  strategist: { name: "Voice", threshold: 60 },
+  voice: { name: "Presence", threshold: 80 },
+  presence: null,
 };
 
 const BG = "#0c0b0a";
