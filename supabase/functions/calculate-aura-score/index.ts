@@ -251,13 +251,29 @@ serve(async (req) => {
       tier_transition = { from: previousTier, to: currentTier, is_new: isNew };
     }
 
-    // --- Store weekly snapshot (max 1 per day) ---
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    // --- Snapshot guard: one row per UTC day, latest truth wins ---
+    // - No row for today → INSERT.
+    // - Row exists and score OR formula_version changed → UPDATE in place.
+    // - Row exists and nothing changed → skip.
+    const todayStartUTC = new Date(Date.UTC(
+      now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()
+    )).toISOString();
+    const componentsPayload = {
+      capture_score: captureScore,
+      signal_score: signalScore,
+      content_score: contentScore,
+      weekly_rhythm,
+      signal_weighted,
+      content_weighted,
+      capture_weighted,
+      formula_version: 2,
+    };
     const { data: todaySnap } = await admin
       .from("score_snapshots")
-      .select("id")
+      .select("id, score, components")
       .eq("user_id", userId)
-      .gte("created_at", todayStart)
+      .gte("created_at", todayStartUTC)
+      .order("created_at", { ascending: false })
       .limit(1);
 
     if (!todaySnap || todaySnap.length === 0) {
@@ -265,8 +281,23 @@ serve(async (req) => {
         user_id: userId,
         score: auraScore,
         tier: currentTier,
-        components: { capture_score: captureScore, signal_score: signalScore, content_score: contentScore, weekly_rhythm, signal_weighted, content_weighted, capture_weighted, formula_version: 2 },
+        components: componentsPayload,
       });
+    } else {
+      const existing: any = todaySnap[0];
+      const prevFormulaVersion = existing?.components?.formula_version ?? null;
+      const scoreChanged = Number(existing.score) !== auraScore;
+      const formulaChanged = prevFormulaVersion !== 2;
+      if (scoreChanged || formulaChanged) {
+        await admin
+          .from("score_snapshots")
+          .update({
+            score: auraScore,
+            tier: currentTier,
+            components: componentsPayload,
+          })
+          .eq("id", existing.id);
+      }
     }
 
     // ── G4 Tiers (5-tier system) ──
