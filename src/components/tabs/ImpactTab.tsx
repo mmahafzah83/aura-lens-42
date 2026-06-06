@@ -1550,7 +1550,8 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 color: "var(--aura-accent)",
                 hint: topSignal ? `Top: ${topSignal}` : "Build signals from diverse sources",
                 tooltip: "How deep your market intelligence runs. Based on how many signals you have, their strength, and how broadly they cover your territory. Having at least one strong signal gives a bonus.",
-                status: signalScore >= 70 ? "Growing" : signalScore >= 40 ? "Build more" : "Needs action" },
+                status: signalScore >= 70 ? "Growing" : signalScore >= 40 ? "Build more" : "Needs action",
+                weightedOverride: (auraData as any)?.signal_weighted ?? null },
               { key: "content", label: "Content", slug: "content-published", rawValue: contentScore, weight: 0.40, maxPoints: 40,
                 color: "var(--aura-blue)",
                 hint: (() => {
@@ -1558,14 +1559,16 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                   return `${pub} on LinkedIn last 30d`;
                 })(),
                 tooltip: "Your publishing activity. Imported LinkedIn history is your foundation (up to 15 points). Publishing new content from your signals is what grows this score (up to 85 points). Resets monthly.",
-                status: contentScore >= 70 ? "Growing" : contentScore >= 40 ? "Build more" : "Needs action" },
+                status: contentScore >= 70 ? "Growing" : contentScore >= 40 ? "Build more" : "Needs action",
+                weightedOverride: (auraData as any)?.content_weighted ?? null },
               { key: "consistency", label: "Consistency", slug: "weekly-rhythm", rawValue: captureScore, weight: 0.20, maxPoints: 20,
                 color: "var(--aura-positive)",
                 hint: daysSinceLastAll === null ? "No captures yet"
                   : daysSinceLastAll === 0 ? "Captured today"
                   : `${daysSinceLastAll}d since last capture`,
                 tooltip: "Your capture rhythm. Recent weeks count more (60%), but your long-term consistency also matters (40%). Capture at least once per week to keep your intelligence fresh.",
-                status: captureScore >= 70 ? "Growing" : captureScore >= 40 ? "Build more" : "Needs action" },
+                status: captureScore >= 70 ? "Growing" : captureScore >= 40 ? "Build more" : "Needs action",
+                weightedOverride: (auraData as any)?.capture_weighted ?? null },
             ]).map(c => (
               <ForceCard key={c.key} {...c} />
             ))}
@@ -2828,13 +2831,18 @@ const SectionToggle = ({
 
 /* ─── ForceCard ─────────────────────────────────────────────── */
 const ForceCard = ({
-  label, rawValue, weight, maxPoints, color, hint, status, tooltip, slug,
+  label, rawValue, weight, maxPoints, color, hint, status, tooltip, slug, weightedOverride,
 }: {
   label: string; rawValue: number; weight: number; maxPoints: number;
   color: string; hint: string; status: string; tooltip: string; slug?: string;
+  weightedOverride?: number | null;
 }) => {
   const raw = Math.max(0, Math.min(100, Math.round(rawValue)));
-  const weighted = Math.round(raw * weight);
+  // Prefer the EF-provided weighted value; fall back to local math only when
+  // the EF predates the weighted fields.
+  const weighted = (weightedOverride != null && Number.isFinite(weightedOverride))
+    ? Math.round(weightedOverride)
+    : Math.round(raw * weight);
   const pct = (weighted / maxPoints) * 100;
   return (
     <div
