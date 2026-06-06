@@ -163,8 +163,13 @@ interface AuraScoreData {
   capture_score: number;
   signal_score: number;
   content_score: number;
+  signal_weighted?: number;
+  content_weighted?: number;
+  capture_weighted?: number;
   score_trend: number | null;
   tier_name: string;
+  next_tier_name?: string | null;
+  points_to_next?: number | null;
   personalized_nudge: string;
   weekly_rhythm: { active_weeks: number; total_weeks: number; weekly_data: boolean[] };
 }
@@ -1720,7 +1725,11 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
                 <InfoTooltip
                   label="Your tier"
                   slug="tiers"
-                  text={"Your Digital Presence Score measures three forces: Signal strength (40%), Content published (40%), and Weekly rhythm (20%).\n\nObserver (0-14): absorbing the market.\n\nExplorer (15-34): finding patterns.\n\nStrategist (35-59): connecting insights to action.\n\nVoice (60-79): shaping conversations.\n\nPresence (80-100): the market knows you before they meet you."}
+                  text={
+                    auraData.next_tier_name && auraData.points_to_next != null
+                      ? `You're in ${tier}. ${auraData.points_to_next} point${auraData.points_to_next === 1 ? "" : "s"} to reach ${auraData.next_tier_name}.`
+                      : `You're in ${tier} — the top tier.`
+                  }
                   side="bottom"
                   triggerSize={14}
                 />
@@ -1774,19 +1783,22 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
 
       {/* THREE FORCES — score breakdown directly under header */}
       {!auraLoading && !isEmpty && auraData && (() => {
-        const signalW = Math.round((auraData.signal_score ?? 0) * 0.4);
-        const contentW = Math.round((auraData.content_score ?? 0) * 0.4);
-        const captureW = Math.round((auraData.capture_score ?? 0) * 0.2);
+        // Read EF-provided weighted points; fall back to local math only when
+        // the EF predates the weighted fields (W1-P1 backstop).
+        const signalW = auraData.signal_weighted ?? Math.round((auraData.signal_score ?? 0) * 0.4);
+        const contentW = auraData.content_weighted ?? Math.round((auraData.content_score ?? 0) * 0.4);
+        const captureW = auraData.capture_weighted ?? Math.round((auraData.capture_score ?? 0) * 0.2);
 
         const activeWeeks = auraData.weekly_rhythm?.active_weeks ?? 0;
-        const consistencyMax = isFirstWeek ? 4 : 20;
-        const consistencyVal = isFirstWeek ? Math.min(activeWeeks, 4) : captureW;
-        const consistencyUnit = isFirstWeek ? " weeks" : "";
+        const totalWeeks = auraData.weekly_rhythm?.total_weeks ?? 12;
+        const consistencyMax = 20;
+        const consistencyVal = captureW;
+        const rhythmSublabel = `${activeWeeks} of last ${totalWeeks} weeks active`;
 
         const forces = [
           { key: "signal", label: "Signal strength",  weighted: signalW,  max: 40, color: "var(--warning)" },
           { key: "content", label: "Content published", weighted: contentW, max: 40, color: "var(--color-info-text, var(--info))" },
-          { key: "consistency", label: "Weekly rhythm",  weighted: consistencyVal, max: consistencyMax, color: "var(--success)", unitSuffix: consistencyUnit },
+          { key: "consistency", label: "Weekly rhythm",  weighted: consistencyVal, max: consistencyMax, color: "var(--success)", sublabel: rhythmSublabel },
         ];
 
         const pcts = forces.map(f => f.max ? (f.weighted / f.max) : 0);
@@ -1813,7 +1825,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
                           {f.weighted}
                         </span>
                         <span className="text-denominator">
-                          /{f.max}{(f as any).unitSuffix || ""}
+                          /{f.max}
                         </span>
                       </div>
                       <div className="text-section-header" style={{ marginBottom: 6, display: "flex", alignItems: "center", gap: 4 }}>
@@ -1846,6 +1858,16 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
                           />
                         )}
                       </div>
+                      {(f as any).sublabel && (
+                        <div style={{
+                          fontSize: 11,
+                          color: "hsl(var(--muted-foreground))",
+                          marginBottom: 6,
+                          lineHeight: 1.4,
+                        }}>
+                          {(f as any).sublabel}
+                        </div>
+                      )}
                       <div style={{
                         height: 2, background: "hsl(var(--border) / 0.6)",
                         borderRadius: 1, overflow: "hidden",
