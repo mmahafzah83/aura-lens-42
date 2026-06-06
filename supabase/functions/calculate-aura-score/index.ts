@@ -112,11 +112,11 @@ serve(async (req) => {
       (s.theme_tags || []).forEach((t: string) => uniqueThemes.add(t)),
     );
 
-    // depth 0–60: weightedStrengthSum normalized; D* calibration constant, initial 5.5
-    const D_STAR = 5.5;
+    // depth 0–60: weightedStrengthSum normalized; D* calibration constant
+    const D_STAR = 8;
     const depth = 60 * Math.min(weightedStrengthSum / D_STAR, 1);
     // breadth 0–30: soft saturation over distinct themes, no hard cap
-    const breadth = 30 * (1 - Math.exp(-uniqueThemes.size / 4));
+    const breadth = 30 * (1 - Math.exp(-uniqueThemes.size / 6));
     // liveness 0–10: continuous share of strength in live/evergreen tiers
     const liveShare = liveEvergreenStrengthSum / Math.max(weightedStrengthSum, 0.0001);
     const liveness = 10 * Math.min(liveShare, 1);
@@ -139,13 +139,20 @@ serve(async (req) => {
       .in("source_type", ["aura", "aura_generated"])
       .eq("tracking_status", "published")
       .gte("created_at", thirtyDaysAgo);
-    // Distinct posts confirmed on LinkedIn via xlsx import in last 30 days (with engagement_rate + snapshot_date)
+    // Distinct posts confirmed on LinkedIn via xlsx import in last 30 days (for base curve published_count)
     const { data: lpmRows } = await admin
       .from("linkedin_post_metrics")
       .select("post_id, snapshot_date, engagement_rate")
       .eq("user_id", userId)
       .gte("snapshot_date", thirtyDaysAgo);
     const linkedinPublishedCount = new Set((lpmRows || []).map((r: any) => r.post_id)).size;
+    // Quality factor samples last 90 days (latest snapshot per post)
+    const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: lpm90Rows } = await admin
+      .from("linkedin_post_metrics")
+      .select("post_id, snapshot_date, engagement_rate")
+      .eq("user_id", userId)
+      .gte("snapshot_date", ninetyDaysAgo);
     // Use max to avoid double-counting posts that exist in both sources
     const totalPublishedCount = Math.max(auraPublishedCount ?? 0, linkedinPublishedCount ?? 0);
     const distinctPublishedCount = totalPublishedCount;
@@ -194,7 +201,7 @@ serve(async (req) => {
     // log-saturated published base 0–85; P* = 8 reference cadence
     const P_STAR = 8;
     const base = 85 * Math.log(1 + distinctPublishedCount) / Math.log(1 + P_STAR);
-    const quality = computeQualityFactor(lpmRows || []);
+    const quality = computeQualityFactor(lpm90Rows || []);
     const contentScore = Math.min(Math.round(foundation + Math.min(base, 85) * quality), 100);
     // Trace (6 posts, quality 0.7, foundation 0):
     //   base = 85 * ln(7)/ln(9) ≈ 85 * 0.8857 ≈ 75.28
@@ -429,8 +436,10 @@ serve(async (req) => {
       const themes = new Set<string>();
       (signalsFull || []).forEach((s: any) => (s.theme_tags || []).forEach((t: string) => themes.add(t)));
       personalized_nudge = `You have ${signalsFull?.length || 0} signals across ${themes.size} themes. Capture from a new topic area in ${sectorFocus} to broaden coverage.`;
+    } else if (topSignal && Number(topSignal.confidence) >= 0.6) {
+      personalized_nudge = `Your signal "${topTitle}" (${topConf}%) is ready — draft a post from it to lift your content score.`;
     } else {
-      personalized_nudge = `Your ${topTitle} signal (${topConf}%) is ready to publish. Draft a post from this signal to boost your content score.`;
+      personalized_nudge = `Your sector is moving. Paste one link about ${sectorFocus} and see what Aura finds that you didn't notice.`;
     }
 
     // ── G4 Milestones ──
@@ -546,7 +555,13 @@ serve(async (req) => {
       imported_count: importedCount ?? 0,
       aura_published_count: auraPublishedCount ?? 0,
       published_count: totalPublishedCount,
-      signal_detail: { depth: Math.round(depth), breadth: Math.round(breadth), liveness: Math.round(liveness) },
+      signal_detail: {
+        depth: Math.round(depth),
+        breadth: Math.round(breadth),
+        liveness: Math.round(liveness),
+        weighted_strength_sum: Number(weightedStrengthSum.toFixed(2)),
+        live_share: Number(liveShare.toFixed(2)),
+      },
       content_detail: { foundation, base: Math.round(base), quality },
       score_status: scoreStatus,
       score_description: scoreDescription,
