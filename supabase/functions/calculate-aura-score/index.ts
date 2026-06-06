@@ -124,7 +124,8 @@ serve(async (req) => {
       .from("linkedin_posts")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
-      .in("source_type", ["linkedin_export", "browser_capture", "search_discovery", "external_reference"]);
+      .in("source_type", ["linkedin_export", "browser_capture", "external_reference"])
+      .neq("tracking_status", "rejected");
     // Aura-published in last 30 days (MUST be published, not just drafted)
     const { count: auraPublishedCount } = await admin
       .from("linkedin_posts")
@@ -133,12 +134,13 @@ serve(async (req) => {
       .in("source_type", ["aura", "aura_generated"])
       .eq("tracking_status", "published")
       .gte("created_at", thirtyDaysAgo);
-    // Count posts confirmed on LinkedIn via xlsx import in last 30 days
-    const { count: linkedinPublishedCount } = await admin
+    // Distinct posts confirmed on LinkedIn via xlsx import in last 30 days
+    const { data: lpmRows } = await admin
       .from("linkedin_post_metrics")
-      .select("id", { count: "exact", head: true })
+      .select("post_id")
       .eq("user_id", userId)
       .gte("snapshot_date", thirtyDaysAgo);
+    const linkedinPublishedCount = new Set((lpmRows || []).map((r: any) => r.post_id)).size;
     // Use max to avoid double-counting posts that exist in both sources
     const totalPublishedCount = Math.max(auraPublishedCount ?? 0, linkedinPublishedCount ?? 0);
     const contentScore = Math.min(
@@ -146,8 +148,11 @@ serve(async (req) => {
       + Math.min(totalPublishedCount * 15, 85)
     , 100);
 
-    // --- aura_score: weights 40/40/20 (signal/content/capture) ---
-    const auraScore = Math.round(signalScore * 0.40 + contentScore * 0.40 + captureScore * 0.20);
+    // --- aura_score: weights 40/40/20 (signal/content/capture), distributed rounding ---
+    const signal_weighted  = Math.round(signalScore  * 0.40);
+    const content_weighted = Math.round(contentScore * 0.40);
+    const capture_weighted = Math.round(captureScore * 0.20);
+    const auraScore = signal_weighted + content_weighted + capture_weighted;
 
     // --- score_status ---
     let scoreStatus: string;
@@ -260,7 +265,7 @@ serve(async (req) => {
         user_id: userId,
         score: auraScore,
         tier: currentTier,
-        components: { capture_score: captureScore, signal_score: signalScore, content_score: contentScore, weekly_rhythm },
+        components: { capture_score: captureScore, signal_score: signalScore, content_score: contentScore, weekly_rhythm, signal_weighted, content_weighted, capture_weighted, formula_version: 2 },
       });
     }
 
@@ -422,6 +427,10 @@ serve(async (req) => {
       capture_score: captureScore,
       signal_score: signalScore,
       content_score: contentScore,
+      signal_weighted,
+      content_weighted,
+      capture_weighted,
+      formula_version: 2,
       imported_count: importedCount ?? 0,
       aura_published_count: auraPublishedCount ?? 0,
       published_count: totalPublishedCount,
