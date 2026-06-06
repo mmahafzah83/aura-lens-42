@@ -513,6 +513,7 @@ serve(async (req) => {
       imported_count: importedCount ?? 0,
       aura_published_count: auraPublishedCount ?? 0,
       published_count: totalPublishedCount,
+      content_detail: { foundation, base: Math.round(base), quality },
       score_status: scoreStatus,
       score_description: scoreDescription,
       score_trend: scoreTrend,
