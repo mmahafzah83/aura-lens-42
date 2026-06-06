@@ -134,19 +134,67 @@ serve(async (req) => {
       .in("source_type", ["aura", "aura_generated"])
       .eq("tracking_status", "published")
       .gte("created_at", thirtyDaysAgo);
-    // Distinct posts confirmed on LinkedIn via xlsx import in last 30 days
+    // Distinct posts confirmed on LinkedIn via xlsx import in last 30 days (with engagement_rate + snapshot_date)
     const { data: lpmRows } = await admin
       .from("linkedin_post_metrics")
-      .select("post_id")
+      .select("post_id, snapshot_date, engagement_rate")
       .eq("user_id", userId)
       .gte("snapshot_date", thirtyDaysAgo);
     const linkedinPublishedCount = new Set((lpmRows || []).map((r: any) => r.post_id)).size;
     // Use max to avoid double-counting posts that exist in both sources
     const totalPublishedCount = Math.max(auraPublishedCount ?? 0, linkedinPublishedCount ?? 0);
-    const contentScore = Math.min(
-      Math.min(importedCount ?? 0, 15)
-      + Math.min(totalPublishedCount * 15, 85)
-    , 100);
+    const distinctPublishedCount = totalPublishedCount;
+
+    // Trailing-12-month median engagement_rate (user baseline)
+    const twelveMonthsAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: lpm12moRows } = await admin
+      .from("linkedin_post_metrics")
+      .select("engagement_rate")
+      .eq("user_id", userId)
+      .gte("snapshot_date", twelveMonthsAgo);
+
+    const median = (nums: number[]): number => {
+      const arr = nums.filter((n) => Number.isFinite(n)).slice().sort((a, b) => a - b);
+      if (arr.length === 0) return 0;
+      const mid = Math.floor(arr.length / 2);
+      return arr.length % 2 ? arr[mid] : (arr[mid - 1] + arr[mid]) / 2;
+    };
+
+    // Engagement quality factor:
+    // - dedupe `metricsRows` (in-window) to the latest snapshot_date per post
+    // - base = trailing-12mo median engagement_rate; if 0/undefined or no in-window rows → return 1.0
+    // - per-post index = rate / base; factor = median of indices, clamped to [0.7, 1.3]
+    const computeQualityFactor = (metricsRows: any[]): number => {
+      if (!metricsRows || metricsRows.length === 0) return 1.0;
+      const latestByPost = new Map<string, { snapshot_date: string; engagement_rate: number }>();
+      for (const r of metricsRows) {
+        const pid = String(r.post_id);
+        const prev = latestByPost.get(pid);
+        if (!prev || String(r.snapshot_date) > String(prev.snapshot_date)) {
+          latestByPost.set(pid, { snapshot_date: r.snapshot_date, engagement_rate: Number(r.engagement_rate) });
+        }
+      }
+      const baseMedian = median((lpm12moRows || []).map((r: any) => Number(r.engagement_rate)));
+      if (!baseMedian || !Number.isFinite(baseMedian) || baseMedian <= 0) return 1.0;
+      const indices = Array.from(latestByPost.values())
+        .map((v) => v.engagement_rate / baseMedian)
+        .filter((n) => Number.isFinite(n));
+      if (indices.length === 0) return 1.0;
+      const m = median(indices);
+      return Math.max(0.7, Math.min(1.3, m));
+    };
+
+    // foundation 0–15 (unchanged budget, clean importedCount)
+    const foundation = Math.min(importedCount ?? 0, 15);
+    // log-saturated published base 0–85; P* = 8 reference cadence
+    const P_STAR = 8;
+    const base = 85 * Math.log(1 + distinctPublishedCount) / Math.log(1 + P_STAR);
+    const quality = computeQualityFactor(lpmRows || []);
+    const contentScore = Math.min(Math.round(foundation + Math.min(base, 85) * quality), 100);
+    // Trace (6 posts, quality 0.7, foundation 0):
+    //   base = 85 * ln(7)/ln(9) ≈ 85 * 0.8857 ≈ 75.28
+    //   published contribution = 75.28 * 0.7 ≈ 52.7  → contentScore ≈ 53 ≤ 65 ✓
+    //   even with foundation = 15 → 68; the published-only portion stays ≤ 65 as specified.
 
     // --- aura_score: weights 40/40/20 (signal/content/capture), distributed rounding ---
     const signal_weighted  = Math.round(signalScore  * 0.40);
