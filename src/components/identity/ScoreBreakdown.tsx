@@ -10,7 +10,12 @@ interface Props {
 
 // 5-minute in-memory cache keyed by user id so tab switches don't re-call the EF.
 const SCORE_CACHE_TTL_MS = 5 * 60 * 1000;
-const scoreCache = new Map<string, { ts: number; signal: number; content: number; capture: number }>();
+const scoreCache = new Map<string, {
+  ts: number;
+  signal: number; content: number; capture: number;
+  signalW: number; contentW: number; captureW: number;
+  total: number;
+}>();
 
 /**
  * Score Breakdown — calls calculate-aura-score live so numbers match Home/Impact.
@@ -22,6 +27,9 @@ export default function ScoreBreakdown({ userId }: Props) {
   const [components, setComponents] = useState<{
     signal: number; content: number; capture: number;
   }>({ signal: 0, content: 0, capture: 0 });
+  const [weighted, setWeighted] = useState<{
+    signal: number; content: number; capture: number; total: number;
+  }>({ signal: 0, content: 0, capture: 0, total: 0 });
 
   useEffect(() => {
     if (!userId) return;
@@ -29,6 +37,7 @@ export default function ScoreBreakdown({ userId }: Props) {
     const cached = scoreCache.get(userId);
     if (cached && Date.now() - cached.ts < SCORE_CACHE_TTL_MS) {
       setComponents({ signal: cached.signal, content: cached.content, capture: cached.capture });
+      setWeighted({ signal: cached.signalW, content: cached.contentW, capture: cached.captureW, total: cached.total });
       return;
     }
     (async () => {
@@ -36,13 +45,25 @@ export default function ScoreBreakdown({ userId }: Props) {
         await supabase.auth.getSession();
         const { data, error } = await invokeEdgeFunction("calculate-aura-score", { body: {} });
         if (cancelled || error || !data) return;
+        const d: any = data;
         const next = {
-          signal: Number((data as any).signal_score) || 0,
-          content: Number((data as any).content_score) || 0,
-          capture: Number((data as any).capture_score) || 0,
+          signal: Number(d.signal_score) || 0,
+          content: Number(d.content_score) || 0,
+          capture: Number(d.capture_score) || 0,
         };
-        scoreCache.set(userId, { ts: Date.now(), ...next });
+        const w = {
+          // Fall back to local math only if EF predates the weighted fields.
+          signal: Number.isFinite(Number(d.signal_weighted)) ? Number(d.signal_weighted) : Math.round(next.signal * 0.4),
+          content: Number.isFinite(Number(d.content_weighted)) ? Number(d.content_weighted) : Math.round(next.content * 0.4),
+          capture: Number.isFinite(Number(d.capture_weighted)) ? Number(d.capture_weighted) : Math.round(next.capture * 0.2),
+          total: Number.isFinite(Number(d.aura_score)) ? Number(d.aura_score) : 0,
+        };
+        scoreCache.set(userId, {
+          ts: Date.now(), ...next,
+          signalW: w.signal, contentW: w.content, captureW: w.capture, total: w.total,
+        });
         setComponents(next);
+        setWeighted(w);
       } catch (e) {
         console.error("ScoreBreakdown live load failed", e);
       }
@@ -50,10 +71,11 @@ export default function ScoreBreakdown({ userId }: Props) {
     return () => { cancelled = true; };
   }, [userId]);
 
-  const signalPts = Math.round(components.signal * 0.4);
-  const contentPts = Math.round(components.content * 0.4);
-  const consistencyPts = Math.round(components.capture * 0.2);
-  const total = signalPts + contentPts + consistencyPts;
+  const signalPts = weighted.signal;
+  const contentPts = weighted.content;
+  const consistencyPts = weighted.capture;
+  // Total comes from the EF (aura_score), never a local re-sum.
+  const total = weighted.total || (signalPts + contentPts + consistencyPts);
 
   const rows = [
     { label: "Signal",      val: signalPts,      max: 40, color: "var(--gold-dark)" },

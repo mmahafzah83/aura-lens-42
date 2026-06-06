@@ -76,6 +76,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const [tierName, setTierName] = useState<string | null>(null);
   // Score components + tier-boundary inputs for live Journey derivation
   const [scoreComponents, setScoreComponents] = useState<{ signal: number; content: number; capture: number } | null>(null);
+  // EF-provided tier boundary data — replaces local threshold math.
+  const [nextTierFromEF, setNextTierFromEF] = useState<{ name: string | null; pointsToNext: number | null }>({ name: null, pointsToNext: null });
   const [thisWeekEntries, setThisWeekEntries] = useState<number>(0);
   const [topApproachingLive, setTopApproachingLive] = useState<{ title: string; strength: number } | null>(null);
   const [signalStats, setSignalStats] = useState({
@@ -137,8 +139,14 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       try {
         await supabase.auth.getSession();
         const { data: res, error } = await invokeEdgeFunction("calculate-aura-score", { body: {} });
-        if (!cancelled && !error && res && Array.isArray((res as any).milestones)) {
-          setMilestoneData((res as any).milestones);
+        if (!cancelled && !error && res) {
+          const r = res as any;
+          if (Array.isArray(r.milestones)) setMilestoneData(r.milestones);
+          if (r.tier_name) setTierName(String(r.tier_name));
+          setNextTierFromEF({
+            name: r.next_tier_name ?? null,
+            pointsToNext: typeof r.points_to_next === "number" ? r.points_to_next : null,
+          });
         }
       } catch (e) {
         console.warn("[IdentityTab] milestones load failed", e);
@@ -236,8 +244,10 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           const sig = Number(c.signal_score) || 0;
           const con = Number(c.content_score) || 0;
           const cap = Number(c.capture_score) || 0;
-          const total = Math.round(sig * 0.4) + Math.round(con * 0.4) + Math.round(cap * 0.2);
-          setScoreTotal(total || Number((snap as any).composite_score) || null);
+          // Total comes from the snapshot's persisted composite_score (EF aura_score),
+          // never a local re-sum.
+          const total = Number((snap as any).composite_score) || null;
+          setScoreTotal(total);
           const t = (snap as any).tier;
           if (t && typeof t === "string") setTierName(t);
           setScoreComponents({ signal: sig, content: con, capture: cap });
@@ -612,16 +622,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
 
   // ============================================================
   // JOURNEY DERIVATION — live NEXT/Then steps from real data.
-  // Anti-flap: compute once per session and memoize via ref; never
-  // recompute while user is on the page.
-  // Predicates (named, validated against real fields):
-  //   • posts_published == 0           → publishedPostCount === 0
-  //   • weekly rhythm incomplete       → thisWeekEntries < 3
-  //   • approaching Live               → signal.lifecycle_tier ∈ {emerging, evergreen}
-  //                                       AND signal.strength_score >= 0.7
-  //   • within reach of next tier      → pointsToNext != null && pointsToNext <= 5
-  // Thresholds (mirror calculate-aura-score):
-  //   Observer<15 ≤ Explorer<35 ≤ Strategist<60 ≤ Voice<80 ≤ Presence
+  // Tier name + points-to-next come from the EF response
+  // (single source of truth); no local threshold math here.
   // ============================================================
   type JourneyStep = {
     id: string;
@@ -629,15 +631,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     detail?: string;
     action?: { label: string; tab: string };
   };
-  const nextTierBoundary = (() => {
-    const s = scoreTotal ?? authorityScore ?? null;
-    if (s == null) return null;
-    if (s < 15) return { name: "Explorer", pointsToNext: 15 - s };
-    if (s < 35) return { name: "Strategist", pointsToNext: 35 - s };
-    if (s < 60) return { name: "Voice", pointsToNext: 60 - s };
-    if (s < 80) return { name: "Presence", pointsToNext: 80 - s };
-    return null;
-  })();
+  const nextTierBoundary = nextTierFromEF.name && nextTierFromEF.pointsToNext != null
+    ? { name: nextTierFromEF.name, pointsToNext: nextTierFromEF.pointsToNext }
+    : null;
 
   const lowestComponentLabel = (() => {
     if (!scoreComponents) return null;
