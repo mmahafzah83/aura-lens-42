@@ -266,6 +266,32 @@ serve(async (req) => {
     const tierRank: Record<TierKey, number> = {
       observer: 1, explorer: 2, strategist: 3, voice: 4, presence: 5,
     };
+    const tierFloor: Record<TierKey, number> = {
+      observer: 0, explorer: 15, strategist: 35, voice: 60, presence: 80,
+    };
+
+    // ── Tier write rule ──
+    // Promotion is instant. Demotion only persists if the new score sits below
+    // the *current* tier's floor AND the previous snapshot ≥7 days older also
+    // sat below that same floor. Otherwise we hold the previous tier and flag
+    // `tier_pending_demotion` so the UI can warn the user.
+    //
+    // Trace: Voice user (floor 60), last snapshot 77. New score 58 (<60), but
+    // prevScore (≥7d) = 77 (≥60) → effectiveTier stays "voice",
+    // tier_pending_demotion = true. Next run ≥7d later with score 58 and
+    // prevScore now 58 (<60) → effectiveTier = "strategist" (demoted).
+    let effectiveTier: TierKey = currentTier;
+    let tier_pending_demotion = false;
+    if (previousTier && tierRank[currentTier] < tierRank[previousTier]) {
+      const floor = tierFloor[previousTier];
+      const prevBelow = prevScore !== null && Number(prevScore) < floor;
+      const nowBelow = auraScore < floor;
+      if (!(prevBelow && nowBelow)) {
+        effectiveTier = previousTier;
+        tier_pending_demotion = true;
+      }
+    }
+
     let tier_transition: { from: string; to: string; is_new: boolean } | null = null;
     if (previousTier && previousTier !== currentTier && tierRank[currentTier] > tierRank[previousTier]) {
       const milestoneId = `tier_${currentTier}`;
@@ -333,7 +359,7 @@ serve(async (req) => {
       await admin.from("score_snapshots").insert({
         user_id: userId,
         score: auraScore,
-        tier: currentTier,
+        tier: effectiveTier,
         components: componentsPayload,
       });
     } else {
@@ -346,26 +372,28 @@ serve(async (req) => {
           .from("score_snapshots")
           .update({
             score: auraScore,
-            tier: currentTier,
+            tier: effectiveTier,
             components: componentsPayload,
           })
           .eq("id", existing.id);
       }
     }
 
-    // ── G4 Tiers (5-tier system) ──
-    let tier_name: string, tier_number: number, next_tier_name: string | null, points_to_next: number | null;
-    if (auraScore < 15) {
-      tier_name = "Observer"; tier_number = 1; next_tier_name = "Explorer"; points_to_next = 15 - auraScore;
-    } else if (auraScore < 35) {
-      tier_name = "Explorer"; tier_number = 2; next_tier_name = "Strategist"; points_to_next = 35 - auraScore;
-    } else if (auraScore < 60) {
-      tier_name = "Strategist"; tier_number = 3; next_tier_name = "Voice"; points_to_next = 60 - auraScore;
-    } else if (auraScore < 80) {
-      tier_name = "Voice"; tier_number = 4; next_tier_name = "Presence"; points_to_next = 80 - auraScore;
-    } else {
-      tier_name = "Presence"; tier_number = 5; next_tier_name = null; points_to_next = null;
-    }
+    // ── G4 Tiers (5-tier system) — derived from effectiveTier so the
+    // pending-demotion grace period is reflected in the returned tier_name ──
+    const tierMeta: Record<TierKey, { name: string; num: number; next: string | null; nextFloor: number | null }> = {
+      observer:   { name: "Observer",   num: 1, next: "Explorer",   nextFloor: 15 },
+      explorer:   { name: "Explorer",   num: 2, next: "Strategist", nextFloor: 35 },
+      strategist: { name: "Strategist", num: 3, next: "Voice",      nextFloor: 60 },
+      voice:      { name: "Voice",      num: 4, next: "Presence",   nextFloor: 80 },
+      presence:   { name: "Presence",   num: 5, next: null,         nextFloor: null },
+    };
+    const _tm = tierMeta[effectiveTier];
+    const tier_name: string = _tm.name;
+    const tier_number: number = _tm.num;
+    const next_tier_name: string | null = _tm.next;
+    const points_to_next: number | null =
+      _tm.nextFloor !== null ? Math.max(0, _tm.nextFloor - auraScore) : null;
 
     // ── G4 Personalized nudge ──
     const { data: profile } = await admin
@@ -531,8 +559,9 @@ serve(async (req) => {
       weekly_rhythm,
       milestones,
       newly_earned,
-      tier: currentTier,
+      tier: effectiveTier,
       tier_transition,
+      tier_pending_demotion,
     };
 
     return new Response(JSON.stringify(result), {
