@@ -139,13 +139,20 @@ serve(async (req) => {
       .in("source_type", ["aura", "aura_generated"])
       .eq("tracking_status", "published")
       .gte("created_at", thirtyDaysAgo);
-    // Distinct posts confirmed on LinkedIn via xlsx import in last 30 days (with engagement_rate + snapshot_date)
+    // Distinct posts confirmed on LinkedIn via xlsx import in last 30 days (for base curve published_count)
     const { data: lpmRows } = await admin
       .from("linkedin_post_metrics")
       .select("post_id, snapshot_date, engagement_rate")
       .eq("user_id", userId)
       .gte("snapshot_date", thirtyDaysAgo);
     const linkedinPublishedCount = new Set((lpmRows || []).map((r: any) => r.post_id)).size;
+    // Quality factor samples last 90 days (latest snapshot per post)
+    const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: lpm90Rows } = await admin
+      .from("linkedin_post_metrics")
+      .select("post_id, snapshot_date, engagement_rate")
+      .eq("user_id", userId)
+      .gte("snapshot_date", ninetyDaysAgo);
     // Use max to avoid double-counting posts that exist in both sources
     const totalPublishedCount = Math.max(auraPublishedCount ?? 0, linkedinPublishedCount ?? 0);
     const distinctPublishedCount = totalPublishedCount;
@@ -194,7 +201,7 @@ serve(async (req) => {
     // log-saturated published base 0–85; P* = 8 reference cadence
     const P_STAR = 8;
     const base = 85 * Math.log(1 + distinctPublishedCount) / Math.log(1 + P_STAR);
-    const quality = computeQualityFactor(lpmRows || []);
+    const quality = computeQualityFactor(lpm90Rows || []);
     const contentScore = Math.min(Math.round(foundation + Math.min(base, 85) * quality), 100);
     // Trace (6 posts, quality 0.7, foundation 0):
     //   base = 85 * ln(7)/ln(9) ≈ 85 * 0.8857 ≈ 75.28
