@@ -541,6 +541,49 @@ function ContentEngineCard({ c }: { c: NonNullable<ReportData["content"]> }) {
   );
 }
 
+function ProvenanceLine({ sources, evidence }: { sources: number; evidence: number }) {
+  return (
+    <div style={{ fontSize: 11, color: INK_4, lineHeight: 1.5, fontFamily: BODY }}>
+      Built from your{" "}
+      <span style={{ fontFamily: MONO, fontVariantNumeric: "tabular-nums" }}>{sources}</span>{" "}
+      sources and{" "}
+      <span style={{ fontFamily: MONO, fontVariantNumeric: "tabular-nums" }}>{evidence}</span>{" "}
+      evidence fragments
+      <span style={{ margin: "0 6px", color: BRONZE }}>·</span>
+      <span style={{ fontFamily: ARABIC }} dir="rtl" lang="ar">بُني من بياناتك وحدها</span>
+    </div>
+  );
+}
+
+function Next90Block({ gaps }: { gaps: string[] }) {
+  return (
+    <div>
+      <SectionLabel>Where to Point the Next 90 Days</SectionLabel>
+      <div style={{ fontSize: 11, color: INK_3, lineHeight: 1.6, marginBottom: 14 }}>
+        Three gaps the market would notice — each one is a content move.
+      </div>
+      {gaps.map((g, i) => (
+        <div
+          key={i}
+          style={{
+            display: "flex",
+            alignItems: "baseline",
+            gap: 10,
+            padding: "8px 0",
+            borderBottom: `1px solid ${RULE}`,
+            fontSize: 12.5,
+            color: INK,
+            lineHeight: 1.55,
+          }}
+        >
+          <Diamond size={6} color={BRONZE} />
+          <span>{g}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function VoiceHeader() {
   return (
     <div>
@@ -690,6 +733,14 @@ function buildBlocks(d: ReportData): Block[] {
   if (identityShown) {
     blocks.push({ key: "i-hero", section: "identity", spacing: 18, node: <HeroIntro data={d} /> });
     if (d.score) blocks.push({ key: "i-score", section: "identity", spacing: 24, node: <ScoreCard score={d.score} /> });
+    if (d.score && d.footprint) {
+      blocks.push({
+        key: "i-prov",
+        section: "identity",
+        spacing: 10,
+        node: <ProvenanceLine sources={d.footprint.sources} evidence={d.footprint.evidence} />,
+      });
+    }
     const p = d.profile!;
     const items: { label: string; value: string }[] = [];
     if (p.core_practice) items.push({ label: "Core Practice", value: p.core_practice });
@@ -747,6 +798,15 @@ function buildBlocks(d: ReportData): Block[] {
       if (d.voice.storytelling_patterns.length > 0) blocks.push({ key: "f-v-pat", section: "footprint", spacing: 0, node: <StackedRow label="Patterns" value={d.voice.storytelling_patterns.join(" · ")} /> });
       if (d.voice.vocabulary_preferences.prefer && d.voice.vocabulary_preferences.prefer.length > 0) {
         blocks.push({ key: "f-v-pref", section: "footprint", spacing: 0, node: <StackedRow label="Prefers" value={d.voice.vocabulary_preferences.prefer.join(", ")} /> });
+      }
+    }
+    // Closing guidance — reposition the three market-mirror gap strings as
+    // actionable content moves (only when the mirror data is present and
+    // persona-matched; safeData already strips stale mirrors).
+    if (d.market_mirror) {
+      const gaps = d.market_mirror.perspectives.map((p) => p.gap).filter(Boolean);
+      if (gaps.length > 0) {
+        blocks.push({ key: "f-next90", section: "footprint", spacing: 24, node: <Next90Block gaps={gaps} /> });
       }
     }
   }
