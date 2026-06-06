@@ -172,6 +172,8 @@ interface AuraScoreData {
   points_to_next?: number | null;
   personalized_nudge: string;
   weekly_rhythm: { active_weeks: number; total_weeks: number; weekly_data: boolean[] };
+  newly_earned?: string[];
+  milestones?: Array<{ id: string; name: string }>;
 }
 
 const COMPETITOR_KEYWORDS = [
@@ -933,7 +935,12 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
       supabase.removeChannel(channel);
       supabase.removeChannel(homeLive);
     };
-  }, [authReady, authUser, authSession?.access_token, loadBriefing, loadMoves, loadTrends, loadTrendsBadge]);
+  // Fire once per auth-ready mount per user. The four loaders are stable
+  // (useCallback with [] deps) so they don't need to appear here, and
+  // access_token churn from background auth refresh must NOT re-run this
+  // effect — that caused calculate-aura-score to be invoked ~13× per /home load.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authReady, authUser?.id]);
 
   // ─── Derived ───
   const scoreDiff = useMemo(() => {
@@ -1480,11 +1487,14 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
           at once. See FirstVisitHint regression guard. */}
       <FirstVisitHint page="home" suppress={suppressHint} />
 
-      {/* Milestone notification (G7) — shows newly_earned from calculate-aura-score */}
-      <MilestoneNotification userId={authUser?.id ?? null} />
+      {/* Milestone notification (G7) — newly_earned comes from HomeTab's aura-score fetch */}
+      <MilestoneNotification userId={authUser?.id ?? null} auraData={auraData} />
 
       {/* O-2b — Tier transition ceremony (modal renders when unacknowledged tier_* exists) */}
-      <TierCeremonyModal userId={authUser?.id ?? null} />
+      <TierCeremonyModal
+        userId={authUser?.id ?? null}
+        forcedTierName={auraData?.tier_name ?? null}
+      />
 
       {/* M3-4 — identity drift suggestion (frontend-only, session-scoped) */}
       <IdentityDriftBanner />

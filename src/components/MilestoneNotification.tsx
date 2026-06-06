@@ -1,42 +1,41 @@
-import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { useEffect, useState } from "react";
 import { Award, X } from "lucide-react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 
 interface Milestone { id: string; name: string; }
 
-interface Props { userId: string | null; }
+interface Props {
+  userId: string | null;
+  /** Score payload from calculate-aura-score, owned by the parent (HomeTab).
+   *  When present, drives newly_earned + milestones — no independent EF call. */
+  auraData?: {
+    newly_earned?: string[];
+    milestones?: Milestone[];
+  } | null;
+}
 
 const STORAGE_KEY = "aura_seen_milestones";
 
-const MilestoneNotification = ({ userId }: Props) => {
+const MilestoneNotification = ({ userId, auraData }: Props) => {
   const [pending, setPending] = useState<Milestone[]>([]);
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    if (!userId) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        await supabase.auth.getSession();
-        const { data, error } = await invokeEdgeFunction("calculate-aura-score", { body: {} });
-        if (cancelled || error || !data) return;
-        const newly: string[] = (data as any).newly_earned || [];
-        const all: Milestone[] = (data as any).milestones || [];
-        if (!newly.length) return;
-        const seen: string[] = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-        const fresh = newly.filter((id) => !seen.includes(id));
-        if (!fresh.length) return;
-        const items = all.filter((m) => fresh.includes(m.id));
-        setPending(items);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(new Set([...seen, ...fresh]))));
-      } catch (e) {
-        console.error("MilestoneNotification load failed", e);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [userId]);
+    if (!userId || !auraData) return;
+    try {
+      const newly: string[] = auraData.newly_earned || [];
+      const all: Milestone[] = auraData.milestones || [];
+      if (!newly.length) return;
+      const seen: string[] = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      const fresh = newly.filter((id) => !seen.includes(id));
+      if (!fresh.length) return;
+      const items = all.filter((m) => fresh.includes(m.id));
+      setPending(items);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(new Set([...seen, ...fresh]))));
+    } catch (e) {
+      console.error("MilestoneNotification process failed", e);
+    }
+  }, [userId, auraData]);
 
   useEffect(() => {
     if (!pending.length || dismissed) return;

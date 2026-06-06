@@ -1257,6 +1257,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         userId={authUser?.id ?? null}
         forceOpen={credentialOpen}
         onForceClose={() => setCredentialOpen(false)}
+        forcedTierName={tierName ?? null}
       />
       {marketShareData && (
         <MilestoneShareModal
