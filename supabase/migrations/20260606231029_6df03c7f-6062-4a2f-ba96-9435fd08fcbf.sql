@@ -1,0 +1,4 @@
+UPDATE guide_articles SET answer_en = 'One number out of 100. Signal strength 40%, content published 40%, weekly rhythm 20%. Every point comes from a real action you took — and the parts always add up to the total.' WHERE slug = 'score-overview';
+UPDATE guide_articles SET answer_en = 'How solid your captured thinking is, how wide it ranges, and how alive it is right now.' WHERE slug = 'signal-strength';
+UPDATE guide_articles SET answer_en = 'How much of your thinking you actually shared — and whether the market responded. Quality counts more than volume: posting more stops helping after a point.' WHERE slug = 'content-published';
+UPDATE guide_articles SET answer_en = 'Your weekly habit, not your total output. Showing up a little each week beats posting a lot and going quiet. It is 20% of your score.' WHERE slug = 'weekly-rhythm';
