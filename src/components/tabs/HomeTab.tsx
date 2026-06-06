@@ -172,6 +172,8 @@ interface AuraScoreData {
   points_to_next?: number | null;
   personalized_nudge: string;
   weekly_rhythm: { active_weeks: number; total_weeks: number; weekly_data: boolean[] };
+  newly_earned?: string[];
+  milestones?: Array<{ id: string; name: string }>;
 }
 
 const COMPETITOR_KEYWORDS = [
