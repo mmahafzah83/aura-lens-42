@@ -733,6 +733,14 @@ function buildBlocks(d: ReportData): Block[] {
   if (identityShown) {
     blocks.push({ key: "i-hero", section: "identity", spacing: 18, node: <HeroIntro data={d} /> });
     if (d.score) blocks.push({ key: "i-score", section: "identity", spacing: 24, node: <ScoreCard score={d.score} /> });
+    if (d.score && d.footprint) {
+      blocks.push({
+        key: "i-prov",
+        section: "identity",
+        spacing: 10,
+        node: <ProvenanceLine sources={d.footprint.sources} evidence={d.footprint.evidence} />,
+      });
+    }
     const p = d.profile!;
     const items: { label: string; value: string }[] = [];
     if (p.core_practice) items.push({ label: "Core Practice", value: p.core_practice });
