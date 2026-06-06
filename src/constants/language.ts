@@ -206,15 +206,25 @@ export const CTA = {
 } as const;
 
 // ════════════════════════════════════
-// TIER LABELS
+// TIER LABELS — single vocabulary, matches calculate-aura-score
+// (Observer 0-14 / Explorer 15-34 / Strategist 35-59 / Voice 60-79 / Presence 80-100).
 // ════════════════════════════════════
 export const TIERS: Record<string, string> = {
-  Starting: "Scout",
   Observer: "Observer",
-  Building: "Rising",
+  Explorer: "Explorer",
   Strategist: "Strategist",
-  Authority: "Authority",
-  Luminary: "Luminary",
+  Voice: "Voice",
+  Presence: "Presence",
+};
+
+// Arabic display names for the same five tiers. Rendered when the UI
+// is Arabic; the canonical English key remains the source of truth.
+export const TIERS_AR: Record<string, string> = {
+  Observer: "مراقب",
+  Explorer: "مستكشف",
+  Strategist: "استراتيجي",
+  Voice: "صوت",
+  Presence: "حضور",
 };
 
 // ════════════════════════════════════

@@ -1717,7 +1717,7 @@ async function auditHomePage(results: QaResult[], doc: Document) {
       .map((e) => txt(e))
       .map((t) => parseInt(t.match(/\b(\d{1,3})\b/)?.[1] || "", 10))
       .filter((n) => !Number.isNaN(n) && n >= 0 && n <= 100);
-    const tierMatch = text.match(/\b(Observer|Strategist|Authority)\b/);
+    const tierMatch = text.match(/\b(Observer|Explorer|Strategist|Voice|Presence)\b/);
     const tier = tierMatch?.[1];
     const score = scoreCandidates.find((n) => n > 0) ?? scoreCandidates[0];
 
@@ -1728,7 +1728,12 @@ async function auditHomePage(results: QaResult[], doc: Document) {
       pushPage(results, "home", "h1", "Aura Score visible", "warn",
         `Score ${score} found but no tier label`, "tier label near score", "no tier label");
     } else {
-      const expectedTier = score >= 65 ? "Authority" : score >= 35 ? "Strategist" : "Observer";
+      const expectedTier =
+        score >= 80 ? "Presence"
+        : score >= 60 ? "Voice"
+        : score >= 35 ? "Strategist"
+        : score >= 15 ? "Explorer"
+        : "Observer";
       const ok = tier === expectedTier;
       pushPage(results, "home", "h1", "Aura Score and tier match", ok ? "pass" : "fail",
         ok ? `Score ${score} matches tier ${tier}` : `Score ${score} but tier shows ${tier} (expected ${expectedTier})`,
@@ -1792,13 +1797,13 @@ async function auditHomePage(results: QaResult[], doc: Document) {
       cta ? "ok" : "missing CTA");
   }
 
-  // H6 — Authority journey
-  if (/Observer/i.test(text) && /Strategist/i.test(text) && /Authority/i.test(text)) {
+  // H6 — Tier journey ladder
+  if (/Observer/i.test(text) && /Strategist/i.test(text) && /Presence/i.test(text)) {
     pushPage(results, "home", "h6", "Authority journey ladder", "pass",
-      "Observer/Strategist/Authority labels present");
+      "Observer/Strategist/Presence labels present");
   } else {
     pushPage(results, "home", "h6", "Authority journey ladder", "warn",
-      "Tier ladder labels not all visible", "Observer + Strategist + Authority", "incomplete");
+      "Tier ladder labels not all visible", "Observer + Strategist + Presence", "incomplete");
   }
 
   // H7 — Capture rhythm grid
@@ -2038,14 +2043,19 @@ async function auditImpactPage(results: QaResult[], doc: Document) {
   const text = bodyText(doc);
 
   // M1 — Score and tier
-  const tierMatch = text.match(/\b(Observer|Strategist|Authority)\b/);
+  const tierMatch = text.match(/\b(Observer|Explorer|Strategist|Voice|Presence)\b/);
   const numbers = (text.match(/\b(\d{1,3})\b/g) || []).map(Number).filter((n) => n >= 0 && n <= 100);
   const score = numbers.find((n) => n > 0);
   if (score === undefined) {
     pushPage(results, "impact", "m1", "Authority score visible", "fail",
       "No score number found on Impact", "score 0–100", "missing");
   } else if (tierMatch) {
-    const expectedTier = score >= 65 ? "Authority" : score >= 35 ? "Strategist" : "Observer";
+    const expectedTier =
+      score >= 80 ? "Presence"
+      : score >= 60 ? "Voice"
+      : score >= 35 ? "Strategist"
+      : score >= 15 ? "Explorer"
+      : "Observer";
     const ok = tierMatch[1] === expectedTier;
     pushPage(results, "impact", "m1", "Score and tier match",
       ok ? "pass" : "fail",

@@ -221,11 +221,12 @@ export const ConceptA = forwardRef<HTMLDivElement, { data: CredentialData; size?
                 flexWrap: "wrap",
               }}
             >
-              {["Observer", "Strategist", "Authority"].map((t) => {
+              {["Observer", "Explorer", "Strategist", "Voice", "Presence"].map((t) => {
+                const TIERS_ORDER = ["Observer", "Explorer", "Strategist", "Voice", "Presence"];
                 const active = t.toLowerCase() === data.tierName.toLowerCase();
                 const passed =
-                  ["Observer", "Strategist", "Authority"].indexOf(t) <
-                  ["Observer", "Strategist", "Authority"].indexOf(data.tierName);
+                  TIERS_ORDER.indexOf(t) <
+                  TIERS_ORDER.indexOf(data.tierName);
                 return (
                   <span
                     key={t}
