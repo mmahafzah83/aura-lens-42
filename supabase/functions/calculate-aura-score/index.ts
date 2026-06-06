@@ -112,11 +112,11 @@ serve(async (req) => {
       (s.theme_tags || []).forEach((t: string) => uniqueThemes.add(t)),
     );
 
-    // depth 0–60: weightedStrengthSum normalized; D* calibration constant, initial 5.5
-    const D_STAR = 5.5;
+    // depth 0–60: weightedStrengthSum normalized; D* calibration constant
+    const D_STAR = 8;
     const depth = 60 * Math.min(weightedStrengthSum / D_STAR, 1);
     // breadth 0–30: soft saturation over distinct themes, no hard cap
-    const breadth = 30 * (1 - Math.exp(-uniqueThemes.size / 4));
+    const breadth = 30 * (1 - Math.exp(-uniqueThemes.size / 6));
     // liveness 0–10: continuous share of strength in live/evergreen tiers
     const liveShare = liveEvergreenStrengthSum / Math.max(weightedStrengthSum, 0.0001);
     const liveness = 10 * Math.min(liveShare, 1);
