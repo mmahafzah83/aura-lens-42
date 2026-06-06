@@ -55,6 +55,89 @@ destination must be:
 - CAPTURE → "capture_modal"
 - WATCH → "/intelligence"`;
 
+type Signal = {
+  id: string;
+  signal_title: string;
+  confidence?: number | null;
+  fragment_count?: number | null;
+};
+
+type Trend = {
+  headline?: string | null;
+  impact_level?: string | null;
+  decision_label?: string | null;
+};
+
+type AuraContext = {
+  top_signals: Signal[];
+  recent_trends: Trend[];
+  captures_last_7_days: number;
+  last_post: {
+    published_at: string;
+    engagement_score?: number | null;
+    days_since_last_post: number | null;
+  } | null;
+  authority: {
+    authority_score?: number | null;
+    momentum_score?: number | null;
+  } | null;
+};
+
+const trimTitle = (value: string, maxWords = 8) => value.trim().split(/\s+/).slice(0, maxWords).join(" ");
+
+function buildFallbackItems(context: AuraContext) {
+  const items: Array<Record<string, unknown>> = [];
+  const topSignal = context.top_signals[0] ?? null;
+  const secondarySignal = context.top_signals[1] ?? null;
+  const topTrend = context.recent_trends[0] ?? null;
+  const daysSinceLastPost = context.last_post?.days_since_last_post ?? null;
+
+  if ((daysSinceLastPost === null || daysSinceLastPost >= 5) && topSignal) {
+    items.push({
+      action_type: "PUBLISH",
+      title: trimTitle(`Publish ${topSignal.signal_title}`),
+      reason: `${topSignal.signal_title} has ${topSignal.fragment_count ?? 0} fragments. Turn it into a post now.`,
+      urgency: "HIGH",
+      destination: "/publish",
+      signal_id: topSignal.id,
+    });
+  }
+
+  if (context.captures_last_7_days < 3) {
+    const captureHook = topTrend?.headline || secondarySignal?.signal_title || topSignal?.signal_title || "your strongest signal";
+    items.push({
+      action_type: "CAPTURE",
+      title: trimTitle(`Capture proof for ${captureHook}`),
+      reason: `Add one more evidence fragment tied to ${captureHook} this week.`,
+      urgency: "HIGH",
+      destination: "capture_modal",
+      signal_id: null,
+    });
+  }
+
+  if (topTrend) {
+    items.push({
+      action_type: "WATCH",
+      title: trimTitle(`Watch ${topTrend.decision_label || topTrend.headline || "this trend"}`),
+      reason: `${topTrend.headline || "This trend"} could shift your positioning. Review it today.`,
+      urgency: "MEDIUM",
+      destination: "/intelligence",
+      signal_id: secondarySignal?.id ?? topSignal?.id ?? null,
+    });
+  } else if (secondarySignal) {
+    items.push({
+      action_type: "WATCH",
+      title: trimTitle(`Review ${secondarySignal.signal_title}`),
+      reason: `${secondarySignal.signal_title} is active. Check whether it needs a stronger decision angle.`,
+      urgency: "MEDIUM",
+      destination: "/intelligence",
+      signal_id: secondarySignal.id,
+    });
+  }
+
+  return items.slice(0, 3);
+}
+
 async function getAuthenticatedUserId(supabase: any, authHeader: string) {
   const token = authHeader.replace("Bearer ", "").trim();
 
@@ -131,7 +214,7 @@ serve(async (req) => {
       ? Math.floor((Date.now() - new Date(lastPost.published_at).getTime()) / 86400_000)
       : null;
 
-    const context = {
+    const context: AuraContext = {
       top_signals: signalsRes.data || [],
       recent_trends: trendsRes.data || [],
       captures_last_7_days: entriesRes.count ?? 0,
