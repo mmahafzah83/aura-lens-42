@@ -252,7 +252,7 @@ serve(async (req) => {
       clearTimeout(aiTimeout);
       console.error("auras-read: AI fetch failed/timeout", err?.message || err);
       return new Response(JSON.stringify({
-        items: [],
+        items: buildFallbackItems(context),
         context_summary: {
           signals: context.top_signals.length,
           trends: context.recent_trends.length,
@@ -260,6 +260,7 @@ serve(async (req) => {
           days_since_last_post: daysSinceLastPost,
         },
         degraded: "ai_timeout",
+        fallback: true,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     clearTimeout(aiTimeout);
@@ -277,7 +278,21 @@ serve(async (req) => {
       }
       const t = await aiRes.text();
       console.error("AI gateway error:", aiRes.status, t);
-      throw new Error("AI gateway error");
+      return new Response(JSON.stringify({
+        items: buildFallbackItems(context),
+        context_summary: {
+          signals: context.top_signals.length,
+          trends: context.recent_trends.length,
+          captures_7d: context.captures_last_7_days,
+          days_since_last_post: daysSinceLastPost,
+        },
+        degraded: `ai_status_${aiRes.status}`,
+        fallback: aiRes.status >= 500,
+        error: "AI gateway error",
+      }), {
+        status: aiRes.status >= 500 ? 200 : aiRes.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const aiData = await aiRes.json();
@@ -288,7 +303,7 @@ serve(async (req) => {
       if (m) try { parsed = JSON.parse(m[0]); } catch {}
     }
 
-    const rawItems = Array.isArray(parsed.items) ? parsed.items : [];
+    const rawItems = Array.isArray(parsed.items) ? parsed.items : buildFallbackItems(context);
     const signalsList = (signalsRes.data || []) as Array<{ id: string; signal_title: string }>;
     const validSignalMap = new Map(signalsList.map((s) => [s.id, s.signal_title]));
     const items = rawItems
@@ -312,7 +327,7 @@ serve(async (req) => {
         };
       });
 
-    return new Response(JSON.stringify({ items, context_summary: {
+    return new Response(JSON.stringify({ items: items.length > 0 ? items : buildFallbackItems(context), context_summary: {
       signals: context.top_signals.length,
       trends: context.recent_trends.length,
       captures_7d: context.captures_last_7_days,
@@ -322,8 +337,13 @@ serve(async (req) => {
     });
   } catch (e: any) {
     console.error("auras-read error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return new Response(JSON.stringify({
+      items: [],
+      error: e instanceof Error ? e.message : "Unknown error",
+      fallback: true,
+      degraded: "unexpected_error",
+    }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
