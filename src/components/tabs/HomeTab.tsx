@@ -1718,7 +1718,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
           </div>
         </div>
       )}
-      {!auraLoading && !isEmpty && auraData && (() => {
+      {!auraLoading && entriesLoaded && !isEmpty && auraData && (() => {
         const score = auraData.aura_score;
         const tier = auraData.tier_name;
         const dateLabel = now.toLocaleDateString("en-US", {
@@ -1813,7 +1813,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
       })()}
 
       {/* THREE FORCES — score breakdown directly under header */}
-      {!auraLoading && !isEmpty && auraData && (() => {
+      {!auraLoading && entriesLoaded && !isEmpty && auraData && (() => {
         // Read EF-provided weighted points; fall back to local math only when
         // the EF predates the weighted fields (W1-P1 backstop).
         const signalW = auraData.signal_weighted ?? Math.round((auraData.signal_score ?? 0) * 0.4);
@@ -2111,7 +2111,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
       )}
 
       {/* H2b — DYNAMIC PRIMARY CARD */}
-      {!isEmpty && (<>
+      {entriesLoaded && !isEmpty && (<>
       {newSignal && (
         newSignal.isFirst ? (
           <div
