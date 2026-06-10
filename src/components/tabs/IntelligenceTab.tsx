@@ -29,23 +29,46 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
+/**
+ * Mirrors the live pipeline contract used by extract-evidence and SourcesSubTab:
+ * detect-signals-v2 is per-source (one source_registry row → one signal insert/reinforce).
+ * For the manual "Detect patterns" button we iterate the user's most recent processed
+ * sources that already have fragments, call v2 once per source, and aggregate.
+ */
 async function invokeDetectPatterns(userId: string) {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) throw new Error("Not authenticated");
 
-  const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/detect-patterns`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${session.access_token}`,
-      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-    },
-    body: JSON.stringify({ user_id: userId }),
-  });
+  const { data: registryRows, error: regErr } = await supabase
+    .from("source_registry")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("processed", true)
+    .gt("fragment_count", 0)
+    .order("updated_at", { ascending: false })
+    .limit(20);
 
-  const data = await resp.json().catch(() => null);
-  if (!resp.ok) throw new Error(data?.detail || data?.error || "Detection failed");
-  return data;
+  if (regErr) throw new Error(regErr.message);
+  const registryIds = (registryRows || []).map((r: any) => r.id);
+  if (registryIds.length === 0) {
+    return { signals_created: 0, signals_reinforced: 0, sources_processed: 0 };
+  }
+
+  let created = 0;
+  let reinforced = 0;
+  for (const registryId of registryIds) {
+    try {
+      const { data, error } = await supabase.functions.invoke("detect-signals-v2", {
+        body: { source_registry_id: registryId, user_id: userId },
+      });
+      if (error) continue;
+      if (data?.is_new) created += 1;
+      else if (data?.reinforced) reinforced += 1;
+    } catch {
+      // continue — one failed source shouldn't abort the batch
+    }
+  }
+  return { signals_created: created, signals_reinforced: reinforced, sources_processed: registryIds.length };
 }
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
