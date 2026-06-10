@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
     } else {
       const { data: posts, error: postsErr } = await supabase
         .from("linkedin_posts")
-        .select("post_text, engagement_score, like_count, comment_count, source_type")
+        .select("post_text, engagement_score, like_count, comment_count, source_type, tracking_status")
         .eq("user_id", user_id)
         .not("post_text", "is", null)
         .order("published_at", { ascending: false, nullsFirst: false })
@@ -126,9 +126,15 @@ Deno.serve(async (req) => {
         );
       }
 
-      rawPosts = (posts || []).filter(
-        (p: any) => p.post_text && String(p.post_text).trim().length > 0,
-      ).slice(0, 40);
+      rawPosts = (posts || []).filter((p: any) => {
+        if (!p.post_text || String(p.post_text).trim().length === 0) return false;
+        const st = p.source_type;
+        const ts = p.tracking_status;
+        if (st === "aura_generated" && ts === "published") return true;
+        if (st === "browser_capture" && (ts === "confirmed" || ts === "metrics_imported")) return true;
+        if (st === "search_discovery" && ts === "confirmed") return true;
+        return false;
+      }).slice(0, 40);
     }
 
     if (rawPosts.length === 0) {
