@@ -759,13 +759,19 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
 
     // Fire all section loaders in parallel via allSettled so a single
     // failure doesn't block the others.
-    Promise.allSettled([
-      loadBriefing(uid),
-      loadMoves(uid),
-      loadTrends(uid),
-      loadTrendsBadge(uid),
+    // CLIENT-HYDRATION GATE: await one getSession() so the supabase-js client's
+    // internal session object is hydrated before any RLS-gated query fires.
+    // Without this, on cold first load loaders can race the client's own
+    // session restore and produce empty/401 results that look like "no data".
+    supabase.auth.getSession().then(() => {
+      Promise.allSettled([
+        loadBriefing(uid),
+        loadMoves(uid),
+        loadTrends(uid),
+        loadTrendsBadge(uid),
         loadCompetitorAlert(uid),
-    ]);
+      ]);
+    });
 
     // J4 — Compute "You're caught up" eligibility (resets per calendar day).
     (async () => {
@@ -906,7 +912,16 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
           }
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        // RESYNC-ON-SUBSCRIBE: any UPDATE emitted during the WebSocket
+        // handshake window is missed by the channel. The moment the socket
+        // opens, refetch once so first-load determinism is preserved even
+        // when Phase B enrichment lands before the channel is ready.
+        if (status === "SUBSCRIBED") {
+          loadTrends(uid);
+          loadTrendsBadge(uid);
+        }
+      });
 
     // Realtime: live-update hero (score arc + 7d diff), top signal + count,
     // evidence count, and top move + count whenever the user's own rows change.
@@ -931,7 +946,10 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "evidence_fragments", filter: `user_id=eq.${uid}` }, scheduleHomeReload)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "recommended_moves", filter: `user_id=eq.${uid}` }, scheduleHomeReload)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "recommended_moves", filter: `user_id=eq.${uid}` }, scheduleHomeReload)
-      .subscribe();
+      .subscribe((status) => {
+        // RESYNC-ON-SUBSCRIBE: cover any burst emitted during handshake.
+        if (status === "SUBSCRIBED") scheduleHomeReload();
+      });
 
     return () => {
       if (homeReloadTimer) clearTimeout(homeReloadTimer);
