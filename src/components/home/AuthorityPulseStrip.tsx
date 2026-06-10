@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCountUp } from "@/hooks/useCountUp";
+import { applyCatalogFilter } from "@/lib/postProvenance";
 
 interface Props {
   userId: string | null;
@@ -91,9 +92,11 @@ export default function AuthorityPulseStrip({ userId, authorityScore, onGoToImpa
           .select("confidence", { count: "exact" })
           .eq("user_id", userId).eq("status", "active")
           .order("confidence", { ascending: false }).limit(1),
-        supabase.from("linkedin_posts")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", userId),
+        applyCatalogFilter(
+          (supabase.from("linkedin_posts")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", userId) as any),
+        ),
         supabase.from("linkedin_post_metrics")
           .select("engagement_rate")
           .eq("user_id", userId).limit(500),

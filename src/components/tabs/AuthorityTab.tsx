@@ -2154,6 +2154,7 @@ const AnalyzeTab = () => {
         .from("linkedin_posts")
         .select("theme, tone, format_type, engagement_score, like_count, comment_count, repost_count, source_type, tracking_status")
         .neq("tracking_status", "rejected")
+        .neq("tracking_status", "external_reference")
         .order("published_at", { ascending: false })
         .limit(200);
 

@@ -129,7 +129,7 @@ serve(async (req) => {
       .from("linkedin_posts")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
-      .in("source_type", ["linkedin_export", "browser_capture", "external_reference"])
+      .in("source_type", ["linkedin_export", "browser_capture", "external_reference", "search_discovery"])
       .neq("tracking_status", "rejected");
     // Aura-published in last 30 days (MUST be published, not just drafted)
     const { count: auraPublishedCount } = await admin

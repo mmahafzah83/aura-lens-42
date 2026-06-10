@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { safeQuery } from "@/lib/safeQuery";
+import { applyPublishedFilter, filterPublishedRows, CATALOG_EXCLUDED_STATUSES } from "@/lib/postProvenance";
 import { ScoreRing } from "@/components/ui/ScoreRing";
 import InfoTooltip from "@/components/ui/InfoTooltip";
 import { FirstTimeHint } from "@/components/FirstTimeHint";
@@ -308,12 +309,17 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     if ((trueCount ?? 0) > 0) {
       const topRes = await supabase
         .from("linkedin_post_metrics")
-        .select("post_id, impressions, reactions, engagement_rate, snapshot_date, post:linkedin_posts(title, post_text, post_url, published_at)")
+        .select("post_id, impressions, reactions, engagement_rate, snapshot_date, post:linkedin_posts(title, post_text, post_url, published_at, tracking_status)")
         .eq("user_id", user.id)
         .gte("snapshot_date", sinceDateOnly)
         .order("engagement_rate", { ascending: false })
         .limit(20);
-      setTopPosts((topRes.data as any) || []);
+      setTopPosts(
+        ((topRes.data as any[]) || []).filter((r: any) => {
+          const ts = r?.post?.tracking_status;
+          return !ts || !CATALOG_EXCLUDED_STATUSES.includes(ts);
+        }) as any,
+      );
       // Distinct posts that have metrics within the selected window
       const winRes = await supabase
         .from("linkedin_post_metrics")
@@ -541,22 +547,17 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       sinceDate.setDate(sinceDate.getDate() - selectedDays);
       const sinceDateOnly = sinceDate.toISOString().slice(0, 10);
 
-      const { data: allPosts } = await supabase
-        .from("linkedin_posts")
-        .select("theme, tone, format_type, engagement_score, like_count, comment_count, source_type, tracking_status, post_text, published_at")
-        .in("source_type", ["linkedin_export", "external_reference", "aura_generated", "search_discovery"])
-        .neq("tracking_status", "rejected")
-        .gte("published_at", sinceDateOnly)
-        .not("published_at", "is", null)
-        .order("published_at", { ascending: false })
-        .limit(500);
-
-      const analyzablePosts = (allPosts || []).filter((p: any) =>
-        p.source_type === "linkedin_export" ||
-        p.source_type === "external_reference" ||
-        p.tracking_status === "external_reference" ||
-        (p.source_type === "aura_generated" && p.tracking_status === "published")
+      const { data: allPosts } = await applyPublishedFilter(
+        (supabase
+          .from("linkedin_posts")
+          .select("theme, tone, format_type, engagement_score, like_count, comment_count, source_type, tracking_status, post_text, published_at")
+          .gte("published_at", sinceDateOnly)
+          .not("published_at", "is", null)
+          .order("published_at", { ascending: false })
+          .limit(500) as any),
       );
+
+      const analyzablePosts = filterPublishedRows((allPosts as any[]) || []);
 
       if (analyzablePosts.length === 0) {
         setContentPerf({
