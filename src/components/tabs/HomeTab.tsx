@@ -253,7 +253,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
   const [assessmentNudgeDismissed, setAssessmentNudgeDismissed] = useState(false);
   const [assessmentModalOpen, setAssessmentModalOpen] = useState(false);
   const entriesLoaded = Array.isArray(entries);
-  const entryCountForWelcome = entriesLoaded ? entries!.length : 0;
+  const entryCountForWelcome = entriesLoaded ? entries!.length : -1;
   // showWelcome / welcomeState computed below, after topSignal is declared.
   // The welcome card MAY appear once profile + entries are both loaded. Until
   // we know that for sure, we must NOT render the first-visit hint, otherwise
@@ -332,7 +332,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
   });
 
   // J12 — empty state for new users with zero captures
-  const isEmpty = Array.isArray(entries) && entries.length === 0;
+  const isEmpty = entriesLoaded && entries.length === 0;
   const [alarmEducationSeen, setAlarmEducationSeen] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
     return localStorage.getItem("aura_alarm_seen") === "true";
@@ -1718,7 +1718,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
           </div>
         </div>
       )}
-      {!auraLoading && !isEmpty && auraData && (() => {
+      {!auraLoading && entriesLoaded && !isEmpty && auraData && (() => {
         const score = auraData.aura_score;
         const tier = auraData.tier_name;
         const dateLabel = now.toLocaleDateString("en-US", {
@@ -1813,7 +1813,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
       })()}
 
       {/* THREE FORCES — score breakdown directly under header */}
-      {!auraLoading && !isEmpty && auraData && (() => {
+      {!auraLoading && entriesLoaded && !isEmpty && auraData && (() => {
         // Read EF-provided weighted points; fall back to local math only when
         // the EF predates the weighted fields (W1-P1 backstop).
         const signalW = auraData.signal_weighted ?? Math.round((auraData.signal_score ?? 0) * 0.4);
@@ -2111,7 +2111,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
       )}
 
       {/* H2b — DYNAMIC PRIMARY CARD */}
-      {!isEmpty && (<>
+      {entriesLoaded && !isEmpty && (<>
       {newSignal && (
         newSignal.isFirst ? (
           <div
