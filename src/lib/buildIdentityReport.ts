@@ -222,17 +222,17 @@ export async function buildIdentityReport(userId: string): Promise<ReportData> {
     supabase.from("evidence_fragments").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("strategic_signals").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("status", "active"),
     applyPublishedFilter(
-      supabase
+      (supabase
         .from("linkedin_posts")
         .select("source_type, tracking_status, published_at")
         .eq("user_id", userId)
-        .gte("published_at", thirtyDaysAgo),
+        .gte("published_at", thirtyDaysAgo) as any),
     ),
     applyCatalogFilter(
-      supabase
+      (supabase
         .from("linkedin_posts")
         .select("id", { count: "exact", head: true })
-        .eq("user_id", userId),
+        .eq("user_id", userId) as any),
     ),
     supabase
       .from("linkedin_posts")
