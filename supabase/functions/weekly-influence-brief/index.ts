@@ -61,7 +61,7 @@ serve(async (req) => {
         .limit(2),
     ]);
 
-    const posts = postsRes.data || [];
+    const posts = filterPublishedRows(((postsRes as any).data as any[]) || []);
     const snapshots = snapshotsRes.data || [];
     const prevSnapshots = prevSnapshotsRes.data || [];
     const authScores = authScoreRes.data || [];
