@@ -133,6 +133,7 @@ Deno.serve(async (req) => {
         if (st === "aura_generated" && ts === "published") return true;
         if (st === "browser_capture" && (ts === "confirmed" || ts === "metrics_imported")) return true;
         if (st === "search_discovery" && ts === "confirmed") return true;
+        if (st === "manual_url" && ts === "manual") return true;
         return false;
       }).slice(0, 40);
     }
