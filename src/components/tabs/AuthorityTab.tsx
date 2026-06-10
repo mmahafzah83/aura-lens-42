@@ -28,6 +28,7 @@ import CardPreviewPanel from "@/components/visual-cards/CardPreviewPanel";
 import SchematicPreviewPanel from "@/components/visual-cards/SchematicPreviewPanel";
 import StartFromPanel from "@/components/StartFromPanel";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
+import { isPublishedPost } from "@/lib/postProvenance";
 import FlashPanel from "@/components/FlashPanel";
 import EmptyState from "@/components/ui/EmptyState";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
@@ -2170,7 +2171,7 @@ const AnalyzeTab = () => {
       const auraDrafts = rows.filter((p: any) => p.source_type === "aura_generated" && p.tracking_status === "draft");
       // Aura published with real engagement
       const auraPublishedWithData = rows.filter(
-        (p: any) => p.source_type === "aura_generated" && p.tracking_status === "published" && p.like_count != null && p.like_count > 0
+        (p: any) => isPublishedPost(p) && p.like_count != null && p.like_count > 0,
       );
 
       // Summary cards use external posts only
@@ -2230,7 +2231,7 @@ const AnalyzeTab = () => {
   // Separate posts for detailed view
   const externalPosts = posts.filter((p: any) => p.source_type === "external_reference");
   const auraDrafts = posts.filter((p: any) => p.source_type === "aura_generated" && p.tracking_status === "draft");
-  const auraPublished = posts.filter((p: any) => p.source_type === "aura_generated" && p.tracking_status === "published");
+  const auraPublished = posts.filter((p: any) => isPublishedPost(p));
 
   return (
     <div className="space-y-6">
@@ -2994,7 +2995,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
     // Published linkedin posts — filter out empty/short post_text
     const liPublished: SavedPost[] = (liRes.data || [])
       .filter((p: any) => p.post_text && p.post_text.trim().length >= 20)
-      .filter((p: any) => p.published_at || p.tracking_status === "published")
+      .filter((p: any) => p.published_at || isPublishedPost(p))
       .map((p: any) => ({
         ...p,
         _source: "linkedin_posts" as const,
