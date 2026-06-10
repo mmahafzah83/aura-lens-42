@@ -14,6 +14,11 @@ import {
   PERSONA_LABELS,
   type RankBucket,
 } from "@/lib/marketPersonas";
+import {
+  applyPublishedFilter,
+  applyCatalogFilter,
+  filterPublishedRows,
+} from "@/lib/postProvenance";
 
 // ── Canonical capability dimensions (AuditRadarWidget.tsx:7-17) ──
 export const CAPABILITY_DIMENSIONS: readonly string[] = [
@@ -216,18 +221,19 @@ export async function buildIdentityReport(userId: string): Promise<ReportData> {
     supabase.from("documents").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("evidence_fragments").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("strategic_signals").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("status", "active"),
-    supabase
-      .from("linkedin_posts")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId)
-      .in("source_type", ["aura", "aura_generated"])
-      .eq("tracking_status", "published")
-      .gte("created_at", thirtyDaysAgo),
-    supabase
-      .from("linkedin_posts")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId)
-      .not("tracking_status", "is", null),
+    applyPublishedFilter(
+      (supabase
+        .from("linkedin_posts")
+        .select("source_type, tracking_status, published_at")
+        .eq("user_id", userId)
+        .gte("published_at", thirtyDaysAgo) as any),
+    ),
+    applyCatalogFilter(
+      (supabase
+        .from("linkedin_posts")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId) as any),
+    ),
     supabase
       .from("linkedin_posts")
       .select("framework_type")
@@ -424,8 +430,8 @@ export async function buildIdentityReport(userId: string): Promise<ReportData> {
     : { sources: fpSources, evidence: evidenceCount, signals: activeSignalsCount, themes: fpThemes };
 
   // 10. CONTENT
-  const trackedCount = trackedCountRes.count ?? 0;
-  const publishedCount = auraPublishedRes.count ?? 0;
+  const trackedCount = (trackedCountRes as any).count ?? 0;
+  const publishedCount = filterPublishedRows((auraPublishedRes as any).data || []).length;
   const fwCounts = new Map<string, number>();
   for (const r of (frameworkRowsRes.data || []) as any[]) {
     const k = r.framework_type;

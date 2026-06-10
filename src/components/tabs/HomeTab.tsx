@@ -28,6 +28,7 @@ import WeeklyIntelligenceLoopCard from "@/components/WeeklyIntelligenceLoopCard"
 import SilenceAlarm from "@/components/SilenceAlarm";
 import TierCeremonyModal from "@/components/TierCeremonyModal";
 import IdentityDriftBanner from "@/components/IdentityDriftBanner";
+import { applyPublishedFilter, filterPublishedRows } from "@/lib/postProvenance";
 import JourneyCycle from "@/components/home/JourneyCycle";
 import MissionControl from "@/components/home/MissionControl";
 import RecommendedMoveCard from "@/components/home/RecommendedMoveCard";
@@ -641,13 +642,15 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
           .order("priority_score", { ascending: false })
           .limit(1)
           .maybeSingle(),
-        supabase
-          .from("linkedin_posts")
-          .select("published_at")
-          .eq("user_id", uid)
-          .order("published_at", { ascending: false, nullsFirst: false })
-          .limit(1)
-          .maybeSingle(),
+        applyPublishedFilter(
+          (supabase
+            .from("linkedin_posts")
+            .select("source_type, tracking_status, published_at")
+            .eq("user_id", uid)
+            .not("published_at", "is", null)
+            .order("published_at", { ascending: false, nullsFirst: false })
+            .limit(50) as any),
+        ),
       ]);
 
       const topSig = signalRes.data;
@@ -673,8 +676,10 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
       const hasOverlap = sigWords.some(w => headlineWords.has(w));
       if (!hasOverlap) return;
 
-      // Days since last post
-      const lastPost = postRes.data?.published_at;
+      // Days since last post (PUBLISHED — see src/lib/postProvenance.ts)
+      const lastPost = filterPublishedRows(
+        ((postRes as any).data as any[]) || [],
+      )[0]?.published_at;
       const daysSinceLastPost = lastPost
         ? Math.floor((Date.now() - new Date(lastPost).getTime()) / 86400_000)
         : 30;

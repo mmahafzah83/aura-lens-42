@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
+import { applyPublishedFilter, filterPublishedRows } from "@/lib/postProvenance";
 
 interface RhythmItem {
   id: "capture" | "publish" | "voice";
@@ -43,13 +44,14 @@ export default function MissionControl({
           .select("id", { count: "exact", head: true })
           .eq("user_id", userId)
           .gte("created_at", weekStart),
-        supabase
-          .from("linkedin_posts")
-          .select("id, published_confirmed_at, published_at, tracking_status")
-          .eq("user_id", userId)
-          .eq("tracking_status", "published")
-          .or(`published_confirmed_at.gte.${weekStart},published_at.gte.${weekStart}`)
-          .limit(1),
+        applyPublishedFilter(
+          (supabase
+            .from("linkedin_posts")
+            .select("id, source_type, tracking_status, published_confirmed_at, published_at")
+            .eq("user_id", userId)
+            .or(`published_confirmed_at.gte.${weekStart},published_at.gte.${weekStart}`)
+            .limit(50) as any),
+        ),
         supabase
           .from("authority_voice_profiles")
           .select("example_posts")
@@ -61,7 +63,8 @@ export default function MissionControl({
       if (cancelled) return;
 
       const capturedThisWeek = (entriesRes.count ?? 0) > 0;
-      const publishedThisWeek = Array.isArray(postsRes.data) && postsRes.data.length > 0;
+      const publishedThisWeek =
+        filterPublishedRows(((postsRes as any).data as any[]) || []).length > 0;
       const examples = (voiceRes.data as any)?.example_posts;
       const voiceTrained = Array.isArray(examples) && examples.length >= 2;
 

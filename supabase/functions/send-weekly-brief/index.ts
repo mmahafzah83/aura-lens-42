@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { applyPublishedFilter, filterPublishedRows } from "../_shared/postProvenance.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -412,19 +413,29 @@ Rules:
         // Publishing cadence
         const oneWeekAgoIso = sevenDaysAgo;
         const twoWeeksAgoIso = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
-        const [{ count: postsThisWeek }, { count: postsLastWeek }] = await Promise.all([
-          admin
-            .from("linkedin_posts")
-            .select("id", { count: "exact", head: true })
-            .eq("user_id", userId)
-            .gte("published_at", oneWeekAgoIso),
-          admin
-            .from("linkedin_posts")
-            .select("id", { count: "exact", head: true })
-            .eq("user_id", userId)
-            .gte("published_at", twoWeeksAgoIso)
-            .lt("published_at", oneWeekAgoIso),
+        const [thisWeekRes, lastWeekRes] = await Promise.all([
+          applyPublishedFilter(
+            (admin
+              .from("linkedin_posts")
+              .select("source_type, tracking_status, published_at")
+              .eq("user_id", userId)
+              .gte("published_at", oneWeekAgoIso) as any),
+          ),
+          applyPublishedFilter(
+            (admin
+              .from("linkedin_posts")
+              .select("source_type, tracking_status, published_at")
+              .eq("user_id", userId)
+              .gte("published_at", twoWeeksAgoIso)
+              .lt("published_at", oneWeekAgoIso) as any),
+          ),
         ]);
+        const postsThisWeek = filterPublishedRows(
+          ((thisWeekRes as any).data as any[]) || [],
+        ).length;
+        const postsLastWeek = filterPublishedRows(
+          ((lastWeekRes as any).data as any[]) || [],
+        ).length;
 
         // Capture rhythm — distinct active weeks in last 12
         const twelveWeeksAgo = new Date(Date.now() - 12 * 7 * 86400000);

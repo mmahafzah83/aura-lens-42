@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.99.3";
+import { applyPublishedFilter, filterPublishedRows } from "../_shared/postProvenance.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -195,12 +196,14 @@ serve(async (req) => {
         .select("id", { count: "exact", head: true })
         .eq("user_id", user.id)
         .gte("created_at", sevenDaysAgo),
-      supabase.from("linkedin_posts")
-        .select("published_at, engagement_score")
-        .eq("user_id", user.id)
-        .order("published_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
+      applyPublishedFilter(
+        (supabase.from("linkedin_posts")
+          .select("source_type, tracking_status, published_at, engagement_score")
+          .eq("user_id", user.id)
+          .not("published_at", "is", null)
+          .order("published_at", { ascending: false })
+          .limit(50) as any),
+      ),
       supabase.from("authority_scores")
         .select("authority_score, momentum_score")
         .eq("user_id", user.id)
@@ -209,7 +212,9 @@ serve(async (req) => {
         .maybeSingle(),
     ]);
 
-    const lastPost = postRes.data;
+    const lastPost = filterPublishedRows(
+      ((postRes as any).data as any[]) || [],
+    )[0] || null;
     const daysSinceLastPost = lastPost?.published_at
       ? Math.floor((Date.now() - new Date(lastPost.published_at).getTime()) / 86400_000)
       : null;
