@@ -154,7 +154,7 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
         />
       </div>
       <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, marginBottom: 6, lineHeight: 1.5 }}>
-        Your progression from Observer to recognized Authority
+        Your growth from Observer to Presence
       </div>
       {/* Waypoint bar */}
       <div className="relative" style={{ paddingTop: 6, paddingBottom: 28 }}>
