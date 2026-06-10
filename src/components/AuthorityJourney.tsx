@@ -108,7 +108,7 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
 
   if (loading) {
     return (
-      <section aria-label="Authority journey" className="rounded-r-lg border p-5"
+      <section aria-label="Presence journey" className="rounded-r-lg border p-5"
         style={{ background: "hsl(var(--card))", borderColor: "hsl(var(--border) / 0.5)" }}>
         <Skeleton className="h-6 w-full mb-4" />
         <Skeleton className="h-4 w-2/3" />
@@ -124,7 +124,7 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
 
   return (
     <section
-      aria-label="Authority journey"
+      aria-label="Presence journey"
       className="rounded-r-lg border"
       style={{
         background: "hsl(var(--card))",
