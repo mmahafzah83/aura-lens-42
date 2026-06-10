@@ -253,7 +253,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
   const [assessmentNudgeDismissed, setAssessmentNudgeDismissed] = useState(false);
   const [assessmentModalOpen, setAssessmentModalOpen] = useState(false);
   const entriesLoaded = Array.isArray(entries);
-  const entryCountForWelcome = entriesLoaded ? entries!.length : 0;
+  const entryCountForWelcome = entriesLoaded ? entries!.length : -1;
   // showWelcome / welcomeState computed below, after topSignal is declared.
   // The welcome card MAY appear once profile + entries are both loaded. Until
   // we know that for sure, we must NOT render the first-visit hint, otherwise
