@@ -125,12 +125,19 @@ serve(async (req) => {
     // --- content_score: split imported (≤15 baseline) vs active published (≤85) ---
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
     // Imported = all non-user-published content (history baseline, no date filter)
-    const { count: importedCount } = await admin
+    const { count: importedBaseCount } = await admin
       .from("linkedin_posts")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
-      .in("source_type", ["linkedin_export", "browser_capture", "external_reference", "search_discovery"])
+      .in("source_type", ["linkedin_export", "browser_capture", "external_reference"])
       .neq("tracking_status", "rejected");
+    const { count: discoveredConfirmedCount } = await admin
+      .from("linkedin_posts")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("source_type", "search_discovery")
+      .eq("tracking_status", "confirmed");
+    const importedCount = (importedBaseCount ?? 0) + (discoveredConfirmedCount ?? 0);
     // Aura-published in last 30 days (MUST be published, not just drafted)
     const { count: auraPublishedCount } = await admin
       .from("linkedin_posts")
