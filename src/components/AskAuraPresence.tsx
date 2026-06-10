@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Sparkles, Bell, Clock, AlertTriangle, TrendingUp, FileText, BookOpen, ArrowUpRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
+import { applyPublishedFilter, filterPublishedRows } from "@/lib/postProvenance";
 
 type EventType = "timing_window" | "silence_alarm" | "signal_shift" | "weekly_brief" | "knowledge_debt";
 
@@ -149,17 +150,20 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle(),
-        (supabase.from("linkedin_posts" as any) as any)
-          .select("published_at")
-          .eq("user_id", user.id)
-          .not("published_at", "is", null)
-          .order("published_at", { ascending: false })
-          .limit(1)
-          .maybeSingle(),
+        applyPublishedFilter(
+          (supabase.from("linkedin_posts" as any) as any)
+            .select("source_type, tracking_status, published_at")
+            .eq("user_id", user.id)
+            .not("published_at", "is", null)
+            .order("published_at", { ascending: false })
+            .limit(50),
+        ),
       ]);
 
       const lastEntry = (cRes as any)?.data?.created_at as string | undefined;
-      const lastPost = (lastPostRes as any)?.data?.published_at as string | undefined;
+      const lastPost = filterPublishedRows(
+        ((lastPostRes as any)?.data as any[]) || [],
+      )[0]?.published_at as string | undefined;
       const alarmTriggered = !lastEntry || new Date(lastEntry).toISOString() < sevenDaysAgo;
       const highPriorityCount = (bRes as any)?.count ?? 0;
       const lastPostStale = !lastPost || new Date(lastPost).getTime() < threeDaysAgoMs;
