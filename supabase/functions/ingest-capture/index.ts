@@ -275,6 +275,31 @@ Deno.serve(async (req) => {
       if (!entryErr && entryRow?.id) {
         newEntryId = entryRow.id;
         console.log("[ingest-capture] entries insert ok:", newEntryId);
+        // Emit ledger event — non-blocking on failure
+        try {
+          const sbUrl = Deno.env.get("SUPABASE_URL")!;
+          const srk = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+          const res = await fetch(`${sbUrl}/functions/v1/ingest-source-event`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${srk}`,
+              apikey: srk,
+            },
+            body: JSON.stringify({
+              user_id: effectiveUserId,
+              event_type: "capture",
+              source_table: "entries",
+              source_id: newEntryId,
+              payload: { capture_type: type },
+            }),
+          });
+          if (!res.ok) {
+            console.error("[source-event] emit failed", res.status, await res.text());
+          }
+        } catch (e: any) {
+          console.error("[source-event] emit failed", e?.message);
+        }
         // Wire the full pipeline: extract-evidence creates fragments, then chains to detect-signals-v2
         // @ts-ignore EdgeRuntime.waitUntil is available in Supabase Edge Functions
         EdgeRuntime.waitUntil((async () => {
