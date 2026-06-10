@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { applyPublishedFilter, filterPublishedRows } from "../_shared/postProvenance.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -30,13 +31,15 @@ serve(async (req) => {
     const twoWeeksAgo = new Date(now.getTime() - 14 * 86400000).toISOString().split("T")[0];
 
     const [postsRes, snapshotsRes, prevSnapshotsRes, authScoreRes] = await Promise.all([
-      supabase
-        .from("linkedin_posts")
-        .select("hook, title, post_text, theme, topic_label, framework_type, format_type, content_type, visual_style, engagement_score, like_count, comment_count, repost_count, published_at")
-        .eq("user_id", user.id)
-        .gte("published_at", weekAgo)
-        .order("published_at", { ascending: false })
-        .limit(50),
+      applyPublishedFilter(
+        (supabase
+          .from("linkedin_posts")
+          .select("source_type, tracking_status, hook, title, post_text, theme, topic_label, framework_type, format_type, content_type, visual_style, engagement_score, like_count, comment_count, repost_count, published_at")
+          .eq("user_id", user.id)
+          .gte("published_at", weekAgo)
+          .order("published_at", { ascending: false })
+          .limit(50) as any),
+      ),
       supabase
         .from("influence_snapshots")
         .select("snapshot_date, followers, follower_growth, impressions, reactions, comments, shares, engagement_rate, source_type")
