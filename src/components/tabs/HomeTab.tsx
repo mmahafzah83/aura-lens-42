@@ -332,7 +332,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
   });
 
   // J12 — empty state for new users with zero captures
-  const isEmpty = Array.isArray(entries) && entries.length === 0;
+  const isEmpty = entriesLoaded && entries.length === 0;
   const [alarmEducationSeen, setAlarmEducationSeen] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
     return localStorage.getItem("aura_alarm_seen") === "true";
