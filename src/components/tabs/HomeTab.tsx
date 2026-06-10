@@ -535,8 +535,10 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
         ({ data: { session } } = await supabase.auth.getSession());
       }
       if (!session) {
-        console.log("[HomeTab] trends: no session yet, skipping (will retry when auth ready)");
-        // Leave loading=true so the skeleton stays; the auth effect will re-fire.
+        console.log("[HomeTab] trends: no session after retry, unblocking with empty state");
+        // Do NOT leave skeleton stuck — unblock loading and fall through to
+        // empty state. Realtime resync-on-subscribe will recover when rows arrive.
+        didAttempt = true;
         return;
       }
       didAttempt = true;
@@ -595,7 +597,8 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
         });
       }
     } finally {
-      if (didAttempt) setTrendsLoading(false);
+      // ALWAYS clear the skeleton on exit — never strand the loading flag.
+      setTrendsLoading(false);
     }
   }, []);
 
