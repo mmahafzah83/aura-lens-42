@@ -430,8 +430,8 @@ export async function buildIdentityReport(userId: string): Promise<ReportData> {
     : { sources: fpSources, evidence: evidenceCount, signals: activeSignalsCount, themes: fpThemes };
 
   // 10. CONTENT
-  const trackedCount = trackedCountRes.count ?? 0;
-  const publishedCount = auraPublishedRes.count ?? 0;
+  const trackedCount = (trackedCountRes as any).count ?? 0;
+  const publishedCount = filterPublishedRows((auraPublishedRes as any).data || []).length;
   const fwCounts = new Map<string, number>();
   for (const r of (frameworkRowsRes.data || []) as any[]) {
     const k = r.framework_type;
