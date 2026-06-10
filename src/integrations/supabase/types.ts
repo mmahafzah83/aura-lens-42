@@ -797,6 +797,36 @@ export type Database = {
         }
         Relationships: []
       }
+      eval_metrics: {
+        Row: {
+          context: Json
+          created_at: string
+          id: string
+          measured_at: string
+          metric: string
+          user_id: string | null
+          value: number
+        }
+        Insert: {
+          context?: Json
+          created_at?: string
+          id?: string
+          measured_at?: string
+          metric: string
+          user_id?: string | null
+          value: number
+        }
+        Update: {
+          context?: Json
+          created_at?: string
+          id?: string
+          measured_at?: string
+          metric?: string
+          user_id?: string | null
+          value?: number
+        }
+        Relationships: []
+      }
       evidence_fragments: {
         Row: {
           confidence: number
@@ -855,6 +885,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      facet_states: {
+        Row: {
+          created_at: string
+          facet: string
+          id: string
+          inputs: Json
+          last_reinforced_at: string | null
+          uncertainty: number
+          updated_at: string
+          user_id: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          facet: string
+          id?: string
+          inputs?: Json
+          last_reinforced_at?: string | null
+          uncertainty?: number
+          updated_at?: string
+          user_id: string
+          value?: number
+        }
+        Update: {
+          created_at?: string
+          facet?: string
+          id?: string
+          inputs?: Json
+          last_reinforced_at?: string | null
+          uncertainty?: number
+          updated_at?: string
+          user_id?: string
+          value?: number
+        }
+        Relationships: []
       }
       focus_accounts: {
         Row: {
@@ -1067,6 +1133,36 @@ export type Database = {
           started_at?: string | null
           status?: string
           total_rows?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      imprint_snapshots: {
+        Row: {
+          components: Json
+          created_at: string
+          facet_vector: Json
+          formula_version: number
+          id: string
+          imprint: number
+          user_id: string
+        }
+        Insert: {
+          components?: Json
+          created_at?: string
+          facet_vector?: Json
+          formula_version?: number
+          id?: string
+          imprint: number
+          user_id: string
+        }
+        Update: {
+          components?: Json
+          created_at?: string
+          facet_vector?: Json
+          formula_version?: number
+          id?: string
+          imprint?: number
           user_id?: string
         }
         Relationships: []
@@ -2031,6 +2127,42 @@ export type Database = {
           pillar?: string
           target_hours?: number
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      source_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          occurred_at: string
+          payload: Json
+          processed_at: string | null
+          source_id: string
+          source_table: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          occurred_at?: string
+          payload?: Json
+          processed_at?: string | null
+          source_id: string
+          source_table: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          occurred_at?: string
+          payload?: Json
+          processed_at?: string | null
+          source_id?: string
+          source_table?: string
           user_id?: string
         }
         Relationships: []
