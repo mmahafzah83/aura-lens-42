@@ -6,8 +6,7 @@
  * not the number of evidence fragments (one source can produce many fragments via AI
  * extraction, which would inflate depth). Depth caps at sourceCount=5.
  *
- * Used by both detect-signals-v2 (per-capture) and detect-patterns (batch)
- * to guarantee identical scoring regardless of pipeline.
+ * Used by detect-signals-v2 (the canonical signal writer).
  */
 export function calcConfidence(
   aiBaseScore: number,

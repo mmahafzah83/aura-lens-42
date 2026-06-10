@@ -20,7 +20,7 @@ const EDGE_FUNCTIONS = [
   "audit-interpretation", "auras-read", "brand-assessment", "browser-capture",
   "calculate-aura-score", "chat-aura", "check-lifecycle-triggers", "classify-posts",
   "cleanup-posts", "colleague-invite", "daily-briefing", "deduplicate-entries",
-  "detect-card-style", "detect-market-gaps", "detect-patterns", "detect-signals-v2",
+  "detect-card-style", "detect-market-gaps", "detect-signals-v2",
   "discover-linkedin-posts", "draft-post", "evaluate-content-quality", "extract-evidence",
   "fetch-industry-trends", "generate-action-output", "generate-authority-content",
   "generate-brand-positioning", "generate-branded-post", "generate-carousel-v2",

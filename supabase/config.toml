@@ -39,9 +39,6 @@ verify_jwt = false
 [functions.generate-framework-diagram]
 verify_jwt = false
 
-[functions.detect-patterns]
-verify_jwt = false
-
 [functions.evaluate-content-quality]
 verify_jwt = false
 
