@@ -26,6 +26,11 @@ import VoiceEngineSection from "@/components/VoiceEngineSection";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
+import {
+  applyPublishedFilter,
+  applyCatalogFilter,
+  filterPublishedRows,
+} from "@/lib/postProvenance";
 
 // Canonical 8-milestone definition for the timeline
 const MILESTONE_DEFS: { id: string; name: string; cta?: { label: string; tab: string } }[] = [
@@ -261,18 +266,22 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           (supabase.from("entries") as any)
             .select("id", { count: "exact", head: true })
             .eq("user_id", uid),
-          (supabase.from("linkedin_posts") as any)
-            .select("id", { count: "exact", head: true })
-            .eq("user_id", uid)
-            .not("tracking_status", "is", null),
-          (supabase.from("linkedin_posts") as any)
-            .select("id", { count: "exact", head: true })
-            .eq("user_id", uid)
-            .eq("tracking_status", "published"),
+          applyCatalogFilter(
+            (supabase.from("linkedin_posts") as any)
+              .select("id", { count: "exact", head: true })
+              .eq("user_id", uid),
+          ),
+          applyPublishedFilter(
+            (supabase.from("linkedin_posts") as any)
+              .select("source_type, tracking_status")
+              .eq("user_id", uid),
+          ),
         ]);
         setEntryCount(entriesCountRes.count || 0);
         setTrackedPostCount(postsCountRes.count || 0);
-        setPublishedPostCount(publishedCountRes.count || 0);
+        setPublishedPostCount(
+          filterPublishedRows((publishedCountRes as any).data || []).length,
+        );
       } catch (e) {
         console.warn("[IdentityTab] stage counts failed", e);
       }

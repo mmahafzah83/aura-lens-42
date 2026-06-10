@@ -14,6 +14,11 @@ import {
   PERSONA_LABELS,
   type RankBucket,
 } from "@/lib/marketPersonas";
+import {
+  applyPublishedFilter,
+  applyCatalogFilter,
+  filterPublishedRows,
+} from "@/lib/postProvenance";
 
 // ── Canonical capability dimensions (AuditRadarWidget.tsx:7-17) ──
 export const CAPABILITY_DIMENSIONS: readonly string[] = [
@@ -216,18 +221,19 @@ export async function buildIdentityReport(userId: string): Promise<ReportData> {
     supabase.from("documents").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("evidence_fragments").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("strategic_signals").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("status", "active"),
-    supabase
-      .from("linkedin_posts")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId)
-      .in("source_type", ["aura", "aura_generated"])
-      .eq("tracking_status", "published")
-      .gte("created_at", thirtyDaysAgo),
-    supabase
-      .from("linkedin_posts")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId)
-      .not("tracking_status", "is", null),
+    applyPublishedFilter(
+      supabase
+        .from("linkedin_posts")
+        .select("source_type, tracking_status, published_at")
+        .eq("user_id", userId)
+        .gte("published_at", thirtyDaysAgo),
+    ),
+    applyCatalogFilter(
+      supabase
+        .from("linkedin_posts")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId),
+    ),
     supabase
       .from("linkedin_posts")
       .select("framework_type")
