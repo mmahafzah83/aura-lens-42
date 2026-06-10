@@ -1,0 +1,429 @@
+--- FUNCTION: account-brief ---
+supabase/functions/run-qa-audit/index.ts:18:  "account-brief", "activate-framework", "admin-active-users", "admin-delete-user",
+supabase/config.toml:30:12:[functions.account-brief]
+
+--- FUNCTION: activate-framework ---
+src/components/FrameworkBuilderInline.tsx:255:39:      await supabase.functions.invoke("activate-framework", {
+src/components/FrameworkBuilder.tsx:204:39:      await supabase.functions.invoke("activate-framework", {
+src/components/MyFrameworks.tsx:162:71:      const { data, error: actErr } = await supabase.functions.invoke("activate-framework", {
+supabase/functions/run-qa-audit/index.ts:18:  "account-brief", "activate-framework", "admin-active-users", "admin-delete-user",
+
+--- FUNCTION: admin-active-users ---
+src/pages/Admin.tsx:221:65:        const { data, error } = await supabase.functions.invoke("admin-active-users", {
+supabase/functions/run-qa-audit/index.ts:18:  "account-brief", "activate-framework", "admin-active-users", "admin-delete-user",
+supabase/config.toml:99:12:[functions.admin-active-users]
+
+--- FUNCTION: admin-delete-user ---
+src/pages/Admin.tsx:253:63:      const { data, error } = await supabase.functions.invoke("admin-delete-user", {
+supabase/functions/run-qa-audit/index.ts:18:  "account-brief", "activate-framework", "admin-active-users", "admin-delete-user",
+
+--- FUNCTION: analyze-image ---
+src/components/CaptureModal.tsx:177:63:      const { data, error } = await supabase.functions.invoke("analyze-image", {
+supabase/functions/run-qa-audit/index.ts:19:  "analyze-image", "analyze-linkedin-profile", "analyze-potential", "ask-aura",
+supabase/config.toml:21:12:[functions.analyze-image]
+
+--- FUNCTION: analyze-linkedin-profile ---
+src/components/LinkedInProfileAnalyzer.tsx:117:63:      const { data, error } = await supabase.functions.invoke("analyze-linkedin-profile", {
+supabase/functions/run-qa-audit/index.ts:19:  "analyze-image", "analyze-linkedin-profile", "analyze-potential", "ask-aura",
+
+--- FUNCTION: analyze-potential ---
+src/components/PotentialUnleashed.tsx:32:63:      const { data, error } = await supabase.functions.invoke("analyze-potential", {
+supabase/functions/run-qa-audit/index.ts:19:  "analyze-image", "analyze-linkedin-profile", "analyze-potential", "ask-aura",
+supabase/config.toml:18:12:[functions.analyze-potential]
+
+--- FUNCTION: ask-aura ---
+src/utils/qaInteractionAudit.ts:2211:23:    pushPage(results, "ask-aura", "a1", "Ask Aura opens",
+src/utils/qaInteractionAudit.ts:2217:23:    pushPage(results, "ask-aura", "a1", "Ask Aura opens", "warn", `Error: ${e?.message || e}`);
+src/utils/qaInteractionAudit.ts:2227:21:  pushPage(results, "ask-aura", "a2", "Ask Aura input + send",
+src/utils/qaInteractionAudit.ts:2244:25:      pushPage(results, "ask-aura", "a3", "Ask Aura responds",
+src/utils/qaInteractionAudit.ts:2253:27:        pushPage(results, "ask-aura", "a4", "Response quality (uses signals/recommendations)",
+src/utils/qaInteractionAudit.ts:2260:25:      pushPage(results, "ask-aura", "a3", "Ask Aura responds", "warn", `Error: ${e?.message || e}`);
+src/pages/AdminQA.tsx:528:80:  const PAGE_ORDER = ["home", "intelligence", "publish", "impact", "my-story", "ask-aura", "capture", "shared"];
+src/pages/AdminQA.tsx:753:41:                              {page === "ask-aura" ? "ASK AURA" : page === "my-story" ? "MY STORY" : page.toUpperCase()}
+supabase/functions/run-qa-audit/index.ts:19:  "analyze-image", "analyze-linkedin-profile", "analyze-potential", "ask-aura",
+supabase/config.toml:93:12:[functions.ask-aura]
+supabase/migrations/20260605082035_a9bf9ba7-2ba7-46ca-acf2-b1232ac75c78.sql:61:9:('howto-ask-aura', 'general', 'how-to', ARRAY['faq','guide'], 50,
+supabase/migrations/20260529225453_c83c6a4c-25b2-47d4-a4de-c222f99f7d9a.sql:48:20:('difference-guide-ask-aura', 'general', 'getting-started',
+
+--- FUNCTION: audit-interpretation ---
+src/components/AuditResultsView.tsx:155:53:        const res = await supabase.functions.invoke("audit-interpretation", {
+supabase/functions/run-qa-audit/index.ts:20:  "audit-interpretation", "auras-read", "brand-assessment", "browser-capture",
+
+--- FUNCTION: auras-read ---
+src/components/AurasRead.tsx:63:65:        const { data, error } = await supabase.functions.invoke("auras-read", {
+src/components/home/YourMoves.tsx:112:65:        const { data, error } = await supabase.functions.invoke("auras-read", { body: { user_id: userId } });
+src/components/tabs/HomeTab.tsx:423:65:        const { data, error } = await supabase.functions.invoke("auras-read", {
+supabase/functions/run-qa-audit/index.ts:20:  "audit-interpretation", "auras-read", "brand-assessment", "browser-capture",
+
+--- FUNCTION: backfill-unprocessed-entries ---
+supabase/config.toml:120:12:[functions.backfill-unprocessed-entries]
+
+--- FUNCTION: brand-assessment ---
+src/components/ObjectiveAuditModal.tsx:103:45:            await supabase.functions.invoke("brand-assessment", {
+src/components/BrandAssessmentModal.tsx:395:63:      const { data, error } = await supabase.functions.invoke("brand-assessment", {
+src/components/tabs/IdentityTab.tsx:189:41:        await supabase.functions.invoke("brand-assessment", { body: {} });
+supabase/functions/run-qa-audit/index.ts:20:  "audit-interpretation", "auras-read", "brand-assessment", "browser-capture",
+
+--- FUNCTION: browser-capture ---
+supabase/functions/run-qa-audit/index.ts:20:  "audit-interpretation", "auras-read", "brand-assessment", "browser-capture",
+
+--- FUNCTION: calculate-aura-score ---
+src/components/AuthorityJourney.tsx:78:63:        const { data: res, error } = await invokeEdgeFunction("calculate-aura-score", { body: {} });
+src/lib/runPostImportPipeline.ts:50:22:  try { await callFn("calculate-aura-score"); state.score = "done"; }
+src/components/MilestonesSection.tsx:112:63:        const { data: res, error } = await invokeEdgeFunction("calculate-aura-score", { body: {} });
+src/components/WeeklyRhythm.tsx:52:63:        const { data: res, error } = await invokeEdgeFunction("calculate-aura-score", { body: {} });
+src/components/identity/ScoreBreakdown.tsx:46:58:        const { data, error } = await invokeEdgeFunction("calculate-aura-score", { body: {} });
+src/components/tabs/IdentityTab.tsx:141:63:        const { data: res, error } = await invokeEdgeFunction("calculate-aura-score", { body: {} });
+src/components/tabs/HomeTab.tsx:868:63:        const { data: res, error } = await invokeEdgeFunction("calculate-aura-score", { body: {} });
+src/components/tabs/HomeTab.tsx:879:69:              const { data: res, error } = await invokeEdgeFunction("calculate-aura-score", { body: {} });
+src/components/tabs/ImpactTab.tsx:464:63:        const { data: res, error } = await invokeEdgeFunction("calculate-aura-score", { body: {} });
+src/components/tabs/AuthorityTab.tsx:352:22:  invokeEdgeFunction("calculate-aura-score", { body: { user_id: userId } })
+supabase/functions/detect-signals-v2/index.ts:447:          await admin.functions.invoke("calculate-aura-score", {
+supabase/functions/run-qa-audit/index.ts:21:  "calculate-aura-score", "chat-aura", "check-lifecycle-triggers", "classify-posts",
+supabase/functions/run-qa-walkthrough/index.ts:74:    const { data, error } = await admin.functions.invoke("calculate-aura-score", {
+supabase/config.toml:78:12:[functions.calculate-aura-score]
+
+--- FUNCTION: chat-aura ---
+supabase/functions/run-qa-audit/index.ts:21:  "calculate-aura-score", "chat-aura", "check-lifecycle-triggers", "classify-posts",
+supabase/config.toml:24:12:[functions.chat-aura]
+
+--- FUNCTION: check-lifecycle-triggers ---
+supabase/functions/run-qa-audit/index.ts:21:  "calculate-aura-score", "chat-aura", "check-lifecycle-triggers", "classify-posts",
+supabase/config.toml:9:12:[functions.check-lifecycle-triggers]
+
+--- FUNCTION: classify-posts ---
+src/components/influence/PostDiscoveryPanel.tsx:177:70:      const { data, error: fnErr } = await supabase.functions.invoke("classify-posts");
+supabase/functions/run-qa-audit/index.ts:21:  "calculate-aura-score", "chat-aura", "check-lifecycle-triggers", "classify-posts",
+
+--- FUNCTION: cleanup-posts ---
+src/components/influence/PostCleanupPanel.tsx:37:63:      const { data, error } = await supabase.functions.invoke("cleanup-posts");
+supabase/functions/run-qa-audit/index.ts:22:  "cleanup-posts", "colleague-invite", "daily-briefing", "deduplicate-entries",
+
+--- FUNCTION: colleague-invite ---
+src/components/InviteColleagueModal.tsx:27:65:        const { data, error } = await supabase.functions.invoke("colleague-invite", {
+src/components/InviteColleagueModal.tsx:59:63:      const { data, error } = await supabase.functions.invoke("colleague-invite", {
+supabase/functions/run-qa-audit/index.ts:22:  "cleanup-posts", "colleague-invite", "daily-briefing", "deduplicate-entries",
+
+--- FUNCTION: daily-briefing ---
+src/components/home/TodaysIntelligence.tsx:59:65:        const { data, error } = await supabase.functions.invoke("daily-briefing", { body: {} });
+src/components/IntelligenceCards.tsx:109:63:      const { data, error } = await supabase.functions.invoke("daily-briefing", {
+src/components/IntelligenceCards.tsx:153:16:        tags: ["daily-briefing", item.type],
+src/components/home/MarketScan.tsx:194:65:        const { data, error } = await supabase.functions.invoke("daily-briefing", { body: {} });
+supabase/functions/run-qa-audit/index.ts:22:  "cleanup-posts", "colleague-invite", "daily-briefing", "deduplicate-entries",
+
+--- FUNCTION: deduplicate-entries ---
+src/components/RecentEntries.tsx:173:63:      const { data, error } = await supabase.functions.invoke("deduplicate-entries", {
+src/components/RecentEntries.tsx:191:63:      const { data, error } = await supabase.functions.invoke("deduplicate-entries", {
+supabase/functions/run-qa-audit/index.ts:22:  "cleanup-posts", "colleague-invite", "daily-briefing", "deduplicate-entries",
+supabase/config.toml:33:12:[functions.deduplicate-entries]
+
+--- FUNCTION: delete-source ---
+src/components/tabs/SourcesSubTab.tsx:640:55:    const { error } = await supabase.functions.invoke("delete-source", {
+
+--- FUNCTION: detect-card-style ---
+src/components/tabs/AuthorityTab.tsx:616:58:        const { data } = await supabase.functions.invoke("detect-card-style", {
+supabase/functions/run-qa-audit/index.ts:23:  "detect-card-style", "detect-market-gaps", "detect-patterns", "detect-signals-v2",
+
+--- FUNCTION: detect-market-gaps ---
+src/components/tabs/IntelligenceTab.tsx:583:66:      const { data: r, error } = await supabase.functions.invoke("detect-market-gaps", { body: {} });
+src/components/intelligence/MarketCoverageSection.tsx:67:9:        "detect-market-gaps",
+supabase/functions/run-qa-audit/index.ts:23:  "detect-card-style", "detect-market-gaps", "detect-patterns", "detect-signals-v2",
+
+--- FUNCTION: detect-patterns ---
+supabase/functions/run-qa-audit/index.ts:23:  "detect-card-style", "detect-market-gaps", "detect-patterns", "detect-signals-v2",
+supabase/config.toml:42:12:[functions.detect-patterns]
+
+--- FUNCTION: detect-signals-v2 ---
+src/components/tabs/SourcesSubTab.tsx:341:69:        const { error: sigError } = await supabase.functions.invoke('detect-signals-v2', {
+supabase/functions/extract-evidence/index.pre-capture-chain-waituntil.bak.ts:322:      adminClient.functions.invoke("detect-signals-v2", {
+supabase/functions/extract-evidence/index.ts:332:          const { error: sigError } = await adminClient.functions.invoke("detect-signals-v2", {
+supabase/functions/ingest-document/index.ts:388:            const { error: sigError } = await adminClient.functions.invoke("detect-signals-v2", {
+supabase/functions/run-qa-audit/index.ts:23:  "detect-card-style", "detect-market-gaps", "detect-patterns", "detect-signals-v2",
+supabase/config.toml:81:12:[functions.detect-signals-v2]
+
+--- FUNCTION: discover-linkedin-posts ---
+src/components/influence/PostDiscoveryPanel.tsx:118:9:        "discover-linkedin-posts",
+supabase/functions/run-qa-audit/index.ts:24:  "discover-linkedin-posts", "draft-post", "evaluate-content-quality", "extract-evidence",
+
+--- FUNCTION: draft-post ---
+src/pages/TrendDetail.tsx:92:63:      const { data, error } = await supabase.functions.invoke("draft-post", {
+src/components/LinkedInDraftPanel.tsx:55:63:      const { data, error } = await supabase.functions.invoke("draft-post", {
+src/components/RecentEntries.tsx:119:63:      const { data, error } = await supabase.functions.invoke("draft-post", {
+src/components/RecentEntries.tsx:143:63:      const { data, error } = await supabase.functions.invoke("draft-post", {
+src/components/tabs/InfluenceTab.tsx:47:63:      const { data, error } = await supabase.functions.invoke("draft-post", {
+src/components/WeeklyTransformationLens.tsx:39:63:      const { data, error } = await supabase.functions.invoke("draft-post", {
+supabase/functions/run-qa-audit/index.ts:24:  "discover-linkedin-posts", "draft-post", "evaluate-content-quality", "extract-evidence",
+supabase/config.toml:12:12:[functions.draft-post]
+
+--- FUNCTION: evaluate-content-quality ---
+supabase/functions/generate-authority-content/index.pre-arabic-gen-voice-injection.bak.ts:403:        const gatePromise = supabase.functions.invoke("evaluate-content-quality", {
+supabase/functions/generate-authority-content/index.pre-confidence-scale.bak.ts:394:        const gatePromise = supabase.functions.invoke("evaluate-content-quality", {
+supabase/functions/generate-authority-content/index.pre-fix-english-bilingual.bak.ts:402:        const gatePromise = supabase.functions.invoke("evaluate-content-quality", {
+supabase/functions/generate-authority-content/index.pre-gen-service-role.bak.ts:424:        const gatePromise = supabase.functions.invoke("evaluate-content-quality", {
+supabase/functions/generate-authority-content/index.pre-gen-voice-by-language.bak.ts:401:        const gatePromise = supabase.functions.invoke("evaluate-content-quality", {
+supabase/functions/generate-authority-content/index.pre-voice-loop-close.bak.ts:394:        const gatePromise = supabase.functions.invoke("evaluate-content-quality", {
+supabase/functions/generate-authority-content/index.ts:447:        const gatePromise = supabase.functions.invoke("evaluate-content-quality", {
+supabase/functions/run-qa-audit/index.ts:24:  "discover-linkedin-posts", "draft-post", "evaluate-content-quality", "extract-evidence",
+supabase/config.toml:45:12:[functions.evaluate-content-quality]
+
+--- FUNCTION: extract-evidence ---
+src/components/CaptureModal.tsx:411:21:            .invoke("extract-evidence", {
+src/components/tabs/SourcesSubTab.tsx:335:92:      const { data: extractResult, error: extractError } = await supabase.functions.invoke('extract-evidence', {
+supabase/functions/backfill-unprocessed-entries/index.ts:92:        const { error: invErr } = await admin.functions.invoke("extract-evidence", {
+supabase/functions/ingest-capture/index.pre-capture-chain-waituntil.bak.ts:279:        supabase.functions.invoke("extract-evidence", {
+supabase/functions/ingest-capture/index.ts:282:            const { error: extractError } = await supabase.functions.invoke("extract-evidence", {
+supabase/functions/ingest-document/index.ts:380:          "extract-evidence",
+supabase/functions/run-qa-audit/index.ts:24:  "discover-linkedin-posts", "draft-post", "evaluate-content-quality", "extract-evidence",
+supabase/config.toml:36:12:[functions.extract-evidence]
+
+--- FUNCTION: fetch-industry-trends ---
+src/components/tabs/HomeTab.tsx:583:51:            .then(() => supabase.functions.invoke("fetch-industry-trends", { body: { mode: "light" } }))
+src/components/tabs/HomeTab.tsx:1076:57:      const { error } = await supabase.functions.invoke("fetch-industry-trends", {
+supabase/functions/run-qa-audit/index.ts:25:  "fetch-industry-trends", "generate-action-output", "generate-authority-content",
+supabase/config.toml:75:12:[functions.fetch-industry-trends]
+
+--- FUNCTION: generate-action-output ---
+src/components/ActionWorkspace.tsx:71:63:      const { data, error } = await supabase.functions.invoke("generate-action-output", {
+supabase/functions/run-qa-audit/index.ts:25:  "fetch-industry-trends", "generate-action-output", "generate-authority-content",
+supabase/config.toml:51:12:[functions.generate-action-output]
+
+--- FUNCTION: generate-audience-insight ---
+src/components/tabs/ImpactTab.tsx:519:19:          .invoke("generate-audience-insight", { body: {} })
+
+--- FUNCTION: generate-authority-content ---
+supabase/functions/run-qa-audit/index.ts:25:  "fetch-industry-trends", "generate-action-output", "generate-authority-content",
+
+--- FUNCTION: generate-brand-positioning ---
+src/lib/runPostImportPipeline.ts:45:22:  try { await callFn("generate-brand-positioning"); state.positioning = "done"; }
+supabase/functions/run-qa-audit/index.ts:26:  "generate-brand-positioning", "generate-branded-post", "generate-carousel-v2",
+
+--- FUNCTION: generate-branded-post ---
+src/components/IntelligenceCards.tsx:158:41:        await supabase.functions.invoke("generate-branded-post", {
+src/components/IntelligenceCards.tsx:194:63:      const { data, error } = await supabase.functions.invoke("generate-branded-post", {
+src/components/tabs/MarketTab.tsx:89:63:      const { data, error } = await supabase.functions.invoke("generate-branded-post", {
+supabase/functions/run-qa-audit/index.ts:26:  "generate-brand-positioning", "generate-branded-post", "generate-carousel-v2",
+supabase/config.toml:57:12:[functions.generate-branded-post]
+
+--- FUNCTION: generate-carousel-v2 ---
+src/pages/CarouselStudio.tsx:1743:63:      const { data, error } = await supabase.functions.invoke("generate-carousel-v2", {
+src/pages/CarouselStudio.tsx:1871:63:      const { data, error } = await supabase.functions.invoke("generate-carousel-v2", {
+supabase/functions/run-qa-audit/index.ts:26:  "generate-brand-positioning", "generate-branded-post", "generate-carousel-v2",
+supabase/config.toml:102:12:[functions.generate-carousel-v2]
+
+--- FUNCTION: generate-framework-diagram ---
+src/components/MyFrameworks.tsx:109:63:      const { data, error } = await supabase.functions.invoke("generate-framework-diagram", {
+src/components/FrameworkBuilderInline.tsx:196:63:      const { data, error } = await supabase.functions.invoke("generate-framework-diagram", {
+src/components/FrameworkBuilder.tsx:162:63:      const { data, error } = await supabase.functions.invoke("generate-framework-diagram", {
+supabase/functions/run-qa-audit/index.ts:27:  "generate-framework-diagram", "generate-identity-intelligence", "generate-market-mirror",
+supabase/config.toml:39:12:[functions.generate-framework-diagram]
+
+--- FUNCTION: generate-identity-intelligence ---
+src/components/tabs/IdentityTab.tsx:191:41:        await supabase.functions.invoke("generate-identity-intelligence", { body: {} });
+supabase/functions/run-qa-audit/index.ts:27:  "generate-framework-diagram", "generate-identity-intelligence", "generate-market-mirror",
+
+--- FUNCTION: generate-impact-narrative ---
+src/components/tabs/ImpactTab.tsx:886:58:        const { data } = await supabase.functions.invoke("generate-impact-narrative", {
+
+--- FUNCTION: generate-market-mirror ---
+src/components/MarketMirror.tsx:64:63:      const { data, error } = await supabase.functions.invoke("generate-market-mirror");
+src/components/tabs/IdentityTab.tsx:193:41:        await supabase.functions.invoke("generate-market-mirror", { body: {} });
+supabase/functions/run-qa-audit/index.ts:27:  "generate-framework-diagram", "generate-identity-intelligence", "generate-market-mirror",
+
+--- FUNCTION: generate-schematic-spec ---
+src/components/visual-cards/SchematicPreviewPanel.tsx:42:63:      const { data, error } = await supabase.functions.invoke("generate-schematic-spec", {
+supabase/functions/run-qa-audit/index.ts:28:  "generate-schematic-spec", "generate-silence-alarm", "import-linkedin-analytics",
+
+--- FUNCTION: generate-silence-alarm ---
+src/components/SilenceAlarm.tsx:60:71:        const { data: resp, error } = await supabase.functions.invoke("generate-silence-alarm", { body: {} });
+supabase/functions/run-qa-audit/index.ts:28:  "generate-schematic-spec", "generate-silence-alarm", "import-linkedin-analytics",
+
+--- FUNCTION: import-linkedin-analytics ---
+src/components/tabs/ImpactTab.tsx:971:63:      const { data, error } = await supabase.functions.invoke("import-linkedin-analytics", {
+supabase/functions/run-qa-audit/index.ts:28:  "generate-schematic-spec", "generate-silence-alarm", "import-linkedin-analytics",
+
+--- FUNCTION: import-linkedin-csv ---
+supabase/functions/run-qa-audit/index.ts:29:  "import-linkedin-csv", "ingest-capture", "ingest-document", "knowledge-intelligence",
+
+--- FUNCTION: ingest-capture ---
+src/pages/Admin.tsx:152:57:      const { error } = await supabase.functions.invoke("ingest-capture", {
+supabase/functions/run-qa-audit/index.ts:29:  "import-linkedin-csv", "ingest-capture", "ingest-document", "knowledge-intelligence",
+supabase/config.toml:72:12:[functions.ingest-capture]
+
+--- FUNCTION: ingest-document ---
+src/components/DocumentUpload.tsx:243:7:      "ingest-document",
+src/components/tabs/SourcesSubTab.tsx:552:35:        supabase.functions.invoke("ingest-document", { body: { document_id: d.id } })
+src/components/tabs/SourcesSubTab.tsx:570:55:    const { error } = await supabase.functions.invoke("ingest-document", {
+supabase/functions/run-qa-audit/index.ts:29:  "import-linkedin-csv", "ingest-capture", "ingest-document", "knowledge-intelligence",
+supabase/config.toml:27:12:[functions.ingest-document]
+
+--- FUNCTION: knowledge-intelligence ---
+src/components/KnowledgeIntelligenceEngine.tsx:128:63:      const { data, error } = await supabase.functions.invoke("knowledge-intelligence");
+supabase/functions/run-qa-audit/index.ts:29:  "import-linkedin-csv", "ingest-capture", "ingest-document", "knowledge-intelligence",
+
+--- FUNCTION: linkedin-claim ---
+supabase/functions/run-qa-audit/index.ts:30:  "linkedin-claim", "linkedin-expert-advisor", "linkedin-oauth", "linkedin-oauth-callback",
+supabase/config.toml:66:12:[functions.linkedin-claim]
+
+--- FUNCTION: linkedin-expert-advisor ---
+src/components/LinkedInExpertAdvisor.tsx:124:63:      const { data, error } = await supabase.functions.invoke("linkedin-expert-advisor");
+supabase/functions/run-qa-audit/index.ts:30:  "linkedin-claim", "linkedin-expert-advisor", "linkedin-oauth", "linkedin-oauth-callback",
+
+--- FUNCTION: linkedin-oauth-callback ---
+src/pages/LinkedInCallback.tsx:47:74:        const { data, error: fnError } = await supabase.functions.invoke("linkedin-oauth-callback", {
+supabase/functions/run-qa-audit/index.ts:30:  "linkedin-claim", "linkedin-expert-advisor", "linkedin-oauth", "linkedin-oauth-callback",
+supabase/config.toml:63:12:[functions.linkedin-oauth-callback]
+
+--- FUNCTION: linkedin-oauth ---
+src/components/LinkedInIntelligence.tsx:33:66:      const { data: connData } = await supabase.functions.invoke("linkedin-oauth", {
+src/components/LinkedInConnector.tsx:40:35:        supabase.functions.invoke("linkedin-oauth", { body: { action: "status" } }),
+src/components/LinkedInConnector.tsx:65:63:      const { data, error } = await supabase.functions.invoke("linkedin-oauth", {
+src/components/LinkedInConnector.tsx:107:63:      const { data, error } = await supabase.functions.invoke("linkedin-oauth", { body: { action: "disconnect" } });
+supabase/functions/run-qa-audit/index.ts:30:  "linkedin-claim", "linkedin-expert-advisor", "linkedin-oauth", "linkedin-oauth-callback",
+supabase/config.toml:60:12:[functions.linkedin-oauth]
+supabase/config.toml:63:12:[functions.linkedin-oauth-callback]
+
+--- FUNCTION: linkedin-sync ---
+src/pages/LinkedInCallback.tsx:71:43:          await supabase.functions.invoke("linkedin-sync", {});
+src/components/LinkedInConnector.tsx:84:63:      const { data, error } = await supabase.functions.invoke("linkedin-sync", {});
+supabase/functions/run-qa-audit/index.ts:31:  "linkedin-sync", "mark-user-active", "market-intelligence", "onboarding-find-article",
+supabase/config.toml:69:12:[functions.linkedin-sync]
+
+--- FUNCTION: mark-user-active ---
+src/pages/Dashboard.tsx:327:23:              .invoke("mark-user-active", { body: {} })
+supabase/functions/run-qa-audit/index.ts:31:  "linkedin-sync", "mark-user-active", "market-intelligence", "onboarding-find-article",
+supabase/config.toml:96:12:[functions.mark-user-active]
+
+--- FUNCTION: market-intelligence ---
+src/components/tabs/MarketTab.tsx:70:63:      const { data, error } = await supabase.functions.invoke("market-intelligence", {
+supabase/functions/run-qa-audit/index.ts:31:  "linkedin-sync", "mark-user-active", "market-intelligence", "onboarding-find-article",
+
+--- FUNCTION: onboarding-find-article ---
+src/pages/Onboarding.tsx:288:15:      .invoke("onboarding-find-article", {
+supabase/functions/run-qa-audit/index.ts:31:  "linkedin-sync", "mark-user-active", "market-intelligence", "onboarding-find-article",
+supabase/config.toml:108:12:[functions.onboarding-find-article]
+
+--- FUNCTION: onboarding-linkedin-prefill ---
+src/pages/Onboarding.tsx:361:63:      const { data, error } = await supabase.functions.invoke("onboarding-linkedin-prefill", {
+supabase/functions/run-qa-audit/index.ts:32:  "onboarding-linkedin-prefill", "open-document", "qa-ai-evaluate", "regenerate-schematic",
+supabase/config.toml:105:12:[functions.onboarding-linkedin-prefill]
+
+--- FUNCTION: open-document ---
+src/components/tabs/SourcesSubTab.tsx:169:63:      const { data, error } = await supabase.functions.invoke("open-document", {
+supabase/functions/run-qa-audit/index.ts:32:  "onboarding-linkedin-prefill", "open-document", "qa-ai-evaluate", "regenerate-schematic",
+supabase/config.toml:84:12:[functions.open-document]
+
+--- FUNCTION: prepare-weekly-drafts ---
+src/components/home/WeekReadyCard.tsx:122:57:      const { error } = await supabase.functions.invoke("prepare-weekly-drafts");
+
+--- FUNCTION: qa-ai-evaluate ---
+src/pages/AdminQA.tsx:444:55:    const { error } = await supabase.functions.invoke("qa-ai-evaluate", {
+supabase/functions/run-qa-audit/index.ts:32:  "onboarding-linkedin-prefill", "open-document", "qa-ai-evaluate", "regenerate-schematic",
+
+--- FUNCTION: regenerate-schematic ---
+src/components/IntelligenceCards.tsx:244:63:      const { data, error } = await supabase.functions.invoke("regenerate-schematic", {
+src/components/LinkedInDraftPanel.tsx:83:63:      const { data, error } = await supabase.functions.invoke("regenerate-schematic", {
+supabase/functions/run-qa-audit/index.ts:32:  "onboarding-linkedin-prefill", "open-document", "qa-ai-evaluate", "regenerate-schematic",
+supabase/config.toml:54:12:[functions.regenerate-schematic]
+
+--- FUNCTION: run-qa-audit ---
+src/pages/AdminQA.tsx:281:57:      const { error } = await supabase.functions.invoke("run-qa-audit", { body: { layer: "backend", run_id } });
+
+--- FUNCTION: run-qa-walkthrough ---
+src/pages/Admin.tsx:133:57:      const { error } = await supabase.functions.invoke("run-qa-walkthrough", { body: {} });
+supabase/functions/run-qa-audit/index.ts:33:  "run-qa-walkthrough", "send-account-notification", "send-invite", "send-lifecycle-email",
+
+--- FUNCTION: send-account-notification ---
+src/pages/Onboarding.tsx:799:41:        await supabase.functions.invoke("send-account-notification", {
+src/pages/Auth.tsx:209:43:          await supabase.functions.invoke("send-account-notification", {
+src/components/PasswordGate.tsx:96:43:          await supabase.functions.invoke("send-account-notification", {
+supabase/functions/run-qa-audit/index.ts:33:  "run-qa-walkthrough", "send-account-notification", "send-invite", "send-lifecycle-email",
+supabase/config.toml:114:12:[functions.send-account-notification]
+
+--- FUNCTION: send-decline-email ---
+src/pages/Admin.tsx:371:41:        await supabase.functions.invoke("send-decline-email", {
+
+--- FUNCTION: send-invite ---
+src/components/BetaAccessAdmin.tsx:212:61:          const { error } = await supabase.functions.invoke("send-invite", {
+src/components/BetaAccessAdmin.tsx:270:57:      const { error } = await supabase.functions.invoke("send-invite", {
+src/components/BetaAccessAdmin.tsx:291:57:      const { error } = await supabase.functions.invoke("send-invite", {
+src/components/BetaAccessAdmin.tsx:325:57:      const { error } = await supabase.functions.invoke("send-invite", {
+src/pages/Admin.tsx:295:55:    const { error } = await supabase.functions.invoke("send-invite", {
+supabase/functions/run-qa-audit/index.ts:33:  "run-qa-walkthrough", "send-account-notification", "send-invite", "send-lifecycle-email",
+
+--- FUNCTION: send-lifecycle-email ---
+src/pages/Onboarding.tsx:1276:47:              await supabase.functions.invoke("send-lifecycle-email", {
+src/components/OnboardingWizard.tsx:183:35:        supabase.functions.invoke("send-lifecycle-email", {
+supabase/functions/check-lifecycle-triggers/index.ts:113:            const r = await admin.functions.invoke("send-lifecycle-email", {
+supabase/functions/check-lifecycle-triggers/index.ts:131:          const r = await admin.functions.invoke("send-lifecycle-email", {
+supabase/functions/run-qa-audit/index.ts:33:  "run-qa-walkthrough", "send-account-notification", "send-invite", "send-lifecycle-email",
+supabase/config.toml:6:12:[functions.send-lifecycle-email]
+
+--- FUNCTION: send-password-reset ---
+src/pages/Auth.tsx:151:61:    const { data, error } = await supabase.functions.invoke("send-password-reset", {
+supabase/functions/run-qa-audit/index.ts:34:  "send-password-reset", "send-weekly-brief", "signal-decay-engine", "sovereign-reading-list",
+supabase/config.toml:111:12:[functions.send-password-reset]
+
+--- FUNCTION: send-weekly-brief ---
+supabase/functions/run-qa-audit/index.ts:34:  "send-password-reset", "send-weekly-brief", "signal-decay-engine", "sovereign-reading-list",
+
+--- FUNCTION: signal-decay-engine ---
+supabase/functions/run-qa-audit/index.ts:34:  "send-password-reset", "send-weekly-brief", "signal-decay-engine", "sovereign-reading-list",
+
+--- FUNCTION: sovereign-reading-list ---
+src/components/tabs/IntelligenceTab.tsx:834:68:      const { data, error: err } = await supabase.functions.invoke("sovereign-reading-list", {
+src/components/intelligence/RecommendedReadingSection.tsx:40:74:      const { data, error: invokeErr } = await supabase.functions.invoke("sovereign-reading-list", {
+supabase/functions/run-qa-audit/index.ts:34:  "send-password-reset", "send-weekly-brief", "signal-decay-engine", "sovereign-reading-list",
+
+--- FUNCTION: strategic-advisor ---
+supabase/functions/run-qa-audit/index.ts:35:  "strategic-advisor", "strategic-briefing", "strategic-critique", "strategic-nudge",
+
+--- FUNCTION: strategic-briefing ---
+src/components/DailyStrategicBriefing.tsx:60:63:      const { data, error } = await supabase.functions.invoke("strategic-briefing", {
+supabase/functions/run-qa-audit/index.ts:35:  "strategic-advisor", "strategic-briefing", "strategic-critique", "strategic-nudge",
+supabase/config.toml:48:12:[functions.strategic-briefing]
+
+--- FUNCTION: strategic-critique ---
+supabase/functions/run-qa-audit/index.ts:35:  "strategic-advisor", "strategic-briefing", "strategic-critique", "strategic-nudge",
+
+--- FUNCTION: strategic-nudge ---
+supabase/functions/run-qa-audit/index.ts:35:  "strategic-advisor", "strategic-briefing", "strategic-critique", "strategic-nudge",
+
+--- FUNCTION: submit-waitlist ---
+src/pages/RequestAccess.tsx:114:63:      const { data, error } = await supabase.functions.invoke("submit-waitlist", {
+supabase/functions/run-qa-audit/index.ts:36:  "submit-waitlist", "summarize-link", "transcribe-voice", "trend-why-matters",
+supabase/config.toml:90:12:[functions.submit-waitlist]
+
+--- FUNCTION: summarize-link ---
+supabase/functions/ingest-capture/index.pre-capture-chain-waituntil.bak.ts:184:        const { data: summaryData, error: summaryError } = await supabase.functions.invoke("summarize-link", {
+supabase/functions/ingest-capture/index.ts:184:        const { data: summaryData, error: summaryError } = await supabase.functions.invoke("summarize-link", {
+supabase/functions/run-qa-audit/index.ts:36:  "submit-waitlist", "summarize-link", "transcribe-voice", "trend-why-matters",
+supabase/config.toml:3:12:[functions.summarize-link]
+
+--- FUNCTION: transcribe-voice ---
+supabase/functions/run-qa-audit/index.ts:36:  "submit-waitlist", "summarize-link", "transcribe-voice", "trend-why-matters",
+supabase/config.toml:15:12:[functions.transcribe-voice]
+
+--- FUNCTION: trend-why-matters ---
+src/pages/TrendDetail.tsx:199:65:        const { data, error } = await supabase.functions.invoke("trend-why-matters", {
+supabase/functions/run-qa-audit/index.ts:36:  "submit-waitlist", "summarize-link", "transcribe-voice", "trend-why-matters",
+
+--- FUNCTION: update-user-password ---
+src/pages/Auth.tsx:201:71:      const { data: pwData, error } = await supabase.functions.invoke("update-user-password", {
+src/components/SetPasswordModal.tsx:44:71:      const { data: pwData, error } = await supabase.functions.invoke("update-user-password", {
+supabase/functions/run-qa-audit/index.ts:37:  "update-user-password", "voice-distill", "weekly-influence-brief", "weekly-progress-summary",
+supabase/config.toml:117:12:[functions.update-user-password]
+
+--- FUNCTION: voice-distill ---
+src/lib/runPostImportPipeline.ts:40:22:  try { await callFn("voice-distill"); state.voice = "done"; }
+src/components/VoiceEngineSection.tsx:209:63:      const { data, error } = await supabase.functions.invoke("voice-distill", {
+src/components/VoiceEngineSection.tsx:254:63:      const { data, error } = await supabase.functions.invoke("voice-distill", {
+supabase/functions/run-qa-audit/index.ts:37:  "update-user-password", "voice-distill", "weekly-influence-brief", "weekly-progress-summary",
+supabase/config.toml:87:12:[functions.voice-distill]
+
+--- FUNCTION: weekly-influence-brief ---
+src/components/influence/WeeklyInfluenceBrief.tsx:63:63:      const { data, error } = await supabase.functions.invoke("weekly-influence-brief");
+supabase/functions/run-qa-audit/index.ts:37:  "update-user-password", "voice-distill", "weekly-influence-brief", "weekly-progress-summary",
+
+--- FUNCTION: weekly-progress-summary ---
+supabase/functions/run-qa-audit/index.ts:37:  "update-user-password", "voice-distill", "weekly-influence-brief", "weekly-progress-summary",
+

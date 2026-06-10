@@ -1,0 +1,558 @@
+--- account-brief ---
+./supabase/config.toml:[functions.account-brief]
+./supabase/functions/run-qa-audit/index.ts:  "account-brief", "activate-framework", "admin-active-users", "admin-delete-user",
+./src/components/AccountIntelligence.tsx:        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/account-brief`,
+
+--- activate-framework ---
+./src/components/FrameworkBuilderInline.tsx:      await supabase.functions.invoke("activate-framework", {
+./src/components/FrameworkBuilder.tsx:      await supabase.functions.invoke("activate-framework", {
+./src/components/MyFrameworks.tsx:      const { data, error: actErr } = await supabase.functions.invoke("activate-framework", {
+./supabase/functions/run-qa-audit/index.ts:  "account-brief", "activate-framework", "admin-active-users", "admin-delete-user",
+
+--- admin-active-users ---
+./supabase/config.toml:[functions.admin-active-users]
+./src/pages/Admin.tsx:        const { data, error } = await supabase.functions.invoke("admin-active-users", {
+./src/pages/Admin.tsx:        console.warn("admin-active-users failed", e);
+./supabase/functions/run-qa-audit/index.ts:  "account-brief", "activate-framework", "admin-active-users", "admin-delete-user",
+
+--- admin-delete-user ---
+./supabase/functions/run-qa-audit/index.ts:  "account-brief", "activate-framework", "admin-active-users", "admin-delete-user",
+./src/pages/Admin.tsx:      const { data, error } = await supabase.functions.invoke("admin-delete-user", {
+
+--- analyze-image ---
+./src/components/CaptureModal.tsx:      const { data, error } = await supabase.functions.invoke("analyze-image", {
+./supabase/config.toml:[functions.analyze-image]
+./supabase/functions/run-qa-audit/index.ts:  "analyze-image", "analyze-linkedin-profile", "analyze-potential", "ask-aura",
+
+--- analyze-linkedin-profile ---
+./src/components/LinkedInProfileAnalyzer.tsx:      const { data, error } = await supabase.functions.invoke("analyze-linkedin-profile", {
+./supabase/functions/run-qa-audit/index.ts:  "analyze-image", "analyze-linkedin-profile", "analyze-potential", "ask-aura",
+
+--- analyze-potential ---
+./supabase/config.toml:[functions.analyze-potential]
+./supabase/functions/run-qa-audit/index.ts:  "analyze-image", "analyze-linkedin-profile", "analyze-potential", "ask-aura",
+./src/components/PotentialUnleashed.tsx:      const { data, error } = await supabase.functions.invoke("analyze-potential", {
+
+--- ask-aura ---
+./supabase/config.toml:[functions.ask-aura]
+./src/utils/qaInteractionAudit.ts:    pushPage(results, "ask-aura", "a1", "Ask Aura opens",
+./src/utils/qaInteractionAudit.ts:    pushPage(results, "ask-aura", "a1", "Ask Aura opens", "warn", `Error: ${e?.message || e}`);
+./src/utils/qaInteractionAudit.ts:  pushPage(results, "ask-aura", "a2", "Ask Aura input + send",
+./src/utils/qaInteractionAudit.ts:      pushPage(results, "ask-aura", "a3", "Ask Aura responds",
+./src/utils/qaInteractionAudit.ts:        pushPage(results, "ask-aura", "a4", "Response quality (uses signals/recommendations)",
+./src/utils/qaInteractionAudit.ts:      pushPage(results, "ask-aura", "a3", "Ask Aura responds", "warn", `Error: ${e?.message || e}`);
+./src/pages/Dashboard.tsx:          <div data-tour="nav-ask-aura">
+./src/pages/Dashboard.tsx:              <div data-tour="nav-ask-aura">
+./src/pages/AdminQA.tsx:  const PAGE_ORDER = ["home", "intelligence", "publish", "impact", "my-story", "ask-aura", "capture", "shared"];
+./src/pages/AdminQA.tsx:                              {page === "ask-aura" ? "ASK AURA" : page === "my-story" ? "MY STORY" : page.toUpperCase()}
+./supabase/migrations/20260605082035_a9bf9ba7-2ba7-46ca-acf2-b1232ac75c78.sql:('howto-ask-aura', 'general', 'how-to', ARRAY['faq','guide'], 50,
+./supabase/functions/run-qa-audit/index.ts:  "analyze-image", "analyze-linkedin-profile", "analyze-potential", "ask-aura",
+./src/components/AuraChatSidebar.tsx:const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ask-aura`;
+./supabase/migrations/20260529225453_c83c6a4c-25b2-47d4-a4de-c222f99f7d9a.sql:('difference-guide-ask-aura', 'general', 'getting-started',
+./src/components/AskAuraPresence.tsx:        data-testid="nav-ask-aura"
+./src/components/HelpPanel.tsx:  const disambig = bySlug("difference-guide-ask-aura");
+./src/components/tabs/ImpactTab.tsx:              onClick={() => { window.location.hash = "#ask-aura"; }}
+
+--- audit-interpretation ---
+./src/components/AuditResultsView.tsx:        const res = await supabase.functions.invoke("audit-interpretation", {
+./supabase/functions/run-qa-audit/index.ts:  "audit-interpretation", "auras-read", "brand-assessment", "browser-capture",
+
+--- auras-read ---
+./supabase/functions/run-qa-audit/index.ts:  "audit-interpretation", "auras-read", "brand-assessment", "browser-capture",
+./src/components/AurasRead.tsx:        const { data, error } = await supabase.functions.invoke("auras-read", {
+./src/components/home/YourMoves.tsx:        const { data, error } = await supabase.functions.invoke("auras-read", { body: { user_id: userId } });
+./src/components/tabs/HomeTab.tsx:        const { data, error } = await supabase.functions.invoke("auras-read", {
+./src/components/tabs/HomeTab.tsx:          console.warn("[HomeTab] auras-read failed", e);
+./src/components/tabs/HomeTab.tsx:      {/* URGENT — top HIGH PUBLISH from auras-read (conditional) */}
+./src/components/tabs/HomeTab.tsx:      {/* YOUR MOVES — remaining auras-read items */}
+
+--- backfill-unprocessed-entries ---
+./supabase/config.toml:[functions.backfill-unprocessed-entries]
+
+--- brand-assessment ---
+./src/pages/Dashboard.tsx:                      setTimeout(() => window.dispatchEvent(new CustomEvent("aura:open-brand-assessment")), 250);
+./supabase/functions/run-qa-audit/index.ts:  "audit-interpretation", "auras-read", "brand-assessment", "browser-capture",
+./src/components/GuidedJourney.tsx:    window.dispatchEvent(new CustomEvent("aura:open-brand-assessment"));
+./src/components/BrandAssessmentModal.tsx:// New section headers (must match brand-assessment EF SYSTEM_PROMPT)
+./src/components/BrandAssessmentModal.tsx:    console.warn("Couldn't parse brand-assessment JSON tail", e);
+./src/components/BrandAssessmentModal.tsx:      const { data, error } = await supabase.functions.invoke("brand-assessment", {
+./src/components/ObjectiveAuditModal.tsx:            await supabase.functions.invoke("brand-assessment", {
+./src/components/tabs/IdentityTab.tsx:    window.addEventListener("aura:open-brand-assessment", openAssessment);
+./src/components/tabs/IdentityTab.tsx:      window.removeEventListener("aura:open-brand-assessment", openAssessment);
+./src/components/tabs/IdentityTab.tsx:  // Auto-trigger the brand-assessment → identity-intelligence → market-mirror chain
+./src/components/tabs/IdentityTab.tsx:        await supabase.functions.invoke("brand-assessment", { body: {} });
+
+--- browser-capture ---
+./extension/background.js:  const res = await fetch(`${SUPABASE_URL}/functions/v1/browser-capture`, {
+./extension/background.js:    const retry = await fetch(`${SUPABASE_URL}/functions/v1/browser-capture`, {
+./supabase/functions/run-qa-audit/index.ts:  "audit-interpretation", "auras-read", "brand-assessment", "browser-capture",
+
+--- calculate-aura-score ---
+./supabase/config.toml:[functions.calculate-aura-score]
+./src/components/AuthorityJourney.tsx:        const { data: res, error } = await invokeEdgeFunction("calculate-aura-score", { body: {} });
+./src/constants/language.ts:// TIER LABELS — single vocabulary, matches calculate-aura-score
+./src/components/TierCeremonyModal.tsx:  /** Current tier name (from parent's calculate-aura-score payload).
+./src/components/TierCeremonyModal.tsx:// calculate-aura-score (Observer/Explorer/Strategist/Voice/Presence).
+./src/components/TierCeremonyModal.tsx:  // current tier (loaded from calculate-aura-score below) so the existing
+./src/lib/runPostImportPipeline.ts: * → calculate-aura-score sequentially. Reports status via onUpdate, and shows a
+./src/lib/runPostImportPipeline.ts:  try { await callFn("calculate-aura-score"); state.score = "done"; }
+./src/lib/runPostImportPipeline.ts:  catch (e) { console.error("calculate-aura-score failed", e); state.score = "error"; }
+./src/lib/buildIdentityReport.ts:// - CONTENT publishedCount: mirrors calculate-aura-score/index.ts:97-104.
+./supabase/functions/detect-signals-v2/index.ts:          await admin.functions.invoke("calculate-aura-score", {
+./src/components/MilestonesSection.tsx:        const { data: res, error } = await invokeEdgeFunction("calculate-aura-score", { body: {} });
+./src/components/MilestoneNotification.tsx:  /** Score payload from calculate-aura-score, owned by the parent (HomeTab).
+./src/components/WeeklyRhythm.tsx:        const { data: res, error } = await invokeEdgeFunction("calculate-aura-score", { body: {} });
+./src/components/identity/ScoreBreakdown.tsx: * Score Breakdown — calls calculate-aura-score live so numbers match Home/Impact.
+./src/components/identity/ScoreBreakdown.tsx:        const { data, error } = await invokeEdgeFunction("calculate-aura-score", { body: {} });
+./supabase/functions/run-qa-audit/index.ts:  "calculate-aura-score", "chat-aura", "check-lifecycle-triggers", "classify-posts",
+./supabase/functions/run-qa-walkthrough/index.ts:  await run(3, "Score: calculate-aura-score", async () => {
+./supabase/functions/run-qa-walkthrough/index.ts:    const { data, error } = await admin.functions.invoke("calculate-aura-score", {
+./src/components/tabs/ImpactTab.tsx:        const { data: res, error } = await invokeEdgeFunction("calculate-aura-score", { body: {} });
+./src/components/tabs/HomeTab.tsx:        const { data: res, error } = await invokeEdgeFunction("calculate-aura-score", { body: {} });
+./src/components/tabs/HomeTab.tsx:              const { data: res, error } = await invokeEdgeFunction("calculate-aura-score", { body: {} });
+./src/components/tabs/HomeTab.tsx:  // effect — that caused calculate-aura-score to be invoked ~13× per /home load.
+./src/components/tabs/IdentityTab.tsx:        const { data: res, error } = await invokeEdgeFunction("calculate-aura-score", { body: {} });
+./src/components/tabs/AuthorityTab.tsx:  invokeEdgeFunction("calculate-aura-score", { body: { user_id: userId } })
+./src/components/tabs/AuthorityTab.tsx:    .catch((e) => console.error("calculate-aura-score failed:", e));
+
+--- chat-aura ---
+./supabase/config.toml:[functions.chat-aura]
+./supabase/functions/run-qa-audit/index.ts:  "calculate-aura-score", "chat-aura", "check-lifecycle-triggers", "classify-posts",
+
+--- check-lifecycle-triggers ---
+./supabase/config.toml:[functions.check-lifecycle-triggers]
+./supabase/functions/run-qa-audit/index.ts:  "calculate-aura-score", "chat-aura", "check-lifecycle-triggers", "classify-posts",
+
+--- classify-posts ---
+./supabase/functions/discover-linkedin-posts/index.ts:        const classifyRes = await fetch(`${SUPABASE_URL}/functions/v1/classify-posts`, {
+./supabase/functions/run-qa-audit/index.ts:  "calculate-aura-score", "chat-aura", "check-lifecycle-triggers", "classify-posts",
+./src/components/influence/PostDiscoveryPanel.tsx:      const { data, error: fnErr } = await supabase.functions.invoke("classify-posts");
+
+--- cleanup-posts ---
+./supabase/functions/run-qa-audit/index.ts:  "cleanup-posts", "colleague-invite", "daily-briefing", "deduplicate-entries",
+./src/components/influence/PostCleanupPanel.tsx:      const { data, error } = await supabase.functions.invoke("cleanup-posts");
+
+--- colleague-invite ---
+./supabase/functions/run-qa-audit/index.ts:  "cleanup-posts", "colleague-invite", "daily-briefing", "deduplicate-entries",
+./src/components/InviteColleagueModal.tsx:        const { data, error } = await supabase.functions.invoke("colleague-invite", {
+./src/components/InviteColleagueModal.tsx:      const { data, error } = await supabase.functions.invoke("colleague-invite", {
+
+--- daily-briefing ---
+./src/components/home/TodaysIntelligence.tsx:        const { data, error } = await supabase.functions.invoke("daily-briefing", { body: {} });
+./src/components/home/MarketScan.tsx:        const { data, error } = await supabase.functions.invoke("daily-briefing", { body: {} });
+./src/components/IntelligenceCards.tsx:    const cached = sessionStorage.getItem("aura-daily-briefing");
+./src/components/IntelligenceCards.tsx:    const cachedTime = sessionStorage.getItem("aura-daily-briefing-time");
+./src/components/IntelligenceCards.tsx:      const { data, error } = await supabase.functions.invoke("daily-briefing", {
+./src/components/IntelligenceCards.tsx:      sessionStorage.setItem("aura-daily-briefing", JSON.stringify({ ...data, items: briefingItems }));
+./src/components/IntelligenceCards.tsx:      sessionStorage.setItem("aura-daily-briefing-time", Date.now().toString());
+./src/components/IntelligenceCards.tsx:        tags: ["daily-briefing", item.type],
+./src/components/tabs/HomeTab.tsx:      {/* TIER 2 — Market scan (from daily-briefing) */}
+./supabase/functions/run-qa-audit/index.ts:  "cleanup-posts", "colleague-invite", "daily-briefing", "deduplicate-entries",
+
+--- deduplicate-entries ---
+./supabase/config.toml:[functions.deduplicate-entries]
+./supabase/functions/run-qa-audit/index.ts:  "cleanup-posts", "colleague-invite", "daily-briefing", "deduplicate-entries",
+./src/components/RecentEntries.tsx:      const { data, error } = await supabase.functions.invoke("deduplicate-entries", {
+./src/components/RecentEntries.tsx:      const { data, error } = await supabase.functions.invoke("deduplicate-entries", {
+
+--- delete-source ---
+./src/components/tabs/SourcesSubTab.tsx:    const { error } = await supabase.functions.invoke("delete-source", {
+
+--- detect-card-style ---
+./supabase/functions/run-qa-audit/index.ts:  "detect-card-style", "detect-market-gaps", "detect-patterns", "detect-signals-v2",
+./src/components/tabs/AuthorityTab.tsx:        const { data } = await supabase.functions.invoke("detect-card-style", {
+
+--- detect-market-gaps ---
+./supabase/functions/run-qa-audit/index.ts:  "detect-card-style", "detect-market-gaps", "detect-patterns", "detect-signals-v2",
+./src/components/tabs/IntelligenceTab.tsx:      const { data: r, error } = await supabase.functions.invoke("detect-market-gaps", { body: {} });
+./src/components/intelligence/MarketCoverageSection.tsx:        "detect-market-gaps",
+
+--- detect-patterns ---
+./supabase/config.toml:[functions.detect-patterns]
+./src/components/StrategicSignals.tsx:  const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/detect-patterns`, {
+./src/components/tabs/StrategyTab.tsx:  const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/detect-patterns`, {
+./src/components/StrategicIntelligenceEngine.tsx:  const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/detect-patterns`, {
+./src/components/tabs/IntelligenceTab.tsx:  const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/detect-patterns`, {
+./supabase/functions/_shared/confidence.ts: * Used by both detect-signals-v2 (per-capture) and detect-patterns (batch)
+./supabase/functions/run-qa-audit/index.ts:  "detect-card-style", "detect-market-gaps", "detect-patterns", "detect-signals-v2",
+
+--- detect-signals-v2 ---
+./supabase/config.toml:[functions.detect-signals-v2]
+./supabase/functions/extract-evidence/index.ts:    // NEW fragment ids are re-added downstream by detect-signals-v2's union path.
+./supabase/functions/extract-evidence/index.ts:          const { error: sigError } = await adminClient.functions.invoke("detect-signals-v2", {
+./supabase/functions/extract-evidence/index.ts:            console.warn("[extract-evidence] detect-signals-v2 chain failed:", sigError);
+./supabase/functions/extract-evidence/index.ts:          console.warn("[extract-evidence] detect-signals-v2 chain threw:", e?.message);
+./supabase/functions/extract-evidence/index.ts:      console.log("[extract-evidence] chained detect-signals-v2 with", fragmentIds.length, "fragments");
+./src/components/CaptureModal.tsx:      // Server-side pipeline (ingest-capture → extract-evidence → detect-signals-v2) is
+./supabase/functions/extract-evidence/index.pre-capture-chain-waituntil.bak.ts:    // NEW fragment ids are re-added downstream by detect-signals-v2's union path.
+./supabase/functions/extract-evidence/index.pre-capture-chain-waituntil.bak.ts:      adminClient.functions.invoke("detect-signals-v2", {
+./supabase/functions/extract-evidence/index.pre-capture-chain-waituntil.bak.ts:        console.warn("[extract-evidence] detect-signals-v2 chain failed:", e?.message)
+./supabase/functions/extract-evidence/index.pre-capture-chain-waituntil.bak.ts:      console.log("[extract-evidence] chained detect-signals-v2 with", fragmentIds.length, "fragments");
+./supabase/functions/detect-patterns/index.ts:/* ── Confidence formula (shared with detect-signals-v2) ── */
+./src/components/tabs/SourcesSubTab.tsx:        const { error: sigError } = await supabase.functions.invoke('detect-signals-v2', {
+./supabase/functions/calculate-aura-score/index.ts:    // like detect-signals-v2). Mirrors voice-distill L51–95.
+./supabase/functions/ingest-document/index.ts:            const { error: sigError } = await adminClient.functions.invoke("detect-signals-v2", {
+./supabase/functions/ingest-document/index.ts:            if (sigError) console.error("[ingest-document] deferred detect-signals-v2 error:", sigError);
+./supabase/functions/calculate-aura-score/index.pre-ef-defensive-reads.bak.ts:    // like detect-signals-v2). Mirrors voice-distill L51–95.
+./supabase/functions/ingest-capture/index.ts:        // Guard against blank/domain-only titles reaching detect-signals-v2
+./supabase/functions/ingest-capture/index.ts:        // Wire the full pipeline: extract-evidence creates fragments, then chains to detect-signals-v2
+./supabase/functions/ingest-capture/index.pre-capture-chain-waituntil.bak.ts:        // Guard against blank/domain-only titles reaching detect-signals-v2
+./supabase/functions/ingest-capture/index.pre-capture-chain-waituntil.bak.ts:        // Wire the full pipeline: extract-evidence creates fragments, then chains to detect-signals-v2
+./supabase/functions/run-qa-audit/index.ts:  "detect-card-style", "detect-market-gaps", "detect-patterns", "detect-signals-v2",
+./supabase/functions/_shared/confidence.ts: * Used by both detect-signals-v2 (per-capture) and detect-patterns (batch)
+./supabase/functions/backfill-unprocessed-entries/index.ts:          // brief gap so detect-signals-v2 chain has room to start before next batch
+
+--- discover-linkedin-posts ---
+./supabase/functions/run-qa-audit/index.ts:  "discover-linkedin-posts", "draft-post", "evaluate-content-quality", "extract-evidence",
+./src/components/influence/PostDiscoveryPanel.tsx:        "discover-linkedin-posts",
+
+--- draft-post ---
+./src/pages/TrendDetail.tsx:      const { data, error } = await supabase.functions.invoke("draft-post", {
+./src/pages/TrendDetail.tsx:      console.error("[TrendDetail] draft-post failed", e);
+./src/components/LinkedInDraftPanel.tsx:      const { data, error } = await supabase.functions.invoke("draft-post", {
+./src/components/RecentEntries.tsx:      const { data, error } = await supabase.functions.invoke("draft-post", {
+./src/components/RecentEntries.tsx:      const { data, error } = await supabase.functions.invoke("draft-post", {
+./src/components/WeeklyTransformationLens.tsx:      const { data, error } = await supabase.functions.invoke("draft-post", {
+./src/components/tabs/InfluenceTab.tsx:      const { data, error } = await supabase.functions.invoke("draft-post", {
+./supabase/functions/run-qa-audit/index.ts:  "discover-linkedin-posts", "draft-post", "evaluate-content-quality", "extract-evidence",
+./supabase/config.toml:[functions.draft-post]
+
+--- evaluate-content-quality ---
+./supabase/config.toml:[functions.evaluate-content-quality]
+./supabase/functions/run-qa-audit/index.ts:  "discover-linkedin-posts", "draft-post", "evaluate-content-quality", "extract-evidence",
+./supabase/functions/generate-authority-content/index.ts:        const gatePromise = supabase.functions.invoke("evaluate-content-quality", {
+./supabase/functions/generate-authority-content/index.pre-arabic-gen-voice-injection.bak.ts:        const gatePromise = supabase.functions.invoke("evaluate-content-quality", {
+./supabase/functions/generate-authority-content/index.pre-fix-english-bilingual.bak.ts:        const gatePromise = supabase.functions.invoke("evaluate-content-quality", {
+./supabase/functions/generate-authority-content/index.pre-voice-loop-close.bak.ts:        const gatePromise = supabase.functions.invoke("evaluate-content-quality", {
+./supabase/functions/generate-authority-content/index.pre-confidence-scale.bak.ts:        const gatePromise = supabase.functions.invoke("evaluate-content-quality", {
+./supabase/functions/generate-authority-content/index.pre-gen-service-role.bak.ts:        const gatePromise = supabase.functions.invoke("evaluate-content-quality", {
+./supabase/functions/generate-authority-content/index.pre-gen-voice-by-language.bak.ts:        const gatePromise = supabase.functions.invoke("evaluate-content-quality", {
+
+--- extract-evidence ---
+./supabase/config.toml:[functions.extract-evidence]
+./supabase/functions/run-qa-audit/index.ts:  "discover-linkedin-posts", "draft-post", "evaluate-content-quality", "extract-evidence",
+./supabase/functions/ingest-document/index.ts:          "extract-evidence",
+./supabase/functions/ingest-document/index.ts:          console.error("[ingest-document] deferred extract-evidence error:", extractError);
+./supabase/functions/ingest-capture/index.ts:        // Wire the full pipeline: extract-evidence creates fragments, then chains to detect-signals-v2
+./supabase/functions/ingest-capture/index.ts:            const { error: extractError } = await supabase.functions.invoke("extract-evidence", {
+./supabase/functions/ingest-capture/index.ts:              console.warn("[ingest-capture] extract-evidence invoke failed:", extractError);
+./supabase/functions/ingest-capture/index.ts:            console.warn("[ingest-capture] extract-evidence invoke threw:", e?.message);
+./supabase/functions/ingest-capture/index.ts:        console.log("[ingest-capture] extract-evidence invoked for entry:", newEntryId);
+./supabase/functions/ingest-capture/index.pre-capture-chain-waituntil.bak.ts:        // Wire the full pipeline: extract-evidence creates fragments, then chains to detect-signals-v2
+./supabase/functions/ingest-capture/index.pre-capture-chain-waituntil.bak.ts:        supabase.functions.invoke("extract-evidence", {
+./supabase/functions/ingest-capture/index.pre-capture-chain-waituntil.bak.ts:          console.warn("[ingest-capture] extract-evidence invoke failed:", e?.message)
+./supabase/functions/ingest-capture/index.pre-capture-chain-waituntil.bak.ts:        console.log("[ingest-capture] extract-evidence invoked for entry:", newEntryId);
+./supabase/functions/backfill-unprocessed-entries/index.ts:        const { error: invErr } = await admin.functions.invoke("extract-evidence", {
+./supabase/functions/backfill-unprocessed-entries/index.ts:          console.warn("[backfill] extract-evidence invoke error:", entry.id, invErr);
+./supabase/functions/backfill-unprocessed-entries/index.ts:        console.warn("[backfill] extract-evidence invoke threw:", entry.id, e?.message);
+./src/components/CaptureModal.tsx:            .invoke("extract-evidence", {
+./src/components/CaptureModal.tsx:                console.error("[voice] extract-evidence error:", error);
+./src/components/CaptureModal.tsx:            .catch((err) => console.error("[voice] extract-evidence failed:", err));
+./src/components/CaptureModal.tsx:      // Server-side pipeline (ingest-capture → extract-evidence → detect-signals-v2) is
+./src/components/tabs/SourcesSubTab.tsx:      const { data: extractResult, error: extractError } = await supabase.functions.invoke('extract-evidence', {
+
+--- fetch-industry-trends ---
+./supabase/config.toml:[functions.fetch-industry-trends]
+./supabase/functions/run-qa-audit/index.ts:  "fetch-industry-trends", "generate-action-output", "generate-authority-content",
+./src/components/tabs/HomeTab.tsx:            .then(() => supabase.functions.invoke("fetch-industry-trends", { body: { mode: "light" } }))
+./src/components/tabs/HomeTab.tsx:      // (Counting rows is unreliable because fetch-industry-trends caps
+./src/components/tabs/HomeTab.tsx:      const { error } = await supabase.functions.invoke("fetch-industry-trends", {
+
+--- generate-action-output ---
+./supabase/config.toml:[functions.generate-action-output]
+./src/components/ActionWorkspace.tsx:      const { data, error } = await supabase.functions.invoke("generate-action-output", {
+./supabase/functions/run-qa-audit/index.ts:  "fetch-industry-trends", "generate-action-output", "generate-authority-content",
+
+--- generate-audience-insight ---
+./src/components/tabs/ImpactTab.tsx:          .invoke("generate-audience-insight", { body: {} })
+./src/components/tabs/ImpactTab.tsx:          .catch((e) => console.error("generate-audience-insight failed", e))
+
+--- generate-authority-content ---
+./supabase/functions/run-qa-audit/index.ts:  "fetch-industry-trends", "generate-action-output", "generate-authority-content",
+./supabase/functions/prepare-weekly-drafts/index.ts:              `${SUPABASE_URL}/functions/v1/generate-authority-content`,
+./src/components/FlashPanel.tsx:    const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-authority-content`, {
+./src/components/visual-cards/CardPreviewPanel.tsx:        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-authority-content`;
+./src/components/tabs/AuthorityTab.tsx:  // Quality gate from generate-authority-content response
+./src/components/tabs/AuthorityTab.tsx:    const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-authority-content`, {
+./src/components/tabs/AuthorityTab.tsx:      console.error("[generate-authority-content] error:", e);
+./src/components/tabs/AuthorityTab.tsx:      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-authority-content`, {
+./src/components/tabs/AuthorityTab.tsx:      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-authority-content`, {
+
+--- generate-brand-positioning ---
+./src/lib/runPostImportPipeline.ts: * Shared post-LinkedIn-import pipeline. Runs voice-distill → generate-brand-positioning
+./src/lib/runPostImportPipeline.ts:  try { await callFn("generate-brand-positioning"); state.positioning = "done"; }
+./src/lib/runPostImportPipeline.ts:  catch (e) { console.error("generate-brand-positioning failed", e); state.positioning = "error"; }
+./supabase/functions/run-qa-audit/index.ts:  "generate-brand-positioning", "generate-branded-post", "generate-carousel-v2",
+./src/components/OnboardingProfileSection.tsx:      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-brand-positioning`, {
+./src/components/OnboardingProfileSection.tsx:      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-brand-positioning`, {
+./src/components/tabs/IdentityTab.tsx:      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-brand-positioning`, {
+
+--- generate-branded-post ---
+./supabase/config.toml:[functions.generate-branded-post]
+./supabase/functions/run-qa-audit/index.ts:  "generate-brand-positioning", "generate-branded-post", "generate-carousel-v2",
+./src/components/IntelligenceCards.tsx:        await supabase.functions.invoke("generate-branded-post", {
+./src/components/IntelligenceCards.tsx:      const { data, error } = await supabase.functions.invoke("generate-branded-post", {
+./src/components/tabs/MarketTab.tsx:      const { data, error } = await supabase.functions.invoke("generate-branded-post", {
+
+--- generate-carousel-v2 ---
+./src/pages/CarouselStudio.tsx:      const { data, error } = await supabase.functions.invoke("generate-carousel-v2", {
+./src/pages/CarouselStudio.tsx:      const { data, error } = await supabase.functions.invoke("generate-carousel-v2", {
+./supabase/config.toml:[functions.generate-carousel-v2]
+./supabase/functions/run-qa-audit/index.ts:  "generate-brand-positioning", "generate-branded-post", "generate-carousel-v2",
+
+--- generate-framework-diagram ---
+./supabase/config.toml:[functions.generate-framework-diagram]
+./supabase/functions/run-qa-audit/index.ts:  "generate-framework-diagram", "generate-identity-intelligence", "generate-market-mirror",
+./src/components/FrameworkBuilderInline.tsx:      const { data, error } = await supabase.functions.invoke("generate-framework-diagram", {
+./src/components/FrameworkBuilder.tsx:      const { data, error } = await supabase.functions.invoke("generate-framework-diagram", {
+./src/components/MyFrameworks.tsx:      const { data, error } = await supabase.functions.invoke("generate-framework-diagram", {
+
+--- generate-identity-intelligence ---
+./src/components/ProfileIntelligence.tsx:      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-identity-intelligence`, {
+./src/components/tabs/IdentityTab.tsx:        await supabase.functions.invoke("generate-identity-intelligence", { body: {} });
+./supabase/functions/run-qa-audit/index.ts:  "generate-framework-diagram", "generate-identity-intelligence", "generate-market-mirror",
+
+--- generate-impact-narrative ---
+./src/components/tabs/ImpactTab.tsx:  // AI-generated section interpretations (from generate-impact-narrative EF)
+./src/components/tabs/ImpactTab.tsx:        const { data } = await supabase.functions.invoke("generate-impact-narrative", {
+
+--- generate-market-mirror ---
+./src/lib/marketPersonas.ts:// KEEP IN SYNC with supabase/functions/generate-market-mirror/index.ts persona regex.
+./src/components/MarketMirror.tsx:      const { data, error } = await supabase.functions.invoke("generate-market-mirror");
+./supabase/functions/run-qa-audit/index.ts:  "generate-framework-diagram", "generate-identity-intelligence", "generate-market-mirror",
+./src/components/tabs/IdentityTab.tsx:        await supabase.functions.invoke("generate-market-mirror", { body: {} });
+
+--- generate-schematic-spec ---
+./supabase/functions/run-qa-audit/index.ts:  "generate-schematic-spec", "generate-silence-alarm", "import-linkedin-analytics",
+./src/components/visual-cards/SchematicPreviewPanel.tsx:      const { data, error } = await supabase.functions.invoke("generate-schematic-spec", {
+
+--- generate-silence-alarm ---
+./supabase/functions/run-qa-audit/index.ts:  "generate-schematic-spec", "generate-silence-alarm", "import-linkedin-analytics",
+./src/components/SilenceAlarm.tsx:        const { data: resp, error } = await supabase.functions.invoke("generate-silence-alarm", { body: {} });
+
+--- import-linkedin-analytics ---
+./supabase/functions/run-qa-audit/index.ts:  "generate-schematic-spec", "generate-silence-alarm", "import-linkedin-analytics",
+./src/components/tabs/ImpactTab.tsx:      const { data, error } = await supabase.functions.invoke("import-linkedin-analytics", {
+
+--- import-linkedin-csv ---
+./supabase/functions/run-qa-audit/index.ts:  "import-linkedin-csv", "ingest-capture", "ingest-document", "knowledge-intelligence",
+
+--- ingest-capture ---
+./supabase/functions/run-qa-audit/index.ts:  "import-linkedin-csv", "ingest-capture", "ingest-document", "knowledge-intelligence",
+./src/pages/Onboarding.tsx:        const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-capture`, {
+./src/pages/Onboarding.tsx:        // ingest-capture creates the entry server-side — no client-side insert needed.
+./src/pages/Admin.tsx:      const { error } = await supabase.functions.invoke("ingest-capture", {
+./src/components/CaptureModal.tsx:    // ─── Voice capture: direct entries INSERT (bypass ingest-capture so the
+./src/components/CaptureModal.tsx:        // Entries-level dedupe guard (mirrors ingest-capture entries guard).
+./src/components/CaptureModal.tsx:      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-capture`, {
+./src/components/CaptureModal.tsx:      // Note: ingest-capture already creates the entries row server-side.
+./src/components/CaptureModal.tsx:      // Server-side pipeline (ingest-capture → extract-evidence → detect-signals-v2) is
+./supabase/config.toml:[functions.ingest-capture]
+
+--- ingest-document ---
+./supabase/config.toml:[functions.ingest-document]
+./supabase/functions/run-qa-audit/index.ts:  "import-linkedin-csv", "ingest-capture", "ingest-document", "knowledge-intelligence",
+./src/components/DocumentUpload.tsx:      "ingest-document",
+./src/components/DocumentUpload.tsx:      console.error("[DocumentUpload] ingest-document invoke error:", invokeError);
+./src/components/DocumentUpload.tsx:    console.log("[DocumentUpload] ingest-document invoke ok:", invokeData);
+./src/components/tabs/SourcesSubTab.tsx:        supabase.functions.invoke("ingest-document", { body: { document_id: d.id } })
+./src/components/tabs/SourcesSubTab.tsx:    const { error } = await supabase.functions.invoke("ingest-document", {
+
+--- knowledge-intelligence ---
+./supabase/functions/run-qa-audit/index.ts:  "import-linkedin-csv", "ingest-capture", "ingest-document", "knowledge-intelligence",
+./src/components/KnowledgeIntelligenceEngine.tsx:      const { data, error } = await supabase.functions.invoke("knowledge-intelligence");
+
+--- linkedin-claim ---
+./supabase/functions/run-qa-audit/index.ts:  "linkedin-claim", "linkedin-expert-advisor", "linkedin-oauth", "linkedin-oauth-callback",
+./supabase/config.toml:[functions.linkedin-claim]
+
+--- linkedin-expert-advisor ---
+./supabase/functions/run-qa-audit/index.ts:  "linkedin-claim", "linkedin-expert-advisor", "linkedin-oauth", "linkedin-oauth-callback",
+./src/components/LinkedInExpertAdvisor.tsx:      const { data, error } = await supabase.functions.invoke("linkedin-expert-advisor");
+
+--- linkedin-oauth-callback ---
+./src/pages/LinkedInCallback.tsx:        const { data, error: fnError } = await supabase.functions.invoke("linkedin-oauth-callback", {
+./supabase/config.toml:[functions.linkedin-oauth-callback]
+./supabase/functions/run-qa-audit/index.ts:  "linkedin-claim", "linkedin-expert-advisor", "linkedin-oauth", "linkedin-oauth-callback",
+
+--- linkedin-oauth ---
+./src/components/LinkedInIntelligence.tsx:      const { data: connData } = await supabase.functions.invoke("linkedin-oauth", {
+./src/components/LinkedInConnector.tsx:        supabase.functions.invoke("linkedin-oauth", { body: { action: "status" } }),
+./src/components/LinkedInConnector.tsx:      const { data, error } = await supabase.functions.invoke("linkedin-oauth", {
+./src/components/LinkedInConnector.tsx:      const { data, error } = await supabase.functions.invoke("linkedin-oauth", { body: { action: "disconnect" } });
+./src/pages/LinkedInCallback.tsx:        const { data, error: fnError } = await supabase.functions.invoke("linkedin-oauth-callback", {
+./supabase/config.toml:[functions.linkedin-oauth]
+./supabase/config.toml:[functions.linkedin-oauth-callback]
+./supabase/functions/run-qa-audit/index.ts:  "linkedin-claim", "linkedin-expert-advisor", "linkedin-oauth", "linkedin-oauth-callback",
+
+--- linkedin-sync ---
+./src/pages/LinkedInCallback.tsx:          await supabase.functions.invoke("linkedin-sync", {});
+./src/components/LinkedInConnector.tsx:      const { data, error } = await supabase.functions.invoke("linkedin-sync", {});
+./supabase/functions/run-qa-audit/index.ts:  "linkedin-sync", "mark-user-active", "market-intelligence", "onboarding-find-article",
+./supabase/config.toml:[functions.linkedin-sync]
+
+--- mark-user-active ---
+./supabase/config.toml:[functions.mark-user-active]
+./src/pages/Dashboard.tsx:              .invoke("mark-user-active", { body: {} })
+./src/pages/Dashboard.tsx:              .catch((e) => console.warn("mark-user-active failed", e));
+./supabase/functions/run-qa-audit/index.ts:  "linkedin-sync", "mark-user-active", "market-intelligence", "onboarding-find-article",
+
+--- market-intelligence ---
+./supabase/functions/run-qa-audit/index.ts:  "linkedin-sync", "mark-user-active", "market-intelligence", "onboarding-find-article",
+./src/components/tabs/MarketTab.tsx:      const { data, error } = await supabase.functions.invoke("market-intelligence", {
+
+--- onboarding-find-article ---
+./supabase/config.toml:[functions.onboarding-find-article]
+./src/pages/Onboarding.tsx:  // Fire the onboarding-find-article EF in the background. Called at the end of
+./src/pages/Onboarding.tsx:      .invoke("onboarding-find-article", {
+./src/pages/Onboarding.tsx:  // onboarding-find-article EF stalls past ~12s.
+./supabase/functions/run-qa-audit/index.ts:  "linkedin-sync", "mark-user-active", "market-intelligence", "onboarding-find-article",
+
+--- onboarding-linkedin-prefill ---
+./supabase/config.toml:[functions.onboarding-linkedin-prefill]
+./src/pages/Onboarding.tsx:      const { data, error } = await supabase.functions.invoke("onboarding-linkedin-prefill", {
+./supabase/functions/run-qa-audit/index.ts:  "onboarding-linkedin-prefill", "open-document", "qa-ai-evaluate", "regenerate-schematic",
+
+--- open-document ---
+./supabase/config.toml:[functions.open-document]
+./src/components/tabs/SourcesSubTab.tsx:      const { data, error } = await supabase.functions.invoke("open-document", {
+./supabase/functions/run-qa-audit/index.ts:  "onboarding-linkedin-prefill", "open-document", "qa-ai-evaluate", "regenerate-schematic",
+
+--- prepare-weekly-drafts ---
+./src/components/home/WeekReadyCard.tsx:      const { error } = await supabase.functions.invoke("prepare-weekly-drafts");
+
+--- qa-ai-evaluate ---
+./src/pages/AdminQA.tsx:    const { error } = await supabase.functions.invoke("qa-ai-evaluate", {
+./supabase/functions/run-qa-audit/index.ts:  "onboarding-linkedin-prefill", "open-document", "qa-ai-evaluate", "regenerate-schematic",
+
+--- regenerate-schematic ---
+./supabase/config.toml:[functions.regenerate-schematic]
+./supabase/functions/run-qa-audit/index.ts:  "onboarding-linkedin-prefill", "open-document", "qa-ai-evaluate", "regenerate-schematic",
+./src/components/IntelligenceCards.tsx:      const { data, error } = await supabase.functions.invoke("regenerate-schematic", {
+./src/components/LinkedInDraftPanel.tsx:      const { data, error } = await supabase.functions.invoke("regenerate-schematic", {
+
+--- run-qa-audit ---
+./src/pages/AdminQA.tsx:      const { error } = await supabase.functions.invoke("run-qa-audit", { body: { layer: "backend", run_id } });
+./src/pages/AdminQA.tsx:          toast.error(`Backend audit failed: ${msg}. Check that run-qa-audit EF is deployed.`);
+./src/pages/AdminQA.tsx:      toast.error(`Backend audit failed: ${msg}. Check that run-qa-audit EF is deployed.`);
+./src/pages/AdminQA.tsx:              run-qa-audit failed
+
+--- run-qa-walkthrough ---
+./src/pages/Admin.tsx:      const { error } = await supabase.functions.invoke("run-qa-walkthrough", { body: {} });
+./supabase/functions/run-qa-audit/index.ts:  "run-qa-walkthrough", "send-account-notification", "send-invite", "send-lifecycle-email",
+
+--- send-account-notification ---
+./src/pages/Onboarding.tsx:        await supabase.functions.invoke("send-account-notification", {
+./src/pages/Auth.tsx:          await supabase.functions.invoke("send-account-notification", {
+./supabase/functions/run-qa-audit/index.ts:  "run-qa-walkthrough", "send-account-notification", "send-invite", "send-lifecycle-email",
+./supabase/config.toml:[functions.send-account-notification]
+./src/components/PasswordGate.tsx:          await supabase.functions.invoke("send-account-notification", {
+
+--- send-decline-email ---
+./src/pages/Admin.tsx:        await supabase.functions.invoke("send-decline-email", {
+
+--- send-invite ---
+./src/pages/Admin.tsx:    const { error } = await supabase.functions.invoke("send-invite", {
+./supabase/functions/run-qa-audit/index.ts:  "run-qa-walkthrough", "send-account-notification", "send-invite", "send-lifecycle-email",
+./src/components/BetaAccessAdmin.tsx:          const { error } = await supabase.functions.invoke("send-invite", {
+./src/components/BetaAccessAdmin.tsx:      const { error } = await supabase.functions.invoke("send-invite", {
+./src/components/BetaAccessAdmin.tsx:      const { error } = await supabase.functions.invoke("send-invite", {
+./src/components/BetaAccessAdmin.tsx:      const { error } = await supabase.functions.invoke("send-invite", {
+
+--- send-lifecycle-email ---
+./supabase/config.toml:[functions.send-lifecycle-email]
+./src/pages/Onboarding.tsx:              await supabase.functions.invoke("send-lifecycle-email", {
+./supabase/functions/check-lifecycle-triggers/index.ts:            const r = await admin.functions.invoke("send-lifecycle-email", {
+./supabase/functions/check-lifecycle-triggers/index.ts:          const r = await admin.functions.invoke("send-lifecycle-email", {
+./supabase/functions/run-qa-audit/index.ts:  "run-qa-walkthrough", "send-account-notification", "send-invite", "send-lifecycle-email",
+./src/components/OnboardingWizard.tsx:        supabase.functions.invoke("send-lifecycle-email", {
+
+--- send-password-reset ---
+./src/pages/Auth.tsx:    const { data, error } = await supabase.functions.invoke("send-password-reset", {
+./supabase/config.toml:[functions.send-password-reset]
+./supabase/functions/run-qa-audit/index.ts:  "send-password-reset", "send-weekly-brief", "signal-decay-engine", "sovereign-reading-list",
+
+--- send-weekly-brief ---
+./supabase/functions/run-qa-audit/index.ts:  "send-password-reset", "send-weekly-brief", "signal-decay-engine", "sovereign-reading-list",
+
+--- signal-decay-engine ---
+./src/components/intelligence/VelocityIndicators.tsx: * Decay rate matches signal-decay-engine: lambda = 0.023 (~30-day half life).
+./supabase/functions/run-qa-audit/index.ts:  "send-password-reset", "send-weekly-brief", "signal-decay-engine", "sovereign-reading-list",
+
+--- sovereign-reading-list ---
+./supabase/functions/run-qa-audit/index.ts:  "send-password-reset", "send-weekly-brief", "signal-decay-engine", "sovereign-reading-list",
+./src/components/intelligence/RecommendedReadingSection.tsx:      const { data, error: invokeErr } = await supabase.functions.invoke("sovereign-reading-list", {
+./src/components/tabs/IntelligenceTab.tsx:      const { data, error: err } = await supabase.functions.invoke("sovereign-reading-list", {
+
+--- strategic-advisor ---
+./src/components/StrategicAdvisorPanel.tsx:      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/strategic-advisor`, {
+./supabase/functions/run-qa-audit/index.ts:  "strategic-advisor", "strategic-briefing", "strategic-critique", "strategic-nudge",
+
+--- strategic-briefing ---
+./supabase/config.toml:[functions.strategic-briefing]
+./supabase/functions/run-qa-audit/index.ts:  "strategic-advisor", "strategic-briefing", "strategic-critique", "strategic-nudge",
+./src/components/StrategicAdvisor.tsx:      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/strategic-briefing`, {
+./src/components/DailyStrategicBriefing.tsx:const CACHE_KEY = "aura-strategic-briefing";
+./src/components/DailyStrategicBriefing.tsx:const CACHE_DATE_KEY = "aura-strategic-briefing-date";
+./src/components/DailyStrategicBriefing.tsx:      const { data, error } = await supabase.functions.invoke("strategic-briefing", {
+
+--- strategic-critique ---
+./supabase/functions/run-qa-audit/index.ts:  "strategic-advisor", "strategic-briefing", "strategic-critique", "strategic-nudge",
+./src/components/StrategicCompanion.tsx:      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/strategic-critique`, {
+./src/components/tabs/AuthorityTab.tsx:        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/strategic-critique`,
+
+--- strategic-nudge ---
+./supabase/functions/run-qa-audit/index.ts:  "strategic-advisor", "strategic-briefing", "strategic-critique", "strategic-nudge",
+./src/pages/Dashboard.tsx:      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/strategic-nudge`, {
+
+--- submit-waitlist ---
+./supabase/config.toml:[functions.submit-waitlist]
+./src/pages/RequestAccess.tsx:      const { data, error } = await supabase.functions.invoke("submit-waitlist", {
+./src/pages/RequestAccess.tsx:      console.error("submit-waitlist failed:", err);
+./supabase/functions/run-qa-audit/index.ts:  "submit-waitlist", "summarize-link", "transcribe-voice", "trend-why-matters",
+
+--- summarize-link ---
+./supabase/config.toml:[functions.summarize-link]
+./supabase/functions/ingest-capture/index.ts:        // Also call summarize-link for AI summary
+./supabase/functions/ingest-capture/index.ts:        const { data: summaryData, error: summaryError } = await supabase.functions.invoke("summarize-link", {
+./supabase/functions/ingest-capture/index.pre-capture-chain-waituntil.bak.ts:        // Also call summarize-link for AI summary
+./supabase/functions/ingest-capture/index.pre-capture-chain-waituntil.bak.ts:        const { data: summaryData, error: summaryError } = await supabase.functions.invoke("summarize-link", {
+./supabase/functions/run-qa-audit/index.ts:  "submit-waitlist", "summarize-link", "transcribe-voice", "trend-why-matters",
+
+--- transcribe-voice ---
+./supabase/config.toml:[functions.transcribe-voice]
+./src/components/CaptureModal.tsx:          const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe-voice`;
+./src/components/CaptureModal.tsx:              console.warn("transcribe-voice: no speech detected", fnData);
+./src/components/CaptureModal.tsx:              console.error("transcribe-voice failed:", resp.status, fnData);
+./src/components/CaptureModal.tsx:          console.error("transcribe-voice exception:", err);
+./supabase/functions/run-qa-audit/index.ts:  "submit-waitlist", "summarize-link", "transcribe-voice", "trend-why-matters",
+
+--- trend-why-matters ---
+./src/pages/TrendDetail.tsx:        const { data, error } = await supabase.functions.invoke("trend-why-matters", {
+./supabase/functions/run-qa-audit/index.ts:  "submit-waitlist", "summarize-link", "transcribe-voice", "trend-why-matters",
+
+--- update-user-password ---
+./supabase/config.toml:[functions.update-user-password]
+./src/pages/Auth.tsx:      const { data: pwData, error } = await supabase.functions.invoke("update-user-password", {
+./supabase/functions/run-qa-audit/index.ts:  "update-user-password", "voice-distill", "weekly-influence-brief", "weekly-progress-summary",
+./src/components/SetPasswordModal.tsx:      const { data: pwData, error } = await supabase.functions.invoke("update-user-password", {
+
+--- voice-distill ---
+./supabase/config.toml:[functions.voice-distill]
+./src/lib/runPostImportPipeline.ts: * Shared post-LinkedIn-import pipeline. Runs voice-distill → generate-brand-positioning
+./src/lib/runPostImportPipeline.ts:  try { await callFn("voice-distill"); state.voice = "done"; }
+./src/lib/runPostImportPipeline.ts:  catch (e) { console.error("voice-distill failed", e); state.voice = "error"; }
+./supabase/functions/run-qa-audit/index.ts:  "update-user-password", "voice-distill", "weekly-influence-brief", "weekly-progress-summary",
+./supabase/functions/calculate-aura-score/index.ts:    // like detect-signals-v2). Mirrors voice-distill L51–95.
+./supabase/functions/calculate-aura-score/index.pre-ef-defensive-reads.bak.ts:    // like detect-signals-v2). Mirrors voice-distill L51–95.
+./src/components/VoiceEngineSection.tsx:  // Primary-voice-change notification (from voice-distill EF).
+./src/components/VoiceEngineSection.tsx:      const { data, error } = await supabase.functions.invoke("voice-distill", {
+./src/components/VoiceEngineSection.tsx:      const { data, error } = await supabase.functions.invoke("voice-distill", {
+
+--- weekly-influence-brief ---
+./supabase/functions/run-qa-audit/index.ts:  "update-user-password", "voice-distill", "weekly-influence-brief", "weekly-progress-summary",
+./src/components/influence/WeeklyInfluenceBrief.tsx:      const { data, error } = await supabase.functions.invoke("weekly-influence-brief");
+
+--- weekly-progress-summary ---
+./supabase/functions/run-qa-audit/index.ts:  "update-user-password", "voice-distill", "weekly-influence-brief", "weekly-progress-summary",
+
