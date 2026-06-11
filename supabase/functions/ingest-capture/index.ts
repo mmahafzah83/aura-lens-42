@@ -300,6 +300,32 @@ Deno.serve(async (req) => {
         } catch (e: any) {
           console.error("[source-event] emit failed", e?.message);
         }
+        // Generate entry embedding (non-blocking on failure).
+        try {
+          const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+          if (OPENAI_API_KEY && newEntryId) {
+            const embInput = `${extracted_title || ""}\n${finalCapture?.metadata?.summary || ""}\n${entryContent || ""}`.slice(0, 8000);
+            const embRes = await fetch("https://api.openai.com/v1/embeddings", {
+              method: "POST",
+              headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
+              body: JSON.stringify({ model: "text-embedding-3-small", input: [embInput] }),
+            });
+            if (embRes.ok) {
+              const embData = await embRes.json();
+              const vec = embData.data?.[0]?.embedding;
+              if (vec) {
+                await supabase
+                  .from("entries")
+                  .update({ embedding: `[${vec.join(",")}]` } as any)
+                  .eq("id", newEntryId);
+              }
+            } else {
+              console.error("[embed] failed", embRes.status, await embRes.text());
+            }
+          }
+        } catch (embErr: any) {
+          console.error("[embed] failed", embErr?.message);
+        }
         // Wire the full pipeline: extract-evidence creates fragments, then chains to detect-signals-v2
         // @ts-ignore EdgeRuntime.waitUntil is available in Supabase Edge Functions
         EdgeRuntime.waitUntil((async () => {
