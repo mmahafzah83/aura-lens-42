@@ -116,3 +116,6 @@ verify_jwt = false
 
 [functions.backfill-unprocessed-entries]
 verify_jwt = false
+
+[functions.api-health-sentinel]
+verify_jwt = false
