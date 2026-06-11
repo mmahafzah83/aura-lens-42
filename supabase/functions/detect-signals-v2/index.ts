@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { buildConfidenceExplanation } from "../_shared/confidence.ts";
+import { canonicalizeTags } from "../_shared/themeCanon.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -276,6 +277,8 @@ Given evidence fragments and user context, classify them and return valid JSON w
   "what_it_means_for_you": "one sentence connecting this signal to the user's career target and industry, personalised"
 }
 
+theme_tags are subject themes only — never signal types like market_trend or competitor_move.
+
 ${identityCtx}`;
 
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -304,8 +307,8 @@ ${identityCtx}`;
     const newTitle = signal.title || "Untitled Signal";
     const newSummary = signal.summary || "";
     const newType = signal.type || "market_trend";
-    const newTags: string[] = Array.isArray(signal.theme_tags) ? signal.theme_tags.slice(0, 5) : [];
-    if (!newTags.includes(newType)) newTags.unshift(newType);
+    const rawTags: string[] = Array.isArray(signal.theme_tags) ? signal.theme_tags.slice(0, 5) : [];
+    const newTags: string[] = canonicalizeTags(rawTags);
     const aiBaseConfidence = Math.min(1, Math.max(0, signal.ai_base_confidence ?? 0.5));
     const whatItMeans = signal.what_it_means_for_you || "";
 
@@ -381,7 +384,8 @@ ${identityCtx}`;
       const newUniqueSources = await countUniqueSources(admin, mergedEvidence);
       const now = new Date().toISOString();
       const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, newUniqueSources, newUniqueOrgs, now);
-      const priorityScore = await calcPriorityScore(confidence, now, 1.0, newFragCount, admin, user_id, signalRow.theme_tags || [], contentGap);
+      const mergedTags = canonicalizeTags([...(signalRow.theme_tags || []), ...newTags]);
+      const priorityScore = await calcPriorityScore(confidence, now, 1.0, newFragCount, admin, user_id, mergedTags, contentGap);
 
       await admin.from("strategic_signals").update({
         supporting_evidence_ids: mergedEvidence,
@@ -392,6 +396,7 @@ ${identityCtx}`;
         confidence_explanation,
         what_it_means_for_you: whatItMeans,
         priority_score: priorityScore,
+        theme_tags: mergedTags,
         updated_at: now,
         // Reactivate dormant signals when fresh evidence pushes confidence above threshold
         ...(signalRow.status === "dormant" && confidence >= 0.15
