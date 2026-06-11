@@ -324,7 +324,7 @@ Deno.serve(async (req) => {
         if (Number.isFinite(g)) growth30d = g;
       }
       const positiveGrowth = Math.max(0, growth30d);
-      const value = clamp01(0.4 * demoExists + 0.6 * clamp01(positiveGrowth / 200));
+      const value = clamp01(0.4 * demoExists + 0.6 * clamp01(positiveGrowth / 500));
       const uncertainty = demoExists ? 0.3 : 0.8;
       const lastTs = snapshots[0]?.snapshot_date ?? null;
       return {
