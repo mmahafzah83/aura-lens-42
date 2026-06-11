@@ -341,19 +341,24 @@ Deno.serve(async (req) => {
 
     // -------- 6. discernment --------
     const discernmentFn = (): FacetResult => {
-      const total = publishedPosts.length;
-      const withSignal = publishedPosts.filter((p) => p.source_signal_id).length;
+      const cutoffTs = now.getTime() - 120 * 86_400_000;
+      const recentPublishedPosts = publishedPosts.filter((p) => {
+        const t = p.published_at ? Date.parse(p.published_at) : NaN;
+        return Number.isFinite(t) && t >= cutoffTs;
+      });
+      const total = recentPublishedPosts.length;
+      const withSignal = recentPublishedPosts.filter((p) => p.source_signal_id).length;
       const share = total > 0 ? withSignal / total : 0;
       const value = clamp01(share * 0.7 + 0.3 * (hasCritique ? 1 : 0));
-      const lastTs = publishedPosts.reduce<string | null>(
+      const lastTs = recentPublishedPosts.reduce<string | null>(
         (acc, p) => maxTs(acc, p.published_at, p.created_at),
         null,
       );
       return {
         value,
-        uncertainty: 0.4,
+        uncertainty: total > 0 ? 0.4 : 0.7,
         inputs: {
-          published_posts: total,
+          published_posts_120d: total,
           posts_with_source_signal: withSignal,
           share_with_signal: share,
           has_critique_notification: hasCritique,
