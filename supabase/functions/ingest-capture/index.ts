@@ -314,10 +314,15 @@ Deno.serve(async (req) => {
               const embData = await embRes.json();
               const vec = embData.data?.[0]?.embedding;
               if (vec) {
-                await supabase
+                const { error: updErr } = await supabase
                   .from("entries")
                   .update({ embedding: `[${vec.join(",")}]` } as any)
                   .eq("id", newEntryId);
+                if (updErr) {
+                  console.error("[embed] update failed", updErr.message);
+                } else {
+                  console.log("[embed] ok", 1);
+                }
               }
             } else {
               console.error("[embed] failed", embRes.status, await embRes.text());
