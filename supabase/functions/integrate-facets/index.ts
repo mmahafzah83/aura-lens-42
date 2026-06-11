@@ -290,7 +290,7 @@ Deno.serve(async (req) => {
         lastTs = maxTs(lastTs, s.updated_at);
       }
       const avgStrength = strengthCount > 0 ? strengthSum / strengthCount : 0;
-      let value = (1.0 * live + 0.6 * evergreen + 0.3 * emerging) / 8;
+      let value = (1.0 * live + 0.6 * evergreen + 0.3 * emerging) / 12;
       value = value * (0.5 + avgStrength);
       value = clamp01(value);
       const uncertainty = clamp01(Math.max(0.1, 1 - activeSignals.length / 15));
@@ -324,7 +324,7 @@ Deno.serve(async (req) => {
         if (Number.isFinite(g)) growth30d = g;
       }
       const positiveGrowth = Math.max(0, growth30d);
-      const value = clamp01(0.4 * demoExists + 0.6 * clamp01(positiveGrowth / 200));
+      const value = clamp01(0.4 * demoExists + 0.6 * clamp01(positiveGrowth / 500));
       const uncertainty = demoExists ? 0.3 : 0.8;
       const lastTs = snapshots[0]?.snapshot_date ?? null;
       return {
@@ -341,19 +341,24 @@ Deno.serve(async (req) => {
 
     // -------- 6. discernment --------
     const discernmentFn = (): FacetResult => {
-      const total = publishedPosts.length;
-      const withSignal = publishedPosts.filter((p) => p.source_signal_id).length;
+      const cutoffTs = now.getTime() - 120 * 86_400_000;
+      const recentPublishedPosts = publishedPosts.filter((p) => {
+        const t = p.published_at ? Date.parse(p.published_at) : NaN;
+        return Number.isFinite(t) && t >= cutoffTs;
+      });
+      const total = recentPublishedPosts.length;
+      const withSignal = recentPublishedPosts.filter((p) => p.source_signal_id).length;
       const share = total > 0 ? withSignal / total : 0;
       const value = clamp01(share * 0.7 + 0.3 * (hasCritique ? 1 : 0));
-      const lastTs = publishedPosts.reduce<string | null>(
+      const lastTs = recentPublishedPosts.reduce<string | null>(
         (acc, p) => maxTs(acc, p.published_at, p.created_at),
         null,
       );
       return {
         value,
-        uncertainty: 0.4,
+        uncertainty: total > 0 ? 0.4 : 0.7,
         inputs: {
-          published_posts: total,
+          published_posts_120d: total,
           posts_with_source_signal: withSignal,
           share_with_signal: share,
           has_critique_notification: hasCritique,
@@ -375,7 +380,7 @@ Deno.serve(async (req) => {
         if (d <= 90) posts90d++;
         lastTs = maxTs(lastTs, e.occurred_at);
       }
-      const value = clamp01(weighted / 6);
+      const value = clamp01(weighted / 18);
       const uncertainty = clamp01(Math.max(0.2, 1 - posts90d / 12));
       return {
         value,
