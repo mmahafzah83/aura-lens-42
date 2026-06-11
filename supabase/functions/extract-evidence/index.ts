@@ -323,15 +323,22 @@ Extract 3-8 fragments. Focus on ACTIONABLE, STRATEGIC content.`;
         });
         if (embRes.ok) {
           const embData = await embRes.json();
+          let okCount = 0;
           for (const emb of embData.data || []) {
             const row = inserted[emb.index];
             if (row?.id) {
-              await adminClient
+              const { error: updErr } = await adminClient
                 .from("evidence_fragments")
                 .update({ embedding: `[${emb.embedding.join(",")}]` } as any)
                 .eq("id", row.id);
+              if (updErr) {
+                console.error("[embed] update failed", updErr.message);
+              } else {
+                okCount++;
+              }
             }
           }
+          console.log("[embed] ok", okCount);
         } else {
           console.error("[embed] failed", embRes.status, await embRes.text());
         }
