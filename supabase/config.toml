@@ -122,3 +122,6 @@ verify_jwt = false
 
 [functions.backfill-embeddings]
 verify_jwt = false
+
+[functions.backfill-theme-tags]
+verify_jwt = false
