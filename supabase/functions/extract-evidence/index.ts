@@ -311,6 +311,35 @@ Extract 3-8 fragments. Focus on ACTIONABLE, STRATEGIC content.`;
       if (!fragErr && row) inserted.push(row);
     }
 
+    // Generate embeddings for newly inserted fragments (non-blocking on failure).
+    try {
+      const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+      if (OPENAI_API_KEY && inserted.length > 0) {
+        const inputs = inserted.map((f: any) => `${f.title || ""}\n\n${f.content || ""}`.slice(0, 8000));
+        const embRes = await fetch("https://api.openai.com/v1/embeddings", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ model: "text-embedding-3-small", input: inputs }),
+        });
+        if (embRes.ok) {
+          const embData = await embRes.json();
+          for (const emb of embData.data || []) {
+            const row = inserted[emb.index];
+            if (row?.id) {
+              await adminClient
+                .from("evidence_fragments")
+                .update({ embedding: `[${emb.embedding.join(",")}]` } as any)
+                .eq("id", row.id);
+            }
+          }
+        } else {
+          console.error("[embed] failed", embRes.status, await embRes.text());
+        }
+      }
+    } catch (embErr) {
+      console.error("[embed] failed", (embErr as Error).message);
+    }
+
     // Update registry
     await adminClient
       .from("source_registry")
