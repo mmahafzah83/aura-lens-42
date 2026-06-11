@@ -88,6 +88,43 @@ Deno.serve(async (req) => {
 
     let user_id: string | null = null;
     if (isServiceRole || isCron) {
+      // All-users sweep: iterate every diagnostic_profiles user_id sequentially.
+      if (body && body.all_users === true) {
+        const adminSweep = createClient(supabaseUrl, serviceKey);
+        const { data: profs, error: profsErr } = await adminSweep
+          .from("diagnostic_profiles")
+          .select("user_id");
+        if (profsErr) return json({ error: profsErr.message }, 500);
+        const ids = Array.from(
+          new Set(((profs as any[]) || []).map((p) => p.user_id).filter(Boolean)),
+        );
+        const failures: string[] = [];
+        let users_processed = 0;
+        for (const uid of ids) {
+          try {
+            const r = await fetch(`${supabaseUrl}/functions/v1/integrate-facets`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${serviceKey}`,
+                apikey: serviceKey,
+              },
+              body: JSON.stringify({ user_id: uid }),
+            });
+            if (!r.ok) {
+              const t = await r.text();
+              console.error(`[integrate-facets] user ${uid} failed: ${r.status} ${t}`);
+              failures.push(uid);
+            } else {
+              users_processed++;
+            }
+          } catch (e) {
+            console.error(`[integrate-facets] user ${uid} threw:`, (e as Error).message);
+            failures.push(uid);
+          }
+        }
+        return json({ success: true, users_processed, failures });
+      }
       if (body && typeof body.user_id === "string") user_id = body.user_id;
     } else {
       if (!bearer) return json({ error: "Unauthorized" }, 401);

@@ -27,6 +27,48 @@ serve(async (req) => {
 
     let userId: string | null = null;
     if (isServiceRole || isCron) {
+      if (body && body.all_users === true) {
+        const adminSweep = createClient(supabaseUrl, serviceKey);
+        const { data: profs, error: profsErr } = await adminSweep
+          .from("diagnostic_profiles")
+          .select("user_id");
+        if (profsErr) {
+          return new Response(JSON.stringify({ error: profsErr.message }), {
+            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const ids = Array.from(
+          new Set(((profs as any[]) || []).map((p) => p.user_id).filter(Boolean)),
+        );
+        const failures: string[] = [];
+        let users_processed = 0;
+        for (const uid of ids) {
+          try {
+            const r = await fetch(`${supabaseUrl}/functions/v1/compute-imprint`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${serviceKey}`,
+                apikey: serviceKey,
+              },
+              body: JSON.stringify({ user_id: uid }),
+            });
+            if (!r.ok) {
+              const t = await r.text();
+              console.error(`[compute-imprint] user ${uid} failed: ${r.status} ${t}`);
+              failures.push(uid);
+            } else {
+              users_processed++;
+            }
+          } catch (e) {
+            console.error(`[compute-imprint] user ${uid} threw:`, (e as Error).message);
+            failures.push(uid);
+          }
+        }
+        return new Response(JSON.stringify({ success: true, users_processed, failures }), {
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       if (body && typeof body.user_id === "string" && body.user_id.length > 0) {
         userId = body.user_id;
       } else {
