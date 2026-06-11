@@ -290,7 +290,7 @@ Deno.serve(async (req) => {
         lastTs = maxTs(lastTs, s.updated_at);
       }
       const avgStrength = strengthCount > 0 ? strengthSum / strengthCount : 0;
-      let value = (1.0 * live + 0.6 * evergreen + 0.3 * emerging) / 8;
+      let value = (1.0 * live + 0.6 * evergreen + 0.3 * emerging) / 12;
       value = value * (0.5 + avgStrength);
       value = clamp01(value);
       const uncertainty = clamp01(Math.max(0.1, 1 - activeSignals.length / 15));
