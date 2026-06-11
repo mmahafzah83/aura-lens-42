@@ -375,7 +375,7 @@ Deno.serve(async (req) => {
         if (d <= 90) posts90d++;
         lastTs = maxTs(lastTs, e.occurred_at);
       }
-      const value = clamp01(weighted / 6);
+      const value = clamp01(weighted / 18);
       const uncertainty = clamp01(Math.max(0.2, 1 - posts90d / 12));
       return {
         value,
