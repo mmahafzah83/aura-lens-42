@@ -232,7 +232,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           first_name: null, last_name: null, level: null, firm: null, sector_focus: null,
           core_practice: null, north_star_goal: null, brand_pillars: [],
           avatar_url: null, onboarding_completed: false, audit_completed_at: null,
-          brand_assessment_completed_at: null, brand_assessment_results: null,
+          audit_method: null, brand_assessment_completed_at: null, brand_assessment_results: null,
           identity_intelligence: null, primary_strength: null,
         } as ProfileRow);
       }
