@@ -3,9 +3,10 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import usePageMeta from "@/hooks/usePageMeta";
 import { SECTORS } from "@/constants/sectors";
+import { SENIORITY_LEVELS } from "@/constants/seniority";
 import PublicFooter from "@/components/PublicFooter";
 
-type Status = "idle" | "loading" | "success" | "duplicate" | "error";
+type Status = "idle" | "loading" | "success" | "duplicate" | "error" | "validation";
 
 // A6 token pass — constants annotated with the token each mirrors.
 // String literals are required because these are React inline styles + raw
@@ -22,32 +23,10 @@ const FIELD_BORDER = "var(--hairline)";      // mirrors --hairline
 const FIELD_BG_RAW = "#1a1917";              /* mirrors --vellum (dark) */
 const INK_RAW = "#ededed";                   /* mirrors --ink (dark) */
 
-const SENIORITY = [
-  "C-Suite",
-  "SVP / EVP",
-  "VP",
-  "Partner",
-  "Senior Director",
-  "Director",
-  "Senior Manager",
-  "Manager",
-  "Principal / Fellow",
-  "Advisor / Board Member",
-  "Other",
-];
-
+const SENIORITY: string[] = [...SENIORITY_LEVELS];
 const SECTOR: string[] = [...SECTORS];
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PERSONAL_DOMAINS = new Set([
-  "gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "icloud.com",
-  "aol.com", "live.com", "protonmail.com", "proton.me", "msn.com",
-  "yahoo.co.uk", "googlemail.com",
-]);
-const isPersonalEmail = (e: string) => {
-  const d = e.trim().toLowerCase().split("@")[1];
-  return !!d && PERSONAL_DOMAINS.has(d);
-};
 
 function usePositionCount(target: number, start: boolean, duration = 800) {
   const [value, setValue] = useState(0);
@@ -92,8 +71,7 @@ export default function RequestAccess() {
   const [submittedName, setSubmittedName] = useState("");
   const [position, setPosition] = useState<number | null>(null);
   const [errors, setErrors] = useState<{ name?: string; email?: string; seniority?: string; sector?: string }>({});
-  const [emailTouched, setEmailTouched] = useState(false);
-  const showPersonalWarning = emailTouched && EMAIL_RE.test(email.trim()) && isPersonalEmail(email);
+  const [validationMessage, setValidationMessage] = useState("");
 
   const validate = () => {
     const next: typeof errors = {};
@@ -114,7 +92,23 @@ export default function RequestAccess() {
       const { data, error } = await supabase.functions.invoke("submit-waitlist", {
         body: { name: name.trim(), email: email.trim(), seniority, sector },
       });
-      if (error) throw error;
+      if (error) {
+        // FunctionsHttpError exposes the EF response body via error.context;
+        // FunctionsFetchError (true network failure) does not.
+        const ctx: any = (error as any).context;
+        if (ctx && typeof ctx.json === "function") {
+          let efMsg = "";
+          try { efMsg = (await ctx.json())?.error ?? ""; } catch { /* ignore parse error */ }
+          setValidationMessage(
+            typeof efMsg === "string" && efMsg.trim()
+              ? efMsg
+              : "Please check the highlighted fields and try again.",
+          );
+          setStatus("validation");
+          return;
+        }
+        throw error;
+      }
       setSubmittedName(name.trim().split(" ")[0]);
       if (data?.duplicate) {
         setStatus("duplicate");
@@ -247,8 +241,6 @@ export default function RequestAccess() {
                     onChange={(v) => { setEmail(v); if (errors.email) setErrors((p) => ({ ...p, email: undefined })); }}
                     error={errors.email}
                     maxLength={255}
-                    onBlur={() => setEmailTouched(true)}
-                    hint={showPersonalWarning ? "We recommend using your work email — it helps us review your application faster." : undefined}
                   />
                   <Select
                     id="seniority"
@@ -279,6 +271,17 @@ export default function RequestAccess() {
                       color: "var(--error)", fontSize: 14,
                     }}>
                       Didn't connect. Try once more.
+                    </div>
+                  )}
+
+                  {status === "validation" && (
+                    <div style={{
+                      padding: 12, borderRadius: 8,
+                      background: "var(--error-pale)",
+                      border: "1px solid color-mix(in srgb, var(--error) 40%, transparent)",
+                      color: "var(--error)", fontSize: 14,
+                    }}>
+                      {validationMessage || "Please check the highlighted fields and try again."}
                     </div>
                   )}
 

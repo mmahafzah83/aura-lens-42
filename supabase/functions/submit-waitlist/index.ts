@@ -26,10 +26,12 @@ function checkRateLimit(ip: string): boolean {
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// MUST mirror src/constants/seniority.ts (SENIORITY_LEVELS) — keep byte-identical.
 const ALLOWED_SENIORITY = [
   "C-Suite",
   "SVP / EVP",
   "VP",
+  "Partner",
   "Senior Director",
   "Director",
   "Senior Manager",
