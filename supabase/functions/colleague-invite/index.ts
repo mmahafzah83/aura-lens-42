@@ -147,7 +147,7 @@ serve(async (req) => {
       <p style="font-size:15px;line-height:1.75;color:#ededed;margin:0 0 8px;">In the meantime, see what Aura is about:</p>
       <p style="font-size:15px;line-height:1.75;margin:0 0 8px;"><a href="https://aura-intel.org" style="color:${BRAND};text-decoration:none;font-weight:500;">Explore Aura →</a></p>
       ${noteBlock}
-      <p style="font-size:15px;color:#ededed;font-weight:500;margin:24px 0 4px;">Mohammad Mahafzah</p>
+      <p style="font-size:15px;color:#ededed;font-weight:500;margin:24px 0 4px;">Mohammad Mahafdhah</p>
       <p style="font-size:13px;color:#666;margin:0 0 24px;">Aura builder</p>
     </div>
     <div style="padding:16px 40px 28px;border-top:1px solid #1f1f1f;margin-top:24px;">

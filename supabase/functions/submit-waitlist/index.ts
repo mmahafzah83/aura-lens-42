@@ -199,7 +199,7 @@ serve(async (req) => {
       <p style="font-size:15px;line-height:1.75;color:#ededed;margin:0 0 16px;">Aura is in private beta with fewer than 50 professionals. I review every application personally — not an algorithm, not a form filter. Me.</p>
       <p style="font-size:15px;line-height:1.75;color:#ededed;margin:0 0 16px;">I'll look at your background this week. If Aura is right for you, you'll receive an invitation with everything you need to get started.</p>
       <p style="font-size:15px;line-height:1.75;color:#999;margin:16px 0 20px;">In the meantime — keep reading what matters to your sector. That's exactly what Aura will turn into presence.</p>
-      <p style="font-size:15px;color:#ededed;font-weight:500;margin:20px 0 4px;">Mohammad Mahafzah</p>
+      <p style="font-size:15px;color:#ededed;font-weight:500;margin:20px 0 4px;">Mohammad Mahafdhah</p>
       <p style="font-size:13px;color:#666;margin:0 0 24px;">Aura builder</p>
     </div>
     <div style="padding:16px 40px 28px;border-top:1px solid #1f1f1f;margin-top:24px;">

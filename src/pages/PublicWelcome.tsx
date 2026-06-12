@@ -797,7 +797,7 @@ export default function PublicWelcome() {
 
       {/* FOOTER */}
       <footer style={{ padding: 40, borderTop: "1px solid #1a1a1a", textAlign: "center" }}>
-        <div style={{ fontSize: 14, color: "#ededed" }}>Mohammad Mahafzah</div>
+        <div style={{ fontSize: 14, color: "#ededed" }}>Mohammad Mahafdhah</div>
         <div style={{ fontSize: 12, color: "#a3a3a3", marginTop: 4 }}>Aura builder</div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 16 }}>
           <HorizonEye size={16} color="#8a8a8a" />

@@ -249,7 +249,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
             </div>
             <div className="flex-1">
               <label className="text-xs text-muted-foreground tracking-wider uppercase mb-1 block">Last name</label>
-              <Input placeholder="e.g., Mahafzah" value={lastName} onChange={(e) => setLastName(e.target.value)} className="h-9 bg-secondary border-border/30 text-sm" />
+              <Input placeholder="e.g., Mahafdhah" value={lastName} onChange={(e) => setLastName(e.target.value)} className="h-9 bg-secondary border-border/30 text-sm" />
             </div>
           </div>
 

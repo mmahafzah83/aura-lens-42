@@ -32,7 +32,7 @@ function buildHtml(name: string) {
     <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#cfcfcf;">After reviewing your application, we've decided that Aura isn't the right fit for your profile at this stage. We're focused on a very specific cohort of professionals right now, and we want to make sure every user gets the most value from the platform.</p>
     <p style="margin:0 0 28px;font-size:15px;line-height:1.7;color:#cfcfcf;">This isn't permanent. As Aura expands to new sectors and levels, we may reach out again.</p>
     <div style="margin-top:32px;padding-top:20px;border-top:1px solid #1f1e1c;">
-      <div style="font-size:14px;color:#ededed;font-weight:500;">Mohammad Mahafzah</div>
+      <div style="font-size:14px;color:#ededed;font-weight:500;">Mohammad Mahafdhah</div>
       <div style="font-size:12px;color:#8a8478;margin-top:2px;">Aura builder</div>
       <div style="font-size:11px;color:#6b665c;margin-top:14px;">Aura · Turns your expertise into presence · aura-intel.org</div>
     </div>
