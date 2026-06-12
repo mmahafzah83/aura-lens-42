@@ -2374,8 +2374,9 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                 <div className="text-xs uppercase tracking-wider" style={{ color: "hsl(var(--muted-foreground))" }}>LinkedIn caption</div>
                 <button
                   onClick={() => {
-                    const tags = (carousel.hashtags || []).map(h => h.startsWith("#") ? h : "#" + h).join(" ");
-                    const text = `${carousel.linkedin_caption || ""}${tags ? "\n\n" + tags : ""}`;
+                    const tags = dedupeHashtags(carousel.hashtags || []).join(" ");
+                    const stripped = stripDuplicateHashtags(carousel.linkedin_caption || "", carousel.hashtags || []);
+                    const text = `${stripped}${tags ? "\n\n" + tags : ""}`;
                     navigator.clipboard.writeText(text).then(
                       () => toast.success("Caption copied to clipboard"),
                       () => toast.error("Copy failed"),
@@ -2388,7 +2389,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                 </button>
               </div>
               <textarea
-                value={carousel.linkedin_caption || ""}
+                value={stripDuplicateHashtags(carousel.linkedin_caption || "", carousel.hashtags || [])}
                 onChange={e => setCarousel({ ...carousel, linkedin_caption: e.target.value })}
                 className="w-full px-2.5 py-1.5 text-sm rounded-lg border focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-[color:var(--bronze-text)] placeholder:text-[color:hsl(var(--muted-foreground))]"
                 dir={lang === "ar" ? "rtl" : "ltr"}
@@ -2404,10 +2405,10 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
               />
               {carousel.hashtags && carousel.hashtags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 pt-1">
-                  {carousel.hashtags.map((h, i) => (
+                  {dedupeHashtags(carousel.hashtags).map((h, i) => (
                     <span key={i} className="text-xs px-2 py-0.5 rounded-full"
                           style={{ background: "var(--bronze-pale)", color: "var(--bronze-text)", border: "1px solid var(--bronze-line)" }}>
-                      {h.startsWith("#") ? h : "#" + h}
+                      {h}
                     </span>
                   ))}
                 </div>
