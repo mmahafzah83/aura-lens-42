@@ -508,7 +508,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
 
           {!showResults && step === 0 && (
             <p className="text-xs mt-2 mb-1" style={{ color: "rgba(212,176,86,0.7)", letterSpacing: "0.2em", textTransform: "uppercase", fontWeight: 600, fontSize: 11 }}>
-              Step 4 of 5 — How the market sees you
+              Step 4 of 4 — How the market sees you
             </p>
           )}
 
@@ -524,7 +524,8 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
         </div>
 
         {/* Content — scrollable */}
-        <div className="flex-1 overflow-y-auto px-4 pb-4">
+        <div className="relative flex-1 min-h-0">
+          <div className="absolute inset-0 overflow-y-auto px-4 pb-4">
           {showResults ? (
             <div className="max-w-2xl mx-auto h-full">
               {loading ? (
@@ -683,6 +684,20 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
               `}</style>
             </div>
           )}
+          </div>
+          {/* Bottom scroll fade — signals more content; flips with theme via --paper */}
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: 32,
+              pointerEvents: "none",
+              background: "linear-gradient(to bottom, transparent, var(--paper))",
+            }}
+          />
         </div>
 
         {/* Footer — sticky */}
