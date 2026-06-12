@@ -18,6 +18,7 @@ export const PUBLISHED_PAIRS: ReadonlyArray<readonly [string, string]> = [
   ["browser_capture", "metrics_imported"],
   ["search_discovery", "confirmed"],
   ["manual_url", "manual"],
+  ["carousel_studio", "published"],
 ];
 
 const pairKey = (s?: string | null, t?: string | null) => `${s ?? ""}::${t ?? ""}`;

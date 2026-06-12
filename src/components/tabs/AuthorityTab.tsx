@@ -2968,7 +2968,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
     const [liRes, ciRes] = await Promise.all([
       supabase
         .from("linkedin_posts")
-        .select("id, title, post_text, format_type, tracking_status, topic_label, created_at, source_metadata, source_type, published_at, linkedin_url, source_signal_id")
+        .select("id, title, post_text, format_type, tracking_status, topic_label, created_at, source_metadata, source_type, published_at, linkedin_url, source_signal_id, content_type")
         .order("created_at", { ascending: false })
         .limit(100),
       supabase
@@ -2992,6 +2992,15 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
       _source: "content_items" as const,
     }));
 
+    // Carousel drafts live in linkedin_posts (saved by CarouselStudio).
+    const liCarouselDrafts: SavedPost[] = (liRes.data || [])
+      .filter((p: any) => p.tracking_status === "draft" && p.content_type === "carousel")
+      .map((p: any) => ({
+        ...p,
+        format_type: "carousel",
+        _source: "linkedin_posts" as const,
+      }));
+
     // Published linkedin posts — filter out empty/short post_text
     const liPublished: SavedPost[] = (liRes.data || [])
       .filter((p: any) => p.post_text && p.post_text.trim().length >= 20)
@@ -3001,7 +3010,10 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
         _source: "linkedin_posts" as const,
       }));
 
-    setDrafts(ciDrafts);
+    const allDrafts = [...ciDrafts, ...liCarouselDrafts].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
+    setDrafts(allDrafts);
     setPublishedPosts(liPublished);
     const urls: Record<string, string> = {};
     (liRes.data || []).forEach((p: any) => { if (p.linkedin_url) urls[p.id] = p.linkedin_url; });
@@ -3048,19 +3060,35 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
       const linkedSignalId = (item.source_metadata as any)?.source_signal_id
         || (item.source_metadata?.signal_ids?.[0])
         || null;
-      await insertPublishedLinkedInPost({
-        userId: session.user.id,
-        postText: item.post_text || "",
-        formatType: item.format_type || "post",
-        sourceMetadata: item.source_metadata || {},
-        sourceSignalId: linkedSignalId,
-        url: trimmedUrl ?? null,
-        language: ((item.source_metadata as any)?.language === "ar" ? "ar" : "en"),
-      });
-      await supabase
-        .from("content_items")
-        .update({ status: "published" })
-        .eq("id", id);
+      if (item._source === "linkedin_posts") {
+        // Carousel draft — flip in place. source_type stays 'carousel_studio'
+        // (immutable provenance). No voice-learning side effect.
+        const nowIso = new Date().toISOString();
+        const { error: upErr } = await supabase
+          .from("linkedin_posts")
+          .update({
+            tracking_status: "published",
+            published_at: nowIso,
+            linkedin_url: trimmedUrl ?? null,
+            published_confirmed_at: trimmedUrl ? nowIso : null,
+          })
+          .eq("id", id);
+        if (upErr) throw upErr;
+      } else {
+        await insertPublishedLinkedInPost({
+          userId: session.user.id,
+          postText: item.post_text || "",
+          formatType: item.format_type || "post",
+          sourceMetadata: item.source_metadata || {},
+          sourceSignalId: linkedSignalId,
+          url: trimmedUrl ?? null,
+          language: ((item.source_metadata as any)?.language === "ar" ? "ar" : "en"),
+        });
+        await supabase
+          .from("content_items")
+          .update({ status: "published" })
+          .eq("id", id);
+      }
       setDrafts(prev => prev.filter(p => p.id !== id));
       // Fetch the related signal title to personalize the ceremony toast.
       let signalTitle = "strategic";
@@ -3303,7 +3331,9 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
 
                   {/* Date + Actions */}
                   <div className="flex items-center" style={{ marginTop: 12, gap: 16 }}>
-                    <span style={{ fontSize: 12, color: "var(--color-muted)" }}>{formatSmartDate(p.created_at)}</span>
+                    <span style={{ fontSize: 12, color: "var(--color-muted)" }}>
+                      {new Date(p.created_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                    </span>
                     <div className="flex-1" />
                     <button
                       onClick={() => p.post_text && handleCopy(p.id, p.post_text)}
@@ -3329,6 +3359,29 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                             rawType === "carousel" ? "carousel" :
                             rawType === "framework" ? "framework" :
                             "linkedin_post";
+                          if (p._source === "linkedin_posts" && mappedType === "carousel") {
+                            const meta: any = p.source_metadata || {};
+                            navigate("/carousel-studio", {
+                              state: {
+                                draftId: p.id,
+                                draftCarousel: {
+                                  slides: meta.slides || [],
+                                  style: meta.style || "clean_paper",
+                                  carousel_title: meta.carousel_title,
+                                  hashtags: meta.hashtags || [],
+                                  signal_id: meta.signal_id,
+                                  lang: meta.lang === "ar" ? "ar" : "en",
+                                  linkedin_caption: p.post_text || "",
+                                  author_name: meta.author_name,
+                                  author_title: meta.author_title,
+                                  signal_attribution: meta.signal_attribution,
+                                },
+                                signalId: meta.signal_id,
+                                lang: meta.lang === "ar" ? "ar" : "en",
+                              },
+                            });
+                            return;
+                          }
                           onOpenDraft({
                             id: p.id,
                             body: p.post_text || "",
