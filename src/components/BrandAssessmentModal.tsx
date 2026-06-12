@@ -439,12 +439,16 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
         resultsObj.secondary_archetype = secMatch?.[1]?.trim() || "";
       }
 
+      const pillars = derivePillars(resultsObj);
+      const updatePayload: Record<string, any> = {
+        brand_assessment_answers: formattedAnswers,
+        brand_assessment_results: resultsObj,
+        brand_assessment_completed_at: new Date().toISOString(),
+      };
+      if (pillars.length > 0) updatePayload.brand_pillars = pillars;
+
       await (supabase.from("diagnostic_profiles" as any) as any)
-        .update({
-          brand_assessment_answers: formattedAnswers,
-          brand_assessment_results: resultsObj,
-          brand_assessment_completed_at: new Date().toISOString(),
-        })
+        .update(updatePayload)
         .eq("user_id", user.id);
 
       toast({ title: "Done. Aura sees who you are now — and everything it creates will reflect it." });
