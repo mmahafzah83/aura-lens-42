@@ -241,8 +241,6 @@ export default function RequestAccess() {
                     onChange={(v) => { setEmail(v); if (errors.email) setErrors((p) => ({ ...p, email: undefined })); }}
                     error={errors.email}
                     maxLength={255}
-                    onBlur={() => setEmailTouched(true)}
-                    hint={showPersonalWarning ? "We recommend using your work email — it helps us review your application faster." : undefined}
                   />
                   <Select
                     id="seniority"
@@ -273,6 +271,17 @@ export default function RequestAccess() {
                       color: "var(--error)", fontSize: 14,
                     }}>
                       Didn't connect. Try once more.
+                    </div>
+                  )}
+
+                  {status === "validation" && (
+                    <div style={{
+                      padding: 12, borderRadius: 8,
+                      background: "var(--error-pale)",
+                      border: "1px solid color-mix(in srgb, var(--error) 40%, transparent)",
+                      color: "var(--error)", fontSize: 14,
+                    }}>
+                      {validationMessage || "Please check the highlighted fields and try again."}
                     </div>
                   )}
 
