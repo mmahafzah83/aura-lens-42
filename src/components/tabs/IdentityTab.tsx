@@ -65,6 +65,7 @@ interface ProfileRow {
   avatar_url: string | null;
   onboarding_completed: boolean;
   audit_completed_at: string | null;
+  audit_method: string | null;
   brand_assessment_completed_at: string | null;
   brand_assessment_results: any;
   identity_intelligence: any;
@@ -212,7 +213,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     try {
       const [profileRes, scoreRes, signalsRes] = await withTimeout(Promise.all([
         (supabase.from("diagnostic_profiles" as any) as any)
-          .select("first_name, last_name, level, firm, sector_focus, core_practice, north_star_goal, brand_pillars, avatar_url, onboarding_completed, audit_completed_at, brand_assessment_completed_at, brand_assessment_results, identity_intelligence, primary_strength")
+          .select("first_name, last_name, level, firm, sector_focus, core_practice, north_star_goal, brand_pillars, avatar_url, onboarding_completed, audit_completed_at, audit_method, brand_assessment_completed_at, brand_assessment_results, identity_intelligence, primary_strength")
           .eq("user_id", uid).maybeSingle(),
         (supabase.from("authority_scores") as any)
           .select("authority_score").eq("user_id", uid)
@@ -231,7 +232,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           first_name: null, last_name: null, level: null, firm: null, sector_focus: null,
           core_practice: null, north_star_goal: null, brand_pillars: [],
           avatar_url: null, onboarding_completed: false, audit_completed_at: null,
-          brand_assessment_completed_at: null, brand_assessment_results: null,
+          audit_method: null, brand_assessment_completed_at: null, brand_assessment_results: null,
           identity_intelligence: null, primary_strength: null,
         } as ProfileRow);
       }
@@ -1020,6 +1021,11 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           <SectionHeader label="Your Capability Radar" />
           <InfoTooltip slug="capability-radar" label="Capability Radar" side="top" triggerSize={13} />
         </div>
+      )}
+      {assessmentCompleted && profile?.audit_method !== "evidence_audit" && (
+        <p className="text-xs" style={{ color: "var(--ink-5)", marginTop: 2, marginBottom: 8 }}>
+          Self-rated baseline — refine with the Objective Audit.
+        </p>
       )}
       {assessmentCompleted && (
         <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }}>
