@@ -470,7 +470,7 @@ function SuccessCeremony({
       </p>
       {withSignature && (
         <div className="ra-anim-in ra-in-4" style={{ marginTop: 36 }}>
-          <div style={{ fontSize: 14, color: "var(--ink)", fontWeight: 500 }}>Mohammad Mahafzah</div>
+          <div style={{ fontSize: 14, color: "var(--ink)", fontWeight: 500 }}>Mohammad Mahafdhah</div>
           <div style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 2 }}>Aura builder</div>
         </div>
       )}
