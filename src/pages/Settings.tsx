@@ -233,6 +233,23 @@ export default function Settings() {
       }}
     >
       <div className="max-w-2xl mx-auto px-6 py-10">
+        {/* Back */}
+        <button
+          type="button"
+          onClick={() => {
+            if (typeof window !== "undefined" && (window.history.state?.idx ?? 0) > 0) {
+              navigate(-1);
+            } else {
+              navigate("/home");
+            }
+          }}
+          className="flex items-center gap-1.5 text-sm mb-4"
+          style={{ color: "var(--brand)" }}
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back</span>
+        </button>
+
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">
           <SettingsIcon className="w-5 h-5" style={{ color: "var(--brand)" }} />
