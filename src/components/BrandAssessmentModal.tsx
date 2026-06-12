@@ -588,7 +588,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
                 style={{
                   fontSize: 11,
                   letterSpacing: "2px",
-                  color: "rgba(212, 176, 86, 0.4)",
+                  color: "var(--bronze-text)",
                 }}
               >
                 Question {step + 1} of {QUESTIONS.length}
@@ -598,7 +598,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
                 style={{
                   fontFamily: "'Cormorant Garamond', Georgia, serif",
                   fontSize: 22,
-                  color: "rgba(230, 222, 205, 0.95)",
+                  color: "var(--ink)",
                   marginBottom: q.sub ? 8 : 24,
                   fontWeight: 500,
                 }}
@@ -988,7 +988,7 @@ function ResultsView({
             fontFamily: "'Cormorant Garamond', Georgia, serif",
             fontSize: "clamp(28px, 5vw, 36px)",
             fontWeight: 400,
-            color: "rgba(255, 250, 240, 0.96)",
+            color: "var(--ink)",
             lineHeight: 1.15,
             letterSpacing: "-0.01em",
             margin: "18px 0 14px",
@@ -1068,8 +1068,8 @@ function ResultsView({
       {showFull && (
         <div
           style={{
-            background: "var(--surface-ink-raised, var(--ink-2))",
-            border: "1px solid var(--ink-3)",
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
             borderRadius: 14,
             padding: "8px 4px",
           }}
@@ -1078,7 +1078,7 @@ function ResultsView({
             const isOpen = !!openSections[idx];
             const content = extractSection(prose, s.key);
             return (
-              <div key={s.key} style={{ borderBottom: idx < SECTION_DEFS.length - 1 ? "1px solid var(--ink-3)" : "none" }}>
+              <div key={s.key} style={{ borderBottom: idx < SECTION_DEFS.length - 1 ? "1px solid hsl(var(--border))" : "none" }}>
                 <button
                   type="button"
                   onClick={() => setOpenSections(prev => ({ ...prev, [idx]: !prev[idx] }))}
