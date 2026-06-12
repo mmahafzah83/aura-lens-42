@@ -1572,11 +1572,24 @@ export default function CarouselStudio() {
     signalTitle?: string;
     lang?: "en" | "ar";
     autoGenerate?: boolean;
+    draftId?: string;
+    draftCarousel?: {
+      slides?: Slide[];
+      style?: StyleKey;
+      carousel_title?: string;
+      hashtags?: string[];
+      signal_id?: string;
+      lang?: "en" | "ar";
+      linkedin_caption?: string;
+      author_name?: string;
+      author_title?: string;
+      signal_attribution?: any;
+    };
   } | null;
-  const [styleKey, setStyleKey] = useState<StyleKey>("clean_paper");
+  const [styleKey, setStyleKey] = useState<StyleKey>(navState?.draftCarousel?.style || "clean_paper");
   const [dim, setDim] = useState<Dimension>("1080x1350");
   const [topic, setTopic] = useState(navState?.topic || "");
-  const [lang, setLang] = useState<"en" | "ar">(navState?.lang || "en");
+  const [lang, setLang] = useState<"en" | "ar">(navState?.lang || navState?.draftCarousel?.lang || "en");
   const [generating, setGenerating] = useState(false);
   const [genMessageIdx, setGenMessageIdx] = useState(0);
   const GEN_MESSAGES = [
@@ -1594,11 +1607,28 @@ export default function CarouselStudio() {
     }, 4000);
     return () => clearInterval(id);
   }, [generating]);
-  const [carousel, setCarousel] = useState<Carousel>(() => emptyCarousel());
+  const [draftId, setDraftId] = useState<string | undefined>(navState?.draftId);
+  const [carousel, setCarousel] = useState<Carousel>(() => {
+    const dc = navState?.draftCarousel;
+    if (dc && Array.isArray(dc.slides) && dc.slides.length > 0) {
+      const base = emptyCarousel();
+      return {
+        ...base,
+        slides: dc.slides as any,
+        carousel_title: dc.carousel_title || base.carousel_title,
+        hashtags: dc.hashtags || base.hashtags,
+        linkedin_caption: dc.linkedin_caption || base.linkedin_caption,
+        author_name: dc.author_name || base.author_name,
+        author_title: dc.author_title || base.author_title,
+        signal_attribution: dc.signal_attribution || (base as any).signal_attribution,
+      } as Carousel;
+    }
+    return emptyCarousel();
+  });
   const [activeIdx, setActiveIdx] = useState(0);
   const [exporting, setExporting] = useState(false);
   const [contextText, setContextText] = useState(navState?.context || "");
-  const [selectedSignalId, setSelectedSignalId] = useState<string | undefined>(navState?.signalId);
+  const [selectedSignalId, setSelectedSignalId] = useState<string | undefined>(navState?.signalId || navState?.draftCarousel?.signal_id);
   const [showSignals, setShowSignals] = useState(true);
   const [regeneratingIndex, setRegeneratingIndex] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
@@ -1943,8 +1973,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
     try {
       const { data: sess } = await supabase.auth.getSession();
       if (!sess.session?.user?.id) { toast.error("Please sign in"); return; }
-      const { error } = await supabase.from('linkedin_posts').insert({
-        user_id: sess.session.user.id,
+      const payload = {
         post_text: carousel.linkedin_caption || '',
         hook: slides[0]?.headline || carousel.carousel_title || '',
         title: carousel.carousel_title || topic || 'Carousel',
@@ -1963,8 +1992,22 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
           lang,
         },
         tracking_status: 'draft',
-      } as any);
-      if (error) throw error;
+      };
+      if (draftId) {
+        const { error } = await supabase
+          .from('linkedin_posts')
+          .update({ ...payload, updated_at: new Date().toISOString() } as any)
+          .eq('id', draftId);
+        if (error) throw error;
+      } else {
+        const { data: ins, error } = await supabase
+          .from('linkedin_posts')
+          .insert({ user_id: sess.session.user.id, ...payload } as any)
+          .select('id')
+          .single();
+        if (error) throw error;
+        if (ins?.id) setDraftId(ins.id);
+      }
       setSavedToLibrary(true);
       toast.success("Carousel saved to Library");
     } catch (e: any) {
