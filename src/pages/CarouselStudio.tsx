@@ -1996,7 +1996,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
       if (draftId) {
         const { error } = await supabase
           .from('linkedin_posts')
-          .update({ ...payload, updated_at: new Date().toISOString() } as any)
+          .update(payload as any)
           .eq('id', draftId);
         if (error) throw error;
       } else {
