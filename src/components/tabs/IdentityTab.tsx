@@ -213,7 +213,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     try {
       const [profileRes, scoreRes, signalsRes] = await withTimeout(Promise.all([
         (supabase.from("diagnostic_profiles" as any) as any)
-          .select("first_name, last_name, level, firm, sector_focus, core_practice, north_star_goal, brand_pillars, avatar_url, onboarding_completed, audit_completed_at, brand_assessment_completed_at, brand_assessment_results, identity_intelligence, primary_strength")
+          .select("first_name, last_name, level, firm, sector_focus, core_practice, north_star_goal, brand_pillars, avatar_url, onboarding_completed, audit_completed_at, audit_method, brand_assessment_completed_at, brand_assessment_results, identity_intelligence, primary_strength")
           .eq("user_id", uid).maybeSingle(),
         (supabase.from("authority_scores") as any)
           .select("authority_score").eq("user_id", uid)
