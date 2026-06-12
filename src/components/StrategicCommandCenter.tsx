@@ -250,11 +250,38 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
                     description: data.opportunityExplanation,
                     steps: [],
                   })}
-                  onDraftContent={() => setDraftData({
-                    title: data.opportunityTitle,
-                    hook: data.opportunityExplanation,
-                    context: data.opportunityExplanation,
-                  })}
+                  onDraftContent={() => {
+                    try {
+                      setDraftData({
+                        title: data.opportunityTitle,
+                        hook: data.opportunityExplanation,
+                        context: data.opportunityExplanation,
+                      });
+                      // If this opportunity originated from a narrative suggestion,
+                      // mark it drafted and remove it from local state without refetch.
+                      if (data.opportunitySuggestionId) {
+                        const suggestionId = data.opportunitySuggestionId;
+                        supabase
+                          .from("narrative_suggestions")
+                          .update({ status: "drafted" })
+                          .eq("id", suggestionId)
+                          .then(({ error }) => {
+                            if (error) console.error("Failed to mark suggestion drafted:", error);
+                          });
+                        setData(prev => ({
+                          ...prev,
+                          opportunityTitle: "",
+                          opportunityExplanation: "",
+                          confidence: 0,
+                          sourceCount: 0,
+                          opportunityTier: null,
+                          opportunitySuggestionId: null,
+                        }));
+                      }
+                    } catch (err) {
+                      console.error("Draft action failed:", err);
+                    }
+                  }}
                 />
               </div>
             </>
