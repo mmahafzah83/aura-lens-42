@@ -65,6 +65,7 @@ interface ProfileRow {
   avatar_url: string | null;
   onboarding_completed: boolean;
   audit_completed_at: string | null;
+  audit_method: string | null;
   brand_assessment_completed_at: string | null;
   brand_assessment_results: any;
   identity_intelligence: any;
