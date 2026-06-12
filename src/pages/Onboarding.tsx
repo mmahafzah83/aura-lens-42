@@ -8,6 +8,7 @@ import usePageMeta from "@/hooks/usePageMeta";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
 import CalibrationSliders from "@/components/CalibrationSliders";
 import { SECTORS, normalizeSector } from "@/constants/sectors";
+import { initThemeFromStorage } from "@/lib/applyTheme";
 
 type Step = 0 | 1 | 2 | 3;
 
@@ -34,6 +35,10 @@ const Onboarding = () => {
     path: "/onboarding",
   });
   const navigate = useNavigate();
+
+  // Honour the user's saved light/dark preference on this standalone route
+  // (Dashboard normally writes data-theme; /onboarding mounts outside it).
+  useEffect(() => { initThemeFromStorage(); }, []);
 
   // One-time ceremony overlay shown between onboarding completion and Home.
   const [ceremony, setCeremony] = useState(false);

@@ -494,7 +494,7 @@ const SummaryCard = ({ summary, scores, submitting, reduceMotion, onFinish, onBa
           }}
         >
           {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-          Continue to step 4 <ArrowRight className="w-4 h-4" />
+          Continue to step 3 <ArrowRight className="w-4 h-4" />
         </button>
       </div>
     </div>

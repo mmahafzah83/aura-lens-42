@@ -50,11 +50,7 @@ const NAV_ITEMS = [
 
 type TabValue = typeof NAV_ITEMS[number]["value"];
 
-const applyThemeToRoot = (theme: "dark" | "light") => {
-  document.documentElement.setAttribute("data-theme", theme);
-  document.documentElement.classList.remove("light", "dark");
-  document.documentElement.classList.add(theme);
-};
+import { applyThemeToRoot } from "@/lib/applyTheme";
 
 const Dashboard = () => {
   usePageMeta({
