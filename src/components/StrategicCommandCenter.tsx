@@ -22,6 +22,7 @@ interface CommandData {
   confidence: number;
   sourceCount: number;
   opportunityTier: SignalTier;
+  opportunitySuggestionId: string | null;
   pipeline: { label: string; icon: React.ElementType; count: number }[];
   momentum: Array<{ title: string; type: string; created_at: string; lifecycle_tier?: SignalTier }>;
 }
@@ -42,6 +43,7 @@ const EMPTY: CommandData = {
   confidence: 0,
   sourceCount: 0,
   opportunityTier: null,
+  opportunitySuggestionId: null,
   pipeline: [],
   momentum: [],
 };
@@ -66,7 +68,7 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
         (supabase.from("diagnostic_profiles" as any) as any).select("core_practice, sector_focus, brand_pillars, identity_intelligence, north_star_goal").maybeSingle(),
         supabase.from("master_frameworks").select("id", { count: "exact", head: true }),
         supabase.from("learned_intelligence").select("id", { count: "exact", head: true }),
-        supabase.from("narrative_suggestions").select("topic, reason, angle").eq("status", "suggested").limit(1),
+        supabase.from("narrative_suggestions").select("id, topic, reason, angle").eq("status", "suggested").limit(1),
       ]);
 
       const signals = signalsRes.data || [];
@@ -94,11 +96,13 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
       let confidence = 0;
       let sourceCount = 0;
       let opportunityTier: SignalTier = null;
+      let opportunitySuggestionId: string | null = null;
 
       if (suggestions.length > 0) {
         const s = suggestions[0] as any;
         opportunityTitle = s.topic;
         opportunityExplanation = s.reason || s.angle || "";
+        opportunitySuggestionId = s.id ?? null;
       }
 
       if (topSignal) {
@@ -142,7 +146,7 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
         ...(recentFrameworks || []).map((f: any) => ({ title: f.title, type: "framework", created_at: f.created_at })),
       ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 4);
 
-      setData({ userName, identityStatement, northStar, opportunityTitle, opportunityExplanation, confidence, sourceCount, opportunityTier, pipeline, momentum });
+      setData({ userName, identityStatement, northStar, opportunityTitle, opportunityExplanation, confidence, sourceCount, opportunityTier, opportunitySuggestionId, pipeline, momentum });
     } catch (err) {
       console.error("Command center load error:", err);
     }
