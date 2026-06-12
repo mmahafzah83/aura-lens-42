@@ -329,11 +329,27 @@ const StrategicAdvisor = ({ onOpenChat }: StrategicAdvisorProps) => {
   };
 
   const handleConvert = (rec: Recommendation, type: "task" | "content") => {
-    if (type === "content" && onOpenChat) {
-      onOpenChat(`Help me create content about: ${rec.title}. Context: ${rec.rationale}`);
+    try {
+      if (type === "content" && onOpenChat) {
+        onOpenChat(`Help me create content about: ${rec.title}. Context: ${rec.rationale}`);
+      }
+      toast.success(type === "task" ? "Added to tasks" : "Opening content builder");
+      setRecommendations(prev => prev.filter(r => r.id !== rec.id));
+
+      // Mark narrative_suggestions row as drafted when this rec originated from a suggestion
+      if (type === "content" && rec.id.startsWith("narr-")) {
+        const suggestionId = rec.id.slice("narr-".length);
+        supabase
+          .from("narrative_suggestions")
+          .update({ status: "drafted" })
+          .eq("id", suggestionId)
+          .then(({ error }) => {
+            if (error) console.error("Failed to mark suggestion drafted:", error);
+          });
+      }
+    } catch (err) {
+      console.error("Convert failed:", err);
     }
-    toast.success(type === "task" ? "Added to tasks" : "Opening content builder");
-    setRecommendations(prev => prev.filter(r => r.id !== rec.id));
   };
 
   if (loading) {
