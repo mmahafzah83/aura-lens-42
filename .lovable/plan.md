@@ -1,56 +1,104 @@
+## Goal
 
-# Fix: one theme contract across onboarding + brand assessment (v2)
+One pipeline — Request Access. Frontend and edge function disagree on `Partner`, the personal-email hint nags users we want to welcome, and any 4xx response collapses into a misleading "Didn't connect" banner. Fix all three with the smallest possible surface area.
 
-Revised per feedback: text stays on the parchment primitives (`--ink` / `--bronze-text`), shadcn semantics are used only for sub-surfaces that lack a parchment equivalent. Adds a bottom scroll fade to the modal body.
+## Changes
 
-## 1. Make `/onboarding` honour the user's light/dark preference
+### 1. New shared constant — `src/constants/seniority.ts`
 
-`applyThemeToRoot` currently only runs inside `Dashboard`, so `/onboarding` falls through to the dark `:root` block.
+Mirror the `sectors.ts` pattern.
 
-- Extract the existing logic from `src/pages/Dashboard.tsx` into `src/lib/applyTheme.ts` (no behaviour change, same `localStorage["aura-theme"]` key, same `"light"` default).
-- Call it once at the top of `src/pages/Onboarding.tsx` (inside a `useEffect`, before first paint where possible). Dashboard keeps calling the same helper.
-- Result: `/onboarding` and `/dashboard` resolve identically — both write `data-theme` on `<html>`.
+```ts
+export const SENIORITY_LEVELS = [
+  "C-Suite",
+  "SVP / EVP",
+  "VP",
+  "Partner",
+  "Senior Director",
+  "Director",
+  "Senior Manager",
+  "Manager",
+  "Principal / Fellow",
+  "Advisor / Board Member",
+  "Other",
+] as const;
 
-## 2. Fix the off-by-one CTA copy
-
-Single hardcoded string. `src/components/CalibrationSliders.tsx:497`:
-
-```text
-- Continue to step 4
-+ Continue to step 3
+export type SeniorityLevel = typeof SENIORITY_LEVELS[number];
 ```
 
-No other logic touched.
+### 2. `src/pages/RequestAccess.tsx`
 
-## 3. BrandAssessmentModal — stay on the parchment contract for text, fix sub-surfaces, add scroll fade
+- Line 5: add `import { SENIORITY_LEVELS } from "@/constants/seniority";` next to the existing `SECTORS` import.
+- Lines 25–37: delete the local `SENIORITY` array. Replace the single usage site at line 257 with `options={[...SENIORITY_LEVELS]}` (matches the `SECTOR` spread pattern at line 39).
+- Lines 42–50: delete `PERSONAL_DOMAINS` and `isPersonalEmail`.
+- Line 95: delete `const [emailTouched, setEmailTouched] = useState(false);`.
+- Line 96: delete the `showPersonalWarning` computation.
+- Lines 250–251 (`<Field id="email" …>`): remove the `onBlur={() => setEmailTouched(true)}` and `hint={showPersonalWarning ? … : undefined}` props.
+- `Field` component (lines 355–385): leave the `onBlur` and `hint` props in the signature — they remain a generic field API and removing them would broaden the diff for no benefit. Only the email call-site stops passing them.
+- `handleSubmit` (lines 109–129): split the catch into a network-vs-4xx branch, and add a `"validation"` status with a single field-level error message.
 
-The shell already uses `--paper` / `--ink` / `--ink-3` correctly. The ink scale flips with theme, so text migrates to those primitives (not shadcn). Shadcn semantics are used only for sub-surfaces that have no correct parchment equivalent.
+  ```ts
+  type Status = "idle" | "loading" | "success" | "duplicate" | "error" | "validation";
 
-Replacements in `src/components/BrandAssessmentModal.tsx`:
+  // …
+  try {
+    const { data, error } = await supabase.functions.invoke("submit-waitlist", {
+      body: { name: name.trim(), email: email.trim(), seniority, sector },
+    });
+    if (error) {
+      // FunctionsHttpError exposes the EF response; FunctionsFetchError is a real network failure.
+      const ctx: any = (error as any).context;
+      if (ctx && typeof ctx.json === "function") {
+        let efMsg = "";
+        try { efMsg = (await ctx.json())?.error ?? ""; } catch { /* fall through */ }
+        setValidationMessage(
+          typeof efMsg === "string" && efMsg.trim()
+            ? efMsg
+            : "Please check the highlighted fields and try again.",
+        );
+        setStatus("validation");
+        return;
+      }
+      throw error; // true network / unknown — falls into the catch below
+    }
+    // …existing success / duplicate handling…
+  } catch (err) {
+    console.error("submit-waitlist failed:", err);
+    setStatus("error");
+  }
+  ```
 
-- Question number (`:585-594`) — `rgba(212, 176, 86, 0.4)` → `var(--bronze-text)` at full opacity. Brand bronze is intentional; the only bug was the 0.4 opacity rendering as a ghost on parchment.
-- Question title `<h2>` (`:595-606`) — `rgba(230, 222, 205, 0.95)` → `var(--ink)`.
-- Reveal archetype `<h2>` (`:971-997`) — `rgba(255, 250, 240, 0.96)` → `var(--ink)`.
-- "Full picture" card (`:1054-1060`) — `background: var(--ink-2)` → `hsl(var(--card))`; `border: 1px solid var(--ink-3)` → `1px solid hsl(var(--border))`; any text inside that previously relied on the dark surface → `hsl(var(--card-foreground))`. (Shadcn used here because the parchment scale has no correct "raised card" surface token.)
-- Sweep the same file for any other hardcoded `rgba(...)` cream/ink text values and migrate to the `--ink` scale (`--ink` / `--ink-2` / `--ink-muted`) using the existing ink hierarchy. Any further dark sub-surfaces follow the same `--card` / `--border` rule. Bronze accents stay.
-- Fix the parallel "Step 4 of 5" eyebrow on `:511` to "Step 4 of 4" so all eyebrows agree.
+  Add `const [validationMessage, setValidationMessage] = useState("");` next to the other state.
 
-**Scroll fade (new, in-scope):** the body region at `:527` (`flex-1 overflow-y-auto`) gets a bottom fade so users see content continues. No height or layout change.
+- Banner block (lines 274–283): keep the existing "Didn't connect. Try once more." banner gated on `status === "error"`. Add a sibling banner gated on `status === "validation"` that renders `validationMessage` using the same neutral/warning styling (reuse `--error-pale` / `--error`, or a softer `--warning` token if present — pick whichever already exists; do not introduce a new token).
 
-- Wrap or position-relative the scroller's parent and add a sibling `::after`-style overlay (or a pointer-events:none absolute div) anchored to the bottom: ~32px tall, `background: linear-gradient(to bottom, transparent, var(--paper))`, `pointer-events: none`. Uses `--paper` so it flips with theme automatically.
-- No JS scroll listener; static fade is sufficient and matches existing patterns.
+### 3. `supabase/functions/submit-waitlist/index.ts`
 
-## 4. Verification
-
-- `localStorage["aura-theme"] = "light"`, hard-refresh `/onboarding`: Calibration, BrandAssessment intro, Question, and Reveal all render on parchment with legible ink text, no embedded dark cards, bronze accents readable.
-- Toggle to `"dark"`: same screens render warm-dark with cream-equivalent ink text — current dark behaviour preserved by the ink scale.
-- Step counter reads 1→2→3→4; Calibration finish button reads "Continue to step 3"; modal eyebrow reads "Step 4 of 4".
-- Bottom scroll fade visible on the Question body in both themes; fade colour matches `--paper`.
-- `rg -n "rgba\(230,222,205|rgba\(255,250,240" src/components/BrandAssessmentModal.tsx` → **zero matches**.
-- tsc clean; no token additions to `index.css`.
+- Above `ALLOWED_SENIORITY` (line 26), add the comment line:
+  ```ts
+  // MUST mirror src/constants/seniority.ts (SENIORITY_LEVELS) — keep byte-identical.
+  ```
+- Update the array to match `SENIORITY_LEVELS` exactly (insert `"Partner",` after `"VP",`):
+  ```
+  "C-Suite", "SVP / EVP", "VP", "Partner", "Senior Director", "Director",
+  "Senior Manager", "Manager", "Principal / Fellow",
+  "Advisor / Board Member", "Other"
+  ```
+- `ALLOWED_SECTOR` (lines 39–56) is unchanged. No other EF logic touched (email regex, rate limit, duplicate check, Resend email).
 
 ## Out of scope
 
-- Modal layout, container height, scroll behaviour beyond the bottom fade.
-- Token palette changes.
-- Refactor of `CalibrationSliders` step state — label only.
+- DB schema, migrations, RLS on `beta_allowlist`.
+- Other surfaces that reference seniority strings (none found outside these two files).
+- Visual redesign of the form or banners.
+- The `BronzeNotice`/`SuccessCeremony` flows.
+- The "Mahafzah → Mahafdhah" display-string fixes (separate ticket).
+
+## Verification
+
+1. **Byte-identical lists.** Diff the seniority strings between `seniority.ts` and `submit-waitlist/index.ts` — must be identical character-for-character (same quotes, same order, same trailing comma style).
+2. **Live submit as Partner.** Use a fresh email, level `Partner`, any sector. Expect: success banner; row appears in `beta_allowlist` with `seniority='Partner'`, `status='pending'`, `source='waitlist'`. Verified via `psql` SELECT against `beta_allowlist` ordered by `created_at DESC LIMIT 1`.
+3. **Validation surfacing.** Submit with a body that bypasses client-side validation (e.g. devtools) sending `seniority="Bogus"`. Expect the new validation banner with the EF's exact message ("Valid seniority is required") — not "Didn't connect".
+4. **Network failure path.** Block the function URL in devtools (offline mode). Expect "Didn't connect. Try once more." — unchanged behavior.
+5. **Personal-email hint gone.** Type `you@gmail.com`, blur the field. No hint should render. `rg "PERSONAL_DOMAINS|isPersonalEmail|showPersonalWarning|emailTouched"` across `src/` must return zero matches.
+6. **No regressions in sector dropdown.** Sector list still renders 16 entries from `SECTORS`.
