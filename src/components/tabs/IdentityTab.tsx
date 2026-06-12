@@ -1022,6 +1022,11 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           <InfoTooltip slug="capability-radar" label="Capability Radar" side="top" triggerSize={13} />
         </div>
       )}
+      {assessmentCompleted && profile?.audit_method !== "evidence_audit" && (
+        <p className="text-xs" style={{ color: "var(--ink-5)", marginTop: 2, marginBottom: 8 }}>
+          Self-rated baseline — refine with the Objective Audit.
+        </p>
+      )}
       {assessmentCompleted && (
         <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }}>
           <div style={{ background: "var(--aura-card)", border: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", borderRadius: 12, padding: 14 }}>
