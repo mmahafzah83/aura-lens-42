@@ -214,7 +214,7 @@ const buildEmailHtml = (BRAND: string) => {
     <div style="padding:32px 40px 16px;">
       <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 22px;">I'll be watching to see what Aura discovers about you.</p>
       <p dir="rtl" lang="ar" style="font-family:${HEADING_FONT};font-size:16px;color:${BRAND};text-align:center;margin:18px 0 26px;">حتى السوق يعرفك قبل ما يشوفك ✦</p>
-      <p style="font-size:15px;color:#ffffff;font-weight:500;margin:0 0 4px;">Mohammad Mahafzah</p>
+      <p style="font-size:15px;color:#ffffff;font-weight:500;margin:0 0 4px;">Mohammad Mahafdhah</p>
       <p style="font-size:13px;color:#666;margin:0;">Aura builder</p>
     </div>
 
