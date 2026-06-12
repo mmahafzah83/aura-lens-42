@@ -1,102 +1,56 @@
 
-# Wave A6 — Decorative color debt closure
+# Fix: one theme contract across onboarding + brand assessment (v2)
 
-Scope: presentation-only. No logic, no feature changes. Four files touched.
+Revised per feedback: text stays on the parchment primitives (`--ink` / `--bronze-text`), shadcn semantics are used only for sub-surfaces that lack a parchment equivalent. Adds a bottom scroll fade to the modal body.
 
----
+## 1. Make `/onboarding` honour the user's light/dark preference
 
-## 1. Six tint fixes (adjudicated in A5.1)
+`applyThemeToRoot` currently only runs inside `Dashboard`, so `/onboarding` falls through to the dark `:root` block.
 
-### `src/components/MarketMirror.tsx`
-- **L244** `background: "rgba(249,115,22,0.04)"` → `background: "color-mix(in srgb, var(--signal) 4%, transparent)"`
+- Extract the existing logic from `src/pages/Dashboard.tsx` into `src/lib/applyTheme.ts` (no behaviour change, same `localStorage["aura-theme"]` key, same `"light"` default).
+- Call it once at the top of `src/pages/Onboarding.tsx` (inside a `useEffect`, before first paint where possible). Dashboard keeps calling the same helper.
+- Result: `/onboarding` and `/dashboard` resolve identically — both write `data-theme` on `<html>`.
 
-### `src/components/CaptureModal.tsx`
-- **L722** `background: "radial-gradient(circle, rgba(176,141,58,0.25) 0%, transparent 65%)"` → `…color-mix(in srgb, var(--bronze) 25%, transparent) 0%, transparent 65%…`
-- **L949** `background: active ? "rgba(255,255,255,0.15)" : "var(--vellum)"` → `active ? "var(--hairline)" : "var(--vellum)"` — visual check on dark: active tab must remain distinguishable; if it loses contrast, fall back to `color-mix(in srgb, var(--ink) 12%, transparent)` and note.
-- **L1094** `rgba(239,159,39,0.1)` → `var(--warning-pale)`
-- **L1095** `border: "1px solid rgba(239,159,39,0.4)"` → `border: "1px solid color-mix(in srgb, var(--warning) 40%, transparent)"`
-- **L1419** `"0 4px 20px rgba(184,48,37,0.4)" /* danger glow */` → `"0 4px 20px color-mix(in srgb, var(--error) 40%, transparent)" /* danger glow */`
+## 2. Fix the off-by-one CTA copy
 
-Quote before/after for each in the report.
+Single hardcoded string. `src/components/CalibrationSliders.tsx:497`:
 
----
-
-## 2. `src/pages/RequestAccess.tsx` — token pass (public, pre-invite page)
-
-Page is currently fully dark-first with literal hex/rgba throughout. Single file, presentation-only.
-
-Mapping (apply Wave A grammar):
-
-| Constant / line | From | To |
-|---|---|---|
-| `BRONZE` (L10) | `#B08D3A` | keep as `var(--bronze)` reference where used inline; for non-CSS-var contexts (already a TS const) annotate `// mirrors --bronze` |
-| `LEFT_BG` L11 `#0a0a08`, `RIGHT_BG` L12 `#0f0e0c` | hex | `var(--paper)` / `var(--paper-2)` (or single-source as constants annotated to the matching dark-surface token) |
-| `FIELD_BG` L13 `#1a1917`, `FIELD_BORDER` L14 `#2a2a28` | hex | `var(--vellum)` / `var(--hairline)` |
-| Body / muted text `#ededed`, `#aaa`, `#999`, `#bdbdbd`, `#9a9a9a`, `#888`, `#666`, `#555` | hex | `var(--ink)` / `var(--ink-2)` / `var(--ink-muted)` / `var(--ink-5)` per existing ink scale |
-| Heading `#fff` (L142, L212, L426, L483) | hex | `var(--ink)` |
-| Error block L267–269 `rgba(220,70,70,0.1)`, `rgba(220,70,70,0.4)`, `#e89c9c` (also L493) | hex/rgba | `var(--error-pale)` bg, `color-mix(in srgb, var(--error) 40%, transparent)` border, `var(--error)` text |
-| Submit button L280 `#fff` | hex | `var(--ink-on-brand)` |
-| Footer link L299 `#D4B056` | hex | `var(--bronze-text)` |
-| Placeholder L297 `rgba(255,255,255,0.45)` | rgba | `var(--ink-muted)` |
-| Focus ring L519 `rgba(176,141,58,0.15)` | rgba | `color-mix(in srgb, var(--bronze) 15%, transparent)` |
-| Autofill L528–529 `#ededed` | hex | `var(--ink)` (kept as literal if `!important` CSS block can't read vars — annotate) |
-| Hover shadow L535 `rgba(176,141,58,0.2)` | rgba | `color-mix(in srgb, var(--bronze) 20%, transparent)` |
-| Select option bg/text L403–405 `#555`, `#ededed` | hex | `var(--ink-muted)` / `var(--ink)` |
-
-`✦` marks (L164, L178, L423): add `aria-hidden="true"` (D2.4 register). L178 sparkle is inside Arabic copy text node — wrap in `<span aria-hidden="true">✦</span>`.
-
-Note any literals that must stay (e.g., inside the `<style>` autofill block where CSS vars don't resolve in `-webkit-text-fill-color` reliably); annotate with `/* mirrors --ink */`.
-
----
-
-## 3. GRAMMAR-1 flip in `src/index.css`
-
-Currently (3 occurrences across themes):
-```
---danger-pale: <hex>;
---error-pale:  var(--danger-pale);
+```text
+- Continue to step 4
++ Continue to step 3
 ```
 
-Flip to canonical:
-```
---error-pale:  <hex>;       /* canonical */
---danger-pale: var(--error-pale);  /* legacy alias — migrate consumers */
-```
+No other logic touched.
 
-Apply at L157–158 (dark `:root`), L258–259 (light), L1240–1241 (legacy/admin block). Values unchanged.
+## 3. BrandAssessmentModal — stay on the parchment contract for text, fix sub-surfaces, add scroll fade
 
-**`--danger-pale` consumers to migrate later** (not in this wave):
-- `src/components/AurasRead.tsx:26` — `bg: "var(--danger-pale)"` → `var(--error-pale)`
+The shell already uses `--paper` / `--ink` / `--ink-3` correctly. The ink scale flips with theme, so text migrates to those primitives (not shadcn). Shadcn semantics are used only for sub-surfaces that have no correct parchment equivalent.
 
-(Single consumer. Could be migrated in this same touch if desired — recommend yes, then leave the alias for any drift.)
+Replacements in `src/components/BrandAssessmentModal.tsx`:
 
----
+- Question number (`:585-594`) — `rgba(212, 176, 86, 0.4)` → `var(--bronze-text)` at full opacity. Brand bronze is intentional; the only bug was the 0.4 opacity rendering as a ghost on parchment.
+- Question title `<h2>` (`:595-606`) — `rgba(230, 222, 205, 0.95)` → `var(--ink)`.
+- Reveal archetype `<h2>` (`:971-997`) — `rgba(255, 250, 240, 0.96)` → `var(--ink)`.
+- "Full picture" card (`:1054-1060`) — `background: var(--ink-2)` → `hsl(var(--card))`; `border: 1px solid var(--ink-3)` → `1px solid hsl(var(--border))`; any text inside that previously relied on the dark surface → `hsl(var(--card-foreground))`. (Shadcn used here because the parchment scale has no correct "raised card" surface token.)
+- Sweep the same file for any other hardcoded `rgba(...)` cream/ink text values and migrate to the `--ink` scale (`--ink` / `--ink-2` / `--ink-muted`) using the existing ink hierarchy. Any further dark sub-surfaces follow the same `--card` / `--border` rule. Bronze accents stay.
+- Fix the parallel "Step 4 of 5" eyebrow on `:511` to "Step 4 of 4" so all eyebrows agree.
 
-## 4. `--color-info-text` check
+**Scroll fade (new, in-scope):** the body region at `:527` (`flex-1 overflow-y-auto`) gets a bottom fade so users see content continues. No height or layout change.
 
-`rg -n 'var\(--color-info-text' src/` → 5 consumers:
-- `AurasRead.tsx:35` (no fallback)
-- `home/YourMoves.tsx:36`, `home/MarketScan.tsx:96`, `tabs/HomeTab.tsx:1788, 1884` (all with `var(--info)` fallback)
+- Wrap or position-relative the scroller's parent and add a sibling `::after`-style overlay (or a pointer-events:none absolute div) anchored to the bottom: ~32px tall, `background: linear-gradient(to bottom, transparent, var(--paper))`, `pointer-events: none`. Uses `--paper` so it flips with theme automatically.
+- No JS scroll listener; static fade is sufficient and matches existing patterns.
 
-Definition: `src/index.css:1259  --color-info-text: #185FA5;` — defined **only in one block** (legacy/admin), not in the dark/light theme roots. AurasRead.tsx has no fallback → renders empty/inherited outside that block.
+## 4. Verification
 
-**Fix:** define `--color-info-text` in both theme roots alongside `--info`:
-- dark `:root` (~L130 area): `--color-info-text: <info-on-dark hex matching §1>;`
-- light block (~L240 area): `--color-info-text: <info-on-light hex>;`
+- `localStorage["aura-theme"] = "light"`, hard-refresh `/onboarding`: Calibration, BrandAssessment intro, Question, and Reveal all render on parchment with legible ink text, no embedded dark cards, bronze accents readable.
+- Toggle to `"dark"`: same screens render warm-dark with cream-equivalent ink text — current dark behaviour preserved by the ink scale.
+- Step counter reads 1→2→3→4; Calibration finish button reads "Continue to step 3"; modal eyebrow reads "Step 4 of 4".
+- Bottom scroll fade visible on the Question body in both themes; fade colour matches `--paper`.
+- `rg -n "rgba\(230,222,205|rgba\(255,250,240" src/components/BrandAssessmentModal.tsx` → **zero matches**.
+- tsc clean; no token additions to `index.css`.
 
-This is the minimal, non-breaking choice (preserves the semantic distinction "info text vs. info accent"). Alternative — simplify all 5 call sites to `var(--info)` and delete the token — is broader and changes intent; **not recommended** in this wave.
+## Out of scope
 
----
-
-## Self-check (to paste in report)
-
-1. `rg -n 'rgba\(249,115,22,0.04\)|rgba\(176,141,58,0.25\)|rgba\(255,255,255,0.15\)|rgba\(239,159,39|rgba\(184,48,37' src/components/MarketMirror.tsx src/components/CaptureModal.tsx` → expect zero.
-2. `rg -n '#[0-9a-fA-F]' src/pages/RequestAccess.tsx` → quote residue with justification (expected: autofill `-webkit-text-fill-color` literals only, annotated).
-3. `tsc --noEmit` exit code, real output.
-4. Dark screenshots of (a) RequestAccess hero + form, (b) CaptureModal warning row, (c) MarketMirror gap card, (d) CaptureModal tab row (verify active state still reads). Owner verifies light mode in preview.
-
-## Out of scope (parked, registered)
-
-- SEMANTIC-1 (`--semantic-warning` alias hygiene) — park to next token-file touch.
-- AdminDesignSystem fallbacks, App.css legacy, qaInteractionAudit.ts strings — park.
-- cardStyles / CarouselStudio export palette constants — already single-sourced & annotated in A5.
+- Modal layout, container height, scroll behaviour beyond the bottom fade.
+- Token palette changes.
+- Refactor of `CalibrationSliders` step state — label only.

@@ -508,7 +508,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
 
           {!showResults && step === 0 && (
             <p className="text-xs mt-2 mb-1" style={{ color: "rgba(212,176,86,0.7)", letterSpacing: "0.2em", textTransform: "uppercase", fontWeight: 600, fontSize: 11 }}>
-              Step 4 of 5 — How the market sees you
+              Step 4 of 4 — How the market sees you
             </p>
           )}
 
@@ -524,7 +524,8 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
         </div>
 
         {/* Content — scrollable */}
-        <div className="flex-1 overflow-y-auto px-4 pb-4">
+        <div className="relative flex-1 min-h-0">
+          <div className="absolute inset-0 overflow-y-auto px-4 pb-4">
           {showResults ? (
             <div className="max-w-2xl mx-auto h-full">
               {loading ? (
@@ -587,7 +588,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
                 style={{
                   fontSize: 11,
                   letterSpacing: "2px",
-                  color: "rgba(212, 176, 86, 0.4)",
+                  color: "var(--bronze-text)",
                 }}
               >
                 Question {step + 1} of {QUESTIONS.length}
@@ -597,7 +598,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
                 style={{
                   fontFamily: "'Cormorant Garamond', Georgia, serif",
                   fontSize: 22,
-                  color: "rgba(230, 222, 205, 0.95)",
+                  color: "var(--ink)",
                   marginBottom: q.sub ? 8 : 24,
                   fontWeight: 500,
                 }}
@@ -683,6 +684,20 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
               `}</style>
             </div>
           )}
+          </div>
+          {/* Bottom scroll fade — signals more content; flips with theme via --paper */}
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: 32,
+              pointerEvents: "none",
+              background: "linear-gradient(to bottom, transparent, var(--paper))",
+            }}
+          />
         </div>
 
         {/* Footer — sticky */}
@@ -973,7 +988,7 @@ function ResultsView({
             fontFamily: "'Cormorant Garamond', Georgia, serif",
             fontSize: "clamp(28px, 5vw, 36px)",
             fontWeight: 400,
-            color: "rgba(255, 250, 240, 0.96)",
+            color: "var(--ink)",
             lineHeight: 1.15,
             letterSpacing: "-0.01em",
             margin: "18px 0 14px",
@@ -1053,8 +1068,8 @@ function ResultsView({
       {showFull && (
         <div
           style={{
-            background: "var(--surface-ink-raised, var(--ink-2))",
-            border: "1px solid var(--ink-3)",
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
             borderRadius: 14,
             padding: "8px 4px",
           }}
@@ -1063,7 +1078,7 @@ function ResultsView({
             const isOpen = !!openSections[idx];
             const content = extractSection(prose, s.key);
             return (
-              <div key={s.key} style={{ borderBottom: idx < SECTION_DEFS.length - 1 ? "1px solid var(--ink-3)" : "none" }}>
+              <div key={s.key} style={{ borderBottom: idx < SECTION_DEFS.length - 1 ? "1px solid hsl(var(--border))" : "none" }}>
                 <button
                   type="button"
                   onClick={() => setOpenSections(prev => ({ ...prev, [idx]: !prev[idx] }))}
