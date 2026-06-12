@@ -179,7 +179,7 @@ export default function VisualCardRenderer(props: VisualCardProps) {
             ? 'م'
             : (props.authorName?.trim().charAt(0).toUpperCase() || 'M');
           return (
-            <div style={{ position: 'relative', marginTop: 40 }}>
+            <div style={{ position: 'relative', marginTop: 40, zIndex: 2 }}>
               {/* Thin separator — full width, 10% opacity */}
               <div style={{
                 height: 1,
