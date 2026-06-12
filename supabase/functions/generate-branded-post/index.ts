@@ -74,7 +74,10 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     const p = profile as any || {};
-    const brandPillars = (p.brand_pillars || []).join(", ") || "Strategy, Innovation, Leadership";
+    const pillarsArr: string[] = Array.isArray(p.brand_pillars)
+      ? p.brand_pillars.filter((s: unknown): s is string => typeof s === "string" && s.trim().length > 0)
+      : [];
+    const brandPillarsLine = pillarsArr.length > 0 ? `BRAND PILLARS: ${pillarsArr.join(", ")}\n\n` : "";
     const firm = p.firm || "a leading organization";
     const level = p.level || "Senior professional";
     const sector = p.sector_focus || "their sector";
@@ -93,9 +96,7 @@ Deno.serve(async (req) => {
 
     const systemPrompt = `You are an Elite Executive LinkedIn Ghostwriter for a ${level} at ${firm}, focused on ${sector}.
 
-BRAND PILLARS: ${brandPillars}
-
-You MUST produce TWO versions: English AND Arabic.
+${brandPillarsLine}You MUST produce TWO versions: English AND Arabic.
 
 === WRITING RULES (apply to BOTH languages) ===
 
