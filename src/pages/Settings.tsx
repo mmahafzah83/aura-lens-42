@@ -26,6 +26,7 @@ interface ProfileData {
   leadership_style: string | null;
   primary_strength: string | null;
   avatar_url: string | null;
+  brand_assessment_completed_at: string | null;
   brand_pillars: string[];
   identity_intelligence: Record<string, unknown>;
   brand_assessment_results: Record<string, unknown>;
@@ -65,19 +66,23 @@ export default function Settings() {
         const { data, error: qErr } = await supabase
           .from("diagnostic_profiles")
           .select(
-            "first_name, last_name, level, firm, core_practice, sector_focus, north_star_goal, linkedin_handle, linkedin_url, years_experience, leadership_style, primary_strength, avatar_url, brand_pillars, identity_intelligence, brand_assessment_results, skill_ratings, generated_skills, audit_results"
+            "first_name, last_name, level, firm, core_practice, sector_focus, north_star_goal, linkedin_handle, linkedin_url, years_experience, leadership_style, primary_strength, avatar_url, brand_assessment_completed_at, brand_pillars, identity_intelligence, brand_assessment_results, skill_ratings, generated_skills, audit_results"
           )
           .eq("user_id", session.user.id)
           .maybeSingle();
         if (cancelled) return;
         if (qErr) throw qErr;
         setProfile((data as ProfileData) || null);
-        try {
-          const r = await buildIdentityReport(session.user.id);
-          if (!cancelled) setReport(r);
-        } catch (re) {
-          console.error("[Settings] buildIdentityReport failed", re);
-        } finally {
+        if (data?.brand_assessment_completed_at) {
+          try {
+            const r = await buildIdentityReport(session.user.id);
+            if (!cancelled) setReport(r);
+          } catch (re) {
+            console.error("[Settings] buildIdentityReport failed", re);
+          } finally {
+            if (!cancelled) setReportLoading(false);
+          }
+        } else {
           if (!cancelled) setReportLoading(false);
         }
       } catch (e: any) {
@@ -363,31 +368,48 @@ export default function Settings() {
             >
               Export
             </div>
-            <p className="text-sm mb-4" style={{ color: "var(--ink-3)" }}>
-              Download your Strategic Identity Report as a PDF.
-            </p>
-            <AuraButton
-              variant="primary"
-              size="sm"
-              onClick={handleDownloadReport}
-              loading={exportingReport}
-              disabled={exportingReport || reportLoading || !report}
-            >
-              Download Report (PDF)
-            </AuraButton>
-            {/* §16.1 trust line — quiet, caption, muted; bilingual stack */}
-            <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 2 }}>
-              <p style={{ fontSize: 11, lineHeight: 1.6, color: "var(--ink-4)", margin: 0 }}>
-                The report is built from your data alone — and leaves only by your hand.
-              </p>
-              <p
-                dir="rtl"
-                lang="ar"
-                style={{ fontSize: 11, lineHeight: 1.6, color: "var(--ink-4)", margin: 0, fontFamily: "'Cairo', 'DM Sans', sans-serif" }}
-              >
-                التقرير يُبنى من بياناتك وحدها — ولا يغادر إلا بيدك.
-              </p>
-            </div>
+            {profile?.brand_assessment_completed_at ? (
+              <>
+                <p className="text-sm mb-4" style={{ color: "var(--ink-3)" }}>
+                  Download your Strategic Identity Report as a PDF.
+                </p>
+                <AuraButton
+                  variant="primary"
+                  size="sm"
+                  onClick={handleDownloadReport}
+                  loading={exportingReport}
+                  disabled={exportingReport || reportLoading || !report}
+                >
+                  Download Report (PDF)
+                </AuraButton>
+                {/* §16.1 trust line — quiet, caption, muted; bilingual stack */}
+                <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 2 }}>
+                  <p style={{ fontSize: 11, lineHeight: 1.6, color: "var(--ink-4)", margin: 0 }}>
+                    The report is built from your data alone — and leaves only by your hand.
+                  </p>
+                  <p
+                    dir="rtl"
+                    lang="ar"
+                    style={{ fontSize: 11, lineHeight: 1.6, color: "var(--ink-4)", margin: 0, fontFamily: "'Cairo', 'DM Sans', sans-serif" }}
+                  >
+                    التقرير يُبنى من بياناتك وحدها — ولا يغادر إلا بيدك.
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-sm mb-4" style={{ color: "var(--ink-4)" }}>
+                  Complete your brand assessment to generate your identity report.
+                </p>
+                <AuraButton
+                  variant="primary"
+                  size="sm"
+                  onClick={() => navigate("/onboarding")}
+                >
+                  Complete brand assessment
+                </AuraButton>
+              </>
+            )}
           </AuraCard>
         </div>
 
