@@ -66,19 +66,23 @@ export default function Settings() {
         const { data, error: qErr } = await supabase
           .from("diagnostic_profiles")
           .select(
-            "first_name, last_name, level, firm, core_practice, sector_focus, north_star_goal, linkedin_handle, linkedin_url, years_experience, leadership_style, primary_strength, avatar_url, brand_pillars, identity_intelligence, brand_assessment_results, skill_ratings, generated_skills, audit_results"
+            "first_name, last_name, level, firm, core_practice, sector_focus, north_star_goal, linkedin_handle, linkedin_url, years_experience, leadership_style, primary_strength, avatar_url, brand_assessment_completed_at, brand_pillars, identity_intelligence, brand_assessment_results, skill_ratings, generated_skills, audit_results"
           )
           .eq("user_id", session.user.id)
           .maybeSingle();
         if (cancelled) return;
         if (qErr) throw qErr;
         setProfile((data as ProfileData) || null);
-        try {
-          const r = await buildIdentityReport(session.user.id);
-          if (!cancelled) setReport(r);
-        } catch (re) {
-          console.error("[Settings] buildIdentityReport failed", re);
-        } finally {
+        if (data?.brand_assessment_completed_at) {
+          try {
+            const r = await buildIdentityReport(session.user.id);
+            if (!cancelled) setReport(r);
+          } catch (re) {
+            console.error("[Settings] buildIdentityReport failed", re);
+          } finally {
+            if (!cancelled) setReportLoading(false);
+          }
+        } else {
           if (!cancelled) setReportLoading(false);
         }
       } catch (e: any) {
