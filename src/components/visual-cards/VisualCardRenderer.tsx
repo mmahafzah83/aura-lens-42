@@ -65,10 +65,17 @@ function AccentBar({ style, language }: { style: CardStyleConfig; language: 'en'
   }
   // top / bottom
   const isPartial = bar.length && bar.length !== '100%';
+  // Reserve a footer-safe zone at the bottom of the card so decorative
+  // bars never cross the brand/tagline row. The footer occupies roughly
+  // the bottom ~120px of the inner content (separator + 24px gap + avatar
+  // row + stacked brand/tagline) on top of the card's 80px padding. We
+  // push any bottom-positioned bar above that reserved zone, family-wide,
+  // independent of caption length.
+  const FOOTER_RESERVE = 220; // 80 padding + ~140 footer + breathing room
   return (
     <div style={{
       ...common,
-      [bar.position]: bar.position === 'bottom' ? 80 : 0,
+      [bar.position]: bar.position === 'bottom' ? FOOTER_RESERVE : 0,
       left: bar.centered ? '50%' : 0,
       transform: bar.centered ? 'translateX(-50%)' : undefined,
       height: bar.size,
@@ -172,7 +179,7 @@ export default function VisualCardRenderer(props: VisualCardProps) {
             ? 'م'
             : (props.authorName?.trim().charAt(0).toUpperCase() || 'M');
           return (
-            <div style={{ position: 'relative', marginTop: 40 }}>
+            <div style={{ position: 'relative', marginTop: 40, zIndex: 2 }}>
               {/* Thin separator — full width, 10% opacity */}
               <div style={{
                 height: 1,
