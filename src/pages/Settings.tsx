@@ -26,6 +26,7 @@ interface ProfileData {
   leadership_style: string | null;
   primary_strength: string | null;
   avatar_url: string | null;
+  brand_assessment_completed_at: string | null;
   brand_pillars: string[];
   identity_intelligence: Record<string, unknown>;
   brand_assessment_results: Record<string, unknown>;
