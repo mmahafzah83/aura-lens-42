@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import InfoTooltip from "@/components/ui/InfoTooltip";
 import { CollapsibleList } from "@/components/ui/CollapsibleList";
 import MilestoneShareModal, { type MilestoneShareData } from "@/components/MilestoneShareModal";
+import { useCelebrationsEnabled } from "@/hooks/useCelebrationsEnabled";
 
 interface Milestone {
   id: string;
@@ -97,6 +98,7 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
   const [loading, setLoading] = useState(!provided);
   const [profile, setProfile] = useState<{ first_name: string | null; level: string | null; sector_focus: string | null } | null>(null);
   const [shareData, setShareData] = useState<MilestoneShareData | null>(null);
+  const { enabled: celebrationsEnabled } = useCelebrationsEnabled();
 
   useEffect(() => {
     if (provided) { setData(provided); setLoading(false); }
@@ -232,36 +234,38 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
                     </div>
                   )}
                 </div>
-                <button
-                  type="button"
-                  aria-label={`Share ${m.name} on LinkedIn`}
-                  onClick={() => setShareData({
-                    name: m.name,
-                    context: buildShareContext(m.id, m.name, m.context, profile?.sector_focus || null),
-                    earnedAt: m.earned_at,
-                    icon: MILESTONE_ICONS[m.id] || "✦",
-                    firstName: profile?.first_name || null,
-                    level: profile?.level || null,
-                    sectorFocus: profile?.sector_focus || null,
-                  })}
-                  style={{
-                    background: "transparent",
-                    border: "1px solid hsl(var(--border) / 0.6)",
-                    borderRadius: 6,
-                    padding: "4px 8px",
-                    cursor: "pointer",
-                    color: "hsl(var(--muted-foreground))",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 4,
-                    fontSize: 12,
-                    flexShrink: 0,
-                  }}
-                  title="Share on LinkedIn"
-                >
-                  <Share2 size={12} />
-                  Share
-                </button>
+                {celebrationsEnabled && (
+                  <button
+                    type="button"
+                    aria-label={`Share ${m.name} on LinkedIn`}
+                    onClick={() => setShareData({
+                      name: m.name,
+                      context: buildShareContext(m.id, m.name, m.context, profile?.sector_focus || null),
+                      earnedAt: m.earned_at,
+                      icon: MILESTONE_ICONS[m.id] || "✦",
+                      firstName: profile?.first_name || null,
+                      level: profile?.level || null,
+                      sectorFocus: profile?.sector_focus || null,
+                    })}
+                    style={{
+                      background: "transparent",
+                      border: "1px solid hsl(var(--border) / 0.6)",
+                      borderRadius: 6,
+                      padding: "4px 8px",
+                      cursor: "pointer",
+                      color: "hsl(var(--muted-foreground))",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                      fontSize: 12,
+                      flexShrink: 0,
+                    }}
+                    title="Share on LinkedIn"
+                  >
+                    <Share2 size={12} />
+                    Share
+                  </button>
+                )}
               </div>
             );
           }}
@@ -305,7 +309,7 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
         </div>
       )}
 
-      {shareData && (
+      {celebrationsEnabled && shareData && (
         <MilestoneShareModal
           open={!!shareData}
           onClose={() => setShareData(null)}

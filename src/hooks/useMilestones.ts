@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useCelebrationsEnabled } from "@/hooks/useCelebrationsEnabled";
 
 export interface Milestone {
   id: string;
@@ -15,6 +16,7 @@ export interface Milestone {
 export function useMilestones(userId: string | null) {
   const [allMilestones, setAllMilestones] = useState<Milestone[]>([]);
   const [loading, setLoading] = useState(false);
+  const { enabled: celebrationsEnabled } = useCelebrationsEnabled();
 
   const refresh = useCallback(async () => {
     if (!userId) return;
@@ -91,7 +93,9 @@ export function useMilestones(userId: string | null) {
     []
   );
 
-  const unacknowledgedMilestones = allMilestones.filter((m) => !m.acknowledged);
+  const unacknowledgedMilestones = celebrationsEnabled
+    ? allMilestones.filter((m) => !m.acknowledged)
+    : [];
 
   return {
     allMilestones,

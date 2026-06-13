@@ -22,6 +22,7 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import { useJourneyState } from "@/hooks/useJourneyState";
+import { useCelebrationsEnabled } from "@/hooks/useCelebrationsEnabled";
 import ShareLink from "@/components/ShareLink";
 import MilestoneShareModal, { type MilestoneShareData } from "@/components/MilestoneShareModal";
 import WeeklyIntelligenceLoopCard from "@/components/WeeklyIntelligenceLoopCard";
@@ -228,6 +229,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
   const sessionConfirmed = authReady && !!authSession?.access_token && !!authUser?.id;
   const navigate = useNavigate();
   const journey = useJourneyState(authUser?.id ?? null);
+  const { enabled: celebrationsEnabled } = useCelebrationsEnabled();
   const [now, setNow] = useState(new Date());
   const [isFirstWeek, setIsFirstWeek] = useState(false);
   useEffect(() => {
@@ -1514,19 +1516,23 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
       <FirstVisitHint page="home" suppress={suppressHint} />
 
       {/* Milestone notification (G7) — newly_earned comes from HomeTab's aura-score fetch */}
-      <MilestoneNotification userId={authUser?.id ?? null} auraData={auraData} />
+      {celebrationsEnabled && (
+        <MilestoneNotification userId={authUser?.id ?? null} auraData={auraData} />
+      )}
 
       {/* O-2b — Tier transition ceremony (modal renders when unacknowledged tier_* exists) */}
-      <TierCeremonyModal
-        userId={authUser?.id ?? null}
-        forcedTierName={auraData?.tier_name ?? null}
-      />
+      {celebrationsEnabled && (
+        <TierCeremonyModal
+          userId={authUser?.id ?? null}
+          forcedTierName={auraData?.tier_name ?? null}
+        />
+      )}
 
       {/* M3-4 — identity drift suggestion (frontend-only, session-scoped) */}
       <IdentityDriftBanner />
 
       {/* Score-jump celebratory banner — appears when score grew 10+ pts vs last week */}
-      {!scoreJumpDismissed && auraData && (auraData.score_trend ?? 0) >= 10 && (
+      {celebrationsEnabled && !scoreJumpDismissed && auraData && (auraData.score_trend ?? 0) >= 10 && (
         <div
           role="status"
           style={{
@@ -2646,7 +2652,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
       </div>
       </>)}
 
-      {scoreJumpShareData && (
+      {celebrationsEnabled && scoreJumpShareData && (
         <MilestoneShareModal
           open={!!scoreJumpShareData}
           onClose={() => setScoreJumpShareData(null)}
