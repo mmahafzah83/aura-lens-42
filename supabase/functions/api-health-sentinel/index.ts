@@ -59,7 +59,7 @@ async function checkPerplexity(key: string): Promise<Result> {
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "sonar",
-        max_tokens: 1,
+        max_tokens: 16,
         messages: [{ role: "user", content: "hi" }],
       }),
     });
