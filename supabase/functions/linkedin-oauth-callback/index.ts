@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     console.error("LinkedIn OAuth callback error:", err);
-    return new Response(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }), {
+    return new Response(JSON.stringify({ error: "An unexpected error occurred" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

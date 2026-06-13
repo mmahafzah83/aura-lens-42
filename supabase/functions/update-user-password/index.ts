@@ -53,7 +53,7 @@ serve(async (req) => {
   } catch (err) {
     console.error("[update-user-password]", err);
     return new Response(
-      JSON.stringify({ error: (err as Error).message || "Unknown error" }),
+      JSON.stringify({ error: "An unexpected error occurred" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
