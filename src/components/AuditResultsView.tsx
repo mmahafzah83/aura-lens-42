@@ -278,7 +278,7 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
       </div>
 
       {/* Section 3 — Guided Actions */}
-      <div className="border-t border-ink-3 pt-4 space-y-2">
+      <div className="border-t border-ink-3 pt-4 space-y-3">
         {/* Primary CTA */}
         <button
           onClick={() => { onClose?.(); onNavigate?.("settings"); }}
@@ -291,30 +291,26 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
           Show me who I am →
         </button>
 
-        {/* Secondary ghost buttons */}
-        <div className="flex gap-2">
-          <button
-            onClick={() => { onClose?.(); onNavigate?.("identity"); }}
-            className="flex-1 py-2.5 rounded-xl text-[12px] transition-colors text-center"
-            style={{
-              background: "transparent",
-              border: "1px solid var(--ink-3)",
-              color: "var(--ink-5)",
-            }}
-          >
-            See my positioning →
-          </button>
-          <button
-            onClick={() => { onClose?.(); onNavigate?.("intelligence"); }}
-            className="flex-1 py-2.5 rounded-xl text-[12px] transition-colors text-center"
-            style={{
-              background: "transparent",
-              border: "1px solid var(--ink-3)",
-              color: "var(--ink-5)",
-            }}
-          >
-            Paste a link →
-          </button>
+        {/* Secondary options */}
+        <div className="text-center">
+          <p className="text-[11px] mb-1.5" style={{ color: "var(--ink-5)" }}>or explore:</p>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={() => { onClose?.(); onNavigate?.("identity"); }}
+              className="text-xs hover:underline"
+              style={{ color: "var(--ink-5)" }}
+            >
+              See my positioning
+            </button>
+            <span className="text-[10px]" style={{ color: "var(--ink-3)" }}>·</span>
+            <button
+              onClick={() => { onClose?.(); onNavigate?.("intelligence"); }}
+              className="text-xs hover:underline"
+              style={{ color: "var(--ink-5)" }}
+            >
+              Paste a link
+            </button>
+          </div>
         </div>
       </div>
     </div>
