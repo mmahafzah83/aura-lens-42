@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { AuraCard } from "@/components/ui/AuraCard";
 import { AuraButton } from "@/components/ui/AuraButton";
 import { X } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface FirstLoginWelcomeProps {
   firstName?: string | null;
@@ -9,8 +10,9 @@ interface FirstLoginWelcomeProps {
   onDismiss: () => void;
 }
 
-export function FirstLoginWelcome({ firstName, onOpenGuide, onDismiss }: FirstLoginWelcomeProps) {
+export function FirstLoginWelcome({ firstName: firstNameProp, onOpenGuide, onDismiss }: FirstLoginWelcomeProps) {
   const [visible, setVisible] = useState(false);
+  const [fetchedName, setFetchedName] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -22,7 +24,37 @@ export function FirstLoginWelcome({ firstName, onOpenGuide, onDismiss }: FirstLo
     }
   }, []);
 
+  useEffect(() => {
+    async function loadName() {
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from("diagnostic_profiles")
+        .select("first_name")
+        .eq("user_id", user.id)
+        .single();
+
+      if (profile?.first_name) {
+        setFetchedName(profile.first_name);
+        return;
+      }
+
+      const metaName = user.user_metadata?.first_name as string | undefined;
+      if (metaName) {
+        setFetchedName(metaName);
+      }
+    }
+
+    if (!firstNameProp) {
+      loadName();
+    }
+  }, [firstNameProp]);
+
   if (!visible) return null;
+
+  const firstName = firstNameProp || fetchedName;
 
   const handleExplore = () => {
     try { localStorage.setItem("aura_welcome_briefing_done", "1"); } catch {}
@@ -70,7 +102,7 @@ export function FirstLoginWelcome({ firstName, onOpenGuide, onDismiss }: FirstLo
               lineHeight: 1.3,
             }}
           >
-            {firstName ? `Welcome, ${firstName}.` : "Welcome to Aura."}
+            {firstName ? `Welcome, ${firstName}.` : "Welcome."}
           </h2>
 
           <p
