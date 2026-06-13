@@ -1516,19 +1516,23 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
       <FirstVisitHint page="home" suppress={suppressHint} />
 
       {/* Milestone notification (G7) — newly_earned comes from HomeTab's aura-score fetch */}
-      <MilestoneNotification userId={authUser?.id ?? null} auraData={auraData} />
+      {celebrationsEnabled && (
+        <MilestoneNotification userId={authUser?.id ?? null} auraData={auraData} />
+      )}
 
       {/* O-2b — Tier transition ceremony (modal renders when unacknowledged tier_* exists) */}
-      <TierCeremonyModal
-        userId={authUser?.id ?? null}
-        forcedTierName={auraData?.tier_name ?? null}
-      />
+      {celebrationsEnabled && (
+        <TierCeremonyModal
+          userId={authUser?.id ?? null}
+          forcedTierName={auraData?.tier_name ?? null}
+        />
+      )}
 
       {/* M3-4 — identity drift suggestion (frontend-only, session-scoped) */}
       <IdentityDriftBanner />
 
       {/* Score-jump celebratory banner — appears when score grew 10+ pts vs last week */}
-      {!scoreJumpDismissed && auraData && (auraData.score_trend ?? 0) >= 10 && (
+      {celebrationsEnabled && !scoreJumpDismissed && auraData && (auraData.score_trend ?? 0) >= 10 && (
         <div
           role="status"
           style={{
