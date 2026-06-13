@@ -412,6 +412,15 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores, refreshKey = 0 }: Audi
               <span className="text-xs font-medium inline-flex items-center gap-1.5" style={{ color: "var(--brand)" }}>
                 <ShieldCheck className="w-3.5 h-3.5" /> Evidence verified
               </span>
+              {onStartAudit && (
+                <button
+                  onClick={onStartAudit}
+                  className="text-xs font-medium hover:underline"
+                  style={{ color: "var(--ink-5)" }}
+                >
+                  Re-run audit
+                </button>
+              )}
             </div>
           ) : (
             <div
