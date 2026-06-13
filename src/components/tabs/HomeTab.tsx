@@ -22,6 +22,7 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import { useJourneyState } from "@/hooks/useJourneyState";
+import { useCelebrationsEnabled } from "@/hooks/useCelebrationsEnabled";
 import ShareLink from "@/components/ShareLink";
 import MilestoneShareModal, { type MilestoneShareData } from "@/components/MilestoneShareModal";
 import WeeklyIntelligenceLoopCard from "@/components/WeeklyIntelligenceLoopCard";
@@ -228,6 +229,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
   const sessionConfirmed = authReady && !!authSession?.access_token && !!authUser?.id;
   const navigate = useNavigate();
   const journey = useJourneyState(authUser?.id ?? null);
+  const { enabled: celebrationsEnabled } = useCelebrationsEnabled();
   const [now, setNow] = useState(new Date());
   const [isFirstWeek, setIsFirstWeek] = useState(false);
   useEffect(() => {
