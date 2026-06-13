@@ -1270,13 +1270,15 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         }}
       />
       <BrandAssessmentModal open={brandOpen} onOpenChange={setBrandOpen} onNavigate={handleNavigate} />
-      <TierCeremonyModal
-        userId={authUser?.id ?? null}
-        forceOpen={credentialOpen}
-        onForceClose={() => setCredentialOpen(false)}
-        forcedTierName={tierName ?? null}
-      />
-      {marketShareData && (
+      {celebrationsEnabled && (
+        <TierCeremonyModal
+          userId={authUser?.id ?? null}
+          forceOpen={credentialOpen}
+          onForceClose={() => setCredentialOpen(false)}
+          forcedTierName={tierName ?? null}
+        />
+      )}
+      {celebrationsEnabled && marketShareData && (
         <MilestoneShareModal
           open={!!marketShareData}
           onClose={() => setMarketShareData(null)}
