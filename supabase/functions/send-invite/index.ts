@@ -189,7 +189,7 @@ const buildEmailHtml = (BRAND: string) => {
       <div style="margin:0 0 14px;">
         <a href="{{CONFIRMATION_URL}}" style="display:inline-block;background:${CTA};color:#ffffff;padding:0 28px;height:48px;line-height:48px;border-radius:8px;font-weight:600;font-size:15px;text-decoration:none;font-family:${BODY_FONT};">Open my Aura →</a>
       </div>
-      <p style="font-size:12px;color:#444;margin:0 0 28px;">This link expires in 48 hours.</p>
+      <p style="font-size:12px;color:#444;margin:0 0 28px;">This link expires in 24 hours.</p>
     </div>
 
     <!-- 7 · YOUR FIRST 10 MINUTES -->
