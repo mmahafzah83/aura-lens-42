@@ -38,9 +38,9 @@ serve(async (req) => {
     });
 
     if (updateError) {
-      console.error("[update-user-password] Failed:", updateError.message);
-      return new Response(
-        JSON.stringify({ error: "Password update failed: " + updateError.message }),
+     console.error("[update-user-password] Failed:", updateError.message);
+     return new Response(
+       JSON.stringify({ error: "Password update failed" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

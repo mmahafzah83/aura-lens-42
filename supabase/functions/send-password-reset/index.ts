@@ -34,6 +34,12 @@ serve(async (req) => {
     }
 
     const cleanEmail = email.trim().toLowerCase();
+    // Basic validation: length + RFC-ish email regex to reduce abuse surface.
+    if (cleanEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      return new Response(JSON.stringify({ error: "Invalid email" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
     const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
