@@ -1,135 +1,54 @@
-# Carousel drafts in the Library
+## Goal
+One global, per-browser flag suppresses every celebration surface for the current user. Milestone writes to `user_milestones` and the first-login welcome are untouched. The flag is one constant to flip later.
 
-One pipeline. No schema change. Two source files edited + one shared constant addition.
+## Files
 
-## Diagnosis (confirmed)
+### NEW — `src/hooks/useCelebrationsEnabled.ts`
+- Reads `localStorage["aura_celebrations_muted"]`.
+- Module-level constant `DEFAULT_MUTED = true` (the one-character flip — change to `false` to re-enable across the build for users who never set the key).
+- Returns `{ enabled, muted }` where `enabled === !muted`.
+- Subscribes to the `storage` event so changes in other tabs propagate.
 
-- `CarouselStudio.saveToLibrary` (~1940–1976) inserts into `linkedin_posts` with `tracking_status='draft'`, `content_type='carousel'`, `source_type='carousel_studio'`, slide JSON in `source_metadata.slides`.
-- `LibraryTab.loadPosts` (`AuthorityTab.tsx` ~2966–3028) reads drafts only from `content_items` where `status='draft'`. It reads `linkedin_posts` only for the Published section, gated by `p.published_at || isPublishedPost(p)`.
-- Net effect: a carousel draft has no `published_at`, and `('carousel_studio','draft')` is not in the published pair-set → it appears nowhere.
+### EDIT — `src/hooks/useMilestones.ts`
+- Import `useCelebrationsEnabled`.
+- Inside the hook, compute `const { enabled } = useCelebrationsEnabled();`.
+- Replace the existing `unacknowledgedMilestones` derivation with:
+  `const unacknowledgedMilestones = enabled ? allMilestones.filter(m => !m.acknowledged) : [];`
+- `allMilestones`, `refresh`, `checkAndAwardMilestone`, `acknowledgeMilestone`, `shareMilestone` are NOT touched — all `user_milestones` reads/writes continue exactly as today.
 
-## Scope
+### EDIT — `src/components/tabs/HomeTab.tsx`
+- Import `useCelebrationsEnabled`; `const { enabled: celebrationsEnabled } = useCelebrationsEnabled();` near the other hooks.
+- Wrap in `{celebrationsEnabled && (...)}`:
+  - `MilestoneNotification` block at line 1517.
+  - `TierCeremonyModal` block at line 1520.
+  - Score-jump banner conditional at line 1529 — add `celebrationsEnabled &&` to the existing guard `(!scoreJumpDismissed && auraData && (auraData.score_trend ?? 0) >= 10)`.
+  - `MilestoneShareModal` block at line 2649–2655.
 
-- `src/components/tabs/AuthorityTab.tsx` (LibraryTab merge, draft card, publish branch)
-- `src/pages/CarouselStudio.tsx` (route prefill for resuming an existing draft, in-place save)
-- `src/lib/postProvenance.ts` + `supabase/functions/_shared/postProvenance.ts` (add one pair — see Change 2)
+### EDIT — `src/components/tabs/IdentityTab.tsx`
+- Import `useCelebrationsEnabled`; same hook call.
+- Wrap in `{celebrationsEnabled && (...)}`:
+  - `TierCeremonyModal` block at line 1271 (keeps `forceOpen` re-entry path muted too; if/when re-enabled the modal returns).
+  - `MilestoneShareModal` block at line 1278.
+- `MilestonesSection` mount at line 1257 is left as-is (already `className="hidden"`).
 
-No SQL, no other readers, no edge functions, no voice-learning hooks for carousels.
+### EDIT — `src/components/MilestonesSection.tsx`
+- Import `useCelebrationsEnabled`; `const { enabled: celebrationsEnabled } = useCelebrationsEnabled();`.
+- Keep all earned/unearned rendering intact (history is preserved as a quiet record).
+- In the earned-list `renderItem`, hide the `<button>...Share</button>` block (lines 235–264) behind `{celebrationsEnabled && (...)}`.
+- Hide the `MilestoneShareModal` block at lines 308–314 behind `{celebrationsEnabled && (...)}` (defensive — modal can't open without the button anyway).
+- No copy changes to headings/labels (already neutral: "Achievements", "Your milestones", "Earned …").
 
-## Change 1 — Drafts section reads carousel drafts too
+### NOT TOUCHED
+- `src/components/FirstLoginWelcome.tsx` and its mount at `src/pages/Dashboard.tsx:915` — first-login welcome continues to render.
+- `AuthorityJourney.tsx` tier strip — it's informational tier progress, not a celebration surface in the inventory; its embedded Share affordance is via `ShareLink`, but per the request only `MilestoneShareModal` entry points and the Share buttons in `MilestonesSection` are gated. (If you also want `AuthorityJourney`'s ShareLink gated, say so — it's a one-line addition.)
+- `calculate-aura-score` edge function and any `user_milestones` SQL — untouched.
 
-In `LibraryTab.loadPosts`:
+## Default state for this build
+`DEFAULT_MUTED = true` in `useCelebrationsEnabled.ts`. The founder's G1 week is quiet by default. To re-enable globally, flip that single constant to `false`. To re-enable per user without redeploy, set `localStorage.aura_celebrations_muted = "false"` in the browser.
 
-1. Add `content_type` to the `linkedin_posts` select list.
-2. After `Promise.all`, derive a second slice:
-
-   ```ts
-   const liCarouselDrafts: SavedPost[] = (liRes.data || [])
-     .filter((p: any) =>
-       p.tracking_status === "draft" && p.content_type === "carousel"
-     )
-     .map((p: any) => ({
-       ...p,
-       format_type: "carousel",
-       _source: "linkedin_posts" as const,
-     }));
-   ```
-3. Merge and sort by `created_at` descending:
-
-   ```ts
-   const allDrafts = [...ciDrafts, ...liCarouselDrafts].sort(
-     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-   );
-   setDrafts(allDrafts);
-   ```
-4. Published filter unchanged — `p.published_at || isPublishedPost(p)` is false for carousel drafts today (no `published_at`, pair not in set), so the Published list does not change.
-5. Realtime channel on `linkedin_posts` for the current user already triggers `loadPosts()`, so carousel saves and publishes reflect instantly with no manual refetch.
-
-### Card rendering
-
-The existing draft card already differentiates `format_type === "carousel"` for the type badge (~2340). Two small adjustments inside the draft-card render block (~3211+):
-
-- **Date + time on every draft card:** replace `formatSmartDate(p.created_at)` (line 3306) with a combined date+time string:
-
-  ```ts
-  new Date(p.created_at).toLocaleString(undefined, {
-    month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
-  })
-  ```
-
-  Applied to all drafts (post + carousel) for one consistent recency cue. Published cards unchanged.
-
-- **Edit button for carousel drafts:** in the existing Edit handler (~3324), branch when `_source === "linkedin_posts"` and `format_type === "carousel"`. Instead of calling `onOpenDraft` (which routes to the Create tab), `navigate("/carousel-studio", { state: { ... } })` carrying the draft id, slides, style, lang, hashtags, signal id, author fields, etc., reconstructed from `source_metadata`.
-
-### CarouselStudio: resume an existing draft
-
-Extend the `navState` type at ~1568 to also accept:
-
-```ts
-draftId?: string;
-draftCarousel?: {
-  slides: Slide[];
-  style: StyleKey;
-  carousel_title?: string;
-  hashtags?: string[];
-  signal_id?: string;
-  lang?: "en" | "ar";
-  linkedin_caption?: string;
-  author_name?: string;
-  author_title?: string;
-};
-```
-
-When `navState.draftId` is present on mount, hydrate `carousel`, `styleKey`, `lang`, `selectedSignalId` from `draftCarousel` and store `draftId` in component state. Modify `saveToLibrary` (~1940): when `draftId` is set, `update(...)` the existing `linkedin_posts` row in place instead of `insert(...)` (same payload, scoped to `.eq("id", draftId)`). Toast unchanged ("Carousel saved to Library").
-
-This keeps Drafts to one row per carousel — successive saves update in place, realtime re-sorts, the card stays at the top.
-
-## Change 2 — "Published to LinkedIn" action parity, preserving provenance
-
-A carousel draft is **already** in `linkedin_posts` — flipping in place is the parity move and avoids duplicates. `source_type` is immutable provenance and stays `'carousel_studio'` forever.
-
-**Provenance addition.** Add `['carousel_studio', 'published']` to `PUBLISHED_PAIRS` in both `src/lib/postProvenance.ts` and `supabase/functions/_shared/postProvenance.ts` (the mirror), so that `isPublishedPost` legitimately returns true for a published carousel row. The pair is also automatically added to `PUBLISHED_SOURCE_TYPES` / `PUBLISHED_TRACKING_STATUSES` by the existing `Array.from(new Set(...))` derivations — no further changes to query helpers.
-
-**Handler.** In `LibraryTab.markPublished` (~3041), branch on `_source`:
-
-- `_source === "content_items"` → unchanged (still uses `insertPublishedLinkedInPost`, still updates `content_items.status='published'`).
-- `_source === "linkedin_posts"` (carousel draft) → in-place update only, no voice-learning, no new row:
-
-  ```ts
-  await supabase.from("linkedin_posts").update({
-    tracking_status: "published",
-    published_at: new Date().toISOString(),
-    linkedin_url: trimmedUrl ?? null,
-    published_confirmed_at: trimmedUrl ? new Date().toISOString() : null,
-  }).eq("id", id);
-  ```
-
-  No `source_type` write. No `insertPublishedLinkedInPost` call. No voice-profile read or write of any kind — generated captions are never fed back into the authored-only voice profile.
-
-  `isPublishedPost` now returns true for `('carousel_studio','published')`, so the row enters the Published list on the next `loadPosts()` (already called at the end of the existing handler). Same ceremony toast. Same `linkedin_url` capture flow. Same delete handler (already `_source`-aware at line 3137).
-
-Local state move: `setDrafts(prev => prev.filter(p => p.id !== id))`; `loadPosts()` then repopulates Published.
-
-## Out of scope
-
-- Schema: no new columns. `content_type` already exists on `linkedin_posts`.
-- Published list's filter logic — unchanged.
-- Post drafts in `content_items` — unchanged behavior, same handlers.
-- `insertPublishedLinkedInPost` — untouched (still used by the post draft path and the Create→Publish path, both of which are authored posts that legitimately train the voice profile).
-- Voice-learning loop for carousels — explicitly NOT added; captions are AI-generated and must never train authored-only voice provenance.
-
-## Technical notes
-
-- Files: `src/components/tabs/AuthorityTab.tsx`, `src/pages/CarouselStudio.tsx`, `src/lib/postProvenance.ts`, `supabase/functions/_shared/postProvenance.ts`.
-- `SavedPost` already permits both `_source` values; no type change required.
-- Realtime channel on `linkedin_posts` covers both save-in-place and publish-in-place.
-
-## Verification
-
-1. Generate a carousel → Save to Library → switch to Library tab → carousel appears at the top of Drafts with timestamp formatted like `Jun 12, 3:42 PM`, badge "Carousel".
-2. Click Edit on the carousel draft → opens `/carousel-studio` with the slides loaded; saving again updates the same row (no duplicate in Drafts, timestamp re-sorts to top).
-3. Click "Published ✓" on the carousel draft (with or without URL) → card disappears from Drafts and appears in Published. SQL check on that row: `tracking_status='published'`, `published_at` set, `source_type` **still `'carousel_studio'`** (immutable), `linkedin_url` matches the entered value or null. `isPublishedPost` returns true via the newly added pair.
-4. A post draft from `content_items` still publishes via `insertPublishedLinkedInPost` (separate row), `content_items.status='published'` — unchanged.
-5. `authority_voice_profiles.example_posts` is unchanged before vs. after a carousel publish — confirms no voice-learning side effect.
-6. Published list with no carousels involved — pixel-identical behavior.
-7. `diff src/lib/postProvenance.ts supabase/functions/_shared/postProvenance.ts` shows only the existing mirror-comment differences plus the same new pair entry on both sides.
+## Self-check (post-implementation)
+1. Load `/home` as a fresh user: no `MilestoneNotification` toast, no `TierCeremonyModal`, no score-jump banner.
+2. Earn a milestone (trigger `calculate-aura-score`): SQL `select milestone_id, acknowledged from user_milestones where user_id = '<me>' order by earned_at desc;` shows the new row written.
+3. Load `/dashboard?tab=identity`: `MilestonesSection` (when surfaced) shows earned items with dates but no Share button; `TierCeremonyModal` / `MilestoneShareModal` do not mount.
+4. Wipe `localStorage["aura_welcome_briefing_done"]` and reload `/dashboard`: `FirstLoginWelcome` still appears.
+5. In DevTools set `localStorage.aura_celebrations_muted = "false"` and reload: all celebrations return without code changes.
