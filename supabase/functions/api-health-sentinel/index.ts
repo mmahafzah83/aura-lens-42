@@ -71,7 +71,7 @@ async function checkPerplexity(key: string): Promise<Result> {
 
 async function checkResend(key: string): Promise<Result> {
   try {
-    const r = await fetch("https://api.resend.com/domains", {
+    const r = await fetch("https://api.resend.com/emails", {
       method: "GET",
       headers: { Authorization: `Bearer ${key}` },
     });
