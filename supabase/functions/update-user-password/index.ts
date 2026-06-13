@@ -38,9 +38,9 @@ serve(async (req) => {
     });
 
     if (updateError) {
-      console.error("[update-user-password] Failed:", updateError.message);
-      return new Response(
-        JSON.stringify({ error: "Password update failed: " + updateError.message }),
+     console.error("[update-user-password] Failed:", updateError.message);
+     return new Response(
+       JSON.stringify({ error: "Password update failed" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -53,7 +53,7 @@ serve(async (req) => {
   } catch (err) {
     console.error("[update-user-password]", err);
     return new Response(
-      JSON.stringify({ error: (err as Error).message || "Unknown error" }),
+      JSON.stringify({ error: "An unexpected error occurred" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

@@ -138,7 +138,7 @@ serve(async (req) => {
     });
   } catch (err) {
     console.error("send-account-notification:", err);
-    return new Response(JSON.stringify({ error: (err as Error).message }), {
+    return new Response(JSON.stringify({ error: "An unexpected error occurred" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
