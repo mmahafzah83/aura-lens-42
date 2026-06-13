@@ -336,10 +336,10 @@ const TerritoryPanel = ({
               style={{
                 textAlign: "left",
                 padding: "12px 14px",
-                border: "0.5px solid var(--surface-ink-subtle)",
+                border: isSelected ? "0.5px solid var(--brand-muted, var(--surface-ink-subtle))" : "0.5px solid var(--surface-ink-subtle)",
                 borderLeft: isSelected ? "3px solid var(--brand)" : "3px solid transparent",
                 borderRadius: 8,
-                background: isSelected ? "var(--surface-ink-raised)" : "transparent",
+                background: isSelected ? "hsl(var(--muted) / 0.35)" : "transparent",
                 cursor: "pointer",
                 transition: "background .15s",
                 width: "100%",
@@ -348,7 +348,7 @@ const TerritoryPanel = ({
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{
-                    margin: 0, 
+                    margin: 0,
                     fontSize: 14, fontWeight: 500, color: "var(--ink-6, var(--ink))",
                     lineHeight: 1.3, wordBreak: "break-word",
                   }}>{t.name}</p>
@@ -357,6 +357,7 @@ const TerritoryPanel = ({
                   {t.signalCount} signal{t.signalCount === 1 ? "" : "s"}
                 </span>
                 <StatusBadge status={t.status} />
+                {isSelected && <ChevronRight size={16} color="var(--brand)" />}
               </div>
               <div style={{
                 marginTop: 8, height: 4, borderRadius: 2,
@@ -1435,7 +1436,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                 )}
 
                 {/* SIGNAL LIST — grouped by lifecycle tier */}
-                {sortedByTier.length > 1 && (() => {
+                {(sortedByTier.length > 0 || selectedTheme) && (() => {
                   const filtered = selectedTheme
                     ? sortedByTier.filter(s =>
                         (s.theme_tags || []).some(t => t.toLowerCase().trim() === selectedTheme)
@@ -1512,7 +1513,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                   );
 
                   return (
-                    <section data-tour="signal-list" style={{ marginTop: 36, paddingTop: 24, borderTop: "0.5px solid var(--color-border-tertiary, var(--surface-ink-subtle))" }}>
+                    <section ref={signalsListRef} data-tour="signal-list" style={{ marginTop: 36, paddingTop: 24, borderTop: "0.5px solid var(--color-border-tertiary, var(--surface-ink-subtle))" }}>
                       <FirstTimeHint hintKey="intel-signals">
                         Your signals grouped by lifecycle. When one reaches "Live," hit "Write this" to generate a LinkedIn post.
                       </FirstTimeHint>
@@ -1539,10 +1540,18 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                         )}
                       </div>
 
-                      <TierSection tierKey="live" signals={liveSignals} defaultOpen={true} renderRow={renderRow} />
-                      <TierSection tierKey="evergreen" signals={evergreenSignals} defaultOpen={true} renderRow={renderRow} />
-                      <TierSection tierKey="emerging" signals={emergingSignals} defaultOpen={false} renderRow={renderRow} />
-                      <TierSection tierKey="other" signals={otherSignals} defaultOpen={false} renderRow={renderRow} />
+                      {filtered.length === 0 && selectedTheme ? (
+                        <div style={{ padding: "24px 0", textAlign: "center", color: "var(--ink-3)", fontSize: 14 }}>
+                          No signals in this territory yet
+                        </div>
+                      ) : (
+                        <>
+                          <TierSection tierKey="live" signals={liveSignals} defaultOpen={true} renderRow={renderRow} />
+                          <TierSection tierKey="evergreen" signals={evergreenSignals} defaultOpen={true} renderRow={renderRow} />
+                          <TierSection tierKey="emerging" signals={emergingSignals} defaultOpen={false} renderRow={renderRow} />
+                          <TierSection tierKey="other" signals={otherSignals} defaultOpen={false} renderRow={renderRow} />
+                        </>
+                      )}
                     </section>
                   );
                 })()}
