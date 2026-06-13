@@ -1105,6 +1105,13 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
   const [detecting, setDetecting] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
+  const signalsListRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (selectedTheme) {
+      signalsListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [selectedTheme]);
 
   const loadSignals = useCallback(async () => {
     setLoading(true); setLoadError(false);
