@@ -2652,7 +2652,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
       </div>
       </>)}
 
-      {scoreJumpShareData && (
+      {celebrationsEnabled && scoreJumpShareData && (
         <MilestoneShareModal
           open={!!scoreJumpShareData}
           onClose={() => setScoreJumpShareData(null)}
