@@ -339,13 +339,7 @@ const StrategicAdvisor = ({ onOpenChat }: StrategicAdvisorProps) => {
       // Mark narrative_suggestions row as drafted when this rec originated from a suggestion
       if (type === "content" && rec.id.startsWith("narr-")) {
         const suggestionId = rec.id.slice("narr-".length);
-        supabase
-          .from("narrative_suggestions")
-          .update({ status: "drafted" })
-          .eq("id", suggestionId)
-          .then(({ error }) => {
-            if (error) console.error("Failed to mark suggestion drafted:", error);
-          });
+        markSuggestionDrafted(suggestionId);
       }
     } catch (err) {
       console.error("Convert failed:", err);
