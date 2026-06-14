@@ -1057,30 +1057,6 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
     }
   };
 
-  // Variations: regenerate with a new opening style
-  const runVariation = async (key: string, instruction: string) => {
-    if (!displayedOutput || isGeneratingAny || actionLoading) return;
-    setActionLoading(key);
-    const previous = displayedOutput;
-    setOutput("");
-    try {
-      const accumulated = await streamGeneration(instruction);
-      if (accumulated.trim()) {
-        setFullVersion(accumulated);
-        setShowingShort(false);
-        setTranslatedPost(null);
-        setTranslatedLang(null);
-      } else {
-        setOutput(previous);
-        toast.error("No content returned.");
-      }
-    } catch (e: any) {
-      setOutput(previous);
-      toast.error(e?.message || "Variation failed");
-    } finally {
-      setActionLoading(null);
-    }
-  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -1812,56 +1788,6 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
 
             {/* Visual companion is rendered below in its dedicated section */}
 
-            {/* Quick Actions + Variations (visible after a post is generated) */}
-            {displayedOutput && !isGeneratingAny && contentType === "post" && (
-              <div className="space-y-4">
-                {/* Variations */}
-                <div>
-                  <div className="mb-2">
-                    <p className="text-xs uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--ink-2)" }}>
-                      Variations
-                      <InfoTooltip slug="variations" label="Variations" side="top" triggerSize={13} className="ml-1.5 align-middle" />
-                    </p>
-                    <p className="text-xs" style={{ color: "var(--ink-3)" }}>
-                      Different angles on the same signal
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                    {[
-                      { key: "var-question", label: "Lead with a question", desc: "Open with a provocative question", instruction: "Rewrite this post so it opens with a single provocative question that challenges the reader. Keep the same insight and signal evidence. Return only the rewritten post." },
-                      { key: "var-number", label: "Lead with a number", desc: "Open with a striking statistic", instruction: "Rewrite this post so it opens with a striking, specific statistic or number drawn from the signal evidence. Keep the same core insight. Return only the rewritten post." },
-                      { key: "var-tension", label: "Lead with tension", desc: "Open with a contradiction", instruction: "Rewrite this post so it opens with a sharp contradiction or conflict between two competing ideas. Keep the same insight and signal evidence. Return only the rewritten post." },
-                    ].map((v) => {
-                      const loading = actionLoading === v.key;
-                      const disabled = !!actionLoading || isGeneratingAny;
-                      return (
-                        <button
-                          key={v.key}
-                          type="button"
-                          disabled={disabled}
-                          onClick={() => runVariation(v.key, v.instruction)}
-                          className="text-left p-5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed card-interactive"
-                          style={{
-                            background: "var(--vellum)",
-                            border: "1px solid var(--brand-line)",
-                          }}
-                          onMouseEnter={(e) => { if (!disabled) e.currentTarget.style.borderColor = "var(--brand)"; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--brand-line)"; }}
-                        >
-                          <div className="flex items-center gap-2 mb-1">
-                            {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: "var(--brand)" }} />}
-                            <span className="text-sm font-medium" style={{ color: "var(--ink)" }}>
-                              {v.label}
-                            </span>
-                          </div>
-                          <p className="text-xs" style={{ color: "var(--ink-3)" }}>{v.desc}</p>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Visual Companion — Branded Card or AI Schematic */}
             {displayedOutput && !isGeneratingAny && (
