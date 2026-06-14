@@ -11,6 +11,7 @@ import FrameworkBuilder from "@/components/FrameworkBuilder";
 import LinkedInDraftPanel from "@/components/LinkedInDraftPanel";
 import SignalExplorer from "@/components/SignalExplorer";
 import TierBadge, { SignalTier } from "@/components/ui/TierBadge";
+import { markSuggestionDrafted } from "@/lib/markSuggestionDrafted";
 
 /* ── Types ── */
 interface CommandData {
@@ -261,13 +262,7 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
                       // mark it drafted and remove it from local state without refetch.
                       if (data.opportunitySuggestionId) {
                         const suggestionId = data.opportunitySuggestionId;
-                        supabase
-                          .from("narrative_suggestions")
-                          .update({ status: "drafted" })
-                          .eq("id", suggestionId)
-                          .then(({ error }) => {
-                            if (error) console.error("Failed to mark suggestion drafted:", error);
-                          });
+                        markSuggestionDrafted(suggestionId);
                         setData(prev => ({
                           ...prev,
                           opportunityTitle: "",
