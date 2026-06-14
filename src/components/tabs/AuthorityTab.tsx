@@ -29,6 +29,7 @@ import SchematicPreviewPanel from "@/components/visual-cards/SchematicPreviewPan
 import StartFromPanel from "@/components/StartFromPanel";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import { isPublishedPost } from "@/lib/postProvenance";
+import { markSuggestionDrafted } from "@/lib/markSuggestionDrafted";
 import FlashPanel from "@/components/FlashPanel";
 import EmptyState from "@/components/ui/EmptyState";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
@@ -1915,7 +1916,7 @@ const PlanTab = ({ onGenerateFromPlan }: { onGenerateFromPlan: (prefill: PlanPre
   }, []);
 
   const loadSuggestions = async () => {
-    const { data } = await (supabase.from("narrative_suggestions" as any) as any).select("*").order("created_at", { ascending: false }).limit(20);
+    const { data } = await (supabase.from("narrative_suggestions" as any) as any).select("*").eq("status", "suggested").order("created_at", { ascending: false }).limit(20);
     setSuggestions(data || []);
     setLoading(false);
   };
@@ -2035,12 +2036,18 @@ const PlanTab = ({ onGenerateFromPlan }: { onGenerateFromPlan: (prefill: PlanPre
                         size="sm"
                         variant="outline"
                         className="mt-3 h-7 text-xs gap-1.5 border-border/15"
-                        onClick={() => onGenerateFromPlan({
-                          topic: s.topic,
-                          context: `${s.angle}\n\nReason: ${s.reason}`,
-                          contentType: FORMAT_TO_CONTENT_TYPE[s.recommended_format] || "post",
-                          planTitle: s.topic,
-                        })}
+                        onClick={() => {
+                          onGenerateFromPlan({
+                            topic: s.topic,
+                            context: `${s.angle}\n\nReason: ${s.reason}`,
+                            contentType: FORMAT_TO_CONTENT_TYPE[s.recommended_format] || "post",
+                            planTitle: s.topic,
+                          });
+                          if (s.id) {
+                            markSuggestionDrafted(s.id);
+                            setSuggestions((prev: any[]) => prev.filter((x) => x.id !== s.id));
+                          }
+                        }}
                       >
                         <ArrowRight className="w-3.5 h-3.5" /> Generate this →
                       </Button>
