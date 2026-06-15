@@ -22,7 +22,7 @@ const STEPS = [
     headline: "Your reputation compounds.",
     subtitle: "Every week you show up, your name reaches new rooms.",
     nodes: [
-      { label: "Authority", icon: Crown },
+      { label: "Presence", icon: Crown },
       { label: "Reach", icon: Eye },
     ],
   },

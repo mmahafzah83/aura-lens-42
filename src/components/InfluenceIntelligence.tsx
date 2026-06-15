@@ -181,7 +181,7 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = fa
         {/* Tabs */}
         <div className="flex gap-1 mb-6">
           {([
-            { key: "authority" as const, label: "Authority", icon: Crown },
+            { key: "authority" as const, label: "Presence", icon: Crown },
             { key: "posts" as const, label: "Posts", icon: BarChart3 },
             { key: "audience" as const, label: "Audience", icon: Users },
           ] as const).map(t => (

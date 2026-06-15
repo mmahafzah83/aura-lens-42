@@ -110,7 +110,7 @@ const pipelineStages = [
   { label: "Signals", key: "signals" },
   { label: "Insights", key: "insights" },
   { label: "Frameworks", key: "frameworks" },
-  { label: "Authority", key: "authority" },
+  { label: "Presence", key: "authority" },
   { label: "Influence", key: "influence" },
 ];
 

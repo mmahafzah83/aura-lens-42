@@ -27,7 +27,7 @@ interface DailyBrief {
 
 const TYPE_CONFIG = {
   strategic: { icon: Target, color: "text-amber-400", bg: "bg-amber-500/8", border: "border-amber-500/15", label: "Strategic" },
-  authority: { icon: Crown, color: "text-primary", bg: "bg-primary/8", border: "border-primary/15", label: "Authority" },
+  authority: { icon: Crown, color: "text-primary", bg: "bg-primary/8", border: "border-primary/15", label: "Presence" },
   consulting: { icon: Briefcase, color: "text-emerald-400", bg: "bg-emerald-500/8", border: "border-emerald-500/15", label: "Consulting" },
 };
 
