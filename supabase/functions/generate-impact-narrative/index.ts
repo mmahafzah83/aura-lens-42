@@ -78,7 +78,7 @@ serve(async (req) => {
     const prompt = `You are a Senior Presence Advisor analyzing a professional's Impact dashboard. Speak directly to ${name} by first name. Be specific — reference exact numbers from the data. Be strategic — explain what the numbers MEAN, not just what they ARE.
 
 DASHBOARD DATA (last ${selectedDays} days):
-- Digital presence score: ${score}/100 (${tierName} tier), ${weekDelta > 0 ? "up" : "down"} ${Math.abs(weekDelta)} points this week
+- Imprint: ${score}/100 (${tierName} tier), ${weekDelta > 0 ? "up" : "down"} ${Math.abs(weekDelta)} points this week
 - Followers: ${followers} total, +${newFollowers} new this period${followerChange !== null ? `, ${followerChange > 0 ? "+" : ""}${followerChange.toFixed(0)}% vs prior period` : ""}
 - Impressions: ${impressions} total${impChange !== null ? `, ${impChange > 0 ? "+" : ""}${impChange.toFixed(0)}% vs prior period` : ""}
 - Engagement rate: ${engagementRate}%${engChange !== null ? `, ${engChange > 0 ? "+" : ""}${engChange.toFixed(0)}% vs prior period` : ""}

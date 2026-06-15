@@ -5,7 +5,7 @@
  * NEVER: "authority" (noun), "trajectory", "personal brand",
  *        "thought leader", "leverage" (verb), "utilize"
  *
- * Score = "Digital Presence Score"
+ * Score = "Imprint"
  * Growth = never "trajectory"
  * Themes = "Influence Themes"
  * Territory = "Influence territory"
