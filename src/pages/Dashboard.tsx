@@ -901,6 +901,14 @@ const Dashboard = () => {
                     try { localStorage.setItem("aura_welcome_briefing_done", "1"); } catch {}
                   }}
                 />
+                {/* App-level overlays formerly mounted inside HomeTab.
+                    Re-mounted here so they keep firing after the Brief swap. */}
+                <OnboardingChecklist
+                  onOpenCapture={() => handleOpenCapture()}
+                  onSwitchTab={switchTab}
+                />
+                <FirstVisitHint page="home" />
+                <IdentityDriftBanner />
                 <ErrorBoundary>
                   <Brief
                     onOpenCapture={() => handleOpenCapture()}
