@@ -912,7 +912,7 @@ const Dashboard = () => {
                 <ErrorBoundary>
                   <Brief
                     onOpenCapture={() => handleOpenCapture()}
-                    onSwitchTab={switchTab}
+                    onSwitchTab={(t) => switchTab(t as TabValue)}
                     onOpenDraft={(d) => { setDraftPrefill(d); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                   />
                 </ErrorBoundary>
