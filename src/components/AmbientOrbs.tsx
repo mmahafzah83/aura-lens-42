@@ -47,7 +47,9 @@ function resolve(v: ThemeValue | undefined, theme: "dark" | "light"): string | u
 
 export function AmbientOrbs({ theme: _theme, pageKey }: AmbientOrbsProps) {
   // Theme switching retired — orbs render against the single System-A palette.
-  const theme = ("light" as "light" | "dark");
+  let theme: "light" | "dark" = "light";
+  void theme;
+  theme = "light";
   const allowed = pageKey === "home" || pageKey === "influence";
   const [fx, setFx] = useState<Record<string, ThemeValue | boolean> | null>(cachedFx);
 
