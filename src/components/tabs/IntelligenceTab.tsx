@@ -90,7 +90,7 @@ interface IntelligenceTabProps {
   onDraftToStudio?: (prefill: SignalDraftPrefill) => void;
 }
 
-interface Signal {
+export interface Signal {
   id: string;
   signal_title: string;
   explanation: string;
@@ -391,7 +391,7 @@ const TerritoryPanel = ({
 /* ═══════════════════════════════════════════
    SIGNAL HERO
    ═══════════════════════════════════════════ */
-const SignalHero = ({
+export const SignalHero = ({
   signal, onDraft, onOpenChat,
 }: {
   signal: Signal;
@@ -591,7 +591,7 @@ interface CoverageResult { coverage_score: number; items: CoverageItem[]; narrat
 
 const STORAGE_KEY = "market_coverage_cache_v1";
 
-const EditorialBlindSpots = ({
+export const EditorialBlindSpots = ({
   signals, onOpenCapture,
 }: { signals: Signal[]; onOpenCapture?: (prefillUrl?: string, prefillText?: string, sourceKey?: string) => void }) => {
   const { isCaptured } = useCapturedSources();
@@ -762,7 +762,7 @@ const TIER_SECTION_META: Record<TierKey, { label: string; Icon: typeof Zap; varN
   other: { label: "Other", Icon: HelpCircle, varName: "--ink-3" },
 };
 
-const TierSection = ({
+export const TierSection = ({
   tierKey, signals, defaultOpen, renderRow,
 }: {
   tierKey: TierKey;
@@ -818,7 +818,7 @@ const TierSection = ({
   );
 };
 
-const EditorialReadingList = ({
+export const EditorialReadingList = ({
   signals, onOpenCapture,
 }: { signals: Signal[]; onOpenCapture?: (prefillUrl?: string, prefillText?: string, sourceKey?: string) => void }) => {
   const { isCaptured } = useCapturedSources();
