@@ -7,21 +7,20 @@ export type ThemeMode = "dark" | "light";
 
 const STORAGE_KEY = "aura-theme";
 
-export const applyThemeToRoot = (theme: ThemeMode) => {
-  const root = document.documentElement;
-  root.setAttribute("data-theme", theme);
-  root.classList.remove("light", "dark");
-  root.classList.add(theme);
+/**
+ * Theme switching has been retired. Aura now ships a single System-A palette
+ * driven by :root tokens in index.css. These exports remain as no-ops so any
+ * lingering call sites compile, and we opportunistically clear the legacy
+ * storage key + any stale data-theme attribute.
+ */
+const cleanupLegacy = () => {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+    document.documentElement.removeAttribute("data-theme");
+    document.documentElement.classList.remove("light", "dark");
+  } catch { /* SSR / restricted env */ }
 };
 
-export const getStoredTheme = (): ThemeMode => {
-  if (typeof window === "undefined") return "light";
-  return (localStorage.getItem(STORAGE_KEY) as ThemeMode) || "light";
-};
-
-/** One-shot: read stored preference and apply. Safe to call on every mount. */
-export const initThemeFromStorage = (): ThemeMode => {
-  const t = getStoredTheme();
-  try { applyThemeToRoot(t); } catch { /* SSR / restricted env */ }
-  return t;
-};
+export const applyThemeToRoot = (_theme: ThemeMode) => { cleanupLegacy(); };
+export const getStoredTheme = (): ThemeMode => "light";
+export const initThemeFromStorage = (): ThemeMode => { cleanupLegacy(); return "light"; };

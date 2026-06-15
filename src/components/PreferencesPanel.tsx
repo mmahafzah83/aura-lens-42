@@ -10,8 +10,8 @@ interface PreferencesPanelProps {
   userId?: string | null;
   fullName?: string | null;
   email?: string;
-  theme: "light" | "dark";
-  onToggleTheme: () => void;
+  theme?: "light" | "dark";
+  onToggleTheme?: () => void;
   onSignOut: () => void;
   onEditField?: (field: EditProfileField) => void;
   onChangePassword?: () => void;
@@ -309,7 +309,7 @@ export default function PreferencesPanel({
       {/* Backdrop */}
       <div
         onClick={onClose}
-        className={theme === "dark" ? "bg-black/40" : "bg-black/20"}
+        className="bg-black/20"
         style={{
           position: "absolute",
           inset: 0,
@@ -508,68 +508,6 @@ export default function PreferencesPanel({
             on={sharedLearningOn}
             onChange={updateSharedLearning}
           />
-
-          {/* APPEARANCE */}
-          <SectionHeader>Appearance</SectionHeader>
-          <div
-            style={{
-              padding: "14px 24px",
-              borderTop: "0.5px solid var(--color-border-tertiary, var(--brand-line, rgba(0,0,0,0.06)))",
-            }}
-          >
-            <div
-              style={{
-                fontSize: 14,
-                fontWeight: 500,
-                color: "var(--foreground)",
-                marginBottom: 10,
-                fontFamily: "'DM Sans', system-ui, sans-serif",
-              }}
-            >
-              Theme
-            </div>
-            <div
-              role="group"
-              aria-label="Theme"
-              style={{
-                display: "flex",
-                width: "100%",
-                padding: 3,
-                borderRadius: 10,
-                background: "var(--color-background-secondary, var(--brand-ghost, rgba(0,0,0,0.04)))",
-                border: "0.5px solid var(--color-border-secondary, var(--brand-line, rgba(0,0,0,0.08)))",
-              }}
-            >
-              {(["light", "dark"] as const).map((mode) => {
-                const active = theme === mode;
-                return (
-                  <button
-                    key={mode}
-                    type="button"
-                    onClick={() => { if (mode !== theme) onToggleTheme(); }}
-                    aria-pressed={active}
-                    style={{
-                      flex: 1,
-                      minHeight: 34,
-                      padding: "6px 10px",
-                      fontSize: 13,
-                      fontWeight: 500,
-                      border: "none",
-                      borderRadius: 8,
-                      cursor: "pointer",
-                      background: active ? "var(--brand)" : "transparent",
-                      color: active ? "#fff" : "var(--color-text-secondary, var(--muted-foreground))",
-                      transition: "background 150ms ease, color 150ms ease",
-                      textTransform: "capitalize",
-                      fontFamily: "'DM Sans', system-ui, sans-serif",
-                    }}
-                  >
-                    {mode}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
 
           {/* ACCOUNT */}
           <SectionHeader>Account</SectionHeader>

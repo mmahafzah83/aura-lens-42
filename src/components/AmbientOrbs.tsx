@@ -45,7 +45,9 @@ function resolve(v: ThemeValue | undefined, theme: "dark" | "light"): string | u
   return v[theme];
 }
 
-export function AmbientOrbs({ theme, pageKey }: AmbientOrbsProps) {
+export function AmbientOrbs({ theme: _theme, pageKey }: AmbientOrbsProps) {
+  // Theme switching retired — orbs render against the single System-A palette.
+  const theme: "light" | "dark" = "light";
   const allowed = pageKey === "home" || pageKey === "influence";
   const [fx, setFx] = useState<Record<string, ThemeValue | boolean> | null>(cachedFx);
 
@@ -66,15 +68,9 @@ export function AmbientOrbs({ theme, pageKey }: AmbientOrbsProps) {
   }
   if (!enabled) return null;
 
-  const c1 =
-    resolve(fx?.orb_color_1 as ThemeValue, theme) ||
-    (theme === "dark" ? "#B08D3A" : "#D4B670");
-  const c2 =
-    resolve(fx?.orb_color_2 as ThemeValue, theme) ||
-    (theme === "dark" ? "#7A5C2E" : "#E8D9B4");
-  const opacityStr =
-    resolve(fx?.orbs_opacity as ThemeValue, theme) ||
-    (theme === "dark" ? "0.18" : "0.12");
+  const c1 = resolve(fx?.orb_color_1 as ThemeValue, theme) || "#D4B670";
+  const c2 = resolve(fx?.orb_color_2 as ThemeValue, theme) || "#E8D9B4";
+  const opacityStr = resolve(fx?.orbs_opacity as ThemeValue, theme) || "0.12";
 
   return (
     <div
