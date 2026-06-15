@@ -357,7 +357,7 @@ const MarketTab = () => {
               <div className="space-y-4">
                 {[
                   { label: "Awareness", value: brandStats.awareness, target: 70, color: "bg-blue-400" },
-                  { label: "Authority", value: brandStats.authority, target: 20, color: "bg-purple-400" },
+                  { label: "Presence", value: brandStats.authority, target: 20, color: "bg-purple-400" },
                   { label: "Conversion", value: brandStats.conversion, target: 10, color: "bg-amber-400" },
                 ].map((cat) => {
                   const pct = totalDrafts > 0 ? Math.round((cat.value / totalDrafts) * 100) : 0;

@@ -69,7 +69,7 @@ const StrategicEvolutionMap = ({ onOpenChat }: EvolutionMapProps) => {
           color: "text-blue-400", glowColor: "shadow-blue-500/20",
         },
         {
-          key: "authority", label: "Authority", icon: Crown,
+          key: "authority", label: "Presence", icon: Crown,
           count: activationsRes.data?.length || 0,
           items: (activationsRes.data || []).slice(0, 8),
           color: "text-primary", glowColor: "shadow-primary/20",

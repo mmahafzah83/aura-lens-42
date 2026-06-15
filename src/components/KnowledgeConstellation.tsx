@@ -30,7 +30,7 @@ const TYPE_LABELS: Record<string, string> = {
   signal: "Signal",
   insight: "Insight",
   framework: "Framework",
-  authority: "Authority",
+  authority: "Presence",
   influence: "Influence",
 };
 

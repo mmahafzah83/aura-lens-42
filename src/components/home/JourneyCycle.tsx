@@ -31,7 +31,7 @@ export default function JourneyCycle({
     { key: "signal", label: "Signal", state: signal },
     { key: "publish", label: "Publish", state: publish },
     { key: "track", label: "Track", state: track },
-    { key: "authority", label: "Authority", state: authority },
+    { key: "authority", label: "Presence", state: authority },
   ];
 
   return (
