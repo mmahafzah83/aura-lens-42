@@ -28,6 +28,10 @@ import InviteColleagueModal from "@/components/InviteColleagueModal";
 import NpsSurveyModal from "@/components/NpsSurveyModal";
 import FirstLoginWelcome from "@/components/FirstLoginWelcome";
 import HomeTab from "@/components/tabs/HomeTab";
+import Brief from "@/components/Brief";
+import OnboardingChecklist from "@/components/OnboardingChecklist";
+import IdentityDriftBanner from "@/components/IdentityDriftBanner";
+import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import IdentityTab from "@/components/tabs/IdentityTab";
 import IntelligenceTab from "@/components/tabs/IntelligenceTab";
 import usePageMeta from "@/hooks/usePageMeta";
@@ -897,15 +901,18 @@ const Dashboard = () => {
                     try { localStorage.setItem("aura_welcome_briefing_done", "1"); } catch {}
                   }}
                 />
+                {/* App-level overlays formerly mounted inside HomeTab.
+                    Re-mounted here so they keep firing after the Brief swap. */}
+                <OnboardingChecklist
+                  onOpenCapture={() => handleOpenCapture()}
+                  onSwitchTab={switchTab}
+                />
+                <FirstVisitHint page="home" />
+                <IdentityDriftBanner />
                 <ErrorBoundary>
-                  <HomeTab
-                    entries={entries}
-                    onOpenChat={openChat}
-                    onRefresh={fetchEntries}
-                    onNavigateToSignal={navigateToSignal}
-                    onOpenCapture={handleOpenCapture}
-                    onSwitchTab={switchTab}
-                    onDraftToStudio={(prefill) => { setSignalDraftPrefill(prefill); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                  <Brief
+                    onOpenCapture={() => handleOpenCapture()}
+                    onSwitchTab={(t) => switchTab(t as TabValue)}
                     onOpenDraft={(d) => { setDraftPrefill(d); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                   />
                 </ErrorBoundary>
