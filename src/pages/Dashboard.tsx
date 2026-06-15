@@ -34,6 +34,7 @@ import IdentityDriftBanner from "@/components/IdentityDriftBanner";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import IdentityTab from "@/components/tabs/IdentityTab";
 import IntelligenceTab from "@/components/tabs/IntelligenceTab";
+import Observatory from "@/components/Observatory";
 import usePageMeta from "@/hooks/usePageMeta";
 
 import AuthorityTab from "@/components/tabs/AuthorityTab";
@@ -938,7 +939,7 @@ const Dashboard = () => {
             {activeTab === "intelligence" && (
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
-                  <IntelligenceTab
+                  <Observatory
                     entries={entries}
                     onOpenChat={openChat}
                     onRefresh={fetchEntries}
