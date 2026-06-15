@@ -885,7 +885,7 @@ const Dashboard = () => {
                   ? "publish"
                   : "impact"
               }
-              theme={theme}
+              theme="light"
             />
             <AmbientOrbs theme="light" pageKey={activeTab} />
             {activeTab === "home" && (
@@ -1108,8 +1108,6 @@ const Dashboard = () => {
         userId={userId}
         fullName={user?.fullName ?? null}
         email={user?.email}
-        theme={theme}
-        onToggleTheme={toggleTheme}
         onSignOut={() => { setPreferencesOpen(false); handleLogout(); }}
         onEditField={(field) => {
           setPreferencesOpen(false);
