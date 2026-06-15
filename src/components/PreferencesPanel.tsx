@@ -25,6 +25,7 @@ interface Profile {
   sector_focus: string | null;
   linkedin_handle: string | null;
   notification_prefs: Record<string, unknown> | null;
+  shared_learning_consent: boolean | null;
 }
 
 function normalizeLinkedInHandle(input: string): string {
@@ -238,7 +239,7 @@ export default function PreferencesPanel({
     (async () => {
       const { data } = await (supabase
         .from("diagnostic_profiles" as any) as any)
-        .select("first_name, last_name, firm, sector_focus, linkedin_handle, notification_prefs")
+        .select("first_name, last_name, firm, sector_focus, linkedin_handle, notification_prefs, shared_learning_consent")
         .eq("user_id", userId)
         .maybeSingle();
       if (!cancelled) {
@@ -259,6 +260,7 @@ export default function PreferencesPanel({
   const prefs = (profile?.notification_prefs ?? {}) as Record<string, unknown>;
   const weeklyBriefOn = prefs.weekly_brief !== false; // default true
   const dailyNudgesOn = prefs.daily_nudges !== false; // default true
+  const sharedLearningOn = profile?.shared_learning_consent === true;
 
   const updatePref = async (key: string, value: boolean) => {
     if (!userId) return;
@@ -266,6 +268,14 @@ export default function PreferencesPanel({
     setProfile((p) => (p ? { ...p, notification_prefs: next } : p));
     await (supabase.from("diagnostic_profiles" as any) as any)
       .update({ notification_prefs: next })
+      .eq("user_id", userId);
+  };
+
+  const updateSharedLearning = async (value: boolean) => {
+    if (!userId) return;
+    setProfile((p) => (p ? { ...p, shared_learning_consent: value } : p));
+    await (supabase.from("diagnostic_profiles" as any) as any)
+      .update({ shared_learning_consent: value })
       .eq("user_id", userId);
   };
 
@@ -488,6 +498,15 @@ export default function PreferencesPanel({
             description="In-app reminders when signals need attention or content is due."
             on={dailyNudgesOn}
             onChange={(v) => updatePref("daily_nudges", v)}
+          />
+
+          {/* PRIVACY */}
+          <SectionHeader>Privacy</SectionHeader>
+          <ToggleRow
+            label="Contribute to shared learning"
+            description="Let Aura learn anonymous, aggregated patterns from how members across your field use it — never your content, identity, or drafts. Turn off anytime."
+            on={sharedLearningOn}
+            onChange={updateSharedLearning}
           />
 
           {/* APPEARANCE */}

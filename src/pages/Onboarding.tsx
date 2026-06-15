@@ -147,6 +147,9 @@ const Onboarding = () => {
   const [northStar, setNorthStar] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
 
+  // Shared-learning consent (opt-in; persisted on diagnostic_profiles.shared_learning_consent).
+  const [sharedLearningConsent, setSharedLearningConsent] = useState(false);
+
   // Step 2
   const [foundArticle, setFoundArticle] = useState<FoundArticle | null>(null);
   const [articleSearchDone, setArticleSearchDone] = useState(false);
@@ -416,6 +419,7 @@ const Onboarding = () => {
         completed: true,
       };
       if (usedLinkedIn && linkedinUrl.trim()) payload.linkedin_url = linkedinUrl.trim();
+      payload.shared_learning_consent = sharedLearningConsent;
 
       const { error } = await supabase
         .from("diagnostic_profiles" as any)
@@ -1065,6 +1069,25 @@ const Onboarding = () => {
               <label className="text-xs font-medium block mb-1" style={{ color: "hsl(var(--muted-foreground))" }}>My 3-year ambition</label>
               <input className={inputCls} style={inputStyle} value={northStar} onChange={(e) => setNorthStar(e.target.value)} placeholder="This one's yours — what are you building toward?" />
             </div>
+            <label
+              className="flex items-start gap-3 mb-5 cursor-pointer select-none"
+              style={{
+                padding: "12px 14px",
+                border: "1px solid hsl(var(--border))",
+                borderRadius: 10,
+                background: "hsl(var(--muted) / 0.3)",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={sharedLearningConsent}
+                onChange={(e) => setSharedLearningConsent(e.target.checked)}
+                style={{ marginTop: 3, width: 16, height: 16, accentColor: "var(--brand)" }}
+              />
+              <span style={{ fontSize: 13, lineHeight: 1.55, color: "hsl(var(--foreground))" }}>
+                Help Aura get smarter for everyone. With your permission, Aura learns anonymous, aggregated patterns from how members across your field use it — never your actual content, identity, or drafts. You can turn this off anytime in Settings.
+              </span>
+            </label>
             {primaryBtn(<>Confirm & continue <ArrowRight className="w-4 h-4" /></>, handleSaveProfile, { loading: savingProfile, disabled: !profileValid })}
           </>
         )}

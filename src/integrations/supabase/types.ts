@@ -535,6 +535,7 @@ export type Database = {
           phone_whatsapp: string | null
           primary_strength: string | null
           sector_focus: string | null
+          shared_learning_consent: boolean
           skill_ratings: Json
           theme_preference: string | null
           user_id: string
@@ -573,6 +574,7 @@ export type Database = {
           phone_whatsapp?: string | null
           primary_strength?: string | null
           sector_focus?: string | null
+          shared_learning_consent?: boolean
           skill_ratings?: Json
           theme_preference?: string | null
           user_id: string
@@ -611,6 +613,7 @@ export type Database = {
           phone_whatsapp?: string | null
           primary_strength?: string | null
           sector_focus?: string | null
+          shared_learning_consent?: boolean
           skill_ratings?: Json
           theme_preference?: string | null
           user_id?: string
