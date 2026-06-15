@@ -154,6 +154,16 @@ serve(async (req) => {
     const imprint = Math.max(0, Math.min(100, Math.round(raw)));
 
     // 4. Insert imprint_snapshots
+    // Read prior imprint BEFORE inserting the new snapshot, so the delta
+    // diffs against the previous row (not the row we're about to write).
+    const { data: prev } = await admin
+      .from("imprint_snapshots")
+      .select("imprint")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
     const { data: snapIns, error: snapErr } = await admin
       .from("imprint_snapshots")
       .insert({
@@ -180,7 +190,7 @@ serve(async (req) => {
     await admin.from("eval_metrics").insert({
       user_id: userId,
       metric: "imprint_score_delta",
-      value: imprint - aura_score,
+      value: imprint - ((prev as any)?.imprint ?? imprint), // true day-over-day delta; 0 on first snapshot
       context: { formula_version: 1, facet_certainty_mean },
     });
 
