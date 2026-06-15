@@ -18,6 +18,16 @@ function resolve(val: ThemeValue, theme: "dark" | "light"): string {
 }
 
 function applyTokens(tokens: DesignTokens, theme: "dark" | "light") {
+  // ── F-SWAP no-op ──────────────────────────────────────────────────────
+  // System-A tokens are the single effective source (defined in src/index.css).
+  // This hook used to push DB-driven bronze/brand/sidebar/effect values onto
+  // documentElement at runtime, which would override the new theme. We keep
+  // the file, the design_system table, and the admin editors intact, but the
+  // hook no longer drives the live theme. Early-return before any writes.
+  void tokens; void theme;
+  return;
+
+  // eslint-disable-next-line no-unreachable
   const root = document.documentElement;
   const { colors = {}, typography = {}, shadows = {}, radii = {}, sidebar = {}, effects = {} } = tokens;
 
