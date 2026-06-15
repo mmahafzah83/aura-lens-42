@@ -14,9 +14,11 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ['var(--font-display)', 'Cormorant Garamond', 'Georgia', 'serif'],
-        serif: ['var(--font-display)', 'Cormorant Garamond', 'Georgia', 'serif'],
-        sans: ['"DM Sans"', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', 'Newsreader', 'Georgia', 'serif'],
+        serif:   ['var(--font-serif)', 'Newsreader', 'Georgia', 'serif'],
+        sans:    ['var(--font-body)', 'ui-sans-serif', 'system-ui', '-apple-system', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        arabic:  ['var(--font-arabic)', 'Cairo', 'sans-serif'],
+        mono:    ['var(--font-mono)', '"IBM Plex Mono"', 'ui-monospace', 'Menlo', 'monospace'],
       },
       spacing: {
         '4.5': '1.125rem', // 18px — standard button/inline icon size
@@ -92,10 +94,10 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
         brand: {
-          DEFAULT: '#B08D3A',
-          hover:   '#8C6E26',
-          pale:    '#F0E6C9',
-          muted:   'rgba(176,141,58,0.22)',
+          DEFAULT: 'var(--action)',
+          hover:   'var(--spot)',
+          pale:    'var(--paper-2)',
+          muted:   'var(--rule)',
         },
         ink: {
           DEFAULT: 'var(--ink)',
@@ -113,6 +115,16 @@ export default {
           3: 'var(--paper-3)',
         },
         vellum: 'var(--vellum)',
+        /* System-A scales */
+        rule:     'var(--rule)',
+        spot:     { DEFAULT: 'var(--spot)', 2: 'var(--spot-2)' },
+        obsidian: { DEFAULT: 'var(--ob-bg)', page: 'var(--ob-page)', panel: 'var(--ob-panel)', raised: 'var(--ob-raised)', field: 'var(--ob-field)' },
+        hair:     { DEFAULT: 'var(--hair)', grid: 'var(--grid)' },
+        glass:    { DEFAULT: 'var(--glass)', 2: 'var(--glass-2)', 3: 'var(--glass-3)' },
+        live:     'var(--live)',
+        action:   'var(--action)',
+        pos:      'var(--pos)',
+        neg:      'var(--neg)',
         semantic: {
           success:        'var(--semantic-success)',
           'success-light':'var(--semantic-success-light)',
@@ -156,9 +168,9 @@ export default {
           'publish-bg':   '#FEF0E6',
           'publish-text': '#C05A10',
         },
-        success: { DEFAULT: '#2E7D38', pale: '#EAF4EB', light: '#5BBF6A' },
-        danger:  { DEFAULT: '#B83025', pale: '#FDECEA', light: '#E24B4A' },
-        warning: { DEFAULT: '#92400E', pale: '#FEF3C7', light: '#BA7517' },
+        success: { DEFAULT: 'var(--pos)', pale: 'rgba(111,191,142,0.12)', light: 'var(--pos)' },
+        danger:  { DEFAULT: 'var(--neg)', pale: 'rgba(217,138,130,0.12)', light: 'var(--neg)' },
+        warning: { DEFAULT: 'var(--action)', pale: 'rgba(214,167,72,0.12)', light: 'var(--action)' },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -167,12 +179,16 @@ export default {
         xl: "20px",
         '2xl': "24px",
         full: "9999px",
+        instrument: '16px',
+        control:    '8px',
+        sharp:      '2px',
       },
       boxShadow: {
         card:        '0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05)',
         'card-hover':'0 2px 8px rgba(0,0,0,0.08), 0 12px 32px rgba(0,0,0,0.07)',
-        brand:       '0 4px 20px rgba(176,141,58,0.35)',
-        'brand-sm':  '0 2px 12px rgba(176,141,58,0.30)',
+        brand:       '0 8px 24px -8px rgba(8,12,17,0.18)',
+        'brand-sm':  '0 1px 2px rgba(8,12,17,0.06)',
+        inset:       '0 30px 60px -28px rgba(8,12,17,.55)',
       },
       keyframes: {
         "accordion-down": {

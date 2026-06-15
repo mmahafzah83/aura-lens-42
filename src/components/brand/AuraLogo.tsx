@@ -10,8 +10,10 @@ export interface AuraLogoProps {
   title?: string;
 }
 
-const COLOR_LIGHT = "#B08D3A";
-const COLOR_DARK = "#D4B056";
+// Provisional mark — replaced when Claude Design ships the final logo.
+// Single source of truth for the Aura wordmark + mark across the app.
+const COLOR_LIGHT = "#6E2A26"; // System-A spot (oxblood)
+const COLOR_DARK  = "#D6A748"; // System-A action (amber) — for dark surfaces
 
 function useResolvedColor(variant: AuraLogoVariant): string {
   const [color, setColor] = useState<string>(
@@ -122,15 +124,15 @@ export function AuraLogo({
       {withWordmark && (
         <span
           style={{
-            fontFamily: "'Cormorant Garamond', Georgia, serif",
+            fontFamily: "'Newsreader', Georgia, serif",
             fontWeight: 500,
-            letterSpacing: "0.14em",
+            letterSpacing: "0.04em",
             fontSize: wordmarkSize,
             color,
             lineHeight: 1.5,
           }}
         >
-          AURA
+          Aura
         </span>
       )}
     </span>
