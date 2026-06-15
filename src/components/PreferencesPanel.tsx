@@ -500,6 +500,15 @@ export default function PreferencesPanel({
             onChange={(v) => updatePref("daily_nudges", v)}
           />
 
+          {/* PRIVACY */}
+          <SectionHeader>Privacy</SectionHeader>
+          <ToggleRow
+            label="Contribute to shared learning"
+            description="Let Aura learn anonymous, aggregated patterns from how members across your field use it — never your content, identity, or drafts. Turn off anytime."
+            on={sharedLearningOn}
+            onChange={updateSharedLearning}
+          />
+
           {/* APPEARANCE */}
           <SectionHeader>Appearance</SectionHeader>
           <div
