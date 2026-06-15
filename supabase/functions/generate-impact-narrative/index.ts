@@ -79,9 +79,9 @@ serve(async (req) => {
 
 DASHBOARD DATA (last ${selectedDays} days):
 - Imprint: ${score}/100 (${tierName} tier), ${weekDelta > 0 ? "up" : "down"} ${Math.abs(weekDelta)} points this week
-- Followers: ${followers} total, +${newFollowers} new this period${followerChange !== null ? `, ${followerChange > 0 ? "+" : ""}${followerChange.toFixed(0)}% vs prior period` : ""}
-- Impressions: ${impressions} total${impChange !== null ? `, ${impChange > 0 ? "+" : ""}${impChange.toFixed(0)}% vs prior period` : ""}
-- Engagement rate: ${engagementRate}%${engChange !== null ? `, ${engChange > 0 ? "+" : ""}${engChange.toFixed(0)}% vs prior period` : ""}
+- Followers: ${followers} total, +${newFollowers} new this period${Number.isFinite(followerChange) ? `, ${followerChange > 0 ? "+" : ""}${followerChange.toFixed(0)}% vs prior period` : ""}
+- Impressions: ${impressions} total${Number.isFinite(impChange) ? `, ${impChange > 0 ? "+" : ""}${impChange.toFixed(0)}% vs prior period` : ""}
+- Engagement rate: ${engagementRate}%${Number.isFinite(engChange) ? `, ${engChange > 0 ? "+" : ""}${engChange.toFixed(0)}% vs prior period` : ""}
 - Score breakdown: Signal ${signalScore}/40, Content ${contentScore}/40, Consistency ${consistencyScore}/20
 - Visibility: ${visibility} avg impressions/post
 - Resonance: ${resonance}% engagement (tier benchmark: 1.5-4% for 10K-50K followers)
