@@ -1161,10 +1161,10 @@ aside .aura-theme-toggle {
   --radius-lg:  14px;
   --radius-xl:  20px;
   --radius-2xl: 24px;
-  --font-body:    'DM Sans', system-ui, sans-serif;
-  --font-display: 'Cormorant Garamond', serif;
-  --font-arabic:  'Cairo', 'DM Sans', sans-serif;
-  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+  --font-body:    ui-sans-serif, system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --font-display: 'Newsreader', Georgia, serif;
+  --font-arabic:  'Cairo', sans-serif;
+  --font-mono:    'IBM Plex Mono', ui-monospace, Menlo, monospace;
 
   /* DS-2 additions */
   --border:           rgba(0,0,0,0.12);
