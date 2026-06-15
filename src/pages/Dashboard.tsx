@@ -33,7 +33,6 @@ import OnboardingChecklist from "@/components/OnboardingChecklist";
 import IdentityDriftBanner from "@/components/IdentityDriftBanner";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import IdentityTab from "@/components/tabs/IdentityTab";
-import IntelligenceTab from "@/components/tabs/IntelligenceTab";
 import Observatory from "@/components/Observatory";
 import usePageMeta from "@/hooks/usePageMeta";
 
