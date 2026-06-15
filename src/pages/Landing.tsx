@@ -380,7 +380,7 @@ const Landing = () => {
         {[
           { num: 47, label: "Sources captured", sub: "articles, links and documents added" },
           { num: 7, label: "Signals detected", sub: "strategic patterns identified" },
-          { num: 90, label: "Digital Presence Score", sub: "out of 100 — tracks your growth" },
+          { num: 90, label: "Imprint", sub: "out of 100 — tracks your growth" },
         ].map((s, i) => (
           <div key={i} className="flex items-center">
             {i > 0 && <div className="w-px h-14 mx-6 sm:mx-10" style={{ background: "var(--ink-3)" }} />}
@@ -709,7 +709,7 @@ const FAQ_ITEMS: { q: string; a: string }[] = [
   { q: "Who is Aura built for?", a: "Senior professionals in the GCC — Directors, VPs, CIOs, CDOs — who read extensively but don't publish enough. Especially those in digital transformation, utilities, critical infrastructure, and Vision 2030 programs." },
   { q: "How is this different from ChatGPT?", a: "ChatGPT writes from general knowledge. Aura writes from YOUR knowledge — your captured articles, your detected signals, your professional voice. Every post references intelligence you've actually built, not generic AI output." },
   { q: "What languages does Aura support?", a: "English and Arabic. Arabic content uses contemporary formal Arabic with proper RTL formatting. Technical terms (AI, KPI, IoT) stay in English." },
-  { q: "How long before I see value?", a: "5 minutes. Capture 3 articles → Aura detects your first signal. Generate your first post from that signal. Your Digital Presence Score starts moving immediately." },
+  { q: "How long before I see value?", a: "5 minutes. Capture 3 articles → Aura detects your first signal. Generate your first post from that signal. Your Imprint starts moving immediately." },
   { q: "Is this free during beta?", a: "Yes. The private beta is free. We'll introduce pricing ($49/month) after beta, with early access users receiving a founding member rate." },
   { q: "How do I get access?", a: "Apply at aura-intel.org/request-access. We review applications weekly. Current wait time: 3-5 business days." },
 ];
