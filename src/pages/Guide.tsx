@@ -127,7 +127,7 @@ const Guide = () => {
 
   usePageMeta({
     title: "Aura — How It Works",
-    description: "How Aura turns your daily reading into market presence: capture, detect signals, generate content, and track your digital presence score.",
+    description: "How Aura turns your daily reading into market presence: capture, detect signals, generate content, and track your Imprint.",
     path: "/guide",
     jsonLd,
   });

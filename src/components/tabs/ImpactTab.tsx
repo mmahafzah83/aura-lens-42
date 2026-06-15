@@ -3015,7 +3015,7 @@ const ScoreHero = ({
               }}
             >
               of 100
-              <InfoTooltip slug="score-overview" label="Digital presence score" side="bottom" triggerSize={11} className="ml-1" />
+              <InfoTooltip slug="score-overview" label="Imprint" side="bottom" triggerSize={11} className="ml-1" />
             </div>
           </div>
         </div>
