@@ -108,7 +108,7 @@ WEEKLY INFLUENCE DATA (${weekAgo} to today):
 Followers: ${thisWeekFollowers} (${followerDelta >= 0 ? "+" : ""}${followerDelta} vs last week)
 Posts published this week: ${posts.length}
 Avg engagement rate this week: ${thisWeekEngRate.toFixed(2)}% (vs ${prevWeekEngRate.toFixed(2)}% last week)
-${authScores.length > 0 ? `Authority score: ${Math.round(Number(authScores[0].authority_score))}` : ""}
+${authScores.length > 0 ? `Imprint: ${Math.round(Number(authScores[0].authority_score))}` : ""}
 ${authScores.length > 0 ? `Strategic resonance: ${Math.round(Number(authScores[0].strategic_resonance_score))}` : ""}
 
 Top theme: ${topTheme ? `"${topTheme[0]}" (${topTheme[1].count} posts, ${(topTheme[1].totalEng / topTheme[1].count).toFixed(1)}% avg eng)` : "No theme data"}

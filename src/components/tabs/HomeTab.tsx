@@ -1692,7 +1692,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
         </div>
       )}
       <FirstTimeHint hintKey="home-score">
-        This is your Digital Presence Score — it grows when you capture, publish, and stay consistent.
+        This is your Imprint — it grows when you capture, publish, and stay consistent.
       </FirstTimeHint>
       <div data-tour="score-hero">
       {!auraLoading && isEmpty && (
@@ -1810,7 +1810,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
               <div style={{ fontSize: 14, color: "hsl(var(--muted-foreground))", letterSpacing: "0.05em", display: "inline-flex", alignItems: "center", gap: 4, marginTop: 4 }}>
                 <span>of 100</span>
                 <InfoTooltip
-                  label="Digital Presence Score"
+                  label="Imprint"
                   slug="score-overview"
                   text="One number out of 100. Signal strength 40%, content published 40%, weekly rhythm 20%. Every point comes from a real action you took — and the parts always add up to the total."
                   side="bottom"

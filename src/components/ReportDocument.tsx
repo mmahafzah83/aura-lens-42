@@ -120,7 +120,7 @@ function PageHeader({ subtitle }: { subtitle?: string }) {
       <div>
         <div style={{ fontFamily: DISPLAY, fontSize: 22, fontWeight: 600, letterSpacing: "0.18em", color: INK }}>AURA</div>
         <div style={{ fontFamily: BODY, fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: INK_4, marginTop: 2 }}>
-          Strategic Digital Presence
+          Strategic Presence
         </div>
       </div>
       {subtitle ? (
@@ -358,7 +358,7 @@ function HeroIntro({ data }: { data: ReportData }) {
 function ScoreCard({ score }: { score: NonNullable<ReportData["score"]> }) {
   return (
     <div style={{ padding: 18, border: `1px solid ${RULE}`, borderTop: `2px solid ${BRONZE}` }}>
-      <SectionLabel>Digital Presence Score</SectionLabel>
+      <SectionLabel>Imprint</SectionLabel>
       <div style={{ display: "flex", alignItems: "stretch", gap: 32, marginTop: 12 }}>
         <div style={{ flex: "none", display: "flex", flexDirection: "column", justifyContent: "flex-start", borderRight: `1px solid ${RULE}`, paddingRight: 32, paddingTop: 2 }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "nowrap", whiteSpace: "nowrap" }}>

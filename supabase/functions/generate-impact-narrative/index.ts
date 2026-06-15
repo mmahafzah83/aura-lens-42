@@ -75,7 +75,7 @@ serve(async (req) => {
       `#${i + 1}: ${p.date} — ${p.impressions} imp, ${p.reactions} reactions, ${p.rate}% engagement`
     ).join("\n");
 
-    const prompt = `You are a Senior Digital Presence Advisor analyzing a professional's Impact dashboard. Speak directly to ${name} by first name. Be specific — reference exact numbers from the data. Be strategic — explain what the numbers MEAN, not just what they ARE.
+    const prompt = `You are a Senior Presence Advisor analyzing a professional's Impact dashboard. Speak directly to ${name} by first name. Be specific — reference exact numbers from the data. Be strategic — explain what the numbers MEAN, not just what they ARE.
 
 DASHBOARD DATA (last ${selectedDays} days):
 - Digital presence score: ${score}/100 (${tierName} tier), ${weekDelta > 0 ? "up" : "down"} ${Math.abs(weekDelta)} points this week
@@ -128,7 +128,7 @@ Rules:
         max_tokens: 600,
         temperature: 0.7,
         messages: [
-          { role: "system", content: "You are a Senior Digital Presence Advisor. Return ONLY valid JSON. No prose, no code fences." },
+          { role: "system", content: "You are a Senior Presence Advisor. Return ONLY valid JSON. No prose, no code fences." },
           { role: "user", content: prompt }
         ]
       })
