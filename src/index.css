@@ -386,7 +386,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
 @layer utilities {
   /* ── Typography Scale ── */
   .text-page-title {
-    font-family: 'Cormorant Garamond', serif;
+    font-family: var(--font-serif);
     font-size: 34px;
     font-weight: 400;
     line-height: 1.1;
@@ -403,7 +403,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   .text-body { font-size: 16px; line-height: 1.6; }
   .text-meta { font-size: 14px; line-height: 1.5; color: hsl(var(--muted-foreground)); }
   .text-label {
-    font-family: 'DM Sans', system-ui, sans-serif;
+    font-family: var(--font-body);
     font-size: 11px;
     font-weight: 600;
     line-height: 1.4;
