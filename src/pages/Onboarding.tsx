@@ -147,6 +147,9 @@ const Onboarding = () => {
   const [northStar, setNorthStar] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
 
+  // Shared-learning consent (opt-in; persisted on diagnostic_profiles.shared_learning_consent).
+  const [sharedLearningConsent, setSharedLearningConsent] = useState(false);
+
   // Step 2
   const [foundArticle, setFoundArticle] = useState<FoundArticle | null>(null);
   const [articleSearchDone, setArticleSearchDone] = useState(false);
@@ -416,6 +419,7 @@ const Onboarding = () => {
         completed: true,
       };
       if (usedLinkedIn && linkedinUrl.trim()) payload.linkedin_url = linkedinUrl.trim();
+      payload.shared_learning_consent = sharedLearningConsent;
 
       const { error } = await supabase
         .from("diagnostic_profiles" as any)
