@@ -50,8 +50,6 @@ const NAV_ITEMS = [
 
 type TabValue = typeof NAV_ITEMS[number]["value"];
 
-import { applyThemeToRoot } from "@/lib/applyTheme";
-
 const Dashboard = () => {
   usePageMeta({
     title: "Aura — Dashboard",
@@ -92,20 +90,6 @@ const Dashboard = () => {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
-  const [theme, setTheme] = useState<"dark" | "light">(() => {
-    if (typeof window === "undefined") return "light";
-    return (localStorage.getItem("aura-theme") as "dark" | "light") || "light";
-  });
-  const toggleTheme = () => {
-    setTheme((prev) => {
-      const next = prev === "dark" ? "light" : "dark";
-      try {
-        localStorage.setItem("aura-theme", next);
-        applyThemeToRoot(next);
-      } catch {}
-      return next;
-    });
-  };
   const [signalDraftPrefill, setSignalDraftPrefill] = useState<{
     topic: string;
     context: string;
@@ -134,10 +118,6 @@ const Dashboard = () => {
   const [brandAssessmentOpen, setBrandAssessmentOpen] = useState(false);
   const [editProfileField, setEditProfileField] = useState<EditProfileField | undefined>(undefined);
 
-  useEffect(() => {
-    applyThemeToRoot(theme);
-  }, [theme]);
-
   // Force-enable elevation motion globally (count-up + ring draw-in).
   useEffect(() => {
     document.documentElement.setAttribute("data-fx-score-ring", "true");
@@ -155,7 +135,7 @@ const Dashboard = () => {
   }, [newIntelSignalCount]);
 
   // Database-driven design tokens (overrides CSS fallbacks via inline style)
-  useDesignTokens(theme);
+  useDesignTokens("light");
 
   // Sprint F2 — observe cards for entry fade/slide animation.
   // Re-runs when the active tab changes so newly mounted cards get observed.
@@ -818,8 +798,6 @@ const Dashboard = () => {
                 fullName={user?.fullName ?? null}
                 email={user?.email}
                 avatarUrl={user?.avatarUrl ?? null}
-                theme={theme}
-                onToggleTheme={toggleTheme}
                 onSignOut={handleLogout}
                 onOpenPreferences={() => setPreferencesOpen(true)}
                 onEditProfile={() => {
@@ -909,7 +887,7 @@ const Dashboard = () => {
               }
               theme={theme}
             />
-            <AmbientOrbs theme={theme} pageKey={activeTab} />
+            <AmbientOrbs theme="light" pageKey={activeTab} />
             {activeTab === "home" && (
               <div className="animate-tab-spring aura-page">
                 <FirstLoginWelcome
