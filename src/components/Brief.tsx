@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import AuraLogo from "@/components/brand/AuraLogo";
-import { useLanguage } from "@/contexts/LanguageContext";
 
 /**
  * Brief — bone Page daily folio (System-A tokens).
@@ -172,7 +171,6 @@ const ErrorLine: React.FC<{ what: string; onRetry: () => void }> = ({ what, onRe
 
 export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: BriefProps) {
   const { user, isReady } = useAuthReady();
-  const { language } = useLanguage();
 
   // Profile (masthead + salutation): resolves independently — no Scout — limbo.
   const [profile, setProfile] = useState<{ firstName: string; sectorFocus: string } | null>(null);
@@ -664,8 +662,6 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
         [lang="ar"] .brief-cta, [dir="rtl"] .brief-cta { font-family: var(--font-arabic); }
       `}</style>
 
-      {/* Language attribute hint for AR mirroring without changing existing dir wiring. */}
-      {language === "ar" && <span aria-hidden lang="ar" style={{ display: "none" }} />}
     </motion.div>
   );
 }
