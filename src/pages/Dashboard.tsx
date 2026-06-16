@@ -34,6 +34,9 @@ import IdentityDriftBanner from "@/components/IdentityDriftBanner";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import IdentityTab from "@/components/tabs/IdentityTab";
 import Observatory from "@/components/Observatory";
+import TierCeremonyModal from "@/components/TierCeremonyModal";
+import MilestoneNotification from "@/components/MilestoneNotification";
+import useTierFromImprint from "@/hooks/useTierFromImprint";
 import usePageMeta from "@/hooks/usePageMeta";
 
 import AuthorityTab from "@/components/tabs/AuthorityTab";
