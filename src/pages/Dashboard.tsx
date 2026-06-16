@@ -1167,6 +1167,27 @@ const Dashboard = () => {
         onOpenChange={setBrandAssessmentOpen}
         onComplete={() => setBrandAssessmentOpen(false)}
       />
+
+      {/* Tier ceremony — fires when imprint_snapshots crosses a band boundary.
+          Uses forceOpen + forceOpenStep=0 so the ceremonial intro runs first.
+          Closing the modal acknowledges the tier locally so it doesn't replay. */}
+      <TierCeremonyModal
+        userId={userId}
+        forceOpen={tierCeremonyOpen}
+        forceOpenStep={0}
+        forcedTierName={tierImprint.currentTier?.name ?? null}
+        onForceClose={() => {
+          tierImprint.acknowledge();
+          setTierCeremonyOpen(false);
+        }}
+      />
+
+      {/* Lightweight milestone toast (tier-only). Other canonical milestones
+          continue to surface via user_milestones / useMilestones inside their
+          own components — they are NOT coupled to calculate-aura-score. */}
+      <div style={{ position: "fixed", bottom: 16, insetInlineStart: 16, zIndex: 60, maxWidth: 360 }}>
+        <MilestoneNotification userId={userId} auraData={tierMilestoneAuraData} />
+      </div>
     </div>
   );
 };
