@@ -834,12 +834,12 @@ const Observatory = ({
     const uid = authUser.id;
     const ch = supabase.channel(`observatory-live-${uid}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "strategic_signals", filter: `user_id=eq.${uid}` }, () => loadSignals(uid))
-      .on("postgres_changes", { event: "*", schema: "public", table: "entries", filter: `user_id=eq.${uid}` }, () => { loadSignals(uid); loadActivity(uid); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "entries", filter: `user_id=eq.${uid}` }, () => { loadSignals(uid); loadImprint(uid); })
       .on("postgres_changes", { event: "*", schema: "public", table: "imprint_snapshots", filter: `user_id=eq.${uid}` }, () => loadImprint(uid))
       .on("postgres_changes", { event: "*", schema: "public", table: "facet_states", filter: `user_id=eq.${uid}` }, () => loadFacets(uid))
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [authUser?.id, loadSignals, loadImprint, loadFacets, loadActivity]);
+  }, [authUser?.id, loadSignals, loadImprint, loadFacets]);
 
   // Deep link ?signal=...
   useEffect(() => {
