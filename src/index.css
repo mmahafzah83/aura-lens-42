@@ -1019,6 +1019,62 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
 }
 
 /* ══════════════════════════════════════════════════════════════
+   STATEMENT-PAGE — Impact route (System-A dark Instrument)
+   Scoped wrapper that rebinds the three legacy token families
+   (--aura-*, --color-*, --brand/--bronze/--ink-*) onto the
+   dark Instrument palette. Surface-only; no logic touched.
+   ══════════════════════════════════════════════════════════════ */
+.statement-page {
+  background: var(--ob-bg);
+  color: var(--glass);
+  /* Aura legacy → Instrument */
+  --aura-bg: var(--ob-bg);
+  --aura-card: var(--ob-panel);
+  --aura-border: var(--hair);
+  --aura-t1: var(--glass);
+  --aura-t2: color-mix(in srgb, var(--glass) 78%, transparent);
+  --aura-t3: var(--glass-2);
+  --aura-accent: var(--action);
+  --aura-accent2: var(--live);
+  --aura-accent3: var(--pos);
+  --aura-positive: var(--pos);
+  --aura-negative: var(--neg);
+  --aura-blue: var(--live);
+  --aura-font-heading: var(--font-display);
+  /* Color-* legacy → Instrument */
+  --color-card: var(--ob-panel);
+  --color-border: var(--hair);
+  --color-border-tertiary: var(--hair);
+  --color-text-primary: var(--glass);
+  --color-text-secondary: color-mix(in srgb, var(--glass) 78%, transparent);
+  --color-text-muted: var(--glass-2);
+  --color-background-primary: var(--ob-raised);
+  --color-background-success: color-mix(in srgb, var(--pos) 14%, transparent);
+  --color-background-warning: color-mix(in srgb, var(--action) 14%, transparent);
+  /* Brand / bronze / parchment legacy → Instrument */
+  --brand: var(--action);
+  --brand-muted: color-mix(in srgb, var(--action) 20%, transparent);
+  --brand-line: var(--hair);
+  --bronze: var(--action);
+  --bronze-line: var(--hair);
+  --bronze-soft: color-mix(in srgb, var(--action) 18%, transparent);
+  --surface-ink-raised: var(--ob-raised);
+  --line-1: var(--hair);
+  /* Ink scale (parchment) → glass scale (dark) */
+  --ink: var(--glass);
+  --ink-2: color-mix(in srgb, var(--glass) 82%, transparent);
+  --ink-3: var(--glass-2);
+  --ink-4: var(--glass-3);
+  --ink-5: var(--glass-3);
+}
+/* Eyebrow / micro labels in IBM Plex Mono on the muted glass tier */
+.statement-page .text-section-header,
+.statement-page .text-ink-4 {
+  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--glass-2);
+}
+
+/* ══════════════════════════════════════════════════════════════
    DESIGN-8: Global polish pass
    Cosmetic-only overrides (no component logic touched).
    Applied via opt-in utility classes plus a few safe global rules

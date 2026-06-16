@@ -1384,7 +1384,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
-      className="space-y-7 max-w-5xl"
+      className="statement-page space-y-7 max-w-5xl"
     >
       {/* ─────────── 1. PAGE HEADER ─────────── */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24 }}>
@@ -1492,7 +1492,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
           <h2
             style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontFamily: "var(--font-serif), Georgia, serif",
               fontSize: 18,
               fontWeight: 500,
               color: "var(--color-text-primary)",
@@ -1623,7 +1623,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           fontFamily: "'DM Sans', system-ui, sans-serif",
         };
         const cormorant = {
-          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontFamily: "var(--font-serif), Georgia, serif",
           color: "var(--aura-t1)",
         };
 
@@ -1951,7 +1951,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         }}
       >
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 16, fontWeight: 500, color: "var(--ink)" }}>
+          <div style={{ fontFamily: "var(--font-serif), Georgia, serif", fontSize: 16, fontWeight: 500, color: "var(--ink)" }}>
             {showDetailed ? "Hide detailed breakdown" : "See detailed breakdown"}
           </div>
           {!showDetailed && (
@@ -1974,7 +1974,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           YOUR LINKEDIN FOOTPRINT
         </div>
         <h2 style={{
-          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontFamily: "var(--font-serif), Georgia, serif",
           fontSize: 18, fontWeight: 500, color: "var(--aura-t1)",
           margin: "0 0 4px",
         }}>
@@ -2532,7 +2532,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               className="rounded-lg p-5"
               style={{ background: "var(--color-card)", border: "0.5px solid var(--color-border)" }}
             >
-              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 32, fontWeight: 500, color: "var(--ink)", lineHeight: 1 }}>
+              <div style={{ fontFamily: "var(--font-serif), Georgia, serif", fontSize: 32, fontWeight: 500, color: "var(--ink)", lineHeight: 1 }}>
                 {formatNumber(periodImpressions ?? 0)}
               </div>
               <div style={{ fontSize: 11, color: "var(--color-text-muted)", marginTop: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>
@@ -2807,7 +2807,7 @@ const SectionToggle = ({
   >
     <h2
       style={{
-        fontFamily: "'Cormorant Garamond', Georgia, serif",
+        fontFamily: "var(--font-serif), Georgia, serif",
         fontSize: 18,
         fontWeight: 500,
         color: "var(--color-text-primary)",
