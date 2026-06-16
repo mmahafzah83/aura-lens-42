@@ -1719,6 +1719,9 @@ button[aria-label="Notifications"]:focus-visible {
   display: inline-block;
   color: var(--gold-dark, var(--brand));
 }
+@media (prefers-reduced-motion: reduce) {
+  .aura-gold-pulse { animation: none; }
+}
 
 /* ── Publish ceremony toast — warm parchment with subtle gold shimmer ── */
 .aura-publish-ceremony {
