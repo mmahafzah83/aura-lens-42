@@ -330,29 +330,130 @@ const ImprintCore = ({
 };
 
 /* ──────────────────────────────────────────────────────────
-   Three readouts — raw activity counts
+   ContributionBar — three parts (Signal/Content/Rhythm) summing
+   to the Imprint score. Reads imprint_snapshots.components.score_components.
    ────────────────────────────────────────────────────────── */
-const Readout = ({ label, value, sub }: { label: string; value: string; sub?: string }) => (
-  <div style={{
-    flex: 1, minWidth: 0, padding: "16px 18px",
-    background: "var(--ob-panel)", border: "0.5px solid var(--hair)", borderRadius: 10,
-  }}>
-    <div style={{
-      fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
-      color: "var(--glass-2)", letterSpacing: "0.14em",
-    }}>{label}</div>
-    <div style={{
-      marginTop: 8, fontFamily: "'IBM Plex Mono', monospace",
-      fontSize: 30, color: "var(--live)", fontVariantNumeric: "tabular-nums",
-    }}>{value}</div>
-    {sub && (
+type ScoreComponents = { signal_score: number; content_score: number; capture_score: number };
+
+const WEIGHTS = { signal: 0.40, content: 0.40, rhythm: 0.20 } as const;
+const RHYTHM_TEAL = "color-mix(in srgb, var(--live) 55%, var(--glass) 5%)";
+
+/** Round three values so they sum EXACTLY to `target`. Adjust the largest. */
+function roundToSum(parts: [number, number, number], target: number): [number, number, number] {
+  const rounded = parts.map(Math.round) as [number, number, number];
+  const diff = target - (rounded[0] + rounded[1] + rounded[2]);
+  if (diff !== 0) {
+    let maxIdx = 0;
+    for (let i = 1; i < 3; i++) if (parts[i] > parts[maxIdx]) maxIdx = i;
+    rounded[maxIdx] = rounded[maxIdx] + diff;
+  }
+  return rounded;
+}
+
+const ContributionBar = ({
+  imprint, components, loading,
+}: { imprint: number | null; components: ScoreComponents | null; loading: boolean }) => {
+  if (loading || imprint == null || !components) {
+    return (
       <div style={{
-        marginTop: 4, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
-        color: "var(--glass-2)", letterSpacing: "0.08em",
-      }}>{sub}</div>
-    )}
-  </div>
-);
+        padding: 16, background: "var(--ob-panel)",
+        border: "0.5px solid var(--hair)", borderRadius: 12,
+      }}>
+        <div style={{ height: 14, background: "var(--ob-field)", borderRadius: 4, opacity: 0.5 }} />
+        <div style={{ marginTop: 10, height: 11, width: "60%", background: "var(--ob-field)", borderRadius: 4, opacity: 0.4 }} />
+      </div>
+    );
+  }
+
+  const sRaw = Math.max(0, Math.min(100, components.signal_score)) * WEIGHTS.signal;
+  const cRaw = Math.max(0, Math.min(100, components.content_score)) * WEIGHTS.content;
+  const rRaw = Math.max(0, Math.min(100, components.capture_score)) * WEIGHTS.rhythm;
+  const target = Math.round(Math.max(0, Math.min(100, imprint)));
+  const [s, c, r] = roundToSum([sRaw, cRaw, rRaw], target);
+
+  // Bar geometry: each segment width = its rounded contribution (out of 100).
+  const segs = [
+    { key: "Signal",  v: s, color: "var(--live)",   slug: "signal-contribution",  text: "How strong and well-evidenced your signals are." },
+    { key: "Content", v: c, color: "var(--action)", slug: "content-contribution", text: "How much you've published from your signals." },
+    { key: "Rhythm",  v: r, color: RHYTHM_TEAL,     slug: "rhythm-contribution",  text: "How steadily you've been capturing, week to week." },
+  ];
+
+  // Lever: largest (gap-to-100 × weight).
+  const levers = [
+    { label: "Signal",  gap: (100 - components.signal_score)  * WEIGHTS.signal },
+    { label: "Content", gap: (100 - components.content_score) * WEIGHTS.content },
+    { label: "Rhythm",  gap: (100 - components.capture_score) * WEIGHTS.rhythm },
+  ];
+  const lever = levers.reduce((a, b) => (b.gap > a.gap ? b : a));
+
+  return (
+    <div style={{
+      padding: 18, background: "var(--ob-panel)",
+      border: "0.5px solid var(--hair)", borderRadius: 12,
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+        <span style={{
+          fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
+          color: "var(--glass-2)", letterSpacing: "0.16em",
+        }}>WHAT BUILDS YOUR IMPRINT</span>
+        <InfoTooltip
+          slug="imprint-composition"
+          text="Your Imprint is built from three things: the strength of your signals, what you've published, and how steadily you show up."
+          label="What builds your Imprint"
+          side="top"
+          triggerSize={13}
+        />
+      </div>
+
+      {/* Bar — full width = 100. Three segments sized to contributions. */}
+      <div role="img" aria-label={`Imprint ${target}: signal ${s}, content ${c}, rhythm ${r}`}
+           style={{
+             display: "flex", width: "100%", height: 14, borderRadius: 4,
+             overflow: "hidden", background: "var(--ob-field)",
+             border: "0.5px solid var(--hair)",
+           }}>
+        {segs.map(seg => (
+          <div key={seg.key} title={`${seg.key} +${seg.v}`}
+               style={{ width: `${seg.v}%`, background: seg.color, transition: "width 600ms cubic-bezier(.4,0,.2,1)" }} />
+        ))}
+      </div>
+
+      {/* Legend dots */}
+      <div style={{
+        marginTop: 10, display: "flex", gap: 14, flexWrap: "wrap",
+        fontFamily: "'IBM Plex Mono', monospace", fontSize: 11,
+        color: "var(--glass-2)", letterSpacing: "0.04em",
+      }}>
+        {segs.map(seg => (
+          <span key={seg.key} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <span style={{
+              width: 8, height: 8, borderRadius: 2, background: seg.color,
+              display: "inline-block",
+            }} />
+            <span style={{ color: "var(--glass)" }}>{seg.key}</span>
+            <InfoTooltip text={seg.text} label={`${seg.key} contribution`} side="top" triggerSize={12} />
+          </span>
+        ))}
+      </div>
+
+      {/* Mono tally */}
+      <div style={{
+        marginTop: 10, fontFamily: "'IBM Plex Mono', monospace", fontSize: 12,
+        color: "var(--glass)", letterSpacing: "0.02em",
+        fontVariantNumeric: "tabular-nums",
+      }}>
+        Signal +{s} · Content +{c} · Rhythm +{r} = Imprint {target}
+      </div>
+
+      {/* Lever line */}
+      <div style={{
+        marginTop: 6, fontSize: 12, color: "var(--glass-2)", lineHeight: 1.5,
+      }}>
+        {lever.label} is your biggest lever right now — the fastest way up.
+      </div>
+    </div>
+  );
+};
 
 /* ──────────────────────────────────────────────────────────
    Theme chips (replaces TerritoryPanel's recharts radar)
