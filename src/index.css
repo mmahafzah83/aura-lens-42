@@ -1099,9 +1099,9 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
    component logic touched.
 
    Strategy:
-   - Rebind the legacy --ink*/--brand*/--surface-ink-* token
-     families to the dark Instrument palette so light-on-parchment
-     text becomes light-on-dark.
+   - Rebind the legacy ink, brand and surface-ink token families
+     to the dark Instrument palette so light-on-parchment text
+     becomes light-on-dark.
    - Flatten --surface-ink-raised / --surface-ink-subtle to
      transparent so the inline "card" backgrounds disappear; the
      existing 1px borders (var(--ink-3) → var(--hair)) collapse
