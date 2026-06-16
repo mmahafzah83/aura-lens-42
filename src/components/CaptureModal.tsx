@@ -977,13 +977,13 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                     }
                   }}
                    onFocus={(e) => {
-                    e.currentTarget.style.borderColor = "var(--brand)";
-                    e.currentTarget.style.background = "var(--vellum)";
-                    e.currentTarget.style.boxShadow = "0 0 0 3px var(--brand-muted)";
+                    e.currentTarget.style.borderColor = "var(--action)";
+                    e.currentTarget.style.background = "var(--ob-field)";
+                    e.currentTarget.style.boxShadow = "0 0 0 3px color-mix(in srgb, var(--action) 30%, transparent)";
                   }}
                   onBlur={async (e) => {
-                    e.currentTarget.style.borderColor = urlError ? "var(--error)" : "var(--brand-line)";
-                    e.currentTarget.style.background = "var(--vellum)";
+                    e.currentTarget.style.borderColor = urlError ? "var(--neg)" : "var(--glass-3)";
+                    e.currentTarget.style.background = "var(--ob-field)";
                     e.currentTarget.style.boxShadow = "none";
                     const url = e.target.value.trim();
                     if (!url || !isValidUrl(url)) return;
@@ -1006,12 +1006,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                   }}
                   style={{
                     width: "100%",
-                    background: "var(--vellum)",
-                    border: urlError ? "0.5px solid var(--error)" : "0.5px solid var(--brand-line)",
+                    background: "var(--ob-field)",
+                    border: urlError ? "0.5px solid var(--neg)" : "0.5px solid var(--glass-3)",
                     borderRadius: 12,
                     padding: "13px 76px 13px 16px",
                     fontSize: 14,
-                    color: "var(--ink)",
+                    color: "var(--glass)",
                     outline: "none",
                     transition: "all 150ms ease",
                   }}
@@ -1028,12 +1028,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                   }}
                   style={{
                     position: "absolute",
-                    right: 8,
+                    insetInlineEnd: 8,
                     top: "50%",
                     transform: "translateY(-50%)",
-                    background: "var(--paper-3)",
-                    color: "var(--ink-2)",
-                    border: "0.5px solid var(--brand-line)",
+                    background: "var(--ob-raised)",
+                    color: "var(--glass-2)",
+                    border: "0.5px solid var(--glass-3)",
                     borderRadius: 7,
                     fontSize: 12,
                     fontWeight: 600,
@@ -1041,32 +1041,33 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                     cursor: "pointer",
                     textTransform: "uppercase",
                     letterSpacing: "0.05em",
+                    fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
                   }}
                 >
                   Paste
                 </button>
               </div>
 
-              {urlError && <p style={{ fontSize: 12, color: "var(--error)", margin: 0 }}>{urlError}</p>}
+              {urlError && <p style={{ fontSize: 12, color: "var(--neg)", margin: 0 }}>{urlError}</p>}
 
               {linkPreview && (
                 <div
                   style={{
-                    background: "var(--aura-card)",
-                    border: "0.5px solid hsl(var(--border))",
+                    background: "var(--ob-raised)",
+                    border: "0.5px solid var(--hair)",
                     borderRadius: 12,
                     padding: "12px 14px",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
                   }}
                 >
-                  <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-4)" }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--glass-2)", fontFamily: "'IBM Plex Mono', ui-monospace, monospace" }}>
                     {linkPreview.domain}
                   </div>
-                  <div style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)", marginTop: 4, lineHeight: 1.35 }}>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: "var(--glass)", marginTop: 4, lineHeight: 1.35 }}>
                     {linkPreview.title}
                   </div>
                   {linkPreview.snippet && (
-                    <div style={{ fontSize: 12, color: "var(--ink-5)", marginTop: 6, lineHeight: 1.5 }}>
+                    <div style={{ fontSize: 12, color: "var(--glass-2)", marginTop: 6, lineHeight: 1.5 }}>
                       {linkPreview.snippet}…
                     </div>
                   )}
@@ -1076,7 +1077,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
               {signalMatch && (
                 <div
                   style={{
-                    background: "var(--brand-pale)",
+                    background: "color-mix(in srgb, var(--live) 15%, var(--ob-raised))",
+                    border: "0.5px solid color-mix(in srgb, var(--live) 35%, transparent)",
                     borderRadius: 10,
                     padding: "11px 14px",
                     display: "flex",
@@ -1085,7 +1087,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                   }}
                 >
                   <span className="capture-pulse-dot" />
-                  <span style={{ fontSize: 12, color: "var(--warning)", lineHeight: 1.45 }}>
+                  <span style={{ fontSize: 12, color: "var(--glass)", lineHeight: 1.45 }}>
                     Aura detected this strengthens your signal <strong>{signalMatch.title}</strong> — adding will reinforce it.
                   </span>
                 </div>
@@ -1094,20 +1096,20 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
               {duplicateInfo && (
                 <div
                   style={{
-                    background: "var(--warning-pale)",
-                    border: "0.5px solid color-mix(in srgb, var(--warning) 40%, transparent)",
+                    background: "color-mix(in srgb, var(--action) 10%, var(--ob-raised))",
+                    border: "0.5px solid color-mix(in srgb, var(--action) 28%, transparent)",
                     borderRadius: 10,
                     padding: "10px 14px",
                   }}
                 >
-                  <p style={{ fontSize: 12, color: "var(--ink)", margin: 0 }}>
+                  <p style={{ fontSize: 12, color: "var(--glass)", margin: 0 }}>
                     You already captured this source on {duplicateInfo.date}.
                   </p>
                   <div style={{ marginTop: 6 }}>
-                    <button type="button" onClick={() => { setDuplicateInfo(null); handleSave(); }} style={{ fontSize: 12, color: "var(--warning)", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}>
+                    <button type="button" onClick={() => { setDuplicateInfo(null); handleSave(); }} style={{ fontSize: 12, color: "var(--action)", background: "transparent", border: "none", cursor: "pointer", padding: 0, fontWeight: 600 }}>
                       Capture anyway
                     </button>
-                    <button type="button" onClick={() => { setContent(""); setDuplicateInfo(null); }} style={{ fontSize: 12, color: "var(--ink-5)", background: "transparent", border: "none", marginLeft: 12, cursor: "pointer", padding: 0 }}>
+                    <button type="button" onClick={() => { setContent(""); setDuplicateInfo(null); }} style={{ fontSize: 12, color: "var(--glass-2)", background: "transparent", border: "none", marginInlineStart: 12, cursor: "pointer", padding: 0 }}>
                       Skip
                     </button>
                   </div>
