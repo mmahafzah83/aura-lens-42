@@ -782,7 +782,7 @@ export default function PublicWelcome() {
             </p>
             <p className="reveal reveal-d4" dir="rtl" style={{
               fontSize: 18, color: BRONZE, marginTop: 28,
-              fontFamily: "'Cairo', var(--font-body), sans-serif",
+              fontFamily: ARABIC,
             }}>
               حتى السوق يعرفك قبل ما يشوفك ✦
             </p>
