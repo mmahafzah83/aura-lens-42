@@ -65,7 +65,7 @@ const App = () => (
                 <div
                   className="text-lg"
                   style={{
-                    fontFamily: "'Cormorant Garamond', Georgia, serif",
+                    fontFamily: "var(--serif)",
                     color: "var(--ink)",
                     letterSpacing: "0.04em",
                   }}
