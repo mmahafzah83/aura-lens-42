@@ -1238,16 +1238,16 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                   <div
                     onClick={() => fileInputRef.current?.click()}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = "var(--brand)";
-                      e.currentTarget.style.background = "var(--brand-pale)";
+                      e.currentTarget.style.borderColor = "var(--action)";
+                      e.currentTarget.style.background = "color-mix(in srgb, var(--action) 10%, var(--ob-field))";
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = "var(--border-strong)";
-                      e.currentTarget.style.background = "var(--surface-subtle)";
+                      e.currentTarget.style.borderColor = "var(--glass-3)";
+                      e.currentTarget.style.background = "var(--ob-field)";
                     }}
                     style={{
-                      background: "var(--surface-subtle)",
-                      border: "1.5px dashed var(--border-strong)",
+                      background: "var(--ob-field)",
+                      border: "1.5px dashed var(--glass-3)",
                       borderRadius: 14,
                       padding: 32,
                       textAlign: "center",
@@ -1255,9 +1255,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                       transition: "all 150ms ease",
                     }}
                   >
-                    <ImageIcon className="w-9 h-9 mx-auto mb-3" style={{ color: "var(--ink-5)" }} />
-                    <p style={{ fontSize: 14, color: "var(--ink-3)", margin: 0 }}>Drop an image or click to upload</p>
-                    <p style={{ fontSize: 12, color: "var(--ink-5)", marginTop: 4 }}>PNG, JPG up to 10MB</p>
+                    <ImageIcon className="w-9 h-9 mx-auto mb-3" style={{ color: "var(--glass-2)" }} />
+                    <p style={{ fontSize: 14, color: "var(--glass)", margin: 0 }}>Drop an image or click to upload</p>
+                    <p style={{ fontSize: 12, color: "var(--glass-2)", marginTop: 4 }}>PNG, JPG up to 10MB</p>
                   </div>
                   <div className="grid grid-cols-2" style={{ gap: 8 }}>
                     <button
@@ -1268,12 +1268,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                         alignItems: "center",
                         justifyContent: "center",
                         gap: 6,
-                        border: "0.5px solid hsl(var(--border))",
+                        border: "0.5px solid var(--glass-3)",
                         borderRadius: 10,
                         padding: "8px 16px",
                         fontSize: 12,
-                        background: "var(--aura-card)",
-                        color: "var(--ink)",
+                        background: "var(--ob-raised)",
+                        color: "var(--glass)",
                         cursor: "pointer",
                       }}
                     >
@@ -1287,12 +1287,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                         alignItems: "center",
                         justifyContent: "center",
                         gap: 6,
-                        border: "0.5px solid hsl(var(--border))",
+                        border: "0.5px solid var(--glass-3)",
                         borderRadius: 10,
                         padding: "8px 16px",
                         fontSize: 12,
-                        background: "var(--aura-card)",
-                        color: "var(--ink)",
+                        background: "var(--ob-raised)",
+                        color: "var(--glass)",
                         cursor: "pointer",
                       }}
                     >
@@ -1302,15 +1302,15 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                 </>
               ) : (
                 <div className="relative">
-                  <img src={imagePreview} alt="Preview" style={{ width: "100%", maxHeight: 200, objectFit: "contain", borderRadius: 12, background: "var(--surface-subtle)" }} />
-                  <button onClick={clearImage} className="absolute" style={{ top: 8, right: 8, width: 26, height: 26, borderRadius: "50%", background: "rgba(255,255,255,0.9)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                    <X className="w-3.5 h-3.5" style={{ color: "var(--ink)" }} />
+                  <img src={imagePreview} alt="Preview" style={{ width: "100%", maxHeight: 200, objectFit: "contain", borderRadius: 12, background: "var(--ob-field)" }} />
+                  <button onClick={clearImage} className="absolute" style={{ top: 8, insetInlineEnd: 8, width: 26, height: 26, borderRadius: "50%", background: "var(--ob-raised)", border: "0.5px solid var(--glass-3)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                    <X className="w-3.5 h-3.5" style={{ color: "var(--glass)" }} />
                   </button>
                 </div>
               )}
               {analyzing && (
-                <div className="flex items-center" style={{ gap: 8, fontSize: 14, color: "var(--ink-5)" }}>
-                  <Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--brand)" }} />
+                <div className="flex items-center" style={{ gap: 8, fontSize: 14, color: "var(--glass-2)" }}>
+                  <Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--live)" }} />
                   AI is reading your screenshot…
                 </div>
               )}
