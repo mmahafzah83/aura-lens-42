@@ -3272,10 +3272,25 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                   <LinkedInPreview text={p.post_text} profile={profile} />
 
                   {/* Body text */}
-                  <p style={{ fontSize: 14, color: "var(--ink)", lineHeight: 1.625 }} className={expandedCards.has(p.id) ? "" : "line-clamp-4"} dir="auto">
+                  <p
+                    style={{
+                      fontSize: 14,
+                      color: "var(--ink)",
+                      lineHeight: 1.625,
+                      ...(expandedCards.has(p.id) ? {} : {
+                        display: "-webkit-box",
+                        WebkitBoxOrient: "vertical" as any,
+                        WebkitLineClamp: 2,
+                        overflow: "hidden",
+                        WebkitMaskImage: "linear-gradient(180deg, #000 60%, transparent 100%)",
+                        maskImage: "linear-gradient(180deg, #000 60%, transparent 100%)",
+                      }),
+                    }}
+                    dir="auto"
+                  >
                     {p.post_text || "Untitled draft"}
                   </p>
-                  {(p.post_text?.split("\n").length || 0) > 4 || (p.post_text?.length || 0) > 280 ? (
+                  {(p.post_text?.split("\n").length || 0) > 2 || (p.post_text?.length || 0) > 140 ? (
                     <button
                       onClick={() => toggleCardExpand(p.id)}
                       style={{ fontSize: 14, color: "var(--brand)", background: "none", border: "none", cursor: "pointer", padding: 0, marginTop: 4 }}
@@ -3476,7 +3491,22 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                 >
                   <div className="flex items-start gap-3">
                     <div className="flex-1 min-w-0">
-                      <p style={{ fontSize: 14, color: "var(--ink)", lineHeight: 1.5 }} className={expandedCards.has(p.id) ? "" : "line-clamp-2"} dir="auto">
+                      <p
+                        style={{
+                          fontSize: 14,
+                          color: "var(--ink)",
+                          lineHeight: 1.5,
+                          ...(expandedCards.has(p.id) ? {} : {
+                            display: "-webkit-box",
+                            WebkitBoxOrient: "vertical" as any,
+                            WebkitLineClamp: 2,
+                            overflow: "hidden",
+                            WebkitMaskImage: "linear-gradient(180deg, #000 60%, transparent 100%)",
+                            maskImage: "linear-gradient(180deg, #000 60%, transparent 100%)",
+                          }),
+                        }}
+                        dir="auto"
+                      >
                         {p.post_text}
                       </p>
                       {(p.post_text?.split("\n").length || 0) > 2 || (p.post_text?.length || 0) > 140 ? (
