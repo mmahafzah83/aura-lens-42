@@ -60,12 +60,12 @@ const isTrusted = (s: string | null) => {
 
 const impactColor = (level: string | null) => {
   if (level === "High") return "var(--error)";
-  if (level === "Emerging") return "var(--brand)";
+  if (level === "Emerging") return "var(--action)";
   return "hsl(var(--muted-foreground))";
 };
 const decisionStyle = (label: string | null): { color: string; bg: string } => {
-  if (label === "Act Now") return { color: "var(--error)", bg: "#E24B4A12" };
-  if (label === "Early Opportunity") return { color: "var(--brand)", bg: "var(--brand-muted)" };
+  if (label === "Act Now") return { color: "var(--error)", bg: "var(--glass-2)" };
+  if (label === "Early Opportunity") return { color: "var(--action)", bg: "var(--glass-2)" };
   return { color: "hsl(var(--muted-foreground))", bg: "hsl(var(--muted) / 0.3)" };
 };
 
@@ -253,7 +253,7 @@ export default function TrendDetail() {
         </div>
         <button
           onClick={() => navigate("/home")}
-          style={{ fontSize: 12, color: "var(--brand)", background: "transparent", border: "0.5px solid var(--bronze-line)", padding: "6px 14px", borderRadius: 4, cursor: "pointer" }}
+          style={{ fontSize: 12, color: "var(--action)", background: "transparent", border: "0.5px solid var(--rule)", padding: "6px 14px", borderRadius: 4, cursor: "pointer" }}
         >
           Back to Home
         </button>
@@ -267,7 +267,7 @@ export default function TrendDetail() {
 
   const sectionLabel: React.CSSProperties = {
     fontSize: 12, fontWeight: 500, letterSpacing: "0.1em",
-    textTransform: "uppercase", color: "var(--brand)", marginBottom: 6,
+    textTransform: "uppercase", color: "var(--action)", marginBottom: 6,
   };
   const bodyText: React.CSSProperties = {
     fontSize: 14, lineHeight: 1.65, color: "hsl(var(--foreground))",
@@ -313,7 +313,7 @@ export default function TrendDetail() {
           </span>
         )}
         {isTrusted(signal.source) && (
-          <span style={{ fontSize: 12, color: "var(--success)", border: "0.5px solid #7ab64855", padding: "2px 8px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.05em" }}>
+          <span style={{ fontSize: 12, color: "var(--success)", border: "0.5px solid var(--rule)", padding: "2px 8px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.05em" }}>
             ✓ TRUSTED
           </span>
         )}
@@ -367,7 +367,7 @@ export default function TrendDetail() {
           <div className="flex items-center" style={{ gap: 8, marginBottom: 6 }}>
             <span style={sectionLabel as React.CSSProperties}>Content angle</span>
             {signal.opportunity_type && (
-              <span style={{ fontSize: 12, color: "var(--success)", background: "#7ab64812", border: "0.5px solid #7ab64855", padding: "2px 8px", borderRadius: 999, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 6 }}>
+              <span style={{ fontSize: 12, color: "var(--success)", background: "var(--glass-2)", border: "0.5px solid var(--rule)", padding: "2px 8px", borderRadius: 999, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 6 }}>
                 {signal.opportunity_type} opportunity
               </span>
             )}
@@ -399,7 +399,7 @@ export default function TrendDetail() {
                 This signal was created before snapshots were stored locally. No internal article copy is available — only the headline and original publisher reference below.
               </div>
               <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
-                Click <span style={{ color: "var(--brand)" }}>↻ Refresh signals</span> on Home to generate fresh signal-quality results with full article snapshots.
+                Click <span style={{ color: "var(--action)" }}>↻ Refresh signals</span> on Home to generate fresh signal-quality results with full article snapshots.
               </div>
             </div>
           );
@@ -412,9 +412,9 @@ export default function TrendDetail() {
               onClick={() => setSnapshotMode(mode)}
               style={{
                 fontSize: 12,
-                color: active ? "var(--brand)" : "hsl(var(--muted-foreground))",
-                background: active ? "var(--brand-muted)" : "transparent",
-                border: `0.5px solid ${active ? "var(--bronze-line)" : "hsl(var(--border))"}`,
+                color: active ? "var(--action)" : "hsl(var(--muted-foreground))",
+                background: active ? "var(--glass-2)" : "transparent",
+                border: `0.5px solid ${active ? "var(--rule)" : "hsl(var(--border))"}`,
                 padding: "3px 10px", borderRadius: 3, cursor: "pointer", letterSpacing: "0.04em",
                 fontWeight: active ? 600 : 400,
               }}
@@ -439,7 +439,7 @@ export default function TrendDetail() {
                 )}
                 <button
                   onClick={() => setShowFullSnapshot(s => !s)}
-                  style={{ fontSize: 12, color: "var(--brand)", background: "transparent", border: "0.5px solid var(--bronze-line)", padding: "3px 10px", borderRadius: 3, cursor: "pointer", letterSpacing: "0.04em" }}
+                  style={{ fontSize: 12, color: "var(--action)", background: "transparent", border: "0.5px solid var(--rule)", padding: "3px 10px", borderRadius: 3, cursor: "pointer", letterSpacing: "0.04em" }}
                 >
                   {showFullSnapshot ? "Show less" : "Show more"}
                 </button>
@@ -473,8 +473,8 @@ export default function TrendDetail() {
           disabled={drafting}
           style={{
             fontSize: 14, padding: "8px 16px", borderRadius: 8,
-            border: "0.5px solid var(--bronze-line)",
-            background: "var(--brand)", color: "#fff",
+            border: "0.5px solid var(--rule)",
+            background: "var(--action)", color: "#fff",
             fontWeight: 500, cursor: drafting ? "not-allowed" : "pointer",
             opacity: drafting ? 0.7 : 1,
           }}
