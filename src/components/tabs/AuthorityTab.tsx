@@ -2803,8 +2803,13 @@ const LinkedInPreview = ({
   profile: { first_name?: string | null; level?: string | null; avatar_url?: string | null } | null;
 }) => {
   if (!text) return null;
-  const lines = text.split("\n").slice(0, 3).join("\n");
-  const showMore = text.length > lines.length;
+  // Defensive: strip stray markdown asterisks (**bold**, *em*) so older drafts render clean.
+  const cleanText = text
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/(^|[\s(])\*(?!\s)([^*\n]+?)\*(?=[\s.,;:!?)]|$)/g, "$1$2")
+    .replace(/\*\*/g, "");
+  const lines = cleanText.split("\n").slice(0, 3).join("\n");
+  const showMore = cleanText.length > lines.length;
   const name = profile?.first_name || "You";
   const level = profile?.level || "Executive";
   const initial = (name[0] || "?").toUpperCase();
