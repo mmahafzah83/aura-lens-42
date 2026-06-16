@@ -294,7 +294,7 @@ FORMATTING RULES (mandatory):
 - NEVER start the post with a format label like "POST", "LinkedIn Post", "منشور LinkedIn", or "BOOST". The very first line must be the hook content itself.
 - Do NOT use "---" or "***" as section separators. Use a single blank line.
 - Do NOT use "#" markdown headers. LinkedIn does not render markdown headers.
-- Bold via **text** is acceptable. Numbered lists "1. " are acceptable. Bullet glyphs ◆ ↳ are acceptable.
+- NEVER use markdown bold or asterisks. Do NOT wrap words in **double asterisks** or *single asterisks* — LinkedIn renders them literally. For emphasis, use line breaks, ALL-CAPS sparingly, or a leading bullet glyph. Numbered lists "1. " are acceptable. Bullet glyphs ◆ ↳ are acceptable.
 - No code fences, no horizontal rules, no markdown links.`;
 
       const langLabel = effectiveLanguage === "ar"
