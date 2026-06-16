@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -75,6 +75,7 @@ export interface UseTierFromImprintResult {
 }
 
 export function useTierFromImprint(userId: string | null | undefined): UseTierFromImprintResult {
+  const instanceId = useId();
   const [loading, setLoading] = useState(true);
   const [score, setScore] = useState<number | null>(null);
   const [currentTier, setCurrentTier] = useState<TierBand | null>(null);
@@ -130,7 +131,7 @@ export function useTierFromImprint(userId: string | null | undefined): UseTierFr
   useEffect(() => {
     if (!userId) return;
     const ch = supabase
-      .channel(`tier-imprint-${userId}`)
+      .channel(`tier-imprint-${userId}-${instanceId}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "imprint_snapshots", filter: `user_id=eq.${userId}` },
@@ -138,7 +139,7 @@ export function useTierFromImprint(userId: string | null | undefined): UseTierFr
       )
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [userId, load]);
+  }, [userId, instanceId, load]);
 
   const acknowledge = useCallback(() => {
     if (!currentTier) return;
