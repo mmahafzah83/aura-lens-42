@@ -86,7 +86,7 @@ const StepCard = ({
               </span>
             )}
           </div>
-          <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond', serif)", fontSize: 22, color: "var(--ink)", lineHeight: 1.375, margin: "6px 0 10px" }}>
+          <div style={{ fontFamily: "var(--serif)", fontSize: 22, color: "var(--ink)", lineHeight: 1.375, margin: "6px 0 10px" }}>
             {title}
           </div>
           {!isDone && (
@@ -152,7 +152,7 @@ export default function GuidedJourney({ journey, onResetDiagnostic }: Props) {
         <div style={{ fontSize: 12, letterSpacing: 2, color: "var(--action)", marginBottom: 6, textTransform: "uppercase", fontWeight: 600 }}>
           Your professional identity
         </div>
-        <h1 style={{ fontFamily: "var(--font-display, 'Cormorant Garamond', serif)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
+        <h1 style={{ fontFamily: "var(--serif)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
           Tell Aura who you are
         </h1>
         <p style={{ fontSize: 14, color: "var(--ink-3)", marginTop: 10, lineHeight: 1.625, maxWidth: 640 }}>
