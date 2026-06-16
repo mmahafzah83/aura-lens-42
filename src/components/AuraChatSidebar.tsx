@@ -252,7 +252,7 @@ const AlwaysContextStrip = () => {
           <span style={{ fontSize: 12, textTransform: "uppercase", color: "hsl(var(--muted-foreground))", letterSpacing: 0.5, marginRight: 2 }}>Signals</span>
           {!loaded ? null : signals.length > 0 ? (
             signals.map(s => (
-              <span key={s.id} style={{ background: "#E6F1FB", color: "#0C447C", fontSize: 12, padding: "2px 8px", borderRadius: 10 }}>
+              <span key={s.id} style={{ background: "color-mix(in srgb, var(--live) 16%, transparent)", color: "var(--live)", border: "0.5px solid color-mix(in srgb, var(--live) 36%, transparent)", fontSize: 12, padding: "2px 8px", borderRadius: 10 }}>
                 {truncate(s.signal_title || "Untitled signal", 30)}
               </span>
             ))
@@ -265,10 +265,10 @@ const AlwaysContextStrip = () => {
           <div style={{ display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center" }}>
             <span style={{ fontSize: 12, textTransform: "uppercase", color: "hsl(var(--muted-foreground))", letterSpacing: 0.5, marginRight: 2 }}>Identity</span>
             {roleParts && (
-              <span style={{ background: "#EEEDFE", color: "#3C3489", fontSize: 12, padding: "2px 8px", borderRadius: 10 }}>{roleParts}</span>
+              <span style={{ background: "var(--ob-raised)", color: "var(--glass)", border: "0.5px solid var(--hair)", fontSize: 12, padding: "2px 8px", borderRadius: 10 }}>{roleParts}</span>
             )}
             {identity.sector_focus && (
-              <span style={{ background: "#EEEDFE", color: "#3C3489", fontSize: 12, padding: "2px 8px", borderRadius: 10 }}>{identity.sector_focus}</span>
+              <span style={{ background: "var(--ob-raised)", color: "var(--glass)", border: "0.5px solid var(--hair)", fontSize: 12, padding: "2px 8px", borderRadius: 10 }}>{identity.sector_focus}</span>
             )}
           </div>
         )}
