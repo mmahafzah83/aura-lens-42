@@ -668,7 +668,19 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
      Use live EF data (auraData) as PRIMARY source for current display,
      fall back to most recent snapshot only if EF hasn't returned yet. */
   const latest = snapshots.length > 0 ? snapshots[snapshots.length - 1] : null;
-  const latestScore = (auraData as any)?.aura_score ?? latest?.score ?? 0;
+  // CANONICAL SCORE — repointed to imprint_snapshots so Impact matches
+  // Home / Observatory / My Story. Legacy aura_score / score_snapshots used
+  // ONLY as null-fallback while imprint hasn't loaded.
+  const { score: imprintScore, currentTier: imprintTier, delta: imprintDelta } =
+    useTierFromImprint(userId);
+  const legacyAuraScore = (auraData as any)?.aura_score ?? latest?.score ?? 0;
+  const latestScore = imprintScore != null ? imprintScore : legacyAuraScore;
+  const tierName: string = imprintTier?.name ?? (auraData as any)?.tier_name ?? "Observer";
+  // Three forces — LEGACY DECOMPOSITION. imprint_snapshots does not yet
+  // expose signal/content/consistency components, so these still read from
+  // calculate-aura-score / score_snapshots. They are NOT presented as
+  // summing to the imprint dial; pending an imprint-native breakdown they
+  // remain a directional, legacy view. TODO: replace once imprint components ship.
   const captureScore = (auraData as any)?.capture_score ?? latest?.components?.capture_score ?? 0;
   const contentScore = (auraData as any)?.content_score ?? latest?.components?.content_score ?? 0;
   const signalScore = (auraData as any)?.signal_score ?? latest?.components?.signal_score ?? 0;
@@ -687,7 +699,10 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     return best?.score ?? null;
   }, [snapshots]);
 
-  const weekDelta = score7 !== null ? latestScore - score7 : null;
+  // Week delta: prefer imprint snapshot-to-snapshot delta; fall back to
+  // legacy score_snapshots window when imprint history is unavailable.
+  const legacyWeekDelta = score7 !== null ? legacyAuraScore - score7 : null;
+  const weekDelta = imprintDelta != null ? imprintDelta : legacyWeekDelta;
 
   let trendLabel = "→ Stable";
   let trendColor = "var(--color-text-secondary)";
