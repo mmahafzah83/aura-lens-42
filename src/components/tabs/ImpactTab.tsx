@@ -1093,7 +1093,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="space-y-7 max-w-5xl"
+        className="statement-page space-y-7 max-w-5xl"
       >
         <div style={{ marginBottom: 8 }}>
           <div className="font-serif text-base font-medium tracking-wide text-ink-4" style={{ marginBottom: 6 }}>
