@@ -831,19 +831,19 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
         style={{
           maxHeight: "88vh",
           zIndex: 1000,
-          background: "var(--paper-2)",
+          background: "var(--ob-panel)",
           borderTopLeftRadius: 20,
           borderTopRightRadius: 20,
-          color: "var(--ink)",
+          color: "var(--glass)",
           transform: swipeY > 0 ? `translateY(${swipeY}px)` : undefined,
           transition: swipeY > 0 ? "none" : "transform 0.3s ease-out",
           opacity: swipeY > 0 ? Math.max(0.3, 1 - swipeY / 400) : 1,
-          boxShadow: "0 -8px 40px rgba(0,0,0,0.18)",
+          boxShadow: "0 -8px 40px rgba(0,0,0,0.55)",
         }}
       >
         {/* Sheet handle */}
         <div className="flex justify-center cursor-grab">
-          <div style={{ width: 40, height: 4, background: "var(--border)", borderRadius: 2, margin: "10px auto 0" }} />
+          <div style={{ width: 40, height: 4, background: "var(--hair)", borderRadius: 2, margin: "10px auto 0" }} />
         </div>
 
         {/* Header */}
@@ -854,16 +854,16 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
           <div className="flex items-center" style={{ gap: 12 }}>
             <div
               className="flex items-center justify-center shrink-0"
-              style={{ width: 36, height: 36, background: "var(--brand)", borderRadius: 11 }}
+              style={{ width: 36, height: 36, background: "var(--action)", borderRadius: 11 }}
             >
               <Plus className="w-5 h-5" style={{ color: "var(--ink-on-brand)" }} strokeWidth={2.5} />
             </div>
             <div>
               <h2
                 style={{
-                  fontFamily: "'DM Serif Display', Georgia, serif",
+                  fontFamily: "var(--font-serif)",
                   fontSize: 18,
-                  color: "var(--ink)",
+                  color: "var(--glass)",
                   margin: 0,
                   lineHeight: 1.375,
                 }}
@@ -873,11 +873,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
               <p
                 style={{
                   fontSize: 12,
-                  color: "var(--ink-4)",
+                  color: "var(--glass-2)",
                   textTransform: "uppercase",
                   letterSpacing: "0.1em",
                   fontWeight: 600,
                   margin: "2px 0 0",
+                  fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
                 }}
               >
                 Intelligence capture
@@ -891,8 +892,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
               width: 32,
               height: 32,
               borderRadius: "50%",
-              background: "var(--paper-3)",
-              color: "var(--ink-3)",
+              background: "var(--ob-raised)",
+              color: "var(--glass-2)",
               border: "none",
             }}
             aria-label="Close capture"
