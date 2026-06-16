@@ -111,7 +111,7 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <Eye size={16} style={{ color: "var(--bronze)" }} />
-          <h3 style={{ fontFamily: "var(--font-display, 'Cormorant Garamond', serif)", fontSize: 20, margin: 0 }}>
+          <h3 style={{ fontFamily: "var(--font-serif)", fontSize: 20, margin: 0 }}>
             Market Mirror
           </h3>
         </div>
@@ -229,26 +229,26 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
             })}
           </div>
 
-          <p style={{ fontSize: 15, lineHeight: 1.65, color: "var(--ink)", whiteSpace: "pre-wrap", margin: "0 0 14px", fontFamily: "var(--font-display, 'Cormorant Garamond', serif)", fontStyle: text && /[\u0600-\u06FF]/.test(text) ? "normal" : "italic" }}>
+          <p style={{ fontSize: 15, lineHeight: 1.65, color: "var(--ink)", whiteSpace: "pre-wrap", margin: "0 0 14px", fontFamily: "var(--font-serif)", fontStyle: text && /[\u0600-\u06FF]/.test(text) ? "normal" : "italic" }}>
             {text || "No perspective generated."}
           </p>
 
           {gap && (() => {
             const persona = tab === "headhunter" ? labels.gap1 : tab === "client_cio" ? labels.gap2 : labels.gap3;
-            const ALERT = "var(--signal)";
+            const ALERT = "var(--live)";
             const gapIsArabic = /[\u0600-\u06FF]/.test(gap);
             return (
               <div
                 style={{
                   marginTop: 8, padding: "12px 14px",
-                  background: "color-mix(in srgb, var(--signal) 4%, transparent)",
+                  background: "color-mix(in srgb, var(--live) 6%, transparent)",
                   borderLeft: `3px solid ${ALERT}`,
                   borderRadius: 6,
                 }}
               >
                 <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12, letterSpacing: 1.5, textTransform: "uppercase", color: "var(--ink)", fontWeight: 600, marginBottom: 6 }}>
                   <span aria-hidden style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: ALERT }} />
-                  Authority gap
+                  Presence gap
                 </div>
                 <div style={{ fontSize: 14, color: "var(--ink)", lineHeight: 1.625 }}>
                   A {persona} would notice: {gap}
