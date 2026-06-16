@@ -17,7 +17,7 @@ const TAB_MAP: Record<string, string> = {
 function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <div style={{ borderBottom: "1px solid var(--brand-line)", padding: "10px 0" }}>
+    <div style={{ borderBottom: "1px solid var(--rule)", padding: "10px 0" }}>
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
@@ -109,8 +109,8 @@ export function HelpPanel({ open, onClose, activeTab }: { open: boolean; onClose
           bottom: 0,
           width: 380,
           maxWidth: "100vw",
-          background: "var(--vellum)",
-          borderLeft: "1px solid var(--brand-line)",
+          background: "var(--paper-2)",
+          borderLeft: "1px solid var(--rule)",
           boxShadow: "var(--shadow-lg)",
           zIndex: 50,
           display: "flex",
@@ -130,7 +130,7 @@ export function HelpPanel({ open, onClose, activeTab }: { open: boolean; onClose
             alignItems: "flex-start",
             justifyContent: "space-between",
             padding: "20px 22px 16px",
-            borderBottom: "1px solid var(--brand-line)",
+            borderBottom: "1px solid var(--rule)",
             flexShrink: 0,
           }}
         >
@@ -165,7 +165,7 @@ export function HelpPanel({ open, onClose, activeTab }: { open: boolean; onClose
                 <div
                   style={{
                     background: "var(--surface-subtle, #fff)",
-                    border: "1px solid var(--brand-line)",
+                    border: "1px solid var(--rule)",
                     borderRadius: 12,
                     padding: "14px 16px",
                     marginBottom: 22,
@@ -211,13 +211,13 @@ export function HelpPanel({ open, onClose, activeTab }: { open: boolean; onClose
           )}
 
           <div style={{ display: "flex", gap: 14, fontSize: 12 }}>
-            <Link to="/terms" style={{ color: "var(--brand)", textDecoration: "none" }}>Terms</Link>
-            <Link to="/privacy" style={{ color: "var(--brand)", textDecoration: "none" }}>Privacy</Link>
+            <Link to="/terms" style={{ color: "var(--action)", textDecoration: "none" }}>Terms</Link>
+            <Link to="/privacy" style={{ color: "var(--action)", textDecoration: "none" }}>Privacy</Link>
           </div>
         </div>
 
         {/* Fixed footer */}
-        <footer style={{ padding: "14px 18px", borderTop: "1px solid var(--brand-line)", flexShrink: 0 }}>
+        <footer style={{ padding: "14px 18px", borderTop: "1px solid var(--rule)", flexShrink: 0 }}>
           <AuraButton
             variant="secondary"
             style={{ width: "100%" }}
@@ -229,7 +229,7 @@ export function HelpPanel({ open, onClose, activeTab }: { open: boolean; onClose
             Aura Private Beta · Questions?{" "}
             <a
               href="mailto:support@aura-intel.org"
-              style={{ color: "var(--brand)", textDecoration: "none" }}
+              style={{ color: "var(--action)", textDecoration: "none" }}
             >
               Reach out to your invite contact
             </a>
@@ -255,7 +255,7 @@ export function HelpButton({ onClick }: { onClick: () => void }) {
         width: 44, height: 44, borderRadius: "50%",
         background: "transparent", border: 0, cursor: "pointer",
         display: "inline-flex", alignItems: "center", justifyContent: "center",
-        color: hover ? "var(--brand)" : "var(--ink-3)",
+        color: hover ? "var(--action)" : "var(--ink-3)",
         transition: "color 150ms",
       }}
     >

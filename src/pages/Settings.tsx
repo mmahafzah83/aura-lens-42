@@ -194,7 +194,7 @@ export default function Settings() {
         className="min-h-screen flex flex-col items-center justify-center gap-3"
         style={{ background: "var(--paper)" }}
       >
-        <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--brand)" }} />
+        <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--action)" }} />
         <p className="text-sm" style={{ color: "var(--ink-4)" }}>
           Loading your profile…
         </p>
@@ -215,7 +215,7 @@ export default function Settings() {
           type="button"
           onClick={() => navigate("/home")}
           className="text-sm underline"
-          style={{ color: "var(--brand)" }}
+          style={{ color: "var(--action)" }}
         >
           Go home
         </button>
@@ -229,7 +229,7 @@ export default function Settings() {
       style={{
         background: "var(--paper)",
         color: "var(--ink)",
-        fontFamily: "var(--font-body, 'DM Sans', sans-serif)",
+        fontFamily: "var(--font-body)",
       }}
     >
       <div className="max-w-2xl mx-auto px-6 py-10">
@@ -244,7 +244,7 @@ export default function Settings() {
             }
           }}
           className="flex items-center gap-1.5 text-sm mb-4"
-          style={{ color: "var(--brand)" }}
+          style={{ color: "var(--action)" }}
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back</span>
@@ -252,10 +252,10 @@ export default function Settings() {
 
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">
-          <SettingsIcon className="w-5 h-5" style={{ color: "var(--brand)" }} />
+          <SettingsIcon className="w-5 h-5" style={{ color: "var(--action)" }} />
           <h1
             style={{
-              fontFamily: "var(--font-display, 'Cormorant Garamond'), Georgia, serif",
+              fontFamily: "var(--serif)",
               fontSize: 28,
               fontWeight: 500,
               letterSpacing: "0.02em",
@@ -276,7 +276,7 @@ export default function Settings() {
               Your captures, drafts, and signals are private to your account — no other user can see them, and nothing in Aura shows them to us. We don't sell your data, and the providers that power Aura operate under business terms that don't use it to train their models by default. Aura isn't end-to-end encrypted — the system has to read your content to turn it into signals — so we protect it with strict per-account isolation instead.{" "}
               <Link
                 to="/guide"
-                style={{ color: "var(--brand)", fontWeight: 500, textDecoration: "none" }}
+                style={{ color: "var(--action)", fontWeight: 500, textDecoration: "none" }}
               >
                 Full details →
               </Link>
@@ -336,9 +336,9 @@ export default function Settings() {
                     key={pillar}
                     className="text-xs font-medium px-2.5 py-1 rounded-full"
                     style={{
-                      background: "var(--brand-ghost, rgba(176,141,58,0.08))",
-                      color: "var(--brand)",
-                      border: "1px solid var(--brand-line, rgba(176,141,58,0.22))",
+                      background: "var(--glass-2)",
+                      color: "var(--action)",
+                      border: "1px solid var(--rule)",
                     }}
                   >
                     {pillar}
@@ -407,7 +407,7 @@ export default function Settings() {
                   <p
                     dir="rtl"
                     lang="ar"
-                    style={{ fontSize: 11, lineHeight: 1.6, color: "var(--ink-4)", margin: 0, fontFamily: "'Cairo', 'DM Sans', sans-serif" }}
+                    style={{ fontSize: 11, lineHeight: 1.6, color: "var(--ink-4)", margin: 0, fontFamily: "'Cairo', var(--font-body), sans-serif" }}
                   >
                     التقرير يُبنى من بياناتك وحدها — ولا يغادر إلا بيدك.
                   </p>

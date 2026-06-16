@@ -471,8 +471,8 @@ const Auth = () => {
                   fontSize: 12.5,
                   lineHeight: 1.625,
                   color: "var(--ink-2)",
-                  background: "var(--brand-muted)",
-                  border: "0.5px solid var(--bronze-line)",
+                  background: "var(--paper-2)",
+                  border: "0.5px solid var(--rule)",
                   borderRadius: 10,
                   padding: "12px 14px",
                 }}
@@ -586,14 +586,14 @@ const Auth = () => {
                   fontSize: 12.5,
                   lineHeight: 1.625,
                   color: "var(--ink-2)",
-                  background: "var(--brand-muted)",
-                  border: "0.5px solid var(--bronze-line)",
+                  background: "var(--paper-2)",
+                  border: "0.5px solid var(--rule)",
                   borderRadius: 10,
                   padding: "10px 12px",
                 }}
               >
                 Use the email and password from your invitation. First time?
-                Use <span style={{ color: "var(--brand)", fontWeight: 600 }}>Set Password</span> below to create your password.
+                Use <span style={{ color: "var(--action)", fontWeight: 600 }}>Set Password</span> below to create your password.
               </div>
             )}
             <div>
@@ -662,7 +662,7 @@ const Auth = () => {
                 disabled={resetting}
                 className="hover:underline disabled:opacity-50"
                 style={{
-                  color: "var(--brand)",
+                  color: "var(--action)",
                   fontFamily: "var(--font-body)",
                   fontSize: 14,
                   fontWeight: 600,
