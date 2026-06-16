@@ -436,6 +436,7 @@ Rewrite any sentence that uses these with concrete, specific language.${postType
       // model is instructed to avoid but sometimes still emits.
       content = content
         .replace(/^\s*(?:منشور\s*LinkedIn|LinkedIn\s*Post|POST|بوست)\s*[:：\-—]?\s*\n?/i, '')
+        .replace(/^[ \t]*(?:منشور\s*LinkedIn|LinkedIn\s*Post|POST|بوست)[ \t]*[:：\-—]?[ \t]*$\n?/gim, '')
         .replace(/^\s*-{3,}\s*$/gm, '')
         .replace(/^\s*#{1,6}\s+/gm, '')
         .trim();
