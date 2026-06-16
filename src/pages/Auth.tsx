@@ -227,44 +227,44 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--ink)", fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--paper)", fontFamily: "var(--font-body)" }}>
       <div className="flex-1 flex">
       {/* Scoped style overrides to defeat global input styles + autofill */}
       <style>{`
         .auth-input {
-          background-color: var(--surface-ink-subtle) !important;
-          border: 0.5px solid var(--ink-3) !important;
-          color: var(--ink-7) !important;
+          background-color: var(--paper-2) !important;
+          border: 0.5px solid var(--rule) !important;
+          color: var(--ink) !important;
           border-radius: 10px !important;
           padding: 12px 14px !important;
           width: 100%;
           font-size: 13px;
           line-height: 1.4;
           outline: none;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-body);
           transition: border-color 0.15s ease, box-shadow 0.15s ease;
         }
         .auth-input::placeholder {
-          color: var(--ink-4) !important;
+          color: var(--ink-3) !important;
           opacity: 1;
         }
         .auth-input:focus {
-          border-color: var(--brand) !important;
-          box-shadow: 0 0 0 3px var(--brand-muted) !important;
+          border-color: var(--action) !important;
+          box-shadow: 0 0 0 3px color-mix(in srgb, var(--action) 22%, transparent) !important;
         }
         /* Defeat browser autofill white background */
         .auth-input:-webkit-autofill,
         .auth-input:-webkit-autofill:hover,
         .auth-input:-webkit-autofill:focus,
         .auth-input:-webkit-autofill:active {
-          -webkit-box-shadow: 0 0 0 1000px var(--surface-ink-subtle) inset !important;
-          -webkit-text-fill-color: var(--ink-7) !important;
-          caret-color: var(--ink-7) !important;
+          -webkit-box-shadow: 0 0 0 1000px #E9E2D3 inset !important; /* mirrors --paper-2 */
+          -webkit-text-fill-color: #1B1712 !important;                /* mirrors --ink */
+          caret-color: #1B1712 !important;                            /* mirrors --ink */
           transition: background-color 9999s ease-in-out 0s;
         }
         .auth-headline {
-          color: var(--paper) !important;
-          font-family: 'Cormorant Garamond', Georgia, serif !important;
+          color: var(--ink) !important;
+          font-family: var(--font-serif) !important;
           font-weight: 400 !important;
           font-size: 34px !important;
           letter-spacing: -0.02em !important;
@@ -272,66 +272,67 @@ const Auth = () => {
           opacity: 1 !important;
           text-shadow: none !important;
           background: none !important;
-          -webkit-text-fill-color: var(--paper) !important;
+          -webkit-text-fill-color: var(--ink) !important;
         }
         .auth-headline em {
           font-style: italic;
-          color: var(--brand);
-          -webkit-text-fill-color: var(--brand);
+          color: var(--spot);
+          -webkit-text-fill-color: var(--spot);
         }
         .auth-sublabel {
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-body);
           font-size: 13px;
-          color: var(--ink-5);
+          color: var(--ink-2);
           font-weight: 300;
           line-height: 1.6;
           margin-bottom: 28px;
         }
         .auth-tagline {
-          color: var(--ink-7) !important;
+          color: var(--glass) !important;
           opacity: 1 !important;
           font-size: 24px !important;
           font-weight: 400 !important;
           text-align: center !important;
-          font-family: 'Cormorant Garamond', Georgia, serif !important;
+          font-family: var(--font-serif) !important;
           line-height: 1.35 !important;
           letter-spacing: -0.01em !important;
           background: none !important;
-          -webkit-text-fill-color: var(--ink-7) !important;
+          -webkit-text-fill-color: var(--glass) !important;
         }
         .auth-feature-title {
-          color: var(--ink-7) !important;
+          color: var(--glass) !important;
           font-weight: 600 !important;
           font-size: 13px !important;
-          font-family: 'DM Sans', sans-serif !important;
+          font-family: var(--font-body) !important;
           margin-bottom: 2px !important;
           opacity: 1 !important;
         }
         .auth-feature-desc {
-          color: var(--ink-5) !important;
+          color: var(--glass-2) !important;
           font-size: 12px !important;
           font-weight: 300 !important;
           line-height: 1.5 !important;
-          font-family: 'DM Sans', sans-serif !important;
+          font-family: var(--font-body) !important;
           opacity: 1 !important;
         }
         .auth-label {
-          color: #6B6866 !important;
+          color: var(--ink-3) !important;
           font-size: 11px !important;
           font-weight: 600 !important;
-          letter-spacing: 0.06em !important;
-          font-family: 'DM Sans', sans-serif !important;
+          letter-spacing: 0.08em !important;
+          text-transform: uppercase !important;
+          font-family: var(--font-mono) !important;
           display: block;
           margin-bottom: 6px;
           opacity: 1 !important;
         }
         .auth-submit {
-          background: var(--brand);
-          color: var(--paper);
+          background: var(--action);
+          color: var(--ink);
           border: none;
           border-radius: 10px;
           padding: 13px;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-body);
           font-size: 14px;
           font-weight: 600;
           width: 100%;
@@ -343,7 +344,7 @@ const Auth = () => {
           justify-content: center;
           gap: 8px;
         }
-        .auth-submit:hover:not(:disabled) { background: var(--brand-hover); }
+        .auth-submit:hover:not(:disabled) { background: color-mix(in srgb, var(--action) 88%, black); }
         .auth-submit:disabled { opacity: 0.6; cursor: not-allowed; }
         .auth-google {
           background: var(--paper);
@@ -351,7 +352,7 @@ const Auth = () => {
           border: none;
           border-radius: 10px;
           padding: 12px;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-body);
           font-size: 13px;
           font-weight: 500;
           width: 100%;
@@ -363,13 +364,13 @@ const Auth = () => {
           transition: opacity 0.15s ease;
         }
         .auth-google:hover { opacity: 0.92; }
-        .auth-divider-line { height: 0.5px; background: var(--ink-3); flex: 1; }
-        .auth-divider-text { font-size: 11px; color: var(--ink-4); font-family: 'DM Sans', sans-serif; }
+        .auth-divider-line { height: 0.5px; background: var(--rule); flex: 1; }
+        .auth-divider-text { font-size: 11px; color: var(--ink-3); font-family: var(--font-mono); letter-spacing: 0.08em; }
         .auth-wordmark {
-          font-family: 'Cormorant Garamond', Georgia, serif;
+          font-family: var(--font-serif);
           font-weight: 500;
           font-size: 22px;
-          color: var(--paper);
+          color: var(--ink);
           letter-spacing: 0.04em;
           line-height: 1;
         }
@@ -378,27 +379,27 @@ const Auth = () => {
           font-weight: 600;
           letter-spacing: 0.12em;
           text-transform: uppercase;
-          color: var(--ink-4);
-          font-family: 'DM Sans', sans-serif;
+          color: var(--ink-3);
+          font-family: var(--font-mono);
           margin-top: 4px;
         }
         .auth-beta-pill {
           display: inline-flex;
           align-items: center;
           gap: 5px;
-          background: var(--brand-muted);
-          border: 0.5px solid var(--bronze-line);
+          background: color-mix(in srgb, var(--action) 14%, transparent);
+          border: 0.5px solid color-mix(in srgb, var(--action) 40%, transparent);
           border-radius: 20px;
           padding: 4px 12px;
           font-size: 10px;
           font-weight: 600;
-          color: var(--brand);
-          letter-spacing: 0.06em;
-          font-family: 'DM Sans', sans-serif;
+          color: var(--spot);
+          letter-spacing: 0.12em;
+          font-family: var(--font-mono);
         }
-        .auth-beta-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--brand); }
-        .auth-link { font-size: 12px; color: var(--ink-4); font-family: 'DM Sans', sans-serif; }
-        .auth-link-orange { color: var(--brand); font-weight: 500; }
+        .auth-beta-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--action); }
+        .auth-link { font-size: 12px; color: var(--ink-3); font-family: var(--font-body); }
+        .auth-link-orange { color: var(--spot); font-weight: 600; }
         .auth-brand-large {
           display: flex;
           justify-content: center;
@@ -407,8 +408,8 @@ const Auth = () => {
           width: 36px;
           height: 36px;
           border-radius: 10px;
-          background: var(--surface-ink-subtle);
-          border: 0.5px solid var(--ink-3);
+          background: var(--ob-panel);
+          border: 0.5px solid var(--hair);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -416,21 +417,25 @@ const Auth = () => {
         }
         .auth-footer-note {
           font-size: 10px;
-          color: #3A3836;
+          color: var(--glass-3);
           text-align: center;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-mono);
+          letter-spacing: 0.08em;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .auth-glow { animation: none !important; }
         }
       `}</style>
 
       {/* LEFT — auth form */}
       <div
         className="w-full md:w-[40%] min-h-screen flex items-center justify-center px-6 py-10"
-        style={{ backgroundColor: "var(--ink)" }}
+        style={{ backgroundColor: "var(--paper)" }}
       >
         <div className="w-full max-w-sm">
           {/* Logo */}
           <div className="flex items-center gap-3 mb-2">
-            <AuraLogo size={40} variant="dark" withWordmark />
+            <AuraLogo size={40} variant="auto" withWordmark />
             <div className="auth-wordmark-sub" style={{ marginTop: 0 }}>Turns your expertise into presence</div>
           </div>
 
@@ -452,7 +457,7 @@ const Auth = () => {
             {showNewPasswordForm
               ? "Enter your new password below."
               : resetSent
-                ? <>We sent a password reset link to <span style={{ color: "var(--ink-7)", fontWeight: 600 }}>{resetSentEmail}</span>.</>
+                ? <>We sent a password reset link to <span style={{ color: "var(--ink)", fontWeight: 600 }}>{resetSentEmail}</span>.</>
                 : hasEmailParam
                   ? "Welcome back — sign in to see your intelligence brief."
                   : dailyInsight}
@@ -462,10 +467,10 @@ const Auth = () => {
             <div className="space-y-4">
               <div
                 style={{
-                  fontFamily: "'DM Sans', sans-serif",
+                  fontFamily: "var(--font-body)",
                   fontSize: 12.5,
                   lineHeight: 1.625,
-                  color: "var(--ink-5)",
+                  color: "var(--ink-2)",
                   background: "var(--brand-muted)",
                   border: "0.5px solid var(--bronze-line)",
                   borderRadius: 10,
@@ -497,8 +502,8 @@ const Auth = () => {
                   type="button"
                   onClick={() => { setResetSent(false); }}
                   style={{
-                    color: "var(--ink-4)",
-                    fontFamily: "'DM Sans', sans-serif",
+                    color: "var(--ink-3)",
+                    fontFamily: "var(--font-body)",
                     fontSize: 14,
                     background: "none",
                     border: "none",
@@ -529,7 +534,7 @@ const Auth = () => {
                     style={{
                       position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
                       background: "transparent", border: 0, cursor: "pointer",
-                      color: "var(--ink-4)", padding: 4,
+                      color: "var(--ink-3)", padding: 4,
                     }}
                   >{showPwd ? <EyeOff size={16} /> : <Eye size={16} />}</button>
                 </div>
@@ -546,7 +551,7 @@ const Auth = () => {
                   onKeyDown={(e) => { if (e.key === "Enter") handleResetPassword(); }}
                 />
               </div>
-              <p className="text-xs" style={{ color: "var(--ink-4)" }}>Must be at least 8 characters.</p>
+              <p className="text-xs" style={{ color: "var(--ink-3)" }}>Must be at least 8 characters.</p>
               <button
                 type="button"
                 onClick={handleResetPassword}
@@ -562,10 +567,10 @@ const Auth = () => {
             {linkExpired ? (
               <div
                 style={{
-                  fontFamily: "'DM Sans', sans-serif",
+                  fontFamily: "var(--font-body)",
                   fontSize: 12.5,
                   lineHeight: 1.625,
-                  color: "var(--ink-6)",
+                  color: "var(--ink-2)",
                   background: "rgba(220, 80, 60, 0.08)",
                   border: "0.5px solid rgba(220, 80, 60, 0.35)",
                   borderRadius: 10,
@@ -577,10 +582,10 @@ const Auth = () => {
             ) : (
               <div
                 style={{
-                  fontFamily: "'DM Sans', sans-serif",
+                  fontFamily: "var(--font-body)",
                   fontSize: 12.5,
                   lineHeight: 1.625,
-                  color: "var(--ink-5)",
+                  color: "var(--ink-2)",
                   background: "var(--brand-muted)",
                   border: "0.5px solid var(--bronze-line)",
                   borderRadius: 10,
@@ -632,7 +637,7 @@ const Auth = () => {
                   style={{
                     position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
                     background: "transparent", border: 0, cursor: "pointer",
-                    color: "var(--ink-4)", padding: 4,
+                    color: "var(--ink-3)", padding: 4,
                   }}
                 >{showLoginPwd ? <EyeOff size={16} /> : <Eye size={16} />}</button>
               </div>
@@ -658,7 +663,7 @@ const Auth = () => {
                 className="hover:underline disabled:opacity-50"
                 style={{
                   color: "var(--brand)",
-                  fontFamily: "'DM Sans', sans-serif",
+                  fontFamily: "var(--font-body)",
                   fontSize: 14,
                   fontWeight: 600,
                   background: "none",
@@ -692,11 +697,11 @@ const Auth = () => {
       {/* RIGHT — brand panel (hidden on mobile) */}
       <div
         className="hidden md:flex md:w-[60%] min-h-screen relative items-center justify-center px-12"
-        style={{ backgroundColor: "var(--surface-ink-subtle, #1C1812)" }}
+        style={{ backgroundColor: "var(--ob-bg)" }}
       >
         {/* Centered radial glow */}
         <div
-          className="pointer-events-none"
+          className="pointer-events-none auth-glow"
           style={{
             position: "absolute",
             top: "50%",
@@ -705,7 +710,7 @@ const Auth = () => {
             width: 400,
             height: 400,
             background:
-              "radial-gradient(circle, hsl(43 50% 55% / 0.08) 0%, transparent 65%)",
+              "radial-gradient(circle, color-mix(in srgb, var(--action) 12%, transparent) 0%, transparent 65%)",
             zIndex: 0,
           }}
         />
@@ -718,24 +723,24 @@ const Auth = () => {
             Your expertise is invisible. Aura fixes that.
           </p>
 
-          <div className="mx-auto my-8" style={{ width: 40, height: 2, backgroundColor: "var(--brand)", opacity: 0.5 }} />
+          <div className="mx-auto my-8" style={{ width: 40, height: 2, backgroundColor: "var(--action)", opacity: 0.5 }} />
 
           <div className="space-y-6 text-left">
             <FeatureRow
               delay={300}
-              icon={<Radio className="w-4 h-4" style={{ color: "var(--brand)" }} />}
+              icon={<Radio className="w-4 h-4" style={{ color: "var(--action)" }} />}
               title="Signal intelligence"
               desc="Converts what you read into ranked market signals"
             />
             <FeatureRow
               delay={360}
-              icon={<PenLine className="w-4 h-4" style={{ color: "var(--brand)" }} />}
+              icon={<PenLine className="w-4 h-4" style={{ color: "var(--action)" }} />}
               title="Flash content"
               desc="LinkedIn posts in your voice, English or Arabic, in minutes"
             />
             <FeatureRow
               delay={420}
-              icon={<TrendingUp className="w-4 h-4" style={{ color: "var(--brand)" }} />}
+              icon={<TrendingUp className="w-4 h-4" style={{ color: "var(--action)" }} />}
               title="Imprint"
               desc="Tracks how your visibility compounds over time"
             />
