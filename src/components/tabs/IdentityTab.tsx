@@ -1081,8 +1081,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               }}>
                 <Star className="w-2 h-2" style={{ color: "var(--paper)" }} fill="currentColor" />
               </span>
-              <div style={{ fontSize: 11, fontWeight: 500, color: "var(--warning, var(--brand))", letterSpacing: "0.04em" }}>
-                NOW{tierName ? ` — ${tierName.toUpperCase()}` : ""}{(scoreTotal ?? authorityScore) != null ? ` · SCORE ${scoreTotal ?? authorityScore}` : ""}
+              <div style={{ fontFamily: "var(--font-mono, ui-monospace, monospace)", fontSize: 11, fontWeight: 500, color: "var(--action)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                NOW{(imprintTier?.name || tierName) ? ` — ${(imprintTier?.name || tierName)!.toUpperCase()}` : ""}{(imprintScore ?? scoreTotal ?? authorityScore) != null ? ` · SCORE ${imprintScore ?? scoreTotal ?? authorityScore}` : ""}
               </div>
               {(identityIntel?.primary_role || positioningTitle) && (
                 <div style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 500, color: "var(--ink)", marginTop: 3 }}>
