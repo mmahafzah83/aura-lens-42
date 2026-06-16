@@ -148,7 +148,7 @@ const DynamicActions = ({ state, onAction, disabled }: { state: string; onAction
           onMouseEnter={(e) => {
             (e.currentTarget as HTMLButtonElement).style.background = "var(--ob-panel)";
             (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--hair)";
-            (e.currentTarget as HTMLButtonElement).style.color = "var(--bronze)";
+            (e.currentTarget as HTMLButtonElement).style.color = "var(--action)";
           }}
           onMouseLeave={(e) => {
             (e.currentTarget as HTMLButtonElement).style.background = "var(--ob-raised)";
@@ -192,7 +192,7 @@ const WhisperSuggestions = ({ state, onAction, disabled }: { state: string; onAc
           }}
           onMouseEnter={(e) => {
             if (disabled) return;
-            (e.currentTarget as HTMLDivElement).style.color = "var(--bronze)";
+            (e.currentTarget as HTMLDivElement).style.color = "var(--action)";
             (e.currentTarget as HTMLDivElement).style.transform = "translateX(4px)";
           }}
           onMouseLeave={(e) => {
