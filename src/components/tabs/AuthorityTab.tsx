@@ -2014,7 +2014,7 @@ const PlanTab = ({ onGenerateFromPlan }: { onGenerateFromPlan: (prefill: PlanPre
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">Plan what to publish next based on signals and insights — sequence the moves that compound your influence.</p>
-        <Button variant="outline" size="sm" onClick={generatePlan} disabled={generating} className="gap-2">
+        <Button variant="outline" size="sm" onClick={generatePlan} disabled={generating} className="gap-2 border-border/40">
           {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
           Generate Plan
         </Button>
@@ -2025,7 +2025,7 @@ const PlanTab = ({ onGenerateFromPlan }: { onGenerateFromPlan: (prefill: PlanPre
           <Calendar className="w-8 h-8 text-primary/30 mx-auto" />
           <p className="text-foreground font-medium">No narrative plan yet</p>
           <p className="text-sm text-muted-foreground max-w-sm mx-auto">Generate an AI-powered content plan based on your strongest signals and frameworks.</p>
-          <Button onClick={generatePlan} disabled={generating} className="gap-2">
+          <Button onClick={generatePlan} disabled={generating} className="gap-2 border-border/40">
             {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
             Generate Plan
           </Button>
@@ -2052,17 +2052,17 @@ const PlanTab = ({ onGenerateFromPlan }: { onGenerateFromPlan: (prefill: PlanPre
 
                 <div className="space-y-2">
                   {items.map(s => (
-                    <div key={s.id} className="glass-card rounded-xl p-5 border border-border/8 hover:border-primary/15 transition-all">
+                    <div key={s.id} className="rounded-xl p-5 border border-border/30 hover:border-primary/30 transition-all" style={{ background: "var(--paper-2)" }}>
                       <p className="text-sm font-semibold text-foreground mb-1">{s.topic}</p>
                       <p className="text-xs text-muted-foreground leading-relaxed mb-2">{s.angle}</p>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span className="px-2 py-0.5 rounded-full bg-primary/8 text-primary/70 font-medium">{s.reason}</span>
+                        <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{s.reason}</span>
                         <span className="ml-auto">{formatSmartDate(s.created_at)}</span>
                       </div>
                       <Button
                         size="sm"
                         variant="outline"
-                        className="mt-3 h-7 text-xs gap-1.5 border-border/15"
+                        className="mt-3 h-7 text-xs gap-1.5 border-border/40"
                         onClick={() => {
                           onGenerateFromPlan({
                             topic: s.topic,
