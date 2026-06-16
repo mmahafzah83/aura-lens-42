@@ -388,6 +388,10 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
   const [preferredStructures, setPreferredStructures] = useState<string[]>([]);
   const [profileName, setProfileName] = useState<string>("");
   const [profileRole, setProfileRole] = useState<string>("");
+  const [profileLoaded, setProfileLoaded] = useState<boolean>(false);
+  // Race-fix: hold the most recently requested signal_id so a generate()
+  // fired immediately after signalPrefill arrives can't outrun React state.
+  const pendingSignalIdRef = useRef<string | null>(null);
   const [planRef, setPlanRef] = useState<string | null>(null);
 
   // Short version state
@@ -504,6 +508,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
           if (Array.isArray(ps)) setPreferredStructures(ps.map((s: any) => typeof s === "string" ? s : JSON.stringify(s)));
           else if (typeof ps === "string") setPreferredStructures([ps]);
         }
+        setProfileLoaded(true);
       });
     })();
   }, [lang]);
@@ -562,6 +567,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
         setFramework("hook_insight_question");
       }
       setSelectedSignalId(signalPrefill.signalId || null);
+      pendingSignalIdRef.current = signalPrefill.signalId || null;
       setSelectedSignalTitle(signalPrefill.signalTitle || null);
       setSelectedSignalInsight(signalPrefill.context || null);
       setOutput("");
@@ -653,7 +659,8 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
         language: effLang,
         framework: effFramework !== "auto" ? effFramework : undefined,
         extra_instruction: extraPromptInstruction,
-        signal_id: selectedSignalId,
+        // Race-fix: prefer freshly-set ref while React flushes setSelectedSignalId
+        signal_id: selectedSignalId ?? pendingSignalIdRef.current,
         stream: false,
       }),
       signal: overrides?.signal,
@@ -1070,6 +1077,24 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
         {/* Hero CTA — top signal */}
         {(() => {
           if (contentType === "flash" || contentType === "framework_summary") return null;
+          // Race-fix: avoid an empty-pill flash by waiting for profile resolve
+          if (!profileLoaded) {
+            return (
+              <div
+                aria-hidden
+                style={{
+                  background: "var(--paper-2)",
+                  borderRadius: 16,
+                  padding: 22,
+                  border: "0.5px solid var(--rule)",
+                }}
+              >
+                <div className="pub-skel" style={{ height: 10, width: 120, marginBottom: 12 }} />
+                <div className="pub-skel" style={{ height: 22, width: "70%", marginBottom: 10 }} />
+                <div className="pub-skel" style={{ height: 10, width: "40%" }} />
+              </div>
+            );
+          }
           const activeSignal = (selectedSignalId && _signals.find(s => s.id === selectedSignalId)) || _signals[0];
           if (!activeSignal) return null;
           const isCustomAngle = !!(selectedSignalTitle && selectedSignalTitle !== activeSignal.signal_title) || (!!topic && topic !== activeSignal.signal_title);
@@ -1078,25 +1103,25 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
           <div
             id="aura-hero-cta"
             style={{
-              background: "var(--ink)",
+              background: "var(--paper-2)",
               borderRadius: 16,
               padding: 22,
-              boxShadow: "var(--shadow-sm)",
-              color: "var(--paper)",
+              border: "0.5px solid var(--rule)",
+              color: "var(--ink)",
             }}
           >
-            <div style={{ fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--paper)", opacity: 0.6, marginBottom: 10, fontWeight: 600 }}>
+            <div className="pub-micro pub-micro--spot" style={{ marginBottom: 10 }}>
               {isCustomAngle ? "Selected post angle" : "Generate from your top signal"}
             </div>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 500, color: "var(--paper)", lineHeight: 1.375, margin: 0 }}>
+            <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 22, fontWeight: 500, color: "var(--ink)", lineHeight: 1.3, margin: 0 }}>
               {heroTitle}
             </h2>
             {isCustomAngle && (
-              <div style={{ fontSize: 12, color: "var(--paper)", opacity: 0.6, marginTop: 6 }}>
+              <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 6 }}>
                 From signal: {activeSignal.signal_title} · {Math.round((activeSignal.confidence ?? 0) * 100)}%
               </div>
             )}
-            <div style={{ fontSize: 12, color: "var(--brand)", marginTop: 8, fontWeight: 500 }}>
+            <div style={{ fontSize: 12, color: "var(--spot)", marginTop: 8, fontWeight: 500 }}>
               {Math.round((activeSignal.confidence ?? 0) * 100)}% · {activeSignal.fragment_count ?? 0} findings · {activeSignal.unique_orgs ?? 0} organizations
             </div>
             <div className="flex flex-col sm:flex-row gap-2 mt-4">
@@ -1110,28 +1135,30 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                   if (!isCustomAngle) {
                     selectSuggestion(activeSignal.signal_title, activeSignal.explanation || "", "post", activeSignal.signal_title, activeSignal.explanation || "");
                     setSelectedSignalId(activeSignal.id);
+                    pendingSignalIdRef.current = activeSignal.id;
                   }
                   generate({ topic: heroTopic, context: heroContext, contentType: "post", language: lang, framework });
                 }}
-                style={{ flex: 1, gap: 6, color: "var(--paper)" }}
+                style={{ flex: 1, gap: 6 }}
               >
                 Generate post <ArrowRight className="w-4 h-4" />
               </AuraButton>
-              <div className="flex gap-1 rounded-[10px] p-0.5" style={{ background: "rgba(0,0,0,0.06)" }}>
+              <div className="flex gap-1 rounded-[10px] p-0.5" style={{ background: "var(--paper-3)" }}>
                 <button
                   onClick={() => setLang("en")}
                   style={{
-                    background: lang === "en" ? "rgba(0,0,0,0.10)" : "transparent",
-                    color: lang === "en" ? "var(--paper)" : "color-mix(in srgb, var(--paper) 60%, transparent)",
+                    background: lang === "en" ? "var(--paper)" : "transparent",
+                    color: lang === "en" ? "var(--ink)" : "var(--ink-3)",
                     border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 500, cursor: "pointer",
                   }}
                 >EN</button>
                 <button
                   onClick={() => setLang("ar")}
                   style={{
-                    background: lang === "ar" ? "rgba(0,0,0,0.10)" : "transparent",
-                    color: lang === "ar" ? "var(--paper)" : "color-mix(in srgb, var(--paper) 60%, transparent)",
+                    background: lang === "ar" ? "var(--paper)" : "transparent",
+                    color: lang === "ar" ? "var(--ink)" : "var(--ink-3)",
                     border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 500, cursor: "pointer",
+                    fontFamily: "var(--arabic), 'Cairo', sans-serif",
                   }}
                 >العربية</button>
               </div>
@@ -2843,8 +2870,16 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
   const [topSignal, setTopSignal] = useState<{ id: string; signal_title: string } | null>(null);
   const [signalCount, setSignalCount] = useState<number>(0);
   const navigate = useNavigate();
+  // Race-fix: don't let realtime INSERTs trigger a parallel refetch
+  // before the initial loadPosts() has settled.
+  const initialLoadDoneRef = useRef(false);
 
-  useEffect(() => { loadPosts(); loadProfile(); loadSignalContext(); }, []);
+  useEffect(() => {
+    initialLoadDoneRef.current = false;
+    loadPosts().finally(() => { initialLoadDoneRef.current = true; });
+    loadProfile();
+    loadSignalContext();
+  }, []);
 
   // Realtime: refetch library when this user's linkedin_posts change.
   useEffect(() => {
@@ -2858,7 +2893,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "linkedin_posts", filter: `user_id=eq.${user.id}` },
-          () => { loadPosts(); },
+          () => { if (initialLoadDoneRef.current) loadPosts(); },
         )
         .subscribe();
     })();
@@ -3585,14 +3620,14 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
   }, [draftPrefill]);
 
   return (
-    <div className="space-y-8">
+    <div className="publish-page space-y-8" style={{ background: "var(--paper)", minHeight: "100%" }}>
       <FirstVisitHint page="publish" />
       {/* Branded header — visible on every sub-tab (Create, Library, Plan) */}
       <div>
-        <div className="font-serif text-base font-medium tracking-wide text-ink-4" style={{ marginBottom: 6 }}>
+        <div className="pub-micro" style={{ marginBottom: 6 }}>
           Your content engine
         </div>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
+        <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 34, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
           Publish
         </h1>
         <p style={{ fontSize: 14, color: "var(--ink-3)", marginTop: 8, lineHeight: 1.5, maxWidth: 640 }}>
@@ -3616,11 +3651,10 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
       <div
         className="inline-flex"
         style={{
-          background: "var(--aura-card)",
+          background: "var(--paper-2)",
           borderRadius: 12,
           padding: 4,
-          boxShadow: "var(--shadow-sm)",
-          border: "0.5px solid hsl(var(--border))",
+          border: "0.5px solid var(--rule)",
           gap: 2,
         }}
       >
@@ -3639,10 +3673,11 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
                 borderRadius: 9,
                 border: "none",
                 cursor: "pointer",
-                fontFamily: "'DM Sans', sans-serif",
-                background: active ? "var(--brand)" : "transparent",
-                color: active ? "#fff" : "var(--ink-4)",
+                fontFamily: "var(--font-serif), Georgia, serif",
+                background: active ? "var(--paper)" : "transparent",
+                color: active ? "var(--ink)" : "var(--ink-3)",
                 fontWeight: active ? 600 : 500,
+                boxShadow: active ? "0 1px 2px rgba(27,23,18,0.08)" : "none",
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 6,
