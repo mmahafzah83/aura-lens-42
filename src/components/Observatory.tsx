@@ -27,7 +27,6 @@ import { InfoTooltip } from "@/components/ui/InfoTooltip";
 
 import { useAuthReady } from "@/hooks/useAuthReady";
 import { useJourneyState } from "@/hooks/useJourneyState";
-import { applyPublishedFilter, filterPublishedRows } from "@/lib/postProvenance";
 import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/ui/EmptyState";
 import {
