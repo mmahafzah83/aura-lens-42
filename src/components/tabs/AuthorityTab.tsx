@@ -388,6 +388,10 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
   const [preferredStructures, setPreferredStructures] = useState<string[]>([]);
   const [profileName, setProfileName] = useState<string>("");
   const [profileRole, setProfileRole] = useState<string>("");
+  const [profileLoaded, setProfileLoaded] = useState<boolean>(false);
+  // Race-fix: hold the most recently requested signal_id so a generate()
+  // fired immediately after signalPrefill arrives can't outrun React state.
+  const pendingSignalIdRef = useRef<string | null>(null);
   const [planRef, setPlanRef] = useState<string | null>(null);
 
   // Short version state
