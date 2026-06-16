@@ -706,19 +706,66 @@ const Observatory = ({
     try {
       const { data, error } = await supabase
         .from("imprint_snapshots")
-        .select("imprint, created_at")
+        .select("imprint, components, created_at")
         .eq("user_id", uid)
         .order("created_at", { ascending: false })
-        .limit(2);
+        .limit(30);
       if (error) throw error;
-      const rows = (data || []) as Array<{ imprint: number | null; created_at: string }>;
-      const latest = rows[0]?.imprint ?? null;
-      const prior = rows[1]?.imprint ?? null;
-      const delta = latest != null && prior != null ? Math.round(latest - prior) : null;
-      setImprint({ score: latest, delta, loading: false });
+      const rows = (data || []) as Array<{
+        imprint: number | null;
+        components: any;
+        created_at: string;
+      }>;
+      const latestRow = rows[0];
+      const latest = latestRow?.imprint != null ? Number(latestRow.imprint) : null;
+
+      // 7-day-ago lookback. Among rows older than ~1 day before latest, pick
+      // the one closest to latest.created_at − 7d. If none, delta = 0.
+      let delta: number | null = null;
+      if (latest != null && rows.length > 1) {
+        const latestTs = new Date(latestRow.created_at).getTime();
+        const targetTs = latestTs - 7 * 24 * 60 * 60 * 1000;
+        const minGapMs = 24 * 60 * 60 * 1000;
+        const candidates = rows.slice(1).filter(r =>
+          r.imprint != null && (latestTs - new Date(r.created_at).getTime()) >= minGapMs,
+        );
+        if (candidates.length > 0) {
+          const closest = candidates.reduce((best, r) => {
+            const d = Math.abs(new Date(r.created_at).getTime() - targetTs);
+            return d < best.d ? { row: r, d } : best;
+          }, { row: candidates[0], d: Math.abs(new Date(candidates[0].created_at).getTime() - targetTs) });
+          delta = Math.round(latest - Number(closest.row.imprint));
+        } else {
+          delta = 0;
+        }
+      }
+
+      // Week shape: last up-to-7 daily imprint values (one per day, latest first → reverse).
+      const dayMap = new Map<string, number>();
+      for (const r of rows) {
+        if (r.imprint == null) continue;
+        const day = new Date(r.created_at).toISOString().slice(0, 10);
+        if (!dayMap.has(day)) dayMap.set(day, Number(r.imprint));
+      }
+      const weekShape = Array.from(dayMap.entries())
+        .slice(0, 7)
+        .reverse()
+        .map(([, v]) => v);
+
+      // score_components from latest row (if present).
+      const sc = latestRow?.components?.score_components;
+      const components: ScoreComponents | null = sc && typeof sc === "object"
+        ? {
+            signal_score: Number(sc.signal_score ?? 0),
+            content_score: Number(sc.content_score ?? 0),
+            capture_score: Number(sc.capture_score ?? 0),
+          }
+        : null;
+
+      setImprint({ score: latest, delta, components, weekShape, loading: false });
     } catch (e) {
       console.warn("[Observatory] imprint load failed", e);
-      setImprint({ score: null, delta: null, loading: false });
+      setImprint({ score: null, delta: null, components: null, weekShape: [], loading: false });
     }
   }, []);
 
@@ -730,13 +777,20 @@ const Observatory = ({
         .eq("user_id", uid);
       if (error) throw error;
       const rows = (data || []) as Array<{ facet: string; value: number | null; uncertainty: number | null }>;
+      // facet_states keys are lowercase canonical (identity, edge, voice, focus,
+      // audience, discernment, conviction). Map to display facet names.
       const norm: FacetRow[] = rows
-        .map(r => ({
-          facet: (r.facet || "").trim() as FacetKey,
-          value: r.value == null ? null : Number(r.value),
-          uncertainty: r.uncertainty == null ? null : Number(r.uncertainty),
-        }))
-        .filter(r => FACET_ORDER.includes(r.facet));
+        .map(r => {
+          const key = (r.facet || "").trim().toLowerCase();
+          const display = FACET_DB_TO_DISPLAY[key];
+          if (!display) return null;
+          return {
+            facet: display,
+            value: r.value == null ? null : Number(r.value),
+            uncertainty: r.uncertainty == null ? null : Number(r.uncertainty),
+          } as FacetRow;
+        })
+        .filter((r): r is FacetRow => r !== null);
       setFacets({ rows: norm, loading: false });
     } catch (e) {
       console.warn("[Observatory] facets load failed", e);
@@ -744,36 +798,15 @@ const Observatory = ({
     }
   }, []);
 
-  const loadActivity = useCallback(async (uid: string) => {
-    try {
-      const sinceIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-      const [pubContent, pubLiRes, rhythmRes] = await Promise.all([
-        supabase.from("content_items").select("id", { count: "exact", head: true })
-          .eq("user_id", uid).eq("status", "published"),
-        // Canonical published-post definition (src/lib/postProvenance.ts).
-        // All-time, no window — honest "posts shipped" count.
-        applyPublishedFilter(
-          supabase.from("linkedin_posts")
-            .select("id, source_type, tracking_status")
-            .eq("user_id", uid) as any,
-        ),
-        supabase.from("entries").select("id", { count: "exact", head: true })
-          .eq("user_id", uid).gte("created_at", sinceIso),
-      ]);
-      const liPublished = filterPublishedRows(((pubLiRes as any)?.data as any[]) || []).length;
-      setPublishedCount((pubContent.count || 0) + liPublished);
-      setRhythmCount(rhythmRes.count || 0);
-    } catch (e) {
-      console.warn("[Observatory] activity load failed", e);
-    }
-  }, []);
+  // (loadActivity removed — the raw published/rhythm readouts are replaced by
+  // the ContributionBar reading score_components from imprint_snapshots.)
 
   // ── Race-free bootstrap: gate every fetch on authReady + user ──
   useEffect(() => {
     if (!authReady) return;
     if (!authUser?.id) {
       setSignalsLoading(false);
-      setImprint({ score: null, delta: null, loading: false });
+      setImprint({ score: null, delta: null, components: null, weekShape: [], loading: false });
       setFacets({ rows: [], loading: false });
       return;
     }
@@ -781,8 +814,7 @@ const Observatory = ({
     void loadSignals(uid);
     void loadImprint(uid);
     void loadFacets(uid);
-    void loadActivity(uid);
-  }, [authReady, authUser?.id, loadSignals, loadImprint, loadFacets, loadActivity]);
+  }, [authReady, authUser?.id, loadSignals, loadImprint, loadFacets]);
 
   // Refetch on capture-complete
   useEffect(() => {
@@ -790,11 +822,11 @@ const Observatory = ({
     const handler = () => {
       const uid = authUser.id;
       void loadSignals(uid);
-      void loadActivity(uid);
+      void loadImprint(uid);
     };
     window.addEventListener("capture-complete", handler);
     return () => window.removeEventListener("capture-complete", handler);
-  }, [authUser?.id, loadSignals, loadActivity]);
+  }, [authUser?.id, loadSignals, loadImprint]);
 
   // Realtime subscriptions (gated on user)
   useEffect(() => {
