@@ -467,7 +467,7 @@ const Auth = () => {
             <div className="space-y-4">
               <div
                 style={{
-                  fontFamily: "'DM Sans', sans-serif",
+                  fontFamily: "var(--font-body)",
                   fontSize: 12.5,
                   lineHeight: 1.625,
                   color: "var(--ink-2)",
@@ -503,7 +503,7 @@ const Auth = () => {
                   onClick={() => { setResetSent(false); }}
                   style={{
                     color: "var(--ink-3)",
-                    fontFamily: "'DM Sans', sans-serif",
+                    fontFamily: "var(--font-body)",
                     fontSize: 14,
                     background: "none",
                     border: "none",
@@ -567,7 +567,7 @@ const Auth = () => {
             {linkExpired ? (
               <div
                 style={{
-                  fontFamily: "'DM Sans', sans-serif",
+                  fontFamily: "var(--font-body)",
                   fontSize: 12.5,
                   lineHeight: 1.625,
                   color: "var(--ink-2)",
@@ -582,7 +582,7 @@ const Auth = () => {
             ) : (
               <div
                 style={{
-                  fontFamily: "'DM Sans', sans-serif",
+                  fontFamily: "var(--font-body)",
                   fontSize: 12.5,
                   lineHeight: 1.625,
                   color: "var(--ink-2)",
@@ -663,7 +663,7 @@ const Auth = () => {
                 className="hover:underline disabled:opacity-50"
                 style={{
                   color: "var(--brand)",
-                  fontFamily: "'DM Sans', sans-serif",
+                  fontFamily: "var(--font-body)",
                   fontSize: 14,
                   fontWeight: 600,
                   background: "none",
