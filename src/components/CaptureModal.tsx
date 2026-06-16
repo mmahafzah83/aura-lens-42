@@ -694,7 +694,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
         style={{
           position: "fixed", inset: 0, zIndex: 20000,
           display: "flex", alignItems: "center", justifyContent: "center",
-          background: "rgba(10, 8, 5, 0.78)",
+          background: "rgba(4, 8, 12, 0.78)",
           backdropFilter: "blur(6px)",
           animation: "fade-up-in 360ms ease both",
         }}
@@ -707,8 +707,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
             maxWidth: 460,
             padding: "44px 36px 32px",
             textAlign: "center",
-            background: "var(--paper)",
-            border: "1px solid var(--brand-line, rgba(176,141,58,0.28))",
+            background: "var(--ob-panel)",
+            border: "1px solid var(--hair)",
             borderRadius: 16,
             boxShadow: "0 30px 80px -20px rgba(0,0,0,0.5)",
           }}
@@ -719,7 +719,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
             style={{
               position: "absolute", top: 14, left: "50%",
               width: 220, height: 220, transform: "translateX(-50%)",
-              background: "radial-gradient(circle, color-mix(in srgb, var(--bronze) 25%, transparent) 0%, transparent 65%)",
+              background: "radial-gradient(circle, color-mix(in srgb, var(--action) 22%, transparent) 0%, transparent 65%)",
               pointerEvents: "none",
             }}
           />
@@ -727,15 +727,15 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
             className="aura-gold-pulse"
             style={{
               position: "relative", fontSize: 42, lineHeight: 1,
-              color: "var(--bronze)",
+              color: "var(--action)",
               marginBottom: 18,
             }}
           >✦</div>
           <h2
             style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontFamily: "var(--font-serif)",
               fontSize: 26, fontWeight: 500,
-              color: "var(--ink)",
+              color: "var(--glass)",
               letterSpacing: "-0.01em",
               margin: "0 0 12px",
             }}
@@ -745,7 +745,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
           <p
             style={{
               fontSize: 14, lineHeight: 1.65,
-              color: "var(--ink-3)",
+              color: "var(--glass-2)",
               margin: "0 auto 20px", maxWidth: 360,
             }}
           >
@@ -760,8 +760,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                 window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "intelligence" } }));
               }}
               style={{
-                background: "var(--bronze)",
-                color: "var(--paper)",
+                background: "var(--action)",
+                color: "var(--ink-on-brand)",
                 border: 0, borderRadius: 8,
                 padding: "10px 22px",
                 fontSize: 14, fontWeight: 600,
@@ -776,9 +776,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
             onClick={() => setFirstCeremonyOpen(false)}
             aria-label="Close"
             style={{
-              position: "absolute", top: 12, right: 12,
+              position: "absolute", top: 12, insetInlineEnd: 12,
               background: "transparent", border: 0,
-              color: "var(--ink-4)", cursor: "pointer",
+              color: "var(--glass-2)", cursor: "pointer",
             }}
           >
             <X size={16} />
