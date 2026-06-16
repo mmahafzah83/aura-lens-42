@@ -1403,15 +1403,15 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                       width: 64,
                       height: 64,
                       borderRadius: "50%",
-                      background: "var(--surface-subtle)",
+                      background: "var(--ob-field)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                     }}
                   >
-                    <Loader2 className="w-7 h-7 animate-spin" style={{ color: "var(--brand)" }} />
+                    <Loader2 className="w-7 h-7 animate-spin" style={{ color: "var(--live)" }} />
                   </div>
-                  <p style={{ fontSize: 14, color: "var(--ink-5)", margin: 0 }}>Transcribing…</p>
+                  <p style={{ fontSize: 14, color: "var(--glass-2)", margin: 0 }}>Transcribing…</p>
                 </>
               ) : (
                 <>
@@ -1438,10 +1438,10 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      background: isRecording ? "var(--error)" : "var(--brand)",
+                      background: isRecording ? "var(--neg)" : "var(--action)",
                       boxShadow: isRecording
-                        ? "0 4px 20px color-mix(in srgb, var(--error) 40%, transparent)" /* danger glow */
-                        : "var(--shadow-brand)",
+                        ? "0 4px 20px color-mix(in srgb, var(--neg) 40%, transparent)"
+                        : "0 4px 20px color-mix(in srgb, var(--action) 35%, transparent)",
                       transition: "background 200ms ease",
                     }}
                     aria-label={isRecording ? "Stop recording" : "Start recording"}
@@ -1454,28 +1454,29 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                   </button>
                   <div
                     style={{
-                      fontFamily: "'DM Serif Display', Georgia, serif",
+                      fontFamily: "var(--font-serif)",
                       fontSize: 22,
-                      color: "var(--brand)",
+                      color: isRecording ? "var(--live)" : "var(--glass)",
                       letterSpacing: "-0.02em",
                       lineHeight: 1.5,
+                      fontVariantNumeric: "tabular-nums",
                     }}
                   >
                     {fmtMMSS(recordingSeconds)}
                   </div>
                   {!isRecording && (
-                    <p style={{ fontSize: 12, color: "var(--ink-5)", margin: 0 }}>Tap to record</p>
+                    <p style={{ fontSize: 12, color: "var(--glass-2)", margin: 0 }}>Tap to record</p>
                   )}
                 </>
               )}
               {!isRecording && !isTranscribing && (
                 <div className="w-full" style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
                   {transcriptionFailed && (
-                    <p style={{ fontSize: 12, color: "var(--ink)", margin: 0 }}>
+                    <p style={{ fontSize: 12, color: "var(--glass)", margin: 0 }}>
                       Auto-transcription unavailable. Type your notes manually.
                     </p>
                   )}
-                  <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-4)", margin: 0 }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--glass-2)", margin: 0, fontFamily: "'IBM Plex Mono', ui-monospace, monospace" }}>
                     Transcript
                   </p>
                   <textarea
@@ -1486,12 +1487,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                     placeholder="Transcript will appear here…"
                     style={{
                       width: "100%",
-                      background: "var(--surface-subtle)",
-                      border: "0.5px solid var(--border)",
+                      background: "var(--ob-field)",
+                      border: "0.5px solid var(--glass-3)",
                       borderRadius: 12,
                       padding: "12px 14px",
                       fontSize: 14,
-                      color: "var(--ink)",
+                      color: "var(--glass)",
                       resize: "none",
                       outline: "none",
                       
@@ -1509,15 +1510,15 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
               onClick={handleSave}
               disabled={saving || isRecording || isTranscribing || analyzing || (captureType === "image" ? !imageFile : !content.trim())}
               onMouseEnter={(e) => {
-                if (!e.currentTarget.disabled) e.currentTarget.style.background = "var(--brand-hover)";
+                if (!e.currentTarget.disabled) e.currentTarget.style.background = "color-mix(in srgb, var(--action) 88%, black)";
               }}
               onMouseLeave={(e) => {
-                if (!e.currentTarget.disabled) e.currentTarget.style.background = "var(--brand)";
+                if (!e.currentTarget.disabled) e.currentTarget.style.background = "var(--action)";
               }}
               style={{
                 width: "100%",
-                background: "var(--brand)",
-                color: "var(--paper)",
+                background: "var(--action)",
+                color: "var(--ink-on-brand)",
                 border: "none",
                 borderRadius: 12,
                 padding: 14,
