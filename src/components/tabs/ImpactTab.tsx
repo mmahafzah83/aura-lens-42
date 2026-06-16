@@ -1384,7 +1384,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
-      className="space-y-7 max-w-5xl"
+      className="statement-page space-y-7 max-w-5xl"
     >
       {/* ─────────── 1. PAGE HEADER ─────────── */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24 }}>
