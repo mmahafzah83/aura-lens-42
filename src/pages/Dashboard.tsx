@@ -144,6 +144,24 @@ const Dashboard = () => {
   // Database-driven design tokens (overrides CSS fallbacks via inline style)
   useDesignTokens("light");
 
+  // Tier derived from imprint_snapshots (replaces retired calculate-aura-score
+  // tier_name / newly_earned payload). A band crossing fires the ceremony
+  // and the milestone toast at Dashboard level so both surface from any tab.
+  const tierImprint = useTierFromImprint(userId);
+  const [tierCeremonyOpen, setTierCeremonyOpen] = useState(false);
+  useEffect(() => {
+    if (tierImprint.crossed && tierImprint.currentTier) setTierCeremonyOpen(true);
+  }, [tierImprint.crossed, tierImprint.currentTier]);
+  const tierMilestoneAuraData = tierImprint.crossed && tierImprint.currentTier
+    ? {
+        newly_earned: [`tier_${tierImprint.currentTier.key}`],
+        milestones: [{
+          id: `tier_${tierImprint.currentTier.key}`,
+          name: `${tierImprint.currentTier.name} tier`,
+        }],
+      }
+    : null;
+
   // Sprint F2 — observe cards for entry fade/slide animation.
   // Re-runs when the active tab changes so newly mounted cards get observed.
   useCardEntryAnimation(null, [activeTab]);
