@@ -457,7 +457,7 @@ const Auth = () => {
             {showNewPasswordForm
               ? "Enter your new password below."
               : resetSent
-                ? <>We sent a password reset link to <span style={{ color: "var(--ink-7)", fontWeight: 600 }}>{resetSentEmail}</span>.</>
+                ? <>We sent a password reset link to <span style={{ color: "var(--ink)", fontWeight: 600 }}>{resetSentEmail}</span>.</>
                 : hasEmailParam
                   ? "Welcome back — sign in to see your intelligence brief."
                   : dailyInsight}
@@ -470,7 +470,7 @@ const Auth = () => {
                   fontFamily: "'DM Sans', sans-serif",
                   fontSize: 12.5,
                   lineHeight: 1.625,
-                  color: "var(--ink-5)",
+                  color: "var(--ink-2)",
                   background: "var(--brand-muted)",
                   border: "0.5px solid var(--bronze-line)",
                   borderRadius: 10,
@@ -502,7 +502,7 @@ const Auth = () => {
                   type="button"
                   onClick={() => { setResetSent(false); }}
                   style={{
-                    color: "var(--ink-4)",
+                    color: "var(--ink-3)",
                     fontFamily: "'DM Sans', sans-serif",
                     fontSize: 14,
                     background: "none",
@@ -534,7 +534,7 @@ const Auth = () => {
                     style={{
                       position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
                       background: "transparent", border: 0, cursor: "pointer",
-                      color: "var(--ink-4)", padding: 4,
+                      color: "var(--ink-3)", padding: 4,
                     }}
                   >{showPwd ? <EyeOff size={16} /> : <Eye size={16} />}</button>
                 </div>
@@ -551,7 +551,7 @@ const Auth = () => {
                   onKeyDown={(e) => { if (e.key === "Enter") handleResetPassword(); }}
                 />
               </div>
-              <p className="text-xs" style={{ color: "var(--ink-4)" }}>Must be at least 8 characters.</p>
+              <p className="text-xs" style={{ color: "var(--ink-3)" }}>Must be at least 8 characters.</p>
               <button
                 type="button"
                 onClick={handleResetPassword}
@@ -570,7 +570,7 @@ const Auth = () => {
                   fontFamily: "'DM Sans', sans-serif",
                   fontSize: 12.5,
                   lineHeight: 1.625,
-                  color: "var(--ink-6)",
+                  color: "var(--ink-2)",
                   background: "rgba(220, 80, 60, 0.08)",
                   border: "0.5px solid rgba(220, 80, 60, 0.35)",
                   borderRadius: 10,
@@ -585,7 +585,7 @@ const Auth = () => {
                   fontFamily: "'DM Sans', sans-serif",
                   fontSize: 12.5,
                   lineHeight: 1.625,
-                  color: "var(--ink-5)",
+                  color: "var(--ink-2)",
                   background: "var(--brand-muted)",
                   border: "0.5px solid var(--bronze-line)",
                   borderRadius: 10,
@@ -637,7 +637,7 @@ const Auth = () => {
                   style={{
                     position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
                     background: "transparent", border: 0, cursor: "pointer",
-                    color: "var(--ink-4)", padding: 4,
+                    color: "var(--ink-3)", padding: 4,
                   }}
                 >{showLoginPwd ? <EyeOff size={16} /> : <Eye size={16} />}</button>
               </div>
