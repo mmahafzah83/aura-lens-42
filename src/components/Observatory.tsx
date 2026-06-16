@@ -23,6 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import SectionError from "@/components/ui/section-error";
 import SourcesSubTab from "@/components/tabs/SourcesSubTab";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 
 import { useAuthReady } from "@/hooks/useAuthReady";
 import { useJourneyState } from "@/hooks/useJourneyState";
