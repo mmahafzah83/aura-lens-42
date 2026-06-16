@@ -48,7 +48,7 @@ function percentileFor(avg: number): string {
   return "a unique profile";
 }
 
-const BRONZE = "var(--bronze)";
+const BRONZE = "var(--action)";
 const TRACK = "var(--hairline)";
 
 interface CustomSliderProps {
@@ -255,7 +255,7 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
               animate={{ x: 0 }}
               transition={{ duration: 0.5, ease: "easeOut" }}
               style={{
-                fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
+                fontFamily: "var(--serif)",
                 fontSize: 22, color: BRONZE, marginBottom: 10, lineHeight: 1.3,
                 display: "inline-flex", alignItems: "center", gap: 8,
               }}
@@ -322,7 +322,7 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
                 className="font-semibold transition-all flex items-center justify-center gap-2"
                 style={{
                   height: 44, padding: "0 22px", minWidth: 140,
-                  background: BRONZE, color: "var(--ink-on-brand)",
+                  background: BRONZE, color: "var(--ink)",
                   borderRadius: 10, fontSize: 14,
                 }}
               >
@@ -416,7 +416,7 @@ const SummaryCard = ({ summary, scores, submitting, reduceMotion, onFinish, onBa
     <div style={{ textAlign: "center" }}>
       <div style={{ fontSize: 24, color: BRONZE, marginBottom: 12 }}>✦</div>
       <h2 style={{
-        fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
+        fontFamily: "var(--serif)",
         fontSize: 22, color: "hsl(var(--foreground))", marginBottom: 24,
       }}>
         Your Calibration
@@ -489,7 +489,7 @@ const SummaryCard = ({ summary, scores, submitting, reduceMotion, onFinish, onBa
           className="font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-50"
           style={{
             height: 44, padding: "0 22px",
-            background: BRONZE, color: "var(--ink-on-brand)",
+            background: BRONZE, color: "var(--ink)",
             borderRadius: 10, fontSize: 14,
           }}
         >
