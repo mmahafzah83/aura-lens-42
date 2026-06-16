@@ -158,7 +158,7 @@ const ExpandablePanel = ({
         style={{
           background: "none", border: "none", padding: 0, cursor: "pointer",
           display: "inline-flex", alignItems: "center", gap: 5,
-          fontSize: 12, color: "var(--ink-3)",
+          fontSize: 12, color: "var(--glass-2)",
         }}
       >
         <Info size={12} />
@@ -169,7 +169,7 @@ const ExpandablePanel = ({
         <div style={{
           marginTop: 10, padding: "14px 16px", borderRadius: 10,
           background: "var(--surface-ink-raised)", border: "0.5px solid var(--surface-ink-subtle)",
-          fontSize: 12, color: "var(--ink-3)", lineHeight: 1.6, textAlign: "left",
+          fontSize: 12, color: "var(--glass-2)", lineHeight: 1.6, textAlign: "left",
         }}>
           {children}
         </div>
@@ -311,18 +311,18 @@ const TerritoryPanel = ({
               />
             </RadarChart>
           </ResponsiveContainer>
-          <p style={{ marginTop: 8, fontSize: 11, color: "var(--ink-3)", textAlign: "center" }}>
+          <p style={{ marginTop: 8, fontSize: 11, color: "var(--glass-2)", textAlign: "center" }}>
             Top 5 territories by strength (signals × confidence).
           </p>
         </div>
       )}
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-        <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".06em", color: "var(--ink-3)" }}>
+        <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".06em", color: "var(--glass-2)" }}>
           TERRITORIES
         </span>
         <InfoTooltip slug="intel-territories" label="Territories" side="top" triggerSize={13} />
-        <span style={{ fontSize: 11, color: "var(--ink-3)" }}>({territories.length})</span>
+        <span style={{ fontSize: 11, color: "var(--glass-2)" }}>({territories.length})</span>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -349,11 +349,11 @@ const TerritoryPanel = ({
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{
                     margin: 0,
-                    fontSize: 14, fontWeight: 500, color: "var(--ink-6, var(--ink))",
+                    fontSize: 14, fontWeight: 500, color: "var(--glass)",
                     lineHeight: 1.3, wordBreak: "break-word",
                   }}>{t.name}</p>
                 </div>
-                <span style={{ fontSize: 13, color: "var(--ink-3)", whiteSpace: "nowrap" }}>
+                <span style={{ fontSize: 13, color: "var(--glass-2)", whiteSpace: "nowrap" }}>
                   {t.signalCount} signal{t.signalCount === 1 ? "" : "s"}
                 </span>
                 <StatusBadge status={t.status} />
@@ -463,7 +463,7 @@ export const SignalHero = ({
   const isRising = signal.velocity_status === "accelerating";
   const isFading = signal.velocity_status === "fading";
   const velText = isRising ? "and rising" : isFading ? "and fading" : "and stable";
-  const velColor = isRising ? "var(--success, hsl(140 60% 45%))" : isFading ? "hsl(24 95% 53%)" : "var(--ink-5)";
+  const velColor = isRising ? "var(--success, hsl(140 60% 45%))" : isFading ? "hsl(24 95% 53%)" : "var(--glass-2)";
 
   return (
     <section style={{ marginTop: 32, paddingTop: 24, borderTop: "0.5px solid var(--color-border-tertiary, var(--surface-ink-subtle))" }}>
@@ -483,14 +483,14 @@ export const SignalHero = ({
 
       <h2 style={{
         fontFamily: "var(--font-display)",
-        fontSize: 20, fontWeight: 500, color: "var(--ink)", lineHeight: 1.3, margin: "0 0 12px",
+        fontSize: 20, fontWeight: 500, color: "var(--glass)", lineHeight: 1.3, margin: "0 0 12px",
       }}>
         {signal.signal_title}
       </h2>
 
-      <p style={{ fontSize: 12, color: "var(--ink-3)", lineHeight: 1.7, margin: "0 0 20px" }}>
-        You've captured <strong style={{ color: "var(--ink-6)", fontWeight: 500 }}>{fragCount} piece{fragCount === 1 ? "" : "s"} of evidence</strong> from{" "}
-        <strong style={{ color: "var(--ink-6)", fontWeight: 500 }}>{sourceCount} source{sourceCount === 1 ? "" : "s"}</strong>.{" "}
+      <p style={{ fontSize: 12, color: "var(--glass-2)", lineHeight: 1.7, margin: "0 0 20px" }}>
+        You've captured <strong style={{ color: "var(--glass)", fontWeight: 500 }}>{fragCount} piece{fragCount === 1 ? "" : "s"} of evidence</strong> from{" "}
+        <strong style={{ color: "var(--glass)", fontWeight: 500 }}>{sourceCount} source{sourceCount === 1 ? "" : "s"}</strong>.{" "}
         Confidence: <strong style={{ color: "var(--brand)", fontWeight: 500 }}>{confPct}%</strong>
         <InfoTooltip
           label="Confidence"
@@ -518,7 +518,7 @@ export const SignalHero = ({
           </div>
           <p style={{
             fontFamily: "var(--font-display)",
-            fontSize: 14, color: "var(--ink)", lineHeight: 1.5, margin: 0,
+            fontSize: 14, color: "var(--glass)", lineHeight: 1.5, margin: 0,
           }}>
             {signal.what_it_means_for_you}
           </p>
@@ -527,7 +527,7 @@ export const SignalHero = ({
 
       {signal.strategic_implications &&
         signal.strategic_implications.trim() !== (signal.what_it_means_for_you || "").trim() && (
-        <p style={{ fontSize: 12, color: "var(--ink-3)", lineHeight: 1.6, margin: "0 0 18px" }}>
+        <p style={{ fontSize: 12, color: "var(--glass-2)", lineHeight: 1.6, margin: "0 0 18px" }}>
           {signal.strategic_implications}{" "}
           <span style={{ color: "var(--brand)", fontWeight: 500 }}>The window is open.</span>
         </p>
@@ -539,7 +539,7 @@ export const SignalHero = ({
           style={{
             background: "none", border: "none", padding: 0, cursor: "pointer",
             display: "inline-flex", alignItems: "center", gap: 6,
-            fontSize: 12, color: "var(--ink-3)",
+            fontSize: 12, color: "var(--glass-2)",
           }}
         >
           <Layers size={12} />
@@ -549,7 +549,7 @@ export const SignalHero = ({
         {showEvidence && (
           <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
             {evidence.length === 0 ? (
-              <p style={{ fontSize: 12, color: "var(--ink-3)" }}>No evidence linked yet.</p>
+              <p style={{ fontSize: 12, color: "var(--glass-2)" }}>No evidence linked yet.</p>
             ) : evidence.map(f => (
               <div key={f.id} style={{
                 display: "flex", gap: 10, padding: "8px 12px",
@@ -557,9 +557,9 @@ export const SignalHero = ({
                 border: "0.5px solid var(--surface-ink-subtle)",
                 alignItems: "center", fontSize: 12,
               }}>
-                <span style={{ flex: 1, color: "var(--ink-5)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.title}</span>
-                <span style={{ color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: 0.4, fontSize: 10 }}>{f.source_label}</span>
-                <span style={{ color: "var(--ink-3)" }}>{relativeTime(f.created_at)}</span>
+                <span style={{ flex: 1, color: "var(--glass-2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.title}</span>
+                <span style={{ color: "var(--glass-2)", textTransform: "uppercase", letterSpacing: 0.4, fontSize: 10 }}>{f.source_label}</span>
+                <span style={{ color: "var(--glass-2)" }}>{relativeTime(f.created_at)}</span>
               </div>
             ))}
           </div>
@@ -647,10 +647,10 @@ export const EditorialBlindSpots = ({
       </div>
 
       {!data && loading ? (
-        <p style={{ fontSize: 12, color: "var(--ink-3)" }}><Loader2 size={12} className="inline animate-spin" /> Analysing coverage…</p>
+        <p style={{ fontSize: 12, color: "var(--glass-2)" }}><Loader2 size={12} className="inline animate-spin" /> Analysing coverage…</p>
       ) : !data || gaps.length === 0 ? (
         <div style={{ padding: "20px 16px", background: "var(--surface-ink-raised)", border: "0.5px dashed var(--surface-ink-subtle)", borderRadius: 10, textAlign: "center" }}>
-          <p style={{ fontSize: 12, color: "var(--ink-3)", margin: "0 0 10px" }}>Your coverage analysis is building. Refresh after your next capture.</p>
+          <p style={{ fontSize: 12, color: "var(--glass-2)", margin: "0 0 10px" }}>Your coverage analysis is building. Refresh after your next capture.</p>
           <Button size="sm" variant="outline" onClick={load} disabled={loading}>
             <RefreshCw size={12} className={loading ? "animate-spin mr-1" : "mr-1"} /> Refresh coverage
           </Button>
@@ -663,7 +663,7 @@ export const EditorialBlindSpots = ({
             </div>
             <span style={{ fontSize: 12, color: "var(--brand)", fontWeight: 500 }}>{coveragePct}%</span>
           </div>
-          <p style={{ fontSize: 12, color: "var(--ink-3)", margin: "0 0 18px", lineHeight: 1.5 }}>
+          <p style={{ fontSize: 12, color: "var(--glass-2)", margin: "0 0 18px", lineHeight: 1.5 }}>
             Your radar covers {coveragePct}% of the active conversations in your sector.
           </p>
 
@@ -690,10 +690,10 @@ export const EditorialBlindSpots = ({
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <h4 style={{
                       fontFamily: "var(--font-display)",
-                      fontSize: 15, fontWeight: 500, color: "var(--ink)",
+                      fontSize: 15, fontWeight: 500, color: "var(--glass)",
                       margin: "0 0 4px", lineHeight: 1.3,
                     }}>{it.trend_headline}</h4>
-                    <p style={{ fontSize: 12, color: "var(--ink-4)", lineHeight: 1.5, margin: "0 0 6px" }}>{it.recommendation}</p>
+                    <p style={{ fontSize: 12, color: "var(--glass-2)", lineHeight: 1.5, margin: "0 0 6px" }}>{it.recommendation}</p>
                     <p style={{ fontStyle: "italic", fontSize: 11, color: accent, margin: "0 0 10px" }}>{urgency}</p>
                      <button
                       onClick={() => onOpenCapture?.(undefined, it.recommendation, (it.recommendation || "").trim())}
@@ -722,7 +722,7 @@ export const EditorialBlindSpots = ({
               style={{
                 marginTop: 12, background: "none", border: "none", padding: 0, cursor: "pointer",
                 display: "inline-flex", alignItems: "center", gap: 6,
-                fontSize: 12, color: "var(--ink-3)",
+                fontSize: 12, color: "var(--glass-2)",
               }}
             >
               {expanded
@@ -796,7 +796,7 @@ export const TierSection = ({
         <ChevronDown
           size={14}
           style={{
-            color: "var(--ink-3)",
+            color: "var(--glass-2)",
             marginInlineStart: "auto",
             transform: open ? "rotate(180deg)" : "rotate(0)",
             transition: "transform .2s",
@@ -913,7 +913,7 @@ export const EditorialReadingList = ({
   return (
     <section style={{ marginTop: 40, paddingTop: 24, borderTop: "0.5px solid var(--color-border-tertiary, var(--surface-ink-subtle))" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 10 }}>
-        <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".06em", color: "var(--ink-3)" }}>
+        <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".06em", color: "var(--glass-2)" }}>
           READING INTELLIGENCE
         </span>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -925,7 +925,7 @@ export const EditorialReadingList = ({
             style={{
               display: "inline-flex", alignItems: "center", gap: 4,
               background: "none", border: "0.5px solid var(--surface-ink-subtle)",
-              borderRadius: 6, padding: "4px 10px", fontSize: 12, color: "var(--ink-3)",
+              borderRadius: 6, padding: "4px 10px", fontSize: 12, color: "var(--glass-2)",
               cursor: (loading || cooldownLeft > 0) ? "default" : "pointer",
               opacity: cooldownLeft > 0 ? 0.6 : 1,
             }}
@@ -936,20 +936,20 @@ export const EditorialReadingList = ({
         </div>
       </div>
 
-      <p style={{ fontSize: 13, color: "var(--ink-4)", margin: "0 0 18px", lineHeight: 1.5 }}>
+      <p style={{ fontSize: 13, color: "var(--glass-2)", margin: "0 0 18px", lineHeight: 1.5 }}>
         Articles selected to strengthen your radar. Each tells you what capturing it does for your intelligence.
       </p>
 
       {loading && recs.length === 0 ? (
-        <p style={{ fontSize: 12, color: "var(--ink-3)" }}><Loader2 size={12} className="inline animate-spin" /> Loading…</p>
+        <p style={{ fontSize: 12, color: "var(--glass-2)" }}><Loader2 size={12} className="inline animate-spin" /> Loading…</p>
       ) : error || recs.length === 0 ? (
         <div style={{
           padding: "2rem 1rem", border: "0.5px dashed var(--surface-ink-subtle)", borderRadius: 10,
           textAlign: "center",
           display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
         }}>
-          <BookOpen size={16} style={{ color: "var(--ink-3)" }} />
-          <p style={{ color: "var(--aura-t2, var(--ink-3))", fontSize: 14, margin: 0, maxWidth: 420, lineHeight: 1.5 }}>
+          <BookOpen size={16} style={{ color: "var(--glass-2)" }} />
+          <p style={{ color: "var(--aura-t2, var(--glass-2))", fontSize: 14, margin: 0, maxWidth: 420, lineHeight: 1.5 }}>
             No verified articles found for your current intelligence gaps. Aura scans daily — check back tomorrow, or capture an article you've found yourself.
           </p>
           <button
@@ -976,7 +976,7 @@ export const EditorialReadingList = ({
               }}>
                 <h4 style={{
                   fontFamily: "var(--font-display)",
-                  fontSize: 16, fontWeight: 500, color: "var(--ink)",
+                  fontSize: 16, fontWeight: 500, color: "var(--glass)",
                   margin: "0 0 4px", lineHeight: 1.3,
                 }}>
                   {hasUrl ? (
@@ -992,14 +992,14 @@ export const EditorialReadingList = ({
                     <span style={{ color: "inherit" }}>{rec.title}</span>
                   )}
                 </h4>
-                {rec.url && domain && <p style={{ fontSize: 11, color: "var(--ink-3)", margin: "0 0 10px" }}>{domain}</p>}
+                {rec.url && domain && <p style={{ fontSize: 11, color: "var(--glass-2)", margin: "0 0 10px" }}>{domain}</p>}
                 {!hasUrl && (
-                  <p style={{ fontSize: 11, color: "var(--ink-3)", margin: "0 0 10px" }}>
+                  <p style={{ fontSize: 11, color: "var(--glass-2)", margin: "0 0 10px" }}>
                     <a
                       href={searchHref}
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{ color: "var(--ink-3)", textDecoration: "underline" }}
+                      style={{ color: "var(--glass-2)", textDecoration: "underline" }}
                     >
                       Search for this →
                     </a>
@@ -1015,7 +1015,7 @@ export const EditorialReadingList = ({
                     {ctx.icon}
                     <span style={{ fontSize: 11, fontWeight: 500, color: ctx.color }}>{ctx.label}</span>
                   </div>
-                  <p style={{ fontSize: 12, color: "var(--ink-4)", lineHeight: 1.5, margin: 0 }}>{ctx.text}</p>
+                  <p style={{ fontSize: 12, color: "var(--glass-2)", lineHeight: 1.5, margin: 0 }}>{ctx.text}</p>
                 </div>
 
                 {(() => {
@@ -1043,7 +1043,7 @@ export const EditorialReadingList = ({
                       href={rec.url} target="_blank" rel="noopener noreferrer" title="Open article"
                       style={{
                         display: "inline-flex", alignItems: "center", gap: 5,
-                        background: "transparent", color: "var(--ink-4)",
+                        background: "transparent", color: "var(--glass-2)",
                         border: "0.5px solid var(--surface-ink-subtle)",
                         borderRadius: 6, padding: "6px 10px", fontSize: 12, textDecoration: "none",
                       }}
@@ -1052,12 +1052,12 @@ export const EditorialReadingList = ({
                     </a>
                   )}
                 </div>
-                <p style={{ fontSize: 11, color: "var(--ink-3)", margin: "8px 0 0" }}>
+                <p style={{ fontSize: 11, color: "var(--glass-2)", margin: "8px 0 0" }}>
                   <a
                     href={searchHref}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{ color: "var(--ink-3)", textDecoration: "underline" }}
+                    style={{ color: "var(--glass-2)", textDecoration: "underline" }}
                   >
                     Can't open it? Search the title →
                   </a>
@@ -1074,7 +1074,7 @@ export const EditorialReadingList = ({
               style={{
                 background: "none", border: "none", padding: 0, cursor: "pointer",
                 display: "inline-flex", alignItems: "center", gap: 6,
-                fontSize: 12, color: "var(--ink-3)", alignSelf: "flex-start",
+                fontSize: 12, color: "var(--glass-2)", alignSelf: "flex-start",
               }}
             >
               {expanded
@@ -1297,7 +1297,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
             background: "var(--surface-ink-raised)", border: "0.5px solid var(--surface-ink-subtle)",
             borderRadius: 12, textAlign: "center",
           }}>
-            <p style={{ fontSize: 14, color: "var(--ink-2)", lineHeight: 1.6, margin: "0 0 16px" }}>
+            <p style={{ fontSize: 14, color: "var(--glass)", lineHeight: 1.6, margin: "0 0 16px" }}>
               {entryCount === 0
                 ? "Your radar activates with your first capture. Paste a link to an article that made you think this week."
                 : "Aura is analysing your captures. Signals emerge when 3+ sources share a pattern. Keep capturing from different sources."}
@@ -1338,7 +1338,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                 style={{
                   padding: "10px 18px",
                   fontSize: 13, fontWeight: active ? 500 : 400,
-                  color: active ? "var(--brand)" : "var(--ink-3)",
+                  color: active ? "var(--brand)" : "var(--glass-2)",
                   background: "transparent", border: "none",
                   borderBottom: active ? "2px solid var(--brand)" : "2px solid transparent",
                   marginBottom: -2, cursor: "pointer",
@@ -1359,7 +1359,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                   <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".06em", color: "hsl(24 95% 53%)", display: "inline-flex", alignItems: "center", gap: 4 }}>
                     <AlertTriangle size={12} /> FADING
                   </span>
-                  <span style={{ fontSize: 12, color: "var(--ink-4)" }}>
+                  <span style={{ fontSize: 12, color: "var(--glass-2)" }}>
                     {fadingSignals.length} signal{fadingSignals.length > 1 ? "s" : ""} losing strength — new evidence in the next {daysUntilDormant(topFading.confidence)} days reverses the trend.
                   </span>
                   <button onClick={() => onOpenCapture?.()} style={{ background: "none", border: "none", color: "hsl(24 95% 53%)", fontSize: 12, fontWeight: 500, cursor: "pointer", padding: 0 }}>
@@ -1371,12 +1371,12 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
 
             {dormantSignals.length > 0 && (
               <div role="status" style={{ marginBottom: 16, padding: "12px 14px", border: "0.5px solid var(--surface-ink-subtle)", borderRadius: 10, background: "var(--surface-ink-raised)" }}>
-                <div style={{ fontSize: 12, color: "var(--ink-4)", marginBottom: 8 }}>
+                <div style={{ fontSize: 12, color: "var(--glass-2)", marginBottom: 8 }}>
                   ◌ {dormantSignals.length} signal{dormantSignals.length > 1 ? "s have" : " has"} gone dormant (60+ days without new evidence).
                 </div>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <button style={{ fontSize: 12, padding: "5px 12px", borderRadius: 6, background: "transparent", color: "var(--ink-5)", border: "0.5px solid var(--surface-ink-subtle)", cursor: "pointer" }}>
+                    <button style={{ fontSize: 12, padding: "5px 12px", borderRadius: 6, background: "transparent", color: "var(--glass-2)", border: "0.5px solid var(--surface-ink-subtle)", cursor: "pointer" }}>
                       <Archive size={11} className="inline mr-1" /> Archive dormant signals
                     </button>
                   </AlertDialogTrigger>
@@ -1518,9 +1518,9 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                         Your signals grouped by lifecycle. When one reaches "Live," hit "Write this" to generate a LinkedIn post.
                       </FirstTimeHint>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
-                        <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".06em", color: "var(--ink-3)" }}>SIGNALS</span>
+                        <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".06em", color: "var(--glass-2)" }}>SIGNALS</span>
                         <InfoTooltip slug="intel-signals" label="Signals" side="top" triggerSize={13} />
-                        <span style={{ fontSize: 11, color: "var(--ink-3)" }}>
+                        <span style={{ fontSize: 11, color: "var(--glass-2)" }}>
                           {filtered.length}
                           {selectedTheme ? ` · of ${sortedByTier.length}` : ""}
                         </span>
@@ -1530,7 +1530,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                             style={{
                               display: "inline-flex", alignItems: "center", gap: 4,
                               fontSize: 11, padding: "3px 8px", borderRadius: 999,
-                              background: "var(--surface-ink-raised)", color: "var(--ink-5, var(--ink))",
+                              background: "var(--surface-ink-raised)", color: "var(--ink-5, var(--glass))",
                               border: "0.5px solid var(--surface-ink-subtle)", cursor: "pointer",
                             }}
                           >
@@ -1541,7 +1541,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                       </div>
 
                       {filtered.length === 0 && selectedTheme ? (
-                        <div style={{ padding: "24px 0", textAlign: "center", color: "var(--ink-3)", fontSize: 14 }}>
+                        <div style={{ padding: "24px 0", textAlign: "center", color: "var(--glass-2)", fontSize: 14 }}>
                           No signals in this territory yet
                         </div>
                       ) : (
@@ -1583,17 +1583,17 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
 /* Header with editorial title + inline stats */
 const Header = ({ entryCount, evidenceCount, signalsCount, movesCount }: { entryCount: number; evidenceCount: number; signalsCount: number; movesCount: number }) => (
   <div style={{ textAlign: "center" }}>
-    <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".12em", color: "var(--ink-4)", textTransform: "uppercase" }}>
+    <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".12em", color: "var(--glass-2)", textTransform: "uppercase" }}>
       Your strategic radar
     </div>
     <h1 style={{
       fontFamily: "var(--font-display)",
-      fontSize: 26, fontWeight: 500, color: "var(--ink)",
+      fontSize: 26, fontWeight: 500, color: "var(--glass)",
       margin: "8px 0 6px",
     }}>
       Intelligence
     </h1>
-    <p style={{ fontSize: 13, color: "var(--ink-3)", margin: "0 0 16px", lineHeight: 1.5 }}>
+    <p style={{ fontSize: 13, color: "var(--glass-2)", margin: "0 0 16px", lineHeight: 1.5 }}>
       What the market doesn't know you know.
     </p>
     <div data-testid="intel-stats" style={{ display: "inline-flex", alignItems: "center", gap: 0, background: "none", border: "none", flexWrap: "wrap", justifyContent: "center" }}>
@@ -1608,15 +1608,15 @@ const Header = ({ entryCount, evidenceCount, signalsCount, movesCount }: { entry
             display: "flex", flexDirection: "column", alignItems: "center",
             padding: "0 10px", background: "none", border: "none",
           }}>
-            <div className="text-metric" style={{ color: s.val === 0 ? "var(--ink-3)" : s.color }}>
+            <div className="text-metric" style={{ color: s.val === 0 ? "var(--glass-2)" : s.color }}>
               {s.val === 0 ? "—" : s.val}
             </div>
-            <div style={{ fontSize: 11, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 4 }}>
+            <div style={{ fontSize: 11, color: "var(--glass-2)", textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 4 }}>
               {s.label}
             </div>
           </div>
           {i < arr.length - 1 && (
-            <ChevronRight size={14} style={{ color: "var(--ink-3)", margin: "0 2px", flexShrink: 0 }} />
+            <ChevronRight size={14} style={{ color: "var(--glass-2)", margin: "0 2px", flexShrink: 0 }} />
           )}
         </div>
       ))}
@@ -1627,10 +1627,10 @@ const Header = ({ entryCount, evidenceCount, signalsCount, movesCount }: { entry
           display: "flex", flexDirection: "column", alignItems: "center",
           padding: "0 10px", background: "none", border: "none",
         }}>
-          <div className="text-metric" style={{ color: movesCount === 0 ? "var(--ink-3)" : "var(--success, hsl(140 60% 45%))" }}>
+          <div className="text-metric" style={{ color: movesCount === 0 ? "var(--glass-2)" : "var(--success, hsl(140 60% 45%))" }}>
             {movesCount === 0 ? "—" : movesCount}
           </div>
-          <div style={{ fontSize: 11, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 4 }}>
+          <div style={{ fontSize: 11, color: "var(--glass-2)", textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 4 }}>
             {movesCount === 1 ? "move" : "moves"}
           </div>
         </div>
