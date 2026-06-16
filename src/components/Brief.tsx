@@ -2,22 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthReady } from "@/hooks/useAuthReady";
-import AuraLogo from "@/components/brand/AuraLogo";
 
 /**
- * Brief — bone Page daily folio (System-A tokens).
- * Replaces the legacy HomeTab. Flat editorial surface — no AmbientOrbs,
- * no PageHeroBackground (both still pull from the legacy DB palette).
- *
- * Bindings:
- *   - Masthead eyebrow → diagnostic_profiles.sector_focus (dynamic, no location)
- *   - Salutation       → diagnostic_profiles.first_name → auth user_metadata fallback
- *   - Standing line    → imprint_snapshots (latest + previous → delta)
- *   - While you were away → strategic_signals (active, top by confidence) + entries
- *   - Ready draft      → content_items (generation_params.source='weekly_ready')
- *                        same pipeline WeekReadyCard uses (prepare-weekly-drafts EF)
- *
- * Each section clears its OWN skeleton on resolve (success branch included).
+ * Brief — bone editorial board (System-A tokens).
+ * Single centered column. Dateline + headline + standing line + signals + draft card.
+ * Surface-only rewrite; all data reads preserved verbatim.
  */
 
 export interface BriefDraft {
@@ -60,9 +49,10 @@ interface AwayData {
 interface DraftData {
   draft: BriefDraft | null;
   preview: string;
+  voiceScore: number | null;
+  signalCount: number | null;
 }
 
-const SCALE_SEEN_KEY = "aura-imprint-scale-seen";
 const LAST_VISIT_KEY = "aura-brief-last-visit";
 
 function startOfThisWeekIso(): string {
@@ -81,23 +71,54 @@ function greeting(now: Date): string {
   return "Good evening";
 }
 
-function formatDateLine(now: Date): string {
-  // "Monday · June 15, 2026"
-  const weekday = now.toLocaleDateString(undefined, { weekday: "long" });
-  const rest = now.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
-  return `${weekday} · ${rest}`;
+function isoWeekNumber(d: Date): number {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  return Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+}
+
+function toRoman(num: number): string {
+  if (!num || num < 1) return "I";
+  const map: Array<[number, string]> = [
+    [1000, "M"], [900, "CM"], [500, "D"], [400, "CD"],
+    [100, "C"], [90, "XC"], [50, "L"], [40, "XL"],
+    [10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"],
+  ];
+  let n = num; let out = "";
+  for (const [v, s] of map) { while (n >= v) { out += s; n -= v; } }
+  return out;
+}
+
+function formatDateline(now: Date, vol: number, no: number): string {
+  const weekday = now.toLocaleDateString("en-US", { weekday: "long" }).toUpperCase();
+  const month = now.toLocaleDateString("en-US", { month: "long" }).toUpperCase();
+  const dd = String(now.getDate()).padStart(2, "0");
+  return `VOL. ${toRoman(vol)} \u2014 NO. ${no} \u00B7 ${weekday} ${dd} ${month}`;
+}
+
+// Defensive cleaner — mirrors LinkedInPreview in AuthorityTab. For legacy rows
+// that persisted a literal "POST" prefix line and **markdown** bolds.
+function cleanBody(raw: string): string {
+  return (raw || "")
+    .replace(/^[ \t]*(post|بوست|منشور\s+linkedin)[ \t]*$/gim, "")
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/(^|[\s(])\*(?!\s)([^*\n]+?)\*(?=[\s.,;:!?)]|$)/g, "$1$2")
+    .replace(/\*\*/g, "")
+    .replace(/^\s*\n+/, "");
 }
 
 function derivePreview(body: string): string {
-  const s = (body || "").replace(/\s+/g, " ").trim();
+  const s = cleanBody(body).replace(/\s+/g, " ").trim();
   if (!s) return "";
-  return s.length > 180 ? s.slice(0, 178).trim() + "…" : s;
+  return s.length > 180 ? s.slice(0, 178).trim() + "\u2026" : s;
 }
 
 function deriveHook(body: string): string {
-  const first = (body || "").split(/\r?\n/).find((l) => l.trim().length > 0) || "";
+  const first = cleanBody(body).split(/\r?\n/).find((l) => l.trim().length > 0) || "";
   const cleaned = first.replace(/^[#>*\-\s]+/, "").trim();
-  return cleaned.length > 110 ? cleaned.slice(0, 108).trim() + "…" : cleaned;
+  return cleaned.length > 110 ? cleaned.slice(0, 108).trim() + "\u2026" : cleaned;
 }
 
 // ── Atoms ────────────────────────────────────────────────────────────
@@ -116,20 +137,6 @@ const SkeletonLine: React.FC<{ width?: number | string; height?: number }> = ({ 
   />
 );
 
-const Eyebrow: React.FC<React.PropsWithChildren> = ({ children }) => (
-  <div
-    style={{
-      fontFamily: "var(--font-mono)",
-      fontSize: 11,
-      letterSpacing: "0.16em",
-      textTransform: "uppercase",
-      color: "var(--spot)",
-    }}
-  >
-    {children}
-  </div>
-);
-
 const SectionLabel: React.FC<React.PropsWithChildren> = ({ children }) => (
   <div
     style={{
@@ -137,8 +144,8 @@ const SectionLabel: React.FC<React.PropsWithChildren> = ({ children }) => (
       fontSize: 11,
       letterSpacing: "0.14em",
       textTransform: "uppercase",
-      color: "var(--ink-3)",
-      marginBottom: 10,
+      color: "var(--spot)",
+      marginBottom: 14,
     }}
   >
     {children}
@@ -172,19 +179,24 @@ const ErrorLine: React.FC<{ what: string; onRetry: () => void }> = ({ what, onRe
 export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: BriefProps) {
   const { user, isReady } = useAuthReady();
 
-  // Profile (masthead + salutation): resolves independently — no Scout — limbo.
   const [profile, setProfile] = useState<{ firstName: string; sectorFocus: string } | null>(null);
 
   const [imprint, setImprint] = useState<SectionState<ImprintData>>({ status: "loading" });
   const [away, setAway] = useState<SectionState<AwayData>>({ status: "loading" });
   const [draftState, setDraftState] = useState<SectionState<DraftData>>({ status: "loading" });
 
-  const [scaleSeen, setScaleSeen] = useState<boolean>(() => {
-    if (typeof window === "undefined") return true;
-    return localStorage.getItem(SCALE_SEEN_KEY) === "1";
-  });
-
   const now = useMemo(() => new Date(), []);
+
+  const volNumber = useMemo(() => {
+    const created = (user as any)?.created_at;
+    if (!created) return 1;
+    const start = new Date(created).getTime();
+    if (!isFinite(start)) return 1;
+    const years = Math.floor((Date.now() - start) / (365 * 24 * 60 * 60 * 1000));
+    return Math.max(1, years + 1);
+  }, [user]);
+  const issueNumber = useMemo(() => isoWeekNumber(now), [now]);
+  const dateline = useMemo(() => formatDateline(now, volNumber, issueNumber), [now, volNumber, issueNumber]);
 
   // Resolve profile as soon as auth is ready.
   useEffect(() => {
@@ -222,8 +234,6 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
 
     return () => { cancelled = true; };
   }, [isReady, user]);
-
-  // ── Fetchers (each clears its own loading on success) ──
 
   const loadImprint = useCallback(async () => {
     if (!user) { setImprint({ status: "ready", data: { imprint: null, delta: null } }); return; }
@@ -277,7 +287,6 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
       }));
       const newCaptureCount = capRes?.count ?? 0;
 
-      // Count of all active signals since the visit (cheap second query for the "+N more")
       const { count: signalCount } = await (supabase.from("strategic_signals" as any) as any)
         .select("id", { count: "exact", head: true })
         .eq("user_id", user.id)
@@ -292,7 +301,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
   }, [user]);
 
   const loadDraft = useCallback(async () => {
-    if (!user) { setDraftState({ status: "ready", data: { draft: null, preview: "" } }); return; }
+    if (!user) { setDraftState({ status: "ready", data: { draft: null, preview: "", voiceScore: null, signalCount: null } }); return; }
     setDraftState({ status: "loading" });
     try {
       const { data, error } = await supabase
@@ -311,7 +320,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
       );
       const pick = ready[0];
       if (!pick) {
-        setDraftState({ status: "ready", data: { draft: null, preview: "" } });
+        setDraftState({ status: "ready", data: { draft: null, preview: "", voiceScore: null, signalCount: null } });
         return;
       }
       const lang: "en" | "ar" = pick.language === "ar" ? "ar" : "en";
@@ -325,9 +334,21 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
         topic: pick?.generation_params?.topic ?? null,
         _source: "content_items",
       };
+      const gp = pick?.generation_params || {};
+      const rawVoice =
+        gp.voice_match ?? gp.voice_score ?? gp.quality_score ?? gp.match_score ?? null;
+      let voiceScore: number | null = null;
+      if (typeof rawVoice === "number" && isFinite(rawVoice)) {
+        voiceScore = rawVoice <= 1 ? Math.round(rawVoice * 100) : Math.round(rawVoice);
+      }
+      const sigCountRaw =
+        gp.source_signal_count ?? gp.signal_count ??
+        (Array.isArray(gp.source_signals) ? gp.source_signals.length : null) ??
+        (Array.isArray(gp.signals) ? gp.signals.length : null);
+      const signalCount = typeof sigCountRaw === "number" && sigCountRaw > 0 ? sigCountRaw : null;
       setDraftState({
         status: "ready",
-        data: { draft, preview: derivePreview(pick.body || "") },
+        data: { draft, preview: derivePreview(pick.body || ""), voiceScore, signalCount },
       });
     } catch (e) {
       console.warn("[Brief] draft load failed", e);
@@ -335,28 +356,25 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
     }
   }, [user]);
 
-  // Kick off fetches in parallel once auth is ready.
   useEffect(() => {
     if (!isReady) return;
     void loadImprint();
     void loadAway();
     void loadDraft();
-    // Record this visit AFTER the away-fetch baseline is captured.
     return () => {
       try { localStorage.setItem(LAST_VISIT_KEY, new Date().toISOString()); } catch { /* noop */ }
     };
   }, [isReady, loadImprint, loadAway, loadDraft]);
-
-  const acknowledgeScale = useCallback(() => {
-    try { localStorage.setItem(SCALE_SEEN_KEY, "1"); } catch { /* noop */ }
-    setScaleSeen(true);
-  }, []);
 
   // ── Render ──
 
   const firstName = profile?.firstName || "";
   const sectorFocus = profile?.sectorFocus || "";
   const profileResolved = profile !== null;
+
+  const hasReadyDraft = draftState.status === "ready" && !!draftState.data.draft;
+  const topSignal =
+    away.status === "ready" && away.data.signals.length > 0 ? away.data.signals[0] : null;
 
   return (
     <motion.div
@@ -375,55 +393,72 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
       }}
       aria-label="Your Brief"
     >
-      {/* a. MASTHEAD */}
-      <header style={{ marginBottom: 28 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginBottom: 18 }}>
-          <AuraLogo size={36} variant="light" withWordmark />
-          <div style={{ textAlign: "end" }}>
-            <Eyebrow>
-              {profileResolved
-                ? (sectorFocus || "Awaiting sector")
-                : <span style={{ display: "inline-block", verticalAlign: "middle" }}><SkeletonLine width={140} height={11} /></span>}
-            </Eyebrow>
-            <div
-              style={{
-                marginTop: 4,
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                letterSpacing: "0.10em",
-                color: "var(--ink-3)",
-              }}
-            >
-              {formatDateLine(now)}
-            </div>
-          </div>
-        </div>
-        <div className="tick-rule" style={{ color: "var(--rule)" }} aria-hidden />
-      </header>
+      {/* 1. DATELINE */}
+      <div
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 11,
+          letterSpacing: "0.16em",
+          textTransform: "uppercase",
+          color: "var(--spot)",
+          marginBottom: 18,
+        }}
+      >
+        {dateline}
+      </div>
 
-      {/* b. SALUTATION */}
-      <section style={{ marginBottom: 22 }}>
+      {/* 2. HEADLINE + pill */}
+      <section
+        className="brief-headline-row"
+        style={{
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "space-between",
+          gap: 16,
+          marginBottom: 28,
+        }}
+      >
         {profileResolved ? (
           <h1
             style={{
               fontFamily: "var(--font-serif)",
               fontWeight: 400,
-              fontSize: 36,
-              lineHeight: 1.15,
-              letterSpacing: "-0.01em",
+              fontSize: "clamp(2rem, 5vw, 3.25rem)",
+              lineHeight: 1.08,
+              letterSpacing: "-0.015em",
               margin: 0,
               color: "var(--ink)",
+              flex: "1 1 auto",
             }}
           >
             {greeting(now)}{firstName ? `, ${firstName}` : ""}.
           </h1>
         ) : (
-          <SkeletonLine width="55%" height={36} />
+          <SkeletonLine width="55%" height={44} />
+        )}
+        {hasReadyDraft && (
+          <span
+            style={{
+              flex: "0 0 auto",
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              letterSpacing: "0.16em",
+              textTransform: "uppercase",
+              color: "var(--spot)",
+              border: "1px solid var(--spot)",
+              background: "transparent",
+              borderRadius: 999,
+              padding: "5px 10px",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Strongest move ready
+          </span>
         )}
       </section>
 
-      {/* c. STANDING LINE */}
-      <section style={{ marginBottom: 36 }}>
+      {/* 3. STANDING LINE */}
+      <section style={{ marginBottom: 24 }}>
         {imprint.status === "loading" && <SkeletonLine width="70%" height={22} />}
         {imprint.status === "error" && <ErrorLine what="standing line" onRetry={loadImprint} />}
         {imprint.status === "ready" && (
@@ -431,8 +466,8 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
             <p
               style={{
                 fontFamily: "var(--font-serif)",
-                fontSize: 22,
-                lineHeight: 1.45,
+                fontSize: "clamp(1.25rem, 2.5vw, 1.75rem)",
+                lineHeight: 1.4,
                 color: "var(--ink)",
                 margin: 0,
               }}
@@ -441,52 +476,65 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
                 const v = imprint.data.imprint;
                 const d = imprint.data.delta;
                 if (v == null) return "Your Imprint is forming — it sharpens with every capture.";
-                const directionPhrase =
+                const movement =
                   d == null ? "" :
-                  d > 1 ? ", rising this week" :
-                  d < -1 ? ", settling this week" :
+                  d > 0 ? `, up ${d} this week` :
+                  d < 0 ? `, down ${Math.abs(d)} this week` :
                   ", steady this week";
-                return `Your Imprint is ${v}${directionPhrase}.`;
+                const sectorClause = sectorFocus
+                  ? ` — carried by depth you added in ${sectorFocus}.`
+                  : ".";
+                const marketClause = topSignal
+                  ? ` The market is moving on ${topSignal.title}; you're early.`
+                  : "";
+                return (
+                  <>
+                    Your{" "}
+                    <span style={{ color: "var(--spot)" }}>
+                      Imprint holds at {v}
+                    </span>
+                    {movement}
+                    {sectorClause}
+                    {marketClause}
+                  </>
+                );
               })()}
             </p>
-            {!scaleSeen && imprint.data.imprint != null && (
+
+            {/* 4. CAPTION BLOCK */}
+            <div style={{ marginTop: 14 }}>
               <div
                 style={{
-                  marginTop: 8,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
                   fontFamily: "var(--font-mono)",
                   fontSize: 11,
-                  letterSpacing: "0.12em",
+                  letterSpacing: "0.14em",
                   textTransform: "uppercase",
                   color: "var(--ink-3)",
                 }}
               >
-                <span>Imprint · 0–100 · how present your expertise is</span>
-                <button
-                  type="button"
-                  onClick={acknowledgeScale}
-                  aria-label="Dismiss explanation"
-                  style={{
-                    background: "transparent",
-                    border: 0,
-                    padding: "2px 6px",
-                    cursor: "pointer",
-                    color: "var(--ink-3)",
-                    fontFamily: "inherit",
-                    fontSize: "inherit",
-                  }}
-                >
-                  Got it
-                </button>
+                Updated this morning · A quiet line, not a gauge
               </div>
-            )}
+              <div
+                style={{
+                  marginTop: 4,
+                  fontFamily: "var(--font-serif)",
+                  fontStyle: "italic",
+                  fontSize: "0.9rem",
+                  lineHeight: 1.5,
+                  color: "var(--ink-2)",
+                }}
+              >
+                Imprint — how present your expertise is, on a quiet 0–100 line.
+              </div>
+            </div>
           </>
         )}
       </section>
 
-      {/* d. WHILE YOU WERE AWAY */}
+      {/* 5. TICK RULE */}
+      <div className="tick-rule" style={{ color: "var(--rule)", marginBottom: 28 }} aria-hidden />
+
+      {/* 6. WHILE YOU WERE AWAY */}
       <section style={{ marginBottom: 36 }}>
         <SectionLabel>While you were away</SectionLabel>
         {away.status === "loading" && (
@@ -506,31 +554,95 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
             );
           }
           return (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {signals.map((s) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => onSwitchTab?.("intelligence")}
-                  style={{
-                    textAlign: "start",
-                    background: "transparent",
-                    border: 0,
-                    borderInlineStart: "2px solid var(--rule)",
-                    paddingInline: "12px 0",
-                    paddingBlock: 2,
-                    cursor: "pointer",
-                    color: "var(--ink)",
-                    fontFamily: "var(--font-serif)",
-                    fontSize: 19,
-                    lineHeight: 1.4,
-                  }}
-                >
-                  {s.title}
-                </button>
-              ))}
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              {signals.map((s, idx) => {
+                const pct = s.confidence != null ? Math.round(s.confidence * 100) : null;
+                const hot = s.confidence != null && s.confidence >= 0.7;
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => onSwitchTab?.("intelligence")}
+                    className="brief-signal-row"
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "auto 1fr auto",
+                      gap: 16,
+                      alignItems: "baseline",
+                      textAlign: "start",
+                      background: "transparent",
+                      border: 0,
+                      borderTop: "1px solid var(--rule)",
+                      paddingBlock: 16,
+                      cursor: "pointer",
+                      color: "var(--ink)",
+                      width: "100%",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "var(--font-serif)",
+                        fontSize: "clamp(1.75rem, 3.5vw, 2.5rem)",
+                        lineHeight: 1,
+                        color: "var(--spot)",
+                      }}
+                    >
+                      {String(idx + 1).padStart(2, "0")}
+                    </span>
+                    <span style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+                      <span
+                        style={{
+                          fontFamily: "var(--font-serif)",
+                          fontSize: "clamp(1.05rem, 2vw, 1.25rem)",
+                          lineHeight: 1.35,
+                          color: "var(--ink)",
+                        }}
+                      >
+                        {s.title}
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          fontSize: 10,
+                          letterSpacing: "0.14em",
+                          textTransform: "uppercase",
+                          color: "var(--ink-3)",
+                        }}
+                      >
+                        Intelligence · New signal
+                      </span>
+                    </span>
+                    {pct != null && (
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6,
+                          fontFamily: "var(--font-mono)",
+                          fontSize: 11,
+                          letterSpacing: "0.08em",
+                          color: "var(--ink-2)",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        <span
+                          aria-hidden
+                          style={{
+                            width: 7,
+                            height: 7,
+                            borderRadius: "50%",
+                            background: hot ? "var(--live)" : "var(--ink-3)",
+                            display: "inline-block",
+                          }}
+                        />
+                        {pct}%
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
               {(signalCount > signals.length || newCaptureCount > 0) && (
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.10em", color: "var(--ink-3)", marginTop: 2 }}>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.10em", color: "var(--ink-3)", marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--rule)" }}>
                   {signalCount > signals.length && <>{signalCount - signals.length} more signal{signalCount - signals.length === 1 ? "" : "s"}</>}
                   {signalCount > signals.length && newCaptureCount > 0 && " · "}
                   {newCaptureCount > 0 && <>{newCaptureCount} new capture{newCaptureCount === 1 ? "" : "s"}</>}
@@ -541,7 +653,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
         })()}
       </section>
 
-      {/* e. READY DRAFT */}
+      {/* 7. DRAFT CARD */}
       <section style={{ marginBottom: 36 }}>
         <SectionLabel>Ready to publish</SectionLabel>
         {draftState.status === "loading" && (
@@ -554,32 +666,80 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
         {draftState.status === "error" && <ErrorLine what="ready draft" onRetry={loadDraft} />}
         {draftState.status === "ready" && (
           draftState.data.draft ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <article
+              style={{
+                background: "#FFFFFF",
+                border: "1px solid var(--rule)",
+                borderInlineStart: "3px solid var(--action)",
+                borderRadius: 6,
+                padding: "20px 22px",
+                boxShadow: "0 1px 2px rgba(20,18,14,0.04), 0 8px 24px rgba(20,18,14,0.06)",
+                display: "flex",
+                flexDirection: "column",
+                gap: 16,
+              }}
+            >
               <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  flexWrap: "wrap",
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 11,
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase",
+                    color: "var(--ink-2)",
+                  }}
+                >
+                  A draft is ready in your voice
+                </span>
+                {draftState.data.voiceScore != null && (
+                  <span
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 10,
+                      letterSpacing: "0.14em",
+                      textTransform: "uppercase",
+                      color: "var(--action)",
+                      border: "1px solid var(--action)",
+                      background: "rgba(214,158,46,0.08)",
+                      borderRadius: 999,
+                      padding: "4px 9px",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {draftState.data.voiceScore}% voice match
+                  </span>
+                )}
+              </div>
+
+              <h2
                 dir="auto"
                 style={{
                   fontFamily: "var(--font-serif)",
-                  fontSize: 22,
-                  lineHeight: 1.4,
+                  fontWeight: 400,
+                  fontSize: "clamp(1.25rem, 2.6vw, 1.75rem)",
+                  lineHeight: 1.3,
                   color: "var(--ink)",
+                  margin: 0,
                 }}
               >
-                {deriveHook(draftState.data.draft.body) || "Untitled draft"}
-              </div>
-              {draftState.data.preview && (
-                <p
-                  dir="auto"
-                  style={{
-                    margin: 0,
-                    color: "var(--ink-2)",
-                    fontSize: 16,
-                    lineHeight: 1.6,
-                  }}
-                >
-                  {draftState.data.preview}
-                </p>
-              )}
-              <div>
+                {`\u201C${deriveHook(draftState.data.draft.body) || "Untitled draft"}\u201D`}
+              </h2>
+
+              <p style={{ margin: 0, color: "var(--ink-2)", fontSize: 15, lineHeight: 1.55 }}>
+                {draftState.data.signalCount
+                  ? `Drafted from ${draftState.data.signalCount} signals you captured. Every line traces to its evidence.`
+                  : "Drafted from your signals. Every line traces to its evidence."}
+              </p>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
                 <button
                   type="button"
                   onClick={() => onOpenDraft(draftState.data.draft!)}
@@ -597,10 +757,41 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
                     cursor: "pointer",
                   }}
                 >
-                  Open in Composer →
+                  Open in Composer
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDraftState({ status: "ready", data: { draft: null, preview: "", voiceScore: null, signalCount: null } })}
+                  style={{
+                    background: "transparent",
+                    border: 0,
+                    padding: 0,
+                    color: "var(--ink-2)",
+                    fontFamily: "var(--font-body)",
+                    fontSize: 14,
+                    cursor: "pointer",
+                  }}
+                >
+                  Dismiss
                 </button>
               </div>
-            </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  letterSpacing: "0.16em",
+                  textTransform: "uppercase",
+                  color: "var(--ink-3)",
+                  borderTop: "1px solid var(--rule)",
+                  paddingTop: 10,
+                }}
+              >
+                Draft · Ready to publish
+              </div>
+            </article>
           ) : (
             <p style={{ margin: 0, color: "var(--ink-2)", fontSize: 17, lineHeight: 1.55 }}>
               No draft prepared yet.{" "}
@@ -626,7 +817,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
         )}
       </section>
 
-      {/* New-user empty hint — only when nothing at all is loaded for any section. */}
+      {/* New-user empty hint */}
       {imprint.status === "ready" && imprint.data.imprint == null &&
        away.status === "ready" && away.data.signals.length === 0 && away.data.newCaptureCount === 0 &&
        draftState.status === "ready" && !draftState.data.draft && (
@@ -660,6 +851,9 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
           outline-offset: 3px;
         }
         [lang="ar"] .brief-cta, [dir="rtl"] .brief-cta { font-family: var(--font-arabic); }
+        @media (max-width: 560px) {
+          .brief-headline-row { flex-direction: column; align-items: flex-start; }
+        }
       `}</style>
 
     </motion.div>
