@@ -2088,8 +2088,8 @@ End with NEXT STEP:.`;
 
             {/* Composer */}
             <div
-              className="border-t border-border/30 px-4 py-3 space-y-2 shrink-0 bg-background"
-              style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
+              className="border-t px-4 py-3 space-y-2 shrink-0"
+              style={{ borderColor: "var(--hair)", background: "var(--ob-bg)", paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
             >
               {/* Quick Actions */}
               <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
@@ -2134,14 +2134,15 @@ End with NEXT STEP:.`;
                   onKeyDown={handleKeyDown}
                   placeholder="Ask Aura anything…"
                   rows={1}
-                  className="flex-1 border-[color:var(--bronze)] resize-none text-sm min-h-[44px] max-h-[120px] text-[color:var(--ink)] caret-[color:var(--ink)] placeholder:text-[color:var(--muted-foreground)] bg-[color:var(--paper-2)]"
+                  className="flex-1 border-[color:var(--hair)] resize-none text-sm min-h-[44px] max-h-[120px] text-[color:var(--glass)] caret-[color:var(--glass)] placeholder:text-[color:var(--glass-2)] bg-[color:var(--ob-field)]"
                 />
                 <Button
                   data-testid="aura-send-btn"
                   onClick={() => send(input)}
                   disabled={isLoading || !input.trim()}
                   size="icon"
-                  className="bg-primary text-primary-foreground hover:bg-primary/90 h-11 w-11 flex-shrink-0"
+                  className="h-11 w-11 flex-shrink-0 hover:opacity-90"
+                  style={{ background: "var(--action)", color: "var(--ob-bg)" }}
                 >
                   {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 </Button>
