@@ -11,7 +11,7 @@
  *      + three raw-count readouts (Signal / Published / Rhythm)
  *   2. THE SCAN — alerts, SignalHero (debounced), theme chips, TierSection list,
  *      EditorialBlindSpots, EditorialReadingList
- *   3. TICKER + SOURCES — SectorPulseTicker (off-screen pause) + SourcesSubTab
+ *   3. SOURCES — SourcesSubTab
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -23,7 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import SectionError from "@/components/ui/section-error";
 import SourcesSubTab from "@/components/tabs/SourcesSubTab";
-import SectorPulseTicker from "@/components/SectorPulseTicker";
+
 import { useAuthReady } from "@/hooks/useAuthReady";
 import { useJourneyState } from "@/hooks/useJourneyState";
 import { applyPublishedFilter, filterPublishedRows } from "@/lib/postProvenance";
