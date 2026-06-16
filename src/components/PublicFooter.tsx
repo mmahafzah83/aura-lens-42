@@ -5,12 +5,12 @@ interface Props {
 }
 
 const PublicFooter = ({ forceDark = false }: Props) => {
-  const textColor = forceDark ? "rgba(255,255,255,0.4)" : "var(--ink-4)";
-  const linkColor = forceDark ? "rgba(255,255,255,0.55)" : "var(--ink-3)";
-  const hoverColor = forceDark ? "#D4B056" : "var(--bronze)";
-  const borderColor = forceDark
-    ? "rgba(212,176,86,0.15)"
-    : "var(--brand-line)";
+  // System-A: forceDark → dark Instrument (--ob-bg/--glass); default → bone.
+  const textColor = forceDark ? "var(--glass-3)" : "var(--ink-3)";
+  const linkColor = forceDark ? "var(--glass-2)" : "var(--ink-3)";
+  const hoverColor = "var(--action)";
+  const borderColor = forceDark ? "var(--hair)" : "var(--rule)";
+  const bgColor = forceDark ? "var(--ob-bg)" : "transparent";
 
   const linkStyle: React.CSSProperties = {
     color: linkColor,
@@ -34,8 +34,8 @@ const PublicFooter = ({ forceDark = false }: Props) => {
         fontSize: 12,
         color: textColor,
         borderTop: `1px solid ${borderColor}`,
-        background: "transparent",
-        fontFamily: "'DM Sans', sans-serif",
+        background: bgColor,
+        fontFamily: "var(--font-body)",
       }}
     >
       <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
