@@ -761,7 +761,7 @@ export default function PublicWelcome() {
         <section id="final-cta" ref={finalCtaRef} style={{ background: BG, minHeight: "80vh", padding: "100px 24px", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ maxWidth: 600, margin: "0 auto", textAlign: "center" }}>
             <div className="pw-eye-pulse reveal" style={{ display: "flex", justifyContent: "center" }}>
-              <HorizonEye size={56} />
+              <AuraLogo variant="auto" size={56} />
             </div>
             <h2 className="reveal reveal-d1" style={{
               fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300,
@@ -802,8 +802,8 @@ export default function PublicWelcome() {
         <div style={{ fontSize: 14, color: "#ededed" }}>Mohammad Mahafdhah</div>
         <div style={{ fontSize: 12, color: "#a3a3a3", marginTop: 4 }}>Aura builder</div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 16 }}>
-          <HorizonEye size={16} color="#8a8a8a" />
-          <span style={{ fontSize: 11, color: "#9a9a9a" }}>Aura · Turns your expertise into presence · aura-intel.org</span>
+          <AuraLogo variant="auto" size={20} />
+          <span style={{ fontSize: 11, color: INK_2, fontFamily: BODY }}>Aura · Turns your expertise into presence · aura-intel.org</span>
         </div>
       </footer>
     </div>
