@@ -114,79 +114,95 @@ function useCountUpNum(target: number | null, reduce: boolean) {
 }
 
 const AuraDial = ({
-  score, delta, loading, onScreen,
-}: { score: number | null; delta: number | null; loading: boolean; onScreen: boolean }) => {
+  score, delta, loading, onScreen, weekShape,
+}: { score: number | null; delta: number | null; loading: boolean; onScreen: boolean; weekShape: number[] }) => {
   const reduce = prefersReducedMotion();
   const displayed = useCountUpNum(score, reduce);
-  const animatePulse = !reduce && onScreen;
 
-  // Dial geometry
+  // Tick-bezel geometry: a ring of 60 short radial ticks, with the first
+  // round(score/100 * 60) ticks lit (var(--live)) and the rest dim.
   const size = 220;
   const cx = size / 2;
   const cy = size / 2;
-  const r = 92;
-  const stroke = 8;
-  const circ = 2 * Math.PI * r;
+  const rInner = 86;
+  const rOuterMinor = 100;
+  const rOuterMajor = 104;
+  const TICKS = 60;
   const pct = score != null ? Math.max(0, Math.min(100, score)) / 100 : 0;
-  const dash = circ * pct;
-  const tickColor = "var(--glass-3)";
+  const litCount = score == null ? 0 : Math.round(pct * TICKS);
 
-  const ticks = Array.from({ length: 60 }, (_, i) => {
-    const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
-    const inner = r + 12;
-    const outer = r + (i % 5 === 0 ? 20 : 16);
+  const ticks = Array.from({ length: TICKS }, (_, i) => {
+    const angle = (i / TICKS) * Math.PI * 2 - Math.PI / 2;
+    const isMajor = i % 5 === 0;
+    const inner = rInner;
+    const outer = isMajor ? rOuterMajor : rOuterMinor;
+    const lit = i < litCount;
     return (
       <line key={i}
         x1={cx + Math.cos(angle) * inner} y1={cy + Math.sin(angle) * inner}
         x2={cx + Math.cos(angle) * outer} y2={cy + Math.sin(angle) * outer}
-        stroke={tickColor} strokeWidth={i % 5 === 0 ? 1 : 0.5} opacity={0.6}
+        stroke={lit ? "var(--live)" : "var(--hair)"}
+        strokeWidth={isMajor ? 1.6 : 1.1}
+        strokeLinecap="round"
+        opacity={lit ? 1 : 0.55}
       />
     );
   });
 
-  const deltaColor = delta == null ? "var(--glass-2)"
-    : delta > 0 ? "var(--pos)" : delta < 0 ? "var(--neg)" : "var(--glass-2)";
-  const deltaSign = delta == null ? "" : delta > 0 ? "+" : "";
+  const deltaLabel =
+    delta == null ? "—" :
+    delta > 0 ? `▲${delta} this week` :
+    delta < 0 ? `▼${Math.abs(delta)} this week` :
+    "steady this week";
+  const deltaColor =
+    delta == null ? "var(--glass-2)" :
+    delta > 0 ? "var(--pos)" :
+    delta < 0 ? "var(--neg)" : "var(--glass-2)";
+
+  // Sparkline (week shape) — small line of up-to-7 daily imprint values.
+  const sparkW = 84;
+  const sparkH = 24;
+  const showSpark = weekShape.length >= 2;
+  let sparkPath = "";
+  if (showSpark) {
+    const min = Math.min(...weekShape);
+    const max = Math.max(...weekShape);
+    const range = Math.max(1, max - min);
+    const step = sparkW / (weekShape.length - 1);
+    sparkPath = weekShape.map((v, i) => {
+      const x = i * step;
+      const y = sparkH - ((v - min) / range) * sparkH;
+      return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(" ");
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
       <div style={{ position: "relative", width: size, height: size }}>
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img"
              aria-label={score != null ? `Imprint ${Math.round(score)} of 100` : "Imprint forming"}>
-          {/* halo */}
-          <circle cx={cx} cy={cy} r={r + 30} fill="none" stroke="var(--live)" strokeWidth={0.5} opacity={0.15}>
-            {animatePulse && (
-              <animate attributeName="opacity" values="0.08;0.22;0.08" dur="3.2s" repeatCount="indefinite" />
-            )}
-          </circle>
-          {/* tick ring */}
           <g>{ticks}</g>
-          {/* base track */}
-          <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--hair)" strokeWidth={stroke} />
-          {/* value arc */}
-          <circle cx={cx} cy={cy} r={r} fill="none"
-                  stroke="var(--live)" strokeWidth={stroke} strokeLinecap="round"
-                  strokeDasharray={`${dash} ${circ - dash}`}
-                  transform={`rotate(-90 ${cx} ${cy})`}
-                  style={{ transition: reduce ? "none" : "stroke-dasharray 800ms cubic-bezier(.4,0,.2,1)" }} />
-          {/* numeric */}
-          <text x={cx} y={cy + 6} textAnchor="middle"
-                fill="var(--glass)" fontFamily="'IBM Plex Mono', monospace"
-                fontSize={48} fontWeight={500} style={{ fontVariantNumeric: "tabular-nums" }}>
+          {/* numeric — serif */}
+          <text x={cx} y={cy + 10} textAnchor="middle"
+                fill="var(--glass)"
+                fontFamily="var(--font-display, 'Newsreader', serif)"
+                fontSize={56} fontWeight={500} style={{ fontVariantNumeric: "tabular-nums" }}>
             {loading ? "—" : score == null ? "—" : Math.round(displayed)}
           </text>
-          <text x={cx} y={cy + 28} textAnchor="middle"
+          <text x={cx} y={cy + 32} textAnchor="middle"
                 fill="var(--glass-2)" fontFamily="'IBM Plex Mono', monospace"
-                fontSize={10} letterSpacing="0.14em">
+                fontSize={10} letterSpacing="0.18em">
             IMPRINT
           </text>
         </svg>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, letterSpacing: "0.08em" }}>
-        <span style={{ color: "var(--glass-2)" }}>Δ 7D</span>
-        <span style={{ color: deltaColor, fontVariantNumeric: "tabular-nums" }}>
-          {delta == null ? "—" : `${deltaSign}${delta}`}
-        </span>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, letterSpacing: "0.06em" }}>
+        <span style={{ color: deltaColor }}>{deltaLabel}</span>
+        {showSpark && (
+          <svg width={sparkW} height={sparkH} aria-label="Week shape" style={{ display: "block" }}>
+            <path d={sparkPath} fill="none" stroke="var(--live)" strokeWidth={1.2} strokeLinecap="round" strokeLinejoin="round" opacity={0.9} />
+          </svg>
+        )}
       </div>
     </div>
   );
