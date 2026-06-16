@@ -2870,8 +2870,16 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
   const [topSignal, setTopSignal] = useState<{ id: string; signal_title: string } | null>(null);
   const [signalCount, setSignalCount] = useState<number>(0);
   const navigate = useNavigate();
+  // Race-fix: don't let realtime INSERTs trigger a parallel refetch
+  // before the initial loadPosts() has settled.
+  const initialLoadDoneRef = useRef(false);
 
-  useEffect(() => { loadPosts(); loadProfile(); loadSignalContext(); }, []);
+  useEffect(() => {
+    initialLoadDoneRef.current = false;
+    loadPosts().finally(() => { initialLoadDoneRef.current = true; });
+    loadProfile();
+    loadSignalContext();
+  }, []);
 
   // Realtime: refetch library when this user's linkedin_posts change.
   useEffect(() => {
@@ -2885,7 +2893,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "linkedin_posts", filter: `user_id=eq.${user.id}` },
-          () => { loadPosts(); },
+          () => { if (initialLoadDoneRef.current) loadPosts(); },
         )
         .subscribe();
     })();
