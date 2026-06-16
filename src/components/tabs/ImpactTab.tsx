@@ -1479,7 +1479,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       </div>
       <ScoreHero
         score={latestScore}
-        tierName={auraData?.tier_name}
+        tierName={tierName as any}
         nextTierName={auraData?.next_tier_name}
         pointsToNext={auraData?.points_to_next}
         sector={sectorFocus}
