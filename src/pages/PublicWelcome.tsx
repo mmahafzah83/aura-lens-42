@@ -238,7 +238,7 @@ const Milestone = ({ label, title, desc, preFilled }: { label: string; title: st
         aria-hidden
         style={{
           position: "absolute", left: 8, top: 0, bottom: 0, width: 2,
-          background: filled ? BRONZE : "#2a2a2a",
+          background: filled ? BRONZE : HAIR,
           transition: "background 600ms ease-out",
         }}
       />
@@ -557,7 +557,7 @@ export default function PublicWelcome() {
                 }}>Move the slider to begin.</p>
               )}
             </div>
-            <div className="pw-fade-up pw-bounce" style={{ fontSize: 13, color: contentRevealed ? BRONZE : "#8a8a8a", animationDelay: "1.8s", opacity: 0, marginTop: 8, transition: "color 400ms ease" }}>
+            <div className="pw-fade-up pw-bounce" style={{ fontSize: 13, color: contentRevealed ? BRONZE : INK_3, animationDelay: "1.8s", opacity: 0, marginTop: 8, transition: "color 400ms ease" }}>
               {contentRevealed ? "Scroll to discover what's possible ↓" : "↓"}
             </div>
           </div>
