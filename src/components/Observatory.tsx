@@ -218,6 +218,17 @@ type FacetKey = "Identity" | "Expertise" | "Voice" | "Focus" | "Audience" | "Per
 const FACET_ORDER: FacetKey[] = ["Identity", "Expertise", "Voice", "Focus", "Audience", "Perception", "Confidence"];
 const FORMING: ReadonlySet<FacetKey> = new Set<FacetKey>(["Perception", "Confidence"]);
 
+/** facet_states stores lowercase canonical keys. Map → display facet name. */
+const FACET_DB_TO_DISPLAY: Record<string, FacetKey> = {
+  identity: "Identity",
+  edge: "Expertise",
+  voice: "Voice",
+  focus: "Focus",
+  audience: "Audience",
+  discernment: "Perception",
+  conviction: "Confidence",
+};
+
 interface FacetRow {
   facet: FacetKey;
   value: number | null;
