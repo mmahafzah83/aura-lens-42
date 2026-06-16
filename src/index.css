@@ -983,6 +983,34 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   --brand-muted: color-mix(in srgb, var(--action) 22%, transparent);
   --brand-pale: color-mix(in srgb, var(--action) 10%, var(--paper));
 }
+
+/* ── Bone Page shadcn token remap ──
+   Scope shadcn surface tokens to the bone wrappers only so they stop
+   inheriting the dark :root values (muddy olive cards/inputs). Dark
+   Instruments (Observatory, Capture, Ask, Carousel, Impact, TrendDetail)
+   keep their dark shadcn values because they sit outside these wrappers.
+   Values are HSL triples (no `hsl()` wrapper) to match shadcn convention
+   (`hsl(var(--card))`).
+     --paper-2 #E9E2D3 → 41 33% 87%
+     --paper-3 #E0D8C6 → 41 32% 83%
+     --rule    #D6CDB9 → 41 26% 78%
+     --action  #D6A748 → 40 63% 56% */
+.publish-page,
+.story-page {
+  --card:      41 33% 87%;
+  --popover:   41 33% 87%;
+  --muted:     41 33% 87%;
+  --secondary: 41 33% 87%;
+  --input:     41 26% 78%;
+  --border:    41 26% 78%;
+  --ring:      40 63% 56%;
+}
+
+.story-page {
+  background: var(--paper);
+  color: var(--ink);
+}
+
 .publish-page h1,
 .publish-page h2,
 .publish-page h3 { font-family: var(--font-serif), Georgia, serif; }
