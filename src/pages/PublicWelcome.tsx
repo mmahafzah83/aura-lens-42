@@ -2,21 +2,23 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import usePageMeta from "@/hooks/usePageMeta";
 import ScrollSpyNav from "@/components/ScrollSpyNav";
+import { AuraLogo } from "@/components/brand/AuraLogo";
 
-const BRONZE = "#B08D3A";
-const BG = "#0a0a08";
-const BG_WARM = "#0d0b08";
-const BG_ALT = "#0f0e0c";
-const CARD_BG = "#151412";
-const STEPS_BG = "#111110";
-
-const HorizonEye = ({ size = 80, color = BRONZE, pupilR = 5 }: { size?: number; color?: string; pupilR?: number }) => (
-  <svg width={size} height={size * 0.55} viewBox="0 0 60 33" fill="none" aria-hidden>
-    <path d="M2 16.5 C 12 4, 48 4, 58 16.5 C 48 29, 12 29, 2 16.5 Z" stroke={color} strokeWidth="1.5" fill="none" />
-    <circle cx="30" cy="16.5" r="9" stroke={color} strokeWidth="1" fill="none" opacity="0.55" />
-    <circle cx="30" cy="16.5" r={pupilR} fill={color} style={{ transition: "r 600ms ease-out" }} />
-  </svg>
-);
+// System-A tokens (resolved at runtime from index.css)
+const BRONZE = "var(--action)";
+const BG = "var(--ob-bg)";
+const BG_WARM = "var(--ob-bg)";
+const BG_ALT = "var(--ob-panel)";
+const CARD_BG = "var(--ob-panel)";
+const STEPS_BG = "var(--ob-raised)";
+const INK = "var(--glass)";
+const INK_2 = "var(--glass-2)";
+const INK_3 = "var(--glass-3)";
+const HAIR = "var(--hair)";
+const SERIF = "var(--font-serif), Georgia, serif";
+const BODY = "var(--font-body), sans-serif";
+const ARABIC = "var(--font-arabic), var(--font-body), sans-serif";
+const SPOT = "var(--spot)";
 
 /* Character-by-character headline reveal */
 const CharReveal = ({ text, accentWord, className, style }: { text: string; accentWord?: string; className?: string; style?: React.CSSProperties }) => {
