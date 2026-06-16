@@ -1395,7 +1395,7 @@ End with NEXT STEP:.`;
             transform: "translateX(-50%)",
             width: 520,
             height: 520,
-            background: "radial-gradient(circle, var(--ob-raised) 0%, rgba(176,141,58,0) 60%)",
+            background: "radial-gradient(circle, var(--ob-raised) 0%, transparent 60%)",
             pointerEvents: "none",
             opacity: 0.7,
           }}
@@ -1411,9 +1411,9 @@ End with NEXT STEP:.`;
             to { opacity: 1; transform: translateY(0); }
           }
           @keyframes auraSignalGlow {
-            0% { box-shadow: 0 0 0 0 rgba(176,141,58,0); }
-            50% { box-shadow: 0 0 12px 2px rgba(176,141,58,0.12); }
-            100% { box-shadow: 0 0 0 0 rgba(176,141,58,0); }
+            0% { box-shadow: 0 0 0 0 transparent; }
+            50% { box-shadow: 0 0 12px 2px var(--hair); }
+            100% { box-shadow: 0 0 0 0 transparent; }
           }
           /* Border tint stays bronze; bg/text/placeholder are token-driven on the
              element so they resolve correctly in BOTH light and dark themes. */
@@ -1437,7 +1437,7 @@ End with NEXT STEP:.`;
           .aura-chat-dark .aura-msg .provocation,
           .aura-chat-dark .aura-msg blockquote {
             font-style: italic;
-            color: rgba(230, 222, 205, 0.5);
+            color: var(--glass-2);
             border-left: 2px solid rgba(176, 141, 58, 0.25);
             padding-left: 12px;
             display: block;
@@ -1849,7 +1849,7 @@ End with NEXT STEP:.`;
                                     border: "1px solid var(--action)",
                                     borderRadius: 8,
                                     padding: "10px 12px",
-                                    color: "rgba(230,222,205,0.95)",
+                                    color: "var(--glass)",
                                     fontSize: 14,
                                     outline: "none",
                                   }}
