@@ -57,14 +57,14 @@ const ThinkingCeremony = ({ signalCount, captureCount }: { signalCount: number; 
     <div style={{
       padding: "14px 16px",
       borderRadius: 12,
-      background: "rgba(176,141,58,0.06)",
-      border: "1px solid rgba(176,141,58,0.15)",
+      background: "var(--ob-raised)",
+      border: "1px solid var(--ob-panel)",
     }}>
       {lines.map((line, i) => (
         <div key={i} style={{
           fontFamily: "'DM Sans', sans-serif",
           fontSize: 13,
-          color: "rgba(230, 222, 205, 0.7)",
+          color: "var(--glass-2)",
           opacity: step > i ? 1 : 0,
           transform: step > i ? "translateY(0)" : "translateY(8px)",
           transition: "all 0.5s ease-out",
@@ -135,25 +135,25 @@ const DynamicActions = ({ state, onAction, disabled }: { state: string; onAction
           }}
           style={{
             display: "inline-flex", alignItems: "center", gap: 6,
-            background: "rgba(176,141,58,0.08)",
-            border: "1px solid rgba(176,141,58,0.2)",
+            background: "var(--ob-raised)",
+            border: "1px solid var(--hair)",
             borderRadius: 20,
             padding: "8px 14px",
             fontSize: 13,
-            color: "rgba(230,222,205,0.85)",
+            color: "var(--glass)",
             cursor: disabled ? "not-allowed" : "pointer",
             transition: "all 0.2s ease",
             opacity: disabled ? 0.5 : 1,
           }}
           onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background = "rgba(176,141,58,0.15)";
-            (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(176,141,58,0.4)";
+            (e.currentTarget as HTMLButtonElement).style.background = "var(--ob-panel)";
+            (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--hair)";
             (e.currentTarget as HTMLButtonElement).style.color = "var(--bronze)";
           }}
           onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background = "rgba(176,141,58,0.08)";
-            (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(176,141,58,0.2)";
-            (e.currentTarget as HTMLButtonElement).style.color = "rgba(230,222,205,0.85)";
+            (e.currentTarget as HTMLButtonElement).style.background = "var(--ob-raised)";
+            (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--hair)";
+            (e.currentTarget as HTMLButtonElement).style.color = "var(--glass)";
           }}
         >
           <Icon size={14} />
@@ -182,7 +182,7 @@ const WhisperSuggestions = ({ state, onAction, disabled }: { state: string; onAc
           }}
           style={{
             fontSize: 12,
-            color: "rgba(230, 222, 205, 0.32)",
+            color: "var(--glass-3)",
             padding: "6px 0",
             cursor: disabled ? "not-allowed" : "pointer",
             transition: "all 0.25s ease",
@@ -196,7 +196,7 @@ const WhisperSuggestions = ({ state, onAction, disabled }: { state: string; onAc
             (e.currentTarget as HTMLDivElement).style.transform = "translateX(4px)";
           }}
           onMouseLeave={(e) => {
-            (e.currentTarget as HTMLDivElement).style.color = "rgba(230, 222, 205, 0.32)";
+            (e.currentTarget as HTMLDivElement).style.color = "var(--glass-3)";
             (e.currentTarget as HTMLDivElement).style.transform = "translateX(0)";
           }}
         >
@@ -375,7 +375,7 @@ const ContextPanel = ({ userQuery }: { userQuery: string }) => {
           )}
 
           {loaded && (
-            <div style={{ marginTop: 8, fontSize: 12, color: signals.length > 0 ? "var(--success)" : "var(--gold-mid)" }}>
+            <div style={{ marginTop: 8, fontSize: 12, color: signals.length > 0 ? "var(--success)" : "var(--glass-2)" }}>
               {signals.length > 0
                 ? "Response grounded in your stored intelligence"
                 : "Response based on general reasoning — capture more to improve relevance"}
@@ -1377,8 +1377,8 @@ End with NEXT STEP:.`;
         style={{
           height: "85vh",
           zIndex: 1000,
-          background: "#0a0908",
-          color: "rgba(230, 222, 205, 0.95)",
+          background: "var(--ob-bg)",
+          color: "var(--glass)",
           transform: swipeY > 0 ? `translateY(${swipeY}px)` : "translateY(0)",
           transition: swipeY > 0 ? "none" : "transform 0.3s ease-out",
           opacity: swipeY > 0 ? Math.max(0.3, 1 - swipeY / 400) : 1,
@@ -1395,7 +1395,7 @@ End with NEXT STEP:.`;
             transform: "translateX(-50%)",
             width: 520,
             height: 520,
-            background: "radial-gradient(circle, rgba(176,141,58,0.08) 0%, rgba(176,141,58,0) 60%)",
+            background: "radial-gradient(circle, var(--ob-raised) 0%, rgba(176,141,58,0) 60%)",
             pointerEvents: "none",
             opacity: 0.7,
           }}
@@ -1421,19 +1421,19 @@ End with NEXT STEP:.`;
             border-color: color-mix(in srgb, var(--bronze) 25%, transparent) !important;
           }
           .aura-chat-dark .aura-msg .serif-insight {
-            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-family: var(--font-serif);
             font-size: 16px;
-            color: rgba(237, 237, 237, 0.95);
+            color: var(--glass);
             line-height: 1.4;
             display: block;
             margin-bottom: 4px;
           }
           .aura-chat-dark .aura-msg .signal-ref,
           .aura-chat-dark .aura-msg strong {
-            color: #D4B056;
+            color: var(--action);
             font-weight: 500;
           }
-          .aura-chat-dark .aura-msg .dim-ref { color: rgba(212, 176, 86, 0.75); }
+          .aura-chat-dark .aura-msg .dim-ref { color: var(--glass-2); }
           .aura-chat-dark .aura-msg .provocation,
           .aura-chat-dark .aura-msg blockquote {
             font-style: italic;
@@ -1511,7 +1511,7 @@ End with NEXT STEP:.`;
                   </p>
                   {!activeConv && headerCounts && (
                     <p style={{ fontSize: 11, color: "var(--ink-5)", marginTop: 2, lineHeight: 1.4 }}>
-                      <span style={{ color: "var(--gold-dark)", marginRight: 4 }}>✦</span>
+                      <span style={{ color: "var(--action)", marginRight: 4 }}>✦</span>
                       Aware of {headerCounts.signals} signal{headerCounts.signals === 1 ? "" : "s"}
                       {headerCounts.score != null && ` · score ${headerCounts.score}`}
                       {headerCounts.daysSincePost != null && ` · ${headerCounts.daysSincePost}d since last post`}
@@ -1575,19 +1575,19 @@ End with NEXT STEP:.`;
           const topic = firstSentence.length > 60 ? firstSentence.slice(0, 60) + "…" : firstSentence;
           const lastAssistants = memoryRows.filter(r => r.role === "assistant" && r.content).slice(0, 5);
           return (
-            <div style={{ background: "rgba(176,141,58,0.08)", borderBottom: "0.5px solid rgba(176,141,58,0.2)" }}>
+            <div style={{ background: "var(--ob-raised)", borderBottom: "0.5px solid var(--hair)" }}>
               <div className="flex items-center gap-2 px-4 py-2">
-                <span style={{ color: "#D4B056", fontSize: 12, fontWeight: 600 }}>
+                <span style={{ color: "var(--action)", fontSize: 12, fontWeight: 600 }}>
                   ✦
                 </span>
-                <span style={{ fontSize: 12, color: "rgba(230,222,205,0.75)", lineHeight: 1.35 }} className="truncate">
+                <span style={{ fontSize: 12, color: "var(--glass-2)", lineHeight: 1.35 }} className="truncate">
                   Continuing from: {topic}
                 </span>
               </div>
               {showMemoryPanel && (
-                <div style={{ borderTop: "0.5px solid var(--gold-light)", background: "var(--gold-pale-2)", padding: "6px 8px" }}>
+                <div style={{ borderTop: "0.5px solid var(--hair)", background: "var(--ob-raised)", padding: "6px 8px" }}>
                   {lastAssistants.length === 0 ? (
-                    <div style={{ fontSize: 12, color: "var(--gold-mid-2)", padding: "6px 8px" }}>No recent memory yet.</div>
+                    <div style={{ fontSize: 12, color: "var(--glass-2)", padding: "6px 8px" }}>No recent memory yet.</div>
                   ) : (
                     lastAssistants.map(r => {
                       const ts = new Date(r.created_at).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
@@ -1598,11 +1598,11 @@ End with NEXT STEP:.`;
                           onClick={() => { send(r.content || ""); }}
                           className="w-full text-left tactile-press"
                           style={{ display: "block", padding: "6px 8px", borderRadius: 6, background: "transparent", border: "none", cursor: "pointer", marginBottom: 2 }}
-                          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--gold-pale-3)"; }}
+                          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--ob-panel)"; }}
                           onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
                         >
-                          <div style={{ fontSize: 12, color: "var(--gold-mid-3)", textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 2 }}>{ts}</div>
-                          <div style={{ fontSize: 12, color: "var(--gold-dark)", lineHeight: 1.35 }}>{snippet}</div>
+                          <div style={{ fontSize: 12, color: "var(--glass-2)", textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 2 }}>{ts}</div>
+                          <div style={{ fontSize: 12, color: "var(--action)", lineHeight: 1.35 }}>{snippet}</div>
                         </button>
                       );
                     })
@@ -1764,18 +1764,18 @@ End with NEXT STEP:.`;
                       {/* Milestone card (top, dismissable) */}
                       {milestone && (
                         <div style={{
-                          background: "rgba(176,141,58,0.1)",
-                          border: "1px solid rgba(176,141,58,0.35)",
+                          background: "var(--ob-raised)",
+                          border: "1px solid var(--hair)",
                           borderRadius: 12,
                           padding: "14px 16px",
                           position: "relative",
                         }}>
-                          <div style={{ color: "#D4B056", fontSize: 18, marginBottom: 8 }}>✦</div>
+                          <div style={{ color: "var(--action)", fontSize: 18, marginBottom: 8 }}>✦</div>
                           <div style={{
                             fontFamily: "'DM Sans', sans-serif",
                             fontSize: 13,
                             lineHeight: 1.6,
-                            color: "rgba(230,222,205,0.9)",
+                            color: "var(--glass)",
                             whiteSpace: "pre-line",
                           }}>{milestone.message}</div>
                           {milestone.cta && (
@@ -1783,8 +1783,8 @@ End with NEXT STEP:.`;
                               onClick={() => { const cta = milestone.cta!; setMilestone(null); send(cta.prompt); }}
                               style={{
                                 marginTop: 10,
-                                background: "#D4B056",
-                                color: "#0d0d0b",
+                                background: "var(--action)",
+                                color: "var(--ob-bg)",
                                 border: "none",
                                 padding: "8px 14px",
                                 borderRadius: 8,
@@ -1796,7 +1796,7 @@ End with NEXT STEP:.`;
                           )}
                           <button
                             onClick={() => setMilestone(null)}
-                            style={{ position: "absolute", top: 8, right: 8, background: "transparent", border: "none", color: "rgba(230,222,205,0.4)", cursor: "pointer" }}
+                            style={{ position: "absolute", top: 8, right: 8, background: "transparent", border: "none", color: "var(--glass-3)", cursor: "pointer" }}
                           ><X size={14} /></button>
                         </div>
                       )}
@@ -1807,17 +1807,17 @@ End with NEXT STEP:.`;
                           fontFamily: "'DM Sans', sans-serif",
                           fontSize: 14,
                           lineHeight: 1.75,
-                          color: "rgba(230,222,205,0.9)",
+                          color: "var(--glass)",
                           padding: "8px 4px",
                         }}>
-                          <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, color: "#ededed", marginBottom: 14 }}>
+                          <div style={{ fontFamily: "var(--font-serif)", fontSize: 22, color: "var(--glass)", marginBottom: 14 }}>
                             I've been studying your profile.
                           </div>
                           <p style={{ marginBottom: 14 }}>{studyParagraph}</p>
                           {firstOpenCtx.northStar ? (
                             <>
                               <p style={{ marginBottom: 14 }}>
-                                You told me your goal is: <span style={{ color: "#D4B056", fontStyle: "italic" }}>"{firstOpenCtx.northStar}"</span>
+                                You told me your goal is: <span style={{ color: "var(--action)", fontStyle: "italic" }}>"{firstOpenCtx.northStar}"</span>
                               </p>
                               <p style={{ marginBottom: 18 }}>
                                 Based on your calibration, the market has a gap exactly where your strengths sit. Let me show you.
@@ -1825,7 +1825,7 @@ End with NEXT STEP:.`;
                               <button
                                 onClick={() => send("Based on my calibration and north star goal, what territory should I claim in my sector? Be specific about what gap exists and why I'm positioned to fill it.")}
                                 style={{
-                                  background: "#D4B056", color: "#0d0d0b", border: "none",
+                                  background: "var(--action)", color: "var(--ob-bg)", border: "none",
                                   padding: "10px 18px", borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: "pointer",
                                 }}
                               >Show me →</button>
@@ -1834,7 +1834,7 @@ End with NEXT STEP:.`;
                             <>
                               <p style={{ marginBottom: 14 }}>That's not common. And it's exactly what the market is undervaluing right now.</p>
                               <p style={{ marginBottom: 14 }}>I have one question for you.</p>
-                              <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, color: "#ededed", marginBottom: 12 }}>
+                              <div style={{ fontFamily: "var(--font-serif)", fontSize: 18, color: "var(--glass)", marginBottom: 12 }}>
                                 What topic do you want the market to associate with your name?
                               </div>
                               <div style={{ display: "flex", gap: 8 }}>
@@ -1845,8 +1845,8 @@ End with NEXT STEP:.`;
                                   placeholder="e.g. AI strategy for utilities"
                                   style={{
                                     flex: 1,
-                                    background: "rgba(255,255,255,0.04)",
-                                    border: "1px solid #D4B056",
+                                    background: "var(--ob-field)",
+                                    border: "1px solid var(--action)",
                                     borderRadius: 8,
                                     padding: "10px 12px",
                                     color: "rgba(230,222,205,0.95)",
@@ -1885,7 +1885,7 @@ End with NEXT STEP:.`;
                                     finally { setSavingNorthStar(false); }
                                   }}
                                   style={{
-                                    background: "#D4B056", color: "#0d0d0b", border: "none",
+                                    background: "var(--action)", color: "var(--ob-bg)", border: "none",
                                     padding: "0 16px", borderRadius: 8, fontSize: 13, fontWeight: 600,
                                     cursor: northStarInput.trim() ? "pointer" : "not-allowed",
                                     opacity: northStarInput.trim() ? 1 : 0.5,
@@ -1900,42 +1900,42 @@ End with NEXT STEP:.`;
                           {/* Contextual greeting card */}
                           {firstOpenCtx.topSignalTitle ? (
                             <div style={{
-                              background: "rgba(176,141,58,0.08)",
-                              border: "1px solid rgba(176,141,58,0.2)",
+                              background: "var(--ob-raised)",
+                              border: "1px solid var(--hair)",
                               borderRadius: 10,
                               padding: "12px 14px",
                             }}>
-                              <div style={{ fontSize: 11, color: "#D4B056", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 6, fontWeight: 600 }}>Your top signal</div>
-                              <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, color: "#ededed", lineHeight: 1.4, marginBottom: 4 }}>
+                              <div style={{ fontSize: 11, color: "var(--action)", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 6, fontWeight: 600 }}>Your top signal</div>
+                              <div style={{ fontFamily: "var(--font-serif)", fontSize: 18, color: "var(--glass)", lineHeight: 1.4, marginBottom: 4 }}>
                                 "{firstOpenCtx.topSignalTitle}"
                               </div>
-                              <div style={{ fontSize: 12, color: "rgba(230,222,205,0.6)" }}>
+                              <div style={{ fontSize: 12, color: "var(--glass-2)" }}>
                                 {Math.round((firstOpenCtx.topSignalConfidence || 0) * 100)}% confidence
                                 {firstOpenCtx.topSignalSources != null ? ` · ${firstOpenCtx.topSignalSources} source${firstOpenCtx.topSignalSources === 1 ? "" : "s"}` : ""}
                               </div>
                             </div>
                           ) : captureCount > 0 ? (
                             <div style={{
-                              background: "rgba(176,141,58,0.06)",
-                              border: "1px solid rgba(176,141,58,0.18)",
+                              background: "var(--ob-raised)",
+                              border: "1px solid var(--hair)",
                               borderRadius: 10,
                               padding: "12px 14px",
                             }}>
-                              <div style={{ fontSize: 11, color: "#D4B056", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 6, fontWeight: 600 }}>Your intelligence</div>
-                              <div style={{ fontSize: 13, color: "rgba(230,222,205,0.85)", lineHeight: 1.5 }}>
+                              <div style={{ fontSize: 11, color: "var(--action)", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 6, fontWeight: 600 }}>Your intelligence</div>
+                              <div style={{ fontSize: 13, color: "var(--glass)", lineHeight: 1.5 }}>
                                 {captureCount} capture{captureCount === 1 ? "" : "s"} processed.
                                 {captureCount < 3 ? ` ${3 - captureCount} more to detect your first signal.` : " Signals emerging."}
                               </div>
                             </div>
                           ) : (
                             <div style={{
-                              background: "rgba(176,141,58,0.06)",
-                              border: "1px solid rgba(176,141,58,0.18)",
+                              background: "var(--ob-raised)",
+                              border: "1px solid var(--hair)",
                               borderRadius: 10,
                               padding: "12px 14px",
                             }}>
-                              <div style={{ fontSize: 11, color: "#D4B056", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 6, fontWeight: 600 }}>Getting started</div>
-                              <div style={{ fontSize: 13, color: "rgba(230,222,205,0.85)", lineHeight: 1.5 }}>
+                              <div style={{ fontSize: 11, color: "var(--action)", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 6, fontWeight: 600 }}>Getting started</div>
+                              <div style={{ fontSize: 13, color: "var(--glass)", lineHeight: 1.5 }}>
                                 Capture your first article and I'll start finding patterns in what you read.
                               </div>
                             </div>
