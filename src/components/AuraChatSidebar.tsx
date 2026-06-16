@@ -342,7 +342,7 @@ const ContextPanel = ({ userQuery }: { userQuery: string }) => {
     <div className="mt-1.5 w-full max-w-[85%]">
       <button
         onClick={() => setExpanded(e => !e)}
-        style={{ fontSize: 12, color: "var(--ink-4)", background: "none", border: "none", padding: 0, cursor: "pointer" }}
+        style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--glass-2)", background: "none", border: "none", padding: 0, cursor: "pointer" }}
       >
         Context used {expanded ? "▴" : "↓"}
       </button>
