@@ -1530,7 +1530,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                             style={{
                               display: "inline-flex", alignItems: "center", gap: 4,
                               fontSize: 11, padding: "3px 8px", borderRadius: 999,
-                              background: "var(--surface-ink-raised)", color: "var(--ink-5, var(--glass))",
+                              background: "var(--surface-ink-raised)", color: "var(--glass-2)",
                               border: "0.5px solid var(--surface-ink-subtle)", cursor: "pointer",
                             }}
                           >
