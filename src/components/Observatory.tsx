@@ -221,7 +221,7 @@ const ImprintCore = ({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label="Imprint core: 7 facets">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label="Imprint core: 7 facets" style={{ overflow: "visible" }}>
         {/* outer guide ring */}
         <circle cx={cx} cy={cy} r={ringR} fill="none" stroke="var(--hair)" strokeWidth={0.5} />
         {/* core */}

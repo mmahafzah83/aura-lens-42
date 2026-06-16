@@ -468,7 +468,7 @@ export const SignalHero = ({
   return (
     <section style={{ marginTop: 32, paddingTop: 24, borderTop: "0.5px solid var(--color-border-tertiary, var(--surface-ink-subtle))" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-        <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".06em", color: "var(--brand)" }}>
+        <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".06em", color: "var(--glass)" }}>
           ✦ YOUR STRONGEST SIGNAL
         </span>
         <InfoTooltip slug="intel-strongest-signal" label="Your strongest signal" side="top" triggerSize={13} />
