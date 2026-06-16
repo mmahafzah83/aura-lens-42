@@ -1115,16 +1115,16 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   --ink: var(--glass);
   --ink-2: color-mix(in srgb, var(--glass) 82%, transparent);
   --ink-3: var(--hair);
-  --ink-4: var(--glass-2);
+  --ink-4: color-mix(in srgb, var(--glass) 78%, transparent);
   --ink-5: var(--glass-2);
   --ink-6: var(--glass);
   --ink-7: var(--glass);
   --ink-on-brand: var(--ob-bg);
 
-  /* Surfaces → flat, so the inline-styled cards collapse to rows */
-  --surface-ink: transparent;
-  --surface-ink-raised: transparent;
-  --surface-ink-subtle: color-mix(in srgb, var(--glass) 4%, transparent);
+  /* Surfaces → OPAQUE dark panels so cards stand on the gridded page */
+  --surface-ink: var(--ob-panel);
+  --surface-ink-raised: var(--ob-raised);
+  --surface-ink-subtle: var(--ob-panel);
 
   /* Brand / bronze legacy → Instrument accents */
   --brand: var(--action);
@@ -1143,8 +1143,8 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   --bronze-glow: color-mix(in srgb, var(--action) 30%, transparent);
 
   /* Aura legacy → Instrument (safety net for any nested usage) */
-  --aura-bg: transparent;
-  --aura-card: transparent;
+  --aura-bg: var(--ob-bg);
+  --aura-card: var(--ob-panel);
   --aura-border: var(--hair);
   --aura-t1: var(--glass);
   --aura-t2: color-mix(in srgb, var(--glass) 78%, transparent);
@@ -1152,13 +1152,27 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   --aura-accent: var(--action);
   --aura-accent2: var(--live);
 
-  /* Paper / parchment surfaces → dark (in case any inline style hits these) */
-  --paper: transparent;
-  --paper-2: transparent;
-  --paper-3: transparent;
+  /* Paper / parchment surfaces → opaque dark panels */
+  --paper: var(--ob-panel);
+  --paper-2: var(--ob-panel);
+  --paper-3: var(--ob-raised);
   --rule: var(--hair);
   --hairline: var(--hair);
   --line-1: var(--hair);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   .observatory-page — full-bleed dark surface + faint graph-paper
+   grid for the Intelligence tab. Page-local; does not touch
+   :root globals or other tabs.
+   ══════════════════════════════════════════════════════════════ */
+.observatory-page {
+  background-color: var(--ob-bg);
+  background-image:
+    linear-gradient(to right,  rgba(255,255,255,0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.045) 1px, transparent 1px);
+  background-size: 26px 26px;
+  background-position: 0 0, 0 0;
 }
 
 /* ══════════════════════════════════════════════════════════════
