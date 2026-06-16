@@ -3184,7 +3184,17 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 32,
+        ['--bg-card' as any]: 'var(--paper-2)',
+        ['--bg-subtle' as any]: 'var(--paper-3)',
+        ['--color-border' as any]: 'var(--brand-line)',
+        ['--color-muted' as any]: 'var(--ink-3)',
+      }}
+    >
       {pendingDeleteId && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.8)" }}>
           <div className="bg-card border border-border/20 rounded-xl p-6 w-[400px] max-w-[90vw] space-y-4 shadow-2xl">
