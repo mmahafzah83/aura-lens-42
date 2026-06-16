@@ -1322,14 +1322,14 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
             <div className="space-y-3">
               {recentDocs.length > 0 && (
                 <div className="space-y-2">
-                  <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-4)" }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--glass-2)", fontFamily: "'IBM Plex Mono', ui-monospace, monospace" }}>
                     Recent documents
                   </div>
                   <div className="space-y-1.5">
                     {recentDocs.map((d) => {
                       const ext = (d.filename || "").split(".").pop()?.toLowerCase() || "";
                       const isPdf = ext === "pdf";
-                      const iconBg = isPdf ? "var(--error)" : "var(--color-indigo)";
+                      const iconBg = isPdf ? "var(--neg)" : "var(--action)";
                       const isProcessed = d.status === "processed";
                       return (
                         <div
@@ -1339,8 +1339,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                             alignItems: "center",
                             gap: 12,
                             padding: "10px 12px",
-                            background: "var(--aura-card)",
-                            border: "0.5px solid hsl(var(--border))",
+                            background: "var(--ob-raised)",
+                            border: "0.5px solid var(--hair)",
                             borderRadius: 12,
                           }}
                         >
@@ -1359,10 +1359,10 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                             <FileText className="w-4 h-4" style={{ color: "var(--ink-on-brand)" }} />
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 12, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            <div style={{ fontSize: 12, fontWeight: 500, color: "var(--glass)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                               {d.filename}
                             </div>
-                            <div style={{ fontSize: 12, color: "var(--ink-5)", marginTop: 2 }}>
+                            <div style={{ fontSize: 12, color: "var(--glass-2)", marginTop: 2 }}>
                               {fmtBytes(d.file_size)} · {new Date(d.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                             </div>
                           </div>
@@ -1374,8 +1374,11 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                               textTransform: "uppercase",
                               padding: "3px 8px",
                               borderRadius: 6,
-                              background: isProcessed ? "var(--success-pale)" : "var(--warning-pale)",
-                              color: isProcessed ? "var(--success)" : "var(--warning)",
+                              background: isProcessed
+                                ? "color-mix(in srgb, var(--pos) 18%, var(--ob-raised))"
+                                : "color-mix(in srgb, var(--action) 16%, var(--ob-raised))",
+                              color: isProcessed ? "var(--pos)" : "var(--action)",
+                              fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
                             }}
                           >
                             {isProcessed ? "Read" : "Reading"}
