@@ -697,11 +697,11 @@ const Auth = () => {
       {/* RIGHT — brand panel (hidden on mobile) */}
       <div
         className="hidden md:flex md:w-[60%] min-h-screen relative items-center justify-center px-12"
-        style={{ backgroundColor: "var(--surface-ink-subtle, #1C1812)" }}
+        style={{ backgroundColor: "var(--ob-bg)" }}
       >
         {/* Centered radial glow */}
         <div
-          className="pointer-events-none"
+          className="pointer-events-none auth-glow"
           style={{
             position: "absolute",
             top: "50%",
@@ -710,7 +710,7 @@ const Auth = () => {
             width: 400,
             height: 400,
             background:
-              "radial-gradient(circle, hsl(43 50% 55% / 0.08) 0%, transparent 65%)",
+              "radial-gradient(circle, color-mix(in srgb, var(--action) 12%, transparent) 0%, transparent 65%)",
             zIndex: 0,
           }}
         />
@@ -723,24 +723,24 @@ const Auth = () => {
             Your expertise is invisible. Aura fixes that.
           </p>
 
-          <div className="mx-auto my-8" style={{ width: 40, height: 2, backgroundColor: "var(--brand)", opacity: 0.5 }} />
+          <div className="mx-auto my-8" style={{ width: 40, height: 2, backgroundColor: "var(--action)", opacity: 0.5 }} />
 
           <div className="space-y-6 text-left">
             <FeatureRow
               delay={300}
-              icon={<Radio className="w-4 h-4" style={{ color: "var(--brand)" }} />}
+              icon={<Radio className="w-4 h-4" style={{ color: "var(--action)" }} />}
               title="Signal intelligence"
               desc="Converts what you read into ranked market signals"
             />
             <FeatureRow
               delay={360}
-              icon={<PenLine className="w-4 h-4" style={{ color: "var(--brand)" }} />}
+              icon={<PenLine className="w-4 h-4" style={{ color: "var(--action)" }} />}
               title="Flash content"
               desc="LinkedIn posts in your voice, English or Arabic, in minutes"
             />
             <FeatureRow
               delay={420}
-              icon={<TrendingUp className="w-4 h-4" style={{ color: "var(--brand)" }} />}
+              icon={<TrendingUp className="w-4 h-4" style={{ color: "var(--action)" }} />}
               title="Imprint"
               desc="Tracks how your visibility compounds over time"
             />
