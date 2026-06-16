@@ -1047,10 +1047,18 @@ const Observatory = ({
 
   /* ── Render ───────────────────────────────────────────── */
   return (
-    <div style={{
-      minHeight: "100vh", paddingBottom: 80,
-      background: "var(--ob-bg)", color: "var(--glass)",
-    }}>
+    <div
+      className="observatory-page"
+      style={{
+        minHeight: "100vh", paddingBottom: 80,
+        color: "var(--glass)",
+        // Full-bleed: break out of the parent .aura-page gutter so the
+        // dark gridded surface fills the entire tab edge-to-edge.
+        width: "100vw",
+        marginLeft: "calc(50% - 50vw)",
+        marginRight: "calc(50% - 50vw)",
+      }}
+    >
       <div style={{ maxWidth: 960, margin: "0 auto", padding: "32px 16px 0" }}>
 
         <ObsHeader
