@@ -23,6 +23,7 @@ import { useJourneyState } from "@/hooks/useJourneyState";
 import TierCeremonyModal from "@/components/TierCeremonyModal";
 import VoiceEngineSection from "@/components/VoiceEngineSection";
 import { useCelebrationsEnabled } from "@/hooks/useCelebrationsEnabled";
+import { useTierFromImprint } from "@/hooks/useTierFromImprint";
 
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
@@ -77,6 +78,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const { user: authUser, isReady: authReady } = useAuthReady();
   const { enabled: celebrationsEnabled } = useCelebrationsEnabled();
   const journey = useJourneyState(authUser?.id ?? null);
+  // Canonical score: imprint_snapshots (same source as Home/Observatory).
+  const { score: imprintScore, currentTier: imprintTier } = useTierFromImprint(authUser?.id ?? null);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [authorityScore, setAuthorityScore] = useState<number | null>(null);
