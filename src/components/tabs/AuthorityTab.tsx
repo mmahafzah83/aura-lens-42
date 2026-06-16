@@ -3612,14 +3612,14 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
   }, [draftPrefill]);
 
   return (
-    <div className="space-y-8">
+    <div className="publish-page space-y-8" style={{ background: "var(--paper)", minHeight: "100%" }}>
       <FirstVisitHint page="publish" />
       {/* Branded header — visible on every sub-tab (Create, Library, Plan) */}
       <div>
-        <div className="font-serif text-base font-medium tracking-wide text-ink-4" style={{ marginBottom: 6 }}>
+        <div className="pub-micro" style={{ marginBottom: 6 }}>
           Your content engine
         </div>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
+        <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 34, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
           Publish
         </h1>
         <p style={{ fontSize: 14, color: "var(--ink-3)", marginTop: 8, lineHeight: 1.5, maxWidth: 640 }}>
@@ -3643,11 +3643,10 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
       <div
         className="inline-flex"
         style={{
-          background: "var(--aura-card)",
+          background: "var(--paper-2)",
           borderRadius: 12,
           padding: 4,
-          boxShadow: "var(--shadow-sm)",
-          border: "0.5px solid hsl(var(--border))",
+          border: "0.5px solid var(--rule)",
           gap: 2,
         }}
       >
@@ -3666,10 +3665,11 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
                 borderRadius: 9,
                 border: "none",
                 cursor: "pointer",
-                fontFamily: "'DM Sans', sans-serif",
-                background: active ? "var(--brand)" : "transparent",
-                color: active ? "#fff" : "var(--ink-4)",
+                fontFamily: "var(--font-serif), Georgia, serif",
+                background: active ? "var(--paper)" : "transparent",
+                color: active ? "var(--ink)" : "var(--ink-3)",
                 fontWeight: active ? 600 : 500,
+                boxShadow: active ? "0 1px 2px rgba(27,23,18,0.08)" : "none",
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 6,
