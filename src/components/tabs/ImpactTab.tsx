@@ -2640,7 +2640,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               <div
                 className="rounded-lg p-5"
                 style={{
-                  background: "#FFFFFF",
+                  background: "var(--color-card)",
                   border: "0.5px solid rgba(0,0,0,0.07)",
                   borderRadius: 14,
                   boxShadow: "var(--aura-shadow-sm, 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05))",
