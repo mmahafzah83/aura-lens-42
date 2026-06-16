@@ -347,35 +347,35 @@ const ContextPanel = ({ userQuery }: { userQuery: string }) => {
         Context used {expanded ? "▴" : "↓"}
       </button>
       {expanded && (
-        <div style={{ background: "var(--ink)", border: "0.5px solid var(--surface-ink-subtle)", borderRadius: 6, padding: "10px 12px", marginTop: 6 }}>
-          <div style={{ fontSize: 12, textTransform: "uppercase", color: "var(--ink-3)", letterSpacing: 0.5 }}>SIGNALS</div>
+        <div style={{ background: "var(--ob-panel)", border: "0.5px solid var(--hair)", borderRadius: 6, padding: "10px 12px", marginTop: 6 }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, textTransform: "uppercase", color: "var(--glass-2)", letterSpacing: 0.5 }}>SIGNALS</div>
           {!loaded ? (
-            <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 4 }}>Loading…</div>
+            <div style={{ fontSize: 12, color: "var(--glass-2)", marginTop: 4 }}>Loading…</div>
           ) : signals.length > 0 ? (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
               {signals.map(s => (
-                <span key={s.id} style={{ background: "var(--surface-ink-subtle)", border: "1px solid var(--brand-muted)", color: "var(--brand)", fontSize: 12, padding: "2px 7px", borderRadius: 4 }}>
+                <span key={s.id} style={{ background: "color-mix(in srgb, var(--live) 14%, transparent)", border: "1px solid color-mix(in srgb, var(--live) 36%, transparent)", color: "var(--live)", fontSize: 12, padding: "2px 7px", borderRadius: 4 }}>
                   {s.signal_title}
                 </span>
               ))}
             </div>
           ) : (
-            <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 4 }}>No stored signals matched this query</div>
+            <div style={{ fontSize: 12, color: "var(--glass-2)", marginTop: 4 }}>No stored signals matched this query</div>
           )}
 
-          <div style={{ fontSize: 12, textTransform: "uppercase", color: "var(--ink-3)", letterSpacing: 0.5, marginTop: 8 }}>YOUR PROFILE</div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, textTransform: "uppercase", color: "var(--glass-2)", letterSpacing: 0.5, marginTop: 8 }}>YOUR PROFILE</div>
           {profileRows.length > 0 ? (
             <div style={{ marginTop: 4 }}>
               {profileRows.map(r => (
-                <div key={r.label} style={{ fontSize: 12, color: "var(--ink-5)" }}>· {r.label}: {r.value}</div>
+                <div key={r.label} style={{ fontSize: 12, color: "var(--glass)" }}>· {r.label}: {r.value}</div>
               ))}
             </div>
           ) : (
-            <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 4 }}>No profile context available</div>
+            <div style={{ fontSize: 12, color: "var(--glass-2)", marginTop: 4 }}>No profile context available</div>
           )}
 
           {loaded && (
-            <div style={{ marginTop: 8, fontSize: 12, color: signals.length > 0 ? "var(--success)" : "var(--glass-2)" }}>
+            <div style={{ marginTop: 8, fontSize: 12, color: signals.length > 0 ? "var(--pos)" : "var(--action)" }}>
               {signals.length > 0
                 ? "Response grounded in your stored intelligence"
                 : "Response based on general reasoning — capture more to improve relevance"}
