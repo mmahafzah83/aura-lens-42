@@ -590,11 +590,24 @@ const ObsHeader = ({
       marginTop: 14, display: "inline-flex", gap: 18,
       fontFamily: "'IBM Plex Mono', monospace", fontSize: 11,
       color: "var(--glass-2)", letterSpacing: "0.06em",
+      flexWrap: "wrap", justifyContent: "center",
     }}>
-      <span><span style={{ color: "var(--glass)" }}>{entryCount || "—"}</span> sources</span>
-      <span><span style={{ color: "var(--glass)" }}>{evidenceCount || "—"}</span> evidence</span>
-      <span><span style={{ color: "var(--glass)" }}>{signalsCount || "—"}</span> signals</span>
-      <span><span style={{ color: "var(--glass)" }}>{movesCount || "—"}</span> moves</span>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+        <span style={{ color: "var(--glass)" }}>{entryCount || "—"}</span> sources
+        <InfoTooltip text="Everything you've captured — links, notes, documents." label="Sources" side="bottom" triggerSize={12} />
+      </span>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+        <span style={{ color: "var(--glass)" }}>{evidenceCount || "—"}</span> evidence
+        <InfoTooltip text="Facts and quotes pulled from your sources." label="Evidence" side="bottom" triggerSize={12} />
+      </span>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+        <span style={{ color: "var(--glass)" }}>{signalsCount || "—"}</span> signals
+        <InfoTooltip text="Themes Aura detected across your captures." label="Signals" side="bottom" triggerSize={12} />
+      </span>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+        <span style={{ color: "var(--glass)" }}>{movesCount || "—"}</span> moves
+        <InfoTooltip text="Suggested next actions ready for you." label="Moves" side="bottom" triggerSize={12} />
+      </span>
     </div>
   </div>
 );
