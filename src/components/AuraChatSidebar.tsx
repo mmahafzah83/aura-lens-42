@@ -468,12 +468,12 @@ interface VaultItem {
 }
 
 const VAULT_TYPE_STYLES: Record<string, { bg: string; color: string }> = {
-  pursuit: { bg: "#EEEDFE", color: "#3C3489" },
-  memo: { bg: "#E6F1FB", color: "#0C447C" },
-  post: { bg: "#EAF3DE", color: "#27500A" },
-  plan: { bg: "#FAEEDA", color: "#633806" },
-  deck: { bg: "#F1EFE8", color: "#444441" },
-  analysis: { bg: "#F1EFE8", color: "#444441" },
+  pursuit:  { bg: "var(--ob-raised)", color: "var(--glass)" },
+  memo:     { bg: "color-mix(in srgb, var(--live) 16%, transparent)", color: "var(--live)" },
+  post:     { bg: "color-mix(in srgb, var(--pos) 16%, transparent)", color: "var(--pos)" },
+  plan:     { bg: "color-mix(in srgb, var(--action) 16%, transparent)", color: "var(--action)" },
+  deck:     { bg: "var(--ob-raised)", color: "var(--glass-2)" },
+  analysis: { bg: "var(--ob-raised)", color: "var(--glass-2)" },
 };
 
 function detectVaultType(content: string): string {
