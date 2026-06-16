@@ -26,6 +26,7 @@ import SourcesSubTab from "@/components/tabs/SourcesSubTab";
 import SectorPulseTicker from "@/components/SectorPulseTicker";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import { useJourneyState } from "@/hooks/useJourneyState";
+import { applyPublishedFilter, filterPublishedRows } from "@/lib/postProvenance";
 import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/ui/EmptyState";
 import {
