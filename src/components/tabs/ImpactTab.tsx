@@ -2166,10 +2166,10 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               <div className="glass-card rounded-xl p-5 border border-border/8">
                 <div className="text-foreground font-bold text-lg">{contentPerf.postCount}</div>
                 <div className="text-xs text-muted-foreground mt-1" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                  Posts Analyzed
+                  Posts analyzed · last {selectedDays}d
                   <InfoTooltip
                     label="Posts analyzed"
-                    text="LinkedIn posts Aura has analyzed for voice training and performance tracking."
+                    text={`LinkedIn posts Aura analyzed in the selected window (last ${selectedDays} days). Observatory's "Posts shipped" is the all-time count.`}
                     side="top"
                     triggerSize={13}
                   />

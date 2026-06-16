@@ -26,6 +26,7 @@ import SourcesSubTab from "@/components/tabs/SourcesSubTab";
 import SectorPulseTicker from "@/components/SectorPulseTicker";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import { useJourneyState } from "@/hooks/useJourneyState";
+import { applyPublishedFilter, filterPublishedRows } from "@/lib/postProvenance";
 import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/ui/EmptyState";
 import {
@@ -604,15 +605,21 @@ const Observatory = ({
   const loadActivity = useCallback(async (uid: string) => {
     try {
       const sinceIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-      const [pubContent, pubLi, rhythmRes] = await Promise.all([
+      const [pubContent, pubLiRes, rhythmRes] = await Promise.all([
         supabase.from("content_items").select("id", { count: "exact", head: true })
           .eq("user_id", uid).eq("status", "published"),
-        supabase.from("linkedin_posts").select("id", { count: "exact", head: true })
-          .eq("user_id", uid),
+        // Canonical published-post definition (src/lib/postProvenance.ts).
+        // All-time, no window — honest "posts shipped" count.
+        applyPublishedFilter(
+          supabase.from("linkedin_posts")
+            .select("id, source_type, tracking_status")
+            .eq("user_id", uid) as any,
+        ),
         supabase.from("entries").select("id", { count: "exact", head: true })
           .eq("user_id", uid).gte("created_at", sinceIso),
       ]);
-      setPublishedCount((pubContent.count || 0) + (pubLi.count || 0));
+      const liPublished = filterPublishedRows(((pubLiRes as any)?.data as any[]) || []).length;
+      setPublishedCount((pubContent.count || 0) + liPublished);
       setRhythmCount(rhythmRes.count || 0);
     } catch (e) {
       console.warn("[Observatory] activity load failed", e);
