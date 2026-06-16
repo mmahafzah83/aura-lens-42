@@ -1067,7 +1067,7 @@ const Observatory = ({
                   slug="imprint"
                   text="How visible your expertise is, from 0 to 100. It rises as you read and publish."
                   label="Imprint"
-                  side="left"
+                  side="top"
                   triggerSize={13}
                 />
               </div>
@@ -1090,7 +1090,7 @@ const Observatory = ({
                   slug="imprint-facets"
                   text="The seven sides of your standing. A fuller shape means a rounder presence."
                   label="Facet wheel"
-                  side="left"
+                  side="top"
                   triggerSize={13}
                 />
               </div>
