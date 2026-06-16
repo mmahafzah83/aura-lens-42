@@ -581,19 +581,19 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
           () => (
             <div
               style={{
-                background: "var(--ink)",
-                color: "var(--ink-on-brand)",
-                border: "1px solid var(--brand-muted, rgba(197,165,90,0.4))",
+                background: "var(--ob-raised)",
+                color: "var(--glass)",
+                border: "1px solid var(--hair)",
                 borderRadius: 12,
                 padding: "14px 18px",
                 boxShadow: "0 10px 30px -10px rgba(0,0,0,0.4)",
                 maxWidth: 380,
               }}
             >
-              <div style={{ fontSize: 12, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--bronze-text)", fontWeight: 600, marginBottom: 6 }}>
+              <div style={{ fontSize: 12, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--action)", fontWeight: 600, marginBottom: 6, fontFamily: "'IBM Plex Mono', ui-monospace, monospace" }}>
                 ✦ Captured
               </div>
-              <div style={{ fontSize: 14, lineHeight: 1.5, opacity: 0.9 }}>
+              <div style={{ fontSize: 14, lineHeight: 1.5, color: "var(--glass-2)" }}>
                 Aura is analyzing this. Patterns emerge as you capture more — your next source might connect the dots.
               </div>
             </div>
