@@ -931,9 +931,11 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                     borderRadius: 10,
                     fontSize: 12,
                     fontWeight: 500,
-                    border: active ? "0.5px solid var(--bronze)" : "0.5px solid var(--brand-line)",
-                    background: active ? "var(--bronze)" : "var(--paper-3)",
-                    color: active ? "var(--paper)" : "var(--ink-3)",
+                    border: active ? "0.5px solid var(--action)" : "0.5px solid var(--glass-3)",
+                    background: active
+                      ? "color-mix(in srgb, var(--action) 18%, var(--ob-raised))"
+                      : "var(--ob-raised)",
+                    color: active ? "var(--glass)" : "var(--glass-2)",
                     opacity: disabled ? 0.5 : 1,
                     cursor: disabled ? "not-allowed" : "pointer",
                     transition: "all 150ms ease",
@@ -947,7 +949,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                       width: 22,
                       height: 22,
                       borderRadius: 6,
-                      background: active ? "var(--hairline)" : "var(--vellum)",
+                      background: active ? "color-mix(in srgb, var(--action) 25%, transparent)" : "var(--ob-field)",
                     }}
                   >
                     <Icon className="w-3.5 h-3.5" />
