@@ -244,12 +244,30 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
         .select("imprint, created_at")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
-        .limit(2);
+        .limit(30);
       if (error) throw error;
       const rows = (data || []) as Array<{ imprint: number | null; created_at: string }>;
       const latest = rows[0]?.imprint ?? null;
-      const prior = rows[1]?.imprint ?? null;
-      const delta = latest != null && prior != null ? Math.round(latest - prior) : null;
+      // 7-day-ago lookback: find the snapshot whose created_at is closest to
+      // (latest.created_at − 7d), only considering rows older than ~1 day before latest.
+      let delta: number | null = null;
+      if (latest != null && rows.length > 1) {
+        const latestTs = new Date(rows[0].created_at).getTime();
+        const targetTs = latestTs - 7 * 24 * 60 * 60 * 1000;
+        const minGapMs = 24 * 60 * 60 * 1000;
+        const candidates = rows.slice(1).filter(r =>
+          r.imprint != null && (latestTs - new Date(r.created_at).getTime()) >= minGapMs,
+        );
+        if (candidates.length > 0) {
+          const closest = candidates.reduce((best, r) => {
+            const d = Math.abs(new Date(r.created_at).getTime() - targetTs);
+            return d < best.d ? { row: r, d } : best;
+          }, { row: candidates[0], d: Math.abs(new Date(candidates[0].created_at).getTime() - targetTs) });
+          delta = Math.round(latest - (closest.row.imprint as number));
+        } else {
+          delta = 0;
+        }
+      }
       setImprint({ status: "ready", data: { imprint: latest, delta } });
     } catch (e) {
       console.warn("[Brief] imprint load failed", e);
