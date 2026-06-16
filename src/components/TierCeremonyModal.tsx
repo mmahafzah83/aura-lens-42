@@ -24,6 +24,10 @@ interface Props {
   /** Current tier name (from parent's calculate-aura-score payload).
    *  Used when forceOpen is true to skip an independent EF call. */
   forcedTierName?: string | null;
+  /** Step to land on when `forceOpen` is true. Defaults to 1 (credential
+   *  chooser — My Story re-entry). Pass 0 for a true ceremonial entry
+   *  (band-crossing). */
+  forceOpenStep?: 0 | 1;
 }
 
 // One short, dignified ceremony line per tier. Vocabulary mirrors
@@ -53,7 +57,9 @@ const TEXT = "#f0ede8";
 const TEXT_MUTED = "rgba(240,237,232,.55)";
 const SERIF = "'Cormorant Garamond', 'Cairo', Georgia, serif";
 
-export default function TierCeremonyModal({ userId, forceOpen, onForceClose, forcedTierName }: Props) {
+export default function TierCeremonyModal({
+  userId, forceOpen, onForceClose, forcedTierName, forceOpenStep,
+}: Props) {
   const { unacknowledgedMilestones, acknowledgeMilestone, shareMilestone } =
     useMilestones(userId);
 
@@ -120,9 +126,9 @@ export default function TierCeremonyModal({ userId, forceOpen, onForceClose, for
 
   // When opened via forceOpen, jump straight to the credential chooser.
   useEffect(() => {
-    if (forceOpen) setStep(1);
+    if (forceOpen) setStep(forceOpenStep ?? 1);
     else setStep(0);
-  }, [forceOpen]);
+  }, [forceOpen, forceOpenStep]);
 
   useEffect(() => {
     if (!tierMilestone || !userId) return;
