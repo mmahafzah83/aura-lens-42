@@ -1092,6 +1092,76 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
 }
 
 /* ══════════════════════════════════════════════════════════════
+   .observatory-lower — scoped repaint for the lower Intelligence
+   sections (SignalHero, TierSection, EditorialBlindSpots,
+   EditorialReadingList, SourcesSubTab) when composed inside the
+   dark Observatory shell. Surface-only token rebinding — no
+   component logic touched.
+
+   Strategy:
+   - Rebind the legacy ink, brand and surface-ink token families
+     to the dark Instrument palette so light-on-parchment text
+     becomes light-on-dark.
+   - Flatten --surface-ink-raised / --surface-ink-subtle to
+     transparent so the inline "card" backgrounds disappear; the
+     existing 1px borders (var(--ink-3) → var(--hair)) collapse
+     into hairline separators between rows.
+   ══════════════════════════════════════════════════════════════ */
+.observatory-lower {
+  background: transparent;
+  color: var(--glass);
+
+  /* Ink scale (parchment) → glass scale (dark) */
+  --ink: var(--glass);
+  --ink-2: color-mix(in srgb, var(--glass) 82%, transparent);
+  --ink-3: var(--hair);
+  --ink-4: var(--glass-2);
+  --ink-5: var(--glass-2);
+  --ink-6: var(--glass);
+  --ink-7: var(--glass);
+  --ink-on-brand: var(--ob-bg);
+
+  /* Surfaces → flat, so the inline-styled cards collapse to rows */
+  --surface-ink: transparent;
+  --surface-ink-raised: transparent;
+  --surface-ink-subtle: color-mix(in srgb, var(--glass) 4%, transparent);
+
+  /* Brand / bronze legacy → Instrument accents */
+  --brand: var(--action);
+  --brand-hover: var(--action);
+  --brand-muted: color-mix(in srgb, var(--action) 20%, transparent);
+  --brand-pale: color-mix(in srgb, var(--action) 10%, transparent);
+  --brand-line: var(--hair);
+  --brand-glow: color-mix(in srgb, var(--action) 30%, transparent);
+  --brand-ghost: color-mix(in srgb, var(--action) 8%, transparent);
+  --bronze: var(--action);
+  --bronze-deep: var(--action);
+  --bronze-pale: color-mix(in srgb, var(--action) 10%, transparent);
+  --bronze-line: var(--hair);
+  --bronze-mist: color-mix(in srgb, var(--action) 6%, transparent);
+  --bronze-soft: color-mix(in srgb, var(--action) 18%, transparent);
+  --bronze-glow: color-mix(in srgb, var(--action) 30%, transparent);
+
+  /* Aura legacy → Instrument (safety net for any nested usage) */
+  --aura-bg: transparent;
+  --aura-card: transparent;
+  --aura-border: var(--hair);
+  --aura-t1: var(--glass);
+  --aura-t2: color-mix(in srgb, var(--glass) 78%, transparent);
+  --aura-t3: var(--glass-2);
+  --aura-accent: var(--action);
+  --aura-accent2: var(--live);
+
+  /* Paper / parchment surfaces → dark (in case any inline style hits these) */
+  --paper: transparent;
+  --paper-2: transparent;
+  --paper-3: transparent;
+  --rule: var(--hair);
+  --hairline: var(--hair);
+  --line-1: var(--hair);
+}
+
+/* ══════════════════════════════════════════════════════════════
    DESIGN-8: Global polish pass
    Cosmetic-only overrides (no component logic touched).
    Applied via opt-in utility classes plus a few safe global rules

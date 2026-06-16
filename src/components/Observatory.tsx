@@ -1137,7 +1137,7 @@ const Observatory = ({
         )}
 
         {activeSubTab === "signals" && (
-          <>
+          <div className="observatory-lower">
             {/* ZONE 2 — THE SCAN */}
             {/* Alerts */}
             {fadingSignals.length > 0 && topFading && (
@@ -1249,11 +1249,11 @@ const Observatory = ({
                 <EditorialReadingList signals={signals} onOpenCapture={onOpenCapture} />
               </>
             )}
-          </>
+          </div>
         )}
 
         {activeSubTab === "sources" && (
-          <div style={{ marginTop: 8 }}>
+          <div className="observatory-lower" style={{ marginTop: 8 }}>
             <SourcesSubTab
               onOpenCapture={onOpenCapture}
               onSwitchToSignal={(signalId) => {
