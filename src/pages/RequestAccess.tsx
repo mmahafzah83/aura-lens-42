@@ -5,23 +5,23 @@ import usePageMeta from "@/hooks/usePageMeta";
 import { SECTORS } from "@/constants/sectors";
 import { SENIORITY_LEVELS } from "@/constants/seniority";
 import PublicFooter from "@/components/PublicFooter";
+import AuraLogo from "@/components/brand/AuraLogo";
 
 type Status = "idle" | "loading" | "success" | "duplicate" | "error" | "validation";
 
-// A6 token pass — constants annotated with the token each mirrors.
-// String literals are required because these are React inline styles + raw
-// CSS strings in the <style> block; both can safely reference CSS vars.
-const BRONZE = "var(--bronze)";              // mirrors --bronze
-const BRONZE_TEXT = "var(--bronze-text)";    // mirrors --bronze-text
-const LEFT_BG = "var(--paper)";              // mirrors --paper
-const RIGHT_BG = "var(--paper-2)";           // mirrors --paper-2
-const FIELD_BG = "var(--vellum)";            // mirrors --vellum
-const FIELD_BORDER = "var(--hairline)";      // mirrors --hairline
+// System-A bone Page tokens (string literals required for inline styles +
+// raw CSS strings; both safely reference CSS vars).
+const BRONZE = "var(--action)";              // amber CTA (System-A --action)
+const BRONZE_TEXT = "var(--spot)";           // oxblood emphasis (System-A --spot)
+const LEFT_BG = "var(--paper)";              // bone Page
+const RIGHT_BG = "var(--paper-2)";           // bone surface
+const FIELD_BG = "var(--paper)";             // bone field
+const FIELD_BORDER = "var(--rule)";          // bone hairline
 // Raw hex retained only inside the CSS `<style>` autofill block where
 // `-webkit-text-fill-color` and `-webkit-box-shadow` don't reliably resolve
-// var() values across browsers. Mirrors --vellum / --ink.
-const FIELD_BG_RAW = "#1a1917";              /* mirrors --vellum (dark) */
-const INK_RAW = "#ededed";                   /* mirrors --ink (dark) */
+// var() values across browsers. Mirrors --paper / --ink (bone).
+const FIELD_BG_RAW = "#F1ECE1";              /* mirrors --paper */
+const INK_RAW = "#1B1712";                   /* mirrors --ink */
 
 const SENIORITY: string[] = [...SENIORITY_LEVELS];
 const SECTOR: string[] = [...SECTORS];
@@ -47,14 +47,6 @@ function usePositionCount(target: number, start: boolean, duration = 800) {
   }, [target, start, duration]);
   return value;
 }
-
-const HorizonEye = ({ size = 48, color = BRONZE }: { size?: number; color?: string }) => (
-  <svg width={size} height={size * 0.55} viewBox="0 0 60 33" fill="none" aria-hidden="true">
-    <path d="M2 16.5 C 12 4, 48 4, 58 16.5 C 48 29, 12 29, 2 16.5 Z" stroke={color} strokeWidth="1.5" fill="none" />
-    <circle cx="30" cy="16.5" r="9" stroke={color} strokeWidth="1" fill="none" opacity="0.55" />
-    <circle cx="30" cy="16.5" r="5" fill={color} />
-  </svg>
-);
 
 export default function RequestAccess() {
   usePageMeta({
@@ -129,7 +121,7 @@ export default function RequestAccess() {
     "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>\")";
 
   return (
-    <div style={{ minHeight: "100vh", background: LEFT_BG, color: "var(--ink)", fontFamily: "'DM Sans', sans-serif", display: "flex", flexDirection: "column" }}>
+    <div style={{ minHeight: "100vh", background: LEFT_BG, color: "var(--ink)", fontFamily: "var(--font-body)", display: "flex", flexDirection: "column" }}>
       <style>{RA_CSS}</style>
 
       <main className="ra-grid" style={{ flex: 1 }}>
@@ -138,11 +130,11 @@ export default function RequestAccess() {
           <div className="ra-left-inner">
             <div className="ra-anim ra-d1" style={{ marginBottom: 28 }}>
               <div className="ra-eye-pulse" style={{ display: "inline-flex" }}>
-                <HorizonEye size={48} />
+                <AuraLogo size={48} variant="auto" />
               </div>
             </div>
             <h1 className="ra-anim ra-d2" style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontFamily: "var(--font-serif)",
               fontWeight: 400, fontSize: 28, color: "var(--ink)",
               margin: "0 0 16px", lineHeight: 1.25,
             }}>
@@ -176,7 +168,7 @@ export default function RequestAccess() {
               dir="rtl"
               style={{
                 fontSize: 16, color: BRONZE, marginTop: 40, marginBottom: 0,
-                fontFamily: "'Cairo', 'DM Sans', sans-serif",
+                fontFamily: "var(--font-arabic)",
               }}
             >
               حتى السوق يعرفك قبل ما يشوفك <span aria-hidden="true">✦</span>
@@ -212,7 +204,7 @@ export default function RequestAccess() {
                   ← Back to Aura
                 </Link>
                 <h2 style={{
-                  fontFamily: "'Cormorant Garamond', Georgia, serif",
+                  fontFamily: "var(--font-serif)",
                   fontWeight: 400, fontSize: 24, color: "var(--ink)",
                   margin: "0 0 8px",
                 }}>
@@ -435,7 +427,7 @@ function SuccessCeremony({
     <div style={{ textAlign: "center", padding: "16px 0" }}>
       <div aria-hidden="true" className="ra-star" style={{ fontSize: 32, color: BRONZE, lineHeight: 1 }}>✦</div>
       <h2 className="ra-anim-in ra-in-1" style={{
-        fontFamily: "'Cormorant Garamond', Georgia, serif",
+        fontFamily: "var(--font-serif)",
         fontWeight: 400, fontSize: 24, color: "var(--ink)",
         margin: "24px 0 14px", lineHeight: 1.3,
       }}>
