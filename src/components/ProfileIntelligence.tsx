@@ -309,7 +309,7 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null, hide
               )}
               <div className="flex items-center gap-2">
                 <Target className="w-4 h-4 text-primary" />
-                <h4 className="text-sm font-semibold text-foreground">Where to build authority next</h4>
+                <h4 className="text-sm font-semibold text-foreground">Where to build presence next</h4>
               </div>
               <div className="space-y-2">
                 {identity.authority_themes.map((at, i) => (

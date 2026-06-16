@@ -23,6 +23,7 @@ import { useJourneyState } from "@/hooks/useJourneyState";
 import TierCeremonyModal from "@/components/TierCeremonyModal";
 import VoiceEngineSection from "@/components/VoiceEngineSection";
 import { useCelebrationsEnabled } from "@/hooks/useCelebrationsEnabled";
+import { useTierFromImprint } from "@/hooks/useTierFromImprint";
 
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
@@ -77,6 +78,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const { user: authUser, isReady: authReady } = useAuthReady();
   const { enabled: celebrationsEnabled } = useCelebrationsEnabled();
   const journey = useJourneyState(authUser?.id ?? null);
+  // Canonical score: imprint_snapshots (same source as Home/Observatory).
+  const { score: imprintScore, currentTier: imprintTier } = useTierFromImprint(authUser?.id ?? null);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [authorityScore, setAuthorityScore] = useState<number | null>(null);
@@ -739,7 +742,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 story-page">
       {loadError && (
         <SectionError onRetry={() => authUser && loadAll(authUser.id)} message="Couldn't load your story. " />
       )}
@@ -749,7 +752,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         <div style={{ fontSize: 11, letterSpacing: "0.08em", color: "var(--ink-5)", fontWeight: 500, textTransform: "uppercase" }}>
           Your professional identity
         </div>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 500, color: "var(--ink)", margin: "8px 0 6px" }}>
+        <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 26, fontWeight: 500, color: "var(--ink)", margin: "8px 0 6px" }}>
           My Story
         </h1>
         <p style={{ fontSize: 13, color: "var(--ink-3)", margin: "0 auto", maxWidth: 560, lineHeight: 1.6 }}>
@@ -763,16 +766,16 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
 
       {/* Gated welcome for users without brand assessment */}
       {!assessmentCompleted && autoAssessing && (
-        <div style={{ background: "var(--ink)", borderRadius: 16, padding: "32px 28px", border: "1px solid var(--brand-line, rgba(197,165,90,0.2))", display: "flex", flexDirection: "column", alignItems: "center", gap: 16, textAlign: "center" }}>
+        <div style={{ background: "var(--paper-2)", borderRadius: 16, padding: "32px 28px", border: "0.5px solid var(--rule)", display: "flex", flexDirection: "column", alignItems: "center", gap: 16, textAlign: "center" }}>
           <div
             style={{
               width: 32, height: 32, borderRadius: "50%",
-              border: "2px solid rgba(197,165,90,0.25)",
-              borderTopColor: "var(--brand)",
+              border: "2px solid var(--rule)",
+              borderTopColor: "var(--action)",
               animation: "aura-spin 0.9s linear infinite",
             }}
           />
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 20, color: "var(--paper)" }}>
+          <div style={{ fontFamily: "var(--font-serif)", fontSize: 20, color: "var(--ink)" }}>
             Building your professional identity
           </div>
           <div style={{ fontSize: 13, color: "var(--ink-3)" }}>
@@ -782,17 +785,17 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         </div>
       )}
       {!assessmentCompleted && !autoAssessing && (
-        <div style={{ background: "var(--ink)", borderRadius: 16, padding: "28px 28px 24px", position: "relative", overflow: "hidden", border: "1px solid var(--brand-line, rgba(197,165,90,0.2))" }}>
+        <div style={{ background: "var(--paper-2)", borderRadius: 16, padding: "28px 28px 24px", position: "relative", overflow: "hidden", border: "0.5px solid var(--rule)", borderLeft: "3px solid var(--spot)" }}>
           <div className="relative">
-            <div style={{ fontSize: 12, letterSpacing: "0.16em", color: "var(--brand)", marginBottom: 8, fontWeight: 600 }}>
+            <div style={{ fontFamily: "var(--font-mono, ui-monospace, monospace)", fontSize: 11, letterSpacing: "0.12em", color: "var(--spot)", marginBottom: 8, fontWeight: 600, textTransform: "uppercase" }}>
               Your professional identity
             </div>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, color: "var(--paper)", margin: "0 0 12px", lineHeight: 1.375 }}>
+            <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 22, color: "var(--ink)", margin: "0 0 12px", lineHeight: 1.375 }}>
               Tell Aura who you are in 5 minutes, and it'll show you how the market should see you.
             </h2>
             <button
               onClick={() => setBrandOpen(true)}
-              style={{ background: "var(--brand)", color: "var(--ink)", border: 0, borderRadius: 10, padding: "12px 20px", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+              style={{ background: "var(--action)", color: "var(--ink)", border: 0, borderRadius: 10, padding: "12px 20px", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
             >
               Show me who I am in this market →
             </button>
@@ -861,7 +864,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
 
             {/* Center */}
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 500, color: "var(--ink)", lineHeight: 1.2 }}>
+              <div style={{ fontFamily: "var(--font-serif)", fontSize: 17, fontWeight: 500, color: "var(--ink)", lineHeight: 1.2 }}>
                 {userName}
               </div>
               {subtitle && (
@@ -885,8 +888,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   </span>
                 )}
                 {authorityScore != null && (
-                  <span style={{ fontFamily: "var(--font-display)", fontSize: 15, color: "var(--warning, var(--brand))", fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 6 }}>
-                    {scoreTotal ?? authorityScore}
+                  <span style={{ fontFamily: "var(--font-serif)", fontSize: 15, color: "var(--action)", fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 6 }}>
+                    {imprintScore ?? scoreTotal ?? authorityScore}
                     <InfoTooltip
                       label="Archetype strength"
                       text="Increases as you publish content aligned with your archetype patterns."
@@ -1078,8 +1081,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               }}>
                 <Star className="w-2 h-2" style={{ color: "var(--paper)" }} fill="currentColor" />
               </span>
-              <div style={{ fontSize: 11, fontWeight: 500, color: "var(--warning, var(--brand))", letterSpacing: "0.04em" }}>
-                NOW{tierName ? ` — ${tierName.toUpperCase()}` : ""}{(scoreTotal ?? authorityScore) != null ? ` · SCORE ${scoreTotal ?? authorityScore}` : ""}
+              <div style={{ fontFamily: "var(--font-mono, ui-monospace, monospace)", fontSize: 11, fontWeight: 500, color: "var(--action)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                NOW{(imprintTier?.name || tierName) ? ` — ${(imprintTier?.name || tierName)!.toUpperCase()}` : ""}{(imprintScore ?? scoreTotal ?? authorityScore) != null ? ` · SCORE ${imprintScore ?? scoreTotal ?? authorityScore}` : ""}
               </div>
               {(identityIntel?.primary_role || positioningTitle) && (
                 <div style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 500, color: "var(--ink)", marginTop: 3 }}>
