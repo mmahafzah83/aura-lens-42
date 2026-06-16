@@ -622,11 +622,13 @@ const Observatory = ({
   const [entryCount, setEntryCount] = useState(0);
   const [evidenceCount, setEvidenceCount] = useState(0);
   const [movesCount, setMovesCount] = useState(0);
-  const [publishedCount, setPublishedCount] = useState(0);
-  const [rhythmCount, setRhythmCount] = useState(0);
-  const [imprint, setImprint] = useState<{ score: number | null; delta: number | null; loading: boolean }>({
-    score: null, delta: null, loading: true,
-  });
+  const [imprint, setImprint] = useState<{
+    score: number | null;
+    delta: number | null;
+    components: ScoreComponents | null;
+    weekShape: number[];
+    loading: boolean;
+  }>({ score: null, delta: null, components: null, weekShape: [], loading: true });
   const [facets, setFacets] = useState<{ rows: FacetRow[]; loading: boolean }>({ rows: [], loading: true });
 
   const [activeSubTab, setActiveSubTab] = useState<SubTab>("signals");
