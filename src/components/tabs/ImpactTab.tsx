@@ -1093,7 +1093,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="space-y-7 max-w-5xl"
+        className="statement-page space-y-7 max-w-5xl"
       >
         <div style={{ marginBottom: 8 }}>
           <div className="font-serif text-base font-medium tracking-wide text-ink-4" style={{ marginBottom: 6 }}>
@@ -1143,7 +1143,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35 }}
-        className="space-y-7 max-w-5xl"
+        className="statement-page space-y-7 max-w-5xl"
       >
         <div style={{ marginBottom: 8 }}>
           <div className="font-serif text-base font-medium tracking-wide text-ink-4" style={{ marginBottom: 6 }}>
@@ -1414,7 +1414,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
-      className="statement-page space-y-7 max-w-5xl"
+      className="statement-page observatory-page space-y-7 max-w-5xl"
     >
       {/* ─────────── 1. PAGE HEADER ─────────── */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24 }}>
@@ -1422,10 +1422,10 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           <div className="font-serif text-base font-medium tracking-wide text-ink-4" style={{ marginBottom: 6 }}>
             Your digital presence growth
           </div>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--glass)", letterSpacing: "-0.02em", margin: 0 }}>
             Impact
           </h1>
-          <p style={{ fontSize: 14, color: "var(--ink-3)", marginTop: 8, lineHeight: 1.5, maxWidth: 640 }}>
+          <p style={{ fontSize: 14, color: "var(--glass-2)", marginTop: 8, lineHeight: 1.5, maxWidth: 640 }}>
             Every week you show up, your name reaches rooms you've never been in. That's how advisory calls, board invitations, and speaking slots find you.
           </p>
         </div>
@@ -2640,7 +2640,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               <div
                 className="rounded-lg p-5"
                 style={{
-                  background: "#FFFFFF",
+                  background: "var(--color-card)",
                   border: "0.5px solid rgba(0,0,0,0.07)",
                   borderRadius: 14,
                   boxShadow: "var(--aura-shadow-sm, 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05))",

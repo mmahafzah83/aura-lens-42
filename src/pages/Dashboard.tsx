@@ -808,7 +808,7 @@ const Dashboard = () => {
         }`}
         style={{
           paddingTop: 'env(safe-area-inset-top)',
-          background: activeTab === "intelligence" ? 'var(--ob-bg)' : 'var(--paper)',
+          background: (activeTab === "intelligence" || activeTab === "influence") ? 'var(--ob-bg)' : 'var(--paper)',
         }}
       >
         <div className="max-w-5xl mx-auto px-4 sm:px-8 pt-4 sm:pt-8">
@@ -898,7 +898,7 @@ const Dashboard = () => {
         </div>
         <div
           className={
-            activeTab === "intelligence"
+            (activeTab === "intelligence" || activeTab === "influence")
               ? "pb-[88px] md:pb-12"
               : "max-w-5xl mx-auto px-4 sm:px-8 pb-[88px] md:pb-12 overflow-hidden"
           }
