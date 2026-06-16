@@ -2507,12 +2507,12 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
 
 function Field({ label, value, onChange, multiline = false, mono = false, lang = "en" }:
   { label: string; value: string; onChange: (v: string) => void; multiline?: boolean; mono?: boolean; lang?: "en" | "ar" }) {
-  const cls = "w-full mt-1 px-2.5 py-1.5 text-sm rounded-lg border focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-[color:var(--bronze-text)] placeholder:text-[color:hsl(var(--muted-foreground))]";
+  const cls = "w-full mt-1 px-2.5 py-1.5 text-sm rounded-lg border focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-[color:var(--action)] placeholder:text-[color:var(--glass-3)]";
   const isAr = lang === "ar";
   const style: React.CSSProperties = {
-    background: "var(--paper)",
-    color: "var(--ink)",
-    borderColor: "var(--hairline)",
+    background: "var(--ob-field)",
+    color: "var(--glass)",
+    borderColor: "var(--hair)",
     fontFamily: mono
       ? "'JetBrains Mono', monospace"
       : (isAr ? "'Cairo', 'DM Sans', sans-serif" : undefined),
@@ -2521,7 +2521,7 @@ function Field({ label, value, onChange, multiline = false, mono = false, lang =
   const dir = isAr ? "rtl" : "ltr";
   return (
     <label className="block mb-2">
-      <span className="text-[11px] uppercase tracking-wider" style={{ color: "hsl(var(--muted-foreground))" }}>{label}</span>
+      <span className="text-[11px] uppercase tracking-wider" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>{label}</span>
       {multiline ? (
         <textarea dir={dir} className={cls} style={{ ...style, minHeight: 70 }} value={value} onChange={e => onChange(e.target.value)} />
       ) : (
@@ -2576,29 +2576,29 @@ function EditPanel({ slide, onChange, lang = "en" }: { slide: Slide; onChange: (
       )}
       {t === "LIST" && (
         <div>
-          <div className="text-[11px] uppercase tracking-wider mb-1" style={{ color: "hsl(var(--muted-foreground))" }}>List items</div>
+          <div className="text-[11px] uppercase tracking-wider mb-1" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>List items</div>
           {(slide.list_items || []).map((it, i) => (
             <div key={i} className="flex gap-2 mb-1.5">
               <select value={it.label} onChange={e => {
                 const next = [...(slide.list_items || [])];
                 next[i] = { ...it, label: e.target.value as any };
                 onChange({ list_items: next });
-              }} className="px-2 py-1 text-xs rounded border" style={{ background: "var(--paper-2)", color: "var(--ink)", borderColor: "var(--hairline)" }}>
+              }} className="px-2 py-1 text-xs rounded border" style={{ background: "var(--ob-raised)", color: "var(--glass)", borderColor: "var(--hair)" }}>
                 <option>KILL</option><option>KEEP</option><option>DO</option><option>DONT</option>
               </select>
               <input value={it.text} onChange={e => {
                 const next = [...(slide.list_items || [])];
                 next[i] = { ...it, text: e.target.value };
                 onChange({ list_items: next });
-              }} className="flex-1 px-2 py-1 text-sm rounded border placeholder:text-[color:hsl(var(--muted-foreground))]" style={{ background: "var(--paper-2)", color: "var(--ink)", borderColor: "var(--hairline)" }} />
+              }} className="flex-1 px-2 py-1 text-sm rounded border placeholder:text-[color:var(--glass-3)]" style={{ background: "var(--ob-field)", color: "var(--glass)", borderColor: "var(--hair)" }} />
               <button onClick={() => {
                 const next = (slide.list_items || []).filter((_, j) => j !== i);
                 onChange({ list_items: next });
-              }} className="px-2 text-xs hover:opacity-100" style={{ color: "hsl(var(--muted-foreground))" }}>×</button>
+              }} className="px-2 text-xs hover:opacity-100" style={{ color: "var(--glass-2)" }}>×</button>
             </div>
           ))}
           <button onClick={() => onChange({ list_items: [...(slide.list_items || []), { label: "KEEP", text: "" }] })}
-                  className="text-xs flex items-center gap-1 hover:opacity-100 mt-1" style={{ color: "var(--ink)" }}>
+                  className="text-xs flex items-center gap-1 hover:opacity-100 mt-1" style={{ color: "var(--glass)" }}>
             <Plus className="w-3 h-3" /> Add item
           </button>
         </div>
