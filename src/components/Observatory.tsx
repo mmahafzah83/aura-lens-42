@@ -267,37 +267,47 @@ const ImprintCore = ({
           const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
           const row = facets.find(f => f.facet === key);
           const v = row?.value ?? null;
-          const forming = FORMING.has(key) || v == null;
+          const isForming = FORMING.has(key);
+          const noValue = v == null;
+          // Perception/Confidence ALWAYS render as a dashed "forming" ghost
+          // outline regardless of value. Other facets are ghost only if no value.
+          const ghost = isForming || noValue;
+          // Certainty: opacity = clamp(1 − uncertainty, 0.4, 1.0). Only applies
+          // to measured (non-forming) facets with a real value.
+          const u = row?.uncertainty ?? null;
+          const certainty = (!ghost && u != null)
+            ? Math.max(0.4, Math.min(1, 1 - u))
+            : (ghost ? 0.55 : 1);
           const dist = ringR;
           const px = cx + Math.cos(angle) * dist;
           const py = cy + Math.sin(angle) * dist;
-          const labelDist = ringR + 22;
+          const labelDist = ringR + 26;
           const lx = cx + Math.cos(angle) * labelDist;
           const ly = cy + Math.sin(angle) * labelDist;
 
-          const dotR = forming ? 5 : 5 + Math.min(4, Math.max(0, (v ?? 0) / 25));
+          const dotR = ghost ? 5 : 5 + Math.min(4, Math.max(0, (v ?? 0) / 25));
           return (
-            <g key={key}>
+            <g key={key} opacity={certainty}>
               {/* spoke */}
               <line x1={cx} y1={cy} x2={px} y2={py}
-                    stroke={forming ? "var(--glass-3)" : "var(--live)"}
+                    stroke={ghost ? "var(--glass-3)" : "var(--live)"}
                     strokeWidth={0.5}
-                    strokeDasharray={forming ? "3 3" : undefined}
-                    opacity={forming ? 0.5 : 0.7} />
+                    strokeDasharray={ghost ? "3 3" : undefined}
+                    opacity={ghost ? 0.6 : 0.85} />
               {/* dot */}
               <circle cx={px} cy={py} r={dotR}
-                      fill={forming ? "transparent" : "var(--live)"}
-                      stroke={forming ? "var(--glass-2)" : "var(--live)"}
+                      fill={ghost ? "transparent" : "var(--live)"}
+                      stroke={ghost ? "var(--glass-2)" : "var(--live)"}
                       strokeWidth={1}
-                      strokeDasharray={forming ? "2 2" : undefined} />
-              {/* label */}
+                      strokeDasharray={ghost ? "2 2" : undefined} />
+              {/* label — widened box so full names render */}
               <text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle"
                     fill="var(--glass-2)" fontFamily="'IBM Plex Mono', monospace"
-                    fontSize={9} letterSpacing="0.08em">
+                    fontSize={9} letterSpacing="0.06em">
                 {key.toUpperCase()}
               </text>
               {/* value */}
-              {!forming && v != null && (
+              {!ghost && v != null && (
                 <text x={lx} y={ly + 11} textAnchor="middle" dominantBaseline="middle"
                       fill="var(--glass)" fontFamily="'IBM Plex Mono', monospace"
                       fontSize={10} style={{ fontVariantNumeric: "tabular-nums" }}>
@@ -309,8 +319,11 @@ const ImprintCore = ({
         })}
       </svg>
       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
-                    color: "var(--glass-2)", letterSpacing: "0.14em" }}>
-        {loading ? "CORE · LOADING" : "IMPRINT CORE · 7 FACETS"}
+                    color: "var(--glass-2)", letterSpacing: "0.14em", textAlign: "center",
+                    maxWidth: 260, lineHeight: 1.5 }}>
+        {loading
+          ? "CORE · LOADING"
+          : "Perception & Confidence are still forming — your next frontier."}
       </div>
     </div>
   );
