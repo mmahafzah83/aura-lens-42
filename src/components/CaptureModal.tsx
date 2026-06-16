@@ -124,6 +124,19 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
     setSignalMatch(null);
   }, [open]);
 
+  // a11y: Esc closes (surface-only a11y baseline; does not change capture flow).
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (isRecording) stopRecording();
+        onOpenChange(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, isRecording, onOpenChange]);
+
   // Apply prefill from external openers (e.g. Market Scan cards)
   useEffect(() => {
     if (!open) return;
