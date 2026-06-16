@@ -2069,9 +2069,9 @@ End with NEXT STEP:.`;
                         }}
                         className="mt-1.5 flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md transition-colors tactile-press"
                         style={{
-                          background: "#EEEDFE",
-                          color: "#3C3489",
-                          border: "0.5px solid #AFA9EC",
+                          background: "color-mix(in srgb, #AFA9EC 18%, transparent)",
+                          color: "#C9C5F8",
+                          border: "0.5px solid color-mix(in srgb, #AFA9EC 40%, transparent)",
                         }}
                       >
                         Copy portrait
@@ -2115,9 +2115,9 @@ End with NEXT STEP:.`;
                   disabled={isLoading}
                   className="flex items-center gap-1.5 text-xs transition-colors disabled:opacity-50 px-2.5 py-1.5 rounded-lg whitespace-nowrap shrink-0 tactile-press"
                   style={{
-                    background: "#EEEDFE",
-                    border: "0.5px solid #AFA9EC",
-                    color: "#3C3489",
+                    background: "color-mix(in srgb, #AFA9EC 18%, transparent)",
+                    border: "0.5px solid color-mix(in srgb, #AFA9EC 40%, transparent)",
+                    color: "#C9C5F8",
                     fontWeight: 500,
                   }}
                 >
