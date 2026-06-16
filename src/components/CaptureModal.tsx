@@ -1133,9 +1133,11 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                         fontSize: 12,
                         padding: "5px 12px",
                         borderRadius: 20,
-                        background: active ? "var(--bronze)" : "var(--paper-3)",
-                        border: active ? "0.5px solid var(--bronze)" : "0.5px solid var(--brand-line)",
-                        color: active ? "var(--paper)" : "var(--ink-3)",
+                        background: active
+                          ? "color-mix(in srgb, var(--action) 20%, var(--ob-raised))"
+                          : "var(--ob-raised)",
+                        border: active ? "0.5px solid var(--action)" : "0.5px solid var(--glass-3)",
+                        color: active ? "var(--glass)" : "var(--glass-2)",
                         cursor: "pointer",
                         transition: "all 150ms ease",
                       }}
@@ -1173,23 +1175,23 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                 }}
                 dir="auto"
                 onFocus={(e) => {
-                  e.currentTarget.style.borderColor = "var(--brand)";
-                  e.currentTarget.style.background = "hsl(var(--background))";
-                  e.currentTarget.style.boxShadow = "0 0 0 3px var(--brand-muted)";
+                  e.currentTarget.style.borderColor = "var(--action)";
+                  e.currentTarget.style.background = "var(--ob-field)";
+                  e.currentTarget.style.boxShadow = "0 0 0 3px color-mix(in srgb, var(--action) 30%, transparent)";
                 }}
                 onBlur={(e) => {
-                  e.currentTarget.style.borderColor = "var(--border)";
-                  e.currentTarget.style.background = "hsl(var(--background))";
+                  e.currentTarget.style.borderColor = "var(--glass-3)";
+                  e.currentTarget.style.background = "var(--ob-field)";
                   e.currentTarget.style.boxShadow = "none";
                 }}
                 style={{
                   width: "100%",
-                  background: "hsl(var(--background))",
-                  border: "0.5px solid hsl(var(--border))",
+                  background: "var(--ob-field)",
+                  border: "0.5px solid var(--glass-3)",
                   borderRadius: 12,
                   padding: "14px 16px",
                   fontSize: 14,
-                  color: "hsl(var(--foreground))",
+                  color: "var(--glass)",
                   minHeight: 120,
                   resize: "none",
                   outline: "none",
@@ -1202,9 +1204,10 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                   style={{
                     marginTop: 6,
                     fontSize: 11,
-                    color: content.length >= 15000 ? "var(--brand)" : "var(--ink-4)",
+                    color: content.length >= 15000 ? "var(--action)" : "var(--glass-2)",
                     textAlign: "right",
                     fontVariantNumeric: "tabular-nums",
+                    fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
                   }}
                 >
                   {content.length.toLocaleString()} / 15,000
@@ -1212,13 +1215,13 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
               )}
               {/* §16.1 trust line — quiet, caption, muted; bilingual stack */}
               <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 2 }}>
-                <p style={{ fontSize: 11, lineHeight: 1.6, color: "var(--ink-4)", margin: 0 }}>
+                <p style={{ fontSize: 11, lineHeight: 1.6, color: "var(--glass-2)", margin: 0 }}>
                   What you capture stays yours — used only to build your signals.
                 </p>
                 <p
                   dir="rtl"
                   lang="ar"
-                  style={{ fontSize: 11, lineHeight: 1.6, color: "var(--ink-4)", margin: 0, fontFamily: "'Cairo', 'DM Sans', sans-serif" }}
+                  style={{ fontSize: 11, lineHeight: 1.6, color: "var(--glass-2)", margin: 0, fontFamily: "var(--font-arabic)" }}
                 >
                   ما تلتقطه يبقى لك وحدك — يُستخدم لبناء إشاراتك فقط.
                 </p>
