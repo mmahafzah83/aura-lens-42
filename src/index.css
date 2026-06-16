@@ -944,17 +944,17 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
 
 /* ── Publish (Create tab) inputs + generate button ── */
 .aura-create-input {
-  background: #F3F0EB !important;
-  border: 0.5px solid rgba(0,0,0,0.12) !important;
+  background: var(--paper-2) !important;
+  border: 0.5px solid var(--rule) !important;
   border-radius: 10px !important;
   padding: 11px 14px !important;
-  font-family: 'DM Sans', sans-serif !important;
+  font-family: var(--font-serif), 'DM Sans', sans-serif !important;
   font-size: 13px !important;
-  color: #0E0D0C !important;
+  color: var(--ink) !important;
   box-shadow: none !important;
   transition: border-color 0.15s, background 0.15s, box-shadow 0.15s !important;
 }
-.aura-create-input::placeholder { color: #B4B0AA !important; }
+.aura-create-input::placeholder { color: var(--ink-3) !important; }
 
 /* Dark-mode placeholder contrast (WCAG AA-friendly warm parchment at 60%) */
 .dark ::placeholder,
@@ -964,12 +964,59 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
 }
 .aura-create-input:focus,
 .aura-create-input:focus-visible {
-  border-color: var(--brand) !important;
-  background: #fff !important;
-  box-shadow: 0 0 0 3px var(--brand-muted) !important;
+  border-color: var(--action) !important;
+  background: var(--paper) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--action) 22%, transparent) !important;
   outline: none !important;
 }
-.aura-generate-btn:not(:disabled):hover { background: var(--brand-hover) !important; }
+.aura-generate-btn:not(:disabled):hover { background: color-mix(in srgb, var(--action) 88%, black) !important; }
+
+/* ─── Publish (Composer) — bone Page surface ───
+   Opt-in wrapper. Renders an opaque bone Page and locally rebinds
+   bronze/parchment legacy tokens to Page tokens so existing inline
+   styles flow with the new surface. No logic touched. */
+.publish-page {
+  background: var(--paper);
+  color: var(--ink);
+  /* Scoped legacy → Page rebinds */
+  --aura-card: var(--paper-2);
+  --vellum: var(--paper-2);
+  --vellum-2: var(--paper-3);
+  --bg-subtle: var(--paper-2);
+  --surface-subtle: var(--paper-2);
+  --bronze: var(--action);
+  --bronze-hover: color-mix(in srgb, var(--action) 88%, black);
+  --bronze-mist: color-mix(in srgb, var(--action) 18%, var(--paper));
+  --bronze-pale: color-mix(in srgb, var(--action) 10%, var(--paper));
+  --bronze-text: var(--ink);
+  --bronze-line: color-mix(in srgb, var(--action) 36%, transparent);
+  --brand: var(--action);
+  --brand-muted: color-mix(in srgb, var(--action) 22%, transparent);
+  --brand-pale: color-mix(in srgb, var(--action) 10%, var(--paper));
+}
+.publish-page h1,
+.publish-page h2,
+.publish-page h3 { font-family: var(--font-serif), Georgia, serif; }
+.publish-page .pub-micro {
+  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.publish-page .pub-micro--spot { color: var(--spot); }
+@keyframes pub-skel-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 0.85; }
+}
+.publish-page .pub-skel {
+  background: linear-gradient(90deg, var(--paper-2), var(--paper-3), var(--paper-2));
+  border-radius: 8px;
+  animation: pub-skel-pulse 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .publish-page .pub-skel { animation: none; }
+}
 
 /* ══════════════════════════════════════════════════════════════
    DESIGN-8: Global polish pass
