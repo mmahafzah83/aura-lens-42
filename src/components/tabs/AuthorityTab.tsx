@@ -659,7 +659,8 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
         language: effLang,
         framework: effFramework !== "auto" ? effFramework : undefined,
         extra_instruction: extraPromptInstruction,
-        signal_id: selectedSignalId,
+        // Race-fix: prefer freshly-set ref while React flushes setSelectedSignalId
+        signal_id: selectedSignalId ?? pendingSignalIdRef.current,
         stream: false,
       }),
       signal: overrides?.signal,
