@@ -899,6 +899,9 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   animation: capture-sheet-up 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   will-change: transform, opacity;
 }
+@media (prefers-reduced-motion: reduce) {
+  .capture-sheet-anim { animation: none; }
+}
 .capture-backdrop {
   backdrop-filter: blur(3px);
   -webkit-backdrop-filter: blur(3px);
@@ -913,10 +916,13 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
 .capture-wave-bar {
   width: 4px;
   height: 28px;
-  background: var(--brand);
+  background: var(--live);
   border-radius: 2px;
   transform-origin: center;
   animation: capture-wave 1s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .capture-wave-bar { animation: none; transform: scaleY(0.7); }
 }
 
 /* Pulse dot */
@@ -928,9 +934,12 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--brand);
+  background: var(--live);
   animation: capture-pulse-dot 1.5s ease-in-out infinite;
   flex-shrink: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .capture-pulse-dot { animation: none; }
 }
 
 /* ── Publish (Create tab) inputs + generate button ── */
@@ -1709,6 +1718,9 @@ button[aria-label="Notifications"]:focus-visible {
   animation: gold-pulse 2s ease-in-out infinite;
   display: inline-block;
   color: var(--gold-dark, var(--brand));
+}
+@media (prefers-reduced-motion: reduce) {
+  .aura-gold-pulse { animation: none; }
 }
 
 /* ── Publish ceremony toast — warm parchment with subtle gold shimmer ── */

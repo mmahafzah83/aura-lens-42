@@ -124,6 +124,19 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
     setSignalMatch(null);
   }, [open]);
 
+  // a11y: Esc closes (surface-only a11y baseline; does not change capture flow).
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (isRecording) stopRecording();
+        onOpenChange(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, isRecording, onOpenChange]);
+
   // Apply prefill from external openers (e.g. Market Scan cards)
   useEffect(() => {
     if (!open) return;
@@ -581,19 +594,19 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
           () => (
             <div
               style={{
-                background: "var(--ink)",
-                color: "var(--ink-on-brand)",
-                border: "1px solid var(--brand-muted, rgba(197,165,90,0.4))",
+                background: "var(--ob-raised)",
+                color: "var(--glass)",
+                border: "1px solid var(--hair)",
                 borderRadius: 12,
                 padding: "14px 18px",
                 boxShadow: "0 10px 30px -10px rgba(0,0,0,0.4)",
                 maxWidth: 380,
               }}
             >
-              <div style={{ fontSize: 12, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--bronze-text)", fontWeight: 600, marginBottom: 6 }}>
+              <div style={{ fontSize: 12, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--action)", fontWeight: 600, marginBottom: 6, fontFamily: "'IBM Plex Mono', ui-monospace, monospace" }}>
                 ✦ Captured
               </div>
-              <div style={{ fontSize: 14, lineHeight: 1.5, opacity: 0.9 }}>
+              <div style={{ fontSize: 14, lineHeight: 1.5, color: "var(--glass-2)" }}>
                 Aura is analyzing this. Patterns emerge as you capture more — your next source might connect the dots.
               </div>
             </div>
@@ -694,7 +707,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
         style={{
           position: "fixed", inset: 0, zIndex: 20000,
           display: "flex", alignItems: "center", justifyContent: "center",
-          background: "rgba(10, 8, 5, 0.78)",
+          background: "rgba(4, 8, 12, 0.78)",
           backdropFilter: "blur(6px)",
           animation: "fade-up-in 360ms ease both",
         }}
@@ -707,8 +720,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
             maxWidth: 460,
             padding: "44px 36px 32px",
             textAlign: "center",
-            background: "var(--paper)",
-            border: "1px solid var(--brand-line, rgba(176,141,58,0.28))",
+            background: "var(--ob-panel)",
+            border: "1px solid var(--hair)",
             borderRadius: 16,
             boxShadow: "0 30px 80px -20px rgba(0,0,0,0.5)",
           }}
@@ -719,7 +732,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
             style={{
               position: "absolute", top: 14, left: "50%",
               width: 220, height: 220, transform: "translateX(-50%)",
-              background: "radial-gradient(circle, color-mix(in srgb, var(--bronze) 25%, transparent) 0%, transparent 65%)",
+              background: "radial-gradient(circle, color-mix(in srgb, var(--action) 22%, transparent) 0%, transparent 65%)",
               pointerEvents: "none",
             }}
           />
@@ -727,15 +740,15 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
             className="aura-gold-pulse"
             style={{
               position: "relative", fontSize: 42, lineHeight: 1,
-              color: "var(--bronze)",
+              color: "var(--action)",
               marginBottom: 18,
             }}
           >✦</div>
           <h2
             style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontFamily: "var(--font-serif)",
               fontSize: 26, fontWeight: 500,
-              color: "var(--ink)",
+              color: "var(--glass)",
               letterSpacing: "-0.01em",
               margin: "0 0 12px",
             }}
@@ -745,7 +758,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
           <p
             style={{
               fontSize: 14, lineHeight: 1.65,
-              color: "var(--ink-3)",
+              color: "var(--glass-2)",
               margin: "0 auto 20px", maxWidth: 360,
             }}
           >
@@ -760,8 +773,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                 window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "intelligence" } }));
               }}
               style={{
-                background: "var(--bronze)",
-                color: "var(--paper)",
+                background: "var(--action)",
+                color: "var(--ink-on-brand)",
                 border: 0, borderRadius: 8,
                 padding: "10px 22px",
                 fontSize: 14, fontWeight: 600,
@@ -776,9 +789,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
             onClick={() => setFirstCeremonyOpen(false)}
             aria-label="Close"
             style={{
-              position: "absolute", top: 12, right: 12,
+              position: "absolute", top: 12, insetInlineEnd: 12,
               background: "transparent", border: 0,
-              color: "var(--ink-4)", cursor: "pointer",
+              color: "var(--glass-2)", cursor: "pointer",
             }}
           >
             <X size={16} />
@@ -831,19 +844,19 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
         style={{
           maxHeight: "88vh",
           zIndex: 1000,
-          background: "var(--paper-2)",
+          background: "var(--ob-panel)",
           borderTopLeftRadius: 20,
           borderTopRightRadius: 20,
-          color: "var(--ink)",
+          color: "var(--glass)",
           transform: swipeY > 0 ? `translateY(${swipeY}px)` : undefined,
           transition: swipeY > 0 ? "none" : "transform 0.3s ease-out",
           opacity: swipeY > 0 ? Math.max(0.3, 1 - swipeY / 400) : 1,
-          boxShadow: "0 -8px 40px rgba(0,0,0,0.18)",
+          boxShadow: "0 -8px 40px rgba(0,0,0,0.55)",
         }}
       >
         {/* Sheet handle */}
         <div className="flex justify-center cursor-grab">
-          <div style={{ width: 40, height: 4, background: "var(--border)", borderRadius: 2, margin: "10px auto 0" }} />
+          <div style={{ width: 40, height: 4, background: "var(--hair)", borderRadius: 2, margin: "10px auto 0" }} />
         </div>
 
         {/* Header */}
@@ -854,16 +867,16 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
           <div className="flex items-center" style={{ gap: 12 }}>
             <div
               className="flex items-center justify-center shrink-0"
-              style={{ width: 36, height: 36, background: "var(--brand)", borderRadius: 11 }}
+              style={{ width: 36, height: 36, background: "var(--action)", borderRadius: 11 }}
             >
               <Plus className="w-5 h-5" style={{ color: "var(--ink-on-brand)" }} strokeWidth={2.5} />
             </div>
             <div>
               <h2
                 style={{
-                  fontFamily: "'DM Serif Display', Georgia, serif",
+                  fontFamily: "var(--font-serif)",
                   fontSize: 18,
-                  color: "var(--ink)",
+                  color: "var(--glass)",
                   margin: 0,
                   lineHeight: 1.375,
                 }}
@@ -873,11 +886,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
               <p
                 style={{
                   fontSize: 12,
-                  color: "var(--ink-4)",
+                  color: "var(--glass-2)",
                   textTransform: "uppercase",
                   letterSpacing: "0.1em",
                   fontWeight: 600,
                   margin: "2px 0 0",
+                  fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
                 }}
               >
                 Intelligence capture
@@ -891,8 +905,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
               width: 32,
               height: 32,
               borderRadius: "50%",
-              background: "var(--paper-3)",
-              color: "var(--ink-3)",
+              background: "var(--ob-raised)",
+              color: "var(--glass-2)",
               border: "none",
             }}
             aria-label="Close capture"
@@ -930,9 +944,11 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                     borderRadius: 10,
                     fontSize: 12,
                     fontWeight: 500,
-                    border: active ? "0.5px solid var(--bronze)" : "0.5px solid var(--brand-line)",
-                    background: active ? "var(--bronze)" : "var(--paper-3)",
-                    color: active ? "var(--paper)" : "var(--ink-3)",
+                    border: active ? "0.5px solid var(--action)" : "0.5px solid var(--glass-3)",
+                    background: active
+                      ? "color-mix(in srgb, var(--action) 18%, var(--ob-raised))"
+                      : "var(--ob-raised)",
+                    color: active ? "var(--glass)" : "var(--glass-2)",
                     opacity: disabled ? 0.5 : 1,
                     cursor: disabled ? "not-allowed" : "pointer",
                     transition: "all 150ms ease",
@@ -946,7 +962,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                       width: 22,
                       height: 22,
                       borderRadius: 6,
-                      background: active ? "var(--hairline)" : "var(--vellum)",
+                      background: active ? "color-mix(in srgb, var(--action) 25%, transparent)" : "var(--ob-field)",
                     }}
                   >
                     <Icon className="w-3.5 h-3.5" />
@@ -974,13 +990,13 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                     }
                   }}
                    onFocus={(e) => {
-                    e.currentTarget.style.borderColor = "var(--brand)";
-                    e.currentTarget.style.background = "var(--vellum)";
-                    e.currentTarget.style.boxShadow = "0 0 0 3px var(--brand-muted)";
+                    e.currentTarget.style.borderColor = "var(--action)";
+                    e.currentTarget.style.background = "var(--ob-field)";
+                    e.currentTarget.style.boxShadow = "0 0 0 3px color-mix(in srgb, var(--action) 30%, transparent)";
                   }}
                   onBlur={async (e) => {
-                    e.currentTarget.style.borderColor = urlError ? "var(--error)" : "var(--brand-line)";
-                    e.currentTarget.style.background = "var(--vellum)";
+                    e.currentTarget.style.borderColor = urlError ? "var(--neg)" : "var(--glass-3)";
+                    e.currentTarget.style.background = "var(--ob-field)";
                     e.currentTarget.style.boxShadow = "none";
                     const url = e.target.value.trim();
                     if (!url || !isValidUrl(url)) return;
@@ -1003,12 +1019,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                   }}
                   style={{
                     width: "100%",
-                    background: "var(--vellum)",
-                    border: urlError ? "0.5px solid var(--error)" : "0.5px solid var(--brand-line)",
+                    background: "var(--ob-field)",
+                    border: urlError ? "0.5px solid var(--neg)" : "0.5px solid var(--glass-3)",
                     borderRadius: 12,
                     padding: "13px 76px 13px 16px",
                     fontSize: 14,
-                    color: "var(--ink)",
+                    color: "var(--glass)",
                     outline: "none",
                     transition: "all 150ms ease",
                   }}
@@ -1025,12 +1041,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                   }}
                   style={{
                     position: "absolute",
-                    right: 8,
+                    insetInlineEnd: 8,
                     top: "50%",
                     transform: "translateY(-50%)",
-                    background: "var(--paper-3)",
-                    color: "var(--ink-2)",
-                    border: "0.5px solid var(--brand-line)",
+                    background: "var(--ob-raised)",
+                    color: "var(--glass-2)",
+                    border: "0.5px solid var(--glass-3)",
                     borderRadius: 7,
                     fontSize: 12,
                     fontWeight: 600,
@@ -1038,32 +1054,33 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                     cursor: "pointer",
                     textTransform: "uppercase",
                     letterSpacing: "0.05em",
+                    fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
                   }}
                 >
                   Paste
                 </button>
               </div>
 
-              {urlError && <p style={{ fontSize: 12, color: "var(--error)", margin: 0 }}>{urlError}</p>}
+              {urlError && <p style={{ fontSize: 12, color: "var(--neg)", margin: 0 }}>{urlError}</p>}
 
               {linkPreview && (
                 <div
                   style={{
-                    background: "var(--aura-card)",
-                    border: "0.5px solid hsl(var(--border))",
+                    background: "var(--ob-raised)",
+                    border: "0.5px solid var(--hair)",
                     borderRadius: 12,
                     padding: "12px 14px",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
                   }}
                 >
-                  <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-4)" }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--glass-2)", fontFamily: "'IBM Plex Mono', ui-monospace, monospace" }}>
                     {linkPreview.domain}
                   </div>
-                  <div style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)", marginTop: 4, lineHeight: 1.35 }}>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: "var(--glass)", marginTop: 4, lineHeight: 1.35 }}>
                     {linkPreview.title}
                   </div>
                   {linkPreview.snippet && (
-                    <div style={{ fontSize: 12, color: "var(--ink-5)", marginTop: 6, lineHeight: 1.5 }}>
+                    <div style={{ fontSize: 12, color: "var(--glass-2)", marginTop: 6, lineHeight: 1.5 }}>
                       {linkPreview.snippet}…
                     </div>
                   )}
@@ -1073,7 +1090,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
               {signalMatch && (
                 <div
                   style={{
-                    background: "var(--brand-pale)",
+                    background: "color-mix(in srgb, var(--live) 15%, var(--ob-raised))",
+                    border: "0.5px solid color-mix(in srgb, var(--live) 35%, transparent)",
                     borderRadius: 10,
                     padding: "11px 14px",
                     display: "flex",
@@ -1082,7 +1100,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                   }}
                 >
                   <span className="capture-pulse-dot" />
-                  <span style={{ fontSize: 12, color: "var(--warning)", lineHeight: 1.45 }}>
+                  <span style={{ fontSize: 12, color: "var(--glass)", lineHeight: 1.45 }}>
                     Aura detected this strengthens your signal <strong>{signalMatch.title}</strong> — adding will reinforce it.
                   </span>
                 </div>
@@ -1091,20 +1109,20 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
               {duplicateInfo && (
                 <div
                   style={{
-                    background: "var(--warning-pale)",
-                    border: "0.5px solid color-mix(in srgb, var(--warning) 40%, transparent)",
+                    background: "color-mix(in srgb, var(--action) 10%, var(--ob-raised))",
+                    border: "0.5px solid color-mix(in srgb, var(--action) 28%, transparent)",
                     borderRadius: 10,
                     padding: "10px 14px",
                   }}
                 >
-                  <p style={{ fontSize: 12, color: "var(--ink)", margin: 0 }}>
+                  <p style={{ fontSize: 12, color: "var(--glass)", margin: 0 }}>
                     You already captured this source on {duplicateInfo.date}.
                   </p>
                   <div style={{ marginTop: 6 }}>
-                    <button type="button" onClick={() => { setDuplicateInfo(null); handleSave(); }} style={{ fontSize: 12, color: "var(--warning)", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}>
+                    <button type="button" onClick={() => { setDuplicateInfo(null); handleSave(); }} style={{ fontSize: 12, color: "var(--action)", background: "transparent", border: "none", cursor: "pointer", padding: 0, fontWeight: 600 }}>
                       Capture anyway
                     </button>
-                    <button type="button" onClick={() => { setContent(""); setDuplicateInfo(null); }} style={{ fontSize: 12, color: "var(--ink-5)", background: "transparent", border: "none", marginLeft: 12, cursor: "pointer", padding: 0 }}>
+                    <button type="button" onClick={() => { setContent(""); setDuplicateInfo(null); }} style={{ fontSize: 12, color: "var(--glass-2)", background: "transparent", border: "none", marginInlineStart: 12, cursor: "pointer", padding: 0 }}>
                       Skip
                     </button>
                   </div>
@@ -1128,9 +1146,11 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                         fontSize: 12,
                         padding: "5px 12px",
                         borderRadius: 20,
-                        background: active ? "var(--bronze)" : "var(--paper-3)",
-                        border: active ? "0.5px solid var(--bronze)" : "0.5px solid var(--brand-line)",
-                        color: active ? "var(--paper)" : "var(--ink-3)",
+                        background: active
+                          ? "color-mix(in srgb, var(--action) 20%, var(--ob-raised))"
+                          : "var(--ob-raised)",
+                        border: active ? "0.5px solid var(--action)" : "0.5px solid var(--glass-3)",
+                        color: active ? "var(--glass)" : "var(--glass-2)",
                         cursor: "pointer",
                         transition: "all 150ms ease",
                       }}
@@ -1168,23 +1188,23 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                 }}
                 dir="auto"
                 onFocus={(e) => {
-                  e.currentTarget.style.borderColor = "var(--brand)";
-                  e.currentTarget.style.background = "hsl(var(--background))";
-                  e.currentTarget.style.boxShadow = "0 0 0 3px var(--brand-muted)";
+                  e.currentTarget.style.borderColor = "var(--action)";
+                  e.currentTarget.style.background = "var(--ob-field)";
+                  e.currentTarget.style.boxShadow = "0 0 0 3px color-mix(in srgb, var(--action) 30%, transparent)";
                 }}
                 onBlur={(e) => {
-                  e.currentTarget.style.borderColor = "var(--border)";
-                  e.currentTarget.style.background = "hsl(var(--background))";
+                  e.currentTarget.style.borderColor = "var(--glass-3)";
+                  e.currentTarget.style.background = "var(--ob-field)";
                   e.currentTarget.style.boxShadow = "none";
                 }}
                 style={{
                   width: "100%",
-                  background: "hsl(var(--background))",
-                  border: "0.5px solid hsl(var(--border))",
+                  background: "var(--ob-field)",
+                  border: "0.5px solid var(--glass-3)",
                   borderRadius: 12,
                   padding: "14px 16px",
                   fontSize: 14,
-                  color: "hsl(var(--foreground))",
+                  color: "var(--glass)",
                   minHeight: 120,
                   resize: "none",
                   outline: "none",
@@ -1197,9 +1217,10 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                   style={{
                     marginTop: 6,
                     fontSize: 11,
-                    color: content.length >= 15000 ? "var(--brand)" : "var(--ink-4)",
+                    color: content.length >= 15000 ? "var(--action)" : "var(--glass-2)",
                     textAlign: "right",
                     fontVariantNumeric: "tabular-nums",
+                    fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
                   }}
                 >
                   {content.length.toLocaleString()} / 15,000
@@ -1207,13 +1228,13 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
               )}
               {/* §16.1 trust line — quiet, caption, muted; bilingual stack */}
               <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 2 }}>
-                <p style={{ fontSize: 11, lineHeight: 1.6, color: "var(--ink-4)", margin: 0 }}>
+                <p style={{ fontSize: 11, lineHeight: 1.6, color: "var(--glass-2)", margin: 0 }}>
                   What you capture stays yours — used only to build your signals.
                 </p>
                 <p
                   dir="rtl"
                   lang="ar"
-                  style={{ fontSize: 11, lineHeight: 1.6, color: "var(--ink-4)", margin: 0, fontFamily: "'Cairo', 'DM Sans', sans-serif" }}
+                  style={{ fontSize: 11, lineHeight: 1.6, color: "var(--glass-2)", margin: 0, fontFamily: "var(--font-arabic)" }}
                 >
                   ما تلتقطه يبقى لك وحدك — يُستخدم لبناء إشاراتك فقط.
                 </p>
@@ -1230,16 +1251,16 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                   <div
                     onClick={() => fileInputRef.current?.click()}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = "var(--brand)";
-                      e.currentTarget.style.background = "var(--brand-pale)";
+                      e.currentTarget.style.borderColor = "var(--action)";
+                      e.currentTarget.style.background = "color-mix(in srgb, var(--action) 10%, var(--ob-field))";
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = "var(--border-strong)";
-                      e.currentTarget.style.background = "var(--surface-subtle)";
+                      e.currentTarget.style.borderColor = "var(--glass-3)";
+                      e.currentTarget.style.background = "var(--ob-field)";
                     }}
                     style={{
-                      background: "var(--surface-subtle)",
-                      border: "1.5px dashed var(--border-strong)",
+                      background: "var(--ob-field)",
+                      border: "1.5px dashed var(--glass-3)",
                       borderRadius: 14,
                       padding: 32,
                       textAlign: "center",
@@ -1247,9 +1268,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                       transition: "all 150ms ease",
                     }}
                   >
-                    <ImageIcon className="w-9 h-9 mx-auto mb-3" style={{ color: "var(--ink-5)" }} />
-                    <p style={{ fontSize: 14, color: "var(--ink-3)", margin: 0 }}>Drop an image or click to upload</p>
-                    <p style={{ fontSize: 12, color: "var(--ink-5)", marginTop: 4 }}>PNG, JPG up to 10MB</p>
+                    <ImageIcon className="w-9 h-9 mx-auto mb-3" style={{ color: "var(--glass-2)" }} />
+                    <p style={{ fontSize: 14, color: "var(--glass)", margin: 0 }}>Drop an image or click to upload</p>
+                    <p style={{ fontSize: 12, color: "var(--glass-2)", marginTop: 4 }}>PNG, JPG up to 10MB</p>
                   </div>
                   <div className="grid grid-cols-2" style={{ gap: 8 }}>
                     <button
@@ -1260,12 +1281,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                         alignItems: "center",
                         justifyContent: "center",
                         gap: 6,
-                        border: "0.5px solid hsl(var(--border))",
+                        border: "0.5px solid var(--glass-3)",
                         borderRadius: 10,
                         padding: "8px 16px",
                         fontSize: 12,
-                        background: "var(--aura-card)",
-                        color: "var(--ink)",
+                        background: "var(--ob-raised)",
+                        color: "var(--glass)",
                         cursor: "pointer",
                       }}
                     >
@@ -1279,12 +1300,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                         alignItems: "center",
                         justifyContent: "center",
                         gap: 6,
-                        border: "0.5px solid hsl(var(--border))",
+                        border: "0.5px solid var(--glass-3)",
                         borderRadius: 10,
                         padding: "8px 16px",
                         fontSize: 12,
-                        background: "var(--aura-card)",
-                        color: "var(--ink)",
+                        background: "var(--ob-raised)",
+                        color: "var(--glass)",
                         cursor: "pointer",
                       }}
                     >
@@ -1294,15 +1315,15 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                 </>
               ) : (
                 <div className="relative">
-                  <img src={imagePreview} alt="Preview" style={{ width: "100%", maxHeight: 200, objectFit: "contain", borderRadius: 12, background: "var(--surface-subtle)" }} />
-                  <button onClick={clearImage} className="absolute" style={{ top: 8, right: 8, width: 26, height: 26, borderRadius: "50%", background: "rgba(255,255,255,0.9)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                    <X className="w-3.5 h-3.5" style={{ color: "var(--ink)" }} />
+                  <img src={imagePreview} alt="Preview" style={{ width: "100%", maxHeight: 200, objectFit: "contain", borderRadius: 12, background: "var(--ob-field)" }} />
+                  <button onClick={clearImage} className="absolute" style={{ top: 8, insetInlineEnd: 8, width: 26, height: 26, borderRadius: "50%", background: "var(--ob-raised)", border: "0.5px solid var(--glass-3)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                    <X className="w-3.5 h-3.5" style={{ color: "var(--glass)" }} />
                   </button>
                 </div>
               )}
               {analyzing && (
-                <div className="flex items-center" style={{ gap: 8, fontSize: 14, color: "var(--ink-5)" }}>
-                  <Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--brand)" }} />
+                <div className="flex items-center" style={{ gap: 8, fontSize: 14, color: "var(--glass-2)" }}>
+                  <Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--live)" }} />
                   AI is reading your screenshot…
                 </div>
               )}
@@ -1314,14 +1335,14 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
             <div className="space-y-3">
               {recentDocs.length > 0 && (
                 <div className="space-y-2">
-                  <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-4)" }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--glass-2)", fontFamily: "'IBM Plex Mono', ui-monospace, monospace" }}>
                     Recent documents
                   </div>
                   <div className="space-y-1.5">
                     {recentDocs.map((d) => {
                       const ext = (d.filename || "").split(".").pop()?.toLowerCase() || "";
                       const isPdf = ext === "pdf";
-                      const iconBg = isPdf ? "var(--error)" : "var(--color-indigo)";
+                      const iconBg = isPdf ? "var(--neg)" : "var(--action)";
                       const isProcessed = d.status === "processed";
                       return (
                         <div
@@ -1331,8 +1352,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                             alignItems: "center",
                             gap: 12,
                             padding: "10px 12px",
-                            background: "var(--aura-card)",
-                            border: "0.5px solid hsl(var(--border))",
+                            background: "var(--ob-raised)",
+                            border: "0.5px solid var(--hair)",
                             borderRadius: 12,
                           }}
                         >
@@ -1351,10 +1372,10 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                             <FileText className="w-4 h-4" style={{ color: "var(--ink-on-brand)" }} />
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 12, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            <div style={{ fontSize: 12, fontWeight: 500, color: "var(--glass)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                               {d.filename}
                             </div>
-                            <div style={{ fontSize: 12, color: "var(--ink-5)", marginTop: 2 }}>
+                            <div style={{ fontSize: 12, color: "var(--glass-2)", marginTop: 2 }}>
                               {fmtBytes(d.file_size)} · {new Date(d.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                             </div>
                           </div>
@@ -1366,8 +1387,11 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                               textTransform: "uppercase",
                               padding: "3px 8px",
                               borderRadius: 6,
-                              background: isProcessed ? "var(--success-pale)" : "var(--warning-pale)",
-                              color: isProcessed ? "var(--success)" : "var(--warning)",
+                              background: isProcessed
+                                ? "color-mix(in srgb, var(--pos) 18%, var(--ob-raised))"
+                                : "color-mix(in srgb, var(--action) 16%, var(--ob-raised))",
+                              color: isProcessed ? "var(--pos)" : "var(--action)",
+                              fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
                             }}
                           >
                             {isProcessed ? "Read" : "Reading"}
@@ -1392,15 +1416,15 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                       width: 64,
                       height: 64,
                       borderRadius: "50%",
-                      background: "var(--surface-subtle)",
+                      background: "var(--ob-field)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                     }}
                   >
-                    <Loader2 className="w-7 h-7 animate-spin" style={{ color: "var(--brand)" }} />
+                    <Loader2 className="w-7 h-7 animate-spin" style={{ color: "var(--live)" }} />
                   </div>
-                  <p style={{ fontSize: 14, color: "var(--ink-5)", margin: 0 }}>Transcribing…</p>
+                  <p style={{ fontSize: 14, color: "var(--glass-2)", margin: 0 }}>Transcribing…</p>
                 </>
               ) : (
                 <>
@@ -1427,10 +1451,10 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      background: isRecording ? "var(--error)" : "var(--brand)",
+                      background: isRecording ? "var(--neg)" : "var(--action)",
                       boxShadow: isRecording
-                        ? "0 4px 20px color-mix(in srgb, var(--error) 40%, transparent)" /* danger glow */
-                        : "var(--shadow-brand)",
+                        ? "0 4px 20px color-mix(in srgb, var(--neg) 40%, transparent)"
+                        : "0 4px 20px color-mix(in srgb, var(--action) 35%, transparent)",
                       transition: "background 200ms ease",
                     }}
                     aria-label={isRecording ? "Stop recording" : "Start recording"}
@@ -1443,28 +1467,29 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                   </button>
                   <div
                     style={{
-                      fontFamily: "'DM Serif Display', Georgia, serif",
+                      fontFamily: "var(--font-serif)",
                       fontSize: 22,
-                      color: "var(--brand)",
+                      color: isRecording ? "var(--live)" : "var(--glass)",
                       letterSpacing: "-0.02em",
                       lineHeight: 1.5,
+                      fontVariantNumeric: "tabular-nums",
                     }}
                   >
                     {fmtMMSS(recordingSeconds)}
                   </div>
                   {!isRecording && (
-                    <p style={{ fontSize: 12, color: "var(--ink-5)", margin: 0 }}>Tap to record</p>
+                    <p style={{ fontSize: 12, color: "var(--glass-2)", margin: 0 }}>Tap to record</p>
                   )}
                 </>
               )}
               {!isRecording && !isTranscribing && (
                 <div className="w-full" style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
                   {transcriptionFailed && (
-                    <p style={{ fontSize: 12, color: "var(--ink)", margin: 0 }}>
+                    <p style={{ fontSize: 12, color: "var(--glass)", margin: 0 }}>
                       Auto-transcription unavailable. Type your notes manually.
                     </p>
                   )}
-                  <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-4)", margin: 0 }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--glass-2)", margin: 0, fontFamily: "'IBM Plex Mono', ui-monospace, monospace" }}>
                     Transcript
                   </p>
                   <textarea
@@ -1475,12 +1500,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                     placeholder="Transcript will appear here…"
                     style={{
                       width: "100%",
-                      background: "var(--surface-subtle)",
-                      border: "0.5px solid var(--border)",
+                      background: "var(--ob-field)",
+                      border: "0.5px solid var(--glass-3)",
                       borderRadius: 12,
                       padding: "12px 14px",
                       fontSize: 14,
-                      color: "var(--ink)",
+                      color: "var(--glass)",
                       resize: "none",
                       outline: "none",
                       
@@ -1498,15 +1523,15 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
               onClick={handleSave}
               disabled={saving || isRecording || isTranscribing || analyzing || (captureType === "image" ? !imageFile : !content.trim())}
               onMouseEnter={(e) => {
-                if (!e.currentTarget.disabled) e.currentTarget.style.background = "var(--brand-hover)";
+                if (!e.currentTarget.disabled) e.currentTarget.style.background = "color-mix(in srgb, var(--action) 88%, black)";
               }}
               onMouseLeave={(e) => {
-                if (!e.currentTarget.disabled) e.currentTarget.style.background = "var(--brand)";
+                if (!e.currentTarget.disabled) e.currentTarget.style.background = "var(--action)";
               }}
               style={{
                 width: "100%",
-                background: "var(--brand)",
-                color: "var(--paper)",
+                background: "var(--action)",
+                color: "var(--ink-on-brand)",
                 border: "none",
                 borderRadius: 12,
                 padding: 14,
