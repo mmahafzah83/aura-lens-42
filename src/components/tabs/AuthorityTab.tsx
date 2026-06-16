@@ -1178,7 +1178,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                 gap: 6,
                 fontSize: 12,
                 fontWeight: 500,
-                color: "var(--ink-4)",
+                color: "var(--ink-2)",
                 background: "transparent",
                 border: "none",
                 cursor: "pointer",
@@ -1317,7 +1317,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                         borderRadius: 20,
                         background: active ? "var(--ink)" : "var(--aura-card)",
                         border: `0.5px solid ${active ? "var(--ink)" : "hsl(var(--border))"}`,
-                        color: active ? "var(--paper)" : "var(--ink-3)",
+                        color: active ? "var(--paper)" : "var(--ink-2)",
                         cursor: "pointer",
                         transition: "background 0.15s, color 0.15s, border-color 0.15s",
                       }}
