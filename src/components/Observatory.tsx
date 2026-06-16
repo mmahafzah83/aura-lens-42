@@ -497,9 +497,7 @@ const Observatory = ({
 
   // Off-screen pause for SMIL motion
   const instrumentsRef = useRef<HTMLDivElement>(null);
-  const tickerRef = useRef<HTMLDivElement>(null);
   const instrumentsOnScreen = useOnScreen(instrumentsRef);
-  const tickerOnScreen = useOnScreen(tickerRef);
 
   /* ── Loaders ──────────────────────────────────────────── */
   const loadSignals = useCallback(async (uid: string) => {
@@ -1055,10 +1053,6 @@ const Observatory = ({
           </div>
         )}
 
-        {/* ZONE 3 — TICKER */}
-        <div ref={tickerRef} style={{ marginTop: 32 }}>
-          {tickerOnScreen && <SectorPulseTicker onOpenChat={onOpenChat} />}
-        </div>
       </div>
     </div>
   );
