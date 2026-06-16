@@ -1178,7 +1178,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                 gap: 6,
                 fontSize: 12,
                 fontWeight: 500,
-                color: "var(--ink-4)",
+                color: "var(--ink-2)",
                 background: "transparent",
                 border: "none",
                 cursor: "pointer",
@@ -1317,7 +1317,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                         borderRadius: 20,
                         background: active ? "var(--ink)" : "var(--aura-card)",
                         border: `0.5px solid ${active ? "var(--ink)" : "hsl(var(--border))"}`,
-                        color: active ? "var(--paper)" : "var(--ink-3)",
+                        color: active ? "var(--paper)" : "var(--ink-2)",
                         cursor: "pointer",
                         transition: "background 0.15s, color 0.15s, border-color 0.15s",
                       }}
@@ -2014,7 +2014,7 @@ const PlanTab = ({ onGenerateFromPlan }: { onGenerateFromPlan: (prefill: PlanPre
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">Plan what to publish next based on signals and insights — sequence the moves that compound your influence.</p>
-        <Button variant="outline" size="sm" onClick={generatePlan} disabled={generating} className="gap-2">
+        <Button variant="outline" size="sm" onClick={generatePlan} disabled={generating} className="gap-2 border-border/40">
           {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
           Generate Plan
         </Button>
@@ -2025,7 +2025,7 @@ const PlanTab = ({ onGenerateFromPlan }: { onGenerateFromPlan: (prefill: PlanPre
           <Calendar className="w-8 h-8 text-primary/30 mx-auto" />
           <p className="text-foreground font-medium">No narrative plan yet</p>
           <p className="text-sm text-muted-foreground max-w-sm mx-auto">Generate an AI-powered content plan based on your strongest signals and frameworks.</p>
-          <Button onClick={generatePlan} disabled={generating} className="gap-2">
+          <Button onClick={generatePlan} disabled={generating} className="gap-2 border-border/40">
             {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
             Generate Plan
           </Button>
@@ -2052,17 +2052,17 @@ const PlanTab = ({ onGenerateFromPlan }: { onGenerateFromPlan: (prefill: PlanPre
 
                 <div className="space-y-2">
                   {items.map(s => (
-                    <div key={s.id} className="glass-card rounded-xl p-5 border border-border/8 hover:border-primary/15 transition-all">
+                    <div key={s.id} className="rounded-xl p-5 border border-border/30 hover:border-primary/30 transition-all" style={{ background: "var(--paper-2)" }}>
                       <p className="text-sm font-semibold text-foreground mb-1">{s.topic}</p>
                       <p className="text-xs text-muted-foreground leading-relaxed mb-2">{s.angle}</p>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span className="px-2 py-0.5 rounded-full bg-primary/8 text-primary/70 font-medium">{s.reason}</span>
+                        <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{s.reason}</span>
                         <span className="ml-auto">{formatSmartDate(s.created_at)}</span>
                       </div>
                       <Button
                         size="sm"
                         variant="outline"
-                        className="mt-3 h-7 text-xs gap-1.5 border-border/15"
+                        className="mt-3 h-7 text-xs gap-1.5 border-border/40"
                         onClick={() => {
                           onGenerateFromPlan({
                             topic: s.topic,
@@ -3184,7 +3184,17 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 32,
+        ['--bg-card' as any]: 'var(--paper-2)',
+        ['--bg-subtle' as any]: 'var(--paper-3)',
+        ['--color-border' as any]: 'var(--brand-line)',
+        ['--color-muted' as any]: 'var(--ink-3)',
+      }}
+    >
       {pendingDeleteId && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.8)" }}>
           <div className="bg-card border border-border/20 rounded-xl p-6 w-[400px] max-w-[90vw] space-y-4 shadow-2xl">
@@ -3262,10 +3272,25 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                   <LinkedInPreview text={p.post_text} profile={profile} />
 
                   {/* Body text */}
-                  <p style={{ fontSize: 14, color: "var(--ink)", lineHeight: 1.625 }} className={expandedCards.has(p.id) ? "" : "line-clamp-4"} dir="auto">
+                  <p
+                    style={{
+                      fontSize: 14,
+                      color: "var(--ink)",
+                      lineHeight: 1.625,
+                      ...(expandedCards.has(p.id) ? {} : {
+                        display: "-webkit-box",
+                        WebkitBoxOrient: "vertical" as any,
+                        WebkitLineClamp: 2,
+                        overflow: "hidden",
+                        WebkitMaskImage: "linear-gradient(180deg, #000 60%, transparent 100%)",
+                        maskImage: "linear-gradient(180deg, #000 60%, transparent 100%)",
+                      }),
+                    }}
+                    dir="auto"
+                  >
                     {p.post_text || "Untitled draft"}
                   </p>
-                  {(p.post_text?.split("\n").length || 0) > 4 || (p.post_text?.length || 0) > 280 ? (
+                  {(p.post_text?.split("\n").length || 0) > 2 || (p.post_text?.length || 0) > 140 ? (
                     <button
                       onClick={() => toggleCardExpand(p.id)}
                       style={{ fontSize: 14, color: "var(--brand)", background: "none", border: "none", cursor: "pointer", padding: 0, marginTop: 4 }}
@@ -3466,7 +3491,22 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                 >
                   <div className="flex items-start gap-3">
                     <div className="flex-1 min-w-0">
-                      <p style={{ fontSize: 14, color: "var(--ink)", lineHeight: 1.5 }} className={expandedCards.has(p.id) ? "" : "line-clamp-2"} dir="auto">
+                      <p
+                        style={{
+                          fontSize: 14,
+                          color: "var(--ink)",
+                          lineHeight: 1.5,
+                          ...(expandedCards.has(p.id) ? {} : {
+                            display: "-webkit-box",
+                            WebkitBoxOrient: "vertical" as any,
+                            WebkitLineClamp: 2,
+                            overflow: "hidden",
+                            WebkitMaskImage: "linear-gradient(180deg, #000 60%, transparent 100%)",
+                            maskImage: "linear-gradient(180deg, #000 60%, transparent 100%)",
+                          }),
+                        }}
+                        dir="auto"
+                      >
                         {p.post_text}
                       </p>
                       {(p.post_text?.split("\n").length || 0) > 2 || (p.post_text?.length || 0) > 140 ? (

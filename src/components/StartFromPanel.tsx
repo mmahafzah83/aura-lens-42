@@ -341,7 +341,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
           ) : groups.length === 0 ? (
             <div className="text-center py-8">
               <Lightbulb className="w-6 h-6 mx-auto mb-2" style={{ color: "var(--ink-3)" }} />
-              <p style={{ fontSize: 12, color: "var(--ink-5)", lineHeight: 1.5 }}>
+              <p style={{ fontSize: 12, color: "var(--ink-3)", lineHeight: 1.5 }}>
                 No signals yet. Capture 3-5 articles to build your signal map.
                 <br />
                 <span style={{ fontSize: 12, opacity: 0.7 }}>Signal-grounded posts perform far better than topic-only generation.</span>
@@ -402,7 +402,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                       >
                         {item.angle || item.title}
                       </p>
-                      <p style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 4, lineHeight: 1.3 }} className="line-clamp-1">
+                      <p style={{ fontSize: 12, color: "var(--ink-2)", marginTop: 4, lineHeight: 1.3 }} className="line-clamp-1">
                         {item.signalTitle || item.title}
                       </p>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
