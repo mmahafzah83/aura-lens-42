@@ -1415,10 +1415,15 @@ End with NEXT STEP:.`;
             50% { box-shadow: 0 0 12px 2px var(--hair); }
             100% { box-shadow: 0 0 0 0 transparent; }
           }
-          /* Border tint stays bronze; bg/text/placeholder are token-driven on the
-             element so they resolve correctly in BOTH light and dark themes. */
+          /* Instrument: hairline borders on inputs. */
           .aura-chat-dark textarea, .aura-chat-dark input[type="text"] {
-            border-color: color-mix(in srgb, var(--bronze) 25%, transparent) !important;
+            border-color: var(--hair) !important;
+          }
+          .aura-chat-dark textarea:focus-visible,
+          .aura-chat-dark input[type="text"]:focus-visible,
+          .aura-chat-dark button:focus-visible {
+            outline: 2px solid var(--action);
+            outline-offset: 2px;
           }
           .aura-chat-dark .aura-msg .serif-insight {
             font-family: var(--font-serif);
@@ -1430,7 +1435,7 @@ End with NEXT STEP:.`;
           }
           .aura-chat-dark .aura-msg .signal-ref,
           .aura-chat-dark .aura-msg strong {
-            color: var(--action);
+            color: var(--live);
             font-weight: 500;
           }
           .aura-chat-dark .aura-msg .dim-ref { color: var(--glass-2); }
@@ -1438,7 +1443,7 @@ End with NEXT STEP:.`;
           .aura-chat-dark .aura-msg blockquote {
             font-style: italic;
             color: var(--glass-2);
-            border-left: 2px solid rgba(176, 141, 58, 0.25);
+            border-left: 2px solid var(--hair);
             padding-left: 12px;
             display: block;
             margin: 10px 0;
