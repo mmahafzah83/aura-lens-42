@@ -2162,27 +2162,27 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
   };
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--paper)", color: "var(--ink)", paddingBottom: 100 }}>
+    <div className="min-h-screen" style={{ background: "var(--ob-bg)", color: "var(--glass)", paddingBottom: 100 }}>
       {/* Top bar */}
-      <div className="px-4 md:px-8 py-4 border-b" style={{ borderColor: "var(--hairline)" }}>
+      <div className="px-4 md:px-8 py-4 border-b" style={{ borderColor: "var(--hair)" }}>
         <div className="flex flex-wrap items-center gap-3 mb-3">
-          <button onClick={() => navigate("/home?tab=authority")} className="flex items-center gap-1 text-sm opacity-70 hover:opacity-100">
+          <button onClick={() => navigate("/home?tab=authority")} className="flex items-center gap-1 text-sm opacity-70 hover:opacity-100 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-[color:var(--action)]" style={{ color: "var(--glass)" }}>
             <ArrowLeft className="w-4 h-4" /> Back to Publish
           </button>
           <div className="ml-auto flex items-center gap-2">
-            <Sparkles className="w-4 h-4" style={{ color: "var(--bronze-text)" }} />
-            <span className="text-sm font-medium">Carousel Studio</span>
+            <Sparkles className="w-4 h-4" style={{ color: "var(--action)" }} />
+            <span className="text-sm font-medium" style={{ fontFamily: "var(--font-serif)", color: "var(--glass)" }}>Carousel Studio</span>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 mb-3">
           {(Object.keys(STYLES) as StyleKey[]).map(k => (
             <button key={k} onClick={() => setStyleKey(k)}
-                    className="px-3 py-1.5 rounded-full text-xs font-medium border"
+                    className="px-3 py-1.5 rounded-full text-xs font-medium border focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--action)]"
                     style={{
                       background: styleKey === k ? STYLES[k].accent : "transparent",
-                      color: styleKey === k ? "var(--ink-on-brand)" : "var(--ink)",
-                      borderColor: styleKey === k ? STYLES[k].accent : "var(--hairline)",
+                      color: styleKey === k ? "var(--ink-on-brand)" : "var(--glass)",
+                      borderColor: styleKey === k ? STYLES[k].accent : "var(--hair)",
                     }}>
               {STYLES[k].name}
             </button>
@@ -2190,14 +2190,14 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
         </div>
 
         <div className="flex flex-wrap items-center gap-2 mb-3">
-          <span className="text-xs mr-1" style={{ color: "hsl(var(--muted-foreground))" }}>Language</span>
+          <span className="text-xs mr-1 pub-micro" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>Language</span>
           {(["en", "ar"] as const).map(l => (
             <button key={l} onClick={() => setLang(l)}
-                    className="px-3 py-1.5 rounded-full text-xs font-medium border"
+                    className="px-3 py-1.5 rounded-full text-xs font-medium border focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--action)]"
                     style={{
-                      background: lang === l ? "var(--bronze)" : "transparent",
-                      color: lang === l ? "var(--ink-on-brand)" : "var(--ink)",
-                      borderColor: lang === l ? "var(--bronze)" : "var(--hairline)",
+                      background: lang === l ? "var(--action)" : "transparent",
+                      color: lang === l ? "var(--ink-on-brand)" : "var(--glass)",
+                      borderColor: lang === l ? "var(--action)" : "var(--hair)",
                       fontFamily: l === "ar" ? "'Cairo', sans-serif" : undefined,
                     }}>
               {l === "ar" ? "العربية" : "English"}
@@ -2211,12 +2211,12 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
             onChange={e => setTopic(e.target.value)}
             placeholder="Topic — e.g. Why comprehensive transformations outperform incremental change"
             dir={lang === "ar" ? "rtl" : "ltr"}
-            className="flex-1 min-w-[260px] px-3 py-2 rounded-lg border text-sm placeholder:text-[color:hsl(var(--muted-foreground))]"
-            style={{ background: "var(--paper-2)", color: "var(--ink)", borderColor: "var(--hairline)", fontFamily: lang === "ar" ? "'Cairo', sans-serif" : undefined }}
+            className="flex-1 min-w-[260px] px-3 py-2 rounded-lg border text-sm placeholder:text-[color:var(--glass-3)] focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--action)]"
+            style={{ background: "var(--ob-field)", color: "var(--glass)", borderColor: "var(--hair)", fontFamily: lang === "ar" ? "'Cairo', sans-serif" : undefined }}
           />
           <button onClick={generate} disabled={generating}
-                  className="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
-                  style={{ background: "var(--bronze)", color: "var(--ink-on-brand)" }}>
+                  className="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--action)]"
+                  style={{ background: "var(--action)", color: "var(--ink-on-brand)" }}>
             {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
             Generate Carousel
           </button>
@@ -2235,27 +2235,27 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                     <SlideSVG slide={slide} total={slides.length} style={style} dim={dim} carousel={carousel} lang={lang} />
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center text-center px-8"
-                         style={{ background: style.bg, color: style.fg }}>
+                         style={{ background: "var(--ob-panel)", color: "var(--glass)" }}>
                       {generating ? (
                         <>
-                          <Loader2 className="w-10 h-10 animate-spin mb-4" style={{ color: style.accent }} />
+                          <Loader2 className="w-10 h-10 animate-spin mb-4 motion-reduce:animate-none" style={{ color: "var(--action)" }} />
                           <div className="text-base font-semibold mb-1">Generating your carousel…</div>
                           <div
                             key={genMessageIdx}
-                            className="text-sm opacity-70 max-w-md transition-opacity duration-500 ease-in-out"
-                            style={{ animation: "fadeIn 0.5s ease-in-out" }}
+                            className="text-sm opacity-70 max-w-md transition-opacity duration-500 ease-in-out motion-reduce:transition-none motion-reduce:[animation:none]"
+                            style={{ animation: "fadeIn 0.5s ease-in-out", color: "var(--glass-2)" }}
                           >
                             {GEN_MESSAGES[genMessageIdx]}
                           </div>
                           {topic && (
-                            <div className="text-sm opacity-50 max-w-md mt-1">Creating 8 slides on: {topic}</div>
+                            <div className="text-sm max-w-md mt-1" style={{ color: "var(--glass-3)" }}>Creating 8 slides on: {topic}</div>
                           )}
                         </>
                       ) : (
                         <>
-                          <LayoutGrid className="w-10 h-10 mb-4 opacity-40" />
+                          <LayoutGrid className="w-10 h-10 mb-4" style={{ color: "var(--glass-3)" }} />
                           <div className="text-base font-semibold mb-1">Enter a topic and click Generate</div>
-                          <div className="text-sm opacity-60 max-w-md">Or pick a signal from the sidebar — 8 slides · 5 styles · Arabic & English · PDF export</div>
+                          <div className="text-sm max-w-md" style={{ color: "var(--glass-2)" }}>Or pick a signal from the sidebar — 8 slides · 5 styles · Arabic & English · PDF export</div>
                         </>
                       )}
                     </div>
@@ -2267,26 +2267,26 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
               {slides.length > 0 && !generating && (
                 <div className="flex flex-wrap items-center justify-center gap-3 text-xs">
                   {hasVoiceProfile && (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border" style={{ borderColor: "var(--hairline)", background: "var(--paper-2)", color: "hsl(var(--muted-foreground))" }}>
-                      <Sparkles className="w-3 h-3" style={{ color: "var(--bronze-text)" }} />
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border" style={{ borderColor: "var(--hair)", background: "var(--ob-panel)", color: "var(--glass-2)" }}>
+                      <Sparkles className="w-3 h-3" style={{ color: "var(--action)" }} />
                       Shaped by your voice
                     </span>
                   )}
                   <div className="flex items-center gap-2">
-                    <span style={{ color: "hsl(var(--muted-foreground))" }}>Does this sound like you?</span>
+                    <span style={{ color: "var(--glass-2)" }}>Does this sound like you?</span>
                     <button
                       onClick={handleVoiceSoundsLikeMe}
                       disabled={voiceFeedbackBusy}
-                      className="px-2.5 py-1 rounded-full border disabled:opacity-50"
-                      style={{ borderColor: "var(--hairline)", background: "var(--paper-2)", color: "var(--ink)" }}
+                      className="px-2.5 py-1 rounded-full border disabled:opacity-50 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--action)]"
+                      style={{ borderColor: "var(--hair)", background: "var(--ob-panel)", color: "var(--glass)" }}
                     >
                       Sounds like me
                     </button>
                     <button
                       onClick={handleVoiceDoesntSoundLikeMe}
                       disabled={voiceFeedbackBusy}
-                      className="px-2.5 py-1 rounded-full border disabled:opacity-50"
-                      style={{ borderColor: "var(--hairline)", background: "var(--paper-2)", color: "var(--ink)" }}
+                      className="px-2.5 py-1 rounded-full border disabled:opacity-50 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--action)]"
+                      style={{ borderColor: "var(--hair)", background: "var(--ob-panel)", color: "var(--glass)" }}
                     >
                       Doesn't sound like me
                     </button>
@@ -2297,18 +2297,18 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
               {/* Nav */}
               <div className="flex items-center justify-center gap-3">
                 <button onClick={() => setActiveIdx(Math.max(0, activeIdx - 1))} disabled={activeIdx === 0}
-                        className="p-2 rounded-full disabled:opacity-30" style={{ background: "var(--paper-2)", color: "var(--ink)" }}>
+                        className="p-2 rounded-full disabled:opacity-30 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--action)]" style={{ background: "var(--ob-raised)", color: "var(--glass)" }}>
                   <ChevronLeft className="w-4 h-4" />
                 </button>
                 <div className="flex gap-1.5">
                   {slides.map((_, i) => (
                     <button key={i} onClick={() => setActiveIdx(i)}
                             className="w-2 h-2 rounded-full transition-all"
-                            style={{ background: i === activeIdx ? "var(--bronze)" : "var(--ink-5)", width: i === activeIdx ? 18 : 8 }} />
+                            style={{ background: i === activeIdx ? "var(--action)" : "var(--glass-3)", width: i === activeIdx ? 18 : 8 }} />
                   ))}
                 </div>
                 <button onClick={() => setActiveIdx(Math.min(slides.length - 1, activeIdx + 1))} disabled={activeIdx >= slides.length - 1}
-                        className="p-2 rounded-full disabled:opacity-30" style={{ background: "var(--paper-2)", color: "var(--ink)" }}>
+                        className="p-2 rounded-full disabled:opacity-30 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--action)]" style={{ background: "var(--ob-raised)", color: "var(--glass)" }}>
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
@@ -2322,7 +2322,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                               style={{
                                 width: "100%", aspectRatio: `${DIM[dim].w} / ${DIM[dim].h}`,
                                 borderRadius: 8, overflow: "hidden",
-                                border: i === activeIdx ? "2px solid var(--bronze)" : "1px solid var(--hairline)",
+                                border: i === activeIdx ? "2px solid var(--action)" : "1px solid var(--hair)",
                                 cursor: "pointer", padding: 0, background: "transparent", display: "block",
                               }}>
                         <SlideSVG slide={s} total={slides.length} style={style} dim={dim} carousel={carousel} lang={lang} />
@@ -2332,16 +2332,16 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                         disabled={regeneratingIndex !== null}
                         title={`Regenerate slide ${i + 1}`}
                         className="absolute top-1 right-1 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
-                        style={{ background: "var(--paper-3)", border: "1px solid var(--bronze-line)" }}
+                        style={{ background: "var(--ob-raised)", border: "1px solid var(--hair)" }}
                       >
                         {regeneratingIndex === i
-                          ? <Loader2 className="w-3 h-3 animate-spin" style={{ color: "var(--bronze-text)" }} />
-                          : <RefreshCw className="w-3 h-3" style={{ color: "var(--bronze-text)" }} />}
+                          ? <Loader2 className="w-3 h-3 animate-spin motion-reduce:animate-none" style={{ color: "var(--action)" }} />
+                          : <RefreshCw className="w-3 h-3" style={{ color: "var(--action)" }} />}
                       </button>
                       {regeneratingIndex === i && (
                         <div className="absolute inset-0 flex items-center justify-center rounded-lg"
-                             style={{ background: "color-mix(in srgb, var(--paper) 70%, transparent)" }}>
-                          <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--bronze-text)" }} />
+                             style={{ background: "color-mix(in srgb, var(--ob-bg) 70%, transparent)" }}>
+                          <Loader2 className="w-5 h-5 animate-spin motion-reduce:animate-none" style={{ color: "var(--action)" }} />
                         </div>
                       )}
                     </div>
@@ -2353,28 +2353,28 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
               <div className="flex flex-wrap items-center gap-2 justify-center">
                 <select onChange={e => { if (e.target.value) { addSlide(e.target.value as SlideType); e.target.value = ""; } }}
                         defaultValue=""
-                        className="px-3 py-1.5 text-xs rounded-lg border" style={{ background: "var(--paper-2)", color: "var(--ink)", borderColor: "var(--hairline)" }}>
+                        className="px-3 py-1.5 text-xs rounded-lg border focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--action)]" style={{ background: "var(--ob-raised)", color: "var(--glass)", borderColor: "var(--hair)" }}>
                   <option value="">+ Add slide</option>
                   {(["COVER","BOLD_CLAIM","REFRAME","BIG_NUMBER","TERMINAL","GRID","COMPARE","QUESTION","LIST","INSIGHT","CTA"] as SlideType[]).map(t => (
                     <option key={t} value={t}>{t}</option>
                   ))}
                 </select>
-                <button onClick={() => moveSlide(-1)} className="p-1.5 rounded" style={{ background: "var(--paper-2)", color: "var(--ink)" }}><ArrowUp className="w-3.5 h-3.5" /></button>
-                <button onClick={() => moveSlide(1)} className="p-1.5 rounded" style={{ background: "var(--paper-2)", color: "var(--ink)" }}><ArrowDown className="w-3.5 h-3.5" /></button>
-                <button onClick={deleteSlide} className="p-1.5 rounded text-[color:var(--error)]" style={{ background: "var(--paper-2)" }}><Trash2 className="w-3.5 h-3.5" /></button>
+                <button onClick={() => moveSlide(-1)} className="p-1.5 rounded focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-[color:var(--action)]" style={{ background: "var(--ob-raised)", color: "var(--glass)" }}><ArrowUp className="w-3.5 h-3.5" /></button>
+                <button onClick={() => moveSlide(1)} className="p-1.5 rounded focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-[color:var(--action)]" style={{ background: "var(--ob-raised)", color: "var(--glass)" }}><ArrowDown className="w-3.5 h-3.5" /></button>
+                <button onClick={deleteSlide} className="p-1.5 rounded focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-[color:var(--action)]" style={{ background: "var(--ob-raised)", color: "var(--neg)" }}><Trash2 className="w-3.5 h-3.5" /></button>
               </div>
             </div>
           </div>
         </div>
         {/* Right column: signals (collapsible) + edit panel */}
         <aside className="space-y-4 lg:sticky lg:top-4 self-start" style={{ maxHeight: "calc(100vh - 32px)", overflowY: "auto" }}>
-          <div className="rounded-2xl" style={{ background: "var(--paper-2)", border: "1px solid var(--hairline)" }}>
+          <div className="rounded-2xl" style={{ background: "var(--ob-panel)", border: "1px solid var(--hair)" }}>
             <button
               onClick={() => setShowSignals(s => !s)}
               className="w-full flex items-center justify-between px-4 py-3 text-left"
             >
-              <span className="text-xs uppercase tracking-wider font-semibold" style={{ color: "var(--ink-3)" }}>Your publishing window</span>
-              {showSignals ? <ChevronUp className="w-4 h-4" style={{ color: "hsl(var(--muted-foreground))" }} /> : <ChevronDown className="w-4 h-4" style={{ color: "hsl(var(--muted-foreground))" }} />}
+              <span className="text-xs uppercase tracking-wider font-semibold" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>Your publishing window</span>
+              {showSignals ? <ChevronUp className="w-4 h-4" style={{ color: "var(--glass-2)" }} /> : <ChevronDown className="w-4 h-4" style={{ color: "var(--glass-2)" }} />}
             </button>
             {showSignals && (
               <div style={{ maxHeight: 320, overflowY: "auto" }} className="px-1 pb-2">
@@ -2394,15 +2394,15 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
           </div>
 
           {/* Edit panel */}
-          <div className="space-y-3 p-4 rounded-2xl" style={{ background: "var(--paper-2)", border: "1px solid var(--hairline)" }}>
+          <div className="space-y-3 p-4 rounded-2xl" style={{ background: "var(--ob-panel)", border: "1px solid var(--hair)" }}>
             <div className="flex items-center justify-between">
-              <div className="text-xs uppercase tracking-wider" style={{ color: "hsl(var(--muted-foreground))" }}>Edit · {slide?.slide_type}</div>
-              <div className="text-xs" style={{ color: "hsl(var(--muted-foreground))" }}>Slide {activeIdx + 1} of {slides.length}</div>
+              <div className="text-xs uppercase tracking-wider" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>Edit · {slide?.slide_type}</div>
+              <div className="text-xs" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>Slide {activeIdx + 1} of {slides.length}</div>
             </div>
             {slide && <EditPanel slide={slide} onChange={updateSlide} lang={lang} />}
 
-            <div className="pt-3 mt-3 border-t" style={{ borderColor: "var(--hairline)" }}>
-              <div className="text-xs uppercase tracking-wider mb-2" style={{ color: "hsl(var(--muted-foreground))" }}>Author & attribution</div>
+            <div className="pt-3 mt-3 border-t" style={{ borderColor: "var(--hair)" }}>
+              <div className="text-xs uppercase tracking-wider mb-2" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>Author & attribution</div>
               <Field lang={lang} label="Name" value={carousel.author_name || ""} onChange={v => setCarousel({ ...carousel, author_name: v })} />
               <Field lang={lang} label="Title" value={carousel.author_title || ""} onChange={v => setCarousel({ ...carousel, author_title: v })} />
               <Field lang={lang} label="Handle" value={carousel.author_handle || ""} onChange={v => setCarousel({ ...carousel, author_handle: v })} />
@@ -2412,9 +2412,9 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
 
           {/* LinkedIn caption + hashtags */}
           {(carousel.linkedin_caption || (carousel.hashtags && carousel.hashtags.length > 0)) && (
-            <div className="space-y-3 p-4 rounded-2xl" style={{ background: "var(--paper-2)", border: "1px solid var(--hairline)" }}>
+            <div className="space-y-3 p-4 rounded-2xl" style={{ background: "var(--ob-panel)", border: "1px solid var(--hair)" }}>
               <div className="flex items-center justify-between">
-                <div className="text-xs uppercase tracking-wider" style={{ color: "hsl(var(--muted-foreground))" }}>LinkedIn caption</div>
+                <div className="text-xs uppercase tracking-wider" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>LinkedIn caption</div>
                 <button
                   onClick={() => {
                     const tags = dedupeHashtags(carousel.hashtags || []).join(" ");
@@ -2425,8 +2425,8 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                       () => toast.error("Copy failed"),
                     );
                   }}
-                  className="flex items-center gap-1 text-xs px-2 py-1 rounded"
-                  style={{ background: "var(--paper-3)", color: "var(--ink)" }}
+                  className="flex items-center gap-1 text-xs px-2 py-1 rounded focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-[color:var(--action)]"
+                  style={{ background: "var(--ob-raised)", color: "var(--glass)" }}
                 >
                   <Copy className="w-3 h-3" /> Copy
                 </button>
@@ -2434,12 +2434,12 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
               <textarea
                 value={stripDuplicateHashtags(carousel.linkedin_caption || "", carousel.hashtags || [])}
                 onChange={e => setCarousel({ ...carousel, linkedin_caption: e.target.value })}
-                className="w-full px-2.5 py-1.5 text-sm rounded-lg border focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-[color:var(--bronze-text)] placeholder:text-[color:hsl(var(--muted-foreground))]"
+                className="w-full px-2.5 py-1.5 text-sm rounded-lg border focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-[color:var(--action)] placeholder:text-[color:var(--glass-3)]"
                 dir={lang === "ar" ? "rtl" : "ltr"}
                 style={{
-                  background: "var(--paper)",
-                  color: "var(--ink)",
-                  borderColor: "var(--hairline)",
+                  background: "var(--ob-field)",
+                  color: "var(--glass)",
+                  borderColor: "var(--hair)",
                   minHeight: 130,
                   resize: "vertical",
                   fontFamily: lang === "ar" ? "'Cairo', 'DM Sans', sans-serif" : undefined,
@@ -2450,7 +2450,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {dedupeHashtags(carousel.hashtags).map((h, i) => (
                     <span key={i} className="text-xs px-2 py-0.5 rounded-full"
-                          style={{ background: "var(--bronze-pale)", color: "var(--bronze-text)", border: "1px solid var(--bronze-line)" }}>
+                          style={{ background: "var(--ob-raised)", color: "var(--glass-2)", border: "1px solid var(--hair)" }}>
                       {h}
                     </span>
                   ))}
@@ -2463,33 +2463,33 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
 
       {/* Sticky bottom bar */}
       <div className="fixed bottom-0 left-0 right-0 px-4 py-3 backdrop-blur-md flex flex-wrap items-center gap-2 justify-center"
-           style={{ background: "color-mix(in srgb, var(--paper) 85%, transparent)", borderTop: "1px solid var(--hairline)" }}>
-        <span className="w-full text-center text-[11px]" style={{ color: "hsl(var(--muted-foreground))", letterSpacing: "0.02em" }}>
+           style={{ background: "color-mix(in srgb, var(--ob-bg) 85%, transparent)", borderTop: "1px solid var(--hair)" }}>
+        <span className="w-full text-center text-[11px]" style={{ color: "var(--glass-2)", letterSpacing: "0.02em", fontFamily: "var(--font-mono)" }}>
           ✦ AI-generated slides · Review before sharing
         </span>
         <div className="flex items-center gap-1 mr-2">
           {(Object.keys(DIM) as Dimension[]).map(d => (
             <button key={d} onClick={() => setDim(d)}
-                    className="px-2.5 py-1 text-xs rounded"
+                    className="px-2.5 py-1 text-xs rounded focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-[color:var(--action)]"
                     style={{
-                      background: dim === d ? "var(--bronze)" : "var(--paper-2)",
-                      color: dim === d ? "var(--ink-on-brand)" : "var(--ink)",
+                      background: dim === d ? "var(--action)" : "var(--ob-raised)",
+                      color: dim === d ? "var(--ink-on-brand)" : "var(--glass)",
                     }}>
               {d.replace("x", "×")}
             </button>
           ))}
         </div>
         <button onClick={exportPdf} disabled={exporting}
-                className="px-3 py-1.5 text-xs rounded-lg flex items-center gap-1.5"
-                style={{ background: "var(--bronze)", color: "var(--ink-on-brand)" }}>
+                className="px-3 py-1.5 text-xs rounded-lg flex items-center gap-1.5 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--action)]"
+                style={{ background: "var(--action)", color: "var(--ink-on-brand)" }}>
           {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />} PDF
         </button>
         <button onClick={saveToLibrary} disabled={saving || savedToLibrary || !slides.length}
-                className="px-3 py-1.5 text-xs rounded-lg flex items-center gap-1.5"
+                className="px-3 py-1.5 text-xs rounded-lg flex items-center gap-1.5 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--action)]"
                 style={{
-                  background: savedToLibrary ? "var(--success-pale)" : "var(--paper-2)",
-                  color: savedToLibrary ? "var(--success)" : "var(--ink)",
-                  border: savedToLibrary ? "1px solid var(--success)" : "1px solid transparent",
+                  background: savedToLibrary ? "color-mix(in srgb, var(--pos) 14%, var(--ob-raised))" : "var(--ob-raised)",
+                  color: savedToLibrary ? "var(--pos)" : "var(--glass)",
+                  border: savedToLibrary ? "1px solid var(--pos)" : "1px solid transparent",
                 }}>
           {saving ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving…</>
             : savedToLibrary ? <><Check className="w-3.5 h-3.5" /> Saved to Library</>
