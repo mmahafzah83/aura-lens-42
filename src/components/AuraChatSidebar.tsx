@@ -2002,7 +2002,7 @@ End with NEXT STEP:.`;
                               </p>
                             ),
                             strong: ({ children }) => (
-                              <strong className="font-semibold text-foreground">{children}</strong>
+                              <strong className="font-semibold" style={{ color: "var(--live)" }}>{children}</strong>
                             ),
                             em: ({ children }) => <em className="italic">{children}</em>,
                             br: () => <br />,
