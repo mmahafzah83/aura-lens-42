@@ -806,9 +806,12 @@ const Dashboard = () => {
         className={`grain-overlay flex-1 min-w-0 relative z-10 transition-all duration-300 overflow-x-hidden ${
           sidebarCollapsed ? "md:ml-[68px]" : "md:ml-[220px]"
         }`}
-        style={{ paddingTop: 'env(safe-area-inset-top)', background: 'var(--paper)' }}
+        style={{
+          paddingTop: 'env(safe-area-inset-top)',
+          background: activeTab === "intelligence" ? 'var(--ob-bg)' : 'var(--paper)',
+        }}
       >
-        <div className="max-w-5xl mx-auto px-4 sm:px-8 py-4 sm:py-8 pb-[88px] md:pb-12 overflow-hidden">
+        <div className="max-w-5xl mx-auto px-4 sm:px-8 pt-4 sm:pt-8">
           {/* Top Bar */}
           <div className="flex items-center justify-between mb-6 pt-2 md:pt-0">
             <div className="flex items-center gap-3">
@@ -892,7 +895,14 @@ const Dashboard = () => {
               />
             </div>
           </div>
-
+        </div>
+        <div
+          className={
+            activeTab === "intelligence"
+              ? "pb-[88px] md:pb-12"
+              : "max-w-5xl mx-auto px-4 sm:px-8 pb-[88px] md:pb-12 overflow-hidden"
+          }
+        >
           {/* Tab Content */}
           <div className="tab-content-spring aura-page-fade relative" key={activeTab} style={{ minHeight: "60vh" }}>
             {activeTab === "home" && (
