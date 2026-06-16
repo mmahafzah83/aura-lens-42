@@ -29,6 +29,7 @@ import { runPostImportPipeline, type PipelineState, PIPELINE_LABELS } from "@/li
 import AuthorityJourney from "@/components/AuthorityJourney";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import MarketMirror from "@/components/MarketMirror";
+import { useTierFromImprint } from "@/hooks/useTierFromImprint";
 
 /* ── Types ── */
 interface Snapshot {
