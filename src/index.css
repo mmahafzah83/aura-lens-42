@@ -789,22 +789,11 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   display: none;
 }
 
-/* ── Design v2: global cosmetic overlays (light theme) ── */
-[data-theme="light"] {
-  /* Card token swap to pure white #FFFFFF (was already 100%) — keep */
-  --card: 0 0% 100%;
-  --card-foreground: 30 8% 5%;
-}
-
-/* Floating white card — apply to any .bg-card / .bg-white / shadcn Card */
-[data-theme="light"] .bg-card,
-[data-theme="light"] .bg-white,
-[data-theme="light"] [data-aura-card="true"] {
-  background-color: #FFFFFF !important;
-  border: 0.5px solid rgba(0,0,0,0.07) !important;
-  border-radius: 14px;
-  box-shadow: var(--aura-shadow-sm);
-}
+/* ── Design v2: global cosmetic overlays (light theme) ──
+   The forced opaque-white card overlay was removed: it whited out every
+   shadcn Card on bone Pages. Bone surfaces now read the scoped shadcn
+   token map below (see .publish-page / .story-page). LinkedInPreview keeps
+   its own hardcoded white background. */
 
 /* Metric / section uppercase labels */
 .aura-metric-label,
