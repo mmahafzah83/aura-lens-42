@@ -567,6 +567,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
         setFramework("hook_insight_question");
       }
       setSelectedSignalId(signalPrefill.signalId || null);
+      pendingSignalIdRef.current = signalPrefill.signalId || null;
       setSelectedSignalTitle(signalPrefill.signalTitle || null);
       setSelectedSignalInsight(signalPrefill.context || null);
       setOutput("");
