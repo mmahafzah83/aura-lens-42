@@ -195,7 +195,7 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
   };
 
   const inputCls =
-    "w-full rounded-lg border bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/40 transition-colors";
+    "w-full rounded-lg border bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[var(--action)]/40 transition-colors";
   const inputStyle: React.CSSProperties = { borderColor: "hsl(var(--border))" };
 
   const Label = ({ children, hint }: { children: React.ReactNode; hint?: string }) => (
@@ -251,13 +251,13 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
         >
           <div
             className="h-full transition-all duration-500"
-            style={{ width: `${progressPct}%`, background: "var(--brand)" }}
+            style={{ width: `${progressPct}%`, background: "var(--action)" }}
           />
         </div>
 
         <p
           className="text-xs tracking-[0.18em] uppercase mb-2 font-medium"
-          style={{ color: "var(--brand)" }}
+          style={{ color: "var(--action)" }}
         >
           Step {step} of 3 — {stepLabels[step]}
         </p>
@@ -369,9 +369,9 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
                           onClick={() => togglePillar(p)}
                           className="px-3 py-1.5 rounded-full text-xs transition-all"
                           style={{
-                            background: active ? "var(--brand)" : "hsl(var(--muted) / 0.4)",
-                            color: active ? "var(--brand-foreground, #1A1916)" : "hsl(var(--foreground))",
-                            border: `1px solid ${active ? "var(--brand)" : "hsl(var(--border))"}`,
+                            background: active ? "var(--action)" : "hsl(var(--muted) / 0.4)",
+                            color: active ? "var(--ink, #1A1916)" : "hsl(var(--foreground))",
+                            border: `1px solid ${active ? "var(--action)" : "hsl(var(--border))"}`,
                           }}
                         >
                           {p}
@@ -457,7 +457,7 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
               onClick={saveStep1}
               disabled={!step1Valid || saving}
               className="w-full py-3.5 rounded-full text-sm font-medium transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-              style={{ background: "var(--brand)", color: "var(--brand-foreground, #1A1916)" }}
+              style={{ background: "var(--action)", color: "var(--ink, #1A1916)" }}
             >
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
               Continue
@@ -468,7 +468,7 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
               onClick={saveStep2}
               disabled={!step2Valid || saving}
               className="w-full py-3.5 rounded-full text-sm font-medium transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-              style={{ background: "var(--brand)", color: "var(--brand-foreground, #1A1916)" }}
+              style={{ background: "var(--action)", color: "var(--ink, #1A1916)" }}
             >
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
               Continue
@@ -480,7 +480,7 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
                 onClick={() => finish(false)}
                 disabled={saving}
                 className="w-full py-3.5 rounded-full text-sm font-medium transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                style={{ background: "var(--brand)", color: "var(--brand-foreground, #1A1916)" }}
+                style={{ background: "var(--action)", color: "var(--ink, #1A1916)" }}
               >
                 {saving && <Loader2 className="w-4 h-4 animate-spin" />}
                 Finish setup

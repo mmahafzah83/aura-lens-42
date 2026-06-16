@@ -580,7 +580,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
                   style={{
                     fontSize: 10,
                     letterSpacing: "2px",
-                    color: "var(--brand)",
+                    color: "var(--action)",
                     fontWeight: 700,
                     marginBottom: 8,
                   }}
@@ -593,7 +593,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
                 style={{
                   fontSize: 11,
                   letterSpacing: "2px",
-                  color: "var(--bronze-text)",
+                  color: "var(--spot)",
                 }}
               >
                 Question {step + 1} of {QUESTIONS.length}
@@ -601,7 +601,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
               <h2
                 className="leading-snug"
                 style={{
-                  fontFamily: "'Cormorant Garamond', Georgia, serif",
+                  fontFamily: "var(--serif)",
                   fontSize: 22,
                   color: "var(--ink)",
                   marginBottom: q.sub ? 8 : 24,
@@ -641,8 +641,8 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
                           borderTop: "1px solid rgba(212,176,86,0.2)",
                           borderRight: "1px solid rgba(212,176,86,0.2)",
                           borderBottom: "1px solid rgba(212,176,86,0.2)",
-                          borderLeft: sel ? "3px solid var(--bronze-text)" : "1px solid color-mix(in srgb, var(--bronze-text) 20%, transparent)",
-                          color: sel ? "var(--bronze-text)" : "var(--ink)",
+                          borderLeft: sel ? "3px solid var(--spot)" : "1px solid color-mix(in srgb, var(--spot) 20%, transparent)",
+                          color: sel ? "var(--spot)" : "var(--ink)",
                           borderRadius: 12,
                           padding: sel ? "16px 20px 16px 18px" : "16px 20px",
                           fontSize: 15,
@@ -656,7 +656,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
                         <span
                           aria-hidden="true"
                           style={{
-                            color: "var(--bronze-text)",
+                            color: "var(--spot)",
                             fontSize: 10,
                             opacity: sel ? 1 : 0,
                             transition: "opacity 200ms ease",
@@ -720,7 +720,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
               onClick={handleNext}
               className="w-full rounded-xl font-medium tracking-wide transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
               style={{
-                background: "linear-gradient(to bottom, hsl(43 80% 55%), var(--brand))",
+                background: "linear-gradient(to bottom, hsl(43 80% 55%), var(--action))",
                 color: "var(--ink)",
                 padding: step === QUESTIONS.length - 1 ? "16px" : "14px",
                 fontSize: step === QUESTIONS.length - 1 ? 15 : 14,
@@ -743,19 +743,19 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
           }}
         >
           <div style={{ textAlign: "center", maxWidth: 360 }}>
-            <div style={{ color: "var(--bronze-text)", fontSize: 16, marginBottom: 18 }}>{interlude.dots}</div>
+            <div style={{ color: "var(--spot)", fontSize: 16, marginBottom: 18 }}>{interlude.dots}</div>
             <p
               style={{
-                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontFamily: "var(--serif)",
                 fontSize: 18,
-                color: "var(--bronze-text)",
+                color: "var(--spot)",
                 lineHeight: 1.55,
                 margin: 0,
               }}
             >
               {interlude.text}
             </p>
-            <div style={{ color: "var(--bronze-text)", fontSize: 16, marginTop: 18 }}>{interlude.dots}</div>
+            <div style={{ color: "var(--spot)", fontSize: 16, marginTop: 18 }}>{interlude.dots}</div>
           </div>
         </div>
       )}
@@ -880,7 +880,7 @@ function ResultsView({
           <button
             onClick={onSaveAndContinue}
             className="w-full py-3 rounded-xl text-sm font-medium tracking-wide hover:brightness-110 transition-all active:scale-[0.98]"
-            style={{ background: "linear-gradient(to bottom, hsl(43 80% 55%), var(--brand))", color: "var(--ink)" }}
+            style={{ background: "linear-gradient(to bottom, hsl(43 80% 55%), var(--action))", color: "var(--ink)" }}
           >
             View my complete Strategic Identity →
           </button>
@@ -910,18 +910,18 @@ function ResultsView({
         /* Print stylesheet runs in a popup window with no access to app CSS vars.
            Hex values below mirror canonical light-mode Standard tokens:
              #1a1a1a  → var(--ink)            (body text)
-             #8b6f2a  → var(--bronze-text)    (light-mode bronze, AA on paper)
-             #B08D3A  → var(--bronze)         (canonical brand accent)
-             #fbf7ec  → var(--bronze-mist)    (warm tinted surface)
-             #e6dcc4  → var(--bronze-line)    (hairline divider)
+             #8b6f2a  → var(--spot)    (light-mode bronze, AA on paper)
+             #B08D3A  → var(--action)         (canonical brand accent)
+             #fbf7ec  → var(--paper-2)    (warm tinted surface)
+             #e6dcc4  → var(--rule)    (hairline divider)
              #666     → var(--ink-3)          (secondary text)
              #999     → var(--ink-4)          (muted footer text)                       */
         body{font-family:Georgia,serif;max-width:720px;margin:40px auto;padding:0 24px;color:#1a1a1a;line-height:1.6}
         .label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#8b6f2a}
-        h1{font-family:'Cormorant Garamond',Georgia,serif;font-size:32px;color:#8b6f2a;margin:8px 0 4px;font-weight:500}
+        h1{font-family:var(--serif);font-size:32px;color:#8b6f2a;margin:8px 0 4px;font-weight:500}
         .desc{color:#666;font-size:14px;margin:0 0 16px}
         .oneliner{font-size:17px;font-weight:600;border-left:3px solid #B08D3A;padding:8px 14px;margin:18px 0;background:#fbf7ec}
-        h2{font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#8b6f2a;text-transform:uppercase;letter-spacing:1px;margin:24px 0 8px;border-bottom:1px solid #e6dcc4;padding-bottom:4px}
+        h2{font-family:var(--serif);font-size:18px;color:#8b6f2a;text-transform:uppercase;letter-spacing:1px;margin:24px 0 8px;border-bottom:1px solid #e6dcc4;padding-bottom:4px}
         section p{font-size:14px}
         footer{margin-top:40px;font-size:11px;color:#999;text-align:center}
       </style></head><body>
@@ -965,7 +965,7 @@ function ResultsView({
             fontSize: 11,
             letterSpacing: "2px",
             textTransform: "uppercase",
-            color: "var(--bronze-text)",
+            color: "var(--spot)",
             fontWeight: 600,
             marginBottom: 16,
             opacity: 0,
@@ -979,7 +979,7 @@ function ResultsView({
             fontSize: 11,
             letterSpacing: "3px",
             textTransform: "uppercase",
-            color: "var(--brand)",
+            color: "var(--action)",
             fontWeight: 600,
             opacity: 0,
             animation: "aura-fade-in 500ms ease-out 800ms forwards",
@@ -990,7 +990,7 @@ function ResultsView({
 
         <h2
           style={{
-            fontFamily: "'Cormorant Garamond', Georgia, serif",
+            fontFamily: "var(--serif)",
             fontSize: "clamp(28px, 5vw, 36px)",
             fontWeight: 400,
             color: "var(--ink)",
@@ -1039,7 +1039,7 @@ function ResultsView({
                 key={i}
                 style={{
                   border: "1px solid rgba(212, 176, 86, 0.4)",
-                  color: "var(--brand)",
+                  color: "var(--action)",
                   borderRadius: 999,
                   fontSize: 12,
                   padding: "5px 12px",
@@ -1063,7 +1063,7 @@ function ResultsView({
         <button
           type="button"
           onClick={() => setShowFull(v => !v)}
-          style={{ background: "transparent", border: 0, color: "var(--brand)", fontSize: 13, cursor: "pointer", fontWeight: 500 }}
+          style={{ background: "transparent", border: 0, color: "var(--action)", fontSize: 13, cursor: "pointer", fontWeight: 500 }}
         >
           {showFull ? "Hide the full picture ↑" : "See the full picture →"}
         </button>
@@ -1093,11 +1093,11 @@ function ResultsView({
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div
                       style={{
-                        fontFamily: "'Cormorant Garamond', Georgia, serif",
+                        fontFamily: "var(--serif)",
                         fontSize: 14,
                         textTransform: "uppercase",
                         letterSpacing: "0.1em",
-                        color: "var(--brand)",
+                        color: "var(--action)",
                         fontWeight: 600,
                       }}
                     >
@@ -1166,7 +1166,7 @@ function ResultsView({
           type="button"
           onClick={goToStory}
           className="flex items-center gap-2 px-5 py-2.5 rounded-lg hover:brightness-110 transition-all active:scale-[0.98]"
-          style={{ background: "linear-gradient(to bottom, hsl(43 80% 55%), var(--brand))", color: "var(--ink)", fontSize: 13, cursor: "pointer", border: 0, fontWeight: 600 }}
+          style={{ background: "linear-gradient(to bottom, hsl(43 80% 55%), var(--action))", color: "var(--ink)", fontSize: 13, cursor: "pointer", border: 0, fontWeight: 600 }}
         >
           Enter Aura <ArrowRight className="w-3.5 h-3.5" />
         </button>
@@ -1228,7 +1228,7 @@ function CinematicLoading({ stage = 0 }: { stage?: number }) {
       <p
         key={stage}
         style={{
-          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontFamily: "var(--serif)",
           fontSize: 18,
           textAlign: "center",
           color: "#d4b056",

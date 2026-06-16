@@ -48,7 +48,7 @@ function percentileFor(avg: number): string {
   return "a unique profile";
 }
 
-const BRONZE = "var(--bronze)";
+const BRONZE = "var(--action)";
 const TRACK = "var(--hairline)";
 
 interface CustomSliderProps {
@@ -322,7 +322,7 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
                 className="font-semibold transition-all flex items-center justify-center gap-2"
                 style={{
                   height: 44, padding: "0 22px", minWidth: 140,
-                  background: BRONZE, color: "var(--ink-on-brand)",
+                  background: BRONZE, color: "var(--ink)",
                   borderRadius: 10, fontSize: 14,
                 }}
               >
@@ -489,7 +489,7 @@ const SummaryCard = ({ summary, scores, submitting, reduceMotion, onFinish, onBa
           className="font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-50"
           style={{
             height: 44, padding: "0 22px",
-            background: BRONZE, color: "var(--ink-on-brand)",
+            background: BRONZE, color: "var(--ink)",
             borderRadius: 10, fontSize: 14,
           }}
         >
