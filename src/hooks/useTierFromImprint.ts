@@ -64,6 +64,8 @@ export interface UseTierFromImprintResult {
   currentTier: TierBand | null;
   /** Previous tier from the prior snapshot (null when first snapshot). */
   previousTier: TierBand | null;
+  /** Numeric delta = latest - prior imprint score (null when no prior). */
+  delta: number | null;
   /** True when latest band differs from previous band AND not yet acknowledged. */
   crossed: boolean;
   /** Mark current tier as acknowledged so it won't re-trigger. */
@@ -77,12 +79,13 @@ export function useTierFromImprint(userId: string | null | undefined): UseTierFr
   const [score, setScore] = useState<number | null>(null);
   const [currentTier, setCurrentTier] = useState<TierBand | null>(null);
   const [previousTier, setPreviousTier] = useState<TierBand | null>(null);
+  const [delta, setDelta] = useState<number | null>(null);
   const [crossed, setCrossed] = useState(false);
 
   const load = useCallback(async () => {
     if (!userId) {
       setLoading(false);
-      setScore(null); setCurrentTier(null); setPreviousTier(null); setCrossed(false);
+      setScore(null); setCurrentTier(null); setPreviousTier(null); setDelta(null); setCrossed(false);
       return;
     }
     setLoading(true);
@@ -102,6 +105,7 @@ export function useTierFromImprint(userId: string | null | undefined): UseTierFr
       setScore(latest);
       setCurrentTier(cur);
       setPreviousTier(prev);
+      setDelta(latest != null && prior != null ? Math.round(latest - prior) : null);
 
       // Crossing = bands differ. We do NOT require an upward move (a downward
       // crossing still warrants surfacing, though the modal copy reads as a
@@ -114,7 +118,7 @@ export function useTierFromImprint(userId: string | null | undefined): UseTierFr
       setCrossed(!!cur && isUpward && !alreadyAck);
     } catch (e) {
       console.warn("[useTierFromImprint] load failed", e);
-      setScore(null); setCurrentTier(null); setPreviousTier(null); setCrossed(false);
+      setScore(null); setCurrentTier(null); setPreviousTier(null); setDelta(null); setCrossed(false);
     } finally {
       setLoading(false);
     }
@@ -144,7 +148,7 @@ export function useTierFromImprint(userId: string | null | undefined): UseTierFr
     setCrossed(false);
   }, [currentTier]);
 
-  return { loading, score, currentTier, previousTier, crossed, acknowledge, refresh: load };
+  return { loading, score, currentTier, previousTier, delta, crossed, acknowledge, refresh: load };
 }
 
 export default useTierFromImprint;

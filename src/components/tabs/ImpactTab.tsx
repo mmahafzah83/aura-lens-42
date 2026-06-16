@@ -29,6 +29,7 @@ import { runPostImportPipeline, type PipelineState, PIPELINE_LABELS } from "@/li
 import AuthorityJourney from "@/components/AuthorityJourney";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import MarketMirror from "@/components/MarketMirror";
+import { useTierFromImprint } from "@/hooks/useTierFromImprint";
 
 /* ── Types ── */
 interface Snapshot {
@@ -667,7 +668,19 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
      Use live EF data (auraData) as PRIMARY source for current display,
      fall back to most recent snapshot only if EF hasn't returned yet. */
   const latest = snapshots.length > 0 ? snapshots[snapshots.length - 1] : null;
-  const latestScore = (auraData as any)?.aura_score ?? latest?.score ?? 0;
+  // CANONICAL SCORE — repointed to imprint_snapshots so Impact matches
+  // Home / Observatory / My Story. Legacy aura_score / score_snapshots used
+  // ONLY as null-fallback while imprint hasn't loaded.
+  const { score: imprintScore, currentTier: imprintTier, delta: imprintDelta } =
+    useTierFromImprint(userId);
+  const legacyAuraScore = (auraData as any)?.aura_score ?? latest?.score ?? 0;
+  const latestScore = imprintScore != null ? imprintScore : legacyAuraScore;
+  const tierName: string = imprintTier?.name ?? (auraData as any)?.tier_name ?? "Observer";
+  // Three forces — LEGACY DECOMPOSITION. imprint_snapshots does not yet
+  // expose signal/content/consistency components, so these still read from
+  // calculate-aura-score / score_snapshots. They are NOT presented as
+  // summing to the imprint dial; pending an imprint-native breakdown they
+  // remain a directional, legacy view. TODO: replace once imprint components ship.
   const captureScore = (auraData as any)?.capture_score ?? latest?.components?.capture_score ?? 0;
   const contentScore = (auraData as any)?.content_score ?? latest?.components?.content_score ?? 0;
   const signalScore = (auraData as any)?.signal_score ?? latest?.components?.signal_score ?? 0;
@@ -686,7 +699,10 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     return best?.score ?? null;
   }, [snapshots]);
 
-  const weekDelta = score7 !== null ? latestScore - score7 : null;
+  // Week delta: prefer imprint snapshot-to-snapshot delta; fall back to
+  // legacy score_snapshots window when imprint history is unavailable.
+  const legacyWeekDelta = score7 !== null ? legacyAuraScore - score7 : null;
+  const weekDelta = imprintDelta != null ? imprintDelta : legacyWeekDelta;
 
   let trendLabel = "→ Stable";
   let trendColor = "var(--color-text-secondary)";
@@ -873,6 +889,20 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     let cancelled = false;
     (async () => {
       try {
+        // Cache validation — the EF builds its data_hash from a JSON payload
+        // that includes `score`. We mirror that prefix client-side so a
+        // narrative generated against a stale (legacy) score is BYPASSED
+        // rather than rendered. Keeps "what your numbers say" in lockstep
+        // with the imprint dial.
+        const expectedHashPrefix = JSON.stringify({
+          score: latestScore,
+          followers: latestFollowers,
+          impressions: periodImpressions,
+          engagementRate: periodEngagementRate,
+          postCount: contentPerf?.postCount || 0,
+          selectedDays,
+          promptVersion: "v2",
+        }).slice(0, 200);
         const { data: cached } = await supabase
           .from("impact_narratives")
           .select("*")
@@ -880,14 +910,14 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           .order("generated_at", { ascending: false })
           .limit(1)
           .maybeSingle();
-        if (cached && !cancelled) {
+        if (cached && !cancelled && (cached as any).data_hash === expectedHashPrefix) {
           setImpactNarrative(cached as any);
           return;
         }
         const { data } = await supabase.functions.invoke("generate-impact-narrative", {
           body: {
             score: latestScore,
-            tierName: auraData?.tier_name || "Observer",
+            tierName: tierName || "Observer",
             weekDelta: weekDelta || 0,
             selectedDays,
             followers: latestFollowers,
@@ -1463,7 +1493,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       </div>
       <ScoreHero
         score={latestScore}
-        tierName={auraData?.tier_name}
+        tierName={tierName as any}
         nextTierName={auraData?.next_tier_name}
         pointsToNext={auraData?.points_to_next}
         sector={sectorFocus}
