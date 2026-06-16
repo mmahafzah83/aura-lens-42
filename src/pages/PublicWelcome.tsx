@@ -2,21 +2,23 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import usePageMeta from "@/hooks/usePageMeta";
 import ScrollSpyNav from "@/components/ScrollSpyNav";
+import { AuraLogo } from "@/components/brand/AuraLogo";
 
-const BRONZE = "#B08D3A";
-const BG = "#0a0a08";
-const BG_WARM = "#0d0b08";
-const BG_ALT = "#0f0e0c";
-const CARD_BG = "#151412";
-const STEPS_BG = "#111110";
-
-const HorizonEye = ({ size = 80, color = BRONZE, pupilR = 5 }: { size?: number; color?: string; pupilR?: number }) => (
-  <svg width={size} height={size * 0.55} viewBox="0 0 60 33" fill="none" aria-hidden>
-    <path d="M2 16.5 C 12 4, 48 4, 58 16.5 C 48 29, 12 29, 2 16.5 Z" stroke={color} strokeWidth="1.5" fill="none" />
-    <circle cx="30" cy="16.5" r="9" stroke={color} strokeWidth="1" fill="none" opacity="0.55" />
-    <circle cx="30" cy="16.5" r={pupilR} fill={color} style={{ transition: "r 600ms ease-out" }} />
-  </svg>
-);
+// System-A tokens (resolved at runtime from index.css)
+const BRONZE = "var(--action)";
+const BG = "var(--ob-bg)";
+const BG_WARM = "var(--ob-bg)";
+const BG_ALT = "var(--ob-panel)";
+const CARD_BG = "var(--ob-panel)";
+const STEPS_BG = "var(--ob-raised)";
+const INK = "var(--glass)";
+const INK_2 = "var(--glass-2)";
+const INK_3 = "var(--glass-3)";
+const HAIR = "var(--hair)";
+const SERIF = "var(--font-serif), Georgia, serif";
+const BODY = "var(--font-body), sans-serif";
+const ARABIC = "var(--font-arabic), var(--font-body), sans-serif";
+const SPOT = "var(--spot)";
 
 /* Character-by-character headline reveal */
 const CharReveal = ({ text, accentWord, className, style }: { text: string; accentWord?: string; className?: string; style?: React.CSSProperties }) => {
@@ -78,16 +80,16 @@ const MassiveStat = ({ value, suffix = "%", literal, desc, accent, source }: { v
       paddingLeft: accent ? 16 : 0,
     }}>
       <div className={landed ? "pw-stat-pulse" : ""} style={{
-        fontFamily: "'Cormorant Garamond', Georgia, serif",
+        fontFamily: "var(--font-serif), Georgia, serif",
         fontSize: "clamp(40px, 10vw, 72px)",
         color: BRONZE, fontWeight: 300, lineHeight: 1,
       }}>
         {literal ?? `${counted}${suffix}`}
       </div>
-      <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#888", lineHeight: 1.5, marginTop: 16, maxWidth: 240, marginLeft: "auto", marginRight: "auto" }}>
+      <div style={{ fontFamily: "var(--font-body), sans-serif", fontSize: 13, color: INK_3, lineHeight: 1.5, marginTop: 16, maxWidth: 240, marginLeft: "auto", marginRight: "auto" }}>
         {desc}
       </div>
-      {source && <div style={{ fontSize: 11, color: "#444", marginTop: 8 }}>{source}</div>}
+      {source && <div style={{ fontSize: 11, color: INK_3, marginTop: 8 }}>{source}</div>}
     </div>
   );
 };
@@ -118,9 +120,9 @@ const KineticSplit = () => {
       <span
         className={`pw-split-left ${on ? "on" : ""}`}
         style={{
-          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontFamily: "var(--font-serif), Georgia, serif",
           fontSize: "clamp(28px, 6vw, 48px)",
-          color: "#ededed", fontWeight: 300,
+          color: INK, fontWeight: 300,
         }}
       >
         Invisible
@@ -128,7 +130,7 @@ const KineticSplit = () => {
       <span
         className={`pw-split-right ${on ? "on" : ""}`}
         style={{
-          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontFamily: "var(--font-serif), Georgia, serif",
           fontSize: "clamp(32px, 7vw, 56px)",
           color: BRONZE, fontStyle: "italic", fontWeight: 400,
         }}
@@ -191,7 +193,7 @@ const StatCard = ({ value, suffix = "%", literal, desc, fullWidth }: { value?: n
       className={`pw-stat-card reveal pw-stat-flash ${fullWidth ? "pw-stat-fullwidth" : ""} ${isAccent ? "pw-stat-accent" : ""}`}
       style={{
         background: CARD_BG,
-        border: "1px solid #1f1f1f",
+        border: `1px solid ${HAIR}`,
         borderRadius: 12,
         padding: 28,
         textAlign: "center",
@@ -199,7 +201,7 @@ const StatCard = ({ value, suffix = "%", literal, desc, fullWidth }: { value?: n
       }}
     >
       <div className={landed ? "pw-stat-pulse" : ""} style={{
-        fontFamily: "'Cormorant Garamond', Georgia, serif",
+        fontFamily: "var(--font-serif), Georgia, serif",
         fontSize: "clamp(40px, 7vw, 64px)",
         color: BRONZE,
         lineHeight: 1.05,
@@ -207,7 +209,7 @@ const StatCard = ({ value, suffix = "%", literal, desc, fullWidth }: { value?: n
       }}>
         {literal ?? `${counted}${suffix}`}
       </div>
-      <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#a3a3a3", lineHeight: 1.5, marginTop: 12 }}>
+      <div style={{ fontFamily: "var(--font-body), sans-serif", fontSize: 13, color: INK_2, lineHeight: 1.5, marginTop: 12 }}>
         {desc}
       </div>
     </div>
@@ -236,7 +238,7 @@ const Milestone = ({ label, title, desc, preFilled }: { label: string; title: st
         aria-hidden
         style={{
           position: "absolute", left: 8, top: 0, bottom: 0, width: 2,
-          background: filled ? BRONZE : "#2a2a2a",
+          background: filled ? BRONZE : HAIR,
           transition: "background 600ms ease-out",
         }}
       />
@@ -247,13 +249,13 @@ const Milestone = ({ label, title, desc, preFilled }: { label: string; title: st
           position: "absolute", left: 0, top: 2, width: 18, height: 18, borderRadius: "50%",
           border: `2.5px solid ${BRONZE}`,
           background: filled ? BRONZE : "transparent",
-          boxShadow: filled ? "0 0 8px rgba(176,141,58,0.3)" : "none",
+          boxShadow: filled ? "0 0 8px color-mix(in srgb, var(--action) 30%, transparent)" : "none",
           transition: "background 400ms ease-out, box-shadow 400ms ease-out",
         }}
       />
-      <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, letterSpacing: "3px", color: BRONZE, fontWeight: 600 }}>{label}</div>
-      <div ref={titleRef} style={{ fontSize: 18, color: "#fff", fontWeight: 600, marginTop: 8, transition: "transform 300ms ease" }}>{title}</div>
-      <div style={{ fontSize: 14, color: "#b8b8b8", lineHeight: 1.6, marginTop: 8 }}>{desc}</div>
+      <div style={{ fontFamily: "var(--font-body), sans-serif", fontSize: 11, letterSpacing: "3px", color: BRONZE, fontWeight: 600 }}>{label}</div>
+      <div ref={titleRef} style={{ fontSize: 18, color: INK, fontWeight: 600, marginTop: 8, transition: "transform 300ms ease" }}>{title}</div>
+      <div style={{ fontSize: 14, color: INK_2, lineHeight: 1.6, marginTop: 8 }}>{desc}</div>
     </div>
   );
 };
@@ -263,7 +265,7 @@ const Engine = ({ symbol, title, desc }: { symbol: string; title: string; desc: 
     className="reveal pw-engine-card"
     style={{
       background: CARD_BG,
-      border: "1px solid #1f1f1f",
+      border: `1px solid ${HAIR}`,
       borderLeft: `3px solid ${BRONZE}`,
       borderRadius: 12,
       padding: 24,
@@ -281,8 +283,8 @@ const Engine = ({ symbol, title, desc }: { symbol: string; title: string; desc: 
       transition: "box-shadow 300ms ease",
     }}>{symbol}</div>
     <div>
-      <div style={{ fontSize: 16, color: "#fff", fontWeight: 700 }}>{title}</div>
-      <div style={{ fontSize: 14, color: "#b8b8b8", lineHeight: 1.65, marginTop: 6 }}>{desc}</div>
+      <div style={{ fontSize: 16, color: INK, fontWeight: 700 }}>{title}</div>
+      <div style={{ fontSize: 14, color: INK_2, lineHeight: 1.65, marginTop: 6 }}>{desc}</div>
     </div>
   </div>
 );
@@ -303,7 +305,7 @@ const SectionDivider = () => {
   return (
     <div ref={ref} className="pw-divider-sweep" aria-hidden style={{
       width: "60%", height: 1, margin: "0 auto",
-      background: "linear-gradient(90deg, transparent, rgba(176,141,58,0.45), transparent)",
+      background: "linear-gradient(90deg, transparent, color-mix(in srgb, var(--action) 45%, transparent), transparent)",
     }} />
   );
 };
@@ -325,7 +327,7 @@ const TypewriterQuote = ({ text }: { text: string }) => {
   return (
     <blockquote ref={ref} className="reveal reveal-d2 pw-tw" style={{
       borderLeft: `3px solid ${BRONZE}`, padding: "24px 28px",
-      fontStyle: "italic", color: "#cdcdcd", fontSize: 16, lineHeight: 1.8,
+      fontStyle: "italic", color: INK, fontSize: 16, lineHeight: 1.8,
       margin: "32px 0",
     }}>
       {words.map((w, i) => (
@@ -451,10 +453,10 @@ export default function PublicWelcome() {
   return (
     <div style={{
       background: BG,
-      color: "#ededed",
+      color: INK,
       minHeight: "100vh",
-      fontFamily: "'DM Sans', sans-serif",
-      backgroundImage: "radial-gradient(circle at 1px 1px, #1a1a1a 1px, transparent 0)",
+      fontFamily: "var(--font-body), sans-serif",
+      backgroundImage: "radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--glass) 8%, transparent) 1px, transparent 0)",
       backgroundSize: "40px 40px",
     }}>
       <style>{PW_CSS}</style>
@@ -475,7 +477,7 @@ export default function PublicWelcome() {
           <div aria-hidden style={{
             position: "absolute", top: "38%", left: "50%", transform: "translate(-50%, -50%)",
             width: 800, height: 800, borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(176,141,58,0.05) 0%, rgba(176,141,58,0.02) 35%, transparent 65%)",
+            background: "radial-gradient(circle, color-mix(in srgb, var(--action) 5%, transparent) 0%, color-mix(in srgb, var(--action) 2%, transparent) 35%, transparent 65%)",
             pointerEvents: "none",
           }} />
           <div style={{ position: "relative", width: "100%", maxWidth: 720, margin: "0 auto", display: "flex", flexDirection: "column", alignItems: "center", gap: 36 }}>
@@ -496,7 +498,7 @@ export default function PublicWelcome() {
                   position: "absolute",
                   inset: "-20% -20% -20% -20%",
                   background:
-                    "radial-gradient(circle, rgba(176,141,58,0.18) 0%, rgba(176,141,58,0.08) 40%, transparent 70%)",
+                    "radial-gradient(circle, color-mix(in srgb, var(--action) 18%, transparent) 0%, color-mix(in srgb, var(--action) 8%, transparent) 40%, transparent 70%)",
                   filter: "blur(20px)",
                   pointerEvents: "none",
                   zIndex: 0,
@@ -525,8 +527,8 @@ export default function PublicWelcome() {
             <CharReveal
               text="How visible is your expertise right now?"
               style={{
-                fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300,
-                fontSize: "clamp(32px, 5vw, 48px)", color: "#fff", textAlign: "center", margin: 0, lineHeight: 1.15,
+                fontFamily: "var(--font-serif), Georgia, serif", fontWeight: 300,
+                fontSize: "clamp(32px, 5vw, 48px)", color: INK, textAlign: "center", margin: 0, lineHeight: 1.15,
               }}
             />
             <div className="pw-fade-up" style={{ width: "100%", maxWidth: 460, animationDelay: "0.8s", opacity: 0 }}>
@@ -536,7 +538,7 @@ export default function PublicWelcome() {
                 className="pw-slider"
                 aria-label="How visible is your expertise"
               />
-              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12, fontSize: 12, color: "#a3a3a3" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12, fontSize: 12, color: INK_2 }}>
                 <span>Only my clients know</span>
                 <span>The market knows my name</span>
               </div>
@@ -544,18 +546,18 @@ export default function PublicWelcome() {
             <div style={{ minHeight: 90, maxWidth: 440, textAlign: "center" }}>
               {moved && (
                 <p style={{
-                  fontSize: 16, color: "#aaa", lineHeight: 1.7, margin: 0,
+                  fontSize: 16, color: INK_2, lineHeight: 1.7, margin: 0,
                   opacity: fading ? 0 : 1, transition: "opacity 300ms ease",
                 }}>{responseText}</p>
               )}
               {showNudge && !moved && (
                 <p className="pw-nudge" style={{
                   fontSize: 13, color: BRONZE, marginTop: 12,
-                  fontFamily: "'DM Sans', sans-serif",
+                  fontFamily: "var(--font-body), sans-serif",
                 }}>Move the slider to begin.</p>
               )}
             </div>
-            <div className="pw-fade-up pw-bounce" style={{ fontSize: 13, color: contentRevealed ? BRONZE : "#8a8a8a", animationDelay: "1.8s", opacity: 0, marginTop: 8, transition: "color 400ms ease" }}>
+            <div className="pw-fade-up pw-bounce" style={{ fontSize: 13, color: contentRevealed ? BRONZE : INK_3, animationDelay: "1.8s", opacity: 0, marginTop: 8, transition: "color 400ms ease" }}>
               {contentRevealed ? "Scroll to discover what's possible ↓" : "↓"}
             </div>
           </div>
@@ -574,20 +576,20 @@ export default function PublicWelcome() {
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <p className="reveal" style={{ fontSize: 10, letterSpacing: "2.5px", color: BRONZE, fontWeight: 600, margin: 0 }}>THE REAL PROBLEM</p>
             <h2 className="reveal reveal-d1 pw-illuminate" style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300,
-              fontSize: "clamp(28px, 5vw, 44px)", color: "#fff", lineHeight: 1.2, marginTop: 20,
+              fontFamily: "var(--font-serif), Georgia, serif", fontWeight: 300,
+              fontSize: "clamp(28px, 5vw, 44px)", color: INK, lineHeight: 1.2, marginTop: 20,
             }}>
               You've spent years becoming <em style={{ color: BRONZE, fontStyle: "italic" }}>exceptional</em>. The market has no idea.
             </h2>
             <TypewriterQuote text={`"You've led teams, shaped strategy, solved problems most people can't even name. But when someone outside your direct circle searches your name — they find almost nothing. No signal. No fingerprint. No proof of what you actually know."`} />
-            <p className="reveal reveal-d1" style={{ fontSize: 15, color: "#ededed", lineHeight: 1.75, marginTop: 24 }}>
+            <p className="reveal reveal-d1" style={{ fontSize: 15, color: INK, lineHeight: 1.75, marginTop: 24 }}>
               Meanwhile, professionals who publish consistently — even when their expertise is narrower than yours — are the ones getting invited to the table. The keynote slots. The advisory boards.
             </p>
-            <p className="reveal reveal-d2" style={{ fontSize: 15, color: "#ededed", lineHeight: 1.75, marginTop: 24 }}>
+            <p className="reveal reveal-d2" style={{ fontSize: 15, color: INK, lineHeight: 1.75, marginTop: 24 }}>
               The problem was never your expertise. It was never your ideas.
             </p>
-            <p className="reveal reveal-d3" style={{ fontSize: 15, color: "#ededed", lineHeight: 1.75, marginTop: 24 }}>
-              <strong style={{ color: "#fff", fontWeight: 600 }}>The problem is that no one has helped you turn what's in your head into what the market sees.</strong>
+            <p className="reveal reveal-d3" style={{ fontSize: 15, color: INK, lineHeight: 1.75, marginTop: 24 }}>
+              <strong style={{ color: INK, fontWeight: 600 }}>The problem is that no one has helped you turn what's in your head into what the market sees.</strong>
             </p>
           </div>
         </section>
@@ -599,7 +601,7 @@ export default function PublicWelcome() {
           padding: "80px 24px",
         }}>
           <p className="reveal" style={{
-            fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300,
+            fontFamily: "var(--font-serif), Georgia, serif", fontWeight: 300,
             fontSize: "clamp(28px, 4vw, 40px)", color: BRONZE, margin: 0, textAlign: "center",
           }}>
             Until now.
@@ -620,10 +622,10 @@ export default function PublicWelcome() {
               <MassiveStat literal="<3%" desc="of LinkedIn's 1B+ users create original content weekly" />
               <MassiveStat value={44} desc="of company value is tied to its leader's reputation" />
             </div>
-            <p className="reveal" style={{ fontSize: 11, color: "#9a9a9a", marginTop: 20, textAlign: "center" }}>
+            <p className="reveal" style={{ fontSize: 11, color: INK_3, marginTop: 20, textAlign: "center" }}>
               Edelman-LinkedIn 2024/2025 · Weber Shandwick · Brunswick Group
             </p>
-            <p className="reveal reveal-d1" style={{ fontSize: 17, color: "#ededed", lineHeight: 1.75, marginTop: 28 }}>
+            <p className="reveal reveal-d1" style={{ fontSize: 17, color: INK, lineHeight: 1.75, marginTop: 28 }}>
               You're already in the top 1% of expertise. Aura puts you in the top 1% of <strong style={{ color: BRONZE, fontWeight: 700 }}>visibility</strong> — without changing how you spend your week.
             </p>
           </div>
@@ -637,25 +639,25 @@ export default function PublicWelcome() {
           <div style={{ maxWidth: 680, margin: "0 auto", position: "relative" }}>
             <p className="reveal" style={{ fontSize: 10, letterSpacing: "2.5px", color: BRONZE, fontWeight: 600, margin: 0 }}>WHY I BUILT THIS</p>
             <h2 className="reveal reveal-d1" style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300,
-              fontSize: "clamp(26px, 4.5vw, 38px)", color: "#fff", marginTop: 20,
+              fontFamily: "var(--font-serif), Georgia, serif", fontWeight: 300,
+              fontSize: "clamp(26px, 4.5vw, 38px)", color: INK, marginTop: 20,
             }}>
               Because I'm one of you.
             </h2>
-            <p className="reveal reveal-d1" style={{ fontSize: 15, color: "#ededed", lineHeight: 1.75, marginTop: 28 }}>
+            <p className="reveal reveal-d1" style={{ fontSize: 15, color: INK, lineHeight: 1.75, marginTop: 28 }}>
               I read 30+ articles a week. I see patterns in digital transformation that most reports miss. I hold opinions that could shape how organizations think about their future.
             </p>
-            <p className="reveal reveal-d2" style={{ fontSize: 15, color: "#ededed", lineHeight: 1.75, marginTop: 24 }}>
+            <p className="reveal reveal-d2" style={{ fontSize: 15, color: INK, lineHeight: 1.75, marginTop: 24 }}>
               But for years, all of that stayed locked in my head, my notes, my devices. The market had no idea.
             </p>
-            <p className="reveal reveal-d3" style={{ fontSize: 15, color: "#ededed", lineHeight: 1.75, marginTop: 24 }}>
+            <p className="reveal reveal-d3" style={{ fontSize: 15, color: INK, lineHeight: 1.75, marginTop: 24 }}>
               So I built the system I wished existed. One that takes what I already read, finds the strategic patterns, understands my voice and my expertise — and turns it into a digital presence that compounds over time.
             </p>
             <div aria-hidden className="reveal reveal-d4" style={{
               width: 60, height: 1, background: BRONZE, margin: "48px auto 0",
             }} />
             <p className="reveal reveal-d4" style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300,
+              fontFamily: "var(--font-serif), Georgia, serif", fontWeight: 300,
               fontSize: "clamp(22px, 3.5vw, 30px)", color: BRONZE, marginTop: 32, textAlign: "center",
             }}>
               I called it Aura. And now it's ready for you.
@@ -670,8 +672,8 @@ export default function PublicWelcome() {
           <div style={{ maxWidth: 760, margin: "0 auto" }}>
             <p className="reveal" style={{ fontSize: 10, letterSpacing: "2.5px", color: BRONZE, fontWeight: 600, margin: 0 }}>HOW AURA WORKS</p>
             <h2 className="reveal reveal-d1" style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300,
-              fontSize: "clamp(26px, 4.5vw, 38px)", color: "#fff", marginTop: 20, marginBottom: 40,
+              fontFamily: "var(--font-serif), Georgia, serif", fontWeight: 300,
+              fontSize: "clamp(26px, 4.5vw, 38px)", color: INK, marginTop: 20, marginBottom: 40,
             }}>
               Four engines. One intelligence system.
             </h2>
@@ -691,8 +693,8 @@ export default function PublicWelcome() {
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <p className="reveal" style={{ fontSize: 10, letterSpacing: "2.5px", color: BRONZE, fontWeight: 600, margin: 0 }}>WHAT CHANGES FOR YOU</p>
             <h2 className="reveal reveal-d1" style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300,
-              fontSize: "clamp(26px, 4.5vw, 38px)", color: "#fff", marginTop: 20, marginBottom: 48,
+              fontFamily: "var(--font-serif), Georgia, serif", fontWeight: 300,
+              fontSize: "clamp(26px, 4.5vw, 38px)", color: INK, marginTop: 20, marginBottom: 48,
             }}>
               From invisible to undeniable.
             </h2>
@@ -711,20 +713,20 @@ export default function PublicWelcome() {
         <section style={{
           background: STEPS_BG,
           padding: "100px 24px",
-          borderTop: "1px solid #1a1a1a",
-          borderBottom: "1px solid #1a1a1a",
+          borderTop: `1px solid ${HAIR}`,
+          borderBottom: `1px solid ${HAIR}`,
         }}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <p className="reveal" style={{ fontSize: 10, letterSpacing: "2.5px", color: BRONZE, fontWeight: 600, margin: 0 }}>YOUR FIRST 10 MINUTES</p>
             <h2 className="reveal reveal-d1" style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300,
-              fontSize: "clamp(26px, 4.5vw, 38px)", color: "#fff", marginTop: 20, marginBottom: 40,
+              fontFamily: "var(--font-serif), Georgia, serif", fontWeight: 300,
+              fontSize: "clamp(26px, 4.5vw, 38px)", color: INK, marginTop: 20, marginBottom: 40,
             }}>
               You'll feel the difference immediately.
             </h2>
             <div style={{ position: "relative" }}>
               <div aria-hidden style={{
-                position: "absolute", left: 15, top: 16, bottom: 16, width: 1, background: "#2a2a2a",
+                position: "absolute", left: 15, top: 16, bottom: 16, width: 1, background: HAIR,
               }} />
               {[
                 { n: "01", t: "Accept your invitation", d: "A welcome that shows you this was built for someone at your level." },
@@ -740,12 +742,12 @@ export default function PublicWelcome() {
                     width: 32, height: 32, minWidth: 32, borderRadius: 8,
                     border: `1.5px solid ${BRONZE}`, background: STEPS_BG,
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    color: BRONZE, fontSize: 13, fontWeight: 700, fontFamily: "'DM Sans', sans-serif",
+                    color: BRONZE, fontSize: 13, fontWeight: 700, fontFamily: "var(--font-body), sans-serif",
                     position: "relative", zIndex: 1,
                   }}>{s.n}</div>
                   <div style={{ flex: 1, paddingTop: 4 }}>
-                    <div style={{ fontSize: 16, color: "#fff", fontWeight: 700 }}>{s.t}</div>
-                    <div style={{ fontSize: 14, color: "#b8b8b8", lineHeight: 1.6, marginTop: 6 }}>{s.d}</div>
+                    <div style={{ fontSize: 16, color: INK, fontWeight: 700 }}>{s.t}</div>
+                    <div style={{ fontSize: 14, color: INK_2, lineHeight: 1.6, marginTop: 6 }}>{s.d}</div>
                   </div>
                 </div>
               ))}
@@ -759,15 +761,15 @@ export default function PublicWelcome() {
         <section id="final-cta" ref={finalCtaRef} style={{ background: BG, minHeight: "80vh", padding: "100px 24px", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ maxWidth: 600, margin: "0 auto", textAlign: "center" }}>
             <div className="pw-eye-pulse reveal" style={{ display: "flex", justifyContent: "center" }}>
-              <HorizonEye size={56} />
+              <AuraLogo variant="auto" size={56} />
             </div>
             <h2 className="reveal reveal-d1" style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 300,
-              fontSize: "clamp(28px, 5vw, 42px)", color: "#fff", marginTop: 28, lineHeight: 1.2,
+              fontFamily: "var(--font-serif), Georgia, serif", fontWeight: 300,
+              fontSize: "clamp(28px, 5vw, 42px)", color: INK, marginTop: 28, lineHeight: 1.2,
             }}>
               Stop being the best-kept secret in your field.
             </h2>
-            <p className="reveal reveal-d2" style={{ fontSize: 16, color: "#bdbdbd", maxWidth: 440, margin: "24px auto 36px", lineHeight: 1.75 }}>
+            <p className="reveal reveal-d2" style={{ fontSize: 16, color: INK_2, maxWidth: 440, margin: "24px auto 36px", lineHeight: 1.75 }}>
               Your expertise has earned its place. Give Aura 10 minutes — and it will show you who you really are in the market.
             </p>
             <Link to="/request-access" className="pw-cta pw-cta-shimmer pw-cta-breathe reveal reveal-d3">
@@ -775,19 +777,19 @@ export default function PublicWelcome() {
                 Request Your Access →
               </span>
             </Link>
-            <p className="reveal reveal-d3" style={{ fontSize: 12, color: "#666", marginTop: 14 }}>
+            <p className="reveal reveal-d3" style={{ fontSize: 12, color: INK_3, marginTop: 14 }}>
               Takes 30 seconds. We respond within a week.
             </p>
             <p className="reveal reveal-d4" dir="rtl" style={{
               fontSize: 18, color: BRONZE, marginTop: 28,
-              fontFamily: "'Cairo', 'DM Sans', sans-serif",
+              fontFamily: ARABIC,
             }}>
               حتى السوق يعرفك قبل ما يشوفك ✦
             </p>
-            <p className="reveal reveal-d4" style={{ fontSize: 11, letterSpacing: "2px", color: "#9a9a9a", marginTop: 20 }}>
+            <p className="reveal reveal-d4" style={{ fontSize: 11, letterSpacing: "2px", color: INK_3, marginTop: 20 }}>
               PRIVATE BETA · BY INVITATION ONLY
             </p>
-            <p className="reveal reveal-d4" style={{ fontSize: 13, color: "#666", marginTop: 10 }}>
+            <p className="reveal reveal-d4" style={{ fontSize: 13, color: INK_3, marginTop: 10 }}>
               Join 40+ professionals already on the list
             </p>
           </div>
@@ -796,12 +798,12 @@ export default function PublicWelcome() {
       </main>
 
       {/* FOOTER */}
-      <footer style={{ padding: 40, borderTop: "1px solid #1a1a1a", textAlign: "center" }}>
-        <div style={{ fontSize: 14, color: "#ededed" }}>Mohammad Mahafdhah</div>
-        <div style={{ fontSize: 12, color: "#a3a3a3", marginTop: 4 }}>Aura builder</div>
+      <footer style={{ padding: 40, borderTop: `1px solid ${HAIR}`, textAlign: "center" }}>
+        <div style={{ fontSize: 14, color: INK }}>Mohammad Mahafdhah</div>
+        <div style={{ fontSize: 12, color: INK_2, marginTop: 4 }}>Aura builder</div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 16 }}>
-          <HorizonEye size={16} color="#8a8a8a" />
-          <span style={{ fontSize: 11, color: "#9a9a9a" }}>Aura · Turns your expertise into presence · aura-intel.org</span>
+          <AuraLogo variant="auto" size={20} />
+          <span style={{ fontSize: 11, color: INK_2, fontFamily: BODY }}>Aura · Turns your expertise into presence · aura-intel.org</span>
         </div>
       </footer>
     </div>
@@ -826,20 +828,20 @@ const PW_CSS = `
   .reveal-d3 { transition-delay: 0.45s; }
   .reveal-d4 { transition-delay: 0.60s; }
 
-  .pw-slider { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; border-radius: 4px; background: #333; outline: none; }
-  .pw-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 22px; height: 22px; border-radius: 50%; background: #B08D3A; box-shadow: 0 2px 8px rgba(0,0,0,0.3); cursor: pointer; border: none; }
-  .pw-slider::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: #B08D3A; box-shadow: 0 2px 8px rgba(0,0,0,0.3); cursor: pointer; border: none; }
+  .pw-slider { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; border-radius: 4px; background: var(--hair); outline: none; }
+  .pw-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 22px; height: 22px; border-radius: 50%; background: var(--action); box-shadow: 0 2px 8px color-mix(in srgb, black 30%, transparent); cursor: pointer; border: none; }
+  .pw-slider::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: var(--action); box-shadow: 0 2px 8px color-mix(in srgb, black 30%, transparent); cursor: pointer; border: none; }
 
   .pw-cta {
     position: relative; overflow: hidden;
-    background: #B08D3A; color: #fff; font-size: 16px; font-weight: 600;
+    background: var(--action); color: var(--glass); font-size: 16px; font-weight: 600;
     padding: 16px 36px; border-radius: 8px; display: inline-block;
     text-decoration: none; transition: transform 200ms ease, box-shadow 200ms ease;
   }
-  .pw-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(176,141,58,0.25); }
+  .pw-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 24px color-mix(in srgb, var(--action) 25%, transparent); }
   .pw-cta-shimmer::before {
     content: ""; position: absolute; inset: 0;
-    background: linear-gradient(90deg, transparent 0%, rgba(255,235,180,0.25) 50%, transparent 100%);
+    background: linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--glass) 22%, transparent) 50%, transparent 100%);
     transform: translateX(-100%);
     animation: pw-shimmer 5s ease-in-out infinite;
     pointer-events: none;
@@ -849,10 +851,10 @@ const PW_CSS = `
     60%, 100% { transform: translateX(100%); }
   }
 
-  .pw-stat-card:hover { border-color: #B08D3A !important; }
+  .pw-stat-card:hover { border-color: var(--action) !important; }
   .pw-engine-card { cursor: default; }
-  .pw-engine-card:hover { border-color: #B08D3A !important; }
-  .pw-engine-card:hover .pw-engine-icon { box-shadow: 0 0 12px rgba(176,141,58,0.15); }
+  .pw-engine-card:hover { border-color: var(--action) !important; }
+  .pw-engine-card:hover .pw-engine-icon { box-shadow: 0 0 12px color-mix(in srgb, var(--action) 15%, transparent); }
 
   .pw-milestone-pop { animation: pw-pop 300ms ease-out; }
   @keyframes pw-pop { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
@@ -871,7 +873,7 @@ const PW_CSS = `
   .pw-stat-card.pw-stat-flash.visible { animation: pw-statGlow 800ms ease-out; }
   @keyframes pw-statGlow {
     0% { box-shadow: 0 0 0 transparent; }
-    40% { box-shadow: 0 0 16px rgba(176,141,58,0.28); }
+    40% { box-shadow: 0 0 16px color-mix(in srgb, var(--action) 28%, transparent); }
     100% { box-shadow: 0 0 0 transparent; }
   }
   .pw-stat-pulse { animation: pw-statPulse 320ms ease-out; }
@@ -912,22 +914,22 @@ const PW_CSS = `
     position: fixed; z-index: 90;
     bottom: calc(20px + env(safe-area-inset-bottom, 0px));
     right: 20px;
-    background: rgba(26,25,23,0.92);
+    background: color-mix(in srgb, var(--ob-panel) 92%, transparent);
     -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
-    border: 1px solid rgba(176,141,58,0.3);
+    border: 1px solid color-mix(in srgb, var(--action) 30%, transparent);
     border-radius: 999px;
     padding: 10px 18px;
     font-size: 13px; font-weight: 500;
-    color: #B08D3A;
+    color: var(--action);
     text-decoration: none;
     display: inline-flex; align-items: center;
     min-height: 44px;
     opacity: 0; pointer-events: none;
     transition: opacity 300ms ease, background 200ms ease, border-color 200ms ease, transform 200ms ease;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    box-shadow: 0 4px 16px color-mix(in srgb, black 40%, transparent);
   }
   .pw-pill[data-visible="true"] { opacity: 1; pointer-events: auto; }
-  .pw-pill:hover { background: #1a1917; border-color: ${BRONZE}; transform: translateY(-1px); }
+  .pw-pill:hover { background: var(--ob-raised); border-color: ${BRONZE}; transform: translateY(-1px); }
   @media (max-width: 767px) {
     .pw-pill {
       right: auto; left: 50%; transform: translateX(-50%);
@@ -1014,11 +1016,11 @@ const PW_CSS = `
   }
   @keyframes pw-undeniableIn {
     from { opacity: 0; transform: translateY(16px); text-shadow: 0 0 0 transparent; }
-    to   { opacity: 1; transform: translateY(0); text-shadow: 0 0 30px rgba(212,176,86,0.3); }
+    to   { opacity: 1; transform: translateY(0); text-shadow: 0 0 30px color-mix(in srgb, var(--action) 30%, transparent); }
   }
   @keyframes pw-undeniablePulse {
-    0%, 100% { transform: scale(1); text-shadow: 0 0 10px rgba(212,176,86,0.2); }
-    50%      { transform: scale(1.03); text-shadow: 0 0 30px rgba(212,176,86,0.4); }
+    0%, 100% { transform: scale(1); text-shadow: 0 0 10px color-mix(in srgb, var(--action) 20%, transparent); }
+    50%      { transform: scale(1.03); text-shadow: 0 0 30px color-mix(in srgb, var(--action) 40%, transparent); }
   }
 
   /* Orbiting bronze scan dot around the hero head */
@@ -1031,7 +1033,7 @@ const PW_CSS = `
   .pw-eye-orbit-dot {
     width: 12px; height: 12px; border-radius: 50%;
     background: ${BRONZE};
-    box-shadow: 0 0 18px 4px rgba(176,141,58,0.55);
+    box-shadow: 0 0 18px 4px color-mix(in srgb, var(--action) 55%, transparent);
     transform: translateX(60%);
     animation: pw-eye-orbit-fade 16s ease-in-out infinite;
   }
@@ -1049,10 +1051,10 @@ const PW_CSS = `
   .pw-watermark {
     position: absolute; left: 0; right: 0; top: 50%;
     transform: translateY(-50%);
-    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-family: var(--font-serif), Georgia, serif;
     font-size: clamp(80px, 15vw, 140px);
     font-weight: 300;
-    color: rgba(176,141,58,0.04);
+    color: color-mix(in srgb, var(--action) 4%, transparent);
     text-align: center; width: 100%;
     pointer-events: none; user-select: none;
     letter-spacing: 0.05em;
