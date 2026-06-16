@@ -508,6 +508,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
           if (Array.isArray(ps)) setPreferredStructures(ps.map((s: any) => typeof s === "string" ? s : JSON.stringify(s)));
           else if (typeof ps === "string") setPreferredStructures([ps]);
         }
+        setProfileLoaded(true);
       });
     })();
   }, [lang]);
