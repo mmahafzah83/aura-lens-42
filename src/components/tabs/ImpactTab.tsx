@@ -889,6 +889,20 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     let cancelled = false;
     (async () => {
       try {
+        // Cache validation — the EF builds its data_hash from a JSON payload
+        // that includes `score`. We mirror that prefix client-side so a
+        // narrative generated against a stale (legacy) score is BYPASSED
+        // rather than rendered. Keeps "what your numbers say" in lockstep
+        // with the imprint dial.
+        const expectedHashPrefix = JSON.stringify({
+          score: latestScore,
+          followers: latestFollowers,
+          impressions: periodImpressions,
+          engagementRate: periodEngagementRate,
+          postCount: contentPerf?.postCount || 0,
+          selectedDays,
+          promptVersion: "v2",
+        }).slice(0, 200);
         const { data: cached } = await supabase
           .from("impact_narratives")
           .select("*")
@@ -896,14 +910,14 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           .order("generated_at", { ascending: false })
           .limit(1)
           .maybeSingle();
-        if (cached && !cancelled) {
+        if (cached && !cancelled && (cached as any).data_hash === expectedHashPrefix) {
           setImpactNarrative(cached as any);
           return;
         }
         const { data } = await supabase.functions.invoke("generate-impact-narrative", {
           body: {
             score: latestScore,
-            tierName: auraData?.tier_name || "Observer",
+            tierName: tierName || "Observer",
             weekDelta: weekDelta || 0,
             selectedDays,
             followers: latestFollowers,
