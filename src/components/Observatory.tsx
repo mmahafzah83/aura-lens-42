@@ -1057,22 +1057,43 @@ const Observatory = ({
             alignItems: "stretch",
           }}>
             <div style={{
+              position: "relative",
               padding: 18, background: "var(--ob-panel)",
               border: "0.5px solid var(--hair)", borderRadius: 12,
               display: "flex", justifyContent: "center",
             }}>
+              <div style={{ position: "absolute", top: 10, right: 12 }}>
+                <InfoTooltip
+                  slug="imprint"
+                  text="How visible your expertise is, from 0 to 100. It rises as you read and publish."
+                  label="Imprint"
+                  side="left"
+                  triggerSize={13}
+                />
+              </div>
               <AuraDial
                 score={imprint.score}
                 delta={imprint.delta}
                 loading={imprint.loading}
                 onScreen={instrumentsOnScreen}
+                weekShape={imprint.weekShape}
               />
             </div>
             <div style={{
+              position: "relative",
               padding: 18, background: "var(--ob-panel)",
               border: "0.5px solid var(--hair)", borderRadius: 12,
               display: "flex", justifyContent: "center",
             }}>
+              <div style={{ position: "absolute", top: 10, right: 12 }}>
+                <InfoTooltip
+                  slug="imprint-facets"
+                  text="The seven sides of your standing. A fuller shape means a rounder presence."
+                  label="Facet wheel"
+                  side="left"
+                  triggerSize={13}
+                />
+              </div>
               <ImprintCore
                 facets={facets.rows}
                 loading={facets.loading}
@@ -1081,11 +1102,13 @@ const Observatory = ({
             </div>
           </div>
 
-          {/* Three readouts */}
-          <div style={{ display: "flex", gap: 12, marginTop: 12, flexWrap: "wrap" }}>
-            <Readout label="SIGNAL"    value={signalsLoading ? "—" : String(signals.length)}    sub="ACTIVE SIGNALS" />
-            <Readout label="PUBLISHED" value={String(publishedCount)}                            sub="POSTS SHIPPED" />
-            <Readout label="RHYTHM"    value={String(rhythmCount)}                               sub="CAPTURES · 7D" />
+          {/* Contribution bar — three parts sum to the Imprint */}
+          <div style={{ marginTop: 12 }}>
+            <ContributionBar
+              imprint={imprint.score}
+              components={imprint.components}
+              loading={imprint.loading}
+            />
           </div>
         </section>
 
