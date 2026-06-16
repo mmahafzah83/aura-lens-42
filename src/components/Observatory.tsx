@@ -23,10 +23,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import SectionError from "@/components/ui/section-error";
 import SourcesSubTab from "@/components/tabs/SourcesSubTab";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 
 import { useAuthReady } from "@/hooks/useAuthReady";
 import { useJourneyState } from "@/hooks/useJourneyState";
-import { applyPublishedFilter, filterPublishedRows } from "@/lib/postProvenance";
 import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/ui/EmptyState";
 import {
@@ -113,79 +113,95 @@ function useCountUpNum(target: number | null, reduce: boolean) {
 }
 
 const AuraDial = ({
-  score, delta, loading, onScreen,
-}: { score: number | null; delta: number | null; loading: boolean; onScreen: boolean }) => {
+  score, delta, loading, onScreen, weekShape,
+}: { score: number | null; delta: number | null; loading: boolean; onScreen: boolean; weekShape: number[] }) => {
   const reduce = prefersReducedMotion();
   const displayed = useCountUpNum(score, reduce);
-  const animatePulse = !reduce && onScreen;
 
-  // Dial geometry
+  // Tick-bezel geometry: a ring of 60 short radial ticks, with the first
+  // round(score/100 * 60) ticks lit (var(--live)) and the rest dim.
   const size = 220;
   const cx = size / 2;
   const cy = size / 2;
-  const r = 92;
-  const stroke = 8;
-  const circ = 2 * Math.PI * r;
+  const rInner = 86;
+  const rOuterMinor = 100;
+  const rOuterMajor = 104;
+  const TICKS = 60;
   const pct = score != null ? Math.max(0, Math.min(100, score)) / 100 : 0;
-  const dash = circ * pct;
-  const tickColor = "var(--glass-3)";
+  const litCount = score == null ? 0 : Math.round(pct * TICKS);
 
-  const ticks = Array.from({ length: 60 }, (_, i) => {
-    const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
-    const inner = r + 12;
-    const outer = r + (i % 5 === 0 ? 20 : 16);
+  const ticks = Array.from({ length: TICKS }, (_, i) => {
+    const angle = (i / TICKS) * Math.PI * 2 - Math.PI / 2;
+    const isMajor = i % 5 === 0;
+    const inner = rInner;
+    const outer = isMajor ? rOuterMajor : rOuterMinor;
+    const lit = i < litCount;
     return (
       <line key={i}
         x1={cx + Math.cos(angle) * inner} y1={cy + Math.sin(angle) * inner}
         x2={cx + Math.cos(angle) * outer} y2={cy + Math.sin(angle) * outer}
-        stroke={tickColor} strokeWidth={i % 5 === 0 ? 1 : 0.5} opacity={0.6}
+        stroke={lit ? "var(--live)" : "var(--hair)"}
+        strokeWidth={isMajor ? 1.6 : 1.1}
+        strokeLinecap="round"
+        opacity={lit ? 1 : 0.55}
       />
     );
   });
 
-  const deltaColor = delta == null ? "var(--glass-2)"
-    : delta > 0 ? "var(--pos)" : delta < 0 ? "var(--neg)" : "var(--glass-2)";
-  const deltaSign = delta == null ? "" : delta > 0 ? "+" : "";
+  const deltaLabel =
+    delta == null ? "—" :
+    delta > 0 ? `▲${delta} this week` :
+    delta < 0 ? `▼${Math.abs(delta)} this week` :
+    "steady this week";
+  const deltaColor =
+    delta == null ? "var(--glass-2)" :
+    delta > 0 ? "var(--pos)" :
+    delta < 0 ? "var(--neg)" : "var(--glass-2)";
+
+  // Sparkline (week shape) — small line of up-to-7 daily imprint values.
+  const sparkW = 84;
+  const sparkH = 24;
+  const showSpark = weekShape.length >= 2;
+  let sparkPath = "";
+  if (showSpark) {
+    const min = Math.min(...weekShape);
+    const max = Math.max(...weekShape);
+    const range = Math.max(1, max - min);
+    const step = sparkW / (weekShape.length - 1);
+    sparkPath = weekShape.map((v, i) => {
+      const x = i * step;
+      const y = sparkH - ((v - min) / range) * sparkH;
+      return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(" ");
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
       <div style={{ position: "relative", width: size, height: size }}>
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img"
              aria-label={score != null ? `Imprint ${Math.round(score)} of 100` : "Imprint forming"}>
-          {/* halo */}
-          <circle cx={cx} cy={cy} r={r + 30} fill="none" stroke="var(--live)" strokeWidth={0.5} opacity={0.15}>
-            {animatePulse && (
-              <animate attributeName="opacity" values="0.08;0.22;0.08" dur="3.2s" repeatCount="indefinite" />
-            )}
-          </circle>
-          {/* tick ring */}
           <g>{ticks}</g>
-          {/* base track */}
-          <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--hair)" strokeWidth={stroke} />
-          {/* value arc */}
-          <circle cx={cx} cy={cy} r={r} fill="none"
-                  stroke="var(--live)" strokeWidth={stroke} strokeLinecap="round"
-                  strokeDasharray={`${dash} ${circ - dash}`}
-                  transform={`rotate(-90 ${cx} ${cy})`}
-                  style={{ transition: reduce ? "none" : "stroke-dasharray 800ms cubic-bezier(.4,0,.2,1)" }} />
-          {/* numeric */}
-          <text x={cx} y={cy + 6} textAnchor="middle"
-                fill="var(--glass)" fontFamily="'IBM Plex Mono', monospace"
-                fontSize={48} fontWeight={500} style={{ fontVariantNumeric: "tabular-nums" }}>
+          {/* numeric — serif */}
+          <text x={cx} y={cy + 10} textAnchor="middle"
+                fill="var(--glass)"
+                fontFamily="var(--font-display, 'Newsreader', serif)"
+                fontSize={56} fontWeight={500} style={{ fontVariantNumeric: "tabular-nums" }}>
             {loading ? "—" : score == null ? "—" : Math.round(displayed)}
           </text>
-          <text x={cx} y={cy + 28} textAnchor="middle"
+          <text x={cx} y={cy + 32} textAnchor="middle"
                 fill="var(--glass-2)" fontFamily="'IBM Plex Mono', monospace"
-                fontSize={10} letterSpacing="0.14em">
+                fontSize={10} letterSpacing="0.18em">
             IMPRINT
           </text>
         </svg>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, letterSpacing: "0.08em" }}>
-        <span style={{ color: "var(--glass-2)" }}>Δ 7D</span>
-        <span style={{ color: deltaColor, fontVariantNumeric: "tabular-nums" }}>
-          {delta == null ? "—" : `${deltaSign}${delta}`}
-        </span>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, letterSpacing: "0.06em" }}>
+        <span style={{ color: deltaColor }}>{deltaLabel}</span>
+        {showSpark && (
+          <svg width={sparkW} height={sparkH} aria-label="Week shape" style={{ display: "block" }}>
+            <path d={sparkPath} fill="none" stroke="var(--live)" strokeWidth={1.2} strokeLinecap="round" strokeLinejoin="round" opacity={0.9} />
+          </svg>
+        )}
       </div>
     </div>
   );
@@ -200,6 +216,17 @@ const AuraDial = ({
 type FacetKey = "Identity" | "Expertise" | "Voice" | "Focus" | "Audience" | "Perception" | "Confidence";
 const FACET_ORDER: FacetKey[] = ["Identity", "Expertise", "Voice", "Focus", "Audience", "Perception", "Confidence"];
 const FORMING: ReadonlySet<FacetKey> = new Set<FacetKey>(["Perception", "Confidence"]);
+
+/** facet_states stores lowercase canonical keys. Map → display facet name. */
+const FACET_DB_TO_DISPLAY: Record<string, FacetKey> = {
+  identity: "Identity",
+  edge: "Expertise",
+  voice: "Voice",
+  focus: "Focus",
+  audience: "Audience",
+  discernment: "Perception",
+  conviction: "Confidence",
+};
 
 interface FacetRow {
   facet: FacetKey;
@@ -239,37 +266,47 @@ const ImprintCore = ({
           const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
           const row = facets.find(f => f.facet === key);
           const v = row?.value ?? null;
-          const forming = FORMING.has(key) || v == null;
+          const isForming = FORMING.has(key);
+          const noValue = v == null;
+          // Perception/Confidence ALWAYS render as a dashed "forming" ghost
+          // outline regardless of value. Other facets are ghost only if no value.
+          const ghost = isForming || noValue;
+          // Certainty: opacity = clamp(1 − uncertainty, 0.4, 1.0). Only applies
+          // to measured (non-forming) facets with a real value.
+          const u = row?.uncertainty ?? null;
+          const certainty = (!ghost && u != null)
+            ? Math.max(0.4, Math.min(1, 1 - u))
+            : (ghost ? 0.55 : 1);
           const dist = ringR;
           const px = cx + Math.cos(angle) * dist;
           const py = cy + Math.sin(angle) * dist;
-          const labelDist = ringR + 22;
+          const labelDist = ringR + 26;
           const lx = cx + Math.cos(angle) * labelDist;
           const ly = cy + Math.sin(angle) * labelDist;
 
-          const dotR = forming ? 5 : 5 + Math.min(4, Math.max(0, (v ?? 0) / 25));
+          const dotR = ghost ? 5 : 5 + Math.min(4, Math.max(0, (v ?? 0) / 25));
           return (
-            <g key={key}>
+            <g key={key} opacity={certainty}>
               {/* spoke */}
               <line x1={cx} y1={cy} x2={px} y2={py}
-                    stroke={forming ? "var(--glass-3)" : "var(--live)"}
+                    stroke={ghost ? "var(--glass-3)" : "var(--live)"}
                     strokeWidth={0.5}
-                    strokeDasharray={forming ? "3 3" : undefined}
-                    opacity={forming ? 0.5 : 0.7} />
+                    strokeDasharray={ghost ? "3 3" : undefined}
+                    opacity={ghost ? 0.6 : 0.85} />
               {/* dot */}
               <circle cx={px} cy={py} r={dotR}
-                      fill={forming ? "transparent" : "var(--live)"}
-                      stroke={forming ? "var(--glass-2)" : "var(--live)"}
+                      fill={ghost ? "transparent" : "var(--live)"}
+                      stroke={ghost ? "var(--glass-2)" : "var(--live)"}
                       strokeWidth={1}
-                      strokeDasharray={forming ? "2 2" : undefined} />
-              {/* label */}
+                      strokeDasharray={ghost ? "2 2" : undefined} />
+              {/* label — widened box so full names render */}
               <text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle"
                     fill="var(--glass-2)" fontFamily="'IBM Plex Mono', monospace"
-                    fontSize={9} letterSpacing="0.08em">
+                    fontSize={9} letterSpacing="0.06em">
                 {key.toUpperCase()}
               </text>
               {/* value */}
-              {!forming && v != null && (
+              {!ghost && v != null && (
                 <text x={lx} y={ly + 11} textAnchor="middle" dominantBaseline="middle"
                       fill="var(--glass)" fontFamily="'IBM Plex Mono', monospace"
                       fontSize={10} style={{ fontVariantNumeric: "tabular-nums" }}>
@@ -281,37 +318,141 @@ const ImprintCore = ({
         })}
       </svg>
       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
-                    color: "var(--glass-2)", letterSpacing: "0.14em" }}>
-        {loading ? "CORE · LOADING" : "IMPRINT CORE · 7 FACETS"}
+                    color: "var(--glass-2)", letterSpacing: "0.14em", textAlign: "center",
+                    maxWidth: 260, lineHeight: 1.5 }}>
+        {loading
+          ? "CORE · LOADING"
+          : "Perception & Confidence are still forming — your next frontier."}
       </div>
     </div>
   );
 };
 
 /* ──────────────────────────────────────────────────────────
-   Three readouts — raw activity counts
+   ContributionBar — three parts (Signal/Content/Rhythm) summing
+   to the Imprint score. Reads imprint_snapshots.components.score_components.
    ────────────────────────────────────────────────────────── */
-const Readout = ({ label, value, sub }: { label: string; value: string; sub?: string }) => (
-  <div style={{
-    flex: 1, minWidth: 0, padding: "16px 18px",
-    background: "var(--ob-panel)", border: "0.5px solid var(--hair)", borderRadius: 10,
-  }}>
-    <div style={{
-      fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
-      color: "var(--glass-2)", letterSpacing: "0.14em",
-    }}>{label}</div>
-    <div style={{
-      marginTop: 8, fontFamily: "'IBM Plex Mono', monospace",
-      fontSize: 30, color: "var(--live)", fontVariantNumeric: "tabular-nums",
-    }}>{value}</div>
-    {sub && (
+type ScoreComponents = { signal_score: number; content_score: number; capture_score: number };
+
+const WEIGHTS = { signal: 0.40, content: 0.40, rhythm: 0.20 } as const;
+const RHYTHM_TEAL = "color-mix(in srgb, var(--live) 55%, var(--glass) 5%)";
+
+/** Round three values so they sum EXACTLY to `target`. Adjust the largest. */
+function roundToSum(parts: [number, number, number], target: number): [number, number, number] {
+  const rounded = parts.map(Math.round) as [number, number, number];
+  const diff = target - (rounded[0] + rounded[1] + rounded[2]);
+  if (diff !== 0) {
+    let maxIdx = 0;
+    for (let i = 1; i < 3; i++) if (parts[i] > parts[maxIdx]) maxIdx = i;
+    rounded[maxIdx] = rounded[maxIdx] + diff;
+  }
+  return rounded;
+}
+
+const ContributionBar = ({
+  imprint, components, loading,
+}: { imprint: number | null; components: ScoreComponents | null; loading: boolean }) => {
+  if (loading || imprint == null || !components) {
+    return (
       <div style={{
-        marginTop: 4, fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
-        color: "var(--glass-2)", letterSpacing: "0.08em",
-      }}>{sub}</div>
-    )}
-  </div>
-);
+        padding: 16, background: "var(--ob-panel)",
+        border: "0.5px solid var(--hair)", borderRadius: 12,
+      }}>
+        <div style={{ height: 14, background: "var(--ob-field)", borderRadius: 4, opacity: 0.5 }} />
+        <div style={{ marginTop: 10, height: 11, width: "60%", background: "var(--ob-field)", borderRadius: 4, opacity: 0.4 }} />
+      </div>
+    );
+  }
+
+  const sRaw = Math.max(0, Math.min(100, components.signal_score)) * WEIGHTS.signal;
+  const cRaw = Math.max(0, Math.min(100, components.content_score)) * WEIGHTS.content;
+  const rRaw = Math.max(0, Math.min(100, components.capture_score)) * WEIGHTS.rhythm;
+  const target = Math.round(Math.max(0, Math.min(100, imprint)));
+  const [s, c, r] = roundToSum([sRaw, cRaw, rRaw], target);
+
+  // Bar geometry: each segment width = its rounded contribution (out of 100).
+  const segs = [
+    { key: "Signal",  v: s, color: "var(--live)",   slug: "signal-contribution",  text: "How strong and well-evidenced your signals are." },
+    { key: "Content", v: c, color: "var(--action)", slug: "content-contribution", text: "How much you've published from your signals." },
+    { key: "Rhythm",  v: r, color: RHYTHM_TEAL,     slug: "rhythm-contribution",  text: "How steadily you've been capturing, week to week." },
+  ];
+
+  // Lever: largest (gap-to-100 × weight).
+  const levers = [
+    { label: "Signal",  gap: (100 - components.signal_score)  * WEIGHTS.signal },
+    { label: "Content", gap: (100 - components.content_score) * WEIGHTS.content },
+    { label: "Rhythm",  gap: (100 - components.capture_score) * WEIGHTS.rhythm },
+  ];
+  const lever = levers.reduce((a, b) => (b.gap > a.gap ? b : a));
+
+  return (
+    <div style={{
+      padding: 18, background: "var(--ob-panel)",
+      border: "0.5px solid var(--hair)", borderRadius: 12,
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+        <span style={{
+          fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
+          color: "var(--glass-2)", letterSpacing: "0.16em",
+        }}>WHAT BUILDS YOUR IMPRINT</span>
+        <InfoTooltip
+          slug="imprint-composition"
+          text="Your Imprint is built from three things: the strength of your signals, what you've published, and how steadily you show up."
+          label="What builds your Imprint"
+          side="top"
+          triggerSize={13}
+        />
+      </div>
+
+      {/* Bar — full width = 100. Three segments sized to contributions. */}
+      <div role="img" aria-label={`Imprint ${target}: signal ${s}, content ${c}, rhythm ${r}`}
+           style={{
+             display: "flex", width: "100%", height: 14, borderRadius: 4,
+             overflow: "hidden", background: "var(--ob-field)",
+             border: "0.5px solid var(--hair)",
+           }}>
+        {segs.map(seg => (
+          <div key={seg.key} title={`${seg.key} +${seg.v}`}
+               style={{ width: `${seg.v}%`, background: seg.color, transition: "width 600ms cubic-bezier(.4,0,.2,1)" }} />
+        ))}
+      </div>
+
+      {/* Legend dots */}
+      <div style={{
+        marginTop: 10, display: "flex", gap: 14, flexWrap: "wrap",
+        fontFamily: "'IBM Plex Mono', monospace", fontSize: 11,
+        color: "var(--glass-2)", letterSpacing: "0.04em",
+      }}>
+        {segs.map(seg => (
+          <span key={seg.key} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <span style={{
+              width: 8, height: 8, borderRadius: 2, background: seg.color,
+              display: "inline-block",
+            }} />
+            <span style={{ color: "var(--glass)" }}>{seg.key}</span>
+            <InfoTooltip text={seg.text} label={`${seg.key} contribution`} side="top" triggerSize={12} />
+          </span>
+        ))}
+      </div>
+
+      {/* Mono tally */}
+      <div style={{
+        marginTop: 10, fontFamily: "'IBM Plex Mono', monospace", fontSize: 12,
+        color: "var(--glass)", letterSpacing: "0.02em",
+        fontVariantNumeric: "tabular-nums",
+      }}>
+        Signal +{s} · Content +{c} · Rhythm +{r} = Imprint {target}
+      </div>
+
+      {/* Lever line */}
+      <div style={{
+        marginTop: 6, fontSize: 12, color: "var(--glass-2)", lineHeight: 1.5,
+      }}>
+        {lever.label} is your biggest lever right now — the fastest way up.
+      </div>
+    </div>
+  );
+};
 
 /* ──────────────────────────────────────────────────────────
    Theme chips (replaces TerritoryPanel's recharts radar)
@@ -449,11 +590,24 @@ const ObsHeader = ({
       marginTop: 14, display: "inline-flex", gap: 18,
       fontFamily: "'IBM Plex Mono', monospace", fontSize: 11,
       color: "var(--glass-2)", letterSpacing: "0.06em",
+      flexWrap: "wrap", justifyContent: "center",
     }}>
-      <span><span style={{ color: "var(--glass)" }}>{entryCount || "—"}</span> sources</span>
-      <span><span style={{ color: "var(--glass)" }}>{evidenceCount || "—"}</span> evidence</span>
-      <span><span style={{ color: "var(--glass)" }}>{signalsCount || "—"}</span> signals</span>
-      <span><span style={{ color: "var(--glass)" }}>{movesCount || "—"}</span> moves</span>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+        <span style={{ color: "var(--glass)" }}>{entryCount || "—"}</span> sources
+        <InfoTooltip text="Everything you've captured — links, notes, documents." label="Sources" side="bottom" triggerSize={12} />
+      </span>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+        <span style={{ color: "var(--glass)" }}>{evidenceCount || "—"}</span> evidence
+        <InfoTooltip text="Facts and quotes pulled from your sources." label="Evidence" side="bottom" triggerSize={12} />
+      </span>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+        <span style={{ color: "var(--glass)" }}>{signalsCount || "—"}</span> signals
+        <InfoTooltip text="Themes Aura detected across your captures." label="Signals" side="bottom" triggerSize={12} />
+      </span>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+        <span style={{ color: "var(--glass)" }}>{movesCount || "—"}</span> moves
+        <InfoTooltip text="Suggested next actions ready for you." label="Moves" side="bottom" triggerSize={12} />
+      </span>
     </div>
   </div>
 );
@@ -480,11 +634,13 @@ const Observatory = ({
   const [entryCount, setEntryCount] = useState(0);
   const [evidenceCount, setEvidenceCount] = useState(0);
   const [movesCount, setMovesCount] = useState(0);
-  const [publishedCount, setPublishedCount] = useState(0);
-  const [rhythmCount, setRhythmCount] = useState(0);
-  const [imprint, setImprint] = useState<{ score: number | null; delta: number | null; loading: boolean }>({
-    score: null, delta: null, loading: true,
-  });
+  const [imprint, setImprint] = useState<{
+    score: number | null;
+    delta: number | null;
+    components: ScoreComponents | null;
+    weekShape: number[];
+    loading: boolean;
+  }>({ score: null, delta: null, components: null, weekShape: [], loading: true });
   const [facets, setFacets] = useState<{ rows: FacetRow[]; loading: boolean }>({ rows: [], loading: true });
 
   const [activeSubTab, setActiveSubTab] = useState<SubTab>("signals");
@@ -562,19 +718,66 @@ const Observatory = ({
     try {
       const { data, error } = await supabase
         .from("imprint_snapshots")
-        .select("imprint, created_at")
+        .select("imprint, components, created_at")
         .eq("user_id", uid)
         .order("created_at", { ascending: false })
-        .limit(2);
+        .limit(30);
       if (error) throw error;
-      const rows = (data || []) as Array<{ imprint: number | null; created_at: string }>;
-      const latest = rows[0]?.imprint ?? null;
-      const prior = rows[1]?.imprint ?? null;
-      const delta = latest != null && prior != null ? Math.round(latest - prior) : null;
-      setImprint({ score: latest, delta, loading: false });
+      const rows = (data || []) as Array<{
+        imprint: number | null;
+        components: any;
+        created_at: string;
+      }>;
+      const latestRow = rows[0];
+      const latest = latestRow?.imprint != null ? Number(latestRow.imprint) : null;
+
+      // 7-day-ago lookback. Among rows older than ~1 day before latest, pick
+      // the one closest to latest.created_at − 7d. If none, delta = 0.
+      let delta: number | null = null;
+      if (latest != null && rows.length > 1) {
+        const latestTs = new Date(latestRow.created_at).getTime();
+        const targetTs = latestTs - 7 * 24 * 60 * 60 * 1000;
+        const minGapMs = 24 * 60 * 60 * 1000;
+        const candidates = rows.slice(1).filter(r =>
+          r.imprint != null && (latestTs - new Date(r.created_at).getTime()) >= minGapMs,
+        );
+        if (candidates.length > 0) {
+          const closest = candidates.reduce((best, r) => {
+            const d = Math.abs(new Date(r.created_at).getTime() - targetTs);
+            return d < best.d ? { row: r, d } : best;
+          }, { row: candidates[0], d: Math.abs(new Date(candidates[0].created_at).getTime() - targetTs) });
+          delta = Math.round(latest - Number(closest.row.imprint));
+        } else {
+          delta = 0;
+        }
+      }
+
+      // Week shape: last up-to-7 daily imprint values (one per day, latest first → reverse).
+      const dayMap = new Map<string, number>();
+      for (const r of rows) {
+        if (r.imprint == null) continue;
+        const day = new Date(r.created_at).toISOString().slice(0, 10);
+        if (!dayMap.has(day)) dayMap.set(day, Number(r.imprint));
+      }
+      const weekShape = Array.from(dayMap.entries())
+        .slice(0, 7)
+        .reverse()
+        .map(([, v]) => v);
+
+      // score_components from latest row (if present).
+      const sc = latestRow?.components?.score_components;
+      const components: ScoreComponents | null = sc && typeof sc === "object"
+        ? {
+            signal_score: Number(sc.signal_score ?? 0),
+            content_score: Number(sc.content_score ?? 0),
+            capture_score: Number(sc.capture_score ?? 0),
+          }
+        : null;
+
+      setImprint({ score: latest, delta, components, weekShape, loading: false });
     } catch (e) {
       console.warn("[Observatory] imprint load failed", e);
-      setImprint({ score: null, delta: null, loading: false });
+      setImprint({ score: null, delta: null, components: null, weekShape: [], loading: false });
     }
   }, []);
 
@@ -586,13 +789,20 @@ const Observatory = ({
         .eq("user_id", uid);
       if (error) throw error;
       const rows = (data || []) as Array<{ facet: string; value: number | null; uncertainty: number | null }>;
+      // facet_states keys are lowercase canonical (identity, edge, voice, focus,
+      // audience, discernment, conviction). Map to display facet names.
       const norm: FacetRow[] = rows
-        .map(r => ({
-          facet: (r.facet || "").trim() as FacetKey,
-          value: r.value == null ? null : Number(r.value),
-          uncertainty: r.uncertainty == null ? null : Number(r.uncertainty),
-        }))
-        .filter(r => FACET_ORDER.includes(r.facet));
+        .map(r => {
+          const key = (r.facet || "").trim().toLowerCase();
+          const display = FACET_DB_TO_DISPLAY[key];
+          if (!display) return null;
+          return {
+            facet: display,
+            value: r.value == null ? null : Number(r.value),
+            uncertainty: r.uncertainty == null ? null : Number(r.uncertainty),
+          } as FacetRow;
+        })
+        .filter((r): r is FacetRow => r !== null);
       setFacets({ rows: norm, loading: false });
     } catch (e) {
       console.warn("[Observatory] facets load failed", e);
@@ -600,36 +810,15 @@ const Observatory = ({
     }
   }, []);
 
-  const loadActivity = useCallback(async (uid: string) => {
-    try {
-      const sinceIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-      const [pubContent, pubLiRes, rhythmRes] = await Promise.all([
-        supabase.from("content_items").select("id", { count: "exact", head: true })
-          .eq("user_id", uid).eq("status", "published"),
-        // Canonical published-post definition (src/lib/postProvenance.ts).
-        // All-time, no window — honest "posts shipped" count.
-        applyPublishedFilter(
-          supabase.from("linkedin_posts")
-            .select("id, source_type, tracking_status")
-            .eq("user_id", uid) as any,
-        ),
-        supabase.from("entries").select("id", { count: "exact", head: true })
-          .eq("user_id", uid).gte("created_at", sinceIso),
-      ]);
-      const liPublished = filterPublishedRows(((pubLiRes as any)?.data as any[]) || []).length;
-      setPublishedCount((pubContent.count || 0) + liPublished);
-      setRhythmCount(rhythmRes.count || 0);
-    } catch (e) {
-      console.warn("[Observatory] activity load failed", e);
-    }
-  }, []);
+  // (loadActivity removed — the raw published/rhythm readouts are replaced by
+  // the ContributionBar reading score_components from imprint_snapshots.)
 
   // ── Race-free bootstrap: gate every fetch on authReady + user ──
   useEffect(() => {
     if (!authReady) return;
     if (!authUser?.id) {
       setSignalsLoading(false);
-      setImprint({ score: null, delta: null, loading: false });
+      setImprint({ score: null, delta: null, components: null, weekShape: [], loading: false });
       setFacets({ rows: [], loading: false });
       return;
     }
@@ -637,8 +826,7 @@ const Observatory = ({
     void loadSignals(uid);
     void loadImprint(uid);
     void loadFacets(uid);
-    void loadActivity(uid);
-  }, [authReady, authUser?.id, loadSignals, loadImprint, loadFacets, loadActivity]);
+  }, [authReady, authUser?.id, loadSignals, loadImprint, loadFacets]);
 
   // Refetch on capture-complete
   useEffect(() => {
@@ -646,11 +834,11 @@ const Observatory = ({
     const handler = () => {
       const uid = authUser.id;
       void loadSignals(uid);
-      void loadActivity(uid);
+      void loadImprint(uid);
     };
     window.addEventListener("capture-complete", handler);
     return () => window.removeEventListener("capture-complete", handler);
-  }, [authUser?.id, loadSignals, loadActivity]);
+  }, [authUser?.id, loadSignals, loadImprint]);
 
   // Realtime subscriptions (gated on user)
   useEffect(() => {
@@ -658,12 +846,12 @@ const Observatory = ({
     const uid = authUser.id;
     const ch = supabase.channel(`observatory-live-${uid}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "strategic_signals", filter: `user_id=eq.${uid}` }, () => loadSignals(uid))
-      .on("postgres_changes", { event: "*", schema: "public", table: "entries", filter: `user_id=eq.${uid}` }, () => { loadSignals(uid); loadActivity(uid); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "entries", filter: `user_id=eq.${uid}` }, () => { loadSignals(uid); loadImprint(uid); })
       .on("postgres_changes", { event: "*", schema: "public", table: "imprint_snapshots", filter: `user_id=eq.${uid}` }, () => loadImprint(uid))
       .on("postgres_changes", { event: "*", schema: "public", table: "facet_states", filter: `user_id=eq.${uid}` }, () => loadFacets(uid))
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [authUser?.id, loadSignals, loadImprint, loadFacets, loadActivity]);
+  }, [authUser?.id, loadSignals, loadImprint, loadFacets]);
 
   // Deep link ?signal=...
   useEffect(() => {
@@ -881,22 +1069,43 @@ const Observatory = ({
             alignItems: "stretch",
           }}>
             <div style={{
+              position: "relative",
               padding: 18, background: "var(--ob-panel)",
               border: "0.5px solid var(--hair)", borderRadius: 12,
               display: "flex", justifyContent: "center",
             }}>
+              <div style={{ position: "absolute", top: 10, right: 12 }}>
+                <InfoTooltip
+                  slug="imprint"
+                  text="How visible your expertise is, from 0 to 100. It rises as you read and publish."
+                  label="Imprint"
+                  side="top"
+                  triggerSize={13}
+                />
+              </div>
               <AuraDial
                 score={imprint.score}
                 delta={imprint.delta}
                 loading={imprint.loading}
                 onScreen={instrumentsOnScreen}
+                weekShape={imprint.weekShape}
               />
             </div>
             <div style={{
+              position: "relative",
               padding: 18, background: "var(--ob-panel)",
               border: "0.5px solid var(--hair)", borderRadius: 12,
               display: "flex", justifyContent: "center",
             }}>
+              <div style={{ position: "absolute", top: 10, right: 12 }}>
+                <InfoTooltip
+                  slug="imprint-facets"
+                  text="The seven sides of your standing. A fuller shape means a rounder presence."
+                  label="Facet wheel"
+                  side="top"
+                  triggerSize={13}
+                />
+              </div>
               <ImprintCore
                 facets={facets.rows}
                 loading={facets.loading}
@@ -905,11 +1114,13 @@ const Observatory = ({
             </div>
           </div>
 
-          {/* Three readouts */}
-          <div style={{ display: "flex", gap: 12, marginTop: 12, flexWrap: "wrap" }}>
-            <Readout label="SIGNAL"    value={signalsLoading ? "—" : String(signals.length)}    sub="ACTIVE SIGNALS" />
-            <Readout label="PUBLISHED" value={String(publishedCount)}                            sub="POSTS SHIPPED" />
-            <Readout label="RHYTHM"    value={String(rhythmCount)}                               sub="CAPTURES · 7D" />
+          {/* Contribution bar — three parts sum to the Imprint */}
+          <div style={{ marginTop: 12 }}>
+            <ContributionBar
+              imprint={imprint.score}
+              components={imprint.components}
+              loading={imprint.loading}
+            />
           </div>
         </section>
 
