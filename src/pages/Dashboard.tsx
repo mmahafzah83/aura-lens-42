@@ -547,10 +547,14 @@ const Dashboard = () => {
 
       {/* ── Desktop Sidebar ── */}
       <aside
+        data-surface={(activeTab === "intelligence" || activeTab === "influence") ? "dark" : "bone"}
         className={`aura-sidebar-shell hidden md:flex flex-col fixed top-0 left-0 h-full z-30 backdrop-blur-xl transition-all duration-300 ${
           sidebarCollapsed ? "w-[68px]" : "w-[220px]"
         }`}
-        style={{ background: "var(--aura-card)" }}
+        style={{
+          background: (activeTab === "intelligence" || activeTab === "influence") ? "var(--aura-card)" : "var(--paper)",
+          transition: "background-color .25s ease, color .25s ease",
+        }}
       >
         {/* Logo */}
         <div
@@ -701,9 +705,11 @@ const Dashboard = () => {
             onClick={() => setMobileSidebarOpen(false)}
           />
           <aside
+            data-surface={(activeTab === "intelligence" || activeTab === "influence") ? "dark" : "bone"}
             className="aura-sidebar-shell absolute left-0 top-0 h-full w-[260px] flex flex-col animate-slide-in-right"
             style={{
               animationName: 'slideInLeft',
+              transition: "background-color .25s ease, color .25s ease",
             }}
           >
             <div
