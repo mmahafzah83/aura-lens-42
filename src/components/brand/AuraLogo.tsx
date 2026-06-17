@@ -10,10 +10,12 @@ export interface AuraLogoProps {
   title?: string;
 }
 
-// Provisional mark — replaced when Claude Design ships the final logo.
-// Single source of truth for the Aura wordmark + mark across the app.
-const COLOR_LIGHT = "#6E2A26"; // System-A spot (oxblood)
-const COLOR_DARK  = "#D6A748"; // System-A action (amber) — for dark surfaces
+// Radiant Dial mark — single source of truth for the Aura wordmark + mark across the app.
+// The mark uses currentColor so it inherits the surface text colour
+// (ink on bone surfaces, light on dark). The live-tick stays teal.
+const COLOR_LIGHT = "#1B1712"; // ink on bone surfaces
+const COLOR_DARK  = "#E8EDF3"; // light on dark surfaces
+const TICK_COLOR  = "#36C5B0";
 
 function useResolvedColor(variant: AuraLogoVariant): string {
   const [color, setColor] = useState<string>(
@@ -42,53 +44,71 @@ function useResolvedColor(variant: AuraLogoVariant): string {
 }
 
 /**
- * Horizon Eye mark — بصيرة (basira), strategic foresight.
- * ViewBox 0 0 100 80, mark centered at (50, 40).
+ * Radiant Dial mark — square 64×64 viewBox.
+ * The #mark group inherits currentColor; #tick-live stays teal.
  */
-function MarkSVG({
-  size,
-  color,
-  showRays,
-  showIris,
-  title,
-}: {
-  size: number;
-  color: string;
-  showRays: boolean;
-  showIris: boolean;
-  title?: string;
-}) {
-  const height = Math.round(size * 0.8);
+function MarkSVG({ size, title }: { size: number; title?: string }) {
   return (
     <svg
       width={size}
-      height={height}
-      viewBox="0 0 100 80"
+      height={size}
+      viewBox="0 0 64 64"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       role={title ? "img" : "presentation"}
       aria-label={title}
       aria-hidden={title ? undefined : true}
     >
-      <g transform="translate(50 40)" stroke={color} fill="none" strokeLinecap="round">
-        {/* Eye almond arcs */}
-        <path d="M-44,0 Q-22,-28 0,-28 Q22,-28 44,0" strokeWidth="1.6" />
-        <path d="M-44,0 Q-22,28 0,28 Q22,28 44,0" strokeWidth="1.6" />
-
-        {/* Iris ring */}
-        {showIris && <circle cx="0" cy="0" r="12" strokeWidth="1.2" />}
-
-        {/* Pupil */}
-        <circle cx="0" cy="0" r="5" fill={color} stroke="none" />
-
-        {/* Foresight rays */}
-        {showRays && (
-          <g strokeWidth="0.7" stroke={color}>
-            <line x1="0" y1="-30" x2="0" y2="-34" opacity="0.3" />
-            <line x1="-16" y1="-27" x2="-19" y2="-31" opacity="0.25" />
-            <line x1="16" y1="-27" x2="19" y2="-31" opacity="0.25" />
-          </g>
-        )}
+      <g id="mark" fill="currentColor" stroke="currentColor" strokeLinecap="round">
+        <line x1="32" y1="18.89" x2="32" y2="8.77" strokeWidth="1.2" />
+        <line x1="33.87" y1="19.03" x2="34.8" y2="12.54" strokeWidth="0.78" />
+        <line x1="35.69" y1="19.42" x2="37.54" y2="13.14" strokeWidth="0.78" />
+        <line x1="37.44" y1="20.08" x2="40.17" y2="14.12" strokeWidth="0.78" />
+        <line x1="39.09" y1="20.97" x2="44.56" y2="12.45" strokeWidth="1.2" />
+        <line x1="40.58" y1="22.09" x2="44.87" y2="17.14" strokeWidth="0.78" />
+        <line x1="41.91" y1="23.42" x2="46.86" y2="19.13" strokeWidth="0.78" />
+        <line x1="43.03" y1="24.91" x2="48.54" y2="21.37" strokeWidth="0.78" />
+        <line x1="43.92" y1="26.56" x2="53.13" y2="22.35" strokeWidth="1.2" />
+        <line x1="44.58" y1="28.31" x2="50.86" y2="26.46" strokeWidth="0.78" />
+        <line x1="44.97" y1="30.13" x2="51.46" y2="29.2" strokeWidth="0.78" />
+        <line x1="45.11" y1="32" x2="51.66" y2="32" strokeWidth="0.78" />
+        <line x1="44.97" y1="33.87" x2="55" y2="35.31" strokeWidth="1.2" />
+        <line x1="44.58" y1="35.69" x2="50.86" y2="37.54" strokeWidth="0.78" />
+        <line x1="43.92" y1="37.44" x2="49.88" y2="40.17" strokeWidth="0.78" />
+        <line x1="43.03" y1="39.09" x2="48.54" y2="42.63" strokeWidth="0.78" />
+        <line x1="41.91" y1="40.58" x2="49.56" y2="47.22" strokeWidth="1.2" />
+        <line x1="40.58" y1="41.91" x2="44.87" y2="46.86" strokeWidth="0.78" />
+        <line x1="39.09" y1="43.03" x2="42.63" y2="48.54" strokeWidth="0.78" />
+        <line x1="37.44" y1="43.92" x2="40.17" y2="49.88" strokeWidth="0.78" />
+        <line x1="35.69" y1="44.58" x2="38.55" y2="54.29" strokeWidth="1.2" />
+        <line x1="33.87" y1="44.97" x2="34.8" y2="51.46" strokeWidth="0.78" />
+        <line x1="32" y1="45.11" x2="32" y2="51.66" strokeWidth="0.78" />
+        <line x1="30.13" y1="44.97" x2="29.2" y2="51.46" strokeWidth="0.78" />
+        <line x1="28.31" y1="44.58" x2="25.45" y2="54.29" strokeWidth="1.2" />
+        <line x1="26.56" y1="43.92" x2="23.83" y2="49.88" strokeWidth="0.78" />
+        <line x1="24.91" y1="43.03" x2="21.37" y2="48.54" strokeWidth="0.78" />
+        <line x1="23.42" y1="41.91" x2="19.13" y2="46.86" strokeWidth="0.78" />
+        <line x1="22.09" y1="40.58" x2="14.44" y2="47.22" strokeWidth="1.2" />
+        <line x1="20.97" y1="39.09" x2="15.46" y2="42.63" strokeWidth="0.78" />
+        <line x1="20.08" y1="37.44" x2="14.12" y2="40.17" strokeWidth="0.78" />
+        <line x1="19.42" y1="35.69" x2="13.14" y2="37.54" strokeWidth="0.78" />
+        <line x1="19.03" y1="33.87" x2="9" y2="35.31" strokeWidth="1.2" />
+        <line x1="18.89" y1="32" x2="12.34" y2="32" strokeWidth="0.78" />
+        <line x1="19.03" y1="30.13" x2="12.54" y2="29.2" strokeWidth="0.78" />
+        <line x1="19.42" y1="28.31" x2="13.14" y2="26.46" strokeWidth="0.78" />
+        <line x1="20.08" y1="26.56" x2="10.87" y2="22.35" strokeWidth="1.2" />
+        <line x1="20.97" y1="24.91" x2="15.46" y2="21.37" strokeWidth="0.78" />
+        <line x1="22.09" y1="23.42" x2="17.14" y2="19.13" strokeWidth="0.78" />
+        <line x1="23.42" y1="22.09" x2="19.13" y2="17.14" strokeWidth="0.78" />
+        <line x1="24.91" y1="20.97" x2="19.44" y2="12.45" strokeWidth="1.2" />
+        <line x1="26.56" y1="20.08" x2="23.83" y2="14.12" strokeWidth="0.78" />
+        <line x1="28.31" y1="19.42" x2="26.46" y2="13.14" strokeWidth="0.78" />
+        <line x1="30.13" y1="19.03" x2="29.2" y2="12.54" strokeWidth="0.78" />
+        <circle cx="32" cy="32" r="6.85" stroke="none" />
+      </g>
+      <g id="tick-live" stroke={TICK_COLOR} fill={TICK_COLOR} strokeLinecap="round">
+        <line x1="40.07" y1="21.67" x2="49.24" y2="9.94" strokeWidth="1.55" />
+        <circle cx="49.24" cy="9.94" r="1.61" />
       </g>
     </svg>
   );
@@ -103,22 +123,15 @@ export function AuraLogo({
 }: AuraLogoProps) {
   const color = useResolvedColor(variant);
 
-  // Detail tiers based on size
-  const showIris = size >= 32;
-  const showRays = size >= 40;
-
   const wordmarkSize = Math.round(size * 0.45);
 
   return (
     <span
       className={className}
-      style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
+      style={{ display: "inline-flex", alignItems: "center", gap: 8, color }}
     >
       <MarkSVG
         size={size}
-        color={color}
-        showRays={showRays}
-        showIris={showIris}
         title={withWordmark ? undefined : title}
       />
       {withWordmark && (
@@ -141,27 +154,27 @@ export function AuraLogo({
 
 /**
  * Raw SVG string for use in favicons, transactional emails, OG images.
- * Pass a hex color; defaults to bronze.
+ * Pass a hex color; defaults to ink.
  */
 export function getAuraLogoSvgString(color: string = COLOR_LIGHT, size: number = 24): string {
-  const showIris = size >= 32;
-  const showRays = size >= 40;
-  const height = Math.round(size * 0.8);
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${height}" viewBox="0 0 100 80" fill="none">
-  <g transform="translate(50 40)" stroke="${color}" fill="none" stroke-linecap="round">
-    <path d="M-44,0 Q-22,-28 0,-28 Q22,-28 44,0" stroke-width="1.6"/>
-    <path d="M-44,0 Q-22,28 0,28 Q22,28 44,0" stroke-width="1.6"/>
-    ${showIris ? `<circle cx="0" cy="0" r="12" stroke-width="1.2"/>` : ""}
-    <circle cx="0" cy="0" r="5" fill="${color}" stroke="none"/>
-    ${
-      showRays
-        ? `<g stroke-width="0.7" stroke="${color}">
-      <line x1="0" y1="-30" x2="0" y2="-34" opacity="0.3"/>
-      <line x1="-16" y1="-27" x2="-19" y2="-31" opacity="0.25"/>
-      <line x1="16" y1="-27" x2="19" y2="-31" opacity="0.25"/>
-    </g>`
-        : ""
-    }
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 64 64" fill="none">
+  <g fill="${color}" stroke="${color}" stroke-linecap="round">
+    <line x1="32" y1="18.89" x2="32" y2="8.77" stroke-width="1.2"/>
+    <line x1="39.09" y1="20.97" x2="44.56" y2="12.45" stroke-width="1.2"/>
+    <line x1="43.92" y1="26.56" x2="53.13" y2="22.35" stroke-width="1.2"/>
+    <line x1="44.97" y1="33.87" x2="55" y2="35.31" stroke-width="1.2"/>
+    <line x1="41.91" y1="40.58" x2="49.56" y2="47.22" stroke-width="1.2"/>
+    <line x1="35.69" y1="44.58" x2="38.55" y2="54.29" stroke-width="1.2"/>
+    <line x1="28.31" y1="44.58" x2="25.45" y2="54.29" stroke-width="1.2"/>
+    <line x1="22.09" y1="40.58" x2="14.44" y2="47.22" stroke-width="1.2"/>
+    <line x1="19.03" y1="33.87" x2="9" y2="35.31" stroke-width="1.2"/>
+    <line x1="20.08" y1="26.56" x2="10.87" y2="22.35" stroke-width="1.2"/>
+    <line x1="24.91" y1="20.97" x2="19.44" y2="12.45" stroke-width="1.2"/>
+    <circle cx="32" cy="32" r="6.85" stroke="none"/>
+  </g>
+  <g stroke="${TICK_COLOR}" fill="${TICK_COLOR}" stroke-linecap="round">
+    <line x1="40.07" y1="21.67" x2="49.24" y2="9.94" stroke-width="1.55"/>
+    <circle cx="49.24" cy="9.94" r="1.61"/>
   </g>
 </svg>`;
 }
