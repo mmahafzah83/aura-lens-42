@@ -1638,10 +1638,67 @@ html.dark .text-gray-500,
 .aura-sidebar-shell {
   background: linear-gradient(180deg, var(--paper) 0%, var(--paper-2) 100%);
   border-right: 0.5px solid var(--brand-line);
+  transition: background-color .25s ease, color .25s ease;
 }
 [data-theme="dark"] .aura-sidebar-shell {
   background: linear-gradient(180deg, var(--vellum) 0%, var(--paper-2) 100%);
   border-right: 0.5px solid var(--brand-line);
+}
+
+/* ── Per-page sidebar surface (set via data-surface on the <aside>) ── */
+
+/* Bone surface — rebind instrument tokens to parchment so the whole shell reads bone */
+.aura-sidebar-shell[data-surface="bone"] {
+  --aura-card: var(--paper-2);
+  --aura-card-glass: var(--paper-3);
+  --aura-border: var(--brand-line);
+  --aura-t1: var(--ink);
+  --aura-t2: var(--ink-3);
+  --aura-t3: var(--ink-4);
+  --aura-accent: var(--brand);
+}
+
+/* Dark surface — rebind bone tokens to the instrument palette, mirror .statement-page --aura-* */
+.aura-sidebar-shell[data-surface="dark"] {
+  /* parchment → instrument */
+  --paper: var(--ob-bg);
+  --paper-2: var(--ob-panel);
+  --paper-3: var(--hair);
+  --vellum: var(--ob-panel);
+  --brand-line: var(--hair);
+  /* ink scale → glass scale */
+  --ink: var(--glass);
+  --ink-2: color-mix(in srgb, var(--glass) 82%, transparent);
+  --ink-3: var(--glass-2);
+  --ink-4: var(--glass-3);
+  --ink-5: var(--glass-3);
+  /* --aura-* family mirrors .statement-page */
+  --aura-card: var(--ob-panel);
+  --aura-card-glass: var(--ob-raised);
+  --aura-border: var(--hair);
+  --aura-t1: var(--glass);
+  --aura-t2: color-mix(in srgb, var(--glass) 78%, transparent);
+  --aura-t3: var(--glass-2);
+  --aura-accent: var(--action);
+  background: var(--ob-bg);
+  border-right: 0.5px solid var(--hair);
+}
+.aura-sidebar-shell[data-surface="dark"] .aura-nav-item { color: var(--glass-2); }
+.aura-sidebar-shell[data-surface="dark"] .aura-nav-item:hover:not(.is-active) { color: var(--glass); background: color-mix(in srgb, var(--glass) 8%, transparent); }
+.aura-sidebar-shell[data-surface="bone"] { background: var(--paper); border-right: 0.5px solid var(--brand-line); }
+
+/* Ask Aura pill — surface-aware via CSS vars set on the sidebar shell */
+.aura-sidebar-shell[data-surface="bone"] {
+  --ask-bg: var(--paper-3);
+  --ask-bg-hover: color-mix(in srgb, var(--brand) 10%, var(--paper-3));
+  --ask-fg: var(--brand);
+  --ask-border: 1px solid var(--brand-line);
+}
+.aura-sidebar-shell[data-surface="dark"] {
+  --ask-bg: var(--ob-raised);
+  --ask-bg-hover: var(--ob-panel);
+  --ask-fg: var(--action);
+  --ask-border: none;
 }
 
 /* Nav item base */

@@ -257,24 +257,24 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
         data-testid="nav-ask-aura"
         className={
           className ??
-          "w-full flex items-center gap-3 tactile-press group aura-ask-btn"
+          "w-full flex items-center gap-3 tactile-press group aura-ask-btn aura-ask-surface"
         }
         style={{
-          background: "var(--ob-raised)",
-          color: "var(--action)",
+          background: "var(--ask-bg, var(--ob-raised))",
+          color: "var(--ask-fg, var(--action))",
           borderRadius: "var(--r-md)",
           padding: "10px 14px",
-          border: "none",
+          border: "var(--ask-border, none)",
           transition: "background var(--t-fast) var(--ease)",
           ...(visual.borderColor
             ? { borderLeft: `2px solid ${visual.borderColor}` }
             : {}),
         }}
         onMouseEnter={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.background = "var(--ob-panel)";
+          (e.currentTarget as HTMLButtonElement).style.background = "var(--ask-bg-hover, var(--ob-panel))";
         }}
         onMouseLeave={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.background = "var(--ob-raised)";
+          (e.currentTarget as HTMLButtonElement).style.background = "var(--ask-bg, var(--ob-raised))";
         }}
       >
         <span className="relative inline-flex items-center justify-center shrink-0">
