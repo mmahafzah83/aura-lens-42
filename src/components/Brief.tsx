@@ -401,10 +401,12 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
     void loadImprint();
     void loadAway();
     void loadDraft();
+    void loadDiscernment();
+    void loadProof();
     return () => {
       try { localStorage.setItem(LAST_VISIT_KEY, new Date().toISOString()); } catch { /* noop */ }
     };
-  }, [isReady, loadImprint, loadAway, loadDraft]);
+  }, [isReady, loadImprint, loadAway, loadDraft, loadDiscernment, loadProof]);
 
   // ── Render ──
 
