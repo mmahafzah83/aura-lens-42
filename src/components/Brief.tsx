@@ -199,6 +199,8 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
   const [imprint, setImprint] = useState<SectionState<ImprintData>>({ status: "loading" });
   const [away, setAway] = useState<SectionState<AwayData>>({ status: "loading" });
   const [draftState, setDraftState] = useState<SectionState<DraftData>>({ status: "loading" });
+  const [discernment, setDiscernment] = useState<SectionState<DiscernmentData>>({ status: "loading" });
+  const [proof, setProof] = useState<SectionState<ProofData>>({ status: "loading" });
 
   const now = useMemo(() => new Date(), []);
 
@@ -251,17 +253,17 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
   }, [isReady, user]);
 
   const loadImprint = useCallback(async () => {
-    if (!user) { setImprint({ status: "ready", data: { imprint: null, delta: null } }); return; }
+    if (!user) { setImprint({ status: "ready", data: { imprint: null, delta: null, signalScore: null, contentScore: null } }); return; }
     setImprint({ status: "loading" });
     try {
       const { data, error } = await supabase
         .from("imprint_snapshots")
-        .select("imprint, created_at")
+        .select("imprint, created_at, components")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(30);
       if (error) throw error;
-      const rows = (data || []) as Array<{ imprint: number | null; created_at: string }>;
+      const rows = (data || []) as Array<{ imprint: number | null; created_at: string; components: any }>;
       const latest = rows[0]?.imprint ?? null;
       // 7-day-ago lookback: find the snapshot whose created_at is closest to
       // (latest.created_at − 7d), only considering rows older than ~1 day before latest.
@@ -283,7 +285,12 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
           delta = 0;
         }
       }
-      setImprint({ status: "ready", data: { imprint: latest, delta } });
+      const sc = rows[0]?.components?.score_components ?? {};
+      const signalScore =
+        typeof sc.signal_score === "number" ? Math.round(sc.signal_score) : null;
+      const contentScore =
+        typeof sc.content_score === "number" ? Math.round(sc.content_score) : null;
+      setImprint({ status: "ready", data: { imprint: latest, delta, signalScore, contentScore } });
     } catch (e) {
       console.warn("[Brief] imprint load failed", e);
       setImprint({ status: "error", message: "imprint" });
