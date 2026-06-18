@@ -491,7 +491,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
       }}
       aria-label="Your Brief"
     >
-      {/* 1. DATELINE */}
+      {/* MASTHEAD ─────────────────────────── */}
       <div
         style={{
           fontFamily: "var(--font-mono)",
@@ -499,261 +499,265 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
           letterSpacing: "0.16em",
           textTransform: "uppercase",
           color: "var(--spot)",
-          marginBottom: 18,
+          textAlign: "center",
+          marginBottom: 10,
         }}
       >
-        {dateline}
+        {`YEAR ${now.getFullYear()} \u00B7 WEEK ${issueNumber}`}
       </div>
 
-      {/* 2. HEADLINE + pill */}
-      <section
-        className="brief-headline-row"
-        style={{
-          display: "flex",
-          alignItems: "flex-end",
-          justifyContent: "space-between",
-          gap: 16,
-          marginBottom: 28,
-        }}
-      >
+      <div style={{ textAlign: "center", marginBottom: 8 }}>
+        <div
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            letterSpacing: "0.22em",
+            textTransform: "uppercase",
+            color: "var(--ink-3)",
+            marginBottom: 6,
+          }}
+        >
+          Aura
+        </div>
         {profileResolved ? (
-          <h1
-            style={{
-              fontFamily: "var(--font-serif)",
-              fontWeight: 400,
-              fontSize: "clamp(2rem, 5vw, 3.25rem)",
-              lineHeight: 1.08,
-              letterSpacing: "-0.015em",
-              margin: 0,
-              color: "var(--ink)",
-              flex: "1 1 auto",
-            }}
-          >
-            {greeting(now)}{firstName ? `, ${firstName}` : ""}.
-          </h1>
-        ) : (
-          <SkeletonLine width="55%" height={44} />
-        )}
-        {hasReadyDraft && (
-          <span
-            style={{
-              flex: "0 0 auto",
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.16em",
-              textTransform: "uppercase",
-              color: "var(--spot)",
-              border: "1px solid var(--spot)",
-              background: "transparent",
-              borderRadius: 999,
-              padding: "5px 10px",
-              whiteSpace: "nowrap",
-            }}
-          >
-            Strongest move ready
-          </span>
-        )}
-      </section>
-
-      {/* 3. STANDING LINE */}
-      <section style={{ marginBottom: 24 }}>
-        {imprint.status === "loading" && <SkeletonLine width="70%" height={22} />}
-        {imprint.status === "error" && <ErrorLine what="standing line" onRetry={loadImprint} />}
-        {imprint.status === "ready" && (
-          <>
-            <p
+          firstName ? (
+            <h1
               style={{
                 fontFamily: "var(--font-serif)",
-                fontSize: "clamp(1.25rem, 2.5vw, 1.75rem)",
-                lineHeight: 1.4,
-                color: "var(--ink)",
+                fontWeight: 400,
+                fontSize: "clamp(2.25rem, 5.5vw, 3.5rem)",
+                lineHeight: 1.05,
+                letterSpacing: "-0.015em",
                 margin: 0,
+                color: "var(--ink)",
               }}
             >
-              {(() => {
-                const v = imprint.data.imprint;
-                const d = imprint.data.delta;
-                if (v == null) return "Your Imprint is forming — it sharpens with every capture.";
-                const movement =
-                  d == null ? "" :
-                  d > 0 ? `, up ${d} this week` :
-                  d < 0 ? `, down ${Math.abs(d)} this week` :
-                  ", steady this week";
-                const sectorClause = sectorFocus
-                  ? ` — carried by depth you added in ${sectorFocus}.`
-                  : ".";
-                const marketClause = topSignal
-                  ? ` The market is moving on ${topSignal.title}; you're early.`
-                  : "";
-                return (
-                  <>
-                    Your{" "}
-                    <span style={{ color: "var(--spot)" }}>
-                      Imprint holds at {v}
-                    </span>
-                    {movement}
-                    {sectorClause}
-                    {marketClause}
-                  </>
-                );
-              })()}
-            </p>
-
-            {/* 4. CAPTION BLOCK */}
-            <div style={{ marginTop: 14 }}>
-              <div
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 11,
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
-                  color: "var(--ink-3)",
-                }}
-              >
-                Updated this morning · A quiet line, not a gauge
-              </div>
-              <div
-                style={{
-                  marginTop: 4,
-                  fontFamily: "var(--font-serif)",
-                  fontStyle: "italic",
-                  fontSize: "0.9rem",
-                  lineHeight: 1.5,
-                  color: "var(--ink-2)",
-                }}
-              >
-                Imprint — how present your expertise is, on a quiet 0–100 line.
-              </div>
-            </div>
-          </>
-        )}
-      </section>
-
-      {/* 5. TICK RULE */}
-      <div className="tick-rule" style={{ color: "var(--rule)", marginBottom: 28 }} aria-hidden />
-
-      {/* 6. WHILE YOU WERE AWAY */}
-      <section style={{ marginBottom: 36 }}>
-        <SectionLabel>While you were away</SectionLabel>
-        {away.status === "loading" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <SkeletonLine width="85%" />
-            <SkeletonLine width="65%" />
+              {firstName}
+            </h1>
+          ) : null
+        ) : (
+          <div style={{ display: "inline-block" }}>
+            <SkeletonLine width={220} height={44} />
           </div>
         )}
-        {away.status === "error" && <ErrorLine what="signals update" onRetry={loadAway} />}
-        {away.status === "ready" && (() => {
-          const { signals, signalCount, newCaptureCount } = away.data;
-          if (signals.length === 0 && newCaptureCount === 0) {
+        <div
+          style={{
+            marginTop: 8,
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            letterSpacing: "0.16em",
+            textTransform: "uppercase",
+            color: "var(--ink-3)",
+          }}
+        >
+          Your Strategic Intelligence Brief
+        </div>
+      </div>
+
+      <div
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 10,
+          letterSpacing: "0.14em",
+          textTransform: "uppercase",
+          color: "var(--ink-3)",
+          textAlign: "center",
+          marginBottom: 36,
+        }}
+      >
+        {proof.status === "ready" && proof.data.dayN != null ? (
+          <>
+            {`Day ${proof.data.dayN} of building your Aura`} <span style={{ color: "var(--rule)" }}>·</span>{" "}
+            {`${proof.data.entriesTotal} capture${proof.data.entriesTotal === 1 ? "" : "s"}`}{" "}
+            <span style={{ color: "var(--rule)" }}>·</span>{" "}
+            {`${proof.data.fragments} fragment${proof.data.fragments === 1 ? "" : "s"} from ${proof.data.institutions} institution${proof.data.institutions === 1 ? "" : "s"}`}
+          </>
+        ) : (
+          <SkeletonLine width="70%" height={12} />
+        )}
+      </div>
+
+      {/* THE GAP ─────────────────────────── */}
+      <section style={{ marginBottom: 40 }}>
+        <SectionLabel>This week's tension</SectionLabel>
+
+        {imprint.status === "loading" ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <SkeletonLine width="90%" height={36} />
+            <SkeletonLine width="75%" height={18} />
+          </div>
+        ) : imprint.status === "error" ? (
+          <ErrorLine what="gap reading" onRetry={loadImprint} />
+        ) : (
+          (() => {
+            const signalScore = imprint.data.signalScore;
+            const contentScore = imprint.data.contentScore;
+            const headline = topSignal
+              ? `You see ${topSignal.title} more clearly than you've said it.`
+              : "Your reading is ahead of your voice this week.";
+
+            const dInputs = discernment.status === "ready" ? discernment.data : null;
+            const hasGap = dInputs && dInputs.postsWithSignal != null && dInputs.published120d != null;
+
             return (
-              <p style={{ margin: 0, color: "var(--ink-2)", fontSize: 17, lineHeight: 1.55 }}>
-                The scan is quiet — for now.
-              </p>
+              <>
+                <h2
+                  dir="auto"
+                  style={{
+                    fontFamily: "var(--font-serif)",
+                    fontWeight: 400,
+                    fontSize: "clamp(1.6rem, 4vw, 2.5rem)",
+                    lineHeight: 1.18,
+                    letterSpacing: "-0.01em",
+                    color: "var(--ink)",
+                    margin: 0,
+                  }}
+                >
+                  {headline}
+                </h2>
+
+                <p
+                  style={{
+                    marginTop: 14,
+                    marginBottom: 0,
+                    fontSize: 16,
+                    lineHeight: 1.6,
+                    color: "var(--ink-2)",
+                  }}
+                >
+                  {hasGap && signalScore != null && contentScore != null ? (
+                    <>
+                      Only <strong style={{ color: "var(--ink)" }}>{dInputs!.postsWithSignal}</strong> of your last{" "}
+                      <strong style={{ color: "var(--ink)" }}>{dInputs!.published120d}</strong> posts drew on a signal
+                      you captured — your reading scores{" "}
+                      <span style={{ color: "var(--live)", fontWeight: 600 }}>{signalScore}</span>, your voice{" "}
+                      <span style={{ color: "var(--spot)", fontWeight: 600 }}>{contentScore}</span>.
+                    </>
+                  ) : signalScore != null && contentScore != null ? (
+                    <>
+                      Your reading scores{" "}
+                      <span style={{ color: "var(--live)", fontWeight: 600 }}>{signalScore}</span>; your voice{" "}
+                      <span style={{ color: "var(--spot)", fontWeight: 600 }}>{contentScore}</span>. The gap is the opening.
+                    </>
+                  ) : (
+                    "Your reading and your voice are still forming. The gap is the opening."
+                  )}
+                </p>
+
+                {signalScore != null && contentScore != null && (
+                  <div style={{ marginTop: 22 }}>
+                    {(() => {
+                      const lo = Math.min(signalScore, contentScore);
+                      const hi = Math.max(signalScore, contentScore);
+                      const voiceIsLow = contentScore <= signalScore;
+                      return (
+                        <>
+                          <div
+                            style={{
+                              position: "relative",
+                              height: 1,
+                              background: "var(--rule)",
+                              marginInline: 4,
+                            }}
+                          >
+                            <div
+                              style={{
+                                position: "absolute",
+                                insetInlineStart: `${lo}%`,
+                                width: `${Math.max(0, hi - lo)}%`,
+                                top: -3,
+                                height: 7,
+                                background: "var(--spot)",
+                                opacity: 0.18,
+                              }}
+                            />
+                            <span
+                              aria-hidden
+                              style={{
+                                position: "absolute",
+                                insetInlineStart: `calc(${contentScore}% - 4px)`,
+                                top: -4,
+                                width: 9,
+                                height: 9,
+                                background: "var(--spot)",
+                                borderRadius: "50%",
+                              }}
+                            />
+                            <span
+                              aria-hidden
+                              style={{
+                                position: "absolute",
+                                insetInlineStart: `calc(${signalScore}% - 4px)`,
+                                top: -4,
+                                width: 9,
+                                height: 9,
+                                background: "var(--live)",
+                                borderRadius: "50%",
+                              }}
+                            />
+                          </div>
+                          <div
+                            style={{
+                              position: "relative",
+                              height: 18,
+                              marginTop: 8,
+                              marginInline: 4,
+                              fontFamily: "var(--font-mono)",
+                              fontSize: 10,
+                              letterSpacing: "0.12em",
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            <span
+                              style={{
+                                position: "absolute",
+                                insetInlineStart: `${contentScore}%`,
+                                transform: voiceIsLow ? "translateX(0)" : "translateX(-100%)",
+                                color: "var(--spot)",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              Your voice {contentScore}
+                            </span>
+                            <span
+                              style={{
+                                position: "absolute",
+                                insetInlineStart: `${signalScore}%`,
+                                transform: voiceIsLow ? "translateX(-100%)" : "translateX(0)",
+                                color: "var(--live)",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              Your reading {signalScore}
+                            </span>
+                          </div>
+                          <div
+                            style={{
+                              marginTop: 14,
+                              textAlign: "center",
+                              fontFamily: "var(--font-mono)",
+                              fontSize: 10,
+                              letterSpacing: "0.16em",
+                              textTransform: "uppercase",
+                              color: "var(--ink-3)",
+                            }}
+                          >
+                            The gap — one post closes it
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
+              </>
             );
-          }
-          return (
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              {signals.map((s, idx) => {
-                const pct = s.confidence != null ? Math.round(s.confidence * 100) : null;
-                const hot = s.confidence != null && s.confidence >= 0.7;
-                return (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => onSwitchTab?.("intelligence")}
-                    className="brief-signal-row"
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "auto 1fr auto",
-                      gap: 16,
-                      alignItems: "baseline",
-                      textAlign: "start",
-                      background: "transparent",
-                      border: 0,
-                      borderTop: "1px solid var(--rule)",
-                      paddingBlock: 16,
-                      cursor: "pointer",
-                      color: "var(--ink)",
-                      width: "100%",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontFamily: "var(--font-serif)",
-                        fontSize: "clamp(1.75rem, 3.5vw, 2.5rem)",
-                        lineHeight: 1,
-                        color: "var(--spot)",
-                      }}
-                    >
-                      {String(idx + 1).padStart(2, "0")}
-                    </span>
-                    <span style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
-                      <span
-                        style={{
-                          fontFamily: "var(--font-serif)",
-                          fontSize: "clamp(1.05rem, 2vw, 1.25rem)",
-                          lineHeight: 1.35,
-                          color: "var(--ink)",
-                        }}
-                      >
-                        {s.title}
-                      </span>
-                      <span
-                        style={{
-                          fontFamily: "var(--font-mono)",
-                          fontSize: 10,
-                          letterSpacing: "0.14em",
-                          textTransform: "uppercase",
-                          color: "var(--ink-3)",
-                        }}
-                      >
-                        Intelligence · New signal
-                      </span>
-                    </span>
-                    {pct != null && (
-                      <span
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 6,
-                          fontFamily: "var(--font-mono)",
-                          fontSize: 11,
-                          letterSpacing: "0.08em",
-                          color: "var(--ink-2)",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        <span
-                          aria-hidden
-                          style={{
-                            width: 7,
-                            height: 7,
-                            borderRadius: "50%",
-                            background: hot ? "var(--live)" : "var(--ink-3)",
-                            display: "inline-block",
-                          }}
-                        />
-                        {pct}%
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-              {(signalCount > signals.length || newCaptureCount > 0) && (
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.10em", color: "var(--ink-3)", marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--rule)" }}>
-                  {signalCount > signals.length && <>{signalCount - signals.length} more signal{signalCount - signals.length === 1 ? "" : "s"}</>}
-                  {signalCount > signals.length && newCaptureCount > 0 && " · "}
-                  {newCaptureCount > 0 && <>{newCaptureCount} new capture{newCaptureCount === 1 ? "" : "s"}</>}
-                </div>
-              )}
-            </div>
-          );
-        })()}
+          })()
+        )}
       </section>
 
-      {/* 7. DRAFT CARD */}
-      <section style={{ marginBottom: 36 }}>
-        <SectionLabel>Ready to publish</SectionLabel>
+      {/* THE POST ─────────────────────────── */}
+      <section style={{ marginBottom: 40 }}>
+        <SectionLabel>The post</SectionLabel>
         {draftState.status === "loading" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <SkeletonLine width="80%" height={20} />
@@ -764,134 +768,84 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
         {draftState.status === "error" && <ErrorLine what="ready draft" onRetry={loadDraft} />}
         {draftState.status === "ready" && (
           draftState.data.draft ? (
-            <article
-              style={{
-                background: "#FFFFFF",
-                border: "1px solid var(--rule)",
-                borderInlineStart: "3px solid var(--action)",
-                borderRadius: 6,
-                padding: "20px 22px",
-                boxShadow: "0 1px 2px rgba(20,18,14,0.04), 0 8px 24px rgba(20,18,14,0.06)",
-                display: "flex",
-                flexDirection: "column",
-                gap: 16,
-              }}
-            >
-              <div
+            <>
+              <p
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 12,
-                  flexWrap: "wrap",
+                  margin: "0 0 14px 0",
+                  fontFamily: "var(--font-serif)",
+                  fontStyle: "italic",
+                  fontSize: "1.05rem",
+                  lineHeight: 1.55,
+                  color: "var(--ink-2)",
                 }}
               >
-                <span
+                {draftState.data.signalCount
+                  ? `${draftState.data.signalCount} capture${draftState.data.signalCount === 1 ? "" : "s"} converged on one thesis. I've drafted the post — it needs your voice and ten minutes.`
+                  : `I've drafted the post — it needs your voice and ten minutes.`}
+              </p>
+              <article
+                style={{
+                  background: "var(--paper-2)",
+                  border: "1px solid var(--rule)",
+                  borderInlineStart: "3px solid var(--action)",
+                  borderRadius: 6,
+                  padding: "20px 22px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 16,
+                }}
+              >
+                <h3
+                  dir="auto"
                   style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 11,
-                    letterSpacing: "0.14em",
-                    textTransform: "uppercase",
-                    color: "var(--ink-2)",
+                    fontFamily: "var(--font-serif)",
+                    fontWeight: 400,
+                    fontSize: "clamp(1.25rem, 2.6vw, 1.65rem)",
+                    lineHeight: 1.3,
+                    color: "var(--ink)",
+                    margin: 0,
                   }}
                 >
-                  A draft is ready in your voice
-                </span>
-                {draftState.data.voiceScore != null && (
-                  <span
+                  {`\u201C${deriveHook(draftState.data.draft.body) || "Untitled draft"}\u201D`}
+                </h3>
+                <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    onClick={() => onOpenDraft(draftState.data.draft!)}
+                    className="brief-cta"
                     style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 10,
-                      letterSpacing: "0.14em",
-                      textTransform: "uppercase",
-                      color: "var(--action)",
-                      border: "1px solid var(--action)",
-                      background: "rgba(214,158,46,0.08)",
-                      borderRadius: 999,
-                      padding: "4px 9px",
-                      whiteSpace: "nowrap",
+                      background: "var(--action)",
+                      color: "#1B1712",
+                      border: 0,
+                      borderRadius: 4,
+                      padding: "10px 18px",
+                      fontFamily: "var(--font-body)",
+                      fontSize: 15,
+                      fontWeight: 600,
+                      letterSpacing: "0.01em",
+                      cursor: "pointer",
                     }}
                   >
-                    {draftState.data.voiceScore}% voice match
-                  </span>
-                )}
-              </div>
-
-              <h2
-                dir="auto"
-                style={{
-                  fontFamily: "var(--font-serif)",
-                  fontWeight: 400,
-                  fontSize: "clamp(1.25rem, 2.6vw, 1.75rem)",
-                  lineHeight: 1.3,
-                  color: "var(--ink)",
-                  margin: 0,
-                }}
-              >
-                {`\u201C${deriveHook(draftState.data.draft.body) || "Untitled draft"}\u201D`}
-              </h2>
-
-              <p style={{ margin: 0, color: "var(--ink-2)", fontSize: 15, lineHeight: 1.55 }}>
-                {draftState.data.signalCount
-                  ? `Drafted from ${draftState.data.signalCount} signals you captured. Every line traces to its evidence.`
-                  : "Drafted from your signals. Every line traces to its evidence."}
-              </p>
-
-              <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
-                <button
-                  type="button"
-                  onClick={() => onOpenDraft(draftState.data.draft!)}
-                  className="brief-cta"
-                  style={{
-                    background: "var(--action)",
-                    color: "#1B1712",
-                    border: 0,
-                    borderRadius: 4,
-                    padding: "10px 18px",
-                    fontFamily: "var(--font-body)",
-                    fontSize: 15,
-                    fontWeight: 600,
-                    letterSpacing: "0.01em",
-                    cursor: "pointer",
-                  }}
-                >
-                  Open in Composer
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDraftState({ status: "ready", data: { draft: null, preview: "", voiceScore: null, signalCount: null } })}
-                  style={{
-                    background: "transparent",
-                    border: 0,
-                    padding: 0,
-                    color: "var(--ink-2)",
-                    fontFamily: "var(--font-body)",
-                    fontSize: 14,
-                    cursor: "pointer",
-                  }}
-                >
-                  Dismiss
-                </button>
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
-                  letterSpacing: "0.16em",
-                  textTransform: "uppercase",
-                  color: "var(--ink-3)",
-                  borderTop: "1px solid var(--rule)",
-                  paddingTop: 10,
-                }}
-              >
-                Draft · Ready to publish
-              </div>
-            </article>
+                    Open in Composer
+                  </button>
+                  {draftState.data.voiceScore != null && (
+                    <span
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 10,
+                        letterSpacing: "0.14em",
+                        textTransform: "uppercase",
+                        color: "var(--ink-3)",
+                      }}
+                    >
+                      {draftState.data.voiceScore}% voice match
+                    </span>
+                  )}
+                </div>
+              </article>
+            </>
           ) : (
-            <p style={{ margin: 0, color: "var(--ink-2)", fontSize: 17, lineHeight: 1.55 }}>
+            <p style={{ margin: 0, color: "var(--ink-2)", fontSize: 16, lineHeight: 1.55 }}>
               No draft prepared yet.{" "}
               <button
                 type="button"
@@ -915,11 +869,109 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
         )}
       </section>
 
+      {/* WHILE YOU WERE AWAY (demoted) ─────────────────────────── */}
+      <section style={{ marginBottom: 36 }}>
+        <SectionLabel>While you were away</SectionLabel>
+        {away.status === "loading" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <SkeletonLine width="85%" />
+            <SkeletonLine width="65%" />
+          </div>
+        )}
+        {away.status === "error" && <ErrorLine what="signals update" onRetry={loadAway} />}
+        {away.status === "ready" && (() => {
+          const { signals, newCaptureCount } = away.data;
+          if (signals.length === 0 && newCaptureCount === 0) {
+            return (
+              <p style={{ margin: 0, color: "var(--ink-2)", fontSize: 15, lineHeight: 1.55 }}>
+                The scan is quiet — for now.
+              </p>
+            );
+          }
+          return (
+            <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+              {signals.slice(0, 2).map((s) => (
+                <li key={s.id} style={{ borderTop: "1px solid var(--rule)" }}>
+                  <button
+                    type="button"
+                    onClick={() => onSwitchTab?.("intelligence")}
+                    dir="auto"
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      textAlign: "start",
+                      background: "transparent",
+                      border: 0,
+                      paddingBlock: 12,
+                      paddingInline: 0,
+                      cursor: "pointer",
+                      color: "var(--ink)",
+                      fontFamily: "var(--font-body)",
+                      fontSize: 15,
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {s.title}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          );
+        })()}
+      </section>
+
+      {/* QUIET FOOTER ─────────────────────────── */}
+      <footer
+        style={{
+          marginTop: 24,
+          paddingTop: 16,
+          borderTop: "1px solid var(--rule)",
+          fontFamily: "var(--font-mono)",
+          fontSize: 10,
+          letterSpacing: "0.16em",
+          textTransform: "uppercase",
+          color: "var(--ink-3)",
+          textAlign: "center",
+          lineHeight: 1.7,
+        }}
+      >
+        {imprint.status === "ready" && imprint.data.imprint != null ? (
+          (() => {
+            const v = imprint.data.imprint;
+            const tier =
+              v >= 80 ? "Presence" :
+              v >= 60 ? "Voice" :
+              v >= 35 ? "Strategist" :
+              v >= 15 ? "Explorer" : "Observer";
+            return (
+              <>
+                {`Imprint ${v} \u00B7 ${tier} \u00B7 aura-intel.org`}
+              </>
+            );
+          })()
+        ) : (
+          <>aura-intel.org</>
+        )}
+        <div
+          style={{
+            marginTop: 6,
+            fontFamily: "var(--font-serif)",
+            fontStyle: "italic",
+            fontSize: 12,
+            letterSpacing: 0,
+            textTransform: "none",
+            color: "var(--ink-3)",
+          }}
+        >
+          Turn your expertise into presence.
+        </div>
+      </footer>
+
       {/* New-user empty hint */}
       {imprint.status === "ready" && imprint.data.imprint == null &&
        away.status === "ready" && away.data.signals.length === 0 && away.data.newCaptureCount === 0 &&
        draftState.status === "ready" && !draftState.data.draft && (
-        <section style={{ marginTop: 8 }}>
+        <section style={{ marginTop: 24 }}>
           <p style={{ fontFamily: "var(--font-serif)", fontSize: 20, color: "var(--ink-2)", margin: "0 0 8px 0" }}>
             Your Brief is forming.
           </p>
