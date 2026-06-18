@@ -32,6 +32,8 @@ type SectionState<T> =
 interface ImprintData {
   imprint: number | null;
   delta: number | null;
+  signalScore: number | null;
+  contentScore: number | null;
 }
 
 interface AwaySignal {
@@ -51,6 +53,19 @@ interface DraftData {
   preview: string;
   voiceScore: number | null;
   signalCount: number | null;
+}
+
+interface DiscernmentData {
+  value: number | null;
+  postsWithSignal: number | null;
+  published120d: number | null;
+}
+
+interface ProofData {
+  entriesTotal: number;
+  fragments: number;
+  institutions: number;
+  dayN: number | null;
 }
 
 const LAST_VISIT_KEY = "aura-brief-last-visit";
