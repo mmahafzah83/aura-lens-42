@@ -396,6 +396,62 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
     }
   }, [user]);
 
+  const loadDiscernment = useCallback(async () => {
+    if (!user) { setDiscernment({ status: "ready", data: { value: null, postsWithSignal: null, published120d: null } }); return; }
+    setDiscernment({ status: "loading" });
+    try {
+      const { data } = await (supabase.from("facet_states" as any) as any)
+        .select("value, inputs")
+        .eq("user_id", user.id)
+        .eq("facet", "discernment")
+        .maybeSingle();
+      const inputs = (data?.inputs || {}) as any;
+      setDiscernment({
+        status: "ready",
+        data: {
+          value: typeof data?.value === "number" ? Math.round(data.value) : null,
+          postsWithSignal: typeof inputs.posts_with_source_signal === "number" ? inputs.posts_with_source_signal : null,
+          published120d: typeof inputs.published_posts_120d === "number" ? inputs.published_posts_120d : null,
+        },
+      });
+    } catch (e) {
+      console.warn("[Brief] discernment load failed", e);
+      setDiscernment({ status: "error", message: "gap reading" });
+    }
+  }, [user]);
+
+  const loadProof = useCallback(async () => {
+    if (!user) { setProof({ status: "ready", data: { entriesTotal: 0, fragments: 0, institutions: 0, dayN: null } }); return; }
+    setProof({ status: "loading" });
+    try {
+      const [entriesRes, fragsRes, instRes, firstRes] = await Promise.all([
+        supabase.from("entries").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+        supabase.from("evidence_fragments").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+        supabase.from("evidence_fragments").select("source_registry_id").eq("user_id", user.id).not("source_registry_id", "is", null),
+        supabase.from("entries").select("created_at").eq("user_id", user.id).order("created_at", { ascending: true }).limit(1).maybeSingle(),
+      ]);
+      const institutions = new Set(
+        ((instRes?.data || []) as Array<{ source_registry_id: string | null }>)
+          .map((r) => r.source_registry_id)
+          .filter(Boolean),
+      ).size;
+      const first = (firstRes?.data as any)?.created_at as string | undefined;
+      const dayN = first ? Math.max(1, Math.floor((Date.now() - new Date(first).getTime()) / 86400000) + 1) : null;
+      setProof({
+        status: "ready",
+        data: {
+          entriesTotal: entriesRes?.count ?? 0,
+          fragments: fragsRes?.count ?? 0,
+          institutions,
+          dayN,
+        },
+      });
+    } catch (e) {
+      console.warn("[Brief] proof load failed", e);
+      setProof({ status: "error", message: "proof counts" });
+    }
+  }, [user]);
+
   useEffect(() => {
     if (!isReady) return;
     void loadImprint();
