@@ -149,9 +149,9 @@ serve(async (req) => {
     }
     const facet_certainty_mean = weightTotal > 0 ? weightedSum / weightTotal : 0;
 
-    // 3. Imprint
-    const raw = 0.7 * aura_score + 0.3 * (100 * facet_certainty_mean);
-    const imprint = Math.max(0, Math.min(100, Math.round(raw)));
+    // 3. Imprint — headline equals the gated composite (aura_score). Facets are
+    //    retained as diagnostics inside `components` but never blended into the number.
+    const imprint = Math.max(0, Math.min(100, Math.round(aura_score)));
 
     // 4. Insert imprint_snapshots
     // Read prior imprint BEFORE inserting the new snapshot, so the delta
@@ -169,13 +169,17 @@ serve(async (req) => {
       .insert({
         user_id: userId,
         imprint,
-        formula_version: 1,
+        formula_version: 2,
+        tier: scorePayload?.tier ?? null,
         facet_vector,
         components: {
           aura_score,
           score_components,
           facet_certainty_mean,
-          blend: { score: 0.7, facets: 0.3 },
+          blend: null,
+          tier_name: scorePayload?.tier_name ?? null,
+          next_tier_name: scorePayload?.next_tier_name ?? null,
+          points_to_next: scorePayload?.points_to_next ?? null,
         },
       })
       .select("id")
