@@ -3047,6 +3047,12 @@ const ScoreHero = ({
               of 100
               <InfoTooltip slug="score-overview" label="Imprint" side="bottom" triggerSize={11} className="ml-1" />
             </div>
+            <div style={{
+              fontSize: 12, color: "var(--aura-t2)", marginTop: 6,
+              textAlign: "center", letterSpacing: "0.01em",
+            }}>
+              the mark your expertise is leaving
+            </div>
           </div>
         </div>
 
