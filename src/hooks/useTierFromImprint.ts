@@ -43,6 +43,10 @@ export function bandFromScore(score: number | null | undefined): TierBand | null
   return TIER_BANDS.find(b => s >= b.min && s <= b.max) || null;
 }
 
+/** Look up a tier band by its EF-computed key. Source of truth when present. */
+export const bandFromKey = (key: string | null | undefined): TierBand | null =>
+  key ? (TIER_BANDS.find(b => b.key === key) ?? null) : null;
+
 const ACK_KEY = "aura_tier_ack_v1"; // { [tierKey]: epoch_ms }
 
 function readAck(): Record<string, number> {
@@ -93,16 +97,18 @@ export function useTierFromImprint(userId: string | null | undefined): UseTierFr
     try {
       const { data, error } = await supabase
         .from("imprint_snapshots")
-        .select("imprint, created_at")
+        .select("imprint, tier, created_at")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(2);
       if (error) throw error;
-      const rows = (data || []) as Array<{ imprint: number | null; created_at: string }>;
+      const rows = (data || []) as Array<{ imprint: number | null; tier: string | null; created_at: string }>;
       const latest = rows[0]?.imprint ?? null;
       const prior  = rows[1]?.imprint ?? null;
-      const cur = bandFromScore(latest);
-      const prev = bandFromScore(prior);
+      // Source of truth = EF-computed tier (carries asymmetric hysteresis).
+      // bandFromScore is a legacy fallback ONLY for old rows where tier is null.
+      const cur  = bandFromKey(rows[0]?.tier) ?? bandFromScore(latest);
+      const prev = bandFromKey(rows[1]?.tier) ?? bandFromScore(prior);
       setScore(latest);
       setCurrentTier(cur);
       setPreviousTier(prev);
