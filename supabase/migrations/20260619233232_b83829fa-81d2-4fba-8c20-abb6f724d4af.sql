@@ -1,0 +1,1 @@
+ALTER TABLE public.imprint_snapshots ADD COLUMN IF NOT EXISTS tier text;

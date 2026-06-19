@@ -1148,6 +1148,7 @@ export type Database = {
           formula_version: number
           id: string
           imprint: number
+          tier: string | null
           user_id: string
         }
         Insert: {
@@ -1157,6 +1158,7 @@ export type Database = {
           formula_version?: number
           id?: string
           imprint: number
+          tier?: string | null
           user_id: string
         }
         Update: {
@@ -1166,6 +1168,7 @@ export type Database = {
           formula_version?: number
           id?: string
           imprint?: number
+          tier?: string | null
           user_id?: string
         }
         Relationships: []
