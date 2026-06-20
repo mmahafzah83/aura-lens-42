@@ -3010,49 +3010,51 @@ const ScoreHero = ({
     >
       <div className="flex items-start gap-5 flex-wrap">
         {/* Score ring */}
-        <div data-testid="impact-score" style={{ width: 140, height: 140, position: "relative", flexShrink: 0 }}>
-          <svg width="140" height="140" viewBox="0 0 140 140">
-            <circle cx="70" cy="70" r={r} fill="none" stroke="var(--aura-border)" strokeWidth="11" />
-            <circle
-              cx="70" cy="70" r={r} fill="none"
-              stroke="var(--aura-accent)" strokeWidth="11" strokeLinecap="round"
-              strokeDasharray={`${dash} ${c}`}
-              transform="rotate(-90 70 70)"
-              className={breathing ? "aura-ring-breathing" : undefined}
-              style={{ transition: "stroke-dasharray 800ms cubic-bezier(0.16, 1, 0.3, 1)" }}
-            />
-          </svg>
-          <div
-            style={{
-              position: "absolute", inset: 0,
-              display: "flex", flexDirection: "column",
-              alignItems: "center", justifyContent: "center",
-            }}
-          >
-            <div
-              className="text-metric"
-              style={{
-                color: "var(--aura-accent)",
-              }}
-            >
-              {animatedScore}
-            </div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          <div data-testid="impact-score" style={{ width: 140, height: 140, position: "relative" }}>
+            <svg width="140" height="140" viewBox="0 0 140 140">
+              <circle cx="70" cy="70" r={r} fill="none" stroke="var(--aura-border)" strokeWidth="11" />
+              <circle
+                cx="70" cy="70" r={r} fill="none"
+                stroke="var(--aura-accent)" strokeWidth="11" strokeLinecap="round"
+                strokeDasharray={`${dash} ${c}`}
+                transform="rotate(-90 70 70)"
+                className={breathing ? "aura-ring-breathing" : undefined}
+                style={{ transition: "stroke-dasharray 800ms cubic-bezier(0.16, 1, 0.3, 1)" }}
+              />
+            </svg>
             <div
               style={{
-                fontSize: 14, color: "var(--aura-t2)", marginTop: 4,
-                letterSpacing: "0.08em", textTransform: "uppercase",
-                display: "inline-flex", alignItems: "center", gap: 4,
+                position: "absolute", inset: 0,
+                display: "flex", flexDirection: "column",
+                alignItems: "center", justifyContent: "center",
               }}
             >
-              of 100
-              <InfoTooltip slug="score-overview" label="Imprint" side="bottom" triggerSize={11} className="ml-1" />
+              <div
+                className="text-metric"
+                style={{
+                  color: "var(--aura-accent)",
+                }}
+              >
+                {animatedScore}
+              </div>
+              <div
+                style={{
+                  fontSize: 14, color: "var(--aura-t2)", marginTop: 4,
+                  letterSpacing: "0.08em", textTransform: "uppercase",
+                  display: "inline-flex", alignItems: "center", gap: 4,
+                }}
+              >
+                of 100
+                <InfoTooltip slug="score-overview" label="Imprint" side="bottom" triggerSize={11} className="ml-1" />
+              </div>
             </div>
-            <div style={{
-              fontSize: 12, color: "var(--aura-t2)", marginTop: 6,
-              textAlign: "center", letterSpacing: "0.01em",
-            }}>
-              the mark your expertise is leaving
-            </div>
+          </div>
+          <div style={{
+            fontSize: 12, color: "var(--aura-t2)", textAlign: "center", letterSpacing: "0.01em",
+            lineHeight: 1.35, maxWidth: 150,
+          }}>
+            the mark your expertise is leaving
           </div>
         </div>
 

@@ -534,6 +534,8 @@ const Dashboard = () => {
     return () => { cancelled = true; };
   }, [userId]);
 
+  const darkSurface = activeTab === "intelligence" || activeTab === "influence";
+
   return (
     <div
       className="min-h-screen bg-background flex relative safe-area-container"
@@ -561,12 +563,12 @@ const Dashboard = () => {
           className="flex items-center gap-3 px-4 py-5"
           style={{ borderBottom: "0.5px solid var(--paper-3)" }}
         >
-          <AuraLogo size={sidebarCollapsed ? 24 : 32} variant="auto" />
+          <AuraLogo size={sidebarCollapsed ? 24 : 32} variant={darkSurface ? "dark" : "light"} />
           {!sidebarCollapsed && (
             <div className="overflow-hidden min-w-0">
               <h1
                 className="text-lg tracking-tight font-semibold"
-                style={{ color: "var(--ink)" }}
+                style={{ color: darkSurface ? "var(--glass)" : "var(--ink)" }}
               >
                 Aura
               </h1>
@@ -574,7 +576,7 @@ const Dashboard = () => {
                 style={{
                   fontSize: 12,
                   letterSpacing: "0.08em",
-                  color: "var(--ink-4)",
+                  color: darkSurface ? "var(--glass-2)" : "var(--ink-4)",
                   lineHeight: 1.4,
                 }}
               >
@@ -717,8 +719,8 @@ const Dashboard = () => {
               style={{ borderBottom: "0.5px solid var(--paper-3)" }}
             >
               <div className="flex items-center gap-2.5">
-                <AuraLogo size={32} variant="auto" />
-                <span className="text-lg font-semibold" style={{ color: "var(--aura-t1)" }}>Aura</span>
+                <AuraLogo size={32} variant={darkSurface ? "dark" : "light"} />
+                <span className="text-lg font-semibold" style={{ color: darkSurface ? "var(--glass)" : "var(--aura-t1)" }}>Aura</span>
               </div>
               <button
                 onClick={() => setMobileSidebarOpen(false)}
@@ -904,7 +906,7 @@ const Dashboard = () => {
         </div>
         <div
           className={
-            (activeTab === "intelligence" || activeTab === "influence")
+            activeTab === "intelligence"
               ? "pb-[88px] md:pb-12"
               : "max-w-5xl mx-auto px-4 sm:px-8 pb-[88px] md:pb-12 overflow-hidden"
           }
