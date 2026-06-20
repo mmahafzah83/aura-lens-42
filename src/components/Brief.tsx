@@ -746,7 +746,6 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
                     {(() => {
                       const lo = Math.min(signalScore, contentScore);
                       const hi = Math.max(signalScore, contentScore);
-                      const voiceIsLow = contentScore <= signalScore;
                       return (
                         <>
                           {/* Reading label ABOVE the track, anchored at its marker. */}
