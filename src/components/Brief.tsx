@@ -635,6 +635,20 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
         >
           Your Strategic Intelligence Brief
         </div>
+        {sectorFocus ? (
+          <div
+            style={{
+              marginTop: 4,
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              letterSpacing: "0.15em",
+              textTransform: "uppercase",
+              color: "var(--spot)",
+            }}
+          >
+            {`Your field \u00B7 ${sectorFocus}`}
+          </div>
+        ) : null}
       </div>
 
       <div
