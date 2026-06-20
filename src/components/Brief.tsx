@@ -897,9 +897,12 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
                 }}
               >
                 <h3
-                  dir="auto"
+                  dir={draftState.data.draft.language === "ar" ? "rtl" : "ltr"}
+                  lang={draftState.data.draft.language}
                   style={{
-                    fontFamily: "var(--font-serif)",
+                    fontFamily: draftState.data.draft.language === "ar"
+                      ? "var(--font-arabic)"
+                      : "var(--font-serif)",
                     fontWeight: 400,
                     fontSize: "clamp(1.25rem, 2.6vw, 1.65rem)",
                     lineHeight: 1.3,
