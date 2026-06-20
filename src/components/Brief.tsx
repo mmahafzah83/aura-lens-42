@@ -735,6 +735,31 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
                       const voiceIsLow = contentScore <= signalScore;
                       return (
                         <>
+                          {/* Reading label ABOVE the track, anchored at its marker. */}
+                          <div
+                            style={{
+                              position: "relative",
+                              height: 16,
+                              marginBottom: 6,
+                              marginInline: 4,
+                              fontFamily: "var(--font-mono)",
+                              fontSize: 10,
+                              letterSpacing: "0.12em",
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            <span
+                              style={{
+                                position: "absolute",
+                                insetInlineStart: `${signalScore}%`,
+                                transform: "translateX(-50%)",
+                                color: "var(--live)",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              Your reading {signalScore}
+                            </span>
+                          </div>
                           <div
                             style={{
                               position: "relative",
