@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRef } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthReady } from "@/hooks/useAuthReady";
@@ -46,6 +47,7 @@ interface AwayData {
   signals: AwaySignal[];
   signalCount: number;
   newCaptureCount: number;
+  mode: "away" | "radar";
 }
 
 interface DraftData {
@@ -196,6 +198,33 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
 
   const [profile, setProfile] = useState<{ firstName: string; sectorFocus: string } | null>(null);
 
+  // Cached set of source_signal_ids the user has already turned into a published
+  // LinkedIn post — used to gate both the "while you were away" list and the
+  // weekly draft pick so we don't resurface what's already shipped.
+  const publishedSignalsRef = useRef<Set<string> | null>(null);
+
+  const loadPublishedSignalIds = useCallback(async (): Promise<Set<string>> => {
+    if (publishedSignalsRef.current) return publishedSignalsRef.current;
+    if (!user) { publishedSignalsRef.current = new Set(); return publishedSignalsRef.current; }
+    try {
+      const { data } = await (supabase.from("linkedin_posts" as any) as any)
+        .select("source_signal_id, published_at, tracking_status")
+        .eq("user_id", user.id)
+        .not("source_signal_id", "is", null);
+      const rows = (data || []) as Array<{ source_signal_id: string | null; published_at: string | null; tracking_status: string | null }>;
+      const set = new Set<string>();
+      for (const r of rows) {
+        if (!r.source_signal_id) continue;
+        if (r.published_at != null || r.tracking_status === "published") set.add(r.source_signal_id);
+      }
+      publishedSignalsRef.current = set;
+      return set;
+    } catch {
+      publishedSignalsRef.current = new Set();
+      return publishedSignalsRef.current;
+    }
+  }, [user]);
+
   const [imprint, setImprint] = useState<SectionState<ImprintData>>({ status: "loading" });
   const [away, setAway] = useState<SectionState<AwayData>>({ status: "loading" });
   const [draftState, setDraftState] = useState<SectionState<DraftData>>({ status: "loading" });
@@ -298,11 +327,19 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
   }, [user]);
 
   const loadAway = useCallback(async () => {
-    if (!user) { setAway({ status: "ready", data: { signals: [], signalCount: 0, newCaptureCount: 0 } }); return; }
+    if (!user) { setAway({ status: "ready", data: { signals: [], signalCount: 0, newCaptureCount: 0, mode: "away" } }); return; }
     setAway({ status: "loading" });
     try {
-      const lastVisit = (typeof window !== "undefined" && localStorage.getItem(LAST_VISIT_KEY)) || null;
-      const since = lastVisit || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      // Window = EARLIER of last-visit and 7 days ago, so a quick repeat visit
+      // doesn't make the scan look falsely quiet.
+      const sevenAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const lv = (typeof window !== "undefined" && localStorage.getItem(LAST_VISIT_KEY)) || null;
+      const sinceDate = lv
+        ? new Date(Math.min(new Date(lv).getTime(), sevenAgo.getTime()))
+        : sevenAgo;
+      const since = sinceDate.toISOString();
+
+      const publishedSet = await loadPublishedSignalIds();
 
       const [sigRes, capRes] = await Promise.all([
         (supabase.from("strategic_signals" as any) as any)
@@ -311,7 +348,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
           .eq("status", "active")
           .gte("created_at", since)
           .order("confidence_score", { ascending: false })
-          .limit(2),
+          .limit(8),
         supabase
           .from("entries")
           .select("id", { count: "exact", head: true })
@@ -320,30 +357,55 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
       ]);
 
       const sigRows = (sigRes?.data || []) as Array<{ id: string; signal_title: string | null; confidence_score: number | null }>;
-      const signals: AwaySignal[] = sigRows.map((r) => ({
-        id: r.id,
-        title: r.signal_title || "Untitled signal",
-        confidence: r.confidence_score,
-      }));
+      let signals: AwaySignal[] = sigRows
+        .filter((r) => !publishedSet.has(r.id))
+        .slice(0, 2)
+        .map((r) => ({
+          id: r.id,
+          title: r.signal_title || "Untitled signal",
+          confidence: r.confidence_score,
+        }));
       const newCaptureCount = capRes?.count ?? 0;
+      let mode: "away" | "radar" = "away";
 
-      const { count: signalCount } = await (supabase.from("strategic_signals" as any) as any)
+      // Fallback: nothing in the since-window — surface the top 2 ACTIVE signals
+      // (any date) so the masthead headline and list still name something real.
+      if (signals.length === 0) {
+        const { data: radarData } = await (supabase.from("strategic_signals" as any) as any)
+          .select("id, signal_title, confidence_score")
+          .eq("user_id", user.id)
+          .eq("status", "active")
+          .order("confidence_score", { ascending: false })
+          .limit(8);
+        const radarRows = (radarData || []) as Array<{ id: string; signal_title: string | null; confidence_score: number | null }>;
+        const filtered = radarRows.filter((r) => !publishedSet.has(r.id)).slice(0, 2);
+        if (filtered.length > 0) {
+          signals = filtered.map((r) => ({
+            id: r.id,
+            title: r.signal_title || "Untitled signal",
+            confidence: r.confidence_score,
+          }));
+          mode = "radar";
+        }
+      }
+
+      const { count: activeTotal } = await (supabase.from("strategic_signals" as any) as any)
         .select("id", { count: "exact", head: true })
         .eq("user_id", user.id)
-        .eq("status", "active")
-        .gte("created_at", since);
+        .eq("status", "active");
 
-      setAway({ status: "ready", data: { signals, signalCount: signalCount ?? signals.length, newCaptureCount } });
+      setAway({ status: "ready", data: { signals, signalCount: activeTotal ?? signals.length, newCaptureCount, mode } });
     } catch (e) {
       console.warn("[Brief] away load failed", e);
       setAway({ status: "error", message: "while-you-were-away update" });
     }
-  }, [user]);
+  }, [user, loadPublishedSignalIds]);
 
   const loadDraft = useCallback(async () => {
     if (!user) { setDraftState({ status: "ready", data: { draft: null, preview: "", voiceScore: null, signalCount: null } }); return; }
     setDraftState({ status: "loading" });
     try {
+      const publishedSet = await loadPublishedSignalIds();
       const { data, error } = await supabase
         .from("content_items")
         .select("id, type, body, language, status, generation_params, created_at")
@@ -355,9 +417,30 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
         id: string; type: string | null; body: string | null; language: string | null;
         status: string | null; generation_params: any;
       }>;
-      const ready = rows.filter(
-        (r) => r?.generation_params?.source === "weekly_ready" && r.status !== "published",
-      );
+      const draftSignalIds = (gp: any): string[] => {
+        const out: string[] = [];
+        if (typeof gp?.signal_id === "string") out.push(gp.signal_id);
+        if (typeof gp?.source_signal_id === "string") out.push(gp.source_signal_id);
+        if (Array.isArray(gp?.source_signals)) {
+          for (const s of gp.source_signals) {
+            if (typeof s === "string") out.push(s);
+            else if (s && typeof s.id === "string") out.push(s.id);
+          }
+        }
+        if (Array.isArray(gp?.signals)) {
+          for (const s of gp.signals) {
+            if (typeof s === "string") out.push(s);
+            else if (s && typeof s.id === "string") out.push(s.id);
+          }
+        }
+        return out;
+      };
+      const ready = rows.filter((r) => {
+        if (r?.generation_params?.source !== "weekly_ready") return false;
+        if (r.status === "published") return false;
+        const ids = draftSignalIds(r.generation_params);
+        return !ids.some((id) => publishedSet.has(id));
+      });
       const pick = ready[0];
       if (!pick) {
         setDraftState({ status: "ready", data: { draft: null, preview: "", voiceScore: null, signalCount: null } });
@@ -394,7 +477,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
       console.warn("[Brief] draft load failed", e);
       setDraftState({ status: "error", message: "ready draft" });
     }
-  }, [user]);
+  }, [user, loadPublishedSignalIds]);
 
   const loadDiscernment = useCallback(async () => {
     if (!user) { setDiscernment({ status: "ready", data: { value: null, postsWithSignal: null, published120d: null } }); return; }
@@ -696,41 +779,34 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
                               }}
                             />
                           </div>
-                          <div
-                            style={{
-                              position: "relative",
-                              height: 18,
-                              marginTop: 8,
-                              marginInline: 4,
-                              fontFamily: "var(--font-mono)",
-                              fontSize: 10,
-                              letterSpacing: "0.12em",
-                              textTransform: "uppercase",
-                            }}
-                          >
-                            <span
-                              style={{
-                                position: "absolute",
-                                insetInlineStart: `${contentScore}%`,
-                                transform: voiceIsLow ? "translateX(0)" : "translateX(-100%)",
-                                color: "var(--spot)",
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              Your voice {contentScore}
-                            </span>
-                            <span
-                              style={{
-                                position: "absolute",
-                                insetInlineStart: `${signalScore}%`,
-                                transform: voiceIsLow ? "translateX(-100%)" : "translateX(0)",
-                                color: "var(--live)",
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              Your reading {signalScore}
-                            </span>
-                          </div>
+                           {/* Reading label sits ABOVE the track — but we've already
+                               rendered the track; instead we stack: voice BELOW,
+                               reading rendered as an overlay ABOVE the track via
+                               negative margin so the two never collide. */}
+                           <div
+                             style={{
+                               position: "relative",
+                               height: 16,
+                               marginTop: 6,
+                               marginInline: 4,
+                               fontFamily: "var(--font-mono)",
+                               fontSize: 10,
+                               letterSpacing: "0.12em",
+                               textTransform: "uppercase",
+                             }}
+                           >
+                             <span
+                               style={{
+                                 position: "absolute",
+                                 insetInlineStart: `${contentScore}%`,
+                                 transform: "translateX(-50%)",
+                                 color: "var(--spot)",
+                                 whiteSpace: "nowrap",
+                               }}
+                             >
+                               Your voice {contentScore}
+                             </span>
+                           </div>
                           <div
                             style={{
                               marginTop: 14,
@@ -742,7 +818,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
                               color: "var(--ink-3)",
                             }}
                           >
-                            The gap — one post closes it
+                            The gap — your opening
                           </div>
                         </>
                       );
