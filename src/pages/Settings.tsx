@@ -35,6 +35,13 @@ interface ProfileData {
   audit_results: Record<string, unknown>;
 }
 
+interface LinkedInConnection {
+  display_name?: string | null;
+  connected_at?: string;
+  last_synced_at?: string;
+}
+
+
 export default function Settings() {
   usePageMeta({
     title: "Aura — Settings",
@@ -48,7 +55,9 @@ export default function Settings() {
   const [error, setError] = useState<string | null>(null);
   const [exportingReport, setExportingReport] = useState(false);
   const [report, setReport] = useState<ReportData | null>(null);
-  const [reportLoading, setReportLoading] = useState(true);
+const [reportLoading, setReportLoading] = useState(true);
+const [linkedInConnection, setLinkedInConnection] = useState<LinkedInConnection | null>(null);
+const [linkedInBusy, setLinkedInBusy] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -93,6 +102,50 @@ export default function Settings() {
       }
     })();
     return () => { cancelled = true; };
+  }, []);
+
+  const loadLinkedInStatus = async () => {
+    setLinkedInBusy(true);
+    try {
+      const { data } = await supabase.functions.invoke("linkedin-oauth", { body: { action: "status" } });
+      setLinkedInConnection(data?.connection || null);
+    } catch (e) {
+      console.error("[Settings] LinkedIn status error", e);
+    } finally {
+      setLinkedInBusy(false);
+    }
+  };
+
+  const handleConnectLinkedIn = async () => {
+    setLinkedInBusy(true);
+    try {
+      const { data } = await supabase.functions.invoke("linkedin-oauth", {
+        body: { action: "get-auth-url", origin: window.location.origin },
+      });
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+    } catch (e) {
+      console.error("[Settings] LinkedIn connect error", e);
+    } finally {
+      setLinkedInBusy(false);
+    }
+  };
+
+  const handleDisconnectLinkedIn = async () => {
+    setLinkedInBusy(true);
+    try {
+      await supabase.functions.invoke("linkedin-oauth", { body: { action: "disconnect" } });
+      await loadLinkedInStatus();
+    } catch (e) {
+      console.error("[Settings] LinkedIn disconnect error", e);
+    } finally {
+      setLinkedInBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    loadLinkedInStatus();
   }, []);
 
   const displayName = [profile?.first_name, profile?.last_name]
@@ -281,6 +334,51 @@ export default function Settings() {
                 Full details →
               </Link>
             </p>
+          </AuraCard>
+        </div>
+
+        {/* LinkedIn */}
+        <SectionHeader
+          label="LinkedIn"
+          subtitle="Connect your account to publish from Aura and pull your analytics automatically."
+        />
+        <div className="mb-8">
+          <AuraCard variant="default" hover="none">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                {linkedInConnection ? (
+                  <>
+                    <div
+                      className="text-sm font-semibold"
+                      style={{ color: "var(--ink)" }}
+                    >
+                      {linkedInConnection.display_name || "LinkedIn User"}
+                    </div>
+                    <div className="mt-1 text-sm" style={{ color: "var(--ink-4)" }}>
+                      Connected
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-sm" style={{ color: "var(--ink)" }}>
+                      Not connected
+                    </div>
+                    <div className="mt-1 text-sm" style={{ color: "var(--ink-4)" }}>
+                      Connect your LinkedIn account to publish and sync analytics.
+                    </div>
+                  </>
+                )}
+              </div>
+              <AuraButton
+                variant={linkedInConnection ? "ghost" : "primary"}
+                size="sm"
+                loading={linkedInBusy}
+                disabled={linkedInBusy}
+                onClick={linkedInConnection ? handleDisconnectLinkedIn : handleConnectLinkedIn}
+              >
+                {linkedInConnection ? "Disconnect" : "Connect LinkedIn"}
+              </AuraButton>
+            </div>
           </AuraCard>
         </div>
 
