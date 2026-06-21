@@ -82,17 +82,17 @@ Deno.serve(async (req) => {
 
     const accessToken = tokenData.access_token;
     const refreshToken = tokenData.refresh_token || null;
-    const grantedScopes = (typeof tokenData.scope === "string" && tokenData.scope.trim()) ? tokenData.scope.split(/[\s,]+/).filter(Boolean) : ["openid", "profile", "email", "w_member_social", "r_member_postAnalytics", "r_member_profileAnalytics"];
+    const grantedScopes = (typeof tokenData.scope === "string" && tokenData.scope.trim()) ? tokenData.scope.split(/[\s,]+/).filter(Boolean) : ["r_basicprofile", "w_member_social", "r_member_postAnalytics", "r_member_profileAnalytics"];
     const expiresIn = tokenData.expires_in || 5184000;
 
     // Fetch LinkedIn profile
-    const profileRes = await fetch("https://api.linkedin.com/v2/userinfo", {
+    const profileRes = await fetch("https://api.linkedin.com/v2/me", {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     const profile = await profileRes.json();
 
-    const linkedinId = profile.sub || "unknown";
-    const displayName = profile.name || profile.given_name || "LinkedIn User";
+    const linkedinId = profile.id || "unknown";
+    const displayName = [profile.localizedFirstName, profile.localizedLastName].filter(Boolean).join(" ") || "LinkedIn User";
     const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
 
     const adminClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
