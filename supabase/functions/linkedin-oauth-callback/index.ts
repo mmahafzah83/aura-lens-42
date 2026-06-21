@@ -82,6 +82,7 @@ Deno.serve(async (req) => {
 
     const accessToken = tokenData.access_token;
     const refreshToken = tokenData.refresh_token || null;
+    const grantedScopes = (typeof tokenData.scope === "string" && tokenData.scope.trim()) ? tokenData.scope.split(/[\s,]+/).filter(Boolean) : ["openid", "profile", "email", "w_member_social", "r_member_postAnalytics", "r_member_profileAnalytics"];
     const expiresIn = tokenData.expires_in || 5184000;
 
     // Fetch LinkedIn profile
@@ -112,7 +113,7 @@ Deno.serve(async (req) => {
         access_token: accessToken,
         refresh_token: refreshToken,
         token_expires_at: expiresAt,
-        scopes: ["openid", "profile", "email"],
+        scopes: grantedScopes,
         status: "active",
         connected_at: new Date().toISOString(),
       })
