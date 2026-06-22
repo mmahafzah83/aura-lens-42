@@ -375,6 +375,8 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
   // Mark-as-published (Create view) — lets users close the loop without saving a draft first.
   const [publishing, setPublishing] = useState(false);
   const [publishedFromCreate, setPublishedFromCreate] = useState(false);
+  const [publishingLive, setPublishingLive] = useState(false);
+  const [confirmLiveOpen, setConfirmLiveOpen] = useState(false);
   const [pubUrlOpen, setPubUrlOpen] = useState(false);
   const [pubUrl, setPubUrl] = useState("");
   const [pubUrlError, setPubUrlError] = useState("");
@@ -931,6 +933,66 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
     }
   };
 
+  // Publish the current draft to LinkedIn via the linkedin-publish edge function.
+  // Reuses the same text + metadata as the manual mark-published flow, but the
+  // edge function does the actual posting and confirms it back.
+  const handlePublishToLinkedIn = async () => {
+    if (publishingLive || publishedFromCreate) return;
+    const text = stripMarkdown(output || fullVersion || shortVersion || "");
+    if (!text.trim()) { toast.error("Nothing to publish"); return; }
+    setPublishingLive(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) throw new Error("Not authenticated");
+      let postId: string;
+      if (editingDraftId && editingSource === "linkedin_posts") {
+        const { error: upErr } = await supabase
+          .from("linkedin_posts")
+          .update({ post_text: text })
+          .eq("id", editingDraftId);
+        if (upErr) throw upErr;
+        postId = editingDraftId;
+      } else {
+        const { data: ins, error: insErr } = await supabase
+          .from("linkedin_posts")
+          .insert({
+            user_id: session.user.id,
+            post_text: text,
+            format_type: (contentType as string) === "carousel" ? "carousel" : "post",
+            tracking_status: "draft",
+            source_type: "aura_generated",
+            source_signal_id: selectedSignalId || null,
+            source_metadata: {
+              source: "create_view",
+              topic: topic || null,
+              language: lang,
+              signal_ids: selectedSignalId ? [selectedSignalId] : [],
+              signal_titles: selectedSignalTitle ? [selectedSignalTitle] : [],
+            },
+          })
+          .select("id")
+          .single();
+        if (insErr) throw insErr;
+        postId = (ins as any).id;
+      }
+      const { data, error } = await supabase.functions.invoke("linkedin-publish", { body: { postId } });
+      if (error) throw error;
+      if (!(data as any)?.success) {
+        const msg = (data as any)?.error || "Publish failed";
+        toast.error(/not connected/i.test(msg) ? "Connect LinkedIn in Settings first." : msg);
+        return;
+      }
+      setPublishedFromCreate(true);
+      setConfirmLiveOpen(false);
+      const url = (data as any).postUrl;
+      toast.success("Published to LinkedIn", url ? { action: { label: "View post", onClick: () => window.open(url, "_blank") } } : undefined);
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't publish to LinkedIn");
+    } finally {
+      setPublishingLive(false);
+    }
+  };
+
   // Mark the currently-generated post as published WITHOUT requiring a saved draft.
   // Reuses insertPublishedLinkedInPost (same core as Library's markPublished).
   const handleMarkPublishedFromCreate = async (urlArg?: string) => {
@@ -1440,6 +1502,21 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                     </Button>
                     <InfoTooltip slug="save-draft" label="Save Draft" side="top" triggerSize={13} />
                     <Button
+                      data-testid="pub-publish-linkedin-btn"
+                      size="sm"
+                      onClick={() => { if (publishedFromCreate || publishingLive) return; setConfirmLiveOpen((v) => !v); }}
+                      disabled={publishingLive || publishedFromCreate || !output.trim()}
+                      className="h-7 gap-1.5 text-xs"
+                    >
+                      {publishingLive ? (
+                        <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Publishing…</>
+                      ) : publishedFromCreate ? (
+                        <><Check className="w-3.5 h-3.5" /> Published ✓</>
+                      ) : (
+                        <><Send className="w-3.5 h-3.5" /> Publish to LinkedIn</>
+                      )}
+                    </Button>
+                    <Button
                       data-testid="pub-mark-published-btn"
                       size="sm"
                       variant="outline"
@@ -1461,6 +1538,22 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                     <InfoTooltip slug="mark-published" label="Mark as published" side="top" triggerSize={13} />
                   </div>
                 </div>
+
+                {confirmLiveOpen && !publishedFromCreate && (
+                  <div style={{ marginTop: 4, padding: 10, background: "var(--bg-subtle)", borderRadius: 6, display: "flex", flexDirection: "column", gap: 8 }}>
+                    <span style={{ fontSize: 13, color: "var(--ink)" }}>
+                      This posts to your live LinkedIn now — your followers will see it. Publish?
+                    </span>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <Button size="sm" onClick={handlePublishToLinkedIn} disabled={publishingLive} className="h-7 text-xs">
+                        {publishingLive ? "Publishing…" : "Publish now"}
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setConfirmLiveOpen(false)} disabled={publishingLive} className="h-7 text-xs">
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Mark-as-published URL prompt (optional) — mirrors the saved-card flow */}
                 {pubUrlOpen && !publishedFromCreate && (
