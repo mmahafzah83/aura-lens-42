@@ -1,3 +1,4 @@
+// linkedin-publish — redeploy 2026-06-22
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const LINKEDIN_VERSION = "202605";
