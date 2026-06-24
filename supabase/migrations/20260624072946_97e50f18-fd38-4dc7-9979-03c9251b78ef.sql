@@ -1,0 +1,1 @@
+ALTER TABLE public.diagnostic_profiles ADD COLUMN IF NOT EXISTS signature_presets jsonb NOT NULL DEFAULT '[]'::jsonb;

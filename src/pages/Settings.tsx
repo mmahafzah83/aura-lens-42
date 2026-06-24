@@ -33,6 +33,7 @@ interface ProfileData {
   skill_ratings: Record<string, unknown>;
   generated_skills: Record<string, unknown>;
   audit_results: Record<string, unknown>;
+  signature_presets: { id: string; name: string; text_en: string; text_ar: string }[] | null;
 }
 
 interface LinkedInConnection {
@@ -58,6 +59,8 @@ export default function Settings() {
 const [reportLoading, setReportLoading] = useState(true);
 const [linkedInConnection, setLinkedInConnection] = useState<LinkedInConnection | null>(null);
 const [linkedInBusy, setLinkedInBusy] = useState(true);
+const [signatures, setSignatures] = useState<{ id: string; name: string; text_en: string; text_ar: string }[]>([]);
+const [savingSig, setSavingSig] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -75,13 +78,14 @@ const [linkedInBusy, setLinkedInBusy] = useState(true);
         const { data, error: qErr } = await supabase
           .from("diagnostic_profiles")
           .select(
-            "first_name, last_name, level, firm, core_practice, sector_focus, north_star_goal, linkedin_handle, linkedin_url, years_experience, leadership_style, primary_strength, avatar_url, brand_assessment_completed_at, brand_pillars, identity_intelligence, brand_assessment_results, skill_ratings, generated_skills, audit_results"
+            "first_name, last_name, level, firm, core_practice, sector_focus, north_star_goal, linkedin_handle, linkedin_url, years_experience, leadership_style, primary_strength, avatar_url, brand_assessment_completed_at, brand_pillars, identity_intelligence, brand_assessment_results, skill_ratings, generated_skills, audit_results, signature_presets"
           )
           .eq("user_id", session.user.id)
           .maybeSingle();
         if (cancelled) return;
         if (qErr) throw qErr;
         setProfile((data as ProfileData) || null);
+        setSignatures(Array.isArray((data as any)?.signature_presets) ? (data as any).signature_presets : []);
         if (data?.brand_assessment_completed_at) {
           try {
             const r = await buildIdentityReport(session.user.id);
@@ -143,6 +147,26 @@ const [linkedInBusy, setLinkedInBusy] = useState(true);
       setLinkedInBusy(false);
     }
   };
+
+  const persistSignatures = async (next: typeof signatures) => {
+    setSavingSig(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) throw new Error("Not signed in");
+      const { error } = await supabase.from("diagnostic_profiles").update({ signature_presets: next }).eq("user_id", session.user.id);
+      if (error) throw error;
+      setSignatures(next);
+      toast.success("Signatures saved");
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't save signatures");
+    } finally {
+      setSavingSig(false);
+    }
+  };
+  const addSignature = () => setSignatures((s) => [...s, { id: crypto.randomUUID(), name: "New signature", text_en: "", text_ar: "" }]);
+  const updateSignature = (id: string, field: "name" | "text_en" | "text_ar", value: string) =>
+    setSignatures((s) => s.map((p) => (p.id === id ? { ...p, [field]: value } : p)));
+  const removeSignature = (id: string) => persistSignatures(signatures.filter((p) => p.id !== id));
 
   useEffect(() => {
     loadLinkedInStatus();
@@ -380,6 +404,62 @@ const [linkedInBusy, setLinkedInBusy] = useState(true);
               </AuraButton>
             </div>
           </AuraCard>
+        </div>
+
+        {/* Signatures */}
+        <SectionHeader
+          label="Signatures"
+          subtitle="Reusable closers you can drop into any post — each with an English and an Arabic version. You'll pick one in the Composer when you publish."
+        />
+        <div className="mb-8 space-y-4">
+          {signatures.length === 0 && (
+            <AuraCard variant="default" hover="none">
+              <p className="text-sm italic" style={{ color: "var(--ink-4)" }}>No signatures yet. Add one to reuse across your posts.</p>
+            </AuraCard>
+          )}
+          {signatures.map((sig) => (
+            <AuraCard key={sig.id} variant="default" hover="none">
+              <div className="space-y-3">
+                <input
+                  value={sig.name}
+                  onChange={(e) => updateSignature(sig.id, "name", e.target.value)}
+                  placeholder="Signature name"
+                  className="w-full text-sm font-semibold bg-transparent outline-none"
+                  style={{ color: "var(--ink)", borderBottom: "1px solid var(--rule)", padding: "4px 0" }}
+                />
+                <div>
+                  <label className="text-xs uppercase tracking-wide" style={{ color: "var(--ink-4)" }}>English</label>
+                  <textarea
+                    value={sig.text_en}
+                    onChange={(e) => updateSignature(sig.id, "text_en", e.target.value)}
+                    rows={3}
+                    placeholder="English signature text…"
+                    className="w-full mt-1 text-sm rounded-md p-2 outline-none"
+                    style={{ color: "var(--ink)", background: "var(--glass-2)", border: "1px solid var(--rule)", fontFamily: "var(--font-body)" }}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-wide" style={{ color: "var(--ink-4)" }}>العربية</label>
+                  <textarea
+                    value={sig.text_ar}
+                    onChange={(e) => updateSignature(sig.id, "text_ar", e.target.value)}
+                    rows={3}
+                    dir="rtl"
+                    placeholder="نص التوقيع بالعربية…"
+                    className="w-full mt-1 text-sm rounded-md p-2 outline-none"
+                    style={{ color: "var(--ink)", background: "var(--glass-2)", border: "1px solid var(--rule)", fontFamily: "'Cairo', var(--font-body), sans-serif", textAlign: "right" }}
+                  />
+                </div>
+                <div className="flex justify-end">
+                  <button type="button" onClick={() => removeSignature(sig.id)} className="text-xs" style={{ color: "var(--error)" }}>Delete</button>
+                </div>
+              </div>
+            </AuraCard>
+          ))}
+          <div className="flex gap-2">
+            <AuraButton variant="ghost" size="sm" onClick={addSignature} disabled={savingSig}>Add signature</AuraButton>
+            <AuraButton variant="primary" size="sm" onClick={() => persistSignatures(signatures)} loading={savingSig} disabled={savingSig}>Save signatures</AuraButton>
+          </div>
         </div>
 
         {/* Profile summary */}
