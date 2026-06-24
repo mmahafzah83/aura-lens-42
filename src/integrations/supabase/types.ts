@@ -536,6 +536,7 @@ export type Database = {
           primary_strength: string | null
           sector_focus: string | null
           shared_learning_consent: boolean
+          signature_presets: Json
           skill_ratings: Json
           theme_preference: string | null
           user_id: string
@@ -575,6 +576,7 @@ export type Database = {
           primary_strength?: string | null
           sector_focus?: string | null
           shared_learning_consent?: boolean
+          signature_presets?: Json
           skill_ratings?: Json
           theme_preference?: string | null
           user_id: string
@@ -614,6 +616,7 @@ export type Database = {
           primary_strength?: string | null
           sector_focus?: string | null
           shared_learning_consent?: boolean
+          signature_presets?: Json
           skill_ratings?: Json
           theme_preference?: string | null
           user_id?: string
