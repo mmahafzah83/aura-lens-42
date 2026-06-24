@@ -1513,7 +1513,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                       ) : publishedFromCreate ? (
                         <><Check className="w-3.5 h-3.5" /> Published ✓</>
                       ) : (
-                        <><Send className="w-3.5 h-3.5" /> Publish to LinkedIn</>
+                        <><Send className="w-3.5 h-3.5" /> Review & publish</>
                       )}
                     </Button>
                     <Button
