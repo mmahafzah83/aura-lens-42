@@ -1524,6 +1524,19 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                       )}
                     </Button>
                     <InfoTooltip slug="save-draft" label="Save Draft" side="top" triggerSize={13} />
+                    {sigPresets.length > 0 && (
+                      <select
+                        data-testid="pub-signature-picker"
+                        defaultValue=""
+                        onChange={(e) => { const v = e.target.value; if (v) { insertSignature(v); e.currentTarget.value = ""; } }}
+                        disabled={!output.trim()}
+                        title="Insert a saved signature"
+                        className="h-7 text-xs rounded-md border bg-background px-2 text-muted-foreground"
+                      >
+                        <option value="">+ Signature</option>
+                        {sigPresets.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))}
+                      </select>
+                    )}
                     <Button
                       data-testid="pub-publish-linkedin-btn"
                       size="sm"
