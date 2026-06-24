@@ -470,6 +470,20 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
     })();
   }, []);
 
+  // Load signature presets
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user?.id) return;
+        const { data } = await supabase.from("diagnostic_profiles").select("signature_presets").eq("user_id", session.user.id).maybeSingle();
+        if (Array.isArray((data as any)?.signature_presets)) setSigPresets((data as any).signature_presets);
+      } catch { /* ignore */ }
+    })();
+  }, []);
+
+
+
   useEffect(() => {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
