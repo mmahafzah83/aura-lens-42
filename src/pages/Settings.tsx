@@ -33,6 +33,7 @@ interface ProfileData {
   skill_ratings: Record<string, unknown>;
   generated_skills: Record<string, unknown>;
   audit_results: Record<string, unknown>;
+  signature_presets: { id: string; name: string; text_en: string; text_ar: string }[] | null;
 }
 
 interface LinkedInConnection {
@@ -58,6 +59,8 @@ export default function Settings() {
 const [reportLoading, setReportLoading] = useState(true);
 const [linkedInConnection, setLinkedInConnection] = useState<LinkedInConnection | null>(null);
 const [linkedInBusy, setLinkedInBusy] = useState(true);
+const [signatures, setSignatures] = useState<{ id: string; name: string; text_en: string; text_ar: string }[]>([]);
+const [savingSig, setSavingSig] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -75,13 +78,14 @@ const [linkedInBusy, setLinkedInBusy] = useState(true);
         const { data, error: qErr } = await supabase
           .from("diagnostic_profiles")
           .select(
-            "first_name, last_name, level, firm, core_practice, sector_focus, north_star_goal, linkedin_handle, linkedin_url, years_experience, leadership_style, primary_strength, avatar_url, brand_assessment_completed_at, brand_pillars, identity_intelligence, brand_assessment_results, skill_ratings, generated_skills, audit_results"
+            "first_name, last_name, level, firm, core_practice, sector_focus, north_star_goal, linkedin_handle, linkedin_url, years_experience, leadership_style, primary_strength, avatar_url, brand_assessment_completed_at, brand_pillars, identity_intelligence, brand_assessment_results, skill_ratings, generated_skills, audit_results, signature_presets"
           )
           .eq("user_id", session.user.id)
           .maybeSingle();
         if (cancelled) return;
         if (qErr) throw qErr;
         setProfile((data as ProfileData) || null);
+        setSignatures(Array.isArray((data as any)?.signature_presets) ? (data as any).signature_presets : []);
         if (data?.brand_assessment_completed_at) {
           try {
             const r = await buildIdentityReport(session.user.id);
