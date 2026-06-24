@@ -530,6 +530,14 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
     })();
   }, [lang]);
 
+  const insertSignature = (presetId: string) => {
+    const p = sigPresets.find((x) => x.id === presetId);
+    if (!p) return;
+    const text = (lang === "ar" ? p.text_ar : p.text_en) || "";
+    if (!text.trim()) return;
+    setOutput((prev) => (prev && prev.trim() ? prev.replace(/\s+$/, "") + "\n\n" : "") + text.trim());
+  };
+
   const selectSuggestion = (t: string, ctx: string, format: ContentType, signalTitle?: string, signalInsight?: string) => {
     setTopic(t);
     setContext(ctx);
