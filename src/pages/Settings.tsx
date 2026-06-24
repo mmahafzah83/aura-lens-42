@@ -148,6 +148,26 @@ const [savingSig, setSavingSig] = useState(false);
     }
   };
 
+  const persistSignatures = async (next: typeof signatures) => {
+    setSavingSig(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) throw new Error("Not signed in");
+      const { error } = await supabase.from("diagnostic_profiles").update({ signature_presets: next }).eq("user_id", session.user.id);
+      if (error) throw error;
+      setSignatures(next);
+      toast.success("Signatures saved");
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't save signatures");
+    } finally {
+      setSavingSig(false);
+    }
+  };
+  const addSignature = () => setSignatures((s) => [...s, { id: crypto.randomUUID(), name: "New signature", text_en: "", text_ar: "" }]);
+  const updateSignature = (id: string, field: "name" | "text_en" | "text_ar", value: string) =>
+    setSignatures((s) => s.map((p) => (p.id === id ? { ...p, [field]: value } : p)));
+  const removeSignature = (id: string) => persistSignatures(signatures.filter((p) => p.id !== id));
+
   useEffect(() => {
     loadLinkedInStatus();
   }, []);
