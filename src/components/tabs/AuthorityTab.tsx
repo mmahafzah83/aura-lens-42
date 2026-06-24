@@ -364,6 +364,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
   const [framework, setFramework] = useState<ContentFramework>("auto");
   const [lang, setLang] = useState<"en" | "ar">("en");
   const [output, setOutput] = useState("");
+  const [sigPresets, setSigPresets] = useState<{ id: string; name: string; text_en: string; text_ar: string }[]>([]);
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   const [editingSource, setEditingSource] = useState<"content_items" | "linkedin_posts">("content_items");
   const [isEditingBody, setIsEditingBody] = useState(false);
@@ -469,6 +470,20 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
     })();
   }, []);
 
+  // Load signature presets
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user?.id) return;
+        const { data } = await supabase.from("diagnostic_profiles").select("signature_presets").eq("user_id", session.user.id).maybeSingle();
+        if (Array.isArray((data as any)?.signature_presets)) setSigPresets((data as any).signature_presets);
+      } catch { /* ignore */ }
+    })();
+  }, []);
+
+
+
   useEffect(() => {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -514,6 +529,14 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
       });
     })();
   }, [lang]);
+
+  const insertSignature = (presetId: string) => {
+    const p = sigPresets.find((x) => x.id === presetId);
+    if (!p) return;
+    const text = (lang === "ar" ? p.text_ar : p.text_en) || "";
+    if (!text.trim()) return;
+    setOutput((prev) => (prev && prev.trim() ? prev.replace(/\s+$/, "") + "\n\n" : "") + text.trim());
+  };
 
   const selectSuggestion = (t: string, ctx: string, format: ContentType, signalTitle?: string, signalInsight?: string) => {
     setTopic(t);
@@ -1501,6 +1524,19 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                       )}
                     </Button>
                     <InfoTooltip slug="save-draft" label="Save Draft" side="top" triggerSize={13} />
+                    {sigPresets.length > 0 && (
+                      <select
+                        data-testid="pub-signature-picker"
+                        defaultValue=""
+                        onChange={(e) => { const v = e.target.value; if (v) { insertSignature(v); e.currentTarget.value = ""; } }}
+                        disabled={!output.trim()}
+                        title="Insert a saved signature"
+                        className="h-7 text-xs rounded-md border bg-background px-2 text-muted-foreground"
+                      >
+                        <option value="">+ Signature</option>
+                        {sigPresets.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))}
+                      </select>
+                    )}
                     <Button
                       data-testid="pub-publish-linkedin-btn"
                       size="sm"
