@@ -1513,7 +1513,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                       ) : publishedFromCreate ? (
                         <><Check className="w-3.5 h-3.5" /> Published ✓</>
                       ) : (
-                        <><Send className="w-3.5 h-3.5" /> Publish to LinkedIn</>
+                        <><Send className="w-3.5 h-3.5" /> Review & publish</>
                       )}
                     </Button>
                     <Button
@@ -1539,21 +1539,45 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                   </div>
                 </div>
 
-                {confirmLiveOpen && !publishedFromCreate && (
-                  <div style={{ marginTop: 4, padding: 10, background: "var(--bg-subtle)", borderRadius: 6, display: "flex", flexDirection: "column", gap: 8 }}>
-                    <span style={{ fontSize: 13, color: "var(--ink)" }}>
-                      This posts to your live LinkedIn now — your followers will see it. Publish?
-                    </span>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <Button size="sm" onClick={handlePublishToLinkedIn} disabled={publishingLive} className="h-7 text-xs">
-                        {publishingLive ? "Publishing…" : "Publish now"}
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => setConfirmLiveOpen(false)} disabled={publishingLive} className="h-7 text-xs">
-                        Cancel
-                      </Button>
+                {confirmLiveOpen && !publishedFromCreate && (() => {
+                  const previewText = stripMarkdown(output || fullVersion || shortVersion || "");
+                  const count = previewText.length;
+                  const isAr = lang === "ar";
+                  return (
+                    <div className="mt-2 border rounded-lg overflow-hidden bg-background">
+                      <div className="px-3.5 py-2 border-b text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Preview — exactly how it will post
+                      </div>
+                      <div
+                        dir={isAr ? "rtl" : "ltr"}
+                        className="p-4 whitespace-pre-wrap break-words text-[15px] leading-relaxed max-h-80 overflow-y-auto"
+                        style={{ textAlign: isAr ? "right" : "left" }}
+                      >
+                        {previewText || "Nothing to preview yet."}
+                      </div>
+                      <div className="px-3.5 py-2 border-t flex flex-col gap-2">
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>{count} / 3000 characters</span>
+                          <span>Text only — no image attached</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Tip: LinkedIn shows about the first 210 characters before "…see more." Make sure your hook lands there.
+                        </div>
+                        {count > 3000 && (
+                          <span className="text-xs text-destructive">Over LinkedIn's 3000-character limit — trim before publishing.</span>
+                        )}
+                        <div className="flex gap-2 mt-0.5">
+                          <Button size="sm" onClick={handlePublishToLinkedIn} disabled={publishingLive || !previewText.trim() || count > 3000} className="h-8 text-xs">
+                            {publishingLive ? "Publishing…" : "Publish now"}
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => setConfirmLiveOpen(false)} disabled={publishingLive} className="h-8 text-xs">
+                            Edit
+                          </Button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* Mark-as-published URL prompt (optional) — mirrors the saved-card flow */}
                 {pubUrlOpen && !publishedFromCreate && (
