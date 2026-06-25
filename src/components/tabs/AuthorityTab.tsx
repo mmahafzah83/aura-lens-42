@@ -1016,6 +1016,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
               language: lang,
               signal_ids: selectedSignalId ? [selectedSignalId] : [],
               signal_titles: selectedSignalTitle ? [selectedSignalTitle] : [],
+              ...(attachedImageUrl ? { image_url: attachedImageUrl } : {}),
             },
           })
           .select("id")
