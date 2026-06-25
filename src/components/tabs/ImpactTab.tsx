@@ -431,12 +431,16 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     const priorRows = (priorRes.data as any[]) || [];
     if (priorRows.length > 0) {
       const pImp = priorRows.reduce((s, r) => s + Number(r.impressions || 0), 0);
-      const pEng = priorRows.reduce(
+      // ER weighted only over engagement-bearing days (see note above) so the
+      // prior-period comparison stays apples-to-apples with the current period.
+      const pErRows = priorRows.filter(r => Number(r.engagement_rate || 0) > 0);
+      const pErImp = pErRows.reduce((s, r) => s + Number(r.impressions || 0), 0);
+      const pEng = pErRows.reduce(
         (s, r) => s + (Number(r.impressions || 0) * Number(r.engagement_rate || 0)) / 100, 0
       );
       const pFol = priorRows.reduce((s, r) => s + Number(r.follower_growth || 0), 0);
       setPriorImpressions(pImp);
-      setPriorEngagementRate(pImp > 0 ? (pEng / pImp) * 100 : 0);
+      setPriorEngagementRate(pErImp > 0 ? (pEng / pErImp) * 100 : 0);
       setPriorNewFollowers(pFol);
     } else {
       setPriorImpressions(null);
