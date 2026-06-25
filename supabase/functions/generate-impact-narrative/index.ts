@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.99.3";
 
-const PROMPT_VERSION = "v2";
+const PROMPT_VERSION = "v3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -99,10 +99,10 @@ ${profile?.sector_focus ? `Sector: ${profile.sector_focus}` : ""}
 
 Return ONLY valid JSON:
 {
-  "hero_narrative": "2-3 sentences. The headline story of this period. Reference the most dramatic number. End with ONE specific action. Use ${name}'s first name.",
+  "hero_narrative": "2-3 sentences. The headline story of this period. Reference the single most significant real number from the data above. End with ONE specific action. Use ${name}'s first name.",
   "footprint_insight": "1-2 sentences interpreting Visibility + Resonance + Signal Depth + Momentum together. What pattern do they reveal? What's the strategic gap?",
-  "content_insight": "1-2 sentences about publishing patterns. Reference post count, avg engagement, and strongest territory. Compare to what they SHOULD be doing.",
-  "post_insight": "1-2 sentences about what the top posts reveal. Which format/topic works? Is there an outlier distorting the picture? What should they write next?",
+  "content_insight": "1-2 sentences about publishing patterns. Reference the real post count and engagement rate. Name the strongest territory ONLY from the Top signal above; if it is None, say the territory isn't established yet. Do not invent topics or formats.",
+  "post_insight": "1-2 sentences interpreting ONLY the listed top posts — compare their reach (impressions) against their engagement rate, and note if one post's rate far outpaces the rest. Do NOT name a format or topic; none is provided in the data.",
   "one_action": "One sentence. The single highest-leverage action this week. Be specific — name the topic, the format, or the audience segment."
 }
 
@@ -126,9 +126,9 @@ Rules:
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         max_tokens: 600,
-        temperature: 0.7,
+        temperature: 0.2,
         messages: [
-          { role: "system", content: "You are a Senior Presence Advisor. Return ONLY valid JSON. No prose, no code fences." },
+          { role: "system", content: "You are a Senior Presence Advisor. Analyze ONLY the data provided — never invent numbers, facts, formats, topics, trends, or comparisons. Return ONLY valid JSON. No prose, no code fences." },
           { role: "user", content: prompt }
         ]
       })

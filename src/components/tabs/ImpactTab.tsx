@@ -901,7 +901,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           engagementRate: periodEngagementRate,
           postCount: contentPerf?.postCount || 0,
           selectedDays,
-          promptVersion: "v2",
+          promptVersion: "v3",
         }).slice(0, 200);
         const { data: cached } = await supabase
           .from("impact_narratives")
