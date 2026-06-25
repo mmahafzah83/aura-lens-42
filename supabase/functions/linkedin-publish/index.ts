@@ -1,4 +1,4 @@
-// linkedin-publish — redeploy 2026-06-22
+// linkedin-publish — redeploy 2026-06-25 (image upload support)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const LINKEDIN_VERSION = "202605";
@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
 
     const { data: post, error: postErr } = await adminClient
       .from("linkedin_posts")
-      .select("id, post_text, published_confirmed_at")
+      .select("id, post_text, published_confirmed_at, source_metadata")
       .eq("id", postId)
       .eq("user_id", user.id)
       .maybeSingle();
@@ -62,7 +62,52 @@ Deno.serve(async (req) => {
       return json({ success: false, error: "Post exceeds LinkedIn's 3000-character limit" });
     }
 
-    const body = {
+    // Optional single image (additive — text-only posts are unaffected)
+    const imageUrl: string | undefined = (post as any)?.source_metadata?.image_url;
+    let mediaContent: Record<string, unknown> | undefined;
+
+    if (imageUrl) {
+      const initRes = await fetch("https://api.linkedin.com/rest/images?action=initializeUpload", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${connection.access_token}`,
+          "X-Restli-Protocol-Version": "2.0.0",
+          "LinkedIn-Version": LINKEDIN_VERSION,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ initializeUploadRequest: { owner: `urn:li:person:${connection.linkedin_id}` } }),
+      });
+      if (!initRes.ok) {
+        const d = await initRes.text();
+        return json({ success: false, error: "Image init failed", status: initRes.status, detail: d });
+      }
+      const initJson = await initRes.json();
+      const uploadUrl: string = initJson?.value?.uploadUrl;
+      const imageUrn: string = initJson?.value?.image;
+      if (!uploadUrl || !imageUrn) {
+        return json({ success: false, error: "Image init returned no upload URL", detail: JSON.stringify(initJson) });
+      }
+
+      const imgRes = await fetch(imageUrl);
+      if (!imgRes.ok) {
+        return json({ success: false, error: "Could not read the stored image", status: imgRes.status });
+      }
+      const imgBytes = new Uint8Array(await imgRes.arrayBuffer());
+
+      const upRes = await fetch(uploadUrl, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${connection.access_token}` },
+        body: imgBytes,
+      });
+      if (!(upRes.status === 200 || upRes.status === 201)) {
+        const d = await upRes.text();
+        return json({ success: false, error: "Image upload failed", status: upRes.status, detail: d });
+      }
+
+      mediaContent = { media: { id: imageUrn } };
+    }
+
+    const body: Record<string, unknown> = {
       author: `urn:li:person:${connection.linkedin_id}`,
       commentary: postText,
       visibility: "PUBLIC",
@@ -74,6 +119,7 @@ Deno.serve(async (req) => {
       lifecycleState: "PUBLISHED",
       isReshareDisabledByAuthor: false,
     };
+    if (mediaContent) body.content = mediaContent;
 
     const liRes = await fetch("https://api.linkedin.com/rest/posts", {
       method: "POST",
