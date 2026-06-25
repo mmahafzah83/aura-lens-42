@@ -6,8 +6,6 @@ verify_jwt = false
 [functions.linkedin-token-refresh]
 verify_jwt = false
 
-[functions.linkedin-analytics-probe]
-verify_jwt = false
 
 [functions.linkedin-metrics-sync]
 verify_jwt = false
