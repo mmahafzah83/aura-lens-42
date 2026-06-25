@@ -392,18 +392,23 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       .filter(p => p.published_at)
       .map(p => ({ published_at: p.published_at, post_text: p.post_text })));
 
-    // Period impressions + impression-weighted engagement rate
-    // engagement_rate in DB is stored as a percentage (e.g. 4.09 = 4.09%),
-    // so to get absolute engagements per day we multiply impressions × rate / 100.
+    // Period impressions + reach-weighted engagement rate.
+    // engagement_rate in DB is stored as a percentage (e.g. 4.09 = 4.09%).
+    // ER is computed ONLY over days that carry engagement data (engagement_rate > 0).
+    // Auto-pulled impression-only days (LinkedIn's `me` finder returns impressions
+    // but not daily engagement) store engagement_rate = 0; including them would
+    // understate the true rate. Denominator = impressions on engagement-bearing days.
     const totalImp = folRowsAll.reduce((s, r) => s + Number(r.impressions || 0), 0);
     setPeriodImpressions(folRowsAll.length ? totalImp : null);
 
-    const totalEng = folRowsAll.reduce(
+    const erRows = folRowsAll.filter(r => Number(r.engagement_rate || 0) > 0);
+    const erImp = erRows.reduce((s, r) => s + Number(r.impressions || 0), 0);
+    const totalEng = erRows.reduce(
       (s, r) => s + (Number(r.impressions || 0) * Number(r.engagement_rate || 0)) / 100,
       0,
     );
-    if (totalImp > 0) {
-      setPeriodEngagementRate((totalEng / totalImp) * 100);
+    if (erImp > 0) {
+      setPeriodEngagementRate((totalEng / erImp) * 100);
     } else {
       setPeriodEngagementRate(null);
     }
