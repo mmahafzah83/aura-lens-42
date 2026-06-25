@@ -1033,6 +1033,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
       }
       setPublishedFromCreate(true);
       setConfirmLiveOpen(false);
+      setAttachedImageUrl(null);
       const url = (data as any).postUrl;
       toast.success("Published to LinkedIn", url ? { action: { label: "View post", onClick: () => window.open(url, "_blank") } } : undefined);
     } catch (e: any) {
