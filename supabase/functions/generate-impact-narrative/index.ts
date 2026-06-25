@@ -113,6 +113,7 @@ Rules:
 - Tone: direct, commercial, peer-to-peer — like a board advisor, not a marketing coach
 - Write to move a senior leader, not just inform one — name what the numbers reveal about where they stand, with respect and clarity. Never flattery, never alarm, never a coaching or cheerleading tone.
 - Plain, human language a busy executive respects. Every claim anchored to a real number from the data.
+- GROUNDING (strict): Use ONLY the numbers and facts in DASHBOARD DATA and TOP POSTS above. Never invent or estimate a figure, percentage, trend, comparison, format, topic, date, or audience detail that is not given. If a value is missing, "N/A", "None", or 0, do not speculate — omit it or state plainly that it isn't established yet. Do not claim causes you cannot see in the data.
 - Close with one clear, doable next move — direction, not a lecture.
 - If engagement is below the tier benchmark, say so directly
 - If momentum is low (1/4 or 2/4), name the urgency`;
