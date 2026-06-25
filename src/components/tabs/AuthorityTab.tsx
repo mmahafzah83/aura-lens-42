@@ -962,6 +962,28 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
   // Publish the current draft to LinkedIn via the linkedin-publish edge function.
   // Reuses the same text + metadata as the manual mark-published flow, but the
   // edge function does the actual posting and confirms it back.
+
+  const handleAttachImage = async (file: File) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { toast.error("Please choose an image file"); return; }
+    if (file.size > 10 * 1024 * 1024) { toast.error("Image must be under 10 MB"); return; }
+    setUploadingImage(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) throw new Error("Not authenticated");
+      const ext = (file.name.split(".").pop() || "png").toLowerCase();
+      const path = `${session.user.id}/linkedin-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("capture-images").upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from("capture-images").getPublicUrl(path);
+      setAttachedImageUrl(pub.publicUrl);
+      toast.success("Image attached");
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't attach image");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
   const handlePublishToLinkedIn = async () => {
     if (publishingLive || publishedFromCreate) return;
     const text = stripMarkdown(output || fullVersion || shortVersion || "");
