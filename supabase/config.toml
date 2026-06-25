@@ -3,6 +3,9 @@ project_id = "zddlsztxfzvevzjbuocc"
 [functions.summarize-link]
 verify_jwt = false
 
+[functions.linkedin-token-refresh]
+verify_jwt = false
+
 [functions.send-lifecycle-email]
 verify_jwt = false
 
