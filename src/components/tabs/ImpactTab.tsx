@@ -2194,12 +2194,12 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 )}
               </div>
               <div className="glass-card rounded-xl p-5 border border-border/8">
-                <div className="text-foreground font-bold text-lg">{contentPerf.avgEngagement}%</div>
+                <div className="text-foreground font-bold text-lg">{periodEngagementRate != null ? periodEngagementRate.toFixed(1) : "—"}%</div>
                 <div className="text-xs text-muted-foreground mt-1" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
                   Avg Engagement
                   <InfoTooltip
                     label="Engagement rate"
-                    text="Average interactions (likes + comments) divided by impressions, per post."
+                    text="Total engagements ÷ impressions across this period, weighted by reach — includes reactions, comments, and reposts. Matches the rate in your score header."
                     side="top"
                     triggerSize={13}
                   />
@@ -2339,7 +2339,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                       <div className="mt-0.5" style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>
                         {formatNumber(p.impressions ?? 0)} impressions
                         <span className="mx-1.5" style={{ color: "var(--color-text-muted)" }}>·</span>
-                        {formatNumber(p.reactions ?? 0)} reactions
+                        {formatNumber(p.reactions ?? 0)} engagements
                       </div>
                     </div>
 
