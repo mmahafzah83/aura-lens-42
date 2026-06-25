@@ -1618,10 +1618,15 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                       >
                         {previewText || "Nothing to preview yet."}
                       </div>
+                      {attachedImageUrl && (
+                        <div className="px-4 pb-3">
+                          <img src={attachedImageUrl} alt="attached preview" className="max-h-60 rounded-md border" />
+                        </div>
+                      )}
                       <div className="px-3.5 py-2 border-t flex flex-col gap-2">
                         <div className="flex justify-between text-xs text-muted-foreground">
                           <span>{count} / 3000 characters</span>
-                          <span>Text only — no image attached</span>
+                          <span>{attachedImageUrl ? "Image attached" : "Text only — no image attached"}</span>
                         </div>
                         <div className="text-xs text-muted-foreground">
                           Tip: LinkedIn shows about the first 210 characters before "…see more." Make sure your hook lands there.
@@ -1629,8 +1634,18 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                         {count > 3000 && (
                           <span className="text-xs text-destructive">Over LinkedIn's 3000-character limit — trim before publishing.</span>
                         )}
+                        <div className="flex items-center gap-2">
+                          <input ref={imageInputRef} type="file" accept="image/*" className="hidden"
+                            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleAttachImage(f); e.currentTarget.value = ""; }} />
+                          <Button size="sm" variant="ghost" onClick={() => imageInputRef.current?.click()} disabled={uploadingImage} className="h-8 text-xs">
+                            {uploadingImage ? "Uploading…" : attachedImageUrl ? "Change image" : "Add image"}
+                          </Button>
+                          {attachedImageUrl && (
+                            <Button size="sm" variant="ghost" onClick={() => setAttachedImageUrl(null)} className="h-8 text-xs text-destructive">Remove</Button>
+                          )}
+                        </div>
                         <div className="flex gap-2 mt-0.5">
-                          <Button size="sm" onClick={handlePublishToLinkedIn} disabled={publishingLive || !previewText.trim() || count > 3000} className="h-8 text-xs">
+                          <Button size="sm" onClick={handlePublishToLinkedIn} disabled={publishingLive || uploadingImage || !previewText.trim() || count > 3000} className="h-8 text-xs">
                             {publishingLive ? "Publishing…" : "Publish now"}
                           </Button>
                           <Button size="sm" variant="ghost" onClick={() => setConfirmLiveOpen(false)} disabled={publishingLive} className="h-8 text-xs">
