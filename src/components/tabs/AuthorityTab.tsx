@@ -966,18 +966,40 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
   const handleAttachImage = async (file: File) => {
     if (!file) return;
     if (!file.type.startsWith("image/")) { toast.error("Please choose an image file"); return; }
-    if (file.size > 10 * 1024 * 1024) { toast.error("Image must be under 10 MB"); return; }
+    if (file.size > 40 * 1024 * 1024) { toast.error("Image is too large (max 40 MB)"); return; }
     setUploadingImage(true);
     try {
+      // LinkedIn re-compresses and shows feed images at ~1200px, so a 1920px JPEG
+      // is visually identical in-feed but a fraction of the size — fast upload, no limit fights.
+      const optimized = await new Promise<Blob>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX = 1920;
+          const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+          const w = Math.round(img.width * scale);
+          const h = Math.round(img.height * scale);
+          const canvas = document.createElement("canvas");
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) { reject(new Error("Canvas unavailable")); return; }
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          URL.revokeObjectURL(img.src);
+          canvas.toBlob((b) => b ? resolve(b) : reject(new Error("Could not process image")), "image/jpeg", 0.9);
+        };
+        img.onerror = () => { URL.revokeObjectURL(img.src); reject(new Error("Could not read image")); };
+        img.src = URL.createObjectURL(file);
+      });
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.id) throw new Error("Not authenticated");
-      const ext = (file.name.split(".").pop() || "png").toLowerCase();
-      const path = `${session.user.id}/linkedin-${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("capture-images").upload(path, file, { upsert: true, contentType: file.type });
+      const path = `${session.user.id}/linkedin-${Date.now()}.jpg`;
+      const { error: upErr } = await supabase.storage.from("capture-images").upload(path, optimized, { upsert: true, contentType: "image/jpeg" });
       if (upErr) throw upErr;
       const { data: pub } = supabase.storage.from("capture-images").getPublicUrl(path);
       setAttachedImageUrl(pub.publicUrl);
-      toast.success("Image attached");
+      toast.success(`Image attached (optimized to ${Math.round(optimized.size / 1024)} KB)`);
     } catch (e: any) {
       toast.error(e?.message || "Couldn't attach image");
     } finally {
