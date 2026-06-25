@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.99.3";
 
-const PROMPT_VERSION = "v2";
+const PROMPT_VERSION = "v3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -99,10 +99,10 @@ ${profile?.sector_focus ? `Sector: ${profile.sector_focus}` : ""}
 
 Return ONLY valid JSON:
 {
-  "hero_narrative": "2-3 sentences. The headline story of this period. Reference the most dramatic number. End with ONE specific action. Use ${name}'s first name.",
+  "hero_narrative": "2-3 sentences. The headline story of this period. Reference the single most significant real number from the data above. End with ONE specific action. Use ${name}'s first name.",
   "footprint_insight": "1-2 sentences interpreting Visibility + Resonance + Signal Depth + Momentum together. What pattern do they reveal? What's the strategic gap?",
-  "content_insight": "1-2 sentences about publishing patterns. Reference post count, avg engagement, and strongest territory. Compare to what they SHOULD be doing.",
-  "post_insight": "1-2 sentences about what the top posts reveal. Which format/topic works? Is there an outlier distorting the picture? What should they write next?",
+  "content_insight": "1-2 sentences about publishing patterns. Reference the real post count and engagement rate. Name the strongest territory ONLY from the Top signal above; if it is None, say the territory isn't established yet. Do not invent topics or formats.",
+  "post_insight": "1-2 sentences interpreting ONLY the listed top posts — compare their reach (impressions) against their engagement rate, and note if one post's rate far outpaces the rest. Do NOT name a format or topic; none is provided in the data.",
   "one_action": "One sentence. The single highest-leverage action this week. Be specific — name the topic, the format, or the audience segment."
 }
 
@@ -113,6 +113,7 @@ Rules:
 - Tone: direct, commercial, peer-to-peer — like a board advisor, not a marketing coach
 - Write to move a senior leader, not just inform one — name what the numbers reveal about where they stand, with respect and clarity. Never flattery, never alarm, never a coaching or cheerleading tone.
 - Plain, human language a busy executive respects. Every claim anchored to a real number from the data.
+- GROUNDING (strict): Use ONLY the numbers and facts in DASHBOARD DATA and TOP POSTS above. Never invent or estimate a figure, percentage, trend, comparison, format, topic, date, or audience detail that is not given. If a value is missing, "N/A", "None", or 0, do not speculate — omit it or state plainly that it isn't established yet. Do not claim causes you cannot see in the data.
 - Close with one clear, doable next move — direction, not a lecture.
 - If engagement is below the tier benchmark, say so directly
 - If momentum is low (1/4 or 2/4), name the urgency`;
@@ -126,9 +127,9 @@ Rules:
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         max_tokens: 600,
-        temperature: 0.7,
+        temperature: 0.2,
         messages: [
-          { role: "system", content: "You are a Senior Presence Advisor. Return ONLY valid JSON. No prose, no code fences." },
+          { role: "system", content: "You are a Senior Presence Advisor. Analyze ONLY the data provided — never invent numbers, facts, formats, topics, trends, or comparisons. Return ONLY valid JSON. No prose, no code fences." },
           { role: "user", content: prompt }
         ]
       })
