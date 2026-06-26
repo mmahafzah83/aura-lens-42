@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import AuraLogo from "@/components/brand/AuraLogo";
 
 export interface LegalSection {
   title: string;
@@ -15,105 +14,108 @@ interface Props {
 }
 
 const LegalPage = ({ title, updated, sections }: Props) => {
-  const navigate = useNavigate();
   const location = useLocation();
-  const [authed, setAuthed] = useState(false);
+  const path = location.pathname;
+  const isTrust = path.startsWith("/trust");
+  const isTerms = path.startsWith("/terms");
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => setAuthed(!!session));
-  }, []);
-
-  const handleBack = () => {
-    if (window.history.length > 1) window.history.back();
-    else navigate(authed ? "/home" : "/");
-  };
-
-  const isTerms = location.pathname.startsWith("/terms");
-  const isPrivacy = location.pathname.startsWith("/privacy");
-  const homeHref = authed ? "/home" : "/";
+  const kicker = isTrust ? "TRUST · SECURITY" : isTerms ? "LEGAL · TERMS" : "LEGAL · PRIVACY";
+  const crossTo = isTerms ? "/privacy" : "/terms";
+  const crossLabel = isTerms ? "Read our Privacy Policy →" : "Read our Terms of Service →";
 
   return (
     <div
+      className="legal-cluster"
       style={{
-        background: "var(--paper)",
-        color: "var(--ink)",
+        ["--lk" as string]: "var(--live)",
         minHeight: "100vh",
-        fontFamily: "var(--font-body)",
         display: "flex",
         flexDirection: "column",
+        background: "var(--paper)",
+        color: "var(--ink)",
+        fontFamily: "var(--font-body)",
       }}
     >
-      {/* Sticky top nav */}
+      {/* Dark instrument top bar */}
       <header
-        className="flex items-center justify-between px-5 sm:px-10 py-4 sticky top-0 z-40"
+        className="flex items-center justify-between px-6 sm:px-10 py-4 sticky top-0 z-40"
         style={{
-          borderBottom: "1px solid var(--surface-ink-subtle)",
-          background: "rgba(255,255,255,0.92)",
-          backdropFilter: "blur(10px)",
-          WebkitBackdropFilter: "blur(10px)",
+          background: "var(--ob-bg)",
+          borderBottom: "1px solid var(--hair)",
         }}
       >
         <Link
-          to={homeHref}
-          className="text-sm font-bold tracking-[0.15em]"
-          style={{ color: "var(--brand)", fontFamily: "var(--font-display)" }}
+          to="/"
+          className="flex items-center gap-2"
+          aria-label="Aura home"
         >
-          AURA
+          <AuraLogo size={26} variant="dark" />
+          <span
+            className="text-sm font-bold tracking-[0.2em]"
+            style={{ color: "var(--glass)", fontFamily: "var(--font-display)" }}
+          >
+            AURA
+          </span>
         </Link>
-        <nav className="hidden sm:flex items-center gap-5 text-xs" aria-label="Legal navigation">
+
+        <nav className="flex items-center gap-4 sm:gap-6 text-xs">
           <Link
-            to="/terms"
-            style={{
-              color: isTerms ? "var(--brand)" : "var(--ink-4)",
-              fontWeight: isTerms ? 600 : 400,
-              transition: "color 150ms ease",
-            }}
+            to="/auth"
+            style={{ color: "var(--glass-2)", fontWeight: 500, transition: "color 150ms ease" }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--live)")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--glass-2)")}
           >
-            Terms
+            Log in
           </Link>
-          <span style={{ color: "var(--ink-5)" }}>·</span>
           <Link
-            to="/privacy"
+            to="/request-access"
+            className="px-3 py-1.5 rounded-full text-xs font-medium"
             style={{
-              color: isPrivacy ? "var(--brand)" : "var(--ink-4)",
-              fontWeight: isPrivacy ? 600 : 400,
-              transition: "color 150ms ease",
+              background: "var(--paper-2)",
+              color: "var(--ink)",
+              border: "1px solid var(--hair)",
+              transition: "all 150ms ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "var(--paper-3)";
+              e.currentTarget.style.borderColor = "var(--live)";
+              e.currentTarget.style.color = "var(--ink-2)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "var(--paper-2)";
+              e.currentTarget.style.borderColor = "var(--hair)";
+              e.currentTarget.style.color = "var(--ink)";
             }}
           >
-            Privacy
+            Request access
           </Link>
         </nav>
-        <Link
-          to={authed ? "/home" : "/auth"}
-          className="text-xs"
-          style={{ color: "var(--ink-3)", fontWeight: 500 }}
-        >
-          {authed ? "← Back to Aura" : "Sign in"}
-        </Link>
       </header>
 
       <main
         className="mx-auto px-5 sm:px-10 flex-1 w-full"
-        style={{ maxWidth: 720, paddingTop: 80, paddingBottom: 60 }}
+        style={{ maxWidth: 720, paddingTop: 64, paddingBottom: 60 }}
       >
-        <button
-          type="button"
-          onClick={handleBack}
+        <Link
+          to="/"
           className="inline-flex items-center gap-1.5 mb-8"
           style={{
             fontSize: 12,
             color: "var(--ink-3)",
-            background: "transparent",
-            border: 0,
-            padding: 0,
-            cursor: "pointer",
             transition: "color 150ms ease",
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--brand)")}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--lk)")}
           onMouseLeave={(e) => (e.currentTarget.style.color = "var(--ink-3)")}
         >
-          <ArrowLeft size={13} /> Back
-        </button>
+          <ArrowLeft size={13} /> Back to home
+        </Link>
+
+        <div
+          className="mb-2 uppercase tracking-[0.12em]"
+          style={{ color: "var(--ink-3)", fontFamily: "var(--font-mono)", fontSize: 12 }}
+        >
+          {kicker}
+        </div>
 
         <h1
           className="text-3xl sm:text-4xl mb-2"
@@ -121,8 +123,8 @@ const LegalPage = ({ title, updated, sections }: Props) => {
         >
           {title}
         </h1>
-        <p className="text-xs mb-12" style={{ color: "var(--ink-4)" }}>
-          Last updated: {updated}
+        <p className="text-xs mb-12" style={{ color: "var(--ink-3)" }}>
+          Last updated · {updated}
         </p>
 
         <div className="space-y-10">
@@ -138,75 +140,109 @@ const LegalPage = ({ title, updated, sections }: Props) => {
                   fontWeight: 500,
                 }}
               >
-                <span style={{ color: "var(--brand)", marginRight: 8 }}>{i + 1}.</span>
+                <span style={{ color: "var(--live)", marginRight: 10 }}>
+                  {String(i + 1).padStart(2, "0")}
+                </span>
                 {s.title}
               </h2>
-              <p style={{ color: "var(--ink)", fontSize: 15, lineHeight: 1.8, whiteSpace: "pre-line" }}>
+              <p style={{ color: "var(--ink-2)", fontSize: 15, lineHeight: 1.8, whiteSpace: "pre-line" }}>
                 {s.body}
               </p>
             </section>
           ))}
         </div>
 
-        {/* Cross-link between legal pages */}
         <div
           className="mt-16 pt-8 flex items-center justify-between gap-4 flex-wrap"
-          style={{ borderTop: "1px solid var(--surface-ink-subtle)" }}
+          style={{ borderTop: "1px solid var(--rule)" }}
         >
-          <button
-            type="button"
-            onClick={handleBack}
+          <Link
+            to="/"
             className="inline-flex items-center gap-1.5"
             style={{
               fontSize: 12,
               color: "var(--ink-3)",
-              background: "transparent",
-              border: 0,
-              padding: 0,
-              cursor: "pointer",
+              transition: "color 150ms ease",
             }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--lk)")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--ink-3)")}
           >
-            <ArrowLeft size={13} /> Back
-          </button>
+            <ArrowLeft size={13} /> Back to home
+          </Link>
           <Link
-            to={isTerms ? "/privacy" : "/terms"}
-            style={{ fontSize: 12, color: "var(--brand)", fontWeight: 500 }}
+            to={isTrust ? "/privacy" : crossTo}
+            style={{ fontSize: 12, color: "var(--lk)", fontWeight: 500 }}
           >
-            {isTerms ? "Read our Privacy Policy →" : "Read our Terms of Service →"}
+            {isTrust ? "Read our Privacy Policy →" : crossLabel}
           </Link>
         </div>
       </main>
 
+      {/* Dark instrument footer */}
       <footer
-        className="py-10 px-5 sm:px-10 text-center mt-auto"
-        style={{ borderTop: "1px solid var(--surface-ink-subtle)" }}
+        className="px-6 sm:px-10 py-10"
+        style={{ background: "var(--ob-bg)", borderTop: "1px solid var(--hair)" }}
       >
-        <span
-          className="text-sm font-bold tracking-[0.15em]"
-          style={{ color: "var(--brand)", fontFamily: "var(--font-display)" }}
-        >
-          AURA
-        </span>
-        <p className="mt-2 text-xs" style={{ color: "var(--ink-4)" }}>
-          Strategic intelligence for senior professionals.
-        </p>
         <div
-          className="mt-3 flex justify-center items-center gap-3 text-xs flex-wrap"
-          style={{ color: "var(--ink-4)" }}
+          className="mx-auto flex flex-col sm:flex-row items-center justify-between gap-4"
+          style={{ maxWidth: 720 }}
         >
-          <Link to="/terms" style={{ color: "var(--ink-4)" }}>Terms</Link>
-          <span>·</span>
-          <Link to="/privacy" style={{ color: "var(--ink-4)" }}>Privacy</Link>
-          <span>·</span>
-          <Link to="/guide" style={{ color: "var(--ink-4)" }}>Guide</Link>
-          <span>·</span>
-          <Link to="/request-access" style={{ color: "var(--ink-4)" }}>Request access</Link>
-          <span>·</span>
-          <a href="mailto:support@aura-intel.org" style={{ color: "var(--ink-4)" }}>Contact</a>
+          <div
+            className="flex flex-wrap items-center justify-center gap-3 text-xs"
+            style={{ fontFamily: "var(--font-mono)", color: "var(--glass-2)" }}
+          >
+            <Link
+              to="/"
+              style={{ color: "var(--glass-2)", transition: "color 150ms ease" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--glass)")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--glass-2)")}
+            >
+              Home
+            </Link>
+            <span style={{ color: "var(--glass-3)" }}>·</span>
+            <Link
+              to="/trust"
+              style={{ color: "var(--glass-2)", transition: "color 150ms ease" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--glass)")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--glass-2)")}
+            >
+              Security & Trust
+            </Link>
+            <span style={{ color: "var(--glass-3)" }}>·</span>
+            <Link
+              to="/privacy"
+              style={{ color: "var(--glass-2)", transition: "color 150ms ease" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--glass)")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--glass-2)")}
+            >
+              Privacy
+            </Link>
+            <span style={{ color: "var(--glass-3)" }}>·</span>
+            <Link
+              to="/terms"
+              style={{ color: "var(--glass-2)", transition: "color 150ms ease" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--glass)")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--glass-2)")}
+            >
+              Terms
+            </Link>
+            <span style={{ color: "var(--glass-3)" }}>·</span>
+            <Link
+              to="/guide"
+              style={{ color: "var(--glass-2)", transition: "color 150ms ease" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--glass)")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--glass-2)")}
+            >
+              The Guide
+            </Link>
+          </div>
+          <p
+            className="text-xs"
+            style={{ color: "var(--glass-3)", fontFamily: "var(--font-mono)" }}
+          >
+            Aura · Built in Riyadh, for the world.
+          </p>
         </div>
-        <p className="mt-3 text-xs" style={{ color: "var(--ink-5)" }}>
-          © {new Date().getFullYear()} Aura Intelligence. All rights reserved.
-        </p>
       </footer>
     </div>
   );
