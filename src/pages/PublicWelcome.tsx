@@ -185,12 +185,10 @@ const StatCard = ({ value, suffix = "%", literal, desc, fullWidth }: { value?: n
       return () => clearTimeout(t);
     }
   }, [visible, counted, value, literal]);
-  // Highlight the 54% rejection stat with a bronze accent
-  const isAccent = value === 54;
   return (
     <div
       ref={ref}
-      className={`pw-stat-card reveal pw-stat-flash ${fullWidth ? "pw-stat-fullwidth" : ""} ${isAccent ? "pw-stat-accent" : ""}`}
+      className={`pw-stat-card reveal pw-stat-flash ${fullWidth ? "pw-stat-fullwidth" : ""}`}
       style={{
         background: CARD_BG,
         border: `1px solid ${HAIR}`,
@@ -338,7 +336,7 @@ const TypewriterQuote = ({ text }: { text: string }) => {
 };
 
 const responseFor = (v: number) => {
-  if (v <= 30) return "You're not alone. 97% of senior professionals are here — invisible despite years of deep expertise. Scroll to see why.";
+  if (v <= 30) return "You're not alone. Most senior professionals are right here — invisible despite years of deep expertise. Scroll to see why.";
   if (v <= 60) return "You've started, but the gap between what you know and what the market sees is still wide. Scroll to see what's possible.";
   if (v <= 80) return "You're ahead of most. But you know it could compound faster. Scroll to see how.";
   return "Rare. You know how hard this is to build — and how easy it is to lose. Scroll to see how to make it permanent.";
@@ -616,14 +614,12 @@ export default function PublicWelcome() {
           <div style={{ maxWidth: 700, margin: "0 auto" }}>
             <p className="reveal" style={{ fontSize: 10, letterSpacing: "2.5px", color: BRONZE, fontWeight: 600, margin: 0 }}>THE NUMBERS DON'T LIE</p>
             <div className="mt-10">
-              <MassiveStat value={73} desc="of decision-makers trust expertise content over marketing" />
-              <MassiveStat value={82} desc="trust companies more when leaders are visible online" />
-              <MassiveStat value={54} accent desc="have rejected candidates for invisible online presence" />
-              <MassiveStat literal="<3%" desc="of LinkedIn's 1B+ users create original content weekly" />
-              <MassiveStat value={44} desc="of company value is tied to its leader's reputation" />
+              <MassiveStat value={73} desc="of decision-makers trust an expert's content over traditional marketing" />
+              <MassiveStat value={92} accent desc="are more likely to trust a company whose senior leaders are visible online" />
+              <MassiveStat literal="<3%" desc="of LinkedIn members post more than once a week" />
             </div>
             <p className="reveal" style={{ fontSize: 11, color: INK_3, marginTop: 20, textAlign: "center" }}>
-              Edelman-LinkedIn 2024/2025 · Weber Shandwick · Brunswick Group
+              Edelman-LinkedIn 2024 · FTI Consulting 2023 · Business of Apps 2026
             </p>
             <p className="reveal reveal-d1" style={{ fontSize: 17, color: INK, lineHeight: 1.75, marginTop: 28 }}>
               You're already in the top 1% of expertise. Aura puts you in the top 1% of <strong style={{ color: BRONZE, fontWeight: 700 }}>visibility</strong> — without changing how you spend your week.
@@ -789,9 +785,6 @@ export default function PublicWelcome() {
             <p className="reveal reveal-d4" style={{ fontSize: 11, letterSpacing: "2px", color: INK_3, marginTop: 20 }}>
               PRIVATE BETA · BY INVITATION ONLY
             </p>
-            <p className="reveal reveal-d4" style={{ fontSize: 13, color: INK_3, marginTop: 10 }}>
-              Join 40+ professionals already on the list
-            </p>
           </div>
         </section>
         </div>{/* /gated */}
@@ -804,6 +797,13 @@ export default function PublicWelcome() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 16 }}>
           <AuraLogo variant="auto" size={20} />
           <span style={{ fontSize: 11, color: INK_2, fontFamily: BODY }}>Aura · Turns your expertise into presence · aura-intel.org</span>
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 14, marginTop: 16, fontSize: 12 }}>
+          <Link to="/our-story" style={{ color: "var(--glass-2)" }}>Our story</Link>
+          <Link to="/guide" style={{ color: "var(--glass-2)" }}>Guide</Link>
+          <Link to="/trust" style={{ color: "var(--glass-2)" }}>Security &amp; Trust</Link>
+          <Link to="/privacy" style={{ color: "var(--glass-2)" }}>Privacy</Link>
+          <Link to="/terms" style={{ color: "var(--glass-2)" }}>Terms</Link>
         </div>
       </footer>
     </div>
@@ -869,7 +869,7 @@ const PW_CSS = `
   .pw-nudge { animation: pw-nudgeIn 280ms ease-out; }
   @keyframes pw-nudgeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
 
-  /* Stat-card: bronze glow on entry + number landing pulse + 54% accent */
+  /* Stat-card: bronze glow on entry + number landing pulse + accent */
   .pw-stat-card.pw-stat-flash.visible { animation: pw-statGlow 800ms ease-out; }
   @keyframes pw-statGlow {
     0% { box-shadow: 0 0 0 transparent; }
