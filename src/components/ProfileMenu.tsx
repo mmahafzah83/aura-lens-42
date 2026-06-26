@@ -86,8 +86,8 @@ export default function ProfileMenu({
               width: 40,
               height: 40,
               borderRadius: "50%",
-              background: "var(--brand-surface, var(--brand-pale, #f3ecd9))",
-              color: "var(--brand)",
+              background: "var(--paper-3)",
+              color: "var(--action)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -95,7 +95,7 @@ export default function ProfileMenu({
               fontSize: 14,
               flexShrink: 0,
               overflow: "hidden",
-              border: "0.5px solid var(--brand-line, rgba(0,0,0,0.1))",
+              border: "0.5px solid var(--rule)",
             }}
           >
             {avatarUrl ? (
