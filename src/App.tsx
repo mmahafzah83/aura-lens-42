@@ -16,6 +16,7 @@ import NotFound from "./pages/NotFound";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Trust from "./pages/Trust";
+import OurStory from "./pages/OurStory";
 import Guide from "./pages/Guide";
 import Settings from "./pages/Settings";
 import PasswordGate from "./components/PasswordGate";
@@ -99,6 +100,7 @@ const App = () => (
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/trust" element={<Trust />} />
+            <Route path="/our-story" element={<OurStory />} />
             <Route path="/guide" element={<Guide />} />
             <Route path="/settings" element={<PasswordGate><Settings /></PasswordGate>} />
             <Route path="/carousel-studio" element={<PasswordGate><CarouselStudio /></PasswordGate>} />
