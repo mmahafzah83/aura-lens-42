@@ -196,11 +196,11 @@ const NotificationBell = () => {
                             { label: "Voice", value: n.metadata.market_voice, color: "bg-[color:var(--info)]" },
                           ].map((kpi) => (
                             <div key={kpi.label} className="flex items-center gap-1.5">
-                              <span className="text-xs text-muted-foreground">{kpi.label}</span>
-                              <div className="w-12 h-1 rounded-full bg-secondary overflow-hidden">
+                              <span className="text-xs" style={{ color: "var(--ink-3)" }}>{kpi.label}</span>
+                              <div className="w-12 h-1 rounded-full overflow-hidden" style={{ background: "var(--paper-3)" }}>
                                 <div className={`h-full rounded-full ${kpi.color}`} style={{ width: `${kpi.value || 0}%` }} />
                               </div>
-                              <span className="text-xs text-muted-foreground">{kpi.value || 0}%</span>
+                              <span className="text-xs" style={{ color: "var(--ink-3)" }}>{kpi.value || 0}%</span>
                             </div>
                           ))}
                         </div>
