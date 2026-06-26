@@ -70,10 +70,11 @@ export default function ProfileMenu({
         style={{
           minWidth: 240,
           maxWidth: "calc(100vw - 24px)",
-          background: "var(--surface-ink-raised, var(--paper, #fff))",
-          border: "0.5px solid var(--brand-line, rgba(0,0,0,0.1))",
+          background: "var(--paper-2)",
+          border: "0.5px solid var(--rule)",
           borderRadius: 12,
           boxShadow: "var(--shadow-lift, 0 10px 30px -10px rgba(0,0,0,0.25))",
+          color: "var(--ink)",
           padding: 8,
         }}
       >
@@ -85,8 +86,8 @@ export default function ProfileMenu({
               width: 40,
               height: 40,
               borderRadius: "50%",
-              background: "var(--brand-surface, var(--brand-pale, #f3ecd9))",
-              color: "var(--brand)",
+              background: "var(--paper-3)",
+              color: "var(--action)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -94,7 +95,7 @@ export default function ProfileMenu({
               fontSize: 14,
               flexShrink: 0,
               overflow: "hidden",
-              border: "0.5px solid var(--brand-line, rgba(0,0,0,0.1))",
+              border: "0.5px solid var(--rule)",
             }}
           >
             {avatarUrl ? (
@@ -115,7 +116,7 @@ export default function ProfileMenu({
                 style={{
                   fontSize: 14,
                   fontWeight: 500,
-                  color: "var(--foreground)",
+                  color: "var(--ink)",
                   lineHeight: 1.3,
                   overflow: "hidden",
                   textOverflow: "ellipsis",
@@ -129,7 +130,7 @@ export default function ProfileMenu({
               <div
                 style={{
                   fontSize: 12,
-                  color: "var(--muted-foreground)",
+                  color: "var(--ink-3)",
                   marginTop: 2,
                   overflow: "hidden",
                   textOverflow: "ellipsis",
@@ -146,7 +147,7 @@ export default function ProfileMenu({
         <div
           style={{
             height: 0,
-            borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))",
+            borderTop: "0.5px solid var(--rule)",
             margin: "8px 4px 8px",
           }}
         />
@@ -168,11 +169,11 @@ export default function ProfileMenu({
               border: "none",
               borderRadius: 8,
               cursor: "pointer",
-              color: "var(--foreground)",
+              color: "var(--ink)",
               fontSize: 14,
               fontWeight: 500,
             }}
-            className="hover:bg-[var(--brand-ghost,rgba(0,0,0,0.04))] transition-colors"
+            className="hover:bg-[var(--paper-3)] transition-colors"
           >
             <Settings2 className="w-4 h-4" />
             Preferences
@@ -195,11 +196,11 @@ export default function ProfileMenu({
             border: "none",
             borderRadius: 8,
             cursor: "pointer",
-            color: "var(--foreground)",
+            color: "var(--ink)",
             fontSize: 14,
             fontWeight: 500,
           }}
-          className="hover:bg-[var(--brand-ghost,rgba(0,0,0,0.04))] transition-colors"
+          className="hover:bg-[var(--paper-3)] transition-colors"
         >
           <Settings className="w-4 h-4" />
           Settings
@@ -221,11 +222,11 @@ export default function ProfileMenu({
             border: "none",
             borderRadius: 8,
             cursor: "pointer",
-            color: "var(--error, #c0392b)",
+            color: "var(--spot)",
             fontSize: 14,
             fontWeight: 500,
           }}
-          className="hover:bg-[var(--brand-ghost,rgba(0,0,0,0.04))] transition-colors"
+          className="hover:bg-[var(--paper-3)] transition-colors"
         >
           <LogOut className="w-4 h-4" />
           Sign out
