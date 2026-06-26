@@ -1109,7 +1109,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             Your digital presence growth
           </div>
           <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
-            Impact
+            Statement
           </h1>
         </div>
         <section
@@ -1159,7 +1159,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             Your digital presence growth
           </div>
           <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
-            Impact
+            Statement
           </h1>
         </div>
 
@@ -1432,7 +1432,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             Your digital presence growth
           </div>
           <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--glass)", letterSpacing: "-0.02em", margin: 0 }}>
-            Impact
+            Statement
           </h1>
           <p style={{ fontSize: 14, color: "var(--glass-2)", marginTop: 8, lineHeight: 1.5, maxWidth: 640 }}>
             Every week you show up, your name reaches rooms you've never been in. That's how advisory calls, board invitations, and speaking slots find you.

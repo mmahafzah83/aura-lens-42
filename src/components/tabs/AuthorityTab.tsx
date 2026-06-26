@@ -1120,7 +1120,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
       setPublishedFromCreate(true);
       setPubUrlOpen(false);
       setPubUrl("");
-      toast.success("Marked as published — your aura score is updating");
+      toast.success("Marked as published — your Imprint is updating");
     } catch (e: any) {
       toast.error(e?.message || "Couldn't mark as published");
     } finally {
@@ -3890,7 +3890,7 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
           Your content engine
         </div>
         <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 34, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
-          Publish
+          Composer
         </h1>
         <p style={{ fontSize: 14, color: "var(--ink-3)", marginTop: 8, lineHeight: 1.5, maxWidth: 640 }}>
           You already know things most people in your sector don't. This is where that knowledge becomes content that opens doors.

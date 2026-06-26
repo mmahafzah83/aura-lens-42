@@ -987,19 +987,19 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab, onDraftToStudio, onNavig
     const parts: Part[] = [];
     // Sentence 1
     if (scoreDiff != null && scoreDiff < -5) {
-      parts.push({ text: "Your presence score is " });
+      parts.push({ text: "Your Imprint is " });
       parts.push({ text: "declining", color: RED });
       parts.push({ text: " — down " });
       parts.push({ text: `${Math.abs(scoreDiff)} points`, bold: true });
       parts.push({ text: " this week. " });
     } else if (scoreDiff != null && scoreDiff > 5) {
-      parts.push({ text: "Your presence score is " });
+      parts.push({ text: "Your Imprint is " });
       parts.push({ text: "growing", color: GREEN });
       parts.push({ text: " — up " });
       parts.push({ text: `${scoreDiff} points`, bold: true });
       parts.push({ text: " this week. " });
     } else {
-      parts.push({ text: "Your presence score is holding steady this week. " });
+      parts.push({ text: "Your Imprint is holding steady this week. " });
     }
 
     // Sentence 2

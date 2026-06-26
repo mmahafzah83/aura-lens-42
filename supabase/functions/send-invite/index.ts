@@ -158,7 +158,7 @@ const buildEmailHtml = (BRAND: string) => {
         ${howRow("&#10022;", "The identity map", "Aura doesn't start with content. It starts with YOU. Your strengths. Your sector expertise. Your natural voice. It builds a complete map of who you are professionally — so nothing it creates is generic.")}
         ${howRow("&#9670;", "The intelligence engine", "You read an article. Aura reads it too. It finds the strategic pattern you'd miss on a busy Tuesday — and connects it to what matters in your sector right now.")}
         ${howRow("&#9671;", "The voice studio", "Aura writes in your voice. Not templates. Not AI speak. Content that sounds like you wrote it at your absolute best — the version of you that had 3 uninterrupted hours to think and write.")}
-        ${howRow("&#9679;", "The presence score", "Aura tracks your digital visibility over time — what's working, what's growing, where the right people are noticing you. Your reputation, measured and compounding.")}
+        ${howRow("&#9679;", "The Imprint", "Aura tracks your digital visibility over time — what's working, what's growing, where the right people are noticing you. Your reputation, measured and compounding.")}
       </table>
     </div>
 
