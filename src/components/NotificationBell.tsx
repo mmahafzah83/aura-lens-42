@@ -179,7 +179,7 @@ const NotificationBell = () => {
                           {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
                         </span>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{n.body}</p>
+                      <p className="text-xs mt-1 leading-relaxed" style={{ color: "var(--ink-3)" }}>{n.body}</p>
 
                       {/* Alert urgency badge */}
                       {n.metadata?.urgency === "high" && (
