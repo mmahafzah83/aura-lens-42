@@ -148,9 +148,9 @@ const NotificationBell = () => {
         <div className="max-h-[360px] overflow-y-auto">
           {notifications.length === 0 ? (
             <div className="px-4 py-8 text-center">
-              <Bell className="w-6 h-6 text-muted-foreground/30 mx-auto mb-2" />
-              <p className="text-xs text-muted-foreground">No strategic alerts yet</p>
-              <p className="text-xs text-muted-foreground/60 mt-1">Aura will notify you when meaningful patterns emerge</p>
+              <Bell className="w-6 h-6 mx-auto mb-2" style={{ color: "var(--ink-4)" }} />
+              <p className="text-xs" style={{ color: "var(--ink-3)" }}>No strategic alerts yet</p>
+              <p className="text-xs mt-1" style={{ color: "var(--ink-4)" }}>Aura will notify you when meaningful patterns emerge</p>
             </div>
           ) : (
             notifications.map((n) => {
