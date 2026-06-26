@@ -192,7 +192,7 @@ export const ConceptA = forwardRef<HTMLDivElement, { data: CredentialData; size?
                 color: TEXT_MUTED,
               }}
             >
-              Presence Score
+              Imprint
             </div>
           </div>
 

@@ -677,7 +677,7 @@ export default function PublicWelcome() {
               <Engine symbol="✦" title="The identity map" desc="Aura doesn't start with content. It starts with YOU. Your strengths. Your sector expertise. Your natural voice. It builds a complete map of who you are professionally — so nothing it creates is generic." />
               <Engine symbol="◆" title="The intelligence engine" desc="You read an article. Aura reads it too. It finds the strategic pattern you'd miss on a busy Tuesday — and connects it to what matters in your sector right now." />
               <Engine symbol="◇" title="The voice studio" desc="Aura writes in your voice. Not templates. Not AI speak. Content that sounds like you wrote it at your absolute best — the version of you that had 3 uninterrupted hours to think and write." />
-              <Engine symbol="●" title="The presence score" desc="Aura tracks your digital visibility over time — what's working, what's growing, where the right people are noticing you. Your reputation, measured and compounding." />
+              <Engine symbol="●" title="The Imprint" desc="Aura tracks your digital visibility over time — what's working, what's growing, where the right people are noticing you. Your reputation, measured and compounding." />
             </div>
           </div>
         </section>
