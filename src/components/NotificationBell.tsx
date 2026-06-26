@@ -166,7 +166,10 @@ const NotificationBell = () => {
                   }}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 bg-secondary/30 ${iconColor}`}>
+                    <div
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${iconColor}`}
+                      style={{ background: "var(--paper-3)" }}
+                    >
                       <Icon className="w-3.5 h-3.5" />
                     </div>
                     <div className="flex-1 min-w-0">
