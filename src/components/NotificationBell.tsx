@@ -155,7 +155,7 @@ const NotificationBell = () => {
           ) : (
             notifications.map((n) => {
               const Icon = TYPE_ICONS[n.type] || Bell;
-              const iconColor = TYPE_COLORS[n.type] || "text-muted-foreground";
+              const iconColor = TYPE_COLORS[n.type] || "text-[color:var(--ink-3)]";
               return (
                 <div
                   key={n.id}
