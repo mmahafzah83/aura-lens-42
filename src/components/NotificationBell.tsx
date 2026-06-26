@@ -122,9 +122,16 @@ const NotificationBell = () => {
         </button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-80 sm:w-96 p-0 glass-card-elevated border-border/30"
+        className="w-80 sm:w-96 p-0 overflow-hidden"
         align="end"
         sideOffset={8}
+        style={{
+          background: "var(--paper-2)",
+          border: "0.5px solid var(--rule)",
+          borderRadius: 12,
+          boxShadow: "var(--shadow-lift)",
+          color: "var(--ink)",
+        }}
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/20">
           <h4 className="text-sm font-semibold text-foreground">Strategic Alerts</h4>
