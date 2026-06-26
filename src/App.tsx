@@ -32,6 +32,7 @@ const AdminExperience = lazy(() => import("./pages/AdminExperience"));
 const AdminQA = lazy(() => import("./pages/AdminQA"));
 const AdminGuideHealth = lazy(() => import("./pages/AdminGuideHealth"));
 const AdminStandard = lazy(() => import("./pages/AdminStandard"));
+const OurStory = lazy(() => import("./pages/OurStory"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -99,6 +100,7 @@ const App = () => (
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/trust" element={<Trust />} />
+            <Route path="/our-story" element={<OurStory />} />
             <Route path="/guide" element={<Guide />} />
             <Route path="/settings" element={<PasswordGate><Settings /></PasswordGate>} />
             <Route path="/carousel-studio" element={<PasswordGate><CarouselStudio /></PasswordGate>} />
