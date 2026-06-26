@@ -70,10 +70,11 @@ export default function ProfileMenu({
         style={{
           minWidth: 240,
           maxWidth: "calc(100vw - 24px)",
-          background: "var(--surface-ink-raised, var(--paper, #fff))",
-          border: "0.5px solid var(--brand-line, rgba(0,0,0,0.1))",
+          background: "var(--paper-2)",
+          border: "0.5px solid var(--rule)",
           borderRadius: 12,
           boxShadow: "var(--shadow-lift, 0 10px 30px -10px rgba(0,0,0,0.25))",
+          color: "var(--ink)",
           padding: 8,
         }}
       >
