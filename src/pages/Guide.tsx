@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, ChevronDown } from "lucide-react";
+import { Search, ChevronDown, ArrowLeft } from "lucide-react";
 import usePageMeta from "@/hooks/usePageMeta";
+import AuraLogo from "@/components/brand/AuraLogo";
 import { useGuideArticles } from "@/hooks/useGuideArticles";
 import type { GuideArticle } from "@/hooks/useGuideArticles";
 
@@ -11,6 +12,7 @@ const SECTION_ORDER = [
   "tabs",
   "how-to",
   "tips",
+  "signals",
   "scoring",
   "terms",
   "trust",
@@ -21,6 +23,7 @@ const SECTION_LABELS: Record<string, string> = {
   tabs: "Your pages",
   "how-to": "How to…",
   tips: "Tips & lessons",
+  signals: "Signals",
   scoring: "Your score & formulas",
   terms: "Key terms",
   trust: "Trust & privacy",
@@ -46,19 +49,19 @@ function CollapsibleItem({
   onToggle: () => void;
 }) {
   return (
-    <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+    <div style={{ borderBottom: "1px solid var(--rule)" }}>
       <button
         type="button"
         onClick={onToggle}
         aria-expanded={open}
         className="w-full flex items-center justify-between text-left py-5"
-        style={{ background: "transparent", border: 0, cursor: "pointer", color: "hsl(var(--foreground))" }}
+        style={{ background: "transparent", border: 0, cursor: "pointer", color: "var(--ink)" }}
       >
         <span style={{ fontSize: 15, fontWeight: 500 }}>{item.question_en}</span>
         <ChevronDown
           size={18}
           style={{
-            color: "rgba(255,255,255,0.6)",
+            color: "var(--ink-3)",
             transform: open ? "rotate(180deg)" : "none",
             transition: "transform 200ms ease",
             flexShrink: 0,
@@ -67,19 +70,20 @@ function CollapsibleItem({
         />
       </button>
       {open && (
-        <div style={{ fontSize: 14, lineHeight: 1.7, color: "hsl(var(--muted-foreground))", paddingBottom: 20, paddingRight: 34, whiteSpace: "pre-line" }}>
+        <div style={{ fontSize: 14, lineHeight: 1.7, color: "var(--ink-2)", paddingBottom: 20, paddingRight: 34, whiteSpace: "pre-line" }}>
           {item.answer_en}
           {item.formula_note_en && (
             <div
               style={{
                 marginTop: 12,
                 padding: "10px 14px",
-                borderRadius: 8,
-                background: "rgba(197,165,90,0.08)",
-                border: "1px solid rgba(197,165,90,0.2)",
+                borderRadius: 6,
+                background: "var(--paper-2)",
+                border: "1px solid var(--rule)",
+                borderLeft: "2px solid var(--live)",
                 fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
                 fontSize: 13,
-                color: "var(--bronze)",
+                color: "var(--ink-2)",
                 lineHeight: 1.6,
               }}
             >
@@ -140,44 +144,67 @@ const Guide = () => {
 
   return (
     <div
-      className="min-h-screen bg-neutral-950"
-      style={{ background: "var(--ink)", color: "var(--ink-7)", fontFamily: "var(--font-body)" }}
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        background: "var(--paper)",
+        color: "var(--ink)",
+        fontFamily: "var(--font-body)",
+      }}
     >
-      <style>{`
-        .guide-footer a { color: rgba(255,255,255,0.4); transition: color .15s ease; }
-        .guide-footer a:hover { color: rgba(255,255,255,0.7); }
-        @media (max-width: 768px) {
-          .guide-footer-grid { grid-template-columns: 1fr !important; text-align: center; gap: 20px !important; }
-          .guide-footer-col-center, .guide-footer-col-right { text-align: center !important; }
-        }
-      `}</style>
-
-      {/* Nav */}
-      <nav
-        className="flex items-center justify-between px-5 sm:px-10 py-5 sticky top-0 z-50"
-        style={{
-          background: "rgba(13,13,13,0.95)",
-          backdropFilter: "blur(10px)",
-          WebkitBackdropFilter: "blur(10px)",
-          borderBottom: "1px solid var(--surface-ink-subtle)",
-          paddingTop: "max(env(safe-area-inset-top), 16px)",
-        }}
+      {/* Dark instrument top bar */}
+      <header
+        className="flex items-center justify-between px-6 sm:px-10 py-4 sticky top-0 z-40"
+        style={{ background: "var(--ob-bg)", borderBottom: "1px solid var(--hair)" }}
       >
-        <Link to="/" className="text-lg font-medium tracking-[0.15em]" style={{ color: "var(--brand)", fontFamily: "var(--font-display)" }}>
-          AURA
+        <Link to="/" className="flex items-center gap-2" aria-label="Aura home">
+          <AuraLogo size={26} variant="dark" />
+          <span
+            className="text-sm font-bold tracking-[0.2em]"
+            style={{ color: "var(--glass)", fontFamily: "var(--font-display)" }}
+          >
+            AURA
+          </span>
         </Link>
-        <button
-          onClick={() => navigate(authed ? "/home" : "/auth")}
-          className="text-sm px-4 py-2 rounded-lg border transition-colors hover:bg-brand/10"
-          style={{ color: "var(--brand)", borderColor: "var(--bronze-line)" }}
-        >
-          {authed ? "Open app" : "Sign in"}
-        </button>
-      </nav>
+        <nav className="flex items-center gap-4 sm:gap-6 text-xs">
+          <Link
+            to="/auth"
+            style={{ color: "var(--glass-2)", fontWeight: 500, transition: "color 150ms ease" }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--live)")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--glass-2)")}
+          >
+            Log in
+          </Link>
+          <Link
+            to="/request-access"
+            className="px-3 py-1.5 rounded-full text-xs font-medium"
+            style={{
+              background: "var(--paper-2)",
+              color: "var(--ink)",
+              border: "1px solid var(--hair)",
+            }}
+          >
+            Request access
+          </Link>
+        </nav>
+      </header>
 
       {/* Hero */}
-      <section className="px-5 sm:px-10 pt-20 pb-10 text-center max-w-3xl mx-auto">
-        <p className="text-xs tracking-[0.2em] uppercase mb-5" style={{ color: "var(--bronze)" }}>The Aura Guide</p>
+      <section className="px-5 sm:px-10 pt-16 pb-10 text-center max-w-3xl mx-auto w-full">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 mb-8"
+          style={{ fontSize: 12, color: "var(--ink-3)" }}
+        >
+          <ArrowLeft size={13} /> Back to home
+        </Link>
+        <p
+          className="uppercase tracking-[0.12em] mb-4"
+          style={{ color: "var(--live)", fontFamily: "var(--font-mono)", fontSize: 12 }}
+        >
+          The Aura Guide
+        </p>
         <h1
           className="mb-5"
           style={{
@@ -185,13 +212,13 @@ const Guide = () => {
             fontSize: "clamp(32px, 5vw, 48px)",
             lineHeight: 1.375,
             letterSpacing: "-0.02em",
-            color: "var(--ink-2)",
+            color: "var(--ink)",
             fontWeight: 500,
           }}
         >
           How Aura works
         </h1>
-        <p style={{ fontSize: 16, color: "var(--ink-3)", lineHeight: 1.625 }}>
+        <p style={{ fontSize: 16, color: "var(--ink-2)", lineHeight: 1.625 }}>
           From what you already know to what the market sees.
         </p>
       </section>
@@ -206,7 +233,7 @@ const Guide = () => {
               left: 14,
               top: "50%",
               transform: "translateY(-50%)",
-              color: "var(--ink-4)",
+              color: "var(--ink-3)",
               pointerEvents: "none",
             }}
           />
@@ -218,29 +245,29 @@ const Guide = () => {
             className="w-full rounded-xl text-sm outline-none"
             style={{
               padding: "12px 16px 12px 42px",
-              background: "var(--surface-ink-raised)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              color: "var(--ink-2)",
+              background: "var(--paper-2)",
+              border: "1px solid var(--rule)",
+              color: "var(--ink)",
             }}
           />
         </div>
       </section>
 
       {/* Content */}
-      <section className="px-5 sm:px-10 pb-20">
+      <section className="px-5 sm:px-10 pb-20 flex-1">
         <div className="max-w-3xl mx-auto">
           {loading && (
-            <p style={{ fontSize: 14, color: "var(--ink-4)", textAlign: "center", padding: "40px 0" }}>Loading…</p>
+            <p style={{ fontSize: 14, color: "var(--ink-3)", textAlign: "center", padding: "40px 0" }}>Loading…</p>
           )}
 
           {error && (
-            <p style={{ fontSize: 14, color: "var(--error)", textAlign: "center", padding: "40px 0" }}>
+            <p style={{ fontSize: 14, color: "var(--ink-3)", textAlign: "center", padding: "40px 0" }}>
               The guide is loading — try again in a moment.
             </p>
           )}
 
           {!loading && !error && articles.length === 0 && (
-            <p style={{ fontSize: 14, color: "var(--ink-4)", textAlign: "center", padding: "40px 0" }}>
+            <p style={{ fontSize: 14, color: "var(--ink-3)", textAlign: "center", padding: "40px 0" }}>
               The guide is loading — try again in a moment.
             </p>
           )}
@@ -248,11 +275,11 @@ const Guide = () => {
           {!loading && !error && hasSearch && (
             <>
               {filtered.length === 0 ? (
-                <p style={{ fontSize: 14, color: "var(--ink-4)", textAlign: "center", padding: "40px 0" }}>
+                <p style={{ fontSize: 14, color: "var(--ink-3)", textAlign: "center", padding: "40px 0" }}>
                   No results for "{search.trim()}"
                 </p>
               ) : (
-                <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+                <div style={{ borderTop: "1px solid var(--rule)" }}>
                   {filtered.map((item) => (
                     <CollapsibleItem
                       key={item.slug}
@@ -275,11 +302,11 @@ const Guide = () => {
                   <div key={cat} className="mb-12">
                     <p
                       className="text-xs tracking-[0.2em] uppercase mb-4"
-                      style={{ color: "var(--bronze)" }}
+                      style={{ color: "var(--live)", fontFamily: "var(--font-mono)" }}
                     >
                       {SECTION_LABELS[cat] || cat}
                     </p>
-                    <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+                    <div style={{ borderTop: "1px solid var(--rule)" }}>
                       {items.map((item) => (
                         <CollapsibleItem
                           key={item.slug}
@@ -298,71 +325,48 @@ const Guide = () => {
       </section>
 
       {/* CTA */}
-      <section className="px-5 sm:px-10 py-20 text-center" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-        <h2 className="mb-5" style={{ fontFamily: "var(--font-display)", fontSize: "clamp(28px, 4vw, 40px)", color: "var(--ink-2)", fontWeight: 500 }}>
+      <section className="px-5 sm:px-10 py-20 text-center" style={{ borderTop: "1px solid var(--rule)" }}>
+        <h2 className="mb-5" style={{ fontFamily: "var(--font-display)", fontSize: "clamp(28px, 4vw, 40px)", color: "var(--ink)", fontWeight: 500 }}>
           Ready to start?
         </h2>
-        <p className="mb-8 max-w-md mx-auto" style={{ fontSize: 15, color: "var(--ink-3)", lineHeight: 1.625 }}>
+        <p className="mb-8 max-w-md mx-auto" style={{ fontSize: 15, color: "var(--ink-2)", lineHeight: 1.625 }}>
           {authed ? "Jump back into your dashboard and keep building." : "Join the private beta. We review applications weekly."}
         </p>
         <button
-          onClick={() => navigate(authed ? "/home" : "/request-access")}
+          onClick={() => navigate("/request-access")}
           className="px-7 py-3 rounded-xl text-sm font-medium transition-all hover:brightness-110"
-          style={{ background: "var(--brand)", color: "var(--ink)", fontWeight: 500 }}
+          style={{ background: "var(--action)", color: "var(--paper)", fontWeight: 500 }}
         >
-          {authed ? "Open Aura" : "Request access"}
+          Request access
         </button>
       </section>
 
-      {/* Footer (mirrors landing) */}
+      {/* Dark instrument footer */}
       <footer
-        className="guide-footer"
-        style={{
-          background: "#0D0D0D",
-          borderTop: "1px solid rgba(255,255,255,0.08)",
-          padding: "48px 40px",
-          color: "rgba(255,255,255,0.4)",
-        }}
+        className="px-6 sm:px-10 py-10"
+        style={{ background: "var(--ob-bg)", borderTop: "1px solid var(--hair)" }}
       >
         <div
-          className="guide-footer-grid"
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr 1fr",
-            gap: 32,
-            alignItems: "start",
-            maxWidth: 1280,
-            margin: "0 auto",
-          }}
+          className="mx-auto flex flex-col sm:flex-row items-center justify-between gap-4"
+          style={{ maxWidth: 720 }}
         >
-          <div>
-            <div className="flex items-center gap-2" style={{ height: 24 }}>
-              <span className="text-base font-medium tracking-[0.15em]" style={{ color: "var(--brand)", fontFamily: "var(--font-display)", lineHeight: "24px" }}>AURA</span>
-              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>Turns your expertise into presence</span>
-            </div>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 12 }}>
-              © 2026 Aura Intelligence. All rights reserved.
-            </p>
+          <div
+            className="flex flex-wrap items-center justify-center gap-3 text-xs"
+            style={{ fontFamily: "var(--font-mono)", color: "var(--glass-2)" }}
+          >
+            <Link to="/" style={{ color: "var(--glass-2)" }}>Home</Link>
+            <span style={{ color: "var(--glass-3)" }}>·</span>
+            <Link to="/trust" style={{ color: "var(--glass-2)" }}>Security & Trust</Link>
+            <span style={{ color: "var(--glass-3)" }}>·</span>
+            <Link to="/privacy" style={{ color: "var(--glass-2)" }}>Privacy</Link>
+            <span style={{ color: "var(--glass-3)" }}>·</span>
+            <Link to="/terms" style={{ color: "var(--glass-2)" }}>Terms</Link>
+            <span style={{ color: "var(--glass-3)" }}>·</span>
+            <Link to="/our-story" style={{ color: "var(--glass-2)" }}>Our Story</Link>
           </div>
-          <div className="guide-footer-col-center" style={{ textAlign: "center" }}>
-            <div style={{ display: "inline-flex", flexWrap: "wrap", justifyContent: "center", gap: 10, fontSize: 12 }}>
-              <Link to="/terms">Terms</Link>
-              <span style={{ color: "rgba(255,255,255,0.25)" }}>·</span>
-              <Link to="/privacy">Privacy</Link>
-              <span style={{ color: "rgba(255,255,255,0.25)" }}>·</span>
-              <Link to="/guide">Guide</Link>
-              <span style={{ color: "rgba(255,255,255,0.25)" }}>·</span>
-              <Link to="/request-access">Request Access</Link>
-            </div>
-          </div>
-          <div className="guide-footer-col-right" style={{ textAlign: "right" }}>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>
-              Contact: <a href="mailto:support@aura-intel.org">support@aura-intel.org</a>
-            </p>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 6 }}>
-              Built in Riyadh for the world.
-            </p>
-          </div>
+          <p className="text-xs" style={{ color: "var(--glass-3)", fontFamily: "var(--font-mono)" }}>
+            Aura · Built in Riyadh, for the world.
+          </p>
         </div>
       </footer>
     </div>
