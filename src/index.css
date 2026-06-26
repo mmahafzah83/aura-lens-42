@@ -1685,6 +1685,7 @@ html.dark .text-gray-500,
 }
 .aura-sidebar-shell[data-surface="dark"] .aura-nav-item { color: var(--glass-2); }
 .aura-sidebar-shell[data-surface="dark"] .aura-nav-item:hover:not(.is-active) { color: var(--glass); background: color-mix(in srgb, var(--glass) 8%, transparent); }
+.aura-sidebar-shell[data-surface="dark"] .aura-nav-item.is-active { color: var(--action); }
 .aura-sidebar-shell[data-surface="bone"] { background: var(--paper); border-right: 0.5px solid var(--brand-line); }
 
 /* Ask Aura pill — surface-aware via CSS vars set on the sidebar shell */
