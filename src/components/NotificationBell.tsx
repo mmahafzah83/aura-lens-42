@@ -133,10 +133,14 @@ const NotificationBell = () => {
           color: "var(--ink)",
         }}
       >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border/20">
-          <h4 className="text-sm font-semibold text-foreground">Strategic Alerts</h4>
+        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--rule)" }}>
+          <h4 className="text-sm font-semibold" style={{ color: "var(--ink)" }}>Strategic Alerts</h4>
           {notifications.length > 0 && (
-            <button onClick={clearAll} className="text-xs text-muted-foreground hover:text-destructive transition-colors">
+            <button
+              onClick={clearAll}
+              className="text-xs transition-colors"
+              style={{ color: "var(--ink-3)" }}
+            >
               Clear all
             </button>
           )}
