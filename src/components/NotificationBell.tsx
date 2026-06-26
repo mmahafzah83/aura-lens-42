@@ -98,13 +98,16 @@ const NotificationBell = () => {
         <button
           aria-label="Notifications"
           data-testid="nav-notifications"
-          className="relative tactile-press p-2 inline-flex items-center justify-center min-w-[44px] min-h-[44px]"
+          className="relative tactile-press inline-flex items-center justify-center"
           style={{
-            background: "var(--paper-2)",
-            border: "0.5px solid var(--paper-3)",
-            borderRadius: "var(--r-md)",
-            color: unreadCount > 0 ? "var(--bronze)" : "var(--ink-3)",
-            transition: "color var(--t-fast) var(--ease)",
+            width: 44,
+            height: 44,
+            borderRadius: "50%",
+            background: "transparent",
+            border: 0,
+            cursor: "pointer",
+            color: unreadCount > 0 ? "var(--action)" : "var(--ink-3)",
+            transition: "color 150ms",
           }}
         >
           <Bell className="w-4 h-4" />
