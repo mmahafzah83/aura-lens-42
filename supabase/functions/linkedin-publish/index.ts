@@ -67,6 +67,24 @@ Deno.serve(async (req) => {
     let mediaContent: Record<string, unknown> | undefined;
 
     if (imageUrl) {
+      let parsedImg: URL;
+      try {
+        parsedImg = new URL(imageUrl);
+      } catch {
+        return json({ success: false, error: "Invalid image URL" }, 400);
+      }
+      if (parsedImg.protocol !== "https:") {
+        return json({ success: false, error: "Image URL must be https" }, 400);
+      }
+      const imgHost = parsedImg.hostname.toLowerCase();
+      const allowedHost =
+        imgHost.endsWith(".supabase.co") ||
+        imgHost.endsWith(".supabase.in") ||
+        imgHost.endsWith(".lovable.app") ||
+        imgHost.endsWith(".lovable.dev");
+      if (!allowedHost) {
+        return json({ success: false, error: "Image must be hosted on approved storage" }, 400);
+      }
       const initRes = await fetch("https://api.linkedin.com/rest/images?action=initializeUpload", {
         method: "POST",
         headers: {
@@ -88,7 +106,7 @@ Deno.serve(async (req) => {
         return json({ success: false, error: "Image init returned no upload URL", detail: JSON.stringify(initJson) });
       }
 
-      const imgRes = await fetch(imageUrl);
+      const imgRes = await fetch(parsedImg.toString());
       if (!imgRes.ok) {
         return json({ success: false, error: "Could not read the stored image", status: imgRes.status });
       }

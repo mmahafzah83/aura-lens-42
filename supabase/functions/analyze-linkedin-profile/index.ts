@@ -28,9 +28,22 @@ serve(async (req) => {
     }
 
     const { url, profileText: userProvidedText } = await req.json();
-    if (!url || !url.includes("linkedin.com/in/")) {
+    let parsedUrl: URL | null = null;
+    try {
+      parsedUrl = new URL(url);
+    } catch {
+      parsedUrl = null;
+    }
+    const validHost =
+      parsedUrl &&
+      parsedUrl.protocol === "https:" &&
+      (parsedUrl.hostname === "linkedin.com" ||
+        parsedUrl.hostname === "www.linkedin.com" ||
+        parsedUrl.hostname.endsWith(".linkedin.com")) &&
+      parsedUrl.pathname.startsWith("/in/");
+    if (!validHost) {
       return new Response(
-        JSON.stringify({ error: "A valid LinkedIn profile URL is required (e.g. https://www.linkedin.com/in/username)" }),
+        JSON.stringify({ error: "A valid https LinkedIn profile URL is required (e.g. https://www.linkedin.com/in/username)" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -43,8 +56,7 @@ serve(async (req) => {
 
     // Only attempt fetch if user didn't provide text
     if (!pageText) {
-      let profileUrl = url.trim();
-      if (!profileUrl.startsWith("http")) profileUrl = `https://${profileUrl}`;
+      let profileUrl = parsedUrl!.toString();
       if (!profileUrl.endsWith("/")) profileUrl += "/";
 
       const fetchWithTimeout = async (targetUrl: string, timeoutMs = 12000) => {
