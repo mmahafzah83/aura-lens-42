@@ -159,9 +159,11 @@ const NotificationBell = () => {
               return (
                 <div
                   key={n.id}
-                  className={`px-4 py-3 border-b border-border/10 transition-colors ${
-                    n.read ? "opacity-60" : "bg-primary/5"
-                  }`}
+                  className={`px-4 py-3 transition-colors ${n.read ? "opacity-60" : ""}`}
+                  style={{
+                    borderBottom: "1px solid var(--rule)",
+                    background: n.read ? "transparent" : "color-mix(in srgb, var(--action) 8%, transparent)",
+                  }}
                 >
                   <div className="flex items-start gap-3">
                     <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 bg-secondary/30 ${iconColor}`}>
