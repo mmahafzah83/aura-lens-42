@@ -98,13 +98,16 @@ const NotificationBell = () => {
         <button
           aria-label="Notifications"
           data-testid="nav-notifications"
-          className="relative tactile-press p-2 inline-flex items-center justify-center min-w-[44px] min-h-[44px]"
+          className="relative tactile-press inline-flex items-center justify-center"
           style={{
-            background: "var(--paper-2)",
-            border: "0.5px solid var(--paper-3)",
-            borderRadius: "var(--r-md)",
-            color: unreadCount > 0 ? "var(--bronze)" : "var(--ink-3)",
-            transition: "color var(--t-fast) var(--ease)",
+            width: 44,
+            height: 44,
+            borderRadius: "50%",
+            background: "transparent",
+            border: 0,
+            cursor: "pointer",
+            color: unreadCount > 0 ? "var(--action)" : "var(--ink-3)",
+            transition: "color 150ms",
           }}
         >
           <Bell className="w-4 h-4" />
@@ -119,14 +122,25 @@ const NotificationBell = () => {
         </button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-80 sm:w-96 p-0 glass-card-elevated border-border/30"
+        className="w-80 sm:w-96 p-0 overflow-hidden"
         align="end"
         sideOffset={8}
+        style={{
+          background: "var(--paper-2)",
+          border: "0.5px solid var(--rule)",
+          borderRadius: 12,
+          boxShadow: "var(--shadow-lift)",
+          color: "var(--ink)",
+        }}
       >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border/20">
-          <h4 className="text-sm font-semibold text-foreground">Strategic Alerts</h4>
+        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--rule)" }}>
+          <h4 className="text-sm font-semibold" style={{ color: "var(--ink)" }}>Strategic Alerts</h4>
           {notifications.length > 0 && (
-            <button onClick={clearAll} className="text-xs text-muted-foreground hover:text-destructive transition-colors">
+            <button
+              onClick={clearAll}
+              className="text-xs transition-colors"
+              style={{ color: "var(--ink-3)" }}
+            >
               Clear all
             </button>
           )}
@@ -134,33 +148,38 @@ const NotificationBell = () => {
         <div className="max-h-[360px] overflow-y-auto">
           {notifications.length === 0 ? (
             <div className="px-4 py-8 text-center">
-              <Bell className="w-6 h-6 text-muted-foreground/30 mx-auto mb-2" />
-              <p className="text-xs text-muted-foreground">No strategic alerts yet</p>
-              <p className="text-xs text-muted-foreground/60 mt-1">Aura will notify you when meaningful patterns emerge</p>
+              <Bell className="w-6 h-6 mx-auto mb-2" style={{ color: "var(--ink-4)" }} />
+              <p className="text-xs" style={{ color: "var(--ink-3)" }}>No strategic alerts yet</p>
+              <p className="text-xs mt-1" style={{ color: "var(--ink-4)" }}>Aura will notify you when meaningful patterns emerge</p>
             </div>
           ) : (
             notifications.map((n) => {
               const Icon = TYPE_ICONS[n.type] || Bell;
-              const iconColor = TYPE_COLORS[n.type] || "text-muted-foreground";
+              const iconColor = TYPE_COLORS[n.type] || "text-[color:var(--ink-3)]";
               return (
                 <div
                   key={n.id}
-                  className={`px-4 py-3 border-b border-border/10 transition-colors ${
-                    n.read ? "opacity-60" : "bg-primary/5"
-                  }`}
+                  className={`px-4 py-3 transition-colors ${n.read ? "opacity-60" : ""}`}
+                  style={{
+                    borderBottom: "1px solid var(--rule)",
+                    background: n.read ? "transparent" : "color-mix(in srgb, var(--action) 8%, transparent)",
+                  }}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 bg-secondary/30 ${iconColor}`}>
+                    <div
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${iconColor}`}
+                      style={{ background: "var(--paper-3)" }}
+                    >
                       <Icon className="w-3.5 h-3.5" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <h5 className="text-xs font-semibold text-foreground truncate">{n.title}</h5>
-                        <span className="text-xs text-muted-foreground/50 shrink-0">
+                        <h5 className="text-xs font-semibold truncate" style={{ color: "var(--ink)" }}>{n.title}</h5>
+                        <span className="text-xs shrink-0" style={{ color: "var(--ink-4)" }}>
                           {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
                         </span>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{n.body}</p>
+                      <p className="text-xs mt-1 leading-relaxed" style={{ color: "var(--ink-3)" }}>{n.body}</p>
 
                       {/* Alert urgency badge */}
                       {n.metadata?.urgency === "high" && (
@@ -177,11 +196,11 @@ const NotificationBell = () => {
                             { label: "Voice", value: n.metadata.market_voice, color: "bg-[color:var(--info)]" },
                           ].map((kpi) => (
                             <div key={kpi.label} className="flex items-center gap-1.5">
-                              <span className="text-xs text-muted-foreground">{kpi.label}</span>
-                              <div className="w-12 h-1 rounded-full bg-secondary overflow-hidden">
+                              <span className="text-xs" style={{ color: "var(--ink-3)" }}>{kpi.label}</span>
+                              <div className="w-12 h-1 rounded-full overflow-hidden" style={{ background: "var(--paper-3)" }}>
                                 <div className={`h-full rounded-full ${kpi.color}`} style={{ width: `${kpi.value || 0}%` }} />
                               </div>
-                              <span className="text-xs text-muted-foreground">{kpi.value || 0}%</span>
+                              <span className="text-xs" style={{ color: "var(--ink-3)" }}>{kpi.value || 0}%</span>
                             </div>
                           ))}
                         </div>
