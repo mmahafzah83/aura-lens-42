@@ -900,12 +900,19 @@ function ResultsView({
   };
 
   const downloadReport = () => {
+    const escapeHtml = (s: string) =>
+      String(s ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
     const sectionsHtml = SECTION_DEFS.map(s => {
       const content = extractSection(prose, s.key) || "";
       if (!content) return "";
-      return `<section><h2>${s.label}</h2><p>${content.replace(/\n/g, "<br/>")}</p></section>`;
+      return `<section><h2>${escapeHtml(s.label)}</h2><p>${escapeHtml(content).replace(/\n/g, "<br/>")}</p></section>`;
     }).join("");
-    const html = `<!doctype html><html><head><meta charset="utf-8"/><title>Aura — ${archetype}</title>
+    const html = `<!doctype html><html><head><meta charset="utf-8"/><title>Aura — ${escapeHtml(archetype)}</title>
       <style>
         /* Print stylesheet runs in a popup window with no access to app CSS vars.
            Hex values below mirror canonical light-mode Standard tokens:
@@ -926,9 +933,9 @@ function ResultsView({
         footer{margin-top:40px;font-size:11px;color:#999;text-align:center}
       </style></head><body>
       <div class="label">Aura sees you as</div>
-      <h1>${archetype}</h1>
-      ${oneLineDesc ? `<p class="desc">${oneLineDesc}</p>` : ""}
-      ${positioning ? `<div class="oneliner">${positioning}</div>` : ""}
+      <h1>${escapeHtml(archetype)}</h1>
+      ${oneLineDesc ? `<p class="desc">${escapeHtml(oneLineDesc)}</p>` : ""}
+      ${positioning ? `<div class="oneliner">${escapeHtml(positioning)}</div>` : ""}
       ${sectionsHtml}
       <footer>Aura — Strategic Positioning Report</footer>
       </body></html>`;
