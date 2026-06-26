@@ -148,10 +148,28 @@ Deno.serve(async (req) => {
         let fetchSuccess = false;
 
         try {
+          let parsedTarget: URL;
+          try {
+            parsedTarget = new URL(targetUrl);
+          } catch {
+            throw new Error("Invalid URL");
+          }
+          if (parsedTarget.protocol !== "https:") {
+            throw new Error("Only https:// URLs are allowed");
+          }
+          const host = parsedTarget.hostname.toLowerCase();
+          if (
+            host === "localhost" ||
+            host.endsWith(".local") ||
+            /^(10\.|127\.|0\.|169\.254\.|192\.168\.|::1|fc|fd)/i.test(host) ||
+            /^172\.(1[6-9]|2\d|3[01])\./.test(host)
+          ) {
+            throw new Error("Private/internal hosts are not allowed");
+          }
           const controller = new AbortController();
           const timer = setTimeout(() => controller.abort(), 10000);
 
-          const pageRes = await fetch(targetUrl, {
+          const pageRes = await fetch(parsedTarget.toString(), {
             headers: {
               "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
               Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
