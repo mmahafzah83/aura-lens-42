@@ -174,7 +174,7 @@ const NotificationBell = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <h5 className="text-xs font-semibold text-foreground truncate">{n.title}</h5>
+                        <h5 className="text-xs font-semibold truncate" style={{ color: "var(--ink)" }}>{n.title}</h5>
                         <span className="text-xs text-muted-foreground/50 shrink-0">
                           {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
                         </span>
