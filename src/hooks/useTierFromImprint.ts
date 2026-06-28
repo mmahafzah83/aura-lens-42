@@ -72,6 +72,8 @@ export interface UseTierFromImprintResult {
   delta: number | null;
   /** True when latest band differs from previous band AND not yet acknowledged. */
   crossed: boolean;
+  /** Component breakdown from the latest snapshot's components.score_components. */
+  scoreComponents: { signal: number; content: number; capture: number } | null;
   /** Mark current tier as acknowledged so it won't re-trigger. */
   acknowledge: () => void;
   /** Manually re-query (also called on imprint_snapshots realtime events). */
@@ -86,23 +88,24 @@ export function useTierFromImprint(userId: string | null | undefined): UseTierFr
   const [previousTier, setPreviousTier] = useState<TierBand | null>(null);
   const [delta, setDelta] = useState<number | null>(null);
   const [crossed, setCrossed] = useState(false);
+  const [scoreComponents, setScoreComponents] = useState<{ signal: number; content: number; capture: number } | null>(null);
 
   const load = useCallback(async () => {
     if (!userId) {
       setLoading(false);
-      setScore(null); setCurrentTier(null); setPreviousTier(null); setDelta(null); setCrossed(false);
+      setScore(null); setCurrentTier(null); setPreviousTier(null); setDelta(null); setCrossed(false); setScoreComponents(null);
       return;
     }
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from("imprint_snapshots")
-        .select("imprint, tier, created_at")
+        .select("imprint, tier, components, created_at")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(2);
       if (error) throw error;
-      const rows = (data || []) as Array<{ imprint: number | null; tier: string | null; created_at: string }>;
+      const rows = (data || []) as Array<{ imprint: number | null; tier: string | null; components: any; created_at: string }>;
       const latest = rows[0]?.imprint ?? null;
       const prior  = rows[1]?.imprint ?? null;
       // Source of truth = EF-computed tier (carries asymmetric hysteresis).
@@ -113,6 +116,16 @@ export function useTierFromImprint(userId: string | null | undefined): UseTierFr
       setCurrentTier(cur);
       setPreviousTier(prev);
       setDelta(latest != null && prior != null ? Math.round(latest - prior) : null);
+      const sc = rows[0]?.components?.score_components;
+      if (sc && (sc.signal_score != null || sc.content_score != null || sc.capture_score != null)) {
+        setScoreComponents({
+          signal:  Math.round(Number(sc.signal_score  ?? 0)),
+          content: Math.round(Number(sc.content_score ?? 0)),
+          capture: Math.round(Number(sc.capture_score ?? 0)),
+        });
+      } else {
+        setScoreComponents(null);
+      }
 
       // Crossing = bands differ. We do NOT require an upward move (a downward
       // crossing still warrants surfacing, though the modal copy reads as a
@@ -125,7 +138,7 @@ export function useTierFromImprint(userId: string | null | undefined): UseTierFr
       setCrossed(!!cur && isUpward && !alreadyAck);
     } catch (e) {
       console.warn("[useTierFromImprint] load failed", e);
-      setScore(null); setCurrentTier(null); setPreviousTier(null); setDelta(null); setCrossed(false);
+      setScore(null); setCurrentTier(null); setPreviousTier(null); setDelta(null); setCrossed(false); setScoreComponents(null);
     } finally {
       setLoading(false);
     }
@@ -155,7 +168,7 @@ export function useTierFromImprint(userId: string | null | undefined): UseTierFr
     setCrossed(false);
   }, [currentTier]);
 
-  return { loading, score, currentTier, previousTier, delta, crossed, acknowledge, refresh: load };
+  return { loading, score, currentTier, previousTier, delta, crossed, scoreComponents, acknowledge, refresh: load };
 }
 
 export default useTierFromImprint;
