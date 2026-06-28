@@ -898,31 +898,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     let cancelled = false;
     (async () => {
       try {
-        // Cache validation — the EF builds its data_hash from a JSON payload
-        // that includes `score`. We mirror that prefix client-side so a
-        // narrative generated against a stale (legacy) score is BYPASSED
-        // rather than rendered. Keeps "what your numbers say" in lockstep
-        // with the imprint dial.
-        const expectedHashPrefix = JSON.stringify({
-          score: latestScore,
-          followers: latestFollowers,
-          impressions: periodImpressions,
-          engagementRate: periodEngagementRate,
-          postCount: contentPerf?.postCount || 0,
-          selectedDays,
-          promptVersion: "v3",
-        }).slice(0, 200);
-        const { data: cached } = await supabase
-          .from("impact_narratives")
-          .select("*")
-          .eq("user_id", userId)
-          .order("generated_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (cached && !cancelled && (cached as any).data_hash === expectedHashPrefix) {
-          setImpactNarrative(cached as any);
-          return;
-        }
         const { data } = await supabase.functions.invoke("generate-impact-narrative", {
           body: {
             score: latestScore,
