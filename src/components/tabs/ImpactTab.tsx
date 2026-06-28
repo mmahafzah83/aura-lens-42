@@ -680,7 +680,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   // CANONICAL SCORE — repointed to imprint_snapshots so Impact matches
   // Home / Observatory / My Story. Legacy aura_score / score_snapshots used
   // ONLY as null-fallback while imprint hasn't loaded.
-  const { score: imprintScore, currentTier: imprintTier, delta: imprintDelta } =
+  const { score: imprintScore, currentTier: imprintTier, delta: imprintDelta, scoreComponents } =
     useTierFromImprint(userId);
   const legacyAuraScore = (auraData as any)?.aura_score ?? latest?.score ?? 0;
   const latestScore = imprintScore != null ? imprintScore : legacyAuraScore;
@@ -690,9 +690,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   // calculate-aura-score / score_snapshots. They are NOT presented as
   // summing to the imprint dial; pending an imprint-native breakdown they
   // remain a directional, legacy view. TODO: replace once imprint components ship.
-  const captureScore = (auraData as any)?.capture_score ?? latest?.components?.capture_score ?? 0;
-  const contentScore = (auraData as any)?.content_score ?? latest?.components?.content_score ?? 0;
-  const signalScore = (auraData as any)?.signal_score ?? latest?.components?.signal_score ?? 0;
+  const signalScore  = scoreComponents?.signal  ?? (auraData as any)?.signal_score  ?? latest?.components?.signal_score  ?? 0;
+  const contentScore = scoreComponents?.content ?? (auraData as any)?.content_score ?? latest?.components?.content_score ?? 0;
+  const captureScore = scoreComponents?.capture ?? (auraData as any)?.capture_score ?? latest?.components?.capture_score ?? 0;
 
   // Score 7 days ago (closest snapshot to that date)
   const score7 = useMemo(() => {
@@ -898,31 +898,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     let cancelled = false;
     (async () => {
       try {
-        // Cache validation — the EF builds its data_hash from a JSON payload
-        // that includes `score`. We mirror that prefix client-side so a
-        // narrative generated against a stale (legacy) score is BYPASSED
-        // rather than rendered. Keeps "what your numbers say" in lockstep
-        // with the imprint dial.
-        const expectedHashPrefix = JSON.stringify({
-          score: latestScore,
-          followers: latestFollowers,
-          impressions: periodImpressions,
-          engagementRate: periodEngagementRate,
-          postCount: contentPerf?.postCount || 0,
-          selectedDays,
-          promptVersion: "v3",
-        }).slice(0, 200);
-        const { data: cached } = await supabase
-          .from("impact_narratives")
-          .select("*")
-          .eq("user_id", userId)
-          .order("generated_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (cached && !cancelled && (cached as any).data_hash === expectedHashPrefix) {
-          setImpactNarrative(cached as any);
-          return;
-        }
         const { data } = await supabase.functions.invoke("generate-impact-narrative", {
           body: {
             score: latestScore,

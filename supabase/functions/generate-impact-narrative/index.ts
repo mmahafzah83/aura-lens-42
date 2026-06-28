@@ -42,8 +42,27 @@ serve(async (req) => {
       topPosts,
     } = body;
 
+    // GROUNDING: pull canonical imprint + components from imprint_snapshots so
+    // narrative + cache key cannot drift from the dial.
+    const { data: imp } = await admin
+      .from("imprint_snapshots")
+      .select("imprint, components")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const sc = (imp?.components as any)?.score_components ?? {};
+    const groundedScore       = imp?.imprint != null ? Math.round(Number(imp.imprint)) : score;
+    const groundedSignal      = sc.signal_score  ?? signalScore;
+    const groundedContent     = sc.content_score ?? contentScore;
+    const groundedConsistency = sc.capture_score ?? consistencyScore;
+
     const hashInput = JSON.stringify({
-      score, followers, impressions, engagementRate, postCount, selectedDays,
+      score: groundedScore,
+      signal: groundedSignal,
+      content: groundedContent,
+      consistency: groundedConsistency,
+      followers, impressions, engagementRate, postCount, selectedDays,
       promptVersion: PROMPT_VERSION,
     });
     const dataHash = hashInput.slice(0, 200);
@@ -78,11 +97,11 @@ serve(async (req) => {
     const prompt = `You are a Senior Presence Advisor analyzing a professional's Impact dashboard. Speak directly to ${name} by first name. Be specific — reference exact numbers from the data. Be strategic — explain what the numbers MEAN, not just what they ARE.
 
 DASHBOARD DATA (last ${selectedDays} days):
-- Imprint: ${score}/100 (${tierName} tier), ${weekDelta > 0 ? "up" : "down"} ${Math.abs(weekDelta)} points this week
+- Imprint: ${groundedScore}/100 (${tierName} tier), ${weekDelta > 0 ? "up" : "down"} ${Math.abs(weekDelta)} points this week
 - Followers: ${followers} total, +${newFollowers} new this period${Number.isFinite(followerChange) ? `, ${followerChange > 0 ? "+" : ""}${followerChange.toFixed(0)}% vs prior period` : ""}
 - Impressions: ${impressions} total${Number.isFinite(impChange) ? `, ${impChange > 0 ? "+" : ""}${impChange.toFixed(0)}% vs prior period` : ""}
 - Engagement rate: ${engagementRate}%${Number.isFinite(engChange) ? `, ${engChange > 0 ? "+" : ""}${engChange.toFixed(0)}% vs prior period` : ""}
-- Score breakdown: Signal ${signalScore}/40, Content ${contentScore}/40, Consistency ${consistencyScore}/20
+- Score breakdown: Signal ${groundedSignal}/40, Content ${groundedContent}/40, Consistency ${groundedConsistency}/20
 - Visibility: ${visibility} avg impressions/post
 - Resonance: ${resonance}% engagement (tier benchmark: 1.5-4% for 10K-50K followers)
 - Signal depth: ${signalDepth} active signals
