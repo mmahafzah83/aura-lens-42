@@ -19,6 +19,7 @@ import Trust from "./pages/Trust";
 import Guide from "./pages/Guide";
 import Settings from "./pages/Settings";
 import PasswordGate from "./components/PasswordGate";
+import AdminGate from "./components/AdminGate";
 import { ThemeProvider } from "./components/ThemeProvider";
 import CookieConsent from "./components/CookieConsent";
 
