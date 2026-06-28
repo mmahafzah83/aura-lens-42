@@ -19,6 +19,7 @@ import Trust from "./pages/Trust";
 import Guide from "./pages/Guide";
 import Settings from "./pages/Settings";
 import PasswordGate from "./components/PasswordGate";
+import AdminGate from "./components/AdminGate";
 import { ThemeProvider } from "./components/ThemeProvider";
 import CookieConsent from "./components/CookieConsent";
 
@@ -88,12 +89,12 @@ const App = () => (
             <Route path="/login" element={<Auth />} />
             <Route path="/request-access" element={<RequestAccess />} />
             <Route path="/accept-invitation" element={<AcceptInvitation />} />
-            <Route path="/admin" element={<PasswordGate><Admin /></PasswordGate>} />
-            <Route path="/admin/design-system" element={<PasswordGate><AdminDesignSystem /></PasswordGate>} />
-            <Route path="/admin/experience" element={<PasswordGate><AdminExperience /></PasswordGate>} />
-            <Route path="/admin/qa" element={<PasswordGate><AdminQA /></PasswordGate>} />
-            <Route path="/admin/guide-health" element={<PasswordGate><AdminGuideHealth /></PasswordGate>} />
-            <Route path="/admin/standard" element={<PasswordGate><AdminStandard /></PasswordGate>} />
+            <Route path="/admin" element={<PasswordGate><AdminGate><Admin /></AdminGate></PasswordGate>} />
+            <Route path="/admin/design-system" element={<PasswordGate><AdminGate><AdminDesignSystem /></AdminGate></PasswordGate>} />
+            <Route path="/admin/experience" element={<PasswordGate><AdminGate><AdminExperience /></AdminGate></PasswordGate>} />
+            <Route path="/admin/qa" element={<PasswordGate><AdminGate><AdminQA /></AdminGate></PasswordGate>} />
+            <Route path="/admin/guide-health" element={<PasswordGate><AdminGate><AdminGuideHealth /></AdminGate></PasswordGate>} />
+            <Route path="/admin/standard" element={<PasswordGate><AdminGate><AdminStandard /></AdminGate></PasswordGate>} />
             <Route path="/onboarding" element={<PasswordGate><Onboarding /></PasswordGate>} />
             <Route path="/api/auth/linkedin/callback" element={<LinkedInCallback />} />
             <Route path="/trends/:id" element={<PasswordGate><TrendDetail /></PasswordGate>} />
