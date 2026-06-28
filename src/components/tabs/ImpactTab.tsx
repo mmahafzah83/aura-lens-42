@@ -3138,13 +3138,14 @@ const PeriodComparison = ({ change, selectedDays, growthContext = false }: { cha
   );
 };
 
-const MiniKPI = ({ label, rawValue, formatter, index = 0, selectedDays, change }: {
+const MiniKPI = ({ label, rawValue, formatter, index = 0, selectedDays, change, growthContext }: {
   label: string;
   rawValue: number | null;
   formatter: (n: number) => string;
   index?: number;
   selectedDays?: RangeDays;
   change?: number | null;
+  growthContext?: boolean;
 }) => {
   // For decimals (engagement rate), scale by 10 so the count-up stays integer-safe.
   const isDecimal = formatter(0.1).includes(".");
@@ -3181,7 +3182,7 @@ const MiniKPI = ({ label, rawValue, formatter, index = 0, selectedDays, change }
       </div>
     )}
     {change !== undefined && selectedDays && (
-      <PeriodComparison change={change ?? null} selectedDays={selectedDays} />
+      <PeriodComparison change={change ?? null} selectedDays={selectedDays} growthContext={growthContext} />
     )}
   </div>
 );
