@@ -728,8 +728,7 @@ const AdminDesignSystem = () => {
             </table>
           </div>
         </section>
-      </div>
-    </div>
+    </AdminShell>
   );
 };
 
