@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import AdminShell from "@/components/admin/AdminShell";
 
 // Guard pattern reused verbatim from src/pages/AdminDesignSystem.tsx
 const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
@@ -48,17 +49,18 @@ export default function AdminStandard() {
   }
 
   return (
-    <iframe
-      title="The Aura Standard V2.0"
-      src="/admin/aura-standard-v2.html"
-      style={{
-        position: "fixed",
-        inset: 0,
-        width: "100vw",
-        height: "100vh",
-        border: 0,
-        background: "var(--paper)",
-      }}
-    />
+    <AdminShell bleed>
+      <iframe
+        title="The Aura Standard V2.0"
+        src="/admin/aura-standard-v2.html"
+        style={{
+          display: "block",
+          width: "100%",
+          height: "calc(100vh - 60px)",
+          border: 0,
+          background: "var(--paper)",
+        }}
+      />
+    </AdminShell>
   );
 }
