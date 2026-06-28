@@ -374,14 +374,14 @@ const ContributionBar = ({
   const segs = [
     { key: "Signal",  v: s, color: "var(--live)",   slug: "signal-contribution",  text: "How strong and well-evidenced your signals are." },
     { key: "Content", v: c, color: "var(--action)", slug: "content-contribution", text: "How much you've published from your signals." },
-    { key: "Rhythm",  v: r, color: RHYTHM_TEAL,     slug: "rhythm-contribution",  text: "How steadily you've been capturing, week to week." },
+    { key: "Consistency",  v: r, color: RHYTHM_TEAL,     slug: "rhythm-contribution",  text: "How steadily you've been capturing, week to week." },
   ];
 
   // Lever: largest (gap-to-100 × weight).
   const levers = [
     { label: "Signal",  gap: (100 - components.signal_score)  * WEIGHTS.signal },
     { label: "Content", gap: (100 - components.content_score) * WEIGHTS.content },
-    { label: "Rhythm",  gap: (100 - components.capture_score) * WEIGHTS.rhythm },
+    { label: "Consistency",  gap: (100 - components.capture_score) * WEIGHTS.rhythm },
   ];
   const lever = levers.reduce((a, b) => (b.gap > a.gap ? b : a));
 
@@ -405,7 +405,7 @@ const ContributionBar = ({
       </div>
 
       {/* Bar — full width = 100. Three segments sized to contributions. */}
-      <div role="img" aria-label={`Imprint ${target}: signal ${s}, content ${c}, rhythm ${r}`}
+      <div role="img" aria-label={`Imprint ${target}: signal ${s}, content ${c}, consistency ${r}`}
            style={{
              display: "flex", width: "100%", height: 14, borderRadius: 4,
              overflow: "hidden", background: "var(--ob-field)",
@@ -441,7 +441,7 @@ const ContributionBar = ({
         color: "var(--glass)", letterSpacing: "0.02em",
         fontVariantNumeric: "tabular-nums",
       }}>
-        Signal +{s} · Content +{c} · Rhythm +{r} = Imprint {target}
+        Signal +{s} · Content +{c} · Consistency +{r} = Imprint {target}
       </div>
 
       {/* Lever line */}
