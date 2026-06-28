@@ -469,8 +469,7 @@ const AdminExperience = () => {
             </div>
           </Card>
         </section>
-      </div>
-    </div>
+    </AdminShell>
   );
 };
 
