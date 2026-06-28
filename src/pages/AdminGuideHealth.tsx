@@ -265,7 +265,6 @@ export default function AdminGuideHealth() {
             })
           )}
         </div>
-      </div>
-    </div>
+    </AdminShell>
   );
 }
