@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Check, Copy, Loader2, Send, Trash2 } from "lucide-react";
-import AuraLogo from "@/components/brand/AuraLogo";
+import AdminShell from "@/components/admin/AdminShell";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -397,40 +397,7 @@ const Admin = () => {
   }
 
   return (
-    <div
-      className="min-h-screen w-full"
-      style={{ backgroundColor: "var(--ink)", color: "var(--ink-7)", fontFamily: "DM Sans, system-ui, sans-serif" }}
-    >
-      <div className="max-w-5xl mx-auto px-6 py-10">
-        {/* Header */}
-        <div className="mb-6">
-          <AuraLogo size={28} variant="dark" withWordmark />
-        </div>
-        <h1 className="text-3xl font-bold mb-2" style={{ color: "var(--ink-7)" }}>
-          Beta Access — Admin
-        </h1>
-        <p className="text-sm mb-8" style={{ color: "var(--ink-5)" }}>
-          Manage waitlist and send invites
-        </p>
-
-        {/* Admin nav */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          <Link
-            to="/admin/experience"
-            className="text-xs px-3 py-1.5 rounded-md font-medium inline-flex items-center gap-1.5"
-            style={{ backgroundColor: "var(--brand-muted)", color: "var(--brand)", border: "1px solid var(--bronze-line)" }}
-          >
-            Experience Manager →
-          </Link>
-          <Link
-            to="/admin/design-system"
-            className="text-xs px-3 py-1.5 rounded-md font-medium"
-            style={{ backgroundColor: "var(--surface-ink-raised)", color: "var(--ink-5)", border: "1px solid var(--ink-3)" }}
-          >
-            Design System →
-          </Link>
-        </div>
-
+    <AdminShell title="Beta access — Admin" subtitle="Manage waitlist and send invites">
         {/* Stats row */}
         <div className="flex flex-wrap gap-2 mb-6">
           <span className="text-xs px-3 py-1.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
@@ -1105,7 +1072,6 @@ const Admin = () => {
             </div>
           )}
         </div>
-      </div>
       <AlertDialog
         open={!!confirmInviteRow}
         onOpenChange={(open) => { if (!open) setConfirmInviteRow(null); }}
@@ -1157,7 +1123,7 @@ const Admin = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </AdminShell>
   );
 };
 

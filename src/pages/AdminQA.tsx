@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import html2canvas from "html2canvas";
 import { runDomAudit } from "@/utils/qaInteractionAudit";
 import { Loader2, Copy, ChevronDown, ChevronRight, X, Download } from "lucide-react";
+import AdminShell from "@/components/admin/AdminShell";
 
 const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 // Map "page label" → real SPA URL. The app renders those areas as tabs on /home
@@ -593,27 +594,10 @@ const AdminQA = () => {
   }
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      background: "var(--paper)",
-      color: "var(--ink, #F4EFE6)",
-      fontFamily: "var(--font-body, 'DM Sans', sans-serif)",
-      fontSize: 15,
-      lineHeight: 1.625,
-      padding: "32px 40px 80px",
-    }}>
-      <header style={{ marginBottom: 32 }}>
-        <button
-          onClick={() => navigate("/admin")}
-          style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.18)", color: "var(--ink, #F4EFE6)", padding: "6px 12px", borderRadius: 6, marginBottom: 16, cursor: "pointer", fontSize: 14, fontFamily: "var(--font-body, 'DM Sans', sans-serif)" }}
-        >
-          ← Admin
-        </button>
-        <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 48, fontWeight: 500, margin: 0, color: "#F4EFE6", letterSpacing: 0.2 }}>
-          QA Audit Console
-        </h1>
-        <p style={{ color: "#B8B0A2", marginTop: 6, fontSize: 15 }}>Backend + DOM + AI evaluation across the Aura surface.</p>
-      </header>
+    <AdminShell
+      title="QA Audit Console"
+      subtitle="Backend + DOM + AI evaluation across the Aura surface."
+    >
       {/* Hidden iframe container used by the DOM audit to load other routes without unmounting this page */}
       <div ref={iframeContainerRef} aria-hidden="true" style={{ position: "fixed", left: -99999, top: 0, width: 0, height: 0, overflow: "hidden", pointerEvents: "none" }} />
 
@@ -950,7 +934,7 @@ const AdminQA = () => {
           </div>
         </div>
       )}
-    </div>
+    </AdminShell>
   );
 };
 

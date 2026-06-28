@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import AdminShell from "@/components/admin/AdminShell";
 
 const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 
@@ -219,30 +220,10 @@ const AdminExperience = () => {
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
   return (
-    <div
-      className="min-h-screen w-full"
-      style={{ backgroundColor: "var(--ink)", color: "var(--ink-7)", fontFamily: "DM Sans, system-ui, sans-serif" }}
+    <AdminShell
+      title="Experience Manager"
+      subtitle="Visually control Aura's atmosphere — backgrounds, grain, orbs, animations."
     >
-      <div className="max-w-5xl mx-auto px-6 py-10">
-        {/* Breadcrumb */}
-        <nav className="text-xs mb-4 flex items-center gap-2" style={{ color: "var(--ink-5)" }}>
-          <Link to="/admin" className="inline-flex items-center gap-1 hover:underline" style={{ color: "var(--brand)" }}>
-            <ArrowLeft className="w-3 h-3" /> Admin
-          </Link>
-          <span>›</span>
-          <span style={{ color: "var(--ink-7)" }}>Experience Manager</span>
-        </nav>
-
-        <h1
-          className="text-4xl mb-2"
-          style={{ fontFamily: "Cormorant Garamond, serif", color: "var(--ink-7)", letterSpacing: "0.01em" }}
-        >
-          Experience Manager
-        </h1>
-        <p className="text-sm mb-10" style={{ color: "var(--ink-5)" }}>
-          Visually control Aura's atmosphere — backgrounds, grain, orbs, animations.
-        </p>
-
         {/* ─── SECTION 1: Page Backgrounds ─── */}
         <section className="mb-12">
           <SectionTitle title="Page backgrounds" subtitle="Set hero background images per page" />
@@ -488,8 +469,7 @@ const AdminExperience = () => {
             </div>
           </Card>
         </section>
-      </div>
-    </div>
+    </AdminShell>
   );
 };
 
