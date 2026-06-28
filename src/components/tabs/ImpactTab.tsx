@@ -2733,7 +2733,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                   value={newFollowersPeriod > 0 ? `+${formatNumber(newFollowersPeriod)}` : "0"}
                   valueColor="var(--success)"
                 />
-                <PeriodComparison change={followerChange} selectedDays={selectedDays} />
+                <PeriodComparison change={followerChange} selectedDays={selectedDays} growthContext />
               </div>
               <Stat
                 label="Best single day"
@@ -3092,7 +3092,7 @@ const ScoreHero = ({
           {/* Mini KPIs */}
           <div className="grid grid-cols-3 gap-2">
             <MiniKPI index={0} label="Followers" rawValue={followers} formatter={(n) => fmt(n)}
-              selectedDays={selectedDays} change={followerChange} />
+              selectedDays={selectedDays} change={followerChange} growthContext />
             <MiniKPI index={1} label="Impressions" rawValue={impressions} formatter={(n) => fmt(n)}
               selectedDays={selectedDays} change={impChange} />
             <MiniKPI index={2} label="Avg Engagement" rawValue={engagementRate} formatter={(n) => `${n.toFixed(1)}%`}
@@ -3104,29 +3104,30 @@ const ScoreHero = ({
   );
 };
 
-const PeriodComparison = ({ change, selectedDays }: { change: number | null; selectedDays: number }) => {
+const PeriodComparison = ({ change, selectedDays, growthContext = false }: { change: number | null; selectedDays: number; growthContext?: boolean }) => {
   if (change === null) return null;
   const isFlat = Math.abs(change) < 0.5;
   const isUp = change > 0;
+  const slowerPace = growthContext && !isUp && !isFlat;
   return (
     <div style={{ fontSize: 11, marginTop: 3, display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
       {isFlat ? (
         <span style={{ color: "var(--color-text-secondary)" }}>● 0%</span>
       ) : (
-        <span style={{ color: isUp ? "var(--success)" : "var(--error)", fontWeight: 600 }}>
+        <span style={{ color: isUp ? "var(--success)" : (slowerPace ? "var(--warning)" : "var(--error)"), fontWeight: 600 }}>
           {(() => {
             const abs = Math.abs(change);
             if (abs > 200) {
               const multiplier = (change > 0 ? change : -change) / 100;
               return (
                 <>
-                  {isUp ? "▲" : "▼"} {multiplier.toFixed(0)}× {isUp ? "growth" : "decline"}
+                  {isUp ? "▲" : "▼"} {multiplier.toFixed(0)}× {isUp ? "growth" : (slowerPace ? "slower" : "decline")}
                 </>
               );
             }
             return (
               <>
-                {isUp ? "▲" : "▼"} {change > 0 ? "+" : ""}{change.toFixed(1)}%
+                {isUp ? "▲" : "▼"} {change > 0 ? "+" : ""}{change.toFixed(1)}%{slowerPace ? " slower" : ""}
               </>
             );
           })()}
