@@ -934,7 +934,7 @@ const AdminQA = () => {
           </div>
         </div>
       )}
-    </div>
+    </AdminShell>
   );
 };
 
