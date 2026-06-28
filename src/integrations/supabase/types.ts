@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_health_checks: {
+        Row: {
+          checked: number
+          created_at: string
+          failed: number
+          id: string
+          results: Json
+          run_at: string
+        }
+        Insert: {
+          checked?: number
+          created_at?: string
+          failed?: number
+          id?: string
+          results?: Json
+          run_at?: string
+        }
+        Update: {
+          checked?: number
+          created_at?: string
+          failed?: number
+          id?: string
+          results?: Json
+          run_at?: string
+        }
+        Relationships: []
+      }
       audience_demographics: {
         Row: {
           category: string
