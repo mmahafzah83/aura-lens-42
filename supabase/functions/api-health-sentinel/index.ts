@@ -75,7 +75,21 @@ async function checkResend(key: string): Promise<Result> {
       method: "GET",
       headers: { Authorization: `Bearer ${key}` },
     });
-    return { provider: "resend", ok: r.ok, status: r.status, detail: r.ok ? "" : (await r.text()).slice(0, 200) };
+
+    if (r.ok) return { provider: "resend", ok: true, status: r.status, detail: "" };
+
+    const text = (await r.text()).slice(0, 200);
+    // A restricted (send-only) key correctly rejects GET /emails with 401
+    // restricted_api_key. That is the healthy production state — POST /emails
+    // (sending) is unaffected. Treat ONLY this exact signature as healthy.
+    const isSendOnly =
+      r.status === 401 && /restricted_api_key|restricted to only send/i.test(text);
+
+    if (isSendOnly) {
+      return { provider: "resend", ok: true, status: r.status, detail: "send-only key (healthy)" };
+    }
+
+    return { provider: "resend", ok: false, status: r.status, detail: text };
   } catch (e) {
     return { provider: "resend", ok: false, status: 0, detail: (e as Error).message };
   }
