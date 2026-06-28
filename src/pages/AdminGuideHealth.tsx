@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import AdminShell from "@/components/admin/AdminShell";
 
 const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 
@@ -97,15 +98,6 @@ export default function AdminGuideHealth() {
   }, [articles]);
 
   if (!authChecked) return null;
-
-  const wrap: React.CSSProperties = {
-    minHeight: "100vh",
-    background: "var(--paper)",
-    color: "var(--ink)",
-    padding: "40px 24px 80px",
-    fontFamily: "'DM Sans', sans-serif",
-  };
-  const inner: React.CSSProperties = { maxWidth: 1000, margin: "0 auto" };
   const sectionTitle: React.CSSProperties = {
     fontFamily: "'Cormorant Garamond', Georgia, serif",
     fontSize: 24,
@@ -138,32 +130,10 @@ export default function AdminGuideHealth() {
   };
 
   return (
-    <div style={wrap}>
-      <div style={inner}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-          <h1 style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 36, letterSpacing: "0.02em", margin: 0 }}>
-            Guide health
-          </h1>
-          <button
-            type="button"
-            onClick={() => navigate("/admin")}
-            style={{
-              background: "transparent",
-              border: "1px solid var(--brand-line)",
-              color: "var(--ink-3)",
-              padding: "6px 12px",
-              borderRadius: 6,
-              fontSize: 12,
-              cursor: "pointer",
-            }}
-          >
-            ← Admin
-          </button>
-        </div>
-        <p style={{ color: "var(--ink-3)", fontSize: 13, margin: "0 0 8px" }}>
-          Read-only view of corpus coverage and tooltip/hint slug gaps.
-        </p>
-
+    <AdminShell
+      title="Guide health"
+      subtitle="Read-only view of corpus coverage and tooltip/hint slug gaps."
+    >
         {error && (
           <div style={{ ...card, borderColor: "#dc2626", color: "#dc2626", marginTop: 16 }}>
             {error}
