@@ -1072,7 +1072,6 @@ const Admin = () => {
             </div>
           )}
         </div>
-      </div>
       <AlertDialog
         open={!!confirmInviteRow}
         onOpenChange={(open) => { if (!open) setConfirmInviteRow(null); }}
@@ -1124,7 +1123,7 @@ const Admin = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </AdminShell>
   );
 };
 
