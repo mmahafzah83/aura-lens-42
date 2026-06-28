@@ -520,6 +520,7 @@ export type Database = {
           generated_skills: Json
           id: string
           identity_intelligence: Json
+          is_admin: boolean
           last_active_at: string | null
           last_name: string | null
           last_visit_at: string | null
@@ -560,6 +561,7 @@ export type Database = {
           generated_skills?: Json
           id?: string
           identity_intelligence?: Json
+          is_admin?: boolean
           last_active_at?: string | null
           last_name?: string | null
           last_visit_at?: string | null
@@ -600,6 +602,7 @@ export type Database = {
           generated_skills?: Json
           id?: string
           identity_intelligence?: Json
+          is_admin?: boolean
           last_active_at?: string | null
           last_name?: string | null
           last_visit_at?: string | null
@@ -2656,6 +2659,7 @@ export type Database = {
         Args: { p_created_by?: string; p_new_tokens: Json }
         Returns: string
       }
+      is_current_user_admin: { Args: never; Returns: boolean }
       rollback_design_version: {
         Args: { p_target_version: number }
         Returns: undefined
