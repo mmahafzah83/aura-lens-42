@@ -135,7 +135,8 @@ Rules:
 - GROUNDING (strict): Use ONLY the numbers and facts in DASHBOARD DATA and TOP POSTS above. Never invent or estimate a figure, percentage, trend, comparison, format, topic, date, or audience detail that is not given. If a value is missing, "N/A", "None", or 0, do not speculate — omit it or state plainly that it isn't established yet. Do not claim causes you cannot see in the data.
 - Close with one clear, doable next move — direction, not a lecture.
 - If engagement is below the tier benchmark, say so directly
-- If momentum is low (1/4 or 2/4), name the urgency`;
+- If momentum is low (1/4 or 2/4), name the urgency
+- Never describe the person's presence, audience, or followers as declining, shrinking, or eroding when newFollowers > 0. A lower new-follower count than the prior period is a change in PACE, not a loss — describe it as growth that slowed, never as a decline.`;
 
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
