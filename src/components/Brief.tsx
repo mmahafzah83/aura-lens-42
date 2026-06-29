@@ -606,18 +606,21 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.24, ease: [0.32, 0.72, 0.35, 1] }}
+      className="brief-page"
       style={{
         background: "var(--paper)",
         color: "var(--ink)",
         fontFamily: "var(--font-body)",
         fontSize: 17,
         lineHeight: 1.6,
-        maxWidth: 720,
-        margin: "0 auto",
-        padding: "12px 4px 80px",
+        marginInline: "calc(50% - 50vw)",
+        width: "100vw",
+        padding: "22px 0 60px",
+        minHeight: "100vh",
       }}
       aria-label="Your Brief"
     >
+      <div style={{ maxWidth: 720, margin: "0 auto", padding: "0 24px" }}>
       {/* MASTHEAD ─────────────────────────── */}
       <div
         style={{
