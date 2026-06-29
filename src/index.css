@@ -2030,10 +2030,8 @@ button[aria-label="Notifications"]:focus-visible {
   position: fixed; inset: 0; z-index: 9999;
   display: flex; align-items: center; justify-content: center;
   flex-direction: column; text-align: center;
-  background:
-    radial-gradient(ellipse at center, rgba(176,141,58,0.10) 0%, transparent 60%),
-    linear-gradient(135deg, #14110C 0%, #2A2318 100%);
-  color: hsl(40 20% 95%);
+  background: radial-gradient(ellipse at center, color-mix(in srgb, var(--action) 10%, transparent) 0%, transparent 60%), var(--paper);
+  color: var(--ink);
   animation: aura-ceremony-in 500ms ease-out both;
   cursor: pointer;
 }
