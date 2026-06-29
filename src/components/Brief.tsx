@@ -739,10 +739,12 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
             const signalScore = imprint.data.signalScore;
             const contentScore = imprint.data.contentScore;
             const headline = topSignal
-              ? `You see ${topSignal.title} more clearly than you've said it.`
+              ? "You see this more clearly than you've said it."
               : (signalScore != null && contentScore != null)
                 ? "Your reading is ahead of your voice this week."
                 : "Your reading is taking shape.";
+
+
 
             const dInputs = discernment.status === "ready" ? discernment.data : null;
             const hasGap = dInputs && dInputs.postsWithSignal != null && dInputs.published120d != null;
@@ -764,6 +766,39 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
                   {headline}
                 </h2>
 
+                {topSignal && (
+                  <div
+                    style={{
+                      marginTop: 14,
+                      paddingLeft: 16,
+                      borderLeft: "2px solid var(--rule)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 10,
+                        letterSpacing: "0.12em",
+                        textTransform: "uppercase",
+                        color: "var(--spot)",
+                        marginBottom: 4,
+                      }}
+                    >
+                      Signal
+                    </div>
+                    <div
+                      dir="auto"
+                      style={{
+                        fontSize: 16,
+                        lineHeight: 1.5,
+                        color: "var(--ink-2)",
+                      }}
+                    >
+                      {topSignal.title}
+                    </div>
+                  </div>
+                )}
+
                 <p
                   style={{
                     marginTop: 14,
@@ -773,6 +808,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
                     color: "var(--ink-2)",
                   }}
                 >
+
                   {hasGap && signalScore != null && contentScore != null ? (
                     <>
                       Only <strong style={{ color: "var(--ink)" }}>{dInputs!.postsWithSignal}</strong> of your last{" "}
