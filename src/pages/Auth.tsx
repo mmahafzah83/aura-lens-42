@@ -477,7 +477,7 @@ const Auth = () => {
                   padding: "12px 14px",
                 }}
               >
-                The link expires in 1 hour. Click it to set a new password and sign in.
+                The link expires in 24 hours. Click it to set a new password and sign in.
               </div>
               <button
                 type="button"

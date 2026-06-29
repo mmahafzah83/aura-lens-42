@@ -97,7 +97,7 @@ export default function AcceptInvitation() {
             }}
           >
             {isExpired
-              ? "Invite links last 48 hours. You can request a fresh one — it only takes a moment."
+              ? "Invite links last 24 hours. You can request a fresh one — it only takes a moment."
               : "Aura is a personal intelligence system that converts what you already know into the digital presence your career demands."}
           </p>
 
