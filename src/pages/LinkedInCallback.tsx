@@ -86,7 +86,7 @@ const LinkedInCallback = () => {
   }, [searchParams, navigate]);
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
+    <div className="story-page min-h-screen bg-background flex items-center justify-center">
       <div className="text-center max-w-md space-y-4">
         {status === "processing" && (
           <>
