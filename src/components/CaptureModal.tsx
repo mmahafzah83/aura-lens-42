@@ -76,6 +76,36 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
 
+  // Shared first-capture ceremony trigger. Counts entries + documents so the
+  // ceremony fires on the user's first capture of ANY type (link/text/image/
+  // voice/document). Guarded by a single localStorage flag.
+  const maybeTriggerFirstCeremony = async (userId: string): Promise<boolean> => {
+    try {
+      if (localStorage.getItem("aura_first_capture_celebrated")) return false;
+      const [entriesRes, docsRes] = await Promise.all([
+        supabase
+          .from("entries")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", userId),
+        supabase
+          .from("documents")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", userId),
+      ]);
+      const total = (entriesRes.count ?? 0) + (docsRes.count ?? 0);
+      if (total === 1) {
+        localStorage.setItem("aura_first_capture_celebrated", "true");
+        setFirstCeremonyOpen(true);
+        setFirstCeremonyShowCta(false);
+        window.setTimeout(() => setFirstCeremonyShowCta(true), 2000);
+        return true;
+      }
+    } catch {
+      // ignore
+    }
+    return false;
+  };
+
   // Recording elapsed seconds (UI only)
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const recordingTimerRef = useRef<number | null>(null);
