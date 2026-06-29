@@ -475,7 +475,7 @@ const VoiceEngineSection = () => {
                   fontSize: 12,
                   fontWeight: 600,
                   color: "var(--brand)",
-                  background: "rgba(197,165,90,0.12)",
+                  background: "color-mix(in srgb, var(--brand) 12%, transparent)",
                   border: "1px solid rgba(197,165,90,0.3)",
                   borderRadius: 999,
                   padding: "2px 7px",
@@ -521,18 +521,18 @@ const VoiceEngineSection = () => {
                 const hasVoiceCard = !!tone.trim() || useArr.length > 0 || avoidArr.length > 0;
 
                 const cardStyle: React.CSSProperties = {
-                  background: "#F8F5F0",
+                  background: "var(--paper-2)",
                   border: "0.5px solid #E3D9C5",
                   borderRadius: 14,
                   padding: "22px 24px",
-                  color: "#2A2418",
+                  color: "var(--ink)",
                 };
                 const eyebrowStyle: React.CSSProperties = {
-                  fontFamily: "'DM Sans', system-ui, sans-serif",
+                  fontFamily: "var(--font-body)",
                   fontSize: 12,
                   letterSpacing: "0.14em",
                   textTransform: "uppercase",
-                  color: "#A98F4E",
+                  color: "var(--brand)",
                   fontWeight: 600,
                 };
 
@@ -543,8 +543,8 @@ const VoiceEngineSection = () => {
 
                 // ---------- Tabs strip (always above card) ----------
                 const tabs: Array<{ lang: "en" | "ar"; label: string; font: string }> = [
-                  { lang: "ar", label: "العربية", font: "'Cairo', 'DM Sans', sans-serif" },
-                  { lang: "en", label: "English", font: "'DM Sans', system-ui, sans-serif" },
+                  { lang: "ar", label: "العربية", font: "var(--font-arabic)" },
+                  { lang: "en", label: "English", font: "var(--font-body)" },
                 ];
                 const tabsStrip = (
                   <div
@@ -575,7 +575,7 @@ const VoiceEngineSection = () => {
                             fontFamily: t.font,
                             fontSize: 13,
                             fontWeight: isActive ? 600 : 500,
-                            color: isActive ? "#B08D3A" : "#8A8170",
+                            color: isActive ? "var(--brand)" : "var(--ink-5)",
                             borderBottom: isActive ? "2px solid #B08D3A" : "2px solid transparent",
                             marginBottom: -1,
                             direction: t.lang === "ar" ? "rtl" : "ltr",
@@ -585,7 +585,7 @@ const VoiceEngineSection = () => {
                         >
                           {t.label}
                           {isPrimary && (
-                            <span style={{ marginInlineStart: 6, color: "#B08D3A" }}>✦</span>
+                            <span style={{ marginInlineStart: 6, color: "var(--brand)" }}>✦</span>
                           )}
                         </button>
                       );
@@ -609,7 +609,7 @@ const VoiceEngineSection = () => {
                       marginBottom: 10,
                       padding: "10px 12px",
                       border: "0.5px solid #E3D9C5",
-                      background: "rgba(197,165,90,0.08)",
+                      background: "color-mix(in srgb, var(--brand) 8%, transparent)",
                       borderRadius: 8,
                     }}
                     dir={activeLang === "ar" ? "rtl" : "ltr"}
@@ -618,10 +618,10 @@ const VoiceEngineSection = () => {
                     <span
                       style={{
                         flex: 1,
-                        fontFamily: activeLang === "ar" ? "'Cairo', 'DM Sans', sans-serif" : "'DM Sans', system-ui, sans-serif",
+                        fontFamily: activeLang === "ar" ? "var(--font-arabic)" : "var(--font-body)",
                         fontSize: 13,
                         fontWeight: 500,
-                        color: "#2A2418",
+                        color: "var(--ink)",
                         lineHeight: 1.6,
                       }}
                     >
@@ -636,7 +636,7 @@ const VoiceEngineSection = () => {
                       style={{
                         background: "transparent",
                         border: "none",
-                        color: "#8A8170",
+                        color: "var(--ink-5)",
                         fontSize: 13,
                         fontWeight: 600,
                         cursor: "pointer",
@@ -664,10 +664,10 @@ const VoiceEngineSection = () => {
                   >
                     <span
                       style={{
-                        fontFamily: activeLang === "ar" ? "'Cairo', 'DM Sans', sans-serif" : "'DM Sans', system-ui, sans-serif",
+                        fontFamily: activeLang === "ar" ? "var(--font-arabic)" : "var(--font-body)",
                         fontSize: 12,
                         fontWeight: 500,
-                        color: "#8A8170",
+                        color: "var(--ink-5)",
                         letterSpacing: activeLang === "ar" ? "normal" : "0.01em",
                         lineHeight: 1.6,
                       }}
@@ -682,7 +682,7 @@ const VoiceEngineSection = () => {
                       label="voice-primary"
                     >
                       {activeLang === "ar" ? (
-                        <span dir="rtl" lang="ar" style={{ fontFamily: "'Cairo', 'DM Sans', sans-serif" }}>
+                        <span dir="rtl" lang="ar" style={{ fontFamily: "var(--font-arabic)" }}>
                           مكتبتك تحدد الصوت الأساسي. التعليم يصقله. المنشورات المُعجَب بها تشكّل الأسلوب فقط. ملاحظاتك تضبطه.
                         </span>
                       ) : (
@@ -702,10 +702,10 @@ const VoiceEngineSection = () => {
                         <div style={{ ...eyebrowStyle, letterSpacing: "normal" }}>بصمة صوتك</div>
                         <InfoTooltip slug="voice-signature" triggerSize={13} side="top" />
                       </span>
-                      <p style={{ fontSize: 22, fontWeight: 600, marginTop: 10, marginBottom: 6, color: "#2A2418", lineHeight: 1.5 }}>
+                      <p style={{ fontSize: 22, fontWeight: 600, marginTop: 10, marginBottom: 6, color: "var(--ink)", lineHeight: 1.5 }}>
                         بصمة صوتك لم تتشكل بعد.
                       </p>
-                      <p style={{ fontSize: 13, fontWeight: 500, color: "#6E6555", margin: 0, lineHeight: 1.7 }}>
+                      <p style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-4)", margin: 0, lineHeight: 1.7 }}>
                         منشوراتك تعلّم Aura — وبصمتك تتشكل مع كل منشور.
                       </p>
                     </div>
@@ -731,7 +731,7 @@ const VoiceEngineSection = () => {
                             border: "0.5px solid #E3D9C5",
                             borderRadius: 10,
                             padding: "14px 16px",
-                            background: "rgba(255,255,255,0.4)",
+                            background: "color-mix(in srgb, var(--paper) 40%, transparent)",
                             position: "relative",
                           }}
                         >
@@ -743,7 +743,7 @@ const VoiceEngineSection = () => {
                                 className="min-h-[88px] text-sm"
                                 dir="rtl"
                                 lang="ar"
-                                style={{ background: "#fff", color: "#2A2418", border: "0.5px solid #E3D9C5", fontWeight: 500 }}
+                                style={{ background: "var(--paper)", color: "var(--ink)", border: "0.5px solid #E3D9C5", fontWeight: 500 }}
                               />
                               <div style={{ display: "flex", gap: 8, marginTop: 10, justifyContent: "flex-start" }}>
                                 <Button
@@ -751,7 +751,7 @@ const VoiceEngineSection = () => {
                                   size="sm"
                                   onClick={() => { setEditingTone(false); setToneDraft(tone); }}
                                   disabled={savingTone}
-                                  style={{ color: "#6E6555" }}
+                                  style={{ color: "var(--ink-4)" }}
                                 >
                                   إلغاء
                                 </Button>
@@ -759,7 +759,7 @@ const VoiceEngineSection = () => {
                                   size="sm"
                                   onClick={handleSaveTone}
                                   disabled={savingTone}
-                                  style={{ background: "#B08D3A", color: "#fff" }}
+                                  style={{ background: "var(--brand)", color: "var(--paper)" }}
                                 >
                                   {savingTone ? <Loader2 className="w-3 h-3 animate-spin" /> : "حفظ"}
                                 </Button>
@@ -772,12 +772,12 @@ const VoiceEngineSection = () => {
                                   fontSize: 24,
                                   fontWeight: 600,
                                   lineHeight: 1.6,
-                                  color: "#2A2418",
+                                  color: "var(--ink)",
                                   margin: 0,
                                   flex: 1,
                                 }}
                               >
-                                {tone || <span style={{ color: "#8A8170", fontWeight: 500 }}>لم تُلتقط النبرة بعد.</span>}
+                                {tone || <span style={{ color: "var(--ink-5)", fontWeight: 500 }}>لم تُلتقط النبرة بعد.</span>}
                               </p>
                               <button
                                 type="button"
@@ -789,7 +789,7 @@ const VoiceEngineSection = () => {
                                   borderRadius: 8,
                                   padding: 6,
                                   cursor: "pointer",
-                                  color: "#A98F4E",
+                                  color: "var(--brand)",
                                   flexShrink: 0,
                                 }}
                               >
@@ -798,7 +798,7 @@ const VoiceEngineSection = () => {
                             </div>
                           )}
                         </div>
-                        <p style={{ fontSize: 12.5, fontWeight: 500, color: "#6E6555", marginTop: 8, marginBottom: 0, lineHeight: 1.7 }}>
+                        <p style={{ fontSize: 12.5, fontWeight: 500, color: "var(--ink-4)", marginTop: 8, marginBottom: 0, lineHeight: 1.7 }}>
                           أول قراءة من Aura — عدّلها لتشبهك.
                         </p>
 
@@ -814,7 +814,7 @@ const VoiceEngineSection = () => {
                                 fontSize: 18,
                                 fontWeight: 500,
                                 lineHeight: 2,
-                                color: "#2A2418",
+                                color: "var(--ink)",
                                 margin: "8px 0 0",
                               }}
                             >
@@ -822,7 +822,7 @@ const VoiceEngineSection = () => {
                                 <span key={i}>
                                   <span>«{phrase}»</span>
                                   {i < arr.length - 1 && (
-                                    <span style={{ color: "#A98F4E", margin: "0 8px" }}>·</span>
+                                    <span style={{ color: "var(--brand)", margin: "0 8px" }}>·</span>
                                   )}
                                 </span>
                               ))}
@@ -834,7 +834,7 @@ const VoiceEngineSection = () => {
                                 style={{
                                   fontSize: 12,
                                   fontWeight: 500,
-                                  color: "#8A8170",
+                                  color: "var(--ink-5)",
                                   marginTop: 6,
                                   marginBottom: 0,
                                   background: "transparent",
@@ -865,12 +865,12 @@ const VoiceEngineSection = () => {
                                   style={{
                                     fontSize: 14,
                                     fontWeight: 500,
-                                    color: "#6E6555",
+                                    color: "var(--ink-4)",
                                     lineHeight: 1.9,
                                     paddingInlineStart: 4,
                                   }}
                                 >
-                                  <span style={{ color: "#A98F4E", marginInlineEnd: 8 }}>◆</span>
+                                  <span style={{ color: "var(--brand)", marginInlineEnd: 8 }}>◆</span>
                                   {w}
                                 </li>
                               ))}
@@ -882,7 +882,7 @@ const VoiceEngineSection = () => {
                                 style={{
                                   fontSize: 12,
                                   fontWeight: 500,
-                                  color: "#8A8170",
+                                  color: "var(--ink-5)",
                                   marginTop: 6,
                                   marginBottom: 0,
                                   background: "transparent",
@@ -912,8 +912,8 @@ const VoiceEngineSection = () => {
                             borderRadius: 999,
                             padding: "8px 14px",
                             background: "transparent",
-                            color: "#B08D3A",
-                            fontFamily: "'Cairo', 'DM Sans', sans-serif",
+                            color: "var(--brand)",
+                            fontFamily: "var(--font-arabic)",
                             fontSize: 13,
                             fontWeight: 600,
                             cursor: "pointer",
@@ -925,7 +925,7 @@ const VoiceEngineSection = () => {
 
                         {/* Footer */}
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 18, paddingTop: 14, borderTop: "0.5px solid #E3D9C5" }}>
-                          <span style={{ fontSize: 12.5, fontWeight: 500, color: "#8A8170" }}>
+                          <span style={{ fontSize: 12.5, fontWeight: 500, color: "var(--ink-5)" }}>
                             صيغت من {examplesArr.length} من منشوراتك
                           </span>
                           <InfoTooltip slug="voice-sharpen" triggerSize={13} side="top" />
@@ -939,8 +939,8 @@ const VoiceEngineSection = () => {
                               gap: 6,
                               background: "transparent",
                               border: "none",
-                              color: "#B08D3A",
-                              fontFamily: "'Cairo', 'DM Sans', sans-serif",
+                              color: "var(--brand)",
+                              fontFamily: "var(--font-arabic)",
                               fontSize: 13,
                               fontWeight: 600,
                               cursor: distilling ? "default" : "pointer",
@@ -966,10 +966,10 @@ const VoiceEngineSection = () => {
                       {primarySubtitle}
                       <div style={cardStyle}>
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><div style={eyebrowStyle}>Your voice signature</div><InfoTooltip slug="voice-signature" triggerSize={13} side="top" /></span>
-                        <p style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 22, marginTop: 10, marginBottom: 6, color: "#2A2418", lineHeight: 1.35 }}>
+                        <p style={{ fontFamily: "var(--font-serif)", fontSize: 22, marginTop: 10, marginBottom: 6, color: "var(--ink)", lineHeight: 1.35 }}>
                           Your voice signature isn't formed yet.
                         </p>
-                        <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 13, color: "#6E6555", margin: 0 }}>
+                        <p style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "var(--ink-4)", margin: 0 }}>
                           Teach Aura a few of your posts below and watch it take shape.
                         </p>
                       </div>
@@ -993,7 +993,7 @@ const VoiceEngineSection = () => {
                         border: "0.5px solid #E3D9C5",
                         borderRadius: 10,
                         padding: "14px 16px",
-                        background: "rgba(255,255,255,0.4)",
+                        background: "color-mix(in srgb, var(--paper) 40%, transparent)",
                         position: "relative",
                       }}
                     >
@@ -1003,7 +1003,7 @@ const VoiceEngineSection = () => {
                             value={toneDraft}
                             onChange={(e) => setToneDraft(e.target.value)}
                             className="min-h-[88px] text-sm"
-                            style={{ background: "#fff", color: "#2A2418", border: "0.5px solid #E3D9C5" }}
+                            style={{ background: "var(--paper)", color: "var(--ink)", border: "0.5px solid #E3D9C5" }}
                           />
                           <div style={{ display: "flex", gap: 8, marginTop: 10, justifyContent: "flex-end" }}>
                             <Button
@@ -1011,7 +1011,7 @@ const VoiceEngineSection = () => {
                               size="sm"
                               onClick={() => { setEditingTone(false); setToneDraft(tone); }}
                               disabled={savingTone}
-                              style={{ color: "#6E6555" }}
+                              style={{ color: "var(--ink-4)" }}
                             >
                               Cancel
                             </Button>
@@ -1019,7 +1019,7 @@ const VoiceEngineSection = () => {
                               size="sm"
                               onClick={handleSaveTone}
                               disabled={savingTone}
-                              style={{ background: "#B08D3A", color: "#fff" }}
+                              style={{ background: "var(--brand)", color: "var(--paper)" }}
                             >
                               {savingTone ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save"}
                             </Button>
@@ -1029,15 +1029,15 @@ const VoiceEngineSection = () => {
                         <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                           <p
                             style={{
-                              fontFamily: "'Cormorant Garamond', Georgia, serif",
+                              fontFamily: "var(--font-serif)",
                               fontSize: 24,
                               lineHeight: 1.35,
-                              color: "#2A2418",
+                              color: "var(--ink)",
                               margin: 0,
                               flex: 1,
                             }}
                           >
-                            {tone || <span style={{ color: "#8A8170", fontStyle: "italic" }}>No tone captured yet.</span>}
+                            {tone || <span style={{ color: "var(--ink-5)", fontStyle: "italic" }}>No tone captured yet.</span>}
                           </p>
                           <button
                             type="button"
@@ -1049,7 +1049,7 @@ const VoiceEngineSection = () => {
                               borderRadius: 8,
                               padding: 6,
                               cursor: "pointer",
-                              color: "#A98F4E",
+                              color: "var(--brand)",
                               flexShrink: 0,
                             }}
                           >
@@ -1058,7 +1058,7 @@ const VoiceEngineSection = () => {
                         </div>
                       )}
                     </div>
-                    <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 12.5, color: "#6E6555", marginTop: 8, marginBottom: 0 }}>
+                    <p style={{ fontFamily: "var(--font-body)", fontSize: 12.5, color: "var(--ink-4)", marginTop: 8, marginBottom: 0 }}>
                       Aura's first take — edit it to make it yours.
                     </p>
 
@@ -1071,11 +1071,11 @@ const VoiceEngineSection = () => {
                             <li
                               key={i}
                               style={{
-                                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                                fontFamily: "var(--font-serif)",
                                 fontStyle: "italic",
                                 fontSize: 18,
                                 lineHeight: 1.5,
-                                color: "#2A2418",
+                                color: "var(--ink)",
                               }}
                             >
                               &ldquo;{phrase}&rdquo;
@@ -1087,9 +1087,9 @@ const VoiceEngineSection = () => {
                             type="button"
                             onClick={() => setShowAllPhrases((s) => !s)}
                             style={{
-                              fontFamily: "'DM Sans', system-ui, sans-serif",
+                              fontFamily: "var(--font-body)",
                               fontSize: 12,
-                              color: "#8A8170",
+                              color: "var(--ink-5)",
                               marginTop: 6,
                               marginBottom: 0,
                               background: "transparent",
@@ -1115,9 +1115,9 @@ const VoiceEngineSection = () => {
                             <li
                               key={i}
                               style={{
-                                fontFamily: "'DM Sans', system-ui, sans-serif",
+                                fontFamily: "var(--font-body)",
                                 fontSize: 14,
-                                color: "#6E6555",
+                                color: "var(--ink-4)",
                                 lineHeight: 1.6,
                               }}
                             >
@@ -1130,9 +1130,9 @@ const VoiceEngineSection = () => {
                             type="button"
                             onClick={() => setShowAllAvoid((s) => !s)}
                             style={{
-                              fontFamily: "'DM Sans', system-ui, sans-serif",
+                              fontFamily: "var(--font-body)",
                               fontSize: 12,
-                              color: "#8A8170",
+                              color: "var(--ink-5)",
                               marginTop: 6,
                               marginBottom: 0,
                               background: "transparent",
@@ -1162,8 +1162,8 @@ const VoiceEngineSection = () => {
                         borderRadius: 999,
                         padding: "8px 14px",
                         background: "transparent",
-                        color: "#B08D3A",
-                        fontFamily: "'DM Sans', system-ui, sans-serif",
+                        color: "var(--brand)",
+                        fontFamily: "var(--font-body)",
                         fontSize: 13,
                         fontWeight: 500,
                         cursor: "pointer",
@@ -1174,7 +1174,7 @@ const VoiceEngineSection = () => {
 
                     {/* Footer */}
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 18, paddingTop: 14, borderTop: "0.5px solid #E3D9C5" }}>
-                      <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: 12.5, color: "#8A8170" }}>
+                      <span style={{ fontFamily: "var(--font-body)", fontSize: 12.5, color: "var(--ink-5)" }}>
                         Shaped from {examplesArr.length} of your posts.
                       </span>
                       <InfoTooltip slug="voice-sharpen" triggerSize={13} side="top" />
@@ -1188,8 +1188,8 @@ const VoiceEngineSection = () => {
                           gap: 6,
                           background: "transparent",
                           border: "none",
-                          color: "#B08D3A",
-                          fontFamily: "'DM Sans', system-ui, sans-serif",
+                          color: "var(--brand)",
+                          fontFamily: "var(--font-body)",
                           fontSize: 13,
                           fontWeight: 600,
                           cursor: distilling ? "default" : "pointer",
@@ -1247,7 +1247,7 @@ const VoiceEngineSection = () => {
                       dir="rtl"
                       lang="ar"
                       className="text-[11px] leading-relaxed text-muted-foreground/70"
-                      style={{ fontFamily: "'Cairo', 'DM Sans', sans-serif" }}
+                      style={{ fontFamily: "var(--font-arabic)" }}
                     >
                       منشوراتك لك وحدك — تُستخدم لصقل صوتك فقط، ولا تُشارك مع أحد.
                     </p>
