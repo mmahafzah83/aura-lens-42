@@ -435,7 +435,7 @@ const [savingSig, setSavingSig] = useState(false);
                     rows={3}
                     placeholder="English signature text…"
                     className="w-full mt-1 text-sm rounded-md p-2 outline-none"
-                    style={{ color: "var(--ink)", background: "var(--glass-2)", border: "1px solid var(--rule)", fontFamily: "var(--font-body)" }}
+                    style={{ color: "var(--ink)", background: "var(--paper-2)", border: "1px solid var(--rule)", fontFamily: "var(--font-body)" }}
                   />
                 </div>
                 <div>
@@ -447,7 +447,7 @@ const [savingSig, setSavingSig] = useState(false);
                     dir="rtl"
                     placeholder="نص التوقيع بالعربية…"
                     className="w-full mt-1 text-sm rounded-md p-2 outline-none"
-                    style={{ color: "var(--ink)", background: "var(--glass-2)", border: "1px solid var(--rule)", fontFamily: "'Cairo', var(--font-body), sans-serif", textAlign: "right" }}
+                    style={{ color: "var(--ink)", background: "var(--paper-2)", border: "1px solid var(--rule)", fontFamily: "'Cairo', var(--font-body), sans-serif", textAlign: "right" }}
                   />
                 </div>
                 <div className="flex justify-end">
@@ -514,9 +514,9 @@ const [savingSig, setSavingSig] = useState(false);
                     key={pillar}
                     className="text-xs font-medium px-2.5 py-1 rounded-full"
                     style={{
-                      background: "var(--glass-2)",
-                      color: "var(--action)",
-                      border: "1px solid var(--rule)",
+                      background: "color-mix(in srgb, var(--action) 12%, var(--paper))",
+                      color: "var(--ink)",
+                      border: "1px solid color-mix(in srgb, var(--action) 32%, transparent)",
                     }}
                   >
                     {pillar}
