@@ -1263,22 +1263,41 @@ const Onboarding = () => {
           style={{ background: "var(--paper-2)" }}
         >
           <div
-            className="w-full"
-            style={{
-              maxWidth: 560,
-              background: "var(--paper)",
-              color: "var(--ink)",
-              borderRadius: 16,
-              boxShadow: "0 8px 32px rgba(0,0,0,0.08), 0 8px 32px rgba(0,0,0,0.3)",
-              padding: "clamp(32px, 6vw, 48px)",
-              border: "1px solid var(--rule)",
-            }}
+            style={{ position: "relative", width: "100%", maxWidth: 560, maxHeight: "calc(100dvh - 80px)" }}
           >
-            <CalibrationSliders
-              sector={sectorFocus || null}
-              onComplete={handleCalibrationComplete}
-              initialScores={initialSkillScores}
-              onAutoSave={autoSaveScores}
+            <div
+              className="w-full"
+              style={{
+                maxHeight: "100%",
+                overflowY: "auto",
+                background: "var(--paper)",
+                color: "var(--ink)",
+                borderRadius: 16,
+                boxShadow: "0 8px 32px rgba(0,0,0,0.08), 0 8px 32px rgba(0,0,0,0.3)",
+                padding: "clamp(32px, 6vw, 48px)",
+                border: "1px solid var(--rule)",
+              }}
+            >
+              <CalibrationSliders
+                sector={sectorFocus || null}
+                onComplete={handleCalibrationComplete}
+                initialScores={initialSkillScores}
+                onAutoSave={autoSaveScores}
+              />
+            </div>
+            <div
+              aria-hidden
+              style={{
+                position: "absolute",
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: 40,
+                pointerEvents: "none",
+                borderBottomLeftRadius: 16,
+                borderBottomRightRadius: 16,
+                background: "linear-gradient(to bottom, transparent, var(--paper))",
+              }}
             />
           </div>
         </div>
