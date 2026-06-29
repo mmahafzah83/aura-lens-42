@@ -192,7 +192,7 @@ const LANDING_CSS = `
   .aura-landing{--ink:#1B1712;--paper:#F1ECE1;--bone:#EDE7D9;--muted:#7c8682;--teal:#36C5B0;--amber:#D6A748;--ox:#6E2A26;}
   .aura-landing *{box-sizing:border-box}
   .aura-landing{scroll-behavior:smooth}
-  .aura-landing{margin:0;background:#040706;color:var(--bone);font-family:'Newsreader',Georgia,serif;overflow-x:hidden}
+  .aura-landing{margin:0;background:#040706;color:var(--bone);font-family:'Newsreader',Georgia,serif;overflow-x:clip}
   .aura-landing #bg{position:fixed;inset:0;z-index:0;display:block}
   .aura-landing nav{position:fixed;top:0;left:0;right:0;z-index:30;display:flex;align-items:center;justify-content:space-between;padding:18px clamp(20px,5vw,56px);transition:background .4s,backdrop-filter .4s}
   .aura-landing nav.solid{background:rgba(4,7,6,.72);backdrop-filter:blur(10px)}
