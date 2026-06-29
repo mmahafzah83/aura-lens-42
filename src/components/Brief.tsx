@@ -343,11 +343,11 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
 
       const [sigRes, capRes] = await Promise.all([
         (supabase.from("strategic_signals" as any) as any)
-          .select("id, signal_title, confidence_score, created_at, status")
+          .select("id, signal_title, confidence, created_at, status")
           .eq("user_id", user.id)
           .eq("status", "active")
           .gte("created_at", since)
-          .order("confidence_score", { ascending: false })
+          .order("confidence", { ascending: false })
           .limit(8),
         supabase
           .from("entries")
@@ -361,14 +361,15 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
         .eq("user_id", user.id)
         .gte("created_at", since);
 
-      const sigRows = (sigRes?.data || []) as Array<{ id: string; signal_title: string | null; confidence_score: number | null }>;
+      if (sigRes?.error) throw sigRes.error;
+      const sigRows = (sigRes?.data || []) as Array<{ id: string; signal_title: string | null; confidence: number | null }>;
       let signals: AwaySignal[] = sigRows
         .filter((r) => !publishedSet.has(r.id))
         .slice(0, 2)
         .map((r) => ({
           id: r.id,
           title: r.signal_title || "Untitled signal",
-          confidence: r.confidence_score,
+          confidence: r.confidence,
         }));
       const newCaptureCount = (capRes?.count ?? 0) + (docSinceCount ?? 0);
       let mode: "away" | "radar" = "away";
@@ -376,19 +377,20 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
       // Fallback: nothing in the since-window — surface the top 2 ACTIVE signals
       // (any date) so the masthead headline and list still name something real.
       if (signals.length === 0) {
-        const { data: radarData } = await (supabase.from("strategic_signals" as any) as any)
-          .select("id, signal_title, confidence_score")
+        const { data: radarData, error: radarError } = await (supabase.from("strategic_signals" as any) as any)
+          .select("id, signal_title, confidence")
           .eq("user_id", user.id)
           .eq("status", "active")
-          .order("confidence_score", { ascending: false })
+          .order("confidence", { ascending: false })
           .limit(8);
-        const radarRows = (radarData || []) as Array<{ id: string; signal_title: string | null; confidence_score: number | null }>;
+        if (radarError) throw radarError;
+        const radarRows = (radarData || []) as Array<{ id: string; signal_title: string | null; confidence: number | null }>;
         const filtered = radarRows.filter((r) => !publishedSet.has(r.id)).slice(0, 2);
         if (filtered.length > 0) {
           signals = filtered.map((r) => ({
             id: r.id,
             title: r.signal_title || "Untitled signal",
-            confidence: r.confidence_score,
+            confidence: r.confidence,
           }));
           mode = "radar";
         }
