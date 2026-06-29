@@ -765,6 +765,39 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
                   {headline}
                 </h2>
 
+                {topSignal && (
+                  <div
+                    style={{
+                      marginTop: 14,
+                      paddingLeft: 16,
+                      borderLeft: "2px solid var(--rule)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 10,
+                        letterSpacing: "0.12em",
+                        textTransform: "uppercase",
+                        color: "var(--spot)",
+                        marginBottom: 4,
+                      }}
+                    >
+                      Signal
+                    </div>
+                    <div
+                      dir="auto"
+                      style={{
+                        fontSize: 16,
+                        lineHeight: 1.5,
+                        color: "var(--ink-2)",
+                      }}
+                    >
+                      {topSignal.title}
+                    </div>
+                  </div>
+                )}
+
                 <p
                   style={{
                     marginTop: 14,
@@ -774,6 +807,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
                     color: "var(--ink-2)",
                   }}
                 >
+
                   {hasGap && signalScore != null && contentScore != null ? (
                     <>
                       Only <strong style={{ color: "var(--ink)" }}>{dInputs!.postsWithSignal}</strong> of your last{" "}
