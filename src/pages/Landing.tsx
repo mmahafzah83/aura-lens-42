@@ -2,6 +2,186 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import usePageMeta from "@/hooks/usePageMeta";
+import * as THREE from "three";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
+
+// Ray geometry shared with the hero starfield mark (mirrors RAYS inside
+// LANDING_SCRIPT). Kept in module scope so the bundled Three.js init below
+// does not depend on the injected script's lexical scope.
+const HERO_RAYS: number[][] = [
+  [32,18.89,32,8.77,1.2],[33.87,19.03,34.8,12.54,.78],[35.69,19.42,37.54,13.14,.78],
+  [37.44,20.08,40.17,14.12,.78],[39.09,20.97,44.56,12.45,1.2],[40.58,22.09,44.87,17.14,.78],
+  [41.91,23.42,46.86,19.13,.78],[43.03,24.91,48.54,21.37,.78],[43.92,26.56,53.13,22.35,1.2],
+  [44.58,28.31,50.86,26.46,.78],[44.97,30.13,51.46,29.2,.78],[45.11,32,51.66,32,.78],
+  [44.97,33.87,55,35.31,1.2],[44.58,35.69,50.86,37.54,.78],[43.92,37.44,49.88,40.17,.78],
+  [43.03,39.09,48.54,42.63,.78],[41.91,40.58,49.56,47.22,1.2],[40.58,41.91,44.87,46.86,.78],
+  [39.09,43.03,42.63,48.54,.78],[37.44,43.92,40.17,49.88,.78],[35.69,44.58,38.55,54.29,1.2],
+  [33.87,44.97,34.8,51.46,.78],[32,45.11,32,51.66,.78],[30.13,44.97,29.2,51.46,.78],
+  [28.31,44.58,25.45,54.29,1.2],[26.56,43.92,23.83,49.88,.78],[24.91,43.03,21.37,48.54,.78],
+  [23.42,41.91,19.13,46.86,.78],[22.09,40.58,14.44,47.22,1.2],[20.97,39.09,15.46,42.63,.78],
+  [20.08,37.44,14.12,40.17,.78],[19.42,35.69,13.14,37.54,.78],[19.03,33.87,9,35.31,1.2],
+  [18.89,32,12.34,32,.78],[19.03,30.13,12.54,29.2,.78],[19.42,28.31,13.14,26.46,.78],
+  [20.08,26.56,10.87,22.35,1.2],[20.97,24.91,15.46,21.37,.78],[22.09,23.42,17.14,19.13,.78],
+  [23.42,22.09,19.13,17.14,.78],[24.91,20.97,19.44,12.45,1.2],[26.56,20.08,23.83,14.12,.78],
+  [28.31,19.42,26.46,13.14,.78],[30.13,19.03,29.2,12.54,.78],
+];
+
+// Initialise the WebGL hero starfield. Returns a disposer that frees all
+// GL resources (composer, renderer, GL context). Throws nothing — callers
+// rely on a no-op disposer when WebGL is unavailable.
+function initHeroWebGL(): () => void {
+  const noop = () => {};
+  try {
+    const canvas = document.getElementById("bg") as HTMLCanvasElement | null;
+    if (!canvas) return noop;
+    let W = window.innerWidth, H = window.innerHeight;
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(W, H);
+    renderer.setClearColor(0x040706, 1);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 0.92;
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x040706, 0.02);
+    const camera = new THREE.PerspectiveCamera(60, W / H, 0.1, 260);
+    camera.position.set(0, 0, 11);
+    const spr = (() => {
+      const c = document.createElement("canvas"); c.width = c.height = 64;
+      const x = c.getContext("2d")!;
+      const g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+      g.addColorStop(0, "rgba(255,255,255,1)");
+      g.addColorStop(.25, "rgba(255,255,255,.85)");
+      g.addColorStop(1, "rgba(255,255,255,0)");
+      x.fillStyle = g; x.fillRect(0, 0, 64, 64);
+      return new THREE.CanvasTexture(c);
+    })();
+    function field(n: number, spread: number, dN: number, dF: number, size: number, color: number, op: number) {
+      const g = new THREE.BufferGeometry();
+      const p = new Float32Array(n * 3);
+      for (let i = 0; i < n; i++) {
+        p[i*3] = (Math.random() - .5) * spread;
+        p[i*3+1] = (Math.random() - .5) * spread * .6;
+        p[i*3+2] = dN + Math.random() * (dF - dN);
+      }
+      g.setAttribute("position", new THREE.BufferAttribute(p, 3));
+      const m = new THREE.PointsMaterial({ size, map: spr, color, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true, opacity: op });
+      const pts = new THREE.Points(g, m); scene.add(pts); return pts;
+    }
+    const dust = field(1100, 52, -72, 8, .1, 0xA6ACA8, .5);
+    const tealStars = field(34, 46, -66, 8, .34, 0x36C5B0, .8);
+    const S = 0.12, mark = new THREE.Group(); scene.add(mark);
+    const lp: number[] = [];
+    HERO_RAYS.forEach(r => lp.push((r[0]-32)*S, -(r[1]-32)*S, 0, (r[2]-32)*S, -(r[3]-32)*S, 0));
+    const lg = new THREE.BufferGeometry();
+    lg.setAttribute("position", new THREE.Float32BufferAttribute(lp, 3));
+    const lmat = new THREE.LineBasicMaterial({ color: 0xEDE7D9, transparent: true, opacity: 0, blending: THREE.AdditiveBlending });
+    mark.add(new THREE.LineSegments(lg, lmat));
+    const tg = new THREE.BufferGeometry();
+    tg.setAttribute("position", new THREE.Float32BufferAttribute([(40.07-32)*S, -(21.67-32)*S, 0, (49.24-32)*S, -(9.94-32)*S, 0], 3));
+    const tmat = new THREE.LineBasicMaterial({ color: 0x36C5B0, transparent: true, opacity: 0, blending: THREE.AdditiveBlending });
+    mark.add(new THREE.LineSegments(tg, tmat));
+    const cmat = new THREE.MeshBasicMaterial({ color: 0xF2EEE4, transparent: true, opacity: 0 });
+    mark.add(new THREE.Mesh(new THREE.SphereGeometry(.3, 24, 24), cmat));
+    const nmat = new THREE.MeshBasicMaterial({ color: 0x36C5B0, transparent: true, opacity: 0 });
+    const node = new THREE.Mesh(new THREE.SphereGeometry(.14, 16, 16), nmat);
+    node.position.set((49.24-32)*S, -(9.94-32)*S, 0); mark.add(node);
+    const MP = 1100;
+    const tP = new Float32Array(MP*3), sP = new Float32Array(MP*3), col = new Float32Array(MP*3), cur = new Float32Array(MP*3);
+    const segs: Array<{a:[number,number];b:[number,number];teal:boolean;len:number}> =
+      HERO_RAYS.map(r => ({ a: [r[0], r[1]] as [number,number], b: [r[2], r[3]] as [number,number], teal: false, len: 0 }));
+    segs.push({ a: [40.07, 21.67], b: [49.24, 9.94], teal: true, len: 0 });
+    segs.forEach(s => { s.len = Math.hypot(s.b[0]-s.a[0], s.b[1]-s.a[1]); });
+    const tot = segs.reduce((x, s) => x + s.len, 0);
+    for (let i = 0; i < MP; i++) {
+      let X: number, Y: number, teal = false;
+      if (i < 190) {
+        const an = Math.random()*6.283, rr = Math.sqrt(Math.random())*6.85;
+        X = 32 + Math.cos(an)*rr; Y = 32 + Math.sin(an)*rr;
+      } else {
+        let q = Math.random()*tot, sg = segs[0];
+        for (const s of segs) { if (q <= s.len) { sg = s; break; } q -= s.len; }
+        const u = Math.random();
+        X = sg.a[0] + (sg.b[0]-sg.a[0])*u; Y = sg.a[1] + (sg.b[1]-sg.a[1])*u; teal = sg.teal;
+      }
+      const wx = (X-32)*S, wy = -(Y-32)*S;
+      tP[i*3] = wx; tP[i*3+1] = wy; tP[i*3+2] = (Math.random()-.5)*.3;
+      const dx = Math.random()-.5, dy = Math.random()-.5, dz = Math.random()-.5;
+      const dl = Math.hypot(dx, dy, dz) || 1, rd = 5 + Math.random()*11;
+      sP[i*3] = wx + dx/dl*rd; sP[i*3+1] = wy + dy/dl*rd; sP[i*3+2] = dz/dl*rd*.6;
+      cur[i*3] = sP[i*3]; cur[i*3+1] = sP[i*3+1]; cur[i*3+2] = sP[i*3+2];
+      if (teal || Math.random() < .14) { col[i*3] = .21; col[i*3+1] = .77; col[i*3+2] = .69; }
+      else { col[i*3] = .93; col[i*3+1] = .905; col[i*3+2] = .84; }
+    }
+    const pg = new THREE.BufferGeometry();
+    pg.setAttribute("position", new THREE.BufferAttribute(cur, 3));
+    pg.setAttribute("color", new THREE.BufferAttribute(col, 3));
+    const parts = new THREE.Points(pg, new THREE.PointsMaterial({ size: .2, map: spr, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true, opacity: 0 }));
+    scene.add(parts);
+    mark.position.set(3.6, 0.7, 0); parts.position.set(3.6, 0.7, 0);
+    const composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene, camera));
+    const bloom = new UnrealBloomPass(new THREE.Vector2(W, H), .55, .4, .2);
+    composer.addPass(bloom);
+    composer.addPass(new OutputPass());
+    let a = 0, assembling = true;
+    const ease = (t: number) => 1 - Math.pow(1 - t, 3);
+    let mx = 0, my = 0;
+    const onPointer = (e: PointerEvent) => { mx = e.clientX/window.innerWidth - .5; my = e.clientY/window.innerHeight - .5; };
+    window.addEventListener("pointermove", onPointer);
+    function drift(p: THREE.Points, sp: number, dt: number) {
+      const ar = (p.geometry.attributes.position as THREE.BufferAttribute).array as Float32Array;
+      for (let k = 2; k < ar.length; k += 3) { ar[k] += sp*dt; if (ar[k] > 9) ar[k] -= 80; }
+      (p.geometry.attributes.position as THREE.BufferAttribute).needsUpdate = true;
+    }
+    const clk = new THREE.Clock();
+    let rafId = 0, disposed = false;
+    function loop() {
+      if (disposed) return;
+      const dt = Math.min(clk.getDelta(), .05), t = clk.elapsedTime;
+      const prog = Math.min(1, window.scrollY/window.innerHeight);
+      const speed = 1.2 + prog*2.2;
+      drift(dust, speed, dt); drift(tealStars, speed*.8, dt);
+      if (assembling) { a += dt/2.1; if (a >= 1) { a = 1; assembling = false; } const e = ease(a); for (let k = 0; k < MP*3; k++) cur[k] = sP[k] + (tP[k]-sP[k])*e; (pg.attributes.position as THREE.BufferAttribute).needsUpdate = true; }
+      const heroVis = Math.max(0, 1 - window.scrollY/(window.innerHeight*.7));
+      const e2 = ease(a);
+      (parts.material as THREE.PointsMaterial).opacity = heroVis*.55;
+      const lit = Math.max(0, Math.min(1, (e2-.55)/.45)) * heroVis;
+      lmat.opacity = .92*lit; tmat.opacity = lit; cmat.opacity = lit;
+      nmat.opacity = heroVis * Math.min(1, e2*1.3);
+      const b = 1 + .04*Math.sin(t*1.05);
+      mark.scale.set(b, b, b); parts.scale.set(b, b, b);
+      bloom.strength = .4 + heroVis*.28;
+      camera.position.x += (mx*1.8 - camera.position.x)*.04;
+      camera.position.y += (-my*1.0 - camera.position.y)*.04;
+      camera.lookAt(0, 0, 0);
+      composer.render();
+      rafId = requestAnimationFrame(loop);
+    }
+    rafId = requestAnimationFrame(loop);
+    const onResize = () => {
+      W = window.innerWidth; H = window.innerHeight;
+      camera.aspect = W/H; camera.updateProjectionMatrix();
+      renderer.setSize(W, H); composer.setSize(W, H);
+    };
+    window.addEventListener("resize", onResize);
+    return () => {
+      disposed = true;
+      try { cancelAnimationFrame(rafId); } catch {}
+      try { window.removeEventListener("pointermove", onPointer); } catch {}
+      try { window.removeEventListener("resize", onResize); } catch {}
+      try { composer.dispose(); } catch {}
+      try { renderer.dispose(); } catch {}
+      try { renderer.forceContextLoss(); } catch {}
+    };
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("[Landing] WebGL hero init failed", err);
+    return noop;
+  }
+}
 
 // Auto-generated port of the cinematic landing page.
 // All CSS rules are scoped to .aura-landing so the dark theme never leaks
