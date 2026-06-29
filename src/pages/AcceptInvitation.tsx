@@ -48,10 +48,10 @@ export default function AcceptInvitation() {
   return (
     <div
       style={{
-        background: "#0d0d0b",
-        color: "#ededed",
+        background: "var(--ob-bg)",
+        color: "var(--glass)",
         minHeight: "100vh",
-        fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+        fontFamily: "var(--font-body)",
       }}
     >
       <style>{ACCEPT_CSS}</style>
@@ -74,10 +74,10 @@ export default function AcceptInvitation() {
           <h1
             className="ai-headline"
             style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontFamily: "var(--font-serif)",
               fontWeight: 400,
               lineHeight: 1.2,
-              color: "#ffffff",
+              color: "var(--glass)",
               margin: "0 0 18px",
             }}
           >
@@ -91,7 +91,7 @@ export default function AcceptInvitation() {
             style={{
               fontSize: 16,
               lineHeight: 1.6,
-              color: "rgba(237,237,237,0.65)",
+              color: "var(--glass-2)",
               margin: "0 auto 32px",
               maxWidth: 380,
             }}
@@ -125,7 +125,7 @@ export default function AcceptInvitation() {
                   onClick={scrollToPanels}
                   style={{
                     fontSize: 14,
-                    color: "rgba(237,237,237,0.5)",
+                    color: "var(--glass-3)",
                     textDecoration: "none",
                   }}
                 >
@@ -142,7 +142,7 @@ export default function AcceptInvitation() {
         <section
           id="tell-me-more"
           style={{
-            background: "#111110",
+            background: "var(--ob-panel)",
             padding: "100px 20px 120px",
           }}
         >
@@ -182,14 +182,12 @@ export default function AcceptInvitation() {
   );
 }
 
-const BRAND = "#B08D3A";
-
 const primaryButtonStyle: React.CSSProperties = {
   display: "inline-block",
   width: "100%",
   maxWidth: 400,
-  background: BRAND,
-  color: "#ffffff",
+  background: "var(--action)",
+  color: "var(--ink)",
   height: 48,
   lineHeight: "48px",
   borderRadius: 8,
@@ -226,13 +224,13 @@ function Panel({ num, title, body }: { num: string; title: string; body: string 
         transition: "opacity 600ms ease-out, transform 600ms ease-out",
       }}
     >
-      <div style={{ fontSize: 12, letterSpacing: "2px", color: BRAND, marginBottom: 12, fontWeight: 600 }}>
+      <div style={{ fontSize: 12, letterSpacing: "2px", color: "var(--live)", marginBottom: 12, fontWeight: 600, fontFamily: "var(--font-mono)" }}>
         {num}
       </div>
-      <h2 style={{ fontSize: 18, color: "#ffffff", fontWeight: 700, margin: "0 0 12px", lineHeight: 1.35 }}>
+      <h2 style={{ fontSize: 18, color: "var(--glass)", fontWeight: 700, margin: "0 0 12px", lineHeight: 1.35, fontFamily: "var(--font-serif)" }}>
         {title}
       </h2>
-      <p style={{ fontSize: 14, color: "#999", lineHeight: 1.65, margin: 0, maxWidth: 400 }}>
+      <p style={{ fontSize: 14, color: "var(--glass-2)", lineHeight: 1.65, margin: 0, maxWidth: 400, fontFamily: "var(--font-body)" }}>
         {body}
       </p>
     </div>
@@ -264,6 +262,10 @@ const ACCEPT_CSS = `
 .ai-cta {
   opacity: 0;
   animation: ai-fade-up-scale 400ms ease-out 3200ms forwards;
+  transition: background 0.2s ease;
+}
+.ai-cta:hover {
+  background: color-mix(in srgb, var(--action) 88%, black) !important;
 }
 .ai-secondary {
   opacity: 0;
