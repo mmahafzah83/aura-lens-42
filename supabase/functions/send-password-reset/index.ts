@@ -1,21 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import {
+  emailShell, heading, button, INK_MUTE, OXBLOOD,
+} from "../_shared/email-theme.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-const HEADING_FONT = "'Cormorant Garamond', Georgia, 'Times New Roman', serif";
-const BODY_FONT = "'DM Sans', -apple-system, BlinkMacSystemFont, Arial, sans-serif";
-
-function horizonEye(size: number, color: string): string {
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 64 64" fill="none" style="display:block">
-    <ellipse cx="32" cy="32" rx="28" ry="14" stroke="${color}" stroke-width="2" fill="none"/>
-    <circle cx="32" cy="32" r="7" fill="${color}"/>
-    <circle cx="32" cy="32" r="2.5" fill="#1A1916"/>
-  </svg>`;
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -66,40 +58,15 @@ serve(async (req) => {
         .maybeSingle();
       if (profile?.first_name) name = profile.first_name;
     } catch (_) { /* ignore */ }
-
-    let BRAND = "#B08D3A";
-    try {
-      const { data: dsRow } = await admin
-        .from("design_system")
-        .select("tokens")
-        .eq("is_active", true)
-        .maybeSingle();
-      const c = (dsRow?.tokens as any)?.colors?.brand?.light;
-      if (typeof c === "string") BRAND = c;
-    } catch (_) { /* ignore */ }
-
-    const html = `<!doctype html><html><body style="margin:0;padding:0;background:#F6F1E8;font-family:${BODY_FONT};color:#1A1916;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F6F1E8;padding:32px 16px;">
-    <tr><td align="center">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#FFFDF8;border:1px solid #E8DFCC;border-radius:14px;padding:36px 36px 28px;">
-        <tr><td align="left" style="padding-bottom:18px;">${horizonEye(36, BRAND)}</td></tr>
-        <tr><td>
-          <h1 style="font-family:${HEADING_FONT};font-size:28px;font-weight:500;line-height:1.2;margin:0 0 14px;color:#1A1916;">Reset your password</h1>
-          <p style="font-size:15px;line-height:1.6;margin:0 0 18px;color:#3A3633;">Hi ${name}, we received a request to reset the password for your Aura account. Click below to set a new one.</p>
-          <p style="margin:24px 0;"><a href="${resetUrl}" style="display:inline-block;background:${BRAND};color:#1A1916;text-decoration:none;font-weight:600;font-size:14px;padding:13px 22px;border-radius:10px;">Reset my password →</a></p>
-          <p style="font-size:13px;color:#6B6866;margin:0 0 8px;">This link expires in 24 hours.</p>
-          <p style="font-size:13px;color:#6B6866;margin:0 0 18px;">If you didn't request this, you can safely ignore this email.</p>
-          <p style="font-size:12px;color:#8A8580;line-height:1.5;margin:18px 0 0;word-break:break-all;">If the button doesn't work, paste this link:<br/><a href="${resetUrl}" style="color:${BRAND};">${resetUrl}</a></p>
-        </td></tr>
-        <tr><td style="border-top:1px solid #EDE6D5;padding-top:18px;margin-top:24px;">
-          <p style="font-size:11px;color:#8A8580;margin:18px 0 0;display:flex;align-items:center;gap:8px;">
-            ${horizonEye(16, BRAND)}<span style="margin-left:8px;">Aura · Turns your expertise into presence · aura-intel.org</span>
-          </p>
-        </td></tr>
-      </table>
-    </td></tr>
-  </table>
-</body></html>`;
+    const body = `
+      ${heading("Reset your password")}
+      <p style="font-size:15px;line-height:1.6;margin:0 0 18px;">Hi ${name}, we received a request to reset the password for your Aura account. Click below to set a new one.</p>
+      <p style="margin:24px 0;">${button(resetUrl, "Reset my password →")}</p>
+      <p style="font-size:13px;color:${INK_MUTE};margin:0 0 8px;">This link expires in 24 hours.</p>
+      <p style="font-size:13px;color:${INK_MUTE};margin:0 0 18px;">If you didn't request this, you can safely ignore this email.</p>
+      <p style="font-size:12px;color:${INK_MUTE};line-height:1.5;margin:18px 0 0;word-break:break-all;">If the button doesn't work, paste this link:<br/><a href="${resetUrl}" style="color:${OXBLOOD};">${resetUrl}</a></p>
+    `;
+    const html = emailShell({ preheader: "Reset your Aura password", body });
 
     const resendRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
