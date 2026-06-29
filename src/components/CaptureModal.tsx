@@ -604,23 +604,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
       }
 
       // Success — celebrate the FIRST EVER capture (count = 1 for this user)
-      let didCelebrate = false;
-      try {
-        const { count } = await supabase
-          .from("entries")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", session.user.id);
-        if (count === 1 && !localStorage.getItem("aura_first_capture_celebrated")) {
-          localStorage.setItem("aura_first_capture_celebrated", "true");
-          didCelebrate = true;
-          setFirstCeremonyOpen(true);
-          setFirstCeremonyShowCta(false);
-          // The "See your intelligence" CTA appears after a 2s pause.
-          window.setTimeout(() => setFirstCeremonyShowCta(true), 2000);
-        }
-      } catch {
-        // ignore — fall through to default toast
-      }
+      const didCelebrate = await maybeTriggerFirstCeremony(session.user.id);
       if (!didCelebrate) {
         sonnerToast.custom(
           () => (
