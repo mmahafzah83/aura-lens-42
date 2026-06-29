@@ -5,7 +5,7 @@ import usePageMeta from "@/hooks/usePageMeta";
 
 // Auto-generated port of the cinematic landing page.
 // All CSS rules are scoped to .aura-landing so the dark theme never leaks
-// onto other routes. The SVG gradient id formerly "beamg" was renamed to
+// onto other routes. The SVG gradient id was renamed to
 // "aura-beam-grad" to avoid global collisions.
 
 const LANDING_CSS = `
