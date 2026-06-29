@@ -355,6 +355,11 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
           .eq("user_id", user.id)
           .gte("created_at", since),
       ]);
+      const { count: docSinceCount } = await supabase
+        .from("documents")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .gte("created_at", since);
 
       const sigRows = (sigRes?.data || []) as Array<{ id: string; signal_title: string | null; confidence_score: number | null }>;
       let signals: AwaySignal[] = sigRows
@@ -365,7 +370,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
           title: r.signal_title || "Untitled signal",
           confidence: r.confidence_score,
         }));
-      const newCaptureCount = capRes?.count ?? 0;
+      const newCaptureCount = (capRes?.count ?? 0) + (docSinceCount ?? 0);
       let mode: "away" | "radar" = "away";
 
       // Fallback: nothing in the since-window — surface the top 2 ACTIVE signals
@@ -513,6 +518,8 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
         supabase.from("evidence_fragments").select("source_registry_id").eq("user_id", user.id).not("source_registry_id", "is", null),
         supabase.from("entries").select("created_at").eq("user_id", user.id).order("created_at", { ascending: true }).limit(1).maybeSingle(),
       ]);
+      const { count: docsTotal } = await supabase
+        .from("documents").select("id", { count: "exact", head: true }).eq("user_id", user.id);
       const institutions = new Set(
         ((instRes?.data || []) as Array<{ source_registry_id: string | null }>)
           .map((r) => r.source_registry_id)
@@ -523,7 +530,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
       setProof({
         status: "ready",
         data: {
-          entriesTotal: entriesRes?.count ?? 0,
+          entriesTotal: (entriesRes?.count ?? 0) + (docsTotal ?? 0),
           fragments: fragsRes?.count ?? 0,
           institutions,
           dayN,
@@ -547,6 +554,43 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
     };
   }, [isReady, loadImprint, loadAway, loadDraft, loadDiscernment, loadProof]);
 
+  // Re-run all loaders on capture-complete (any capture type).
+  useEffect(() => {
+    if (!user?.id) return;
+    const handler = () => {
+      publishedSignalsRef.current = null;
+      void loadImprint();
+      void loadAway();
+      void loadDraft();
+      void loadDiscernment();
+      void loadProof();
+    };
+    window.addEventListener("capture-complete", handler);
+    return () => window.removeEventListener("capture-complete", handler);
+  }, [user?.id, loadImprint, loadAway, loadDraft, loadDiscernment, loadProof]);
+
+  // Realtime — any capture (entries/documents), signal, or imprint snapshot
+  // refreshes the Brief the moment it lands.
+  useEffect(() => {
+    if (!user?.id) return;
+    const uid = user.id;
+    const refreshAll = () => {
+      publishedSignalsRef.current = null;
+      void loadImprint();
+      void loadAway();
+      void loadDraft();
+      void loadDiscernment();
+      void loadProof();
+    };
+    const ch = supabase.channel(`brief-live-${uid}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "entries",            filter: `user_id=eq.${uid}` }, refreshAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "documents",          filter: `user_id=eq.${uid}` }, refreshAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "strategic_signals",  filter: `user_id=eq.${uid}` }, refreshAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "imprint_snapshots",  filter: `user_id=eq.${uid}` }, refreshAll)
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [user?.id, loadImprint, loadAway, loadDraft, loadDiscernment, loadProof]);
+
   // ── Render ──
 
   const firstName = profile?.firstName || "";
@@ -562,18 +606,21 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.24, ease: [0.32, 0.72, 0.35, 1] }}
+      className="brief-page"
       style={{
         background: "var(--paper)",
         color: "var(--ink)",
         fontFamily: "var(--font-body)",
         fontSize: 17,
         lineHeight: 1.6,
-        maxWidth: 720,
-        margin: "0 auto",
-        padding: "12px 4px 80px",
+        marginInline: "calc(50% - 50vw)",
+        width: "100vw",
+        padding: "22px 0 60px",
+        minHeight: "100vh",
       }}
       aria-label="Your Brief"
     >
+      <div style={{ maxWidth: 720, margin: "0 auto", padding: "0 24px" }}>
       {/* MASTHEAD ─────────────────────────── */}
       <div
         style={{
@@ -691,7 +738,9 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
             const contentScore = imprint.data.contentScore;
             const headline = topSignal
               ? `You see ${topSignal.title} more clearly than you've said it.`
-              : "Your reading is ahead of your voice this week.";
+              : (signalScore != null && contentScore != null)
+                ? "Your reading is ahead of your voice this week."
+                : "Your reading is taking shape.";
 
             const dInputs = discernment.status === "ready" ? discernment.data : null;
             const hasGap = dInputs && dInputs.postsWithSignal != null && dInputs.published120d != null;
@@ -986,13 +1035,9 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
         )}
       </section>
 
-      {/* WHILE YOU WERE AWAY (demoted) ─────────────────────────── */}
+      {/* YOUR RADAR ─────────────────────────── */}
       <section style={{ marginBottom: 36 }}>
-        <SectionLabel>
-          {away.status === "ready" && away.data.mode === "radar"
-            ? "Still on your radar"
-            : "While you were away"}
-        </SectionLabel>
+        <SectionLabel>Your radar</SectionLabel>
         {away.status === "loading" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <SkeletonLine width="85%" />
@@ -1005,14 +1050,14 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
           if (signals.length === 0 && newCaptureCount === 0 && signalCount === 0) {
             return (
               <p style={{ margin: 0, color: "var(--ink-2)", fontSize: 15, lineHeight: 1.55 }}>
-                Your scan is still forming.
+                You're clear — nothing new on your radar.
               </p>
             );
           }
           if (signals.length === 0) {
             return (
               <p style={{ margin: 0, color: "var(--ink-2)", fontSize: 15, lineHeight: 1.55 }}>
-                The scan is quiet — for now.
+                You're clear — nothing new on your radar.
               </p>
             );
           }
@@ -1046,6 +1091,50 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
             </ul>
           );
         })()}
+      </section>
+
+      {/* KEEP THE SCAN LIVE ─────────────────────────── */}
+      <section style={{ marginBottom: 36 }}>
+        <div
+          style={{
+            background: "var(--paper-2)",
+            border: "0.5px solid var(--rule)",
+            borderInlineStart: "3px solid var(--live)",
+            borderRadius: 12,
+            padding: "20px 22px",
+          }}
+        >
+          <SectionLabel>Keep the scan live</SectionLabel>
+          <p style={{ margin: "0 0 15px 0", fontSize: 15, lineHeight: 1.6, color: "var(--ink-2)" }}>
+            {away.status === "ready" && away.data.newCaptureCount > 0 ? (
+              <>
+                Your scan runs on what you read.{" "}
+                <strong style={{ color: "var(--ink)", fontWeight: 500 }}>{away.data.newCaptureCount}</strong>{" "}
+                {away.data.newCaptureCount === 1 ? "capture" : "captures"} this week kept it sharp — one more keeps the next signal{" "}
+                <span style={{ color: "var(--live-ink, var(--live))", fontWeight: 500 }}>Live</span>.
+              </>
+            ) : (
+              <>Your scan runs on what you read. Paste the first piece that made you think.</>
+            )}
+          </p>
+          <button
+            type="button"
+            onClick={() => onOpenCapture?.()}
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              letterSpacing: "0.06em",
+              padding: "9px 16px",
+              borderRadius: 6,
+              background: "transparent",
+              color: "var(--live-ink, var(--live))",
+              border: "0.5px solid var(--live)",
+              cursor: "pointer",
+            }}
+          >
+            Capture this week →
+          </button>
+        </div>
       </section>
 
       {/* QUIET FOOTER ─────────────────────────── */}
@@ -1133,7 +1222,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
           .brief-headline-row { flex-direction: column; align-items: flex-start; }
         }
       `}</style>
-
+      </div>
     </motion.div>
   );
 }
