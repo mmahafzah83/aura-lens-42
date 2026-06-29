@@ -608,7 +608,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
       transition={{ duration: 0.24, ease: [0.32, 0.72, 0.35, 1] }}
       className="brief-page"
       style={{
-        background: "var(--paper)",
+        backgroundColor: "var(--paper)",
         color: "var(--ink)",
         fontFamily: "var(--font-body)",
         fontSize: 17,
