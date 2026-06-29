@@ -91,6 +91,7 @@ const App = () => (
             <Route path="/request-access" element={<RequestAccess />} />
             <Route path="/accept-invitation" element={<AcceptInvitation />} />
             <Route path="/admin" element={<PasswordGate><AdminGate><Admin /></AdminGate></PasswordGate>} />
+            <Route path="/admin/access" element={<PasswordGate><AdminGate><AdminAccess /></AdminGate></PasswordGate>} />
             <Route path="/admin/design-system" element={<PasswordGate><AdminGate><AdminDesignSystem /></AdminGate></PasswordGate>} />
             <Route path="/admin/experience" element={<PasswordGate><AdminGate><AdminExperience /></AdminGate></PasswordGate>} />
             <Route path="/admin/qa" element={<PasswordGate><AdminGate><AdminQA /></AdminGate></PasswordGate>} />
