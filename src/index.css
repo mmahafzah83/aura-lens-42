@@ -345,11 +345,11 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
     letter-spacing: 0.01em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    overflow-x: hidden;
+    overflow-x: clip;
   }
 
   html {
-    overflow-x: hidden;
+    overflow-x: clip;
   }
 
   h1, h2, h3 {
