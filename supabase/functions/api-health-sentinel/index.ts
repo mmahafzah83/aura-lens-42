@@ -79,9 +79,6 @@ async function checkResend(key: string): Promise<Result> {
     if (r.ok) return { provider: "resend", ok: true, status: r.status, detail: "" };
 
     const text = (await r.text()).slice(0, 200);
-    // A restricted (send-only) key correctly rejects GET /emails with 401
-    // restricted_api_key. That is the healthy production state — POST /emails
-    // (sending) is unaffected. Treat ONLY this exact signature as healthy.
     const isSendOnly =
       r.status === 401 && /restricted_api_key|restricted to only send/i.test(text);
 
@@ -109,7 +106,54 @@ Deno.serve(async (req) => {
     const apiKeyHeader = req.headers.get("apikey") || req.headers.get("x-api-key") || "";
     const isServiceRole = !!bearer && (bearer === serviceKey || apiKeyHeader === serviceKey);
     const isCron = !!CRON_SECRET && cronHeader === CRON_SECRET;
-    if (!isServiceRole && !isCron) return json({ error: "Unauthorized" }, 401);
+
+    let isAdmin = false;
+    let userClient = null;
+
+    if (!isServiceRole && !isCron && bearer) {
+      userClient = createClient(supabaseUrl, serviceKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+        global: { headers: { Authorization: `Bearer ${bearer}` } },
+      });
+      const { data: { user }, error: userErr } = await userClient.auth.getUser();
+      if (user && !userErr) {
+        const { data: adminFlag } = await userClient.rpc("is_current_user_admin" as never);
+        isAdmin = !!adminFlag;
+      }
+    }
+
+    if (!isServiceRole && !isCron && !isAdmin) {
+      return json({ error: "Unauthorized" }, 401);
+    }
+
+    let body: any = {};
+    if (req.method !== "GET") {
+      const text = await req.text();
+      if (text) {
+        try {
+          body = JSON.parse(text);
+        } catch {
+          return json({ error: "Invalid JSON body" }, 400);
+        }
+      }
+    }
+
+    const admin = createClient(supabaseUrl, serviceKey);
+
+    if (body.latest === true) {
+      const client = userClient || admin;
+      const { data, error } = await client
+        .from("api_health_checks")
+        .select("id, run_at, results, checked, failed")
+        .order("run_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) {
+        console.error("[sentinel] latest read error", error.message);
+        return json({ error: error.message }, 500);
+      }
+      return json({ success: true, latest: data });
+    }
 
     const OPENAI = Deno.env.get("OPENAI_API_KEY") || "";
     const ANTHROPIC = Deno.env.get("ANTHROPIC_API_KEY") || "";
@@ -128,7 +172,14 @@ Deno.serve(async (req) => {
     }
 
     const failures = results.filter((r) => !r.ok);
-    const admin = createClient(supabaseUrl, serviceKey);
+
+    const { error: insertErr } = await admin.from("api_health_checks").insert({
+      run_at: new Date().toISOString(),
+      results: results.map((r) => ({ provider: r.provider, ok: r.ok, status: r.status, detail: r.detail })),
+      checked: results.length,
+      failed: failures.length,
+    });
+    if (insertErr) console.error("[sentinel] insert failed", insertErr.message);
 
     if (failures.length > 0) {
       const rows = failures.map((f) => ({
