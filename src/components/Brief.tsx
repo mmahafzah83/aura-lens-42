@@ -554,6 +554,43 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
     };
   }, [isReady, loadImprint, loadAway, loadDraft, loadDiscernment, loadProof]);
 
+  // Re-run all loaders on capture-complete (any capture type).
+  useEffect(() => {
+    if (!user?.id) return;
+    const handler = () => {
+      publishedSignalsRef.current = null;
+      void loadImprint();
+      void loadAway();
+      void loadDraft();
+      void loadDiscernment();
+      void loadProof();
+    };
+    window.addEventListener("capture-complete", handler);
+    return () => window.removeEventListener("capture-complete", handler);
+  }, [user?.id, loadImprint, loadAway, loadDraft, loadDiscernment, loadProof]);
+
+  // Realtime — any capture (entries/documents), signal, or imprint snapshot
+  // refreshes the Brief the moment it lands.
+  useEffect(() => {
+    if (!user?.id) return;
+    const uid = user.id;
+    const refreshAll = () => {
+      publishedSignalsRef.current = null;
+      void loadImprint();
+      void loadAway();
+      void loadDraft();
+      void loadDiscernment();
+      void loadProof();
+    };
+    const ch = supabase.channel(`brief-live-${uid}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "entries",            filter: `user_id=eq.${uid}` }, refreshAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "documents",          filter: `user_id=eq.${uid}` }, refreshAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "strategic_signals",  filter: `user_id=eq.${uid}` }, refreshAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "imprint_snapshots",  filter: `user_id=eq.${uid}` }, refreshAll)
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [user?.id, loadImprint, loadAway, loadDraft, loadDiscernment, loadProof]);
+
   // ── Render ──
 
   const firstName = profile?.firstName || "";
