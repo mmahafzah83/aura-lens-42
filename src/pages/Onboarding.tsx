@@ -600,48 +600,67 @@ const Onboarding = () => {
       style={{ background: "var(--paper-2)" }}
     >
       <div
-        className="w-full"
-        style={{
-          maxWidth: 560,
-          background: "var(--paper)",
-          color: "var(--ink)",
-          borderRadius: 16,
-          boxShadow: "0 8px 32px rgba(0,0,0,0.08), 0 8px 32px rgba(0,0,0,0.3)",
-          padding: "clamp(32px, 6vw, 48px)",
-          border: "1px solid var(--rule)",
-        }}
+        style={{ position: "relative", width: "100%", maxWidth: 560, maxHeight: "calc(100dvh - 80px)" }}
       >
-        <ProgressDots />
-        <AnimatePresence mode="wait" custom={direction} initial={false}>
-          <motion.div
-            key={step}
-            custom={direction}
-            initial={{ opacity: 0, x: direction * 60 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: direction * -60 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-          >
-            {children}
-          </motion.div>
-        </AnimatePresence>
-        {onboardingVisits >= 3 && (
-          <div style={{ marginTop: 16, textAlign: "center" }}>
-            <button
-              type="button"
-              onClick={skipOnboardingEscape}
-              style={{
-                background: "none",
-                border: "none",
-                color: "var(--ink-2)",
-                fontSize: 12,
-                cursor: "pointer",
-                textDecoration: "underline",
-              }}
+        <div
+          className="w-full"
+          style={{
+            maxHeight: "100%",
+            overflowY: "auto",
+            background: "var(--paper)",
+            color: "var(--ink)",
+            borderRadius: 16,
+            boxShadow: "0 8px 32px rgba(0,0,0,0.08), 0 8px 32px rgba(0,0,0,0.3)",
+            padding: "clamp(32px, 6vw, 48px)",
+            border: "1px solid var(--rule)",
+          }}
+        >
+          <ProgressDots />
+          <AnimatePresence mode="wait" custom={direction} initial={false}>
+            <motion.div
+              key={step}
+              custom={direction}
+              initial={{ opacity: 0, x: direction * 60 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: direction * -60 }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             >
-              Skip onboarding and go to dashboard →
-            </button>
-          </div>
-        )}
+              {children}
+            </motion.div>
+          </AnimatePresence>
+          {onboardingVisits >= 3 && (
+            <div style={{ marginTop: 16, textAlign: "center" }}>
+              <button
+                type="button"
+                onClick={skipOnboardingEscape}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "var(--ink-2)",
+                  fontSize: 12,
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                }}
+              >
+                Skip onboarding and go to dashboard →
+              </button>
+            </div>
+          )}
+        </div>
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: 40,
+            pointerEvents: "none",
+            borderBottomLeftRadius: 16,
+            borderBottomRightRadius: 16,
+            background: "linear-gradient(to bottom, transparent, var(--paper))",
+          }}
+        />
       </div>
     </div>
   );
