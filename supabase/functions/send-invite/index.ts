@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
-  emailShell, sectionLabel, heading, divider, button, pullQuote,
+  emailShell, sectionLabel, divider, button, pullQuote,
   CARD, RULE, INK, INK_BODY, INK_MUTE, AMBER, OXBLOOD,
   SERIF, BODY, MONO, ARABIC,
 } from "../_shared/email-theme.ts";
