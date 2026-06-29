@@ -518,6 +518,8 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
         supabase.from("evidence_fragments").select("source_registry_id").eq("user_id", user.id).not("source_registry_id", "is", null),
         supabase.from("entries").select("created_at").eq("user_id", user.id).order("created_at", { ascending: true }).limit(1).maybeSingle(),
       ]);
+      const { count: docsTotal } = await supabase
+        .from("documents").select("id", { count: "exact", head: true }).eq("user_id", user.id);
       const institutions = new Set(
         ((instRes?.data || []) as Array<{ source_registry_id: string | null }>)
           .map((r) => r.source_registry_id)
@@ -528,7 +530,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
       setProof({
         status: "ready",
         data: {
-          entriesTotal: entriesRes?.count ?? 0,
+          entriesTotal: (entriesRes?.count ?? 0) + (docsTotal ?? 0),
           fragments: fragsRes?.count ?? 0,
           institutions,
           dayN,
