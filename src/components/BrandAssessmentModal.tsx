@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import { derivePillars } from "@/lib/brandPillars";
+import AuraLogo from "@/components/brand/AuraLogo";
 
 // New section headers (must match brand-assessment EF SYSTEM_PROMPT)
 const SECTION_DEFS: { key: string; label: string; hint: string }[] = [
