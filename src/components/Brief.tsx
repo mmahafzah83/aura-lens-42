@@ -1035,13 +1035,9 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
         )}
       </section>
 
-      {/* WHILE YOU WERE AWAY (demoted) ─────────────────────────── */}
+      {/* YOUR RADAR ─────────────────────────── */}
       <section style={{ marginBottom: 36 }}>
-        <SectionLabel>
-          {away.status === "ready" && away.data.mode === "radar"
-            ? "Still on your radar"
-            : "While you were away"}
-        </SectionLabel>
+        <SectionLabel>Your radar</SectionLabel>
         {away.status === "loading" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <SkeletonLine width="85%" />
@@ -1054,14 +1050,14 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
           if (signals.length === 0 && newCaptureCount === 0 && signalCount === 0) {
             return (
               <p style={{ margin: 0, color: "var(--ink-2)", fontSize: 15, lineHeight: 1.55 }}>
-                Your scan is still forming.
+                You're clear — nothing new on your radar.
               </p>
             );
           }
           if (signals.length === 0) {
             return (
               <p style={{ margin: 0, color: "var(--ink-2)", fontSize: 15, lineHeight: 1.55 }}>
-                The scan is quiet — for now.
+                You're clear — nothing new on your radar.
               </p>
             );
           }
