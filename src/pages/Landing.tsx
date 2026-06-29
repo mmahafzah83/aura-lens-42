@@ -932,11 +932,11 @@ tio.observe(document.getElementById("tiers"));
  function upd(){const line=innerHeight*0.5;let act=+items[0].dataset.scene;for(const it of items){if(it.getBoundingClientRect().top<=line)act=+it.dataset.scene;}if(act!==cur){cur=act;scenes.forEach(s=>s.classList.toggle("active",+s.dataset.s===act));}}
  addEventListener("scroll",upd,{passive:true});addEventListener("resize",upd);upd();})();
 
-import("three").then(async(THREE)=>{
- const {EffectComposer}=await import("three/addons/postprocessing/EffectComposer.js");
- const {RenderPass}=await import("three/addons/postprocessing/RenderPass.js");
- const {UnrealBloomPass}=await import("three/addons/postprocessing/UnrealBloomPass.js");
- const {OutputPass}=await import("three/addons/postprocessing/OutputPass.js");
+import("https://esm.sh/three@0.161.0").then(async(THREE)=>{
+ const {EffectComposer}=await import("https://esm.sh/three@0.161.0/examples/jsm/postprocessing/EffectComposer.js");
+ const {RenderPass}=await import("https://esm.sh/three@0.161.0/examples/jsm/postprocessing/RenderPass.js");
+ const {UnrealBloomPass}=await import("https://esm.sh/three@0.161.0/examples/jsm/postprocessing/UnrealBloomPass.js");
+ const {OutputPass}=await import("https://esm.sh/three@0.161.0/examples/jsm/postprocessing/OutputPass.js");
  try{
   const canvas=document.getElementById("bg");let W=innerWidth,H=innerHeight;
   const renderer=new THREE.WebGLRenderer({canvas,antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(W,H);renderer.setClearColor(0x040706,1);renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=0.92;
