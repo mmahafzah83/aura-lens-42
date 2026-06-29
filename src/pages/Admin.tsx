@@ -1,1130 +1,275 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { Check, Copy, Loader2, Send, Trash2 } from "lucide-react";
 import AdminShell from "@/components/admin/AdminShell";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Activity,
+  AlertCircle,
+  ArrowRight,
+  CheckCircle2,
+  Loader2,
+  XCircle,
+} from "lucide-react";
 
-const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
+type ProviderResult = {
+  provider: string;
+  ok: boolean;
+  status: number;
+  detail?: string;
+};
 
-type Row = {
+type HealthCheck = {
   id: string;
-  email: string;
-  name: string | null;
-  seniority: string | null;
-  sector: string | null;
-  status: string;
-  source: string | null;
-  requested_at: string | null;
-  created_at: string | null;
-  invited_at: string | null;
+  run_at: string;
+  results: ProviderResult[];
+  checked: number;
+  failed: number;
 };
 
-const SENIORITY = ["C-Suite", "VP", "Director", "Manager", "Other"];
-const SECTOR = ["Consulting", "Energy", "Finance", "Government", "Technology", "Other"];
+const ADMIN_PAGES = [
+  {
+    to: "/admin/experience",
+    label: "Experience",
+    description: "Run QA walkthroughs and monitor flows",
+  },
+  {
+    to: "/admin/design-system",
+    label: "Design system",
+    description: "Manage design tokens and versions",
+  },
+  {
+    to: "/admin/qa",
+    label: "QA",
+    description: "Review audit reports and checks",
+  },
+  {
+    to: "/admin/guide-health",
+    label: "Guide health",
+    description: "Inspect guide page status",
+  },
+  {
+    to: "/admin/standard",
+    label: "Standard",
+    description: "View the Aura standard",
+  },
+];
 
-const initials = (name: string | null, email: string) => {
-  if (name && name.trim()) {
-    const parts = name.trim().split(/\s+/).filter(Boolean);
-    return ((parts[0]?.[0] || "") + (parts[1]?.[0] || "")).toUpperCase() || "?";
-  }
-  return (email?.[0] || "?").toUpperCase();
+const providerName = (provider: string) => {
+  const map: Record<string, string> = {
+    openai: "OpenAI",
+    anthropic: "Anthropic",
+    perplexity: "Perplexity",
+    resend: "Resend",
+  };
+  return map[provider] || provider;
 };
 
-const formatDate = (iso: string | null) => {
+const formatRunAt = (iso: string | null) => {
   if (!iso) return "—";
   const d = new Date(iso);
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return d.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 };
 
-const relativeTime = (iso: string | null) => {
-  if (!iso) return "Never logged in";
-  const diffMs = Date.now() - new Date(iso).getTime();
-  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  if (days === 0) return "Today";
-  if (days === 1) return "1 day ago";
-  return `${days} days ago`;
+const cardStyle = {
+  backgroundColor: "var(--ob-panel)",
+  border: "1px solid var(--hair)",
+  borderRadius: 12,
+  padding: "24px",
 };
 
-const statusBadge = (status: string) => {
-  const map: Record<string, string> = {
-    pending: "bg-neutral-500/15 text-neutral-300 border-neutral-500/30",
-    invited: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-    approved: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-    active: "bg-green-500/15 text-green-300 border-green-500/30",
-    rejected: "bg-red-500/15 text-red-300 border-red-500/30",
-    declined: "bg-neutral-500/15 text-neutral-400 border-neutral-500/30",
-  };
-  return map[status] || "bg-neutral-700/40 text-neutral-300 border-neutral-600/40";
+const mutedStyle = {
+  color: "var(--glass-2)",
+  fontSize: 13,
 };
 
-const Admin = () => {
-  const navigate = useNavigate();
-  const [authChecked, setAuthChecked] = useState(false);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
-
-  const [rows, setRows] = useState<Row[]>([]);
+export default function Admin() {
+  const [latest, setLatest] = useState<HealthCheck | null>(null);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [seniorityFilter, setSeniorityFilter] = useState<string>("all");
-  const [sectorFilter, setSectorFilter] = useState<string>("all");
-  const [activeInvite, setActiveInvite] = useState<string | null>(null);
-  const [noteByRow, setNoteByRow] = useState<Record<string, string>>({});
-  const [sendingId, setSendingId] = useState<string | null>(null);
-  const [directEmail, setDirectEmail] = useState("");
-  const [directName, setDirectName] = useState("");
-  const [directSending, setDirectSending] = useState(false);
-  const [confirmInviteRow, setConfirmInviteRow] = useState<Row | null>(null);
-  const [confirmDeclineRow, setConfirmDeclineRow] = useState<Row | null>(null);
-  const [decliningId, setDecliningId] = useState<string | null>(null);
-  const [directDuplicate, setDirectDuplicate] = useState<{ name: string | null; status: string } | null>(null);
-  const [npsRows, setNpsRows] = useState<Array<{ id: string; rating: number | null; message: string | null; page: string | null; created_at: string | null }>>([]);
-  const [activeUsers, setActiveUsers] = useState<Array<{ email: string; first_name: string | null; sector: string | null; last_sign_in_at: string | null; activated_at: string | null; captures: number; user_id?: string | null }>>([]);
-  const [activeLoading, setActiveLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Seed captures
-  const [seedUserId, setSeedUserId] = useState<string>("");
-  const [seedUrl, setSeedUrl] = useState<string>("");
-  const [seedSending, setSeedSending] = useState(false);
-
-  // Inactivity alert
-  const [copiedUser, setCopiedUser] = useState<string | null>(null);
-
-  // Delete-user state
-  const [confirmEmail, setConfirmEmail] = useState<string | null>(null);
-  const [deletingEmail, setDeletingEmail] = useState<string | null>(null);
-
-  // QA health check
-  type QAResult = { step: number; action: string; passed: boolean; error: string | null; duration_ms: number };
-  type QAReport = { id: string; run_at: string; total_checks: number; passed: number; failed: number; results: QAResult[] };
-  const [qaReports, setQaReports] = useState<QAReport[]>([]);
-  const [qaRunning, setQaRunning] = useState(false);
-
-  const fetchQaReports = async () => {
-    const { data } = await supabase
-      .from("qa_reports")
-      .select("id, run_at, total_checks, passed, failed, results")
-      .order("run_at", { ascending: false })
-      .limit(10);
-    setQaReports((data || []) as QAReport[]);
-  };
-
-  const runQaCheck = async () => {
-    setQaRunning(true);
-    try {
-      const { error } = await supabase.functions.invoke("run-qa-walkthrough", { body: {} });
-      if (error) throw error;
-      toast.success("QA check complete");
-      await fetchQaReports();
-    } catch (e: any) {
-      toast.error(e?.message || "QA check failed");
-    } finally {
-      setQaRunning(false);
-    }
-  };
-
-  const seedCapture = async () => {
-    const url = seedUrl.trim();
-    if (!seedUserId) { toast.error("Pick a user"); return; }
-    if (!/^https?:\/\//i.test(url)) { toast.error("Enter a valid URL (https://…)"); return; }
-    setSeedSending(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token || accessToken;
-      const { error } = await supabase.functions.invoke("ingest-capture", {
-        body: { type: "link", content: url, source_url: url, target_user_id: seedUserId },
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (error) throw error;
-      const target = activeUsers.find((u) => u.user_id === seedUserId);
-      const label = target?.first_name || target?.email || "user";
-      toast.success(`Article seeded for ${label}`);
-      setSeedUrl("");
-    } catch (e: any) {
-      toast.error(e?.message || "Seed failed");
-    } finally {
-      setSeedSending(false);
-    }
-  };
-
-  // Auth gate — first thing
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (cancelled) return;
-      if (!session) {
-        navigate("/auth", { replace: true });
-        return;
-      }
-      if (session.user.id !== ADMIN_USER_ID) {
-        navigate("/home", { replace: true });
-        return;
-      }
-      setAccessToken(session.access_token);
-      setAuthChecked(true);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [navigate]);
-
-  const fetchRows = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("beta_allowlist")
-      .select("id,email,name,seniority,sector,status,source,requested_at,created_at,invited_at")
-      .order("requested_at", { ascending: false });
-    if (error) {
-      console.error("beta_allowlist fetch failed:", error);
-      toast.error("Couldn't load waitlist");
-    } else {
-      setRows((data || []) as Row[]);
-    }
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    if (!authChecked) return;
-    fetchRows();
-    fetchQaReports();
-    (async () => {
-      const { data } = await supabase
-        .from("beta_feedback")
-        .select("id,rating,message,page,created_at")
-        .eq("feedback_type", "nps")
-        .order("created_at", { ascending: false });
-      setNpsRows((data || []) as any);
-    })();
-    (async () => {
-      setActiveLoading(true);
+    async function fetchLatest() {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const { data, error } = await supabase.functions.invoke("admin-active-users", {
-          body: {},
-          headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
-        });
-        if (!error && data?.users) setActiveUsers(data.users);
-      } catch (e) {
-        console.warn("admin-active-users failed", e);
+        setLoading(true);
+        setError(null);
+        const { data, error } = await supabase.functions.invoke(
+          "api-health-sentinel",
+          { body: { latest: true } }
+        );
+        if (cancelled) return;
+        if (error) throw error;
+        setLatest(data?.latest || null);
+      } catch (e: any) {
+        if (cancelled) return;
+        console.warn("API health latest fetch failed", e);
+        setError(e?.message || "Could not load API health");
+        setLatest(null);
       } finally {
-        setActiveLoading(false);
+        if (!cancelled) setLoading(false);
       }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authChecked]);
-
-  const npsStats = useMemo(() => {
-    const valid = npsRows.filter((r) => typeof r.rating === "number");
-    const count = valid.length;
-    const avg = count ? valid.reduce((s, r) => s + (r.rating || 0), 0) / count : 0;
-    const promoters = valid.filter((r) => (r.rating || 0) >= 9).length;
-    const detractors = valid.filter((r) => (r.rating || 0) <= 6).length;
-    const nps = count ? Math.round(((promoters - detractors) / count) * 100) : 0;
-    return { count, avg, nps };
-  }, [npsRows]);
-
-  const handleDeleteUser = async (email: string) => {
-    setDeletingEmail(email);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        throw new Error("No active session");
-      }
-
-      const { data, error } = await supabase.functions.invoke("admin-delete-user", {
-        body: { target_email: email },
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      if (error || (data && (data as any).error)) {
-        throw new Error((data as any)?.error || error?.message || "Delete failed");
-      }
-      toast.success("User deleted permanently");
-      setRows((prev) => prev.filter((r) => r.email.toLowerCase() !== email.toLowerCase()));
-      setActiveUsers((prev) => prev.filter((u) => u.email.toLowerCase() !== email.toLowerCase()));
-    } catch (e: any) {
-      toast.error(e?.message || "Couldn't delete user");
-    } finally {
-      setDeletingEmail(null);
-      setConfirmEmail(null);
     }
-  };
-
-  const counts = useMemo(() => {
-    const c = { pending: 0, approved: 0, active: 0 };
-    for (const r of rows) {
-      if (r.status === "pending") c.pending++;
-      else if (r.status === "approved") c.approved++;
-      else if (r.status === "active") c.active++;
-    }
-    return c;
-  }, [rows]);
-
-  const filtered = useMemo(() => {
-    return rows.filter((r) => {
-      if (statusFilter !== "all" && r.status !== statusFilter) return false;
-      if (seniorityFilter !== "all" && r.seniority !== seniorityFilter) return false;
-      if (sectorFilter !== "all" && r.sector !== sectorFilter) return false;
-      return true;
-    });
-  }, [rows, statusFilter, seniorityFilter, sectorFilter]);
-
-  const callSendInvite = async (email: string, name: string | null) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token;
-    if (!token) throw new Error("No session");
-    setAccessToken(token);
-    const { error } = await supabase.functions.invoke("send-invite", {
-      body: { email, name: name || "" },
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (error) throw error;
-  };
-
-  const sendInvite = async (row: Row) => {
-    setSendingId(row.id);
-    try {
-      await callSendInvite(row.email, row.name);
-      setRows((prev) =>
-        prev.map((r) =>
-          r.id === row.id
-            ? { ...r, status: "invited", invited_at: new Date().toISOString() }
-            : r
-        )
-      );
-      setActiveInvite(null);
-      setNoteByRow((prev) => ({ ...prev, [row.id]: "" }));
-      toast.success(`Invite sent to ${row.email}`);
-      fetchRows();
-    } catch (err: any) {
-      toast.error(err?.message || "Couldn't send invite");
-    } finally {
-      setSendingId(null);
-    }
-  };
-
-  const sendDirectInvite = async () => {
-    const email = directEmail.trim().toLowerCase();
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      toast.error("Enter a valid email");
-      return;
-    }
-    setDirectSending(true);
-    try {
-      const { data: existing } = await supabase
-        .from("beta_allowlist")
-        .select("id, name, status")
-        .eq("email", email)
-        .maybeSingle();
-      if (existing && !directDuplicate) {
-        setDirectDuplicate({ name: (existing as any).name ?? null, status: (existing as any).status });
-        setDirectSending(false);
-        return;
-      }
-      if (!existing) {
-        const { error: insertErr } = await supabase
-          .from("beta_allowlist")
-          .insert({ email, name: directName.trim() || null, status: "pending", source: "direct" });
-        if (insertErr) throw insertErr;
-      }
-      await callSendInvite(email, directName.trim() || (existing as any)?.name || null);
-      toast.success(`Invite sent to ${email}`);
-      setDirectEmail("");
-      setDirectName("");
-      setDirectDuplicate(null);
-      fetchRows();
-    } catch (err: any) {
-      toast.error(err?.message || "Couldn't send direct invite");
-    } finally {
-      setDirectSending(false);
-    }
-  };
-
-  const declineRow = async (row: Row) => {
-    setDecliningId(row.id);
-    try {
-      const { error: upErr } = await supabase
-        .from("beta_allowlist")
-        .update({ status: "declined" })
-        .eq("id", row.id);
-      if (upErr) throw upErr;
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        await supabase.functions.invoke("send-decline-email", {
-          body: { email: row.email, name: row.name || "" },
-          headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
-        });
-      } catch (mailErr) {
-        console.warn("decline email failed", mailErr);
-      }
-      setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, status: "declined" } : r)));
-      toast.success(`Declined ${row.email}`);
-    } catch (err: any) {
-      toast.error(err?.message || "Couldn't decline");
-    } finally {
-      setDecliningId(null);
-      setConfirmDeclineRow(null);
-    }
-  };
-
-  if (!authChecked) {
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ backgroundColor: "var(--ink)" }}
-      >
-        <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--brand)" }} />
-      </div>
-    );
-  }
+    fetchLatest();
+  }, []);
 
   return (
-    <AdminShell title="Beta access — Admin" subtitle="Manage waitlist and send invites">
-        {/* Stats row */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          <span className="text-xs px-3 py-1.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
-            {counts.pending} pending
-          </span>
-          <span className="text-xs px-3 py-1.5 rounded-full bg-green-500/15 text-green-300 border border-green-500/30">
-            {counts.approved} approved
-          </span>
-          <span className="text-xs px-3 py-1.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30">
-            {counts.active} active
-          </span>
-        </div>
-
-        {/* Inactive users alert */}
-        {(() => {
-          const now = new Date();
-          const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
-          const inactiveUsers = (activeUsers || []).filter((u) => {
-            if (!u.last_sign_in_at) return true;
-            return new Date(u.last_sign_in_at) < fortyEightHoursAgo;
-          });
-          if (inactiveUsers.length === 0) {
-            return (
-              <div className="flex items-center gap-2 mb-6">
-                <span className="text-xs px-3 py-1.5 rounded-full bg-green-500/15 text-green-300 border border-green-500/30 inline-flex items-center gap-1.5">
-                  All users active <Check className="w-3 h-3" />
-                </span>
-              </div>
-            );
-          }
-          return (
+    <AdminShell title="Overview" subtitle="Admin at-a-glance">
+      <div className="grid gap-6">
+        {/* API Health board */}
+        <section style={cardStyle}>
+          <div className="flex items-center gap-3 mb-5">
             <div
-              className="rounded-2xl p-5 mb-6"
+              className="flex items-center justify-center"
               style={{
-                backgroundColor: "var(--surface-ink-raised)",
-                border: "1px solid var(--ink-3)",
-                borderLeft: "4px solid #F97316",
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                backgroundColor: "var(--ob-raised)",
+                border: "1px solid var(--hair)",
+                color: "var(--brand)",
               }}
             >
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-sm font-semibold" style={{ color: "var(--ink-7)" }}>
-                  ⚠ Needs Attention
-                </span>
-                <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: "rgba(249,115,22,0.15)", color: "#F97316", border: "1px solid rgba(249,115,22,0.3)" }}>
-                  {inactiveUsers.length}
-                </span>
-              </div>
-              <div className="space-y-2">
-                {inactiveUsers.map((u) => {
-                  const name = u.first_name || u.email;
-                  const message = `${name}، شفت إنك ما دخلت أورا من فترة. كل شيء تمام؟ أقدر أساعدك بشيء؟`;
-                  const isCopied = copiedUser === (u.user_id || u.email);
-                  return (
-                    <div
-                      key={u.user_id || u.email}
-                      className="flex items-center justify-between gap-3 p-2.5 rounded-md"
-                      style={{ backgroundColor: "var(--ink)", border: "1px solid var(--ink-3)" }}
-                    >
-                      <div className="min-w-0">
-                        <div className="text-sm font-medium truncate" style={{ color: "var(--ink-7)" }}>
-                          {name}
-                        </div>
-                        <div className="text-xs" style={{ color: "var(--ink-5)" }}>
-                          {relativeTime(u.last_sign_in_at)}
-                        </div>
-                      </div>
-                      <button
-                        onClick={async () => {
-                          try {
-                            await navigator.clipboard.writeText(message);
-                            setCopiedUser(u.user_id || u.email);
-                            toast.success("Message copied — send via WhatsApp");
-                            setTimeout(() => setCopiedUser((prev) => (prev === (u.user_id || u.email) ? null : prev)), 2000);
-                          } catch {
-                            toast.error("Copy failed");
-                          }
-                        }}
-                        className="text-xs px-3 py-1.5 rounded-md inline-flex items-center gap-1.5 shrink-0 transition-colors"
-                        style={{ border: "1px solid var(--ink-3)", color: "var(--ink-5)" }}
-                      >
-                        {isCopied ? (
-                          <>
-                            <Check className="w-3 h-3" style={{ color: "#22c55e" }} /> Copied
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3 h-3" /> Copy WhatsApp
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
+              <Activity className="w-5 h-5" />
             </div>
-          );
-        })()}
-
-        {/* Filter bar */}
-        <div className="flex flex-wrap gap-2 mb-5">
-          {(["all", "pending", "approved", "active"] as const).map((s) => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className="text-xs px-3 py-1.5 rounded-lg border transition-colors"
-              style={
-                statusFilter === s
-                  ? {
-                      backgroundColor: "var(--brand-muted)",
-                      color: "var(--brand)",
-                      borderColor: "var(--bronze-line)",
-                    }
-                  : {
-                      backgroundColor: "var(--surface-ink-raised)",
-                      color: "var(--ink-5)",
-                      borderColor: "var(--ink-3)",
-                    }
-              }
-            >
-              {s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
-            </button>
-          ))}
-
-          <Select value={seniorityFilter} onValueChange={setSeniorityFilter}>
-            <SelectTrigger
-              className="h-8 w-[170px] text-xs"
-              style={{ backgroundColor: "var(--surface-ink-raised)", borderColor: "var(--ink-3)", color: "var(--ink-7)" }}
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All levels</SelectItem>
-              {SENIORITY.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {s}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={sectorFilter} onValueChange={setSectorFilter}>
-            <SelectTrigger
-              className="h-8 w-[170px] text-xs"
-              style={{ backgroundColor: "var(--surface-ink-raised)", borderColor: "var(--ink-3)", color: "var(--ink-7)" }}
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All sectors</SelectItem>
-              {SECTOR.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {s}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Table */}
-        <div
-          className="rounded-2xl overflow-hidden mb-8"
-          style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}
-        >
-          {loading ? (
-            <div className="flex items-center justify-center py-16">
-              <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--brand)" }} />
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="text-center py-12 text-sm" style={{ color: "var(--ink-5)" }}>
-              No entries match your filters.
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr
-                    className="text-xs uppercase tracking-wider"
-                    style={{ color: "var(--ink-5)", backgroundColor: "rgba(255,255,255,0.02)" }}
-                  >
-                    <th className="text-left px-4 py-3 font-medium">User</th>
-                    <th className="text-left px-4 py-3 font-medium">Role / Sector</th>
-                    <th className="text-left px-4 py-3 font-medium">Requested</th>
-                    <th className="text-left px-4 py-3 font-medium">Status</th>
-                    <th className="text-right px-4 py-3 font-medium">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((r) => (
-                    <Fragment key={r.id}>
-                      <tr style={{ borderTop: "1px solid var(--ink-3)" }}>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            <div
-                              className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold"
-                              style={{
-                                backgroundColor: "var(--brand-muted)",
-                                color: "var(--brand)",
-                                border: "1px solid var(--bronze-line)",
-                              }}
-                            >
-                              {initials(r.name, r.email)}
-                            </div>
-                            <div className="min-w-0">
-                              <div className="font-semibold truncate" style={{ color: "var(--ink-7)" }}>
-                                {r.name || "—"}
-                              </div>
-                              <div className="text-xs truncate" style={{ color: "var(--ink-5)" }}>
-                                {r.email}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex flex-wrap gap-1">
-                            {r.seniority && (
-                              <span className="text-xs px-2 py-0.5 rounded bg-primary-foreground" style={{ backgroundColor: "var(--ink-2)", color: "var(--ink-7)", border: "1px solid var(--ink-3)" }}>
-                                {r.seniority}
-                              </span>
-                            )}
-                            {r.sector && (
-                              <span className="text-xs px-2 py-0.5 rounded bg-primary-foreground" style={{ backgroundColor: "var(--ink-2)", color: "var(--ink-5)", border: "1px solid var(--ink-3)" }}>
-                                {r.sector}
-                              </span>
-                            )}
-                            {!r.seniority && !r.sector && (
-                              <span className="text-xs" style={{ color: "var(--ink-5)" }}>
-                                —
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-xs" style={{ color: "var(--ink-5)" }}>
-                          {formatDate(r.requested_at || r.created_at)}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={`text-xs px-2 py-0.5 rounded-full border ${statusBadge(r.status)}`}>
-                            {r.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          {r.status === "pending" && (
-                            <div className="inline-flex items-center gap-2">
-                              <button
-                                onClick={() => setConfirmDeclineRow(r)}
-                                disabled={decliningId === r.id}
-                                className="text-xs px-3 py-1.5 rounded-md font-medium transition-colors disabled:opacity-60"
-                                style={{
-                                  backgroundColor: "transparent",
-                                  color: "var(--ink-5)",
-                                  border: "1px solid var(--ink-3)",
-                                }}
-                              >
-                                {decliningId === r.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Decline"}
-                              </button>
-                              <button
-                                onClick={() => setConfirmInviteRow(r)}
-                                className="text-xs px-3 py-1.5 rounded-md font-medium transition-colors"
-                                style={{
-                                  backgroundColor: "var(--brand)",
-                                  color: "var(--ink)",
-                                }}
-                              >
-                                Invite
-                              </button>
-                            </div>
-                          )}
-                          {r.status === "approved" && (
-                            <span className="text-xs" style={{ color: "var(--ink-5)" }}>
-                              Invited ✓
-                            </span>
-                          )}
-                          {r.status === "active" && (
-                            <span className="text-xs text-green-400">Active ✓</span>
-                          )}
-                          {r.status === "declined" && (
-                            <span className="text-xs" style={{ color: "var(--ink-5)" }}>
-                              Declined
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                      {activeInvite === r.id && r.status === "pending" && (
-                        <tr style={{ borderTop: "1px solid var(--ink-3)", backgroundColor: "rgba(255,255,255,0.02)" }}>
-                          <td colSpan={5} className="px-4 py-4">
-                            <div className="space-y-3">
-                              <textarea
-                                value={noteByRow[r.id] || ""}
-                                onChange={(e) =>
-                                  setNoteByRow((prev) => ({ ...prev, [r.id]: e.target.value }))
-                                }
-                                placeholder="Add a personal note (optional)"
-                                rows={3}
-                                className="w-full px-3 py-2 rounded-md text-sm outline-none focus:border-brand transition-colors"
-                                style={{
-                                  backgroundColor: "var(--ink)",
-                                  border: "1px solid var(--ink-3)",
-                                  color: "var(--ink-7)",
-                                }}
-                              />
-                              <div className="flex justify-end items-center gap-3">
-                                <button
-                                  onClick={() => setActiveInvite(null)}
-                                  className="text-xs"
-                                  style={{ color: "var(--ink-5)" }}
-                                >
-                                  Cancel
-                                </button>
-                                <button
-                                  onClick={() => sendInvite(r)}
-                                  disabled={sendingId === r.id}
-                                  className="text-xs px-4 py-2 rounded-md font-medium inline-flex items-center gap-1.5 disabled:opacity-60"
-                                  style={{ backgroundColor: "var(--brand)", color: "var(--ink)" }}
-                                >
-                                  {sendingId === r.id ? (
-                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                  ) : (
-                                    <>
-                                      <Send className="w-3 h-3" />
-                                      Send invite
-                                    </>
-                                  )}
-                                </button>
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </Fragment>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        {/* Direct invite */}
-        <div
-          className="rounded-2xl p-6"
-          style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}
-        >
-          <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--ink-7)" }}>
-            Invite directly (bypasses waitlist)
-          </h2>
-          <p className="text-xs mb-4" style={{ color: "var(--ink-5)" }}>
-            Send an invite straight to an email — they'll be added to the allowlist automatically.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <input
-              type="text"
-              value={directName}
-              onChange={(e) => { setDirectName(e.target.value); setDirectDuplicate(null); }}
-              placeholder="Name (optional)"
-              className="sm:w-[200px] px-3 py-2.5 rounded-md text-sm outline-none transition-colors"
-              style={{ backgroundColor: "var(--ink)", border: "1px solid var(--ink-3)", color: "var(--ink-7)" }}
-            />
-            <input
-              type="email"
-              value={directEmail}
-              onChange={(e) => { setDirectEmail(e.target.value); setDirectDuplicate(null); }}
-              placeholder="email@company.com"
-              className="flex-1 px-3 py-2.5 rounded-md text-sm outline-none transition-colors"
-              style={{ backgroundColor: "var(--ink)", border: "1px solid var(--ink-3)", color: "var(--ink-7)" }}
-            />
-            <button
-              onClick={sendDirectInvite}
-              disabled={directSending || !directEmail}
-              className="px-5 py-2.5 rounded-md text-sm font-medium inline-flex items-center justify-center gap-2 disabled:opacity-60 whitespace-nowrap"
-              style={{ backgroundColor: "var(--brand)", color: "var(--ink)" }}
-            >
-              {directSending ? <Loader2 className="w-4 h-4 animate-spin" /> : directDuplicate ? "Send anyway" : "Send invite"}
-            </button>
-          </div>
-          {directDuplicate && (
-            <p className="text-xs mt-3" style={{ color: "var(--brand)" }}>
-              This email is already on the waitlist as {directDuplicate.name || "(no name)"} ({directDuplicate.status}). Click "Send anyway" to proceed.
-            </p>
-          )}
-        </div>
-
-        {/* Seed Captures */}
-        <div
-          className="rounded-2xl p-6 mt-8"
-          style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}
-        >
-          <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--ink-7)" }}>
-            Seed Captures
-          </h2>
-          <p className="text-xs mb-4" style={{ color: "var(--ink-5)" }}>
-            Pre-load articles for a user before inviting them.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Select value={seedUserId} onValueChange={setSeedUserId}>
-              <SelectTrigger
-                className="sm:w-[260px] text-sm"
-                style={{ backgroundColor: "var(--ink)", border: "1px solid var(--ink-3)", color: "var(--ink-7)" }}
+            <div>
+              <h2
+                style={{
+                  fontSize: 18,
+                  fontWeight: 600,
+                  margin: 0,
+                  color: "var(--glass)",
+                }}
               >
-                <SelectValue placeholder="Choose user" />
-              </SelectTrigger>
-              <SelectContent>
-                {activeUsers
-                  .filter((u) => !!u.user_id && (u.first_name || u.email))
-                  .map((u) => (
-                    <SelectItem key={u.user_id as string} value={u.user_id as string}>
-                      {(u.first_name || u.email)} ({(u.user_id as string).slice(0, 8)})
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-            <input
-              type="text"
-              value={seedUrl}
-              onChange={(e) => setSeedUrl(e.target.value)}
-              placeholder="Paste article URL (https://...)"
-              className="flex-1 px-3 py-2.5 rounded-md text-sm outline-none transition-colors"
-              style={{ backgroundColor: "var(--ink)", border: "1px solid var(--ink-3)", color: "var(--ink-7)" }}
-            />
-            <button
-              onClick={seedCapture}
-              disabled={seedSending || !seedUserId || !seedUrl}
-              className="px-5 py-2.5 rounded-md text-sm font-medium inline-flex items-center justify-center gap-2 disabled:opacity-60 whitespace-nowrap"
-              style={{ backgroundColor: "var(--brand)", color: "var(--ink)" }}
+                API health
+              </h2>
+              <p style={{ margin: 0, ...mutedStyle }}>Latest sentinel result</p>
+            </div>
+          </div>
+
+          {loading && (
+            <div className="flex items-center gap-2" style={mutedStyle}>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Loading health status…</span>
+            </div>
+          )}
+
+          {!loading && error && (
+            <div
+              className="flex items-start gap-2"
+              style={{
+                ...mutedStyle,
+                color: "#F87171",
+              }}
             >
-              {seedSending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Seed Capture"}
-            </button>
-          </div>
-        </div>
-
-        {/* Active users */}
-        <div
-          className="rounded-2xl p-6 mt-8"
-          style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}
-        >
-          <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--ink-7)" }}>
-            Active users
-          </h2>
-          <p className="text-xs mb-4" style={{ color: "var(--ink-5)" }}>
-            {activeUsers.length} {activeUsers.length === 1 ? "person has" : "people have"} signed in.
-          </p>
-          {activeLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--brand)" }} />
-            </div>
-          ) : activeUsers.length === 0 ? (
-            <div className="text-xs" style={{ color: "var(--ink-5)" }}>No active users yet.</div>
-          ) : (
-            <div className="overflow-x-auto rounded-xl" style={{ border: "1px solid var(--ink-3)" }}>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-xs uppercase tracking-wider" style={{ color: "var(--ink-5)", backgroundColor: "rgba(255,255,255,0.02)" }}>
-                    <th className="text-left px-4 py-3 font-medium">Name</th>
-                    <th className="text-left px-4 py-3 font-medium">Email</th>
-                    <th className="text-left px-4 py-3 font-medium">Sector</th>
-                    <th className="text-left px-4 py-3 font-medium">Last login</th>
-                    <th className="text-right px-4 py-3 font-medium">Captures</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {activeUsers.map((u) => (
-                    <tr key={u.email} style={{ borderTop: "1px solid var(--ink-3)" }}>
-                      <td className="px-4 py-3 text-sm" style={{ color: "var(--ink-7)" }}>
-                        {u.first_name || "—"}
-                      </td>
-                      <td className="px-4 py-3 text-xs" style={{ color: "var(--ink-5)" }}>{u.email}</td>
-                      <td className="px-4 py-3 text-xs" style={{ color: "var(--ink-5)" }}>{u.sector || "—"}</td>
-                      <td className="px-4 py-3 text-xs" style={{ color: "var(--ink-5)" }}>
-                        {formatDate(u.last_sign_in_at || u.activated_at)}
-                      </td>
-                      <td className="px-4 py-3 text-xs text-right" style={{ color: "var(--ink-7)" }}>{u.captures}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+              <span>{error}</span>
             </div>
           )}
-        </div>
 
-        {/* User management — delete users + their data */}
-        <div
-          className="rounded-2xl p-6 mt-8"
-          style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}
-        >
-          <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--ink-7)" }}>
-            User management
-          </h2>
-          <p className="text-xs mb-4" style={{ color: "var(--ink-5)" }}>
-            Users: {rows.length} total · {rows.filter((r) => r.status === "active").length} active · {rows.filter((r) => r.status === "pending").length} pending. Deleting a user removes their auth account and all associated data permanently.
-          </p>
-          {rows.length === 0 ? (
-            <div className="text-xs" style={{ color: "var(--ink-5)" }}>No users yet.</div>
-          ) : (
-            <div className="space-y-2">
-              {rows.map((r) => {
-                const profile = activeUsers.find((u) => u.email.toLowerCase() === r.email.toLowerCase());
-                const isAdmin = r.email.toLowerCase() === "fayiz@aura-intel.org" || r.email.toLowerCase().includes("9e0c6ee1");
-                const isDeleting = deletingEmail === r.email;
-                return (
-                  <div
-                    key={r.id}
-                    className="flex items-start justify-between gap-4 p-3 rounded-md"
-                    style={{ backgroundColor: "var(--ink)", border: "1px solid var(--ink-3)" }}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium truncate" style={{ color: "var(--ink-7)" }}>
-                        {r.email}
-                      </div>
-                      <div className="text-xs mt-0.5" style={{ color: "var(--ink-5)" }}>
-                        {profile?.first_name
-                          ? `${profile.first_name}${profile.sector ? ` · ${profile.sector}` : ""}`
-                          : r.name || "(Profile not completed)"}
-                      </div>
-                      <div className="text-xs mt-1 uppercase tracking-wider" style={{ color: "var(--ink-5)" }}>
-                        <span className={`inline-block px-2 py-0.5 rounded border ${statusBadge(r.status)}`}>{r.status}</span>
-                        <span className="ml-2">Joined: {formatDate(r.invited_at || r.created_at || r.requested_at)}</span>
-                      </div>
-                    </div>
-                    {isAdmin ? (
-                      <span className="text-xs px-2 py-1 rounded" style={{ color: "var(--ink-5)", border: "1px dashed var(--ink-3)" }} title="Cannot delete your own account">
-                        Protected
-                      </span>
-                    ) : confirmEmail === r.email ? (
-                      <div className="flex items-center gap-2 shrink-0">
-                        <button
-                          onClick={() => setConfirmEmail(null)}
-                          disabled={isDeleting}
-                          className="px-3 py-1.5 text-xs rounded-md disabled:opacity-50"
-                          style={{ border: "1px solid var(--ink-3)", color: "var(--ink-7)" }}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={() => handleDeleteUser(r.email)}
-                          disabled={isDeleting}
-                          className="px-3 py-1.5 text-xs rounded-md font-medium inline-flex items-center gap-1.5 disabled:opacity-60"
-                          style={{ backgroundColor: "rgb(220,38,38)", color: "#fff" }}
-                        >
-                          {isDeleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
-                          Delete permanently
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setConfirmEmail(r.email)}
-                        className="px-3 py-1.5 text-xs rounded-md inline-flex items-center gap-1.5 shrink-0"
-                        style={{ border: "1px solid rgba(220,38,38,0.4)", color: "rgb(248,113,113)" }}
-                      >
-                        <Trash2 className="w-3 h-3" /> Delete user
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+          {!loading && !error && !latest && (
+            <p style={mutedStyle}>No sentinel result yet.</p>
           )}
-        </div>
 
-        {/* NPS responses */}
-        <div
-          className="rounded-2xl p-6 mt-8"
-          style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}
-        >
-          <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--ink-7)" }}>
-            NPS responses
-          </h2>
-          <p className="text-xs mb-4" style={{ color: "var(--ink-5)" }}>
-            7-day post-signup survey. Higher NPS = more likely to recommend.
-          </p>
-          <div className="flex flex-wrap gap-2 mb-4">
-            <span className="text-xs px-3 py-1.5 rounded-full" style={{ backgroundColor: "var(--brand-muted)", color: "var(--brand)", border: "1px solid var(--bronze-line)" }}>
-              Avg score: {npsStats.avg.toFixed(1)}
-            </span>
-            <span className="text-xs px-3 py-1.5 rounded-full" style={{ backgroundColor: "var(--ink)", color: "var(--ink-5)", border: "1px solid var(--ink-3)" }}>
-              NPS: {npsStats.nps}
-            </span>
-            <span className="text-xs px-3 py-1.5 rounded-full" style={{ backgroundColor: "var(--ink)", color: "var(--ink-5)", border: "1px solid var(--ink-3)" }}>
-              {npsStats.count} responses
-            </span>
-          </div>
-          {npsRows.length === 0 ? (
-            <div className="text-xs" style={{ color: "var(--ink-5)" }}>No NPS responses yet.</div>
-          ) : (
-            <div className="space-y-2">
-              {npsRows.map((r) => (
-                <div
-                  key={r.id}
-                  className="flex items-start gap-3 p-3 rounded-md"
-                  style={{ backgroundColor: "var(--ink)", border: "1px solid var(--ink-3)" }}
-                >
+          {!loading && latest && (
+            <div>
+              <div className="flex items-center gap-2 mb-4" style={mutedStyle}>
+                <span>Run at {formatRunAt(latest.run_at)}</span>
+                <span>·</span>
+                <span>
+                  {latest.failed === 0 ? (
+                    <span style={{ color: "#36C5B0" }}>All systems healthy</span>
+                  ) : (
+                    <span style={{ color: "#F87171" }}>
+                      {latest.failed} of {latest.checked} providers failing
+                    </span>
+                  )}
+                </span>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {latest.results.map((r) => (
                   <div
-                    className="flex items-center justify-center font-semibold text-sm shrink-0"
+                    key={r.provider}
+                    className="flex items-center justify-between"
                     style={{
-                      width: 36, height: 36, borderRadius: 6,
-                      backgroundColor: (r.rating ?? 0) >= 9 ? "var(--brand)" : (r.rating ?? 0) >= 7 ? "var(--brand-muted)" : "rgba(255,255,255,0.05)",
-                      color: (r.rating ?? 0) >= 9 ? "var(--ink)" : "var(--ink-7)",
-                      border: "1px solid var(--ink-3)",
+                      padding: "12px 14px",
+                      borderRadius: 8,
+                      backgroundColor: "var(--ob-raised)",
+                      border: "1px solid var(--hair)",
                     }}
                   >
-                    {r.rating ?? "—"}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm" style={{ color: "var(--ink-7)" }}>
-                      {r.message?.trim() || <span style={{ color: "var(--ink-5)", fontStyle: "italic" }}>No comment</span>}
+                    <div className="flex items-center gap-2">
+                      {r.ok ? (
+                        <CheckCircle2 className="w-4 h-4" style={{ color: "#36C5B0" }} />
+                      ) : (
+                        <XCircle className="w-4 h-4" style={{ color: "#F87171" }} />
+                      )}
+                      <span style={{ color: "var(--glass)", fontSize: 14 }}>
+                        {providerName(r.provider)}
+                      </span>
                     </div>
-                    <div className="text-xs mt-1" style={{ color: "var(--ink-5)" }}>
-                      {formatDate(r.created_at)} · {r.page || "—"}
-                    </div>
+                    <span style={{ color: "var(--glass-2)", fontSize: 13 }}>
+                      HTTP {r.status}
+                    </span>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
-        </div>
+        </section>
 
-        {/* System Health */}
-        <div
-          className="rounded-2xl p-6 mt-8"
-          style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}
-        >
-          <div className="flex items-start justify-between gap-4 mb-4">
-            <div>
-              <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--ink-7)" }}>
-                System Health
-              </h2>
-              <p className="text-xs" style={{ color: "var(--ink-5)" }}>
-                {qaReports[0]
-                  ? `Last check: ${new Date(qaReports[0].run_at).toLocaleString()} — ${qaReports[0].passed}/${qaReports[0].total_checks} ${qaReports[0].failed === 0 ? "✅" : "⚠️"}`
-                  : "No checks run yet."}
-              </p>
-            </div>
-            <button
-              onClick={runQaCheck}
-              disabled={qaRunning}
-              className="px-4 py-2 rounded-md text-xs font-medium inline-flex items-center gap-2 disabled:opacity-60 whitespace-nowrap"
-              style={{ backgroundColor: "var(--brand)", color: "var(--ink)" }}
-            >
-              {qaRunning ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
-              Run QA Check
-            </button>
+        {/* Link list to the other admin pages */}
+        <section style={cardStyle}>
+          <h2
+            style={{
+              fontSize: 18,
+              fontWeight: 600,
+              margin: "0 0 16px",
+              color: "var(--glass)",
+            }}
+          >
+            Admin pages
+          </h2>
+          <div className="grid gap-2">
+            {ADMIN_PAGES.map((page) => (
+              <Link
+                key={page.to}
+                to={page.to}
+                className="group flex items-center justify-between"
+                style={{
+                  padding: "14px 16px",
+                  borderRadius: 8,
+                  backgroundColor: "var(--ob-raised)",
+                  border: "1px solid var(--hair)",
+                  textDecoration: "none",
+                  transition: "background-color .2s ease",
+                }}
+              >
+                <div className="flex flex-col">
+                  <span
+                    style={{
+                      color: "var(--glass)",
+                      fontSize: 14,
+                      fontWeight: 500,
+                    }}
+                  >
+                    {page.label}
+                  </span>
+                  <span style={mutedStyle}>{page.description}</span>
+                </div>
+                <ArrowRight
+                  className="w-4 h-4 shrink-0"
+                  style={{ color: "var(--glass-2)", transition: "color .2s ease" }}
+                />
+              </Link>
+            ))}
           </div>
-          {qaReports.length === 0 ? (
-            <div className="text-xs" style={{ color: "var(--ink-5)" }}>No runs yet.</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-xs uppercase tracking-wider" style={{ color: "var(--ink-5)" }}>
-                    <th className="text-left px-3 py-2 font-medium">Date</th>
-                    <th className="text-left px-3 py-2 font-medium">Result</th>
-                    <th className="text-left px-3 py-2 font-medium">Failed steps</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {qaReports.map((r) => {
-                    const failed = (r.results || []).filter((x) => !x.passed);
-                    return (
-                      <tr key={r.id} style={{ borderTop: "1px solid var(--ink-3)" }}>
-                        <td className="px-3 py-2 text-xs" style={{ color: "var(--ink-5)" }}>
-                          {new Date(r.run_at).toLocaleString()}
-                        </td>
-                        <td className="px-3 py-2 text-xs" style={{ color: r.failed === 0 ? "#10b981" : "#f59e0b" }}>
-                          {r.passed}/{r.total_checks} {r.failed === 0 ? "✅" : "⚠️"}
-                        </td>
-                        <td className="px-3 py-2 text-xs" style={{ color: "var(--ink-7)" }}>
-                          {failed.length === 0
-                            ? "—"
-                            : failed.map((f) => `${f.step}. ${f.action}`).join(", ")}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      <AlertDialog
-        open={!!confirmInviteRow}
-        onOpenChange={(open) => { if (!open) setConfirmInviteRow(null); }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Send invitation?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Send invitation to {confirmInviteRow?.name || "this person"} ({confirmInviteRow?.email})?
-              This will send them an email immediately with a 48-hour access link.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                const row = confirmInviteRow;
-                setConfirmInviteRow(null);
-                if (row) sendInvite(row);
-              }}
-            >
-              Send invite
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      <AlertDialog
-        open={!!confirmDeclineRow}
-        onOpenChange={(open) => { if (!open) setConfirmDeclineRow(null); }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Decline this applicant?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Decline {confirmDeclineRow?.name || confirmDeclineRow?.email}? This will send them a polite email
-              letting them know Aura isn't the right fit at this stage.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                const row = confirmDeclineRow;
-                if (row) declineRow(row);
-              }}
-            >
-              Decline
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        </section>
+      </div>
     </AdminShell>
   );
-};
-
-export default Admin;
+}
