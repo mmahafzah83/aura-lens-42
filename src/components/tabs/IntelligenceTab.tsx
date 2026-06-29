@@ -8,7 +8,6 @@ import {
 import { PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
 import SourcesSubTab from "@/components/tabs/SourcesSubTab";
 import SectionError from "@/components/ui/section-error";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
@@ -1394,12 +1393,6 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
               </div>
             )}
 
-            {/* StrategicAdvisorPanel for 3+ signals */}
-            {signals.length >= 3 && (
-              <div data-testid="intel-next-move" style={{ marginBottom: 16 }}>
-                <StrategicAdvisorPanel context="strategy" compact onOpenChat={onOpenChat} onDraftToStudio={onDraftToStudio} />
-              </div>
-            )}
 
             {signals.length === 0 ? (
               entryCount === 0 ? (
