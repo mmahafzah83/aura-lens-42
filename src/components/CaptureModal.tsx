@@ -76,6 +76,36 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
 
+  // Shared first-capture ceremony trigger. Counts entries + documents so the
+  // ceremony fires on the user's first capture of ANY type (link/text/image/
+  // voice/document). Guarded by a single localStorage flag.
+  const maybeTriggerFirstCeremony = async (userId: string): Promise<boolean> => {
+    try {
+      if (localStorage.getItem("aura_first_capture_celebrated")) return false;
+      const [entriesRes, docsRes] = await Promise.all([
+        supabase
+          .from("entries")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", userId),
+        supabase
+          .from("documents")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", userId),
+      ]);
+      const total = (entriesRes.count ?? 0) + (docsRes.count ?? 0);
+      if (total === 1) {
+        localStorage.setItem("aura_first_capture_celebrated", "true");
+        setFirstCeremonyOpen(true);
+        setFirstCeremonyShowCta(false);
+        window.setTimeout(() => setFirstCeremonyShowCta(true), 2000);
+        return true;
+      }
+    } catch {
+      // ignore
+    }
+    return false;
+  };
+
   // Recording elapsed seconds (UI only)
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const recordingTimerRef = useRef<number | null>(null);
@@ -413,6 +443,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
         setVoiceAudioUrl(null);
         setTranscriptionFailed(false);
         onCaptured();
+        window.dispatchEvent(new Event("capture-complete"));
+        void maybeTriggerFirstCeremony(session.user.id);
         onOpenChange(false);
 
         // M3-4 identity drift check (frontend only, fire-and-forget)
@@ -572,23 +604,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
       }
 
       // Success — celebrate the FIRST EVER capture (count = 1 for this user)
-      let didCelebrate = false;
-      try {
-        const { count } = await supabase
-          .from("entries")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", session.user.id);
-        if (count === 1 && !localStorage.getItem("aura_first_capture_celebrated")) {
-          localStorage.setItem("aura_first_capture_celebrated", "true");
-          didCelebrate = true;
-          setFirstCeremonyOpen(true);
-          setFirstCeremonyShowCta(false);
-          // The "See your intelligence" CTA appears after a 2s pause.
-          window.setTimeout(() => setFirstCeremonyShowCta(true), 2000);
-        }
-      } catch {
-        // ignore — fall through to default toast
-      }
+      const didCelebrate = await maybeTriggerFirstCeremony(session.user.id);
       if (!didCelebrate) {
         sonnerToast.custom(
           () => (
@@ -1402,7 +1418,13 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                   </div>
                 </div>
               )}
-              <DocumentUpload onUploaded={() => { onCaptured(); onOpenChange(false); }} />
+              <DocumentUpload onUploaded={async () => {
+                onCaptured();
+                window.dispatchEvent(new Event("capture-complete"));
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) await maybeTriggerFirstCeremony(user.id);
+                onOpenChange(false);
+              }} />
             </div>
           )}
 
