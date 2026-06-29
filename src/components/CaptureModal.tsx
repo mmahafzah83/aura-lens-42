@@ -443,6 +443,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
         setVoiceAudioUrl(null);
         setTranscriptionFailed(false);
         onCaptured();
+        window.dispatchEvent(new Event("capture-complete"));
+        void maybeTriggerFirstCeremony(session.user.id);
         onOpenChange(false);
 
         // M3-4 identity drift check (frontend only, fire-and-forget)
