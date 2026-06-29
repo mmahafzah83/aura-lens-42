@@ -521,15 +521,6 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const positioningTitle = brandResults?.positioning_title || brandResults?.primary_archetype || identityIntel?.primary_role || profile?.primary_strength || "";
   const positioningStatement = brandResults?.positioning_statement || identityIntel?.identity_summary || brandResults?.interpretation || "";
 
-  // Radar metrics (0-100 each)
-  const radar = {
-    signals: Math.min(100, Math.round(signalStats.count * 20 + (signalStats.topConfidence || 0) * 0.5)),
-    content: Math.min(100, Math.round((radarInputs.totalPosts || 0) * 2)),
-    engagement: Math.min(100, Math.round((radarInputs.avgEngagement || 0) * 40)),
-    voice: radarInputs.voiceTrained ? 80 : 20,
-    rhythm: Math.min(100, Math.round((radarInputs.weeksActive / 4) * 100)),
-  };
-
   const assessments = [
     { name: "Onboarding", done: profile?.onboarding_completed, date: null },
     { name: "Evidence Audit", done: !!profile?.audit_completed_at, date: profile?.audit_completed_at },
