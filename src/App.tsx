@@ -28,6 +28,7 @@ const Landing = lazy(() => import("./pages/Landing"));
 const TrendDetail = lazy(() => import("./pages/TrendDetail"));
 const CarouselStudio = lazy(() => import("./pages/CarouselStudio"));
 const Admin = lazy(() => import("./pages/Admin"));
+const AdminAccess = lazy(() => import("./pages/AdminAccess"));
 const AdminDesignSystem = lazy(() => import("./pages/AdminDesignSystem"));
 const AdminExperience = lazy(() => import("./pages/AdminExperience"));
 const AdminQA = lazy(() => import("./pages/AdminQA"));
@@ -90,6 +91,7 @@ const App = () => (
             <Route path="/request-access" element={<RequestAccess />} />
             <Route path="/accept-invitation" element={<AcceptInvitation />} />
             <Route path="/admin" element={<PasswordGate><AdminGate><Admin /></AdminGate></PasswordGate>} />
+            <Route path="/admin/access" element={<PasswordGate><AdminGate><AdminAccess /></AdminGate></PasswordGate>} />
             <Route path="/admin/design-system" element={<PasswordGate><AdminGate><AdminDesignSystem /></AdminGate></PasswordGate>} />
             <Route path="/admin/experience" element={<PasswordGate><AdminGate><AdminExperience /></AdminGate></PasswordGate>} />
             <Route path="/admin/qa" element={<PasswordGate><AdminGate><AdminQA /></AdminGate></PasswordGate>} />
