@@ -107,7 +107,7 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
     fontSize: 11,
     letterSpacing: "0.12em",
     textTransform: "uppercase",
-    color: "var(--muted-foreground)",
+    color: "var(--ink-3)",
     fontWeight: 600,
     marginBottom: 6,
     display: "block",
@@ -120,7 +120,7 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
     background: "var(--color-background-secondary, var(--brand-ghost, rgba(0,0,0,0.04)))",
     border: "0.5px solid var(--color-border-secondary, var(--brand-line, rgba(0,0,0,0.12)))",
     borderRadius: 8,
-    color: "var(--foreground)",
+    color: "var(--ink)",
     outline: "none",
     fontFamily: "'DM Sans', system-ui, sans-serif",
   };
@@ -152,23 +152,23 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
           style={{
             position: "absolute", top: 12, right: 12,
             background: "transparent", border: 0, cursor: "pointer",
-            color: "var(--muted-foreground)", padding: 4,
+            color: "var(--ink-3)", padding: 4,
           }}
         ><X size={18} /></button>
 
         <h2 style={{
           fontFamily: "'Cormorant Garamond', Georgia, serif",
-          fontSize: 22, fontWeight: 500, color: "var(--foreground)",
+          fontSize: 22, fontWeight: 500, color: "var(--ink)",
           margin: 0, lineHeight: 1.2,
         }}>Edit profile</h2>
         <p style={{
-          fontSize: 13, color: "var(--muted-foreground)",
+          fontSize: 13, color: "var(--ink-3)",
           margin: "4px 0 18px",
           fontFamily: "'DM Sans', system-ui, sans-serif",
         }}>Update how you appear across Aura.</p>
 
         {loading ? (
-          <div style={{ padding: "20px 0", color: "var(--muted-foreground)", fontSize: 13 }}>Loading…</div>
+          <div style={{ padding: "20px 0", color: "var(--ink-3)", fontSize: 13 }}>Loading…</div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -213,7 +213,7 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
                   padding: "10px 16px", fontSize: 13, fontWeight: 500,
                   background: "transparent",
                   border: "0.5px solid var(--color-border-secondary, var(--brand-line, rgba(0,0,0,0.12)))",
-                  borderRadius: 8, cursor: "pointer", color: "var(--foreground)",
+                  borderRadius: 8, cursor: "pointer", color: "var(--ink)",
                   fontFamily: "'DM Sans', system-ui, sans-serif",
                 }}
               >Cancel</button>
