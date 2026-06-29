@@ -13,7 +13,6 @@ import AskAuraPresence from "@/components/AskAuraPresence";
 import AuraLogo from "@/components/brand/AuraLogo";
 // OnboardingSequence removed — replaced by /onboarding flow
 import ExecutiveDiagnostic from "@/components/ExecutiveDiagnostic";
-import OnboardingWizard from "@/components/OnboardingWizard";
 import WhatsAppOptInModal from "@/components/WhatsAppOptInModal";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import NotificationBell from "@/components/NotificationBell";
@@ -27,7 +26,6 @@ import FeedbackButton from "@/components/FeedbackButton";
 import InviteColleagueModal from "@/components/InviteColleagueModal";
 import NpsSurveyModal from "@/components/NpsSurveyModal";
 import FirstLoginWelcome from "@/components/FirstLoginWelcome";
-import HomeTab from "@/components/tabs/HomeTab";
 import Brief from "@/components/Brief";
 import OnboardingChecklist from "@/components/OnboardingChecklist";
 import IdentityDriftBanner from "@/components/IdentityDriftBanner";
@@ -89,8 +87,6 @@ const Dashboard = () => {
   const [newIntelSignalCount, setNewIntelSignalCount] = useState(0);
   const showOnboarding = false;
   const [showDiagnostic, setShowDiagnostic] = useState(false);
-  const [showWizard, setShowWizard] = useState(false);
-  const [wizardUserId, setWizardUserId] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -544,7 +540,6 @@ const Dashboard = () => {
       <div className="gradient-mesh fixed inset-0 pointer-events-none z-0" />
 
       {showDiagnostic && <ExecutiveDiagnostic onComplete={() => setShowDiagnostic(false)} />}
-      {showWizard && <OnboardingWizard userId={wizardUserId} onComplete={() => setShowWizard(false)} />}
       <WhatsAppOptInModal />
 
       {/* ── Desktop Sidebar ── */}
@@ -922,8 +917,8 @@ const Dashboard = () => {
                     try { localStorage.setItem("aura_welcome_briefing_done", "1"); } catch {}
                   }}
                 />
-                {/* App-level overlays formerly mounted inside HomeTab.
-                    Re-mounted here so they keep firing after the Brief swap. */}
+                {/* App-level overlays re-mounted here so they keep firing
+                    after the Brief swap. */}
                 <OnboardingChecklist
                   onOpenCapture={() => handleOpenCapture()}
                   onSwitchTab={switchTab}
