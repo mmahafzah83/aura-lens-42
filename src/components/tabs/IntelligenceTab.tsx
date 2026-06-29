@@ -597,9 +597,11 @@ export const EditorialBlindSpots = ({
   const [data, setData] = useState<(CoverageResult & { generated_at?: string }) | null>(null);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (manual = false) => {
     setLoading(true);
+    setError(null);
     try {
       const { data: sess } = await supabase.auth.getSession();
       if (!sess.session) throw new Error("Not authenticated");
@@ -609,8 +611,24 @@ export const EditorialBlindSpots = ({
       const cached = { ...(r as CoverageResult), generated_at: new Date().toISOString() };
       setData(cached);
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cached)); } catch {}
+      if (manual) {
+        const gapsFound = (cached.items || []).filter(it => it.category === "gap" || it.category === "opportunity").length;
+        toast.success(
+          gapsFound > 0
+            ? `Coverage refreshed — ${gapsFound} blind spot${gapsFound === 1 ? "" : "s"} to track.`
+            : "Coverage refreshed — you're clear."
+        );
+      }
     } catch (e) {
       console.error("coverage error", e);
+      let status = 0;
+      try { status = (e as any)?.context?.status ?? 0; } catch {}
+      const msgRaw = (e as any)?.message ?? "";
+      let msg = "Couldn't refresh coverage — try again.";
+      if (status === 429 || /rate|429/i.test(msgRaw)) msg = "Rate limit — try again shortly.";
+      else if (status === 402 || /credit|402|payment/i.test(msgRaw)) msg = "AI credits needed — check provider billing.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -645,16 +663,9 @@ export const EditorialBlindSpots = ({
         </ExpandablePanel>
       </div>
 
-      {!data && loading ? (
-        <p style={{ fontSize: 12, color: "var(--glass-2)" }}><Loader2 size={12} className="inline animate-spin" /> Analysing coverage…</p>
-      ) : !data || gaps.length === 0 ? (
-        <div style={{ padding: "20px 16px", background: "var(--surface-ink-raised)", border: "0.5px dashed var(--surface-ink-subtle)", borderRadius: 10, textAlign: "center" }}>
-          <p style={{ fontSize: 12, color: "var(--glass-2)", margin: "0 0 10px" }}>Your coverage analysis is building. Refresh after your next capture.</p>
-          <Button size="sm" variant="outline" onClick={load} disabled={loading}>
-            <RefreshCw size={12} className={loading ? "animate-spin mr-1" : "mr-1"} /> Refresh coverage
-          </Button>
-        </div>
-      ) : (
+      {loading && !data ? (
+        <p style={{ fontSize: 12, color: "var(--glass-2)" }}><Loader2 size={12} className="inline animate-spin" /> Analysing your coverage…</p>
+      ) : data && gaps.length > 0 ? (
         <>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
             <div style={{ flex: 1, height: 6, background: "var(--surface-ink-subtle)", borderRadius: 3, overflow: "hidden" }}>
@@ -731,6 +742,25 @@ export const EditorialBlindSpots = ({
             </button>
           )}
         </>
+      ) : error && (!data || gaps.length === 0) ? (
+        <div style={{ padding: "20px 16px", background: "var(--surface-ink-raised)", border: "0.5px solid var(--surface-ink-subtle)", borderRadius: 10 }}>
+          <p style={{ fontSize: 13, fontWeight: 600, color: "var(--glass)", margin: "0 0 4px" }}>Couldn't refresh coverage</p>
+          <p style={{ fontSize: 12, color: "var(--glass-2)", margin: "0 0 12px", lineHeight: 1.5 }}>{error}</p>
+          <Button size="sm" variant="outline" onClick={() => load(true)} disabled={loading}>
+            <RefreshCw size={12} className={loading ? "animate-spin mr-1" : "mr-1"} /> Try again
+          </Button>
+        </div>
+      ) : (
+        <div style={{ padding: "20px 16px", background: "var(--surface-ink-raised)", border: "0.5px solid var(--surface-ink-subtle)", borderRadius: 10 }}>
+          <p style={{ fontSize: 12, color: "var(--glass-2)", margin: "0 0 12px", lineHeight: 1.55 }}>
+            {(data?.items?.length ?? 0) > 0
+              ? `Your radar covers ${coveragePct}% of the active conversations in your sector. No new blind spots this week — Aura surfaces them as your themes widen.`
+              : "Aura is still mapping your sector's live conversation. Your blind spots sharpen as you capture."}
+          </p>
+          <Button size="sm" variant="outline" onClick={() => load(true)} disabled={loading}>
+            <RefreshCw size={12} className={loading ? "animate-spin mr-1" : "mr-1"} /> Refresh coverage
+          </Button>
+        </div>
       )}
     </section>
   );
