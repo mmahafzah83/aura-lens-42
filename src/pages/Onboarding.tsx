@@ -600,13 +600,15 @@ const Onboarding = () => {
       style={{ background: "var(--paper-2)" }}
     >
       <div
-        style={{ position: "relative", width: "100%", maxWidth: 560, maxHeight: "calc(100dvh - 80px)" }}
+        style={{ position: "relative", width: "100%", maxWidth: 560, maxHeight: "calc(100dvh - 80px)", display: "flex", flexDirection: "column" }}
       >
         <div
           className="w-full"
           style={{
             maxHeight: "100%",
             overflowY: "auto",
+            flex: "1 1 auto",
+            minHeight: 0,
             background: "var(--paper)",
             color: "var(--ink)",
             borderRadius: 16,
@@ -1263,13 +1265,15 @@ const Onboarding = () => {
           style={{ background: "var(--paper-2)" }}
         >
           <div
-            style={{ position: "relative", width: "100%", maxWidth: 560, maxHeight: "calc(100dvh - 80px)" }}
+            style={{ position: "relative", width: "100%", maxWidth: 560, maxHeight: "calc(100dvh - 80px)", display: "flex", flexDirection: "column" }}
           >
             <div
               className="w-full"
               style={{
                 maxHeight: "100%",
                 overflowY: "auto",
+                flex: "1 1 auto",
+                minHeight: 0,
                 background: "var(--paper)",
                 color: "var(--ink)",
                 borderRadius: 16,
