@@ -476,7 +476,7 @@ const VoiceEngineSection = () => {
                   fontWeight: 600,
                   color: "var(--brand)",
                   background: "color-mix(in srgb, var(--brand) 12%, transparent)",
-                  border: "1px solid rgba(197,165,90,0.3)",
+                  border: "1px solid color-mix(in srgb, var(--brand) 30%, transparent)",
                   borderRadius: 999,
                   padding: "2px 7px",
                 }}
@@ -522,7 +522,7 @@ const VoiceEngineSection = () => {
 
                 const cardStyle: React.CSSProperties = {
                   background: "var(--paper-2)",
-                  border: "0.5px solid #E3D9C5",
+                  border: "0.5px solid var(--rule)",
                   borderRadius: 14,
                   padding: "22px 24px",
                   color: "var(--ink)",
@@ -554,7 +554,7 @@ const VoiceEngineSection = () => {
                       display: "flex",
                       gap: 6,
                       marginBottom: 10,
-                      borderBottom: "0.5px solid #E3D9C5",
+                      borderBottom: "0.5px solid var(--rule)",
                     }}
                   >
                     {tabs.map((t) => {
@@ -576,7 +576,7 @@ const VoiceEngineSection = () => {
                             fontSize: 13,
                             fontWeight: isActive ? 600 : 500,
                             color: isActive ? "var(--brand)" : "var(--ink-5)",
-                            borderBottom: isActive ? "2px solid #B08D3A" : "2px solid transparent",
+                            borderBottom: isActive ? "2px solid var(--brand)" : "2px solid transparent",
                             marginBottom: -1,
                             direction: t.lang === "ar" ? "rtl" : "ltr",
                           }}
@@ -608,7 +608,7 @@ const VoiceEngineSection = () => {
                       marginTop: 4,
                       marginBottom: 10,
                       padding: "10px 12px",
-                      border: "0.5px solid #E3D9C5",
+                      border: "0.5px solid var(--rule)",
                       background: "color-mix(in srgb, var(--brand) 8%, transparent)",
                       borderRadius: 8,
                     }}
@@ -728,7 +728,7 @@ const VoiceEngineSection = () => {
                         {/* Tone line */}
                         <div
                           style={{
-                            border: "0.5px solid #E3D9C5",
+                            border: "0.5px solid var(--rule)",
                             borderRadius: 10,
                             padding: "14px 16px",
                             background: "color-mix(in srgb, var(--paper) 40%, transparent)",
@@ -743,7 +743,7 @@ const VoiceEngineSection = () => {
                                 className="min-h-[88px] text-sm"
                                 dir="rtl"
                                 lang="ar"
-                                style={{ background: "var(--paper)", color: "var(--ink)", border: "0.5px solid #E3D9C5", fontWeight: 500 }}
+                                style={{ background: "var(--paper)", color: "var(--ink)", border: "0.5px solid var(--rule)", fontWeight: 500 }}
                               />
                               <div style={{ display: "flex", gap: 8, marginTop: 10, justifyContent: "flex-start" }}>
                                 <Button
@@ -784,7 +784,7 @@ const VoiceEngineSection = () => {
                                 aria-label="تعديل بصمة الصوت"
                                 onClick={() => { setToneDraft(tone); setEditingTone(true); }}
                                 style={{
-                                  border: "0.5px solid #E3D9C5",
+                                  border: "0.5px solid var(--rule)",
                                   background: "transparent",
                                   borderRadius: 8,
                                   padding: 6,
@@ -908,7 +908,7 @@ const VoiceEngineSection = () => {
                             display: "inline-flex",
                             alignItems: "center",
                             gap: 8,
-                            border: "0.5px solid #B08D3A",
+                            border: "0.5px solid var(--brand)",
                             borderRadius: 999,
                             padding: "8px 14px",
                             background: "transparent",
@@ -924,7 +924,7 @@ const VoiceEngineSection = () => {
                         </button>
 
                         {/* Footer */}
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 18, paddingTop: 14, borderTop: "0.5px solid #E3D9C5" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 18, paddingTop: 14, borderTop: "0.5px solid var(--rule)" }}>
                           <span style={{ fontSize: 12.5, fontWeight: 500, color: "var(--ink-5)" }}>
                             صيغت من {examplesArr.length} من منشوراتك
                           </span>
@@ -990,7 +990,7 @@ const VoiceEngineSection = () => {
                     {/* Identity / tone line */}
                     <div
                       style={{
-                        border: "0.5px solid #E3D9C5",
+                        border: "0.5px solid var(--rule)",
                         borderRadius: 10,
                         padding: "14px 16px",
                         background: "color-mix(in srgb, var(--paper) 40%, transparent)",
@@ -1003,7 +1003,7 @@ const VoiceEngineSection = () => {
                             value={toneDraft}
                             onChange={(e) => setToneDraft(e.target.value)}
                             className="min-h-[88px] text-sm"
-                            style={{ background: "var(--paper)", color: "var(--ink)", border: "0.5px solid #E3D9C5" }}
+                            style={{ background: "var(--paper)", color: "var(--ink)", border: "0.5px solid var(--rule)" }}
                           />
                           <div style={{ display: "flex", gap: 8, marginTop: 10, justifyContent: "flex-end" }}>
                             <Button
@@ -1044,7 +1044,7 @@ const VoiceEngineSection = () => {
                             aria-label="Edit voice identity"
                             onClick={() => { setToneDraft(tone); setEditingTone(true); }}
                             style={{
-                              border: "0.5px solid #E3D9C5",
+                              border: "0.5px solid var(--rule)",
                               background: "transparent",
                               borderRadius: 8,
                               padding: 6,
@@ -1158,7 +1158,7 @@ const VoiceEngineSection = () => {
                         display: "inline-flex",
                         alignItems: "center",
                         gap: 8,
-                        border: "0.5px solid #B08D3A",
+                        border: "0.5px solid var(--brand)",
                         borderRadius: 999,
                         padding: "8px 14px",
                         background: "transparent",
@@ -1173,7 +1173,7 @@ const VoiceEngineSection = () => {
                     </button>
 
                     {/* Footer */}
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 18, paddingTop: 14, borderTop: "0.5px solid #E3D9C5" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 18, paddingTop: 14, borderTop: "0.5px solid var(--rule)" }}>
                       <span style={{ fontFamily: "var(--font-body)", fontSize: 12.5, color: "var(--ink-5)" }}>
                         Shaped from {examplesArr.length} of your posts.
                       </span>
