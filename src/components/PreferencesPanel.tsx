@@ -48,7 +48,7 @@ const SectionHeader = ({ children }: { children: React.ReactNode }) => (
       fontSize: 11,
       letterSpacing: "0.14em",
       textTransform: "uppercase",
-      color: "var(--brand)",
+      color: "var(--ink-2)",
       fontWeight: 600,
       padding: "20px 24px 10px",
     }}
@@ -84,14 +84,13 @@ const Row = ({
       padding: "14px 24px",
       background: "transparent",
       border: "none",
-      borderTop: "0.5px solid var(--color-border-tertiary, var(--brand-line, rgba(0,0,0,0.06)))",
+      borderTop: "0.5px solid var(--rule)",
       cursor: onClick ? "pointer" : "default",
-      color: danger ? "var(--error, #c0392b)" : "var(--foreground)",
+      color: danger ? "var(--error, #c0392b)" : "var(--ink)",
       fontFamily: "'DM Sans', system-ui, sans-serif",
     }}
     onMouseEnter={(e) => {
-      if (onClick) (e.currentTarget as HTMLElement).style.background =
-        "var(--color-background-secondary, var(--brand-ghost, rgba(0,0,0,0.04)))";
+      if (onClick) (e.currentTarget as HTMLElement).style.background = "var(--paper-2)";
     }}
     onMouseLeave={(e) => {
       (e.currentTarget as HTMLElement).style.background = "transparent";
@@ -103,7 +102,7 @@ const Row = ({
         <div
           style={{
             fontSize: 12.5,
-            color: "var(--muted-foreground)",
+            color: "var(--ink-2)",
             marginTop: 2,
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -116,7 +115,7 @@ const Row = ({
       {children}
     </div>
     {chevron && onClick && !danger && (
-      <ChevronRight className="w-4 h-4" style={{ color: "var(--muted-foreground)", flexShrink: 0 }} />
+      <ChevronRight className="w-4 h-4" style={{ color: "var(--ink-2)", flexShrink: 0 }} />
     )}
   </button>
 );
@@ -145,7 +144,7 @@ const Toggle = ({
       borderRadius: 999,
       border: "none",
       cursor: "pointer",
-      background: on ? "var(--brand)" : "var(--color-border-secondary, rgba(120,120,120,0.35))",
+      background: on ? "var(--brand)" : "var(--rule)",
       position: "relative",
       transition: "background 160ms ease",
       flexShrink: 0,
@@ -185,13 +184,13 @@ const ToggleRow = ({
       alignItems: "center",
       gap: 16,
       padding: "14px 24px",
-      borderTop: "0.5px solid var(--color-border-tertiary, var(--brand-line, rgba(0,0,0,0.06)))",
+      borderTop: "0.5px solid var(--rule)",
       fontFamily: "'DM Sans', system-ui, sans-serif",
     }}
   >
     <div style={{ flex: 1, minWidth: 0 }}>
-      <div style={{ fontSize: 14, fontWeight: 500, color: "var(--foreground)", lineHeight: 1.3 }}>{label}</div>
-      <div style={{ fontSize: 12.5, color: "var(--muted-foreground)", marginTop: 4, lineHeight: 1.45 }}>
+      <div style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)", lineHeight: 1.3 }}>{label}</div>
+      <div style={{ fontSize: 12.5, color: "var(--ink-2)", marginTop: 4, lineHeight: 1.45 }}>
         {description}
       </div>
     </div>
@@ -326,8 +325,8 @@ export default function PreferencesPanel({
           right: 0,
           bottom: 0,
           width: "min(420px, 100vw)",
-          background: "var(--color-background-primary, var(--paper, #fff))",
-          borderLeft: "0.5px solid var(--color-border-tertiary, var(--brand-line, rgba(0,0,0,0.08)))",
+          background: "var(--paper)",
+          borderLeft: "0.5px solid var(--rule)",
           boxShadow: "-12px 0 40px -10px rgba(0,0,0,0.25)",
           display: "flex",
           flexDirection: "column",
@@ -351,7 +350,7 @@ export default function PreferencesPanel({
         <div
           style={{
             padding: "22px 24px 18px",
-            borderBottom: "0.5px solid var(--color-border-tertiary, var(--brand-line, rgba(0,0,0,0.08)))",
+            borderBottom: "0.5px solid var(--rule)",
             display: "flex",
             alignItems: "flex-start",
             justifyContent: "space-between",
@@ -365,7 +364,7 @@ export default function PreferencesPanel({
                 fontFamily: "'Cormorant Garamond', Georgia, serif",
                 fontSize: 20,
                 fontWeight: 500,
-                color: "var(--foreground)",
+                color: "var(--ink)",
                 margin: 0,
                 lineHeight: 1.2,
               }}
@@ -375,7 +374,7 @@ export default function PreferencesPanel({
             <p
               style={{
                 fontSize: 13,
-                color: "var(--muted-foreground)",
+                color: "var(--ink-2)",
                 margin: "4px 0 0",
                 fontFamily: "'DM Sans', system-ui, sans-serif",
               }}
@@ -393,12 +392,12 @@ export default function PreferencesPanel({
               cursor: "pointer",
               padding: 6,
               borderRadius: 6,
-              color: "var(--muted-foreground)",
+              color: "var(--ink-2)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
-            className="hover:bg-[var(--color-background-secondary,var(--brand-ghost,rgba(0,0,0,0.04)))]"
+            className="hover:bg-[var(--paper-2)]"
           >
             <X className="w-4 h-4" />
           </button>
@@ -434,14 +433,14 @@ export default function PreferencesPanel({
             <div
               style={{
                 padding: "14px 24px",
-                borderTop: "0.5px solid var(--color-border-tertiary, var(--brand-line, rgba(0,0,0,0.06)))",
+                borderTop: "0.5px solid var(--rule)",
               }}
             >
               <div
                 style={{
                   fontSize: 14,
                   fontWeight: 500,
-                  color: "var(--foreground)",
+                  color: "var(--ink)",
                   marginBottom: 8,
                   fontFamily: "'DM Sans', system-ui, sans-serif",
                 }}
@@ -463,12 +462,12 @@ export default function PreferencesPanel({
                 placeholder="Paste your LinkedIn profile URL"
                 style={{
                   width: "100%",
-                  background: "var(--color-background-secondary, var(--brand-ghost, rgba(0,0,0,0.04)))",
-                  border: "0.5px solid var(--color-border-secondary, var(--brand-line, rgba(0,0,0,0.12)))",
+                  background: "var(--paper-2)",
+                  border: "0.5px solid var(--rule)",
                   borderRadius: 8,
                   padding: "10px 12px",
                   fontSize: 13,
-                  color: "var(--foreground)",
+                  color: "var(--ink)",
                   fontFamily: "'DM Sans', system-ui, sans-serif",
                   outline: "none",
                 }}
@@ -524,7 +523,7 @@ export default function PreferencesPanel({
               style={{
                 padding: "20px 24px 28px",
                 fontSize: 11,
-                color: "var(--muted-foreground)",
+                color: "var(--ink-2)",
                 textAlign: "center",
                 fontFamily: "'DM Sans', system-ui, sans-serif",
               }}
