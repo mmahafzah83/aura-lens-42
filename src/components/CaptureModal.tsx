@@ -1418,7 +1418,13 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                   </div>
                 </div>
               )}
-              <DocumentUpload onUploaded={() => { onCaptured(); onOpenChange(false); }} />
+              <DocumentUpload onUploaded={async () => {
+                onCaptured();
+                window.dispatchEvent(new Event("capture-complete"));
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) await maybeTriggerFirstCeremony(user.id);
+                onOpenChange(false);
+              }} />
             </div>
           )}
 
