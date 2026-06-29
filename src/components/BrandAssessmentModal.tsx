@@ -836,15 +836,24 @@ function ResultsView({
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [prefersReduced]);
 
+  const stripMd = (s: string) =>
+    (s || "")
+      .replace(/\*\*(.*?)\*\*/g, "$1")
+      .replace(/\*(.*?)\*/g, "$1")
+      .replace(/\*/g, "")
+      .trim();
+
   // Resolve display fields with fallback to prose extraction.
-  const archetype: string = json?.primary_archetype
+  const archetype: string = stripMd(
+    json?.primary_archetype
     || (extractSection(prose, "HOW THE MARKET SEES YOU").split(/[.\n]/)[0] || "").trim()
-    || "Your Positioning";
+    || "Your Positioning",
+  );
 
   const oneLineDesc = (() => {
     const sec = extractSection(prose, "HOW THE MARKET SEES YOU");
     const firstSentence = sec.split(/(?<=\.)\s+/)[0] || "";
-    return firstSentence.replace(/^\*+|\*+$/g, "").trim();
+    return stripMd(firstSentence);
   })();
 
   const positioning: string = (json?.positioning_statement
