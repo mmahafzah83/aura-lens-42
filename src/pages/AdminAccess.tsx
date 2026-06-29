@@ -23,8 +23,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
-
 type Row = {
   id: string;
   email: string;
@@ -76,7 +74,7 @@ const statusBadge = (status: string) => {
   return map[status] || "bg-neutral-700/40 text-neutral-300 border-neutral-600/40";
 };
 
-const Admin = () => {
+const AdminAccess = () => {
   const navigate = useNavigate();
   const [authChecked, setAuthChecked] = useState(false);
   const [accessToken, setAccessToken] = useState<string | null>(null);
@@ -173,10 +171,6 @@ const Admin = () => {
       if (cancelled) return;
       if (!session) {
         navigate("/auth", { replace: true });
-        return;
-      }
-      if (session.user.id !== ADMIN_USER_ID) {
-        navigate("/home", { replace: true });
         return;
       }
       setAccessToken(session.access_token);
@@ -397,7 +391,7 @@ const Admin = () => {
   }
 
   return (
-    <AdminShell title="Beta access — Admin" subtitle="Manage waitlist and send invites">
+    <AdminShell title="Access" subtitle="Manage waitlist and send invites">
         {/* Stats row */}
         <div className="flex flex-wrap gap-2 mb-6">
           <span className="text-xs px-3 py-1.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
@@ -1127,4 +1121,4 @@ const Admin = () => {
   );
 };
 
-export default Admin;
+export default AdminAccess;
