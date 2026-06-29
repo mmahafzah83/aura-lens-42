@@ -738,7 +738,9 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
             const contentScore = imprint.data.contentScore;
             const headline = topSignal
               ? `You see ${topSignal.title} more clearly than you've said it.`
-              : "Your reading is ahead of your voice this week.";
+              : (signalScore != null && contentScore != null)
+                ? "Your reading is ahead of your voice this week."
+                : "Your reading is taking shape.";
 
             const dInputs = discernment.status === "ready" ? discernment.data : null;
             const hasGap = dInputs && dInputs.postsWithSignal != null && dInputs.published120d != null;
