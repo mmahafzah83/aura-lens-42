@@ -355,6 +355,11 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
           .eq("user_id", user.id)
           .gte("created_at", since),
       ]);
+      const { count: docSinceCount } = await supabase
+        .from("documents")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .gte("created_at", since);
 
       const sigRows = (sigRes?.data || []) as Array<{ id: string; signal_title: string | null; confidence_score: number | null }>;
       let signals: AwaySignal[] = sigRows
@@ -365,7 +370,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
           title: r.signal_title || "Untitled signal",
           confidence: r.confidence_score,
         }));
-      const newCaptureCount = capRes?.count ?? 0;
+      const newCaptureCount = (capRes?.count ?? 0) + (docSinceCount ?? 0);
       let mode: "away" | "radar" = "away";
 
       // Fallback: nothing in the since-window — surface the top 2 ACTIVE signals
