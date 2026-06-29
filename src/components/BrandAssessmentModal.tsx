@@ -513,7 +513,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
           </div>
 
           {!showResults && step === 0 && (
-            <p className="text-xs mt-2 mb-1" style={{ color: "rgba(212,176,86,0.7)", letterSpacing: "0.2em", textTransform: "uppercase", fontWeight: 600, fontSize: 11 }}>
+            <p className="text-xs mt-2 mb-1" style={{ color: "var(--spot)", letterSpacing: "0.2em", textTransform: "uppercase", fontWeight: 600, fontSize: 11 }}>
               Step 4 of 4 — How the market sees you
             </p>
           )}
@@ -638,10 +638,10 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
                         onClick={() => toggleOption(opt)}
                         className="w-full text-left flex items-center justify-between gap-3"
                         style={{
-                          background: sel ? "rgba(176, 141, 58, 0.14)" : "transparent",
-                          borderTop: "1px solid rgba(212,176,86,0.2)",
-                          borderRight: "1px solid rgba(212,176,86,0.2)",
-                          borderBottom: "1px solid rgba(212,176,86,0.2)",
+                          background: sel ? "color-mix(in srgb, var(--action) 12%, transparent)" : "transparent",
+                          borderTop: "1px solid var(--rule)",
+                          borderRight: "1px solid var(--rule)",
+                          borderBottom: "1px solid var(--rule)",
                           borderLeft: sel ? "3px solid var(--spot)" : "1px solid color-mix(in srgb, var(--spot) 20%, transparent)",
                           color: sel ? "var(--spot)" : "var(--ink)",
                           borderRadius: 12,
@@ -1046,7 +1046,7 @@ function ResultsView({
               <span
                 key={i}
                 style={{
-                  border: "1px solid rgba(212, 176, 86, 0.4)",
+                  border: "1px solid color-mix(in srgb, var(--action) 35%, transparent)",
                   color: "var(--action)",
                   borderRadius: 999,
                   fontSize: 12,
@@ -1158,7 +1158,7 @@ function ResultsView({
           type="button"
           onClick={copyOneLiner}
           className="flex items-center gap-2 px-4 py-2.5 rounded-lg hover:bg-white/[0.04] transition-colors"
-          style={{ background: "transparent", border: "1px solid rgba(212, 176, 86, 0.35)", color: "var(--ink-6)", fontSize: 13, cursor: "pointer" }}
+          style={{ background: "transparent", border: "1px solid color-mix(in srgb, var(--action) 35%, transparent)", color: "var(--ink-6)", fontSize: 13, cursor: "pointer" }}
         >
           <Copy className="w-3.5 h-3.5" /> Copy my one-liner
         </button>
@@ -1166,7 +1166,7 @@ function ResultsView({
           type="button"
           onClick={downloadReport}
           className="flex items-center gap-2 px-4 py-2.5 rounded-lg hover:bg-white/[0.04] transition-colors"
-          style={{ background: "transparent", border: "1px solid rgba(212, 176, 86, 0.35)", color: "var(--ink-6)", fontSize: 13, cursor: "pointer" }}
+          style={{ background: "transparent", border: "1px solid color-mix(in srgb, var(--action) 35%, transparent)", color: "var(--ink-6)", fontSize: 13, cursor: "pointer" }}
         >
           <Download className="w-3.5 h-3.5" /> Download full report
         </button>
@@ -1227,11 +1227,7 @@ function CinematicLoading({ stage = 0 }: { stage?: number }) {
         }}
         aria-hidden="true"
       >
-        <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <ellipse cx="40" cy="40" rx="34" ry="18" stroke="#B08D3A" strokeWidth="1.5" />
-          <circle cx="40" cy="40" r="11" stroke="#B08D3A" strokeWidth="1.5" />
-          <circle cx="40" cy="40" r="4" fill="#B08D3A" />
-        </svg>
+        <AuraLogo size={80} variant="auto" />
       </div>
       <p
         key={stage}
@@ -1239,7 +1235,7 @@ function CinematicLoading({ stage = 0 }: { stage?: number }) {
           fontFamily: "var(--serif)",
           fontSize: 18,
           textAlign: "center",
-          color: "#d4b056",
+          color: "var(--ink-2)",
           maxWidth: 420,
           margin: 0,
           opacity: 0,
