@@ -87,7 +87,7 @@ serve(async (req) => {
           <h1 style="font-family:${HEADING_FONT};font-size:28px;font-weight:500;line-height:1.2;margin:0 0 14px;color:#1A1916;">Reset your password</h1>
           <p style="font-size:15px;line-height:1.6;margin:0 0 18px;color:#3A3633;">Hi ${name}, we received a request to reset the password for your Aura account. Click below to set a new one.</p>
           <p style="margin:24px 0;"><a href="${resetUrl}" style="display:inline-block;background:${BRAND};color:#1A1916;text-decoration:none;font-weight:600;font-size:14px;padding:13px 22px;border-radius:10px;">Reset my password →</a></p>
-          <p style="font-size:13px;color:#6B6866;margin:0 0 8px;">This link expires in 1 hour.</p>
+          <p style="font-size:13px;color:#6B6866;margin:0 0 8px;">This link expires in 24 hours.</p>
           <p style="font-size:13px;color:#6B6866;margin:0 0 18px;">If you didn't request this, you can safely ignore this email.</p>
           <p style="font-size:12px;color:#8A8580;line-height:1.5;margin:18px 0 0;word-break:break-all;">If the button doesn't work, paste this link:<br/><a href="${resetUrl}" style="color:${BRAND};">${resetUrl}</a></p>
         </td></tr>
