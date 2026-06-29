@@ -742,7 +742,8 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
               ? "You see this more clearly than you've said it."
               : (signalScore != null && contentScore != null)
                 ? "Your reading is ahead of your voice this week."
-                : "Your reading is still taking shape.";
+                : "Your reading is taking shape.";
+
 
 
             const dInputs = discernment.status === "ready" ? discernment.data : null;
