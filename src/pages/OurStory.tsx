@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import AuraLogo from "@/components/brand/AuraLogo";
 import { usePageMeta } from "@/hooks/usePageMeta";
+import PublicFooter from "@/components/PublicFooter";
 
 const label: React.CSSProperties = {
   fontFamily: "var(--font-mono)",
@@ -335,72 +336,7 @@ const OurStory = () => {
         </div>
       </main>
 
-      {/* Dark instrument footer */}
-      <footer
-        className="px-6 sm:px-10 py-10"
-        style={{ background: "var(--ob-bg)", borderTop: "1px solid var(--hair)" }}
-      >
-        <div
-          className="mx-auto flex flex-col sm:flex-row items-center justify-between gap-4"
-          style={{ maxWidth: 720 }}
-        >
-          <div
-            className="flex flex-wrap items-center justify-center gap-3 text-xs"
-            style={{ fontFamily: "var(--font-mono)", color: "var(--glass-2)" }}
-          >
-            <Link
-              to="/"
-              style={{ color: "var(--glass-2)", transition: "color 150ms ease" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--glass)")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--glass-2)")}
-            >
-              Home
-            </Link>
-            <span style={{ color: "var(--glass-2)", opacity: 0.5 }}>·</span>
-            <Link
-              to="/trust"
-              style={{ color: "var(--glass-2)", transition: "color 150ms ease" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--glass)")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--glass-2)")}
-            >
-              Security &amp; Trust
-            </Link>
-            <span style={{ color: "var(--glass-2)", opacity: 0.5 }}>·</span>
-            <Link
-              to="/privacy"
-              style={{ color: "var(--glass-2)", transition: "color 150ms ease" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--glass)")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--glass-2)")}
-            >
-              Privacy
-            </Link>
-            <span style={{ color: "var(--glass-2)", opacity: 0.5 }}>·</span>
-            <Link
-              to="/terms"
-              style={{ color: "var(--glass-2)", transition: "color 150ms ease" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--glass)")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--glass-2)")}
-            >
-              Terms
-            </Link>
-            <span style={{ color: "var(--glass-2)", opacity: 0.5 }}>·</span>
-            <Link
-              to="/guide"
-              style={{ color: "var(--glass-2)", transition: "color 150ms ease" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--glass)")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--glass-2)")}
-            >
-              The Guide
-            </Link>
-          </div>
-          <p
-            className="text-xs"
-            style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)", opacity: 0.7 }}
-          >
-            Aura · Built in Riyadh, for the world.
-          </p>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 };
