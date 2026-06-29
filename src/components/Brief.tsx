@@ -1093,6 +1093,50 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
         })()}
       </section>
 
+      {/* KEEP THE SCAN LIVE ─────────────────────────── */}
+      <section style={{ marginBottom: 36 }}>
+        <div
+          style={{
+            background: "var(--paper-2)",
+            border: "0.5px solid var(--rule)",
+            borderInlineStart: "3px solid var(--live)",
+            borderRadius: 12,
+            padding: "20px 22px",
+          }}
+        >
+          <SectionLabel>Keep the scan live</SectionLabel>
+          <p style={{ margin: "0 0 15px 0", fontSize: 15, lineHeight: 1.6, color: "var(--ink-2)" }}>
+            {away.status === "ready" && away.data.newCaptureCount > 0 ? (
+              <>
+                Your scan runs on what you read.{" "}
+                <strong style={{ color: "var(--ink)", fontWeight: 500 }}>{away.data.newCaptureCount}</strong>{" "}
+                {away.data.newCaptureCount === 1 ? "capture" : "captures"} this week kept it sharp — one more keeps the next signal{" "}
+                <span style={{ color: "var(--live-ink, var(--live))", fontWeight: 500 }}>Live</span>.
+              </>
+            ) : (
+              <>Your scan runs on what you read. Paste the first piece that made you think.</>
+            )}
+          </p>
+          <button
+            type="button"
+            onClick={() => onOpenCapture?.()}
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              letterSpacing: "0.06em",
+              padding: "9px 16px",
+              borderRadius: 6,
+              background: "transparent",
+              color: "var(--live-ink, var(--live))",
+              border: "0.5px solid var(--live)",
+              cursor: "pointer",
+            }}
+          >
+            Capture this week →
+          </button>
+        </div>
+      </section>
+
       {/* QUIET FOOTER ─────────────────────────── */}
       <footer
         style={{
