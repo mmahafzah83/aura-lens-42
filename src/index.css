@@ -1004,14 +1004,12 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   --input:     41 26% 78%;
   --border:    41 26% 78%;
   --ring:      40 63% 56%;
-
-  /* ADD — these were missing, causing near-white text on bone */
-  --background:            41 33% 91%;  /* ≈ --paper */
-  --foreground:            20 14% 9%;   /* ≈ --ink #1B1712 */
+  --background:            41 33% 91%;
+  --foreground:            20 14% 9%;
   --card-foreground:       20 14% 9%;
   --popover-foreground:    20 14% 9%;
-  --secondary-foreground: 20 14% 9%;
-  --muted-foreground:      25 8% 50%;   /* ≈ --ink-3 #8A8073 */
+  --secondary-foreground:  20 14% 9%;
+  --muted-foreground:      25 8% 50%;
 }
 
 
