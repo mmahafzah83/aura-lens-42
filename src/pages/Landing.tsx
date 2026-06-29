@@ -1112,49 +1112,7 @@ tio.observe(document.getElementById("tiers"));
  function upd(){const line=innerHeight*0.5;let act=+items[0].dataset.scene;for(const it of items){if(it.getBoundingClientRect().top<=line)act=+it.dataset.scene;}if(act!==cur){cur=act;scenes.forEach(s=>s.classList.toggle("active",+s.dataset.s===act));}}
  addEventListener("scroll",upd,{passive:true});addEventListener("resize",upd);upd();})();
 
-import("https://esm.sh/three@0.161.0").then(async(THREE)=>{
- const {EffectComposer}=await import("https://esm.sh/three@0.161.0/examples/jsm/postprocessing/EffectComposer.js");
- const {RenderPass}=await import("https://esm.sh/three@0.161.0/examples/jsm/postprocessing/RenderPass.js");
- const {UnrealBloomPass}=await import("https://esm.sh/three@0.161.0/examples/jsm/postprocessing/UnrealBloomPass.js");
- const {OutputPass}=await import("https://esm.sh/three@0.161.0/examples/jsm/postprocessing/OutputPass.js");
- try{
-  const canvas=document.getElementById("bg");let W=innerWidth,H=innerHeight;
-  const renderer=new THREE.WebGLRenderer({canvas,antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(W,H);renderer.setClearColor(0x040706,1);renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=0.92;
-  const scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0x040706,0.02);
-  const camera=new THREE.PerspectiveCamera(60,W/H,0.1,260);camera.position.set(0,0,11);
-  const spr=(()=>{const c=document.createElement("canvas");c.width=c.height=64;const x=c.getContext("2d");const g=x.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,"rgba(255,255,255,1)");g.addColorStop(.25,"rgba(255,255,255,.85)");g.addColorStop(1,"rgba(255,255,255,0)");x.fillStyle=g;x.fillRect(0,0,64,64);return new THREE.CanvasTexture(c);})();
-  function field(n,spread,dN,dF,size,color,op){const g=new THREE.BufferGeometry();const p=new Float32Array(n*3);for(let i=0;i<n;i++){p[i*3]=(Math.random()-.5)*spread;p[i*3+1]=(Math.random()-.5)*spread*.6;p[i*3+2]=dN+Math.random()*(dF-dN);}g.setAttribute("position",new THREE.BufferAttribute(p,3));const m=new THREE.PointsMaterial({size,map:spr,color,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,sizeAttenuation:true,opacity:op});const pts=new THREE.Points(g,m);scene.add(pts);return pts;}
-  const dust=field(1100,52,-72,8,.1,0xA6ACA8,.5);const tealStars=field(34,46,-66,8,.34,0x36C5B0,.8);
-  const S=0.12,mark=new THREE.Group();scene.add(mark);
-  const lp=[];RAYS.forEach(r=>lp.push((r[0]-32)*S,-(r[1]-32)*S,0,(r[2]-32)*S,-(r[3]-32)*S,0));
-  const lg=new THREE.BufferGeometry();lg.setAttribute("position",new THREE.Float32BufferAttribute(lp,3));
-  const lmat=new THREE.LineBasicMaterial({color:0xEDE7D9,transparent:true,opacity:0,blending:THREE.AdditiveBlending});mark.add(new THREE.LineSegments(lg,lmat));
-  const tg=new THREE.BufferGeometry();tg.setAttribute("position",new THREE.Float32BufferAttribute([(40.07-32)*S,-(21.67-32)*S,0,(49.24-32)*S,-(9.94-32)*S,0],3));
-  const tmat=new THREE.LineBasicMaterial({color:0x36C5B0,transparent:true,opacity:0,blending:THREE.AdditiveBlending});mark.add(new THREE.LineSegments(tg,tmat));
-  const cmat=new THREE.MeshBasicMaterial({color:0xF2EEE4,transparent:true,opacity:0});mark.add(new THREE.Mesh(new THREE.SphereGeometry(.3,24,24),cmat));
-  const nmat=new THREE.MeshBasicMaterial({color:0x36C5B0,transparent:true,opacity:0});const node=new THREE.Mesh(new THREE.SphereGeometry(.14,16,16),nmat);node.position.set((49.24-32)*S,-(9.94-32)*S,0);mark.add(node);
-  const MP=1100;const tP=new Float32Array(MP*3),sP=new Float32Array(MP*3),col=new Float32Array(MP*3),cur=new Float32Array(MP*3);
-  const segs=RAYS.map(r=>({a:[r[0],r[1]],b:[r[2],r[3]],teal:false}));segs.push({a:[40.07,21.67],b:[49.24,9.94],teal:true});segs.forEach(s=>s.len=Math.hypot(s.b[0]-s.a[0],s.b[1]-s.a[1]));const tot=segs.reduce((x,s)=>x+s.len,0);
-  for(let i=0;i<MP;i++){let X,Y,teal=false;if(i<190){const an=Math.random()*6.283,rr=Math.sqrt(Math.random())*6.85;X=32+Math.cos(an)*rr;Y=32+Math.sin(an)*rr;}else{let q=Math.random()*tot,sg=segs[0];for(const s of segs){if(q<=s.len){sg=s;break;}q-=s.len;}const u=Math.random();X=sg.a[0]+(sg.b[0]-sg.a[0])*u;Y=sg.a[1]+(sg.b[1]-sg.a[1])*u;teal=sg.teal;}const wx=(X-32)*S,wy=-(Y-32)*S;tP[i*3]=wx;tP[i*3+1]=wy;tP[i*3+2]=(Math.random()-.5)*.3;const dx=Math.random()-.5,dy=Math.random()-.5,dz=Math.random()-.5,dl=Math.hypot(dx,dy,dz)||1,rd=5+Math.random()*11;sP[i*3]=wx+dx/dl*rd;sP[i*3+1]=wy+dy/dl*rd;sP[i*3+2]=dz/dl*rd*.6;cur[i*3]=sP[i*3];cur[i*3+1]=sP[i*3+1];cur[i*3+2]=sP[i*3+2];if(teal||Math.random()<.14){col[i*3]=.21;col[i*3+1]=.77;col[i*3+2]=.69;}else{col[i*3]=.93;col[i*3+1]=.905;col[i*3+2]=.84;}}
-  const pg=new THREE.BufferGeometry();pg.setAttribute("position",new THREE.BufferAttribute(cur,3));pg.setAttribute("color",new THREE.BufferAttribute(col,3));
-  const parts=new THREE.Points(pg,new THREE.PointsMaterial({size:.2,map:spr,vertexColors:true,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,sizeAttenuation:true,opacity:0}));scene.add(parts);mark.position.set(3.6,0.7,0);parts.position.set(3.6,0.7,0);
-  const composer=new EffectComposer(renderer);composer.addPass(new RenderPass(scene,camera));const bloom=new UnrealBloomPass(new THREE.Vector2(W,H),.55,.4,.2);composer.addPass(bloom);composer.addPass(new OutputPass());
-  let a=0,assembling=true;const ease=t=>1-Math.pow(1-t,3);let mx=0,my=0;
-  addEventListener("pointermove",e=>{mx=e.clientX/innerWidth-.5;my=e.clientY/innerHeight-.5;});
-  function drift(p,sp,dt){const ar=p.geometry.attributes.position.array;for(let k=2;k<ar.length;k+=3){ar[k]+=sp*dt;if(ar[k]>9)ar[k]-=80;}p.geometry.attributes.position.needsUpdate=true;}
-  const clk=new THREE.Clock();
-  function loop(){const dt=Math.min(clk.getDelta(),.05),t=clk.elapsedTime;const prog=Math.min(1,scrollY/innerHeight);const speed=1.2+prog*2.2;
-   drift(dust,speed,dt);drift(tealStars,speed*.8,dt);
-   if(assembling){a+=dt/2.1;if(a>=1){a=1;assembling=false;}const e=ease(a);for(let k=0;k<MP*3;k++)cur[k]=sP[k]+(tP[k]-sP[k])*e;pg.attributes.position.needsUpdate=true;}
-   const heroVis=Math.max(0,1-scrollY/(innerHeight*.7));const e=ease(a);parts.material.opacity=heroVis*.55;const lit=Math.max(0,Math.min(1,(e-.55)/.45))*heroVis;
-   lmat.opacity=.92*lit;tmat.opacity=lit;cmat.opacity=lit;nmat.opacity=heroVis*Math.min(1,e*1.3);
-   const b=1+.04*Math.sin(t*1.05);mark.scale.set(b,b,b);parts.scale.set(b,b,b);bloom.strength=.4+heroVis*.28;
-   camera.position.x+=(mx*1.8-camera.position.x)*.04;camera.position.y+=(-my*1.0-camera.position.y)*.04;camera.lookAt(0,0,0);
-   composer.render();requestAnimationFrame(loop);}
-  loop();
-  addEventListener("resize",()=>{W=innerWidth;H=innerHeight;camera.aspect=W/H;camera.updateProjectionMatrix();renderer.setSize(W,H);composer.setSize(W,H);});
- }catch(err){console.error(err);}
-}).catch(err=>console.error(err));
+/* WebGL hero starfield is initialised from the React effect (bundled three.js). */
 
 /* WHAT AURA MAKES · Line + Forge controller */
 (function(){var e=document.getElementById("amk-markRead");if(e&&typeof svgMark==="function")svgMark(e,"#EDE7D9");})();
