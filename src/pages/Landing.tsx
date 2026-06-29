@@ -1237,6 +1237,10 @@ const Landing = () => {
       console.error("[Landing] runtime script failed", err);
     }
 
+    // Initialise the bundled three.js hero starfield. Any failure (no WebGL,
+    // init throws) leaves the dark base (#040706) showing and never throws.
+    const disposeHero = initHeroWebGL();
+
     // Intercept SPA navigation for in-app links (the script-injected /auth,
     // /request-access, etc. would otherwise do a full page reload).
     const onClick = (e: MouseEvent) => {
@@ -1262,6 +1266,7 @@ const Landing = () => {
 
     return () => {
       root.removeEventListener("click", onClick);
+      try { disposeHero(); } catch {}
       for (const t of listeners) {
         try {
           (t.target.removeEventListener as any)(t.type, t.listener, t.options);
