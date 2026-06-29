@@ -28,6 +28,7 @@ const Landing = lazy(() => import("./pages/Landing"));
 const TrendDetail = lazy(() => import("./pages/TrendDetail"));
 const CarouselStudio = lazy(() => import("./pages/CarouselStudio"));
 const Admin = lazy(() => import("./pages/Admin"));
+const AdminAccess = lazy(() => import("./pages/AdminAccess"));
 const AdminDesignSystem = lazy(() => import("./pages/AdminDesignSystem"));
 const AdminExperience = lazy(() => import("./pages/AdminExperience"));
 const AdminQA = lazy(() => import("./pages/AdminQA"));
