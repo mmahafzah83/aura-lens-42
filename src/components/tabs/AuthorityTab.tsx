@@ -1292,7 +1292,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                     background: lang === "ar" ? "var(--paper)" : "transparent",
                     color: lang === "ar" ? "var(--ink)" : "var(--ink-3)",
                     border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 500, cursor: "pointer",
-                    fontFamily: "var(--font-arabic, 'Cairo', sans-serif",
+                    fontFamily: "var(--font-arabic, 'Cairo', sans-serif)",
                   }}
                 >العربية</button>
               </div>
