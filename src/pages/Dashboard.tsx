@@ -11,7 +11,6 @@ import { useCapturedSources } from "@/hooks/useCapturedSources";
 import AuraChatSidebar, { type ChatContext } from "@/components/AuraChatSidebar";
 import AskAuraPresence from "@/components/AskAuraPresence";
 import AuraLogo from "@/components/brand/AuraLogo";
-// OnboardingSequence removed — replaced by /onboarding flow
 import ExecutiveDiagnostic from "@/components/ExecutiveDiagnostic";
 import WhatsAppOptInModal from "@/components/WhatsAppOptInModal";
 import ErrorBoundary from "@/components/ErrorBoundary";
