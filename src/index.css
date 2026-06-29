@@ -91,7 +91,7 @@ html *:not(canvas):not(video):not(iframe) {
   --hair: #243140; --grid: #1B2531;
   --glass: #E8EDF3; --glass-2: #8A97A6; --glass-3: #515E6D;
   /* signals */
-  --live: #36C5B0; --live-ink: #1E8C7B; --action: #D6A748; --action-ink: #8A6A1E; --spot: #6E2A26; --pos: #6FBF8E; --neg: #D98A82;
+  --live: #36C5B0; --live-ink: #15776A; --action: #D6A748; --action-ink: #8A6A1E; --spot: #6E2A26; --pos: #6FBF8E; --neg: #D98A82;
   /* type */
   --font-display: 'Newsreader', Georgia, 'Times New Roman', serif;
   --font-serif:   'Newsreader', Georgia, 'Times New Roman', serif;
@@ -1191,11 +1191,9 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   background-color: var(--paper);
   background-image:
     linear-gradient(to right,  rgba(27,23,18,0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(27,23,18,0.05) 1px, transparent 1px),
-    radial-gradient(120% 80% at 50% -6%, #F6F1E7 0%, #F1ECE1 60%, #ECE4D4 100%);
-  background-size: 26px 26px, 26px 26px, auto;
-  background-position: 0 0, 0 0, 0 0;
-  background-attachment: fixed, fixed, fixed;
+    linear-gradient(to bottom, rgba(27,23,18,0.05) 1px, transparent 1px);
+  background-size: 26px 26px;
+  background-position: 0 0, 0 0;
 }
 
 /* ══════════════════════════════════════════════════════════════
