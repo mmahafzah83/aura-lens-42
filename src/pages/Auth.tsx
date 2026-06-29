@@ -752,7 +752,7 @@ const Auth = () => {
         </div>
       </div>
       </div>
-      <PublicFooter forceDark />
+      <PublicFooter />
     </div>
   );
 };

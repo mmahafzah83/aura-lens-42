@@ -6,6 +6,7 @@ import usePageMeta from "@/hooks/usePageMeta";
 import AuraLogo from "@/components/brand/AuraLogo";
 import { useGuideArticles } from "@/hooks/useGuideArticles";
 import type { GuideArticle } from "@/hooks/useGuideArticles";
+import PublicFooter from "@/components/PublicFooter";
 
 const SECTION_ORDER = [
   "getting-started",
@@ -341,34 +342,7 @@ const Guide = () => {
         </button>
       </section>
 
-      {/* Dark instrument footer */}
-      <footer
-        className="px-6 sm:px-10 py-10"
-        style={{ background: "var(--ob-bg)", borderTop: "1px solid var(--hair)" }}
-      >
-        <div
-          className="mx-auto flex flex-col sm:flex-row items-center justify-between gap-4"
-          style={{ maxWidth: 720 }}
-        >
-          <div
-            className="flex flex-wrap items-center justify-center gap-3 text-xs"
-            style={{ fontFamily: "var(--font-mono)", color: "var(--glass-2)" }}
-          >
-            <Link to="/" style={{ color: "var(--glass-2)" }}>Home</Link>
-            <span style={{ color: "var(--glass-3)" }}>·</span>
-            <Link to="/trust" style={{ color: "var(--glass-2)" }}>Security & Trust</Link>
-            <span style={{ color: "var(--glass-3)" }}>·</span>
-            <Link to="/privacy" style={{ color: "var(--glass-2)" }}>Privacy</Link>
-            <span style={{ color: "var(--glass-3)" }}>·</span>
-            <Link to="/terms" style={{ color: "var(--glass-2)" }}>Terms</Link>
-            <span style={{ color: "var(--glass-3)" }}>·</span>
-            <Link to="/our-story" style={{ color: "var(--glass-2)" }}>Our Story</Link>
-          </div>
-          <p className="text-xs" style={{ color: "var(--glass-3)", fontFamily: "var(--font-mono)" }}>
-            Aura · Built in Riyadh, for the world.
-          </p>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 };

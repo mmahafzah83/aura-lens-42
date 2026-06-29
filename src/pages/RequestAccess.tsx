@@ -342,7 +342,7 @@ export default function RequestAccess() {
           </div>
         </section>
       </main>
-      <PublicFooter forceDark />
+      <PublicFooter />
     </div>
   );
 }
