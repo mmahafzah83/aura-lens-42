@@ -1,5 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import {
+  emailShell, heading, INK, INK_BODY, INK_MUTE,
+} from "../_shared/email-theme.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -176,41 +179,20 @@ serve(async (req) => {
     try {
       const resendKey = Deno.env.get("RESEND_API_KEY");
       if (resendKey) {
-        const BRAND = "#B08D3A";
-        const HEADING_FONT = "'Cormorant Garamond', Georgia, 'Times New Roman', serif";
-        const BODY_FONT = "'DM Sans', -apple-system, BlinkMacSystemFont, Arial, sans-serif";
-        const eye = (size: number, color: string) => `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 80 80" fill="none" aria-label="Aura">
-  <path d="M8 40 C 22 22, 58 22, 72 40 C 58 58, 22 58, 8 40 Z" stroke="${color}" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-  <circle cx="40" cy="40" r="11" stroke="${color}" stroke-width="2" fill="none"/>
-  <circle cx="40" cy="40" r="4" fill="${color}"/>
-</svg>`;
         const escapeHtml = (s: string) =>
           s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
            .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
         const safeName = escapeHtml(name);
-        const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>You're on the list</title></head>
-<body style="margin:0;padding:0;background:#0d0d0d;font-family:${BODY_FONT};color:#ededed;-webkit-font-smoothing:antialiased;">
-<div style="padding:32px 16px;background:#0d0d0d;">
-  <div style="max-width:560px;margin:0 auto;background:#0d0d0d;border:1px solid #1f1f1f;border-radius:12px;overflow:hidden;">
-    <div style="padding:36px 40px 0;">${eye(36, BRAND)}</div>
-    <div style="padding:24px 40px 8px;">
-      <h1 style="font-family:${HEADING_FONT};font-size:24px;font-weight:500;line-height:1.3;color:#ffffff;margin:0 0 22px;">${safeName}, you're on the list.</h1>
-      <p style="font-size:15px;line-height:1.75;color:#ededed;margin:0 0 16px;">We received your request.</p>
-      <p style="font-size:15px;line-height:1.75;color:#ededed;margin:0 0 16px;">Aura is in private beta with fewer than 50 professionals. I review every application personally — not an algorithm, not a form filter. Me.</p>
-      <p style="font-size:15px;line-height:1.75;color:#ededed;margin:0 0 16px;">I'll look at your background this week. If Aura is right for you, you'll receive an invitation with everything you need to get started.</p>
-      <p style="font-size:15px;line-height:1.75;color:#999;margin:16px 0 20px;">In the meantime — keep reading what matters to your sector. That's exactly what Aura will turn into presence.</p>
-      <p style="font-size:15px;color:#ededed;font-weight:500;margin:20px 0 4px;">Mohammad Mahafdhah</p>
-      <p style="font-size:13px;color:#666;margin:0 0 24px;">Aura builder</p>
-    </div>
-    <div style="padding:16px 40px 28px;border-top:1px solid #1f1f1f;margin-top:24px;">
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-        <td valign="middle" style="padding-right:10px;">${eye(16, "#555")}</td>
-        <td valign="middle" style="font-size:11px;letter-spacing:1px;color:#555;">Aura · Turns your expertise into presence · aura-intel.org</td>
-      </tr></table>
-    </div>
-  </div>
-</div>
-</body></html>`;
+        const body = `
+          ${heading(`${safeName}, you're on the list.`)}
+          <p style="font-size:15px;line-height:1.75;color:${INK_BODY};margin:0 0 16px;">We received your request.</p>
+          <p style="font-size:15px;line-height:1.75;color:${INK_BODY};margin:0 0 16px;">Aura is in private beta with fewer than 50 professionals. I review every application personally — not an algorithm, not a form filter. Me.</p>
+          <p style="font-size:15px;line-height:1.75;color:${INK_BODY};margin:0 0 16px;">I'll look at your background this week. If Aura is right for you, you'll receive an invitation with everything you need to get started.</p>
+          <p style="font-size:15px;line-height:1.75;color:${INK_MUTE};margin:16px 0 20px;">In the meantime — keep reading what matters to your sector. That's exactly what Aura will turn into presence.</p>
+          <p style="font-size:15px;color:${INK};font-weight:500;margin:20px 0 4px;">Mohammad Mahafdhah</p>
+          <p style="font-size:13px;color:${INK_MUTE};margin:0 0 8px;">Aura builder</p>
+        `;
+        const html = emailShell({ preheader: "You're on the list", body });
         console.log(`[submit-waitlist] Attempting to send confirmation email to ${email}`);
         const res = await fetch("https://api.resend.com/emails", {
           method: "POST",
