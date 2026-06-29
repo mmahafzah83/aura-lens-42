@@ -91,7 +91,7 @@ html *:not(canvas):not(video):not(iframe) {
   --hair: #243140; --grid: #1B2531;
   --glass: #E8EDF3; --glass-2: #8A97A6; --glass-3: #515E6D;
   /* signals */
-  --live: #36C5B0; --action: #D6A748; --pos: #6FBF8E; --neg: #D98A82;
+  --live: #36C5B0; --live-ink: #1E8C7B; --action: #D6A748; --action-ink: #8A6A1E; --spot: #6E2A26; --pos: #6FBF8E; --neg: #D98A82;
   /* type */
   --font-display: 'Newsreader', Georgia, 'Times New Roman', serif;
   --font-serif:   'Newsreader', Georgia, 'Times New Roman', serif;
