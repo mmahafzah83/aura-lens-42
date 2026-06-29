@@ -1180,7 +1180,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
           .brief-headline-row { flex-direction: column; align-items: flex-start; }
         }
       `}</style>
-
+      </div>
     </motion.div>
   );
 }
