@@ -199,36 +199,26 @@ async function syncConnection(
 
   const rows: Array<Record<string, unknown>> = [];
   for (const date of sortedDates) {
-    const imp = impressions.get(date);
-    const rx = reactions.get(date);
-    const cm = comments.get(date);
-    const rs = reshares.get(date);
-    const fg = followerGains.get(date);
-
+    const imp = impressions.get(date) ?? 0;
+    const rx = reactions.get(date) ?? 0;
+    const cm = comments.get(date) ?? 0;
+    const rs = reshares.get(date) ?? 0;
+    const fg = followerGains.get(date) ?? 0;
+    const eng = rx + cm + rs;
     const payload: Record<string, unknown> = {
       user_id: conn.user_id,
       snapshot_date: date,
       source_type: "linkedin_export",
+      impressions: imp,
+      reactions: rx,
+      comments: cm,
+      shares: rs,
+      follower_growth: fg,
+      engagement_rate: imp > 0 ? Math.round((eng / imp) * 10000) / 100 : 0,
     };
-    if (imp !== undefined) payload.impressions = imp;
-    if (rx !== undefined) payload.reactions = rx;
-    if (cm !== undefined) payload.comments = cm;
-    if (rs !== undefined) payload.shares = rs;
-    if (fg !== undefined) payload.follower_growth = fg;
-
-    // Engagement rate (always computed when impressions is known)
-    if (imp !== undefined) {
-      const eng = (rx ?? 0) + (cm ?? 0) + (rs ?? 0);
-      payload.engagement_rate = imp > 0 ? Math.round((eng / imp) * 10000) / 100 : 0;
-    }
-
-    if (date === latestDate) {
-      if (membersReachedTotal !== null) payload.members_reached = membersReachedTotal;
-      if (cumulativeFollowers !== null) payload.followers = cumulativeFollowers;
-    }
-
     rows.push(payload);
   }
+
 
   if (rows.length) {
     const { error: upErr } = await adminClient
@@ -236,6 +226,18 @@ async function syncConnection(
       .upsert(rows, { onConflict: "user_id,snapshot_date" });
     if (upErr) throw new Error(`upsert:${upErr.message}`);
     report.days_upserted = rows.length;
+
+    // Enrich the latest date with totals that may not be available for every row
+    const latestExtra: Record<string, unknown> = {};
+    if (membersReachedTotal !== null) latestExtra.members_reached = membersReachedTotal;
+    if (cumulativeFollowers !== null) latestExtra.followers = cumulativeFollowers;
+    if (Object.keys(latestExtra).length) {
+      await adminClient
+        .from("influence_snapshots")
+        .update(latestExtra)
+        .eq("user_id", conn.user_id)
+        .eq("snapshot_date", latestDate);
+    }
   }
 
   // Stamp last_synced_at
