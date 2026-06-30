@@ -226,7 +226,7 @@ async function syncConnection(
     // Enrich the latest date with totals that may not be available for every row
     const latestExtra: Record<string, unknown> = {};
     if (membersReachedTotal !== null) latestExtra.members_reached = membersReachedTotal;
-    if (cumulativeFollowers !== null) latestExtra.followers = cumulativeFollowers;
+    if (cumulativeFollowers !== null && cumulativeFollowers > 0) latestExtra.followers = cumulativeFollowers;
     if (Object.keys(latestExtra).length) {
       await adminClient
         .from("influence_snapshots")
