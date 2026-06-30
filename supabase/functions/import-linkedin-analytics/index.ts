@@ -81,96 +81,40 @@ Deno.serve(async (req) => {
       return null;
     };
 
-    /* ───────── Snapshot accumulator (merge engagement + follower per date) ───────── */
-    const snapshots: Record<string, {
-      snapshot_date: string;
-      impressions?: number;
-      engagement_rate?: number;
-      follower_growth?: number;
-      followers?: number;
-    }> = {};
-    const ensureSnap = (date: string) => {
-      if (!snapshots[date]) snapshots[date] = { snapshot_date: date };
-      return snapshots[date];
-    };
-
-    let engagementRows = 0;
-    let followerRows = 0;
     let postRows = 0;
     let totalFollowers = 0;
 
-    /* ───────── SHEET 1: ENGAGEMENT ───────── */
-    const engSheet = findSheet("ENGAGEMENT", "Engagement");
-    if (engSheet) {
-      const rows = XLSX.utils.sheet_to_json<any[]>(engSheet, { header: 1, raw: true, defval: "" });
-      // Headers row 0; data from row 1
-      for (let i = 1; i < rows.length; i++) {
-        const row = rows[i];
-        if (!row || row.length === 0) continue;
-        const date = toISODate(row[0]);
-        if (!date) continue;
-        const impressions = Math.round(toNum(row[1]));
-        const engagements = Math.round(toNum(row[2]));
-        const rate = impressions > 0 ? Math.round((engagements / impressions) * 10000) / 100 : 0;
-        const snap = ensureSnap(date);
-        snap.impressions = impressions;
-        snap.engagement_rate = rate;
-        engagementRows++;
-      }
-    }
-
-    /* ───────── SHEET 2: FOLLOWERS ───────── */
+    /* ───────── SHEET: FOLLOWERS (total only — absolute anchor) ───────── */
     const folSheet = findSheet("FOLLOWERS", "Followers");
     if (folSheet) {
       const rows = XLSX.utils.sheet_to_json<any[]>(folSheet, { header: 1, raw: true, defval: "" });
-      // Row 0, col 1 = total followers
       totalFollowers = Math.round(toNum(rows[0]?.[1]));
-      // Headers at row 2; data from row 3
-      for (let i = 3; i < rows.length; i++) {
-        const row = rows[i];
-        if (!row || row.length === 0) continue;
-        const date = toISODate(row[0]);
-        if (!date) continue;
-        const growth = Math.round(toNum(row[1]));
-        const snap = ensureSnap(date);
-        snap.follower_growth = growth;
-        followerRows++;
-      }
-      // today snapshot gets the total followers
-      if (totalFollowers > 0) {
-        const snap = ensureSnap(today);
-        snap.followers = totalFollowers;
-      }
     }
 
-    /* ───────── Upsert influence_snapshots ───────── */
-    // Manual upsert (no unique constraint guaranteed): select existing then update or insert
-    for (const snap of Object.values(snapshots)) {
-      const { data: existing } = await admin
+    /* ───────── Follower re-anchor (single today row) ───────── */
+    if (totalFollowers > 0) {
+      const { data: todayRow } = await admin
         .from("influence_snapshots")
         .select("id")
         .eq("user_id", userId)
-        .eq("snapshot_date", snap.snapshot_date)
+        .eq("snapshot_date", today)
         .maybeSingle();
-
-      const payload: Record<string, unknown> = {
-        user_id: userId,
-        snapshot_date: snap.snapshot_date,
-        source_type: "linkedin_export",
-      };
-      if (snap.impressions !== undefined) payload.impressions = snap.impressions;
-      if (snap.engagement_rate !== undefined) payload.engagement_rate = snap.engagement_rate;
-      if (snap.follower_growth !== undefined) payload.follower_growth = snap.follower_growth;
-      if (snap.followers !== undefined) payload.followers = snap.followers;
-
-      if (existing?.id) {
-        await admin.from("influence_snapshots").update(payload).eq("id", existing.id);
+      if (todayRow?.id) {
+        await admin
+          .from("influence_snapshots")
+          .update({ followers: totalFollowers })
+          .eq("id", todayRow.id);
       } else {
-        await admin.from("influence_snapshots").insert(payload);
+        await admin.from("influence_snapshots").insert({
+          user_id: userId,
+          snapshot_date: today,
+          followers: totalFollowers,
+          source_type: "linkedin_export",
+        });
       }
     }
 
-    /* ───────── SHEET 3: TOP POSTS ───────── */
+    /* ───────── SHEET: TOP POSTS → linkedin_post_metrics ───────── */
     const topSheet = findSheet("TOP POSTS", "Top posts", "Posts");
     if (topSheet) {
       const rows = XLSX.utils.sheet_to_json<any[]>(topSheet, { header: 1, raw: true, defval: "" });
@@ -262,7 +206,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    /* ───────── SHEET 4: DEMOGRAPHICS ───────── */
+    /* ───────── SHEET: DEMOGRAPHICS ───────── */
     const demoSheet = findSheet("DEMOGRAPHICS", "Demographics");
     let demoRows = 0;
     const uploadBatchId = crypto.randomUUID();
@@ -292,6 +236,7 @@ Deno.serve(async (req) => {
       await admin.from("audience_demographics").delete().eq("user_id", userId);
 
       const demoPayloads: Array<Record<string, unknown>> = [];
+      const importedAt = new Date().toISOString();
 
       for (let i = 1; i < rows.length; i++) {
         const row = rows[i];
@@ -319,7 +264,8 @@ Deno.serve(async (req) => {
           period_start: periodStart,
           period_end: periodEnd,
           upload_batch_id: uploadBatchId,
-          source_type: "linkedin_export",
+          source_type: "upload",
+          imported_at: importedAt,
         });
       }
 
@@ -331,61 +277,13 @@ Deno.serve(async (req) => {
       }
     }
 
-    /* ───────── SHEET 5: DISCOVERY ───────── */
-    if (discSheet) {
-      const rows = XLSX.utils.sheet_to_json<any[]>(discSheet, { header: 1, raw: true, defval: "" });
-
-      let annualImpressions = 0;
-      let membersReached = 0;
-
-      for (let i = 1; i < rows.length; i++) {
-        const row = rows[i];
-        if (!row) continue;
-        const label = String(row[0] ?? "").trim().toLowerCase();
-        const val = Math.round(toNum(row[1]));
-
-        if (label.includes("members") || label.includes("reached")) {
-          membersReached = val;
-        } else if (label.includes("impression")) {
-          annualImpressions = val;
-        }
-      }
-
-      if (annualImpressions > 0 || membersReached > 0) {
-        const { data: todayRow } = await admin
-          .from("influence_snapshots")
-          .select("id")
-          .eq("user_id", userId)
-          .eq("snapshot_date", today)
-          .maybeSingle();
-
-        if (todayRow?.id) {
-          const discPayload: Record<string, unknown> = {};
-          if (membersReached > 0) discPayload.members_reached = membersReached;
-          if (annualImpressions > 0) discPayload.total_impressions_annual = annualImpressions;
-          await admin.from("influence_snapshots").update(discPayload).eq("id", todayRow.id);
-        } else {
-          const discPayload: Record<string, unknown> = {
-            user_id: userId,
-            snapshot_date: today,
-            source_type: "linkedin_export",
-          };
-          if (membersReached > 0) discPayload.members_reached = membersReached;
-          if (annualImpressions > 0) discPayload.total_impressions_annual = annualImpressions;
-          await admin.from("influence_snapshots").insert(discPayload);
-        }
-      }
-    }
-
     return json({
       success: true,
       imported: {
-        engagement_rows: engagementRows,
-        follower_rows: followerRows,
-        post_rows: postRows,
         demographics_rows: demoRows,
+        post_rows: postRows,
       },
-      total_followers: totalFollowers,
+      follower_anchor: totalFollowers > 0 ? totalFollowers : null,
       period: periodStart && periodEnd ? { start: periodStart, end: periodEnd } : null,
     });
   } catch (e) {
