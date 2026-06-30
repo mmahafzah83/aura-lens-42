@@ -226,6 +226,18 @@ async function syncConnection(
       .upsert(rows, { onConflict: "user_id,snapshot_date" });
     if (upErr) throw new Error(`upsert:${upErr.message}`);
     report.days_upserted = rows.length;
+
+    // Enrich the latest date with totals that may not be available for every row
+    const latestExtra: Record<string, unknown> = {};
+    if (membersReachedTotal !== null) latestExtra.members_reached = membersReachedTotal;
+    if (cumulativeFollowers !== null) latestExtra.followers = cumulativeFollowers;
+    if (Object.keys(latestExtra).length) {
+      await adminClient
+        .from("influence_snapshots")
+        .update(latestExtra)
+        .eq("user_id", conn.user_id)
+        .eq("snapshot_date", latestDate);
+    }
   }
 
   // Stamp last_synced_at
