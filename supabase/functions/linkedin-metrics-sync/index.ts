@@ -136,27 +136,23 @@ async function syncConnection(
     report.query_types["MEMBERS_REACHED"] = { ok: false, error: (e as Error).message };
   }
 
-  // memberFollowersCount — daily follower gains
+  // memberFollowersCount — daily follower gains (field is `memberFollowersCount`, paginated)
   const followerGains = new Map<string, number>();
   try {
     const url = `${FOLLOWERS_BASE}?q=dateRange&dateRange=${dr}`;
-    const body = await fetchSingle(url, headers);
-    console.log(`[memberFollowersCount] user=${conn.user_id} shape:`, JSON.stringify(body).slice(0, 800));
-    const els: any[] = Array.isArray(body?.elements) ? body.elements : [];
+    const { elements: els } = await fetchAllPaginated(url, headers);
     for (const el of els) {
-      const s = el?.dateRange?.start ?? el?.timeRange?.start ?? el?.date;
-      let date: string | null = null;
-      if (s && typeof s === "object" && typeof s.year === "number") {
-        date = ymd(s.year, s.month, s.day);
-      }
-      if (!date) continue;
-      const n = Number(el?.followerGains?.organicFollowerGain ?? el?.count ?? 0) || 0;
+      const s = el?.dateRange?.start;
+      if (!s || typeof s.year !== "number") continue;
+      const date = ymd(s.year, s.month, s.day);
+      const n = Number(el?.memberFollowersCount ?? 0) || 0;
       followerGains.set(date, (followerGains.get(date) ?? 0) + n);
     }
     report.query_types["FOLLOWERS"] = { ok: true, days: followerGains.size };
   } catch (e) {
     report.query_types["FOLLOWERS"] = { ok: false, error: (e as Error).message };
   }
+
 
   // Merge into per-date payloads
   const allDates = new Set<string>([
@@ -179,7 +175,7 @@ async function syncConnection(
       .from("influence_snapshots")
       .select("snapshot_date, followers")
       .eq("user_id", conn.user_id)
-      .not("followers", "is", null)
+      .gt("followers", 0)
       .order("snapshot_date", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -230,7 +226,7 @@ async function syncConnection(
     // Enrich the latest date with totals that may not be available for every row
     const latestExtra: Record<string, unknown> = {};
     if (membersReachedTotal !== null) latestExtra.members_reached = membersReachedTotal;
-    if (cumulativeFollowers !== null) latestExtra.followers = cumulativeFollowers;
+    if (cumulativeFollowers !== null && cumulativeFollowers > 0) latestExtra.followers = cumulativeFollowers;
     if (Object.keys(latestExtra).length) {
       await adminClient
         .from("influence_snapshots")
