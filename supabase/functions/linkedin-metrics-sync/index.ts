@@ -175,7 +175,7 @@ async function syncConnection(
       .from("influence_snapshots")
       .select("snapshot_date, followers")
       .eq("user_id", conn.user_id)
-      .not("followers", "is", null)
+      .gt("followers", 0)
       .order("snapshot_date", { ascending: false })
       .limit(1)
       .maybeSingle();
