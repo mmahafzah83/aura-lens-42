@@ -511,10 +511,14 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const [demoRes, insightRes, reachRes] = await Promise.all([
+      const since365 = new Date();
+      since365.setDate(since365.getDate() - 365);
+      const since365Only = since365.toISOString().slice(0, 10);
+
+      const [demoRes, insightRes, reachRes, annualRes] = await Promise.all([
         supabase
           .from("audience_demographics")
-          .select("category, value, percentage, percentage_numeric, period_start, period_end")
+          .select("category, value, percentage, percentage_numeric, period_start, period_end, imported_at")
           .eq("user_id", user.id)
           .order("percentage_numeric", { ascending: false }),
         supabase
@@ -532,13 +536,30 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           .order("snapshot_date", { ascending: false })
           .limit(1)
           .maybeSingle(),
+        supabase
+          .from("influence_snapshots")
+          .select("impressions")
+          .eq("user_id", user.id)
+          .eq("source_type", "linkedin_export")
+          .gte("snapshot_date", since365Only),
       ]);
 
       if (cancelled) return;
-      const demos = (demoRes.data as DemoRow[] | null) || [];
+      const demos = (demoRes.data as (DemoRow & { imported_at?: string | null })[] | null) || [];
       setAllDemographics(demos);
       setAudienceInsight((insightRes.data as AudienceInsight | null) ?? null);
       setReachSnap((reachRes.data as any) ?? null);
+
+      const impSum = ((annualRes.data as any[]) || []).reduce(
+        (s, r) => s + Number(r.impressions || 0), 0
+      );
+      setAnnualImpressions(impSum > 0 ? impSum : null);
+
+      const importedTimes = demos
+        .map(d => (d as any).imported_at)
+        .filter(Boolean)
+        .map((t: string) => new Date(t).getTime());
+      setImportedAt(importedTimes.length ? new Date(Math.max(...importedTimes)).toISOString() : null);
 
       if (demos.length > 0 && !insightRes.data) {
         setAudienceInsightLoading(true);
@@ -554,6 +575,25 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       }
     } catch (e) {
       console.error("ImpactTab: audience load failed", e);
+    }
+  };
+
+  // Sync ribbon loader — LinkedIn connection status + last sync time
+  const loadSyncMeta = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: row } = await supabase
+        .from("linkedin_connections")
+        .select("last_synced_at, status")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      setSyncMeta({
+        connected: !!row && (row as any).status === "active",
+        lastSyncedAt: (row as any)?.last_synced_at ?? null,
+      });
+    } catch (e) {
+      console.error("ImpactTab: loadSyncMeta failed", e);
     }
   };
 
