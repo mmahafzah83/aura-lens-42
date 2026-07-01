@@ -284,7 +284,7 @@ const ImprintCore = ({
           const lx = cx + Math.cos(angle) * labelDist;
           const ly = cy + Math.sin(angle) * labelDist;
 
-          const dotR = ghost ? 5 : 5 + Math.min(4, Math.max(0, (v ?? 0) / 25));
+          const dotR = ghost ? 5 : 5 + Math.min(4, Math.max(0, (v ?? 0) * 4));
           return (
             <g key={key} opacity={certainty}>
               {/* spoke */}
@@ -310,7 +310,7 @@ const ImprintCore = ({
                 <text x={lx} y={ly + 11} textAnchor="middle" dominantBaseline="middle"
                       fill="var(--glass)" fontFamily="'IBM Plex Mono', monospace"
                       fontSize={10} style={{ fontVariantNumeric: "tabular-nums" }}>
-                  {Math.round(v)}
+                  {Math.round(v * 100)}
                 </text>
               )}
             </g>
@@ -373,7 +373,7 @@ const ContributionBar = ({
   // Bar geometry: each segment width = its rounded contribution (out of 100).
   const segs = [
     { key: "Signal",  v: s, color: "var(--live)",   slug: "signal-contribution",  text: "How strong and well-evidenced your signals are." },
-    { key: "Content", v: c, color: "var(--action)", slug: "content-contribution", text: "How much you've published from your signals." },
+    { key: "Content", v: c, color: "var(--action)", slug: "content-contribution", text: "How much you've published, weighted by how it performs." },
     { key: "Consistency",  v: r, color: RHYTHM_TEAL,     slug: "rhythm-contribution",  text: "How steadily you've been capturing, week to week." },
   ];
 
