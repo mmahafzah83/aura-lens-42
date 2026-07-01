@@ -1486,6 +1486,14 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       transition={{ duration: 0.35 }}
       className="statement-page observatory-page space-y-7 max-w-5xl"
     >
+      {/* Global hidden file input — mounted once so any button in the tree can trigger it */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".xlsx"
+        onChange={handleFileSelect}
+        className="hidden"
+      />
       {/* ─────────── 1. PAGE HEADER ─────────── */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24 }}>
         <div>
