@@ -130,11 +130,6 @@ serve(async (req) => {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (!facetRows || facetRows.length === 0) {
-      return new Response(JSON.stringify({ error: "facets not computed" }), {
-        status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
     let weightedSum = 0;
     let weightTotal = 0;
