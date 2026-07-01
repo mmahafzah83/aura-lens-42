@@ -54,10 +54,18 @@ export default function TierCeremonyModal({
 }: Props) {
   const { unacknowledgedMilestones, acknowledgeMilestone, shareMilestone } =
     useMilestones(userId);
+  // Live imprint tier — gates the auto-trigger so the ceremony can only
+  // surface the user's CURRENT tier, never a stale lower milestone left
+  // unacknowledged in user_milestones (e.g. a Presence user still holding
+  // an unacknowledged tier_strategist row).
+  const { currentTier: liveTier } = useTierFromImprint(userId);
 
   const realTierMilestone: Milestone | undefined = useMemo(
-    () => unacknowledgedMilestones.find((m) => m.milestone_id?.startsWith("tier_")),
-    [unacknowledgedMilestones]
+    () =>
+      liveTier
+        ? unacknowledgedMilestones.find((m) => m.milestone_id === `tier_${liveTier.key}`)
+        : undefined,
+    [unacknowledgedMilestones, liveTier]
   );
 
   // Synthetic milestone used when forceOpen is set — represents the user's
@@ -67,7 +75,7 @@ export default function TierCeremonyModal({
   useEffect(() => {
     if (!forceOpen || !userId) { setForcedTier(null); return; }
     // Tier comes from the parent's existing aura-score payload — no extra EF call.
-    setForcedTier(forcedTierName ? String(forcedTierName) : "Strategist");
+    setForcedTier(forcedTierName ? String(forcedTierName) : null);
   }, [forceOpen, userId, forcedTierName]);
 
   const syntheticMilestone: Milestone | undefined = useMemo(() => {
@@ -141,8 +149,8 @@ export default function TierCeremonyModal({
             .order("confidence", { ascending: false })
             .limit(1)
             .maybeSingle(),
-          (supabase.from("score_snapshots") as any)
-            .select("score")
+          (supabase.from("imprint_snapshots") as any)
+            .select("imprint")
             .eq("user_id", userId)
             .order("created_at", { ascending: false })
             .limit(1)
@@ -159,7 +167,7 @@ export default function TierCeremonyModal({
           ? { title: ctx.top_signal_title, confidence: 0 }
           : null
       );
-      const snapScore = (latestSnapshot as any)?.score;
+      const snapScore = (latestSnapshot as any)?.imprint;
       setScore(
         typeof snapScore === "number"
           ? Math.round(snapScore)
@@ -404,7 +412,10 @@ export default function TierCeremonyModal({
 
   if (!tierMilestone || (sessionGate && !forceOpen)) return null;
 
-  const next = TIER_NEXT[tierName.toLowerCase()];
+  const nextIdx = TIER_BANDS.findIndex((b) => b.key === tierName.toLowerCase());
+  const next = nextIdx >= 0 && TIER_BANDS[nextIdx + 1]
+    ? { name: TIER_BANDS[nextIdx + 1].name, threshold: TIER_BANDS[nextIdx + 1].min }
+    : null;
 
   const SelectedConcept = CONCEPTS.find((c) => c.key === concept)!.component;
 
