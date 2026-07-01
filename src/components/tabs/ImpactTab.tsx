@@ -180,6 +180,8 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
   // Computed 365-day impressions sum (replaces removed total_impressions_annual column)
   const [annualImpressions, setAnnualImpressions] = useState<number | null>(null);
+  // Annual members_reached is a window-total, so the correct annual denominator is the MAX over 365d.
+  const [annualReach, setAnnualReach] = useState<number | null>(null);
   // Most recent imported_at across audience_demographics
   const [importedAt, setImportedAt] = useState<string | null>(null);
 
