@@ -8,6 +8,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import DocumentUpload from "@/components/DocumentUpload";
 import { bumpCaptureAndCheckDrift } from "@/lib/identityDriftCheck";
 import { TOAST, ERROR } from "@/constants/language";
+import { useCelebrationsEnabled } from "@/hooks/useCelebrationsEnabled";
 
 type CaptureType = "link" | "voice" | "text" | "image" | "document";
 
@@ -32,6 +33,7 @@ const isValidUrl = (s: string) => {
 
 const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat, prefillUrl, prefillText }: CaptureModalProps) => {
   const queryClient = useQueryClient();
+  const { enabled: celebrationsEnabled } = useCelebrationsEnabled();
   const [captureType, setCaptureType] = useState<CaptureType>("link");
   const [content, setContent] = useState("");
   const [isRecording, setIsRecording] = useState(false);
@@ -80,6 +82,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
   // ceremony fires on the user's first capture of ANY type (link/text/image/
   // voice/document). Guarded by a single localStorage flag.
   const maybeTriggerFirstCeremony = async (userId: string): Promise<boolean> => {
+    if (!celebrationsEnabled) return false;
     try {
       if (localStorage.getItem("aura_first_capture_celebrated")) return false;
       const [entriesRes, docsRes] = await Promise.all([
