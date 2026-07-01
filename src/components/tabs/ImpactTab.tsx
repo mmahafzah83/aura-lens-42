@@ -2600,13 +2600,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 <li>Download the .xlsx file and upload it below</li>
               </ol>
               <div className="mt-4 flex items-center gap-3 flex-wrap">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".xlsx"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
                 {!selectedFile ? (
                   <button
                     onClick={handleUploadClick}
