@@ -1552,6 +1552,55 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       </div>
       {/* FirstVisitHint and Market Mirror removed — Impact is now a focused dashboard. */}
 
+      {/* ─────────── SYNC STATUS RIBBON (only when connected + last sync known) ─────────── */}
+      {syncMeta.connected && syncMeta.lastSyncedAt && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            padding: "8px 14px",
+            borderRadius: 8,
+            background: "var(--color-card)",
+            border: "0.5px solid var(--color-border)",
+            fontSize: 12,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--color-text-secondary)" }}>
+            <span
+              aria-hidden="true"
+              style={{
+                width: 6, height: 6, borderRadius: "50%",
+                background: "var(--brand)", flexShrink: 0,
+              }}
+            />
+            <span>
+              Synced from LinkedIn · updated daily · last sync {relTime(syncMeta.lastSyncedAt)}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={handleRefreshNow}
+            disabled={refreshing}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              padding: "4px 10px",
+              borderRadius: 6,
+              background: "transparent",
+              border: "0.5px solid var(--color-border)",
+              color: "var(--color-text-primary)",
+              fontSize: 12,
+              cursor: refreshing ? "default" : "pointer",
+              opacity: refreshing ? 0.7 : 1,
+            }}
+          >
+            {refreshing ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+            {refreshing ? "Syncing…" : "Refresh now"}
+          </button>
+        </div>
+      )}
+
       {/* ─────────── SCORE HERO (compact: ring + tier card + KPIs) ─────────── */}
       <div data-tour="impact-hero">
       <FirstTimeHint hintKey="impact-score">
