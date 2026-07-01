@@ -2133,10 +2133,10 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                       </div>
                       <div style={cardStyle}>
                         <div style={{ ...uppercaseLabel, marginBottom: 8 }}>RETURN VIEWERS</div>
-                        {reachSnap && (reachSnap.members_reached || 0) > 0 && (annualImpressions ?? 0) > 0 ? (
+                        {(annualReach ?? 0) > 0 && (annualImpressions ?? 0) > 0 ? (
                           <>
                             <div style={{ ...cormorant, fontSize: 28, fontWeight: 500, lineHeight: 1.1 }}>
-                              {(Number(annualImpressions) / Number(reachSnap.members_reached)).toFixed(1)}×
+                              {(Number(annualImpressions) / Number(annualReach)).toFixed(1)}×
                             </div>
                             <div style={{
                               fontFamily: "'DM Sans', system-ui, sans-serif",
