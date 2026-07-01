@@ -748,7 +748,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     useTierFromImprint(userId);
   const legacyAuraScore = (auraData as any)?.aura_score ?? latest?.score ?? 0;
   const latestScore = imprintScore != null ? imprintScore : legacyAuraScore;
-  const tierName: string = imprintTier?.name ?? (auraData as any)?.tier_name ?? "Observer";
+  const tierName: string = imprintTier?.name ?? "Observer";
   // Three forces — LEGACY DECOMPOSITION. imprint_snapshots does not yet
   // expose signal/content/consistency components, so these still read from
   // calculate-aura-score / score_snapshots. They are NOT presented as
