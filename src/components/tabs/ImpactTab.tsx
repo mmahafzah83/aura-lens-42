@@ -2144,6 +2144,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     </div>
                   </div>
                 )}
+                </div>
               </div>
             )}
           </section>
