@@ -1017,6 +1017,37 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   /* ── XLSX Upload ── */
   const handleUploadClick = () => fileInputRef.current?.click();
 
+  // Relative time formatter for sync ribbon
+  const relTime = (iso: string): string => {
+    const t = new Date(iso).getTime();
+    if (isNaN(t)) return "";
+    const diffMin = Math.max(0, Math.floor((Date.now() - t) / 60000));
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return `${diffHr}h ago`;
+    const diffDay = Math.floor(diffHr / 24);
+    return `${diffDay}d ago`;
+  };
+
+  const handleRefreshNow = async () => {
+    setRefreshing(true);
+    try {
+      await supabase.auth.getSession();
+      const { error } = await supabase.functions.invoke("linkedin-metrics-sync", {
+        body: { scope: "me" },
+      });
+      if (error) throw error;
+      await loadAll(selectedDays);
+      await loadAudience();
+      await loadSyncMeta();
+      toast.success("Synced from LinkedIn");
+    } catch (err: any) {
+      toast.error(err?.message || "Sync failed");
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1042,24 +1073,26 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
       const imp = (data as any)?.imported || {};
-      const posts = imp.post_rows || imp.imported || 0;
-      const days = (imp.engagement_rows || 0) + (imp.follower_rows || 0);
-      const totalImported = (imp.engagement_rows || 0) + (imp.follower_rows || 0) + (imp.post_rows || 0);
-      if (totalImported === 0) {
-        toast.error("No post data found in this file. Make sure you're exporting from LinkedIn Analytics → Post impressions.");
-        setUploadError("No post data found in this file. Make sure you're exporting from LinkedIn Analytics → Post impressions.");
+      const posts = Number(imp.post_rows || 0);
+      const demographics = Number(imp.demographics_rows || 0);
+      const followerAnchor = (data as any)?.follower_anchor ?? null;
+      const importedAnything = posts > 0 || demographics > 0 || followerAnchor != null;
+      if (!importedAnything) {
+        const msg = "Nothing imported from that file. Export from LinkedIn Analytics → Export and try again.";
+        toast.error(msg);
+        setUploadError(msg);
         setUploading(false);
         if (fileInputRef.current) fileInputRef.current.value = "";
         return;
       }
-      setImportedCount({ posts, days });
-      toast.success(`Analytics imported successfully — ${days} days of data loaded`);
+      setImportedCount({ posts, days: 0 });
+      toast.success(`Updated — ${demographics} audience segment${demographics === 1 ? "" : "s"}${posts ? `, ${posts} post${posts === 1 ? "" : "s"}` : ""}`);
       setSelectedFile(null);
       setPipeline({ voice: "pending", positioning: "pending", score: "pending" });
       await runPostImportPipeline(setPipeline);
       await loadAll(selectedDays);
       await loadAudience();
-      setSuccessData({ posts, days });
+      setSuccessData({ posts, demographics });
       setShowSuccessCard(true);
       setTimeout(() => setShowSuccessCard(false), 2500);
     } catch (err: any) {
