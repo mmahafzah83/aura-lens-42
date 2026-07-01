@@ -497,6 +497,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           .eq("user_id", user.id)
           .maybeSingle();
         if (!cancelled) setSectorFocus((prof as any)?.sector_focus || null);
+        if (!cancelled) loadSyncMeta();
       } catch (e) {
         console.error("ImpactTab: aura score load failed", e);
       }
