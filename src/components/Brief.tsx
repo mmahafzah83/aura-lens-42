@@ -1224,11 +1224,9 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
         {imprint.status === "ready" && imprint.data.imprint != null ? (
           (() => {
             const v = imprint.data.imprint;
-            const tier =
-              v >= 80 ? "Presence" :
-              v >= 60 ? "Voice" :
-              v >= 35 ? "Strategist" :
-              v >= 15 ? "Explorer" : "Observer";
+            // Tier from the shared stored source (hysteresis-aware) — same as
+            // Dashboard + My Story. Never a local raw-band recompute.
+            const tier = tierInfo.currentTier?.name ?? bandFromScore(v)?.name ?? "Observer";
             return (
               <>
                 {`Imprint ${v} \u00B7 ${tier} \u00B7 aura-intel.org`}
