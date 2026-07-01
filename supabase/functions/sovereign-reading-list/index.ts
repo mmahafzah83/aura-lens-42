@@ -210,19 +210,30 @@ Output valid JSON:
     const cleaned = aiText.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
     const parsed = JSON.parse(cleaned || "{}");
 
-    // Validate every URL: must be exact-match against Perplexity citations AND reachable.
+    // URL integrity: trust Perplexity citations — these are URLs Perplexity
+    // actually retrieved to ground its answer, so they're real and reachable.
+    // Match by NORMALIZED form (drop www / trailing slash / query / case) so a
+    // cosmetic variant doesn't discard a real link, and canonicalize rec.url to
+    // the exact citation. No HEAD re-validation: premium publishers
+    // (McKinsey / HBR / Gartner / BCG) block HEAD/bot requests, which was nulling
+    // real links. The card UI already has a per-item "search the title" fallback.
+    const normalizeUrl = (u: string): string => {
+      try {
+        const p = new URL(u);
+        return `${p.hostname.replace(/^www\./, "")}${p.pathname.replace(/\/+$/, "")}`.toLowerCase();
+      } catch { return u.toLowerCase(); }
+    };
+    const citationByNorm = new Map<string, string>();
+    for (const c of perplexityCitations) citationByNorm.set(normalizeUrl(c), c);
+
     const recommendations: any[] = Array.isArray(parsed.recommendations) ? parsed.recommendations : [];
     for (const rec of recommendations) {
-      // Check 1: exact match against Perplexity citations
-      if (rec.url && !perplexityCitations.includes(rec.url)) {
-        rec.url = null;
-      }
-      // Check 2: HEAD-validate surviving URLs
+      // Provenance: keep rec.url only if it maps to a real citation; canonicalize to it.
       if (rec.url) {
-        const ok = await validateLink(rec.url).catch(() => false);
-        if (!ok) rec.url = null;
+        const canon = citationByNorm.get(normalizeUrl(rec.url));
+        rec.url = canon ?? null;
       }
-      // Check 3: fallback — try to find a citation whose URL contains keywords from the title
+      // Fallback: match a citation by title keywords.
       if (!rec.url && typeof rec.title === "string" && rec.title.trim()) {
         const titleWords = rec.title.toLowerCase().split(/\s+/).filter((w: string) => w.length > 4).slice(0, 3);
         if (titleWords.length >= 2) {
@@ -230,10 +241,7 @@ Output valid JSON:
             const lower = citUrl.toLowerCase();
             return titleWords.filter((w: string) => lower.includes(w)).length >= 2;
           });
-          if (matched) {
-            const ok = await validateLink(matched).catch(() => false);
-            if (ok) rec.url = matched;
-          }
+          if (matched) rec.url = matched;
         }
       }
     }
