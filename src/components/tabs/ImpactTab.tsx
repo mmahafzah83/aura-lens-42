@@ -1727,7 +1727,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                   const pub = Number((auraData as any)?.published_count ?? (auraData as any)?.aura_published_count ?? 0);
                   return `${pub} on LinkedIn last 30d`;
                 })(),
-                tooltip: "Your publishing activity. Imported LinkedIn history is your foundation (up to 15 points). Publishing new content from your signals is what grows this score (up to 85 points). Resets monthly.",
+                tooltip: "Your publishing activity. Imported LinkedIn history is your foundation (up to 15 points). Publishing new posts is what grows this score (up to 85 points), weighted by how they perform. Resets monthly.",
                 status: contentScore >= 70 ? "Growing" : contentScore >= 40 ? "Build more" : "Needs action",
                 weightedOverride: (auraData as any)?.content_weighted ?? null },
               { key: "consistency", label: "Consistency", slug: "weekly-rhythm", rawValue: captureScore, weight: 0.20, maxPoints: 20,

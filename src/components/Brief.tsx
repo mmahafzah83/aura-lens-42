@@ -814,11 +814,12 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
 
                   {hasGap && signalScore != null && contentScore != null ? (
                     <>
-                      Only <strong style={{ color: "var(--ink)" }}>{dInputs!.postsWithSignal}</strong> of your last{" "}
-                      <strong style={{ color: "var(--ink)" }}>{dInputs!.published120d}</strong> posts drew on a signal
-                      you captured — your reading scores{" "}
+                      Your reading scores{" "}
                       <span style={{ color: "var(--live)", fontWeight: 600 }}>{signalScore}</span>, your voice{" "}
-                      <span style={{ color: "var(--spot)", fontWeight: 600 }}>{contentScore}</span>.
+                      <span style={{ color: "var(--spot)", fontWeight: 600 }}>{contentScore}</span> — but only{" "}
+                      <strong style={{ color: "var(--ink)" }}>{dInputs!.postsWithSignal}</strong> of your last{" "}
+                      <strong style={{ color: "var(--ink)" }}>{dInputs!.published120d}</strong> posts drew on a signal
+                      you captured. That's the gap — and the opening.
                     </>
                   ) : signalScore != null && contentScore != null ? (
                     <>
