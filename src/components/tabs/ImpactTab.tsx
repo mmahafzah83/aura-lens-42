@@ -167,9 +167,21 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const [progressStep, setProgressStep] = useState(0);
   const [importedCount, setImportedCount] = useState<{ posts: number; days: number } | null>(null);
   const [showSuccessCard, setShowSuccessCard] = useState(false);
-  const [successData, setSuccessData] = useState<{ posts: number; days: number } | null>(null);
+  const [successData, setSuccessData] = useState<{ posts: number; demographics: number } | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+
+  // Sync ribbon + Refresh-now
+  const [syncMeta, setSyncMeta] = useState<{ connected: boolean; lastSyncedAt: string | null }>({
+    connected: false,
+    lastSyncedAt: null,
+  });
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Computed 365-day impressions sum (replaces removed total_impressions_annual column)
+  const [annualImpressions, setAnnualImpressions] = useState<number | null>(null);
+  // Most recent imported_at across audience_demographics
+  const [importedAt, setImportedAt] = useState<string | null>(null);
 
   // Content performance
   const [contentPerf, setContentPerf] = useState<{
