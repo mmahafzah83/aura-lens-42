@@ -257,6 +257,11 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           const con = Number(c.content_score) || 0;
           const cap = Number(c.capture_score) || 0;
           // Total comes from the snapshot's persisted composite_score (EF aura_score),
+          // never a local re-sum.
+          const total = Number((snap as any).composite_score) || null;
+          setScoreTotal(total);
+          setScoreComponents({ signal: sig, content: con, capture: cap });
+        }
       } catch (e) {
         console.warn("[IdentityTab] score snapshot load failed", e);
       }
