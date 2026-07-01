@@ -167,9 +167,21 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const [progressStep, setProgressStep] = useState(0);
   const [importedCount, setImportedCount] = useState<{ posts: number; days: number } | null>(null);
   const [showSuccessCard, setShowSuccessCard] = useState(false);
-  const [successData, setSuccessData] = useState<{ posts: number; days: number } | null>(null);
+  const [successData, setSuccessData] = useState<{ posts: number; demographics: number } | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+
+  // Sync ribbon + Refresh-now
+  const [syncMeta, setSyncMeta] = useState<{ connected: boolean; lastSyncedAt: string | null }>({
+    connected: false,
+    lastSyncedAt: null,
+  });
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Computed 365-day impressions sum (replaces removed total_impressions_annual column)
+  const [annualImpressions, setAnnualImpressions] = useState<number | null>(null);
+  // Most recent imported_at across audience_demographics
+  const [importedAt, setImportedAt] = useState<string | null>(null);
 
   // Content performance
   const [contentPerf, setContentPerf] = useState<{
@@ -485,6 +497,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           .eq("user_id", user.id)
           .maybeSingle();
         if (!cancelled) setSectorFocus((prof as any)?.sector_focus || null);
+        if (!cancelled) loadSyncMeta();
       } catch (e) {
         console.error("ImpactTab: aura score load failed", e);
       }
@@ -499,10 +512,14 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const [demoRes, insightRes, reachRes] = await Promise.all([
+      const since365 = new Date();
+      since365.setDate(since365.getDate() - 365);
+      const since365Only = since365.toISOString().slice(0, 10);
+
+      const [demoRes, insightRes, reachRes, annualRes] = await Promise.all([
         supabase
           .from("audience_demographics")
-          .select("category, value, percentage, percentage_numeric, period_start, period_end")
+          .select("category, value, percentage, percentage_numeric, period_start, period_end, imported_at")
           .eq("user_id", user.id)
           .order("percentage_numeric", { ascending: false }),
         supabase
@@ -520,13 +537,30 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           .order("snapshot_date", { ascending: false })
           .limit(1)
           .maybeSingle(),
+        supabase
+          .from("influence_snapshots")
+          .select("impressions")
+          .eq("user_id", user.id)
+          .eq("source_type", "linkedin_export")
+          .gte("snapshot_date", since365Only),
       ]);
 
       if (cancelled) return;
-      const demos = (demoRes.data as DemoRow[] | null) || [];
+      const demos = (demoRes.data as (DemoRow & { imported_at?: string | null })[] | null) || [];
       setAllDemographics(demos);
       setAudienceInsight((insightRes.data as AudienceInsight | null) ?? null);
       setReachSnap((reachRes.data as any) ?? null);
+
+      const impSum = ((annualRes.data as any[]) || []).reduce(
+        (s, r) => s + Number(r.impressions || 0), 0
+      );
+      setAnnualImpressions(impSum > 0 ? impSum : null);
+
+      const importedTimes = demos
+        .map(d => (d as any).imported_at)
+        .filter(Boolean)
+        .map((t: string) => new Date(t).getTime());
+      setImportedAt(importedTimes.length ? new Date(Math.max(...importedTimes)).toISOString() : null);
 
       if (demos.length > 0 && !insightRes.data) {
         setAudienceInsightLoading(true);
@@ -542,6 +576,25 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       }
     } catch (e) {
       console.error("ImpactTab: audience load failed", e);
+    }
+  };
+
+  // Sync ribbon loader — LinkedIn connection status + last sync time
+  const loadSyncMeta = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: row } = await supabase
+        .from("linkedin_connections")
+        .select("last_synced_at, status")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      setSyncMeta({
+        connected: !!row && (row as any).status === "active",
+        lastSyncedAt: (row as any)?.last_synced_at ?? null,
+      });
+    } catch (e) {
+      console.error("ImpactTab: loadSyncMeta failed", e);
     }
   };
 
@@ -964,6 +1017,37 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   /* ── XLSX Upload ── */
   const handleUploadClick = () => fileInputRef.current?.click();
 
+  // Relative time formatter for sync ribbon
+  const relTime = (iso: string): string => {
+    const t = new Date(iso).getTime();
+    if (isNaN(t)) return "";
+    const diffMin = Math.max(0, Math.floor((Date.now() - t) / 60000));
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return `${diffHr}h ago`;
+    const diffDay = Math.floor(diffHr / 24);
+    return `${diffDay}d ago`;
+  };
+
+  const handleRefreshNow = async () => {
+    setRefreshing(true);
+    try {
+      await supabase.auth.getSession();
+      const { error } = await supabase.functions.invoke("linkedin-metrics-sync", {
+        body: { scope: "me" },
+      });
+      if (error) throw error;
+      await loadAll(selectedDays);
+      await loadAudience();
+      await loadSyncMeta();
+      toast.success("Synced from LinkedIn");
+    } catch (err: any) {
+      toast.error(err?.message || "Sync failed");
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -989,24 +1073,26 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
       const imp = (data as any)?.imported || {};
-      const posts = imp.post_rows || imp.imported || 0;
-      const days = (imp.engagement_rows || 0) + (imp.follower_rows || 0);
-      const totalImported = (imp.engagement_rows || 0) + (imp.follower_rows || 0) + (imp.post_rows || 0);
-      if (totalImported === 0) {
-        toast.error("No post data found in this file. Make sure you're exporting from LinkedIn Analytics → Post impressions.");
-        setUploadError("No post data found in this file. Make sure you're exporting from LinkedIn Analytics → Post impressions.");
+      const posts = Number(imp.post_rows || 0);
+      const demographics = Number(imp.demographics_rows || 0);
+      const followerAnchor = (data as any)?.follower_anchor ?? null;
+      const importedAnything = posts > 0 || demographics > 0 || followerAnchor != null;
+      if (!importedAnything) {
+        const msg = "Nothing imported from that file. Export from LinkedIn Analytics → Export and try again.";
+        toast.error(msg);
+        setUploadError(msg);
         setUploading(false);
         if (fileInputRef.current) fileInputRef.current.value = "";
         return;
       }
-      setImportedCount({ posts, days });
-      toast.success(`Analytics imported successfully — ${days} days of data loaded`);
+      setImportedCount({ posts, days: 0 });
+      toast.success(`Updated — ${demographics} audience segment${demographics === 1 ? "" : "s"}${posts ? `, ${posts} post${posts === 1 ? "" : "s"}` : ""}`);
       setSelectedFile(null);
       setPipeline({ voice: "pending", positioning: "pending", score: "pending" });
       await runPostImportPipeline(setPipeline);
       await loadAll(selectedDays);
       await loadAudience();
-      setSuccessData({ posts, days });
+      setSuccessData({ posts, demographics });
       setShowSuccessCard(true);
       setTimeout(() => setShowSuccessCard(false), 2500);
     } catch (err: any) {
@@ -1111,7 +1197,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             Your presence data is live.
           </h2>
           <p className="text-sm" style={{ color: "var(--ink-3)" }}>
-            {successData.posts} posts imported across {successData.days} days.
+            {successData.demographics} audience segments · {successData.posts} posts refreshed.
           </p>
         </section>
       </motion.div>
@@ -1400,6 +1486,14 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       transition={{ duration: 0.35 }}
       className="statement-page observatory-page space-y-7 max-w-5xl"
     >
+      {/* Global hidden file input — mounted once so any button in the tree can trigger it */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".xlsx"
+        onChange={handleFileSelect}
+        className="hidden"
+      />
       {/* ─────────── 1. PAGE HEADER ─────────── */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24 }}>
         <div>
@@ -1457,6 +1551,55 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         </div>
       </div>
       {/* FirstVisitHint and Market Mirror removed — Impact is now a focused dashboard. */}
+
+      {/* ─────────── SYNC STATUS RIBBON (only when connected + last sync known) ─────────── */}
+      {syncMeta.connected && syncMeta.lastSyncedAt && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            padding: "8px 14px",
+            borderRadius: 8,
+            background: "var(--color-card)",
+            border: "0.5px solid var(--color-border)",
+            fontSize: 12,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--color-text-secondary)" }}>
+            <span
+              aria-hidden="true"
+              style={{
+                width: 6, height: 6, borderRadius: "50%",
+                background: "var(--brand)", flexShrink: 0,
+              }}
+            />
+            <span>
+              Synced from LinkedIn · updated daily · last sync {relTime(syncMeta.lastSyncedAt)}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={handleRefreshNow}
+            disabled={refreshing}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              padding: "4px 10px",
+              borderRadius: 6,
+              background: "transparent",
+              border: "0.5px solid var(--color-border)",
+              color: "var(--color-text-primary)",
+              fontSize: 12,
+              cursor: refreshing ? "default" : "pointer",
+              opacity: refreshing ? 0.7 : 1,
+            }}
+          >
+            {refreshing ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+            {refreshing ? "Syncing…" : "Refresh now"}
+          </button>
+        </div>
+      )}
 
       {/* ─────────── SCORE HERO (compact: ring + tier card + KPIs) ─────────── */}
       <div data-tour="impact-hero">
@@ -1622,6 +1765,11 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           : "Full export period";
 
         const hasData = demos.length > 0;
+        const importedShort = importedAt ? fmtDateShort(importedAt) : null;
+        const importedAgeDays = importedAt
+          ? Math.floor((Date.now() - new Date(importedAt).getTime()) / 86400000)
+          : null;
+        const isStale = importedAgeDays != null && importedAgeDays > 30;
         const cardStyle = {
           background: "var(--aura-card)",
           border: "1px solid var(--aura-border)",
@@ -1650,6 +1798,25 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               right={
                 <div className="flex items-center gap-2">
                   <span style={{ fontSize: 12, color: "var(--aura-t3)" }}>{periodLabel}</span>
+                  {hasData && importedShort && (
+                    <>
+                      <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
+                        Imported {importedShort}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          letterSpacing: "0.08em",
+                          padding: "2px 6px",
+                          borderRadius: 999,
+                          border: "0.5px solid var(--color-border)",
+                          color: "var(--color-text-muted)",
+                        }}
+                      >
+                        OPTIONAL
+                      </span>
+                    </>
+                  )}
                   <InfoTooltip
                     label="Your audience"
                     text="Based on your LinkedIn audience demographics. Updated each time you upload your analytics export."
@@ -1660,6 +1827,43 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
             {openSections.audience && (
               <div style={{ marginTop: 12 }}>
+                {hasData && (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      marginBottom: 12,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <p style={{ fontSize: 12, color: "var(--color-text-muted)", margin: 0, maxWidth: 640 }}>
+                      LinkedIn doesn't share audience demographics through its API — this is the one view that updates from your export, not automatically.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleUploadClick}
+                      style={{
+                        display: "inline-flex", alignItems: "center", gap: 6,
+                        padding: "4px 10px", borderRadius: 6,
+                        background: "transparent",
+                        border: "0.5px solid var(--color-border)",
+                        color: "var(--color-text-primary)",
+                        fontSize: 12, cursor: "pointer", flexShrink: 0,
+                      }}
+                    >
+                      <Upload className="w-3 h-3" />
+                      Update audience data (.xlsx)
+                    </button>
+                  </div>
+                )}
+                {hasData && isStale && importedShort && (
+                  <p style={{ fontSize: 12, color: "var(--color-text-muted)", margin: "0 0 12px" }}>
+                    Last imported {importedShort} · data may be stale — re-import to refresh.
+                  </p>
+                )}
+                <div style={hasData && isStale ? { opacity: 0.6 } : undefined}>
                 {isLoadingAudience ? (
                   <div style={{ ...cardStyle, textAlign: "center", padding: "32px 18px" }}>
                     <div
@@ -1918,10 +2122,10 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                       </div>
                       <div style={cardStyle}>
                         <div style={{ ...uppercaseLabel, marginBottom: 8 }}>RETURN VIEWERS</div>
-                        {reachSnap && (reachSnap.members_reached || 0) > 0 && (reachSnap.total_impressions_annual || 0) > 0 ? (
+                        {reachSnap && (reachSnap.members_reached || 0) > 0 && (annualImpressions ?? 0) > 0 ? (
                           <>
                             <div style={{ ...cormorant, fontSize: 28, fontWeight: 500, lineHeight: 1.1 }}>
-                              {(Number(reachSnap.total_impressions_annual) / Number(reachSnap.members_reached)).toFixed(1)}×
+                              {(Number(annualImpressions) / Number(reachSnap.members_reached)).toFixed(1)}×
                             </div>
                             <div style={{
                               fontFamily: "'DM Sans', system-ui, sans-serif",
@@ -1940,6 +2144,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     </div>
                   </div>
                 )}
+                </div>
               </div>
             )}
           </section>
@@ -2395,13 +2600,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 <li>Download the .xlsx file and upload it below</li>
               </ol>
               <div className="mt-4 flex items-center gap-3 flex-wrap">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".xlsx"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
                 {!selectedFile ? (
                   <button
                     onClick={handleUploadClick}
