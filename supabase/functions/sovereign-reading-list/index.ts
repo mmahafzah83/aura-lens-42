@@ -7,23 +7,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-/** Validate a URL is a real deep article link (not homepage / 404). Returns true if reachable. */
-async function validateLink(url: string | null | undefined): Promise<boolean> {
-  if (!url) return false;
-  try {
-    const parsed = new URL(url);
-    const segs = parsed.pathname.split("/").filter(Boolean);
-    if (segs.length < 1) return false; // homepage only
-    const res = await fetch(url, { method: "HEAD", redirect: "follow" });
-    if (!res.ok) return false;
-    const finalUrl = res.url || url;
-    const finalSegs = new URL(finalUrl).pathname.split("/").filter(Boolean);
-    if (finalSegs.length < 1) return false;
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 const EMPTY_RESPONSE = {
   recommendations: [],
