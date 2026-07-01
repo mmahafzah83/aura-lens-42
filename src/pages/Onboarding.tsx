@@ -114,6 +114,18 @@ const Onboarding = () => {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [checking, setChecking] = useState(true);
 
+  const seedImprint = () => {
+    try {
+      if (!userId) return;
+      const key = `aura_imprint_seeded_${userId}`;
+      if (localStorage.getItem(key)) return;
+      localStorage.setItem(key, "1");
+      // Self-JWT path: compute-imprint resolves the user from the bearer token,
+      // recomputes the score, and writes the first imprint_snapshot immediately.
+      supabase.functions.invoke("compute-imprint", { body: {} }).catch(() => {});
+    } catch { /* non-blocking */ }
+  };
+
   // Step -1: password setup gate
   const [needsPassword, setNeedsPassword] = useState(false);
   const [needsIdentityConfirm, setNeedsIdentityConfirm] = useState(false);
