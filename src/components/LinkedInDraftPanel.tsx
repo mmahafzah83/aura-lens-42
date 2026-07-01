@@ -160,7 +160,7 @@ const LinkedInDraftPanel = ({ open, onClose, title, hook, angle, context }: Link
                 {loading.en && <Loader2 className="w-3 h-3 animate-spin" />}
               </TabsTrigger>
               <TabsTrigger value="ar" className="text-xs gap-1.5">
-                <Globe className="w-3 h-3" /> العربية
+                <Globe className="w-3 h-3" /> <span style={{ fontFamily: "var(--font-arabic, 'Cairo', sans-serif)" }}>العربية</span>
                 {loading.ar && <Loader2 className="w-3 h-3 animate-spin" />}
               </TabsTrigger>
             </TabsList>

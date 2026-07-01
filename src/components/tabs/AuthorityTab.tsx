@@ -1508,7 +1508,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
               </p>
               <div data-testid="pub-lang-toggle" className="flex gap-1 bg-secondary/30 rounded-lg p-0.5 border border-border/10">
                 <button onClick={() => setLang("en")} className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${lang === "en" ? "bg-primary text-primary-foreground" : "text-foreground"}`}>English</button>
-                <button onClick={() => setLang("ar")} className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${lang === "ar" ? "bg-primary text-primary-foreground" : "text-foreground"}`}>العربية</button>
+                <button onClick={() => setLang("ar")} style={{ fontFamily: "var(--font-arabic, 'Cairo', sans-serif)" }} className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${lang === "ar" ? "bg-primary text-primary-foreground" : "text-foreground"}`}>العربية</button>
               </div>
             </div>
 
