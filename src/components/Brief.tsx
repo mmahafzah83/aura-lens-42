@@ -3,7 +3,7 @@ import { useRef } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthReady } from "@/hooks/useAuthReady";
-import useTierFromImprint, { bandFromScore } from "@/hooks/useTierFromImprint";
+import useTierFromImprint from "@/hooks/useTierFromImprint";
 import TierExplainer from "@/components/ui/TierExplainer";
 
 /**
@@ -1227,11 +1227,11 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
             const v = imprint.data.imprint;
             // Tier from the shared stored source (hysteresis-aware) — same as
             // Dashboard + My Story. Never a local raw-band recompute.
-            const tier = tierInfo.currentTier?.name ?? bandFromScore(v)?.name ?? "Observer";
+            const tier = tierInfo.currentTier?.name ?? null;
             return (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>
-                {`Imprint ${v} \u00B7 ${tier}`}
-                <TierExplainer tierKey={tierInfo.currentTier?.key ?? null} tierName={tier} side="top" triggerSize={12} />
+                {tier ? `Imprint ${v} \u00B7 ${tier}` : `Imprint ${v}`}
+                {tier && <TierExplainer tierKey={tierInfo.currentTier?.key ?? null} tierName={tier} side="top" triggerSize={12} />}
                 <span>{"\u00B7 aura-intel.org"}</span>
               </span>
             );
