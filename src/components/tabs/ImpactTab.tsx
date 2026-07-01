@@ -1197,7 +1197,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             Your presence data is live.
           </h2>
           <p className="text-sm" style={{ color: "var(--ink-3)" }}>
-            {successData.posts} posts imported across {successData.days} days.
+            {successData.demographics} audience segments · {successData.posts} posts refreshed.
           </p>
         </section>
       </motion.div>
