@@ -541,7 +541,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           .maybeSingle(),
         supabase
           .from("influence_snapshots")
-          .select("impressions")
+          .select("impressions, members_reached")
           .eq("user_id", user.id)
           .eq("source_type", "linkedin_export")
           .gte("snapshot_date", since365Only),
@@ -553,10 +553,19 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       setAudienceInsight((insightRes.data as AudienceInsight | null) ?? null);
       setReachSnap((reachRes.data as any) ?? null);
 
-      const impSum = ((annualRes.data as any[]) || []).reduce(
+      const annualRows = (annualRes.data as any[]) || [];
+      const impSum = annualRows.reduce(
         (s, r) => s + Number(r.impressions || 0), 0
       );
       setAnnualImpressions(impSum > 0 ? impSum : null);
+
+      const reachMax = annualRows.reduce(
+        (m, r) => Math.max(m, Number(r.members_reached || 0)), 0
+      );
+      setAnnualReach(reachMax > 0 ? reachMax : null);
+      // Interim: members_reached is a window-total, so MAX over 365d = the annual
+      // reach figure. Durable fix is for the sync to store its window length so a
+      // period-matched pair can be selected. Until then, MAX is the correct denominator.
 
       const importedTimes = demos
         .map(d => (d as any).imported_at)
