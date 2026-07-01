@@ -196,6 +196,7 @@ const ErrorLine: React.FC<{ what: string; onRetry: () => void }> = ({ what, onRe
 
 export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: BriefProps) {
   const { user, isReady } = useAuthReady();
+  const tierInfo = useTierFromImprint(user?.id ?? null);
 
   const [profile, setProfile] = useState<{ firstName: string; sectorFocus: string } | null>(null);
 
