@@ -1765,6 +1765,11 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           : "Full export period";
 
         const hasData = demos.length > 0;
+        const importedShort = importedAt ? fmtDateShort(importedAt) : null;
+        const importedAgeDays = importedAt
+          ? Math.floor((Date.now() - new Date(importedAt).getTime()) / 86400000)
+          : null;
+        const isStale = importedAgeDays != null && importedAgeDays > 30;
         const cardStyle = {
           background: "var(--aura-card)",
           border: "1px solid var(--aura-border)",
@@ -1793,6 +1798,25 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               right={
                 <div className="flex items-center gap-2">
                   <span style={{ fontSize: 12, color: "var(--aura-t3)" }}>{periodLabel}</span>
+                  {hasData && importedShort && (
+                    <>
+                      <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
+                        Imported {importedShort}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          letterSpacing: "0.08em",
+                          padding: "2px 6px",
+                          borderRadius: 999,
+                          border: "0.5px solid var(--color-border)",
+                          color: "var(--color-text-muted)",
+                        }}
+                      >
+                        OPTIONAL
+                      </span>
+                    </>
+                  )}
                   <InfoTooltip
                     label="Your audience"
                     text="Based on your LinkedIn audience demographics. Updated each time you upload your analytics export."
@@ -1803,6 +1827,43 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
             {openSections.audience && (
               <div style={{ marginTop: 12 }}>
+                {hasData && (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      marginBottom: 12,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <p style={{ fontSize: 12, color: "var(--color-text-muted)", margin: 0, maxWidth: 640 }}>
+                      LinkedIn doesn't share audience demographics through its API — this is the one view that updates from your export, not automatically.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleUploadClick}
+                      style={{
+                        display: "inline-flex", alignItems: "center", gap: 6,
+                        padding: "4px 10px", borderRadius: 6,
+                        background: "transparent",
+                        border: "0.5px solid var(--color-border)",
+                        color: "var(--color-text-primary)",
+                        fontSize: 12, cursor: "pointer", flexShrink: 0,
+                      }}
+                    >
+                      <Upload className="w-3 h-3" />
+                      Update audience data (.xlsx)
+                    </button>
+                  </div>
+                )}
+                {hasData && isStale && importedShort && (
+                  <p style={{ fontSize: 12, color: "var(--color-text-muted)", margin: "0 0 12px" }}>
+                    Last imported {importedShort} · data may be stale — re-import to refresh.
+                  </p>
+                )}
+                <div style={hasData && isStale ? { opacity: 0.6 } : undefined}>
                 {isLoadingAudience ? (
                   <div style={{ ...cardStyle, textAlign: "center", padding: "32px 18px" }}>
                     <div
