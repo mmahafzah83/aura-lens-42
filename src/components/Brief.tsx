@@ -1084,14 +1084,9 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
         )}
         {away.status === "error" && <ErrorLine what="signals update" onRetry={loadAway} />}
         {away.status === "ready" && (() => {
-          const { signals, newCaptureCount, signalCount } = away.data;
-          if (signals.length === 0 && newCaptureCount === 0 && signalCount === 0) {
-            return (
-              <p style={{ margin: 0, color: "var(--ink-2)", fontSize: 15, lineHeight: 1.55 }}>
-                You're clear — nothing new on your radar.
-              </p>
-            );
-          }
+          const { signals } = away.data;
+          // The top signal is spotlighted above in "This week's tension"; the
+          // radar shows what ELSE is stirring, so the same signal never repeats.
           if (signals.length === 0) {
             return (
               <p style={{ margin: 0, color: "var(--ink-2)", fontSize: 15, lineHeight: 1.55 }}>
@@ -1099,34 +1094,68 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
               </p>
             );
           }
+          const restSignals = signals.slice(1);
+          const gateway = (
+            <button
+              type="button"
+              onClick={() => onSwitchTab?.("intelligence")}
+              style={{
+                background: "transparent",
+                border: 0,
+                padding: 0,
+                color: "var(--action)",
+                textDecoration: "underline",
+                textUnderlineOffset: 3,
+                cursor: "pointer",
+                fontFamily: "var(--font-mono)",
+                fontSize: 12,
+                letterSpacing: "0.06em",
+              }}
+            >
+              See your full radar →
+            </button>
+          );
+          if (restSignals.length === 0) {
+            return (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <p style={{ margin: 0, color: "var(--ink-2)", fontSize: 15, lineHeight: 1.55 }}>
+                  That's the one to watch this week.
+                </p>
+                {gateway}
+              </div>
+            );
+          }
           return (
-            <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-              {signals.slice(0, 2).map((s) => (
-                <li key={s.id} style={{ borderTop: "1px solid var(--rule)" }}>
-                  <button
-                    type="button"
-                    onClick={() => onSwitchTab?.("intelligence")}
-                    dir="auto"
-                    style={{
-                      display: "block",
-                      width: "100%",
-                      textAlign: "start",
-                      background: "transparent",
-                      border: 0,
-                      paddingBlock: 12,
-                      paddingInline: 0,
-                      cursor: "pointer",
-                      color: "var(--ink)",
-                      fontFamily: "var(--font-body)",
-                      fontSize: 15,
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    {s.title}
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                {restSignals.slice(0, 2).map((s) => (
+                  <li key={s.id} style={{ borderTop: "1px solid var(--rule)" }}>
+                    <button
+                      type="button"
+                      onClick={() => onSwitchTab?.("intelligence")}
+                      dir="auto"
+                      style={{
+                        display: "block",
+                        width: "100%",
+                        textAlign: "start",
+                        background: "transparent",
+                        border: 0,
+                        paddingBlock: 12,
+                        paddingInline: 0,
+                        cursor: "pointer",
+                        color: "var(--ink)",
+                        fontFamily: "var(--font-body)",
+                        fontSize: 15,
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      {s.title}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              {gateway}
+            </div>
           );
         })()}
       </section>
