@@ -84,7 +84,6 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const { score: imprintScore, currentTier: imprintTier } = useTierFromImprint(authUser?.id ?? null);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [loading, setLoading] = useState(true);
-  const [authorityScore, setAuthorityScore] = useState<number | null>(null);
   const [scoreTotal, setScoreTotal] = useState<number | null>(null);
   
   // Score components + tier-boundary inputs for live Journey derivation
@@ -217,13 +216,10 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     setLoadError(false);
     setLoading(true);
     try {
-      const [profileRes, scoreRes, signalsRes] = await withTimeout(Promise.all([
+      const [profileRes, signalsRes] = await withTimeout(Promise.all([
         (supabase.from("diagnostic_profiles" as any) as any)
           .select("first_name, last_name, level, firm, sector_focus, core_practice, north_star_goal, brand_pillars, avatar_url, onboarding_completed, audit_completed_at, audit_method, brand_assessment_completed_at, brand_assessment_results, identity_intelligence, primary_strength")
           .eq("user_id", uid).maybeSingle(),
-        (supabase.from("authority_scores") as any)
-          .select("authority_score").eq("user_id", uid)
-          .order("snapshot_date", { ascending: false }).limit(1).maybeSingle(),
         (supabase.from("strategic_signals") as any)
           .select("signal_title, confidence, unique_orgs, theme_tags, supporting_evidence_ids, strength_score, lifecycle_tier")
           .eq("user_id", uid).eq("status", "active")
@@ -242,7 +238,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           identity_intelligence: null, primary_strength: null,
         } as ProfileRow);
       }
-      if (scoreRes.data) setAuthorityScore(scoreRes.data.authority_score);
+      
       // Same total as ScoreBreakdown: components from latest score_snapshots row.
       try {
         const { data: snap } = await (supabase.from("score_snapshots" as any) as any)
@@ -663,7 +659,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     if (journeyRef.current) return journeyRef.current;
     // Only derive after the page's data has settled enough to be meaningful.
     if (loading) return null;
-    if (scoreTotal == null && authorityScore == null) return null;
+    if (imprintScore == null && scoreTotal == null) return null;
 
     const steps: JourneyStep[] = [];
 
@@ -877,17 +873,6 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                     />
                   </span>
                 )}
-                {authorityScore != null && (
-                  <span style={{ fontFamily: "var(--font-serif)", fontSize: 15, color: "var(--action)", fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 6 }}>
-                    {imprintScore ?? scoreTotal ?? authorityScore}
-                    <InfoTooltip
-                      label="Archetype strength"
-                      text="Increases as you publish content aligned with your archetype patterns."
-                      side="bottom"
-                      triggerSize={13}
-                    />
-                  </span>
-                )}
               </div>
             </div>
           </div>
@@ -1073,7 +1058,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               </span>
               <div style={{ fontFamily: "var(--font-mono, ui-monospace, monospace)", fontSize: 11, fontWeight: 500, color: "var(--action)", letterSpacing: "0.08em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                 <span>
-                  NOW{imprintTier?.name ? ` — ${imprintTier.name.toUpperCase()}` : ""}{(imprintScore ?? scoreTotal ?? authorityScore) != null ? ` · SCORE ${imprintScore ?? scoreTotal ?? authorityScore}` : ""}
+                  NOW{imprintTier?.name ? ` — ${imprintTier.name.toUpperCase()}` : ""}{imprintScore != null ? ` · SCORE ${imprintScore}` : ""}
                 </span>
                 {imprintTier?.key && (
                   <TierExplainer tierKey={imprintTier.key} tierName={imprintTier.name} side="top" triggerSize={12} />
