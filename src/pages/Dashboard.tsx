@@ -34,6 +34,7 @@ import Observatory from "@/components/Observatory";
 import TierCeremonyModal from "@/components/TierCeremonyModal";
 import MilestoneNotification from "@/components/MilestoneNotification";
 import useTierFromImprint from "@/hooks/useTierFromImprint";
+import { useCelebrationsEnabled } from "@/hooks/useCelebrationsEnabled";
 import usePageMeta from "@/hooks/usePageMeta";
 
 import AuthorityTab from "@/components/tabs/AuthorityTab";
@@ -141,10 +142,11 @@ const Dashboard = () => {
   // tier_name / newly_earned payload). A band crossing fires the ceremony
   // and the milestone toast at Dashboard level so both surface from any tab.
   const tierImprint = useTierFromImprint(userId);
+  const { enabled: celebrationsEnabled } = useCelebrationsEnabled();
   const [tierCeremonyOpen, setTierCeremonyOpen] = useState(false);
   useEffect(() => {
-    if (tierImprint.crossed && tierImprint.currentTier) setTierCeremonyOpen(true);
-  }, [tierImprint.crossed, tierImprint.currentTier]);
+    if (celebrationsEnabled && tierImprint.crossed && tierImprint.currentTier) setTierCeremonyOpen(true);
+  }, [celebrationsEnabled, tierImprint.crossed, tierImprint.currentTier]);
   const tierMilestoneAuraData = tierImprint.crossed && tierImprint.currentTier
     ? {
         newly_earned: [`tier_${tierImprint.currentTier.key}`],
@@ -1165,23 +1167,27 @@ const Dashboard = () => {
       {/* Tier ceremony — fires when imprint_snapshots crosses a band boundary.
           Uses forceOpen + forceOpenStep=0 so the ceremonial intro runs first.
           Closing the modal acknowledges the tier locally so it doesn't replay. */}
-      <TierCeremonyModal
-        userId={userId}
-        forceOpen={tierCeremonyOpen}
-        forceOpenStep={0}
-        forcedTierName={tierImprint.currentTier?.name ?? null}
-        onForceClose={() => {
-          tierImprint.acknowledge();
-          setTierCeremonyOpen(false);
-        }}
-      />
+      {celebrationsEnabled && (
+        <TierCeremonyModal
+          userId={userId}
+          forceOpen={tierCeremonyOpen}
+          forceOpenStep={0}
+          forcedTierName={tierImprint.currentTier?.name ?? null}
+          onForceClose={() => {
+            tierImprint.acknowledge();
+            setTierCeremonyOpen(false);
+          }}
+        />
+      )}
 
       {/* Lightweight milestone toast (tier-only). Other canonical milestones
           continue to surface via user_milestones / useMilestones inside their
           own components — they are NOT coupled to calculate-aura-score. */}
-      <div style={{ position: "fixed", bottom: 16, insetInlineStart: 16, zIndex: 60, maxWidth: 360 }}>
-        <MilestoneNotification userId={userId} auraData={tierMilestoneAuraData} />
-      </div>
+      {celebrationsEnabled && (
+        <div style={{ position: "fixed", bottom: 16, insetInlineStart: 16, zIndex: 60, maxWidth: 360 }}>
+          <MilestoneNotification userId={userId} auraData={tierMilestoneAuraData} />
+        </div>
+      )}
     </div>
   );
 };
