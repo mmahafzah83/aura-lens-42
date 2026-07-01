@@ -439,7 +439,7 @@ const [savingSig, setSavingSig] = useState(false);
                   />
                 </div>
                 <div>
-                  <label className="text-xs uppercase tracking-wide" style={{ color: "var(--ink-4)" }}>العربية</label>
+                  <label className="text-xs uppercase tracking-wide" style={{ color: "var(--ink-4)", fontFamily: "var(--font-arabic, 'Cairo', sans-serif)" }}>العربية</label>
                   <textarea
                     value={sig.text_ar}
                     onChange={(e) => updateSignature(sig.id, "text_ar", e.target.value)}

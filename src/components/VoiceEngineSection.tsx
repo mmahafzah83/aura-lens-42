@@ -543,7 +543,7 @@ const VoiceEngineSection = () => {
 
                 // ---------- Tabs strip (always above card) ----------
                 const tabs: Array<{ lang: "en" | "ar"; label: string; font: string }> = [
-                  { lang: "ar", label: "العربية", font: "var(--font-arabic)" },
+                  { lang: "ar", label: "العربية", font: "var(--font-arabic, 'Cairo', sans-serif)" },
                   { lang: "en", label: "English", font: "var(--font-body)" },
                 ];
                 const tabsStrip = (

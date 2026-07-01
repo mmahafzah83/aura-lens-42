@@ -2198,7 +2198,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                       background: lang === l ? "var(--action)" : "transparent",
                       color: lang === l ? "var(--ink-on-brand)" : "var(--glass)",
                       borderColor: lang === l ? "var(--action)" : "var(--hair)",
-                      fontFamily: l === "ar" ? "'Cairo', sans-serif" : undefined,
+                      fontFamily: l === "ar" ? "var(--font-arabic, 'Cairo', sans-serif)" : undefined,
                     }}>
               {l === "ar" ? "العربية" : "English"}
             </button>

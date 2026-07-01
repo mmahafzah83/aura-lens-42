@@ -338,6 +338,7 @@ export default function FlashPanel() {
           <button
             onClick={() => setLang("ar")}
             className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${lang === "ar" ? "bg-primary/15 text-primary" : "text-muted-foreground"}`}
+            style={{ fontFamily: "var(--font-arabic, 'Cairo', sans-serif)" }}
           >
             {t.langAr}
           </button>
