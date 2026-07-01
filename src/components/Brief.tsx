@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import useTierFromImprint, { bandFromScore } from "@/hooks/useTierFromImprint";
+import TierExplainer from "@/components/ui/TierExplainer";
 
 /**
  * Brief — bone editorial board (System-A tokens).
@@ -1228,9 +1229,11 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
             // Dashboard + My Story. Never a local raw-band recompute.
             const tier = tierInfo.currentTier?.name ?? bandFromScore(v)?.name ?? "Observer";
             return (
-              <>
-                {`Imprint ${v} \u00B7 ${tier} \u00B7 aura-intel.org`}
-              </>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>
+                {`Imprint ${v} \u00B7 ${tier}`}
+                <TierExplainer tierKey={tierInfo.currentTier?.key ?? null} tierName={tier} side="top" triggerSize={12} />
+                <span>{"\u00B7 aura-intel.org"}</span>
+              </span>
             );
           })()
         ) : (
