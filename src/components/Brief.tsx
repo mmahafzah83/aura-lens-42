@@ -3,6 +3,7 @@ import { useRef } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthReady } from "@/hooks/useAuthReady";
+import useTierFromImprint, { bandFromScore } from "@/hooks/useTierFromImprint";
 
 /**
  * Brief — bone editorial board (System-A tokens).
