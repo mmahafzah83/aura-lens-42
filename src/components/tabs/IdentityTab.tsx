@@ -28,6 +28,8 @@ import { useTierFromImprint } from "@/hooks/useTierFromImprint";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
+import TierExplainer from "@/components/ui/TierExplainer";
+import { TIER_COPY } from "@/constants/tierCopy";
 import {
   applyPublishedFilter,
   applyCatalogFilter,
@@ -1072,12 +1074,22 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               }}>
                 <Star className="w-2 h-2" style={{ color: "var(--paper)" }} fill="currentColor" />
               </span>
-              <div style={{ fontFamily: "var(--font-mono, ui-monospace, monospace)", fontSize: 11, fontWeight: 500, color: "var(--action)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                NOW{(imprintTier?.name || tierName) ? ` — ${(imprintTier?.name || tierName)!.toUpperCase()}` : ""}{(imprintScore ?? scoreTotal ?? authorityScore) != null ? ` · SCORE ${imprintScore ?? scoreTotal ?? authorityScore}` : ""}
+              <div style={{ fontFamily: "var(--font-mono, ui-monospace, monospace)", fontSize: 11, fontWeight: 500, color: "var(--action)", letterSpacing: "0.08em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                <span>
+                  NOW{(imprintTier?.name || tierName) ? ` — ${(imprintTier?.name || tierName)!.toUpperCase()}` : ""}{(imprintScore ?? scoreTotal ?? authorityScore) != null ? ` · SCORE ${imprintScore ?? scoreTotal ?? authorityScore}` : ""}
+                </span>
+                {imprintTier?.key && (
+                  <TierExplainer tierKey={imprintTier.key} tierName={imprintTier.name} side="top" triggerSize={12} />
+                )}
               </div>
               {(identityIntel?.primary_role || positioningTitle) && (
                 <div style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 500, color: "var(--ink)", marginTop: 3 }}>
                   {identityIntel?.primary_role || positioningTitle}
+                </div>
+              )}
+              {imprintTier?.key && TIER_COPY[imprintTier.key] && (
+                <div style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ink-3)", marginTop: 6, lineHeight: 1.5 }}>
+                  {TIER_COPY[imprintTier.key].whatLifts}
                 </div>
               )}
             </div>
