@@ -76,6 +76,7 @@ const Onboarding = () => {
 
   // Suppress the home first-visit hint for users who just completed onboarding.
   const goHome = () => {
+    seedImprint();
     // Play the ceremony exactly once per browser; subsequent visits go straight home.
     try {
       const alreadyPlayed = localStorage.getItem("aura_onboarding_ceremony_seen") === "true";
@@ -183,6 +184,7 @@ const Onboarding = () => {
   }, []);
 
   const skipOnboardingEscape = async () => {
+    seedImprint();
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
