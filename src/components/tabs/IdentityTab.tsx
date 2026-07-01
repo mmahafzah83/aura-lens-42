@@ -86,7 +86,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const [loading, setLoading] = useState(true);
   const [authorityScore, setAuthorityScore] = useState<number | null>(null);
   const [scoreTotal, setScoreTotal] = useState<number | null>(null);
-  const [tierName, setTierName] = useState<string | null>(null);
+  
   // Score components + tier-boundary inputs for live Journey derivation
   const [scoreComponents, setScoreComponents] = useState<{ signal: number; content: number; capture: number } | null>(null);
   // EF-provided tier boundary data — replaces local threshold math.
@@ -155,7 +155,6 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         if (!cancelled && !error && res) {
           const r = res as any;
           if (Array.isArray(r.milestones)) setMilestoneData(r.milestones);
-          if (r.tier_name) setTierName(String(r.tier_name));
           setNextTierFromEF({
             name: r.next_tier_name ?? null,
             pointsToNext: typeof r.points_to_next === "number" ? r.points_to_next : null,
@@ -247,7 +246,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       // Same total as ScoreBreakdown: components from latest score_snapshots row.
       try {
         const { data: snap } = await (supabase.from("score_snapshots" as any) as any)
-          .select("components, composite_score, tier")
+          .select("components, composite_score")
           .eq("user_id", uid)
           .order("created_at", { ascending: false })
           .limit(1)
@@ -261,8 +260,6 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           // never a local re-sum.
           const total = Number((snap as any).composite_score) || null;
           setScoreTotal(total);
-          const t = (snap as any).tier;
-          if (t && typeof t === "string") setTierName(t);
           setScoreComponents({ signal: sig, content: con, capture: cap });
         }
       } catch (e) {
@@ -1076,7 +1073,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               </span>
               <div style={{ fontFamily: "var(--font-mono, ui-monospace, monospace)", fontSize: 11, fontWeight: 500, color: "var(--action)", letterSpacing: "0.08em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                 <span>
-                  NOW{(imprintTier?.name || tierName) ? ` — ${(imprintTier?.name || tierName)!.toUpperCase()}` : ""}{(imprintScore ?? scoreTotal ?? authorityScore) != null ? ` · SCORE ${imprintScore ?? scoreTotal ?? authorityScore}` : ""}
+                  NOW{imprintTier?.name ? ` — ${imprintTier.name.toUpperCase()}` : ""}{(imprintScore ?? scoreTotal ?? authorityScore) != null ? ` · SCORE ${imprintScore ?? scoreTotal ?? authorityScore}` : ""}
                 </span>
                 {imprintTier?.key && (
                   <TierExplainer tierKey={imprintTier.key} tierName={imprintTier.name} side="top" triggerSize={12} />
