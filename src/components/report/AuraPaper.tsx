@@ -204,7 +204,14 @@ export function PaperCover({ data }: { data: ReportData }) {
   const level = p?.level || "";
   const scoreVal = data.score?.score ?? null;
   const tier = data.score?.tier || "";
-  const statement = data.positioning?.statement || data.positioning?.title || "";
+  const rawStatement = data.positioning?.statement || data.positioning?.title || "";
+  const statement = (() => {
+    if (rawStatement.length <= 320) return rawStatement;
+    const slice = rawStatement.slice(0, 320);
+    const b = Math.max(slice.lastIndexOf(". "), slice.lastIndexOf(" · "));
+    const cut = b > 120 ? slice.slice(0, b + 1) : slice.replace(/\s+\S*$/, "");
+    return cut.replace(/[\s.·]+$/u, "") + "…";
+  })();
 
   return (
     <div style={{ position: "relative", overflow: "hidden", height: "100%", display: "flex", flexDirection: "column" }}>
@@ -247,10 +254,6 @@ export function PaperCover({ data }: { data: ReportData }) {
               color: T.ink2,
               margin: "26px 0 0",
               maxWidth: 560,
-              display: "-webkit-box",
-              WebkitLineClamp: 6,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
             }}
           >
             {statement}
@@ -614,7 +617,7 @@ export function ComponentBar({
 // snapshots from the last 63 days ascending, then buckets to one point
 // per ISO week (last snapshot per week), capped at 8 buckets. Returns
 // the bucketed series plus (last − first) delta. Used by both the
-// sparkline and the closing plate so the score_snapshots query lives
+// sparkline and the closing plate so the imprint_snapshots query lives
 // in exactly one place.
 function isoWeekKey(d: Date): string {
   const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
@@ -633,17 +636,17 @@ export function useImprintDelta(userId: string): { rows: { score: number }[] | n
       try {
         const since = new Date(Date.now() - 63 * 24 * 60 * 60 * 1000).toISOString();
         const { data } = await supabase
-          .from("score_snapshots")
-          .select("score, created_at")
+          .from("imprint_snapshots")
+          .select("imprint, created_at")
           .eq("user_id", userId)
           .gte("created_at", since)
           .order("created_at", { ascending: true });
         if (cancelled) return;
-        const raw = (data || []) as { score: number; created_at: string }[];
+        const raw = (data || []) as { imprint: number; created_at: string }[];
         const byWeek = new Map<string, { score: number }>();
         for (const r of raw) {
           const key = isoWeekKey(new Date(r.created_at));
-          byWeek.set(key, { score: r.score }); // last write wins → last snapshot in week
+          byWeek.set(key, { score: Number(r.imprint) }); // last write wins → last snapshot in week
         }
         const buckets = Array.from(byWeek.values()).slice(-8);
         setRows(buckets);
