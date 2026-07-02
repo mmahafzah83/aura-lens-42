@@ -1183,18 +1183,13 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
 }
 
 /* ══════════════════════════════════════════════════════════════
-   .brief-page — full-bleed bone surface + faint graph-paper grid
-   for the Brief tab. Structure mirrors .observatory-page exactly
-   (26px cell, 1px lines) but inverted for the bone palette.
+   .brief-page — full-bleed bone surface for the Brief tab.
+   The graph-paper grid is reserved for the instrument pages.
    ══════════════════════════════════════════════════════════════ */
 .brief-page {
   background-color: var(--paper);
-  background-image:
-    linear-gradient(to right,  rgba(27,23,18,0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(27,23,18,0.05) 1px, transparent 1px);
-  background-size: 26px 26px;
-  background-position: 0 0, 0 0;
 }
+
 
 /* ══════════════════════════════════════════════════════════════
    DESIGN-8: Global polish pass
