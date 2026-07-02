@@ -96,7 +96,6 @@ interface RhythmData {
 
 interface PublishedRecent {
   publishedAt: string | null;
-  topic: string | null;
 }
 
 const LAST_VISIT_KEY = "aura-brief-last-visit";
