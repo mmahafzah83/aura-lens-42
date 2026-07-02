@@ -25,7 +25,7 @@ import { formatSmartDate } from "@/lib/formatDate";
 import { isArabicText } from "@/lib/utils";
 import FrameworkBuilderInline from "@/components/FrameworkBuilderInline";
 import CardPreviewPanel from "@/components/visual-cards/CardPreviewPanel";
-import SchematicPreviewPanel from "@/components/visual-cards/SchematicPreviewPanel";
+
 import StartFromPanel from "@/components/StartFromPanel";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import { isPublishedPost } from "@/lib/postProvenance";
