@@ -292,11 +292,82 @@ function ChipRow({ items }: { items: string[] }) {
   );
 }
 
-function TerritoriesBlock({ items }: { items: string[] }) {
+function TerritoriesBlock({ pillars, tags }: { pillars?: string[]; tags: string[] }) {
+  const hasPillars = !!pillars && pillars.length > 0;
+  if (!hasPillars) {
+    return (
+      <div>
+        <SectionLabel>Strategic Territories</SectionLabel>
+        <ChipRow items={tags.map((t) => formatSkillLabel(t))} />
+      </div>
+    );
+  }
   return (
     <div>
-      <SectionLabel>Strategic Territories</SectionLabel>
-      <ChipRow items={items.map((t) => formatSkillLabel(t))} />
+      <SectionLabel>Strategic Territory</SectionLabel>
+      <div style={{ borderLeft: `2px solid ${T.spot}`, paddingLeft: 14, display: "flex", flexDirection: "column", gap: 6 }}>
+        {pillars!.map((p) => (
+          <div key={p} style={{ fontFamily: FONT.serif, fontSize: 16, color: T.ink, lineHeight: 1.5 }}>
+            {p}
+          </div>
+        ))}
+      </div>
+      {tags.length > 0 ? (
+        <div style={{ marginTop: 14 }}>
+          <div
+            style={{
+              fontFamily: FONT.mono,
+              fontSize: 10.5,
+              fontWeight: 700,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              color: T.ink3,
+              marginBottom: 8,
+            }}
+          >
+            Also tracking
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {tags.map((t) => (
+              <span
+                key={t}
+                style={{
+                  padding: "3px 8px",
+                  fontFamily: FONT.mono,
+                  fontSize: 10,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  color: T.ink2,
+                  border: `1px solid ${T.rule}`,
+                }}
+              >
+                {formatSkillLabel(t)}
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function PositioningBlock({ statement }: { statement: string }) {
+  return (
+    <div>
+      <SectionLabel>The Position</SectionLabel>
+      <div
+        style={{
+          borderLeft: `2px solid ${T.spot}`,
+          paddingLeft: 14,
+          maxWidth: 576,
+          fontFamily: FONT.serif,
+          fontSize: 16,
+          lineHeight: 1.7,
+          color: T.ink,
+        }}
+      >
+        {statement}
+      </div>
     </div>
   );
 }
@@ -516,6 +587,16 @@ function buildBlocks(d: ReportData): Block[] {
       node: <ImprintFigure score={d.score} userId={d.user_id} generatedAt={d.generated_at} />,
     });
   }
+  // Full positioning statement — cover shows sentence 1 only; give the
+  // complete 3-sentence text a proper home when it's meaningfully longer.
+  if (d.positioning?.statement && d.positioning.statement.length > 200) {
+    blocks.push({
+      key: "i-position",
+      section: "identity",
+      spacing: 24,
+      node: <PositioningBlock statement={d.positioning.statement} />,
+    });
+  }
   const p = d.profile;
   if (p) {
     const items: { label: string; value: string }[] = [];
@@ -561,7 +642,13 @@ function buildBlocks(d: ReportData): Block[] {
   // ── FOOTPRINT ────────────────────────────────────────────────────────
   if (d.territories || d.footprint || d.content || d.voice) {
     blocks.push({ key: "f-title", section: "footprint", spacing: 20, node: <SectionTitle title="Strategic Footprint" kicker={name || "Footprint"} /> });
-    if (d.territories) blocks.push({ key: "f-terr", section: "footprint", spacing: 22, node: <TerritoriesBlock items={d.territories} /> });
+    if (d.territories || d.brand_position?.pillars.length)
+      blocks.push({
+        key: "f-terr",
+        section: "footprint",
+        spacing: 22,
+        node: <TerritoriesBlock pillars={d.brand_position?.pillars} tags={d.territories ?? []} />,
+      });
     if (d.footprint)   blocks.push({ key: "f-fp",   section: "footprint", spacing: 24, node: <FootprintFigure fp={d.footprint} /> });
     if (d.content)     blocks.push({ key: "f-content", section: "footprint", spacing: 22, node: <ContentEngineCard c={d.content} /> });
     if (d.voice) {

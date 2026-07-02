@@ -402,12 +402,22 @@ export async function buildIdentityReport(userId: string): Promise<ReportData> {
   // theme_tags upstream; tracked separately. The report must still render
   // a clean list regardless.
   const seenKeys = new Map<string, string>(); // key → canonical display
+  // Synonym merge — collapse common variants into one bucket before ranking.
+  // Key is lowercased/normalised; value is the canonical display label.
+  const SYNONYMS: Record<string, string> = {
+    "artificial intelligence": "AI",
+    "ai": "AI",
+    "operational excellence": "Operational Efficiency",
+    "operational efficiency": "Operational Efficiency",
+  };
   for (const r of (signalsRes.data || []) as any[]) {
     for (const t of (r.theme_tags || []) as string[]) {
       if (!t) continue;
-      const key = t.trim().toLowerCase().replace(/\s+/g, " ");
-      if (!key) continue;
-      const display = seenKeys.get(key) ?? t.trim();
+      const norm = t.trim().toLowerCase().replace(/\s+/g, " ");
+      if (!norm) continue;
+      const mapped = SYNONYMS[norm];
+      const key = mapped ? mapped.toLowerCase() : norm;
+      const display = mapped ?? seenKeys.get(key) ?? t.trim();
       if (!seenKeys.has(key)) seenKeys.set(key, display);
       themeCounts.set(display, (themeCounts.get(display) || 0) + 1);
     }
