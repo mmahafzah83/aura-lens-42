@@ -10,8 +10,8 @@ import { FORCES, HEADERS } from "@/constants/language";
 /**
  * Brief — Editorial Broadsheet (System-A tokens).
  * Surface rebuild atop the existing data architecture. All loaders, the
- * publishedSignalsRef gate, capture-complete listener, and brief-live-${uid}
- * realtime channel are preserved. Tier ONLY from useTierFromImprint.
+ * publishedSignalsRef gate, capture-complete listener, and the live realtime
+ * channel are preserved. Tier ONLY from useTierFromImprint.
  */
 
 export interface BriefDraft {
@@ -1137,7 +1137,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, gap: 12, flexWrap: "wrap" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <Mono color="var(--spot)">{HEADERS.yourRhythm}</Mono>
-              <InfoTooltip label="Rhythm" triggerSize={12}
+              <InfoTooltip label="Your rhythm" triggerSize={12}
                 text="One capture keeps the week unbroken. Consistency beats volume — every time."
                 side="top"
               />
