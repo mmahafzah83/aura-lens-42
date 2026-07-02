@@ -806,7 +806,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
           }}>
             <span style={{
               fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: "0.14em",
-              color: "#7A1F1F", textTransform: "uppercase", flexShrink: 0,
+              color: "var(--spot)", textTransform: "uppercase", flexShrink: 0,
             }}>{leadCopy.slug}</span>
           </p>
           <h1 dir="auto" style={{
