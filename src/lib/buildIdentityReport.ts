@@ -2,7 +2,7 @@
 // Each section is present-or-null for empty-state gating. No rendering here.
 //
 // Canonical-source notes:
-// - SCORE: read-only from score_snapshots (matches HomeTab.tsx:442 arc).
+// - SCORE: read-only from imprint_snapshots (canonical Imprint; matches Brief + dial).
 // - FOOTPRINT: mirrors IntelligenceTab.tsx:1005-1008 header queries.
 // - MARKET MIRROR: labels by cached gaps.persona_set (not current rank),
 //   via shared PERSONA_LABELS from @/lib/marketPersonas.
