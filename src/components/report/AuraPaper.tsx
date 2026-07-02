@@ -213,8 +213,11 @@ export function PaperCover({ data }: { data: ReportData }) {
       // Clean sentence boundary — end with a period, no ellipsis needed.
       return slice.slice(0, b + 1).replace(/[\s·]+$/u, "");
     }
-    const cut = slice.replace(/\s+\S*$/, "");
-    return cut.replace(/[\s.·]+$/u, "") + "…";
+    const cut = slice.replace(/\s+\S*$/, "").replace(/[\s·]+$/u, "");
+    // If the word-boundary trim already ended on a sentence, the period
+    // alone is the correct ending — no floating ellipsis.
+    if (/[.!?]$/.test(cut)) return cut;
+    return cut.replace(/[.]+$/u, "") + "…";
   })();
 
   return (
