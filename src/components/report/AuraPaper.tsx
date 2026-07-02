@@ -218,7 +218,7 @@ export function PaperCover({ data }: { data: ReportData }) {
             letterSpacing: "0.16em",
             textTransform: "uppercase",
             color: T.spot,
-            marginBottom: 40,
+            marginBottom: 28,
           }}
         >
           The Aura Paper · № 01
@@ -247,6 +247,10 @@ export function PaperCover({ data }: { data: ReportData }) {
               color: T.ink2,
               margin: "26px 0 0",
               maxWidth: 560,
+              display: "-webkit-box",
+              WebkitLineClamp: 6,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
             }}
           >
             {statement}
@@ -257,7 +261,7 @@ export function PaperCover({ data }: { data: ReportData }) {
       {/* Slogan band — full bleed inside the sheet padding */}
       <div
         style={{
-          marginTop: 44,
+          marginTop: 28,
           marginInline: -56,
           padding: "22px 56px",
           background: T.spot,
@@ -299,7 +303,7 @@ export function PaperCover({ data }: { data: ReportData }) {
       {/* Reading legend */}
       <div
         style={{
-          marginTop: 34,
+          marginTop: 24,
           border: `1.5px solid ${T.ink}`,
           background: T.paper2,
           position: "relative",
@@ -330,7 +334,7 @@ export function PaperCover({ data }: { data: ReportData }) {
       {/* Meta grid */}
       <div
         style={{
-          marginTop: 40,
+          marginTop: 26,
           paddingTop: 14,
           borderTop: `1px solid ${T.rule}`,
           display: "grid",
