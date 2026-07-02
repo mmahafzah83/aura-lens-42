@@ -810,7 +810,7 @@ const Dashboard = () => {
       {/* ── Main Content ── */}
       <main
         className={`grain-overlay flex-1 min-w-0 relative z-10 transition-all duration-300 overflow-x-hidden ${
-          sidebarCollapsed ? "md:ml-[68px]" : "md:ml-[220px]"
+          activeTab === "home" ? "" : (sidebarCollapsed ? "md:ml-[68px]" : "md:ml-[220px]")
         }`}
         style={{
           paddingTop: 'env(safe-area-inset-top)',
