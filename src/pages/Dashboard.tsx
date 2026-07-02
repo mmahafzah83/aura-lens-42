@@ -928,6 +928,35 @@ const Dashboard = () => {
                 />
                 <FirstVisitHint page="home" />
                 <IdentityDriftBanner />
+                {/* Brief masthead nav — same labels/order as the sidebar, no avatar duplication */}
+                <div className="flex items-center gap-5 overflow-x-auto pb-3 mb-2">
+                  {NAV_ITEMS.map((item) => {
+                    const isActive = activeTab === item.value;
+                    return (
+                      <button
+                        key={item.value}
+                        type="button"
+                        onClick={() => switchTab(item.value)}
+                        className="whitespace-nowrap"
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          fontSize: 11,
+                          letterSpacing: "0.14em",
+                          textTransform: "uppercase",
+                          color: isActive ? "var(--spot)" : "var(--ink-3)",
+                          border: "0px solid transparent",
+                          borderBottom: isActive ? "1px solid var(--spot)" : "1px solid transparent",
+                          paddingBottom: 2,
+                          background: "transparent",
+                          cursor: "pointer",
+                          transition: "color .25s ease",
+                        }}
+                      >
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </div>
                 <ErrorBoundary>
                   <Brief
                     onOpenCapture={() => handleOpenCapture()}
