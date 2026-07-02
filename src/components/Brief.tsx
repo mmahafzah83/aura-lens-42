@@ -1002,10 +1002,17 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
                     const body = s.what || s.explanation || null;
                     return (
                       <li key={s.id} style={{ borderTop: "1px solid var(--rule)" }}>
-                        <button
-                          type="button"
+                        <div
+                          role="button"
+                          tabIndex={0}
                           onClick={() => {
                             setOpenedRows(prev => { const n = new Set(prev); n.add(s.id); return n; });
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              setOpenedRows(prev => { const n = new Set(prev); n.add(s.id); return n; });
+                            }
                           }}
                           className="brief-row"
                           dir="auto"
@@ -1051,7 +1058,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
                               </button>
                             </div>
                           </div>
-                        </button>
+                        </div>
                       </li>
                     );
                   })}
