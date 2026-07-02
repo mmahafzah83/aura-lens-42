@@ -209,6 +209,16 @@ export const CTA = {
 // TIER LABELS — single vocabulary, matches calculate-aura-score
 // (Observer 0-14 / Explorer 15-34 / Strategist 35-59 / Voice 60-79 / Presence 80-100).
 // ════════════════════════════════════
+// ════════════════════════════════════
+// FORCES — canonical labels for the three imprint contributors.
+// Signal 40% · Content 40% · Consistency 20%. Use everywhere a force is named.
+// ════════════════════════════════════
+export const FORCES = {
+  signal: "Signal",
+  content: "Content",
+  consistency: "Consistency",
+} as const;
+
 export const TIERS: Record<string, string> = {
   Observer: "Observer",
   Explorer: "Explorer",
