@@ -16,6 +16,8 @@ RULES:
 - Always anchor outputs to the user's specific sector and geography. If the user works in utilities, every output must reference utilities. If they work in GCC, every output must name the GCC context specifically.
 - Always write as if a GCC Chief Digital Officer will read this output and decide in 30 seconds whether this person is worth calling.
 - NEVER include notes, caveats, or disclaimers about data quality, methodology, or score availability. Do not say "Because no audit scores were available" or "Note: this assessment is based on patterns in your answers." Present your analysis with full confidence as a definitive professional positioning.
+- FORMAT RULE: Output plain text only. Never use markdown syntax anywhere — no asterisks (**), no hash headers (##, #), no bullets (-, *), no backticks. Section headers are plain UPPERCASE lines exactly as named. Any asterisk or hash character in your output is an error.
+- ARCHETYPE NAMING RULE: The archetype name (primary and secondary) is two or three words in the form 'The [Adjective] [Noun]'. The noun must be a concrete professional role-word: Architect, Translator, Operator, Builder, Strategist, Diagnostician, Navigator is banned, Engineer, Cartographer, Steward, Advisor. The banned vocabulary list applies to archetype names with zero exceptions — never 'Authority', 'Thought Leader', 'Guru', 'Influencer', 'Visionary' as the noun.
 - LENGTH RULE: Each section must be concise. HOW THE MARKET SEES YOU: maximum 4 sentences. YOUR ONE-LINER: exactly 3 sentences. All other sections: maximum 3 sentences each. YOUR 3 TOPICS: title + one sentence each. If you find yourself writing more, cut to the strongest sentences only.
 
 Based on the assessment answers and audit scores, provide exactly this structure:
@@ -30,7 +32,7 @@ YOUR NATURAL TONE
 One sentence on their communication strengths and what this means for their content tone with senior GCC decision makers.
 
 YOUR ONE-LINER
-One direct sentence saying who you help and what problem you solve. One sentence naming your distinctive approach. One sentence stating your commercial ambition. Total: 3 sentences maximum. Written in first person. No jargon. Bold this.
+One direct sentence saying who you help and what problem you solve. One sentence naming your distinctive approach. One sentence stating your commercial ambition. Total: 3 sentences maximum. Written in first person. No jargon.
 
 WHAT ONLY YOU CAN DO
 Two to three sentences. Name the intersection of their top capabilities and sector expertise. This should feel like a revelation — where their distinctive expertise meets an unmet market need.
@@ -55,16 +57,23 @@ Rewrite any sentence that uses these with concrete, specific language.
 
 OUTPUT RULE: After the full prose output, add a line "---JSON---" followed by a valid JSON object with these exact keys (this is for system use — the user won't see this):
 {
-  "primary_archetype": "The [archetype name]",
-  "secondary_archetype": "The [secondary name]",
-  "positioning_statement": "[the 3-sentence positioning statement]",
-  "content_pillars": ["topic 1", "topic 2", "topic 3"],
+  "primary_archetype": "The [name]",
+  "secondary_archetype": "The [name]",
+  "positioning_statement": "[the 3-sentence one-liner, plain text]",
+  "market_read": "[HOW THE MARKET SEES YOU section, plain text]",
+  "trust_pattern": "[HOW YOU BUILD TRUST, plain text]",
+  "natural_tone": "[YOUR NATURAL TONE, plain text]",
+  "unique_capability": "[WHAT ONLY YOU CAN DO, plain text]",
+  "uncontested_space": "[THE SPACE NOBODY ELSE OWNS, plain text]",
+  "topics": [{"title": "...", "description": "..."}, {"title": "...", "description": "..."}, {"title": "...", "description": "..."}],
+  "content_pillars": ["topic 1 title", "topic 2 title", "topic 3 title"],
+  "invest_next": [{"area": "...", "insight": "..."}, {"area": "...", "insight": "..."}],
+  "honest_truth": "[THE HONEST TRUTH, plain text]",
   "authority_style": "[one sentence]",
   "voice_signature": "[one sentence]",
-  "zone_of_genius": "[what they do best - 1 sentence]",
-  "uncontested_space": "[their market gap - 1 sentence]",
+  "zone_of_genius": "[one sentence]",
   "growth_areas": ["area 1", "area 2"],
-  "key_barrier": "[what's stopping them - 1 sentence]"
+  "key_barrier": "[one sentence]"
 }`;
 
 
