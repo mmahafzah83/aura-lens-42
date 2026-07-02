@@ -209,7 +209,11 @@ export function PaperCover({ data }: { data: ReportData }) {
     if (rawStatement.length <= 320) return rawStatement;
     const slice = rawStatement.slice(0, 320);
     const b = Math.max(slice.lastIndexOf(". "), slice.lastIndexOf(" · "));
-    const cut = b > 120 ? slice.slice(0, b + 1) : slice.replace(/\s+\S*$/, "");
+    if (b > 120) {
+      // Clean sentence boundary — end with a period, no ellipsis needed.
+      return slice.slice(0, b + 1).replace(/[\s·]+$/u, "");
+    }
+    const cut = slice.replace(/\s+\S*$/, "");
     return cut.replace(/[\s.·]+$/u, "") + "…";
   })();
 
