@@ -293,10 +293,82 @@ function ChipRow({ items }: { items: string[] }) {
 }
 
 function TerritoriesBlock({ items }: { items: string[] }) {
+function TerritoriesBlock({ pillars, tags }: { pillars?: string[]; tags: string[] }) {
+  const hasPillars = !!pillars && pillars.length > 0;
+  if (!hasPillars) {
+    return (
+      <div>
+        <SectionLabel>Strategic Territories</SectionLabel>
+        <ChipRow items={tags.map((t) => formatSkillLabel(t))} />
+      </div>
+    );
+  }
   return (
     <div>
-      <SectionLabel>Strategic Territories</SectionLabel>
-      <ChipRow items={items.map((t) => formatSkillLabel(t))} />
+      <SectionLabel>Strategic Territory</SectionLabel>
+      <div style={{ borderLeft: `2px solid ${T.spot}`, paddingLeft: 14, display: "flex", flexDirection: "column", gap: 6 }}>
+        {pillars!.map((p) => (
+          <div key={p} style={{ fontFamily: FONT.serif, fontSize: 16, color: T.ink, lineHeight: 1.5 }}>
+            {p}
+          </div>
+        ))}
+      </div>
+      {tags.length > 0 ? (
+        <div style={{ marginTop: 14 }}>
+          <div
+            style={{
+              fontFamily: FONT.mono,
+              fontSize: 10.5,
+              fontWeight: 700,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              color: T.ink3,
+              marginBottom: 8,
+            }}
+          >
+            Also tracking
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {tags.map((t) => (
+              <span
+                key={t}
+                style={{
+                  padding: "3px 8px",
+                  fontFamily: FONT.mono,
+                  fontSize: 10,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  color: T.ink2,
+                  border: `1px solid ${T.rule}`,
+                }}
+              >
+                {formatSkillLabel(t)}
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function PositioningBlock({ statement }: { statement: string }) {
+  return (
+    <div>
+      <SectionLabel>The Position</SectionLabel>
+      <div
+        style={{
+          borderLeft: `2px solid ${T.spot}`,
+          paddingLeft: 14,
+          maxWidth: 576,
+          fontFamily: FONT.serif,
+          fontSize: 16,
+          lineHeight: 1.7,
+          color: T.ink,
+        }}
+      >
+        {statement}
+      </div>
     </div>
   );
 }
