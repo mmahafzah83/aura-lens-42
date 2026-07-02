@@ -587,6 +587,16 @@ function buildBlocks(d: ReportData): Block[] {
       node: <ImprintFigure score={d.score} userId={d.user_id} generatedAt={d.generated_at} />,
     });
   }
+  // Full positioning statement — cover shows sentence 1 only; give the
+  // complete 3-sentence text a proper home when it's meaningfully longer.
+  if (d.positioning?.statement && d.positioning.statement.length > 200) {
+    blocks.push({
+      key: "i-position",
+      section: "identity",
+      spacing: 24,
+      node: <PositioningBlock statement={d.positioning.statement} />,
+    });
+  }
   const p = d.profile;
   if (p) {
     const items: { label: string; value: string }[] = [];
@@ -632,7 +642,13 @@ function buildBlocks(d: ReportData): Block[] {
   // ── FOOTPRINT ────────────────────────────────────────────────────────
   if (d.territories || d.footprint || d.content || d.voice) {
     blocks.push({ key: "f-title", section: "footprint", spacing: 20, node: <SectionTitle title="Strategic Footprint" kicker={name || "Footprint"} /> });
-    if (d.territories) blocks.push({ key: "f-terr", section: "footprint", spacing: 22, node: <TerritoriesBlock items={d.territories} /> });
+    if (d.territories || d.brand_position?.pillars.length)
+      blocks.push({
+        key: "f-terr",
+        section: "footprint",
+        spacing: 22,
+        node: <TerritoriesBlock pillars={d.brand_position?.pillars} tags={d.territories ?? []} />,
+      });
     if (d.footprint)   blocks.push({ key: "f-fp",   section: "footprint", spacing: 24, node: <FootprintFigure fp={d.footprint} /> });
     if (d.content)     blocks.push({ key: "f-content", section: "footprint", spacing: 22, node: <ContentEngineCard c={d.content} /> });
     if (d.voice) {
