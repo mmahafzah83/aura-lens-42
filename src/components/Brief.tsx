@@ -585,15 +585,15 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
     try {
       const since = new Date(Date.now() - 48 * 3600_000).toISOString();
       const { data } = await (supabase.from("linkedin_posts" as any) as any)
-        .select("published_at, topic")
+        .select("published_at")
         .eq("user_id", user.id)
         .not("published_at", "is", null)
         .gte("published_at", since)
         .order("published_at", { ascending: false })
         .limit(1);
       const row = (data || [])[0];
-      setPublished(row ? { publishedAt: row.published_at ?? null, topic: row.topic ?? null } : null);
-    } catch { setPublished(null); }
+      setPublished(row ? { publishedAt: row.published_at ?? null } : null);
+    } catch (e) { console.warn("[Brief] published load failed", e); setPublished(null); }
   }, [user]);
 
   useEffect(() => {
