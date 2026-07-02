@@ -2,7 +2,7 @@
 // Each section is present-or-null for empty-state gating. No rendering here.
 //
 // Canonical-source notes:
-// - SCORE: read-only from score_snapshots (matches HomeTab.tsx:442 arc).
+// - SCORE: read-only from imprint_snapshots (canonical Imprint; matches Brief + dial).
 // - FOOTPRINT: mirrors IntelligenceTab.tsx:1005-1008 header queries.
 // - MARKET MIRROR: labels by cached gaps.persona_set (not current rank),
 //   via shared PERSONA_LABELS from @/lib/marketPersonas.
@@ -202,8 +202,8 @@ export async function buildIdentityReport(userId: string): Promise<ReportData> {
       .eq("user_id", userId)
       .maybeSingle(),
     supabase
-      .from("score_snapshots")
-      .select("score, tier, components, created_at")
+      .from("imprint_snapshots" as any)
+      .select("imprint, tier, components, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -309,24 +309,25 @@ export async function buildIdentityReport(userId: string): Promise<ReportData> {
     };
   }
 
-  // 4. SCORE — score_snapshots (read-only; matches Home arc)
+  // 4. SCORE — imprint_snapshots (canonical Imprint; matches Brief + dial)
   let score: ScoreSection | null = null;
   const snap: any = (snapRes as any)?.data || null;
-  if (snap && typeof snap.score === "number") {
-    const c: any = snap.components || {};
+  const imprintVal = snap ? Number(snap.imprint) : NaN;
+  if (snap && Number.isFinite(imprintVal)) {
+    const c: any = (snap.components && (snap.components.score_components || snap.components)) || {};
     score = {
-      score: Number(snap.score) || 0,
+      score: imprintVal,
       tier: snap.tier || null,
       components: {
         signal: Number(c.signal_score) || 0,
         content: Number(c.content_score) || 0,
         capture: Number(c.capture_score) || 0,
         weights: { signal: 40, content: 40, capture: 20 },
-        // EF-provided weighted points (additive; consumers should prefer these
-        // over local raw * weight math).
-        signal_weighted: Number.isFinite(Number(c.signal_weighted)) ? Number(c.signal_weighted) : null,
-        content_weighted: Number.isFinite(Number(c.content_weighted)) ? Number(c.content_weighted) : null,
-        capture_weighted: Number.isFinite(Number(c.capture_weighted)) ? Number(c.capture_weighted) : null,
+        // imprint_snapshots has no *_weighted keys; consumers fall back to
+        // round(value × weight / 100) via ComponentBar.
+        signal_weighted: null,
+        content_weighted: null,
+        capture_weighted: null,
       },
       snapshot_at: snap.created_at,
     };
