@@ -392,60 +392,6 @@ export default function PreferencesPanel({
             value={profile?.sector_focus?.trim() || "Not set"}
             onClick={onEditField ? () => onEditField("sector_focus") : undefined}
           />
-          {editingLinkedIn ? (
-            <div
-              style={{
-                padding: "14px 24px",
-                borderTop: "0.5px solid var(--rule)",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 14,
-                  fontWeight: 500,
-                  color: "var(--ink)",
-                  marginBottom: 8,
-                  fontFamily: "'DM Sans', system-ui, sans-serif",
-                }}
-              >
-                LinkedIn
-              </div>
-              <input
-                ref={liInputRef}
-                value={linkedInInput}
-                onChange={(e) => setLinkedInInput(e.target.value)}
-                onBlur={saveLinkedIn}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") saveLinkedIn();
-                  if (e.key === "Escape") {
-                    setLinkedInInput(profile?.linkedin_handle ?? "");
-                    setEditingLinkedIn(false);
-                  }
-                }}
-                placeholder="Paste your LinkedIn profile URL"
-                style={{
-                  width: "100%",
-                  background: "var(--paper-2)",
-                  border: "0.5px solid var(--rule)",
-                  borderRadius: 8,
-                  padding: "10px 12px",
-                  fontSize: 13,
-                  color: "var(--ink)",
-                  fontFamily: "'DM Sans', system-ui, sans-serif",
-                  outline: "none",
-                }}
-              />
-            </div>
-          ) : (
-            <Row
-              label="LinkedIn"
-              value={profile?.linkedin_handle ? `@${profile.linkedin_handle}` : "Not set"}
-              onClick={() => {
-                setLinkedInInput(profile?.linkedin_handle ?? "");
-                setEditingLinkedIn(true);
-              }}
-            />
-          )}
 
           {/* INTELLIGENCE */}
           <SectionHeader>Intelligence</SectionHeader>
