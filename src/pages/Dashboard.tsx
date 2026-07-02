@@ -544,155 +544,157 @@ const Dashboard = () => {
       <WhatsAppOptInModal />
 
       {/* ── Desktop Sidebar ── */}
-      <aside
-        data-surface={(activeTab === "intelligence" || activeTab === "influence") ? "dark" : "bone"}
-        className={`aura-sidebar-shell hidden md:flex flex-col fixed top-0 left-0 h-full z-30 backdrop-blur-xl transition-all duration-300 ${
-          sidebarCollapsed ? "w-[68px]" : "w-[220px]"
-        }`}
-        style={{
-          background: (activeTab === "intelligence" || activeTab === "influence") ? "var(--aura-card)" : "var(--paper)",
-          transition: "background-color .25s ease, color .25s ease",
-        }}
-      >
-        {/* Logo */}
-        <div
-          className="flex items-center gap-3 px-4 py-5"
-          style={{ borderBottom: "0.5px solid var(--paper-3)" }}
+      {activeTab !== "home" && (
+        <aside
+          data-surface={(activeTab === "intelligence" || activeTab === "influence") ? "dark" : "bone"}
+          className={`aura-sidebar-shell hidden md:flex flex-col fixed top-0 left-0 h-full z-30 backdrop-blur-xl transition-all duration-300 ${
+            sidebarCollapsed ? "w-[68px]" : "w-[220px]"
+          }`}
+          style={{
+            background: (activeTab === "intelligence" || activeTab === "influence") ? "var(--aura-card)" : "var(--paper)",
+            transition: "background-color .25s ease, color .25s ease",
+          }}
         >
-          <AuraLogo size={sidebarCollapsed ? 24 : 32} variant={darkSurface ? "dark" : "light"} />
-          {!sidebarCollapsed && (
-            <div className="overflow-hidden min-w-0">
-              <h1
-                className="text-lg tracking-tight font-semibold"
-                style={{ color: darkSurface ? "var(--glass)" : "var(--ink)" }}
-              >
-                Aura
-              </h1>
-              <p
-                style={{
-                  fontSize: 12,
-                  letterSpacing: "0.08em",
-                  color: darkSurface ? "var(--glass-2)" : "var(--ink-4)",
-                  lineHeight: 1.4,
-                }}
-              >
-                Turns your expertise into presence
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Nav Items */}
-        <nav className="flex-1 py-2 px-0 space-y-1">
-          {!sidebarCollapsed && (
-            <div
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 12,
-                letterSpacing: "0.18em",
-                color: "var(--aura-t2)",
-                padding: "12px 24px 8px",
-                textTransform: "uppercase",
-              }}
-            >
-              Your space
-            </div>
-          )}
-          {NAV_ITEMS.map((item) => {
-            const isActive = activeTab === item.value;
-            const navTestId = ({
-              home: "nav-home",
-              identity: "nav-mystory",
-              intelligence: "nav-intelligence",
-              authority: "nav-publish",
-              influence: "nav-impact",
-            } as Record<string, string>)[item.value] || `nav-${item.value}`;
-            return (
-              <button
-                key={item.value}
-                onClick={() => switchTab(item.value)}
-                data-testid={navTestId}
-                data-active={isActive ? "true" : "false"}
-                className={`w-full flex items-center gap-3 tactile-press group aura-nav-item ${isActive ? "is-active" : ""}`}
-                style={{
-                  padding: "10px 24px",
-                  fontWeight: isActive ? 500 : 400,
-                }}
-              >
-                <item.icon
-                  key={item.value === "intelligence" ? `intel-icon-${intelPulseToken}` : undefined}
-                  className={`w-4.5 h-4.5 shrink-0${item.value === "intelligence" && intelPulseToken > 0 ? " nav-intelligence-pulse" : ""}`}
+          {/* Logo */}
+          <div
+            className="flex items-center gap-3 px-4 py-5"
+            style={{ borderBottom: "0.5px solid var(--paper-3)" }}
+          >
+            <AuraLogo size={sidebarCollapsed ? 24 : 32} variant={darkSurface ? "dark" : "light"} />
+            {!sidebarCollapsed && (
+              <div className="overflow-hidden min-w-0">
+                <h1
+                  className="text-lg tracking-tight font-semibold"
+                  style={{ color: darkSurface ? "var(--glass)" : "var(--ink)" }}
+                >
+                  Aura
+                </h1>
+                <p
                   style={{
-                    color: isActive ? "var(--aura-accent)" : "var(--aura-t3)",
-                    transition: "color var(--t-fast) var(--ease)",
+                    fontSize: 12,
+                    letterSpacing: "0.08em",
+                    color: darkSurface ? "var(--glass-2)" : "var(--ink-4)",
+                    lineHeight: 1.4,
                   }}
-                />
-                {!sidebarCollapsed && (
-                  <span className="text-sm font-medium tracking-wide">{item.label}</span>
-                )}
-                {item.value === "intelligence" && newIntelSignalCount > 0 && !isActive && (
-                  <span
-                    aria-label={`${newIntelSignalCount} new signals`}
-                    className="w-2 h-2 rounded-full ml-auto mr-1 shrink-0"
-                    style={{ background: "var(--gold-dark)" }}
-                  />
-                )}
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Bottom actions */}
-        <div
-          className="px-3 py-4 flex flex-col gap-2"
-          style={{ borderTop: "0.5px solid var(--paper-3)" }}
-        >
-          <div data-tour="nav-ask-aura">
-            <AskAuraPresence collapsed={sidebarCollapsed} onOpen={() => openChat()} />
+                >
+                  Turns your expertise into presence
+                </p>
+              </div>
+            )}
           </div>
-          <button
-            onClick={() => setCaptureOpen(true)}
-            data-testid="nav-capture"
-            data-tour="nav-capture"
-            className="w-full flex items-center gap-3 px-3 py-3 tactile-press group"
-            style={{
-              background: "transparent",
-              color: "var(--aura-accent)",
-              border: "1px solid var(--aura-border)",
-              borderRadius: "var(--r-md)",
-              transition: "all var(--t-fast) var(--ease)",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--aura-card-glass)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-          >
-            <Paperclip className="w-4.5 h-4.5 shrink-0 group-hover:scale-110 transition-transform" />
-            {!sidebarCollapsed && <span className="text-sm font-medium">Capture</span>}
-          </button>
 
-          <button
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className="w-full flex items-center gap-3 px-3 py-2 transition-all min-h-[44px]"
-            style={{ color: "var(--aura-t3)", borderRadius: "var(--r-md)" }}
-          >
-            <Menu className="w-4 h-4 shrink-0" />
-            {!sidebarCollapsed && <span className="text-xs">Collapse</span>}
-          </button>
+          {/* Nav Items */}
+          <nav className="flex-1 py-2 px-0 space-y-1">
+            {!sidebarCollapsed && (
+              <div
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 12,
+                  letterSpacing: "0.18em",
+                  color: "var(--aura-t2)",
+                  padding: "12px 24px 8px",
+                  textTransform: "uppercase",
+                }}
+              >
+                Your space
+              </div>
+            )}
+            {NAV_ITEMS.map((item) => {
+              const isActive = activeTab === item.value;
+              const navTestId = ({
+                home: "nav-home",
+                identity: "nav-mystory",
+                intelligence: "nav-intelligence",
+                authority: "nav-publish",
+                influence: "nav-impact",
+              } as Record<string, string>)[item.value] || `nav-${item.value}`;
+              return (
+                <button
+                  key={item.value}
+                  onClick={() => switchTab(item.value)}
+                  data-testid={navTestId}
+                  data-active={isActive ? "true" : "false"}
+                  className={`w-full flex items-center gap-3 tactile-press group aura-nav-item ${isActive ? "is-active" : ""}`}
+                  style={{
+                    padding: "10px 24px",
+                    fontWeight: isActive ? 500 : 400,
+                  }}
+                >
+                  <item.icon
+                    key={item.value === "intelligence" ? `intel-icon-${intelPulseToken}` : undefined}
+                    className={`w-4.5 h-4.5 shrink-0${item.value === "intelligence" && intelPulseToken > 0 ? " nav-intelligence-pulse" : ""}`}
+                    style={{
+                      color: isActive ? "var(--aura-accent)" : "var(--aura-t3)",
+                      transition: "color var(--t-fast) var(--ease)",
+                    }}
+                  />
+                  {!sidebarCollapsed && (
+                    <span className="text-sm font-medium tracking-wide">{item.label}</span>
+                  )}
+                  {item.value === "intelligence" && newIntelSignalCount > 0 && !isActive && (
+                    <span
+                      aria-label={`${newIntelSignalCount} new signals`}
+                      className="w-2 h-2 rounded-full ml-auto mr-1 shrink-0"
+                      style={{ background: "var(--gold-dark)" }}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </nav>
 
-          <button
-            onClick={() => setInviteOpen(true)}
-            aria-label="Bring someone in"
-            className="w-full flex items-center gap-3 px-3 py-2 transition-all min-h-[44px]"
-            style={{ color: "var(--aura-t3)", borderRadius: "var(--r-md)" }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = "var(--aura-accent)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--aura-t3)"; }}
-            title="Bring someone in"
+          {/* Bottom actions */}
+          <div
+            className="px-3 py-4 flex flex-col gap-2"
+            style={{ borderTop: "0.5px solid var(--paper-3)" }}
           >
-            <UserPlus className="w-4 h-4 shrink-0" />
-            {!sidebarCollapsed && <span className="text-xs">Bring someone in</span>}
-          </button>
-        </div>
-      </aside>
+            <div data-tour="nav-ask-aura">
+              <AskAuraPresence collapsed={sidebarCollapsed} onOpen={() => openChat()} />
+            </div>
+            <button
+              onClick={() => setCaptureOpen(true)}
+              data-testid="nav-capture"
+              data-tour="nav-capture"
+              className="w-full flex items-center gap-3 px-3 py-3 tactile-press group"
+              style={{
+                background: "transparent",
+                color: "var(--aura-accent)",
+                border: "1px solid var(--aura-border)",
+                borderRadius: "var(--r-md)",
+                transition: "all var(--t-fast) var(--ease)",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "var(--aura-card-glass)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+            >
+              <Paperclip className="w-4.5 h-4.5 shrink-0 group-hover:scale-110 transition-transform" />
+              {!sidebarCollapsed && <span className="text-sm font-medium">Capture</span>}
+            </button>
+
+            <button
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              className="w-full flex items-center gap-3 px-3 py-2 transition-all min-h-[44px]"
+              style={{ color: "var(--aura-t3)", borderRadius: "var(--r-md)" }}
+            >
+              <Menu className="w-4 h-4 shrink-0" />
+              {!sidebarCollapsed && <span className="text-xs">Collapse</span>}
+            </button>
+
+            <button
+              onClick={() => setInviteOpen(true)}
+              aria-label="Bring someone in"
+              className="w-full flex items-center gap-3 px-3 py-2 transition-all min-h-[44px]"
+              style={{ color: "var(--aura-t3)", borderRadius: "var(--r-md)" }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = "var(--aura-accent)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = "var(--aura-t3)"; }}
+              title="Bring someone in"
+            >
+              <UserPlus className="w-4 h-4 shrink-0" />
+              {!sidebarCollapsed && <span className="text-xs">Bring someone in</span>}
+            </button>
+          </div>
+        </aside>
+      )}
 
       {/* ── Mobile Sidebar Overlay ── */}
       {mobileSidebarOpen && (
@@ -808,7 +810,7 @@ const Dashboard = () => {
       {/* ── Main Content ── */}
       <main
         className={`grain-overlay flex-1 min-w-0 relative z-10 transition-all duration-300 overflow-x-hidden ${
-          sidebarCollapsed ? "md:ml-[68px]" : "md:ml-[220px]"
+          activeTab === "home" ? "" : (sidebarCollapsed ? "md:ml-[68px]" : "md:ml-[220px]")
         }`}
         style={{
           paddingTop: 'env(safe-area-inset-top)',
@@ -926,6 +928,35 @@ const Dashboard = () => {
                 />
                 <FirstVisitHint page="home" />
                 <IdentityDriftBanner />
+                {/* Brief masthead nav — same labels/order as the sidebar, no avatar duplication */}
+                <div className="flex items-center gap-5 overflow-x-auto pb-3 mb-2">
+                  {NAV_ITEMS.map((item) => {
+                    const isActive = activeTab === item.value;
+                    return (
+                      <button
+                        key={item.value}
+                        type="button"
+                        onClick={() => switchTab(item.value)}
+                        className="whitespace-nowrap"
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          fontSize: 11,
+                          letterSpacing: "0.14em",
+                          textTransform: "uppercase",
+                          color: isActive ? "var(--spot)" : "var(--ink-3)",
+                          border: "0px solid transparent",
+                          borderBottom: isActive ? "1px solid var(--spot)" : "1px solid transparent",
+                          paddingBottom: 2,
+                          background: "transparent",
+                          cursor: "pointer",
+                          transition: "color .25s ease",
+                        }}
+                      >
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </div>
                 <ErrorBoundary>
                   <Brief
                     onOpenCapture={() => handleOpenCapture()}
