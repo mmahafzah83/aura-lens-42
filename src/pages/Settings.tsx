@@ -8,6 +8,7 @@ import { AuraCard } from "@/components/ui/AuraCard";
 import { AuraButton } from "@/components/ui/AuraButton";
 import { Link } from "react-router-dom";
 import { downloadBlob } from "@/lib/download";
+import { exportReportPdf } from "@/lib/exportReportPdf";
 import usePageMeta from "@/hooks/usePageMeta";
 import ReportDocument from "@/components/ReportDocument";
 import { buildIdentityReport, type ReportData } from "@/lib/buildIdentityReport";
@@ -202,61 +203,7 @@ const [savingSig, setSavingSig] = useState(false);
     }
     setExportingReport(true);
     try {
-      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
-        import("html2canvas"),
-        import("jspdf"),
-      ]);
-
-      // Force-request Cairo (used by Arabic blocks in the report) BEFORE
-      // awaiting fonts.ready — otherwise the promise can resolve before the
-      // browser has noticed the offscreen Arabic nodes need Cairo, and
-      // html2canvas rasterises with the DM Sans fallback, breaking shaping.
-      try {
-        if ((document as any).fonts?.load) {
-          await Promise.all([
-            (document as any).fonts.load("400 12px Cairo"),
-            (document as any).fonts.load("600 12px Cairo"),
-          ]);
-        }
-      } catch { /* ignore */ }
-      if ((document as any).fonts?.ready) {
-        await (document as any).fonts.ready;
-      }
-      // Settle for offscreen Arabic glyph runs to apply.
-      await new Promise((r) => setTimeout(r, 150));
-
-      const pageNodes: HTMLElement[] = Array.from(
-        reportMountRef.current.querySelectorAll("[data-report-page]")
-      ) as HTMLElement[];
-      if (pageNodes.length === 0) throw new Error("No report pages to export.");
-
-      const pdf = new jsPDF({ unit: "pt", format: "a4", orientation: "portrait" });
-      const pageW = pdf.internal.pageSize.getWidth();
-      const pageH = pdf.internal.pageSize.getHeight();
-
-      for (let i = 0; i < pageNodes.length; i++) {
-        const canvas = await html2canvas(pageNodes[i], {
-          scale: 2,
-          backgroundColor: "#ffffff",
-          useCORS: true,
-        });
-        // §6 export budget: JPEG @ 0.82 keeps a 4-page report well under 4MB.
-        // PNG was producing ~45MB / page from full-bleed parchment + chip washes.
-        const imgData = canvas.toDataURL("image/jpeg", 0.82);
-        // Fit to width; if too tall, fit to height instead.
-        let w = pageW;
-        let h = (canvas.height * w) / canvas.width;
-        if (h > pageH) {
-          h = pageH;
-          w = (canvas.width * h) / canvas.height;
-        }
-        const x = (pageW - w) / 2;
-        const y = 0;
-        if (i > 0) pdf.addPage();
-        pdf.addImage(imgData, "JPEG", x, y, w, h);
-      }
-
-      downloadBlob(pdf.output("blob"), reportFileName());
+      await exportReportPdf(reportMountRef.current, reportFileName());
       toast.success("Report downloaded");
     } catch (e: any) {
       toast.error(e?.message || "Failed to download report");
