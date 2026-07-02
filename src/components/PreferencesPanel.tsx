@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { X, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,23 +23,8 @@ interface Profile {
   last_name: string | null;
   firm: string | null;
   sector_focus: string | null;
-  linkedin_handle: string | null;
   notification_prefs: Record<string, unknown> | null;
   shared_learning_consent: boolean | null;
-}
-
-function normalizeLinkedInHandle(input: string): string {
-  let s = (input || "").trim();
-  if (!s) return "";
-  s = s.replace(/^https?:\/\//i, "");
-  s = s.replace(/^www\./i, "");
-  s = s.replace(/^linkedin\.com\/in\//i, "");
-  s = s.replace(/^in\//i, "");
-  s = s.replace(/\/+$/g, "");
-  s = s.replace(/^@/, "");
-  // take first path segment in case of query/extra
-  s = s.split(/[/?#]/)[0];
-  return s;
 }
 
 const SectionHeader = ({ children }: { children: React.ReactNode }) => (
@@ -87,7 +72,7 @@ const Row = ({
       borderTop: "0.5px solid var(--rule)",
       cursor: onClick ? "pointer" : "default",
       color: danger ? "var(--error, #c0392b)" : "var(--ink)",
-      fontFamily: "'DM Sans', system-ui, sans-serif",
+      fontFamily: "var(--font-body)",
     }}
     onMouseEnter={(e) => {
       if (onClick) (e.currentTarget as HTMLElement).style.background = "var(--paper-2)";
@@ -185,7 +170,7 @@ const ToggleRow = ({
       gap: 16,
       padding: "14px 24px",
       borderTop: "0.5px solid var(--rule)",
-      fontFamily: "'DM Sans', system-ui, sans-serif",
+      fontFamily: "var(--font-body)",
     }}
   >
     <div style={{ flex: 1, minWidth: 0 }}>
@@ -212,9 +197,6 @@ export default function PreferencesPanel({
   onRetakeBrandAssessment,
 }: PreferencesPanelProps) {
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [editingLinkedIn, setEditingLinkedIn] = useState(false);
-  const [linkedInInput, setLinkedInInput] = useState("");
-  const liInputRef = useRef<HTMLInputElement>(null);
 
   // Body scroll lock + Esc to close.
   useEffect(() => {
@@ -238,23 +220,15 @@ export default function PreferencesPanel({
     (async () => {
       const { data } = await (supabase
         .from("diagnostic_profiles" as any) as any)
-        .select("first_name, last_name, firm, sector_focus, linkedin_handle, notification_prefs, shared_learning_consent")
+        .select("first_name, last_name, firm, sector_focus, notification_prefs, shared_learning_consent")
         .eq("user_id", userId)
         .maybeSingle();
       if (!cancelled) {
         setProfile((data as Profile) || null);
-        setLinkedInInput((data as Profile)?.linkedin_handle ?? "");
       }
     })();
     return () => { cancelled = true; };
   }, [open, userId]);
-
-  useEffect(() => {
-    if (editingLinkedIn) {
-      // Defer focus to next frame so the input is in the DOM.
-      requestAnimationFrame(() => liInputRef.current?.focus());
-    }
-  }, [editingLinkedIn]);
 
   const prefs = (profile?.notification_prefs ?? {}) as Record<string, unknown>;
   const weeklyBriefOn = prefs.weekly_brief !== false; // default true
@@ -275,17 +249,6 @@ export default function PreferencesPanel({
     setProfile((p) => (p ? { ...p, shared_learning_consent: value } : p));
     await (supabase.from("diagnostic_profiles" as any) as any)
       .update({ shared_learning_consent: value })
-      .eq("user_id", userId);
-  };
-
-  const saveLinkedIn = async () => {
-    const handle = normalizeLinkedInHandle(linkedInInput);
-    setEditingLinkedIn(false);
-    if (!userId) return;
-    if (handle === (profile?.linkedin_handle ?? "")) return;
-    setProfile((p) => (p ? { ...p, linkedin_handle: handle } : p));
-    await (supabase.from("diagnostic_profiles" as any) as any)
-      .update({ linkedin_handle: handle || null })
       .eq("user_id", userId);
   };
 
@@ -361,7 +324,7 @@ export default function PreferencesPanel({
           <div style={{ minWidth: 0 }}>
             <h2
               style={{
-                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontFamily: "var(--font-serif)",
                 fontSize: 20,
                 fontWeight: 500,
                 color: "var(--ink)",
@@ -376,7 +339,7 @@ export default function PreferencesPanel({
                 fontSize: 13,
                 color: "var(--ink-2)",
                 margin: "4px 0 0",
-                fontFamily: "'DM Sans', system-ui, sans-serif",
+                fontFamily: "var(--font-body)",
               }}
             >
               How Aura works for you.
@@ -429,60 +392,6 @@ export default function PreferencesPanel({
             value={profile?.sector_focus?.trim() || "Not set"}
             onClick={onEditField ? () => onEditField("sector_focus") : undefined}
           />
-          {editingLinkedIn ? (
-            <div
-              style={{
-                padding: "14px 24px",
-                borderTop: "0.5px solid var(--rule)",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 14,
-                  fontWeight: 500,
-                  color: "var(--ink)",
-                  marginBottom: 8,
-                  fontFamily: "'DM Sans', system-ui, sans-serif",
-                }}
-              >
-                LinkedIn
-              </div>
-              <input
-                ref={liInputRef}
-                value={linkedInInput}
-                onChange={(e) => setLinkedInInput(e.target.value)}
-                onBlur={saveLinkedIn}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") saveLinkedIn();
-                  if (e.key === "Escape") {
-                    setLinkedInInput(profile?.linkedin_handle ?? "");
-                    setEditingLinkedIn(false);
-                  }
-                }}
-                placeholder="Paste your LinkedIn profile URL"
-                style={{
-                  width: "100%",
-                  background: "var(--paper-2)",
-                  border: "0.5px solid var(--rule)",
-                  borderRadius: 8,
-                  padding: "10px 12px",
-                  fontSize: 13,
-                  color: "var(--ink)",
-                  fontFamily: "'DM Sans', system-ui, sans-serif",
-                  outline: "none",
-                }}
-              />
-            </div>
-          ) : (
-            <Row
-              label="LinkedIn"
-              value={profile?.linkedin_handle ? `@${profile.linkedin_handle}` : "Not set"}
-              onClick={() => {
-                setLinkedInInput(profile?.linkedin_handle ?? "");
-                setEditingLinkedIn(true);
-              }}
-            />
-          )}
 
           {/* INTELLIGENCE */}
           <SectionHeader>Intelligence</SectionHeader>
@@ -525,7 +434,7 @@ export default function PreferencesPanel({
                 fontSize: 11,
                 color: "var(--ink-2)",
                 textAlign: "center",
-                fontFamily: "'DM Sans', system-ui, sans-serif",
+                fontFamily: "var(--font-body)",
               }}
             >
               Signed in as {email}
