@@ -1355,11 +1355,11 @@ aside .aura-theme-toggle {
 
 /* ── Aura Design System: Foundation Tokens (ds-0) ── */
 :root {
-  --brand:            var(--bronze);
-  --brand-hover:      var(--bronze-deep);
+  --brand:            var(--action);
+  --brand-hover:      var(--spot);
   --brand-pale:       var(--bronze-pale);
   --brand-muted:      var(--bronze-line);
-  --brand-glow:       var(--bronze-glow);
+  --brand-glow:       var(--action);
   --brand-line:       var(--bronze-line);
   --brand-ghost:      var(--bronze-mist);
   --surface-page:     var(--paper);
@@ -1384,7 +1384,7 @@ aside .aura-theme-toggle {
   --warning-pale:     #FEF3C7;
   --shadow-card:      0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
   --shadow-card-hover:0 2px 8px rgba(0,0,0,0.08), 0 12px 32px rgba(0,0,0,0.07);
-  --shadow-brand:     0 4px 24px rgba(212,176,86,0.30);
+  --shadow-brand:     var(--shadow-lift);
   --radius-sm:  8px;
   --radius-md:  10px;
   --radius-lg:  14px;
@@ -1402,15 +1402,15 @@ aside .aura-theme-toggle {
   --success-dark:     #2a4a2a;
   --success-darkest:  #0a1a0a;
   --success-mid:      #4a8a4a;
-  --gold-pale:        #FEF8F3;
-  --gold-light:       #F9C88B;
-  --gold-mid:         #8a6a20;
-  --gold-text:        #7A4A12;
-  --gold-dark:        #5A3A0E;
-  --gold-pale-2:      #FFFCF8;
-  --gold-mid-2:       #9A6A2A;
-  --gold-pale-3:      #FEF1E1;
-  --gold-mid-3:       #B07A2A;
+  --gold-pale:        color-mix(in srgb, var(--action) 10%, var(--paper));
+  --gold-light:       var(--action);
+  --gold-mid:         var(--action);
+  --gold-text:        var(--spot);
+  --gold-dark:        var(--spot);
+  --gold-pale-2:      color-mix(in srgb, var(--action) 8%, var(--paper));
+  --gold-mid-2:       var(--action);
+  --gold-pale-3:      color-mix(in srgb, var(--action) 12%, var(--paper));
+  --gold-mid-3:       var(--action);
 }
 
 /* Theme-aware surface tokens — dark mode overrides */
@@ -2041,8 +2041,8 @@ button[aria-label="Notifications"]:focus-visible {
 }
 .card-interactive:hover {
   transform: translateY(-1px);
-  border-color: var(--gold-glow, rgba(214, 167, 72, 0.4));
-  box-shadow: 0 3px 16px rgba(214, 167, 72, 0.06);
+  border-color: color-mix(in srgb, var(--action) 40%, transparent);
+  box-shadow: 0 3px 16px color-mix(in srgb, var(--action) 12%, transparent);
 }
 .card-interactive:active {
   transform: translateY(0);
