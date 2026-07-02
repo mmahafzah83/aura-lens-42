@@ -605,8 +605,12 @@ export function ComponentBar({
   );
 }
 
-// ── ImprintSparkline ───────────────────────────────────────────────────
-export function ImprintSparkline({ userId }: { userId: string }) {
+// ── useImprintDelta ────────────────────────────────────────────────────
+// Shared query for the last 8 imprint snapshots (ascending). Returns the
+// scores plus the (last − first) delta. Used by ImprintSparkline and the
+// ClosingPlate stat so the score_snapshots query lives in exactly one
+// place.
+export function useImprintDelta(userId: string): { rows: { score: number }[] | null; delta: number } {
   const [rows, setRows] = useState<{ score: number }[] | null>(null);
 
   useEffect(() => {
@@ -629,7 +633,17 @@ export function ImprintSparkline({ userId }: { userId: string }) {
     return () => { cancelled = true; };
   }, [userId]);
 
-  if (!rows || rows.length < 2) return null;
+  const delta = rows && rows.length >= 2 ? rows[rows.length - 1].score - rows[0].score : 0;
+  return { rows, delta };
+}
+
+// ── ImprintSparkline ───────────────────────────────────────────────────
+export function ImprintSparkline({ userId }: { userId: string }) {
+  const { rows, delta } = useImprintDelta(userId);
+
+  if (!rows || rows.length < 2) {
+    return <div style={{ width: 220, height: 60 }} aria-hidden />;
+  }
   const vals = rows.map((r) => r.score);
   const min = Math.min(...vals);
   const max = Math.max(...vals);
@@ -643,7 +657,6 @@ export function ImprintSparkline({ userId }: { userId: string }) {
     return `${x.toFixed(1)},${y.toFixed(1)}`;
   });
   const last = pts[pts.length - 1].split(",").map(Number);
-  const delta = vals[vals.length - 1] - vals[0];
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
@@ -807,7 +820,7 @@ export function ClosingPlate({
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        margin: -56,
+        margin: 0,
         padding: 0,
         position: "relative",
       }}

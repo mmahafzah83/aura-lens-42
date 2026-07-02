@@ -22,6 +22,7 @@ import {
   CapabilityDotPlot,
   PaperPersonaCard,
   ClosingPlate,
+  useImprintDelta,
   T,
   FONT,
 } from "@/components/report/AuraPaper";
@@ -630,6 +631,7 @@ export default function ReportDocument({ data }: { data: ReportData }) {
 function Paginated({ blocks, data }: { blocks: Block[]; data: ReportData }) {
   const measureRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [heights, setHeights] = useState<number[] | null>(null);
+  const { delta: sparkDelta } = useImprintDelta(data.user_id);
 
   useLayoutEffect(() => {
     if (heights !== null) return;
@@ -705,7 +707,7 @@ function Paginated({ blocks, data }: { blocks: Block[]; data: ReportData }) {
           data={data}
           activeSignals={data.footprint?.signals ?? 0}
           evidenceCount={data.footprint?.evidence ?? 0}
-          sparkDelta={0}
+          sparkDelta={sparkDelta}
         />
       </Sheet>
     </div>
