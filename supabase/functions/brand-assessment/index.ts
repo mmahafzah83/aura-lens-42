@@ -57,16 +57,23 @@ Rewrite any sentence that uses these with concrete, specific language.
 
 OUTPUT RULE: After the full prose output, add a line "---JSON---" followed by a valid JSON object with these exact keys (this is for system use — the user won't see this):
 {
-  "primary_archetype": "The [archetype name]",
-  "secondary_archetype": "The [secondary name]",
-  "positioning_statement": "[the 3-sentence positioning statement]",
-  "content_pillars": ["topic 1", "topic 2", "topic 3"],
+  "primary_archetype": "The [name]",
+  "secondary_archetype": "The [name]",
+  "positioning_statement": "[the 3-sentence one-liner, plain text]",
+  "market_read": "[HOW THE MARKET SEES YOU section, plain text]",
+  "trust_pattern": "[HOW YOU BUILD TRUST, plain text]",
+  "natural_tone": "[YOUR NATURAL TONE, plain text]",
+  "unique_capability": "[WHAT ONLY YOU CAN DO, plain text]",
+  "uncontested_space": "[THE SPACE NOBODY ELSE OWNS, plain text]",
+  "topics": [{"title": "...", "description": "..."}, {"title": "...", "description": "..."}, {"title": "...", "description": "..."}],
+  "content_pillars": ["topic 1 title", "topic 2 title", "topic 3 title"],
+  "invest_next": [{"area": "...", "insight": "..."}, {"area": "...", "insight": "..."}],
+  "honest_truth": "[THE HONEST TRUTH, plain text]",
   "authority_style": "[one sentence]",
   "voice_signature": "[one sentence]",
-  "zone_of_genius": "[what they do best - 1 sentence]",
-  "uncontested_space": "[their market gap - 1 sentence]",
+  "zone_of_genius": "[one sentence]",
   "growth_areas": ["area 1", "area 2"],
-  "key_barrier": "[what's stopping them - 1 sentence]"
+  "key_barrier": "[one sentence]"
 }`;
 
 
