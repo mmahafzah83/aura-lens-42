@@ -1781,47 +1781,24 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                 </div>
                 {output.trim() && !isGeneratingAny && (
                   <>
-                  {selectedSignalTitle && (
-                    <p className="mt-3 text-xs" style={{ color: "var(--ink-4)" }}>
-                      <span style={{ color: "var(--brand)" }}>✦</span> From your signal: {selectedSignalTitle}
-                    </p>
-                  )}
                   <p className="mt-2 text-[11px] text-muted-foreground/60" style={{ letterSpacing: "0.02em" }}>
                     ✦ AI-assisted · Review before publishing
                   </p>
+
                   </>
                 )}
 
-                {/* Generation attribution — connect post to user's real intelligence */}
-                {!isGeneratingAny && (() => {
-                  const sig = (selectedSignalId && _signals.find(s => s.id === selectedSignalId)) || _signals[0];
-                  if (sig && (selectedSignalTitle || sig.signal_title)) {
-                    const title = selectedSignalTitle || sig.signal_title;
-                    const conf = Math.round((sig.confidence ?? 0) * 100);
-                    return (
-                      <div
-                        className="text-xs"
-                        style={{
-                          color: "var(--ink-3)",
-                          fontStyle: "italic",
-                          paddingLeft: 2,
-                          letterSpacing: "0.01em",
-                        }}
-                      >
-                        Grounded in your <span style={{ color: "var(--brand)", fontStyle: "normal", fontWeight: 500 }}>{title}</span> signal · {conf}% confidence
-                      </div>
-                    );
-                  }
-                  if (voiceWords.length === 0) return null;
-                  return (
-                    <div
-                      className="text-xs"
-                      style={{ color: "var(--ink-3)", fontStyle: "italic", paddingLeft: 2 }}
-                    >
-                      Based on your voice profile
-                    </div>
-                  );
-                })()}
+                {/* Generation attribution — voice fallback only */}
+                {!isGeneratingAny && voiceWords.length > 0 && (
+                  <div
+                    className="text-xs"
+                    style={{ color: "var(--ink-3)", fontStyle: "italic", paddingLeft: 2 }}
+                  >
+                    Based on your voice profile
+                  </div>
+                )}
+
+
 
                 {/* Provenance trail + Publish Confidence */}
                 {!isGeneratingAny && (() => {
