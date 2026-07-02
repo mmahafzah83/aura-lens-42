@@ -901,21 +901,30 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
                   }}>{animatedImprint}</div>
 
                   {d.spark.length >= 2 && (
-                    <svg viewBox="0 0 120 30" width="100%" height="30" style={{ marginTop: 8, display: "block" }} aria-label="Imprint over recent snapshots">
-                      {(() => {
-                        const vs = d.spark;
-                        const min = Math.min(...vs);
-                        const max = Math.max(...vs);
-                        const range = Math.max(1, max - min);
-                        const pts = vs.map((v, i) => {
-                          const x = (i / (vs.length - 1)) * 120;
-                          const y = 28 - ((v - min) / range) * 26;
-                          return `${x.toFixed(1)},${y.toFixed(1)}`;
-                        }).join(" ");
-                        return <polyline points={pts} fill="none" stroke="var(--ink-2)" strokeWidth="1" />;
-                      })()}
-                    </svg>
+                    <div>
+                      <Mono size={9} style={{ display: "block", marginBottom: 4 }}>LAST {d.spark.length} SNAPSHOTS</Mono>
+                      <svg viewBox="0 0 120 36" width="100%" height={36} preserveAspectRatio="none" style={{ display: "block" }} aria-label="Imprint over recent snapshots">
+                        {(() => {
+                          const vs = d.spark;
+                          const min = Math.min(...vs);
+                          const max = Math.max(...vs);
+                          const range = Math.max(1, max - min);
+                          const pts = vs.map((v, i) => {
+                            const x = (i / (vs.length - 1)) * 120;
+                            const y = 34 - ((v - min) / range) * 32;
+                            return `${x.toFixed(1)},${y.toFixed(1)}`;
+                          }).join(" ");
+                          return (
+                            <>
+                              <line x1="0" y1="29" x2="120" y2="29" stroke="var(--rule)" strokeWidth="0.75" />
+                              <polyline points={pts} fill="none" stroke="var(--ink-2)" strokeWidth="1" />
+                            </>
+                          );
+                        })()}
+                      </svg>
+                    </div>
                   )}
+
                 </div>
               </div>
             );
