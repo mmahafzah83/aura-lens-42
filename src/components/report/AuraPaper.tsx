@@ -87,8 +87,8 @@ export function PaperHeader({ label }: { label: string }) {
 
 // ── PaperFooter ────────────────────────────────────────────────────────
 export function PaperFooter({
-  n, total,
-}: { n: number; total: number }) {
+  n, total, paperTitle = "The Aura Paper № 01",
+}: { n: number; total: number; paperTitle?: string }) {
   const ticks = Array.from({ length: total }, (_, i) => (
     <span
       key={i}
@@ -123,7 +123,7 @@ export function PaperFooter({
             color: T.ink,
           }}
         >
-          The Aura Paper № 01
+          {paperTitle}
         </span>
         <span style={{ display: "inline-flex", alignItems: "center" }}>{ticks}</span>
         <span
@@ -801,16 +801,25 @@ export function PaperPersonaCard({ p }: { p: { who: string; sees: string; gap: s
 
 // ── ClosingPlate ───────────────────────────────────────────────────────
 export function ClosingPlate({
-  data, activeSignals, evidenceCount, sparkDelta,
+  data, activeSignals = null, evidenceCount = null, sparkDelta = null,
+  headline, body, ctaLabel = "Built from my own record ↗",
 }: {
   data: ReportData;
-  activeSignals: number;
-  evidenceCount: number;
-  sparkDelta: number;
+  activeSignals?: number | null;
+  evidenceCount?: number | null;
+  sparkDelta?: number | null;
+  headline?: React.ReactNode;
+  body?: React.ReactNode;
+  ctaLabel?: string;
 }) {
   const p = data.profile;
   const fullName = [p?.first_name, p?.last_name].filter(Boolean).join(" ").trim();
-  const scoreVal = data.score?.score ?? 0;
+  const scoreVal = data.score?.score ?? null;
+  const showStats =
+    scoreVal !== null ||
+    activeSignals !== null ||
+    evidenceCount !== null ||
+    sparkDelta !== null;
 
   return (
     <div
@@ -866,10 +875,30 @@ export function ClosingPlate({
             maxWidth: 560,
           }}
         >
-          Ninety days is enough to <span style={{ fontStyle: "italic", color: T.action }}>close</span> the gap
-          between your record and how the market reads it.
+          {headline ?? (
+            <>
+              Ninety days is enough to{" "}
+              <span style={{ fontStyle: "italic", color: T.action }}>close</span> the gap
+              between your record and how the market reads it.
+            </>
+          )}
         </h2>
+        {body ? (
+          <p
+            style={{
+              fontFamily: FONT.serif,
+              fontSize: 18,
+              lineHeight: 1.5,
+              color: "rgba(241,236,225,0.86)",
+              margin: "18px 0 0",
+              maxWidth: 560,
+            }}
+          >
+            {body}
+          </p>
+        ) : null}
 
+        {showStats ? (
         <div
           style={{
             marginTop: 60,
@@ -882,11 +911,18 @@ export function ClosingPlate({
             gap: 20,
           }}
         >
-          <ClosingStat label="Imprint" value={String(scoreVal)} deltaTeal={sparkDelta > 0 ? `▲ +${sparkDelta}` : null} />
-          <ClosingStat label="Active signals" value={String(activeSignals)} />
-          <ClosingStat label="Evidence fragments" value={String(evidenceCount)} />
+          {scoreVal !== null ? (
+            <ClosingStat label="Imprint" value={String(scoreVal)} deltaTeal={sparkDelta && sparkDelta > 0 ? `▲ +${sparkDelta}` : null} />
+          ) : null}
+          {activeSignals !== null ? (
+            <ClosingStat label="Active signals" value={String(activeSignals)} />
+          ) : null}
+          {evidenceCount !== null ? (
+            <ClosingStat label="Evidence fragments" value={String(evidenceCount)} />
+          ) : null}
           <ClosingStat label="90 days to close the gap" value="" />
         </div>
+        ) : null}
 
         <div style={{ marginTop: "auto", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div
@@ -917,7 +953,7 @@ export function ClosingPlate({
               textTransform: "uppercase",
             }}
           >
-            Built from my own record ↗
+            {ctaLabel}
           </span>
         </div>
       </div>
