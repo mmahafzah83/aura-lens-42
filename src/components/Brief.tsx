@@ -1322,18 +1322,23 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
           outline-offset: 3px;
         }
         [lang="ar"] .brief-cta, [dir="rtl"] .brief-cta { font-family: var(--font-arabic); }
+        @media (min-width: 1200px) {
+          .brief-lead, .brief-moved, .brief-rhythm { grid-template-columns: 1fr 340px !important; gap: 64px !important; }
+          .brief-ledger, .brief-moved > aside, .brief-rhythm > aside { padding-inline-start: 34px; }
+        }
         @media (max-width: 960px) {
           .brief-lead, .brief-moved, .brief-rhythm { grid-template-columns: 1fr !important; }
           .brief-ledger, .brief-moved > aside, .brief-rhythm > aside {
             border-inline-start: none !important;
             padding-inline-start: 0 !important;
             border-top: 1px solid var(--rule);
-            padding-top: 20px;
+            padding-top: 24px;
           }
         }
         @media (prefers-reduced-motion: reduce) {
           .brief-page * { animation: none !important; transition: none !important; }
         }
+
       `}</style>
     </motion.div>
   );
