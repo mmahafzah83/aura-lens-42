@@ -292,7 +292,6 @@ function ChipRow({ items }: { items: string[] }) {
   );
 }
 
-function TerritoriesBlock({ items }: { items: string[] }) {
 function TerritoriesBlock({ pillars, tags }: { pillars?: string[]; tags: string[] }) {
   const hasPillars = !!pillars && pillars.length > 0;
   if (!hasPillars) {
