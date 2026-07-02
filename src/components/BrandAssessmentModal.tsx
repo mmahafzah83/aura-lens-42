@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { X, ArrowLeft, Compass, ChevronDown, Copy, Download, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
@@ -7,6 +7,10 @@ import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import { derivePillars } from "@/lib/brandPillars";
 import AuraLogo from "@/components/brand/AuraLogo";
+import BrandPaperDocument from "@/components/report/BrandPaperDocument";
+import { buildBrandPaper } from "@/lib/buildBrandPaper";
+import { exportReportPdf } from "@/lib/exportReportPdf";
+import { toast as sonner } from "sonner";
 
 // New section headers (must match brand-assessment EF SYSTEM_PROMPT)
 const SECTION_DEFS: { key: string; label: string; hint: string }[] = [
@@ -909,51 +913,51 @@ function ResultsView({
     }
   };
 
-  const downloadReport = () => {
-    const escapeHtml = (s: string) =>
-      String(s ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
-    const sectionsHtml = SECTION_DEFS.map(s => {
-      const content = extractSection(prose, s.key) || "";
-      if (!content) return "";
-      return `<section><h2>${escapeHtml(s.label)}</h2><p>${escapeHtml(content).replace(/\n/g, "<br/>")}</p></section>`;
-    }).join("");
-    const html = `<!doctype html><html><head><meta charset="utf-8"/><title>Aura — ${escapeHtml(archetype)}</title>
-      <style>
-        /* Print stylesheet runs in a popup window with no access to app CSS vars.
-           Hex values below mirror canonical light-mode Standard tokens:
-             #1a1a1a  → var(--ink)            (body text)
-             #8b6f2a  → var(--spot)    (light-mode bronze, AA on paper)
-             #B08D3A  → var(--action)         (canonical brand accent)
-             #fbf7ec  → var(--paper-2)    (warm tinted surface)
-             #e6dcc4  → var(--rule)    (hairline divider)
-             #666     → var(--ink-3)          (secondary text)
-             #999     → var(--ink-4)          (muted footer text)                       */
-        body{font-family:Georgia,serif;max-width:720px;margin:40px auto;padding:0 24px;color:#1a1a1a;line-height:1.6}
-        .label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#8b6f2a}
-        h1{font-family:var(--serif);font-size:32px;color:#8b6f2a;margin:8px 0 4px;font-weight:500}
-        .desc{color:#666;font-size:14px;margin:0 0 16px}
-        .oneliner{font-size:17px;font-weight:600;border-left:3px solid #B08D3A;padding:8px 14px;margin:18px 0;background:#fbf7ec}
-        h2{font-family:var(--serif);font-size:18px;color:#8b6f2a;text-transform:uppercase;letter-spacing:1px;margin:24px 0 8px;border-bottom:1px solid #e6dcc4;padding-bottom:4px}
-        section p{font-size:14px}
-        footer{margin-top:40px;font-size:11px;color:#999;text-align:center}
-      </style></head><body>
-      <div class="label">Aura sees you as</div>
-      <h1>${escapeHtml(archetype)}</h1>
-      ${oneLineDesc ? `<p class="desc">${escapeHtml(oneLineDesc)}</p>` : ""}
-      ${positioning ? `<div class="oneliner">${escapeHtml(positioning)}</div>` : ""}
-      ${sectionsHtml}
-      <footer>Aura — Strategic Positioning Report</footer>
-      </body></html>`;
-    const w = window.open("", "_blank", "width=820,height=900");
-    if (!w) { onCopyToast("Pop-up blocked — allow pop-ups to download"); return; }
-    w.document.write(html);
-    w.document.close();
-    setTimeout(() => { try { w.focus(); w.print(); } catch { /* noop */ } }, 300);
+  // Off-screen mount that exportReportPdf rasterises.
+  const paperMountRef = useRef<HTMLDivElement | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [brandPaper, setBrandPaper] = useState<ReturnType<typeof buildBrandPaper> | null>(null);
+
+  const downloadReport = async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not signed in");
+      const { data: profile } = await (supabase.from("diagnostic_profiles" as any) as any)
+        .select("first_name,last_name,level,sector_focus,brand_assessment_results")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      // Prefer the fresh interpretation in state; fall back to what's saved.
+      const { prose: currentProse, json: currentJson } = splitInterpretation(interpretation);
+      const source: Record<string, any> = {
+        ...(profile?.brand_assessment_results || {}),
+        ...(currentJson || {}),
+        interpretation: currentProse || interpretation || profile?.brand_assessment_results?.interpretation || "",
+      };
+      const paper = buildBrandPaper(source, {
+        first_name: profile?.first_name,
+        last_name: profile?.last_name,
+        level: profile?.level,
+        sector_focus: profile?.sector_focus,
+      });
+      setBrandPaper(paper);
+
+      // Wait for the off-screen mount to lay out.
+      await new Promise((r) => setTimeout(r, 60));
+      if (!paperMountRef.current) throw new Error("Report mount unavailable");
+
+      const firstSlug = (paper.profile.first_name || "profile")
+        .toString().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "profile";
+      const date = new Date().toISOString().slice(0, 10);
+      await exportReportPdf(paperMountRef.current, `aura-position-${firstSlug}-${date}.pdf`);
+      sonner.success("Report downloaded");
+    } catch (e: any) {
+      onCopyToast(e?.message || "Failed to download report");
+    } finally {
+      setExporting(false);
+    }
   };
 
   const goToStory = () => {
@@ -963,6 +967,27 @@ function ResultsView({
   return (
     <div className="space-y-6">
       <CinematicKeyframes />
+
+      {/* Off-screen AuraPaper mount for PDF export.
+          Must be laid out (not display:none) so html2canvas can rasterise. */}
+      {brandPaper ? (
+        <div
+          ref={paperMountRef}
+          aria-hidden
+          style={{
+            position: "fixed",
+            left: -9999,
+            top: 0,
+            width: 794,
+            pointerEvents: "none",
+            zIndex: -1,
+          }}
+        >
+          <BrandPaperDocument paper={brandPaper} />
+        </div>
+      ) : (
+        <div ref={paperMountRef} style={{ display: "none" }} />
+      )}
 
       {/* === Cinematic Reveal === */}
       <div
