@@ -169,25 +169,38 @@ const Guide = () => {
           </span>
         </Link>
         <nav className="flex items-center gap-4 sm:gap-6 text-xs">
-          <Link
-            to="/auth"
-            style={{ color: "var(--glass-2)", fontWeight: 500, transition: "color 150ms ease" }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--live)")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--glass-2)")}
-          >
-            Log in
-          </Link>
-          <Link
-            to="/request-access"
-            className="px-3 py-1.5 rounded-full text-xs font-medium"
-            style={{
-              background: "var(--paper-2)",
-              color: "var(--ink)",
-              border: "1px solid var(--hair)",
-            }}
-          >
-            Request access
-          </Link>
+          {authed ? (
+            <Link
+              to="/dashboard"
+              style={{ color: "var(--glass-2)", fontWeight: 500, transition: "color 150ms ease" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--live)")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--glass-2)")}
+            >
+              Back to dashboard
+            </Link>
+          ) : (
+            <>
+              <Link
+                to="/auth"
+                style={{ color: "var(--glass-2)", fontWeight: 500, transition: "color 150ms ease" }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--live)")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "var(--glass-2)")}
+              >
+                Log in
+              </Link>
+              <Link
+                to="/request-access"
+                className="px-3 py-1.5 rounded-full text-xs font-medium"
+                style={{
+                  background: "var(--paper-2)",
+                  color: "var(--ink)",
+                  border: "1px solid var(--hair)",
+                }}
+              >
+                Request access
+              </Link>
+            </>
+          )}
         </nav>
       </header>
 
