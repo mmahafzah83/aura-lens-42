@@ -242,7 +242,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
     --popover-foreground: 42 64% 96%;
 
     /* Bronze primary (dark mode) */
-    --primary: 42 58% 58%;
+    --primary: 40 63% 56%;
     --primary-foreground: 39 40% 10%;
 
     --secondary: 36 18% 12%;
@@ -251,7 +251,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
     --muted: 36 18% 11%;
     --muted-foreground: 40 18% 58%;
 
-    --accent: 42 58% 58%;
+    --accent: 40 63% 56%;
     --accent-foreground: 39 40% 10%;
 
     --destructive: 0 62% 56%;
@@ -259,18 +259,18 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
 
     --border: 40 22% 18%;
     --input: 40 22% 18%;
-    --ring: 42 58% 58%;
+    --ring: 40 63% 56%;
 
     --radius: 1rem;
 
     --sidebar-background: 36 28% 6%;
     --sidebar-foreground: 40 28% 80%;
-    --sidebar-primary: 42 58% 58%;
+    --sidebar-primary: 40 63% 56%;
     --sidebar-primary-foreground: 39 40% 10%;
     --sidebar-accent: 36 18% 11%;
     --sidebar-accent-foreground: 42 64% 96%;
     --sidebar-border: 40 22% 18%;
-    --sidebar-ring: 42 58% 58%;
+    --sidebar-ring: 40 63% 56%;
 
     --card-hover: 36 22% 13%;
     --surface-glass: 36 22% 9% / 0.7;
@@ -278,7 +278,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
     /* Influence page tokens */
     --influence-bg: 36 28% 6%;
     --influence-surface: 36 22% 9%;
-    --influence-accent-gold: 42 58% 58%;
+    --influence-accent-gold: 40 63% 56%;
     --influence-accent-blue: 207 100% 62%;
   }
 
@@ -294,7 +294,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
     --popover-foreground: 36 28% 6%;
 
     /* Bronze primary (light mode) */
-    --primary: 39 52% 46%;
+    --primary: 40 63% 56%;
     --primary-foreground: 40 30% 96%;
 
     --secondary: 42 40% 92%;
@@ -303,7 +303,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
     --muted: 42 40% 92%;
     --muted-foreground: 36 14% 32%;
 
-    --accent: 39 52% 46%;
+    --accent: 40 63% 56%;
     --accent-foreground: 40 30% 96%;
 
     --destructive: 6 56% 42%;
@@ -311,23 +311,23 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
 
     --border: 40 28% 84%;
     --input: 40 28% 84%;
-    --ring: 39 52% 46%;
+    --ring: 40 63% 56%;
 
     --sidebar-background: 40 50% 99%;
     --sidebar-foreground: 36 14% 32%;
-    --sidebar-primary: 39 52% 46%;
+    --sidebar-primary: 40 63% 56%;
     --sidebar-primary-foreground: 40 30% 96%;
     --sidebar-accent: 42 40% 92%;
     --sidebar-accent-foreground: 36 28% 6%;
     --sidebar-border: 40 28% 84%;
-    --sidebar-ring: 39 52% 46%;
+    --sidebar-ring: 40 63% 56%;
 
     --card-hover: 42 40% 92%;
     --surface-glass: 40 50% 99% / 0.7;
 
     --influence-bg: 42 64% 96%;
     --influence-surface: 40 50% 99%;
-    --influence-accent-gold: 39 52% 46%;
+    --influence-accent-gold: 40 63% 56%;
     --influence-accent-blue: 207 100% 50%;
   }
 }
@@ -377,7 +377,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   input:focus-visible,
   select:focus-visible,
   textarea:focus-visible {
-    outline: 2px solid var(--brand, #B08D3A);
+    outline: 2px solid var(--brand, #D6A748);
     outline-offset: 2px;
     border-radius: 4px;
   }
@@ -411,7 +411,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
     text-transform: uppercase;
   }
   .text-metric {
-    font-family: 'Cormorant Garamond', serif;
+    font-family: var(--font-serif);
     font-size: 44px;
     font-weight: 400;
     line-height: 1;
@@ -422,7 +422,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
     font-feature-settings: 'lnum' 1, 'tnum' 1;
   }
   .text-kpi {
-    font-family: 'DM Sans', system-ui, sans-serif;
+    font-family: var(--font-body);
     font-size: 36px;
     font-weight: 500;
     line-height: 1;
@@ -430,7 +430,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
     font-variant-numeric: tabular-nums;
   }
   .text-section-header {
-    font-family: 'DM Sans', system-ui, sans-serif;
+    font-family: var(--font-body);
     font-size: 11px;
     font-weight: 600;
     line-height: 1.4;
@@ -439,7 +439,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
     color: var(--aura-t2, hsl(var(--muted-foreground)));
   }
   .text-denominator {
-    font-family: 'DM Sans', system-ui, sans-serif;
+    font-family: var(--font-body);
     font-size: 16px;
     font-weight: 400;
     color: var(--aura-t3, hsl(var(--muted-foreground)));
@@ -530,8 +530,8 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   }
 
   .gold-glow {
-    box-shadow: 0 0 48px -12px hsl(43 80% 45% / 0.2),
-                0 0 96px -24px hsl(43 80% 45% / 0.08);
+    box-shadow: 0 0 48px -12px hsl(40 63% 45% / 0.2),
+                0 0 96px -24px hsl(40 63% 45% / 0.08);
   }
 
   .text-gradient-gold {
@@ -542,18 +542,18 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   }
 
   .radar-glow {
-    box-shadow: 0 0 64px -16px hsl(43 80% 45% / 0.12),
+    box-shadow: 0 0 64px -16px hsl(40 63% 45% / 0.12),
                 inset 0 1px 0 0 hsl(0 0% 100% / 0.02);
   }
 
   @keyframes aura-pulse {
     0%, 100% {
-      box-shadow: 0 0 24px -4px hsl(43 80% 50% / 0.35),
-                  0 0 64px -8px hsl(43 80% 45% / 0.12);
+      box-shadow: 0 0 24px -4px hsl(40 63% 50% / 0.35),
+                  0 0 64px -8px hsl(40 63% 45% / 0.12);
     }
     50% {
-      box-shadow: 0 0 36px -2px hsl(43 80% 55% / 0.5),
-                  0 0 96px -6px hsl(43 80% 45% / 0.2);
+      box-shadow: 0 0 36px -2px hsl(40 63% 55% / 0.5),
+                  0 0 96px -6px hsl(40 63% 45% / 0.2);
     }
   }
 
@@ -563,12 +563,12 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
 
   @keyframes aura-search-pulse {
     0%, 100% {
-      box-shadow: 0 0 16px -4px hsl(43 80% 50% / 0.15),
-                  0 0 40px -8px hsl(43 80% 45% / 0.06);
+      box-shadow: 0 0 16px -4px hsl(40 63% 50% / 0.15),
+                  0 0 40px -8px hsl(40 63% 45% / 0.06);
     }
     50% {
-      box-shadow: 0 0 24px -2px hsl(43 80% 55% / 0.28),
-                  0 0 56px -4px hsl(43 80% 45% / 0.12);
+      box-shadow: 0 0 24px -2px hsl(40 63% 55% / 0.28),
+                  0 0 56px -4px hsl(40 63% 45% / 0.12);
     }
   }
 
@@ -590,7 +590,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   }
   .hover-lift:hover {
     transform: translateY(-2px);
-    box-shadow: 0 0 20px hsl(43 80% 45% / 0.15),
+    box-shadow: 0 0 20px hsl(40 63% 45% / 0.15),
                 0 8px 32px hsl(0 0% 0% / 0.3);
   }
 
@@ -646,8 +646,8 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
 
   .gradient-mesh {
     background:
-      radial-gradient(ellipse 600px 400px at 15% 20%, hsl(43 60% 20% / 0.08) 0%, transparent 70%),
-      radial-gradient(ellipse 500px 500px at 80% 70%, hsl(43 50% 15% / 0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 600px 400px at 15% 20%, hsl(40 63% 20% / 0.08) 0%, transparent 70%),
+      radial-gradient(ellipse 500px 500px at 80% 70%, hsl(40 63% 15% / 0.06) 0%, transparent 70%),
       radial-gradient(ellipse 400px 300px at 50% 50%, hsl(0 0% 8% / 0.15) 0%, transparent 60%);
     animation: mesh-drift 25s ease-in-out infinite;
   }
@@ -664,8 +664,8 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   }
 
   @keyframes onboard-logo-pulse {
-    0%, 100% { transform: scale(1); box-shadow: 0 0 40px -8px hsl(43 80% 50% / 0.3); }
-    50% { transform: scale(1.06); box-shadow: 0 0 80px -4px hsl(43 80% 55% / 0.5); }
+    0%, 100% { transform: scale(1); box-shadow: 0 0 40px -8px hsl(40 63% 50% / 0.3); }
+    50% { transform: scale(1.06); box-shadow: 0 0 80px -4px hsl(40 63% 55% / 0.5); }
   }
 
   @keyframes radar-line-draw {
@@ -714,8 +714,8 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
 
   .onboarding-mesh {
     background:
-      radial-gradient(ellipse 500px 400px at 30% 30%, hsl(43 60% 25% / 0.12) 0%, transparent 70%),
-      radial-gradient(ellipse 400px 400px at 70% 60%, hsl(43 50% 18% / 0.08) 0%, transparent 70%);
+      radial-gradient(ellipse 500px 400px at 30% 30%, hsl(40 63% 25% / 0.12) 0%, transparent 70%),
+      radial-gradient(ellipse 400px 400px at 70% 60%, hsl(40 63% 18% / 0.08) 0%, transparent 70%);
     animation: mesh-drift 20s ease-in-out infinite;
   }
 
@@ -727,7 +727,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
 
   .typewriter-cursor {
     animation: cursor-blink 0.8s step-end infinite;
-    color: hsl(43 72% 52%);
+    color: var(--action);
     font-weight: 300;
     margin-left: 1px;
   }
@@ -740,9 +740,9 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   }
 
   @keyframes ring-pulse {
-    0% { box-shadow: 0 0 0 0 hsl(43 72% 52% / 0.4); }
-    70% { box-shadow: 0 0 0 12px hsl(43 72% 52% / 0); }
-    100% { box-shadow: 0 0 0 0 hsl(43 72% 52% / 0); }
+    0% { box-shadow: 0 0 0 0 hsl(40 63% 52% / 0.4); }
+    70% { box-shadow: 0 0 0 12px hsl(40 63% 52% / 0); }
+    100% { box-shadow: 0 0 0 0 hsl(40 63% 52% / 0); }
   }
 
   .animate-data-pulse {
@@ -798,7 +798,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
 /* Metric / section uppercase labels */
 .aura-metric-label,
 .text-label-v2 {
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.1em;
@@ -876,7 +876,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   align-items: center;
   justify-content: center;
   letter-spacing: 0.02em;
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: var(--font-body);
 }
 
 /* ── Capture sheet redesign animations ── */
@@ -937,7 +937,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   border: 0.5px solid var(--rule) !important;
   border-radius: 10px !important;
   padding: 11px 14px !important;
-  font-family: var(--font-serif), 'DM Sans', sans-serif !important;
+  font-family: var(--font-serif), sans-serif !important;
   font-size: 13px !important;
   color: var(--ink) !important;
   box-shadow: none !important;
@@ -1205,7 +1205,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   letter-spacing: 0.1em !important;
   text-transform: uppercase !important;
   color: #3D3A36 !important;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-body);
 }
 
 /* ─ Intelligence briefing card ─ */
@@ -1224,7 +1224,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   right: -40px;
   width: 180px;
   height: 180px;
-  background: radial-gradient(circle, hsl(43 50% 55% / 0.18) 0%, transparent 70%);
+  background: radial-gradient(circle, hsl(40 63% 55% / 0.18) 0%, transparent 70%);
   pointer-events: none;
   z-index: 0;
 }
@@ -1355,11 +1355,11 @@ aside .aura-theme-toggle {
 
 /* ── Aura Design System: Foundation Tokens (ds-0) ── */
 :root {
-  --brand:            var(--bronze);
-  --brand-hover:      var(--bronze-deep);
+  --brand:            var(--action);
+  --brand-hover:      var(--spot);
   --brand-pale:       var(--bronze-pale);
   --brand-muted:      var(--bronze-line);
-  --brand-glow:       var(--bronze-glow);
+  --brand-glow:       var(--action);
   --brand-line:       var(--bronze-line);
   --brand-ghost:      var(--bronze-mist);
   --surface-page:     var(--paper);
@@ -1384,7 +1384,7 @@ aside .aura-theme-toggle {
   --warning-pale:     #FEF3C7;
   --shadow-card:      0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
   --shadow-card-hover:0 2px 8px rgba(0,0,0,0.08), 0 12px 32px rgba(0,0,0,0.07);
-  --shadow-brand:     0 4px 24px rgba(212,176,86,0.30);
+  --shadow-brand:     var(--shadow-lift);
   --radius-sm:  8px;
   --radius-md:  10px;
   --radius-lg:  14px;
@@ -1402,15 +1402,15 @@ aside .aura-theme-toggle {
   --success-dark:     #2a4a2a;
   --success-darkest:  #0a1a0a;
   --success-mid:      #4a8a4a;
-  --gold-pale:        #FEF8F3;
-  --gold-light:       #F9C88B;
-  --gold-mid:         #8a6a20;
-  --gold-text:        #7A4A12;
-  --gold-dark:        #5A3A0E;
-  --gold-pale-2:      #FFFCF8;
-  --gold-mid-2:       #9A6A2A;
-  --gold-pale-3:      #FEF1E1;
-  --gold-mid-3:       #B07A2A;
+  --gold-pale:        color-mix(in srgb, var(--action) 10%, var(--paper));
+  --gold-light:       var(--action);
+  --gold-mid:         var(--action);
+  --gold-text:        var(--spot);
+  --gold-dark:        var(--spot);
+  --gold-pale-2:      color-mix(in srgb, var(--action) 8%, var(--paper));
+  --gold-mid-2:       var(--action);
+  --gold-pale-3:      color-mix(in srgb, var(--action) 12%, var(--paper));
+  --gold-mid-3:       var(--action);
 }
 
 /* Theme-aware surface tokens — dark mode overrides */
@@ -1611,7 +1611,7 @@ html.dark .text-gray-500,
 }
 @keyframes nav-glow {
   0% { filter: drop-shadow(0 0 0 transparent); }
-  50% { filter: drop-shadow(0 0 6px rgba(176, 141, 58, 0.6)); }
+  50% { filter: drop-shadow(0 0 6px rgba(214, 167, 72, 0.6)); }
   100% { filter: drop-shadow(0 0 0 transparent); }
 }
 .nav-intelligence-pulse {
@@ -1735,14 +1735,14 @@ html.dark .text-gray-500,
 /* A11y: visible keyboard focus for sidebar nav + bottom action buttons */
 .aura-sidebar-shell button:focus-visible,
 .aura-nav-item:focus-visible {
-  outline: 2px solid var(--brand, #B08D3A);
+  outline: 2px solid var(--brand, #D6A748);
   outline-offset: -2px;
   border-radius: 8px;
 }
 
 /* A11y: focus indicator for notification bell trigger */
 button[aria-label="Notifications"]:focus-visible {
-  outline: 2px solid var(--brand, #B08D3A);
+  outline: 2px solid var(--brand, #D6A748);
   outline-offset: 2px;
   border-radius: 8px;
 }
@@ -1755,7 +1755,7 @@ button[aria-label="Notifications"]:focus-visible {
     var(--sidebar-active-bg, var(--brand-surface)) 0%,
     transparent 100%
   );
-  box-shadow: inset 0 0 24px rgba(var(--brand-rgb, 197, 165, 90), 0.03);
+  box-shadow: inset 0 0 24px rgba(var(--brand-rgb, 214, 167, 72), 0.03);
   transition: all 0.25s ease;
 }
 .aura-nav-item.is-active::before {
@@ -1827,7 +1827,7 @@ button[aria-label="Notifications"]:focus-visible {
   [data-fx-card-hover="true"] .rounded-2xl:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-lift);
-    border-color: rgba(var(--brand-rgb, 197, 165, 90), 0.2);
+    border-color: rgba(var(--brand-rgb, 214, 167, 72), 0.2);
   }
 }
 
@@ -1860,8 +1860,8 @@ button[aria-label="Notifications"]:focus-visible {
   50%      { opacity: 0.4; transform: scale(1.4); }
 }
 @keyframes aura-pulse-glow {
-  0%, 100% { text-shadow: 0 0 0 rgba(var(--brand-rgb, 197, 165, 90), 0); }
-  50%      { text-shadow: 0 0 8px rgba(var(--brand-rgb, 197, 165, 90), 0.55); }
+  0%, 100% { text-shadow: 0 0 0 rgba(var(--brand-rgb, 214, 167, 72), 0); }
+  50%      { text-shadow: 0 0 8px rgba(var(--brand-rgb, 214, 167, 72), 0.55); }
 }
 @media (prefers-reduced-motion: no-preference) {
   [data-fx-pulse="true"] .aura-pulse-dot {
@@ -2041,8 +2041,8 @@ button[aria-label="Notifications"]:focus-visible {
 }
 .card-interactive:hover {
   transform: translateY(-1px);
-  border-color: var(--gold-glow, rgba(176, 141, 58, 0.4));
-  box-shadow: 0 3px 16px rgba(176, 141, 58, 0.06);
+  border-color: color-mix(in srgb, var(--action) 40%, transparent);
+  box-shadow: 0 3px 16px color-mix(in srgb, var(--action) 12%, transparent);
 }
 .card-interactive:active {
   transform: translateY(0);
@@ -2052,7 +2052,7 @@ button[aria-label="Notifications"]:focus-visible {
 /* Warm gold focus ring — keyboard navigation matches the brand,
    not the browser's default blue. */
 *:focus-visible {
-  outline: 2px solid rgba(176, 141, 58, 0.5);
+  outline: 2px solid rgba(214, 167, 72, 0.5);
   outline-offset: 2px;
   border-radius: 4px;
 }
