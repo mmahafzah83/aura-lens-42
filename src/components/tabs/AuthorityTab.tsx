@@ -407,7 +407,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
   const [generatingShort, setGeneratingShort] = useState(false);
 
   // Visual companion state
-  const [visualMode, setVisualMode] = useState<'card' | 'schematic'>('card');
+  // Visual companion is card-only.
   const [cardRecommendation, setCardRecommendation] = useState<any>(null);
 
   // Quick actions / variations state
@@ -2011,7 +2011,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
             {/* Visual companion is rendered below in its dedicated section */}
 
 
-            {/* Visual Companion — Branded Card or AI Schematic */}
+            {/* Visual Companion — Branded Card */}
             {displayedOutput && !isGeneratingAny && (
               <div className="rounded-xl border border-border/10 bg-card/60 backdrop-blur-sm">
                 <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/8">
@@ -2021,52 +2021,23 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                       Visual Companion
                     </p>
                   </div>
-                  <div className="inline-flex rounded-md border border-border/15 overflow-hidden">
-                    {([
-                      { key: 'card', label: 'Branded Card' },
-                      { key: 'schematic', label: 'AI Schematic' },
-                    ] as const).map((opt) => (
-                      <button
-                        key={opt.key}
-                        type="button"
-                        onClick={() => setVisualMode(opt.key)}
-                        className="px-2.5 h-7 text-xs font-medium transition-colors"
-                        style={{
-                          background: visualMode === opt.key ? "var(--brand)" : "transparent",
-                          color: visualMode === opt.key ? "var(--ink-on-brand, var(--ink))" : "var(--muted-foreground)",
-                        }}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
                 </div>
-                {visualMode === 'card' ? (
-                  <div className="p-5">
-                    <CardPreviewPanel
-                      postText={displayedOutput}
-                      topicLabel={topic}
-                      language={lang}
-                      authorName={
-                        lang === 'ar'
-                          ? (profileName || 'اسمك')
-                          : (profileName || 'Your Name')
-                      }
-                      authorTitle={profileRole || 'Professional'}
-                      recommendedStyle={cardRecommendation?.style}
-                      recommendedType={cardRecommendation?.card_type}
-                      recommendedHighlight={cardRecommendation?.highlight}
-                    />
-                  </div>
-                ) : (
-                  <SchematicPreviewPanel
+                <div className="p-5">
+                  <CardPreviewPanel
                     postText={displayedOutput}
                     topicLabel={topic}
                     language={lang}
-                    authorName={profileName || 'Author'}
+                    authorName={
+                      lang === 'ar'
+                        ? (profileName || 'اسمك')
+                        : (profileName || 'Your Name')
+                    }
                     authorTitle={profileRole || 'Professional'}
+                    recommendedStyle={cardRecommendation?.style}
+                    recommendedType={cardRecommendation?.card_type}
+                    recommendedHighlight={cardRecommendation?.highlight}
                   />
-                )}
+                </div>
               </div>
             )}
 
