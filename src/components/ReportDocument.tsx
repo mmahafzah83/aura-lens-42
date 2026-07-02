@@ -593,7 +593,7 @@ function packSheets(blocks: Block[], heights: number[]): PackedSheet[] {
   for (let i = 0; i < blocks.length; i++) {
     const b = blocks[i];
     const h = heights[i] || 0;
-    if (!cur || cur.section !== b.section) {
+    if (!cur) {
       cur = { section: b.section, blocks: [] };
       sheets.push(cur);
       used = 0;

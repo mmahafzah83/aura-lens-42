@@ -218,7 +218,7 @@ export function PaperCover({ data }: { data: ReportData }) {
             letterSpacing: "0.16em",
             textTransform: "uppercase",
             color: T.spot,
-            marginBottom: 40,
+            marginBottom: 28,
           }}
         >
           The Aura Paper · № 01
@@ -247,6 +247,10 @@ export function PaperCover({ data }: { data: ReportData }) {
               color: T.ink2,
               margin: "26px 0 0",
               maxWidth: 560,
+              display: "-webkit-box",
+              WebkitLineClamp: 6,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
             }}
           >
             {statement}
@@ -257,7 +261,7 @@ export function PaperCover({ data }: { data: ReportData }) {
       {/* Slogan band — full bleed inside the sheet padding */}
       <div
         style={{
-          marginTop: 44,
+          marginTop: 28,
           marginInline: -56,
           padding: "22px 56px",
           background: T.spot,
@@ -299,7 +303,7 @@ export function PaperCover({ data }: { data: ReportData }) {
       {/* Reading legend */}
       <div
         style={{
-          marginTop: 34,
+          marginTop: 24,
           border: `1.5px solid ${T.ink}`,
           background: T.paper2,
           position: "relative",
@@ -330,7 +334,7 @@ export function PaperCover({ data }: { data: ReportData }) {
       {/* Meta grid */}
       <div
         style={{
-          marginTop: 40,
+          marginTop: 26,
           paddingTop: 14,
           borderTop: `1px solid ${T.rule}`,
           display: "grid",
@@ -606,10 +610,20 @@ export function ComponentBar({
 }
 
 // ── useImprintDelta ────────────────────────────────────────────────────
-// Shared query for the last 8 imprint snapshots (ascending). Returns the
-// scores plus the (last − first) delta. Used by ImprintSparkline and the
-// ClosingPlate stat so the score_snapshots query lives in exactly one
-// place.
+// Shared query for the trailing ~8 weekly imprint samples. Fetches
+// snapshots from the last 63 days ascending, then buckets to one point
+// per ISO week (last snapshot per week), capped at 8 buckets. Returns
+// the bucketed series plus (last − first) delta. Used by both the
+// sparkline and the closing plate so the score_snapshots query lives
+// in exactly one place.
+function isoWeekKey(d: Date): string {
+  const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const day = t.getUTCDay() || 7;
+  t.setUTCDate(t.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((t.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return `${t.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
+}
 export function useImprintDelta(userId: string): { rows: { score: number }[] | null; delta: number } {
   const [rows, setRows] = useState<{ score: number }[] | null>(null);
 
@@ -617,15 +631,22 @@ export function useImprintDelta(userId: string): { rows: { score: number }[] | n
     let cancelled = false;
     (async () => {
       try {
+        const since = new Date(Date.now() - 63 * 24 * 60 * 60 * 1000).toISOString();
         const { data } = await supabase
           .from("score_snapshots")
           .select("score, created_at")
           .eq("user_id", userId)
-          .order("created_at", { ascending: false })
-          .limit(8);
+          .gte("created_at", since)
+          .order("created_at", { ascending: true });
         if (cancelled) return;
-        const list = ((data || []) as { score: number }[]).slice().reverse();
-        setRows(list);
+        const raw = (data || []) as { score: number; created_at: string }[];
+        const byWeek = new Map<string, { score: number }>();
+        for (const r of raw) {
+          const key = isoWeekKey(new Date(r.created_at));
+          byWeek.set(key, { score: r.score }); // last write wins → last snapshot in week
+        }
+        const buckets = Array.from(byWeek.values()).slice(-8);
+        setRows(buckets);
       } catch {
         if (!cancelled) setRows([]);
       }
