@@ -791,7 +791,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
 
       {/* 2. LEAD SPREAD ────────────────────────────────────── */}
       <section className="brief-lead" style={{
-        display: "grid", gridTemplateColumns: "1fr 310px", gap: 40, marginBottom: 40,
+        display: "grid", gridTemplateColumns: "1fr 310px", gap: 40, marginBottom: 48,
       }}>
         {/* LEFT — kicker, headline, standfirst, byline */}
         <div>
@@ -924,7 +924,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
       </section>
 
       {/* 3. NEXT MOVE ────────────────────────────────────── */}
-      <section style={{ borderTop: "2px solid var(--ink)", paddingTop: 20, marginBottom: 44 }}>
+      <section style={{ borderTop: "2px solid var(--ink)", paddingTop: 24, marginBottom: 56 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, flexWrap: "wrap" }}>
           <Mono color="var(--spot)">◆ NEXT MOVE</Mono>
           <InfoTooltip label="Next move" triggerSize={12} text="The one action worth your next ten minutes." side="bottom" />
@@ -949,7 +949,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
       </section>
 
       {/* 4. WHAT MOVED ────────────────────────────────────── */}
-      <section style={{ marginBottom: 44 }}>
+      <section style={{ marginBottom: 56 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, gap: 12, flexWrap: "wrap" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <Mono color="var(--spot)">WHAT MOVED</Mono>
@@ -1138,7 +1138,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
       </section>
 
       {/* 5. YOUR RHYTHM / PROOF ────────────────────────────────────── */}
-      <section className="brief-rhythm" style={{ display: "grid", gridTemplateColumns: "1fr 310px", gap: 40, marginBottom: 44 }}>
+      <section className="brief-rhythm" style={{ display: "grid", gridTemplateColumns: "1fr 310px", gap: 40, marginBottom: 56 }}>
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, gap: 12, flexWrap: "wrap" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
