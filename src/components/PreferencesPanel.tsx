@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { X, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,23 +23,8 @@ interface Profile {
   last_name: string | null;
   firm: string | null;
   sector_focus: string | null;
-  linkedin_handle: string | null;
   notification_prefs: Record<string, unknown> | null;
   shared_learning_consent: boolean | null;
-}
-
-function normalizeLinkedInHandle(input: string): string {
-  let s = (input || "").trim();
-  if (!s) return "";
-  s = s.replace(/^https?:\/\//i, "");
-  s = s.replace(/^www\./i, "");
-  s = s.replace(/^linkedin\.com\/in\//i, "");
-  s = s.replace(/^in\//i, "");
-  s = s.replace(/\/+$/g, "");
-  s = s.replace(/^@/, "");
-  // take first path segment in case of query/extra
-  s = s.split(/[/?#]/)[0];
-  return s;
 }
 
 const SectionHeader = ({ children }: { children: React.ReactNode }) => (
