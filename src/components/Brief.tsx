@@ -791,7 +791,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
 
       {/* 2. LEAD SPREAD ────────────────────────────────────── */}
       <section className="brief-lead" style={{
-        display: "grid", gridTemplateColumns: "1fr 310px", gap: 40, marginBottom: 40,
+        display: "grid", gridTemplateColumns: "1fr 310px", gap: 40, marginBottom: 48,
       }}>
         {/* LEFT — kicker, headline, standfirst, byline */}
         <div>
@@ -901,21 +901,30 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
                   }}>{animatedImprint}</div>
 
                   {d.spark.length >= 2 && (
-                    <svg viewBox="0 0 120 30" width="100%" height="30" style={{ marginTop: 8, display: "block" }} aria-label="Imprint over recent snapshots">
-                      {(() => {
-                        const vs = d.spark;
-                        const min = Math.min(...vs);
-                        const max = Math.max(...vs);
-                        const range = Math.max(1, max - min);
-                        const pts = vs.map((v, i) => {
-                          const x = (i / (vs.length - 1)) * 120;
-                          const y = 28 - ((v - min) / range) * 26;
-                          return `${x.toFixed(1)},${y.toFixed(1)}`;
-                        }).join(" ");
-                        return <polyline points={pts} fill="none" stroke="var(--ink-2)" strokeWidth="1" />;
-                      })()}
-                    </svg>
+                    <div>
+                      <Mono size={9} style={{ display: "block", marginBottom: 4 }}>LAST {d.spark.length} SNAPSHOTS</Mono>
+                      <svg viewBox="0 0 120 36" width="100%" height={36} preserveAspectRatio="none" style={{ display: "block" }} aria-label="Imprint over recent snapshots">
+                        {(() => {
+                          const vs = d.spark;
+                          const min = Math.min(...vs);
+                          const max = Math.max(...vs);
+                          const range = Math.max(1, max - min);
+                          const pts = vs.map((v, i) => {
+                            const x = (i / (vs.length - 1)) * 120;
+                            const y = 34 - ((v - min) / range) * 32;
+                            return `${x.toFixed(1)},${y.toFixed(1)}`;
+                          }).join(" ");
+                          return (
+                            <>
+                              <line x1="0" y1="29" x2="120" y2="29" stroke="var(--rule)" strokeWidth="0.75" />
+                              <polyline points={pts} fill="none" stroke="var(--ink-2)" strokeWidth="1" />
+                            </>
+                          );
+                        })()}
+                      </svg>
+                    </div>
                   )}
+
                 </div>
               </div>
             );
@@ -924,7 +933,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
       </section>
 
       {/* 3. NEXT MOVE ────────────────────────────────────── */}
-      <section style={{ borderTop: "2px solid var(--ink)", paddingTop: 20, marginBottom: 44 }}>
+      <section style={{ borderTop: "2px solid var(--ink)", paddingTop: 24, marginBottom: 56 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, flexWrap: "wrap" }}>
           <Mono color="var(--spot)">◆ NEXT MOVE</Mono>
           <InfoTooltip label="Next move" triggerSize={12} text="The one action worth your next ten minutes." side="bottom" />
@@ -949,7 +958,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
       </section>
 
       {/* 4. WHAT MOVED ────────────────────────────────────── */}
-      <section style={{ marginBottom: 44 }}>
+      <section style={{ marginBottom: 56 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, gap: 12, flexWrap: "wrap" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <Mono color="var(--spot)">WHAT MOVED</Mono>
@@ -1138,7 +1147,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
       </section>
 
       {/* 5. YOUR RHYTHM / PROOF ────────────────────────────────────── */}
-      <section className="brief-rhythm" style={{ display: "grid", gridTemplateColumns: "1fr 310px", gap: 40, marginBottom: 44 }}>
+      <section className="brief-rhythm" style={{ display: "grid", gridTemplateColumns: "1fr 310px", gap: 40, marginBottom: 56 }}>
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, gap: 12, flexWrap: "wrap" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1313,18 +1322,23 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
           outline-offset: 3px;
         }
         [lang="ar"] .brief-cta, [dir="rtl"] .brief-cta { font-family: var(--font-arabic); }
+        @media (min-width: 1200px) {
+          .brief-lead, .brief-moved, .brief-rhythm { grid-template-columns: 1fr 340px !important; gap: 64px !important; }
+          .brief-ledger, .brief-moved > aside, .brief-rhythm > aside { padding-inline-start: 34px; }
+        }
         @media (max-width: 960px) {
           .brief-lead, .brief-moved, .brief-rhythm { grid-template-columns: 1fr !important; }
           .brief-ledger, .brief-moved > aside, .brief-rhythm > aside {
             border-inline-start: none !important;
             padding-inline-start: 0 !important;
             border-top: 1px solid var(--rule);
-            padding-top: 20px;
+            padding-top: 24px;
           }
         }
         @media (prefers-reduced-motion: reduce) {
           .brief-page * { animation: none !important; transition: none !important; }
         }
+
       `}</style>
     </motion.div>
   );
