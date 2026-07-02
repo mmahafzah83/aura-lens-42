@@ -226,12 +226,12 @@ export function HelpPanel({ open, onClose, activeTab }: { open: boolean; onClose
             Read the full guide →
           </AuraButton>
           <div style={{ marginTop: 10, textAlign: "center", fontSize: 12, color: "var(--ink-3)", lineHeight: 1.5 }}>
-            Aura Private Beta · Questions?{" "}
+            Aura Private Beta · Questions? Email us at{" "}
             <a
               href="mailto:support@aura-intel.org"
               style={{ color: "var(--action)", textDecoration: "none" }}
             >
-              Reach out to your invite contact
+              support@aura-intel.org
             </a>
           </div>
         </footer>
