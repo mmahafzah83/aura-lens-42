@@ -72,7 +72,7 @@ const Row = ({
       borderTop: "0.5px solid var(--rule)",
       cursor: onClick ? "pointer" : "default",
       color: danger ? "var(--error, #c0392b)" : "var(--ink)",
-      fontFamily: "'DM Sans', system-ui, sans-serif",
+      fontFamily: "var(--font-body)",
     }}
     onMouseEnter={(e) => {
       if (onClick) (e.currentTarget as HTMLElement).style.background = "var(--paper-2)";
@@ -170,7 +170,7 @@ const ToggleRow = ({
       gap: 16,
       padding: "14px 24px",
       borderTop: "0.5px solid var(--rule)",
-      fontFamily: "'DM Sans', system-ui, sans-serif",
+      fontFamily: "var(--font-body)",
     }}
   >
     <div style={{ flex: 1, minWidth: 0 }}>
@@ -324,7 +324,7 @@ export default function PreferencesPanel({
           <div style={{ minWidth: 0 }}>
             <h2
               style={{
-                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontFamily: "var(--font-serif)",
                 fontSize: 20,
                 fontWeight: 500,
                 color: "var(--ink)",
@@ -339,7 +339,7 @@ export default function PreferencesPanel({
                 fontSize: 13,
                 color: "var(--ink-2)",
                 margin: "4px 0 0",
-                fontFamily: "'DM Sans', system-ui, sans-serif",
+                fontFamily: "var(--font-body)",
               }}
             >
               How Aura works for you.
@@ -434,7 +434,7 @@ export default function PreferencesPanel({
                 fontSize: 11,
                 color: "var(--ink-2)",
                 textAlign: "center",
-                fontFamily: "'DM Sans', system-ui, sans-serif",
+                fontFamily: "var(--font-body)",
               }}
             >
               Signed in as {email}
