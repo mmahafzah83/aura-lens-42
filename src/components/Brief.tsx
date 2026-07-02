@@ -27,6 +27,7 @@ interface BriefProps {
   onOpenDraft: (draft: BriefDraft) => void;
   onSwitchTab?: (tab: string) => void;
   onOpenCapture?: () => void;
+  onInvite?: () => void;
 }
 
 type SectionState<T> =
@@ -205,7 +206,7 @@ function useCountUp(target: number | null, enabled: boolean): number {
 
 // ── Component ────────────────────────────────────────────────────────
 
-export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: BriefProps) {
+export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvite }: BriefProps) {
   const { user, isReady } = useAuthReady();
   const tierInfo = useTierFromImprint(user?.id ?? null);
   const reducedMotion = useMemo(prefersReducedMotion, []);
@@ -752,12 +753,11 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
       style={{
         backgroundColor: "var(--paper)", color: "var(--ink)",
         fontFamily: "var(--font-body)", fontSize: 17, lineHeight: 1.6,
-        marginInline: "calc(50% - 50vw)", width: "100vw",
-        padding: "18px 0 60px", minHeight: "100vh",
+        padding: "6px 0 60px", minHeight: "100vh",
       }}
       aria-label="Your Brief"
     >
-      <div className="brief-inner" style={{ maxWidth: 1100, margin: "0 auto", padding: "0 32px" }}>
+      <div className="brief-inner" style={{ maxWidth: "none", margin: "0 auto", padding: 0 }}>
 
       {/* 1. META STRIP ────────────────────────────────────── */}
       <div className="brief-meta" style={{
@@ -1282,7 +1282,20 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture }: Brief
           <a href="/guide"   style={{ textDecoration: "none" }}><Mono>Guide</Mono></a>
           <a href="/privacy" style={{ textDecoration: "none" }}><Mono>Privacy</Mono></a>
           <a href="/terms"   style={{ textDecoration: "none" }}><Mono>Terms</Mono></a>
-          <a href="mailto:hello@aura-intel.org" style={{ textDecoration: "none" }}><Mono>Contact</Mono></a>
+          <a href="mailto:support@aura-intel.org" style={{ textDecoration: "none" }}><Mono>Contact</Mono></a>
+          <button
+            type="button"
+            onClick={() => onInvite?.()}
+            style={{ background: "transparent", border: 0, padding: 0, cursor: "pointer" }}
+          >
+            <Mono>Bring someone in</Mono>
+          </button>
+        </div>
+        <div style={{
+          fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.14em",
+          textTransform: "uppercase", color: "var(--ink-3)",
+        }}>
+          © {new Date().getFullYear()} Aura · Built in Riyadh, for the world.
         </div>
       </footer>
 

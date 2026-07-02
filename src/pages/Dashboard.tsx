@@ -928,39 +928,93 @@ const Dashboard = () => {
                 />
                 <FirstVisitHint page="home" />
                 <IdentityDriftBanner />
-                {/* Brief masthead nav — same labels/order as the sidebar, no avatar duplication */}
-                <div className="flex items-center gap-5 overflow-x-auto pb-3 mb-2">
-                  {NAV_ITEMS.map((item) => {
-                    const isActive = activeTab === item.value;
-                    return (
-                      <button
-                        key={item.value}
-                        type="button"
-                        onClick={() => switchTab(item.value)}
-                        className="whitespace-nowrap"
-                        style={{
-                          fontFamily: "var(--font-mono)",
-                          fontSize: 11,
-                          letterSpacing: "0.14em",
-                          textTransform: "uppercase",
-                          color: isActive ? "var(--spot)" : "var(--ink-3)",
-                          border: "0px solid transparent",
-                          borderBottom: isActive ? "1px solid var(--spot)" : "1px solid transparent",
-                          paddingBottom: 2,
-                          background: "transparent",
-                          cursor: "pointer",
-                          transition: "color .25s ease",
-                        }}
-                      >
-                        {item.label}
-                      </button>
-                    );
-                  })}
+                {/* Brief masthead — logo + wordmark + kicker on the left,
+                    nav + divider + Capture / Ask Aura actions on the right. */}
+                <div className="flex justify-between items-center overflow-x-auto" style={{ marginBottom: 10 }}>
+                  <div className="flex items-center" style={{ gap: 12 }}>
+                    <AuraLogo size={30} variant="light" />
+                    <span style={{
+                      fontFamily: "var(--font-serif)", fontSize: 24, fontWeight: 500,
+                      color: "var(--ink)", lineHeight: 1,
+                    }}>Aura</span>
+                    <span
+                      className="hidden sm:inline"
+                      style={{
+                        fontFamily: "var(--font-mono)", fontSize: 10,
+                        letterSpacing: "0.18em", textTransform: "uppercase",
+                        color: "var(--ink-3)",
+                      }}
+                    >
+                      Personal Strategic Intelligence
+                    </span>
+                  </div>
+                  <div className="flex items-center" style={{ gap: 16 }}>
+                    {NAV_ITEMS.map((item) => {
+                      const isActive = activeTab === item.value;
+                      return (
+                        <button
+                          key={item.value}
+                          type="button"
+                          onClick={() => switchTab(item.value)}
+                          className="whitespace-nowrap"
+                          style={{
+                            fontFamily: "var(--font-mono)",
+                            fontSize: 11,
+                            letterSpacing: "0.14em",
+                            textTransform: "uppercase",
+                            color: isActive ? "var(--spot)" : "var(--ink-3)",
+                            borderBottom: isActive ? "1px solid var(--spot)" : "1px solid transparent",
+                            paddingBottom: 2,
+                            background: "transparent",
+                            border: 0,
+                            cursor: "pointer",
+                            transition: "color .25s ease",
+                          }}
+                        >
+                          {item.label}
+                        </button>
+                      );
+                    })}
+                    <span aria-hidden style={{ width: 1, height: 14, background: "var(--rule)" }} />
+                    <button
+                      type="button"
+                      onClick={() => handleOpenCapture()}
+                      className="brief-masthead-capture whitespace-nowrap"
+                      style={{
+                        fontFamily: "var(--font-mono)", fontSize: 10,
+                        letterSpacing: "0.14em", textTransform: "uppercase",
+                        color: "var(--spot)", border: "1px solid var(--spot)",
+                        padding: "4px 10px", background: "transparent", cursor: "pointer",
+                        transition: "background-color .2s ease, color .2s ease",
+                      }}
+                    >
+                      Capture
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openChat()}
+                      className="brief-masthead-ask whitespace-nowrap"
+                      style={{
+                        fontFamily: "var(--font-mono)", fontSize: 10,
+                        letterSpacing: "0.14em", textTransform: "uppercase",
+                        color: "var(--ink-2)", background: "transparent",
+                        border: 0, padding: "4px 2px", cursor: "pointer",
+                        transition: "color .2s ease",
+                      }}
+                    >
+                      Ask Aura
+                    </button>
+                  </div>
                 </div>
+                <style>{`
+                  .brief-masthead-capture:hover { background: var(--spot); color: var(--paper) !important; }
+                  .brief-masthead-ask:hover { color: var(--ink) !important; }
+                `}</style>
                 <ErrorBoundary>
                   <Brief
                     onOpenCapture={() => handleOpenCapture()}
                     onSwitchTab={(t) => switchTab(t as TabValue)}
+                    onInvite={() => setInviteOpen(true)}
                     onOpenDraft={(d) => { setDraftPrefill(d); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                   />
                 </ErrorBoundary>
