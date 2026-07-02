@@ -197,9 +197,6 @@ export default function PreferencesPanel({
   onRetakeBrandAssessment,
 }: PreferencesPanelProps) {
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [editingLinkedIn, setEditingLinkedIn] = useState(false);
-  const [linkedInInput, setLinkedInInput] = useState("");
-  const liInputRef = useRef<HTMLInputElement>(null);
 
   // Body scroll lock + Esc to close.
   useEffect(() => {
@@ -223,23 +220,15 @@ export default function PreferencesPanel({
     (async () => {
       const { data } = await (supabase
         .from("diagnostic_profiles" as any) as any)
-        .select("first_name, last_name, firm, sector_focus, linkedin_handle, notification_prefs, shared_learning_consent")
+        .select("first_name, last_name, firm, sector_focus, notification_prefs, shared_learning_consent")
         .eq("user_id", userId)
         .maybeSingle();
       if (!cancelled) {
         setProfile((data as Profile) || null);
-        setLinkedInInput((data as Profile)?.linkedin_handle ?? "");
       }
     })();
     return () => { cancelled = true; };
   }, [open, userId]);
-
-  useEffect(() => {
-    if (editingLinkedIn) {
-      // Defer focus to next frame so the input is in the DOM.
-      requestAnimationFrame(() => liInputRef.current?.focus());
-    }
-  }, [editingLinkedIn]);
 
   const prefs = (profile?.notification_prefs ?? {}) as Record<string, unknown>;
   const weeklyBriefOn = prefs.weekly_brief !== false; // default true
@@ -260,17 +249,6 @@ export default function PreferencesPanel({
     setProfile((p) => (p ? { ...p, shared_learning_consent: value } : p));
     await (supabase.from("diagnostic_profiles" as any) as any)
       .update({ shared_learning_consent: value })
-      .eq("user_id", userId);
-  };
-
-  const saveLinkedIn = async () => {
-    const handle = normalizeLinkedInHandle(linkedInInput);
-    setEditingLinkedIn(false);
-    if (!userId) return;
-    if (handle === (profile?.linkedin_handle ?? "")) return;
-    setProfile((p) => (p ? { ...p, linkedin_handle: handle } : p));
-    await (supabase.from("diagnostic_profiles" as any) as any)
-      .update({ linkedin_handle: handle || null })
       .eq("user_id", userId);
   };
 
