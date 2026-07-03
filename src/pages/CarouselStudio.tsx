@@ -1693,6 +1693,25 @@ export default function CarouselStudio() {
   const [savedToLibrary, setSavedToLibrary] = useState(false);
   const [authorDefaults, setAuthorDefaults] = useState<{ name: string; title: string; handle: string }>({ name: "", title: "", handle: "" });
 
+  // One-pager formats (Broadsheet-only). Format-key drives whether we render the
+  // carousel or a single Explainer / Q&A page.
+  type FormatKey = "carousel" | "explainer" | "qa";
+  const [formatKey, setFormatKey] = useState<FormatKey>("carousel");
+  const [explainerDoc, setExplainerDoc] = useState<ExplainerDoc>(
+    lang === "ar" ? SAMPLE_EXPLAINER_AR : SAMPLE_EXPLAINER,
+  );
+  const [qaDoc, setQaDoc] = useState<QASheetDoc>(
+    lang === "ar" ? SAMPLE_QASHEET_AR : SAMPLE_QASHEET,
+  );
+  // Keep sample doc language in sync with the language toggle. Preserve user
+  // edits by only swapping when the doc still equals the last sample.
+  useEffect(() => {
+    setExplainerDoc(d => (d === SAMPLE_EXPLAINER || d === SAMPLE_EXPLAINER_AR
+      ? (lang === "ar" ? SAMPLE_EXPLAINER_AR : SAMPLE_EXPLAINER) : { ...d, lang }));
+    setQaDoc(d => (d === SAMPLE_QASHEET || d === SAMPLE_QASHEET_AR
+      ? (lang === "ar" ? SAMPLE_QASHEET_AR : SAMPLE_QASHEET) : { ...d, lang }));
+  }, [lang]);
+
   // Voice profile parity (mirrors AuthorityTab post pattern)
   const [hasVoiceProfile, setHasVoiceProfile] = useState(false);
   const [voiceFeedbackBusy, setVoiceFeedbackBusy] = useState(false);
