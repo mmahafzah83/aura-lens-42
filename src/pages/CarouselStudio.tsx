@@ -2496,9 +2496,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
           />
           <button onClick={() => {
             if (formatKey === "carousel") { generate(); return; }
-            toast("Generator arrives with the next deploy");
-            if (formatKey === "explainer") setExplainerDoc(lang === "ar" ? SAMPLE_EXPLAINER_AR : SAMPLE_EXPLAINER);
-            else setQaDoc(lang === "ar" ? SAMPLE_QASHEET_AR : SAMPLE_QASHEET);
+            generateOnePager();
           }} disabled={generating}
                   className="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--action)]"
                   style={{ background: "var(--action)", color: "var(--ink-on-brand)" }}>
