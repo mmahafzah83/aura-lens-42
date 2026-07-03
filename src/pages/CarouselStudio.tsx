@@ -187,6 +187,7 @@ interface Carousel {
   author_title?: string;
   author_handle?: string;
   signal_attribution?: string | null;
+  sector_focus?: string;
 }
 
 type Dimension = "1080x1080" | "1080x1350" | "1200x628";
@@ -462,7 +463,7 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
         carousel={carousel as any}
         lang={lang}
         displayLabel={getDisplayLabel(slide)}
-        sectorFocus={(carousel as any).sector_focus || ""}
+        sectorFocus={carousel.sector_focus || ""}
         renderHeadlineWithAccent={renderHeadlineWithAccent}
         wrapText={wrapText}
       />
@@ -1823,7 +1824,7 @@ export default function CarouselStudio() {
       // (that surfaced stale display names from other contexts).
       const { data: pRes } = await supabase
         .from("diagnostic_profiles")
-        .select("first_name, last_name, level, firm")
+        .select("first_name, last_name, level, firm, sector_focus")
         .eq("user_id", uid)
         .maybeSingle();
       const p: any = pRes || {};
@@ -1836,6 +1837,7 @@ export default function CarouselStudio() {
         author_name: c.author_name || name,
         author_title: c.author_title || title,
         author_handle: c.author_handle || "",
+        sector_focus: c.sector_focus || p.sector_focus || "",
       }));
     })();
   }, []);
@@ -2305,7 +2307,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                         <>
                           <LayoutGrid className="w-10 h-10 mb-4" style={{ color: "var(--glass-3)" }} />
                           <div className="text-base font-semibold mb-1">Enter a topic and click Generate</div>
-                          <div className="text-sm max-w-md" style={{ color: "var(--glass-2)" }}>Or pick a signal from the sidebar — 8 slides · 5 styles · Arabic & English · PDF export</div>
+                          <div className="text-sm max-w-md" style={{ color: "var(--glass-2)" }}>Or pick a signal from the sidebar — 8 slides · 6 styles · Arabic & English · PDF export</div>
                         </>
                       )}
                     </div>
