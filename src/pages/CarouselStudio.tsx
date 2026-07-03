@@ -7,6 +7,13 @@ import usePageMeta from "@/hooks/usePageMeta";
 import StartFromPanel from "@/components/StartFromPanel";
 import BroadsheetSlideSVG from "@/components/broadsheet/BroadsheetSlideSVG";
 import { PAPER, INK, INK2, SPOT, RULE } from "@/components/broadsheet/pressTokens";
+import ExplainerPage from "@/components/broadsheet/ExplainerPage";
+import QASheetPage from "@/components/broadsheet/QASheetPage";
+import {
+  SAMPLE_EXPLAINER, SAMPLE_EXPLAINER_AR,
+  SAMPLE_QASHEET, SAMPLE_QASHEET_AR,
+  type ExplainerDoc, type QASheetDoc,
+} from "@/components/broadsheet/onepagerTypes";
 
 /* ============================ STYLES ============================ */
 
