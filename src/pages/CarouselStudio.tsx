@@ -5,10 +5,12 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import usePageMeta from "@/hooks/usePageMeta";
 import StartFromPanel from "@/components/StartFromPanel";
+import BroadsheetSlideSVG from "@/components/broadsheet/BroadsheetSlideSVG";
+import { PAPER, INK, INK2, SPOT, RULE } from "@/components/broadsheet/pressTokens";
 
 /* ============================ STYLES ============================ */
 
-type StyleKey = "clean_paper" | "bold_statement" | "executive_briefing" | "terminal" | "high_contrast";
+type StyleKey = "clean_paper" | "bold_statement" | "executive_briefing" | "terminal" | "high_contrast" | "broadsheet";
 
 interface StylePalette {
   key: StyleKey;
