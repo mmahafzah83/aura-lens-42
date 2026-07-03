@@ -462,6 +462,111 @@ const [savingPub, setSavingPub] = useState(false);
           </div>
         </div>
 
+        {/* Your publication */}
+        <SectionHeader
+          label="Your publication"
+          subtitle="Name your personal press. It appears as the nameplate on every carousel, one-pager, and edition you export."
+        />
+        <div className="mb-8 space-y-4">
+          <AuraCard variant="default" hover="none">
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs uppercase tracking-wide" style={{ color: "var(--ink-4)" }}>Publication name (English)</label>
+                <input
+                  value={publication.name}
+                  onChange={(e) => setPublicationState((p) => ({ ...p, name: e.target.value }))}
+                  placeholder="The Ada Brief"
+                  maxLength={40}
+                  className="w-full mt-1 text-sm bg-transparent outline-none"
+                  style={{ color: "var(--ink)", borderBottom: "1px solid var(--rule)", padding: "6px 0" }}
+                />
+              </div>
+              <div>
+                <label className="text-xs uppercase tracking-wide" style={{ color: "var(--ink-4)", fontFamily: "'Cairo', var(--font-body), sans-serif" }}>الاسم بالعربية (اختياري)</label>
+                <input
+                  value={publication.name_ar || ""}
+                  onChange={(e) => setPublicationState((p) => ({ ...p, name_ar: e.target.value }))}
+                  dir="rtl"
+                  placeholder="نشرة عدا"
+                  maxLength={40}
+                  className="w-full mt-1 text-sm bg-transparent outline-none"
+                  style={{ color: "var(--ink)", borderBottom: "1px solid var(--rule)", padding: "6px 0", textAlign: "right", fontFamily: "'Cairo', var(--font-body), sans-serif" }}
+                />
+              </div>
+              <div>
+                <label className="text-xs uppercase tracking-wide" style={{ color: "var(--ink-4)" }}>Nameplate style</label>
+                <select
+                  value={publication.style}
+                  onChange={(e) => setPublicationState((p) => ({ ...p, style: e.target.value as PublicationConfig["style"] }))}
+                  className="w-full mt-1 text-sm rounded-md p-2 outline-none"
+                  style={{ color: "var(--ink)", background: "var(--paper-2)", border: "1px solid var(--rule)" }}
+                >
+                  <option value="classic">Classic broadsheet</option>
+                  <option value="monogram">Monogram</option>
+                  <option value="arabic">Arabic nameplate</option>
+                </select>
+              </div>
+              {publication.style === "monogram" && (
+                <div>
+                  <label className="text-xs uppercase tracking-wide" style={{ color: "var(--ink-4)" }}>Monogram letter</label>
+                  <input
+                    value={publication.monogram_char || publication.name.charAt(0).toUpperCase() || ""}
+                    onChange={(e) => setPublicationState((p) => ({ ...p, monogram_char: e.target.value.slice(0, 1).toUpperCase() }))}
+                    maxLength={1}
+                    className="w-16 mt-1 text-sm bg-transparent outline-none text-center"
+                    style={{ color: "var(--ink)", borderBottom: "1px solid var(--rule)", padding: "6px 0" }}
+                  />
+                </div>
+              )}
+
+              {/* Live preview */}
+              <div>
+                <div className="text-xs uppercase tracking-wide mb-2" style={{ color: "var(--ink-4)" }}>Preview</div>
+                <div
+                  style={{
+                    background: PAPER, color: INK, border: `1px solid ${RULE}`,
+                    padding: "20px 24px", borderRadius: 4,
+                  }}
+                >
+                  {publication.style === "classic" && (
+                    <div style={{ fontFamily: SERIF, fontSize: 28, fontWeight: 600, letterSpacing: "0.01em" }}>
+                      {publication.name || "The Brief"}
+                    </div>
+                  )}
+                  {publication.style === "monogram" && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <span style={{
+                        display: "inline-flex", alignItems: "center", justifyContent: "center",
+                        width: 44, height: 44, border: `2px solid ${SPOT}`, color: SPOT,
+                        fontFamily: SERIF, fontSize: 24, fontWeight: 700,
+                      }}>
+                        {(publication.monogram_char || publication.name.charAt(0) || "A").toUpperCase()}
+                      </span>
+                      <span style={{ fontFamily: SERIF, fontSize: 24, fontWeight: 600 }}>
+                        {publication.name || "The Brief"}
+                      </span>
+                    </div>
+                  )}
+                  {publication.style === "arabic" && (
+                    <div dir="rtl" style={{ fontFamily: ARABIC, fontSize: 28, fontWeight: 800, textAlign: "right" }}>
+                      {publication.name_ar || publication.name || "الموجز"}
+                    </div>
+                  )}
+                  <div style={{ borderTop: `2px solid ${INK}`, marginTop: 12, paddingTop: 6, fontFamily: MONO, fontSize: 11, color: SPOT, letterSpacing: 2 }}>
+                    STRATEGIC INTELLIGENCE
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <AuraButton variant="primary" size="sm" onClick={persistPublication} loading={savingPub} disabled={savingPub}>
+                  Save publication
+                </AuraButton>
+              </div>
+            </div>
+          </AuraCard>
+        </div>
+
         {/* Profile summary */}
         <SectionHeader
           label="Profile summary"
