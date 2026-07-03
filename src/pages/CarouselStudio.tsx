@@ -131,6 +131,19 @@ const STYLES: Record<StyleKey, StylePalette> = {
     headingWeight: 900, stripPosition: "none", pattern: "none",
     numberBadgeBg: "#FFFFFF", numberBadgeFg: "#000000",
   },
+  broadsheet: {
+    key: "broadsheet", name: "The Broadsheet",
+    bg: PAPER, fg: INK, accent: SPOT, emphasis: SPOT,
+    muted: INK2, sectionLabel: SPOT,
+    border: RULE, codeBg: "#EAE3D4",
+    compareBg: "#EAE3D4", gridCellBg: "#EAE3D4",
+    bigNumberColor: INK,
+    terminalDots: [SPOT, INK2, INK],
+    bodyFont: "'Newsreader', Georgia, serif",
+    headingFont: "'Newsreader', Georgia, serif",
+    monoFont: "'IBM Plex Mono', ui-monospace, monospace",
+    headingWeight: 500, stripPosition: "none", pattern: "none",
+  },
 };
 
 /* ============================ TYPES ============================ */
