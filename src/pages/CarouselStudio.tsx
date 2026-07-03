@@ -452,6 +452,22 @@ function BackgroundPattern({ kind, color, w, h, id }: { kind: "none"|"dots"|"dia
 
 function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderProps) {
   const { w, h } = DIM[dim];
+  if (style.key === "broadsheet") {
+    return (
+      <BroadsheetSlideSVG
+        slide={slide as any}
+        total={total}
+        w={w}
+        h={h}
+        carousel={carousel as any}
+        lang={lang}
+        displayLabel={getDisplayLabel(slide)}
+        sectorFocus={(carousel as any).sector_focus || ""}
+        renderHeadlineWithAccent={renderHeadlineWithAccent}
+        wrapText={wrapText}
+      />
+    );
+  }
   const isRTL = lang === "ar";
   const arFont = "'Cairo', 'DM Sans', sans-serif";
   const bodyFont = isRTL ? arFont : style.bodyFont;
