@@ -14,6 +14,20 @@ import {
   SAMPLE_QASHEET, SAMPLE_QASHEET_AR,
   type ExplainerDoc, type QASheetDoc,
 } from "@/components/broadsheet/onepagerTypes";
+import {
+  FONT_IMPORT_CSS,
+  getEmbeddedFontCSS,
+  svgToImageBlob,
+  ensureFontsReady,
+  downloadBlob,
+  slugify,
+} from "@/lib/broadsheetExport";
+import {
+  isArabicTag,
+  normalizeTag,
+  dedupeHashtags,
+  stripDuplicateHashtags,
+} from "@/lib/hashtags";
 
 /* ============================ STYLES ============================ */
 
