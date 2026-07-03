@@ -464,6 +464,424 @@ function BroadsheetBody({
     );
   }
 
+  if (slide.slide_type === "REFRAME") {
+    const stripMythPrefix = (s: string) =>
+      s.replace(/^\s*(يعتقد الأغلبية|MOST PEOPLE THINK|Most people think|كان السائد يقول|THE RECORD PREVIOUSLY READ)[:\s\-—]*/i, "").trim();
+    const cleanedMyth = stripMythPrefix(slide.headline || "");
+    const mythLines = wrapText(cleanedMyth, rtl ? 26 : 32);
+    const truthHeadRaw = slide.headline_accent || slide.body || "";
+    const truthBodyRaw = slide.headline_accent ? (slide.body || "") : "";
+    const truthHeadLines = wrapText(truthHeadRaw, rtl ? 20 : 24);
+    const truthBodyLines = truthBodyRaw ? wrapText(truthBodyRaw, rtl ? 34 : 46).slice(0, 5) : [];
+    const tagY = contentY + 40;
+    const mythLineH = 68;
+    const mythStart = tagY + 50;
+    const dividerY = mythStart + mythLines.length * mythLineH + 40;
+    const truthTagY = dividerY + 44;
+    const truthHeadStart = truthTagY + 60;
+    const truthHeadLineH = 82;
+    const truthBodyStart = truthHeadStart + truthHeadLines.length * truthHeadLineH + 28;
+    return (
+      <g>
+        <text x={leftX} y={tagY} textAnchor={anchorStart}
+              fontFamily={LABEL_FONT} fontSize={18}
+              letterSpacing={rtl ? undefined : 3}
+              fontWeight={LABEL_WEIGHT}
+              fill={INK2}
+              style={rtl ? undefined : { textTransform: "uppercase" }}>
+          {L.myth_tag}
+        </text>
+        {mythLines.map((ln, i) => {
+          const y = mythStart + i * mythLineH;
+          const strikeY = y - 58 * 0.42;
+          const approxW = Math.min(textW, ln.length * 30);
+          const x1 = rtl ? leftX - approxW : leftX;
+          const x2 = rtl ? leftX : leftX + approxW;
+          return (
+            <g key={i}>
+              <text x={leftX} y={y} textAnchor={anchorStart}
+                    fontFamily={HEAD_FONT}
+                    fontStyle={rtl ? "normal" : "italic"}
+                    fontWeight={rtl ? 600 : 400}
+                    fontSize={58} fill={INK2}>
+                {ln}
+              </text>
+              <line x1={x1} x2={x2} y1={strikeY} y2={strikeY}
+                    stroke={SPOT} strokeWidth={4} />
+            </g>
+          );
+        })}
+        <line x1={edgePad} x2={edgePad + textW * 0.28} y1={dividerY} y2={dividerY} stroke={INK} strokeWidth={1} />
+        <text x={w / 2} y={dividerY + 6} textAnchor="middle"
+              fontFamily={LABEL_FONT} fontSize={18}
+              letterSpacing={rtl ? undefined : 3}
+              fontWeight={LABEL_WEIGHT}
+              fill={SPOT}
+              style={rtl ? undefined : { textTransform: "uppercase" }}>
+          {L.corrected}
+        </text>
+        <line x1={w - edgePad - textW * 0.28} x2={w - edgePad} y1={dividerY} y2={dividerY} stroke={INK} strokeWidth={1} />
+        {truthHeadLines.map((ln, i) => (
+          <text key={`th${i}`} x={leftX} y={truthHeadStart + i * truthHeadLineH}
+                textAnchor={anchorStart}
+                fontFamily={HEAD_FONT}
+                fontWeight={rtl ? 800 : 600}
+                fontSize={74} fill={INK}
+                style={rtl ? undefined : { letterSpacing: "-0.01em" }}>
+            {renderHeadlineWithAccent(ln, undefined, INK, SPOT, false)}
+          </text>
+        ))}
+        {truthBodyLines.map((ln, i) => (
+          <text key={`tb${i}`} x={leftX} y={truthBodyStart + i * 46}
+                textAnchor={anchorStart}
+                fontFamily={BODY_FONT}
+                fontWeight={BODY_WEIGHT}
+                fontSize={33} fill={INK2}>
+            {ln}
+          </text>
+        ))}
+      </g>
+    );
+  }
+
+  if (slide.slide_type === "GRID") {
+    const cleanItem = (s: string) =>
+      s.replace(/^\s*\d+[\.\)]\s*/, "").replace(/^\s*[◆◇►▸●○•\-–—]\s*/, "").trim();
+    const items = (slide.grid_items || []).map(cleanItem).slice(0, 6);
+    const hasHeadline = !!slide.headline;
+    const hlLines = hasHeadline ? wrapText(slide.headline!, rtl ? 24 : 30).slice(0, 2) : [];
+    const hlStart = contentY + 30;
+    const gridTop = hlStart + hlLines.length * 66 + (hasHeadline ? 40 : 0);
+    const cols = 2;
+    const gap = 32;
+    const cellW = (textW - gap) / cols;
+    const rows = Math.ceil(items.length / cols);
+    const cellH = Math.min(300, (h - gridTop - 160) / Math.max(1, rows));
+    const figW = 130, figH = 68;
+    const labels = "ABCDEF";
+    return (
+      <g>
+        {hlLines.map((ln, i) => (
+          <text key={`h${i}`} x={leftX} y={hlStart + i * 66}
+                textAnchor={anchorStart}
+                fontFamily={HEAD_FONT} fontWeight={HEAD_WEIGHT}
+                fontSize={58} fill={INK}>
+            {renderHeadlineWithAccent(ln, slide.headline_accent, INK, SPOT, true)}
+          </text>
+        ))}
+        {items.map((it, i) => {
+          const r = Math.floor(i / cols);
+          const c = i % cols;
+          const cVisual = rtl ? cols - 1 - c : c;
+          const x = edgePad + cVisual * (cellW + gap);
+          const y = gridTop + r * cellH;
+          const wrapped = wrapText(it, rtl ? 18 : 22).slice(0, 2);
+          const labelX = rtl ? x + cellW : x;
+          const labelAnchor: "start" | "end" = rtl ? "end" : "start";
+          const figX = rtl ? x + cellW - figW : x;
+          return (
+            <g key={i}>
+              <line x1={x} x2={x + cellW} y1={y} y2={y} stroke={RULE} strokeWidth={1} />
+              {c === 1 ? (
+                <line
+                  x1={rtl ? x + cellW : x}
+                  x2={rtl ? x + cellW : x}
+                  y1={y + 20} y2={y + cellH - 20}
+                  stroke={RULE_SOFT} strokeWidth={1}
+                />
+              ) : null}
+              <text x={labelX} y={y + 34} textAnchor={labelAnchor}
+                    fontFamily={MONO} fontSize={18} letterSpacing={3}
+                    fill={SPOT} direction="ltr" style={{ textTransform: "uppercase" }}>
+                {`FIG. ${String(slide.slide_number).padStart(2, "0")}·${labels[i] || "?"}`}
+              </text>
+              <FigPlate x={figX} y={y + 46} w={figW} h={figH} kind={pickFigKind(sectorFocus || "", i)} rtl={rtl} />
+              {wrapped.map((ln, li) => (
+                <text key={li} x={labelX} y={y + 46 + figH + 40 + li * 40}
+                      textAnchor={labelAnchor}
+                      fontFamily={HEAD_FONT}
+                      fontWeight={rtl ? 700 : 500}
+                      fontSize={31} fill={INK}>
+                  {ln}
+                </text>
+              ))}
+            </g>
+          );
+        })}
+      </g>
+    );
+  }
+
+  if (slide.slide_type === "COMPARE") {
+    const wrongTitle = slide.compare_left_title || (rtl ? "قبل" : "BEFORE");
+    const wrongItems = (slide.compare_left_items || []).slice(0, 4);
+    const correctTitle = slide.compare_right_title || (rtl ? "بعد" : "AFTER");
+    const correctItems = (slide.compare_right_items || []).slice(0, 4);
+    // RTL: WRONG on visual right (read first), CORRECT on visual left
+    const visLeftTitle = rtl ? correctTitle : wrongTitle;
+    const visLeftItems = rtl ? correctItems : wrongItems;
+    const visLeftIsCorrect = rtl;
+    const visRightTitle = rtl ? wrongTitle : correctTitle;
+    const visRightItems = rtl ? wrongItems : correctItems;
+    const colGap = 40;
+    const colW = (textW - colGap) / 2;
+    const leftColX = edgePad;
+    const rightColX = edgePad + colW + colGap;
+    const dividerX = edgePad + colW + colGap / 2;
+    const headerY = contentY + 40;
+    const itemsY = headerY + 60;
+    const itemLineH = 40;
+    const itemGap = 22;
+    const wrapCol = rtl ? 16 : 20;
+    const renderCol = (title: string, items: string[], colX: number, isCorrect: boolean) => {
+      const titleAnchor = "start" as const;
+      let yCursor = itemsY;
+      const wrappedList = items.map((it) => wrapText(it, wrapCol));
+      return (
+        <g>
+          <text x={colX} y={headerY} textAnchor={titleAnchor}
+                fontFamily={LABEL_FONT} fontSize={20}
+                letterSpacing={rtl ? undefined : 3}
+                fontWeight={isCorrect ? 700 : LABEL_WEIGHT}
+                fill={isCorrect ? SPOT : INK2}
+                fillOpacity={isCorrect ? 1 : 0.5}
+                style={rtl ? undefined : { textTransform: "uppercase" }}>
+            {rtl ? title : title.toUpperCase()}
+          </text>
+          {wrappedList.map((wrapped, i) => {
+            const blockH = wrapped.length * itemLineH;
+            const blockTop = yCursor;
+            const rendered = (
+              <g key={i}>
+                {isCorrect ? (
+                  <rect
+                    x={rtl ? colX + colW - 3 : colX - 12}
+                    y={blockTop - 30}
+                    width={3} height={blockH}
+                    fill={SPOT}
+                  />
+                ) : null}
+                {wrapped.map((ln, li) => {
+                  const y = blockTop + li * itemLineH;
+                  return (
+                    <g key={li}>
+                      <text x={colX} y={y} textAnchor={titleAnchor}
+                            fontFamily={isCorrect ? HEAD_FONT : BODY_FONT}
+                            fontWeight={isCorrect ? (rtl ? 800 : 600) : BODY_WEIGHT}
+                            fontSize={31} fill={isCorrect ? INK : INK2}>
+                        {ln}
+                      </text>
+                      {!isCorrect ? (
+                        <line
+                          x1={colX} x2={colX + Math.min(colW - 8, ln.length * 15)}
+                          y1={y - 9} y2={y - 9}
+                          stroke={INK} strokeOpacity={0.55} strokeWidth={2}
+                        />
+                      ) : null}
+                    </g>
+                  );
+                })}
+              </g>
+            );
+            yCursor += blockH + itemGap;
+            return rendered;
+          })}
+        </g>
+      );
+    };
+    return (
+      <g>
+        {renderCol(visLeftTitle, visLeftItems, leftColX, visLeftIsCorrect)}
+        {renderCol(visRightTitle, visRightItems, rightColX, !visLeftIsCorrect)}
+        <line x1={dividerX} x2={dividerX} y1={headerY - 20} y2={h - 160}
+              stroke={RULE} strokeWidth={1} />
+      </g>
+    );
+  }
+
+  if (slide.slide_type === "LIST") {
+    const items = slide.list_items || [];
+    const rowY0 = contentY + 30;
+    const rowH = 96;
+    return (
+      <g>
+        {items.map((it, i) => {
+          const y = rowY0 + i * rowH;
+          const kill = it.label === "KILL" || it.label === "DONT" || it.label === "STOP";
+          const labelColor = kill ? SPOT : INK;
+          const labelText = L[it.label] || it.label;
+          const labelX = rtl ? w - edgePad : edgePad;
+          const textX = rtl ? w - edgePad - 180 : edgePad + 180;
+          const anchor: "start" | "end" = rtl ? "end" : "start";
+          return (
+            <g key={i}>
+              <line x1={edgePad} x2={w - edgePad} y1={y - 34} y2={y - 34} stroke={RULE} strokeWidth={1} />
+              <text x={labelX} y={y + 12} textAnchor={anchor}
+                    fontFamily={LABEL_FONT} fontSize={20}
+                    letterSpacing={rtl ? undefined : 3}
+                    fontWeight={rtl ? 700 : 600}
+                    fill={labelColor}
+                    style={rtl ? undefined : { textTransform: "uppercase" }}>
+                {rtl ? labelText : labelText.toUpperCase()}
+              </text>
+              <text x={textX} y={y + 12} textAnchor={anchor}
+                    fontFamily={HEAD_FONT}
+                    fontWeight={kill ? BODY_WEIGHT : (rtl ? 700 : 500)}
+                    fontSize={36}
+                    fill={kill ? INK2 : INK}
+                    textDecoration={kill ? "line-through" : "none"}>
+                {it.text}
+              </text>
+            </g>
+          );
+        })}
+        {items.length > 0 ? (
+          <line x1={edgePad} x2={w - edgePad} y1={rowY0 + items.length * rowH - 34} y2={rowY0 + items.length * rowH - 34} stroke={RULE} strokeWidth={1} />
+        ) : null}
+      </g>
+    );
+  }
+
+  if (slide.slide_type === "INSIGHT") {
+    const hLines = wrapText(slide.headline || "", rtl ? 20 : 26);
+    const bodyLines = wrapText(slide.body || "", rtl ? 34 : 44).slice(0, 6);
+    const startY = contentY + 60;
+    const headLineH = 78;
+    const dashY = startY + hLines.length * headLineH + 12;
+    const bodyStart = dashY + 40;
+    return (
+      <g>
+        {hLines.map((ln, i) => (
+          <text key={i} x={leftX} y={startY + i * headLineH}
+                textAnchor={anchorStart}
+                fontFamily={HEAD_FONT}
+                fontStyle={rtl ? "normal" : "italic"}
+                fontWeight={rtl ? 800 : 600}
+                fontSize={68} fill={INK}>
+            {renderHeadlineWithAccent(ln, slide.headline_accent, INK, SPOT, true)}
+          </text>
+        ))}
+        <line
+          x1={rtl ? leftX - 60 : leftX}
+          x2={rtl ? leftX : leftX + 60}
+          y1={dashY} y2={dashY}
+          stroke={SPOT} strokeWidth={2}
+        />
+        {bodyLines.map((ln, i) => (
+          <text key={`b${i}`} x={leftX} y={bodyStart + i * 56}
+                textAnchor={anchorStart}
+                fontFamily={BODY_FONT} fontWeight={BODY_WEIGHT}
+                fontSize={36} fill={INK2}>
+            {ln}
+          </text>
+        ))}
+      </g>
+    );
+  }
+
+  if (slide.slide_type === "TERMINAL") {
+    const boxX = edgePad;
+    const boxY = contentY + 30;
+    const boxW = textW;
+    const boxH = h - boxY - 160;
+    const lines = slide.terminal_lines || [];
+    const keywords = (slide.terminal_keywords || []).filter(Boolean);
+    const innerPad = 36;
+    const lineX = rtl ? boxX + boxW - innerPad : boxX + innerPad;
+    const lineAnchor: "start" | "end" = rtl ? "end" : "start";
+    const lineGap = 40;
+    const startLinesY = boxY + 64;
+    const highlightSegs = (raw: string) => {
+      let displayLine = raw;
+      if (rtl) {
+        const stripped = raw.replace(/^[→\->]+\s*/, "").replace(/\s*[←]+$/, "");
+        displayLine = `\u200F${stripped} \u200F←`;
+      }
+      let segs: { text: string; hl: boolean }[] = [{ text: displayLine, hl: false }];
+      for (const kw of keywords) {
+        if (!kw) continue;
+        const next: { text: string; hl: boolean }[] = [];
+        for (const seg of segs) {
+          if (seg.hl) { next.push(seg); continue; }
+          const lower = seg.text.toLowerCase();
+          const ki = lower.indexOf(kw.toLowerCase());
+          if (ki === -1) { next.push(seg); continue; }
+          const before = seg.text.slice(0, ki);
+          const mid = seg.text.slice(ki, ki + kw.length);
+          const after = seg.text.slice(ki + kw.length);
+          if (before) next.push({ text: before, hl: false });
+          next.push({ text: mid, hl: true });
+          if (after) next.push({ text: after, hl: false });
+        }
+        segs = next;
+      }
+      return segs;
+    };
+    const punchY = startLinesY + lines.length * lineGap + 36;
+    return (
+      <g>
+        <rect x={boxX} y={boxY} width={boxW} height={boxH} fill="none" stroke={INK} strokeWidth={1.5} />
+        {slide.terminal_file ? (
+          <text x={boxX + boxW - innerPad} y={boxY + 34} textAnchor="end"
+                fontFamily={MONO} fontSize={18} fill={SPOT}
+                direction="ltr" style={{ unicodeBidi: "isolate" as any }}>
+            {slide.terminal_file}
+          </text>
+        ) : null}
+        {lines.map((raw, i) => {
+          const segs = highlightSegs(raw);
+          return (
+            <text key={i} x={lineX} y={startLinesY + i * lineGap}
+                  textAnchor={lineAnchor}
+                  xmlSpace="preserve"
+                  fontFamily={rtl ? ARABIC : MONO} fontSize={26} fill={INK}>
+              {segs.map((s, si) => (
+                <tspan key={si} fill={s.hl ? SPOT : INK} fontWeight={s.hl ? 600 : 400}>
+                  {s.text}
+                </tspan>
+              ))}
+            </text>
+          );
+        })}
+        {slide.terminal_punchline ? (
+          <text x={lineX} y={punchY} textAnchor={lineAnchor}
+                fontFamily={rtl ? ARABIC : SERIF}
+                fontStyle={rtl ? "normal" : "italic"}
+                fontWeight={rtl ? 800 : 400}
+                fontSize={34} fill={SPOT}>
+            {rtl
+              ? slide.terminal_punchline.replace(/^\/\/\s*/, "").replace(/^[→\->]+\s*/, "")
+              : slide.terminal_punchline}
+          </text>
+        ) : null}
+      </g>
+    );
+  }
+
+  if (slide.slide_type === "BOLD_CLAIM") {
+    const lines = wrapText(slide.headline || "", rtl ? 14 : 16);
+    const barY = contentY + 60;
+    const blockStart = barY + 40;
+    const lineH = rtl ? 88 : 110;
+    const barX1 = rtl ? w - edgePad - 120 : edgePad;
+    const barX2 = rtl ? w - edgePad : edgePad + 120;
+    return (
+      <g>
+        <line x1={barX1} x2={barX2} y1={barY} y2={barY} stroke={SPOT} strokeWidth={4} />
+        {lines.map((ln, i) => (
+          <text key={i} x={leftX} y={blockStart + i * lineH}
+                textAnchor={anchorStart}
+                fontFamily={HEAD_FONT}
+                fontWeight={rtl ? 800 : 500}
+                fontSize={rtl ? 72 : 96} fill={INK}
+                style={rtl ? undefined : { letterSpacing: "-0.02em" }}>
+            {renderHeadlineWithAccent(ln, slide.headline_accent, INK, SPOT, true)}
+          </text>
+        ))}
+      </g>
+    );
+  }
+
   // Fallback for other slide types: headline + body, plain paper.
   const headline = slide.headline || "";
   const hLines = wrapText(headline, rtl ? 22 : 28);
