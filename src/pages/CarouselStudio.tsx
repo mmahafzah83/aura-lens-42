@@ -5,10 +5,12 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import usePageMeta from "@/hooks/usePageMeta";
 import StartFromPanel from "@/components/StartFromPanel";
+import BroadsheetSlideSVG from "@/components/broadsheet/BroadsheetSlideSVG";
+import { PAPER, INK, INK2, SPOT, RULE } from "@/components/broadsheet/pressTokens";
 
 /* ============================ STYLES ============================ */
 
-type StyleKey = "clean_paper" | "bold_statement" | "executive_briefing" | "terminal" | "high_contrast";
+type StyleKey = "clean_paper" | "bold_statement" | "executive_briefing" | "terminal" | "high_contrast" | "broadsheet";
 
 interface StylePalette {
   key: StyleKey;
@@ -128,6 +130,19 @@ const STYLES: Record<StyleKey, StylePalette> = {
     monoFont: "'JetBrains Mono', ui-monospace, monospace",
     headingWeight: 900, stripPosition: "none", pattern: "none",
     numberBadgeBg: "#FFFFFF", numberBadgeFg: "#000000",
+  },
+  broadsheet: {
+    key: "broadsheet", name: "The Broadsheet",
+    bg: PAPER, fg: INK, accent: SPOT, emphasis: SPOT,
+    muted: INK2, sectionLabel: SPOT,
+    border: RULE, codeBg: "#EAE3D4",
+    compareBg: "#EAE3D4", gridCellBg: "#EAE3D4",
+    bigNumberColor: INK,
+    terminalDots: [SPOT, INK2, INK],
+    bodyFont: "'Newsreader', Georgia, serif",
+    headingFont: "'Newsreader', Georgia, serif",
+    monoFont: "'IBM Plex Mono', ui-monospace, monospace",
+    headingWeight: 500, stripPosition: "none", pattern: "none",
   },
 };
 
@@ -437,6 +452,22 @@ function BackgroundPattern({ kind, color, w, h, id }: { kind: "none"|"dots"|"dia
 
 function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderProps) {
   const { w, h } = DIM[dim];
+  if (style.key === "broadsheet") {
+    return (
+      <BroadsheetSlideSVG
+        slide={slide as any}
+        total={total}
+        w={w}
+        h={h}
+        carousel={carousel as any}
+        lang={lang}
+        displayLabel={getDisplayLabel(slide)}
+        sectorFocus={(carousel as any).sector_focus || ""}
+        renderHeadlineWithAccent={renderHeadlineWithAccent}
+        wrapText={wrapText}
+      />
+    );
+  }
   const isRTL = lang === "ar";
   const arFont = "'Cairo', 'DM Sans', sans-serif";
   const bodyFont = isRTL ? arFont : style.bodyFont;
@@ -1605,7 +1636,7 @@ export default function CarouselStudio() {
       signal_attribution?: any;
     };
   } | null;
-  const [styleKey, setStyleKey] = useState<StyleKey>(navState?.draftCarousel?.style || "clean_paper");
+  const [styleKey, setStyleKey] = useState<StyleKey>(navState?.draftCarousel?.style || "broadsheet");
   const [dim, setDim] = useState<Dimension>("1080x1350");
   const [topic, setTopic] = useState(navState?.topic || "");
   const [lang, setLang] = useState<"en" | "ar">(navState?.lang || navState?.draftCarousel?.lang || "en");
