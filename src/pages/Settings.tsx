@@ -11,6 +11,8 @@ import { exportReportPdf } from "@/lib/exportReportPdf";
 import usePageMeta from "@/hooks/usePageMeta";
 import ReportDocument from "@/components/ReportDocument";
 import { buildIdentityReport, type ReportData } from "@/lib/buildIdentityReport";
+import { getPublication, validate as validatePublication, type PublicationConfig } from "@/lib/publication";
+import { PAPER, INK, SPOT, RULE, SERIF, MONO, ARABIC } from "@/components/broadsheet/pressTokens";
 
 interface ProfileData {
   first_name: string | null;
@@ -61,6 +63,8 @@ const [linkedInConnection, setLinkedInConnection] = useState<LinkedInConnection 
 const [linkedInBusy, setLinkedInBusy] = useState(true);
 const [signatures, setSignatures] = useState<{ id: string; name: string; text_en: string; text_ar: string }[]>([]);
 const [savingSig, setSavingSig] = useState(false);
+const [publication, setPublicationState] = useState<PublicationConfig>({ name: "", style: "classic" });
+const [savingPub, setSavingPub] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -86,6 +90,15 @@ const [savingSig, setSavingSig] = useState(false);
         if (qErr) throw qErr;
         setProfile((data as ProfileData) || null);
         setSignatures(Array.isArray((data as any)?.signature_presets) ? (data as any).signature_presets : []);
+        {
+          const p = (data as any) || {};
+          const initialPub = getPublication(
+            { identity_intelligence: p.identity_intelligence || {} },
+            "en",
+            p.first_name,
+          );
+          setPublicationState(initialPub);
+        }
         if (data?.brand_assessment_completed_at) {
           try {
             const r = await buildIdentityReport(session.user.id);
@@ -167,6 +180,47 @@ const [savingSig, setSavingSig] = useState(false);
   const updateSignature = (id: string, field: "name" | "text_en" | "text_ar", value: string) =>
     setSignatures((s) => s.map((p) => (p.id === id ? { ...p, [field]: value } : p)));
   const removeSignature = (id: string) => persistSignatures(signatures.filter((p) => p.id !== id));
+
+  const persistPublication = async () => {
+    const err = validatePublication(publication.name);
+    if (err) { toast.error(err); return; }
+    if (publication.name_ar && publication.name_ar.trim() && publication.name_ar.trim().length > 40) {
+      toast.error("Arabic name must be at most 40 characters."); return;
+    }
+    setSavingPub(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) throw new Error("Not signed in");
+      // Refetch identity_intelligence at save time — sibling keys
+      // (preferred_carousel_style etc.) may have been written elsewhere.
+      const { data: fresh, error: fErr } = await supabase
+        .from("diagnostic_profiles")
+        .select("identity_intelligence")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+      if (fErr) throw fErr;
+      const ii = ((fresh as any)?.identity_intelligence as Record<string, any>) || {};
+      const nextPub: PublicationConfig = {
+        name: publication.name.trim(),
+        name_ar: publication.name_ar?.trim() || undefined,
+        style: publication.style,
+        monogram_char: publication.style === "monogram"
+          ? (publication.monogram_char || publication.name.trim().charAt(0) || "A").slice(0, 1).toUpperCase()
+          : undefined,
+      };
+      const { error } = await supabase
+        .from("diagnostic_profiles")
+        .update({ identity_intelligence: { ...ii, publication: nextPub } })
+        .eq("user_id", session.user.id);
+      if (error) throw error;
+      setPublicationState(nextPub);
+      toast.success("Publication saved");
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't save publication");
+    } finally {
+      setSavingPub(false);
+    }
+  };
 
   useEffect(() => {
     loadLinkedInStatus();
