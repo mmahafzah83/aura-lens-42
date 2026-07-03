@@ -2449,7 +2449,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
               </div>
 
               {/* Voice parity: indicator + feedback (mirrors AuthorityTab post pattern) */}
-              {slides.length > 0 && !generating && (
+              {formatKey === "carousel" && slides.length > 0 && !generating && (
                 <div className="flex flex-wrap items-center justify-center gap-3 text-xs">
                   {hasVoiceProfile && (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border" style={{ borderColor: "var(--hair)", background: "var(--ob-panel)", color: "var(--glass-2)" }}>
@@ -2479,7 +2479,9 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                 </div>
               )}
 
-              {/* Nav */}
+              {/* Nav + Filmstrip + slide-management (carousel-only) */}
+              {formatKey === "carousel" && (
+              <>
               <div className="flex items-center justify-center gap-3">
                 <button onClick={() => setActiveIdx(Math.max(0, activeIdx - 1))} disabled={activeIdx === 0}
                         className="p-2 rounded-full disabled:opacity-30 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--action)]" style={{ background: "var(--ob-raised)", color: "var(--glass)" }}>
@@ -2548,6 +2550,8 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                 <button onClick={() => moveSlide(1)} className="p-1.5 rounded focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-[color:var(--action)]" style={{ background: "var(--ob-raised)", color: "var(--glass)" }}><ArrowDown className="w-3.5 h-3.5" /></button>
                 <button onClick={deleteSlide} className="p-1.5 rounded focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-[color:var(--action)]" style={{ background: "var(--ob-raised)", color: "var(--neg)" }}><Trash2 className="w-3.5 h-3.5" /></button>
               </div>
+              </>
+              )}
             </div>
           </div>
         </div>
