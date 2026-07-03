@@ -1703,6 +1703,9 @@ export default function CarouselStudio() {
   const [qaDoc, setQaDoc] = useState<QASheetDoc>(
     lang === "ar" ? SAMPLE_QASHEET_AR : SAMPLE_QASHEET,
   );
+  // Caption + hashtags returned alongside the one-pager doc. Persisted with the draft.
+  const [onePagerMeta, setOnePagerMeta] = useState<{ linkedin_caption: string; hashtags: string[] }>({ linkedin_caption: "", hashtags: [] });
+  const [onePagerDraftId, setOnePagerDraftId] = useState<string | undefined>(undefined);
   // Keep sample doc language in sync with the language toggle. Preserve user
   // edits by only swapping when the doc still equals the last sample.
   useEffect(() => {
