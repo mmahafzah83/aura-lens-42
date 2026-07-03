@@ -109,6 +109,9 @@ verify_jwt = false
 [functions.generate-onepager]
 verify_jwt = false
 
+[functions.generate-edition]
+verify_jwt = false
+
 [functions.onboarding-linkedin-prefill]
 verify_jwt = false
 
