@@ -2126,6 +2126,68 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
     return blob;
   };
 
+  const renderOnePagerToBlob = async (): Promise<Blob> => {
+    const container = offscreenRef.current!;
+    container.innerHTML = "";
+    const wrapper = document.createElement("div");
+    container.appendChild(wrapper);
+    const W = 1080, H = 1350;
+    const ReactDOM = await import("react-dom/client");
+    const root = ReactDOM.createRoot(wrapper);
+    await new Promise<void>((resolve) => {
+      root.render(
+        formatKey === "explainer"
+          ? (
+            <ExplainerPage
+              doc={explainerDoc}
+              authorName={carousel.author_name}
+              authorTitle={carousel.author_title}
+              w={W} h={H}
+              renderHeadlineWithAccent={renderHeadlineWithAccent}
+              wrapText={wrapText}
+            />
+          )
+          : (
+            <QASheetPage
+              doc={qaDoc}
+              authorName={carousel.author_name}
+              authorTitle={carousel.author_title}
+              w={W} h={H}
+              renderHeadlineWithAccent={renderHeadlineWithAccent}
+              wrapText={wrapText}
+            />
+          )
+      );
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    });
+    const svgEl = wrapper.querySelector("svg") as SVGSVGElement;
+    if (!svgEl) throw new Error("SVG not found");
+    svgEl.setAttribute("width", String(W));
+    svgEl.setAttribute("height", String(H));
+    // Embed the broadsheet font superset so PAPER + Newsreader/Cairo/Plex Mono
+    // all rasterise correctly in the Image() sandbox.
+    const families = ["Newsreader:ital,wght@0,400;0,500;0,600;1,400", "IBM+Plex+Mono:wght@400;600"];
+    if (lang === "ar") families.push("Cairo:wght@400;600;700;800");
+    const extraCSS = await getEmbeddedFontCSS(families);
+    const blob = await svgToImageBlob(svgEl, W, H, extraCSS, "image/png", 1);
+    root.unmount();
+    return blob;
+  };
+
+  const exportOnePager = async () => {
+    setExporting(true);
+    try {
+      await ensureFontsReady(lang);
+      const blob = await renderOnePagerToBlob();
+      const label = formatKey === "explainer"
+        ? `explainer-${slugify((explainerDoc.term_headline || "page"))}.png`
+        : `qa-${slugify((qaDoc.topic_headline || "page"))}.png`;
+      downloadBlob(blob, label);
+    } catch (e: any) {
+      toast.error(e.message || "Export failed");
+    } finally { setExporting(false); }
+  };
+
   const exportCurrent = async () => {
     setExporting(true);
     try {
