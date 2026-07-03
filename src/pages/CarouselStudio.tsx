@@ -2818,11 +2818,24 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
         </button>
         </>
         ) : (
+          <>
           <button onClick={exportOnePager} disabled={exporting}
                   className="px-3 py-1.5 text-xs rounded-lg flex items-center gap-1.5 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--action)]"
                   style={{ background: "var(--action)", color: "var(--ink-on-brand)" }}>
             {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileImage className="w-3.5 h-3.5" />} Export PNG
           </button>
+          <button onClick={saveOnePagerToLibrary} disabled={saving || savedToLibrary}
+                  className="px-3 py-1.5 text-xs rounded-lg flex items-center gap-1.5 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--action)]"
+                  style={{
+                    background: savedToLibrary ? "color-mix(in srgb, var(--pos) 14%, var(--ob-raised))" : "var(--ob-raised)",
+                    color: savedToLibrary ? "var(--pos)" : "var(--glass)",
+                    border: savedToLibrary ? "1px solid var(--pos)" : "1px solid transparent",
+                  }}>
+            {saving ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving…</>
+              : savedToLibrary ? <><Check className="w-3.5 h-3.5" /> Saved to Library</>
+              : <><BookmarkPlus className="w-3.5 h-3.5" /> Save to Library</>}
+          </button>
+          </>
         )}
       </div>
 
