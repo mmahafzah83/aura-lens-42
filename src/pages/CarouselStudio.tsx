@@ -7,6 +7,13 @@ import usePageMeta from "@/hooks/usePageMeta";
 import StartFromPanel from "@/components/StartFromPanel";
 import BroadsheetSlideSVG from "@/components/broadsheet/BroadsheetSlideSVG";
 import { PAPER, INK, INK2, SPOT, RULE } from "@/components/broadsheet/pressTokens";
+import ExplainerPage from "@/components/broadsheet/ExplainerPage";
+import QASheetPage from "@/components/broadsheet/QASheetPage";
+import {
+  SAMPLE_EXPLAINER, SAMPLE_EXPLAINER_AR,
+  SAMPLE_QASHEET, SAMPLE_QASHEET_AR,
+  type ExplainerDoc, type QASheetDoc,
+} from "@/components/broadsheet/onepagerTypes";
 
 /* ============================ STYLES ============================ */
 
@@ -1686,6 +1693,25 @@ export default function CarouselStudio() {
   const [savedToLibrary, setSavedToLibrary] = useState(false);
   const [authorDefaults, setAuthorDefaults] = useState<{ name: string; title: string; handle: string }>({ name: "", title: "", handle: "" });
 
+  // One-pager formats (Broadsheet-only). Format-key drives whether we render the
+  // carousel or a single Explainer / Q&A page.
+  type FormatKey = "carousel" | "explainer" | "qa";
+  const [formatKey, setFormatKey] = useState<FormatKey>("carousel");
+  const [explainerDoc, setExplainerDoc] = useState<ExplainerDoc>(
+    lang === "ar" ? SAMPLE_EXPLAINER_AR : SAMPLE_EXPLAINER,
+  );
+  const [qaDoc, setQaDoc] = useState<QASheetDoc>(
+    lang === "ar" ? SAMPLE_QASHEET_AR : SAMPLE_QASHEET,
+  );
+  // Keep sample doc language in sync with the language toggle. Preserve user
+  // edits by only swapping when the doc still equals the last sample.
+  useEffect(() => {
+    setExplainerDoc(d => (d === SAMPLE_EXPLAINER || d === SAMPLE_EXPLAINER_AR
+      ? (lang === "ar" ? SAMPLE_EXPLAINER_AR : SAMPLE_EXPLAINER) : { ...d, lang }));
+    setQaDoc(d => (d === SAMPLE_QASHEET || d === SAMPLE_QASHEET_AR
+      ? (lang === "ar" ? SAMPLE_QASHEET_AR : SAMPLE_QASHEET) : { ...d, lang }));
+  }, [lang]);
+
   // Voice profile parity (mirrors AuthorityTab post pattern)
   const [hasVoiceProfile, setHasVoiceProfile] = useState(false);
   const [voiceFeedbackBusy, setVoiceFeedbackBusy] = useState(false);
@@ -2100,6 +2126,68 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
     return blob;
   };
 
+  const renderOnePagerToBlob = async (): Promise<Blob> => {
+    const container = offscreenRef.current!;
+    container.innerHTML = "";
+    const wrapper = document.createElement("div");
+    container.appendChild(wrapper);
+    const W = 1080, H = 1350;
+    const ReactDOM = await import("react-dom/client");
+    const root = ReactDOM.createRoot(wrapper);
+    await new Promise<void>((resolve) => {
+      root.render(
+        formatKey === "explainer"
+          ? (
+            <ExplainerPage
+              doc={explainerDoc}
+              authorName={carousel.author_name}
+              authorTitle={carousel.author_title}
+              w={W} h={H}
+              renderHeadlineWithAccent={renderHeadlineWithAccent}
+              wrapText={wrapText}
+            />
+          )
+          : (
+            <QASheetPage
+              doc={qaDoc}
+              authorName={carousel.author_name}
+              authorTitle={carousel.author_title}
+              w={W} h={H}
+              renderHeadlineWithAccent={renderHeadlineWithAccent}
+              wrapText={wrapText}
+            />
+          )
+      );
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    });
+    const svgEl = wrapper.querySelector("svg") as SVGSVGElement;
+    if (!svgEl) throw new Error("SVG not found");
+    svgEl.setAttribute("width", String(W));
+    svgEl.setAttribute("height", String(H));
+    // Embed the broadsheet font superset so PAPER + Newsreader/Cairo/Plex Mono
+    // all rasterise correctly in the Image() sandbox.
+    const families = ["Newsreader:ital,wght@0,400;0,500;0,600;1,400", "IBM+Plex+Mono:wght@400;600"];
+    if (lang === "ar") families.push("Cairo:wght@400;600;700;800");
+    const extraCSS = await getEmbeddedFontCSS(families);
+    const blob = await svgToImageBlob(svgEl, W, H, extraCSS, "image/png", 1);
+    root.unmount();
+    return blob;
+  };
+
+  const exportOnePager = async () => {
+    setExporting(true);
+    try {
+      await ensureFontsReady(lang);
+      const blob = await renderOnePagerToBlob();
+      const label = formatKey === "explainer"
+        ? `explainer-${slugify((explainerDoc.term_headline || "page"))}.png`
+        : `qa-${slugify((qaDoc.topic_headline || "page"))}.png`;
+      downloadBlob(blob, label);
+    } catch (e: any) {
+      toast.error(e.message || "Export failed");
+    } finally { setExporting(false); }
+  };
+
   const exportCurrent = async () => {
     setExporting(true);
     try {
@@ -2227,6 +2315,23 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
           </div>
         </div>
 
+        {/* Format pill row */}
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <span className="text-xs mr-1 pub-micro" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>Format</span>
+          {(["carousel","explainer","qa"] as FormatKey[]).map(fk => (
+            <button key={fk} onClick={() => setFormatKey(fk)}
+                    className="px-3 py-1.5 rounded-full text-xs font-medium border focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--action)]"
+                    style={{
+                      background: formatKey === fk ? "var(--action)" : "transparent",
+                      color: formatKey === fk ? "var(--ink-on-brand)" : "var(--glass)",
+                      borderColor: formatKey === fk ? "var(--action)" : "var(--hair)",
+                    }}>
+              {fk === "carousel" ? "Carousel" : fk === "explainer" ? "Explainer" : "Q&A"}
+            </button>
+          ))}
+        </div>
+
+        {formatKey === "carousel" && (
         <div className="flex flex-wrap items-center gap-2 mb-3">
           {(Object.keys(STYLES) as StyleKey[]).map(k => (
             <button key={k} onClick={() => setStyleKey(k)}
@@ -2240,6 +2345,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
             </button>
           ))}
         </div>
+        )}
 
         <div className="flex flex-wrap items-center gap-2 mb-3">
           <span className="text-xs mr-1 pub-micro" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>Language</span>
@@ -2266,11 +2372,16 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
             className="flex-1 min-w-[260px] px-3 py-2 rounded-lg border text-sm placeholder:text-[color:var(--glass-3)] focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--action)]"
             style={{ background: "var(--ob-field)", color: "var(--glass)", borderColor: "var(--hair)", fontFamily: lang === "ar" ? "'Cairo', sans-serif" : undefined }}
           />
-          <button onClick={generate} disabled={generating}
+          <button onClick={() => {
+            if (formatKey === "carousel") { generate(); return; }
+            toast("Generator arrives with the next deploy");
+            if (formatKey === "explainer") setExplainerDoc(lang === "ar" ? SAMPLE_EXPLAINER_AR : SAMPLE_EXPLAINER);
+            else setQaDoc(lang === "ar" ? SAMPLE_QASHEET_AR : SAMPLE_QASHEET);
+          }} disabled={generating}
                   className="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--action)]"
                   style={{ background: "var(--action)", color: "var(--ink-on-brand)" }}>
             {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            Generate Carousel
+            {formatKey === "carousel" ? "Generate Carousel" : formatKey === "explainer" ? "Generate Explainer" : "Generate Q&A"}
           </button>
         </div>
       </div>
@@ -2281,9 +2392,31 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
           <div className="grid gap-6">
             {/* Preview */}
             <div className="space-y-4">
-              <div className="mx-auto" style={{ maxWidth: dim === "1200x628" ? 900 : 640, width: "100%" }}>
-                <div style={{ aspectRatio: `${DIM[dim].w} / ${DIM[dim].h}`, boxShadow: "0 30px 80px rgba(0,0,0,0.5)", borderRadius: 16, overflow: "hidden" }}>
-                  {slide ? (
+              <div className="mx-auto" style={{
+                maxWidth: formatKey !== "carousel" ? 640 : (dim === "1200x628" ? 900 : 640),
+                width: "100%",
+              }}>
+                <div style={{
+                  aspectRatio: formatKey !== "carousel" ? `1080 / 1350` : `${DIM[dim].w} / ${DIM[dim].h}`,
+                  boxShadow: "0 30px 80px rgba(0,0,0,0.5)", borderRadius: 16, overflow: "hidden",
+                }}>
+                  {formatKey === "explainer" ? (
+                    <ExplainerPage
+                      doc={explainerDoc}
+                      authorName={carousel.author_name}
+                      authorTitle={carousel.author_title}
+                      renderHeadlineWithAccent={renderHeadlineWithAccent}
+                      wrapText={wrapText}
+                    />
+                  ) : formatKey === "qa" ? (
+                    <QASheetPage
+                      doc={qaDoc}
+                      authorName={carousel.author_name}
+                      authorTitle={carousel.author_title}
+                      renderHeadlineWithAccent={renderHeadlineWithAccent}
+                      wrapText={wrapText}
+                    />
+                  ) : slide ? (
                     <SlideSVG slide={slide} total={slides.length} style={style} dim={dim} carousel={carousel} lang={lang} />
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center text-center px-8"
@@ -2316,7 +2449,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
               </div>
 
               {/* Voice parity: indicator + feedback (mirrors AuthorityTab post pattern) */}
-              {slides.length > 0 && !generating && (
+              {formatKey === "carousel" && slides.length > 0 && !generating && (
                 <div className="flex flex-wrap items-center justify-center gap-3 text-xs">
                   {hasVoiceProfile && (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border" style={{ borderColor: "var(--hair)", background: "var(--ob-panel)", color: "var(--glass-2)" }}>
@@ -2346,7 +2479,9 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                 </div>
               )}
 
-              {/* Nav */}
+              {/* Nav + Filmstrip + slide-management (carousel-only) */}
+              {formatKey === "carousel" && (
+              <>
               <div className="flex items-center justify-center gap-3">
                 <button onClick={() => setActiveIdx(Math.max(0, activeIdx - 1))} disabled={activeIdx === 0}
                         className="p-2 rounded-full disabled:opacity-30 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--action)]" style={{ background: "var(--ob-raised)", color: "var(--glass)" }}>
@@ -2415,6 +2550,8 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                 <button onClick={() => moveSlide(1)} className="p-1.5 rounded focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-[color:var(--action)]" style={{ background: "var(--ob-raised)", color: "var(--glass)" }}><ArrowDown className="w-3.5 h-3.5" /></button>
                 <button onClick={deleteSlide} className="p-1.5 rounded focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-[color:var(--action)]" style={{ background: "var(--ob-raised)", color: "var(--neg)" }}><Trash2 className="w-3.5 h-3.5" /></button>
               </div>
+              </>
+              )}
             </div>
           </div>
         </div>
@@ -2447,11 +2584,19 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
 
           {/* Edit panel */}
           <div className="space-y-3 p-4 rounded-2xl" style={{ background: "var(--ob-panel)", border: "1px solid var(--hair)" }}>
-            <div className="flex items-center justify-between">
-              <div className="text-xs uppercase tracking-wider" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>Edit · {slide?.slide_type}</div>
-              <div className="text-xs" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>Slide {activeIdx + 1} of {slides.length}</div>
-            </div>
-            {slide && <EditPanel slide={slide} onChange={updateSlide} lang={lang} />}
+            {formatKey === "carousel" ? (
+              <>
+                <div className="flex items-center justify-between">
+                  <div className="text-xs uppercase tracking-wider" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>Edit · {slide?.slide_type}</div>
+                  <div className="text-xs" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>Slide {activeIdx + 1} of {slides.length}</div>
+                </div>
+                {slide && <EditPanel slide={slide} onChange={updateSlide} lang={lang} />}
+              </>
+            ) : formatKey === "explainer" ? (
+              <ExplainerEditPanel doc={explainerDoc} onChange={setExplainerDoc} lang={lang} />
+            ) : (
+              <QAEditPanel doc={qaDoc} onChange={setQaDoc} lang={lang} />
+            )}
 
             <div className="pt-3 mt-3 border-t" style={{ borderColor: "var(--hair)" }}>
               <div className="text-xs uppercase tracking-wider mb-2" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>Author & attribution</div>
@@ -2462,8 +2607,8 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
             </div>
           </div>
 
-          {/* LinkedIn caption + hashtags */}
-          {(carousel.linkedin_caption || (carousel.hashtags && carousel.hashtags.length > 0)) && (
+          {/* LinkedIn caption + hashtags (carousel-only) */}
+          {formatKey === "carousel" && (carousel.linkedin_caption || (carousel.hashtags && carousel.hashtags.length > 0)) && (
             <div className="space-y-3 p-4 rounded-2xl" style={{ background: "var(--ob-panel)", border: "1px solid var(--hair)" }}>
               <div className="flex items-center justify-between">
                 <div className="text-xs uppercase tracking-wider" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>LinkedIn caption</div>
@@ -2517,8 +2662,9 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
       <div className="fixed bottom-0 left-0 right-0 px-4 py-3 backdrop-blur-md flex flex-wrap items-center gap-2 justify-center"
            style={{ background: "color-mix(in srgb, var(--ob-bg) 85%, transparent)", borderTop: "1px solid var(--hair)" }}>
         <span className="w-full text-center text-[11px]" style={{ color: "var(--glass-2)", letterSpacing: "0.02em", fontFamily: "var(--font-mono)" }}>
-          ✦ AI-generated slides · Review before sharing
+          ✦ AI-generated · Review before sharing
         </span>
+        {formatKey === "carousel" && (
         <div className="flex items-center gap-1 mr-2">
           {(Object.keys(DIM) as Dimension[]).map(d => (
             <button key={d} onClick={() => setDim(d)}
@@ -2531,6 +2677,9 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
             </button>
           ))}
         </div>
+        )}
+        {formatKey === "carousel" ? (
+        <>
         <button onClick={exportPdf} disabled={exporting}
                 className="px-3 py-1.5 text-xs rounded-lg flex items-center gap-1.5 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--action)]"
                 style={{ background: "var(--action)", color: "var(--ink-on-brand)" }}>
@@ -2547,6 +2696,14 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
             : savedToLibrary ? <><Check className="w-3.5 h-3.5" /> Saved to Library</>
             : <><BookmarkPlus className="w-3.5 h-3.5" /> Save to Library</>}
         </button>
+        </>
+        ) : (
+          <button onClick={exportOnePager} disabled={exporting}
+                  className="px-3 py-1.5 text-xs rounded-lg flex items-center gap-1.5 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--action)]"
+                  style={{ background: "var(--action)", color: "var(--ink-on-brand)" }}>
+            {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileImage className="w-3.5 h-3.5" />} Export PNG
+          </button>
+        )}
       </div>
 
       {/* Offscreen render container (for export) */}
@@ -2666,6 +2823,86 @@ function EditPanel({ slide, onChange, lang = "en" }: { slide: Slide; onChange: (
           <Field lang={lang} label="Button text" value={slide.cta_button || ""} onChange={v => onChange({ cta_button: v })} />
         </>
       )}
+    </div>
+  );
+}
+
+/* ============================ ONE-PAGER EDIT PANELS ============================ */
+
+function ExplainerEditPanel({ doc, onChange, lang }: {
+  doc: ExplainerDoc;
+  onChange: (d: ExplainerDoc) => void;
+  lang: "en" | "ar";
+}) {
+  const set = (patch: Partial<ExplainerDoc>) => onChange({ ...doc, ...patch });
+  const setSection = (i: number, patch: Partial<ExplainerDoc["sections"][number]>) => {
+    const next = doc.sections.map((s, si) => (si === i ? { ...s, ...patch } : s));
+    set({ sections: next });
+  };
+  return (
+    <div>
+      <div className="text-xs uppercase tracking-wider mb-2" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>Edit · Explainer</div>
+      <Field lang={lang} label="Term headline" value={doc.term_headline} onChange={v => set({ term_headline: v })} />
+      <Field lang={lang} label="Headline accent" value={doc.headline_accent} onChange={v => set({ headline_accent: v })} />
+      <Field lang={lang} label="Kicker" value={doc.kicker} onChange={v => set({ kicker: v })} />
+      <Field lang={lang} label="Series Nº" value={String(doc.series_no)} onChange={v => set({ series_no: parseInt(v || "0", 10) || 0 })} />
+      {doc.sections.slice(0, 2).map((s, i) => (
+        <div key={i} className="pt-2 mt-2 border-t" style={{ borderColor: "var(--hair)" }}>
+          <div className="text-[11px] uppercase tracking-wider mb-1" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>Section {i + 1}</div>
+          <Field lang={lang} label="Label" value={s.label} onChange={v => setSection(i, { label: v })} />
+          <Field lang={lang} label="Body" value={s.body} onChange={v => setSection(i, { body: v })} multiline />
+          <Field lang={lang} label="Fig label" value={s.fig_label} onChange={v => setSection(i, { fig_label: v })} />
+        </div>
+      ))}
+      <div className="pt-2 mt-2 border-t" style={{ borderColor: "var(--hair)" }}>
+        <Field lang={lang} label="Next-in-series title" value={doc.next_title} onChange={v => set({ next_title: v })} />
+        <Field lang={lang} label="Next items (one per line, up to 4)" value={doc.next_items.join("\n")}
+               onChange={v => set({ next_items: v.split("\n").filter(x => x.trim()).slice(0, 4) })} multiline />
+      </div>
+    </div>
+  );
+}
+
+function QAEditPanel({ doc, onChange, lang }: {
+  doc: QASheetDoc;
+  onChange: (d: QASheetDoc) => void;
+  lang: "en" | "ar";
+}) {
+  const set = (patch: Partial<QASheetDoc>) => onChange({ ...doc, ...patch });
+  const setItem = (i: number, patch: Partial<QASheetDoc["items"][number]>) => {
+    const next = doc.items.map((it, ii) => (ii === i ? { ...it, ...patch } : it));
+    set({ items: next });
+  };
+  return (
+    <div>
+      <div className="text-xs uppercase tracking-wider mb-2" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>Edit · Q&amp;A</div>
+      <Field lang={lang} label="Topic headline" value={doc.topic_headline} onChange={v => set({ topic_headline: v })} />
+      <Field lang={lang} label="Headline accent" value={doc.headline_accent} onChange={v => set({ headline_accent: v })} />
+      <Field lang={lang} label="Source line" value={doc.source_line} onChange={v => set({ source_line: v })} />
+      {doc.items.map((it, i) => (
+        <div key={i} className="pt-2 mt-2 border-t" style={{ borderColor: "var(--hair)" }}>
+          <div className="flex items-center justify-between mb-1">
+            <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>Item {String(i + 1).padStart(2, "0")}</div>
+            {doc.items.length > 3 ? (
+              <button onClick={() => set({ items: doc.items.filter((_, j) => j !== i) })}
+                      className="text-xs" style={{ color: "var(--glass-2)" }}>×</button>
+            ) : null}
+          </div>
+          <Field lang={lang} label="Question" value={it.q} onChange={v => setItem(i, { q: v })} multiline />
+          <Field lang={lang} label="Answer" value={it.a} onChange={v => setItem(i, { a: v })} multiline />
+        </div>
+      ))}
+      {doc.items.length < 5 ? (
+        <button
+          onClick={() => set({ items: [...doc.items, { q: "", a: "" }] })}
+          className="text-xs flex items-center gap-1 mt-2" style={{ color: "var(--glass)" }}
+        >
+          <Plus className="w-3 h-3" /> Add item
+        </button>
+      ) : null}
+      <div className="pt-2 mt-2 border-t" style={{ borderColor: "var(--hair)" }}>
+        <Field lang={lang} label="Invite (use ' — ' to highlight tail)" value={doc.invite} onChange={v => set({ invite: v })} multiline />
+      </div>
     </div>
   );
 }
