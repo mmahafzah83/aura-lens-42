@@ -5,6 +5,7 @@ import { FigPlate, pickFig } from "./figs";
 import {
   PAPER, INK, INK2, SPOT, RULE, RULE_SOFT, SERIF, MONO, ARABIC,
 } from "./pressTokens";
+import { pickFig as pickFigKind } from "./figs";
 
 // Minimal structural types — kept local so the file is decoupled from the studio.
 export interface BroadsheetSlide {
@@ -21,6 +22,16 @@ export interface BroadsheetSlide {
   cta_main?: string;
   cta_sub?: string;
   cta_button?: string;
+  grid_items?: string[];
+  compare_left_title?: string;
+  compare_left_items?: string[];
+  compare_right_title?: string;
+  compare_right_items?: string[];
+  list_items?: { label: "KILL"|"KEEP"|"DO"|"DONT"|"STOP"|"START"; text: string }[];
+  terminal_file?: string;
+  terminal_lines?: string[];
+  terminal_punchline?: string;
+  terminal_keywords?: string[];
 }
 
 export interface BroadsheetCarousel {
