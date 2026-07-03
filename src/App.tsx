@@ -27,6 +27,7 @@ import CookieConsent from "./components/CookieConsent";
 const Landing = lazy(() => import("./pages/Landing"));
 const TrendDetail = lazy(() => import("./pages/TrendDetail"));
 const CarouselStudio = lazy(() => import("./pages/CarouselStudio"));
+const EditionStudio = lazy(() => import("./pages/EditionStudio"));
 const Admin = lazy(() => import("./pages/Admin"));
 const AdminAccess = lazy(() => import("./pages/AdminAccess"));
 const AdminDesignSystem = lazy(() => import("./pages/AdminDesignSystem"));
@@ -107,6 +108,7 @@ const App = () => (
             <Route path="/guide" element={<Guide />} />
             <Route path="/settings" element={<PasswordGate><Settings /></PasswordGate>} />
             <Route path="/carousel-studio" element={<PasswordGate><CarouselStudio /></PasswordGate>} />
+            <Route path="/edition" element={<PasswordGate><EditionStudio /></PasswordGate>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>
