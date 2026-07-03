@@ -13,14 +13,16 @@ import {
   getEmbeddedFontCSS, svgToImageBlob, ensureFontsReady, downloadBlob, slugify,
 } from "@/lib/broadsheetExport";
 import { dedupeHashtags, stripDuplicateHashtags } from "@/lib/hashtags";
+import { getPublication } from "@/lib/publication";
 
 const PAGE_W = 1080;
 const PAGE_H = 1350;
 
 function makeSampleEdition(lang: "en" | "ar"): Edition {
   const rtl = lang === "ar";
+  const pub = getPublication(null, lang, null);
   return {
-    nameplate: { name: rtl ? "نشرة المحرر" : "The Editor Brief", style: rtl ? "arabic" : "classic" },
+    nameplate: { name: pub.name, style: pub.style, monogramChar: pub.monogram_char },
     edition_no: 0,
     dateline: rtl ? "الأسبوع — · — — —" : "Week — · —— — —",
     sector_line: rtl ? "قطاعك · منطقتك" : "SECTOR · REGION",
