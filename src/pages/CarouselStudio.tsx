@@ -2662,8 +2662,9 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
       <div className="fixed bottom-0 left-0 right-0 px-4 py-3 backdrop-blur-md flex flex-wrap items-center gap-2 justify-center"
            style={{ background: "color-mix(in srgb, var(--ob-bg) 85%, transparent)", borderTop: "1px solid var(--hair)" }}>
         <span className="w-full text-center text-[11px]" style={{ color: "var(--glass-2)", letterSpacing: "0.02em", fontFamily: "var(--font-mono)" }}>
-          ✦ AI-generated slides · Review before sharing
+          ✦ AI-generated · Review before sharing
         </span>
+        {formatKey === "carousel" && (
         <div className="flex items-center gap-1 mr-2">
           {(Object.keys(DIM) as Dimension[]).map(d => (
             <button key={d} onClick={() => setDim(d)}
@@ -2676,6 +2677,9 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
             </button>
           ))}
         </div>
+        )}
+        {formatKey === "carousel" ? (
+        <>
         <button onClick={exportPdf} disabled={exporting}
                 className="px-3 py-1.5 text-xs rounded-lg flex items-center gap-1.5 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--action)]"
                 style={{ background: "var(--action)", color: "var(--ink-on-brand)" }}>
@@ -2692,6 +2696,14 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
             : savedToLibrary ? <><Check className="w-3.5 h-3.5" /> Saved to Library</>
             : <><BookmarkPlus className="w-3.5 h-3.5" /> Save to Library</>}
         </button>
+        </>
+        ) : (
+          <button onClick={exportOnePager} disabled={exporting}
+                  className="px-3 py-1.5 text-xs rounded-lg flex items-center gap-1.5 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--action)]"
+                  style={{ background: "var(--action)", color: "var(--ink-on-brand)" }}>
+            {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileImage className="w-3.5 h-3.5" />} Export PNG
+          </button>
+        )}
       </div>
 
       {/* Offscreen render container (for export) */}
