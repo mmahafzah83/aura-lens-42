@@ -209,6 +209,7 @@ interface Carousel {
   author_handle?: string;
   signal_attribution?: string | null;
   sector_focus?: string;
+  publication?: import("@/lib/publication").PublicationConfig;
 }
 
 type Dimension = "1080x1080" | "1080x1350" | "1200x628";
