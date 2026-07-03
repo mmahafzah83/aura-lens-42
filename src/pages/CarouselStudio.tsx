@@ -2826,3 +2826,83 @@ function EditPanel({ slide, onChange, lang = "en" }: { slide: Slide; onChange: (
     </div>
   );
 }
+
+/* ============================ ONE-PAGER EDIT PANELS ============================ */
+
+function ExplainerEditPanel({ doc, onChange, lang }: {
+  doc: ExplainerDoc;
+  onChange: (d: ExplainerDoc) => void;
+  lang: "en" | "ar";
+}) {
+  const set = (patch: Partial<ExplainerDoc>) => onChange({ ...doc, ...patch });
+  const setSection = (i: number, patch: Partial<ExplainerDoc["sections"][number]>) => {
+    const next = doc.sections.map((s, si) => (si === i ? { ...s, ...patch } : s));
+    set({ sections: next });
+  };
+  return (
+    <div>
+      <div className="text-xs uppercase tracking-wider mb-2" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>Edit · Explainer</div>
+      <Field lang={lang} label="Term headline" value={doc.term_headline} onChange={v => set({ term_headline: v })} />
+      <Field lang={lang} label="Headline accent" value={doc.headline_accent} onChange={v => set({ headline_accent: v })} />
+      <Field lang={lang} label="Kicker" value={doc.kicker} onChange={v => set({ kicker: v })} />
+      <Field lang={lang} label="Series Nº" value={String(doc.series_no)} onChange={v => set({ series_no: parseInt(v || "0", 10) || 0 })} />
+      {doc.sections.slice(0, 2).map((s, i) => (
+        <div key={i} className="pt-2 mt-2 border-t" style={{ borderColor: "var(--hair)" }}>
+          <div className="text-[11px] uppercase tracking-wider mb-1" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>Section {i + 1}</div>
+          <Field lang={lang} label="Label" value={s.label} onChange={v => setSection(i, { label: v })} />
+          <Field lang={lang} label="Body" value={s.body} onChange={v => setSection(i, { body: v })} multiline />
+          <Field lang={lang} label="Fig label" value={s.fig_label} onChange={v => setSection(i, { fig_label: v })} />
+        </div>
+      ))}
+      <div className="pt-2 mt-2 border-t" style={{ borderColor: "var(--hair)" }}>
+        <Field lang={lang} label="Next-in-series title" value={doc.next_title} onChange={v => set({ next_title: v })} />
+        <Field lang={lang} label="Next items (one per line, up to 4)" value={doc.next_items.join("\n")}
+               onChange={v => set({ next_items: v.split("\n").filter(x => x.trim()).slice(0, 4) })} multiline />
+      </div>
+    </div>
+  );
+}
+
+function QAEditPanel({ doc, onChange, lang }: {
+  doc: QASheetDoc;
+  onChange: (d: QASheetDoc) => void;
+  lang: "en" | "ar";
+}) {
+  const set = (patch: Partial<QASheetDoc>) => onChange({ ...doc, ...patch });
+  const setItem = (i: number, patch: Partial<QASheetDoc["items"][number]>) => {
+    const next = doc.items.map((it, ii) => (ii === i ? { ...it, ...patch } : it));
+    set({ items: next });
+  };
+  return (
+    <div>
+      <div className="text-xs uppercase tracking-wider mb-2" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>Edit · Q&amp;A</div>
+      <Field lang={lang} label="Topic headline" value={doc.topic_headline} onChange={v => set({ topic_headline: v })} />
+      <Field lang={lang} label="Headline accent" value={doc.headline_accent} onChange={v => set({ headline_accent: v })} />
+      <Field lang={lang} label="Source line" value={doc.source_line} onChange={v => set({ source_line: v })} />
+      {doc.items.map((it, i) => (
+        <div key={i} className="pt-2 mt-2 border-t" style={{ borderColor: "var(--hair)" }}>
+          <div className="flex items-center justify-between mb-1">
+            <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>Item {String(i + 1).padStart(2, "0")}</div>
+            {doc.items.length > 3 ? (
+              <button onClick={() => set({ items: doc.items.filter((_, j) => j !== i) })}
+                      className="text-xs" style={{ color: "var(--glass-2)" }}>×</button>
+            ) : null}
+          </div>
+          <Field lang={lang} label="Question" value={it.q} onChange={v => setItem(i, { q: v })} multiline />
+          <Field lang={lang} label="Answer" value={it.a} onChange={v => setItem(i, { a: v })} multiline />
+        </div>
+      ))}
+      {doc.items.length < 5 ? (
+        <button
+          onClick={() => set({ items: [...doc.items, { q: "", a: "" }] })}
+          className="text-xs flex items-center gap-1 mt-2" style={{ color: "var(--glass)" }}
+        >
+          <Plus className="w-3 h-3" /> Add item
+        </button>
+      ) : null}
+      <div className="pt-2 mt-2 border-t" style={{ borderColor: "var(--hair)" }}>
+        <Field lang={lang} label="Invite (use ' — ' to highlight tail)" value={doc.invite} onChange={v => set({ invite: v })} multiline />
+      </div>
+    </div>
+  );
+}
