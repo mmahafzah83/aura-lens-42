@@ -184,6 +184,22 @@ function BroadsheetBody({
   const leftX = rtl ? w - edgePad : edgePad;
   const rightX = rtl ? edgePad : w - edgePad;
   const anchorStart: "start" | "end" = rtl ? "end" : "start";
+  const HEAD_FONT = rtl ? ARABIC : SERIF;
+  const BODY_FONT = rtl ? ARABIC : SERIF;
+  const LABEL_FONT = rtl ? ARABIC : MONO;
+  const HEAD_WEIGHT = rtl ? 800 : 500;
+  const BODY_WEIGHT = rtl ? 600 : 400;
+  const LABEL_WEIGHT = rtl ? 700 : 600;
+  const L: Record<string, string> = {
+    myth_tag: rtl ? "كان السائد يقول —" : "THE RECORD PREVIOUSLY READ —",
+    corrected: rtl ? "والتصحيح" : "CORRECTED TO READ",
+    KILL: rtl ? "حذف" : "KILL",
+    KEEP: rtl ? "إبقاء" : "KEEP",
+    STOP: rtl ? "توقف" : "STOP",
+    START: rtl ? "ابدأ" : "START",
+    DO: rtl ? "افعل" : "DO",
+    DONT: rtl ? "لا تفعل" : "DONT",
+  };
 
   if (slide.slide_type === "COVER") {
     const figY = contentY;
