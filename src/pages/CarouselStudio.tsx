@@ -1409,54 +1409,71 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
 
 /* ============================ EXPORT ============================ */
 
-const FONT_IMPORT_CSS = `@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=DM+Sans:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=block');`;
+const FONT_IMPORT_CSS = `@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=DM+Sans:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,600&family=IBM+Plex+Mono:wght@400;500;600&display=block');`;
 
-// Resolve per-weight Cairo font URLs dynamically from Google's CSS endpoint,
+// Resolve per-weight font URLs dynamically from Google's CSS endpoint,
 // then inline each weight as a base64 woff2/ttf inside the SVG. This is the
 // only reliable way to get the correct font into the Image()/canvas raster
 // sandbox (external @import does not load there).
-let CAIRO_EMBEDDED_CSS: string | null = null;
-let CAIRO_EMBED_PROMISE: Promise<string> | null = null;
-async function getCairoEmbeddedCSS(): Promise<string> {
-  if (CAIRO_EMBEDDED_CSS) return CAIRO_EMBEDDED_CSS;
-  if (CAIRO_EMBED_PROMISE) return CAIRO_EMBED_PROMISE;
-  CAIRO_EMBED_PROMISE = (async () => {
+const FONT_EMBED_CACHE = new Map<string, string>();
+const FONT_EMBED_PROMISES = new Map<string, Promise<string>>();
+
+async function getEmbeddedFontCSS(families: string[]): Promise<string> {
+  const key = families.join("|");
+  const cached = FONT_EMBED_CACHE.get(key);
+  if (cached !== undefined) return cached;
+  const pending = FONT_EMBED_PROMISES.get(key);
+  if (pending) return pending;
+  const promise = (async () => {
     try {
-      const cssRes = await fetch(
-        "https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=block"
-      );
+      const url =
+        "https://fonts.googleapis.com/css2?" +
+        families.map((f) => `family=${f}`).join("&") +
+        "&display=block";
+      const cssRes = await fetch(url);
       const cssText = await cssRes.text();
-      // Parse @font-face blocks, extract weight + src URL, inline as base64.
+      // Parse @font-face blocks; capture family, weight, style, and url.
       const blocks = cssText.split("@font-face").slice(1);
       const out: string[] = [];
       for (const blk of blocks) {
-        const wMatch = blk.match(/font-weight:\s*(\d+)/);
+        const famMatch = blk.match(/font-family:\s*['"]([^'"]+)['"]/);
+        const wMatch = blk.match(/font-weight:\s*([\d\s]+)/);
+        const sMatch = blk.match(/font-style:\s*(\w+)/);
         const uMatch = blk.match(/url\((https:\/\/[^)]+)\)/);
         const fMatch = blk.match(/format\(['"]?([^'")]+)/);
-        if (!wMatch || !uMatch) continue;
-        const w = wMatch[1];
-        const url = uMatch[1];
-        const fmt = fMatch ? fMatch[1] : (url.endsWith(".woff2") ? "woff2" : "truetype");
+        if (!famMatch || !wMatch || !uMatch) continue;
+        const fam = famMatch[1];
+        const w = wMatch[1].trim().split(/\s+/)[0];
+        const style = sMatch ? sMatch[1] : "normal";
+        const srcUrl = uMatch[1];
+        const fmt = fMatch ? fMatch[1] : (srcUrl.endsWith(".woff2") ? "woff2" : "truetype");
         const mime = fmt === "woff2" ? "font/woff2" : "font/ttf";
-        const fr = await fetch(url);
+        const fr = await fetch(srcUrl);
         const buf = await fr.arrayBuffer();
         const bytes = new Uint8Array(buf);
         let bin = "";
         for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
         const b64 = btoa(bin);
         out.push(
-          `@font-face{font-family:'Cairo';font-style:normal;font-weight:${w};font-display:block;src:url(data:${mime};base64,${b64}) format('${fmt}');}`
+          `@font-face{font-family:'${fam}';font-style:${style};font-weight:${w};font-display:block;src:url(data:${mime};base64,${b64}) format('${fmt}');}`
         );
       }
-      CAIRO_EMBEDDED_CSS = out.join("\n");
-      return CAIRO_EMBEDDED_CSS;
+      const css = out.join("\n");
+      FONT_EMBED_CACHE.set(key, css);
+      return css;
     } catch (e) {
-      console.warn("Cairo embed failed, falling back to @import", e);
-      CAIRO_EMBEDDED_CSS = "";
+      console.warn("Font embed failed, falling back to @import", e);
+      FONT_EMBED_CACHE.set(key, "");
       return "";
     }
   })();
-  return CAIRO_EMBED_PROMISE;
+  FONT_EMBED_PROMISES.set(key, promise);
+  return promise;
+}
+
+// Backwards-compatible thin wrapper so existing call sites keep working.
+async function getCairoEmbeddedCSS(): Promise<string> {
+  return getEmbeddedFontCSS(["Cairo:wght@400;600;700;800"]);
 }
 
 function svgToPngBlob(svgEl: SVGSVGElement, width: number, height: number, extraCSS = ""): Promise<Blob> {
@@ -1518,7 +1535,7 @@ async function ensureFontsReady(lang: "en" | "ar") {
     }
     const families = lang === "ar"
       ? ["16px Cairo", "700 16px Cairo", "800 16px Cairo"]
-      : ["16px 'DM Sans'", "16px 'Cormorant Garamond'", "16px 'JetBrains Mono'"];
+      : ["16px 'DM Sans'", "16px 'Cormorant Garamond'", "16px 'JetBrains Mono'", "16px Newsreader", "16px 'IBM Plex Mono'"];
     const checks = families.map((f) => {
       try { return (document as any).fonts?.check?.(f); } catch { return true; }
     });
@@ -1532,7 +1549,9 @@ async function ensureFontsReady(lang: "en" | "ar") {
            <span style="font-family:'Cairo';font-weight:800">تحميل</span>`
         : `<span style="font-family:'DM Sans'">Aa</span>
            <span style="font-family:'Cormorant Garamond'">Aa</span>
-           <span style="font-family:'JetBrains Mono'">Aa</span>`;
+           <span style="font-family:'JetBrains Mono'">Aa</span>
+           <span style="font-family:'Newsreader'">Aa</span>
+           <span style="font-family:'IBM Plex Mono'">Aa</span>`;
       document.body.appendChild(probe);
       try { await (document as any).fonts?.ready; } catch {}
       document.body.removeChild(probe);
