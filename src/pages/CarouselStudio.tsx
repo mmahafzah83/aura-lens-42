@@ -1636,7 +1636,7 @@ export default function CarouselStudio() {
       signal_attribution?: any;
     };
   } | null;
-  const [styleKey, setStyleKey] = useState<StyleKey>(navState?.draftCarousel?.style || "clean_paper");
+  const [styleKey, setStyleKey] = useState<StyleKey>(navState?.draftCarousel?.style || "broadsheet");
   const [dim, setDim] = useState<Dimension>("1080x1350");
   const [topic, setTopic] = useState(navState?.topic || "");
   const [lang, setLang] = useState<"en" | "ar">(navState?.lang || navState?.draftCarousel?.lang || "en");
