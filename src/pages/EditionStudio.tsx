@@ -22,7 +22,7 @@ function makeSampleEdition(lang: "en" | "ar"): Edition {
   const rtl = lang === "ar";
   const pub = getPublication(null, lang, null);
   return {
-    nameplate: { name: pub.name, style: pub.style, monogramChar: pub.monogram_char },
+    nameplate: { name: pub.name, style: pub.style, monogram_char: pub.monogram_char },
     edition_no: 0,
     dateline: rtl ? "الأسبوع — · — — —" : "Week — · —— — —",
     sector_line: rtl ? "قطاعك · منطقتك" : "SECTOR · REGION",
