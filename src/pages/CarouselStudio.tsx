@@ -2584,11 +2584,19 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
 
           {/* Edit panel */}
           <div className="space-y-3 p-4 rounded-2xl" style={{ background: "var(--ob-panel)", border: "1px solid var(--hair)" }}>
-            <div className="flex items-center justify-between">
-              <div className="text-xs uppercase tracking-wider" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>Edit · {slide?.slide_type}</div>
-              <div className="text-xs" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>Slide {activeIdx + 1} of {slides.length}</div>
-            </div>
-            {slide && <EditPanel slide={slide} onChange={updateSlide} lang={lang} />}
+            {formatKey === "carousel" ? (
+              <>
+                <div className="flex items-center justify-between">
+                  <div className="text-xs uppercase tracking-wider" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>Edit · {slide?.slide_type}</div>
+                  <div className="text-xs" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>Slide {activeIdx + 1} of {slides.length}</div>
+                </div>
+                {slide && <EditPanel slide={slide} onChange={updateSlide} lang={lang} />}
+              </>
+            ) : formatKey === "explainer" ? (
+              <ExplainerEditPanel doc={explainerDoc} onChange={setExplainerDoc} lang={lang} />
+            ) : (
+              <QAEditPanel doc={qaDoc} onChange={setQaDoc} lang={lang} />
+            )}
 
             <div className="pt-3 mt-3 border-t" style={{ borderColor: "var(--hair)" }}>
               <div className="text-xs uppercase tracking-wider mb-2" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>Author & attribution</div>
@@ -2599,8 +2607,8 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
             </div>
           </div>
 
-          {/* LinkedIn caption + hashtags */}
-          {(carousel.linkedin_caption || (carousel.hashtags && carousel.hashtags.length > 0)) && (
+          {/* LinkedIn caption + hashtags (carousel-only) */}
+          {formatKey === "carousel" && (carousel.linkedin_caption || (carousel.hashtags && carousel.hashtags.length > 0)) && (
             <div className="space-y-3 p-4 rounded-2xl" style={{ background: "var(--ob-panel)", border: "1px solid var(--hair)" }}>
               <div className="flex items-center justify-between">
                 <div className="text-xs uppercase tracking-wider" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>LinkedIn caption</div>
