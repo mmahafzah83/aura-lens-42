@@ -106,6 +106,9 @@ verify_jwt = false
 [functions.generate-carousel-v2]
 verify_jwt = false
 
+[functions.generate-onepager]
+verify_jwt = false
+
 [functions.onboarding-linkedin-prefill]
 verify_jwt = false
 

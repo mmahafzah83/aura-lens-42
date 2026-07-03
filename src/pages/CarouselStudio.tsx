@@ -1703,6 +1703,9 @@ export default function CarouselStudio() {
   const [qaDoc, setQaDoc] = useState<QASheetDoc>(
     lang === "ar" ? SAMPLE_QASHEET_AR : SAMPLE_QASHEET,
   );
+  // Caption + hashtags returned alongside the one-pager doc. Persisted with the draft.
+  const [onePagerMeta, setOnePagerMeta] = useState<{ linkedin_caption: string; hashtags: string[] }>({ linkedin_caption: "", hashtags: [] });
+  const [onePagerDraftId, setOnePagerDraftId] = useState<string | undefined>(undefined);
   // Keep sample doc language in sync with the language toggle. Preserve user
   // edits by only swapping when the doc still equals the last sample.
   useEffect(() => {
@@ -2096,6 +2099,125 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
     }
   };
 
+  const generateOnePager = async () => {
+    if (!topic.trim()) { toast.error("Enter a topic first"); return; }
+    setGenerating(true);
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      if (!sess.session?.user?.id) { toast.error("Please sign in"); return; }
+      const { data, error } = await supabase.functions.invoke("generate-onepager", {
+        body: {
+          type: formatKey === "explainer" ? "explainer" : "qa",
+          topic,
+          signal_id: selectedSignalId,
+          lang,
+          user_id: sess.session.user.id,
+        },
+      });
+      if (error) {
+        const msg = error.message || "";
+        if (msg.includes("429") || msg.includes("rate")) toast.error("Too many requests — wait a moment.");
+        else toast.error("Generation failed: " + msg);
+        return;
+      }
+      if (data?.error) { toast.error(data.error); return; }
+      const seriesNo = Number(data?.series_no) || 1;
+      if (formatKey === "explainer") {
+        const doc: ExplainerDoc = {
+          term_headline: data.term_headline || "",
+          headline_accent: data.headline_accent || "",
+          kicker: data.kicker || "",
+          series_no: seriesNo,
+          sections: Array.isArray(data.sections) ? data.sections.map((s: any) => ({
+            label: s.label || "",
+            body: s.body || "",
+            fig_kind: s.fig_kind || "line_signal",
+            fig_label: s.fig_label || "",
+          })) : [],
+          next_title: data.next_title || (lang === "ar" ? "أين ستراها بعد ذلك" : "WHERE YOU'LL SEE IT NEXT"),
+          next_items: Array.isArray(data.next_items) ? data.next_items.slice(0, 4) : [],
+          lang,
+        };
+        setExplainerDoc(doc);
+      } else {
+        const doc: QASheetDoc = {
+          topic_headline: data.topic_headline || "",
+          headline_accent: data.headline_accent || "",
+          source_line: data.source_line || "",
+          items: Array.isArray(data.items) ? data.items.map((it: any) => ({ q: it.q || "", a: it.a || "" })) : [],
+          invite: data.invite || "",
+          lang,
+        };
+        setQaDoc(doc);
+      }
+      setOnePagerMeta({
+        linkedin_caption: data.linkedin_caption || "",
+        hashtags: Array.isArray(data.hashtags) ? data.hashtags : [],
+      });
+      setOnePagerDraftId(undefined);
+      setSavedToLibrary(false);
+      toast.success(formatKey === "explainer" ? "Explainer generated" : "Q&A generated");
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Generation failed: " + (e?.message || "Unknown error"));
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const saveOnePagerToLibrary = async () => {
+    setSaving(true);
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      if (!sess.session?.user?.id) { toast.error("Please sign in"); return; }
+      const isExplainer = formatKey === "explainer";
+      const doc = isExplainer ? explainerDoc : qaDoc;
+      const title = isExplainer
+        ? (explainerDoc.term_headline || topic || "Explainer")
+        : (qaDoc.topic_headline || topic || "Q&A");
+      const payload = {
+        post_text: onePagerMeta.linkedin_caption || "",
+        hook: title,
+        title,
+        content_type: isExplainer ? "explainer" : "qa_sheet",
+        source_type: "carousel_studio",
+        source_metadata: {
+          doc,
+          format: formatKey,
+          hashtags: onePagerMeta.hashtags,
+          signal_id: selectedSignalId,
+          series_no: (doc as any).series_no,
+          lang,
+        },
+        tracking_status: "draft",
+      };
+      if (onePagerDraftId) {
+        const { error } = await supabase
+          .from("linkedin_posts")
+          .update(payload as any)
+          .eq("id", onePagerDraftId);
+        if (error) throw error;
+        console.log("[one-pager] updated draft", onePagerDraftId);
+      } else {
+        const { data: ins, error } = await supabase
+          .from("linkedin_posts")
+          .insert({ user_id: sess.session.user.id, ...payload } as any)
+          .select("id")
+          .single();
+        if (error) throw error;
+        if (ins?.id) setOnePagerDraftId(ins.id);
+        console.log("[one-pager] inserted", ins?.id, "content_type=", payload.content_type);
+      }
+      setSavedToLibrary(true);
+      toast.success(isExplainer ? "Explainer saved to Library" : "Q&A saved to Library");
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Save failed: " + (e?.message || "Unknown error"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const renderSlideToBlob = async (
     s: Slide,
     fmt: { mime?: "image/png" | "image/jpeg"; quality?: number } = {},
@@ -2374,9 +2496,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
           />
           <button onClick={() => {
             if (formatKey === "carousel") { generate(); return; }
-            toast("Generator arrives with the next deploy");
-            if (formatKey === "explainer") setExplainerDoc(lang === "ar" ? SAMPLE_EXPLAINER_AR : SAMPLE_EXPLAINER);
-            else setQaDoc(lang === "ar" ? SAMPLE_QASHEET_AR : SAMPLE_QASHEET);
+            generateOnePager();
           }} disabled={generating}
                   className="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--action)]"
                   style={{ background: "var(--action)", color: "var(--ink-on-brand)" }}>
@@ -2698,11 +2818,24 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
         </button>
         </>
         ) : (
+          <>
           <button onClick={exportOnePager} disabled={exporting}
                   className="px-3 py-1.5 text-xs rounded-lg flex items-center gap-1.5 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--action)]"
                   style={{ background: "var(--action)", color: "var(--ink-on-brand)" }}>
             {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileImage className="w-3.5 h-3.5" />} Export PNG
           </button>
+          <button onClick={saveOnePagerToLibrary} disabled={saving || savedToLibrary}
+                  className="px-3 py-1.5 text-xs rounded-lg flex items-center gap-1.5 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--action)]"
+                  style={{
+                    background: savedToLibrary ? "color-mix(in srgb, var(--pos) 14%, var(--ob-raised))" : "var(--ob-raised)",
+                    color: savedToLibrary ? "var(--pos)" : "var(--glass)",
+                    border: savedToLibrary ? "1px solid var(--pos)" : "1px solid transparent",
+                  }}>
+            {saving ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving…</>
+              : savedToLibrary ? <><Check className="w-3.5 h-3.5" /> Saved to Library</>
+              : <><BookmarkPlus className="w-3.5 h-3.5" /> Save to Library</>}
+          </button>
+          </>
         )}
       </div>
 
