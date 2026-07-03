@@ -210,7 +210,7 @@ const [savingPub, setSavingPub] = useState(false);
       };
       const { error } = await supabase
         .from("diagnostic_profiles")
-        .update({ identity_intelligence: { ...ii, publication: nextPub } })
+        .update({ identity_intelligence: { ...ii, publication: nextPub } as any })
         .eq("user_id", session.user.id);
       if (error) throw error;
       setPublicationState(nextPub);
