@@ -2315,6 +2315,23 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
           </div>
         </div>
 
+        {/* Format pill row */}
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <span className="text-xs mr-1 pub-micro" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>Format</span>
+          {(["carousel","explainer","qa"] as FormatKey[]).map(fk => (
+            <button key={fk} onClick={() => setFormatKey(fk)}
+                    className="px-3 py-1.5 rounded-full text-xs font-medium border focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--action)]"
+                    style={{
+                      background: formatKey === fk ? "var(--action)" : "transparent",
+                      color: formatKey === fk ? "var(--ink-on-brand)" : "var(--glass)",
+                      borderColor: formatKey === fk ? "var(--action)" : "var(--hair)",
+                    }}>
+              {fk === "carousel" ? "Carousel" : fk === "explainer" ? "Explainer" : "Q&A"}
+            </button>
+          ))}
+        </div>
+
+        {formatKey === "carousel" && (
         <div className="flex flex-wrap items-center gap-2 mb-3">
           {(Object.keys(STYLES) as StyleKey[]).map(k => (
             <button key={k} onClick={() => setStyleKey(k)}
@@ -2328,6 +2345,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
             </button>
           ))}
         </div>
+        )}
 
         <div className="flex flex-wrap items-center gap-2 mb-3">
           <span className="text-xs mr-1 pub-micro" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>Language</span>
