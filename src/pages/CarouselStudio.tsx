@@ -2392,9 +2392,31 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
           <div className="grid gap-6">
             {/* Preview */}
             <div className="space-y-4">
-              <div className="mx-auto" style={{ maxWidth: dim === "1200x628" ? 900 : 640, width: "100%" }}>
-                <div style={{ aspectRatio: `${DIM[dim].w} / ${DIM[dim].h}`, boxShadow: "0 30px 80px rgba(0,0,0,0.5)", borderRadius: 16, overflow: "hidden" }}>
-                  {slide ? (
+              <div className="mx-auto" style={{
+                maxWidth: formatKey !== "carousel" ? 640 : (dim === "1200x628" ? 900 : 640),
+                width: "100%",
+              }}>
+                <div style={{
+                  aspectRatio: formatKey !== "carousel" ? `1080 / 1350` : `${DIM[dim].w} / ${DIM[dim].h}`,
+                  boxShadow: "0 30px 80px rgba(0,0,0,0.5)", borderRadius: 16, overflow: "hidden",
+                }}>
+                  {formatKey === "explainer" ? (
+                    <ExplainerPage
+                      doc={explainerDoc}
+                      authorName={carousel.author_name}
+                      authorTitle={carousel.author_title}
+                      renderHeadlineWithAccent={renderHeadlineWithAccent}
+                      wrapText={wrapText}
+                    />
+                  ) : formatKey === "qa" ? (
+                    <QASheetPage
+                      doc={qaDoc}
+                      authorName={carousel.author_name}
+                      authorTitle={carousel.author_title}
+                      renderHeadlineWithAccent={renderHeadlineWithAccent}
+                      wrapText={wrapText}
+                    />
+                  ) : slide ? (
                     <SlideSVG slide={slide} total={slides.length} style={style} dim={dim} carousel={carousel} lang={lang} />
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center text-center px-8"
