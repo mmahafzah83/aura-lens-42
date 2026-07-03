@@ -2086,6 +2086,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
               doc={explainerDoc}
               authorName={carousel.author_name}
               authorTitle={carousel.author_title}
+              publication={carousel.publication}
               w={W} h={H}
               renderHeadlineWithAccent={renderHeadlineWithAccent}
               wrapText={wrapText}
@@ -2096,6 +2097,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
               doc={qaDoc}
               authorName={carousel.author_name}
               authorTitle={carousel.author_title}
+              publication={carousel.publication}
               w={W} h={H}
               renderHeadlineWithAccent={renderHeadlineWithAccent}
               wrapText={wrapText}
@@ -2347,6 +2349,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                       doc={explainerDoc}
                       authorName={carousel.author_name}
                       authorTitle={carousel.author_title}
+                      publication={carousel.publication}
                       renderHeadlineWithAccent={renderHeadlineWithAccent}
                       wrapText={wrapText}
                     />
@@ -2355,6 +2358,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                       doc={qaDoc}
                       authorName={carousel.author_name}
                       authorTitle={carousel.author_title}
+                      publication={carousel.publication}
                       renderHeadlineWithAccent={renderHeadlineWithAccent}
                       wrapText={wrapText}
                     />
