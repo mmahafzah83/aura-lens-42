@@ -209,6 +209,7 @@ interface Carousel {
   author_handle?: string;
   signal_attribution?: string | null;
   sector_focus?: string;
+  publication?: import("@/lib/publication").PublicationConfig;
 }
 
 type Dimension = "1080x1080" | "1080x1350" | "1200x628";
@@ -1667,7 +1668,7 @@ export default function CarouselStudio() {
       // (that surfaced stale display names from other contexts).
       const { data: pRes } = await supabase
         .from("diagnostic_profiles")
-        .select("first_name, last_name, level, firm, sector_focus")
+        .select("first_name, last_name, level, firm, sector_focus, identity_intelligence")
         .eq("user_id", uid)
         .maybeSingle();
       const p: any = pRes || {};
@@ -1675,15 +1676,22 @@ export default function CarouselStudio() {
       const title = [p.level, p.firm].filter(Boolean).join(" · ");
       // linkedin_handle column not yet added — keep handle empty by default.
       setAuthorDefaults({ name, title, handle: "" });
+      const { getPublication } = await import("@/lib/publication");
+      const publication = getPublication(
+        { identity_intelligence: p.identity_intelligence || {} },
+        lang,
+        p.first_name,
+      );
       setCarousel(c => ({
         ...c,
         author_name: c.author_name || name,
         author_title: c.author_title || title,
         author_handle: c.author_handle || "",
         sector_focus: c.sector_focus || p.sector_focus || "",
+        publication,
       }));
     })();
-  }, []);
+  }, [lang]);
 
   const offscreenRef = useRef<HTMLDivElement>(null);
   const autoGenTriggered = useRef(false);
@@ -2078,6 +2086,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
               doc={explainerDoc}
               authorName={carousel.author_name}
               authorTitle={carousel.author_title}
+              publication={carousel.publication}
               w={W} h={H}
               renderHeadlineWithAccent={renderHeadlineWithAccent}
               wrapText={wrapText}
@@ -2088,6 +2097,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
               doc={qaDoc}
               authorName={carousel.author_name}
               authorTitle={carousel.author_title}
+              publication={carousel.publication}
               w={W} h={H}
               renderHeadlineWithAccent={renderHeadlineWithAccent}
               wrapText={wrapText}
@@ -2339,6 +2349,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                       doc={explainerDoc}
                       authorName={carousel.author_name}
                       authorTitle={carousel.author_title}
+                      publication={carousel.publication}
                       renderHeadlineWithAccent={renderHeadlineWithAccent}
                       wrapText={wrapText}
                     />
@@ -2347,6 +2358,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                       doc={qaDoc}
                       authorName={carousel.author_name}
                       authorTitle={carousel.author_title}
+                      publication={carousel.publication}
                       renderHeadlineWithAccent={renderHeadlineWithAccent}
                       wrapText={wrapText}
                     />

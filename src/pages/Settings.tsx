@@ -11,6 +11,8 @@ import { exportReportPdf } from "@/lib/exportReportPdf";
 import usePageMeta from "@/hooks/usePageMeta";
 import ReportDocument from "@/components/ReportDocument";
 import { buildIdentityReport, type ReportData } from "@/lib/buildIdentityReport";
+import { getPublication, validate as validatePublication, type PublicationConfig } from "@/lib/publication";
+import { PAPER, INK, SPOT, RULE, SERIF, MONO, ARABIC } from "@/components/broadsheet/pressTokens";
 
 interface ProfileData {
   first_name: string | null;
@@ -61,6 +63,8 @@ const [linkedInConnection, setLinkedInConnection] = useState<LinkedInConnection 
 const [linkedInBusy, setLinkedInBusy] = useState(true);
 const [signatures, setSignatures] = useState<{ id: string; name: string; text_en: string; text_ar: string }[]>([]);
 const [savingSig, setSavingSig] = useState(false);
+const [publication, setPublicationState] = useState<PublicationConfig>({ name: "", style: "classic" });
+const [savingPub, setSavingPub] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -86,6 +90,15 @@ const [savingSig, setSavingSig] = useState(false);
         if (qErr) throw qErr;
         setProfile((data as ProfileData) || null);
         setSignatures(Array.isArray((data as any)?.signature_presets) ? (data as any).signature_presets : []);
+        {
+          const p = (data as any) || {};
+          const initialPub = getPublication(
+            { identity_intelligence: p.identity_intelligence || {} },
+            "en",
+            p.first_name,
+          );
+          setPublicationState(initialPub);
+        }
         if (data?.brand_assessment_completed_at) {
           try {
             const r = await buildIdentityReport(session.user.id);
@@ -167,6 +180,47 @@ const [savingSig, setSavingSig] = useState(false);
   const updateSignature = (id: string, field: "name" | "text_en" | "text_ar", value: string) =>
     setSignatures((s) => s.map((p) => (p.id === id ? { ...p, [field]: value } : p)));
   const removeSignature = (id: string) => persistSignatures(signatures.filter((p) => p.id !== id));
+
+  const persistPublication = async () => {
+    const err = validatePublication(publication.name);
+    if (err) { toast.error(err); return; }
+    if (publication.name_ar && publication.name_ar.trim() && publication.name_ar.trim().length > 40) {
+      toast.error("Arabic name must be at most 40 characters."); return;
+    }
+    setSavingPub(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) throw new Error("Not signed in");
+      // Refetch identity_intelligence at save time — sibling keys
+      // (preferred_carousel_style etc.) may have been written elsewhere.
+      const { data: fresh, error: fErr } = await supabase
+        .from("diagnostic_profiles")
+        .select("identity_intelligence")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+      if (fErr) throw fErr;
+      const ii = ((fresh as any)?.identity_intelligence as Record<string, any>) || {};
+      const nextPub: PublicationConfig = {
+        name: publication.name.trim(),
+        name_ar: publication.name_ar?.trim() || undefined,
+        style: publication.style,
+        monogram_char: publication.style === "monogram"
+          ? (publication.monogram_char || publication.name.trim().charAt(0) || "A").slice(0, 1).toUpperCase()
+          : undefined,
+      };
+      const { error } = await supabase
+        .from("diagnostic_profiles")
+        .update({ identity_intelligence: { ...ii, publication: nextPub } as any })
+        .eq("user_id", session.user.id);
+      if (error) throw error;
+      setPublicationState(nextPub);
+      toast.success("Publication saved");
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't save publication");
+    } finally {
+      setSavingPub(false);
+    }
+  };
 
   useEffect(() => {
     loadLinkedInStatus();
@@ -406,6 +460,111 @@ const [savingSig, setSavingSig] = useState(false);
             <AuraButton variant="ghost" size="sm" onClick={addSignature} disabled={savingSig}>Add signature</AuraButton>
             <AuraButton variant="primary" size="sm" onClick={() => persistSignatures(signatures)} loading={savingSig} disabled={savingSig}>Save signatures</AuraButton>
           </div>
+        </div>
+
+        {/* Your publication */}
+        <SectionHeader
+          label="Your publication"
+          subtitle="Name your personal press. It appears as the nameplate on every carousel, one-pager, and edition you export."
+        />
+        <div className="mb-8 space-y-4">
+          <AuraCard variant="default" hover="none">
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs uppercase tracking-wide" style={{ color: "var(--ink-4)" }}>Publication name (English)</label>
+                <input
+                  value={publication.name}
+                  onChange={(e) => setPublicationState((p) => ({ ...p, name: e.target.value }))}
+                  placeholder="The Ada Brief"
+                  maxLength={40}
+                  className="w-full mt-1 text-sm bg-transparent outline-none"
+                  style={{ color: "var(--ink)", borderBottom: "1px solid var(--rule)", padding: "6px 0" }}
+                />
+              </div>
+              <div>
+                <label className="text-xs uppercase tracking-wide" style={{ color: "var(--ink-4)", fontFamily: "'Cairo', var(--font-body), sans-serif" }}>الاسم بالعربية (اختياري)</label>
+                <input
+                  value={publication.name_ar || ""}
+                  onChange={(e) => setPublicationState((p) => ({ ...p, name_ar: e.target.value }))}
+                  dir="rtl"
+                  placeholder="نشرة عدا"
+                  maxLength={40}
+                  className="w-full mt-1 text-sm bg-transparent outline-none"
+                  style={{ color: "var(--ink)", borderBottom: "1px solid var(--rule)", padding: "6px 0", textAlign: "right", fontFamily: "'Cairo', var(--font-body), sans-serif" }}
+                />
+              </div>
+              <div>
+                <label className="text-xs uppercase tracking-wide" style={{ color: "var(--ink-4)" }}>Nameplate style</label>
+                <select
+                  value={publication.style}
+                  onChange={(e) => setPublicationState((p) => ({ ...p, style: e.target.value as PublicationConfig["style"] }))}
+                  className="w-full mt-1 text-sm rounded-md p-2 outline-none"
+                  style={{ color: "var(--ink)", background: "var(--paper-2)", border: "1px solid var(--rule)" }}
+                >
+                  <option value="classic">Classic broadsheet</option>
+                  <option value="monogram">Monogram</option>
+                  <option value="arabic">Arabic nameplate</option>
+                </select>
+              </div>
+              {publication.style === "monogram" && (
+                <div>
+                  <label className="text-xs uppercase tracking-wide" style={{ color: "var(--ink-4)" }}>Monogram letter</label>
+                  <input
+                    value={publication.monogram_char || publication.name.charAt(0).toUpperCase() || ""}
+                    onChange={(e) => setPublicationState((p) => ({ ...p, monogram_char: e.target.value.slice(0, 1).toUpperCase() }))}
+                    maxLength={1}
+                    className="w-16 mt-1 text-sm bg-transparent outline-none text-center"
+                    style={{ color: "var(--ink)", borderBottom: "1px solid var(--rule)", padding: "6px 0" }}
+                  />
+                </div>
+              )}
+
+              {/* Live preview */}
+              <div>
+                <div className="text-xs uppercase tracking-wide mb-2" style={{ color: "var(--ink-4)" }}>Preview</div>
+                <div
+                  style={{
+                    background: PAPER, color: INK, border: `1px solid ${RULE}`,
+                    padding: "20px 24px", borderRadius: 4,
+                  }}
+                >
+                  {publication.style === "classic" && (
+                    <div style={{ fontFamily: SERIF, fontSize: 28, fontWeight: 600, letterSpacing: "0.01em" }}>
+                      {publication.name || "The Brief"}
+                    </div>
+                  )}
+                  {publication.style === "monogram" && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <span style={{
+                        display: "inline-flex", alignItems: "center", justifyContent: "center",
+                        width: 44, height: 44, border: `2px solid ${SPOT}`, color: SPOT,
+                        fontFamily: SERIF, fontSize: 24, fontWeight: 700,
+                      }}>
+                        {(publication.monogram_char || publication.name.charAt(0) || "A").toUpperCase()}
+                      </span>
+                      <span style={{ fontFamily: SERIF, fontSize: 24, fontWeight: 600 }}>
+                        {publication.name || "The Brief"}
+                      </span>
+                    </div>
+                  )}
+                  {publication.style === "arabic" && (
+                    <div dir="rtl" style={{ fontFamily: ARABIC, fontSize: 28, fontWeight: 800, textAlign: "right" }}>
+                      {publication.name_ar || publication.name || "الموجز"}
+                    </div>
+                  )}
+                  <div style={{ borderTop: `2px solid ${INK}`, marginTop: 12, paddingTop: 6, fontFamily: MONO, fontSize: 11, color: SPOT, letterSpacing: 2 }}>
+                    STRATEGIC INTELLIGENCE
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <AuraButton variant="primary" size="sm" onClick={persistPublication} loading={savingPub} disabled={savingPub}>
+                  Save publication
+                </AuraButton>
+              </div>
+            </div>
+          </AuraCard>
         </div>
 
         {/* Profile summary */}

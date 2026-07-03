@@ -4,11 +4,13 @@ import PressFooter from "./PressFooter";
 import { FigPlate } from "./figs";
 import { PAPER, INK, INK2, SPOT, RULE, RULE_SOFT, SERIF, MONO, ARABIC } from "./pressTokens";
 import type { ExplainerDoc } from "./onepagerTypes";
+import { getPublication, type PublicationConfig } from "@/lib/publication";
 
 export interface ExplainerPageProps {
   doc: ExplainerDoc;
   authorName?: string;
   authorTitle?: string;
+  publication?: PublicationConfig;
   w?: number;
   h?: number;
   renderHeadlineWithAccent: (
@@ -84,7 +86,7 @@ function NextGlyph({ kind, cx, cy }: { kind: number; cx: number; cy: number }) {
 }
 
 export default function ExplainerPage({
-  doc, authorName = "Your Name", authorTitle = "", w = 1080, h = 1350,
+  doc, authorName = "Your Name", authorTitle = "", publication, w = 1080, h = 1350,
   renderHeadlineWithAccent, wrapText,
 }: ExplainerPageProps) {
   const rtl = doc.lang === "ar";
@@ -93,9 +95,17 @@ export default function ExplainerPage({
   const leftX = rtl ? w - edgePad : edgePad;
   const anchor: "start" | "end" = rtl ? "end" : "start";
   const HEAD = rtl ? ARABIC : SERIF;
-  const nameplate: { name: string; style: "classic" | "arabic" } = rtl
-    ? { name: "الموجز", style: "arabic" }
-    : { name: `The ${(authorName || "").split(/\s+/)[0] || "Brief"} Brief`, style: "classic" };
+  const first = (authorName || "").split(/\s+/)[0] || "";
+  const pub = getPublication(
+    { identity_intelligence: { publication } as any },
+    rtl ? "ar" : "en",
+    first,
+  );
+  const nameplate: { name: string; style: "classic" | "monogram" | "arabic"; monogramChar?: string } = {
+    name: pub.name,
+    style: pub.style,
+    monogramChar: pub.monogram_char,
+  };
   const topLeft = rtl ? "شرحٌ من صفحة واحدة" : "A ONE-PAGE EXPLAINER";
   const topRight = rtl ? `العدد ${doc.series_no} من السلسلة` : `Nº ${doc.series_no} IN THE SERIES`;
   const editionLabel = rtl ? "شرح" : "EXPLAINER";

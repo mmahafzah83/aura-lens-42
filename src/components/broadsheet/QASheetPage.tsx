@@ -3,11 +3,13 @@ import Masthead from "./Masthead";
 import PressFooter from "./PressFooter";
 import { PAPER, INK, INK2, SPOT, RULE, SERIF, MONO, ARABIC } from "./pressTokens";
 import type { QASheetDoc } from "./onepagerTypes";
+import { getPublication, type PublicationConfig } from "@/lib/publication";
 
 export interface QASheetPageProps {
   doc: QASheetDoc;
   authorName?: string;
   authorTitle?: string;
+  publication?: PublicationConfig;
   w?: number;
   h?: number;
   renderHeadlineWithAccent: (
@@ -34,7 +36,7 @@ function PaperGrain({ w, h, id }: { w: number; h: number; id: string }) {
 }
 
 export default function QASheetPage({
-  doc, authorName = "Your Name", authorTitle = "", w = 1080, h = 1350,
+  doc, authorName = "Your Name", authorTitle = "", publication, w = 1080, h = 1350,
   renderHeadlineWithAccent, wrapText,
 }: QASheetPageProps) {
   const rtl = doc.lang === "ar";
@@ -43,9 +45,17 @@ export default function QASheetPage({
   const leftX = rtl ? w - edgePad : edgePad;
   const anchor: "start" | "end" = rtl ? "end" : "start";
   const HEAD = rtl ? ARABIC : SERIF;
-  const nameplate: { name: string; style: "classic" | "arabic" } = rtl
-    ? { name: "الموجز", style: "arabic" }
-    : { name: `The ${(authorName || "").split(/\s+/)[0] || "Brief"} Brief`, style: "classic" };
+  const first = (authorName || "").split(/\s+/)[0] || "";
+  const pub = getPublication(
+    { identity_intelligence: { publication } as any },
+    rtl ? "ar" : "en",
+    first,
+  );
+  const nameplate: { name: string; style: "classic" | "monogram" | "arabic"; monogramChar?: string } = {
+    name: pub.name,
+    style: pub.style,
+    monogramChar: pub.monogram_char,
+  };
   const topLeft = rtl ? "أسئلة وأجوبة" : "QUESTIONS & ANSWERS";
   const topRight = doc.source_line || (rtl ? "من صندوق البريد" : "FROM MY INBOX");
   const editionLabel = rtl ? "س و ج" : "Q & A";

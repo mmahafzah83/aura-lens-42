@@ -6,6 +6,8 @@ import {
   PAPER, INK, INK2, SPOT, RULE, RULE_SOFT, SERIF, MONO, ARABIC,
 } from "./pressTokens";
 import { pickFig as pickFigKind } from "./figs";
+import type { PublicationConfig } from "@/lib/publication";
+import { getPublication } from "@/lib/publication";
 
 // Minimal structural types — kept local so the file is decoupled from the studio.
 export interface BroadsheetSlide {
@@ -41,6 +43,7 @@ export interface BroadsheetCarousel {
   author_handle?: string;
   carousel_title?: string;
   signal_attribution?: string | null;
+  publication?: PublicationConfig;
 }
 
 export interface BroadsheetProps {
@@ -68,14 +71,18 @@ function firstWord(s: string): string {
   return t.split(/\s+/)[0];
 }
 
-export function getNameplate(carousel: BroadsheetCarousel): {
+export function getNameplate(carousel: BroadsheetCarousel, lang: "en" | "ar" = "en"): {
   name: string;
   style: "classic" | "monogram" | "arabic";
   monogramChar?: string;
 } {
-  const author = (carousel.author_name || "").trim();
-  const name = author ? `The ${firstWord(author)} Brief` : "The Brief";
-  return { name, style: "classic" };
+  const first = firstWord(carousel.author_name || "");
+  const pub = getPublication(
+    { identity_intelligence: { publication: carousel.publication } as any },
+    lang,
+    first,
+  );
+  return { name: pub.name, style: pub.style, monogramChar: pub.monogram_char };
 }
 
 function formatDateline(d: Date): string {
@@ -109,8 +116,7 @@ export default function BroadsheetSlideSVG(props: BroadsheetProps) {
   const { slide, total, w, h, carousel, lang = "en", displayLabel, sectorFocus, renderHeadlineWithAccent, wrapText } = props;
   const rtl = lang === "ar";
   const edgePad = rtl ? 96 : 68;
-  const nameplate = getNameplate(carousel);
-  if (rtl) nameplate.style = "arabic";
+  const nameplate = getNameplate(carousel, lang);
   const variant: "full" | "slim" = slide.slide_number === 1 ? "full" : "slim";
   const now = new Date();
   const dateline = formatDateline(now);
