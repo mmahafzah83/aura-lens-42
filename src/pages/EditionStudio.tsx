@@ -507,6 +507,122 @@ export default function EditionStudio() {
 
         {/* Right rail */}
         <div className="space-y-4">
+          {/* Your masthead */}
+          <div className="rounded-2xl p-4 space-y-3" style={{ background: "var(--ob-panel)", border: "1px solid var(--hair)" }}>
+            <div className="text-xs uppercase tracking-wider font-semibold" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>
+              YOUR MASTHEAD
+            </div>
+
+            {/* Live preview */}
+            <div
+              className="rounded-lg px-4 py-4 flex items-center justify-center text-center"
+              style={{ background: "var(--ob-raised)", border: "1px solid var(--hair)", minHeight: 68 }}
+            >
+              {pubStyle === "monogram" ? (
+                <div className="flex items-center gap-3">
+                  <div
+                    className="flex items-center justify-center"
+                    style={{
+                      width: 40, height: 40, border: "2px solid var(--action)",
+                      color: "var(--action)", fontFamily: "'Newsreader', Georgia, serif",
+                      fontWeight: 700, fontSize: 22,
+                    }}
+                  >
+                    {(pubMonogram || (pubName || "?").charAt(0)).toUpperCase()}
+                  </div>
+                  <div style={{ color: "var(--glass)", fontFamily: "'Newsreader', Georgia, serif", fontSize: 22, letterSpacing: 1 }}>
+                    {pubName || "Your publication"}
+                  </div>
+                </div>
+              ) : pubStyle === "arabic" ? (
+                <div dir="rtl" style={{ color: "var(--glass)", fontFamily: "'Cairo', sans-serif", fontWeight: 700, fontSize: 24 }}>
+                  {pubName || "نشرتك"}
+                </div>
+              ) : (
+                <div style={{
+                  color: "var(--glass)", fontFamily: "'Newsreader', Georgia, serif",
+                  fontVariant: "small-caps", fontWeight: 600, fontSize: 22, letterSpacing: 2,
+                }}>
+                  {pubName || "The Your Brief"}
+                </div>
+              )}
+            </div>
+
+            {/* Suggestion chips */}
+            <div className="flex flex-wrap gap-1.5">
+              {suggestionChips.map((s, i) => (
+                <button
+                  key={i}
+                  onClick={() => setName(s)}
+                  className="text-xs px-2 py-1 rounded"
+                  style={{
+                    background: "var(--ob-raised)", color: "var(--glass-2)",
+                    border: "1px solid var(--hair)", fontFamily: "var(--font-mono)",
+                  }}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+
+            {/* Custom input */}
+            <div className="space-y-1">
+              <input
+                value={pubName}
+                onChange={e => setName(e.target.value)}
+                dir={pubStyle === "arabic" ? "rtl" : "ltr"}
+                placeholder="The Your Brief"
+                maxLength={40}
+                className="w-full p-2 rounded-lg text-sm"
+                style={{
+                  background: "var(--ob-field)", color: "var(--glass)",
+                  border: `1px solid ${mastheadError ? "var(--neg, #d55)" : "var(--hair)"}`,
+                  fontFamily: pubStyle === "arabic" ? "'Cairo', sans-serif" : undefined,
+                }}
+              />
+              {mastheadError ? (
+                <div className="text-[11px]" style={{ color: "var(--neg, #d55)" }}>{mastheadError}</div>
+              ) : (
+                <div className="text-[11px]" style={{ color: "var(--glass-3)" }}>
+                  2–40 characters. Pick something that sounds like a real publication.
+                </div>
+              )}
+            </div>
+
+            {/* Style chips */}
+            <div className="flex items-center gap-1.5">
+              {(["classic", "monogram", "arabic"] as const).map(s => (
+                <button
+                  key={s}
+                  onClick={() => setStyle(s)}
+                  className="text-xs px-2 py-1 rounded"
+                  style={{
+                    background: pubStyle === s ? "var(--action)" : "transparent",
+                    color: pubStyle === s ? "var(--ink-on-brand)" : "var(--glass-2)",
+                    border: `1px solid ${pubStyle === s ? "var(--action)" : "var(--hair)"}`,
+                    fontFamily: "var(--font-mono)", textTransform: "capitalize",
+                  }}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+
+            {/* Save */}
+            <button
+              onClick={saveMasthead}
+              disabled={savingMasthead || !!mastheadError}
+              className="w-full px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-2 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--action)]"
+              style={{
+                background: "var(--action)", color: "var(--ink-on-brand)",
+                opacity: mastheadError ? 0.5 : 1,
+              }}
+            >
+              {savingMasthead ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+              Save masthead
+            </button>
+          </div>
+
           {/* Signal picker */}
           <div className="rounded-2xl" style={{ background: "var(--ob-panel)", border: "1px solid var(--hair)" }}>
             <button
