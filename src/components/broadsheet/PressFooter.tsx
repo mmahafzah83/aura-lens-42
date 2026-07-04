@@ -31,8 +31,13 @@ export default function PressFooter({
   const bylineY = h - 88;
   const leftX = rtl ? w - edgePad : edgePad;
   const rightX = rtl ? edgePad + 30 : w - edgePad - 30;
-  const eyeX = rtl ? edgePad + 9 : w - edgePad - 9;
-  const eyeY = bylineY - 8;
+  // Aura mark (see src/components/brand/AuraLogo.tsx) — rendered as an inline
+  // radiant-dial mark, ~18px, single color SPOT, centered on the byline.
+  const markSize = 18;
+  const markCX = rtl ? edgePad + markSize / 2 : w - edgePad - markSize / 2;
+  const markCY = bylineY - 8;
+  const markX = markCX - markSize / 2;
+  const markY = markCY - markSize / 2;
   const leftAnchor = rtl ? "end" : "start";
   const rightAnchor = rtl ? "start" : "end";
 
@@ -80,10 +85,23 @@ export default function PressFooter({
         ) : null}
       </text>
 
-      <g>
-        <ellipse cx={eyeX} cy={eyeY} rx={9} ry={5.6} fill="none" stroke={SPOT} strokeWidth={1.4} />
-        <circle cx={eyeX} cy={eyeY} r={3.2} fill={SPOT} />
-      </g>
+      {/* Aura radiant-dial mark — simplified 12-ray version of AuraLogo. */}
+      <svg x={markX} y={markY} width={markSize} height={markSize} viewBox="0 0 64 64" overflow="visible">
+        <g stroke={SPOT} fill={SPOT} strokeLinecap="round">
+          <line x1="32" y1="18.89" x2="32" y2="8.77" strokeWidth="1.6" />
+          <line x1="39.09" y1="20.97" x2="44.56" y2="12.45" strokeWidth="1.6" />
+          <line x1="43.92" y1="26.56" x2="53.13" y2="22.35" strokeWidth="1.6" />
+          <line x1="44.97" y1="33.87" x2="55" y2="35.31" strokeWidth="1.6" />
+          <line x1="41.91" y1="40.58" x2="49.56" y2="47.22" strokeWidth="1.6" />
+          <line x1="35.69" y1="44.58" x2="38.55" y2="54.29" strokeWidth="1.6" />
+          <line x1="28.31" y1="44.58" x2="25.45" y2="54.29" strokeWidth="1.6" />
+          <line x1="22.09" y1="40.58" x2="14.44" y2="47.22" strokeWidth="1.6" />
+          <line x1="19.03" y1="33.87" x2="9" y2="35.31" strokeWidth="1.6" />
+          <line x1="20.08" y1="26.56" x2="10.87" y2="22.35" strokeWidth="1.6" />
+          <line x1="24.91" y1="20.97" x2="19.44" y2="12.45" strokeWidth="1.6" />
+          <circle cx="32" cy="32" r="6.85" stroke="none" />
+        </g>
+      </svg>
       <text
         x={rightX}
         y={bylineY}

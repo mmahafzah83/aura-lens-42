@@ -103,6 +103,20 @@ function blockH(lines: string[], fontSize: number, lineHeight: number) {
 function capLines(lines: string[], maxLines: number, ellipsis = ELLIPSIS) {
   if (!lines || lines.length <= maxLines) return lines;
   const kept = lines.slice(0, Math.max(1, maxLines));
+  const joined = kept.join(" ");
+  // Sentence-safe: look for last terminator (. ؟ ! ۔) after 55% of kept length.
+  const minCut = Math.floor(joined.length * 0.55);
+  const terminators = [".", "؟", "!", "۔"];
+  let cutIdx = -1;
+  for (let i = joined.length - 1; i >= minCut; i--) {
+    if (terminators.includes(joined[i])) { cutIdx = i; break; }
+  }
+  if (cutIdx > 0) {
+    const clean = joined.slice(0, cutIdx + 1).trim();
+    // Re-wrap into same number of lines using original per-line char budget approx.
+    const approxChars = Math.ceil(joined.length / kept.length);
+    return wrap(clean, approxChars).slice(0, maxLines);
+  }
   const last = (kept[kept.length - 1] || "").replace(/[\s.…]+$/, "");
   kept[kept.length - 1] = last + ellipsis;
   return kept;
@@ -349,16 +363,16 @@ function ArticleLayout({ page, edition, pageIndex, total, rtl }: { page: Article
   const storyY = 200;
   const headlineTop = 260;
 
-  const headlineLines = capLines(wrap(page.headline || "", rtl ? 22 : 28), 4);
+  const headlineLines = capLines(wrap(page.headline || "", rtl ? 22 : 28), 3);
   // renderInlineAccent draws each line at y = headlineTop + i * step (step in current code)
   const headStep = headFS * headLH;
   const headlineBottom = headlineTop + Math.max(0, headlineLines.length) * headStep;
 
-  const figH = 210;
-  const figY = Math.max(480, headlineBottom + 28);
-  const figLabelY = figY + figH + 26;
-  const newsLabelY = figLabelY + 42;
-  const bodyY = newsLabelY + 32;
+  let figH = 210;
+  let figY = Math.max(480, headlineBottom + 28);
+  let figLabelY = figY + figH + 26;
+  let newsLabelY = figLabelY + 42;
+  let bodyY = newsLabelY + 32;
 
   const bodyLinesRaw = wrap(page.body || "", rtl ? 40 : 62);
   // Reserve space: rule + MY READ label + my_read block + source line
@@ -366,9 +380,18 @@ function ArticleLayout({ page, edition, pageIndex, total, rtl }: { page: Article
   const readLabelPad = 30;
   const readTextPad = 32;
   // Measure my_read first, so body gets the true remaining band (not a 6-line pessimistic reserve).
-  const readLinesPre = capLines(wrap(page.my_read || "", rtl ? 38 : 58), 6);
+  const readLinesPre = capLines(wrap(page.my_read || "", rtl ? 38 : 58), 5);
   const readH = blockH(readLinesPre, readFS, readLH);
-  const bodyEndCap = sourceY - 20 - readH - readTextPad - readLabelPad - 24;
+  let bodyEndCap = sourceY - 20 - readH - readTextPad - readLabelPad - 24;
+  // Guarantee THE NEWS at least 3 lines by shrinking the fig if starved.
+  if (Math.floor((bodyEndCap - bodyY) / (bodyFS * bodyLH)) < 3) {
+    figH = 150;
+    figY = Math.max(480, headlineBottom + 28);
+    figLabelY = figY + figH + 26;
+    newsLabelY = figLabelY + 42;
+    bodyY = newsLabelY + 32;
+    bodyEndCap = sourceY - 20 - readH - readTextPad - readLabelPad - 24;
+  }
   const bodyLines = capToBand(bodyLinesRaw, bodyY, bodyFS, bodyLH, bodyEndCap, 6);
   const bodyBottom = bodyY + blockH(bodyLines, bodyFS, bodyLH);
 
@@ -377,7 +400,7 @@ function ArticleLayout({ page, edition, pageIndex, total, rtl }: { page: Article
   const readY = readLabelY + readTextPad;
 
   // Final guard against overrun.
-  const readLines = capToBand(readLinesPre, readY, readFS, readLH, sourceY - 20, 6);
+  const readLines = capToBand(readLinesPre, readY, readFS, readLH, sourceY - 20, 5);
 
   const slimNameplate = { name: edition.nameplate.name, style: edition.nameplate.style, monogramChar: edition.nameplate.monogram_char };
   return (
@@ -507,8 +530,8 @@ function DigestLayout({ page, edition, pageIndex, total, rtl }: { page: DigestPa
         const rowRuleY = rowTop - 8;
         const bigX = rtl ? W - edgePad : edgePad;
         const textX = rtl ? W - edgePad - lane : edgePad + lane;
-        const bigY = rowTop + 60;
-        const claimY = rowTop + 8;
+        const bigY = rowTop + 82;
+        const claimY = rowTop + 34;
         const claimLines = capLines(wrap(item.claim || "", rtl ? 22 : 32), 2);
         const claimBottom = claimY + blockH(claimLines, claimFS, claimLH);
         const takeY = claimBottom + 16;
@@ -826,7 +849,7 @@ export default function EditionPageSVG({ page, pageIndex, total, edition }: Edit
   }
 
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" style={{ unicodeBidi: "plaintext" as any }}>
+    <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" style={{ unicodeBidi: "plaintext" as any, direction: "ltr" }}>
       {rtl && (
         <defs>
           <style>{`text, tspan { unicode-bidi: plaintext; }`}</style>
