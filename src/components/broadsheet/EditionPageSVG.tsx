@@ -363,16 +363,16 @@ function ArticleLayout({ page, edition, pageIndex, total, rtl }: { page: Article
   const storyY = 200;
   const headlineTop = 260;
 
-  const headlineLines = capLines(wrap(page.headline || "", rtl ? 22 : 28), 4);
+  const headlineLines = capLines(wrap(page.headline || "", rtl ? 22 : 28), 3);
   // renderInlineAccent draws each line at y = headlineTop + i * step (step in current code)
   const headStep = headFS * headLH;
   const headlineBottom = headlineTop + Math.max(0, headlineLines.length) * headStep;
 
-  const figH = 210;
-  const figY = Math.max(480, headlineBottom + 28);
-  const figLabelY = figY + figH + 26;
-  const newsLabelY = figLabelY + 42;
-  const bodyY = newsLabelY + 32;
+  let figH = 210;
+  let figY = Math.max(480, headlineBottom + 28);
+  let figLabelY = figY + figH + 26;
+  let newsLabelY = figLabelY + 42;
+  let bodyY = newsLabelY + 32;
 
   const bodyLinesRaw = wrap(page.body || "", rtl ? 40 : 62);
   // Reserve space: rule + MY READ label + my_read block + source line
@@ -380,9 +380,18 @@ function ArticleLayout({ page, edition, pageIndex, total, rtl }: { page: Article
   const readLabelPad = 30;
   const readTextPad = 32;
   // Measure my_read first, so body gets the true remaining band (not a 6-line pessimistic reserve).
-  const readLinesPre = capLines(wrap(page.my_read || "", rtl ? 38 : 58), 6);
+  const readLinesPre = capLines(wrap(page.my_read || "", rtl ? 38 : 58), 5);
   const readH = blockH(readLinesPre, readFS, readLH);
-  const bodyEndCap = sourceY - 20 - readH - readTextPad - readLabelPad - 24;
+  let bodyEndCap = sourceY - 20 - readH - readTextPad - readLabelPad - 24;
+  // Guarantee THE NEWS at least 3 lines by shrinking the fig if starved.
+  if (Math.floor((bodyEndCap - bodyY) / (bodyFS * bodyLH)) < 3) {
+    figH = 150;
+    figY = Math.max(480, headlineBottom + 28);
+    figLabelY = figY + figH + 26;
+    newsLabelY = figLabelY + 42;
+    bodyY = newsLabelY + 32;
+    bodyEndCap = sourceY - 20 - readH - readTextPad - readLabelPad - 24;
+  }
   const bodyLines = capToBand(bodyLinesRaw, bodyY, bodyFS, bodyLH, bodyEndCap, 6);
   const bodyBottom = bodyY + blockH(bodyLines, bodyFS, bodyLH);
 
@@ -391,7 +400,7 @@ function ArticleLayout({ page, edition, pageIndex, total, rtl }: { page: Article
   const readY = readLabelY + readTextPad;
 
   // Final guard against overrun.
-  const readLines = capToBand(readLinesPre, readY, readFS, readLH, sourceY - 20, 6);
+  const readLines = capToBand(readLinesPre, readY, readFS, readLH, sourceY - 20, 5);
 
   const slimNameplate = { name: edition.nameplate.name, style: edition.nameplate.style, monogramChar: edition.nameplate.monogram_char };
   return (
