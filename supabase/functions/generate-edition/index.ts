@@ -277,7 +277,7 @@ serve(async (req) => {
         .from("strategic_signals")
         .select(signalCols)
         .eq("user_id", targetUserId)
-        .in("id", signal_ids);
+        .in("id", signal_ids.slice(0, 4));
       signals = data || [];
     } else {
       const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
