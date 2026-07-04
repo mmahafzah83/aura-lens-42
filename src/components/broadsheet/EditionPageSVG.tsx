@@ -562,13 +562,15 @@ function DigestLayout({ page, edition, pageIndex, total, rtl }: { page: DigestPa
   const lane = 240;
 
   const introY = 220;
-  const introLines = capLines(wrap(page.intro || "", rtl ? 38 : 56), 2);
+  const introWrap = rtl ? 38 : 56;
+  const introLines = capLines(wrap(page.intro || "", introWrap), 2, introWrap);
   const introBottom = introY + blockH(introLines, introFS, introLH);
 
   const itemsStart = introBottom + 40;
 
   // Reserve for close block at the bottom.
-  const closeLines = capLines(wrap(page.close || "", rtl ? 34 : 50), 2);
+  const closeWrap = rtl ? 34 : 50;
+  const closeLines = capLines(wrap(page.close || "", closeWrap), 2, closeWrap);
   const closeH = blockH(closeLines, closeFS, closeLH);
   const closeY = FOOTER_TOP - closeH - 10;
   const closeRuleY = closeY - 22;
@@ -606,13 +608,15 @@ function DigestLayout({ page, edition, pageIndex, total, rtl }: { page: DigestPa
         const textX = rtl ? W - edgePad - lane : edgePad + lane;
         const bigY = rowTop + 82;
         const claimY = rowTop + 34;
-        const claimLines = capLines(wrap(item.claim || "", rtl ? 22 : 32), 2);
+        const claimWrap = rtl ? 22 : 32;
+        const claimLines = capLines(wrap(item.claim || "", claimWrap), 2, claimWrap);
         const claimBottom = claimY + blockH(claimLines, claimFS, claimLH);
         const takeY = claimBottom + 16;
         // Cap takeaway so source fits within row.
         const rowBottom = rowTop + perItem;
         const sourceRowY = rowBottom - 14;
-        const takeLines = capToBand(wrap(item.takeaway || "", rtl ? 34 : 48), takeY, takeFS, takeLH, sourceRowY - 20, 3);
+        const takeWrap = rtl ? 34 : 48;
+        const takeLines = capToBand(wrap(item.takeaway || "", takeWrap), takeY, takeFS, takeLH, sourceRowY - 20, 3, takeWrap);
         const takeBottom = takeY + blockH(takeLines, takeFS, takeLH);
         const sourceY = Math.min(sourceRowY, takeBottom + 24);
         return (
