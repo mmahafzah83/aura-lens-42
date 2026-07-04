@@ -159,15 +159,15 @@ ${hasDigest ? `─── DIGEST PAGE ───
 {
   "page_type": "DIGEST",
   "kicker": "THE WEEKEND DIGEST",     // AR: "الملخّص الأسبوعي"
-  "intro": string,                    // "No links to chase. No open tabs waiting…" spirit — one line. AR equivalent.
+  "intro": string,                    // MANDATED — use EXACTLY: EN "No links to chase. No open tabs. Three numbers that reframe the week." · AR "لا روابط تطاردها.. لا تبويبات مفتوحة. ثلاثة أرقام تعيد قراءة الأسبوع."
   "items": [
     { "big_value": string /* "2.4×" | "287d" | "§7b" | "73%" — Western digits even in AR, LTR-isolated */,
-      "claim": string /* ≤10 words */,
-      "takeaway": string /* ≤25 words */,
+      "claim": string /* ≤6 words — a COMPLETE phrase, never cut mid-thought (the renderer wraps 2 lines and truncates with "…") */,
+      "takeaway": string /* ≤22 words — MUST end on a complete sentence, never cut mid-thought */,
       "source": string /* capture name — attribution, not destination URL */ },
     ... 3 items total
   ],
-  "close": "Everything above fits in a screenshot. That's the point."  // AR: "كل ما سبق يدخل في لقطة شاشة واحدة.. تلك هي الفكرة."
+  "close": "If one number stays with you into Monday's first meeting — this page did its job."  // AR: "لو بقي رقم واحد معك حتى اجتماع الاثنين.. هذه الصفحة أدّت مهمتها."
 }` : `─── DIGEST PAGE ───
 OMIT the DIGEST page entirely — do not emit it. Skip straight from the last ARTICLE to the QA page.
 On the FRONT page, "also_inside" MUST list only pages that actually exist: "You Asked · P.{n}" and (optionally) "Until Next {Weekday} · P.{n}". Do NOT reference a Weekend Digest.`}
