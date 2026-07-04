@@ -12,7 +12,7 @@ import {
   Calendar, TrendingUp, BarChart3, ChevronLeft, ChevronDown, Image as ImageIcon, Download, Pencil
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Linkedin } from "lucide-react";
+import { Linkedin, Newspaper } from "lucide-react";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { FirstTimeHint } from "@/components/FirstTimeHint";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
@@ -1411,6 +1411,19 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
             >
               <Sparkles className="w-4 h-4 inline-block mr-1.5" /> Carousel Studio
               <span style={{ opacity: 0.7, fontWeight: 400 }}>— viral, multi-style</span>
+            </button>
+            <button
+              onClick={() => navigate("/edition")}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 6,
+                padding: "8px 14px", borderRadius: 10, marginLeft: 8,
+                background: "var(--paper-3)",
+                color: "var(--bronze)", fontSize: 12, fontWeight: 600,
+                border: "1px solid var(--bronze)", cursor: "pointer",
+              }}
+            >
+              <Newspaper className="w-4 h-4 inline-block mr-1.5" /> Edition Studio
+              <span style={{ opacity: 0.7, fontWeight: 400 }}>— your week, compiled</span>
             </button>
           </div>
         </div>
