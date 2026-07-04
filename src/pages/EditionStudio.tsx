@@ -67,6 +67,114 @@ export default function EditionStudio() {
 
   const offscreenRef = useRef<HTMLDivElement>(null);
 
+  /* ---- Masthead naming (identity_intelligence.publication) ---- */
+  const [profileFirstName, setProfileFirstName] = useState<string>("");
+  const [profileSectorWord, setProfileSectorWord] = useState<string>("");
+  const [pubName, setPubName] = useState<string>("");
+  const [pubStyle, setPubStyle] = useState<PublicationStyle>("classic");
+  const [pubMonogram, setPubMonogram] = useState<string | undefined>(undefined);
+  const [savingMasthead, setSavingMasthead] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const { data: sess } = await supabase.auth.getSession();
+      const uid = sess.session?.user?.id;
+      if (!uid) return;
+      const { data: prof } = await supabase
+        .from("diagnostic_profiles")
+        .select("first_name, sector_focus, identity_intelligence")
+        .eq("user_id", uid)
+        .maybeSingle();
+      const firstName = (prof?.first_name as string) || "";
+      const sector = (prof?.sector_focus as string) || "";
+      setProfileFirstName(firstName);
+      const sectorWord = (sector || "").trim().split(/\s+/)[0] || "";
+      setProfileSectorWord(sectorWord);
+      const pub = getPublication(prof as any, lang, firstName);
+      setPubName(pub.name);
+      setPubStyle(pub.style);
+      setPubMonogram(pub.monogram_char || (pub.name || "?").trim().charAt(0).toUpperCase());
+    })();
+    // Only seed once on mount — subsequent lang changes shouldn't overwrite user's edits.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const mastheadError = useMemo(() => validatePublication(pubName), [pubName]);
+
+  const suggestionChips = useMemo(() => {
+    const f = (profileFirstName || "Editor").trim();
+    const s = profileSectorWord.trim();
+    const base = [`The ${f} Brief`, `The ${f} Dispatch`, `The ${f} Memo`];
+    const sectorChips = s
+      ? [`The ${s} Line`, `${f} on ${s}`]
+      : [`The ${f} Line`, `${f} Weekly`];
+    return [...base, ...sectorChips];
+  }, [profileFirstName, profileSectorWord]);
+
+  const setName = (n: string) => {
+    setPubName(n);
+    if (pubStyle === "monogram") {
+      setPubMonogram((n || "?").trim().charAt(0).toUpperCase());
+    }
+  };
+
+  const setStyle = (s: PublicationStyle) => {
+    setPubStyle(s);
+    if (s === "monogram") {
+      setPubMonogram((pubName || "?").trim().charAt(0).toUpperCase());
+    }
+  };
+
+  const saveMasthead = async () => {
+    const err = validatePublication(pubName);
+    if (err) { toast.error(err); return; }
+    setSavingMasthead(true);
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const uid = sess.session?.user?.id;
+      if (!uid) { toast.error("Please sign in"); return; }
+      // Re-read identity_intelligence fresh so we don't clobber sibling keys.
+      const { data: fresh, error: readErr } = await supabase
+        .from("diagnostic_profiles")
+        .select("identity_intelligence")
+        .eq("user_id", uid)
+        .maybeSingle();
+      if (readErr) throw readErr;
+      const ii = (fresh?.identity_intelligence as Record<string, any>) || {};
+      const nextII = {
+        ...ii,
+        publication: {
+          name: pubName.trim(),
+          style: pubStyle,
+          monogram_char: pubStyle === "monogram"
+            ? ((pubMonogram || pubName || "?").trim().charAt(0).toUpperCase())
+            : (pubMonogram || undefined),
+        },
+      };
+      const { error: writeErr } = await supabase
+        .from("diagnostic_profiles")
+        .update({ identity_intelligence: nextII } as any)
+        .eq("user_id", uid);
+      if (writeErr) throw writeErr;
+      // Reflect immediately in the preview without a recompile.
+      setEdition(e => ({
+        ...e,
+        nameplate: {
+          name: pubName.trim(),
+          style: pubStyle,
+          monogram_char: nextII.publication.monogram_char,
+        },
+      }));
+      toast.success("Masthead saved");
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Save failed: " + (e?.message || "Unknown error"));
+    } finally {
+      setSavingMasthead(false);
+    }
+  };
+
+
   const pages = edition.pages || [];
   const total = pages.length;
   const current = pages[activePage];
