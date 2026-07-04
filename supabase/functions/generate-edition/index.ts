@@ -322,6 +322,7 @@ serve(async (req) => {
       .gte("created_at", sevenDaysAgo)
       .order("created_at", { ascending: false })
       .limit(8);
+    const hasDigest = (captures || []).length >= 2;
 
     // ---- voice profile ----
     const { data: voiceProfile } = await supabase
@@ -348,7 +349,7 @@ Adapt tone, rhythm, and vocabulary to match this user. The voice profile OVERRID
     const weekday = weekdayName(lang);
     const storyCount = signals.length;
 
-    const systemPrompt = buildSystemPrompt(isArabic, voiceBlock, storyCount, editionNo, weekday);
+    const systemPrompt = buildSystemPrompt(isArabic, voiceBlock, storyCount, editionNo, weekday, hasDigest);
 
     // ---- user message: hand the model the actual material ----
     const signalsBlock = signals.map((s, i) => `SIGNAL ${i + 1}:
