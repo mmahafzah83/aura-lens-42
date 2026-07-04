@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, ChevronLeft, ChevronRight, Loader2, Sparkles,
@@ -13,7 +13,7 @@ import {
   getEmbeddedFontCSS, svgToImageBlob, ensureFontsReady, downloadBlob, slugify,
 } from "@/lib/broadsheetExport";
 import { dedupeHashtags, stripDuplicateHashtags } from "@/lib/hashtags";
-import { getPublication } from "@/lib/publication";
+import { getPublication, validate as validatePublication, type PublicationStyle } from "@/lib/publication";
 
 const PAGE_W = 1080;
 const PAGE_H = 1350;
