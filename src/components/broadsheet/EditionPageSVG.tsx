@@ -206,17 +206,20 @@ function FrontLayout({ page, edition, rtl }: { page: FrontPage; edition: Edition
 
   const contentTop = MASTHEAD_BOTTOM_FULL + 68;
 
-  const leadLines = capLines(wrap(page.lead_headline || "", rtl ? 22 : 26), 4);
+  const leadWrap = rtl ? 22 : 26;
+  const leadLines = capLines(wrap(page.lead_headline || "", leadWrap), 4, leadWrap);
   const leadY = contentTop;
   const leadBottom = leadY + blockH(leadLines, leadFS, leadLH);
 
-  const accentLinesRaw = page.lead_accent ? wrap(page.lead_accent, rtl ? 30 : 40) : [];
-  const accentLines = capLines(accentLinesRaw, rtl ? 2 : 3);
+  const accentWrap = rtl ? 30 : 40;
+  const accentLinesRaw = page.lead_accent ? wrap(page.lead_accent, accentWrap) : [];
+  const accentLines = capLines(accentLinesRaw, rtl ? 2 : 3, accentWrap);
   const accentY = leadBottom + 24;
   const accentBottom = accentLines.length ? accentY + blockH(accentLines, accentFS, accentLH) : leadBottom;
 
   const deckY = accentBottom + 32;
-  const deckLines = capLines(wrap(page.deck || "", rtl ? 34 : 46), rtl ? 3 : 4);
+  const deckWrap = rtl ? 34 : 46;
+  const deckLines = capLines(wrap(page.deck || "", deckWrap), rtl ? 3 : 4, deckWrap);
   const deckBottom = deckY + blockH(deckLines, deckFS, deckLH);
 
   const rowStep = 34;
