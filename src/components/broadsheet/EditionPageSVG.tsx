@@ -680,8 +680,22 @@ function BackLayout({ page, edition, pageIndex, total, rtl }: { page: BackPage; 
   const cardLeft = rtl ? W - cardX - 40 : cardX + 40;
   const cardAnchor = rtl ? "end" : "start";
 
-  const headlineLines = wrap(page.headline || "", rtl ? 22 : 28);
-  const promiseLines = wrap(page.promise || "", rtl ? 30 : 44);
+  const headFS = rtl ? 42 : 48;
+  const headLH = 1.16;
+  const promiseFS = 26;
+  const promiseLH = 1.42;
+
+  const headlineTop = cardY + 90;
+  const headlineLines = capLines(wrap(page.headline || "", rtl ? 22 : 28), 3);
+  const headStep = headFS * headLH;
+  const headlineBottom = headlineTop + Math.max(0, headlineLines.length) * headStep;
+
+  const promiseY = headlineBottom + 40;
+  // The card ends at cardY + cardH = 1060; follow pill sits at cardY+cardH-148, sign at cardY+cardH-...; keep promise capped so it stays above signature.
+  const signatureY = Math.min(cardY + 470, cardY + cardH - 250);
+  const promiseLines = capToBand(wrap(page.promise || "", rtl ? 30 : 44), promiseY, promiseFS, promiseLH, signatureY - 20, 4);
+  const signLineY = signatureY + 38;
+  const followSubY = cardY + cardH - 40;
 
   return (
     <>
@@ -693,43 +707,38 @@ function BackLayout({ page, edition, pageIndex, total, rtl }: { page: BackPage; 
         rtl={rtl}
       />
 
-      {/* Card frame */}
       <rect x={cardX} y={cardY} width={cardW} height={cardH} fill="none" stroke={INK} strokeWidth={2} />
       <rect x={cardX + 12} y={cardY + 12} width={cardW - 24} height={cardH - 24} fill="none" stroke={RULE_SOFT} strokeWidth={1} />
 
-      {/* Headline with inline accent */}
       <g>
-        {headlineLines.map((line, i) => renderInlineAccent(line, i === 0 ? page.headline_accent : undefined, rtl ? ARABIC : SERIF, rtl ? 42 : 48, rtl ? 800 : 600, cardLeft, cardY + 90 + i * (rtl ? 42 : 48) * 1.16, cardAnchor))}
+        {headlineLines.map((line, i) => renderInlineAccent(line, i === 0 ? page.headline_accent : undefined, rtl ? ARABIC : SERIF, headFS, rtl ? 800 : 600, cardLeft, headlineTop + i * headStep, cardAnchor))}
       </g>
 
-      {/* Promise */}
       <TextBlock
-        x={cardLeft} y={cardY + 260}
+        x={cardLeft} y={promiseY}
         lines={promiseLines}
         fontFamily={rtl ? ARABIC : SERIF}
-        fontSize={26}
+        fontSize={promiseFS}
         fontWeight={400}
         fill={INK2}
         anchor={cardAnchor}
-        lineHeight={1.42}
+        lineHeight={promiseLH}
       />
 
-      {/* Signature */}
-      <text x={cardLeft} y={cardY + 470} textAnchor={cardAnchor} fontFamily={rtl ? ARABIC : SERIF} fontStyle={rtl ? "normal" : "italic"} fontWeight={rtl ? 700 : 400} fontSize={46} fill={INK}>
+      <text x={cardLeft} y={signatureY} textAnchor={cardAnchor} fontFamily={rtl ? ARABIC : SERIF} fontStyle={rtl ? "normal" : "italic"} fontWeight={rtl ? 700 : 400} fontSize={46} fill={INK}>
         {page.sign_name}
       </text>
-      <text x={cardLeft} y={cardY + 508} textAnchor={cardAnchor} fontFamily={monoFont} fontSize={16} letterSpacing={rtl ? undefined : 2} fill={INK2} style={rtl ? undefined : { textTransform: "uppercase" }}>
+      <text x={cardLeft} y={signLineY} textAnchor={cardAnchor} fontFamily={monoFont} fontSize={16} letterSpacing={rtl ? undefined : 2} fill={INK2} style={rtl ? undefined : { textTransform: "uppercase" }}>
         {rtl ? page.sign_line : (page.sign_line || "").toUpperCase()}
       </text>
 
-      {/* Follow pill */}
       <g transform={`translate(${rtl ? W - cardX - 40 - 320 : cardX + 40}, ${cardY + cardH - 148})`}>
         <rect x={0} y={0} width={320} height={64} rx={32} ry={32} fill={INK} />
         <text x={160} y={40} textAnchor="middle" fontFamily={monoFont} fontSize={16} letterSpacing={rtl ? undefined : 2.5} fill={PAPER} style={rtl ? undefined : { textTransform: "uppercase" }}>
           {page.follow_label}
         </text>
       </g>
-      <text x={cardLeft} y={cardY + cardH - 40} textAnchor={cardAnchor} fontFamily={monoFont} fontSize={15} letterSpacing={rtl ? undefined : 2} fill={INK2} style={rtl ? undefined : { textTransform: "uppercase" }}>
+      <text x={cardLeft} y={followSubY} textAnchor={cardAnchor} fontFamily={monoFont} fontSize={15} letterSpacing={rtl ? undefined : 2} fill={INK2} style={rtl ? undefined : { textTransform: "uppercase" }}>
         {rtl ? page.follow_sub : (page.follow_sub || "").toUpperCase()}
       </text>
     </>
