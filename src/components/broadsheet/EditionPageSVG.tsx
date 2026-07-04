@@ -103,6 +103,20 @@ function blockH(lines: string[], fontSize: number, lineHeight: number) {
 function capLines(lines: string[], maxLines: number, ellipsis = ELLIPSIS) {
   if (!lines || lines.length <= maxLines) return lines;
   const kept = lines.slice(0, Math.max(1, maxLines));
+  const joined = kept.join(" ");
+  // Sentence-safe: look for last terminator (. ؟ ! ۔) after 55% of kept length.
+  const minCut = Math.floor(joined.length * 0.55);
+  const terminators = [".", "؟", "!", "۔"];
+  let cutIdx = -1;
+  for (let i = joined.length - 1; i >= minCut; i--) {
+    if (terminators.includes(joined[i])) { cutIdx = i; break; }
+  }
+  if (cutIdx > 0) {
+    const clean = joined.slice(0, cutIdx + 1).trim();
+    // Re-wrap into same number of lines using original per-line char budget approx.
+    const approxChars = Math.ceil(joined.length / kept.length);
+    return wrap(clean, approxChars).slice(0, maxLines);
+  }
   const last = (kept[kept.length - 1] || "").replace(/[\s.…]+$/, "");
   kept[kept.length - 1] = last + ellipsis;
   return kept;
