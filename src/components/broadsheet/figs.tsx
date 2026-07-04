@@ -8,7 +8,10 @@ export type FigKind =
   | "s_curve"
   | "flow"
   | "capacity_bars"
-  | "decay";
+  | "decay"
+  | "bars_compare"
+  | "gap_wedge"
+  | "steps";
 
 export interface FigPlateProps {
   x: number;
@@ -170,6 +173,80 @@ function Decay({ w, h, rtl }: { w: number; h: number; rtl: boolean }) {
   );
 }
 
+function BarsCompare({ w, h }: { w: number; h: number }) {
+  const pad = 12;
+  const bx = pad, by = pad, bw = w - pad * 2, bh = h - pad * 2 - 20;
+  const n = 4;
+  const bw2 = (bw / n) * 0.55;
+  const gap = (bw - bw2 * n) / (n - 1);
+  const heights = [0.42, 0.58, 0.7, 0.9];
+  const bars: React.ReactNode[] = [];
+  const baselineY = by + bh;
+  for (let i = 0; i < n; i++) {
+    const isLast = i === n - 1;
+    const bh2 = heights[i] * bh;
+    bars.push(
+      <rect
+        key={i}
+        x={bx + i * (bw2 + gap)}
+        y={baselineY - bh2}
+        width={bw2}
+        height={bh2}
+        fill={isLast ? SPOT : "none"}
+        stroke={isLast ? SPOT : INK}
+        strokeWidth={isLast ? 1.8 : 1.2}
+        opacity={isLast ? 1 : 0.28}
+      />
+    );
+  }
+  return (
+    <g>
+      <line x1={bx} x2={bx + bw} y1={baselineY} y2={baselineY} stroke={INK} strokeWidth={1} opacity={0.35} />
+      {bars}
+    </g>
+  );
+}
+
+function GapWedge({ w, h }: { w: number; h: number }) {
+  const pad = 12;
+  const bx = pad, by = pad, bw = w - pad * 2, bh = h - pad * 2 - 20;
+  const y1L = by + bh * 0.5;
+  const y1R = by + bh * 0.18;
+  const y2L = by + bh * 0.62;
+  const y2R = by + bh * 0.92;
+  const wash = `M${bx},${y1L} L${bx + bw},${y1R} L${bx + bw},${y2R} L${bx},${y2L} Z`;
+  return (
+    <g>
+      <path d={wash} fill={SPOT} opacity={0.06} />
+      <line x1={bx} x2={bx + bw} y1={y1L} y2={y1R} stroke={SPOT} strokeWidth={1.6} />
+      <line x1={bx} x2={bx + bw} y1={y2L} y2={y2R} stroke={INK} strokeWidth={1.2} opacity={0.3} />
+    </g>
+  );
+}
+
+function Steps({ w, h }: { w: number; h: number }) {
+  const pad = 12;
+  const bx = pad, by = pad, bw = w - pad * 2, bh = h - pad * 2 - 20;
+  const n = 5;
+  const stepW = bw / n;
+  const heights = [0.15, 0.35, 0.55, 0.75, 0.92];
+  const pts: string[] = [];
+  const baselineY = by + bh;
+  for (let i = 0; i < n; i++) {
+    const yTop = baselineY - heights[i] * bh;
+    const xL = bx + i * stepW;
+    const xR = xL + stepW;
+    if (i === 0) pts.push(`M${xL.toFixed(1)},${yTop.toFixed(1)}`);
+    else {
+      const prevY = baselineY - heights[i - 1] * bh;
+      pts.push(`L${xL.toFixed(1)},${prevY.toFixed(1)}`);
+      pts.push(`L${xL.toFixed(1)},${yTop.toFixed(1)}`);
+    }
+    pts.push(`L${xR.toFixed(1)},${yTop.toFixed(1)}`);
+  }
+  return <path d={pts.join(" ")} fill="none" stroke={SPOT} strokeWidth={1.6} />;
+}
+
 export function FigPlate({ x, y, w, h, kind, rtl }: FigPlateProps) {
   let inner: React.ReactNode = null;
   switch (kind) {
@@ -180,6 +257,10 @@ export function FigPlate({ x, y, w, h, kind, rtl }: FigPlateProps) {
     case "flow": inner = <Flow w={w} h={h} />; break;
     case "capacity_bars": inner = <CapacityBars w={w} h={h} />; break;
     case "decay": inner = <Decay w={w} h={h} rtl={rtl} />; break;
+    case "bars_compare": inner = <BarsCompare w={w} h={h} />; break;
+    case "gap_wedge": inner = <GapWedge w={w} h={h} />; break;
+    case "steps": inner = <Steps w={w} h={h} />; break;
+    default: inner = <LineSignal w={w} h={h} rtl={rtl} />; break;
   }
   const baselineY = h - 20;
   return (

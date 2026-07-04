@@ -69,6 +69,116 @@ function safeParseJSON(raw: string): any {
   return JSON.parse(tryRepair(cleaned));
 }
 
+// -------- Deterministic budget enforcement (server-side, never truncated in renderer) --------
+function trimField(s: string, max: number): string {
+  const t = (s || "").toString();
+  if (t.length <= max) return t;
+  const terminators = [".", "؟", "!", "۔"];
+  const slice = t.slice(0, max);
+  let cutIdx = -1;
+  for (let i = slice.length - 1; i >= Math.floor(max * 0.55); i--) {
+    if (terminators.includes(slice[i])) { cutIdx = i; break; }
+  }
+  if (cutIdx > 0) return slice.slice(0, cutIdx + 1).trim();
+  // Fall back to last word boundary.
+  const lastSpace = slice.lastIndexOf(" ");
+  if (lastSpace > max * 0.4) return slice.slice(0, lastSpace).trim();
+  return slice.trim();
+}
+
+function trimSourceLine(s: string, max = 84, isArabic = false): string {
+  const t = (s || "").toString().trim();
+  if (t.length <= max) return t;
+  // "{prefix} — {names} · {suffix}"   AR: "المصدر — {names} · قراءات الأسبوع"
+  const dashIdx = t.indexOf("—");
+  if (dashIdx < 0) return trimField(t, max);
+  const prefix = t.slice(0, dashIdx + 1).trim();
+  const rest = t.slice(dashIdx + 1).trim();
+  // Split rest at the LAST "·" so we keep the suffix intact.
+  const lastDot = rest.lastIndexOf("·");
+  let names = rest;
+  let suffix = "";
+  if (lastDot > 0) {
+    names = rest.slice(0, lastDot).trim();
+    suffix = rest.slice(lastDot).trim(); // includes leading ·
+  }
+  const nameParts = names.split("·").map((n) => n.trim()).filter(Boolean);
+  const compose = (parts: string[]) =>
+    `${prefix} ${parts.join(" · ")}${suffix ? " " + suffix : ""}`.trim();
+  let line = compose(nameParts);
+  while (line.length > max && nameParts.length > 1) {
+    nameParts.pop(); // drop the LAST name whole
+    line = compose(nameParts);
+  }
+  // Silence unused isArabic (kept for future language-specific rules).
+  void isArabic;
+  return line;
+}
+
+function enforceBudgets(parsed: any, isArabic: boolean): void {
+  if (!parsed || typeof parsed !== "object") return;
+  const capField = (obj: any, key: string, max: number, path: string) => {
+    if (!obj || typeof obj[key] !== "string") return;
+    const before = obj[key].length;
+    if (before <= max) return;
+    const after = trimField(obj[key], max);
+    console.log(`[enforceBudgets] ${path}.${key}: ${before} → ${after.length} (cap ${max})`);
+    obj[key] = after;
+  };
+  const pages: any[] = Array.isArray(parsed.pages) ? parsed.pages : [];
+  pages.forEach((pg, idx) => {
+    if (!pg || typeof pg !== "object") return;
+    const path = `pages[${idx}]:${pg.page_type}`;
+    switch (pg.page_type) {
+      case "FRONT": {
+        capField(pg, "lead_headline", isArabic ? 52 : 60, path);
+        capField(pg, "lead_accent", isArabic ? 50 : 58, path);
+        if (pg.fig && typeof pg.fig === "object") capField(pg.fig, "label", 34, `${path}.fig`);
+        if (Array.isArray(pg.toc)) {
+          pg.toc.forEach((row: any, i: number) => capField(row, "title", 44, `${path}.toc[${i}]`));
+        }
+        break;
+      }
+      case "ARTICLE": {
+        capField(pg, "headline", isArabic ? 64 : 78, path);
+        capField(pg, "kicker", 40, path);
+        capField(pg, "body", 210, path);
+        capField(pg, "my_read", 200, path);
+        if (pg.fig && typeof pg.fig === "object") capField(pg.fig, "label", 34, `${path}.fig`);
+        if (typeof pg.source_line === "string") {
+          const before = pg.source_line.length;
+          const after = trimSourceLine(pg.source_line, 84, isArabic);
+          if (after.length !== before) {
+            console.log(`[enforceBudgets] ${path}.source_line: ${before} → ${after.length} (cap 84, source-safe)`);
+            pg.source_line = after;
+          }
+        }
+        break;
+      }
+      case "DIGEST": {
+        if (Array.isArray(pg.items)) {
+          pg.items.forEach((it: any, i: number) => {
+            capField(it, "claim", 42, `${path}.items[${i}]`);
+            capField(it, "takeaway", 130, `${path}.items[${i}]`);
+            capField(it, "source", 46, `${path}.items[${i}]`);
+          });
+        }
+        break;
+      }
+      case "QA": {
+        capField(pg, "question", 110, path);
+        capField(pg, "answer", 300, path);
+        break;
+      }
+      case "BACK": {
+        capField(pg, "headline", 64, path);
+        capField(pg, "promise", 130, path);
+        break;
+      }
+    }
+  });
+}
+
 // -------- Dateline helpers (date-only, no week prefix) --------
 function formatDatelineEN(d: Date): string {
   const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -116,7 +226,7 @@ Rules:
 ═══ OUTPUT SCHEMA — Edition JSON (STRICT) ═══
 {
   "sector_line": string,       // 2-3 domain words · region (e.g. "TREASURY · MARKETS · GCC")
-  "linkedin_caption": string,  // ≤120 words, hook-first, never describes the asset. Ends with an invitation to open the edition.
+  "linkedin_caption": string,  // See "CAPTION LAW" block below.
   "hashtags": string[],        // 5-7 tags, mix broad + niche
   "pages": [ ... ordered ... ]
 }
@@ -220,6 +330,40 @@ FRONT is page 1. ARTICLE pages start at page 2 and are sequential. ${hasDigest ?
 - NEVER surface confidence values, scores, or how many captures fed the edition.
 
 ${BANNED_WORDS_NOTE}
+
+═══ CAPTION LAW — write like a newsletter operator ═══
+The linkedin_caption is a newsletter announcement, NOT a description of the asset.
+STRUCTURE (blank line between blocks, ≤110 words total, no URLs):
+  1. HOOK (1–2 lines) — the edition's sharpest number or tension. NEVER open with "three stories", "هذا الإصدار", "this edition", "في هذا العدد", "today we cover", or any asset-descriptor.
+  2. LEAD STORY TEASED (2–3 lines) — the itch, not the resolution. Name the actor and the stake; hold the answer for page 2.
+  3. OTHER ANGLES (ONE line) — the remaining stories as angles, not numbered summaries. Example: "القيادة، الهوامش، وتكلفة كل token".
+  4. RITUAL LINE (1 line) — ${isArabic
+    ? `"الإصدار رقم ${editionNo} من نشرتي الأسبوعية. كل ${weekday}: أسبوع من القراءة، إصدار واحد."`
+    : `"Edition Nº ${editionNo} of my weekly publication. Every ${weekday}: one week of reading, one edition."`}
+  5. CLOSING QUESTION (1 line) — one practitioner question tied to the LEAD story (not a generic prompt).
+Hashtags: 5–7 total. ${isArabic ? "AR editions MUST include #التحول_الرقمي plus one Arabic audience tag (e.g. #قادة_المستقبل, #الإدارة_التنفيذية)." : "Mix broad + niche executive tags."}
+
+═══ EDITORIAL VOLTAGE (applies to every field, both languages) ═══
+HEADLINES: carry a stake — actor + what changed + what's at risk. A topic label ("نماذج مالية جديدة", "AI in finance") is a FAILURE. A tension ("الشركات تدفع مليارات لتطرد من لا يتحول", "Firms pay billions to fire those who won't retrain") passes.
+THE NEWS (body): sentence 1 = the fact with its number; sentence 2 = the consequence. No sentence may be pure description.
+MY READ: contains ONE first-person witnessed moment ("شفت بعيني..", "I've sat in..") and ONE falsifiable claim. NEVER restates THE NEWS.
+DIGEST takeaways: consequences ("بدون X، رح تحرق Y" / "Without X, you burn Y"), never descriptions.
+QA answer: opens with the verdict inside the first five words ("No.", "Only if…", "Both.", "لا.", "فقط إذا..").
+HUMANIZER BANS (append to banned list):
+  - Rule-of-three parallel structures ("faster, cheaper, better" / "أسرع، أرخص، أفضل").
+  - "not just X — it's Y" / "ليس فقط.. بل" negative-parallelism constructions.
+  - More than ONE dash per field.
+  - Vague attribution ("خبراء يؤكدون", "experts say", "analysts believe").
+  - Filler openers ("في عالم اليوم", "في ظل التحولات المتسارعة", "In today's fast-changing world").
+FIG SELECTION (shape-matched — MUST match the story's actual dynamic):
+  bars_compare  → magnitude comparison across 3–4 things
+  gap_wedge     → a widening gap between two paths
+  steps         → threshold / regime shift
+  s_curve       → adoption
+  decay         → decline / erosion
+  line_signal   → divergence of two paths, or a single anomaly
+  dots (flow)   → staged milestones / pipeline
+fig.label is ALWAYS a "from → to" tension (e.g. "pilots → production", "خبرة → حضور"). Never a generic noun.
 
 ═══ COMPLETENESS RULE (BOTH LANGUAGES) ═══
 Every text field must be a complete, self-contained statement. Never end any field with an ellipsis or unfinished clause.
@@ -457,6 +601,9 @@ Compile the Edition JSON now. Follow the schema exactly. All fields must be in $
       console.error("JSON parse failed. First 500:", raw.substring(0, 500));
       throw new Error("AI returned malformed JSON. Try regenerating.");
     }
+
+    // Deterministic budget enforcement — the renderer must NEVER truncate.
+    enforceBudgets(parsed, isArabic);
 
     // ---- server-side injection (overwrite whatever the model returned) ----
     parsed.nameplate = nameplate;

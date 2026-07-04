@@ -102,12 +102,21 @@ const CHAR_FACTOR = {
   serif: 0.50,
   serifItalic: 0.49,
   serifBold: 0.52,
-  arabic: 0.55,
-  arabicBold: 0.60,
+  arabic: 0.58,
+  arabicBold: 0.63,
   mono: 0.70,
 };
 const charBudget = (widthPx: number, fs: number, factor: number) =>
   Math.floor((widthPx / (fs * factor)) * 0.94);
+
+/* ============================================================
+ * Newspaper justification bounds — the "not much, not less" dials.
+ * All slack distribution in ArticleLayout / QALayout is clamped by these.
+ * ============================================================ */
+const MAX_LH_BODY = 1.56;
+const MAX_LH_READ = 1.60;
+const MAX_LH_QA_ANSWER = 1.55;
+const MAX_GAP_MULT = 1.4;
 
 /* Cap a single source-style string with an ellipsis (applied BEFORE uppercase). */
 const capSource = (s: string, max: number) => {
@@ -393,8 +402,8 @@ function ArticleLayout({ page, edition, pageIndex, total, rtl }: { page: Article
 
   const headFS = rtl ? 46 : 52;
   const headLH = 1.14;
-  const bodyLH = 1.44;
-  const readLH = 1.42;
+  const bodyLHbase = 1.44;
+  const readLHbase = 1.42;
 
   const storyY = 200;
   const headlineTop = 260;
@@ -412,9 +421,11 @@ function ArticleLayout({ page, edition, pageIndex, total, rtl }: { page: Article
   const readFactor = rtl ? CHAR_FACTOR.arabic : CHAR_FACTOR.serifItalic;
 
   const FIG_MIN = 150;
+  const HEAD_FIG_GAP_BASE = 28;
   const sourceY = FOOTER_TOP - 14;
-  const figYstart = Math.max(480, headlineBottom + 28);
-  const available = sourceY - 20 - figYstart;
+  // headline→fig gap can grow up to MAX_GAP_MULT × base as part of slack.
+  const figYstartBase = Math.max(480, headlineBottom + HEAD_FIG_GAP_BASE);
+  const availableBase = sourceY - 20 - figYstartBase;
 
   // GAP constants (label pads etc.): fig→figLabel 26, figLabel→newsLabel 42,
   // newsLabel→body 32, body→rule 24, rule→readLabel 30, readLabel→read 32.
@@ -440,10 +451,10 @@ function ArticleLayout({ page, edition, pageIndex, total, rtl }: { page: Article
     const rWrap = charBudget(usable, rFS, readFactor);
     const bLines = wrap(page.body || "", bWrap);
     const rLines = wrap(page.my_read || "", rWrap);
-    const bH = blockH(bLines, bFS, bodyLH);
-    const rH = blockH(rLines, rFS, readLH);
+    const bH = blockH(bLines, bFS, bodyLHbase);
+    const rH = blockH(rLines, rFS, readLHbase);
     const needed = FIG_MIN + G_FIG_LABEL + G_NEWS_LABEL + G_BODY + bH + G_RULE + G_READ_LABEL + G_READ + rH;
-    if (needed <= available) {
+    if (needed <= availableBase) {
       chosenBodyFS = bFS;
       chosenReadFS = rFS;
       bodyLinesRaw = bLines;
@@ -463,16 +474,44 @@ function ArticleLayout({ page, edition, pageIndex, total, rtl }: { page: Article
   let figH = FIG_MIN;
   let extraAboveRule = 0;
   let extraAboveReadLabel = 0;
+  let bodyLH = bodyLHbase;
+  let readLH = readLHbase;
+  let extraHeadFigGap = 0;
   let bodyLines: string[];
   let readLines: string[];
 
   if (fit) {
     const needed = FIG_MIN + G_FIG_LABEL + G_NEWS_LABEL + G_BODY + bodyH + G_RULE + G_READ_LABEL + G_READ + readH;
-    const slack = Math.max(0, available - needed);
-    figH = Math.min(260, FIG_MIN + slack * 0.6);
-    const slackRest = slack - (figH - FIG_MIN);
-    extraAboveRule = Math.max(0, slackRest * 0.5);
-    extraAboveReadLabel = Math.max(0, slackRest * 0.5);
+    const slack = Math.max(0, availableBase - needed);
+    if (slack < 40) {
+      // "not much, not less": leave the page as-is; do nothing.
+    } else {
+      // 40% into line-height, 40% into two structural gaps, remainder into bottom margin (figH).
+      const slackLH = slack * 0.4;
+      const slackGaps = slack * 0.4;
+      // Grow body & read LH proportionally within bounds.
+      const bodyLinesCount = Math.max(1, bodyLinesRaw.length);
+      const readLinesCount = Math.max(1, readLinesPre.length);
+      const lhBudgetTotal = bodyLinesCount * bodyFS + readLinesCount * readFS;
+      const wantedGrowPerUnit = slackLH / lhBudgetTotal;
+      bodyLH = Math.min(MAX_LH_BODY, bodyLHbase + wantedGrowPerUnit);
+      readLH = Math.min(MAX_LH_READ, readLHbase + wantedGrowPerUnit);
+      const usedLH =
+        bodyLinesCount * bodyFS * (bodyLH - bodyLHbase) +
+        readLinesCount * readFS * (readLH - readLHbase);
+      // Two gaps: headline→fig (base 28) and body→rule (G_RULE=24). Each ≤ MAX_GAP_MULT×.
+      const gap1Max = HEAD_FIG_GAP_BASE * (MAX_GAP_MULT - 1);
+      const gap2Max = G_RULE * (MAX_GAP_MULT - 1);
+      const gapsMaxTotal = gap1Max + gap2Max;
+      const gapsUse = Math.min(slackGaps, gapsMaxTotal);
+      extraHeadFigGap = gapsUse * (gap1Max / Math.max(1, gapsMaxTotal));
+      extraAboveRule = gapsUse * (gap2Max / Math.max(1, gapsMaxTotal));
+      // Remainder → bottom margin, absorbed by figH (bounded 260) and extra above read label.
+      const usedGaps = extraHeadFigGap + extraAboveRule;
+      const rest = Math.max(0, slack - usedLH - usedGaps);
+      figH = Math.min(260, FIG_MIN + rest * 0.6);
+      extraAboveReadLabel = Math.max(0, rest * 0.4);
+    }
     bodyLines = bodyLinesRaw;
     readLines = readLinesPre;
   } else {
@@ -481,17 +520,17 @@ function ArticleLayout({ page, edition, pageIndex, total, rtl }: { page: Article
     readLinesPre = wrap(page.my_read || "", readWrap);
     // Reserve read region using its full text first, then cap body to what remains.
     const readCappedForReserve = capLines(readLinesPre, 5, readWrap);
-    const readReserveH = blockH(readCappedForReserve, readFS, readLH);
+    const readReserveH = blockH(readCappedForReserve, readFS, readLHbase);
     const bodyEndCap = sourceY - 20 - readReserveH - G_READ - G_READ_LABEL - G_RULE;
-    const bodyY0 = figYstart + FIG_MIN + G_FIG_LABEL + G_NEWS_LABEL + G_BODY;
-    bodyLines = capToBand(bodyLinesRaw, bodyY0, bodyFS, bodyLH, bodyEndCap, 6, bodyWrap);
-    bodyH = blockH(bodyLines, bodyFS, bodyLH);
+    const bodyY0 = figYstartBase + FIG_MIN + G_FIG_LABEL + G_NEWS_LABEL + G_BODY;
+    bodyLines = capToBand(bodyLinesRaw, bodyY0, bodyFS, bodyLHbase, bodyEndCap, 6, bodyWrap);
+    bodyH = blockH(bodyLines, bodyFS, bodyLHbase);
     const readY0 = bodyY0 + bodyH + G_RULE + G_READ_LABEL + G_READ;
-    readLines = capToBand(readLinesPre, readY0, readFS, readLH, sourceY - 20, 5, readWrap);
-    readH = blockH(readLines, readFS, readLH);
+    readLines = capToBand(readLinesPre, readY0, readFS, readLHbase, sourceY - 20, 5, readWrap);
+    readH = blockH(readLines, readFS, readLHbase);
   }
 
-  const figY = figYstart;
+  const figY = figYstartBase + extraHeadFigGap;
   const figLabelY = figY + figH + G_FIG_LABEL;
   const newsLabelY = figLabelY + G_NEWS_LABEL;
   const bodyY = newsLabelY + G_BODY;
@@ -743,7 +782,7 @@ function QALayout({ page, edition, pageIndex, total, rtl }: { page: QAPage; edit
   const aFactor = rtl ? CHAR_FACTOR.arabic : CHAR_FACTOR.serif;
   const aAvailable = (inviteY - 24) - answerY;
   const aLHmin = 1.32;
-  const aLHmax = 1.44;
+  const aLHmax = MAX_LH_QA_ANSWER;
   let aFS = aSizes[aSizes.length - 1];
   let aLH = aLHmin;
   let aWrap = charBudget(usable, aFS, aFactor);
