@@ -102,12 +102,21 @@ const CHAR_FACTOR = {
   serif: 0.50,
   serifItalic: 0.49,
   serifBold: 0.52,
-  arabic: 0.55,
-  arabicBold: 0.60,
+  arabic: 0.58,
+  arabicBold: 0.63,
   mono: 0.70,
 };
 const charBudget = (widthPx: number, fs: number, factor: number) =>
   Math.floor((widthPx / (fs * factor)) * 0.94);
+
+/* ============================================================
+ * Newspaper justification bounds — the "not much, not less" dials.
+ * All slack distribution in ArticleLayout / QALayout is clamped by these.
+ * ============================================================ */
+const MAX_LH_BODY = 1.56;
+const MAX_LH_READ = 1.60;
+const MAX_LH_QA_ANSWER = 1.55;
+const MAX_GAP_MULT = 1.4;
 
 /* Cap a single source-style string with an ellipsis (applied BEFORE uppercase). */
 const capSource = (s: string, max: number) => {
