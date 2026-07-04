@@ -239,7 +239,7 @@ Rules:
   "lead_headline": string,              // Newspaper editor's hook: a named actor or concrete number + the tension, 8–12 words. Make the reader NEED page 2.
   "lead_accent": string,                // NEVER a repeat or fragment of the headline (zero shared significant words). Adds a SECOND piece of information: either the sharpest tension from a DIFFERENT story in this edition (e.g. "Inside: why 80% of pilots never graduate") or the why-now stakes in one line. 6–10 words. Rendered in accent color.
   "deck": string,                       // The mandated line above, with correct count.
-  "fig": { "kind": "line_signal"|"dual_curve"|"step_bars"|"s_curve"|"flow"|"capacity_bars"|"decay", "label": string },
+  "fig": { "kind": "line_signal"|"dual_curve"|"step_bars"|"s_curve"|"flow"|"capacity_bars"|"decay"|"bars_compare"|"gap_wedge"|"steps", "label": string },
   // FIG SELECTION (STRICT — the schematic must visualize THIS story's dynamic):
   //   s_curve        → adoption, scaling, maturation stories
   //   decay          → failure rates, attrition, pilots dying, value erosion
