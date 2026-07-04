@@ -139,6 +139,17 @@ Rules:
   "lead_accent": string,                // The italic turn — the phrase the reader will screenshot. Rendered in accent color.
   "deck": string,                       // The mandated line above, with correct count.
   "fig": { "kind": "line_signal"|"dual_curve"|"step_bars"|"s_curve"|"flow"|"capacity_bars"|"decay", "label": string },
+  // FIG SELECTION (STRICT — the schematic must visualize THIS story's dynamic):
+  //   s_curve        → adoption, scaling, maturation stories
+  //   decay          → failure rates, attrition, pilots dying, value erosion
+  //   dual_curve     → two forces crossing (old model vs new, cost vs value)
+  //   flow           → process/pipeline/stage stories
+  //   capacity_bars  → utilization, budget allocation, capacity stories
+  //   step_bars      → discrete periods, week-by-week, cohort stories
+  //   line_signal    → a single rising/falling trend (only when none above fits)
+  // LABEL RULE: fig.label must name THIS story's tension using a noun from its own headline
+  // (e.g. "retraining velocity vs exits", "pilot → production gap") — ≤6 words,
+  // NEVER a generic label, NEVER reused across pages in the same edition.
   "toc": [ { "title": string /* ≤8 words */, "section": string /* the same UPPERCASE tag */, "page": number } ],
   "also_inside": [ "The Weekend Digest · P.{n}", "You Asked · P.{n}" ]  // AR: "الملخّص الأسبوعي · ص.{n}", "أنت سألت · ص.{n}"
 }
@@ -152,6 +163,17 @@ Rules:
   "headline": string,          // The development itself, ≤12 words. News language.
   "headline_accent": string,   // The clause inside the headline that is rendered in accent color.
   "fig": { "kind": string, "label": string },
+  // FIG SELECTION (STRICT — the schematic must visualize THIS story's dynamic):
+  //   s_curve        → adoption, scaling, maturation stories
+  //   decay          → failure rates, attrition, pilots dying, value erosion
+  //   dual_curve     → two forces crossing (old model vs new, cost vs value)
+  //   flow           → process/pipeline/stage stories
+  //   capacity_bars  → utilization, budget allocation, capacity stories
+  //   step_bars      → discrete periods, week-by-week, cohort stories
+  //   line_signal    → a single rising/falling trend (only when none above fits)
+  // LABEL RULE: fig.label must name THIS story's tension using a noun from its own headline
+  // (e.g. "retraining velocity vs exits", "pilot → production gap") — ≤6 words,
+  // NEVER a generic label, NEVER reused across pages in the same edition.
   "body": string,              // THE NEWS. Neutral, 25–35 words. No opinion. Factual clause + implication clause. Complete sentences.
   "my_read": string,           // POINT OF VIEW. 2 sentences, 25–35 words total. First person ("I…"/"في رأيي.."). MUST end on a complete sentence — never a trailing clause. Rework the signal's what_it_means_for_you into the author's voice. THIS is where the voice profile carries the most weight.
   "source_line": string        // "Source — {names} · read this week" using ONLY the provided capture titles/account_names. Never invent a publication.
