@@ -692,11 +692,45 @@ function BackLayout({ page, edition, pageIndex, total, rtl }: { page: BackPage; 
   const headlineBottom = headlineTop + Math.max(0, headlineLines.length) * headStep;
 
   const promiseY = headlineBottom + 40;
-  // The card ends at cardY + cardH = 1060; follow pill sits at cardY+cardH-148, sign at cardY+cardH-...; keep promise capped so it stays above signature.
-  const signatureY = Math.min(cardY + 470, cardY + cardH - 250);
-  const promiseLines = capToBand(wrap(page.promise || "", rtl ? 30 : 44), promiseY, promiseFS, promiseLH, signatureY - 20, 4);
+  // Reserve: action row (96) + gap (40) + signature (46) + sign_line (16+gap) + follow pill (64) + follow_sub.
+  // Follow pill sits at cardY+cardH-148, followSubY at cardY+cardH-40.
+  const followPillY = cardY + cardH - 148;
+  // Signature must sit above the follow pill with room for sign_line.
+  const maxSignatureY = followPillY - 60;
+  // Action row height budget.
+  const ACTION_ROW_H = 96;
+  const ACTION_GAP_ABOVE = 36;
+  const ACTION_GAP_BELOW = 40;
+  // Cap promise so action row + signature stay inside card.
+  const promiseCap = maxSignatureY - ACTION_GAP_BELOW - ACTION_ROW_H - ACTION_GAP_ABOVE - 20;
+  const promiseLines = capToBand(wrap(page.promise || "", rtl ? 30 : 44), promiseY, promiseFS, promiseLH, promiseCap, 3);
+  const promiseBottom = promiseY + blockH(promiseLines, promiseFS, promiseLH);
+  const iconRowY = promiseBottom + ACTION_GAP_ABOVE;
+  const signatureY = Math.min(maxSignatureY, iconRowY + ACTION_ROW_H + ACTION_GAP_BELOW);
   const signLineY = signatureY + 38;
   const followSubY = cardY + cardH - 40;
+
+  // 4-action row (like carousel CTA). RTL reverses visual order so أعجبني sits rightmost.
+  const actionsEN = [
+    { glyph: "♡", label: "Like" },
+    { glyph: "✎", label: "Comment" },
+    { glyph: "↗", label: "Share" },
+    { glyph: "❒", label: "Save" },
+  ];
+  const actionsAR = [
+    { glyph: "♡", label: "أعجبني" },
+    { glyph: "✎", label: "تعليق" },
+    { glyph: "↗", label: "مشاركة" },
+    { glyph: "❒", label: "حفظ" },
+  ];
+  const actions = rtl ? [...actionsAR].reverse() : actionsEN;
+  const actionCount = actions.length;
+  const actionSpan = cardW - 200;
+  const actionStep = actionSpan / (actionCount - 1);
+  const actionStartX = cardX + (cardW - actionSpan) / 2;
+  const actionCenterY = iconRowY + 34;
+  const actionLabelY = actionCenterY + 44;
+  const actionFont = rtl ? ARABIC : MONO;
 
   return (
     <>
