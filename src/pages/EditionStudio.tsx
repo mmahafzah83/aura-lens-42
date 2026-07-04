@@ -755,6 +755,34 @@ function Field({ label, value, onChange, textarea, rtl }: { label: string; value
   );
 }
 
+const FIG_KIND_OPTIONS: { value: string; label: string }[] = [
+  { value: "line_signal",   label: "line_signal — trend line" },
+  { value: "dual_curve",    label: "dual_curve — two forces crossing" },
+  { value: "step_bars",     label: "step_bars — periods" },
+  { value: "s_curve",       label: "s_curve — adoption curve" },
+  { value: "flow",          label: "flow — pipeline" },
+  { value: "capacity_bars", label: "capacity_bars — allocation" },
+  { value: "decay",         label: "decay — decline" },
+];
+
+function FigKindSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <label className="block space-y-1">
+      <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--glass-3)", fontFamily: "var(--font-mono)" }}>Figure</div>
+      <select
+        value={value || "line_signal"}
+        onChange={e => onChange(e.target.value)}
+        className="w-full p-2 rounded-lg text-sm"
+        style={{ background: "var(--ob-field)", color: "var(--glass)", border: "1px solid var(--hair)", fontFamily: "var(--font-mono)" }}
+      >
+        {FIG_KIND_OPTIONS.map(o => (
+          <option key={o.value} value={o.value} style={{ background: "var(--ob-field)", color: "var(--glass)" }}>{o.label}</option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 function PageEditor({ page, lang, onChange }: { page: EditionPage; lang: "en" | "ar"; onChange: (p: EditionPage) => void }) {
   const rtl = lang === "ar";
   const set = (patch: any) => onChange({ ...page, ...patch });
@@ -767,6 +795,7 @@ function PageEditor({ page, lang, onChange }: { page: EditionPage; lang: "en" | 
           <Field label="Lead headline" rtl={rtl} value={page.lead_headline} onChange={v => set({ lead_headline: v })} textarea />
           <Field label="Lead accent" rtl={rtl} value={page.lead_accent || ""} onChange={v => set({ lead_accent: v })} />
           <Field label="Deck" rtl={rtl} value={page.deck} onChange={v => set({ deck: v })} textarea />
+          <FigKindSelect value={page.fig?.kind || "line_signal"} onChange={v => set({ fig: { ...(page.fig || { label: "" }), kind: v as any } })} />
           <Field label="Fig label" rtl={rtl} value={page.fig?.label || ""} onChange={v => set({ fig: { ...(page.fig || { kind: "line_signal" }), label: v } })} />
         </div>
       );
@@ -781,6 +810,7 @@ function PageEditor({ page, lang, onChange }: { page: EditionPage; lang: "en" | 
           <Field label="Body (news)" rtl={rtl} value={page.body} onChange={v => set({ body: v })} textarea />
           <Field label="My read" rtl={rtl} value={page.my_read} onChange={v => set({ my_read: v })} textarea />
           <Field label="Source line" rtl={rtl} value={page.source_line} onChange={v => set({ source_line: v })} />
+          <FigKindSelect value={page.fig?.kind || "line_signal"} onChange={v => set({ fig: { ...(page.fig || { label: "" }), kind: v as any } })} />
           <Field label="Fig label" rtl={rtl} value={page.fig?.label || ""} onChange={v => set({ fig: { ...(page.fig || { kind: "line_signal" }), label: v } })} />
         </div>
       );
