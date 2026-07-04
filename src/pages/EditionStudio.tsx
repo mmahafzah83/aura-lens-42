@@ -641,8 +641,15 @@ export default function EditionStudio() {
                   hasDraft={false}
                   onSelect={(_t, _ctx, _fmt, _sigTitle, _insight, signalId) => {
                     if (!signalId) return;
-                    setSelectedSignalIds(ids => (ids.includes(signalId) ? ids : [...ids, signalId]));
-                    toast.success(lang === "ar" ? "أضيفت إلى الإصدار" : "Added to edition");
+                    setSelectedSignalIds(ids => {
+                      if (ids.includes(signalId)) return ids;
+                      if (ids.length >= 4) {
+                        toast.error(lang === "ar" ? "الحد الأقصى 4 إشارات" : "4 signals max");
+                        return ids;
+                      }
+                      toast.success(lang === "ar" ? "أضيفت إلى الإصدار" : "Added to edition");
+                      return [...ids, signalId];
+                    });
                   }}
                 />
               </div>
