@@ -115,6 +115,31 @@ export default function PressFooter({
       >
         aura-intel.org
       </text>
+      {rtl ? (
+        <text
+          x={rightX}
+          y={bylineY + 24}
+          textAnchor={rightAnchor}
+          fontFamily={ARABIC}
+          fontSize={12}
+          fontWeight={600}
+          fill={INK2}
+        >
+          حوّل خبرتك إلى حضور
+        </text>
+      ) : (
+        <text
+          x={rightX}
+          y={bylineY + 24}
+          textAnchor={rightAnchor}
+          fontFamily={MONO}
+          fontSize={12}
+          letterSpacing={1.5}
+          fill={INK2}
+        >
+          Turns your expertise into presence
+        </text>
+      )}
     </g>
   );
 }
