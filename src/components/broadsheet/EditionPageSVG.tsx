@@ -451,6 +451,32 @@ function DigestLayout({ page, edition, pageIndex, total, rtl }: { page: DigestPa
   const anchor = rtl ? "end" : "start";
   const monoFont = rtl ? ARABIC : MONO;
 
+  const introFS = rtl ? 26 : 28;
+  const introLH = 1.36;
+  const claimFS = 30;
+  const claimLH = 1.22;
+  const takeFS = rtl ? 22 : 24;
+  const takeLH = 1.36;
+  const closeFS = 22;
+  const closeLH = 1.28;
+  const lane = 240;
+
+  const introY = 220;
+  const introLines = capLines(wrap(page.intro || "", rtl ? 38 : 56), 2);
+  const introBottom = introY + blockH(introLines, introFS, introLH);
+
+  const itemsStart = introBottom + 40;
+
+  // Reserve for close block at the bottom.
+  const closeLines = capLines(wrap(page.close || "", rtl ? 34 : 50), 2);
+  const closeH = blockH(closeLines, closeFS, closeLH);
+  const closeY = FOOTER_TOP - closeH - 10;
+  const closeRuleY = closeY - 22;
+
+  const items = (page.items || []).slice(0, 3);
+  const availableForItems = closeRuleY - itemsStart;
+  const perItem = items.length ? availableForItems / items.length : 0;
+
   return (
     <>
       <Masthead
@@ -462,26 +488,38 @@ function DigestLayout({ page, edition, pageIndex, total, rtl }: { page: DigestPa
       />
 
       <TextBlock
-        x={leftX} y={220}
-        lines={wrap(page.intro || "", rtl ? 38 : 56)}
+        x={leftX} y={introY}
+        lines={introLines}
         fontFamily={rtl ? ARABIC : SERIF}
-        fontSize={rtl ? 26 : 28}
+        fontSize={introFS}
         fontWeight={400}
         fontStyle={rtl ? "normal" : "italic"}
         fill={INK2}
         anchor={anchor}
-        lineHeight={1.36}
+        lineHeight={introLH}
       />
 
-      {(page.items || []).slice(0, 3).map((item, i) => {
-        const rowY = 340 + i * 264;
+      {items.map((item, i) => {
+        const rowTop = itemsStart + i * perItem;
+        const rowRuleY = rowTop - 8;
         const bigX = rtl ? W - edgePad : edgePad;
-        const textX = rtl ? W - edgePad - 260 : edgePad + 260;
+        const textX = rtl ? W - edgePad - lane : edgePad + lane;
+        const bigY = rowTop + 60;
+        const claimY = rowTop + 8;
+        const claimLines = capLines(wrap(item.claim || "", rtl ? 22 : 32), 2);
+        const claimBottom = claimY + blockH(claimLines, claimFS, claimLH);
+        const takeY = claimBottom + 16;
+        // Cap takeaway so source fits within row.
+        const rowBottom = rowTop + perItem;
+        const sourceRowY = rowBottom - 14;
+        const takeLines = capToBand(wrap(item.takeaway || "", rtl ? 34 : 48), takeY, takeFS, takeLH, sourceRowY - 20, 3);
+        const takeBottom = takeY + blockH(takeLines, takeFS, takeLH);
+        const sourceY = Math.min(sourceRowY, takeBottom + 24);
         return (
           <g key={i}>
-            <line x1={edgePad} x2={W - edgePad} y1={rowY - 24} y2={rowY - 24} stroke={RULE} strokeWidth={1} />
+            <line x1={edgePad} x2={W - edgePad} y1={rowRuleY} y2={rowRuleY} stroke={RULE} strokeWidth={1} />
             <text
-              x={bigX} y={rowY + 60}
+              x={bigX} y={bigY}
               textAnchor={rtl ? "end" : "start"}
               fontFamily={SERIF}
               fontWeight={300}
@@ -493,42 +531,42 @@ function DigestLayout({ page, edition, pageIndex, total, rtl }: { page: DigestPa
               {item.big_value}
             </text>
             <TextBlock
-              x={textX} y={rowY + 8}
-              lines={wrap(item.claim || "", rtl ? 22 : 32)}
+              x={textX} y={claimY}
+              lines={claimLines}
               fontFamily={rtl ? ARABIC : SERIF}
-              fontSize={30}
+              fontSize={claimFS}
               fontWeight={600}
               fill={INK}
               anchor={anchor}
-              lineHeight={1.22}
+              lineHeight={claimLH}
             />
             <TextBlock
-              x={textX} y={rowY + 74}
-              lines={wrap(item.takeaway || "", rtl ? 34 : 48)}
+              x={textX} y={takeY}
+              lines={takeLines}
               fontFamily={rtl ? ARABIC : SERIF}
-              fontSize={rtl ? 22 : 24}
+              fontSize={takeFS}
               fontWeight={400}
               fill={INK2}
               anchor={anchor}
-              lineHeight={1.36}
+              lineHeight={takeLH}
             />
-            <text x={textX} y={rowY + 178} textAnchor={anchor} fontFamily={monoFont} fontSize={16} letterSpacing={rtl ? undefined : 2} fill={INK2} style={rtl ? undefined : { textTransform: "uppercase" }}>
+            <text x={textX} y={sourceY} textAnchor={anchor} fontFamily={monoFont} fontSize={16} letterSpacing={rtl ? undefined : 2} fill={INK2} style={rtl ? undefined : { textTransform: "uppercase" }}>
               {rtl ? item.source : (item.source || "").toUpperCase()}
             </text>
           </g>
         );
       })}
 
-      <line x1={edgePad} x2={W - edgePad} y1={1188} y2={1188} stroke={INK} strokeWidth={2} />
+      <line x1={edgePad} x2={W - edgePad} y1={closeRuleY} y2={closeRuleY} stroke={INK} strokeWidth={2} />
       <TextBlock
-        x={leftX} y={1220}
-        lines={wrap(page.close || "", rtl ? 34 : 50)}
+        x={leftX} y={closeY}
+        lines={closeLines}
         fontFamily={rtl ? ARABIC : SERIF}
-        fontSize={22}
+        fontSize={closeFS}
         fontStyle={rtl ? "normal" : "italic"}
         fill={INK}
         anchor={anchor}
-        lineHeight={1.28}
+        lineHeight={closeLH}
       />
     </>
   );
