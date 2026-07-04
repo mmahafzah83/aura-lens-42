@@ -239,7 +239,7 @@ Rules:
   "lead_headline": string,              // Newspaper editor's hook: a named actor or concrete number + the tension, 8–12 words. Make the reader NEED page 2.
   "lead_accent": string,                // NEVER a repeat or fragment of the headline (zero shared significant words). Adds a SECOND piece of information: either the sharpest tension from a DIFFERENT story in this edition (e.g. "Inside: why 80% of pilots never graduate") or the why-now stakes in one line. 6–10 words. Rendered in accent color.
   "deck": string,                       // The mandated line above, with correct count.
-  "fig": { "kind": "line_signal"|"dual_curve"|"step_bars"|"s_curve"|"flow"|"capacity_bars"|"decay", "label": string },
+  "fig": { "kind": "line_signal"|"dual_curve"|"step_bars"|"s_curve"|"flow"|"capacity_bars"|"decay"|"bars_compare"|"gap_wedge"|"steps", "label": string },
   // FIG SELECTION (STRICT — the schematic must visualize THIS story's dynamic):
   //   s_curve        → adoption, scaling, maturation stories
   //   decay          → failure rates, attrition, pilots dying, value erosion
@@ -247,7 +247,10 @@ Rules:
   //   flow           → process/pipeline/stage stories
   //   capacity_bars  → utilization, budget allocation, capacity stories
   //   step_bars      → discrete periods, week-by-week, cohort stories
-  //   line_signal    → a single rising/falling trend (only when none above fits)
+  //   bars_compare   → magnitude comparison across 3–4 things
+  //   gap_wedge      → a widening gap between two paths
+  //   steps          → threshold / regime shift
+  //   line_signal    → a single rising/falling trend or one anomaly (only when none above fits)
   // LABEL RULE: fig.label must name THIS story's tension using a noun from its own headline
   // (e.g. "retraining velocity vs exits", "pilot → production gap") — ≤6 words,
   // NEVER a generic label, NEVER reused across pages in the same edition.
@@ -271,7 +274,10 @@ Rules:
   //   flow           → process/pipeline/stage stories
   //   capacity_bars  → utilization, budget allocation, capacity stories
   //   step_bars      → discrete periods, week-by-week, cohort stories
-  //   line_signal    → a single rising/falling trend (only when none above fits)
+  //   bars_compare   → magnitude comparison across 3–4 things
+  //   gap_wedge      → a widening gap between two paths
+  //   steps          → threshold / regime shift
+  //   line_signal    → a single rising/falling trend or one anomaly (only when none above fits)
   // LABEL RULE: fig.label must name THIS story's tension using a noun from its own headline
   // (e.g. "retraining velocity vs exits", "pilot → production gap") — ≤6 words,
   // NEVER a generic label, NEVER reused across pages in the same edition.
@@ -361,7 +367,7 @@ FIG SELECTION (shape-matched — MUST match the story's actual dynamic):
   steps         → threshold / regime shift
   s_curve       → adoption
   decay         → decline / erosion
-  line_signal   → divergence of two paths, or a single anomaly
+  line_signal   → a single trend or anomaly
   dots (flow)   → staged milestones / pipeline
 fig.label is ALWAYS a "from → to" tension (e.g. "pilots → production", "خبرة → حضور"). Never a generic noun.
 
