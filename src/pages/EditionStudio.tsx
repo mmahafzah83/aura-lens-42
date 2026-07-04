@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, ChevronLeft, ChevronRight, Loader2, Sparkles,
@@ -13,7 +13,7 @@ import {
   getEmbeddedFontCSS, svgToImageBlob, ensureFontsReady, downloadBlob, slugify,
 } from "@/lib/broadsheetExport";
 import { dedupeHashtags, stripDuplicateHashtags } from "@/lib/hashtags";
-import { getPublication } from "@/lib/publication";
+import { getPublication, validate, type PublicationStyle } from "@/lib/publication";
 
 const PAGE_W = 1080;
 const PAGE_H = 1350;
@@ -66,6 +66,114 @@ export default function EditionStudio() {
   const [notEnoughSignals, setNotEnoughSignals] = useState<{ found: number } | null>(null);
 
   const offscreenRef = useRef<HTMLDivElement>(null);
+
+  /* ---- Masthead naming (identity_intelligence.publication) ---- */
+  const [profileFirstName, setProfileFirstName] = useState<string>("");
+  const [profileSectorWord, setProfileSectorWord] = useState<string>("");
+  const [pubName, setPubName] = useState<string>("");
+  const [pubStyle, setPubStyle] = useState<PublicationStyle>("classic");
+  const [pubMonogram, setPubMonogram] = useState<string | undefined>(undefined);
+  const [savingMasthead, setSavingMasthead] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const { data: sess } = await supabase.auth.getSession();
+      const uid = sess.session?.user?.id;
+      if (!uid) return;
+      const { data: prof } = await supabase
+        .from("diagnostic_profiles")
+        .select("first_name, sector_focus, identity_intelligence")
+        .eq("user_id", uid)
+        .maybeSingle();
+      const firstName = (prof?.first_name as string) || "";
+      const sector = (prof?.sector_focus as string) || "";
+      setProfileFirstName(firstName);
+      const sectorWord = (sector || "").trim().split(/\s+/)[0] || "";
+      setProfileSectorWord(sectorWord);
+      const pub = getPublication(prof as any, lang, firstName);
+      setPubName(pub.name);
+      setPubStyle(pub.style);
+      setPubMonogram(pub.monogram_char || (pub.name || "?").trim().charAt(0).toUpperCase());
+    })();
+    // Only seed once on mount — subsequent lang changes shouldn't overwrite user's edits.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const mastheadError = useMemo(() => validate(pubName), [pubName]);
+
+  const suggestionChips = useMemo(() => {
+    const f = (profileFirstName || "Editor").trim();
+    const s = profileSectorWord.trim();
+    const base = [`The ${f} Brief`, `The ${f} Dispatch`, `The ${f} Memo`];
+    const sectorChips = s
+      ? [`The ${s} Line`, `${f} on ${s}`]
+      : [`The ${f} Line`, `${f} Weekly`];
+    return [...base, ...sectorChips];
+  }, [profileFirstName, profileSectorWord]);
+
+  const setName = (n: string) => {
+    setPubName(n);
+    if (pubStyle === "monogram") {
+      setPubMonogram((n || "?").trim().charAt(0).toUpperCase());
+    }
+  };
+
+  const setStyle = (s: PublicationStyle) => {
+    setPubStyle(s);
+    if (s === "monogram") {
+      setPubMonogram((pubName || "?").trim().charAt(0).toUpperCase());
+    }
+  };
+
+  const saveMasthead = async () => {
+    const err = validate(pubName);
+    if (err) { toast.error(err); return; }
+    setSavingMasthead(true);
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const uid = sess.session?.user?.id;
+      if (!uid) { toast.error("Please sign in"); return; }
+      // Re-read identity_intelligence fresh so we don't clobber sibling keys.
+      const { data: fresh, error: readErr } = await supabase
+        .from("diagnostic_profiles")
+        .select("identity_intelligence")
+        .eq("user_id", uid)
+        .maybeSingle();
+      if (readErr) throw readErr;
+      const ii = (fresh?.identity_intelligence as Record<string, any>) || {};
+      const nextII = {
+        ...ii,
+        publication: {
+          name: pubName.trim(),
+          style: pubStyle,
+          monogram_char: pubStyle === "monogram"
+            ? ((pubMonogram || pubName || "?").trim().charAt(0).toUpperCase())
+            : (pubMonogram || undefined),
+        },
+      };
+      const { error: writeErr } = await supabase
+        .from("diagnostic_profiles")
+        .update({ identity_intelligence: nextII } as any)
+        .eq("user_id", uid);
+      if (writeErr) throw writeErr;
+      // Reflect immediately in the preview without a recompile.
+      setEdition(e => ({
+        ...e,
+        nameplate: {
+          name: pubName.trim(),
+          style: pubStyle,
+          monogram_char: nextII.publication.monogram_char,
+        },
+      }));
+      toast.success("Masthead saved");
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Save failed: " + (e?.message || "Unknown error"));
+    } finally {
+      setSavingMasthead(false);
+    }
+  };
+
 
   const pages = edition.pages || [];
   const total = pages.length;
@@ -399,6 +507,122 @@ export default function EditionStudio() {
 
         {/* Right rail */}
         <div className="space-y-4">
+          {/* Your masthead */}
+          <div className="rounded-2xl p-4 space-y-3" style={{ background: "var(--ob-panel)", border: "1px solid var(--hair)" }}>
+            <div className="text-xs uppercase tracking-wider font-semibold" style={{ color: "var(--glass-2)", fontFamily: "var(--font-mono)" }}>
+              YOUR MASTHEAD
+            </div>
+
+            {/* Live preview */}
+            <div
+              className="rounded-lg px-4 py-4 flex items-center justify-center text-center"
+              style={{ background: "var(--ob-raised)", border: "1px solid var(--hair)", minHeight: 68 }}
+            >
+              {pubStyle === "monogram" ? (
+                <div className="flex items-center gap-3">
+                  <div
+                    className="flex items-center justify-center"
+                    style={{
+                      width: 40, height: 40, border: "2px solid var(--action)",
+                      color: "var(--action)", fontFamily: "'Newsreader', Georgia, serif",
+                      fontWeight: 700, fontSize: 22,
+                    }}
+                  >
+                    {(pubMonogram || (pubName || "?").charAt(0)).toUpperCase()}
+                  </div>
+                  <div style={{ color: "var(--glass)", fontFamily: "'Newsreader', Georgia, serif", fontSize: 22, letterSpacing: 1 }}>
+                    {pubName || "Your publication"}
+                  </div>
+                </div>
+              ) : pubStyle === "arabic" ? (
+                <div dir="rtl" style={{ color: "var(--glass)", fontFamily: "'Cairo', sans-serif", fontWeight: 700, fontSize: 24 }}>
+                  {pubName || "نشرتك"}
+                </div>
+              ) : (
+                <div style={{
+                  color: "var(--glass)", fontFamily: "'Newsreader', Georgia, serif",
+                  fontVariant: "small-caps", fontWeight: 600, fontSize: 22, letterSpacing: 2,
+                }}>
+                  {pubName || "The Your Brief"}
+                </div>
+              )}
+            </div>
+
+            {/* Suggestion chips */}
+            <div className="flex flex-wrap gap-1.5">
+              {suggestionChips.map((s, i) => (
+                <button
+                  key={i}
+                  onClick={() => setName(s)}
+                  className="text-xs px-2 py-1 rounded"
+                  style={{
+                    background: "var(--ob-raised)", color: "var(--glass-2)",
+                    border: "1px solid var(--hair)", fontFamily: "var(--font-mono)",
+                  }}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+
+            {/* Custom input */}
+            <div className="space-y-1">
+              <input
+                value={pubName}
+                onChange={e => setName(e.target.value)}
+                dir={pubStyle === "arabic" ? "rtl" : "ltr"}
+                placeholder="The Your Brief"
+                maxLength={40}
+                className="w-full p-2 rounded-lg text-sm"
+                style={{
+                  background: "var(--ob-field)", color: "var(--glass)",
+                  border: `1px solid ${mastheadError ? "var(--neg, #d55)" : "var(--hair)"}`,
+                  fontFamily: pubStyle === "arabic" ? "'Cairo', sans-serif" : undefined,
+                }}
+              />
+              {mastheadError ? (
+                <div className="text-[11px]" style={{ color: "var(--neg, #d55)" }}>{mastheadError}</div>
+              ) : (
+                <div className="text-[11px]" style={{ color: "var(--glass-3)" }}>
+                  2–40 characters. Pick something that sounds like a real publication.
+                </div>
+              )}
+            </div>
+
+            {/* Style chips */}
+            <div className="flex items-center gap-1.5">
+              {(["classic", "monogram", "arabic"] as const).map(s => (
+                <button
+                  key={s}
+                  onClick={() => setStyle(s)}
+                  className="text-xs px-2 py-1 rounded"
+                  style={{
+                    background: pubStyle === s ? "var(--action)" : "transparent",
+                    color: pubStyle === s ? "var(--ink-on-brand)" : "var(--glass-2)",
+                    border: `1px solid ${pubStyle === s ? "var(--action)" : "var(--hair)"}`,
+                    fontFamily: "var(--font-mono)", textTransform: "capitalize",
+                  }}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+
+            {/* Save */}
+            <button
+              onClick={saveMasthead}
+              disabled={savingMasthead || !!mastheadError}
+              className="w-full px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-2 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--action)]"
+              style={{
+                background: "var(--action)", color: "var(--ink-on-brand)",
+                opacity: mastheadError ? 0.5 : 1,
+              }}
+            >
+              {savingMasthead ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+              Save masthead
+            </button>
+          </div>
+
           {/* Signal picker */}
           <div className="rounded-2xl" style={{ background: "var(--ob-panel)", border: "1px solid var(--hair)" }}>
             <button
