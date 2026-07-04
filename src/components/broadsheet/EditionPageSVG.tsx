@@ -760,6 +760,23 @@ function BackLayout({ page, edition, pageIndex, total, rtl }: { page: BackPage; 
         lineHeight={promiseLH}
       />
 
+      <g>
+        {actions.map((a, i) => {
+          const cx = actionStartX + i * actionStep;
+          return (
+            <g key={i}>
+              <circle cx={cx} cy={actionCenterY} r={22} fill="none" stroke={SPOT} strokeWidth={1.5} />
+              <text x={cx} y={actionCenterY + 8} textAnchor="middle" fontFamily={SERIF} fontSize={22} fill={SPOT}>
+                {a.glyph}
+              </text>
+              <text x={cx} y={actionLabelY} textAnchor="middle" fontFamily={actionFont} fontSize={12} fontWeight={700} letterSpacing={rtl ? undefined : 1.5} fill={INK2} style={rtl ? undefined : { textTransform: "uppercase" }}>
+                {a.label}
+              </text>
+            </g>
+          );
+        })}
+      </g>
+
       <text x={cardLeft} y={signatureY} textAnchor={cardAnchor} fontFamily={rtl ? ARABIC : SERIF} fontStyle={rtl ? "normal" : "italic"} fontWeight={rtl ? 700 : 400} fontSize={46} fill={INK}>
         {page.sign_name}
       </text>
