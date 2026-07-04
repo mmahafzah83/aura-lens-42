@@ -366,52 +366,115 @@ function ArticleLayout({ page, edition, pageIndex, total, rtl }: { page: Article
 
   const headFS = rtl ? 46 : 52;
   const headLH = 1.14;
-  const bodyFS = rtl ? 24 : 26;
   const bodyLH = 1.44;
-  const readFS = rtl ? 22 : 24;
   const readLH = 1.42;
 
   const storyY = 200;
   const headlineTop = 260;
 
-  const headlineLines = capLines(wrap(page.headline || "", rtl ? 22 : 28), 3);
-  // renderInlineAccent draws each line at y = headlineTop + i * step (step in current code)
+  const headWrap = rtl ? 22 : 28;
+  const headlineLines = capLines(wrap(page.headline || "", headWrap), 3, headWrap);
   const headStep = headFS * headLH;
   const headlineBottom = headlineTop + Math.max(0, headlineLines.length) * headStep;
 
-  let figH = 210;
-  let figY = Math.max(480, headlineBottom + 28);
-  let figLabelY = figY + figH + 26;
-  let newsLabelY = figLabelY + 42;
-  let bodyY = newsLabelY + 32;
+  // Adaptive fit ladders. Char budget scales as base*baseFS/fs.
+  const bodySizes = rtl ? [24, 22, 20] : [26, 24, 22];
+  const readSizes = rtl ? [22, 20, 19] : [24, 22, 20];
+  const bodyBaseFS = bodySizes[0];
+  const readBaseFS = readSizes[0];
+  const bodyBaseChars = rtl ? 40 : 62;
+  const readBaseChars = rtl ? 38 : 58;
+  const scaledChars = (base: number, baseFS: number, fs: number) =>
+    Math.round((base * baseFS) / fs);
 
-  const bodyLinesRaw = wrap(page.body || "", rtl ? 40 : 62);
-  // Reserve space: rule + MY READ label + my_read block + source line
+  const FIG_MIN = 150;
   const sourceY = FOOTER_TOP - 14;
-  const readLabelPad = 30;
-  const readTextPad = 32;
-  // Measure my_read first, so body gets the true remaining band (not a 6-line pessimistic reserve).
-  const readLinesPre = capLines(wrap(page.my_read || "", rtl ? 38 : 58), 5);
-  const readH = blockH(readLinesPre, readFS, readLH);
-  let bodyEndCap = sourceY - 20 - readH - readTextPad - readLabelPad - 24;
-  // Guarantee THE NEWS at least 3 lines by shrinking the fig if starved.
-  if (Math.floor((bodyEndCap - bodyY) / (bodyFS * bodyLH)) < 3) {
-    figH = 150;
-    figY = Math.max(480, headlineBottom + 28);
-    figLabelY = figY + figH + 26;
-    newsLabelY = figLabelY + 42;
-    bodyY = newsLabelY + 32;
-    bodyEndCap = sourceY - 20 - readH - readTextPad - readLabelPad - 24;
+  const figYstart = Math.max(480, headlineBottom + 28);
+  const available = sourceY - 20 - figYstart;
+
+  // GAP constants (label pads etc.): fig→figLabel 26, figLabel→newsLabel 42,
+  // newsLabel→body 32, body→rule 24, rule→readLabel 30, readLabel→read 32.
+  const G_FIG_LABEL = 26;
+  const G_NEWS_LABEL = 42;
+  const G_BODY = 32;
+  const G_RULE = 24;
+  const G_READ_LABEL = 30;
+  const G_READ = 32;
+
+  let chosenBodyFS = bodySizes[bodySizes.length - 1];
+  let chosenReadFS = readSizes[readSizes.length - 1];
+  let bodyLinesRaw: string[] = [];
+  let readLinesPre: string[] = [];
+  let bodyH = 0;
+  let readH = 0;
+  let fit = false;
+
+  for (let i = 0; i < bodySizes.length; i++) {
+    const bFS = bodySizes[i];
+    const rFS = readSizes[i];
+    const bWrap = scaledChars(bodyBaseChars, bodyBaseFS, bFS);
+    const rWrap = scaledChars(readBaseChars, readBaseFS, rFS);
+    const bLines = wrap(page.body || "", bWrap);
+    const rLines = wrap(page.my_read || "", rWrap);
+    const bH = blockH(bLines, bFS, bodyLH);
+    const rH = blockH(rLines, rFS, readLH);
+    const needed = FIG_MIN + G_FIG_LABEL + G_NEWS_LABEL + G_BODY + bH + G_RULE + G_READ_LABEL + G_READ + rH;
+    if (needed <= available) {
+      chosenBodyFS = bFS;
+      chosenReadFS = rFS;
+      bodyLinesRaw = bLines;
+      readLinesPre = rLines;
+      bodyH = bH;
+      readH = rH;
+      fit = true;
+      break;
+    }
   }
-  const bodyLines = capToBand(bodyLinesRaw, bodyY, bodyFS, bodyLH, bodyEndCap, 6);
-  const bodyBottom = bodyY + blockH(bodyLines, bodyFS, bodyLH);
 
-  const ruleY = bodyBottom + 24;
-  const readLabelY = ruleY + readLabelPad;
-  const readY = readLabelY + readTextPad;
+  const bodyFS = chosenBodyFS;
+  const readFS = chosenReadFS;
+  const bodyWrap = scaledChars(bodyBaseChars, bodyBaseFS, bodyFS);
+  const readWrap = scaledChars(readBaseChars, readBaseFS, readFS);
 
-  // Final guard against overrun.
-  const readLines = capToBand(readLinesPre, readY, readFS, readLH, sourceY - 20, 5);
+  let figH = FIG_MIN;
+  let extraAboveRule = 0;
+  let extraAboveReadLabel = 0;
+  let bodyLines: string[];
+  let readLines: string[];
+
+  if (fit) {
+    const needed = FIG_MIN + G_FIG_LABEL + G_NEWS_LABEL + G_BODY + bodyH + G_RULE + G_READ_LABEL + G_READ + readH;
+    const slack = Math.max(0, available - needed);
+    figH = Math.min(260, FIG_MIN + slack * 0.6);
+    const slackRest = slack - (figH - FIG_MIN);
+    extraAboveRule = Math.max(0, slackRest * 0.5);
+    extraAboveReadLabel = Math.max(0, slackRest * 0.5);
+    bodyLines = bodyLinesRaw;
+    readLines = readLinesPre;
+  } else {
+    // Smallest ladder still overflows: capToBand (sentence-safe now fixed).
+    bodyLinesRaw = wrap(page.body || "", bodyWrap);
+    readLinesPre = wrap(page.my_read || "", readWrap);
+    // Reserve read region using its full text first, then cap body to what remains.
+    const readCappedForReserve = capLines(readLinesPre, 5, readWrap);
+    const readReserveH = blockH(readCappedForReserve, readFS, readLH);
+    const bodyEndCap = sourceY - 20 - readReserveH - G_READ - G_READ_LABEL - G_RULE;
+    const bodyY0 = figYstart + FIG_MIN + G_FIG_LABEL + G_NEWS_LABEL + G_BODY;
+    bodyLines = capToBand(bodyLinesRaw, bodyY0, bodyFS, bodyLH, bodyEndCap, 6, bodyWrap);
+    bodyH = blockH(bodyLines, bodyFS, bodyLH);
+    const readY0 = bodyY0 + bodyH + G_RULE + G_READ_LABEL + G_READ;
+    readLines = capToBand(readLinesPre, readY0, readFS, readLH, sourceY - 20, 5, readWrap);
+    readH = blockH(readLines, readFS, readLH);
+  }
+
+  const figY = figYstart;
+  const figLabelY = figY + figH + G_FIG_LABEL;
+  const newsLabelY = figLabelY + G_NEWS_LABEL;
+  const bodyY = newsLabelY + G_BODY;
+  const bodyBottom = bodyY + bodyH;
+  const ruleY = bodyBottom + G_RULE + extraAboveRule;
+  const readLabelY = ruleY + G_READ_LABEL + extraAboveReadLabel;
+  const readY = readLabelY + G_READ;
 
   const slimNameplate = { name: edition.nameplate.name, style: edition.nameplate.style, monogramChar: edition.nameplate.monogram_char };
   return (
