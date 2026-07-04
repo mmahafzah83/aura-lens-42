@@ -13,7 +13,7 @@ import {
   getEmbeddedFontCSS, svgToImageBlob, ensureFontsReady, downloadBlob, slugify,
 } from "@/lib/broadsheetExport";
 import { dedupeHashtags, stripDuplicateHashtags } from "@/lib/hashtags";
-import { getPublication, validate as validatePublication, type PublicationStyle } from "@/lib/publication";
+import { getPublication, validate, type PublicationStyle } from "@/lib/publication";
 
 const PAGE_W = 1080;
 const PAGE_H = 1350;
@@ -99,7 +99,7 @@ export default function EditionStudio() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const mastheadError = useMemo(() => validatePublication(pubName), [pubName]);
+  const mastheadError = useMemo(() => validate(pubName), [pubName]);
 
   const suggestionChips = useMemo(() => {
     const f = (profileFirstName || "Editor").trim();
@@ -126,7 +126,7 @@ export default function EditionStudio() {
   };
 
   const saveMasthead = async () => {
-    const err = validatePublication(pubName);
+    const err = validate(pubName);
     if (err) { toast.error(err); return; }
     setSavingMasthead(true);
     try {
