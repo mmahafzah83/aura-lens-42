@@ -854,6 +854,8 @@ export default function EditionPageSVG({ page, pageIndex, total, edition }: Edit
       body = <text x={W / 2} y={H / 2} textAnchor="middle" fontFamily={SERIF} fill={INK}>Unknown page type</text>;
   }
 
+  const footerDate = (edition.dateline || "").split("·").pop()?.trim() || edition.dateline;
+
   return (
     <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" style={{ unicodeBidi: "plaintext" as any, direction: "ltr" }}>
       {rtl && (
@@ -866,7 +868,7 @@ export default function EditionPageSVG({ page, pageIndex, total, edition }: Edit
       <PressFooter
         w={W} h={H}
         authorName={authorFirst || edition.nameplate.name}
-        authorTitle={edition.dateline}
+        authorTitle={footerDate}
         rtl={rtl}
         mode="rail"
         current={pageIndex + 1}
