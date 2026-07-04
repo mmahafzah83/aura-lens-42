@@ -363,10 +363,10 @@ function ArticleLayout({ page, edition, pageIndex, total, rtl }: { page: Article
   const sourceY = FOOTER_TOP - 14;
   const readLabelPad = 30;
   const readTextPad = 32;
-  // Guess my_read at max 6 lines when reserving.
-  const readReserveLines = 6;
-  const readReserveH = readReserveLines * readFS * readLH;
-  const bodyEndCap = sourceY - 24 /* source label breathing */ - readReserveH - readTextPad - readLabelPad - 24 /* rule pad */;
+  // Measure my_read first, so body gets the true remaining band (not a 6-line pessimistic reserve).
+  const readLinesPre = capLines(wrap(page.my_read || "", rtl ? 38 : 58), 6);
+  const readH = blockH(readLinesPre, readFS, readLH);
+  const bodyEndCap = sourceY - 20 - readH - readTextPad - readLabelPad - 24;
   const bodyLines = capToBand(bodyLinesRaw, bodyY, bodyFS, bodyLH, bodyEndCap, 6);
   const bodyBottom = bodyY + blockH(bodyLines, bodyFS, bodyLH);
 
@@ -374,7 +374,8 @@ function ArticleLayout({ page, edition, pageIndex, total, rtl }: { page: Article
   const readLabelY = ruleY + readLabelPad;
   const readY = readLabelY + readTextPad;
 
-  const readLines = capToBand(wrap(page.my_read || "", rtl ? 38 : 58), readY, readFS, readLH, sourceY - 20, 6);
+  // Final guard against overrun.
+  const readLines = capToBand(readLinesPre, readY, readFS, readLH, sourceY - 20, 6);
 
   const slimNameplate = { name: edition.nameplate.name, style: edition.nameplate.style, monogramChar: edition.nameplate.monogram_char };
   return (
@@ -691,11 +692,45 @@ function BackLayout({ page, edition, pageIndex, total, rtl }: { page: BackPage; 
   const headlineBottom = headlineTop + Math.max(0, headlineLines.length) * headStep;
 
   const promiseY = headlineBottom + 40;
-  // The card ends at cardY + cardH = 1060; follow pill sits at cardY+cardH-148, sign at cardY+cardH-...; keep promise capped so it stays above signature.
-  const signatureY = Math.min(cardY + 470, cardY + cardH - 250);
-  const promiseLines = capToBand(wrap(page.promise || "", rtl ? 30 : 44), promiseY, promiseFS, promiseLH, signatureY - 20, 4);
+  // Reserve: action row (96) + gap (40) + signature (46) + sign_line (16+gap) + follow pill (64) + follow_sub.
+  // Follow pill sits at cardY+cardH-148, followSubY at cardY+cardH-40.
+  const followPillY = cardY + cardH - 148;
+  // Signature must sit above the follow pill with room for sign_line.
+  const maxSignatureY = followPillY - 60;
+  // Action row height budget.
+  const ACTION_ROW_H = 96;
+  const ACTION_GAP_ABOVE = 36;
+  const ACTION_GAP_BELOW = 40;
+  // Cap promise so action row + signature stay inside card.
+  const promiseCap = maxSignatureY - ACTION_GAP_BELOW - ACTION_ROW_H - ACTION_GAP_ABOVE - 20;
+  const promiseLines = capToBand(wrap(page.promise || "", rtl ? 30 : 44), promiseY, promiseFS, promiseLH, promiseCap, 3);
+  const promiseBottom = promiseY + blockH(promiseLines, promiseFS, promiseLH);
+  const iconRowY = promiseBottom + ACTION_GAP_ABOVE;
+  const signatureY = Math.min(maxSignatureY, iconRowY + ACTION_ROW_H + ACTION_GAP_BELOW);
   const signLineY = signatureY + 38;
   const followSubY = cardY + cardH - 40;
+
+  // 4-action row (like carousel CTA). RTL reverses visual order so أعجبني sits rightmost.
+  const actionsEN = [
+    { glyph: "♡", label: "Like" },
+    { glyph: "✎", label: "Comment" },
+    { glyph: "↗", label: "Share" },
+    { glyph: "❒", label: "Save" },
+  ];
+  const actionsAR = [
+    { glyph: "♡", label: "أعجبني" },
+    { glyph: "✎", label: "تعليق" },
+    { glyph: "↗", label: "مشاركة" },
+    { glyph: "❒", label: "حفظ" },
+  ];
+  const actions = rtl ? [...actionsAR].reverse() : actionsEN;
+  const actionCount = actions.length;
+  const actionSpan = cardW - 200;
+  const actionStep = actionSpan / (actionCount - 1);
+  const actionStartX = cardX + (cardW - actionSpan) / 2;
+  const actionCenterY = iconRowY + 34;
+  const actionLabelY = actionCenterY + 44;
+  const actionFont = rtl ? ARABIC : MONO;
 
   return (
     <>
@@ -724,6 +759,23 @@ function BackLayout({ page, edition, pageIndex, total, rtl }: { page: BackPage; 
         anchor={cardAnchor}
         lineHeight={promiseLH}
       />
+
+      <g>
+        {actions.map((a, i) => {
+          const cx = actionStartX + i * actionStep;
+          return (
+            <g key={i}>
+              <circle cx={cx} cy={actionCenterY} r={22} fill="none" stroke={SPOT} strokeWidth={1.5} />
+              <text x={cx} y={actionCenterY + 8} textAnchor="middle" fontFamily={SERIF} fontSize={22} fill={SPOT}>
+                {a.glyph}
+              </text>
+              <text x={cx} y={actionLabelY} textAnchor="middle" fontFamily={actionFont} fontSize={12} fontWeight={700} letterSpacing={rtl ? undefined : 1.5} fill={INK2} style={rtl ? undefined : { textTransform: "uppercase" }}>
+                {a.label}
+              </text>
+            </g>
+          );
+        })}
+      </g>
 
       <text x={cardLeft} y={signatureY} textAnchor={cardAnchor} fontFamily={rtl ? ARABIC : SERIF} fontStyle={rtl ? "normal" : "italic"} fontWeight={rtl ? 700 : 400} fontSize={46} fill={INK}>
         {page.sign_name}
@@ -772,7 +824,12 @@ export default function EditionPageSVG({ page, pageIndex, total, edition }: Edit
   }
 
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" direction={rtl ? "rtl" : "ltr"}>
+    <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" style={{ unicodeBidi: "plaintext" as any }}>
+      {rtl && (
+        <defs>
+          <style>{`text, tspan { unicode-bidi: plaintext; }`}</style>
+        </defs>
+      )}
       <rect x={0} y={0} width={W} height={H} fill={PAPER} />
       {body}
       <PressFooter

@@ -91,7 +91,7 @@ function weekdayName(lang: string): string {
   return lang === "ar" ? ar[idx] : en[idx];
 }
 
-function buildSystemPrompt(isArabic: boolean, voiceBlock: string, storyCount: number, editionNo: number, weekday: string) {
+function buildSystemPrompt(isArabic: boolean, voiceBlock: string, storyCount: number, editionNo: number, weekday: string, hasDigest: boolean) {
   const deckEN = `Three developments from this week's reading — compiled into one edition, for you.`;
   const deckAR = `ثلاثة تطورات من قراءتي هذا الأسبوع.. جمعتها في إصدار واحد، لأجلك.`;
   const deckLine = isArabic
@@ -155,7 +155,7 @@ Rules:
                                // AR: "المصدر — {names} · قراءات الأسبوع"
 }
 
-─── DIGEST PAGE ───
+${hasDigest ? `─── DIGEST PAGE ───
 {
   "page_type": "DIGEST",
   "kicker": "THE WEEKEND DIGEST",     // AR: "الملخّص الأسبوعي"
@@ -168,7 +168,9 @@ Rules:
     ... 3 items total
   ],
   "close": "Everything above fits in a screenshot. That's the point."  // AR: "كل ما سبق يدخل في لقطة شاشة واحدة.. تلك هي الفكرة."
-}
+}` : `─── DIGEST PAGE ───
+OMIT the DIGEST page entirely — do not emit it. Skip straight from the last ARTICLE to the QA page.
+On the FRONT page, "also_inside" MUST list only pages that actually exist: "You Asked · P.{n}" and (optionally) "Until Next {Weekday} · P.{n}". Do NOT reference a Weekend Digest.`}
 
 ─── QA PAGE ───
 {
@@ -194,7 +196,7 @@ Rules:
 }
 
 ═══ PAGINATION ═══
-FRONT is page 1. ARTICLE pages start at page 2 and are sequential. DIGEST, QA, BACK follow in that order. The FRONT toc entries MUST reference the correct page number of each ARTICLE.
+FRONT is page 1. ARTICLE pages start at page 2 and are sequential. ${hasDigest ? "DIGEST, QA, BACK follow in that order." : "QA follows the last ARTICLE directly, then BACK. There is NO DIGEST page."} The FRONT toc entries MUST reference the correct page number of each ARTICLE.
 
 ═══ SOURCING DISCIPLINE ═══
 - Source names in source_line and DIGEST items come ONLY from the provided captures (their title / account_name) or the provided signal titles. Do NOT invent a publication.
@@ -277,7 +279,7 @@ serve(async (req) => {
         .from("strategic_signals")
         .select(signalCols)
         .eq("user_id", targetUserId)
-        .in("id", signal_ids);
+        .in("id", signal_ids.slice(0, 4));
       signals = data || [];
     } else {
       const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
@@ -320,6 +322,7 @@ serve(async (req) => {
       .gte("created_at", sevenDaysAgo)
       .order("created_at", { ascending: false })
       .limit(8);
+    const hasDigest = (captures || []).length >= 2;
 
     // ---- voice profile ----
     const { data: voiceProfile } = await supabase
@@ -346,7 +349,7 @@ Adapt tone, rhythm, and vocabulary to match this user. The voice profile OVERRID
     const weekday = weekdayName(lang);
     const storyCount = signals.length;
 
-    const systemPrompt = buildSystemPrompt(isArabic, voiceBlock, storyCount, editionNo, weekday);
+    const systemPrompt = buildSystemPrompt(isArabic, voiceBlock, storyCount, editionNo, weekday, hasDigest);
 
     // ---- user message: hand the model the actual material ----
     const signalsBlock = signals.map((s, i) => `SIGNAL ${i + 1}:
