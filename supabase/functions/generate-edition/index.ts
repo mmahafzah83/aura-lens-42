@@ -602,6 +602,9 @@ Compile the Edition JSON now. Follow the schema exactly. All fields must be in $
       throw new Error("AI returned malformed JSON. Try regenerating.");
     }
 
+    // Deterministic budget enforcement — the renderer must NEVER truncate.
+    enforceBudgets(parsed, isArabic);
+
     // ---- server-side injection (overwrite whatever the model returned) ----
     parsed.nameplate = nameplate;
     parsed.edition_no = editionNo;
