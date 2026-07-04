@@ -337,9 +337,44 @@ function ArticleLayout({ page, edition, pageIndex, total, rtl }: { page: Article
   const headlineFont = rtl ? ARABIC : SERIF;
   const monoFont = rtl ? ARABIC : MONO;
 
-  const headlineLines = wrap(page.headline || "", rtl ? 22 : 28);
-  const bodyLines = wrap(page.body || "", rtl ? 40 : 62);
-  const readLines = wrap(page.my_read || "", rtl ? 38 : 58);
+  const headFS = rtl ? 46 : 52;
+  const headLH = 1.14;
+  const bodyFS = rtl ? 24 : 26;
+  const bodyLH = 1.44;
+  const readFS = rtl ? 22 : 24;
+  const readLH = 1.42;
+
+  const storyY = 200;
+  const headlineTop = 260;
+
+  const headlineLines = capLines(wrap(page.headline || "", rtl ? 22 : 28), 4);
+  // renderInlineAccent draws each line at y = headlineTop + i * step (step in current code)
+  const headStep = headFS * headLH;
+  const headlineBottom = headlineTop + Math.max(0, headlineLines.length) * headStep;
+
+  const figH = 210;
+  const figY = Math.max(480, headlineBottom + 28);
+  const figLabelY = figY + figH + 26;
+  const newsLabelY = figLabelY + 42;
+  const bodyY = newsLabelY + 32;
+
+  const bodyLinesRaw = wrap(page.body || "", rtl ? 40 : 62);
+  // Reserve space: rule + MY READ label + my_read block + source line
+  const sourceY = FOOTER_TOP - 14;
+  const readLabelPad = 30;
+  const readTextPad = 32;
+  // Guess my_read at max 6 lines when reserving.
+  const readReserveLines = 6;
+  const readReserveH = readReserveLines * readFS * readLH;
+  const bodyEndCap = sourceY - 24 /* source label breathing */ - readReserveH - readTextPad - readLabelPad - 24 /* rule pad */;
+  const bodyLines = capToBand(bodyLinesRaw, bodyY, bodyFS, bodyLH, bodyEndCap, 6);
+  const bodyBottom = bodyY + blockH(bodyLines, bodyFS, bodyLH);
+
+  const ruleY = bodyBottom + 24;
+  const readLabelY = ruleY + readLabelPad;
+  const readY = readLabelY + readTextPad;
+
+  const readLines = capToBand(wrap(page.my_read || "", rtl ? 38 : 58), readY, readFS, readLH, sourceY - 20, 6);
 
   const slimNameplate = { name: edition.nameplate.name, style: edition.nameplate.style, monogramChar: edition.nameplate.monogram_char };
   return (
@@ -353,60 +388,53 @@ function ArticleLayout({ page, edition, pageIndex, total, rtl }: { page: Article
         rtl={rtl}
       />
 
-      {/* Story counter */}
-      <text x={leftX} y={200} textAnchor={anchor} fontFamily={monoFont} fontSize={16} letterSpacing={rtl ? undefined : 3} fill={INK2} style={rtl ? undefined : { textTransform: "uppercase" }}>
+      <text x={leftX} y={storyY} textAnchor={anchor} fontFamily={monoFont} fontSize={16} letterSpacing={rtl ? undefined : 3} fill={INK2} style={rtl ? undefined : { textTransform: "uppercase" }}>
         {page.story_no}
       </text>
 
-      {/* Headline with inline accent */}
       <g>
-        {headlineLines.map((line, i) => renderInlineAccent(line, i === 0 ? page.headline_accent : undefined, headlineFont, rtl ? 46 : 52, rtl ? 800 : 600, leftX, 260 + i * (rtl ? 46 : 52) * 1.14, anchor))}
+        {headlineLines.map((line, i) => renderInlineAccent(line, i === 0 ? page.headline_accent : undefined, headlineFont, headFS, rtl ? 800 : 600, leftX, headlineTop + i * headStep, anchor))}
       </g>
 
-      {/* Fig */}
-      <FigPlate x={edgePad} y={480} w={W - edgePad * 2} h={210} kind={page.fig?.kind || "line_signal"} rtl={rtl} />
-      <text x={leftX} y={716} textAnchor={anchor} fontFamily={monoFont} fontSize={14} letterSpacing={rtl ? undefined : 2} fill={SPOT} style={rtl ? undefined : { textTransform: "uppercase" }}>
+      <FigPlate x={edgePad} y={figY} w={W - edgePad * 2} h={figH} kind={page.fig?.kind || "line_signal"} rtl={rtl} />
+      <text x={leftX} y={figLabelY} textAnchor={anchor} fontFamily={monoFont} fontSize={14} letterSpacing={rtl ? undefined : 2} fill={SPOT} style={rtl ? undefined : { textTransform: "uppercase" }}>
         {rtl ? page.fig?.label : (page.fig?.label || "").toUpperCase()}
       </text>
 
-      {/* NEWS body */}
-      <text x={leftX} y={758} textAnchor={anchor} fontFamily={monoFont} fontSize={13} letterSpacing={rtl ? undefined : 2.5} fill={INK2} style={rtl ? undefined : { textTransform: "uppercase" }}>
+      <text x={leftX} y={newsLabelY} textAnchor={anchor} fontFamily={monoFont} fontSize={13} letterSpacing={rtl ? undefined : 2.5} fill={INK2} style={rtl ? undefined : { textTransform: "uppercase" }}>
         {rtl ? "الخبر" : "THE NEWS"}
       </text>
       <TextBlock
         x={leftX}
-        y={790}
+        y={bodyY}
         lines={bodyLines}
         fontFamily={rtl ? ARABIC : SERIF}
-        fontSize={rtl ? 24 : 26}
+        fontSize={bodyFS}
         fontWeight={400}
         fill={INK}
         anchor={anchor}
-        lineHeight={1.44}
+        lineHeight={bodyLH}
       />
 
-      {/* Rule between news and read */}
-      <line x1={edgePad} x2={W - edgePad} y1={982} y2={982} stroke={INK} strokeWidth={2} />
+      <line x1={edgePad} x2={W - edgePad} y1={ruleY} y2={ruleY} stroke={INK} strokeWidth={2} />
 
-      {/* MY READ */}
-      <text x={leftX} y={1012} textAnchor={anchor} fontFamily={monoFont} fontSize={13} letterSpacing={rtl ? undefined : 2.5} fill={SPOT} style={rtl ? undefined : { textTransform: "uppercase" }}>
+      <text x={leftX} y={readLabelY} textAnchor={anchor} fontFamily={monoFont} fontSize={13} letterSpacing={rtl ? undefined : 2.5} fill={SPOT} style={rtl ? undefined : { textTransform: "uppercase" }}>
         {rtl ? "قراءتي" : "MY READ"}
       </text>
       <TextBlock
         x={leftX}
-        y={1044}
+        y={readY}
         lines={readLines}
         fontFamily={rtl ? ARABIC : SERIF}
-        fontSize={rtl ? 22 : 24}
-        fontWeight={rtl ? 400 : 400}
+        fontSize={readFS}
+        fontWeight={400}
         fontStyle={rtl ? "normal" : "italic"}
         fill={INK}
         anchor={anchor}
-        lineHeight={1.42}
+        lineHeight={readLH}
       />
 
-      {/* Source line */}
-      <text x={leftX} y={1218} textAnchor={anchor} fontFamily={monoFont} fontSize={14} letterSpacing={rtl ? undefined : 2} fill={INK2} style={rtl ? undefined : { textTransform: "uppercase" }}>
+      <text x={leftX} y={sourceY} textAnchor={anchor} fontFamily={monoFont} fontSize={14} letterSpacing={rtl ? undefined : 2} fill={INK2} style={rtl ? undefined : { textTransform: "uppercase" }}>
         {rtl ? page.source_line : (page.source_line || "").toUpperCase()}
       </text>
     </>
