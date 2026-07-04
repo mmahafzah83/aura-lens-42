@@ -25,6 +25,9 @@ You are compiling a weekly publication for a senior GCC executive. Arabic that r
 
 ═══ ARABIC BANNED PATTERNS (AI-tells) ═══
 NEVER: "في عالم اليوم المتغير", "لا يخفى على أحد", "مما لا شك فيه", "في ظل التحديات", "في هذا السياق", "يُعد من أهم", "تجدر الإشارة إلى", "من نافلة القول", "على صعيد آخر", "من الضروري أن ندرك", "يسعدنا أن نقدم", "يتناول هذا المنشور", "الجزر الرقمية", "الصوامع الرقمية", "بذكاء" as a sentence opener.
+
+6. MIXED-LANGUAGE SENTENCES (STRICT): English tokens sit at a clause BOUNDARY — start of line, end of line, or immediately after "..". NEVER mid-clause. When an English company/product name would open a sentence, frame it: "شركة Accenture" / "منصة SCADA". Never let an Arabic sentence end in a dangling English token followed by "…".
+7. HUMAN VOICE: Write like a Director talking to a peer over coffee — "خليني أسألك.." / "من خبرتي.." openers are good. One rhetorical question per my_read is welcome. Every field ends with a COMPLETE thought — no "..." endings, no unfinished comparisons.
 `;
 
 // -------- JSON repair (mirror of generate-carousel-v2) --------
@@ -149,8 +152,8 @@ Rules:
   "headline": string,          // The development itself, ≤12 words. News language.
   "headline_accent": string,   // The clause inside the headline that is rendered in accent color.
   "fig": { "kind": string, "label": string },
-  "body": string,              // THE NEWS. Neutral, 30-45 words. No opinion. Factual clause + implication clause.
-  "my_read": string,           // POINT OF VIEW. 2 sentences, 30-45 words total. First person ("I…"/"في رأيي.."). Rework the signal's what_it_means_for_you into the author's voice. THIS is where the voice profile carries the most weight.
+  "body": string,              // THE NEWS. Neutral, 25–35 words. No opinion. Factual clause + implication clause. Complete sentences.
+  "my_read": string,           // POINT OF VIEW. 2 sentences, 25–35 words total. First person ("I…"/"في رأيي.."). MUST end on a complete sentence — never a trailing clause. Rework the signal's what_it_means_for_you into the author's voice. THIS is where the voice profile carries the most weight.
   "source_line": string        // "Source — {names} · read this week" using ONLY the provided capture titles/account_names. Never invent a publication.
                                // AR: "المصدر — {names} · قراءات الأسبوع"
 }
@@ -178,7 +181,7 @@ On the FRONT page, "also_inside" MUST list only pages that actually exist: "You 
   "kicker": "YOU ASKED",              // AR: "أنت سألت"
   "question": string,                 // ≤20 words. Use the provided qa_question verbatim if given; else write the sharpest practitioner objection to the lead story.
   "asked_by_role": string,            // Plausible role + region — e.g. "CFO · UAE". NEVER a personal name.
-  "answer": string,                   // Verdict-first ("No." / "Only if…" / "Both."), 40-60 words, contains ONE quotable clause.
+  "answer": string,                   // Verdict-first ("No." / "Only if…" / "Both."), 40–50 words, complete final sentence, contains ONE quotable clause.
   "invite": string                    // "…the best question opens Edition Nº ${editionNo + 1}." — same in AR with Arabic prefix
 }
 
@@ -204,6 +207,10 @@ FRONT is page 1. ARTICLE pages start at page 2 and are sequential. ${hasDigest ?
 - NEVER surface confidence values, scores, or how many captures fed the edition.
 
 ${BANNED_WORDS_NOTE}
+
+═══ COMPLETENESS RULE (BOTH LANGUAGES) ═══
+Every text field must be a complete, self-contained statement. Never end any field with an ellipsis or unfinished clause.
+
 ${isArabic ? ARABIC_DNA : `Write in English. Voice: a peer strategist, not a management consultant. GCC senior leader audience.`}
 ${voiceBlock}
 
