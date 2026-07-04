@@ -221,37 +221,45 @@ function FrontLayout({ page, edition, rtl }: { page: FrontPage; edition: Edition
 
   const contentTop = MASTHEAD_BOTTOM_FULL + 68;
 
-  const leadWrap = rtl ? 22 : 26;
+  const usable = W - edgePad * 2;
+  const leadWrap = charBudget(usable, leadFS, rtl ? CHAR_FACTOR.arabicBold : CHAR_FACTOR.serifBold);
   const leadLines = capLines(wrap(page.lead_headline || "", leadWrap), 4, leadWrap);
   const leadY = contentTop;
   const leadBottom = leadY + blockH(leadLines, leadFS, leadLH);
 
-  const accentWrap = rtl ? 30 : 40;
+  const accentWrap = charBudget(usable, accentFS, rtl ? CHAR_FACTOR.arabic : CHAR_FACTOR.serifItalic);
   const accentLinesRaw = page.lead_accent ? wrap(page.lead_accent, accentWrap) : [];
   const accentLines = capLines(accentLinesRaw, rtl ? 2 : 3, accentWrap);
   const accentY = leadBottom + 24;
   const accentBottom = accentLines.length ? accentY + blockH(accentLines, accentFS, accentLH) : leadBottom;
 
   const deckY = accentBottom + 32;
-  const deckWrap = rtl ? 34 : 46;
+  const deckWrap = charBudget(usable, deckFS, rtl ? CHAR_FACTOR.arabic : CHAR_FACTOR.serif);
   const deckLines = capLines(wrap(page.deck || "", deckWrap), rtl ? 3 : 4, deckWrap);
   const deckBottom = deckY + blockH(deckLines, deckFS, deckLH);
 
+  // TOC-FIRST budgeting. All planned rows appear; fig gets whatever remains.
   const rowStep = 34;
   const tocRowsPlanned = Math.min((page.toc || []).length, 4);
-  const tocNeed = 32 + 26 + 22 + 30 + 40 + tocRowsPlanned * rowStep + 48;
-  const figH = Math.max(120, Math.min(190, (FOOTER_TOP - 60) - deckBottom - tocNeed));
+  const hasAlso = (page.also_inside || []).length > 0;
+  const alsoAllowance = hasAlso ? 40 : 0;
+  // tocRule → tocHeader(30) → firstRow(40) → (rows-1)*step → also(40 if any) → 8 slack
+  const tocBlockAfterRule = 30 + 40 + Math.max(0, tocRowsPlanned - 1) * rowStep + alsoAllowance + 8;
+  const spaceRemaining = FOOTER_TOP - deckBottom - 32 - tocBlockAfterRule;
+  // If fig shown: figH + 26 (label pad) + 22 (rule pad) sits above tocRule
+  const figHmax = Math.max(0, Math.min(190, spaceRemaining - 48));
+  const showFig = figHmax >= 70;
+  const figH = showFig ? figHmax : 0;
   const figY = deckBottom + 32;
   const figLabelY = figY + figH + 26;
-  const tocRuleY = figLabelY + 22;
+  const tocRuleY = showFig ? figLabelY + 22 : deckBottom + 32;
   const tocHeaderY = tocRuleY + 30;
   const tocFirstRowY = tocHeaderY + 40;
 
-  const maxRowsByBand = Math.max(0, Math.floor((FOOTER_TOP - 60 - tocFirstRowY) / rowStep));
-  const tocRows = (page.toc || []).slice(0, Math.min(6, maxRowsByBand));
+  const tocRows = (page.toc || []).slice(0, tocRowsPlanned);
   const lastRowY = tocRows.length ? tocFirstRowY + (tocRows.length - 1) * rowStep : tocFirstRowY;
   const alsoY = lastRowY + 40;
-  const showAlso = (page.also_inside || []).length > 0 && alsoY <= FOOTER_TOP - 8;
+  const showAlso = hasAlso && alsoY <= FOOTER_TOP - 8;
 
   return (
     <>
