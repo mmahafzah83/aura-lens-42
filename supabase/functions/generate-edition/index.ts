@@ -69,23 +69,14 @@ function safeParseJSON(raw: string): any {
   return JSON.parse(tryRepair(cleaned));
 }
 
-// -------- ISO week helpers --------
-function isoWeek(d: Date): number {
-  const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-  const day = t.getUTCDay() || 7;
-  t.setUTCDate(t.getUTCDate() + 4 - day);
-  const yearStart = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
-  return Math.ceil((((t.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-}
+// -------- Dateline helpers (date-only, no week prefix) --------
 function formatDatelineEN(d: Date): string {
-  const wk = isoWeek(d);
   const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  return `Week ${wk} · ${String(d.getUTCDate()).padStart(2,"0")} ${months[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+  return `${String(d.getUTCDate()).padStart(2,"0")} ${months[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 }
 function formatDatelineAR(d: Date): string {
-  const wk = isoWeek(d);
   const months = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
-  return `الأسبوع ${wk} · ${String(d.getUTCDate()).padStart(2,"0")} ${months[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+  return `${String(d.getUTCDate()).padStart(2,"0")} ${months[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 }
 function weekdayName(lang: string): string {
   const en = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
@@ -135,8 +126,8 @@ Rules:
 {
   "page_type": "FRONT",
   "kicker": "THIS WEEK'S LEAD",         // AR: "افتتاحية الأسبوع"
-  "lead_headline": string,              // ≤10 words. News-first. Name the actor + move.
-  "lead_accent": string,                // The italic turn — the phrase the reader will screenshot. Rendered in accent color.
+  "lead_headline": string,              // Newspaper editor's hook: a named actor or concrete number + the tension, 8–12 words. Make the reader NEED page 2.
+  "lead_accent": string,                // NEVER a repeat or fragment of the headline (zero shared significant words). Adds a SECOND piece of information: either the sharpest tension from a DIFFERENT story in this edition (e.g. "Inside: why 80% of pilots never graduate") or the why-now stakes in one line. 6–10 words. Rendered in accent color.
   "deck": string,                       // The mandated line above, with correct count.
   "fig": { "kind": "line_signal"|"dual_curve"|"step_bars"|"s_curve"|"flow"|"capacity_bars"|"decay", "label": string },
   // FIG SELECTION (STRICT — the schematic must visualize THIS story's dynamic):
@@ -174,8 +165,8 @@ Rules:
   // LABEL RULE: fig.label must name THIS story's tension using a noun from its own headline
   // (e.g. "retraining velocity vs exits", "pilot → production gap") — ≤6 words,
   // NEVER a generic label, NEVER reused across pages in the same edition.
-  "body": string,              // THE NEWS. Neutral, 25–35 words. No opinion. Factual clause + implication clause. Complete sentences.
-  "my_read": string,           // POINT OF VIEW. 2 sentences, 25–35 words total. First person ("I…"/"في رأيي.."). MUST end on a complete sentence — never a trailing clause. Rework the signal's what_it_means_for_you into the author's voice. THIS is where the voice profile carries the most weight.
+  "body": string,              // THE NEWS. Neutral, EXACTLY 2 complete sentences, 22–30 words total. No opinion. Factual clause + implication clause.
+  "my_read": string,           // POINT OF VIEW. 2 sentences, 25–32 words total. First person ("I…"/"في رأيي.."). MUST end on a complete sentence — never a trailing clause. Rework the signal's what_it_means_for_you into the author's voice. THIS is where the voice profile carries the most weight.
   "source_line": string        // "Source — {names} · read this week" using ONLY the provided capture titles/account_names. Never invent a publication.
                                // AR: "المصدر — {names} · قراءات الأسبوع"
 }
@@ -188,7 +179,7 @@ ${hasDigest ? `─── DIGEST PAGE ───
   "items": [
     { "big_value": string /* "2.4×" | "287d" | "§7b" | "73%" — Western digits even in AR, LTR-isolated */,
       "claim": string /* ≤6 words — a COMPLETE phrase, never cut mid-thought (the renderer wraps 2 lines and truncates with "…") */,
-      "takeaway": string /* ≤22 words — MUST end on a complete sentence, never cut mid-thought */,
+      "takeaway": string /* ≤20 words EN / ≤16 words AR — MUST end on a complete sentence, never cut mid-thought */,
       "source": string /* capture name — attribution, not destination URL */ },
     ... 3 items total
   ],
@@ -203,7 +194,7 @@ On the FRONT page, "also_inside" MUST list only pages that actually exist: "You 
   "kicker": "YOU ASKED",              // AR: "أنت سألت"
   "question": string,                 // ≤20 words. Use the provided qa_question verbatim if given; else write the sharpest practitioner objection to the lead story.
   "asked_by_role": string,            // Plausible role + region — e.g. "CFO · UAE". NEVER a personal name.
-  "answer": string,                   // Verdict-first ("No." / "Only if…" / "Both."), 40–50 words, complete final sentence, contains ONE quotable clause.
+  "answer": string,                   // Verdict-first ("No." / "Only if…" / "Both."), 40–48 words, complete final sentence, contains ONE quotable clause.
   "invite": string                    // "…the best question opens Edition Nº ${editionNo + 1}." — same in AR with Arabic prefix
 }
 
@@ -232,6 +223,9 @@ ${BANNED_WORDS_NOTE}
 
 ═══ COMPLETENESS RULE (BOTH LANGUAGES) ═══
 Every text field must be a complete, self-contained statement. Never end any field with an ellipsis or unfinished clause.
+
+═══ COMPLETENESS LAW ═══
+The reader receives NO links and NO sources to follow. Every field must be fully self-contained: name the actor, state the finding (with its number when one exists), and land the implication. A field that requires outside context to make sense is a failure. Never end any field mid-thought.
 
 ${isArabic ? ARABIC_DNA : `Write in English. Voice: a peer strategist, not a management consultant. GCC senior leader audience.`}
 ${voiceBlock}
