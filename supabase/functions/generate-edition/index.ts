@@ -116,7 +116,7 @@ Rules:
 ═══ OUTPUT SCHEMA — Edition JSON (STRICT) ═══
 {
   "sector_line": string,       // 2-3 domain words · region (e.g. "TREASURY · MARKETS · GCC")
-  "linkedin_caption": string,  // ≤120 words, hook-first, never describes the asset. Ends with an invitation to open the edition.
+  "linkedin_caption": string,  // See "CAPTION LAW" block below.
   "hashtags": string[],        // 5-7 tags, mix broad + niche
   "pages": [ ... ordered ... ]
 }
@@ -220,6 +220,40 @@ FRONT is page 1. ARTICLE pages start at page 2 and are sequential. ${hasDigest ?
 - NEVER surface confidence values, scores, or how many captures fed the edition.
 
 ${BANNED_WORDS_NOTE}
+
+═══ CAPTION LAW — write like a newsletter operator ═══
+The linkedin_caption is a newsletter announcement, NOT a description of the asset.
+STRUCTURE (blank line between blocks, ≤110 words total, no URLs):
+  1. HOOK (1–2 lines) — the edition's sharpest number or tension. NEVER open with "three stories", "هذا الإصدار", "this edition", "في هذا العدد", "today we cover", or any asset-descriptor.
+  2. LEAD STORY TEASED (2–3 lines) — the itch, not the resolution. Name the actor and the stake; hold the answer for page 2.
+  3. OTHER ANGLES (ONE line) — the remaining stories as angles, not numbered summaries. Example: "القيادة، الهوامش، وتكلفة كل token".
+  4. RITUAL LINE (1 line) — ${isArabic
+    ? `"الإصدار رقم ${editionNo} من نشرتي الأسبوعية. كل ${weekday}: أسبوع من القراءة، إصدار واحد."`
+    : `"Edition Nº ${editionNo} of my weekly publication. Every ${weekday}: one week of reading, one edition."`}
+  5. CLOSING QUESTION (1 line) — one practitioner question tied to the LEAD story (not a generic prompt).
+Hashtags: 5–7 total. ${isArabic ? "AR editions MUST include #التحول_الرقمي plus one Arabic audience tag (e.g. #قادة_المستقبل, #الإدارة_التنفيذية)." : "Mix broad + niche executive tags."}
+
+═══ EDITORIAL VOLTAGE (applies to every field, both languages) ═══
+HEADLINES: carry a stake — actor + what changed + what's at risk. A topic label ("نماذج مالية جديدة", "AI in finance") is a FAILURE. A tension ("الشركات تدفع مليارات لتطرد من لا يتحول", "Firms pay billions to fire those who won't retrain") passes.
+THE NEWS (body): sentence 1 = the fact with its number; sentence 2 = the consequence. No sentence may be pure description.
+MY READ: contains ONE first-person witnessed moment ("شفت بعيني..", "I've sat in..") and ONE falsifiable claim. NEVER restates THE NEWS.
+DIGEST takeaways: consequences ("بدون X، رح تحرق Y" / "Without X, you burn Y"), never descriptions.
+QA answer: opens with the verdict inside the first five words ("No.", "Only if…", "Both.", "لا.", "فقط إذا..").
+HUMANIZER BANS (append to banned list):
+  - Rule-of-three parallel structures ("faster, cheaper, better" / "أسرع، أرخص، أفضل").
+  - "not just X — it's Y" / "ليس فقط.. بل" negative-parallelism constructions.
+  - More than ONE dash per field.
+  - Vague attribution ("خبراء يؤكدون", "experts say", "analysts believe").
+  - Filler openers ("في عالم اليوم", "في ظل التحولات المتسارعة", "In today's fast-changing world").
+FIG SELECTION (shape-matched — MUST match the story's actual dynamic):
+  bars_compare  → magnitude comparison across 3–4 things
+  gap_wedge     → a widening gap between two paths
+  steps         → threshold / regime shift
+  s_curve       → adoption
+  decay         → decline / erosion
+  line_signal   → divergence of two paths, or a single anomaly
+  dots (flow)   → staged milestones / pipeline
+fig.label is ALWAYS a "from → to" tension (e.g. "pilots → production", "خبرة → حضور"). Never a generic noun.
 
 ═══ COMPLETENESS RULE (BOTH LANGUAGES) ═══
 Every text field must be a complete, self-contained statement. Never end any field with an ellipsis or unfinished clause.
