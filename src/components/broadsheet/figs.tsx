@@ -21,7 +21,7 @@ export interface FigPlateProps {
 
 const BASELINE = "rgba(27,23,18,0.25)";
 
-function LineSignal({ w, h }: { w: number; h: number }) {
+function LineSignal({ w, h, rtl }: { w: number; h: number; rtl: boolean }) {
   const pad = 12;
   const bx = pad, by = pad, bw = w - pad * 2, bh = h - pad * 2 - 20;
   const pts: [number, number][] = [];
@@ -33,13 +33,17 @@ function LineSignal({ w, h }: { w: number; h: number }) {
   }
   const d = pts.map((p, i) => `${i ? "L" : "M"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
   const spikeIdx = Math.floor(n * 0.72);
+  const labelX = pts[spikeIdx][0] + 8;
+  const labelY = pts[spikeIdx][1] - 8;
   return (
     <g>
       <path d={d} fill="none" stroke={INK} strokeWidth={1.2} opacity={0.55} />
       <circle cx={pts[spikeIdx][0]} cy={pts[spikeIdx][1]} r={4} fill={SPOT} />
-      <text x={pts[spikeIdx][0] + 8} y={pts[spikeIdx][1] - 8} fontFamily={MONO} fontSize={16} fill={SPOT}>
-        signal
-      </text>
+      <g transform={rtl ? `translate(${labelX * 2},0) scale(-1,1)` : undefined}>
+        <text x={labelX} y={labelY} fontFamily={MONO} fontSize={16} fill={SPOT}>
+          signal
+        </text>
+      </g>
     </g>
   );
 }
@@ -142,7 +146,7 @@ function CapacityBars({ w, h }: { w: number; h: number }) {
   );
 }
 
-function Decay({ w, h }: { w: number; h: number }) {
+function Decay({ w, h, rtl }: { w: number; h: number; rtl: boolean }) {
   const pad = 12;
   const bx = pad, by = pad, bw = w - pad * 2, bh = h - pad * 2 - 20;
   const n = 40;
@@ -152,12 +156,16 @@ function Decay({ w, h }: { w: number; h: number }) {
     const v = Math.exp(-t * 3);
     pts.push(`${i ? "L" : "M"}${(bx + t * bw).toFixed(1)},${(by + (1 - v) * bh).toFixed(1)}`);
   }
+  const labelX = bx + bw - 4;
+  const labelY = by + 16;
   return (
     <g>
       <path d={pts.join(" ")} fill="none" stroke={SPOT} strokeWidth={1.6} />
-      <text x={bx + bw - 4} y={by + 16} textAnchor="end" fontFamily={MONO} fontSize={16} fill={INK2}>
-        decay
-      </text>
+      <g transform={rtl ? `translate(${labelX * 2},0) scale(-1,1)` : undefined}>
+        <text x={labelX} y={labelY} textAnchor="end" fontFamily={MONO} fontSize={16} fill={INK2}>
+          decay
+        </text>
+      </g>
     </g>
   );
 }
@@ -165,13 +173,13 @@ function Decay({ w, h }: { w: number; h: number }) {
 export function FigPlate({ x, y, w, h, kind, rtl }: FigPlateProps) {
   let inner: React.ReactNode = null;
   switch (kind) {
-    case "line_signal": inner = <LineSignal w={w} h={h} />; break;
+    case "line_signal": inner = <LineSignal w={w} h={h} rtl={rtl} />; break;
     case "dual_curve": inner = <DualCurve w={w} h={h} />; break;
     case "step_bars": inner = <StepBars w={w} h={h} />; break;
     case "s_curve": inner = <SCurve w={w} h={h} />; break;
     case "flow": inner = <Flow w={w} h={h} />; break;
     case "capacity_bars": inner = <CapacityBars w={w} h={h} />; break;
-    case "decay": inner = <Decay w={w} h={h} />; break;
+    case "decay": inner = <Decay w={w} h={h} rtl={rtl} />; break;
   }
   const baselineY = h - 20;
   return (
