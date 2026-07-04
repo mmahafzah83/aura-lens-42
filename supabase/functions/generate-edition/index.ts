@@ -91,7 +91,7 @@ function weekdayName(lang: string): string {
   return lang === "ar" ? ar[idx] : en[idx];
 }
 
-function buildSystemPrompt(isArabic: boolean, voiceBlock: string, storyCount: number, editionNo: number, weekday: string) {
+function buildSystemPrompt(isArabic: boolean, voiceBlock: string, storyCount: number, editionNo: number, weekday: string, hasDigest: boolean) {
   const deckEN = `Three developments from this week's reading — compiled into one edition, for you.`;
   const deckAR = `ثلاثة تطورات من قراءتي هذا الأسبوع.. جمعتها في إصدار واحد، لأجلك.`;
   const deckLine = isArabic
@@ -155,7 +155,7 @@ Rules:
                                // AR: "المصدر — {names} · قراءات الأسبوع"
 }
 
-─── DIGEST PAGE ───
+${hasDigest ? `─── DIGEST PAGE ───
 {
   "page_type": "DIGEST",
   "kicker": "THE WEEKEND DIGEST",     // AR: "الملخّص الأسبوعي"
@@ -168,7 +168,9 @@ Rules:
     ... 3 items total
   ],
   "close": "Everything above fits in a screenshot. That's the point."  // AR: "كل ما سبق يدخل في لقطة شاشة واحدة.. تلك هي الفكرة."
-}
+}` : `─── DIGEST PAGE ───
+OMIT the DIGEST page entirely — do not emit it. Skip straight from the last ARTICLE to the QA page.
+On the FRONT page, "also_inside" MUST list only pages that actually exist: "You Asked · P.{n}" and (optionally) "Until Next {Weekday} · P.{n}". Do NOT reference a Weekend Digest.`}
 
 ─── QA PAGE ───
 {
@@ -194,7 +196,7 @@ Rules:
 }
 
 ═══ PAGINATION ═══
-FRONT is page 1. ARTICLE pages start at page 2 and are sequential. DIGEST, QA, BACK follow in that order. The FRONT toc entries MUST reference the correct page number of each ARTICLE.
+FRONT is page 1. ARTICLE pages start at page 2 and are sequential. ${hasDigest ? "DIGEST, QA, BACK follow in that order." : "QA follows the last ARTICLE directly, then BACK. There is NO DIGEST page."} The FRONT toc entries MUST reference the correct page number of each ARTICLE.
 
 ═══ SOURCING DISCIPLINE ═══
 - Source names in source_line and DIGEST items come ONLY from the provided captures (their title / account_name) or the provided signal titles. Do NOT invent a publication.
