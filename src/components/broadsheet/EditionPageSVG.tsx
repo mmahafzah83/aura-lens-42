@@ -94,6 +94,12 @@ const MASTHEAD_BOTTOM_FULL = 200;
 const MASTHEAD_BOTTOM_SLIM = 180;
 const ELLIPSIS = "…";
 
+/* Cap a single source-style string with an ellipsis (applied BEFORE uppercase). */
+const capSource = (s: string, max: number) => {
+  const t = (s || "").trim();
+  return t.length > max ? t.slice(0, max - 1).trimEnd() + "…" : t;
+};
+
 /* Measured block height in px. */
 function blockH(lines: string[], fontSize: number, lineHeight: number) {
   return Math.max(0, lines.length) * fontSize * lineHeight;
@@ -197,7 +203,7 @@ function FrontLayout({ page, edition, rtl }: { page: FrontPage; edition: Edition
   const deckFS = rtl ? 26 : 28;
   const deckLH = 1.44;
 
-  const contentTop = MASTHEAD_BOTTOM_FULL + 40;
+  const contentTop = MASTHEAD_BOTTOM_FULL + 68;
 
   const leadLines = capLines(wrap(page.lead_headline || "", rtl ? 22 : 26), 4);
   const leadY = contentTop;
@@ -461,7 +467,7 @@ function ArticleLayout({ page, edition, pageIndex, total, rtl }: { page: Article
       />
 
       <text x={leftX} y={sourceY} textAnchor={anchor} fontFamily={monoFont} fontSize={14} letterSpacing={rtl ? undefined : 2} fill={INK2} style={rtl ? undefined : { textTransform: "uppercase" }}>
-        {rtl ? page.source_line : (page.source_line || "").toUpperCase()}
+        {rtl ? capSource(page.source_line, 72) : capSource(page.source_line, 72).toUpperCase()}
       </text>
     </>
   );
@@ -577,7 +583,7 @@ function DigestLayout({ page, edition, pageIndex, total, rtl }: { page: DigestPa
               lineHeight={takeLH}
             />
             <text x={textX} y={sourceY} textAnchor={anchor} fontFamily={monoFont} fontSize={16} letterSpacing={rtl ? undefined : 2} fill={INK2} style={rtl ? undefined : { textTransform: "uppercase" }}>
-              {rtl ? item.source : (item.source || "").toUpperCase()}
+              {rtl ? capSource(item.source, 40) : capSource(item.source, 40).toUpperCase()}
             </text>
           </g>
         );
