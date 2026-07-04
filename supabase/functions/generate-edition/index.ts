@@ -69,6 +69,116 @@ function safeParseJSON(raw: string): any {
   return JSON.parse(tryRepair(cleaned));
 }
 
+// -------- Deterministic budget enforcement (server-side, never truncated in renderer) --------
+function trimField(s: string, max: number): string {
+  const t = (s || "").toString();
+  if (t.length <= max) return t;
+  const terminators = [".", "؟", "!", "۔"];
+  const slice = t.slice(0, max);
+  let cutIdx = -1;
+  for (let i = slice.length - 1; i >= Math.floor(max * 0.55); i--) {
+    if (terminators.includes(slice[i])) { cutIdx = i; break; }
+  }
+  if (cutIdx > 0) return slice.slice(0, cutIdx + 1).trim();
+  // Fall back to last word boundary.
+  const lastSpace = slice.lastIndexOf(" ");
+  if (lastSpace > max * 0.4) return slice.slice(0, lastSpace).trim();
+  return slice.trim();
+}
+
+function trimSourceLine(s: string, max = 84, isArabic = false): string {
+  const t = (s || "").toString().trim();
+  if (t.length <= max) return t;
+  // "{prefix} — {names} · {suffix}"   AR: "المصدر — {names} · قراءات الأسبوع"
+  const dashIdx = t.indexOf("—");
+  if (dashIdx < 0) return trimField(t, max);
+  const prefix = t.slice(0, dashIdx + 1).trim();
+  const rest = t.slice(dashIdx + 1).trim();
+  // Split rest at the LAST "·" so we keep the suffix intact.
+  const lastDot = rest.lastIndexOf("·");
+  let names = rest;
+  let suffix = "";
+  if (lastDot > 0) {
+    names = rest.slice(0, lastDot).trim();
+    suffix = rest.slice(lastDot).trim(); // includes leading ·
+  }
+  const nameParts = names.split("·").map((n) => n.trim()).filter(Boolean);
+  const compose = (parts: string[]) =>
+    `${prefix} ${parts.join(" · ")}${suffix ? " " + suffix : ""}`.trim();
+  let line = compose(nameParts);
+  while (line.length > max && nameParts.length > 1) {
+    nameParts.pop(); // drop the LAST name whole
+    line = compose(nameParts);
+  }
+  // Silence unused isArabic (kept for future language-specific rules).
+  void isArabic;
+  return line;
+}
+
+function enforceBudgets(parsed: any, isArabic: boolean): void {
+  if (!parsed || typeof parsed !== "object") return;
+  const capField = (obj: any, key: string, max: number, path: string) => {
+    if (!obj || typeof obj[key] !== "string") return;
+    const before = obj[key].length;
+    if (before <= max) return;
+    const after = trimField(obj[key], max);
+    console.log(`[enforceBudgets] ${path}.${key}: ${before} → ${after.length} (cap ${max})`);
+    obj[key] = after;
+  };
+  const pages: any[] = Array.isArray(parsed.pages) ? parsed.pages : [];
+  pages.forEach((pg, idx) => {
+    if (!pg || typeof pg !== "object") return;
+    const path = `pages[${idx}]:${pg.page_type}`;
+    switch (pg.page_type) {
+      case "FRONT": {
+        capField(pg, "lead_headline", isArabic ? 52 : 60, path);
+        capField(pg, "lead_accent", isArabic ? 50 : 58, path);
+        if (pg.fig && typeof pg.fig === "object") capField(pg.fig, "label", 34, `${path}.fig`);
+        if (Array.isArray(pg.toc)) {
+          pg.toc.forEach((row: any, i: number) => capField(row, "title", 44, `${path}.toc[${i}]`));
+        }
+        break;
+      }
+      case "ARTICLE": {
+        capField(pg, "headline", isArabic ? 64 : 78, path);
+        capField(pg, "kicker", 40, path);
+        capField(pg, "body", 210, path);
+        capField(pg, "my_read", 200, path);
+        if (pg.fig && typeof pg.fig === "object") capField(pg.fig, "label", 34, `${path}.fig`);
+        if (typeof pg.source_line === "string") {
+          const before = pg.source_line.length;
+          const after = trimSourceLine(pg.source_line, 84, isArabic);
+          if (after.length !== before) {
+            console.log(`[enforceBudgets] ${path}.source_line: ${before} → ${after.length} (cap 84, source-safe)`);
+            pg.source_line = after;
+          }
+        }
+        break;
+      }
+      case "DIGEST": {
+        if (Array.isArray(pg.items)) {
+          pg.items.forEach((it: any, i: number) => {
+            capField(it, "claim", 42, `${path}.items[${i}]`);
+            capField(it, "takeaway", 130, `${path}.items[${i}]`);
+            capField(it, "source", 46, `${path}.items[${i}]`);
+          });
+        }
+        break;
+      }
+      case "QA": {
+        capField(pg, "question", 110, path);
+        capField(pg, "answer", 300, path);
+        break;
+      }
+      case "BACK": {
+        capField(pg, "headline", 64, path);
+        capField(pg, "promise", 130, path);
+        break;
+      }
+    }
+  });
+}
+
 // -------- Dateline helpers (date-only, no week prefix) --------
 function formatDatelineEN(d: Date): string {
   const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
