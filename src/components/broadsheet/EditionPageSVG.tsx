@@ -190,21 +190,23 @@ function FrontLayout({ page, edition, rtl }: { page: FrontPage; edition: Edition
   const leadBottom = leadY + blockH(leadLines, leadFS, leadLH);
 
   const accentLinesRaw = page.lead_accent ? wrap(page.lead_accent, rtl ? 30 : 40) : [];
-  const accentLines = capLines(accentLinesRaw, 3);
+  const accentLines = capLines(accentLinesRaw, rtl ? 2 : 3);
   const accentY = leadBottom + 24;
   const accentBottom = accentLines.length ? accentY + blockH(accentLines, accentFS, accentLH) : leadBottom;
 
   const deckY = accentBottom + 32;
-  const deckLines = capLines(wrap(page.deck || "", rtl ? 34 : 46), 4);
+  const deckLines = capLines(wrap(page.deck || "", rtl ? 34 : 46), rtl ? 3 : 4);
   const deckBottom = deckY + blockH(deckLines, deckFS, deckLH);
 
-  const figH = 190;
+  const rowStep = 34;
+  const tocRowsPlanned = Math.min((page.toc || []).length, 4);
+  const tocNeed = 32 + 26 + 22 + 30 + 40 + tocRowsPlanned * rowStep + 48;
+  const figH = Math.max(120, Math.min(190, (FOOTER_TOP - 60) - deckBottom - tocNeed));
   const figY = deckBottom + 32;
   const figLabelY = figY + figH + 26;
   const tocRuleY = figLabelY + 22;
   const tocHeaderY = tocRuleY + 30;
   const tocFirstRowY = tocHeaderY + 40;
-  const rowStep = 34;
 
   const maxRowsByBand = Math.max(0, Math.floor((FOOTER_TOP - 60 - tocFirstRowY) / rowStep));
   const tocRows = (page.toc || []).slice(0, Math.min(6, maxRowsByBand));
