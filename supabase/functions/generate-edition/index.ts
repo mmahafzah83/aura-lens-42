@@ -227,6 +227,17 @@ Every text field must be a complete, self-contained statement. Never end any fie
 ═══ COMPLETENESS LAW ═══
 The reader receives NO links and NO sources to follow. Every field must be fully self-contained: name the actor, state the finding (with its number when one exists), and land the implication. A field that requires outside context to make sense is a failure. Never end any field mid-thought.
 
+═══ RENDER BUDGETS — HARD CHARACTER CAPS (count spaces; CHARACTERS not words) ═══
+If a field would exceed its cap, REWRITE it shorter — the renderer must NEVER truncate.
+  FRONT   · lead_headline ≤60 EN / ≤52 AR · lead_accent ≤58 / ≤50 · fig.label ≤34
+  ARTICLE · headline ≤78 / ≤64 · kicker ≤40 · fig.label ≤34
+          · body ≤210 chars (keep the 2-sentence rule) · my_read ≤200 chars
+          · source_line ≤84 chars AND at most TWO source names (pick the two strongest — NEVER a cut-off name)
+  toc title ≤44
+  DIGEST  · claim ≤42 · takeaway ≤130 · source ≤46
+  QA      · question ≤110 · answer ≤300
+  BACK    · headline ≤64 · promise ≤130
+
 ${isArabic ? ARABIC_DNA : `Write in English. Voice: a peer strategist, not a management consultant. GCC senior leader audience.`}
 ${voiceBlock}
 

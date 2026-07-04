@@ -94,6 +94,21 @@ const MASTHEAD_BOTTOM_FULL = 200;
 const MASTHEAD_BOTTOM_SLIM = 180;
 const ELLIPSIS = "…";
 
+/* ============================================================
+ * Fit-to-canvas width calibration.
+ * charBudget(widthPx, fontSizePx, factor) → glyphs that fit per line.
+ * ============================================================ */
+const CHAR_FACTOR = {
+  serif: 0.50,
+  serifItalic: 0.49,
+  serifBold: 0.52,
+  arabic: 0.55,
+  arabicBold: 0.60,
+  mono: 0.70,
+};
+const charBudget = (widthPx: number, fs: number, factor: number) =>
+  Math.floor((widthPx / (fs * factor)) * 0.94);
+
 /* Cap a single source-style string with an ellipsis (applied BEFORE uppercase). */
 const capSource = (s: string, max: number) => {
   const t = (s || "").trim();
@@ -206,37 +221,45 @@ function FrontLayout({ page, edition, rtl }: { page: FrontPage; edition: Edition
 
   const contentTop = MASTHEAD_BOTTOM_FULL + 68;
 
-  const leadWrap = rtl ? 22 : 26;
+  const usable = W - edgePad * 2;
+  const leadWrap = charBudget(usable, leadFS, rtl ? CHAR_FACTOR.arabicBold : CHAR_FACTOR.serifBold);
   const leadLines = capLines(wrap(page.lead_headline || "", leadWrap), 4, leadWrap);
   const leadY = contentTop;
   const leadBottom = leadY + blockH(leadLines, leadFS, leadLH);
 
-  const accentWrap = rtl ? 30 : 40;
+  const accentWrap = charBudget(usable, accentFS, rtl ? CHAR_FACTOR.arabic : CHAR_FACTOR.serifItalic);
   const accentLinesRaw = page.lead_accent ? wrap(page.lead_accent, accentWrap) : [];
   const accentLines = capLines(accentLinesRaw, rtl ? 2 : 3, accentWrap);
   const accentY = leadBottom + 24;
   const accentBottom = accentLines.length ? accentY + blockH(accentLines, accentFS, accentLH) : leadBottom;
 
   const deckY = accentBottom + 32;
-  const deckWrap = rtl ? 34 : 46;
+  const deckWrap = charBudget(usable, deckFS, rtl ? CHAR_FACTOR.arabic : CHAR_FACTOR.serif);
   const deckLines = capLines(wrap(page.deck || "", deckWrap), rtl ? 3 : 4, deckWrap);
   const deckBottom = deckY + blockH(deckLines, deckFS, deckLH);
 
+  // TOC-FIRST budgeting. All planned rows appear; fig gets whatever remains.
   const rowStep = 34;
   const tocRowsPlanned = Math.min((page.toc || []).length, 4);
-  const tocNeed = 32 + 26 + 22 + 30 + 40 + tocRowsPlanned * rowStep + 48;
-  const figH = Math.max(120, Math.min(190, (FOOTER_TOP - 60) - deckBottom - tocNeed));
+  const hasAlso = (page.also_inside || []).length > 0;
+  const alsoAllowance = hasAlso ? 40 : 0;
+  // tocRule → tocHeader(30) → firstRow(40) → (rows-1)*step → also(40 if any) → 8 slack
+  const tocBlockAfterRule = 30 + 40 + Math.max(0, tocRowsPlanned - 1) * rowStep + alsoAllowance + 8;
+  const spaceRemaining = FOOTER_TOP - deckBottom - 32 - tocBlockAfterRule;
+  // If fig shown: figH + 26 (label pad) + 22 (rule pad) sits above tocRule
+  const figHmax = Math.max(0, Math.min(190, spaceRemaining - 48));
+  const showFig = figHmax >= 70;
+  const figH = showFig ? figHmax : 0;
   const figY = deckBottom + 32;
   const figLabelY = figY + figH + 26;
-  const tocRuleY = figLabelY + 22;
+  const tocRuleY = showFig ? figLabelY + 22 : deckBottom + 32;
   const tocHeaderY = tocRuleY + 30;
   const tocFirstRowY = tocHeaderY + 40;
 
-  const maxRowsByBand = Math.max(0, Math.floor((FOOTER_TOP - 60 - tocFirstRowY) / rowStep));
-  const tocRows = (page.toc || []).slice(0, Math.min(6, maxRowsByBand));
+  const tocRows = (page.toc || []).slice(0, tocRowsPlanned);
   const lastRowY = tocRows.length ? tocFirstRowY + (tocRows.length - 1) * rowStep : tocFirstRowY;
   const alsoY = lastRowY + 40;
-  const showAlso = (page.also_inside || []).length > 0 && alsoY <= FOOTER_TOP - 8;
+  const showAlso = hasAlso && alsoY <= FOOTER_TOP - 8;
 
   return (
     <>
@@ -290,10 +313,14 @@ function FrontLayout({ page, edition, rtl }: { page: FrontPage; edition: Edition
         lineHeight={deckLH}
       />
 
-      <FigPlate x={edgePad} y={figY} w={W - edgePad * 2} h={figH} kind={page.fig?.kind || "line_signal"} rtl={rtl} />
-      <text x={leftX} y={figLabelY} textAnchor={anchor} fontFamily={monoFont} fontSize={16} letterSpacing={rtl ? undefined : 2} fill={SPOT} style={rtl ? undefined : { textTransform: "uppercase" }}>
-        {rtl ? page.fig?.label : (page.fig?.label || "").toUpperCase()}
-      </text>
+      {showFig ? (
+        <>
+          <FigPlate x={edgePad} y={figY} w={W - edgePad * 2} h={figH} kind={page.fig?.kind || "line_signal"} rtl={rtl} />
+          <text x={leftX} y={figLabelY} textAnchor={anchor} fontFamily={monoFont} fontSize={16} letterSpacing={rtl ? undefined : 2} fill={SPOT} style={rtl ? undefined : { textTransform: "uppercase" }}>
+            {rtl ? page.fig?.label : (page.fig?.label || "").toUpperCase()}
+          </text>
+        </>
+      ) : null}
 
       <line x1={edgePad} x2={W - edgePad} y1={tocRuleY} y2={tocRuleY} stroke={INK} strokeWidth={2} />
       <text x={leftX} y={tocHeaderY} textAnchor={anchor} fontFamily={monoFont} fontSize={18} letterSpacing={rtl ? undefined : 3} fill={SPOT} style={rtl ? undefined : { textTransform: "uppercase" }}>
@@ -372,20 +399,17 @@ function ArticleLayout({ page, edition, pageIndex, total, rtl }: { page: Article
   const storyY = 200;
   const headlineTop = 260;
 
-  const headWrap = rtl ? 22 : 28;
-  const headlineLines = capLines(wrap(page.headline || "", headWrap), 3, headWrap);
+  const usable = W - edgePad * 2;
+  const headWrap = charBudget(usable, headFS, rtl ? CHAR_FACTOR.arabicBold : CHAR_FACTOR.serifBold);
+  const headlineLines = capLines(wrap(page.headline || "", headWrap), 4, headWrap);
   const headStep = headFS * headLH;
   const headlineBottom = headlineTop + Math.max(0, headlineLines.length) * headStep;
 
-  // Adaptive fit ladders. Char budget scales as base*baseFS/fs.
-  const bodySizes = rtl ? [24, 22, 20] : [26, 24, 22];
-  const readSizes = rtl ? [22, 20, 19] : [24, 22, 20];
-  const bodyBaseFS = bodySizes[0];
-  const readBaseFS = readSizes[0];
-  const bodyBaseChars = rtl ? 40 : 62;
-  const readBaseChars = rtl ? 38 : 58;
-  const scaledChars = (base: number, baseFS: number, fs: number) =>
-    Math.round((base * baseFS) / fs);
+  // GROW-CAPABLE ladders: largest first, first-fit picks the largest that fits.
+  const bodySizes = rtl ? [27, 25, 24, 22, 20] : [30, 28, 26, 24, 22];
+  const readSizes = rtl ? [24, 23, 22, 20, 19] : [26, 25, 24, 22, 20];
+  const bodyFactor = rtl ? CHAR_FACTOR.arabic : CHAR_FACTOR.serif;
+  const readFactor = rtl ? CHAR_FACTOR.arabic : CHAR_FACTOR.serifItalic;
 
   const FIG_MIN = 150;
   const sourceY = FOOTER_TOP - 14;
@@ -412,8 +436,8 @@ function ArticleLayout({ page, edition, pageIndex, total, rtl }: { page: Article
   for (let i = 0; i < bodySizes.length; i++) {
     const bFS = bodySizes[i];
     const rFS = readSizes[i];
-    const bWrap = scaledChars(bodyBaseChars, bodyBaseFS, bFS);
-    const rWrap = scaledChars(readBaseChars, readBaseFS, rFS);
+    const bWrap = charBudget(usable, bFS, bodyFactor);
+    const rWrap = charBudget(usable, rFS, readFactor);
     const bLines = wrap(page.body || "", bWrap);
     const rLines = wrap(page.my_read || "", rWrap);
     const bH = blockH(bLines, bFS, bodyLH);
@@ -433,8 +457,8 @@ function ArticleLayout({ page, edition, pageIndex, total, rtl }: { page: Article
 
   const bodyFS = chosenBodyFS;
   const readFS = chosenReadFS;
-  const bodyWrap = scaledChars(bodyBaseChars, bodyBaseFS, bodyFS);
-  const readWrap = scaledChars(readBaseChars, readBaseFS, readFS);
+  const bodyWrap = charBudget(usable, bodyFS, bodyFactor);
+  const readWrap = charBudget(usable, readFS, readFactor);
 
   let figH = FIG_MIN;
   let extraAboveRule = 0;
@@ -535,7 +559,7 @@ function ArticleLayout({ page, edition, pageIndex, total, rtl }: { page: Article
       />
 
       <text x={leftX} y={sourceY} textAnchor={anchor} fontFamily={monoFont} fontSize={14} letterSpacing={rtl ? undefined : 2} fill={INK2} style={rtl ? undefined : { textTransform: "uppercase" }}>
-        {rtl ? capSource(page.source_line, 72) : capSource(page.source_line, 72).toUpperCase()}
+        {rtl ? capSource(page.source_line, 86) : capSource(page.source_line, 86).toUpperCase()}
       </text>
     </>
   );
@@ -561,15 +585,18 @@ function DigestLayout({ page, edition, pageIndex, total, rtl }: { page: DigestPa
   const closeLH = 1.28;
   const lane = 240;
 
+  const usable = W - edgePad * 2;
+  const laneCol = usable - lane;
+
   const introY = 220;
-  const introWrap = rtl ? 38 : 56;
+  const introWrap = charBudget(usable, introFS, rtl ? CHAR_FACTOR.arabic : CHAR_FACTOR.serifItalic);
   const introLines = capLines(wrap(page.intro || "", introWrap), 2, introWrap);
   const introBottom = introY + blockH(introLines, introFS, introLH);
 
   const itemsStart = introBottom + 40;
 
   // Reserve for close block at the bottom.
-  const closeWrap = rtl ? 34 : 50;
+  const closeWrap = charBudget(usable, closeFS, rtl ? CHAR_FACTOR.arabic : CHAR_FACTOR.serifItalic);
   const closeLines = capLines(wrap(page.close || "", closeWrap), 2, closeWrap);
   const closeH = blockH(closeLines, closeFS, closeLH);
   const closeY = FOOTER_TOP - closeH - 10;
@@ -608,14 +635,14 @@ function DigestLayout({ page, edition, pageIndex, total, rtl }: { page: DigestPa
         const textX = rtl ? W - edgePad - lane : edgePad + lane;
         const bigY = rowTop + 82;
         const claimY = rowTop + 34;
-        const claimWrap = rtl ? 22 : 32;
+        const claimWrap = charBudget(laneCol, claimFS, rtl ? CHAR_FACTOR.arabicBold : CHAR_FACTOR.serifBold);
         const claimLines = capLines(wrap(item.claim || "", claimWrap), 2, claimWrap);
         const claimBottom = claimY + blockH(claimLines, claimFS, claimLH);
         const takeY = claimBottom + 16;
         // Cap takeaway so source fits within row.
         const rowBottom = rowTop + perItem;
         const sourceRowY = rowBottom - 14;
-        const takeWrap = rtl ? 34 : 48;
+        const takeWrap = charBudget(laneCol, takeFS, rtl ? CHAR_FACTOR.arabic : CHAR_FACTOR.serif);
         const takeLines = capToBand(wrap(item.takeaway || "", takeWrap), takeY, takeFS, takeLH, sourceRowY - 20, 3, takeWrap);
         const takeBottom = takeY + blockH(takeLines, takeFS, takeLH);
         const sourceY = Math.min(sourceRowY, takeBottom + 24);
@@ -655,7 +682,7 @@ function DigestLayout({ page, edition, pageIndex, total, rtl }: { page: DigestPa
               lineHeight={takeLH}
             />
             <text x={textX} y={sourceY} textAnchor={anchor} fontFamily={monoFont} fontSize={16} letterSpacing={rtl ? undefined : 2} fill={INK2} style={rtl ? undefined : { textTransform: "uppercase" }}>
-              {rtl ? capSource(item.source, 40) : capSource(item.source, 40).toUpperCase()}
+              {rtl ? capSource(item.source, 48) : capSource(item.source, 48).toUpperCase()}
             </text>
           </g>
         );
@@ -694,7 +721,9 @@ function QALayout({ page, edition, pageIndex, total, rtl }: { page: QAPage; edit
   const inviteFS = 28;
   const inviteLH = 1.28;
 
-  const qWrap = rtl ? 26 : 34;
+  const usable = W - edgePad * 2;
+  const qUsable = usable - 32; // 32 = bar+indent
+  const qWrap = charBudget(qUsable, qFS, rtl ? CHAR_FACTOR.arabicBold : CHAR_FACTOR.serifItalic);
   const qLines = capLines(wrap(page.question || "", qWrap), 4, qWrap);
   const qTop = 272;
   const barY = qTop - 42;
@@ -704,25 +733,24 @@ function QALayout({ page, edition, pageIndex, total, rtl }: { page: QAPage; edit
   const answerLabelY = ruleY + 36;
   const answerY = answerLabelY + 40;
 
-  const inviteWrap = rtl ? 36 : 52;
+  const inviteWrap = charBudget(usable, inviteFS, rtl ? CHAR_FACTOR.arabic : CHAR_FACTOR.serifItalic);
   const inviteLines = capLines(wrap(page.invite || "", inviteWrap), 3, inviteWrap);
   const inviteH = blockH(inviteLines, inviteFS, inviteLH);
   const inviteY = FOOTER_TOP - inviteH - 8;
 
-  // Adaptive fit for the answer: ladder aSizes with scaled char budget.
-  const aSizes = rtl ? [34, 30, 27] : [34, 31, 28];
-  const aBaseFS = aSizes[0];
-  const aBaseChars = rtl ? 30 : 42;
+  // Grow-capable fit for the answer.
+  const aSizes = rtl ? [36, 33, 30, 27] : [38, 34, 31, 28];
+  const aFactor = rtl ? CHAR_FACTOR.arabic : CHAR_FACTOR.serif;
   const aAvailable = (inviteY - 24) - answerY;
   const aLHmin = 1.32;
   const aLHmax = 1.44;
   let aFS = aSizes[aSizes.length - 1];
   let aLH = aLHmin;
-  let aWrap = Math.round((aBaseChars * aBaseFS) / aFS);
+  let aWrap = charBudget(usable, aFS, aFactor);
   let aLines: string[] = [];
   let aFit = false;
   for (const fs of aSizes) {
-    const w = Math.round((aBaseChars * aBaseFS) / fs);
+    const w = charBudget(usable, fs, aFactor);
     const lines = wrap(page.answer || "", w);
     const h = blockH(lines, fs, aLHmin);
     if (h <= aAvailable) {
@@ -742,7 +770,7 @@ function QALayout({ page, edition, pageIndex, total, rtl }: { page: QAPage; edit
     }
   }
   if (!aFit) {
-    aWrap = Math.round((aBaseChars * aBaseFS) / aFS);
+    aWrap = charBudget(usable, aFS, aFactor);
     aLines = capToBand(wrap(page.answer || "", aWrap), answerY, aFS, aLH, inviteY - 24, 8, aWrap);
   }
 
@@ -824,8 +852,9 @@ function BackLayout({ page, edition, pageIndex, total, rtl }: { page: BackPage; 
   const promiseFS = 26;
   const promiseLH = 1.42;
 
+  const cardInner = cardW - 80;
   const headlineTop = cardY + 90;
-  const headWrapB = rtl ? 22 : 28;
+  const headWrapB = charBudget(cardInner, headFS, rtl ? CHAR_FACTOR.arabicBold : CHAR_FACTOR.serifBold);
   const headlineLines = capLines(wrap(page.headline || "", headWrapB), 3, headWrapB);
   const headStep = headFS * headLH;
   const headlineBottom = headlineTop + Math.max(0, headlineLines.length) * headStep;
@@ -842,7 +871,7 @@ function BackLayout({ page, edition, pageIndex, total, rtl }: { page: BackPage; 
   const ACTION_GAP_BELOW = 40;
   // Cap promise so action row + signature stay inside card.
   const promiseCap = maxSignatureY - ACTION_GAP_BELOW - ACTION_ROW_H - ACTION_GAP_ABOVE - 20;
-  const promiseWrap = rtl ? 30 : 44;
+  const promiseWrap = charBudget(cardInner, promiseFS, rtl ? CHAR_FACTOR.arabic : CHAR_FACTOR.serif);
   const promiseLines = capToBand(wrap(page.promise || "", promiseWrap), promiseY, promiseFS, promiseLH, promiseCap, 3, promiseWrap);
   const promiseBottom = promiseY + blockH(promiseLines, promiseFS, promiseLH);
   const iconRowY = promiseBottom + ACTION_GAP_ABOVE;
