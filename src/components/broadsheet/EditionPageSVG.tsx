@@ -852,8 +852,9 @@ function BackLayout({ page, edition, pageIndex, total, rtl }: { page: BackPage; 
   const promiseFS = 26;
   const promiseLH = 1.42;
 
+  const cardInner = cardW - 80;
   const headlineTop = cardY + 90;
-  const headWrapB = rtl ? 22 : 28;
+  const headWrapB = charBudget(cardInner, headFS, rtl ? CHAR_FACTOR.arabicBold : CHAR_FACTOR.serifBold);
   const headlineLines = capLines(wrap(page.headline || "", headWrapB), 3, headWrapB);
   const headStep = headFS * headLH;
   const headlineBottom = headlineTop + Math.max(0, headlineLines.length) * headStep;
@@ -870,7 +871,7 @@ function BackLayout({ page, edition, pageIndex, total, rtl }: { page: BackPage; 
   const ACTION_GAP_BELOW = 40;
   // Cap promise so action row + signature stay inside card.
   const promiseCap = maxSignatureY - ACTION_GAP_BELOW - ACTION_ROW_H - ACTION_GAP_ABOVE - 20;
-  const promiseWrap = rtl ? 30 : 44;
+  const promiseWrap = charBudget(cardInner, promiseFS, rtl ? CHAR_FACTOR.arabic : CHAR_FACTOR.serif);
   const promiseLines = capToBand(wrap(page.promise || "", promiseWrap), promiseY, promiseFS, promiseLH, promiseCap, 3, promiseWrap);
   const promiseBottom = promiseY + blockH(promiseLines, promiseFS, promiseLH);
   const iconRowY = promiseBottom + ACTION_GAP_ABOVE;
