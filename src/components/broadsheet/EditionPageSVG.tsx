@@ -721,7 +721,9 @@ function QALayout({ page, edition, pageIndex, total, rtl }: { page: QAPage; edit
   const inviteFS = 28;
   const inviteLH = 1.28;
 
-  const qWrap = rtl ? 26 : 34;
+  const usable = W - edgePad * 2;
+  const qUsable = usable - 32; // 32 = bar+indent
+  const qWrap = charBudget(qUsable, qFS, rtl ? CHAR_FACTOR.arabicBold : CHAR_FACTOR.serifItalic);
   const qLines = capLines(wrap(page.question || "", qWrap), 4, qWrap);
   const qTop = 272;
   const barY = qTop - 42;
@@ -731,25 +733,24 @@ function QALayout({ page, edition, pageIndex, total, rtl }: { page: QAPage; edit
   const answerLabelY = ruleY + 36;
   const answerY = answerLabelY + 40;
 
-  const inviteWrap = rtl ? 36 : 52;
+  const inviteWrap = charBudget(usable, inviteFS, rtl ? CHAR_FACTOR.arabic : CHAR_FACTOR.serifItalic);
   const inviteLines = capLines(wrap(page.invite || "", inviteWrap), 3, inviteWrap);
   const inviteH = blockH(inviteLines, inviteFS, inviteLH);
   const inviteY = FOOTER_TOP - inviteH - 8;
 
-  // Adaptive fit for the answer: ladder aSizes with scaled char budget.
-  const aSizes = rtl ? [34, 30, 27] : [34, 31, 28];
-  const aBaseFS = aSizes[0];
-  const aBaseChars = rtl ? 30 : 42;
+  // Grow-capable fit for the answer.
+  const aSizes = rtl ? [36, 33, 30, 27] : [38, 34, 31, 28];
+  const aFactor = rtl ? CHAR_FACTOR.arabic : CHAR_FACTOR.serif;
   const aAvailable = (inviteY - 24) - answerY;
   const aLHmin = 1.32;
   const aLHmax = 1.44;
   let aFS = aSizes[aSizes.length - 1];
   let aLH = aLHmin;
-  let aWrap = Math.round((aBaseChars * aBaseFS) / aFS);
+  let aWrap = charBudget(usable, aFS, aFactor);
   let aLines: string[] = [];
   let aFit = false;
   for (const fs of aSizes) {
-    const w = Math.round((aBaseChars * aBaseFS) / fs);
+    const w = charBudget(usable, fs, aFactor);
     const lines = wrap(page.answer || "", w);
     const h = blockH(lines, fs, aLHmin);
     if (h <= aAvailable) {
@@ -769,7 +770,7 @@ function QALayout({ page, edition, pageIndex, total, rtl }: { page: QAPage; edit
     }
   }
   if (!aFit) {
-    aWrap = Math.round((aBaseChars * aBaseFS) / aFS);
+    aWrap = charBudget(usable, aFS, aFactor);
     aLines = capToBand(wrap(page.answer || "", aWrap), answerY, aFS, aLH, inviteY - 24, 8, aWrap);
   }
 
