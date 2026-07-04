@@ -849,7 +849,7 @@ export default function EditionPageSVG({ page, pageIndex, total, edition }: Edit
   }
 
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" style={{ unicodeBidi: "plaintext" as any }}>
+    <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" style={{ unicodeBidi: "plaintext" as any, direction: "ltr" }}>
       {rtl && (
         <defs>
           <style>{`text, tspan { unicode-bidi: plaintext; }`}</style>
