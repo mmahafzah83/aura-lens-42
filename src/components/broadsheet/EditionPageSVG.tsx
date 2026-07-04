@@ -363,10 +363,10 @@ function ArticleLayout({ page, edition, pageIndex, total, rtl }: { page: Article
   const sourceY = FOOTER_TOP - 14;
   const readLabelPad = 30;
   const readTextPad = 32;
-  // Guess my_read at max 6 lines when reserving.
-  const readReserveLines = 6;
-  const readReserveH = readReserveLines * readFS * readLH;
-  const bodyEndCap = sourceY - 24 /* source label breathing */ - readReserveH - readTextPad - readLabelPad - 24 /* rule pad */;
+  // Measure my_read first, so body gets the true remaining band (not a 6-line pessimistic reserve).
+  const readLinesPre = capLines(wrap(page.my_read || "", rtl ? 38 : 58), 6);
+  const readH = blockH(readLinesPre, readFS, readLH);
+  const bodyEndCap = sourceY - 20 - readH - readTextPad - readLabelPad - 24;
   const bodyLines = capToBand(bodyLinesRaw, bodyY, bodyFS, bodyLH, bodyEndCap, 6);
   const bodyBottom = bodyY + blockH(bodyLines, bodyFS, bodyLH);
 
@@ -374,7 +374,8 @@ function ArticleLayout({ page, edition, pageIndex, total, rtl }: { page: Article
   const readLabelY = ruleY + readLabelPad;
   const readY = readLabelY + readTextPad;
 
-  const readLines = capToBand(wrap(page.my_read || "", rtl ? 38 : 58), readY, readFS, readLH, sourceY - 20, 6);
+  // Final guard against overrun.
+  const readLines = capToBand(readLinesPre, readY, readFS, readLH, sourceY - 20, 6);
 
   const slimNameplate = { name: edition.nameplate.name, style: edition.nameplate.style, monogramChar: edition.nameplate.monogram_char };
   return (
