@@ -585,8 +585,27 @@ function QALayout({ page, edition, pageIndex, total, rtl }: { page: QAPage; edit
   const barX = rtl ? W - edgePad - barW : edgePad;
   const questionX = rtl ? W - edgePad - 32 : edgePad + 32;
 
-  const qLines = wrap(page.question || "", rtl ? 26 : 34);
-  const aLines = wrap(page.answer || "", rtl ? 30 : 42);
+  const qFS = 58;
+  const qLH = 1.22;
+  const aFS = 34;
+  const aLH = 1.32;
+  const inviteFS = 28;
+  const inviteLH = 1.28;
+
+  const qLines = capLines(wrap(page.question || "", rtl ? 26 : 34), 4);
+  const qTop = 272;
+  const barY = qTop - 42;
+  const qBottom = qTop + blockH(qLines, qFS, qLH);
+  const askedByY = qBottom + 24;
+  const ruleY = askedByY + 34;
+  const answerLabelY = ruleY + 36;
+  const answerY = answerLabelY + 40;
+
+  const inviteLines = capLines(wrap(page.invite || "", rtl ? 36 : 52), 3);
+  const inviteH = blockH(inviteLines, inviteFS, inviteLH);
+  const inviteY = FOOTER_TOP - inviteH - 8;
+
+  const aLines = capToBand(wrap(page.answer || "", rtl ? 30 : 42), answerY, aFS, aLH, inviteY - 24, 8);
 
   return (
     <>
@@ -598,49 +617,47 @@ function QALayout({ page, edition, pageIndex, total, rtl }: { page: QAPage; edit
         rtl={rtl}
       />
 
-      {/* Question with inline-start SPOT bar */}
-      <rect x={barX} y={230} width={barW} height={qLines.length * 58 * 1.24 + 20} fill={SPOT} />
+      <rect x={barX} y={barY} width={barW} height={blockH(qLines, qFS, qLH) + 20} fill={SPOT} />
       <TextBlock
-        x={questionX} y={272}
+        x={questionX} y={qTop}
         lines={qLines}
         fontFamily={rtl ? ARABIC : SERIF}
-        fontSize={58}
+        fontSize={qFS}
         fontWeight={rtl ? 700 : 400}
         fontStyle={rtl ? "normal" : "italic"}
         fill={INK}
         anchor={anchor}
-        lineHeight={1.22}
+        lineHeight={qLH}
       />
 
-      <text x={questionX} y={272 + qLines.length * 58 * 1.24 + 24} textAnchor={anchor} fontFamily={monoFont} fontSize={18} letterSpacing={rtl ? undefined : 2.5} fill={INK2} style={rtl ? undefined : { textTransform: "uppercase" }}>
+      <text x={questionX} y={askedByY} textAnchor={anchor} fontFamily={monoFont} fontSize={18} letterSpacing={rtl ? undefined : 2.5} fill={INK2} style={rtl ? undefined : { textTransform: "uppercase" }}>
         {rtl ? `— ${page.asked_by_role}` : `— ${(page.asked_by_role || "").toUpperCase()}`}
       </text>
 
-      {/* Rule + MY ANSWER */}
-      <line x1={edgePad} x2={W - edgePad} y1={870} y2={870} stroke={INK} strokeWidth={2} />
-      <text x={leftX} y={906} textAnchor={anchor} fontFamily={monoFont} fontSize={16} letterSpacing={rtl ? undefined : 3} fill={SPOT} style={rtl ? undefined : { textTransform: "uppercase" }}>
+      <line x1={edgePad} x2={W - edgePad} y1={ruleY} y2={ruleY} stroke={INK} strokeWidth={2} />
+      <text x={leftX} y={answerLabelY} textAnchor={anchor} fontFamily={monoFont} fontSize={16} letterSpacing={rtl ? undefined : 3} fill={SPOT} style={rtl ? undefined : { textTransform: "uppercase" }}>
         {rtl ? "إجابتي" : "MY ANSWER"}
       </text>
       <TextBlock
-        x={leftX} y={946}
+        x={leftX} y={answerY}
         lines={aLines}
         fontFamily={rtl ? ARABIC : SERIF}
-        fontSize={34}
+        fontSize={aFS}
         fontWeight={400}
         fill={INK}
         anchor={anchor}
-        lineHeight={1.32}
+        lineHeight={aLH}
       />
 
       <TextBlock
-        x={leftX} y={1220}
-        lines={wrap(page.invite || "", rtl ? 36 : 52)}
+        x={leftX} y={inviteY}
+        lines={inviteLines}
         fontFamily={rtl ? ARABIC : SERIF}
-        fontSize={28}
+        fontSize={inviteFS}
         fontStyle={rtl ? "normal" : "italic"}
         fill={INK2}
         anchor={anchor}
-        lineHeight={1.28}
+        lineHeight={inviteLH}
       />
     </>
   );
