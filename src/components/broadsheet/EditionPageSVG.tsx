@@ -399,20 +399,17 @@ function ArticleLayout({ page, edition, pageIndex, total, rtl }: { page: Article
   const storyY = 200;
   const headlineTop = 260;
 
-  const headWrap = rtl ? 22 : 28;
-  const headlineLines = capLines(wrap(page.headline || "", headWrap), 3, headWrap);
+  const usable = W - edgePad * 2;
+  const headWrap = charBudget(usable, headFS, rtl ? CHAR_FACTOR.arabicBold : CHAR_FACTOR.serifBold);
+  const headlineLines = capLines(wrap(page.headline || "", headWrap), 4, headWrap);
   const headStep = headFS * headLH;
   const headlineBottom = headlineTop + Math.max(0, headlineLines.length) * headStep;
 
-  // Adaptive fit ladders. Char budget scales as base*baseFS/fs.
-  const bodySizes = rtl ? [24, 22, 20] : [26, 24, 22];
-  const readSizes = rtl ? [22, 20, 19] : [24, 22, 20];
-  const bodyBaseFS = bodySizes[0];
-  const readBaseFS = readSizes[0];
-  const bodyBaseChars = rtl ? 40 : 62;
-  const readBaseChars = rtl ? 38 : 58;
-  const scaledChars = (base: number, baseFS: number, fs: number) =>
-    Math.round((base * baseFS) / fs);
+  // GROW-CAPABLE ladders: largest first, first-fit picks the largest that fits.
+  const bodySizes = rtl ? [27, 25, 24, 22, 20] : [30, 28, 26, 24, 22];
+  const readSizes = rtl ? [24, 23, 22, 20, 19] : [26, 25, 24, 22, 20];
+  const bodyFactor = rtl ? CHAR_FACTOR.arabic : CHAR_FACTOR.serif;
+  const readFactor = rtl ? CHAR_FACTOR.arabic : CHAR_FACTOR.serifItalic;
 
   const FIG_MIN = 150;
   const sourceY = FOOTER_TOP - 14;
@@ -439,8 +436,8 @@ function ArticleLayout({ page, edition, pageIndex, total, rtl }: { page: Article
   for (let i = 0; i < bodySizes.length; i++) {
     const bFS = bodySizes[i];
     const rFS = readSizes[i];
-    const bWrap = scaledChars(bodyBaseChars, bodyBaseFS, bFS);
-    const rWrap = scaledChars(readBaseChars, readBaseFS, rFS);
+    const bWrap = charBudget(usable, bFS, bodyFactor);
+    const rWrap = charBudget(usable, rFS, readFactor);
     const bLines = wrap(page.body || "", bWrap);
     const rLines = wrap(page.my_read || "", rWrap);
     const bH = blockH(bLines, bFS, bodyLH);
@@ -460,8 +457,8 @@ function ArticleLayout({ page, edition, pageIndex, total, rtl }: { page: Article
 
   const bodyFS = chosenBodyFS;
   const readFS = chosenReadFS;
-  const bodyWrap = scaledChars(bodyBaseChars, bodyBaseFS, bodyFS);
-  const readWrap = scaledChars(readBaseChars, readBaseFS, readFS);
+  const bodyWrap = charBudget(usable, bodyFS, bodyFactor);
+  const readWrap = charBudget(usable, readFS, readFactor);
 
   let figH = FIG_MIN;
   let extraAboveRule = 0;
@@ -562,7 +559,7 @@ function ArticleLayout({ page, edition, pageIndex, total, rtl }: { page: Article
       />
 
       <text x={leftX} y={sourceY} textAnchor={anchor} fontFamily={monoFont} fontSize={14} letterSpacing={rtl ? undefined : 2} fill={INK2} style={rtl ? undefined : { textTransform: "uppercase" }}>
-        {rtl ? capSource(page.source_line, 72) : capSource(page.source_line, 72).toUpperCase()}
+        {rtl ? capSource(page.source_line, 86) : capSource(page.source_line, 86).toUpperCase()}
       </text>
     </>
   );
