@@ -782,7 +782,7 @@ function QALayout({ page, edition, pageIndex, total, rtl }: { page: QAPage; edit
   const aFactor = rtl ? CHAR_FACTOR.arabic : CHAR_FACTOR.serif;
   const aAvailable = (inviteY - 24) - answerY;
   const aLHmin = 1.32;
-  const aLHmax = 1.44;
+  const aLHmax = MAX_LH_QA_ANSWER;
   let aFS = aSizes[aSizes.length - 1];
   let aLH = aLHmin;
   let aWrap = charBudget(usable, aFS, aFactor);
