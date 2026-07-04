@@ -105,23 +105,23 @@ function blockH(lines: string[], fontSize: number, lineHeight: number) {
   return Math.max(0, lines.length) * fontSize * lineHeight;
 }
 
-/* Cap by max lines with ellipsis on the last visible line. */
-function capLines(lines: string[], maxLines: number, ellipsis = ELLIPSIS) {
+/* Cap by max lines. Sentence-safe when it retains ≥80% of the kept text;
+ * otherwise falls back to ellipsis on the last visible line.
+ * `wrapChars` is the ORIGINAL per-line char budget used to produce `lines`. */
+function capLines(lines: string[], maxLines: number, wrapChars: number, ellipsis = ELLIPSIS) {
   if (!lines || lines.length <= maxLines) return lines;
   const kept = lines.slice(0, Math.max(1, maxLines));
   const joined = kept.join(" ");
-  // Sentence-safe: look for last terminator (. ؟ ! ۔) after 55% of kept length.
   const minCut = Math.floor(joined.length * 0.55);
   const terminators = [".", "؟", "!", "۔"];
   let cutIdx = -1;
   for (let i = joined.length - 1; i >= minCut; i--) {
     if (terminators.includes(joined[i])) { cutIdx = i; break; }
   }
-  if (cutIdx > 0) {
+  if (cutIdx > 0 && cutIdx >= joined.length * 0.8) {
     const clean = joined.slice(0, cutIdx + 1).trim();
-    // Re-wrap into same number of lines using original per-line char budget approx.
-    const approxChars = Math.ceil(joined.length / kept.length);
-    return wrap(clean, approxChars).slice(0, maxLines);
+    // Re-wrap the cut text with the ORIGINAL per-line budget.
+    return wrap(clean, wrapChars).slice(0, maxLines);
   }
   const last = (kept[kept.length - 1] || "").replace(/[\s.…]+$/, "");
   kept[kept.length - 1] = last + ellipsis;
@@ -136,11 +136,12 @@ function capToBand(
   lineHeight: number,
   endY: number,
   maxLines: number,
+  wrapChars: number,
   ellipsis = ELLIPSIS,
 ) {
   const perLine = fontSize * lineHeight;
   const room = Math.max(1, Math.floor((endY - startY) / perLine));
-  return capLines(lines, Math.min(maxLines, room), ellipsis);
+  return capLines(lines, Math.min(maxLines, room), wrapChars, ellipsis);
 }
 
 /* Wrap plain text into <tspan> lines at a max width in glyphs. */
@@ -205,17 +206,20 @@ function FrontLayout({ page, edition, rtl }: { page: FrontPage; edition: Edition
 
   const contentTop = MASTHEAD_BOTTOM_FULL + 68;
 
-  const leadLines = capLines(wrap(page.lead_headline || "", rtl ? 22 : 26), 4);
+  const leadWrap = rtl ? 22 : 26;
+  const leadLines = capLines(wrap(page.lead_headline || "", leadWrap), 4, leadWrap);
   const leadY = contentTop;
   const leadBottom = leadY + blockH(leadLines, leadFS, leadLH);
 
-  const accentLinesRaw = page.lead_accent ? wrap(page.lead_accent, rtl ? 30 : 40) : [];
-  const accentLines = capLines(accentLinesRaw, rtl ? 2 : 3);
+  const accentWrap = rtl ? 30 : 40;
+  const accentLinesRaw = page.lead_accent ? wrap(page.lead_accent, accentWrap) : [];
+  const accentLines = capLines(accentLinesRaw, rtl ? 2 : 3, accentWrap);
   const accentY = leadBottom + 24;
   const accentBottom = accentLines.length ? accentY + blockH(accentLines, accentFS, accentLH) : leadBottom;
 
   const deckY = accentBottom + 32;
-  const deckLines = capLines(wrap(page.deck || "", rtl ? 34 : 46), rtl ? 3 : 4);
+  const deckWrap = rtl ? 34 : 46;
+  const deckLines = capLines(wrap(page.deck || "", deckWrap), rtl ? 3 : 4, deckWrap);
   const deckBottom = deckY + blockH(deckLines, deckFS, deckLH);
 
   const rowStep = 34;
@@ -362,52 +366,115 @@ function ArticleLayout({ page, edition, pageIndex, total, rtl }: { page: Article
 
   const headFS = rtl ? 46 : 52;
   const headLH = 1.14;
-  const bodyFS = rtl ? 24 : 26;
   const bodyLH = 1.44;
-  const readFS = rtl ? 22 : 24;
   const readLH = 1.42;
 
   const storyY = 200;
   const headlineTop = 260;
 
-  const headlineLines = capLines(wrap(page.headline || "", rtl ? 22 : 28), 3);
-  // renderInlineAccent draws each line at y = headlineTop + i * step (step in current code)
+  const headWrap = rtl ? 22 : 28;
+  const headlineLines = capLines(wrap(page.headline || "", headWrap), 3, headWrap);
   const headStep = headFS * headLH;
   const headlineBottom = headlineTop + Math.max(0, headlineLines.length) * headStep;
 
-  let figH = 210;
-  let figY = Math.max(480, headlineBottom + 28);
-  let figLabelY = figY + figH + 26;
-  let newsLabelY = figLabelY + 42;
-  let bodyY = newsLabelY + 32;
+  // Adaptive fit ladders. Char budget scales as base*baseFS/fs.
+  const bodySizes = rtl ? [24, 22, 20] : [26, 24, 22];
+  const readSizes = rtl ? [22, 20, 19] : [24, 22, 20];
+  const bodyBaseFS = bodySizes[0];
+  const readBaseFS = readSizes[0];
+  const bodyBaseChars = rtl ? 40 : 62;
+  const readBaseChars = rtl ? 38 : 58;
+  const scaledChars = (base: number, baseFS: number, fs: number) =>
+    Math.round((base * baseFS) / fs);
 
-  const bodyLinesRaw = wrap(page.body || "", rtl ? 40 : 62);
-  // Reserve space: rule + MY READ label + my_read block + source line
+  const FIG_MIN = 150;
   const sourceY = FOOTER_TOP - 14;
-  const readLabelPad = 30;
-  const readTextPad = 32;
-  // Measure my_read first, so body gets the true remaining band (not a 6-line pessimistic reserve).
-  const readLinesPre = capLines(wrap(page.my_read || "", rtl ? 38 : 58), 5);
-  const readH = blockH(readLinesPre, readFS, readLH);
-  let bodyEndCap = sourceY - 20 - readH - readTextPad - readLabelPad - 24;
-  // Guarantee THE NEWS at least 3 lines by shrinking the fig if starved.
-  if (Math.floor((bodyEndCap - bodyY) / (bodyFS * bodyLH)) < 3) {
-    figH = 150;
-    figY = Math.max(480, headlineBottom + 28);
-    figLabelY = figY + figH + 26;
-    newsLabelY = figLabelY + 42;
-    bodyY = newsLabelY + 32;
-    bodyEndCap = sourceY - 20 - readH - readTextPad - readLabelPad - 24;
+  const figYstart = Math.max(480, headlineBottom + 28);
+  const available = sourceY - 20 - figYstart;
+
+  // GAP constants (label pads etc.): fig→figLabel 26, figLabel→newsLabel 42,
+  // newsLabel→body 32, body→rule 24, rule→readLabel 30, readLabel→read 32.
+  const G_FIG_LABEL = 26;
+  const G_NEWS_LABEL = 42;
+  const G_BODY = 32;
+  const G_RULE = 24;
+  const G_READ_LABEL = 30;
+  const G_READ = 32;
+
+  let chosenBodyFS = bodySizes[bodySizes.length - 1];
+  let chosenReadFS = readSizes[readSizes.length - 1];
+  let bodyLinesRaw: string[] = [];
+  let readLinesPre: string[] = [];
+  let bodyH = 0;
+  let readH = 0;
+  let fit = false;
+
+  for (let i = 0; i < bodySizes.length; i++) {
+    const bFS = bodySizes[i];
+    const rFS = readSizes[i];
+    const bWrap = scaledChars(bodyBaseChars, bodyBaseFS, bFS);
+    const rWrap = scaledChars(readBaseChars, readBaseFS, rFS);
+    const bLines = wrap(page.body || "", bWrap);
+    const rLines = wrap(page.my_read || "", rWrap);
+    const bH = blockH(bLines, bFS, bodyLH);
+    const rH = blockH(rLines, rFS, readLH);
+    const needed = FIG_MIN + G_FIG_LABEL + G_NEWS_LABEL + G_BODY + bH + G_RULE + G_READ_LABEL + G_READ + rH;
+    if (needed <= available) {
+      chosenBodyFS = bFS;
+      chosenReadFS = rFS;
+      bodyLinesRaw = bLines;
+      readLinesPre = rLines;
+      bodyH = bH;
+      readH = rH;
+      fit = true;
+      break;
+    }
   }
-  const bodyLines = capToBand(bodyLinesRaw, bodyY, bodyFS, bodyLH, bodyEndCap, 6);
-  const bodyBottom = bodyY + blockH(bodyLines, bodyFS, bodyLH);
 
-  const ruleY = bodyBottom + 24;
-  const readLabelY = ruleY + readLabelPad;
-  const readY = readLabelY + readTextPad;
+  const bodyFS = chosenBodyFS;
+  const readFS = chosenReadFS;
+  const bodyWrap = scaledChars(bodyBaseChars, bodyBaseFS, bodyFS);
+  const readWrap = scaledChars(readBaseChars, readBaseFS, readFS);
 
-  // Final guard against overrun.
-  const readLines = capToBand(readLinesPre, readY, readFS, readLH, sourceY - 20, 5);
+  let figH = FIG_MIN;
+  let extraAboveRule = 0;
+  let extraAboveReadLabel = 0;
+  let bodyLines: string[];
+  let readLines: string[];
+
+  if (fit) {
+    const needed = FIG_MIN + G_FIG_LABEL + G_NEWS_LABEL + G_BODY + bodyH + G_RULE + G_READ_LABEL + G_READ + readH;
+    const slack = Math.max(0, available - needed);
+    figH = Math.min(260, FIG_MIN + slack * 0.6);
+    const slackRest = slack - (figH - FIG_MIN);
+    extraAboveRule = Math.max(0, slackRest * 0.5);
+    extraAboveReadLabel = Math.max(0, slackRest * 0.5);
+    bodyLines = bodyLinesRaw;
+    readLines = readLinesPre;
+  } else {
+    // Smallest ladder still overflows: capToBand (sentence-safe now fixed).
+    bodyLinesRaw = wrap(page.body || "", bodyWrap);
+    readLinesPre = wrap(page.my_read || "", readWrap);
+    // Reserve read region using its full text first, then cap body to what remains.
+    const readCappedForReserve = capLines(readLinesPre, 5, readWrap);
+    const readReserveH = blockH(readCappedForReserve, readFS, readLH);
+    const bodyEndCap = sourceY - 20 - readReserveH - G_READ - G_READ_LABEL - G_RULE;
+    const bodyY0 = figYstart + FIG_MIN + G_FIG_LABEL + G_NEWS_LABEL + G_BODY;
+    bodyLines = capToBand(bodyLinesRaw, bodyY0, bodyFS, bodyLH, bodyEndCap, 6, bodyWrap);
+    bodyH = blockH(bodyLines, bodyFS, bodyLH);
+    const readY0 = bodyY0 + bodyH + G_RULE + G_READ_LABEL + G_READ;
+    readLines = capToBand(readLinesPre, readY0, readFS, readLH, sourceY - 20, 5, readWrap);
+    readH = blockH(readLines, readFS, readLH);
+  }
+
+  const figY = figYstart;
+  const figLabelY = figY + figH + G_FIG_LABEL;
+  const newsLabelY = figLabelY + G_NEWS_LABEL;
+  const bodyY = newsLabelY + G_BODY;
+  const bodyBottom = bodyY + bodyH;
+  const ruleY = bodyBottom + G_RULE + extraAboveRule;
+  const readLabelY = ruleY + G_READ_LABEL + extraAboveReadLabel;
+  const readY = readLabelY + G_READ;
 
   const slimNameplate = { name: edition.nameplate.name, style: edition.nameplate.style, monogramChar: edition.nameplate.monogram_char };
   return (
@@ -495,13 +562,15 @@ function DigestLayout({ page, edition, pageIndex, total, rtl }: { page: DigestPa
   const lane = 240;
 
   const introY = 220;
-  const introLines = capLines(wrap(page.intro || "", rtl ? 38 : 56), 2);
+  const introWrap = rtl ? 38 : 56;
+  const introLines = capLines(wrap(page.intro || "", introWrap), 2, introWrap);
   const introBottom = introY + blockH(introLines, introFS, introLH);
 
   const itemsStart = introBottom + 40;
 
   // Reserve for close block at the bottom.
-  const closeLines = capLines(wrap(page.close || "", rtl ? 34 : 50), 2);
+  const closeWrap = rtl ? 34 : 50;
+  const closeLines = capLines(wrap(page.close || "", closeWrap), 2, closeWrap);
   const closeH = blockH(closeLines, closeFS, closeLH);
   const closeY = FOOTER_TOP - closeH - 10;
   const closeRuleY = closeY - 22;
@@ -539,13 +608,15 @@ function DigestLayout({ page, edition, pageIndex, total, rtl }: { page: DigestPa
         const textX = rtl ? W - edgePad - lane : edgePad + lane;
         const bigY = rowTop + 82;
         const claimY = rowTop + 34;
-        const claimLines = capLines(wrap(item.claim || "", rtl ? 22 : 32), 2);
+        const claimWrap = rtl ? 22 : 32;
+        const claimLines = capLines(wrap(item.claim || "", claimWrap), 2, claimWrap);
         const claimBottom = claimY + blockH(claimLines, claimFS, claimLH);
         const takeY = claimBottom + 16;
         // Cap takeaway so source fits within row.
         const rowBottom = rowTop + perItem;
         const sourceRowY = rowBottom - 14;
-        const takeLines = capToBand(wrap(item.takeaway || "", rtl ? 34 : 48), takeY, takeFS, takeLH, sourceRowY - 20, 3);
+        const takeWrap = rtl ? 34 : 48;
+        const takeLines = capToBand(wrap(item.takeaway || "", takeWrap), takeY, takeFS, takeLH, sourceRowY - 20, 3, takeWrap);
         const takeBottom = takeY + blockH(takeLines, takeFS, takeLH);
         const sourceY = Math.min(sourceRowY, takeBottom + 24);
         return (
@@ -620,12 +691,11 @@ function QALayout({ page, edition, pageIndex, total, rtl }: { page: QAPage; edit
 
   const qFS = 58;
   const qLH = 1.22;
-  const aFS = 34;
-  const aLH = 1.32;
   const inviteFS = 28;
   const inviteLH = 1.28;
 
-  const qLines = capLines(wrap(page.question || "", rtl ? 26 : 34), 4);
+  const qWrap = rtl ? 26 : 34;
+  const qLines = capLines(wrap(page.question || "", qWrap), 4, qWrap);
   const qTop = 272;
   const barY = qTop - 42;
   const qBottom = qTop + blockH(qLines, qFS, qLH);
@@ -634,11 +704,47 @@ function QALayout({ page, edition, pageIndex, total, rtl }: { page: QAPage; edit
   const answerLabelY = ruleY + 36;
   const answerY = answerLabelY + 40;
 
-  const inviteLines = capLines(wrap(page.invite || "", rtl ? 36 : 52), 3);
+  const inviteWrap = rtl ? 36 : 52;
+  const inviteLines = capLines(wrap(page.invite || "", inviteWrap), 3, inviteWrap);
   const inviteH = blockH(inviteLines, inviteFS, inviteLH);
   const inviteY = FOOTER_TOP - inviteH - 8;
 
-  const aLines = capToBand(wrap(page.answer || "", rtl ? 30 : 42), answerY, aFS, aLH, inviteY - 24, 8);
+  // Adaptive fit for the answer: ladder aSizes with scaled char budget.
+  const aSizes = rtl ? [34, 30, 27] : [34, 31, 28];
+  const aBaseFS = aSizes[0];
+  const aBaseChars = rtl ? 30 : 42;
+  const aAvailable = (inviteY - 24) - answerY;
+  const aLHmin = 1.32;
+  const aLHmax = 1.44;
+  let aFS = aSizes[aSizes.length - 1];
+  let aLH = aLHmin;
+  let aWrap = Math.round((aBaseChars * aBaseFS) / aFS);
+  let aLines: string[] = [];
+  let aFit = false;
+  for (const fs of aSizes) {
+    const w = Math.round((aBaseChars * aBaseFS) / fs);
+    const lines = wrap(page.answer || "", w);
+    const h = blockH(lines, fs, aLHmin);
+    if (h <= aAvailable) {
+      aFS = fs;
+      aWrap = w;
+      aLines = lines;
+      const slack = aAvailable - h;
+      if (slack > 60 && lines.length > 0) {
+        // Distribute slack across lines by growing lineHeight up to aLHmax.
+        const wantLH = aAvailable / (lines.length * fs);
+        aLH = Math.min(aLHmax, Math.max(aLHmin, wantLH));
+      } else {
+        aLH = aLHmin;
+      }
+      aFit = true;
+      break;
+    }
+  }
+  if (!aFit) {
+    aWrap = Math.round((aBaseChars * aBaseFS) / aFS);
+    aLines = capToBand(wrap(page.answer || "", aWrap), answerY, aFS, aLH, inviteY - 24, 8, aWrap);
+  }
 
   return (
     <>
@@ -719,7 +825,8 @@ function BackLayout({ page, edition, pageIndex, total, rtl }: { page: BackPage; 
   const promiseLH = 1.42;
 
   const headlineTop = cardY + 90;
-  const headlineLines = capLines(wrap(page.headline || "", rtl ? 22 : 28), 3);
+  const headWrapB = rtl ? 22 : 28;
+  const headlineLines = capLines(wrap(page.headline || "", headWrapB), 3, headWrapB);
   const headStep = headFS * headLH;
   const headlineBottom = headlineTop + Math.max(0, headlineLines.length) * headStep;
 
@@ -735,7 +842,8 @@ function BackLayout({ page, edition, pageIndex, total, rtl }: { page: BackPage; 
   const ACTION_GAP_BELOW = 40;
   // Cap promise so action row + signature stay inside card.
   const promiseCap = maxSignatureY - ACTION_GAP_BELOW - ACTION_ROW_H - ACTION_GAP_ABOVE - 20;
-  const promiseLines = capToBand(wrap(page.promise || "", rtl ? 30 : 44), promiseY, promiseFS, promiseLH, promiseCap, 3);
+  const promiseWrap = rtl ? 30 : 44;
+  const promiseLines = capToBand(wrap(page.promise || "", promiseWrap), promiseY, promiseFS, promiseLH, promiseCap, 3, promiseWrap);
   const promiseBottom = promiseY + blockH(promiseLines, promiseFS, promiseLH);
   const iconRowY = promiseBottom + ACTION_GAP_ABOVE;
   const signatureY = Math.min(maxSignatureY, iconRowY + ACTION_ROW_H + ACTION_GAP_BELOW);
