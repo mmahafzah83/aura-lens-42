@@ -88,6 +88,41 @@ export interface Edition {
 const W = 1080;
 const H = 1350;
 
+/* Vertical band: nothing except PressFooter renders at/below FOOTER_TOP. */
+const FOOTER_TOP = H - 132; // 1218
+const MASTHEAD_BOTTOM_FULL = 200;
+const MASTHEAD_BOTTOM_SLIM = 180;
+const ELLIPSIS = "…";
+
+/* Measured block height in px. */
+function blockH(lines: string[], fontSize: number, lineHeight: number) {
+  return Math.max(0, lines.length) * fontSize * lineHeight;
+}
+
+/* Cap by max lines with ellipsis on the last visible line. */
+function capLines(lines: string[], maxLines: number, ellipsis = ELLIPSIS) {
+  if (!lines || lines.length <= maxLines) return lines;
+  const kept = lines.slice(0, Math.max(1, maxLines));
+  const last = (kept[kept.length - 1] || "").replace(/[\s.…]+$/, "");
+  kept[kept.length - 1] = last + ellipsis;
+  return kept;
+}
+
+/* Cap so the block, drawn from startY, stays above endY; also honor a hard maxLines. */
+function capToBand(
+  lines: string[],
+  startY: number,
+  fontSize: number,
+  lineHeight: number,
+  endY: number,
+  maxLines: number,
+  ellipsis = ELLIPSIS,
+) {
+  const perLine = fontSize * lineHeight;
+  const room = Math.max(1, Math.floor((endY - startY) / perLine));
+  return capLines(lines, Math.min(maxLines, room), ellipsis);
+}
+
 /* Wrap plain text into <tspan> lines at a max width in glyphs. */
 function wrap(text: string, chars: number): string[] {
   const words = (text || "").split(/\s+/).filter(Boolean);
@@ -138,12 +173,44 @@ function FrontLayout({ page, edition, rtl }: { page: FrontPage; edition: Edition
   const edgePad = rtl ? 96 : 68;
   const leftX = rtl ? W - edgePad : edgePad;
   const anchor = rtl ? "end" : "start";
-  const contentY = 240;
   const headlineFont = rtl ? ARABIC : SERIF;
   const monoFont = rtl ? ARABIC : MONO;
 
-  const leadLines = wrap(page.lead_headline || "", rtl ? 22 : 26);
-  const deckLines = wrap(page.deck || "", rtl ? 34 : 46);
+  const leadFS = rtl ? 68 : 74;
+  const leadLH = 1.08;
+  const accentFS = rtl ? 40 : 44;
+  const accentLH = 1.18;
+  const deckFS = rtl ? 26 : 28;
+  const deckLH = 1.44;
+
+  const contentTop = MASTHEAD_BOTTOM_FULL + 40;
+
+  const leadLines = capLines(wrap(page.lead_headline || "", rtl ? 22 : 26), 4);
+  const leadY = contentTop;
+  const leadBottom = leadY + blockH(leadLines, leadFS, leadLH);
+
+  const accentLinesRaw = page.lead_accent ? wrap(page.lead_accent, rtl ? 30 : 40) : [];
+  const accentLines = capLines(accentLinesRaw, 3);
+  const accentY = leadBottom + 24;
+  const accentBottom = accentLines.length ? accentY + blockH(accentLines, accentFS, accentLH) : leadBottom;
+
+  const deckY = accentBottom + 32;
+  const deckLines = capLines(wrap(page.deck || "", rtl ? 34 : 46), 4);
+  const deckBottom = deckY + blockH(deckLines, deckFS, deckLH);
+
+  const figH = 190;
+  const figY = deckBottom + 32;
+  const figLabelY = figY + figH + 26;
+  const tocRuleY = figLabelY + 22;
+  const tocHeaderY = tocRuleY + 30;
+  const tocFirstRowY = tocHeaderY + 40;
+  const rowStep = 34;
+
+  const maxRowsByBand = Math.max(0, Math.floor((FOOTER_TOP - 60 - tocFirstRowY) / rowStep));
+  const tocRows = (page.toc || []).slice(0, Math.min(6, maxRowsByBand));
+  const lastRowY = tocRows.length ? tocFirstRowY + (tocRows.length - 1) * rowStep : tocFirstRowY;
+  const alsoY = lastRowY + 40;
+  const showAlso = (page.also_inside || []).length > 0 && alsoY <= FOOTER_TOP - 8;
 
   return (
     <>
@@ -158,62 +225,57 @@ function FrontLayout({ page, edition, rtl }: { page: FrontPage; edition: Edition
         rtl={rtl}
       />
 
-      {/* Lead headline */}
       <TextBlock
         x={leftX}
-        y={contentY + 18}
+        y={leadY}
         lines={leadLines}
         fontFamily={headlineFont}
-        fontSize={rtl ? 68 : 74}
+        fontSize={leadFS}
         fontWeight={rtl ? 800 : 600}
         fill={INK}
         anchor={anchor}
-        lineHeight={1.08}
+        lineHeight={leadLH}
       />
 
-      {/* Accent turn */}
-      {page.lead_accent ? (
+      {accentLines.length ? (
         <TextBlock
           x={leftX}
-          y={contentY + 18 + leadLines.length * (rtl ? 68 : 74) * 1.08 + 24}
-          lines={wrap(page.lead_accent, rtl ? 30 : 40)}
+          y={accentY}
+          lines={accentLines}
           fontFamily={headlineFont}
-          fontSize={rtl ? 40 : 44}
+          fontSize={accentFS}
           fontWeight={rtl ? 600 : 500}
           fontStyle={rtl ? "normal" : "italic"}
           fill={SPOT}
           anchor={anchor}
-          lineHeight={1.18}
+          lineHeight={accentLH}
         />
       ) : null}
 
-      {/* Deck */}
       <TextBlock
         x={leftX}
-        y={640}
+        y={deckY}
         lines={deckLines}
         fontFamily={rtl ? ARABIC : SERIF}
-        fontSize={rtl ? 26 : 28}
+        fontSize={deckFS}
         fontWeight={400}
         fill={INK2}
         anchor={anchor}
-        lineHeight={1.44}
+        lineHeight={deckLH}
       />
 
-      {/* Fig panel */}
-      <FigPlate x={rtl ? edgePad : edgePad} y={780} w={W - edgePad * 2} h={190} kind={page.fig?.kind || "line_signal"} rtl={rtl} />
-      <text x={leftX} y={996} textAnchor={anchor} fontFamily={monoFont} fontSize={16} letterSpacing={rtl ? undefined : 2} fill={SPOT} style={rtl ? undefined : { textTransform: "uppercase" }}>
+      <FigPlate x={edgePad} y={figY} w={W - edgePad * 2} h={figH} kind={page.fig?.kind || "line_signal"} rtl={rtl} />
+      <text x={leftX} y={figLabelY} textAnchor={anchor} fontFamily={monoFont} fontSize={16} letterSpacing={rtl ? undefined : 2} fill={SPOT} style={rtl ? undefined : { textTransform: "uppercase" }}>
         {rtl ? page.fig?.label : (page.fig?.label || "").toUpperCase()}
       </text>
 
-      {/* TOC with dotted leaders */}
-      <line x1={edgePad} x2={W - edgePad} y1={1030} y2={1030} stroke={INK} strokeWidth={2} />
-      <text x={leftX} y={1060} textAnchor={anchor} fontFamily={monoFont} fontSize={18} letterSpacing={rtl ? undefined : 3} fill={SPOT} style={rtl ? undefined : { textTransform: "uppercase" }}>
+      <line x1={edgePad} x2={W - edgePad} y1={tocRuleY} y2={tocRuleY} stroke={INK} strokeWidth={2} />
+      <text x={leftX} y={tocHeaderY} textAnchor={anchor} fontFamily={monoFont} fontSize={18} letterSpacing={rtl ? undefined : 3} fill={SPOT} style={rtl ? undefined : { textTransform: "uppercase" }}>
         {rtl ? "في هذا الإصدار" : "IN THIS EDITION"}
       </text>
 
-      {(page.toc || []).slice(0, 6).map((row, i) => {
-        const rowY = 1098 + i * 34;
+      {tocRows.map((row, i) => {
+        const rowY = tocFirstRowY + i * rowStep;
         const titleX = leftX;
         const folioText = `${row.section} · P.${row.page}`;
         return (
@@ -237,9 +299,8 @@ function FrontLayout({ page, edition, rtl }: { page: FrontPage; edition: Edition
         );
       })}
 
-      {/* Also inside strip */}
-      {(page.also_inside || []).length ? (
-        <text x={leftX} y={1252} textAnchor={anchor} fontFamily={monoFont} fontSize={15} letterSpacing={rtl ? undefined : 2.5} fill={INK2} style={rtl ? undefined : { textTransform: "uppercase" }}>
+      {showAlso ? (
+        <text x={leftX} y={alsoY} textAnchor={anchor} fontFamily={monoFont} fontSize={15} letterSpacing={rtl ? undefined : 2.5} fill={INK2} style={rtl ? undefined : { textTransform: "uppercase" }}>
           {(page.also_inside || []).join("   ·   ")}
         </text>
       ) : null}
