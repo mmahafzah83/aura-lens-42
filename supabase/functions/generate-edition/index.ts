@@ -274,7 +274,10 @@ Rules:
   //   flow           → process/pipeline/stage stories
   //   capacity_bars  → utilization, budget allocation, capacity stories
   //   step_bars      → discrete periods, week-by-week, cohort stories
-  //   line_signal    → a single rising/falling trend (only when none above fits)
+  //   bars_compare   → magnitude comparison across 3–4 things
+  //   gap_wedge      → a widening gap between two paths
+  //   steps          → threshold / regime shift
+  //   line_signal    → a single rising/falling trend or one anomaly (only when none above fits)
   // LABEL RULE: fig.label must name THIS story's tension using a noun from its own headline
   // (e.g. "retraining velocity vs exits", "pilot → production gap") — ≤6 words,
   // NEVER a generic label, NEVER reused across pages in the same edition.
