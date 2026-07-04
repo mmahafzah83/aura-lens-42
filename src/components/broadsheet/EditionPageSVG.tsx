@@ -105,23 +105,23 @@ function blockH(lines: string[], fontSize: number, lineHeight: number) {
   return Math.max(0, lines.length) * fontSize * lineHeight;
 }
 
-/* Cap by max lines with ellipsis on the last visible line. */
-function capLines(lines: string[], maxLines: number, ellipsis = ELLIPSIS) {
+/* Cap by max lines. Sentence-safe when it retains ≥80% of the kept text;
+ * otherwise falls back to ellipsis on the last visible line.
+ * `wrapChars` is the ORIGINAL per-line char budget used to produce `lines`. */
+function capLines(lines: string[], maxLines: number, wrapChars: number, ellipsis = ELLIPSIS) {
   if (!lines || lines.length <= maxLines) return lines;
   const kept = lines.slice(0, Math.max(1, maxLines));
   const joined = kept.join(" ");
-  // Sentence-safe: look for last terminator (. ؟ ! ۔) after 55% of kept length.
   const minCut = Math.floor(joined.length * 0.55);
   const terminators = [".", "؟", "!", "۔"];
   let cutIdx = -1;
   for (let i = joined.length - 1; i >= minCut; i--) {
     if (terminators.includes(joined[i])) { cutIdx = i; break; }
   }
-  if (cutIdx > 0) {
+  if (cutIdx > 0 && cutIdx >= joined.length * 0.8) {
     const clean = joined.slice(0, cutIdx + 1).trim();
-    // Re-wrap into same number of lines using original per-line char budget approx.
-    const approxChars = Math.ceil(joined.length / kept.length);
-    return wrap(clean, approxChars).slice(0, maxLines);
+    // Re-wrap the cut text with the ORIGINAL per-line budget.
+    return wrap(clean, wrapChars).slice(0, maxLines);
   }
   const last = (kept[kept.length - 1] || "").replace(/[\s.…]+$/, "");
   kept[kept.length - 1] = last + ellipsis;
@@ -136,11 +136,12 @@ function capToBand(
   lineHeight: number,
   endY: number,
   maxLines: number,
+  wrapChars: number,
   ellipsis = ELLIPSIS,
 ) {
   const perLine = fontSize * lineHeight;
   const room = Math.max(1, Math.floor((endY - startY) / perLine));
-  return capLines(lines, Math.min(maxLines, room), ellipsis);
+  return capLines(lines, Math.min(maxLines, room), wrapChars, ellipsis);
 }
 
 /* Wrap plain text into <tspan> lines at a max width in glyphs. */
