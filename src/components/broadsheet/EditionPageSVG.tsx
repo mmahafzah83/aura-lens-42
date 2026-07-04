@@ -691,12 +691,11 @@ function QALayout({ page, edition, pageIndex, total, rtl }: { page: QAPage; edit
 
   const qFS = 58;
   const qLH = 1.22;
-  const aFS = 34;
-  const aLH = 1.32;
   const inviteFS = 28;
   const inviteLH = 1.28;
 
-  const qLines = capLines(wrap(page.question || "", rtl ? 26 : 34), 4);
+  const qWrap = rtl ? 26 : 34;
+  const qLines = capLines(wrap(page.question || "", qWrap), 4, qWrap);
   const qTop = 272;
   const barY = qTop - 42;
   const qBottom = qTop + blockH(qLines, qFS, qLH);
@@ -705,11 +704,47 @@ function QALayout({ page, edition, pageIndex, total, rtl }: { page: QAPage; edit
   const answerLabelY = ruleY + 36;
   const answerY = answerLabelY + 40;
 
-  const inviteLines = capLines(wrap(page.invite || "", rtl ? 36 : 52), 3);
+  const inviteWrap = rtl ? 36 : 52;
+  const inviteLines = capLines(wrap(page.invite || "", inviteWrap), 3, inviteWrap);
   const inviteH = blockH(inviteLines, inviteFS, inviteLH);
   const inviteY = FOOTER_TOP - inviteH - 8;
 
-  const aLines = capToBand(wrap(page.answer || "", rtl ? 30 : 42), answerY, aFS, aLH, inviteY - 24, 8);
+  // Adaptive fit for the answer: ladder aSizes with scaled char budget.
+  const aSizes = rtl ? [34, 30, 27] : [34, 31, 28];
+  const aBaseFS = aSizes[0];
+  const aBaseChars = rtl ? 30 : 42;
+  const aAvailable = (inviteY - 24) - answerY;
+  const aLHmin = 1.32;
+  const aLHmax = 1.44;
+  let aFS = aSizes[aSizes.length - 1];
+  let aLH = aLHmin;
+  let aWrap = Math.round((aBaseChars * aBaseFS) / aFS);
+  let aLines: string[] = [];
+  let aFit = false;
+  for (const fs of aSizes) {
+    const w = Math.round((aBaseChars * aBaseFS) / fs);
+    const lines = wrap(page.answer || "", w);
+    const h = blockH(lines, fs, aLHmin);
+    if (h <= aAvailable) {
+      aFS = fs;
+      aWrap = w;
+      aLines = lines;
+      const slack = aAvailable - h;
+      if (slack > 60 && lines.length > 0) {
+        // Distribute slack across lines by growing lineHeight up to aLHmax.
+        const wantLH = aAvailable / (lines.length * fs);
+        aLH = Math.min(aLHmax, Math.max(aLHmin, wantLH));
+      } else {
+        aLH = aLHmin;
+      }
+      aFit = true;
+      break;
+    }
+  }
+  if (!aFit) {
+    aWrap = Math.round((aBaseChars * aBaseFS) / aFS);
+    aLines = capToBand(wrap(page.answer || "", aWrap), answerY, aFS, aLH, inviteY - 24, 8, aWrap);
+  }
 
   return (
     <>
