@@ -162,17 +162,17 @@ function wrap(text: string, chars: number): string[] {
 
 function TextBlock({
   x, y, lines, fontFamily, fontSize, fontWeight = 400, fontStyle = "normal",
-  fill, lineHeight = 1.28, anchor = "start",
+  fill, lineHeight = 1.28, anchor = "start", rtl = false,
 }: {
   x: number; y: number; lines: string[];
   fontFamily: string; fontSize: number;
   fontWeight?: number | string; fontStyle?: string;
-  fill: string; lineHeight?: number; anchor?: "start" | "end" | "middle";
+  fill: string; lineHeight?: number; anchor?: "start" | "end" | "middle"; rtl?: boolean;
 }) {
   return (
     <text x={x} y={y} textAnchor={anchor} fontFamily={fontFamily} fontSize={fontSize} fontWeight={fontWeight as any} fontStyle={fontStyle} fill={fill}>
       {lines.map((l, i) => (
-        <tspan key={i} x={x} dy={i === 0 ? 0 : fontSize * lineHeight}>{l}</tspan>
+        <tspan key={i} x={x} dy={i === 0 ? 0 : fontSize * lineHeight}>{rtl ? "\u200F" + l : l}</tspan>
       ))}
     </text>
   );
@@ -334,10 +334,11 @@ function FrontLayout({ page, edition, rtl }: { page: FrontPage; edition: Edition
  * ARTICLE
  * ============================================================ */
 
-function renderInlineAccent(text: string, accent: string | undefined, font: string, size: number, weight: number, x: number, y: number, anchor: "start" | "end") {
+function renderInlineAccent(text: string, accent: string | undefined, font: string, size: number, weight: number, x: number, y: number, anchor: "start" | "end", rtl = false) {
+  const rlm = rtl ? "\u200F" : "";
   if (!accent || !text.includes(accent)) {
     return (
-      <text x={x} y={y} textAnchor={anchor} fontFamily={font} fontSize={size} fontWeight={weight} fill={INK}>{text}</text>
+      <text x={x} y={y} textAnchor={anchor} fontFamily={font} fontSize={size} fontWeight={weight} fill={INK}>{rlm + text}</text>
     );
   }
   const idx = text.indexOf(accent);
@@ -345,7 +346,7 @@ function renderInlineAccent(text: string, accent: string | undefined, font: stri
   const after = text.slice(idx + accent.length);
   return (
     <text x={x} y={y} textAnchor={anchor} fontFamily={font} fontSize={size} fontWeight={weight} fill={INK}>
-      {before}
+      {rlm + before}
       <tspan fill={SPOT} fontStyle="italic">{accent}</tspan>
       {after}
     </text>
