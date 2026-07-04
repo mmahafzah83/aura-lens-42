@@ -530,8 +530,8 @@ function DigestLayout({ page, edition, pageIndex, total, rtl }: { page: DigestPa
         const rowRuleY = rowTop - 8;
         const bigX = rtl ? W - edgePad : edgePad;
         const textX = rtl ? W - edgePad - lane : edgePad + lane;
-        const bigY = rowTop + 60;
-        const claimY = rowTop + 8;
+        const bigY = rowTop + 82;
+        const claimY = rowTop + 34;
         const claimLines = capLines(wrap(item.claim || "", rtl ? 22 : 32), 2);
         const claimBottom = claimY + blockH(claimLines, claimFS, claimLH);
         const takeY = claimBottom + 16;
