@@ -247,7 +247,7 @@ function FrontLayout({ page, edition, rtl }: { page: FrontPage; edition: Edition
         rtl={rtl}
       />
 
-      <TextBlock
+      <TextBlock rtl={rtl}
         x={leftX}
         y={leadY}
         lines={leadLines}
@@ -260,7 +260,7 @@ function FrontLayout({ page, edition, rtl }: { page: FrontPage; edition: Edition
       />
 
       {accentLines.length ? (
-        <TextBlock
+        <TextBlock rtl={rtl}
           x={leftX}
           y={accentY}
           lines={accentLines}
@@ -274,7 +274,7 @@ function FrontLayout({ page, edition, rtl }: { page: FrontPage; edition: Edition
         />
       ) : null}
 
-      <TextBlock
+      <TextBlock rtl={rtl}
         x={leftX}
         y={deckY}
         lines={deckLines}
@@ -426,7 +426,7 @@ function ArticleLayout({ page, edition, pageIndex, total, rtl }: { page: Article
       </text>
 
       <g>
-        {headlineLines.map((line, i) => renderInlineAccent(line, i === 0 ? page.headline_accent : undefined, headlineFont, headFS, rtl ? 800 : 600, leftX, headlineTop + i * headStep, anchor))}
+        {headlineLines.map((line, i) => renderInlineAccent(line, i === 0 ? page.headline_accent : undefined, headlineFont, headFS, rtl ? 800 : 600, leftX, headlineTop + i * headStep, anchor, rtl))}
       </g>
 
       <FigPlate x={edgePad} y={figY} w={W - edgePad * 2} h={figH} kind={page.fig?.kind || "line_signal"} rtl={rtl} />
@@ -437,7 +437,7 @@ function ArticleLayout({ page, edition, pageIndex, total, rtl }: { page: Article
       <text x={leftX} y={newsLabelY} textAnchor={anchor} fontFamily={monoFont} fontSize={13} letterSpacing={rtl ? undefined : 2.5} fill={INK2} style={rtl ? undefined : { textTransform: "uppercase" }}>
         {rtl ? "الخبر" : "THE NEWS"}
       </text>
-      <TextBlock
+      <TextBlock rtl={rtl}
         x={leftX}
         y={bodyY}
         lines={bodyLines}
@@ -454,7 +454,7 @@ function ArticleLayout({ page, edition, pageIndex, total, rtl }: { page: Article
       <text x={leftX} y={readLabelY} textAnchor={anchor} fontFamily={monoFont} fontSize={13} letterSpacing={rtl ? undefined : 2.5} fill={SPOT} style={rtl ? undefined : { textTransform: "uppercase" }}>
         {rtl ? "قراءتي" : "MY READ"}
       </text>
-      <TextBlock
+      <TextBlock rtl={rtl}
         x={leftX}
         y={readY}
         lines={readLines}
@@ -520,7 +520,7 @@ function DigestLayout({ page, edition, pageIndex, total, rtl }: { page: DigestPa
         rtl={rtl}
       />
 
-      <TextBlock
+      <TextBlock rtl={rtl}
         x={leftX} y={introY}
         lines={introLines}
         fontFamily={rtl ? ARABIC : SERIF}
@@ -563,7 +563,7 @@ function DigestLayout({ page, edition, pageIndex, total, rtl }: { page: DigestPa
             >
               {item.big_value}
             </text>
-            <TextBlock
+            <TextBlock rtl={rtl}
               x={textX} y={claimY}
               lines={claimLines}
               fontFamily={rtl ? ARABIC : SERIF}
@@ -573,7 +573,7 @@ function DigestLayout({ page, edition, pageIndex, total, rtl }: { page: DigestPa
               anchor={anchor}
               lineHeight={claimLH}
             />
-            <TextBlock
+            <TextBlock rtl={rtl}
               x={textX} y={takeY}
               lines={takeLines}
               fontFamily={rtl ? ARABIC : SERIF}
@@ -591,7 +591,7 @@ function DigestLayout({ page, edition, pageIndex, total, rtl }: { page: DigestPa
       })}
 
       <line x1={edgePad} x2={W - edgePad} y1={closeRuleY} y2={closeRuleY} stroke={INK} strokeWidth={2} />
-      <TextBlock
+      <TextBlock rtl={rtl}
         x={leftX} y={closeY}
         lines={closeLines}
         fontFamily={rtl ? ARABIC : SERIF}
@@ -651,7 +651,7 @@ function QALayout({ page, edition, pageIndex, total, rtl }: { page: QAPage; edit
       />
 
       <rect x={barX} y={barY} width={barW} height={blockH(qLines, qFS, qLH) + 20} fill={SPOT} />
-      <TextBlock
+      <TextBlock rtl={rtl}
         x={questionX} y={qTop}
         lines={qLines}
         fontFamily={rtl ? ARABIC : SERIF}
@@ -671,7 +671,7 @@ function QALayout({ page, edition, pageIndex, total, rtl }: { page: QAPage; edit
       <text x={leftX} y={answerLabelY} textAnchor={anchor} fontFamily={monoFont} fontSize={16} letterSpacing={rtl ? undefined : 3} fill={SPOT} style={rtl ? undefined : { textTransform: "uppercase" }}>
         {rtl ? "إجابتي" : "MY ANSWER"}
       </text>
-      <TextBlock
+      <TextBlock rtl={rtl}
         x={leftX} y={answerY}
         lines={aLines}
         fontFamily={rtl ? ARABIC : SERIF}
@@ -682,7 +682,7 @@ function QALayout({ page, edition, pageIndex, total, rtl }: { page: QAPage; edit
         lineHeight={aLH}
       />
 
-      <TextBlock
+      <TextBlock rtl={rtl}
         x={leftX} y={inviteY}
         lines={inviteLines}
         fontFamily={rtl ? ARABIC : SERIF}
@@ -778,10 +778,10 @@ function BackLayout({ page, edition, pageIndex, total, rtl }: { page: BackPage; 
       <rect x={cardX + 12} y={cardY + 12} width={cardW - 24} height={cardH - 24} fill="none" stroke={RULE_SOFT} strokeWidth={1} />
 
       <g>
-        {headlineLines.map((line, i) => renderInlineAccent(line, i === 0 ? page.headline_accent : undefined, rtl ? ARABIC : SERIF, headFS, rtl ? 800 : 600, cardLeft, headlineTop + i * headStep, cardAnchor))}
+        {headlineLines.map((line, i) => renderInlineAccent(line, i === 0 ? page.headline_accent : undefined, rtl ? ARABIC : SERIF, headFS, rtl ? 800 : 600, cardLeft, headlineTop + i * headStep, cardAnchor, rtl))}
       </g>
 
-      <TextBlock
+      <TextBlock rtl={rtl}
         x={cardLeft} y={promiseY}
         lines={promiseLines}
         fontFamily={rtl ? ARABIC : SERIF}
