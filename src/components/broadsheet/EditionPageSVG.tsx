@@ -585,15 +585,18 @@ function DigestLayout({ page, edition, pageIndex, total, rtl }: { page: DigestPa
   const closeLH = 1.28;
   const lane = 240;
 
+  const usable = W - edgePad * 2;
+  const laneCol = usable - lane;
+
   const introY = 220;
-  const introWrap = rtl ? 38 : 56;
+  const introWrap = charBudget(usable, introFS, rtl ? CHAR_FACTOR.arabic : CHAR_FACTOR.serifItalic);
   const introLines = capLines(wrap(page.intro || "", introWrap), 2, introWrap);
   const introBottom = introY + blockH(introLines, introFS, introLH);
 
   const itemsStart = introBottom + 40;
 
   // Reserve for close block at the bottom.
-  const closeWrap = rtl ? 34 : 50;
+  const closeWrap = charBudget(usable, closeFS, rtl ? CHAR_FACTOR.arabic : CHAR_FACTOR.serifItalic);
   const closeLines = capLines(wrap(page.close || "", closeWrap), 2, closeWrap);
   const closeH = blockH(closeLines, closeFS, closeLH);
   const closeY = FOOTER_TOP - closeH - 10;
@@ -632,14 +635,14 @@ function DigestLayout({ page, edition, pageIndex, total, rtl }: { page: DigestPa
         const textX = rtl ? W - edgePad - lane : edgePad + lane;
         const bigY = rowTop + 82;
         const claimY = rowTop + 34;
-        const claimWrap = rtl ? 22 : 32;
+        const claimWrap = charBudget(laneCol, claimFS, rtl ? CHAR_FACTOR.arabicBold : CHAR_FACTOR.serifBold);
         const claimLines = capLines(wrap(item.claim || "", claimWrap), 2, claimWrap);
         const claimBottom = claimY + blockH(claimLines, claimFS, claimLH);
         const takeY = claimBottom + 16;
         // Cap takeaway so source fits within row.
         const rowBottom = rowTop + perItem;
         const sourceRowY = rowBottom - 14;
-        const takeWrap = rtl ? 34 : 48;
+        const takeWrap = charBudget(laneCol, takeFS, rtl ? CHAR_FACTOR.arabic : CHAR_FACTOR.serif);
         const takeLines = capToBand(wrap(item.takeaway || "", takeWrap), takeY, takeFS, takeLH, sourceRowY - 20, 3, takeWrap);
         const takeBottom = takeY + blockH(takeLines, takeFS, takeLH);
         const sourceY = Math.min(sourceRowY, takeBottom + 24);
@@ -679,7 +682,7 @@ function DigestLayout({ page, edition, pageIndex, total, rtl }: { page: DigestPa
               lineHeight={takeLH}
             />
             <text x={textX} y={sourceY} textAnchor={anchor} fontFamily={monoFont} fontSize={16} letterSpacing={rtl ? undefined : 2} fill={INK2} style={rtl ? undefined : { textTransform: "uppercase" }}>
-              {rtl ? capSource(item.source, 40) : capSource(item.source, 40).toUpperCase()}
+              {rtl ? capSource(item.source, 48) : capSource(item.source, 48).toUpperCase()}
             </text>
           </g>
         );
