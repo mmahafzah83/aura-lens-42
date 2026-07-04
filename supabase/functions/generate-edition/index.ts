@@ -367,7 +367,7 @@ FIG SELECTION (shape-matched — MUST match the story's actual dynamic):
   steps         → threshold / regime shift
   s_curve       → adoption
   decay         → decline / erosion
-  line_signal   → divergence of two paths, or a single anomaly
+  line_signal   → a single trend or anomaly
   dots (flow)   → staged milestones / pipeline
 fig.label is ALWAYS a "from → to" tension (e.g. "pilots → production", "خبرة → حضور"). Never a generic noun.
 
