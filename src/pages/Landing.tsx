@@ -886,7 +886,7 @@ const LANDING_HTML = `
       
       
       
-      <circle r="13" fill="#36C5B0" fill-opacity=".18" class="climbhalo"/>
+      
       <circle r="6.5" fill="#36C5B0" class="climber"/>
     </svg></div>
   </div>
