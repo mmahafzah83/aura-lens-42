@@ -252,6 +252,7 @@ Deno.serve(async (req) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const CRON_SECRET = Deno.env.get("CRON_SECRET") || "";
     const adminClient = createClient(SUPABASE_URL, SERVICE_KEY);
 
     // Parse body
@@ -261,17 +262,25 @@ Deno.serve(async (req) => {
     const backfill: boolean = body?.backfill === true;
     const windowDays = backfill ? 365 : 90;
 
+    // Auth: scope=me → require a valid user JWT; anything else (mass sync) →
+    // require the cron secret or the service-role key. Never run unauthenticated.
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const bearer = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+    const cronHeader = req.headers.get("x-cron-secret") || "";
+    const isServiceRole = !!bearer && bearer === SERVICE_KEY;
+    const isCron = !!CRON_SECRET && cronHeader === CRON_SECRET;
+
     // Resolve target connections
     let targetUserId: string | null = null;
     if (scope === "me") {
-      const authHeader = req.headers.get("Authorization") ?? "";
       const userClient = createClient(SUPABASE_URL, ANON_KEY, {
         global: { headers: { Authorization: authHeader } },
       });
-      const token = authHeader.replace("Bearer ", "");
-      const { data: { user }, error } = await userClient.auth.getUser(token);
+      const { data: { user }, error } = await userClient.auth.getUser(bearer);
       if (error || !user) return json({ error: "Unauthorized" }, 401);
       targetUserId = user.id;
+    } else if (!isServiceRole && !isCron) {
+      return json({ error: "Unauthorized" }, 401);
     }
 
     let q = adminClient
