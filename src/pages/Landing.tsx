@@ -872,9 +872,7 @@ const LANDING_HTML = `
 <section class="bone" data-veil id="imprint">
   <div class="veil"></div>
   <div class="wrap">
-    <div class="climbcol">
-      <p class="eyebrow" data-reveal>THE CLIMB</p>
-      <h2 data-reveal>Five tiers. One direction.</h2>
+    <p class="eyebrow" data-reveal>THE IMPRINT</p>
       <p class="lede" data-reveal style="margin-bottom:8px">Presence isn't a switch you flip. It's a climb — and Aura shows you exactly where you stand, and the next rung.</p>
       <div class="tiers" id="tiers">
         <div class="tier" data-reveal><div class="tinfo"><span class="tn">OBSERVER</span><span class="tm">You're reading the field, taking it all in.</span></div><span class="tb"><i data-w="20"></i></span></div>
