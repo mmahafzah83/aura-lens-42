@@ -247,21 +247,6 @@ const LANDING_CSS = `
   .aura-landing .instr{background:#070B0A;border:1px solid #1a2421;border-radius:16px;padding:26px;color:var(--bone)}
   .aura-landing .instr .ik{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:2px;color:#6f7a75;margin:0 0 14px}
   .aura-landing .instr svg{width:100%;max-width:240px;display:block;margin:0 auto}
-  .aura-landing .loop{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:26px;margin-top:32px;counter-reset:s}
-  .aura-landing .lstep{counter-increment:s}
-  .aura-landing .lstep .n{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;color:var(--ox)}
-  .aura-landing .lstep .n::before{content:"0" counter(s)" / "}
-  .aura-landing .lstep h4{font-size:21px;font-weight:500;margin:8px 0 6px}
-  .aura-landing .lstep p{font-size:14.5px;line-height:1.55;color:#4a4238;margin:0}
-  .aura-landing .lstep .n{position:relative;display:inline-block;padding-bottom:7px}
-  .aura-landing .lstep .n::after{content:"";position:absolute;left:0;bottom:0;height:2px;width:26px;background:linear-gradient(90deg,var(--teal),transparent);transform:scaleX(0);transform-origin:left;transition:transform .8s cubic-bezier(.2,.7,.2,1) .15s}
-  .aura-landing .lstep.in .n::after{transform:scaleX(1)}
-  .aura-landing .loop .lstep:nth-child(2)[data-reveal]{transition-delay:.08s}
-  .aura-landing .loop .lstep:nth-child(3)[data-reveal]{transition-delay:.16s}
-  .aura-landing .loop .lstep:nth-child(4)[data-reveal]{transition-delay:.24s}
-  .aura-landing .loop .lstep:nth-child(5)[data-reveal]{transition-delay:.32s}
-  .aura-landing .loop .lstep:nth-child(6)[data-reveal]{transition-delay:.40s}
-  .aura-landing .loop .lstep:last-child .n{color:var(--teal)}
   .aura-landing .tiers{margin-top:28px;display:flex;flex-direction:column;gap:24px;max-width:640px}
   .aura-landing .tier{display:flex;flex-direction:column;gap:9px}
   .aura-landing .tier .tinfo{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
@@ -650,7 +635,7 @@ const LANDING_HTML = `
   <div class="pcine-cool"></div>
   <div class="pcine-grade"></div>
   <canvas class="pcine-cv"></canvas>
-  <p class="eyebrow pcine-eye">THE REAL PROBLEM</p>
+  <p class="eyebrow pcine-eye">THE PROBLEM</p>
   <div class="pcine-beats">
     <div class="beat b1" data-a="0.4" data-b="4.0">You read everything.</div>
     <div class="beat b2" data-a="4.0" data-b="11.0">Every day. Every week. Every year. More than anyone around you.</div>
@@ -664,7 +649,7 @@ const LANDING_HTML = `
 <section class="dark">
   <div class="sweep"></div>
   <div class="wrap">
-    <p class="eyebrow" data-reveal>THE NUMBERS DON'T LIE</p>
+    <p class="eyebrow" data-reveal>THE PROOF</p>
     <div class="nums">
       <div class="num" data-reveal><div class="big"><span data-count="73">0</span>%</div><div class="lbl">of decision-makers trust expertise content over marketing.</div></div>
       <div class="num" data-reveal><div class="big"><span data-count="82">0</span>%</div><div class="lbl">trust a company more when its leaders are visible online.</div></div>
@@ -680,8 +665,14 @@ const LANDING_HTML = `
 <!-- HOW AURA WORKS · Four engines -->
 <section class="dark" id="how">
   <div class="wrap">
-    <p class="eyebrow" data-reveal>HOW AURA WORKS</p>
-    <h2 data-reveal>Four engines. One intelligence system.</h2>
+    <div class="loophead">
+      <div data-reveal>
+        <p class="eyebrow">HOW AURA WORKS</p>
+        <h2 style="max-width:15ch">The world is loud. You can read everything and still miss the one signal that's yours.</h2>
+        <p class="lede" style="margin-bottom:0">Aura starts with who you are — then turns what you read every day into presence that could only be yours. Four engines. One system.</p>
+      </div>
+      <div class="instr" data-reveal><p class="ik">THE INSTRUMENT · SIGNAL IN THE NOISE</p><svg id="miniradar" viewBox="0 0 240 240"></svg></div>
+    </div>
     <div class="engines">
       <div class="ecard" data-reveal>
         <div class="poster"><svg viewBox="0 0 300 168">
@@ -731,43 +722,17 @@ const LANDING_HTML = `
           <text x="150" y="90" text-anchor="middle" font-family="'Newsreader',serif" font-size="36" fill="#EDE7D9">84</text>
           <text x="150" y="146" text-anchor="middle" font-family="'IBM Plex Mono',monospace" font-size="9" letter-spacing="2" fill="#7c8682">IMPRINT</text>
         </svg></div>
-        <div class="body"><h4>The Imprint</h4><p>Aura tracks how your expertise turns into presence over time — what's working, what's growing, where the right people are noticing. Your reputation, measured and compounding.</p></div>
+        <div class="body"><h4>The Imprint</h4><p>Aura turns your progress into one score — the Imprint. It shows what's working, what's growing, and who is starting to notice. The full story is just below.</p></div>
       </div>
     </div>
   </div>
 </section>
-
-<div class="seam"></div>
-
-<!-- THE LOOP · sonar instrument + 6 steps -->
-<section class="bone" data-veil>
-  <div class="veil"></div>
-  <div class="wrap">
-    <div class="loophead">
-      <div data-reveal>
-        <p class="eyebrow">THE LOOP</p>
-        <h2 style="max-width:15ch">The world is loud. You can read everything and still miss the one signal that's yours.</h2>
-        <p class="lede" style="margin-bottom:0">Aura starts with who you are — then turns the noise you move through every day into presence that's unmistakably yours.</p>
-      </div>
-      <div class="instr" data-reveal><p class="ik">THE INSTRUMENT · SIGNAL IN THE NOISE</p><svg id="miniradar" viewBox="0 0 240 240"></svg></div>
-    </div>
-    <div class="loop">
-      <div class="lstep" data-reveal><div class="n"></div><h4>Know who you are.</h4><p>Aura reads your skills, your capability, and the brand you already carry — and fixes your north star.</p></div>
-      <div class="lstep" data-reveal><div class="n"></div><h4>Read like always.</h4><p>In a loud, disruptive week it's easy to consume everything and still drift off course.</p></div>
-      <div class="lstep" data-reveal><div class="n"></div><h4>Tailored to your star.</h4><p>Aura weighs everything you read against who you are and where you're heading.</p></div>
-      <div class="lstep" data-reveal><div class="n"></div><h4>Signals in the dark.</h4><p>It connects the dots, separates the noise, and surfaces the point of view that's yours to claim.</p></div>
-      <div class="lstep" data-reveal><div class="n"></div><h4>Built in your voice.</h4><p>A point of view only you could hold — in language that's recognizably yours.</p></div>
-      <div class="lstep" data-reveal><div class="n"></div><h4>Publish, then watch it grow.</h4><p>Aura tracks the impact on your Imprint, and your presence compounds — week after week.</p></div>
-    </div>
-  </div>
-</section>
-
 <div class="seam"></div>
 
 <!-- WHAT AURA MAKES · pipeline + Arabic output gallery -->
 <section class="dark">
   <div class="wrap">
-    <p class="eyebrow" data-reveal>WHAT AURA MAKES</p>
+    <p class="eyebrow" data-reveal>WHAT YOU GET</p>
     <h2 data-reveal>From what you already read —<br>to what the market reads.</h2>
     <p class="lede" data-reveal style="max-width:54ch">No prompts. No blank page. Aura works quietly from your own intake — and hands back finished pieces in your voice, ready the moment you are.</p>
 
@@ -901,6 +866,23 @@ const LANDING_HTML = `
 
 <div class="seam"></div>
 
+<!-- IMPRINT · Persepolis reveal -->
+<section class="bone" data-veil id="imprint">
+  <div class="veil"></div>
+  <div class="wrap">
+    <p class="eyebrow" data-reveal>THE IMPRINT</p>
+    <div class="impwrap">
+      <div class="dialcard" data-reveal><svg id="dial" viewBox="0 0 280 280"></svg></div>
+      <div data-reveal>
+        <h2>One number. Zero vanity.</h2>
+        <p class="lede">Imprint is a single score from 0 to 100 — how far your expertise has turned into presence. It climbs when you publish something only you could say, holds steady when you're just reading, and never moves for noise. Not followers. Not likes. Evidence you can watch grow, a little every week.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="seam"></div>
+
 <!-- CLIMB · Orano gravitas -->
 <section class="dark" id="climb">
   <div class="sweep"></div>
@@ -916,7 +898,7 @@ const LANDING_HTML = `
         <div class="tier" data-reveal><div class="tinfo"><span class="tn">VOICE</span><span class="tm">You publish in your voice, week after week.</span></div><span class="tb"><i data-w="82"></i></span></div>
         <div class="tier" data-reveal><div class="tinfo"><span class="tn">PRESENCE</span><span class="tm">The field knows your name. People come to you.</span></div><span class="tb"><i data-w="100"></i></span></div>
       </div>
-      <p class="climbnote" data-reveal>Every week you publish from a signal, your Imprint compounds. Miss a week and nothing collapses — Aura keeps reading, and your next move is already waiting.</p>
+      <p class="climbnote" data-reveal>Every week you publish from a signal, your Imprint grows. Miss a week and nothing collapses — Aura keeps reading, and your next move is already waiting.</p>
     </div>
     <div class="climbstage" data-reveal aria-hidden="true"><svg viewBox="0 0 320 360">
       <polyline points="58,316 110,252 162,188 214,124 266,60" fill="none" stroke="#2c4a44" stroke-width="1.5" stroke-dasharray="3 5"/>
@@ -926,30 +908,14 @@ const LANDING_HTML = `
         <line x1="240" y1="60" x2="292" y2="60" stroke="#36C5B0" stroke-opacity=".55"/>
       </g>
       <circle cx="58" cy="316" r="5" fill="#EDE7D9" class="pn"/><circle cx="110" cy="252" r="5" fill="#EDE7D9" class="pn" style="animation-delay:.4s"/>
-      <circle cx="162" cy="188" r="5" fill="#EDE7D9" class="pn" style="animation-delay:.8s"/><circle cx="214" cy="124" r="5" fill="#EDE7D9" class="pn" style="animation-delay:1.2s"/>
+      <circle cx="162" cy="188" r="5" fill="#EDE7D9" class="pn" style="animation-delay:.8s"/>
+      <circle cx="214" cy="124" r="5" fill="#EDE7D9" class="pn" style="animation-delay:1.2s"/>
       <circle cx="266" cy="60" r="6" fill="#36C5B0" class="pn" style="animation-delay:1.6s"/>
       <text x="44" y="338" font-family="'IBM Plex Mono',monospace" font-size="9" letter-spacing="1" fill="#5f6a66">OBSERVER</text>
       <text x="292" y="44" text-anchor="end" font-family="'IBM Plex Mono',monospace" font-size="9" letter-spacing="1" fill="#36C5B0">PRESENCE</text>
       <circle r="13" fill="#36C5B0" fill-opacity=".18" class="climbhalo"/>
       <circle r="6.5" fill="#36C5B0" class="climber"/>
     </svg></div>
-  </div>
-</section>
-
-<div class="seam"></div>
-
-<!-- IMPRINT · Persepolis reveal -->
-<section class="bone" data-veil id="imprint">
-  <div class="veil"></div>
-  <div class="wrap">
-    <p class="eyebrow" data-reveal>THE IMPRINT</p>
-    <div class="impwrap">
-      <div class="dialcard" data-reveal><svg id="dial" viewBox="0 0 280 280"></svg></div>
-      <div data-reveal>
-        <h2>One number. Zero vanity.</h2>
-        <p class="lede">Imprint is a single score from 0 to 100 — how far your expertise has turned into presence. It climbs when you publish something only you could say, holds steady when you're just reading, and never moves for noise. Not followers. Not likes. Evidence you can watch grow, a little every week.</p>
-      </div>
-    </div>
   </div>
 </section>
 
@@ -975,7 +941,7 @@ const LANDING_HTML = `
 <section class="bone" data-veil>
   <div class="veil"></div>
   <div class="wrap">
-    <p class="eyebrow" data-reveal>WHY AURA, NOT THE ALTERNATIVES</p>
+    <p class="eyebrow" data-reveal>WHY AURA</p>
     <h2 data-reveal>You have other options. None of them are this.</h2>
     <p class="lede" data-reveal style="max-width:52ch">The honest comparison — what you'd otherwise reach for, and where each one leaves you.</p>
     <p class="cmp-legend">Pips, left to right: your voice · your signal · effortless · truly yours</p>
