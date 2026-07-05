@@ -22,6 +22,18 @@ Deno.serve(async (req) => {
   const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const LINKEDIN_CLIENT_ID = Deno.env.get("LINKEDIN_CLIENT_ID");
   const LINKEDIN_CLIENT_SECRET = Deno.env.get("LINKEDIN_CLIENT_SECRET");
+  const CRON_SECRET = Deno.env.get("CRON_SECRET") || "";
+
+  // Restrict to cron/service-role callers only. This is a privileged mass
+  // operation and must never run on unauthenticated public requests.
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const bearer = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+  const cronHeader = req.headers.get("x-cron-secret") || "";
+  const isServiceRole = !!bearer && bearer === SERVICE_KEY;
+  const isCron = !!CRON_SECRET && cronHeader === CRON_SECRET;
+  if (!isServiceRole && !isCron) {
+    return json({ error: "Unauthorized" }, 401);
+  }
 
   if (!LINKEDIN_CLIENT_ID || !LINKEDIN_CLIENT_SECRET) {
     return json({ error: "LinkedIn client credentials not configured" }, 500);

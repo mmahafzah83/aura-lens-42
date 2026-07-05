@@ -1491,6 +1491,7 @@ export type Database = {
       linkedin_connections: {
         Row: {
           access_token: string
+          claim_token_hash: string | null
           connected_at: string | null
           created_at: string | null
           display_name: string | null
@@ -1511,6 +1512,7 @@ export type Database = {
         }
         Insert: {
           access_token: string
+          claim_token_hash?: string | null
           connected_at?: string | null
           created_at?: string | null
           display_name?: string | null
@@ -1531,6 +1533,7 @@ export type Database = {
         }
         Update: {
           access_token?: string
+          claim_token_hash?: string | null
           connected_at?: string | null
           created_at?: string | null
           display_name?: string | null
@@ -2687,6 +2690,10 @@ export type Database = {
         Returns: string
       }
       is_current_user_admin: { Args: never; Returns: boolean }
+      record_guide_miss: {
+        Args: { _slug: string; _surface: string }
+        Returns: undefined
+      }
       rollback_design_version: {
         Args: { p_target_version: number }
         Returns: undefined

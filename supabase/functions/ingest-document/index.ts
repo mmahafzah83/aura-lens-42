@@ -499,6 +499,24 @@ Deno.serve(async (req) => {
     console.log(`[ingest-document] auth OK user=${user.id} doc=${document_id}`);
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
+
+    // Ownership guard: caller must own this document before we do anything.
+    const { data: ownershipRow, error: ownErr } = await adminClient
+      .from("documents")
+      .select("user_id")
+      .eq("id", document_id)
+      .maybeSingle();
+    if (ownErr) {
+      return new Response(JSON.stringify({ error: "Lookup failed" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (!ownershipRow || (ownershipRow as any).user_id !== user.id) {
+      return new Response(JSON.stringify({ error: "Not found" }), {
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     await adminClient
       .from("documents")
       .update({ status: "processing", error_message: null })

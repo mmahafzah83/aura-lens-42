@@ -596,7 +596,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       const { data: row } = await supabase
-        .from("linkedin_connections")
+        .from("linkedin_connections_safe" as any)
         .select("last_synced_at, status")
         .eq("user_id", user.id)
         .maybeSingle();
