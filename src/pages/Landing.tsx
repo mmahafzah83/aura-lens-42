@@ -888,7 +888,6 @@ const LANDING_HTML = `
       
       
       
-    </svg></div>
   </div>
 </section>
 
