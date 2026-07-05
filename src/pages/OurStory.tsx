@@ -12,6 +12,7 @@ const label: React.CSSProperties = {
   textTransform: "uppercase",
   margin: "46px 0 16px",
   display: "block",
+  fontWeight: 400,
 };
 
 const body: React.CSSProperties = {
