@@ -868,8 +868,8 @@ const LANDING_HTML = `
 
 <div class="seam"></div>
 
-<!-- CLIMB · Orano gravitas -->
-<section class="dark" id="climb">
+<!-- IMPRINT · Persepolis reveal -->
+<section class="bone" data-veil id="imprint">
   <div class="sweep"></div>
   <div class="wrap climb-grid">
     <div class="climbcol">
