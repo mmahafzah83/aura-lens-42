@@ -880,14 +880,6 @@ const LANDING_HTML = `
         <p class="lede">Imprint is a single score from 0 to 100 — how far your expertise has turned into presence. It climbs when you publish something only you could say, holds steady when you're just reading, and never moves for noise. Not followers. Not likes. Evidence you can watch grow, a little every week.</p>
       </div>
     </div>
-      
-      
-      
-      
-      
-      
-      
-      
   </div>
 </section>
 
