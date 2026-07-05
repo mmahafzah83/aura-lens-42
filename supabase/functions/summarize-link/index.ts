@@ -13,6 +13,37 @@ function hasArabic(text: string): boolean {
   return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text);
 }
 
+// SSRF guard: block hostnames pointing at internal/private/link-local ranges,
+// loopback, or cloud metadata endpoints. Matches the policy used by
+// ingest-capture.
+function isBlockedHost(hostname: string): boolean {
+  const h = hostname.toLowerCase();
+  if (!h) return true;
+  if (h === "localhost" || h === "ip6-localhost" || h === "ip6-loopback") return true;
+  if (h.endsWith(".local") || h.endsWith(".internal")) return true;
+  if (h === "metadata.google.internal") return true;
+  // IPv4 literal
+  const ipv4 = h.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (ipv4) {
+    const [a, b] = ipv4.slice(1).map((n) => parseInt(n, 10));
+    if (a === 10) return true;
+    if (a === 127) return true;
+    if (a === 0) return true;
+    if (a === 169 && b === 254) return true; // link-local + AWS/GCP metadata 169.254.169.254
+    if (a === 172 && b >= 16 && b <= 31) return true;
+    if (a === 192 && b === 168) return true;
+    if (a >= 224) return true; // multicast + reserved
+    return false;
+  }
+  // IPv6 literals — block loopback, link-local, unique-local
+  if (h.startsWith("[") && h.endsWith("]")) {
+    const v6 = h.slice(1, -1);
+    if (v6 === "::1" || v6 === "::") return true;
+    if (v6.startsWith("fe80:") || v6.startsWith("fc") || v6.startsWith("fd")) return true;
+  }
+  return false;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -57,6 +88,11 @@ serve(async (req) => {
     }
     if (parsedUrl.protocol !== "https:") {
       return new Response(JSON.stringify({ error: "Only https:// URLs are allowed" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (isBlockedHost(parsedUrl.hostname)) {
+      return new Response(JSON.stringify({ error: "URL host is not allowed" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
