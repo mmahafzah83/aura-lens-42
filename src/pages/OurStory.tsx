@@ -143,7 +143,7 @@ const OurStory = () => {
           Why Aura exists.
         </h1>
 
-        <span style={label}>FROM THE FOUNDER</span>
+        <h2 style={label}>FROM THE FOUNDER</h2>
 
         <p style={body}>
           I built Aura because I was tired of watching the most capable people in the room stay invisible.
@@ -171,7 +171,7 @@ const OurStory = () => {
           The problem was never your expertise. It is that no one ever helped you turn what is in your head into what your field can see.
         </p>
 
-        <span style={label}>One of you</span>
+        <h2 style={label}>One of you</h2>
 
         <p style={body}>I'm not writing this from the outside.</p>
 
@@ -185,7 +185,7 @@ const OurStory = () => {
           For a real expert, sounding like everyone else is worse than saying nothing at all.
         </div>
 
-        <span style={label}>The quieter problem</span>
+        <h2 style={label}>The quieter problem</h2>
 
         <p style={body}>
           There is a quieter problem underneath the first one — and I know it because I live it too.
@@ -225,7 +225,7 @@ const OurStory = () => {
 
         <p style={body}>Clarity first. Presence after.</p>
 
-        <span style={label}>What I believe</span>
+        <h2 style={label}>What I believe</h2>
 
         <p style={body}>
           Expertise should compound into presence.
@@ -241,7 +241,7 @@ const OurStory = () => {
           You shouldn't have to become a content creator, or perform a kind of self-promotion you quietly find distasteful, to be known for what you already know.
         </p>
 
-        <span style={label}>What Aura refuses to be</span>
+        <h2 style={label}>What Aura refuses to be</h2>
 
         <p style={body}>Not a ghostwriter — it works from your mind, never borrowed words.</p>
 
@@ -257,7 +257,7 @@ const OurStory = () => {
 
         <p style={body}>Ready the moment you decide to publish. Not a moment before.</p>
 
-        <span style={label}>The standard I hold it to</span>
+        <h2 style={label}>The standard I hold it to</h2>
 
         <p style={body}>
           Every line Aura writes has to be something you'd genuinely say — in English, or in Arabic with the dignity the language deserves.
@@ -273,7 +273,7 @@ const OurStory = () => {
 
         <p style={body}>I built Aura to the standard I'd demand as a user. Because I am one.</p>
 
-        <span style={label}>Built for you, too</span>
+        <h2 style={label}>Built for you, too</h2>
 
         <p style={body}>
           I set out to fix my own invisibility. I found a problem thousands of people across our region live with, quietly.
