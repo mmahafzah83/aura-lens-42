@@ -652,11 +652,11 @@ const LANDING_HTML = `
   <canvas class="pcine-cv"></canvas>
   <p class="eyebrow pcine-eye">THE REAL PROBLEM</p>
   <div class="pcine-beats">
-    <div class="beat b1" data-a="0.4" data-b="3.4">You've read everything.</div>
-    <div class="beat b2" data-a="3.4" data-b="7.4">Every day. Every week. Every year — more than almost anyone in your field.</div>
-    <div class="beat b3" data-a="7.4" data-b="11.8">And all of it stays where no one can reach it.<br>In your head. Unshared. Unretrieved.</div>
-    <div class="beat b4" data-a="11.8" data-b="15.6">The market never learns what you know — so it follows someone louder.</div>
-    <div class="beat b5" data-a="16.0" data-b="999">Aura turns what you read into <b>what the world sees.</b><span class="sub">In your own voice — your structure, your tone.</span></div>
+    <div class="beat b1" data-a="0.4" data-b="4.0">You read everything.</div>
+    <div class="beat b2" data-a="4.0" data-b="11.0">Every day. Every week. Every year. More than anyone around you.</div>
+    <div class="beat b3" data-a="11.0" data-b="18.0">But it all stays in your head.<br>No one sees it.</div>
+    <div class="beat b4" data-a="18.0" data-b="24.5">So the market follows someone louder — not someone better.</div>
+    <div class="beat b5" data-a="25.0" data-b="999">Aura turns what you read into <b>what the world sees.</b><span class="sub">In your voice. Your words. Your way.</span></div>
   </div>
 </section>
 
@@ -1096,14 +1096,14 @@ tio.observe(document.getElementById("tiers"));
  function mark(cx,cy,size,al){const s=size/32;ctx.save();ctx.translate(cx,cy);ctx.lineCap="round";ctx.globalAlpha=al;ctx.strokeStyle="rgba(242,238,228,.95)";for(const r of RAYS){ctx.lineWidth=r[4]*s*.9;ctx.beginPath();ctx.moveTo((r[0]-32)*s,(r[1]-32)*s);ctx.lineTo((r[2]-32)*s,(r[3]-32)*s);ctx.stroke();}ctx.strokeStyle="#36C5B0";ctx.lineWidth=1.55*s;ctx.beginPath();ctx.moveTo((40.07-32)*s,(21.67-32)*s);ctx.lineTo((49.24-32)*s,(9.94-32)*s);ctx.stroke();ctx.beginPath();ctx.arc((49.24-32)*s,(9.94-32)*s,1.7*s,0,7);ctx.fillStyle="#36C5B0";ctx.fill();ctx.fillStyle="#F2EEE4";ctx.beginPath();ctx.arc(0,0,6.85*s,0,7);ctx.fill();ctx.restore();}
  function step(pt){ctx.clearRect(0,0,w,h);const cx=w/2,cy=h*0.5,R=Math.min(w,h)*0.5;
    if(!dust){dust=[];for(let i=0;i<14;i++)dust.push({x:Math.random()*w,y:Math.random()*h,r:.6+Math.random()*1.4,sp:4+Math.random()*8,ph:Math.random()*6});}
-   const g=ease(cl((pt-12.4)/2.6,0,1)),m=ease(cl((pt-15.4)/1.8,0,1));
+   const g=ease(cl((pt-18.6)/3.5,0,1)),m=ease(cl((pt-24.4)/2.2,0,1));
    for(const d of dust){const yy=((d.y-pt*d.sp)%h+h)%h;ctx.globalAlpha=.16+.2*Math.sin(pt+d.ph);ctx.fillStyle="#36C5B0";ctx.beginPath();ctx.arc(d.x,yy,d.r,0,7);ctx.fill();}
    ctx.globalAlpha=1;
    if(g>0.01){const rg=ctx.createRadialGradient(cx,cy,R*(0.5-0.3*g),cx,cy,R*1.25);rg.addColorStop(0,"rgba(4,7,6,0)");rg.addColorStop(1,"rgba(4,7,6,"+(0.55*g)+")");ctx.fillStyle=rg;ctx.fillRect(0,0,w,h);ctx.strokeStyle="rgba(54,197,176,"+(0.4*g*(1-m))+")";ctx.lineWidth=1.4;ctx.beginPath();ctx.arc(cx,cy,R*(0.62-0.34*g),0,7);ctx.stroke();}
    if(m>0.01){ctx.fillStyle="rgba(4,7,6,"+(0.72*m)+")";ctx.fillRect(0,0,w,h);glow(cx,cy,R*0.7,0.18*m);mark(cx,cy,R*0.3*(0.9+0.1*Math.sin(pt*1.4)),m);}}
  function ub(pt){for(const bt of beats){let o=0,y=16;if(pt>=bt.a-0.6){const inP=cl((pt-bt.a)/0.85,0,1);o=inP;y=16*(1-inP);if(bt.b<900&&pt>bt.b-0.6){o=1-cl((pt-(bt.b-0.6))/0.6,0,1);}}bt.el.style.opacity=o.toFixed(3);bt.el.style.transform="translateY("+y.toFixed(1)+"px)";}}
  size();addEventListener("resize",size);
- if(RED){step(12);ub(11);return;}
+ if(RED){step(16);ub(15);return;}
  new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting&&!playing){playing=true;t0=performance.now();}else if(!e.isIntersecting){playing=false;}}),{threshold:.5}).observe(sec);
  function frame(now){const pt=playing?(now-t0)/1000:0;step(pt);ub(pt);requestAnimationFrame(frame);}
  requestAnimationFrame(frame);})();
