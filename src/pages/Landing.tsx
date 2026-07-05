@@ -727,8 +727,6 @@ const LANDING_HTML = `
     </div>
   </div>
 </section>
-
-
 <div class="seam"></div>
 
 <!-- WHAT AURA MAKES · pipeline + Arabic output gallery -->
