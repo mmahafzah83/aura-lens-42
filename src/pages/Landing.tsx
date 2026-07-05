@@ -881,11 +881,6 @@ const LANDING_HTML = `
       </div>
     </div>
       
-      <g stroke-width="4" stroke-linecap="round">
-        <line x1="32" y1="316" x2="84" y2="316" stroke="#2a3a36"/><line x1="84" y1="252" x2="136" y2="252" stroke="#2a3a36"/>
-        <line x1="136" y1="188" x2="188" y2="188" stroke="#2a3a36"/><line x1="188" y1="124" x2="240" y2="124" stroke="#2a3a36"/>
-        <line x1="240" y1="60" x2="292" y2="60" stroke="#36C5B0" stroke-opacity=".55"/>
-      </g>
       <circle cx="58" cy="316" r="5" fill="#EDE7D9" class="pn"/><circle cx="110" cy="252" r="5" fill="#EDE7D9" class="pn" style="animation-delay:.4s"/>
       <circle cx="162" cy="188" r="5" fill="#EDE7D9" class="pn" style="animation-delay:.8s"/><circle cx="214" cy="124" r="5" fill="#EDE7D9" class="pn" style="animation-delay:1.2s"/>
       <circle cx="266" cy="60" r="6" fill="#36C5B0" class="pn" style="animation-delay:1.6s"/>
