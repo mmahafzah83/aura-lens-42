@@ -30,14 +30,35 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { temp_id } = await req.json();
-    if (!temp_id) {
-      return new Response(JSON.stringify({ error: "Missing temp_id" }), {
+    const { temp_id, claim_token } = await req.json();
+    if (!temp_id || !claim_token || typeof claim_token !== "string" || claim_token.length < 16) {
+      return new Response(JSON.stringify({ error: "Missing temp_id or claim_token" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const adminClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
+    // Hash the caller-supplied claim_token and require it to match the row's
+    // stored hash. This prevents any authenticated user from hijacking a
+    // pending connection by guessing/leaking only its row id.
+    const enc = new TextEncoder().encode(claim_token);
+    const digest = await crypto.subtle.digest("SHA-256", enc);
+    const tokenHash = Array.from(new Uint8Array(digest))
+      .map((b) => b.toString(16).padStart(2, "0")).join("");
+
+    const { data: pending, error: pendErr } = await adminClient
+      .from("linkedin_connections")
+      .select("id, claim_token_hash, status")
+      .eq("id", temp_id)
+      .eq("status", "pending_claim")
+      .maybeSingle();
+    if (pendErr || !pending || !(pending as any).claim_token_hash ||
+        (pending as any).claim_token_hash !== tokenHash) {
+      return new Response(JSON.stringify({ error: "Invalid claim" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Delete any existing active connection for this user
     await adminClient
@@ -49,7 +70,7 @@ Deno.serve(async (req) => {
     // Claim the pending connection
     const { data, error } = await adminClient
       .from("linkedin_connections")
-      .update({ user_id: user.id, status: "active", connected_at: new Date().toISOString() })
+      .update({ user_id: user.id, status: "active", connected_at: new Date().toISOString(), claim_token_hash: null })
       .eq("id", temp_id)
       .eq("status", "pending_claim")
       .select()
