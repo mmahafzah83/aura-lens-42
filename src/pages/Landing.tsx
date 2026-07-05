@@ -1079,7 +1079,7 @@ tio.observe(document.getElementById("tiers"));
  addEventListener("resize",size);
  if(RED){step(26);ub(26);if(cue)cue.classList.add("show");return;}
  new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting&&!playing){playing=true;t0=performance.now();}else if(!e.isIntersecting){playing=false;}}),{threshold:.5}).observe(sec);
- function frame(now){const pt=playing?(now-t0)/1000:0;step(pt);ub(pt);requestAnimationFrame(frame);}
+ function frame(now){const pt=playing?(now-t0)/1000:0;step(pt);ub(pt);if(cue)cue.classList.toggle("show",pt>=26);requestAnimationFrame(frame);}
  requestAnimationFrame(frame);})();
 (function(){const items=[...document.querySelectorAll(".tlitem[data-scene]")],scenes=document.querySelectorAll(".tlstage .scene");if(!items.length||!scenes.length)return;
  let cur=-1;
