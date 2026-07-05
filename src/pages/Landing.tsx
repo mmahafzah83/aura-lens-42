@@ -873,16 +873,14 @@ const LANDING_HTML = `
   <div class="veil"></div>
   <div class="wrap">
     <p class="eyebrow" data-reveal>THE IMPRINT</p>
-      <p class="lede" data-reveal style="margin-bottom:8px">Presence isn't a switch you flip. It's a climb — and Aura shows you exactly where you stand, and the next rung.</p>
-      <div class="tiers" id="tiers">
-        <div class="tier" data-reveal><div class="tinfo"><span class="tn">OBSERVER</span><span class="tm">You're reading the field, taking it all in.</span></div><span class="tb"><i data-w="20"></i></span></div>
-        <div class="tier" data-reveal><div class="tinfo"><span class="tn">EXPLORER</span><span class="tm">You start capturing what actually matters to you.</span></div><span class="tb"><i data-w="40"></i></span></div>
-        <div class="tier" data-reveal><div class="tinfo"><span class="tn">STRATEGIST</span><span class="tm">You turn signals into a point of view.</span></div><span class="tb"><i data-w="62"></i></span></div>
-        <div class="tier" data-reveal><div class="tinfo"><span class="tn">VOICE</span><span class="tm">You publish in your voice, week after week.</span></div><span class="tb"><i data-w="82"></i></span></div>
-        <div class="tier" data-reveal><div class="tinfo"><span class="tn">PRESENCE</span><span class="tm">The field knows your name. People come to you.</span></div><span class="tb"><i data-w="100"></i></span></div>
+    <div class="impwrap">
+      <div class="dialcard" data-reveal><svg id="dial" viewBox="0 0 280 280"></svg></div>
+      <div data-reveal>
+        <h2>One number. Zero vanity.</h2>
+        <p class="lede">Imprint is a single score from 0 to 100 — how far your expertise has turned into presence. It climbs when you publish something only you could say, holds steady when you're just reading, and never moves for noise. Not followers. Not likes. Evidence you can watch grow, a little every week.</p>
       </div>
-      <p class="climbnote" data-reveal>Every week you publish from a signal, your Imprint grows. Miss a week and nothing collapses — Aura keeps reading, and your next move is already waiting.</p>
     </div>
+
     <div class="climbstage" data-reveal aria-hidden="true"><svg viewBox="0 0 320 360">
       <polyline points="58,316 110,252 162,188 214,124 266,60" fill="none" stroke="#2c4a44" stroke-width="1.5" stroke-dasharray="3 5"/>
       <g stroke-width="4" stroke-linecap="round">
