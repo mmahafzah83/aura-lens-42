@@ -513,6 +513,11 @@ const LANDING_CSS = `
   .aura-landing .pcine-cv{position:absolute;inset:0;width:100%;height:100%;z-index:3}
   .aura-landing .pcine-eye{position:absolute;top:clamp(82px,12vh,132px);left:0;right:0;text-align:center;z-index:5;margin:0}
   .aura-landing .pcine-beats{position:absolute;left:0;right:0;bottom:19%;text-align:center;padding:0 8%;z-index:5;pointer-events:none}
+  .aura-landing .pcine-cue{position:absolute;left:0;right:0;bottom:5%;margin:0 auto;width:max-content;display:flex;flex-direction:column;align-items:center;gap:7px;background:none;border:0;cursor:pointer;color:#EDE7D9;opacity:0;transform:translateY(6px);transition:opacity .8s ease,transform .8s ease;z-index:6;pointer-events:none}
+  .aura-landing .pcine-cue.show{opacity:.7;transform:none;pointer-events:auto}
+  .aura-landing .pcine-cue .pcine-cue-lbl{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:2.5px}
+  .aura-landing .pcine-cue svg{width:22px;height:auto;animation:pcine-bob 1.9s ease-in-out infinite}
+  @keyframes pcine-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(5px)}}
   .aura-landing .beat{position:absolute;left:8%;right:8%;opacity:0;transform:translateY(16px);font-family:'Newsreader',serif;font-weight:500;line-height:1.16;letter-spacing:-.01em;color:#F4F0E6;text-shadow:0 2px 46px rgba(0,0,0,.92),0 0 14px rgba(0,0,0,.8)}
   .aura-landing .beat b{color:var(--teal);font-weight:500}
   .aura-landing .beat .sub{display:block;font-size:.5em;color:#aeb6b0;margin-top:14px;letter-spacing:.02em;text-shadow:0 2px 30px rgba(0,0,0,.9)}
@@ -643,6 +648,7 @@ const LANDING_HTML = `
     <div class="beat b4" data-a="18.0" data-b="24.5">So the market follows someone louder — not someone better.</div>
     <div class="beat b5" data-a="25.0" data-b="999">Aura turns what you read into <b>what the world sees.</b><span class="sub">In your voice. Your words. Your way.</span></div>
   </div>
+  <button class="pcine-cue" aria-label="Continue"><span class="pcine-cue-lbl">KEEP READING</span><svg viewBox="0 0 24 14" aria-hidden="true"><path d="M2 2l10 10L22 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
 </section>
 
 <!-- THE NUMBERS DON'T LIE -->
@@ -1068,10 +1074,12 @@ tio.observe(document.getElementById("tiers"));
    if(g>0.01){const rg=ctx.createRadialGradient(cx,cy,R*(0.5-0.3*g),cx,cy,R*1.25);rg.addColorStop(0,"rgba(4,7,6,0)");rg.addColorStop(1,"rgba(4,7,6,"+(0.55*g)+")");ctx.fillStyle=rg;ctx.fillRect(0,0,w,h);ctx.strokeStyle="rgba(54,197,176,"+(0.4*g*(1-m))+")";ctx.lineWidth=1.4;ctx.beginPath();ctx.arc(cx,cy,R*(0.62-0.34*g),0,7);ctx.stroke();}
    if(m>0.01){ctx.fillStyle="rgba(4,7,6,"+(0.72*m)+")";ctx.fillRect(0,0,w,h);glow(cx,cy,R*0.7,0.18*m);mark(cx,cy,R*0.3*(0.9+0.1*Math.sin(pt*1.4)),m);}}
  function ub(pt){for(const bt of beats){let o=0,y=16;if(pt>=bt.a-0.6){const inP=cl((pt-bt.a)/0.85,0,1);o=inP;y=16*(1-inP);if(bt.b<900&&pt>bt.b-0.6){o=1-cl((pt-(bt.b-0.6))/0.6,0,1);}}bt.el.style.opacity=o.toFixed(3);bt.el.style.transform="translateY("+y.toFixed(1)+"px)";}}
- size();addEventListener("resize",size);
- if(RED){step(16);ub(15);return;}
+ size();
+ const cue=sec.querySelector(".pcine-cue");if(cue)cue.addEventListener("click",function(){var nx=sec.nextElementSibling;if(nx)nx.scrollIntoView({behavior:"smooth"});});
+ addEventListener("resize",size);
+ if(RED){step(26);ub(26);if(cue)cue.classList.add("show");return;}
  new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting&&!playing){playing=true;t0=performance.now();}else if(!e.isIntersecting){playing=false;}}),{threshold:.5}).observe(sec);
- function frame(now){const pt=playing?(now-t0)/1000:0;step(pt);ub(pt);requestAnimationFrame(frame);}
+ function frame(now){const pt=playing?(now-t0)/1000:0;step(pt);ub(pt);if(cue)cue.classList.toggle("show",pt>=26);requestAnimationFrame(frame);}
  requestAnimationFrame(frame);})();
 (function(){const items=[...document.querySelectorAll(".tlitem[data-scene]")],scenes=document.querySelectorAll(".tlstage .scene");if(!items.length||!scenes.length)return;
  let cur=-1;
@@ -1084,11 +1092,11 @@ tio.observe(document.getElementById("tiers"));
 (function(){var e=document.getElementById("amk-markRead");if(e&&typeof svgMark==="function")svgMark(e,"#EDE7D9");})();
 (function(){
   var root=document.getElementById("amk-combo"); if(!root)return;
-  var ph=["cap","read","frag","sig","out"], lbl=["CAPTURE","AURA READS","FRAGMENTS","SIGNALS","OUTPUT"], dur=[3000,3100,3400,3700,7600];
+  var ph=["cap","read","frag","sig","out"], lbl=["CAPTURE","AURA READS","FRAGMENTS","SIGNALS","OUTPUT"], dur=[5000,5200,6200,5600,8200];
   var stations=[].slice.call(root.querySelectorAll(".lstation"));
   var beam=root.querySelector(".dropbeam"), bz=root.querySelector(".beamzone");
   var stage=root.querySelector(".stage"), statEl=root.querySelector(".a-stat"), capEl=root.querySelector(".cap-l");
-  var caps=["One tap, the moment you read it — a link, a report, a voice note.","Aura reads each one, breaks it down, and connects it across your field.","The ideas worth keeping are saved — each tied to your profile, your sector, the trend behind it.","Week by week, the patterns converge into the few themes that are yours to own.","A post, a carousel, a diagram, a framework — in your voice, ready when you are."];
+  var caps=["One tap, the moment you read it — a link, a report, a voice note.","Aura reads each one, breaks it down, and connects it across your field.","The ideas worth keeping are saved — each tied to your profile, your sector, the trend behind it.","Week by week, the patterns turn into the few themes that are yours to own.","A post, a carousel, a diagram, a framework — in your voice, ready when you are."];
   var i=0,timer=null;
   function beamTo(n){var r=stations[n].getBoundingClientRect(),c=bz.getBoundingClientRect();beam.style.left=(r.left-c.left+r.width/2)+"px";beam.style.opacity="1";}
   function countSig(){stage.querySelectorAll(".a-sigrow").forEach(function(r){var pct=r.querySelector(".a-pct"),target=+r.dataset.v,t0=performance.now();(function tk(now){var pr=Math.min((now-t0)/1100,1);pct.textContent=Math.round(target*pr)+"%";if(pr<1)requestAnimationFrame(tk);})(performance.now());});}
