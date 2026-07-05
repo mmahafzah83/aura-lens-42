@@ -870,8 +870,8 @@ const LANDING_HTML = `
 
 <!-- IMPRINT · Persepolis reveal -->
 <section class="bone" data-veil id="imprint">
-  <div class="sweep"></div>
-  <div class="wrap climb-grid">
+  <div class="veil"></div>
+  <div class="wrap">
     <div class="climbcol">
       <p class="eyebrow" data-reveal>THE CLIMB</p>
       <h2 data-reveal>Five tiers. One direction.</h2>
