@@ -648,6 +648,7 @@ const LANDING_HTML = `
     <div class="beat b4" data-a="18.0" data-b="24.5">So the market follows someone louder — not someone better.</div>
     <div class="beat b5" data-a="25.0" data-b="999">Aura turns what you read into <b>what the world sees.</b><span class="sub">In your voice. Your words. Your way.</span></div>
   </div>
+  <button class="pcine-cue" aria-label="Continue"><span class="pcine-cue-lbl">KEEP READING</span><svg viewBox="0 0 24 14" aria-hidden="true"><path d="M2 2l10 10L22 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
 </section>
 
 <!-- THE NUMBERS DON'T LIE -->
