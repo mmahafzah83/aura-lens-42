@@ -1096,7 +1096,7 @@ tio.observe(document.getElementById("tiers"));
   var stations=[].slice.call(root.querySelectorAll(".lstation"));
   var beam=root.querySelector(".dropbeam"), bz=root.querySelector(".beamzone");
   var stage=root.querySelector(".stage"), statEl=root.querySelector(".a-stat"), capEl=root.querySelector(".cap-l");
-  var caps=["One tap, the moment you read it — a link, a report, a voice note.","Aura reads each one, breaks it down, and connects it across your field.","The ideas worth keeping are saved — each tied to your profile, your sector, the trend behind it.","Week by week, the patterns converge into the few themes that are yours to own.","A post, a carousel, a diagram, a framework — in your voice, ready when you are."];
+  var caps=["One tap, the moment you read it — a link, a report, a voice note.","Aura reads each one, breaks it down, and connects it across your field.","The ideas worth keeping are saved — each tied to your profile, your sector, the trend behind it.","Week by week, the patterns turn into the few themes that are yours to own.","A post, a carousel, a diagram, a framework — in your voice, ready when you are."];
   var i=0,timer=null;
   function beamTo(n){var r=stations[n].getBoundingClientRect(),c=bz.getBoundingClientRect();beam.style.left=(r.left-c.left+r.width/2)+"px";beam.style.opacity="1";}
   function countSig(){stage.querySelectorAll(".a-sigrow").forEach(function(r){var pct=r.querySelector(".a-pct"),target=+r.dataset.v,t0=performance.now();(function tk(now){var pr=Math.min((now-t0)/1100,1);pct.textContent=Math.round(target*pr)+"%";if(pr<1)requestAnimationFrame(tk);})(performance.now());});}
