@@ -1092,7 +1092,7 @@ tio.observe(document.getElementById("tiers"));
 (function(){var e=document.getElementById("amk-markRead");if(e&&typeof svgMark==="function")svgMark(e,"#EDE7D9");})();
 (function(){
   var root=document.getElementById("amk-combo"); if(!root)return;
-  var ph=["cap","read","frag","sig","out"], lbl=["CAPTURE","AURA READS","FRAGMENTS","SIGNALS","OUTPUT"], dur=[3000,3100,3400,3700,7600];
+  var ph=["cap","read","frag","sig","out"], lbl=["CAPTURE","AURA READS","FRAGMENTS","SIGNALS","OUTPUT"], dur=[5000,5200,6200,5600,8200];
   var stations=[].slice.call(root.querySelectorAll(".lstation"));
   var beam=root.querySelector(".dropbeam"), bz=root.querySelector(".beamzone");
   var stage=root.querySelector(".stage"), statEl=root.querySelector(".a-stat"), capEl=root.querySelector(".cap-l");
