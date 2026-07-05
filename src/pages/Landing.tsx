@@ -883,7 +883,7 @@ const LANDING_HTML = `
         <div class="tier" data-reveal><div class="tinfo"><span class="tn">VOICE</span><span class="tm">You publish in your voice, week after week.</span></div><span class="tb"><i data-w="82"></i></span></div>
         <div class="tier" data-reveal><div class="tinfo"><span class="tn">PRESENCE</span><span class="tm">The field knows your name. People come to you.</span></div><span class="tb"><i data-w="100"></i></span></div>
       </div>
-      <p class="climbnote" data-reveal>Every week you publish from a signal, your Imprint compounds. Miss a week and nothing collapses — Aura keeps reading, and your next move is already waiting.</p>
+      <p class="climbnote" data-reveal>Every week you publish from a signal, your Imprint grows. Miss a week and nothing collapses — Aura keeps reading, and your next move is already waiting.</p>
     </div>
     <div class="climbstage" data-reveal aria-hidden="true"><svg viewBox="0 0 320 360">
       <polyline points="58,316 110,252 162,188 214,124 266,60" fill="none" stroke="#2c4a44" stroke-width="1.5" stroke-dasharray="3 5"/>
