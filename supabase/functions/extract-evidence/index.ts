@@ -81,6 +81,35 @@ async function fetchSourceContent(
   }
 }
 
+// Verify that (sourceType, sourceId) is owned by userId. Throws on mismatch.
+// Used to block cross-tenant reads by JWT callers before we ever fetch content.
+async function assertSourceOwnership(
+  supabase: any,
+  sourceType: string,
+  sourceId: string,
+  userId: string,
+): Promise<void> {
+  const tableByType: Record<string, string> = {
+    entry: "entries",
+    document: "documents",
+    framework: "master_frameworks",
+    intelligence: "learned_intelligence",
+  };
+  const table = tableByType[sourceType];
+  if (!table) throw new Error(`Unknown source type: ${sourceType}`);
+  const { data, error } = await supabase
+    .from(table)
+    .select("user_id")
+    .eq("id", sourceId)
+    .maybeSingle();
+  if (error) throw new Error(`Ownership lookup failed: ${error.message}`);
+  if (!data || (data as any).user_id !== userId) {
+    const err: any = new Error("Forbidden");
+    err.status = 403;
+    throw err;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -136,6 +165,19 @@ Deno.serve(async (req) => {
     // If no source_registry_id, register first
     let registryId = source_registry_id;
     if (!registryId && source_type && source_id && user_id) {
+      // JWT callers must own the underlying source; service-role/cron bypass.
+      if (!isServiceRole && !isCron) {
+        try {
+          await assertSourceOwnership(adminClient, source_type, source_id, user_id);
+        } catch (e: any) {
+          if (e?.status === 403) {
+            return new Response(JSON.stringify({ error: "Forbidden" }), {
+              status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+          throw e;
+        }
+      }
       const { content, title } = await fetchSourceContent(adminClient, source_type, source_id);
       const { data: existing } = await adminClient
         .from("source_registry")
