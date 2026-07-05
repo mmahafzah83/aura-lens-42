@@ -884,7 +884,7 @@ const LANDING_HTML = `
       
       
       
-      <text x="44" y="338" font-family="'IBM Plex Mono',monospace" font-size="9" letter-spacing="1" fill="#5f6a66">OBSERVER</text>
+      
       <text x="292" y="44" text-anchor="end" font-family="'IBM Plex Mono',monospace" font-size="9" letter-spacing="1" fill="#36C5B0">PRESENCE</text>
       <circle r="13" fill="#36C5B0" fill-opacity=".18" class="climbhalo"/>
       <circle r="6.5" fill="#36C5B0" class="climber"/>
