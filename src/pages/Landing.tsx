@@ -882,7 +882,7 @@ const LANDING_HTML = `
     </div>
       
       
-      <circle cx="162" cy="188" r="5" fill="#EDE7D9" class="pn" style="animation-delay:.8s"/><circle cx="214" cy="124" r="5" fill="#EDE7D9" class="pn" style="animation-delay:1.2s"/>
+      <circle cx="214" cy="124" r="5" fill="#EDE7D9" class="pn" style="animation-delay:1.2s"/>
       <circle cx="266" cy="60" r="6" fill="#36C5B0" class="pn" style="animation-delay:1.6s"/>
       <text x="44" y="338" font-family="'IBM Plex Mono',monospace" font-size="9" letter-spacing="1" fill="#5f6a66">OBSERVER</text>
       <text x="292" y="44" text-anchor="end" font-family="'IBM Plex Mono',monospace" font-size="9" letter-spacing="1" fill="#36C5B0">PRESENCE</text>
