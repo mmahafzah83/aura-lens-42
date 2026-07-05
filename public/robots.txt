@@ -12,5 +12,15 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /home
+Disallow: /dashboard
+Disallow: /login
+Disallow: /admin
+Disallow: /admin/
+Disallow: /onboarding
+Disallow: /settings
+Disallow: /trends/
+Disallow: /carousel-studio
+Disallow: /edition
 
 Sitemap: https://www.aura-intel.org/sitemap.xml

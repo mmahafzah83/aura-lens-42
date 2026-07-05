@@ -394,7 +394,7 @@ const LANDING_CSS = `
   .aura-landing .ecard:hover{transform:translateY(-4px);background:rgba(14,22,20,.85);box-shadow:0 18px 50px rgba(0,0,0,.5)}
   .aura-landing .ecard .eg{display:inline-flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:50%;border:1px solid var(--amber);margin-bottom:16px}
   .aura-landing .ecard .eg svg{width:17px;height:17px;fill:var(--amber)}
-  .aura-landing .ecard h4{font-size:21px;font-weight:500;margin:0 0 8px;color:var(--paper)}
+  .aura-landing .ecard h3{font-size:21px;font-weight:500;margin:0 0 8px;color:var(--paper)}
   .aura-landing .ecard p{font-size:14.5px;line-height:1.55;color:#9aa39e;margin:0}
   .aura-landing /* what changes — word morph + timeline */
   .morph{position:relative;text-align:center;margin:36px 0 58px;height:clamp(56px,9vw,118px);font-family:'Newsreader',serif;font-weight:500}
@@ -410,7 +410,7 @@ const LANDING_CSS = `
   .aura-landing .tlitem:last-child{padding-bottom:0}
   .aura-landing .tlitem::before{content:"";position:absolute;left:-34px;top:5px;width:13px;height:13px;border-radius:50%;background:var(--amber);box-shadow:0 0 0 4px #040706,0 0 16px rgba(214,167,72,.6)}
   .aura-landing .tlk{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:2px;color:var(--amber);display:block;margin-bottom:8px}
-  .aura-landing .tlitem h4{font-size:clamp(20px,2.6vw,26px);font-weight:500;margin:0 0 8px;color:var(--paper)}
+  .aura-landing .tlitem h3{font-size:clamp(20px,2.6vw,26px);font-weight:500;margin:0 0 8px;color:var(--paper)}
   .aura-landing .tlitem p{font-size:15.5px;line-height:1.6;color:#9aa39e;margin:0;max-width:64ch}
   .aura-landing /* your first 10 minutes */
   .steps10{position:relative;margin-top:36px}
@@ -419,7 +419,7 @@ const LANDING_CSS = `
   .aura-landing .s10n{flex:none;width:46px;height:46px;border:1px solid var(--amber);border-radius:11px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--amber);background:rgba(4,7,6,.6);z-index:1}
   .aura-landing .s10::before{content:"";position:absolute;left:23px;top:46px;bottom:8px;width:1px;background:linear-gradient(180deg,rgba(214,167,72,.4),rgba(214,167,72,.05))}
   .aura-landing .s10:last-child::before{display:none}
-  .aura-landing .s10 h4{font-size:21px;font-weight:500;margin:10px 0 6px;color:var(--paper)}
+  .aura-landing .s10 h3{font-size:21px;font-weight:500;margin:10px 0 6px;color:var(--paper)}
   .aura-landing .s10 p{font-size:15px;line-height:1.55;color:#9aa39e;margin:0;max-width:60ch}
   .aura-landing /* why i built this */
   .founder{overflow:hidden}
@@ -441,7 +441,7 @@ const LANDING_CSS = `
   .aura-landing .ecard .poster{position:relative;height:168px;border-bottom:1px solid #1c2723;background:radial-gradient(130% 130% at 50% 0%,rgba(54,197,176,.07),transparent 62%);overflow:hidden}
   .aura-landing .ecard .poster svg{width:100%;height:100%;display:block}
   .aura-landing .ecard .body{padding:22px 28px 0}
-  .aura-landing .ecard .body h4{font-size:22px;font-weight:500;margin:0 0 8px;color:var(--paper)}
+  .aura-landing .ecard .body h3{font-size:22px;font-weight:500;margin:0 0 8px;color:var(--paper)}
   .aura-landing .ecard .body p{font-size:14.5px;line-height:1.56;color:#9aa39e;margin:0}
   .aura-landing .ecard[data-reveal]{opacity:0;transition:opacity .9s ease,transform 1.05s cubic-bezier(.2,.85,.25,1),box-shadow .35s}
   .aura-landing .ecard:nth-child(odd)[data-reveal]{transform:translateX(-72px) rotate(-5deg)}
@@ -686,7 +686,7 @@ const LANDING_HTML = `
           <circle cx="150" cy="26" r="3.5" fill="#EDE7D9" class="np" style="animation-delay:.6s"/><circle cx="150" cy="144" r="3.5" fill="#EDE7D9" class="np" style="animation-delay:1s"/>
           <circle cx="150" cy="84" r="14" fill="none" stroke="#36C5B0" stroke-width="1" class="halo"/><circle cx="150" cy="84" r="7.5" fill="#36C5B0"/>
         </svg></div>
-        <div class="body"><h4>The identity map</h4><p>Aura doesn't start with content. It starts with you — your strengths, your sector, your natural voice — and builds a complete map of who you are professionally, so nothing it makes is generic.</p></div>
+        <div class="body"><h3>The identity map</h3><p>Aura doesn't start with content. It starts with you — your strengths, your sector, your natural voice — and builds a complete map of who you are professionally, so nothing it makes is generic.</p></div>
       </div>
       <div class="ecard" data-reveal>
         <div class="poster"><svg viewBox="0 0 300 168">
@@ -697,7 +697,7 @@ const LANDING_HTML = `
           </g>
           <rect x="0" y="28" width="28" height="112" fill="url(#aura-beam-grad)" class="beam"/>
         </svg></div>
-        <div class="body"><h4>The intelligence engine</h4><p>You read an article. Aura reads it too — and finds the strategic pattern you'd miss on a busy Tuesday, then connects it to what matters in your sector right now.</p></div>
+        <div class="body"><h3>The intelligence engine</h3><p>You read an article. Aura reads it too — and finds the strategic pattern you'd miss on a busy Tuesday, then connects it to what matters in your sector right now.</p></div>
       </div>
       <div class="ecard" data-reveal>
         <div class="poster"><svg viewBox="0 0 300 168">
@@ -713,7 +713,7 @@ const LANDING_HTML = `
             <rect x="238" y="44" width="8" height="80" rx="4" fill="#36C5B0" class="eb" style="animation-delay:.55s"/>
           </g>
         </svg></div>
-        <div class="body"><h4>The voice studio</h4><p>Aura writes in your voice. Not templates. Not AI speak. Content that sounds like you wrote it at your best — the version of you with three uninterrupted hours to think.</p></div>
+        <div class="body"><h3>The voice studio</h3><p>Aura writes in your voice. Not templates. Not AI speak. Content that sounds like you wrote it at your best — the version of you with three uninterrupted hours to think.</p></div>
       </div>
       <div class="ecard" data-reveal>
         <div class="poster"><svg viewBox="0 0 300 168">
@@ -722,7 +722,7 @@ const LANDING_HTML = `
           <text x="150" y="90" text-anchor="middle" font-family="'Newsreader',serif" font-size="36" fill="#EDE7D9">84</text>
           <text x="150" y="146" text-anchor="middle" font-family="'IBM Plex Mono',monospace" font-size="9" letter-spacing="2" fill="#7c8682">IMPRINT</text>
         </svg></div>
-        <div class="body"><h4>The Imprint</h4><p>Aura turns your progress into one score — the Imprint. It shows what's working, what's growing, and who is starting to notice. The full story is just below.</p></div>
+        <div class="body"><h3>The Imprint</h3><p>Aura turns your progress into one score — the Imprint. It shows what's working, what's growing, and who is starting to notice. The full story is just below.</p></div>
       </div>
     </div>
   </div>
@@ -812,11 +812,11 @@ const LANDING_HTML = `
       <div class="morph" data-reveal><span class="m-inv">Invisible</span><span class="m-und">Undeniable</span></div>
       <div class="timeline" data-reveal>
         <div class="tlline"></div>
-        <div class="tlitem" data-scene="0" data-reveal><span class="tlk">DAY 1</span><h4>Aura learns who you are.</h4><p>Your strengths. Your sector. Your voice. By the end of your first session, Aura knows what makes you different from every other professional in your market.</p></div>
-        <div class="tlitem" data-scene="1" data-reveal><span class="tlk">WEEK 1</span><h4>Your first post goes live.</h4><p>A LinkedIn post that sounds like you — not like AI — about a signal Aura found in what you read. Your expertise, visible for the first time to people who've never met you.</p></div>
-        <div class="tlitem" data-scene="2" data-reveal><span class="tlk">MONTH 1</span><h4>People start to notice.</h4><p>Consistent, intelligent content builds recognition. Decision-makers in your sector start seeing your name next to insights they care about.</p></div>
-        <div class="tlitem" data-scene="3" data-reveal><span class="tlk">MONTH 3</span><h4>The invitations arrive.</h4><p>Speaking panels. Advisory requests. Messages from people you've never met: "I've been following your content." The market is finding you.</p></div>
-        <div class="tlitem" data-scene="4" data-reveal><span class="tlk">YEAR 1</span><h4>You own your space.</h4><p>When someone in your industry raises your topic, your name comes up — not because you marketed yourself, but because your expertise finally has the fingerprint it always deserved.</p></div>
+        <div class="tlitem" data-scene="0" data-reveal><span class="tlk">DAY 1</span><h3>Aura learns who you are.</h3><p>Your strengths. Your sector. Your voice. By the end of your first session, Aura knows what makes you different from every other professional in your market.</p></div>
+        <div class="tlitem" data-scene="1" data-reveal><span class="tlk">WEEK 1</span><h3>Your first post goes live.</h3><p>A LinkedIn post that sounds like you — not like AI — about a signal Aura found in what you read. Your expertise, visible for the first time to people who've never met you.</p></div>
+        <div class="tlitem" data-scene="2" data-reveal><span class="tlk">MONTH 1</span><h3>People start to notice.</h3><p>Consistent, intelligent content builds recognition. Decision-makers in your sector start seeing your name next to insights they care about.</p></div>
+        <div class="tlitem" data-scene="3" data-reveal><span class="tlk">MONTH 3</span><h3>The invitations arrive.</h3><p>Speaking panels. Advisory requests. Messages from people you've never met: "I've been following your content." The market is finding you.</p></div>
+        <div class="tlitem" data-scene="4" data-reveal><span class="tlk">YEAR 1</span><h3>You own your space.</h3><p>When someone in your industry raises your topic, your name comes up — not because you marketed yourself, but because your expertise finally has the fingerprint it always deserved.</p></div>
       </div>
       <div class="tlspacer" aria-hidden="true"></div>
     </div>
