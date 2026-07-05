@@ -513,6 +513,11 @@ const LANDING_CSS = `
   .aura-landing .pcine-cv{position:absolute;inset:0;width:100%;height:100%;z-index:3}
   .aura-landing .pcine-eye{position:absolute;top:clamp(82px,12vh,132px);left:0;right:0;text-align:center;z-index:5;margin:0}
   .aura-landing .pcine-beats{position:absolute;left:0;right:0;bottom:19%;text-align:center;padding:0 8%;z-index:5;pointer-events:none}
+  .aura-landing .pcine-cue{position:absolute;left:0;right:0;bottom:5%;margin:0 auto;width:max-content;display:flex;flex-direction:column;align-items:center;gap:7px;background:none;border:0;cursor:pointer;color:#EDE7D9;opacity:0;transform:translateY(6px);transition:opacity .8s ease,transform .8s ease;z-index:6;pointer-events:none}
+  .aura-landing .pcine-cue.show{opacity:.7;transform:none;pointer-events:auto}
+  .aura-landing .pcine-cue .pcine-cue-lbl{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:2.5px}
+  .aura-landing .pcine-cue svg{width:22px;height:auto;animation:pcine-bob 1.9s ease-in-out infinite}
+  @keyframes pcine-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(5px)}}
   .aura-landing .beat{position:absolute;left:8%;right:8%;opacity:0;transform:translateY(16px);font-family:'Newsreader',serif;font-weight:500;line-height:1.16;letter-spacing:-.01em;color:#F4F0E6;text-shadow:0 2px 46px rgba(0,0,0,.92),0 0 14px rgba(0,0,0,.8)}
   .aura-landing .beat b{color:var(--teal);font-weight:500}
   .aura-landing .beat .sub{display:block;font-size:.5em;color:#aeb6b0;margin-top:14px;letter-spacing:.02em;text-shadow:0 2px 30px rgba(0,0,0,.9)}
