@@ -893,18 +893,39 @@ const LANDING_HTML = `
 
 <div class="seam"></div>
 
-<!-- IMPRINT · Persepolis reveal -->
-<section class="bone" data-veil id="imprint">
-  <div class="veil"></div>
-  <div class="wrap">
-    <p class="eyebrow" data-reveal>THE IMPRINT</p>
-    <div class="impwrap">
-      <div class="dialcard" data-reveal><svg id="dial" viewBox="0 0 280 280"></svg></div>
-      <div data-reveal>
-        <h2>One number. Zero vanity.</h2>
-        <p class="lede">Imprint is a single score from 0 to 100 — how far your expertise has turned into presence. It climbs when you publish something only you could say, holds steady when you're just reading, and never moves for noise. Not followers. Not likes. Evidence you can watch grow, a little every week.</p>
+<!-- CLIMB · Orano gravitas -->
+<section class="dark" id="climb">
+  <div class="sweep"></div>
+  <div class="wrap climb-grid">
+    <div class="climbcol">
+      <p class="eyebrow" data-reveal>THE CLIMB</p>
+      <h2 data-reveal>Five tiers. One direction.</h2>
+      <p class="lede" data-reveal style="margin-bottom:8px">Presence isn't a switch you flip. It's a climb — and Aura shows you exactly where you stand, and the next rung.</p>
+      <div class="tiers" id="tiers">
+        <div class="tier" data-reveal><div class="tinfo"><span class="tn">OBSERVER</span><span class="tm">You're reading the field, taking it all in.</span></div><span class="tb"><i data-w="20"></i></span></div>
+        <div class="tier" data-reveal><div class="tinfo"><span class="tn">EXPLORER</span><span class="tm">You start capturing what actually matters to you.</span></div><span class="tb"><i data-w="40"></i></span></div>
+        <div class="tier" data-reveal><div class="tinfo"><span class="tn">STRATEGIST</span><span class="tm">You turn signals into a point of view.</span></div><span class="tb"><i data-w="62"></i></span></div>
+        <div class="tier" data-reveal><div class="tinfo"><span class="tn">VOICE</span><span class="tm">You publish in your voice, week after week.</span></div><span class="tb"><i data-w="82"></i></span></div>
+        <div class="tier" data-reveal><div class="tinfo"><span class="tn">PRESENCE</span><span class="tm">The field knows your name. People come to you.</span></div><span class="tb"><i data-w="100"></i></span></div>
       </div>
+      <p class="climbnote" data-reveal>Every week you publish from a signal, your Imprint grows. Miss a week and nothing collapses — Aura keeps reading, and your next move is already waiting.</p>
     </div>
+    <div class="climbstage" data-reveal aria-hidden="true"><svg viewBox="0 0 320 360">
+      <polyline points="58,316 110,252 162,188 214,124 266,60" fill="none" stroke="#2c4a44" stroke-width="1.5" stroke-dasharray="3 5"/>
+      <g stroke-width="4" stroke-linecap="round">
+        <line x1="32" y1="316" x2="84" y2="316" stroke="#2a3a36"/><line x1="84" y1="252" x2="136" y2="252" stroke="#2a3a36"/>
+        <line x1="136" y1="188" x2="188" y2="188" stroke="#2a3a36"/><line x1="188" y1="124" x2="240" y2="124" stroke="#2a3a36"/>
+        <line x1="240" y1="60" x2="292" y2="60" stroke="#36C5B0" stroke-opacity=".55"/>
+      </g>
+      <circle cx="58" cy="316" r="5" fill="#EDE7D9" class="pn"/><circle cx="110" cy="252" r="5" fill="#EDE7D9" class="pn" style="animation-delay:.4s"/>
+      <circle cx="162" cy="188" r="5" fill="#EDE7D9" class="pn" style="animation-delay:.8s"/>
+      <circle cx="214" cy="124" r="5" fill="#EDE7D9" class="pn" style="animation-delay:1.2s"/>
+      <circle cx="266" cy="60" r="6" fill="#36C5B0" class="pn" style="animation-delay:1.6s"/>
+      <text x="44" y="338" font-family="'IBM Plex Mono',monospace" font-size="9" letter-spacing="1" fill="#5f6a66">OBSERVER</text>
+      <text x="292" y="44" text-anchor="end" font-family="'IBM Plex Mono',monospace" font-size="9" letter-spacing="1" fill="#36C5B0">PRESENCE</text>
+      <circle r="13" fill="#36C5B0" fill-opacity=".18" class="climbhalo"/>
+      <circle r="6.5" fill="#36C5B0" class="climber"/>
+    </svg></div>
   </div>
 </section>
 
