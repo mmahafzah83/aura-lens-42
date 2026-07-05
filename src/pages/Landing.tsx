@@ -880,8 +880,6 @@ const LANDING_HTML = `
         <p class="lede">Imprint is a single score from 0 to 100 — how far your expertise has turned into presence. It climbs when you publish something only you could say, holds steady when you're just reading, and never moves for noise. Not followers. Not likes. Evidence you can watch grow, a little every week.</p>
       </div>
     </div>
-
-    <div class="climbstage" data-reveal aria-hidden="true"><svg viewBox="0 0 320 360">
       <polyline points="58,316 110,252 162,188 214,124 266,60" fill="none" stroke="#2c4a44" stroke-width="1.5" stroke-dasharray="3 5"/>
       <g stroke-width="4" stroke-linecap="round">
         <line x1="32" y1="316" x2="84" y2="316" stroke="#2a3a36"/><line x1="84" y1="252" x2="136" y2="252" stroke="#2a3a36"/>
