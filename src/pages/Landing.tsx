@@ -1074,8 +1074,10 @@ tio.observe(document.getElementById("tiers"));
    if(g>0.01){const rg=ctx.createRadialGradient(cx,cy,R*(0.5-0.3*g),cx,cy,R*1.25);rg.addColorStop(0,"rgba(4,7,6,0)");rg.addColorStop(1,"rgba(4,7,6,"+(0.55*g)+")");ctx.fillStyle=rg;ctx.fillRect(0,0,w,h);ctx.strokeStyle="rgba(54,197,176,"+(0.4*g*(1-m))+")";ctx.lineWidth=1.4;ctx.beginPath();ctx.arc(cx,cy,R*(0.62-0.34*g),0,7);ctx.stroke();}
    if(m>0.01){ctx.fillStyle="rgba(4,7,6,"+(0.72*m)+")";ctx.fillRect(0,0,w,h);glow(cx,cy,R*0.7,0.18*m);mark(cx,cy,R*0.3*(0.9+0.1*Math.sin(pt*1.4)),m);}}
  function ub(pt){for(const bt of beats){let o=0,y=16;if(pt>=bt.a-0.6){const inP=cl((pt-bt.a)/0.85,0,1);o=inP;y=16*(1-inP);if(bt.b<900&&pt>bt.b-0.6){o=1-cl((pt-(bt.b-0.6))/0.6,0,1);}}bt.el.style.opacity=o.toFixed(3);bt.el.style.transform="translateY("+y.toFixed(1)+"px)";}}
- size();addEventListener("resize",size);
- if(RED){step(16);ub(15);return;}
+ size();
+ const cue=sec.querySelector(".pcine-cue");if(cue)cue.addEventListener("click",function(){var nx=sec.nextElementSibling;if(nx)nx.scrollIntoView({behavior:"smooth"});});
+ addEventListener("resize",size);
+ if(RED){step(26);ub(26);if(cue)cue.classList.add("show");return;}
  new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting&&!playing){playing=true;t0=performance.now();}else if(!e.isIntersecting){playing=false;}}),{threshold:.5}).observe(sec);
  function frame(now){const pt=playing?(now-t0)/1000:0;step(pt);ub(pt);requestAnimationFrame(frame);}
  requestAnimationFrame(frame);})();
