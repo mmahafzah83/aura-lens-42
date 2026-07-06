@@ -679,8 +679,42 @@ Return ONLY a JSON object matching this exact schema:
               else if (c === "[") depthArr++;
               else if (c === "]") depthArr--;
             }
+            // Repair helper: escape raw control chars (newlines/tabs) that
+            // appear inside JSON strings — a common LLM output defect.
+            const repair = (input: string): string => {
+              let out = "";
+              let inS = false, es = false;
+              for (let i = 0; i < input.length; i++) {
+                const ch = input[i];
+                if (es) { out += ch; es = false; continue; }
+                if (ch === "\\") { out += ch; es = true; continue; }
+                if (ch === '"') { inS = !inS; out += ch; continue; }
+                if (inS) {
+                  if (ch === "\n") { out += "\\n"; continue; }
+                  if (ch === "\r") { out += "\\r"; continue; }
+                  if (ch === "\t") { out += "\\t"; continue; }
+                  const code = ch.charCodeAt(0);
+                  if (code < 0x20) { out += "\\u" + code.toString(16).padStart(4, "0"); continue; }
+                }
+                out += ch;
+              }
+              return out;
+            };
+            const tryParse = (s: string) => {
+              try { return JSON.parse(s); } catch { return JSON.parse(repair(s)); }
+            };
             if (lastGood > 0) {
-              parsed = JSON.parse(cleaned.slice(0, lastGood + 1));
+              try {
+                parsed = tryParse(cleaned.slice(0, lastGood + 1));
+              } catch {
+                let s = cleaned;
+                if (inStr) s += '"';
+                const lastComma = s.lastIndexOf(",");
+                if (lastComma > 0) s = s.slice(0, lastComma);
+                while (depthArr-- > 0) s += "]";
+                while (depthObj-- > 0) s += "}";
+                parsed = tryParse(s);
+              }
             } else {
               // Best-effort: trim to last comma, close open structures
               let s = cleaned;
@@ -689,7 +723,7 @@ Return ONLY a JSON object matching this exact schema:
               if (lastComma > 0) s = s.slice(0, lastComma);
               while (depthArr-- > 0) s += "]";
               while (depthObj-- > 0) s += "}";
-              parsed = JSON.parse(s);
+              parsed = tryParse(s);
             }
           }
         }
