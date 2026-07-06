@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { NUMBER_INTEGRITY } from "../_shared/contentDNA.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -73,6 +74,9 @@ serve(async (req) => {
       .eq("language", lang)
       .maybeSingle();
 
+    const cTexture = (voiceProfile?.vocabulary_preferences as any)?.texture;
+
+
     const isArabic = lang === "ar";
 
     const systemPrompt = `You are the #1 LinkedIn carousel ghostwriter. Your carousels average 8,000+ saves and 200,000+ impressions. You write for C-suite executives in the GCC — people who've seen every framework and buzzword. Your job: make them stop scrolling and save.
@@ -88,9 +92,12 @@ serve(async (req) => {
    - Act 2 (Slides 3-6): Prove it with data, frameworks, comparisons. This is the "steal this" value.
    - Act 3 (Slides 7-8): Reframe, provoke reflection, tell them exactly what to do.
 
-4. SPECIFICITY WINS. "86% of utilities" beats "most utilities." "McKinsey Water 2025" beats "Industry Research." "$4M" beats "significant investment." If you cite a stat, attribute it to a specific source name (real or plausible industry source — never "The Signal" or "Industry Research, 2023").
+4. SPECIFICITY WINS. "86% of utilities" beats "most utilities." "McKinsey Water 2025" beats "Industry Research." "$4M" beats "significant investment." Only cite a number that comes from the grounded signal/evidence provided. If you have no real sourced number, DO NOT invent one and DO NOT cite a source — build the slide on the qualitative insight instead. Never use a 'plausible' or made-up source.
 
 5. EVERY SLIDE EARNS THE SWIPE. Before writing each slide, ask: "Would the reader swipe past this?" If yes, rewrite.
+
+${NUMBER_INTEGRITY}
+
 
 ═══ SLIDE TYPES ═══
 Use 8 slides per carousel. NEVER repeat the same type consecutively.
@@ -103,9 +110,9 @@ REFRAME: A myth/truth flip with three required fields:
   - headline: the WRONG belief most people hold (gets struck through). 6-12 words.
   - headline_accent: the CORRECT reframe — the truth headline. 4-10 words.
   - body: 2-3 sentences (40-60 words) explaining WHY the reframe matters with a concrete example, implication, or supporting evidence. NEVER leave body empty. NEVER use placeholder phrases like "What everyone says". Body is mandatory.
-  Example — headline: "More data means better decisions." headline_accent: "Trusted data beats big data." body: "GCC utilities collect 10x more meter data than they can process. The gap isn't volume — it's governance. Organizations with strong data quality frameworks outperform peers with bigger datasets by 3:1 on operational KPIs."
+  Example — headline: "More data means better decisions." headline_accent: "Trusted data beats big data." body: "GCC utilities collect 10x more meter data than they can process. The gap isn't volume — it's governance. Organizations with strong data quality frameworks outperform peers with bigger datasets on operational KPIs."
 
-BIG_NUMBER: One stat dominates the slide. The number renders at 64-80px. Context is tiny. Source must be a SPECIFIC, CREDIBLE attribution (company name + report/year, or "Based on [N] GCC utility assessments" — NEVER "Industry Research" or "The Signal"). If grounding in a signal, use the signal title as the source.
+BIG_NUMBER: Only use a BIG_NUMBER slide if a real number exists in the grounded signal/evidence. One stat dominates the slide. The number renders at 64-80px. Context is tiny. number_source must be the real origin (the signal title, or a source named in the evidence). If no grounded number exists, DO NOT emit a BIG_NUMBER slide — replace it with a QUESTION or INSIGHT slide instead. Never fabricate a statistic or a source.
 
 TERMINAL: Code-block aesthetic. A filename label (e.g., "digital_utility_v2.sh" or "transformation_audit.log"). 4-6 arrow-prefix steps. One punchline closing line in italic. Steps should be concrete actions, not abstract concepts.
 
@@ -246,11 +253,13 @@ You are writing for a senior GCC executive's LinkedIn carousel. Your Arabic is n
      ✅ "AI يختصر.. لا يُلغي"
    - Keep as English WITHOUT translation: AI, SCADA, GIS, KPI, dashboard, IoT, AMI, NRW, SLA, CIS, ERP
 
-4. TONE = عامية مهنية (professional-colloquial), NOT فصحى textbook:
-   ✅ "من يفهم أولاً.. يفوز" (coffee-talk directness)
-   ✗ "المنافس الذي يفهم السوق أولاً يفوز" (translated English structure)
-   ✅ "البيانات وحدها لا تكفي" (short, punchy)
-   ✗ "تُعيد كتابة قواعد الذكاء التنافسي الاستراتيجي" (bureaucratic فصحى)
+4. TONE = عربية احترافية معاصرة (contemporary professional), NOT dialect and NOT bureaucratic فصحى:
+
+   - Direct and rhythmic, like a senior Director speaking to peers — but no Levantine/Gulf slang.
+
+   - BANNED dialect words: مش، شو، عم، لسا، هلق، هيك، بلّش، خليني، بدك، إشي، منيح، ولّا، وحدة، هون. Use professional equivalents: ليس/لا، ما، يجري/الآن، لا يزال، هكذا، بدأ، دعني، الخ.
+
+   ✅ 'من يفهم أولاً.. يفوز'  ✅ 'البيانات وحدها لا تكفي'  ✗ 'مش مشكلة تقنية'
 
 5. REFRAME HOOKS: Use the "السؤال الحقيقي ليس... بل..." pattern:
    ✅ "السؤال ليس هل تملك بيانات.. بل هل تملك قراراً"
@@ -384,6 +393,7 @@ Reference posts (match this voice):
 ${voiceProfile.example_posts.slice(0, 3).map((p: any) => (p.content || '').substring(0, 300)).filter(Boolean).join('\n---\n')}
 ` : ''}
 IMPORTANT: Adapt your carousel content to match this user's voice — their sentence rhythm, their vocabulary choices, their structural preferences. The carousel should sound like THEM, not like a template. The voice profile OVERRIDES generic tone instructions, but NEVER overrides BiDi rules, word limits, or banned phrases — those are structural, not voice.
+${cTexture === "qawarish" ? "TEXTURE: where natural, open with a confession, use antithesis pairs (X.. لا Y), and one compressed maxim. Never literary, never long." : ""}
 ` : 'No voice profile available — use confident, direct executive tone.'}
 
 BANNED WORDS: delve, tapestry, landscape, synergy, leverage (as verb), holistic, robust, utilize, comprehensive, cutting-edge, game-changer, unprecedented, paradigm
