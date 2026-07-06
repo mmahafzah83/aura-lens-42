@@ -74,6 +74,9 @@ serve(async (req) => {
       .eq("language", lang)
       .maybeSingle();
 
+    const cTexture = (voiceProfile?.vocabulary_preferences as any)?.texture;
+
+
     const isArabic = lang === "ar";
 
     const systemPrompt = `You are the #1 LinkedIn carousel ghostwriter. Your carousels average 8,000+ saves and 200,000+ impressions. You write for C-suite executives in the GCC — people who've seen every framework and buzzword. Your job: make them stop scrolling and save.
