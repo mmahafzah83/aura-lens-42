@@ -511,6 +511,8 @@ Rewrite any sentence that uses these with concrete, specific language.${postType
             signal_title: groundingSignal?.signal_title || topic || null,
             voice_tone: voiceProfile?.tone || null,
             user_sector: profile?.sector_focus || null,
+            grounding_text: groundingContext || null,
+            content_kind: "post",
           },
         });
         const timeout = new Promise((resolve) => {
