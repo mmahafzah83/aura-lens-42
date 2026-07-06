@@ -518,9 +518,9 @@ Author context (for tone only — do not hardcode in slides): ${authorFullName}$
     const truncateWords = (s: string, max: number, keep: number) => {
       const words = String(s).trim().split(/\s+/).filter(Boolean);
       if (words.length <= max) return s;
-      let out = words.slice(0, keep).join(" ");
-      if (!/[.!?…؟]$/.test(out)) out += ".";
-      return out;
+      const kept = words.slice(0, keep).join(" ");
+      const lastPause = Math.max(kept.lastIndexOf("۔"), kept.lastIndexOf("."), kept.lastIndexOf("؟"));
+      return lastPause > kept.length * 0.5 ? kept.slice(0, lastPause + 1) : s;
     };
     if (Array.isArray(parsed?.slides)) {
       for (const slide of parsed.slides) {
@@ -539,6 +539,28 @@ Author context (for tone only — do not hardcode in slides): ${authorFullName}$
         }
       }
     }
+
+    // Number scrub: remove currency/price figures not present in the grounding.
+    const groundingText = [signal?.signal_title, signal?.explanation].filter(Boolean).join(" ");
+    const currencyRe = /(?:\$|ريال|ر\.?س|SAR|USD|درهم|AED|مليون|ألف|الف)\s?[\d٠-٩.,]+|[\d٠-٩.,]+\s?(?:\$|ريال|ر\.?س|SAR|USD|درهم|AED|مليون|ألف|الف)/g;
+    const scrub = (t: any) => typeof t !== "string" ? t : t.replace(currencyRe, (m: string) => groundingText.includes(m.trim()) ? m : "").replace(/\s{2,}/g, " ").trim();
+    if (Array.isArray(parsed?.slides)) {
+      for (const slide of parsed.slides) {
+        for (const k of ["headline", "headline_accent", "body", "number", "number_context"]) {
+          if (typeof slide[k] === "string") slide[k] = scrub(slide[k]);
+        }
+        for (const k of ["grid_items", "compare_left_items", "compare_right_items"]) {
+          if (Array.isArray(slide[k])) slide[k] = slide[k].map(scrub);
+        }
+      }
+    }
+
+    // Step 5: quality gate (fail-open).
+    try {
+      const flat = (parsed.slides || []).map((s: any) => [s.headline, s.headline_accent, s.body, s.number, s.number_context, (s.grid_items || []).join(" "), (s.compare_left_items || []).join(" "), (s.compare_right_items || []).join(" "), s.question_text, s.cta_main, s.cta_sub].filter(Boolean).join(" \n ")).join(" \n\n ");
+      const g = await supabase.functions.invoke("evaluate-content-quality", { body: { post_text: flat, language: lang, signal_title: signal?.signal_title || topic || null, grounding_text: groundingText || null, content_kind: "carousel" } });
+      parsed.quality_gate = (g?.data && !g?.error) ? { pass: g.data.pass ?? null, assertions: g.data.assertions ?? null, grounded_number: g.data.assertions?.grounded_number ?? null, weaknesses: Array.isArray(g.data.weaknesses) ? g.data.weaknesses : [] } : null;
+    } catch (_e) { parsed.quality_gate = null; }
 
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
