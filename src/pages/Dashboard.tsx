@@ -950,7 +950,8 @@ const Dashboard = () => {
                       Personal Strategic Intelligence
                     </span>
                   </div>
-                  <div className="flex items-center" style={{ gap: 16, borderBottom: "1px solid var(--rule)" }}>
+                  <div className="flex items-center" style={{ gap: 16 }}>
+                    <div className="flex items-center" style={{ gap: 16, borderBottom: "1px solid var(--rule)" }}>
                     {NAV_ITEMS.map((item) => {
                       const isActive = activeTab === item.value;
                       return (
