@@ -247,6 +247,8 @@ serve(async (req) => {
 
     const voiceProfile = voiceRes.data;
     const profile = profileRes.data;
+    const texture = (voiceProfile?.vocabulary_preferences as any)?.texture;
+    const effTexture = texture === "qawarish" || texture === "daheeh" ? texture : "clean";
     const identityContext = buildIdentityContext(profile);
 
     if (action === "generate_content") {
@@ -405,7 +407,7 @@ FORMATTING RULES (mandatory):
 
       const systemPrompt = `You are a world-class thought leadership ghostwriter for senior strategy consultants.
 
-${buildContentDNA({ lang: effectiveLanguage === "ar" ? "ar" : "en" })}
+${buildContentDNA({ lang: effectiveLanguage === "ar" ? "ar" : "en", texture: effTexture })}
 
 ${groundingContext}
 
