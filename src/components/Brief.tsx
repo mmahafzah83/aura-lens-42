@@ -1084,7 +1084,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
               const marks = away.status === "ready" ? away.data.territory : [];
               return (
                 <>
-                  <svg viewBox="0 0 220 220" width="100%" height="220" aria-label="Your territory diagram"
+                  <svg viewBox="-26 0 272 220" width="100%" height="220" aria-label="Your territory diagram"
                     style={{ display: "block" }}>
                     <g fill="none" stroke="var(--rule)" strokeWidth="0.5">
                       <circle cx="110" cy="110" r="90" />
@@ -1100,25 +1100,27 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
                       style={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ink-3)", letterSpacing: "0.14em" }}>YOU</text>
                     {marks.map((m, i) => {
                       const strength = Math.max(0, Math.min(1, (m.strength ?? 0)));
-                      const dist = 15 + strength * 85; // 15 = near center, 100 outer
+                      const dist = 14 + strength * 70; // 14 = near center, 84 outer
                       const angle = (i / Math.max(1, marks.length)) * Math.PI * 2 - Math.PI / 2;
                       const cx = 110 + Math.cos(angle) * dist;
                       const cy = 110 + Math.sin(angle) * dist;
                       const r = 3 + strength * 3;
                       const isHot = m.velocity === "accelerating" || m.lifecycle === "live";
                       const isFaded = m.lifecycle === "faded";
-                      const label = ((m.themes[0] || m.title).split(/\s+/).slice(0, 2).join(" ")).toUpperCase();
-                      const shortLabel = label.length > 14 ? label.slice(0, 12) + "…" : label;
-                      const labelY = i % 2 === 0 ? cy - r - 4 : cy + r + 9;
+                      const words = ((m.themes[0] || m.title).split(/\s+/).filter(Boolean)).slice(0, 2);
+                      const labelLines = words.join(" ").length <= 15 ? [words.join(" ").toUpperCase()] : words.map(w => w.toUpperCase());
+                      const labelYbase = i % 2 === 0 ? cy - r - 4 - (labelLines.length - 1) * 8 : cy + r + 9;
                       return (
                         <g key={m.id}>
                           <circle cx={cx} cy={cy} r={r}
                             fill={isFaded ? "none" : isHot ? "var(--live)" : "var(--ink)"}
                             stroke={isFaded ? "var(--ink-3)" : "none"} strokeWidth="1" />
-                          <text x={cx} y={labelY} textAnchor="middle"
-                            style={{ fontFamily: "var(--font-mono)", fontSize: 6.5, fill: "var(--ink-3)", letterSpacing: "0.1em" }}>
-                            {shortLabel}
-                          </text>
+                          {labelLines.map((line, li) => (
+                            <text key={li} x={cx} y={labelYbase + li * 8} textAnchor="middle"
+                              style={{ fontFamily: "var(--font-mono)", fontSize: 6.5, fill: "var(--ink-3)", letterSpacing: "0.1em" }}>
+                              {line}
+                            </text>
+                          ))}
                         </g>
                       );
                     })}
@@ -1135,10 +1137,6 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
                       Where your work has weight — distance from center = strength.
                     </p>
                   )}
-                  <button type="button" onClick={() => onSwitchTab?.("intelligence")}
-                    style={{ background: "transparent", border: 0, padding: "6px 0 0", cursor: "pointer" }}>
-                    <Mono color="var(--action)" size={11}>Explore in Signals →</Mono>
-                  </button>
                 </>
               );
             })()}
