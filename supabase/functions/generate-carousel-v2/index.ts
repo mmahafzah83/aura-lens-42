@@ -93,6 +93,9 @@ serve(async (req) => {
 
 5. EVERY SLIDE EARNS THE SWIPE. Before writing each slide, ask: "Would the reader swipe past this?" If yes, rewrite.
 
+${NUMBER_INTEGRITY}
+
+
 ═══ SLIDE TYPES ═══
 Use 8 slides per carousel. NEVER repeat the same type consecutively.
 
