@@ -951,6 +951,7 @@ const Dashboard = () => {
                     </span>
                   </div>
                   <div className="flex items-center" style={{ gap: 16 }}>
+                    <div className="flex items-center" style={{ gap: 16, borderBottom: "1px solid var(--rule)" }}>
                     {NAV_ITEMS.map((item) => {
                       const isActive = activeTab === item.value;
                       return (
@@ -958,26 +959,25 @@ const Dashboard = () => {
                           key={item.value}
                           type="button"
                           onClick={() => switchTab(item.value)}
-                          className="whitespace-nowrap"
+                          className={`brief-nav-tab whitespace-nowrap${isActive ? " is-active" : ""}`}
                           style={{
                             fontFamily: "var(--font-mono)",
                             fontSize: 11,
                             letterSpacing: "0.14em",
                             textTransform: "uppercase",
-                            color: isActive ? "var(--spot)" : "var(--ink-3)",
-                            borderBottom: isActive ? "1px solid var(--spot)" : "1px solid transparent",
-                            paddingBottom: 2,
                             background: "transparent",
                             border: 0,
                             cursor: "pointer",
-                            transition: "color .25s ease",
+                            paddingBottom: 6,
+                            position: "relative",
                           }}
                         >
                           {item.label}
                         </button>
                       );
                     })}
-                    <span aria-hidden style={{ width: 1, height: 14, background: "var(--rule)" }} />
+                  </div>
+                  <span aria-hidden style={{ width: 1, height: 14, background: "var(--rule)" }} />
                     <button
                       type="button"
                       onClick={() => handleOpenCapture()}
@@ -1011,6 +1011,12 @@ const Dashboard = () => {
                 <style>{`
                   .brief-masthead-capture:hover { background: var(--spot); color: var(--paper) !important; }
                   .brief-masthead-ask:hover { color: var(--ink) !important; }
+                  .brief-nav-tab { color: var(--ink-3); position: relative; padding-bottom: 6px; transition: color .18s ease; }
+                  .brief-nav-tab::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--spot); transform: scaleX(0); transform-origin: center; transition: transform .18s ease; }
+                  .brief-nav-tab:hover { color: var(--ink); }
+                  .brief-nav-tab:hover::after { transform: scaleX(1); }
+                  .brief-nav-tab.is-active { color: var(--ink); }
+                  .brief-nav-tab.is-active::after { transform: scaleX(1); }
                 `}</style>
                 <ErrorBoundary>
                   <Brief
