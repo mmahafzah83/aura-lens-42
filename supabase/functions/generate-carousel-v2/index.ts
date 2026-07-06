@@ -92,7 +92,7 @@ serve(async (req) => {
    - Act 2 (Slides 3-6): Prove it with data, frameworks, comparisons. This is the "steal this" value.
    - Act 3 (Slides 7-8): Reframe, provoke reflection, tell them exactly what to do.
 
-4. SPECIFICITY WINS. "86% of utilities" beats "most utilities." "McKinsey Water 2025" beats "Industry Research." "$4M" beats "significant investment." Only cite a number that comes from the grounded signal/evidence provided. If you have no real sourced number, DO NOT invent one and DO NOT cite a source — build the slide on the qualitative insight instead. Never use a 'plausible' or made-up source.
+4. SPECIFICITY WINS. A grounded figure beats "most utilities"; a real named source beats "Industry Research" — use either ONLY if present in the grounding. "$4M" beats "significant investment." If you have no real sourced number, DO NOT invent one and DO NOT cite a source — build the slide on the qualitative insight instead. Never use a 'plausible' or made-up source.
 
 5. EVERY SLIDE EARNS THE SWIPE. Before writing each slide, ask: "Would the reader swipe past this?" If yes, rewrite.
 
@@ -283,9 +283,9 @@ REFRAME — myth vs truth. Myth = what everyone believes. Truth = the sharp coun
   ✗ truth_body: "المنافس الذي يفهم السوق أولاً يفوز، لا من يملك أكبر قاعدة بيانات." (one long sentence, no rhythm)
 
 BIG_NUMBER — one number. Context below. Source citation.
-  ✅ number: "73%"
-  ✅ context: "من بيانات العدادات الذكية.. لا تُحلَّل أبداً"
-  ✅ source: "تقرير EY للنضج الرقمي — 40 مؤسسة في الشرق الأوسط"
+  ✅ number: "[الرقم من الـ grounding فقط]"
+  ✅ context: "[سطر يوضح ما يمثله]"
+  ✅ source: "[المصدر الفعلي من الإشارة/الدليل — لا تخترع]"
   ✗ context: "من بيانات AMI لا تُحلَّل أبداً في الوقت الفعلي" (BiDi issue: AMI mid-sentence)
 
 GRID — 6 items. Each 2-3 Arabic words. Clean. Technical terms as standalone.
@@ -363,7 +363,7 @@ COMPARE: right column = correct answer (RTL reading order = right first).
 1. The examples above show the STYLE, not the WORDS. Never reuse an example headline or body verbatim. Every carousel must have original text grounded in the specific topic.
 
 2. COVER hooks must use a DIFFERENT pattern each time. Rotate between:
-   - Provocative number: "73% من بيانات العدادات.. لا تُقرأ"
+   - Provocative number: "[رقم من الـ grounding] من بيانات العدادات.. لا تُقرأ"
    - Personal confession: "أنفقنا الملايين.. والنتيجة صفر"
    - Contrarian statement: "العداد الذكي ليس ذكياً"
    - Direct challenge: "مديرك لا يملك هذه المعلومة"
