@@ -136,6 +136,7 @@ ${useArr.length ? `Lean into this vocabulary: ${JSON.stringify(useArr)}.` : ""}
 ${avoidArr.length ? `Avoid these patterns the user flagged: ${JSON.stringify(avoidArr)}.` : ""}
 Vocabulary notes: ${vp.notes || ""}
 Avoid patterns not present in the user's examples. Match their sentence length, paragraph density, and rhetorical style.
+Mimic rhythm, interests, and boldness from the examples — never register or slang. The DNA register always outranks example mimicry.
 `;
 }
 
@@ -150,7 +151,7 @@ function buildArabicVoiceContext(voiceProfile: any): string {
   return `ملف الصوت — اكتب بهذا الصوت تحديداً: ${voiceProfile.tone || ""}
 استخدم هذه الأنماط البنيوية: ${JSON.stringify(voiceProfile.preferred_structures || [])}
 ${Array.isArray(sp) && sp.length ? `أنماط السرد والإقناع: ${JSON.stringify(sp)}` : ""}
-${examples ? `حاكِ المفردات والإيقاع من هذه الأمثلة:\n${examples}` : ""}
+${examples ? `حاكِ الإيقاع والاهتمامات والجرأة من هذه الأمثلة — لا اللهجة. لا تلتقط مفردات عامية من الأمثلة (مش، شو، عم، لسا، بلّش، خليني). السجل في الـ DNA (عربية احترافية معاصرة) يتقدّم على محاكاة الأمثلة دائماً:\n${examples}` : ""}
 ${admired ? `مراجع صوتية يُقتدى بها:\n${admired}` : ""}
 ${useArr.length ? `وظّف هذه العبارات والمفردات: ${JSON.stringify(useArr)}` : ""}
 ${avoidArr.length ? `تجنّب هذه الأنماط التي حدّدها المستخدم: ${JSON.stringify(avoidArr)}` : ""}
