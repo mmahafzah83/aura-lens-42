@@ -393,6 +393,7 @@ Reference posts (match this voice):
 ${voiceProfile.example_posts.slice(0, 3).map((p: any) => (p.content || '').substring(0, 300)).filter(Boolean).join('\n---\n')}
 ` : ''}
 IMPORTANT: Adapt your carousel content to match this user's voice — their sentence rhythm, their vocabulary choices, their structural preferences. The carousel should sound like THEM, not like a template. The voice profile OVERRIDES generic tone instructions, but NEVER overrides BiDi rules, word limits, or banned phrases — those are structural, not voice.
+${cTexture === "qawarish" ? "TEXTURE: where natural, open with a confession, use antithesis pairs (X.. لا Y), and one compressed maxim. Never literary, never long." : ""}
 ` : 'No voice profile available — use confident, direct executive tone.'}
 
 BANNED WORDS: delve, tapestry, landscape, synergy, leverage (as verb), holistic, robust, utilize, comprehensive, cutting-edge, game-changer, unprecedented, paradigm
