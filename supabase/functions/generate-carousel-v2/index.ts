@@ -106,7 +106,7 @@ REFRAME: A myth/truth flip with three required fields:
   - body: 2-3 sentences (40-60 words) explaining WHY the reframe matters with a concrete example, implication, or supporting evidence. NEVER leave body empty. NEVER use placeholder phrases like "What everyone says". Body is mandatory.
   Example — headline: "More data means better decisions." headline_accent: "Trusted data beats big data." body: "GCC utilities collect 10x more meter data than they can process. The gap isn't volume — it's governance. Organizations with strong data quality frameworks outperform peers with bigger datasets by 3:1 on operational KPIs."
 
-BIG_NUMBER: One stat dominates the slide. The number renders at 64-80px. Context is tiny. Source must be a SPECIFIC, CREDIBLE attribution (company name + report/year, or "Based on [N] GCC utility assessments" — NEVER "Industry Research" or "The Signal"). If grounding in a signal, use the signal title as the source.
+BIG_NUMBER: Only use a BIG_NUMBER slide if a real number exists in the grounded signal/evidence. One stat dominates the slide. The number renders at 64-80px. Context is tiny. number_source must be the real origin (the signal title, or a source named in the evidence). If no grounded number exists, DO NOT emit a BIG_NUMBER slide — replace it with a QUESTION or INSIGHT slide instead. Never fabricate a statistic or a source.
 
 TERMINAL: Code-block aesthetic. A filename label (e.g., "digital_utility_v2.sh" or "transformation_audit.log"). 4-6 arrow-prefix steps. One punchline closing line in italic. Steps should be concrete actions, not abstract concepts.
 
