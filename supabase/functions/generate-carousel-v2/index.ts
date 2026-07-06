@@ -89,7 +89,7 @@ serve(async (req) => {
    - Act 2 (Slides 3-6): Prove it with data, frameworks, comparisons. This is the "steal this" value.
    - Act 3 (Slides 7-8): Reframe, provoke reflection, tell them exactly what to do.
 
-4. SPECIFICITY WINS. "86% of utilities" beats "most utilities." "McKinsey Water 2025" beats "Industry Research." "$4M" beats "significant investment." If you cite a stat, attribute it to a specific source name (real or plausible industry source — never "The Signal" or "Industry Research, 2023").
+4. SPECIFICITY WINS. "86% of utilities" beats "most utilities." "McKinsey Water 2025" beats "Industry Research." "$4M" beats "significant investment." Only cite a number that comes from the grounded signal/evidence provided. If you have no real sourced number, DO NOT invent one and DO NOT cite a source — build the slide on the qualitative insight instead. Never use a 'plausible' or made-up source.
 
 5. EVERY SLIDE EARNS THE SWIPE. Before writing each slide, ask: "Would the reader swipe past this?" If yes, rewrite.
 
