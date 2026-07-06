@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { buildContentDNA, VOICE_PRECEDENCE, NUMBER_INTEGRITY } from "../_shared/contentDNA.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -31,7 +32,7 @@ const ARABIC_VOICE_PROMPT = `أنت محرك توليد المحتوى لـ Aura
 هيكل البوست الإلزامي — بهذا الترتيب:
 1. Hook — جملة صادمة أو واقعية (سطر أو سطرين فقط)
 2. Reality — وصف شيء القارئ يعيشه داخل جهته
-3. Illusion — "كل شيء بتحسه مزبوط"
+3. Illusion — "كل شيء يبدو على ما يرام"
 4. Break — كسر التوقع: "لكن..."
 5. Truth — السبب الأعمق الحقيقي
 6. Impact — الأثر: تعب أكثر، قيمة أقل، أو العكس
@@ -78,12 +79,6 @@ const ARABIC_VOICE_PROMPT = `أنت محرك توليد المحتوى لـ Aura
 
 خليني أسألك:
 كم مرة اتخذت قراراً بناءً على تقرير... وأنت تعرف في داخلك أن الأرقام ناقصة؟
-
-مفردات إلزامية — استخدم منها في كل بوست:
-"نمط متكرر" / "بتحسه مزبوط" / "مش مكمل بعض" / "الأثر الحقيقي" / "الواقع مختلف" / "الفجوة" / "التنفيذ لحاله مش كفاية" / "وهون المشكلة الحقيقية"
-
-روابط إلزامية — استخدم في الانتقالات:
-لكن / بالعكس / المشكلة الحقيقية / خليني أسألك / وهون / بالعكس تماماً
 
 ممنوع منعاً باتاً:
 - "في عالم اليوم المتغير"
@@ -254,9 +249,64 @@ serve(async (req) => {
     const identityContext = buildIdentityContext(profile);
 
     if (action === "generate_content") {
-      const { content_type, topic, context, language, framework, extra_instruction, flash, stream, variation, lang, sector, post_type, theme } = params;
+      const { content_type, topic, context, language, framework, extra_instruction, flash, stream, variation, lang, sector, post_type, theme, signal_id } = params;
       const isFlash = flash === true;
       const isNonStream = stream === false;
+
+      // ── Grounding: fetch signal + evidence so the model draws facts only from real data
+      let groundingSignal: any = null;
+      let groundingFragments: any[] = [];
+      try {
+        if (signal_id) {
+          const [sigRes, fragRes] = await Promise.all([
+            supabase.from("strategic_signals")
+              .select("signal_title, explanation, strategic_implications, confidence")
+              .eq("id", signal_id).maybeSingle(),
+            supabase.from("evidence_fragments")
+              .select("title, content, confidence")
+              .eq("user_id", effectiveUserId)
+              .order("created_at", { ascending: false })
+              .limit(5),
+          ]);
+          groundingSignal = sigRes.data || null;
+          groundingFragments = fragRes.data || [];
+        } else {
+          const { data: sigs } = await supabase.from("strategic_signals")
+            .select("signal_title, explanation, strategic_implications, confidence")
+            .eq("user_id", effectiveUserId)
+            .in("lifecycle_tier", ["live", "evergreen", "emerging"])
+            .order("confidence", { ascending: false })
+            .limit(3);
+          if (sigs && sigs.length) {
+            groundingSignal = sigs[0];
+            groundingFragments = sigs.slice(1).map((s: any) => ({
+              title: s.signal_title,
+              content: s.explanation || (typeof s.strategic_implications === "string" ? s.strategic_implications : JSON.stringify(s.strategic_implications || "")),
+            }));
+          }
+        }
+      } catch (e) {
+        console.warn("[generate-authority-content] grounding fetch failed:", (e as Error).message);
+      }
+
+      const groundingContext = (() => {
+        if (!groundingSignal && groundingFragments.length === 0) return "";
+        const sigLine = groundingSignal
+          ? `SIGNAL: ${groundingSignal.signal_title || ""} — ${groundingSignal.explanation || ""} — implications: ${typeof groundingSignal.strategic_implications === "string" ? groundingSignal.strategic_implications : JSON.stringify(groundingSignal.strategic_implications || "")}`
+          : "";
+        const fragLines = groundingFragments
+          .map((f: any) => `- ${(f.title ? f.title + ": " : "")}${(f.content || "").toString().slice(0, 400)}`)
+          .filter(Boolean)
+          .join("\n");
+        return `GROUNDED EVIDENCE — this is the ONLY source you may draw facts and numbers from:
+
+${sigLine}
+
+EVIDENCE:
+${fragLines}
+
+If this evidence contains no usable number, write the post WITHOUT a number.`;
+      })();
 
       const formatInstructions: Record<string, string> = {
         post: `Write a LinkedIn post (scroll-stopping hook → insight → framework/key points → closing question). Short paragraphs, spaced lines. Mobile-readable.`,
@@ -298,7 +348,7 @@ FORMATTING RULES (mandatory):
 - No code fences, no horizontal rules, no markdown links.`;
 
       const langLabel = effectiveLanguage === "ar"
-        ? `اكتب المنشور بالكامل باللغة العربية. لا تستخدم أي كلمة إنجليزية.`
+        ? `اكتب المنشور بالعربية. المصطلحات التقنية تبقى بالإنجليزية (AI, KPI, dashboard, SCADA).`
         : `Write the post ENTIRELY in English. Do not use any Arabic words or script, even if the examples or profile material contain Arabic.`;
 
       // Flash addendum (variation-aware)
@@ -354,9 +404,15 @@ FORMATTING RULES (mandatory):
 
       const systemPrompt = `You are a world-class thought leadership ghostwriter for senior strategy consultants.
 
+${buildContentDNA({ lang: effectiveLanguage === "ar" ? "ar" : "en" })}
+
+${groundingContext}
+
 ${hookFramework}
 
 ${voiceSection}
+
+${VOICE_PRECEDENCE}
 ${identityContext}
 
 ${formatInstructions[content_type] || formatInstructions.post}
@@ -449,7 +505,7 @@ Rewrite any sentence that uses these with concrete, specific language.${postType
           body: {
             post_text: content,
             language: effectiveLanguage,
-            signal_title: topic || null,
+            signal_title: groundingSignal?.signal_title || topic || null,
             voice_tone: voiceProfile?.tone || null,
             user_sector: profile?.sector_focus || null,
           },
