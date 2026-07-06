@@ -124,6 +124,25 @@ const Dashboard = () => {
     document.documentElement.setAttribute("data-fx-score-ring", "true");
   }, []);
 
+  // In-session Imprint recompute: after any capture-complete event, debounce
+  // 25s (letting ingest-capture → extract-evidence → detect-signals land) then
+  // fire-and-forget compute-imprint. Realtime subscribers on imprint_snapshots
+  // (Brief, Observatory) pick up the new row automatically.
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const handler = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        supabase.functions.invoke("compute-imprint", { body: {} }).catch(() => {});
+      }, 25000);
+    };
+    window.addEventListener("capture-complete", handler);
+    return () => {
+      window.removeEventListener("capture-complete", handler);
+      if (timer) clearTimeout(timer);
+    };
+  }, []);
+
   // Sidebar Intelligence icon pulse — fires once when a new signal arrives.
   const prevIntelCount = useRef<number | null>(null);
   const [intelPulseToken, setIntelPulseToken] = useState(0);
