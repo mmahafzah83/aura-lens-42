@@ -543,11 +543,9 @@ Rewrite any sentence that uses these with concrete, specific language.${postType
             const scaled = o <= 10 ? Math.round(o * 10) : Math.round(o);
             return Math.min(100, Math.max(0, scaled));
           })(),
-          pass: (() => {
-            const o = Number(gateResult.overall ?? 0);
-            const scaled = o <= 10 ? Math.round(o * 10) : Math.round(o);
-            return Math.min(100, Math.max(0, scaled)) >= 70;
-          })(),
+          pass: (gateResult.pass === true) || (gateResult.pass === undefined && (() => { const o=Number(gateResult.overall??0); const scaled=o<=10?Math.round(o*10):Math.round(o); return scaled>=70; })()),
+          assertions: gateResult.assertions || null,
+          grounded_number: gateResult.assertions?.grounded_number ?? null,
           scores: gateResult.scores,
           verdict: gateResult.verdict,
           weaknesses: Array.isArray(gateResult.weaknesses) ? gateResult.weaknesses : [],
