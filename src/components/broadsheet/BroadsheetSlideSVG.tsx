@@ -121,7 +121,7 @@ export default function BroadsheetSlideSVG(props: BroadsheetProps) {
   const now = new Date();
   const dateline = formatDateline(now);
   const topLeft = sectorFocus ? sectorFocus : "Strategic Intelligence";
-  const editionLabel = variant === "full" ? dateline : `P.${slide.slide_number}/${total}`;
+  const editionLabel = variant === "full" ? "" : `P.${slide.slide_number}/${total}`;
   const contentY = variant === "full" ? 200 : 164;
   const grainId = `grain-${slide.slide_number}`;
 
@@ -308,10 +308,10 @@ function BroadsheetBody({
             <text
               x={rtl ? w - edgePad - 56 : edgePad + 56} y={srcY}
               textAnchor={anchorStart}
-              fontFamily={MONO} fontSize={20} letterSpacing={2}
-              fill={INK2} style={{ textTransform: "uppercase" }}
+              fontFamily={rtl ? ARABIC : MONO} fontSize={20} letterSpacing={rtl ? undefined : 2}
+              fill={INK2} style={rtl ? undefined : { textTransform: "uppercase" }}
             >
-              {slide.number_source.toUpperCase()}
+              {rtl ? slide.number_source : slide.number_source.toUpperCase()}
             </text>
           </g>
         ) : null}
@@ -356,10 +356,10 @@ function BroadsheetBody({
         ))}
         <text
           x={leftX} y={noteY} textAnchor={anchorStart}
-          fontFamily={MONO} fontSize={20} letterSpacing={2}
-          fill={INK2} style={{ textTransform: "uppercase" }}
+          fontFamily={rtl ? ARABIC : MONO} fontSize={20} letterSpacing={rtl ? undefined : 2}
+          fill={INK2} style={rtl ? undefined : { textTransform: "uppercase" }}
         >
-          {displayLabel}
+          {rtl ? displayLabel : displayLabel.toUpperCase()}
         </text>
       </g>
     );
@@ -409,7 +409,7 @@ function BroadsheetBody({
             {renderHeadlineWithAccent(ln, slide.headline_accent, INK, SPOT, true)}
           </text>
         ))}
-        {ctaMain ? (
+        {ctaMain && ctaMain.trim() !== (slide.headline || "").trim() ? (
           <text
             x={leftX} y={cardY + 90 + headlineLines.length * 72 + 40}
             textAnchor={anchorStart}
@@ -461,7 +461,7 @@ function BroadsheetBody({
             x={rtl ? pillX - 20 : pillX + pillW + 20}
             y={pillY + pillH / 2 + 6}
             textAnchor={rtl ? "end" : "start"}
-            fontFamily={MONO} fontSize={18} fill={INK2}
+            fontFamily={rtl ? ARABIC : MONO} fontSize={18} fill={INK2}
           >
             {slide.cta_sub}
           </text>
@@ -480,12 +480,12 @@ function BroadsheetBody({
     const truthHeadLines = wrapText(truthHeadRaw, rtl ? 20 : 24);
     const truthBodyLines = truthBodyRaw ? wrapText(truthBodyRaw, rtl ? 34 : 46).slice(0, 5) : [];
     const tagY = contentY + 40;
-    const mythLineH = 68;
+    const mythLineH = rtl ? 84 : 68;
     const mythStart = tagY + 50;
     const dividerY = mythStart + mythLines.length * mythLineH + 40;
     const truthTagY = dividerY + 44;
     const truthHeadStart = truthTagY + 60;
-    const truthHeadLineH = 82;
+    const truthHeadLineH = rtl ? 100 : 82;
     const truthBodyStart = truthHeadStart + truthHeadLines.length * truthHeadLineH + 28;
     return (
       <g>
@@ -500,7 +500,7 @@ function BroadsheetBody({
         {mythLines.map((ln, i) => {
           const y = mythStart + i * mythLineH;
           const strikeY = y - 58 * 0.42;
-          const approxW = Math.min(textW, ln.length * 30);
+          const approxW = Math.min(textW, ln.length * (rtl ? 26 : 36));
           const x1 = rtl ? leftX - approxW : leftX;
           const x2 = rtl ? leftX : leftX + approxW;
           return (
@@ -752,7 +752,7 @@ function BroadsheetBody({
     const hLines = wrapText(slide.headline || "", rtl ? 20 : 26);
     const bodyLines = wrapText(slide.body || "", rtl ? 34 : 44).slice(0, 6);
     const startY = contentY + 60;
-    const headLineH = 78;
+    const headLineH = rtl ? 96 : 78;
     const dashY = startY + hLines.length * headLineH + 12;
     const bodyStart = dashY + 40;
     return (
@@ -774,7 +774,7 @@ function BroadsheetBody({
           stroke={SPOT} strokeWidth={2}
         />
         {bodyLines.map((ln, i) => (
-          <text key={`b${i}`} x={leftX} y={bodyStart + i * 56}
+          <text key={`b${i}`} x={leftX} y={bodyStart + i * (rtl ? 64 : 56)}
                 textAnchor={anchorStart}
                 fontFamily={BODY_FONT} fontWeight={BODY_WEIGHT}
                 fontSize={36} fill={INK2}>
@@ -892,12 +892,12 @@ function BroadsheetBody({
   const headline = slide.headline || "";
   const hLines = wrapText(headline, rtl ? 22 : 28);
   const bodyLines = wrapText(slide.body || "", rtl ? 38 : 52).slice(0, 6);
-  const bodyStart = contentY + hLines.length * 62 + 60;
+  const bodyStart = contentY + hLines.length * (rtl ? 74 : 62) + 60;
   return (
     <g>
       {hLines.map((ln, i) => (
         <text key={i}
-          x={leftX} y={contentY + 60 + i * 62}
+          x={leftX} y={contentY + 60 + i * (rtl ? 74 : 62)}
           textAnchor={anchorStart}
           fontFamily={rtl ? ARABIC : SERIF}
           fontWeight={rtl ? 800 : 500}
@@ -908,7 +908,7 @@ function BroadsheetBody({
       ))}
       {bodyLines.map((ln, i) => (
         <text key={`b${i}`}
-          x={leftX} y={bodyStart + i * 44}
+          x={leftX} y={bodyStart + i * (rtl ? 52 : 44)}
           textAnchor={anchorStart}
           fontFamily={rtl ? ARABIC : SERIF}
           fontSize={30} fill={INK2}
