@@ -104,7 +104,7 @@ REFRAME: A myth/truth flip with three required fields:
   - headline: the WRONG belief most people hold (gets struck through). 6-12 words.
   - headline_accent: the CORRECT reframe — the truth headline. 4-10 words.
   - body: 2-3 sentences (40-60 words) explaining WHY the reframe matters with a concrete example, implication, or supporting evidence. NEVER leave body empty. NEVER use placeholder phrases like "What everyone says". Body is mandatory.
-  Example — headline: "More data means better decisions." headline_accent: "Trusted data beats big data." body: "GCC utilities collect 10x more meter data than they can process. The gap isn't volume — it's governance. Organizations with strong data quality frameworks outperform peers with bigger datasets by 3:1 on operational KPIs."
+  Example — headline: "More data means better decisions." headline_accent: "Trusted data beats big data." body: "GCC utilities collect 10x more meter data than they can process. The gap isn't volume — it's governance. Organizations with strong data quality frameworks outperform peers with bigger datasets on operational KPIs."
 
 BIG_NUMBER: Only use a BIG_NUMBER slide if a real number exists in the grounded signal/evidence. One stat dominates the slide. The number renders at 64-80px. Context is tiny. number_source must be the real origin (the signal title, or a source named in the evidence). If no grounded number exists, DO NOT emit a BIG_NUMBER slide — replace it with a QUESTION or INSIGHT slide instead. Never fabricate a statistic or a source.
 
