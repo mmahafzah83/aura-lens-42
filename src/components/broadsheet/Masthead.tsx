@@ -203,15 +203,7 @@ export default function Masthead({
           >
             {rtl ? kicker : kicker.toUpperCase()}
           </text>
-          {/* Hairline from text end to far pad — approximate width via char count */}
-          <line
-            x1={rtl ? edgePad : edgePad + Math.min(kicker.length * 12 + 20, w - edgePad * 2 - 40)}
-            x2={rtl ? w - edgePad - Math.min(kicker.length * 14 + 20, w - edgePad * 2 - 40) : w - edgePad}
-            y1={172}
-            y2={172}
-            stroke={RULE_SOFT}
-            strokeWidth={1}
-          />
+          {/* Hairline removed: it crossed the label */}
         </>
       ) : null}
     </g>

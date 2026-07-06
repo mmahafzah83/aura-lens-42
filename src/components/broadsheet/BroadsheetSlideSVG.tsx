@@ -823,7 +823,9 @@ function BroadsheetBody({
       }
       return segs;
     };
-    const punchY = startLinesY + lines.length * lineGap + 36;
+    const wrappedLines = lines.map((raw) => wrapText(raw, rtl ? 40 : 52));
+    const totalSubLines = wrappedLines.reduce((sum, arr) => sum + arr.length, 0);
+    const punchY = startLinesY + totalSubLines * lineGap + 36;
     return (
       <g>
         <rect x={boxX} y={boxY} width={boxW} height={boxH} fill="none" stroke={INK} strokeWidth={1.5} />
@@ -834,20 +836,23 @@ function BroadsheetBody({
             {slide.terminal_file}
           </text>
         ) : null}
-        {lines.map((raw, i) => {
-          const segs = highlightSegs(raw);
-          return (
-            <text key={i} x={lineX} y={startLinesY + i * lineGap}
-                  textAnchor={lineAnchor}
-                  xmlSpace="preserve"
-                  fontFamily={rtl ? ARABIC : MONO} fontSize={26} fill={INK}>
-              {segs.map((s, si) => (
-                <tspan key={si} fill={s.hl ? SPOT : INK} fontWeight={s.hl ? 600 : 400}>
-                  {s.text}
-                </tspan>
-              ))}
-            </text>
-          );
+        {wrappedLines.map((subLines, i) => {
+          const prevTotal = wrappedLines.slice(0, i).reduce((sum, arr) => sum + arr.length, 0);
+          return subLines.map((sub, wi) => {
+            const segs = highlightSegs(sub);
+            return (
+              <text key={`${i}-${wi}`} x={lineX} y={startLinesY + (prevTotal + wi) * lineGap}
+                    textAnchor={lineAnchor}
+                    xmlSpace="preserve"
+                    fontFamily={rtl ? ARABIC : MONO} fontSize={26} fill={INK}>
+                {segs.map((s, si) => (
+                  <tspan key={si} fill={s.hl ? SPOT : INK} fontWeight={s.hl ? 600 : 400}>
+                    {s.text}
+                  </tspan>
+                ))}
+              </text>
+            );
+          });
         })}
         {slide.terminal_punchline ? (
           <text x={lineX} y={punchY} textAnchor={lineAnchor}
