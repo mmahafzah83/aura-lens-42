@@ -1401,7 +1401,8 @@ const VoiceEngineSection = () => {
                       <input
                         ref={teachFileRef}
                         type="file"
-                        accept=".txt"
+                        accept=".txt,.md,.docx,.pdf,text/plain,text/markdown,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        multiple
                         onChange={handleTeachFile}
                         className="hidden"
                         id="voice-teach-file"
@@ -1414,7 +1415,7 @@ const VoiceEngineSection = () => {
                         className="w-full gap-2"
                       >
                         {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                        Upload .txt of posts
+                        Upload posts (.txt, .docx, .pdf)
                       </Button>
                     </div>
                     <Button
