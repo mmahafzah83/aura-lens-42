@@ -197,8 +197,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
       toast({ title: "Invalid file", description: "Please upload an image.", variant: "destructive" });
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      toast({ title: "Too large", description: "Image must be under 10MB.", variant: "destructive" });
+    if (file.size > 20 * 1024 * 1024) {
+      toast({ title: "Too large", description: "Image must be under 20MB.", variant: "destructive" });
       return;
     }
 
