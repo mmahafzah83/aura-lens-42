@@ -1305,13 +1305,32 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         ) : (
           /* ─── Empty state ─── */
           <div className="mx-auto" style={{ maxWidth: 580 }}>
+            {/* Primary action for new users with no data */}
+            <div className="flex justify-center mb-5">
+              <AuraButton
+                variant="primary"
+                size="md"
+                onClick={() => window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "authority" } }))}
+                style={{ borderRadius: 6, padding: "12px 26px" }}
+              >
+                Create your first post →
+              </AuraButton>
+            </div>
+
+            <details className="mb-3" style={{ background: "var(--color-background-primary, var(--surface-ink-raised))", border: "0.5px solid var(--color-border-tertiary, var(--brand-line))", borderRadius: 12 }}>
+              <summary
+                className="cursor-pointer text-sm font-medium select-none"
+                style={{ color: "var(--ink)", padding: "14px 18px", listStyle: "none" }}
+              >
+                Already posting on LinkedIn? Import your analytics
+              </summary>
+              <div style={{ padding: "0 18px 18px" }}>
             <section
               className="flex flex-col items-center text-center"
               style={{
-                background: "var(--color-background-primary, var(--surface-ink-raised))",
-                border: "0.5px solid var(--color-border-tertiary, var(--brand-line))",
+                background: "transparent",
                 borderRadius: 12,
-                padding: "28px 24px",
+                padding: "8px 4px 4px",
               }}
             >
               {/* Emotional hook */}
@@ -1444,23 +1463,8 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 </div>
               )}
             </section>
-
-            {/* Create first post alternative */}
-            <div className="flex items-center gap-3 my-5" aria-hidden="true">
-              <div className="flex-1 h-px" style={{ background: "var(--color-border-tertiary, var(--brand-line))" }} />
-              <span className="text-xs" style={{ color: "var(--ink-3)" }}>or start creating first</span>
-              <div className="flex-1 h-px" style={{ background: "var(--color-border-tertiary, var(--brand-line))" }} />
-            </div>
-            <div className="flex justify-center">
-              <AuraButton
-                variant="ghost"
-                size="sm"
-                onClick={() => window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "authority" } }))}
-                style={{ borderRadius: 6, padding: "10px 22px" }}
-              >
-                Create your first post →
-              </AuraButton>
-            </div>
+              </div>
+            </details>
 
             <input
               ref={fileInputRef}

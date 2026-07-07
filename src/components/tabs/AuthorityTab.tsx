@@ -1008,7 +1008,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
   };
   const handlePublishToLinkedIn = async () => {
     if (publishingLive || publishedFromCreate) return;
-    const text = stripMarkdown(output || fullVersion || shortVersion || "");
+    const text = fixArabicDirectionalSymbols(stripMarkdown(output || fullVersion || shortVersion || ""));
     if (!text.trim()) { toast.error("Nothing to publish"); return; }
     setPublishingLive(true);
     try {
@@ -1614,37 +1614,25 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                         <><Send className="w-3.5 h-3.5" /> Review & publish</>
                       )}
                     </Button>
-                    <Button
-                      data-testid="pub-mark-published-btn"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        if (publishedFromCreate || publishing) return;
-                        setPubUrlOpen((v) => !v);
-                      }}
-                      disabled={publishing || publishedFromCreate || !output.trim()}
-                      className={`h-7 gap-1.5 text-xs ${publishedFromCreate ? "border-emerald-500/40 text-emerald-500" : "border-border/15"}`}
-                    >
-                      {publishing ? (
-                        <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Marking…</>
-                      ) : publishedFromCreate ? (
-                        <><Check className="w-3.5 h-3.5" /> Published ✓</>
-                      ) : (
-                        <><Check className="w-3.5 h-3.5" /> Mark as published</>
-                      )}
-                    </Button>
-                    <InfoTooltip slug="mark-published" label="Mark as published" side="top" triggerSize={13} />
                   </div>
                 </div>
 
                 {confirmLiveOpen && !publishedFromCreate && (() => {
-                  const previewText = stripMarkdown(output || fullVersion || shortVersion || "");
+                  const previewText = fixArabicDirectionalSymbols(stripMarkdown(output || fullVersion || shortVersion || ""));
                   const count = previewText.length;
                   const isAr = lang === "ar";
                   return (
                     <div className="mt-2 border rounded-lg overflow-hidden bg-background">
-                      <div className="px-3.5 py-2 border-b text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        Preview — exactly how it will post
+                      <div className="px-3.5 py-2 border-b text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center justify-between">
+                        <span>Preview — exactly how it will post</span>
+                        <button
+                          type="button"
+                          aria-label="Close preview"
+                          onClick={() => setConfirmLiveOpen(false)}
+                          className="p-1 rounded hover:bg-muted/40 text-muted-foreground"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                       <div
                         dir={isAr ? "rtl" : "ltr"}
@@ -1684,67 +1672,13 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                             {publishingLive ? "Publishing…" : "Publish now"}
                           </Button>
                           <Button size="sm" variant="ghost" onClick={() => setConfirmLiveOpen(false)} disabled={publishingLive} className="h-8 text-xs">
-                            Edit
+                            Cancel
                           </Button>
                         </div>
                       </div>
                     </div>
                   );
                 })()}
-
-                {/* Mark-as-published URL prompt (optional) — mirrors the saved-card flow */}
-                {pubUrlOpen && !publishedFromCreate && (
-                  <div
-                    style={{
-                      marginTop: 4,
-                      padding: 10,
-                      background: "var(--bg-subtle)",
-                      borderRadius: 6,
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 6,
-                    }}
-                  >
-                    <span style={{ fontSize: 13, color: "var(--ink)" }}>
-                      Did you post this on LinkedIn? Paste the URL (optional) to link engagement.
-                    </span>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                      <Input
-                        value={pubUrl}
-                        onChange={(e) => { setPubUrl(e.target.value); setPubUrlError(""); }}
-                        placeholder="https://www.linkedin.com/posts/…"
-                        className="h-7 text-xs flex-1 min-w-[200px]"
-                      />
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          const err = validateLinkedInUrl(pubUrl);
-                          if (err) { setPubUrlError(err); return; }
-                          handleMarkPublishedFromCreate(pubUrl.trim() || undefined);
-                        }}
-                        disabled={publishing}
-                        className="h-7 text-xs"
-                      >
-                        Confirm
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => { setPubUrlOpen(false); setPubUrl(""); setPubUrlError(""); }}
-                        className="h-7 text-xs"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                    {pubUrlError ? (
-                      <span style={{ fontSize: 12, color: "var(--warning)" }}>{pubUrlError}</span>
-                    ) : (
-                      <span style={{ fontSize: 12, color: "var(--color-muted)" }}>
-                        Optional — paste the post's link so Aura can track how it performs and learn from it.
-                      </span>
-                    )}
-                  </div>
-                )}
 
                 {/* Back to full version link */}
                 {showingShort && !generatingShort && (

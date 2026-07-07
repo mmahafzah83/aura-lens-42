@@ -5,6 +5,7 @@ import { HelpCircle, X, ChevronDown } from "lucide-react";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import AuraButton from "@/components/ui/AuraButton";
 import { useGuideArticles, type GuideArticle } from "@/hooks/useGuideArticles";
+import { toast } from "sonner";
 
 const TAB_MAP: Record<string, string> = {
   home: "home",
@@ -229,6 +230,12 @@ export function HelpPanel({ open, onClose, activeTab }: { open: boolean; onClose
             Aura Private Beta · Questions? Email us at{" "}
             <a
               href="mailto:support@aura-intel.org"
+              onClick={() => {
+                try {
+                  navigator.clipboard?.writeText("support@aura-intel.org");
+                  toast.success("Email address copied");
+                } catch { /* ignore */ }
+              }}
               style={{ color: "var(--action)", textDecoration: "none" }}
             >
               support@aura-intel.org

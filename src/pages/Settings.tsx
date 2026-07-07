@@ -176,7 +176,11 @@ const [savingPub, setSavingPub] = useState(false);
       setSavingSig(false);
     }
   };
-  const addSignature = () => setSignatures((s) => [...s, { id: crypto.randomUUID(), name: "New signature", text_en: "", text_ar: "" }]);
+  const addSignature = () =>
+    setSignatures((s) => [
+      ...s,
+      { id: crypto.randomUUID(), name: `Signature ${s.length + 1}`, text_en: "", text_ar: "" },
+    ]);
   const updateSignature = (id: string, field: "name" | "text_en" | "text_ar", value: string) =>
     setSignatures((s) => s.map((p) => (p.id === id ? { ...p, [field]: value } : p)));
   const removeSignature = (id: string) => persistSignatures(signatures.filter((p) => p.id !== id));
@@ -420,13 +424,18 @@ const [savingPub, setSavingPub] = useState(false);
           {signatures.map((sig) => (
             <AuraCard key={sig.id} variant="default" hover="none">
               <div className="space-y-3">
-                <input
-                  value={sig.name}
-                  onChange={(e) => updateSignature(sig.id, "name", e.target.value)}
-                  placeholder="Signature name"
-                  className="w-full text-sm font-semibold bg-transparent outline-none"
-                  style={{ color: "var(--ink)", borderBottom: "1px solid var(--rule)", padding: "4px 0" }}
-                />
+                <div>
+                  <label className="text-xs uppercase tracking-wide" style={{ color: "var(--ink-4)" }}>
+                    Signature name
+                  </label>
+                  <input
+                    value={sig.name}
+                    onChange={(e) => updateSignature(sig.id, "name", e.target.value)}
+                    placeholder="e.g. Closing question — Arabic"
+                    className="w-full mt-1 text-sm rounded-md p-2 outline-none"
+                    style={{ color: "var(--ink)", background: "var(--paper-2)", border: "1px solid var(--rule)", fontFamily: "var(--font-body)" }}
+                  />
+                </div>
                 <div>
                   <label className="text-xs uppercase tracking-wide" style={{ color: "var(--ink-4)" }}>English</label>
                   <textarea
@@ -457,7 +466,14 @@ const [savingPub, setSavingPub] = useState(false);
             </AuraCard>
           ))}
           <div className="flex gap-2">
-            <AuraButton variant="ghost" size="sm" onClick={addSignature} disabled={savingSig}>Add signature</AuraButton>
+            <AuraButton
+              variant="ghost"
+              size="sm"
+              onClick={addSignature}
+              disabled={savingSig || signatures.some((s) => !s.text_en.trim() && !s.text_ar.trim())}
+            >
+              Add signature
+            </AuraButton>
             <AuraButton variant="primary" size="sm" onClick={() => persistSignatures(signatures)} loading={savingSig} disabled={savingSig}>Save signatures</AuraButton>
           </div>
         </div>
