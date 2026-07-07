@@ -234,12 +234,87 @@ const VoiceEngineSection = () => {
   const parsePostsBlock = (text: string): string[] => {
     const posts: string[] = [];
     let cur: string[] = [];
-    for (const line of text.split(/\r?\n/)) {
-      if (/^\s*-{3,}\s*$/.test(line)) { posts.push(cur.join("\n")); cur = []; }
-      else cur.push(line);
+    const lines = text.split(/\r?\n/);
+    let blankRun = 0;
+    let sawDashSeparator = false;
+    for (const line of lines) {
+      if (/^\s*-{3,}\s*$/.test(line)) {
+        sawDashSeparator = true;
+        posts.push(cur.join("\n"));
+        cur = [];
+        blankRun = 0;
+        continue;
+      }
+      if (line.trim() === "") {
+        blankRun++;
+        // If no explicit --- separators appear, treat 2+ blank lines as a boundary.
+        if (!sawDashSeparator && blankRun >= 2 && cur.length > 0) {
+          posts.push(cur.join("\n"));
+          cur = [];
+        } else {
+          cur.push(line);
+        }
+        continue;
+      }
+      blankRun = 0;
+      cur.push(line);
     }
     posts.push(cur.join("\n"));
     return posts.map((s) => s.trim()).filter(Boolean);
+  };
+
+  // Batch posts into chunks that stay under the EF payload budget.
+  // Keeps whole posts together; splits on cumulative character count.
+  const chunkPostsForDistill = (posts: string[], maxChars = 8000): string[][] => {
+    const chunks: string[][] = [];
+    let cur: string[] = [];
+    let curChars = 0;
+    for (const p of posts) {
+      const len = p.length;
+      if (cur.length > 0 && curChars + len > maxChars) {
+        chunks.push(cur);
+        cur = [];
+        curChars = 0;
+      }
+      cur.push(p);
+      curChars += len;
+    }
+    if (cur.length > 0) chunks.push(cur);
+    return chunks;
+  };
+
+  // Silent variant of teachFromPosts — no toast, no state reset. Returns success.
+  const distillBatch = async (postsArr: string[]): Promise<boolean> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.id) throw new Error("Not authenticated");
+    const { data, error } = await supabase.functions.invoke("voice-distill", {
+      body: { posts: postsArr, store_samples: true },
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    return true;
+  };
+
+  // Teach from a (potentially large) list of posts by splitting into batches.
+  // Shows one aggregate toast. Used by both paste and file-upload paths when
+  // the input would exceed a single voice-distill payload.
+  const teachFromPostsBatched = async (postsArr: string[], labelPrefix = ""): Promise<number> => {
+    const chunks = chunkPostsForDistill(postsArr);
+    if (chunks.length === 0) return 0;
+    const progressId = `voice-teach-${Date.now()}`;
+    let taught = 0;
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      toast.loading(
+        `${labelPrefix}Teaching Aura — batch ${i + 1} of ${chunks.length} (${chunk.length} posts)…`,
+        { id: progressId, duration: Infinity },
+      );
+      // eslint-disable-next-line no-await-in-loop
+      await distillBatch(chunk);
+      taught += chunk.length;
+    }
+    toast.dismiss(progressId);
+    return taught;
   };
 
   const teachFromPosts = async (postsArr: string[]) => {
@@ -249,14 +324,8 @@ const VoiceEngineSection = () => {
     }
     setTeaching(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user?.id) throw new Error("Not authenticated");
-      const { data, error } = await supabase.functions.invoke("voice-distill", {
-        body: { posts: postsArr, store_samples: true },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      toast.success(`Voice sharpened from ${postsArr.length} ${postsArr.length === 1 ? "post" : "posts"}.`);
+      const taught = await teachFromPostsBatched(postsArr);
+      toast.success(`Voice sharpened from ${taught} ${taught === 1 ? "post" : "posts"}.`);
       setTeachText("");
       setDistilledOnce(true);
       await loadProfile();
@@ -325,23 +394,98 @@ const VoiceEngineSection = () => {
     }
   };
 
-  const handleTeachFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    try {
-      if (!file.name.endsWith(".txt") && file.type !== "text/plain") {
-        toast.error("Text files only for now — or paste your posts directly.");
-        return;
+  const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
+
+  // Client-side text extraction for .txt/.md/.docx/.pdf.
+  const extractTextFromFile = async (file: File): Promise<string> => {
+    const lower = file.name.toLowerCase();
+    if (lower.endsWith(".txt") || lower.endsWith(".md") || file.type === "text/plain" || file.type === "text/markdown") {
+      return await file.text();
+    }
+    if (lower.endsWith(".docx") || file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+      const mammoth: any = await import("mammoth/mammoth.browser");
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      return (result?.value as string) || "";
+    }
+    if (lower.endsWith(".pdf") || file.type === "application/pdf") {
+      const pdfjs: any = await import("pdfjs-dist");
+      // Use CDN worker (module type) so we don't need custom bundler config.
+      try {
+        pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
+      } catch { /* ignore */ }
+      const arrayBuffer = await file.arrayBuffer();
+      const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
+      const pdf = await loadingTask.promise;
+      const pages: string[] = [];
+      for (let i = 1; i <= pdf.numPages; i++) {
+        // eslint-disable-next-line no-await-in-loop
+        const page = await pdf.getPage(i);
+        // eslint-disable-next-line no-await-in-loop
+        const content = await page.getTextContent();
+        const strings = content.items.map((it: any) => (typeof it?.str === "string" ? it.str : "")).filter(Boolean);
+        pages.push(strings.join(" "));
       }
-      const text = await file.text();
-      const truncated = text.slice(0, 10000);
-      await teachFromPosts(parsePostsBlock(truncated));
-    } catch (err: any) {
-      console.error("Voice teach file error:", err);
-      toast.error(err.message || "Couldn't read that file");
+      return pages.join("\n\n");
+    }
+    throw new Error(`Unsupported file type: ${file.name}`);
+  };
+
+  const handleTeachFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    setUploading(true);
+    setTeaching(true);
+    let grandTotal = 0;
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileLabel = `${file.name} (${i + 1}/${files.length}) `;
+        if (file.size > MAX_UPLOAD_BYTES) {
+          toast.error(`${file.name} is over 50MB — skipping.`);
+          continue;
+        }
+        const lower = file.name.toLowerCase();
+        const ok = /\.(txt|md|docx|pdf)$/i.test(lower);
+        if (!ok) {
+          toast.error(`${file.name}: unsupported file type. Use .txt, .md, .docx, or .pdf.`);
+          continue;
+        }
+        const readingId = `voice-read-${Date.now()}-${i}`;
+        toast.loading(`Reading ${file.name}…`, { id: readingId, duration: Infinity });
+        let text = "";
+        try {
+          // eslint-disable-next-line no-await-in-loop
+          text = await extractTextFromFile(file);
+        } catch (err: any) {
+          toast.dismiss(readingId);
+          console.error("Extract error:", err);
+          toast.error(`Couldn't read ${file.name}: ${err?.message || "extraction failed"}`);
+          continue;
+        }
+        toast.dismiss(readingId);
+        const posts = parsePostsBlock(text);
+        if (posts.length === 0) {
+          toast.error(`${file.name}: no posts found.`);
+          continue;
+        }
+        try {
+          // eslint-disable-next-line no-await-in-loop
+          const taught = await teachFromPostsBatched(posts, fileLabel);
+          grandTotal += taught;
+        } catch (err: any) {
+          console.error("Voice teach file error:", err);
+          toast.error(`${file.name}: ${err?.message || "Couldn't teach Aura from those posts"}`);
+        }
+      }
+      if (grandTotal > 0) {
+        toast.success(`Voice sharpened from ${grandTotal} ${grandTotal === 1 ? "post" : "posts"} across ${files.length} ${files.length === 1 ? "file" : "files"}.`);
+        setDistilledOnce(true);
+        await loadProfile();
+      }
     } finally {
       setUploading(false);
+      setTeaching(false);
       if (teachFileRef.current) teachFileRef.current.value = "";
     }
   };
@@ -1257,7 +1401,8 @@ const VoiceEngineSection = () => {
                       <input
                         ref={teachFileRef}
                         type="file"
-                        accept=".txt"
+                        accept=".txt,.md,.docx,.pdf,text/plain,text/markdown,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        multiple
                         onChange={handleTeachFile}
                         className="hidden"
                         id="voice-teach-file"
@@ -1270,7 +1415,7 @@ const VoiceEngineSection = () => {
                         className="w-full gap-2"
                       >
                         {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                        Upload .txt of posts
+                        Upload posts (.txt, .docx, .pdf)
                       </Button>
                     </div>
                     <Button

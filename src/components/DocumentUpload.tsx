@@ -157,17 +157,24 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
       toast({ title: "Unsupported file", description: "Upload PDF, DOCX, PNG, JPG, or WebP files.", variant: "destructive" });
       return;
     }
-    if (file.size > 20 * 1024 * 1024) {
-      toast({ title: "Too large", description: "File must be under 20MB.", variant: "destructive" });
+    if (file.size > 50 * 1024 * 1024) {
+      toast({ title: "Too large", description: `${file.name} must be under 50MB.`, variant: "destructive" });
       return;
     }
 
     // Friendly heads-up for large PDFs/DOCX (>8MB) — extraction may take longer.
     const LARGE_FILE_BYTES = 8 * 1024 * 1024;
-    if (file.size > LARGE_FILE_BYTES && (fileType === "pdf" || fileType === "docx")) {
+    const VERY_LARGE_FILE_BYTES = 25 * 1024 * 1024;
+    if (file.size > VERY_LARGE_FILE_BYTES && (fileType === "pdf" || fileType === "docx")) {
+      const sizeMb = (file.size / 1024 / 1024).toFixed(1);
+      sonnerToast.warning(
+        `Very large ${fileType.toUpperCase()} (${sizeMb} MB) — ${file.name} may take several minutes to process, and could hit extraction limits.`,
+        { duration: 9000 },
+      );
+    } else if (file.size > LARGE_FILE_BYTES && (fileType === "pdf" || fileType === "docx")) {
       const sizeMb = (file.size / 1024 / 1024).toFixed(1);
       sonnerToast.message(
-        `Large ${fileType.toUpperCase()} detected (${sizeMb} MB). Processing may take longer than usual.`,
+        `Large ${fileType.toUpperCase()} detected in ${file.name} (${sizeMb} MB). Processing may take longer than usual.`,
         { duration: 6000 },
       );
     }
@@ -297,12 +304,18 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
       <input
         ref={fileInputRef}
         type="file"
+        multiple
         accept=".pdf,.docx,.png,.jpg,.jpeg,.webp"
         className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) handleFile(file);
+        onChange={async (e) => {
+          const files = Array.from(e.target.files || []);
           e.target.value = "";
+          for (const file of files) {
+            // Sequential: await each so upload + ingest trigger fire in order and
+            // each file gets its own watcher/toast + independent duplicate check.
+            // eslint-disable-next-line no-await-in-loop
+            await handleFile(file);
+          }
         }}
       />
 
