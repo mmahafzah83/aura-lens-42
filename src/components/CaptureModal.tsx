@@ -1289,7 +1289,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                   >
                     <ImageIcon className="w-9 h-9 mx-auto mb-3" style={{ color: "var(--glass-2)" }} />
                     <p style={{ fontSize: 14, color: "var(--glass)", margin: 0 }}>Drop an image or click to upload</p>
-                    <p style={{ fontSize: 12, color: "var(--glass-2)", marginTop: 4 }}>PNG, JPG up to 10MB</p>
+                    <p style={{ fontSize: 12, color: "var(--glass-2)", marginTop: 4 }}>PNG, JPG up to 20MB</p>
                   </div>
                   <div className="grid grid-cols-2" style={{ gap: 8 }}>
                     <button
