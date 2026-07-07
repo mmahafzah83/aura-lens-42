@@ -190,20 +190,41 @@ const NotificationBell = () => {
 
                       {/* KPI mini-bars for weekly summaries */}
                       {n.metadata && n.type === "weekly_summary" && (
-                        <div className="flex gap-3 mt-2">
-                          {[
-                            { label: "Imprint", value: n.metadata.authority_index, color: "bg-primary" },
-                            { label: "Content", value: n.metadata.market_voice, color: "bg-[color:var(--info)]" },
-                          ].map((kpi) => (
-                            <div key={kpi.label} className="flex items-center gap-1.5">
-                              <span className="text-xs" style={{ color: "var(--ink-3)" }}>{kpi.label}</span>
-                              <div className="w-12 h-1 rounded-full overflow-hidden" style={{ background: "var(--paper-3)" }}>
-                                <div className={`h-full rounded-full ${kpi.color}`} style={{ width: `${kpi.value || 0}%` }} />
-                              </div>
-                              <span className="text-xs" style={{ color: "var(--ink-3)" }}>{kpi.value || 0}%</span>
+                        (() => {
+                          const imprint = Math.max(0, Math.min(100, Number(n.metadata.imprint ?? 0)));
+                          const delta = Number(n.metadata.delta ?? 0);
+                          const captures = Number(n.metadata.captures ?? 0);
+                          const posts = Number(n.metadata.posts ?? 0);
+                          // "Content" activity bar: captures + posts, capped to 100%.
+                          const activity = Math.min(100, (captures + posts) * 10);
+                          const bars = [
+                            {
+                              label: "Imprint",
+                              barPct: imprint,
+                              display: `${imprint}${delta === 0 ? "" : delta > 0 ? ` (+${delta})` : ` (${delta})`}`,
+                              color: "bg-primary",
+                            },
+                            {
+                              label: "Content",
+                              barPct: activity,
+                              display: `${captures}c · ${posts}p`,
+                              color: "bg-[color:var(--info)]",
+                            },
+                          ];
+                          return (
+                            <div className="flex gap-3 mt-2">
+                              {bars.map((kpi) => (
+                                <div key={kpi.label} className="flex items-center gap-1.5">
+                                  <span className="text-xs" style={{ color: "var(--ink-3)" }}>{kpi.label}</span>
+                                  <div className="w-12 h-1 rounded-full overflow-hidden" style={{ background: "var(--paper-3)" }}>
+                                    <div className={`h-full rounded-full ${kpi.color}`} style={{ width: `${kpi.barPct}%` }} />
+                                  </div>
+                                  <span className="text-xs" style={{ color: "var(--ink-3)" }}>{kpi.display}</span>
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
+                          );
+                        })()
                       )}
                     </div>
                   </div>
