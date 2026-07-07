@@ -1008,7 +1008,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
   };
   const handlePublishToLinkedIn = async () => {
     if (publishingLive || publishedFromCreate) return;
-    const text = stripMarkdown(output || fullVersion || shortVersion || "");
+    const text = fixArabicDirectionalSymbols(stripMarkdown(output || fullVersion || shortVersion || ""));
     if (!text.trim()) { toast.error("Nothing to publish"); return; }
     setPublishingLive(true);
     try {
