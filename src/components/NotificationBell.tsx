@@ -192,8 +192,8 @@ const NotificationBell = () => {
                       {n.metadata && n.type === "weekly_summary" && (
                         <div className="flex gap-3 mt-2">
                           {[
-                            { label: "Auth", value: n.metadata.authority_index, color: "bg-primary" },
-                            { label: "Voice", value: n.metadata.market_voice, color: "bg-[color:var(--info)]" },
+                            { label: "Imprint", value: n.metadata.authority_index, color: "bg-primary" },
+                            { label: "Content", value: n.metadata.market_voice, color: "bg-[color:var(--info)]" },
                           ].map((kpi) => (
                             <div key={kpi.label} className="flex items-center gap-1.5">
                               <span className="text-xs" style={{ color: "var(--ink-3)" }}>{kpi.label}</span>
