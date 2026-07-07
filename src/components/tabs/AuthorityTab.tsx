@@ -1680,60 +1680,6 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                   );
                 })()}
 
-                {/* Mark-as-published URL prompt (optional) — mirrors the saved-card flow */}
-                {pubUrlOpen && !publishedFromCreate && (
-                  <div
-                    style={{
-                      marginTop: 4,
-                      padding: 10,
-                      background: "var(--bg-subtle)",
-                      borderRadius: 6,
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 6,
-                    }}
-                  >
-                    <span style={{ fontSize: 13, color: "var(--ink)" }}>
-                      Did you post this on LinkedIn? Paste the URL (optional) to link engagement.
-                    </span>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                      <Input
-                        value={pubUrl}
-                        onChange={(e) => { setPubUrl(e.target.value); setPubUrlError(""); }}
-                        placeholder="https://www.linkedin.com/posts/…"
-                        className="h-7 text-xs flex-1 min-w-[200px]"
-                      />
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          const err = validateLinkedInUrl(pubUrl);
-                          if (err) { setPubUrlError(err); return; }
-                          handleMarkPublishedFromCreate(pubUrl.trim() || undefined);
-                        }}
-                        disabled={publishing}
-                        className="h-7 text-xs"
-                      >
-                        Confirm
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => { setPubUrlOpen(false); setPubUrl(""); setPubUrlError(""); }}
-                        className="h-7 text-xs"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                    {pubUrlError ? (
-                      <span style={{ fontSize: 12, color: "var(--warning)" }}>{pubUrlError}</span>
-                    ) : (
-                      <span style={{ fontSize: 12, color: "var(--color-muted)" }}>
-                        Optional — paste the post's link so Aura can track how it performs and learn from it.
-                      </span>
-                    )}
-                  </div>
-                )}
-
                 {/* Back to full version link */}
                 {showingShort && !generatingShort && (
                   <button onClick={switchToFull} className="flex items-center gap-1 text-xs text-primary hover:underline">
