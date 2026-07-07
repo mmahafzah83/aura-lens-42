@@ -598,6 +598,16 @@ export const EditorialBlindSpots = ({
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const pollingRef = useRef<number | null>(null);
+  const pollingTimeoutRef = useRef<number | null>(null);
+
+  const stopScanPolling = () => {
+    if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
+    if (pollingTimeoutRef.current) { clearTimeout(pollingTimeoutRef.current); pollingTimeoutRef.current = null; }
+  };
+
+  useEffect(() => () => { stopScanPolling(); }, []);
 
   const load = useCallback(async (manual = false) => {
     setLoading(true);
@@ -605,6 +615,49 @@ export const EditorialBlindSpots = ({
     try {
       const { data: sess } = await supabase.auth.getSession();
       if (!sess.session) throw new Error("Not authenticated");
+      const userId = sess.session.user.id;
+
+      // If the user has zero industry_trends (new/enriching), kick off a light
+      // Phase A fetch first so detect-market-gaps has data to work with. The
+      // enrichment continues async — poll until rows land, then re-run gaps.
+      const { count: trendCount } = await supabase
+        .from("industry_trends")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .in("status", ["new", "enriching"]);
+
+      const trendsAbsent = (trendCount ?? 0) === 0;
+      if (trendsAbsent) {
+        setScanning(true);
+        stopScanPolling();
+        // Fire-and-forget Phase A — returns fast; enrichment continues async.
+        supabase.functions
+          .invoke("fetch-industry-trends", { body: { mode: "light" } })
+          .catch(() => {});
+        if (manual) {
+          toast.message("Aura is scanning your sector's live conversation — signals appear here within a couple of minutes.");
+        }
+        // Poll every 20s, up to 3 minutes, for the first industry_trends row.
+        pollingRef.current = window.setInterval(async () => {
+          const { count: c } = await supabase
+            .from("industry_trends")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", userId)
+            .eq("status", "new");
+          if ((c ?? 0) > 0) {
+            stopScanPolling();
+            setScanning(false);
+            void load(false);
+          }
+        }, 20000);
+        pollingTimeoutRef.current = window.setTimeout(() => {
+          stopScanPolling();
+          setScanning(false);
+        }, 180000);
+        setLoading(false);
+        return;
+      }
+
       const { data: r, error } = await supabase.functions.invoke("detect-market-gaps", { body: {} });
       if (error) throw error;
       if (!r || r.error) throw new Error(r?.error || "No result");
@@ -613,11 +666,14 @@ export const EditorialBlindSpots = ({
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cached)); } catch {}
       if (manual) {
         const gapsFound = (cached.items || []).filter(it => it.category === "gap" || it.category === "opportunity").length;
-        toast.success(
-          gapsFound > 0
-            ? `Coverage refreshed — ${gapsFound} blind spot${gapsFound === 1 ? "" : "s"} to track.`
-            : "Coverage refreshed — you're clear."
-        );
+        if (gapsFound > 0) {
+          toast.success(`Coverage refreshed — ${gapsFound} blind spot${gapsFound === 1 ? "" : "s"} to track.`);
+        } else if ((cached.items?.length ?? 0) === 0) {
+          // No items AND no trends visible in this response → still warming up.
+          toast.message("Aura is scanning your sector's live conversation — signals appear here within a couple of minutes.");
+        } else {
+          toast.success("Coverage refreshed — you're clear.");
+        }
       }
     } catch (e) {
       console.error("coverage error", e);
@@ -663,7 +719,14 @@ export const EditorialBlindSpots = ({
         </ExpandablePanel>
       </div>
 
-      {loading && !data ? (
+      {scanning ? (
+        <div style={{ padding: "20px 16px", background: "var(--surface-ink-raised)", border: "0.5px solid var(--surface-ink-subtle)", borderRadius: 10, display: "flex", alignItems: "flex-start", gap: 10 }}>
+          <Loader2 size={14} className="animate-spin" style={{ marginTop: 2, color: "var(--brand)" }} />
+          <p style={{ fontSize: 12, color: "var(--glass-2)", margin: 0, lineHeight: 1.55 }}>
+            Aura is scanning your sector's live conversation — signals appear here within a couple of minutes.
+          </p>
+        </div>
+      ) : loading && !data ? (
         <p style={{ fontSize: 12, color: "var(--glass-2)" }}><Loader2 size={12} className="inline animate-spin" /> Analysing your coverage…</p>
       ) : data && gaps.length > 0 ? (
         <>

@@ -123,6 +123,12 @@ const Onboarding = () => {
       // Self-JWT path: compute-imprint resolves the user from the bearer token,
       // recomputes the score, and writes the first imprint_snapshot immediately.
       supabase.functions.invoke("compute-imprint", { body: {} }).catch(() => {});
+      // Fire-and-forget: seed industry_trends for this user so Observatory / Market
+      // Coverage isn't empty on first visit. Phase A returns fast; enrichment
+      // continues in the background.
+      supabase.functions
+        .invoke("fetch-industry-trends", { body: { mode: "light" } })
+        .catch(() => {});
     } catch { /* non-blocking */ }
   };
 
