@@ -1614,37 +1614,25 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                         <><Send className="w-3.5 h-3.5" /> Review & publish</>
                       )}
                     </Button>
-                    <Button
-                      data-testid="pub-mark-published-btn"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        if (publishedFromCreate || publishing) return;
-                        setPubUrlOpen((v) => !v);
-                      }}
-                      disabled={publishing || publishedFromCreate || !output.trim()}
-                      className={`h-7 gap-1.5 text-xs ${publishedFromCreate ? "border-emerald-500/40 text-emerald-500" : "border-border/15"}`}
-                    >
-                      {publishing ? (
-                        <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Marking…</>
-                      ) : publishedFromCreate ? (
-                        <><Check className="w-3.5 h-3.5" /> Published ✓</>
-                      ) : (
-                        <><Check className="w-3.5 h-3.5" /> Mark as published</>
-                      )}
-                    </Button>
-                    <InfoTooltip slug="mark-published" label="Mark as published" side="top" triggerSize={13} />
                   </div>
                 </div>
 
                 {confirmLiveOpen && !publishedFromCreate && (() => {
-                  const previewText = stripMarkdown(output || fullVersion || shortVersion || "");
+                  const previewText = fixArabicDirectionalSymbols(stripMarkdown(output || fullVersion || shortVersion || ""));
                   const count = previewText.length;
                   const isAr = lang === "ar";
                   return (
                     <div className="mt-2 border rounded-lg overflow-hidden bg-background">
-                      <div className="px-3.5 py-2 border-b text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        Preview — exactly how it will post
+                      <div className="px-3.5 py-2 border-b text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center justify-between">
+                        <span>Preview — exactly how it will post</span>
+                        <button
+                          type="button"
+                          aria-label="Close preview"
+                          onClick={() => setConfirmLiveOpen(false)}
+                          className="p-1 rounded hover:bg-muted/40 text-muted-foreground"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                       <div
                         dir={isAr ? "rtl" : "ltr"}
@@ -1684,7 +1672,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                             {publishingLive ? "Publishing…" : "Publish now"}
                           </Button>
                           <Button size="sm" variant="ghost" onClick={() => setConfirmLiveOpen(false)} disabled={publishingLive} className="h-8 text-xs">
-                            Edit
+                            Cancel
                           </Button>
                         </div>
                       </div>
