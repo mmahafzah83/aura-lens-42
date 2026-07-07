@@ -719,7 +719,14 @@ export const EditorialBlindSpots = ({
         </ExpandablePanel>
       </div>
 
-      {loading && !data ? (
+      {scanning ? (
+        <div style={{ padding: "20px 16px", background: "var(--surface-ink-raised)", border: "0.5px solid var(--surface-ink-subtle)", borderRadius: 10, display: "flex", alignItems: "flex-start", gap: 10 }}>
+          <Loader2 size={14} className="animate-spin" style={{ marginTop: 2, color: "var(--brand)" }} />
+          <p style={{ fontSize: 12, color: "var(--glass-2)", margin: 0, lineHeight: 1.55 }}>
+            Aura is scanning your sector's live conversation — signals appear here within a couple of minutes.
+          </p>
+        </div>
+      ) : loading && !data ? (
         <p style={{ fontSize: 12, color: "var(--glass-2)" }}><Loader2 size={12} className="inline animate-spin" /> Analysing your coverage…</p>
       ) : data && gaps.length > 0 ? (
         <>
