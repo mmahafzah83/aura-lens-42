@@ -203,7 +203,7 @@ export function InfoTooltip({
     pointerEvents: visible ? "auto" : "none",
     transition: "opacity 0.2s ease",
     textAlign: "left",
-    fontFamily: "'DM Sans', sans-serif",
+    fontFamily: "var(--font-body)",
     fontWeight: 400,
     letterSpacing: "normal",
     textTransform: "none",
