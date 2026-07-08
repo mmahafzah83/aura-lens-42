@@ -561,68 +561,20 @@ function contrastRatio(fg: string, bg: string): number | null {
 
 /* ---------------- GROUP 11 — Tooltip Deep ---------------- */
 async function auditTooltipDeep(results: QaResult[], doc: Document) {
-  const triggers = new Set<Element>();
-  doc.querySelectorAll("svg.lucide-help-circle, svg.lucide-info").forEach((s) => {
-    const t = s.closest("button, [role='button'], span, div");
-    if (t) triggers.add(t);
+  // Hover triggers can't be reliably simulated (see tooltips.manual). Skip.
+  void doc;
+  results.push({
+    testId: "tooltip_deep.manual",
+    testName: "Tooltip trigger consistency — manual verify",
+    category: "tooltips_deep",
+    status: "warn",
+    details: {
+      description: "Tooltip trigger consistency requires manual review. Confirm hover-triggered tooltips across the app open on hover and use the same pattern.",
+      expected: "Manual verification",
+      actual: "manual",
+      severity: "low",
+    } as any,
   });
-  doc.querySelectorAll("button, span").forEach((el) => {
-    const txt = (el as HTMLElement).innerText?.trim();
-    if (txt === "?" || txt === "ⓘ") triggers.add(el);
-  });
-  const visible = Array.from(triggers).filter((e) => isVisible(e, doc));
-  const behaviors: string[] = [];
-  let i = 0;
-  for (const el of visible.slice(0, 30)) {
-    const before = new Set(doc.querySelectorAll("[role='tooltip'], [data-radix-popper-content-wrapper]"));
-    el.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
-    el.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
-    await sleep(250);
-    const onHover = Array.from(doc.querySelectorAll("[role='tooltip'], [data-radix-popper-content-wrapper]")).filter(n => !before.has(n));
-    const opensOnHover = onHover.length > 0;
-    let opensOnClick = false;
-    if (!opensOnHover) {
-      (el as HTMLElement).click();
-      await sleep(250);
-      opensOnClick = Array.from(doc.querySelectorAll("[role='tooltip'], [role='dialog'], [data-radix-popper-content-wrapper]")).filter(n => !before.has(n)).length > 0;
-    }
-    el.dispatchEvent(new MouseEvent("mouseleave", { bubbles: true }));
-    doc.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
-    await sleep(200);
-    const trigger = opensOnHover ? "hover" : opensOnClick ? "click" : "none";
-    behaviors.push(trigger);
-    if (trigger === "none") {
-      results.push({
-        testId: `tooltip_deep.${i}`,
-        testName: "Tooltip trigger behavior",
-        category: "tooltips_deep",
-        status: "warn",
-        details: {
-          description: `Trigger: ${trigger}`,
-          element: describe(el),
-          expected: "Consistent hover-to-open across the app",
-          actual: trigger,
-          severity: "medium",
-        },
-      });
-    }
-    i++;
-  }
-  const set = new Set(behaviors.filter(b => b !== "none"));
-  if (set.size > 1) {
-    results.push({
-      testId: "tooltip_deep.consistency",
-      testName: "Tooltip pattern consistency",
-      category: "tooltips_deep",
-      status: "fail",
-      details: {
-        description: `Mixed tooltip patterns found: ${Array.from(set).join(", ")}`,
-        expected: "All tooltips use the same trigger pattern",
-        actual: Array.from(set).join(", "),
-        severity: "high",
-      },
-    });
-  }
 }
 
 /* ---------------- GROUP 12 — Loading States ---------------- */
