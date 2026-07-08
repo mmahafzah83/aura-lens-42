@@ -3,6 +3,19 @@
  * Client-side DOM interaction audit. Runs against the currently rendered page,
  * or against any same-origin Document passed in (e.g. an iframe.contentDocument).
  */
+import { TIER_BANDS } from "@/hooks/useTierFromImprint";
+
+/**
+ * Expected tier name (capitalised) for a numeric imprint score. Reads bands
+ * from useTierFromImprint so /admin/qa never drifts from the ratified ladder.
+ * Bands: Observer 0–14, Explorer 15–34, Strategist 35–59, Voice 60–79,
+ * Presence 80–100 — so score 100 → Presence.
+ */
+function expectedTierForScore(score: number): string {
+  const s = Math.max(0, Math.min(100, Math.round(score)));
+  const band = TIER_BANDS.find((b) => s >= b.min && s <= b.max) ?? TIER_BANDS[0];
+  return band.name;
+}
 
 export type QaStatus = "pass" | "fail" | "warn";
 
