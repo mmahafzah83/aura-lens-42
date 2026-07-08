@@ -1379,7 +1379,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                   >
                     <Icon className="w-3.5 h-3.5" />
                   </span>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: active ? "var(--brand)" : "var(--ink)", lineHeight: 1.2 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: active ? "var(--action-ink)" : "var(--ink)", lineHeight: 1.2 }}>
                     {label}
                   </span>
                   {subtitle && (
@@ -1405,7 +1405,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                 display: "inline-flex", alignItems: "center", gap: 6,
                 padding: "8px 14px", borderRadius: 10,
                 background: "var(--paper-3)",
-                color: "var(--bronze)", fontSize: 12, fontWeight: 600,
+                color: "var(--action-ink)", fontSize: 12, fontWeight: 600,
                 border: "1px solid var(--bronze)", cursor: "pointer",
               }}
             >
@@ -1418,7 +1418,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                 display: "inline-flex", alignItems: "center", gap: 6,
                 padding: "8px 14px", borderRadius: 10, marginLeft: 8,
                 background: "var(--paper-3)",
-                color: "var(--bronze)", fontSize: 12, fontWeight: 600,
+                color: "var(--action-ink)", fontSize: 12, fontWeight: 600,
                 border: "1px solid var(--bronze)", cursor: "pointer",
               }}
             >

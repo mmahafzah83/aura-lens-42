@@ -861,7 +861,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   <span style={{
                     fontSize: 11, fontWeight: 500, padding: "3px 10px",
                     borderRadius: 12, background: "var(--brand-pale, rgba(176,141,58,0.12))",
-                    color: "var(--warning, var(--brand))",
+                    color: "var(--action-ink)",
                     display: "inline-flex", alignItems: "center", gap: 6,
                   }}>
                     {archetypeName}

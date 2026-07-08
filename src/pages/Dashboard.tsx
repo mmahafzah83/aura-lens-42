@@ -224,6 +224,7 @@ const Dashboard = () => {
       strategy: "intelligence",
       publish: "authority",
       impact: "influence",
+      "my-story": "identity",
     };
     const resolvedTab = tabParam ? (tabAlias[tabParam] ?? tabParam) : null;
     if (resolvedTab && NAV_ITEMS.some(n => n.value === resolvedTab)) {
@@ -460,6 +461,7 @@ const Dashboard = () => {
   const switchTab = (tab: TabValue) => {
     setActiveTab(tab);
     setMobileSidebarOpen(false);
+    setSearchParams({ tab });
     if (tab === "intelligence") {
       try { localStorage.setItem("aura_intel_last_visit", new Date().toISOString()); } catch {}
       setNewIntelSignalCount(0);
@@ -686,7 +688,7 @@ const Dashboard = () => {
               onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
             >
               <Paperclip className="w-4.5 h-4.5 shrink-0 group-hover:scale-110 transition-transform" />
-              {!sidebarCollapsed && <span className="text-sm font-medium">Capture</span>}
+              {!sidebarCollapsed && <span className="text-sm font-medium" style={{ color: "var(--action-ink)" }}>Capture</span>}
             </button>
 
             <button
