@@ -244,7 +244,7 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null, hide
                     )}
                   </div>
                   {editing !== key && (
-                    <button onClick={() => startEdit(key)} className="text-muted-foreground hover:text-primary transition-colors shrink-0 ml-2">
+                    <button aria-label={`Edit ${label}`} onClick={() => startEdit(key)} className="text-muted-foreground hover:text-primary transition-colors shrink-0 ml-2">
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
                   )}
@@ -256,7 +256,7 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null, hide
                       {editItems.map((item, i) => (
                         <span key={i} className="text-xs px-2.5 py-1 rounded-full bg-secondary text-foreground border border-border/20 flex items-center gap-1.5">
                           {item}
-                          <button onClick={() => removeItem(i)} className="hover:text-destructive"><X className="w-3 h-3" /></button>
+                          <button aria-label={`Remove ${item}`} onClick={() => removeItem(i)} className="hover:text-destructive"><X className="w-3 h-3" /></button>
                         </span>
                       ))}
                     </div>
