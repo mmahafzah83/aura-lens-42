@@ -461,6 +461,7 @@ const Dashboard = () => {
   const switchTab = (tab: TabValue) => {
     setActiveTab(tab);
     setMobileSidebarOpen(false);
+    setSearchParams({ tab });
     if (tab === "intelligence") {
       try { localStorage.setItem("aura_intel_last_visit", new Date().toISOString()); } catch {}
       setNewIntelSignalCount(0);
