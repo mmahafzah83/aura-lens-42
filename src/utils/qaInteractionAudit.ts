@@ -354,13 +354,32 @@ function auditOverflow(results: QaResult[], doc: Document) {
 /* ---------------- GROUP 7 — Fonts ---------------- */
 function auditFonts(results: QaResult[], doc: Document) {
   const win = getWin(doc);
-  const banned = ["inter", "roboto", "arial", "system-ui", "-apple-system"];
+  // System-A whitelist: Newsreader (serif — headings + body), IBM Plex Mono
+  // (mono — score readouts, metric chips, monospace labels), Cairo (Arabic
+  // text), system-ui (utility system UI). Everything else is a violation.
+  const HEADING_OK = ["newsreader", "cairo", "system-ui"];
+  const BODY_OK    = ["newsreader", "cairo", "system-ui", "ibm plex mono"];
+  const MONO_OK    = ["ibm plex mono"];
+  const isRtl = (el: Element) => {
+    let p: Element | null = el;
+    while (p) {
+      const d = (p as HTMLElement).getAttribute?.("dir");
+      if (d === "rtl") return true;
+      const lang = (p as HTMLElement).getAttribute?.("lang");
+      if (lang && /^ar/i.test(lang)) return true;
+      p = p.parentElement;
+    }
+    return false;
+  };
+  const familyMatches = (f: string, whitelist: string[]) =>
+    whitelist.some((w) => f.includes(w));
   const violations: { kind: string; element: string; font: string }[] = [];
 
   doc.querySelectorAll("h1, h2, h3").forEach((el) => {
     if (!isVisible(el, doc)) return;
     const f = win.getComputedStyle(el).fontFamily.toLowerCase();
-    if (!f.includes("cormorant")) violations.push({ kind: "heading", element: describe(el), font: f });
+    const wl = isRtl(el) ? ["cairo", "system-ui"] : HEADING_OK;
+    if (!familyMatches(f, wl)) violations.push({ kind: "heading", element: describe(el), font: f });
   });
   doc.querySelectorAll("p, span, div").forEach((el) => {
     if (!isVisible(el, doc)) return;
@@ -368,18 +387,13 @@ function auditFonts(results: QaResult[], doc: Document) {
     if (!text || text.length < 10) return;
     if ((el as HTMLElement).children.length > 0) return;
     const f = win.getComputedStyle(el).fontFamily.toLowerCase();
-    if (banned.some((b) => f.startsWith(b) || f.split(",")[0].trim().includes(b))) {
-      if (!f.includes("dm sans") && !f.includes("cormorant") && !f.includes("jetbrains")) {
-        violations.push({ kind: "body", element: describe(el), font: f });
-      }
-    } else if (!f.includes("dm sans") && !f.includes("cormorant") && !f.includes("jetbrains")) {
-      violations.push({ kind: "body", element: describe(el), font: f });
-    }
+    const wl = isRtl(el) ? ["cairo", "system-ui"] : BODY_OK;
+    if (!familyMatches(f, wl)) violations.push({ kind: "body", element: describe(el), font: f });
   });
   doc.querySelectorAll("[class*='score'], [class*='metric'], [class*='number'], [class*='mono']").forEach((el) => {
     if (!isVisible(el, doc)) return;
     const f = win.getComputedStyle(el).fontFamily.toLowerCase();
-    if (!f.includes("jetbrains")) violations.push({ kind: "mono", element: describe(el), font: f });
+    if (!familyMatches(f, MONO_OK)) violations.push({ kind: "mono", element: describe(el), font: f });
   });
 
   results.push({
@@ -388,7 +402,7 @@ function auditFonts(results: QaResult[], doc: Document) {
     category: "fonts",
     status: violations.length === 0 ? "pass" : "warn",
     details: {
-      description: `${violations.length} font violations`,
+      description: `${violations.length} font violations (whitelist: Newsreader / IBM Plex Mono / Cairo / system-ui)`,
       samples: violations.slice(0, 15),
     } as any,
   });
