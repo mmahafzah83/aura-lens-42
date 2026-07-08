@@ -776,33 +776,21 @@ function auditAccessibility(results: QaResult[], doc: Document) {
     details: { description: `${contrastFails.length} contrast violations among ${samples.length} sampled`, severity: "high" },
   });
 
-  const buttons = Array.from(doc.querySelectorAll("button, a, [role='button']")).filter((e) => isVisible(e, doc)).slice(0, 30);
-  let unfocusable = 0;
-  buttons.forEach((b, idx) => {
-    const he = b as HTMLElement;
-    he.focus({ preventScroll: true } as any);
-    const cs = win.getComputedStyle(he);
-    const hasOutline = cs.outlineStyle !== "none" && parseFloat(cs.outlineWidth) > 0;
-    const hasRing = cs.boxShadow && cs.boxShadow !== "none";
-    if (!hasOutline && !hasRing) {
-      unfocusable++;
-      if (unfocusable <= 8) {
-        results.push({
-          testId: `a11y.focus.${idx}`,
-          testName: "Missing focus indicator",
-          category: "accessibility",
-          status: "fail",
-          details: {
-            description: "Element has no visible focus indicator on Tab",
-            element: describe(he),
-            expected: "outline or ring on :focus-visible",
-            actual: "none",
-            severity: "high",
-          },
-        });
-      }
-    }
-    he.blur();
+  // :focus-visible only paints when the browser classifies focus as
+  // keyboard-originated. Programmatic .focus() from a synthetic audit does
+  // NOT set that flag, so this check produced ~100% false positives. Flag
+  // for manual verification instead.
+  results.push({
+    testId: "a11y.focus.manual",
+    testName: "Focus-visible outlines — manual verify",
+    category: "accessibility",
+    status: "warn",
+    details: {
+      description: ":focus-visible cannot be triggered synthetically. Tab through the page and confirm every button, link, tab, and form control shows a visible outline or ring on keyboard focus.",
+      expected: "Manual verification",
+      actual: "manual",
+      severity: "low",
+    } as any,
   });
 }
 
