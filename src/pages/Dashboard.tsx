@@ -224,6 +224,7 @@ const Dashboard = () => {
       strategy: "intelligence",
       publish: "authority",
       impact: "influence",
+      "my-story": "identity",
     };
     const resolvedTab = tabParam ? (tabAlias[tabParam] ?? tabParam) : null;
     if (resolvedTab && NAV_ITEMS.some(n => n.value === resolvedTab)) {
