@@ -66,13 +66,14 @@ export function FirstTimeHint({ hintKey, children }: FirstTimeHintProps) {
         type="button"
         onClick={dismiss}
         style={{
-          background: "none",
+          background: "var(--paper-2)",
           border: "none",
-          color: "#B08D3A",
+          color: "var(--ink)",
           fontSize: 12,
           fontWeight: 500,
           cursor: "pointer",
-          padding: "2px 6px",
+          padding: "4px 10px",
+          borderRadius: 6,
           flexShrink: 0,
           whiteSpace: "nowrap",
         }}
