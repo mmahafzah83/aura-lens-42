@@ -1907,12 +1907,7 @@ async function auditImpactPage(results: QaResult[], doc: Document) {
     pushPage(results, "impact", "m1", "Authority score visible", "fail",
       "No score number found on Impact", "score 0–100", "missing");
   } else if (tierMatch) {
-    const expectedTier =
-      score >= 80 ? "Presence"
-      : score >= 60 ? "Voice"
-      : score >= 35 ? "Strategist"
-      : score >= 15 ? "Explorer"
-      : "Observer";
+    const expectedTier = expectedTierForScore(score);
     const ok = tierMatch[1] === expectedTier;
     pushPage(results, "impact", "m1", "Score and tier match",
       ok ? "pass" : "fail",
