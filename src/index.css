@@ -1708,7 +1708,7 @@ html.dark .text-gray-500,
 .aura-sidebar-shell[data-surface="bone"] {
   --ask-bg: var(--paper-3);
   --ask-bg-hover: color-mix(in srgb, var(--brand) 10%, var(--paper-3));
-  --ask-fg: var(--brand);
+  --ask-fg: var(--action-ink);
   --ask-border: 1px solid var(--brand-line);
 }
 .aura-sidebar-shell[data-surface="dark"] {
