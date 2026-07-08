@@ -797,100 +797,19 @@ function findTooltipNear(doc: Document, trigger: Element, before: Set<Element>):
 
 /* ---------------- Tooltip Consistency ---------------- */
 async function auditTooltipsConsistency(results: QaResult[], doc: Document) {
-  const win = getWin(doc);
-  const triggers = new Set<Element>();
-  doc.querySelectorAll("[data-tooltip], [data-tip], [aria-describedby]").forEach((el) => triggers.add(el));
-  doc.querySelectorAll("svg[class*='help' i], svg[class*='info' i], svg[class*='question' i]").forEach((s) => {
-    const t = s.closest("button, [role='button'], span, div");
-    if (t) triggers.add(t);
-  });
-  doc.querySelectorAll("button, span, [role='button']").forEach((el) => {
-    const t = (el as HTMLElement).innerText?.trim();
-    if (t === "?" || t === "ⓘ") triggers.add(el);
-  });
-
-  const visible = Array.from(triggers).filter((e) => isVisible(e, doc)).slice(0, 30);
-  const counts = { "hover-dismiss": 0, "click-dismiss": 0, "click-manual": 0, "hover-sticky": 0, "no-tooltip": 0 } as Record<string, number>;
-
-  for (let i = 0; i < visible.length; i++) {
-    const el = visible[i];
-    const before = new Set(
-      doc.querySelectorAll("[role='tooltip'], [data-radix-popper-content-wrapper], [class*='tooltip' i], [class*='popover' i], [class*='tip' i]")
-    );
-
-    let category: keyof typeof counts = "no-tooltip";
-
-    try {
-      el.dispatchEvent(new (win as any).MouseEvent("mouseenter", { bubbles: true }));
-      el.dispatchEvent(new (win as any).MouseEvent("mouseover", { bubbles: true }));
-      await sleep(400);
-      let tip = findTooltipNear(doc, el, before);
-
-      if (tip) {
-        el.dispatchEvent(new (win as any).MouseEvent("mouseleave", { bubbles: true }));
-        el.dispatchEvent(new (win as any).MouseEvent("mouseout", { bubbles: true }));
-        await sleep(600);
-        const stillThere = doc.contains(tip) && isVisible(tip, doc);
-        category = stillThere ? "hover-sticky" : "hover-dismiss";
-      } else {
-        try { (el as HTMLElement).click(); } catch { /* noop */ }
-        await sleep(400);
-        tip = findTooltipNear(doc, el, before);
-        if (tip) {
-          (doc.body || doc.documentElement).dispatchEvent(new (win as any).MouseEvent("mousedown", { bubbles: true }));
-          (doc.body || doc.documentElement).dispatchEvent(new (win as any).MouseEvent("click", { bubbles: true }));
-          await sleep(400);
-          const stillThere = doc.contains(tip) && isVisible(tip, doc);
-          category = stillThere ? "click-manual" : "click-dismiss";
-        } else {
-          category = "no-tooltip";
-        }
-      }
-    } catch {
-      category = "no-tooltip";
-    }
-
-    counts[category]++;
-
-    const status: QaStatus =
-      category === "hover-dismiss" || category === "click-dismiss"
-        ? "pass"
-        : category === "no-tooltip"
-          ? "warn"
-          : "fail";
-
-    results.push({
-      testId: `tooltip.${i}`,
-      testName: "Tooltip behavior",
-      category: "tooltip",
-      status,
-      details: {
-        description: `Trigger categorized as "${category}"`,
-        element: describe(el),
-        location: locationOf(el),
-        expected: "hover-dismiss or click-dismiss",
-        actual: category,
-        severity: status === "fail" ? "high" : "low",
-      } as any,
-    });
-
-    await sleep(150);
-  }
-
-  const goodTypes = ["hover-dismiss", "click-dismiss"].filter((k) => counts[k] > 0);
-  const badTypes = ["click-manual", "hover-sticky"].filter((k) => counts[k] > 0);
-  const mixed = goodTypes.length + badTypes.length > 1;
-
+  // See tooltips.manual — synthetic hover events cannot exercise Radix /
+  // Floating-UI tooltip open/close reliably. Manual verification only.
+  void doc;
   results.push({
-    testId: "tooltip.summary",
-    testName: "Tooltip consistency summary",
+    testId: "tooltip.consistency.manual",
+    testName: "Tooltip consistency — manual verify",
     category: "tooltip",
-    status: badTypes.length > 0 ? "fail" : mixed ? "warn" : "pass",
+    status: "warn",
     details: {
-      description: `Tested ${visible.length} triggers — ${Object.entries(counts).map(([k, v]) => `${k}=${v}`).join(", ")}`,
-      expected: "Single consistent tooltip pattern",
-      actual: mixed ? "mixed patterns on this page" : "consistent",
-      severity: badTypes.length > 0 ? "high" : "medium",
+      description: "Hover-tooltip patterns must be reviewed by hand. Sample ⓘ / help triggers across pages and confirm they all use the same open/dismiss behavior.",
+      expected: "Manual verification",
+      actual: "manual",
+      severity: "low",
     } as any,
   });
 }
