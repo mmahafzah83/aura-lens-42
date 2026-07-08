@@ -1749,7 +1749,7 @@ button[aria-label="Notifications"]:focus-visible {
 
 /* Active nav item: left bar + gradient + inner glow + brand text */
 .aura-nav-item.is-active {
-  color: var(--sidebar-active-bar, var(--brand));
+  color: var(--action-ink);
   background: linear-gradient(
     90deg,
     var(--sidebar-active-bg, var(--brand-surface)) 0%,
