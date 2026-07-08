@@ -1574,18 +1574,13 @@ async function auditHomePage(results: QaResult[], doc: Document) {
     const score = scoreCandidates.find((n) => n > 0) ?? scoreCandidates[0];
 
     if (score === undefined || Number.isNaN(score)) {
-      pushPage(results, "home", "h1", "Aura Score visible", "fail",
-        "No score number 0–100 found on Home", "score 0–100 displayed", "missing");
+      pushPage(results, "home", "h1", "Imprint score visible", "fail",
+        "No Imprint score 0–100 found on Brief", "Imprint dial with score 0–100", "missing");
     } else if (!tier) {
-      pushPage(results, "home", "h1", "Aura Score visible", "warn",
-        `Score ${score} found but no tier label`, "tier label near score", "no tier label");
+      pushPage(results, "home", "h1", "Imprint score visible", "warn",
+        `Score ${score} found but no tier label`, "tier label near Imprint dial", "no tier label");
     } else {
-      const expectedTier =
-        score >= 80 ? "Presence"
-        : score >= 60 ? "Voice"
-        : score >= 35 ? "Strategist"
-        : score >= 15 ? "Explorer"
-        : "Observer";
+      const expectedTier = expectedTierForScore(score);
       const ok = tier === expectedTier;
       pushPage(results, "home", "h1", "Aura Score and tier match", ok ? "pass" : "fail",
         ok ? `Score ${score} matches tier ${tier}` : `Score ${score} but tier shows ${tier} (expected ${expectedTier})`,
@@ -1593,39 +1588,41 @@ async function auditHomePage(results: QaResult[], doc: Document) {
         `tier=${tier}`);
     }
   } catch (e: any) {
-    pushPage(results, "home", "h1", "Aura Score visible", "warn", `Error: ${e?.message || e}`);
+    pushPage(results, "home", "h1", "Imprint score visible", "warn", `Error: ${e?.message || e}`);
   }
 
-  // H2 — Personalized greeting
-  const greetingEl = Array.from(doc.querySelectorAll("h1, h2, h3, p, div"))
-    .find((e) => /good (morning|afternoon|evening)/i.test(txt(e))) as HTMLElement | undefined;
-  if (!greetingEl) {
-    pushPage(results, "home", "h2", "Personalized greeting", "warn",
-      "No 'Good morning/afternoon/evening' greeting found", "personalized greeting with first name", "missing");
+  // H2 — Brief masthead present (logo/wordmark row + tab bar).
+  const masthead = doc.querySelector(".brief-page .brief-meta, .brief-page header, .brief-page .brief-inner");
+  const tabs = doc.querySelectorAll(".brief-nav-tab");
+  if (!masthead && tabs.length === 0) {
+    pushPage(results, "home", "h2", "Brief masthead", "fail",
+      "No Brief masthead detected", "masthead with nav tabs on Brief", "missing");
   } else {
-    const g = txt(greetingEl);
-    const bad = /undefined|null|\bUser\b/.test(g);
-    const hasName = /,\s*[A-Z][a-z]+/.test(g) || /good (morning|afternoon|evening)\s+[A-Z][a-z]+/i.test(g);
-    pushPage(results, "home", "h2", "Personalized greeting",
-      bad ? "fail" : hasName ? "pass" : "warn",
-      bad ? `Greeting contains placeholder: "${g.slice(0, 60)}"`
-          : hasName ? `Greeting personalized: "${g.slice(0, 60)}"`
-                    : `Greeting present but name unclear: "${g.slice(0, 60)}"`,
-      "Greeting includes user's first name",
-      g.slice(0, 80));
+    const activeTab = doc.querySelector(".brief-nav-tab.is-active");
+    const ok = tabs.length >= 4 && !!activeTab;
+    pushPage(results, "home", "h2", "Brief masthead", ok ? "pass" : "warn",
+      ok ? `Masthead with ${tabs.length} tab(s), active tab present`
+         : `Masthead present but tabs=${tabs.length}, active=${activeTab ? "yes" : "no"}`,
+      ">=4 .brief-nav-tab tabs with one .is-active",
+      `tabs=${tabs.length}, active=${activeTab ? "yes" : "no"}`);
   }
 
-  // H3 — Recommended moves / Aura's Read
-  const moveSection = findByText(doc, "section, div, article", /YOUR NEXT MOVE|AURA'?S READ|recommended move/i);
-  if (!moveSection) {
-    pushPage(results, "home", "h3", "Recommended moves section", "warn",
-      "No 'Your Next Move' or 'Aura's Read' section found", "section visible", "missing");
+  // H3 — Imprint dial (right-side ledger with imprint number + tier + spark).
+  const ledger = doc.querySelector(".brief-ledger") as HTMLElement | null;
+  if (!ledger) {
+    pushPage(results, "home", "h3", "Imprint dial", "fail",
+      "No .brief-ledger imprint dial found on Brief", "Imprint dial with score + tier", "missing");
   } else {
-    const ctas = Array.from(moveSection.querySelectorAll("button, a")).filter((b) => /publish|capture|view|read|→/i.test(txt(b)));
-    const ok = ctas.length > 0 && txt(moveSection).length > 40;
-    pushPage(results, "home", "h3", "Recommended moves with CTAs", ok ? "pass" : "fail",
-      ok ? `Found ${ctas.length} CTA(s)` : "Section present but no actionable CTAs",
-      ">=1 move with CTA button", `${ctas.length} CTAs found`);
+    const ledgerText = txt(ledger);
+    const hasHeading = /YOUR IMPRINT/i.test(ledgerText);
+    const hasScore = /\b\d{1,3}\b/.test(ledgerText);
+    const hasTier = /Observer|Explorer|Strategist|Voice|Presence/i.test(ledgerText);
+    const ok = hasHeading && hasScore && hasTier;
+    pushPage(results, "home", "h3", "Imprint dial", ok ? "pass" : "warn",
+      ok ? "Imprint ledger renders heading + score + tier"
+         : `Imprint ledger present but heading=${hasHeading}, score=${hasScore}, tier=${hasTier}`,
+      "YOUR IMPRINT heading + numeric score + tier label",
+      `heading=${hasHeading}, score=${hasScore}, tier=${hasTier}`);
   }
 
   // H4 — Live Intelligence feed
@@ -1649,13 +1646,21 @@ async function auditHomePage(results: QaResult[], doc: Document) {
       cta ? "ok" : "missing CTA");
   }
 
-  // H6 — Tier journey ladder
-  if (/Observer/i.test(text) && /Strategist/i.test(text) && /Presence/i.test(text)) {
-    pushPage(results, "home", "h6", "Authority journey ladder", "pass",
-      "Observer/Strategist/Presence labels present");
+  // H6 — Edition items (rows in the Brief edition — Recommended Move, moves list, rhythm row).
+  const editionRows = doc.querySelectorAll(".brief-row, .brief-lead, .brief-moved, .brief-rhythm");
+  const editionCta = doc.querySelector(".brief-cta");
+  if (editionRows.length === 0) {
+    pushPage(results, "home", "h6", "Edition items", "fail",
+      "No Brief edition rows found (.brief-row / .brief-lead / .brief-moved / .brief-rhythm)",
+      ">=1 edition section rendered",
+      "0 rows");
   } else {
-    pushPage(results, "home", "h6", "Authority journey ladder", "warn",
-      "Tier ladder labels not all visible", "Observer + Strategist + Presence", "incomplete");
+    pushPage(results, "home", "h6", "Edition items",
+      editionCta ? "pass" : "warn",
+      editionCta ? `${editionRows.length} edition section(s), lead CTA present`
+                 : `${editionRows.length} edition section(s) but no .brief-cta`,
+      "edition sections + lead CTA",
+      `sections=${editionRows.length}, cta=${!!editionCta}`);
   }
 
   // H7 — Capture rhythm grid
