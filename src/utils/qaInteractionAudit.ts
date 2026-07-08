@@ -104,55 +104,21 @@ async function safeRun(
 
 /* ---------------- GROUP 1 — Tooltip Consistency ---------------- */
 async function auditTooltips(results: QaResult[], doc: Document) {
-  const candidates = new Set<Element>();
-  doc.querySelectorAll("[data-tooltip], [aria-describedby]").forEach((el) => candidates.add(el));
-  doc.querySelectorAll("svg.lucide-help-circle, svg.lucide-info").forEach((el) => {
-    const trigger = (el as Element).closest("button, [role='button'], span, div");
-    if (trigger) candidates.add(trigger);
-  });
-  doc.querySelectorAll("button, span, [role='button']").forEach((el) => {
-    const t = (el as HTMLElement).innerText?.trim();
-    if (t === "?" || t === "ⓘ") candidates.add(el);
-  });
-
-  const visible = Array.from(candidates).filter((e) => isVisible(e, doc)).slice(0, 20);
-
-  for (let i = 0; i < visible.length; i++) {
-    const el = visible[i];
-    const before = new Set(doc.querySelectorAll("[role='tooltip'], .tooltip, .popover, [data-radix-popper-content-wrapper]"));
-    el.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
-    el.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
-    await sleep(300);
-    const afterEnter = Array.from(doc.querySelectorAll("[role='tooltip'], .tooltip, .popover, [data-radix-popper-content-wrapper]"))
-      .filter((n) => !before.has(n));
-    const appeared = afterEnter.length > 0;
-
-    el.dispatchEvent(new MouseEvent("mouseleave", { bubbles: true }));
-    el.dispatchEvent(new MouseEvent("mouseout", { bubbles: true }));
-    await sleep(500);
-    const stillThere = afterEnter.filter((n) => doc.contains(n) && isVisible(n, doc));
-
-    if (appeared && stillThere.length > 0) {
-      results.push({
-        testId: `tooltip.${i}`,
-        testName: "Tooltip dismiss on hover-out",
-        category: "tooltips",
-        status: "fail",
-        details: {
-          description: "Tooltip appeared but did not dismiss on mouseleave",
-          element: describe(el),
-          expected: "auto-dismiss on mouseleave",
-          actual: "requires manual close",
-        },
-      });
-    }
-  }
+  // Hover tooltips cannot be triggered reliably by synthetic MouseEvents —
+  // Radix/Floating-UI rely on real pointer intent + delays. Flagged for
+  // manual verification in /admin/qa instead of producing false positives.
+  void doc;
   results.push({
-    testId: "tooltips.summary",
-    testName: "Tooltips checked",
+    testId: "tooltips.manual",
+    testName: "Hover tooltips — manual verify",
     category: "tooltips",
-    status: "pass",
-    details: { description: `${visible.length} tooltip triggers tested` },
+    status: "warn",
+    details: {
+      description: "Hover tooltip behavior is untestable synthetically. Manually hover a sample of ⓘ / help triggers and confirm they appear on hover and dismiss on mouseleave.",
+      expected: "Manual verification",
+      actual: "manual",
+      severity: "low",
+    } as any,
   });
 }
 
