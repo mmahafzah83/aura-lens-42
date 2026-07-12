@@ -1,0 +1,1 @@
+ALTER VIEW public.linkedin_connections_safe SET (security_invoker = true);
