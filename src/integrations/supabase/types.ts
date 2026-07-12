@@ -2353,33 +2353,6 @@ export type Database = {
         }
         Relationships: []
       }
-      strategic_signals_lifecycle_backup_20260531: {
-        Row: {
-          backed_up_at: string | null
-          confidence: number | null
-          fragment_count: number | null
-          id: string | null
-          status: string | null
-          user_id: string | null
-        }
-        Insert: {
-          backed_up_at?: string | null
-          confidence?: number | null
-          fragment_count?: number | null
-          id?: string | null
-          status?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          backed_up_at?: string | null
-          confidence?: number | null
-          fragment_count?: number | null
-          id?: string | null
-          status?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
       sync_errors: {
         Row: {
           context: Json | null
