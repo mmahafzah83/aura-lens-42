@@ -261,18 +261,34 @@ serve(async (req) => {
       let groundingFragments: any[] = [];
       try {
         if (signal_id) {
-          const [sigRes, fragRes] = await Promise.all([
-            supabase.from("strategic_signals")
-              .select("signal_title, explanation, strategic_implications, confidence")
-              .eq("id", signal_id).maybeSingle(),
-            supabase.from("evidence_fragments")
+          // Fetch the signal first — we need its own supporting_evidence_ids to ground on ITS chain.
+          const { data: sigData } = await supabase.from("strategic_signals")
+            .select("signal_title, explanation, strategic_implications, confidence, supporting_evidence_ids")
+            .eq("id", signal_id).maybeSingle();
+          groundingSignal = sigData || null;
+
+          const evidenceIds = Array.isArray(sigData?.supporting_evidence_ids)
+            ? sigData!.supporting_evidence_ids.filter(Boolean)
+            : [];
+
+          if (evidenceIds.length > 0) {
+            // Ground on THIS signal's own evidence chain, strongest first.
+            const { data: fragData } = await supabase.from("evidence_fragments")
+              .select("title, content, confidence")
+              .eq("user_id", effectiveUserId)
+              .in("id", evidenceIds)
+              .order("confidence", { ascending: false })
+              .limit(6);
+            groundingFragments = fragData || [];
+          } else {
+            // Fallback ONLY when the signal has no linked evidence: most recent fragments.
+            const { data: fragData } = await supabase.from("evidence_fragments")
               .select("title, content, confidence")
               .eq("user_id", effectiveUserId)
               .order("created_at", { ascending: false })
-              .limit(5),
-          ]);
-          groundingSignal = sigRes.data || null;
-          groundingFragments = fragRes.data || [];
+              .limit(5);
+            groundingFragments = fragData || [];
+          }
         } else {
           const { data: sigs } = await supabase.from("strategic_signals")
             .select("signal_title, explanation, strategic_implications, confidence")
