@@ -281,8 +281,9 @@ async function insertPublishedLinkedInPost(opts: {
   sourceSignalId?: string | null;
   url?: string | null;
   language?: "en" | "ar";
+  frameworkType?: string | null;
 }): Promise<void> {
-  const { userId, postText, formatType, sourceMetadata, sourceSignalId, url } = opts;
+  const { userId, postText, formatType, sourceMetadata, sourceSignalId, url, frameworkType } = opts;
   const lang: "en" | "ar" = opts.language === "ar" ? "ar" : "en";
   let cleanUrl: string | null = null;
   if (url) {
@@ -310,6 +311,7 @@ async function insertPublishedLinkedInPost(opts: {
       source_trust: 100,
       source_metadata: sourceMetadata || {},
       source_signal_id: sourceSignalId || null,
+      framework_type: frameworkType ?? null,
       enriched_by: [],
       synced_at: new Date().toISOString(),
     });
@@ -1032,6 +1034,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
             tracking_status: "draft",
             source_type: "aura_generated",
             source_signal_id: selectedSignalId || null,
+            framework_type: framework !== "auto" ? framework : null,
             source_metadata: {
               source: "create_view",
               topic: topic || null,
@@ -1107,6 +1110,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
           sourceSignalId: selectedSignalId,
           url: urlArg ?? null,
           language: lang,
+          frameworkType: framework !== "auto" ? framework : null,
         });
         // If this Create session is editing an existing content_items draft,
         // mark the source row as published so it counts as shipped.
@@ -3168,6 +3172,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
           sourceSignalId: linkedSignalId,
           url: trimmedUrl ?? null,
           language: ((item.source_metadata as any)?.language === "ar" ? "ar" : "en"),
+          frameworkType: (item as any).framework_type ?? null,
         });
         await supabase
           .from("content_items")
