@@ -281,8 +281,9 @@ async function insertPublishedLinkedInPost(opts: {
   sourceSignalId?: string | null;
   url?: string | null;
   language?: "en" | "ar";
+  frameworkType?: string | null;
 }): Promise<void> {
-  const { userId, postText, formatType, sourceMetadata, sourceSignalId, url } = opts;
+  const { userId, postText, formatType, sourceMetadata, sourceSignalId, url, frameworkType } = opts;
   const lang: "en" | "ar" = opts.language === "ar" ? "ar" : "en";
   let cleanUrl: string | null = null;
   if (url) {
@@ -310,6 +311,7 @@ async function insertPublishedLinkedInPost(opts: {
       source_trust: 100,
       source_metadata: sourceMetadata || {},
       source_signal_id: sourceSignalId || null,
+      framework_type: frameworkType ?? null,
       enriched_by: [],
       synced_at: new Date().toISOString(),
     });
