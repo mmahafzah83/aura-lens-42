@@ -552,6 +552,7 @@ Rewrite any sentence that uses these with concrete, specific language.${postType
       return new Response(JSON.stringify({
         content,
         success: true,
+        framework_used: (framework && FRAMEWORK_PROMPTS[framework]) ? framework : null,
         quality_gate: gateResult ? {
           overall_score: (() => {
             const o = Number(gateResult.overall ?? 0);
