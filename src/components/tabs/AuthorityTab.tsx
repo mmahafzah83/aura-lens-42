@@ -3172,6 +3172,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
           sourceSignalId: linkedSignalId,
           url: trimmedUrl ?? null,
           language: ((item.source_metadata as any)?.language === "ar" ? "ar" : "en"),
+          frameworkType: (item as any).framework_type ?? null,
         });
         await supabase
           .from("content_items")
