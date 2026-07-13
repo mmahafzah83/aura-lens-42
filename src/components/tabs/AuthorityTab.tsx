@@ -1034,6 +1034,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
             tracking_status: "draft",
             source_type: "aura_generated",
             source_signal_id: selectedSignalId || null,
+            framework_type: framework !== "auto" ? framework : null,
             source_metadata: {
               source: "create_view",
               topic: topic || null,
@@ -1109,6 +1110,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
           sourceSignalId: selectedSignalId,
           url: urlArg ?? null,
           language: lang,
+          frameworkType: framework !== "auto" ? framework : null,
         });
         // If this Create session is editing an existing content_items draft,
         // mark the source row as published so it counts as shipped.
