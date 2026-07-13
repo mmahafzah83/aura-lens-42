@@ -1483,17 +1483,39 @@ async function runPhaseB(opts: {
     await adminClient.from("industry_trends").delete().in("id", leftoverIds).eq("status", "enriching");
   }
 
-  // Cap active at 5
-  const { data: activeAfter } = await adminClient
+  // ── Freshness-aware active cap ──
+  // Stale winners must age out (TTL) and fresh trends can displace older higher-scored
+  // ones (recency-weighted rank), so the radar never locks on old high scorers.
+  const TREND_TTL_DAYS = 10;            // no "new" trend older than this survives
+  const TREND_AGE_DECAY_PER_DAY = 2;    // effective-score penalty per day of age
+  const ACTIVE_CAP = 5;
+  const nowMs = Date.now();
+  const ttlCutoffIso = new Date(nowMs - TREND_TTL_DAYS * 86400000).toISOString();
+
+  // 1) Hard TTL: expire any stale "new" trend past the freshness window (frees locked slots).
+  await adminClient
     .from("industry_trends")
-    .select("id")
+    .update({ status: "expired" })
     .eq("user_id", userId)
     .eq("status", "new")
-    .order("final_score", { ascending: false })
-    .order("fetched_at", { ascending: false });
-  const ids = (activeAfter || []).map((r: any) => r.id);
-  if (ids.length > 5) {
-    await adminClient.from("industry_trends").update({ status: "expired" }).in("id", ids.slice(5));
+    .lt("fetched_at", ttlCutoffIso);
+
+  // 2) Recency-weighted cap on what remains.
+  const { data: activeAfter } = await adminClient
+    .from("industry_trends")
+    .select("id, final_score, fetched_at")
+    .eq("user_id", userId)
+    .eq("status", "new");
+  const ranked = (activeAfter || [])
+    .map((r: any) => {
+      const ageDays = Math.max(0, (nowMs - new Date(r.fetched_at).getTime()) / 86400000);
+      const effective = (Number(r.final_score) || 0) - ageDays * TREND_AGE_DECAY_PER_DAY;
+      return { id: r.id, effective };
+    })
+    .sort((a, b) => b.effective - a.effective);
+  if (ranked.length > ACTIVE_CAP) {
+    const expireIds = ranked.slice(ACTIVE_CAP).map((r) => r.id);
+    await adminClient.from("industry_trends").update({ status: "expired" }).in("id", expireIds);
   }
 
   const ms = Date.now() - runStart;
