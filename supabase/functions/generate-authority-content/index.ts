@@ -509,7 +509,29 @@ Rewrite any sentence that uses these with concrete, specific language.${postType
       // Safety net: strip any meta format-label the model may have prepended,
       // and remove "---" horizontal rules / leading "# " headers that the
       // model is instructed to avoid but sometimes still emits.
+      // Strip a leading scaffold/meta block the model sometimes emits before the post
+      // (System Initialization / BUDGET CHECK / config KEY:value lines). Bounded: only
+      // consumes leading scaffold-looking lines, stops at the first real content line.
+      const stripLeadingScaffold = (text: string): string => {
+        const lines = text.split("\n");
+        let i = 0, sawScaffold = false;
+        const isScaffold = (l: string): boolean => {
+          const t = l.trim();
+          if (/^[A-Za-z][A-Za-z0-9 _-]{0,30}:\s?.+$/.test(t) && /(budget|token|model|system|config|status|available|window|check|init)/i.test(t)) return true;
+          if (/^[A-Z][A-Za-z ]{0,40}$/.test(t) && /(initialization|initialisation|system|budget|config|setup|status|thinking|token)/i.test(t)) return true;
+          return false;
+        };
+        while (i < lines.length) {
+          const t = lines[i].trim();
+          if (t === "") { i++; continue; }
+          if (isScaffold(lines[i])) { sawScaffold = true; i++; continue; }
+          break;
+        }
+        return (sawScaffold && i < lines.length) ? lines.slice(i).join("\n") : text;
+      };
+      content = stripLeadingScaffold(content);
       content = content
+        .replace(/^\s*(?:منشور\s*LinkedIn|LinkedIn\s*Post|POST|بوست)\s*[-—–:：]\s*(?:English|Arabic|عربي(?:ة)?|إنجليزي(?:ة)?)\s*\n?/i, '')
         .replace(/^\s*(?:منشور\s*LinkedIn|LinkedIn\s*Post|POST|بوست)\s*[:：\-—]?\s*\n?/i, '')
         .replace(/^[ \t]*(?:منشور\s*LinkedIn|LinkedIn\s*Post|POST|بوست)[ \t]*[:：\-—]?[ \t]*$\n?/gim, '')
         .replace(/^\s*-{3,}\s*$/gm, '')
