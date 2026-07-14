@@ -2221,6 +2221,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         }}>
           How your content performs in the market
         </p>
+        <div style={{ fontSize:11, color:"var(--aura-t3)", margin:"0 0 12px" }}>
+          Impressions per post from your last import{importedAt ? ` · ${fmtDateShort(importedAt)}` : ""}; engagement synced daily.
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <PillarCard
             label="Visibility"
@@ -2463,6 +2466,13 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             </p>
           </div>
         ) : (
+          <>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", flexWrap:"wrap", gap:8, marginBottom:8 }}>
+            <span style={{ fontSize:11, letterSpacing:"0.06em", textTransform:"uppercase", color:"var(--color-text-muted)" }}>Ranked by engagement rate · high → low</span>
+            {importedAt && (
+              <span style={{ fontSize:11, color:"var(--color-text-muted)" }}>from your last import · {fmtDateShort(importedAt)}</span>
+            )}
+          </div>
           <div
             className="rounded-lg overflow-hidden"
             style={{ background: "var(--color-card)", border: "0.5px solid var(--color-border)" }}
@@ -2588,6 +2598,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               );
             })}
           </div>
+          </>
         ))}
         {openSections.posts && topPosts.length > 0 && (
           <SectionInsight
