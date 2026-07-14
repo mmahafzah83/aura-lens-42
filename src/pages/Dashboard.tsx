@@ -44,11 +44,11 @@ import type { Database } from "@/integrations/supabase/types";
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
 const NAV_ITEMS = [
-  { value: "home", label: "Brief", pageHeader: "Brief", icon: Compass, docTitle: "Aura — Brief" },
-  { value: "intelligence", label: "Observatory", pageHeader: "Observatory", icon: Shield, docTitle: "Aura — Observatory" },
+  { value: "home", label: "Home", pageHeader: "Home", icon: Compass, docTitle: "Aura — Home" },
+  { value: "intelligence", label: "Signals", pageHeader: "Signals", icon: Shield, docTitle: "Aura — Signals" },
   { value: "authority", label: "Composer", pageHeader: "Composer", icon: Crown, docTitle: "Aura — Composer" },
-  { value: "influence", label: "Statement", pageHeader: "Statement", icon: TrendingUp, docTitle: "Aura — Statement" },
-  { value: "identity", label: "Your Story", pageHeader: "Your Story", icon: User, docTitle: "Aura — Your Story" },
+  { value: "influence", label: "Analytics", pageHeader: "Analytics", icon: TrendingUp, docTitle: "Aura — Analytics" },
+  { value: "identity", label: "Profile", pageHeader: "Profile", icon: User, docTitle: "Aura — Profile" },
 ] as const;
 
 type TabValue = typeof NAV_ITEMS[number]["value"];

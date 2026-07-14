@@ -1256,7 +1256,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
           )}
           <button type="button" onClick={() => onSwitchTab?.("influence")}
             style={{ background: "transparent", border: 0, padding: 0, cursor: "pointer" }}>
-            <Mono color="var(--action)" size={11}>Open your Statement →</Mono>
+            <Mono color="var(--action)" size={11}>Open your Analytics →</Mono>
           </button>
         </aside>
       </section>
