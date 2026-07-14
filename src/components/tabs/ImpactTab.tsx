@@ -2595,6 +2595,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               );
             })}
           </div>
+          </>
         ))}
         {openSections.posts && topPosts.length > 0 && (
           <SectionInsight
