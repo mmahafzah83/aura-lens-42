@@ -4,7 +4,6 @@ import {
   Copy, Check, BookmarkPlus, RefreshCw, Linkedin,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { shareToLinkedIn } from "@/lib/shareLinkedIn";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -93,6 +92,9 @@ interface FlashResult {
   text: string;
   copied?: boolean;
   saving?: boolean;
+  publishing?: boolean;
+  previewOpen?: boolean;
+  sigId?: string | null;
 }
 
 const arabicNumerals = ["١", "٢", "٣"];
@@ -107,6 +109,23 @@ export default function FlashPanel() {
   const [spark, setSpark] = useState("");
   const [generating, setGenerating] = useState(false);
   const [results, setResults] = useState<FlashResult[]>([]);
+  const [sigPresets, setSigPresets] = useState<{ id: string; name: string; text_en: string; text_ar: string }[]>([]);
+
+  // Load signature presets (same source as Composer)
+  useEffect(() => {
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) return;
+      const { data } = await supabase
+        .from("diagnostic_profiles")
+        .select("signature_presets")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+      if (Array.isArray((data as any)?.signature_presets)) {
+        setSigPresets((data as any).signature_presets);
+      }
+    })();
+  }, []);
 
   // Theme list is language-aware and static — see THEMES_EN / THEMES_AR.
   const themeChips = useMemo(() => (lang === "ar" ? THEMES_AR : THEMES_EN), [lang]);
@@ -291,9 +310,18 @@ export default function FlashPanel() {
       if (!session?.user?.id) throw new Error("Not authenticated");
       const { error } = await supabase.from("linkedin_posts").insert({
         user_id: session.user.id,
-        post_text: r.text,
+        post_text: displayText(r.text),
+        content_type: "post",
+        format_type: "post",
         source_type: "aura_generated",
         tracking_status: "draft",
+        source_metadata: {
+          origin: "flash",
+          language: lang,
+          post_type: postType || null,
+          theme: selectedTheme || null,
+          sector: sectorPayloadValue() || null,
+        },
       });
       if (error) throw error;
       toast.success(t.saved);
@@ -301,6 +329,81 @@ export default function FlashPanel() {
       toast.error(e.message || "Save failed");
     } finally {
       setResults(prev => prev.map((x, i) => i === idx ? { ...x, saving: false } : x));
+    }
+  };
+
+  // Compose the final text that will actually post to LinkedIn — displayText
+  // (RTL arrow flip) + optional signature preset in the correct language.
+  const composeFinalText = (idx: number): string => {
+    const r = results[idx];
+    if (!r) return "";
+    const base = displayText(r.text);
+    const sigId = r.sigId;
+    if (!sigId) return base;
+    const preset = sigPresets.find(p => p.id === sigId);
+    if (!preset) return base;
+    const sig = (lang === "ar" ? preset.text_ar : preset.text_en) || "";
+    if (!sig.trim()) return base;
+    return `${base.trimEnd()}\n\n${sig.trim()}`;
+  };
+
+  const togglePreview = (idx: number) => {
+    setResults(prev => prev.map((x, i) => i === idx ? { ...x, previewOpen: !x.previewOpen } : x));
+  };
+
+  const setSigForResult = (idx: number, sigId: string | null) => {
+    setResults(prev => prev.map((x, i) => i === idx ? { ...x, sigId } : x));
+  };
+
+  // Publish via the SAME real path AuthorityTab uses: insert a linkedin_posts
+  // draft, then invoke the `linkedin-publish` edge function.
+  const onPublishLinkedIn = async (idx: number) => {
+    const r = results[idx];
+    if (!r) return;
+    const text = composeFinalText(idx);
+    if (!text.trim()) { toast.error("Nothing to publish"); return; }
+    setResults(prev => prev.map((x, i) => i === idx ? { ...x, publishing: true } : x));
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) throw new Error("Not authenticated");
+      const { data: ins, error: insErr } = await supabase
+        .from("linkedin_posts")
+        .insert({
+          user_id: session.user.id,
+          post_text: text,
+          content_type: "post",
+          format_type: "post",
+          source_type: "aura_generated",
+          tracking_status: "draft",
+          source_metadata: {
+            origin: "flash",
+            language: lang,
+            post_type: postType || null,
+            theme: selectedTheme || null,
+            sector: sectorPayloadValue() || null,
+          },
+        })
+        .select("id")
+        .single();
+      if (insErr) throw insErr;
+      const postId = (ins as any).id;
+      const { data, error } = await supabase.functions.invoke("linkedin-publish", { body: { postId } });
+      if (error) throw error;
+      if (!(data as any)?.success) {
+        const msg = (data as any)?.error || "Publish failed";
+        toast.error(/not connected/i.test(msg) ? "Connect LinkedIn in Settings first." : msg);
+        return;
+      }
+      const url = (data as any).postUrl;
+      toast.success(
+        lang === "ar" ? "تم النشر على لينكدإن" : "Published to LinkedIn",
+        url ? { action: { label: "View post", onClick: () => window.open(url, "_blank") } } : undefined,
+      );
+      setResults(prev => prev.map((x, i) => i === idx ? { ...x, previewOpen: false } : x));
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't publish to LinkedIn");
+    } finally {
+      setResults(prev => prev.map((x, i) => i === idx ? { ...x, publishing: false } : x));
     }
   };
 
@@ -563,18 +666,83 @@ export default function FlashPanel() {
                   size="sm"
                   variant="outline"
                   className="h-8 gap-1.5 text-xs"
-                  onClick={() => shareToLinkedIn({
-                    text: displayText(r.text),
-                    mode: "feed",
-                    toastMessage: lang === "ar"
-                      ? "تم نسخ المنشور — الصقه في لينكدإن."
-                      : "Post copied to clipboard — paste it in LinkedIn.",
-                  })}
+                  onClick={() => togglePreview(idx)}
                 >
                   <Linkedin className="w-3 h-3" />
                   <span style={lang === "ar" ? arabicFontStyle : undefined}>{t.postOnLinkedIn}</span>
                 </Button>
               </div>
+
+              {r.previewOpen && (() => {
+                const isAr = lang === "ar";
+                const previewText = composeFinalText(idx);
+                const count = previewText.length;
+                return (
+                  <div className="mt-2 border rounded-lg overflow-hidden bg-background">
+                    <div className="px-3.5 py-2 border-b text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {isAr ? "معاينة — كما سيُنشر تماماً" : "Preview — exactly how it will post"}
+                    </div>
+                    <div
+                      dir={isAr ? "rtl" : "ltr"}
+                      className="p-4 whitespace-pre-wrap break-words text-[15px] leading-relaxed max-h-80 overflow-y-auto"
+                      style={isAr
+                        ? { textAlign: "right", fontFamily: "Cairo, sans-serif" }
+                        : { textAlign: "left" }}
+                    >
+                      {previewText || (isAr ? "لا يوجد نص للمعاينة." : "Nothing to preview yet.")}
+                    </div>
+                    <div className="px-3.5 py-2 border-t flex flex-col gap-2">
+                      {sigPresets.length > 0 && (
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="text-muted-foreground" style={isAr ? arabicFontStyle : undefined}>
+                            {isAr ? "التوقيع" : "Signature"}
+                          </span>
+                          <select
+                            value={r.sigId || ""}
+                            onChange={(e) => setSigForResult(idx, e.target.value || null)}
+                            className="text-xs border rounded px-2 py-1 bg-background"
+                            dir={dirAttr}
+                          >
+                            <option value="">{isAr ? "بدون" : "None"}</option>
+                            {sigPresets.map(p => (
+                              <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>{count} / 3000 {isAr ? "حرف" : "characters"}</span>
+                      </div>
+                      {count > 3000 && (
+                        <span className="text-xs text-destructive">
+                          {isAr ? "تجاوز الحد الأقصى 3000 حرف — قصّه قبل النشر." : "Over LinkedIn's 3000-character limit — trim before publishing."}
+                        </span>
+                      )}
+                      <div className="flex gap-2" style={isAr ? { flexDirection: "row-reverse" } : undefined}>
+                        <Button
+                          size="sm"
+                          onClick={() => onPublishLinkedIn(idx)}
+                          disabled={!!r.publishing || !previewText.trim() || count > 3000}
+                          className="h-8 text-xs"
+                        >
+                          {r.publishing
+                            ? (isAr ? "جاري النشر…" : "Publishing…")
+                            : (isAr ? "انشر الآن" : "Publish now")}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => togglePreview(idx)}
+                          disabled={!!r.publishing}
+                          className="h-8 text-xs"
+                        >
+                          {isAr ? "إلغاء" : "Cancel"}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           ))}
 
