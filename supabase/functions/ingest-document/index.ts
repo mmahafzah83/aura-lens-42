@@ -6,7 +6,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const MAX_BYTES = 20 * 1024 * 1024; // 20 MB safety guardrail
+const MAX_BYTES = 50 * 1024 * 1024; // 50 MB safety guardrail
+const OCR_PAGE_TEXT_THRESHOLD = 30; // <30 chars => treat as scanned
+const OCR_BATCH_SIZE = 5;
+const OCR_MAX_PAGES = 30;
 
 function chunkText(text: string, chunkSize = 800, overlap = 100): string[] {
   const chunks: string[] = [];
@@ -186,42 +189,119 @@ async function extractFromImage(adminClient: any, doc: any, lovableApiKey: strin
 }
 
 // Extract text from a PDF by sending base64 bytes with proper mime to Gemini.
-async function extractFromPdf(adminClient: any, doc: any, lovableApiKey: string): Promise<string> {
+// Deterministic per-page PDF extraction using unpdf (pdf.js for Deno).
+// OCR fallback via Gemini gateway is applied only to pages with < OCR_PAGE_TEXT_THRESHOLD chars.
+type PdfPage = { page: number; text: string };
+type PdfResult = {
+  pages: PdfPage[];
+  pagesTotal: number;
+  pagesRead: number;
+  method: "text" | "ocr" | "mixed";
+  ocrUnread: number; // scanned pages skipped because OCR cap was hit
+};
+
+async function extractFromPdf(
+  adminClient: any,
+  doc: any,
+  lovableApiKey: string,
+): Promise<PdfResult> {
   const storagePath = doc.file_url.includes("/storage/v1/")
     ? doc.file_url.split("/documents/")[1]
     : doc.file_url;
   const bytes = await downloadStorageBytes(adminClient, storagePath);
   if (bytes.byteLength > MAX_BYTES) {
-    throw new Error(`PDF too large (${(bytes.byteLength / 1024 / 1024).toFixed(1)} MB, max 20 MB)`);
+    throw new Error(`PDF too large (${(bytes.byteLength / 1024 / 1024).toFixed(1)} MB, max 50 MB)`);
   }
-  const b64 = bytesToBase64(bytes);
-  console.log(`[ingest-document] PDF bytes=${bytes.byteLength}, base64 len=${b64.length}`);
+  console.log(`[ingest-document] PDF bytes=${bytes.byteLength}, running deterministic extraction`);
 
-  // Lovable AI gateway / Gemini accepts file_data via data URLs in a generic file part.
-  // We use OpenAI-compatible 'image_url' with a data URL containing the PDF — this is
-  // the documented transport for non-image binaries on the gateway. If the gateway
-  // rejects this, we surface the API error verbatim via markError.
-  const dataUrl = `data:application/pdf;base64,${b64}`;
-  const res = await fetchWithTimeout("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${lovableApiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "google/gemini-3-flash-preview",
-      messages: [{
-        role: "user",
-        content: [
-          { type: "text", text: "Extract ALL text content from this PDF document. Return ONLY the raw text, preserving structure (headings, lists, paragraphs). No commentary." },
-          { type: "image_url", image_url: { url: dataUrl } },
-        ],
-      }],
-    }),
-  }, 240000, "PDF extraction");
-  if (!res.ok) {
-    const t = await res.text().catch(() => "");
-    throw new Error(`PDF extraction API ${res.status}: ${t.slice(0, 200)}`);
+  // Deterministic text pass with unpdf (pdf.js for Deno).
+  // @ts-ignore dynamic esm import
+  const { extractText, getDocumentProxy } = await import("https://esm.sh/unpdf@0.12.1");
+  const pdf = await getDocumentProxy(bytes);
+  const pagesTotal: number = pdf.numPages;
+  const pages: PdfPage[] = [];
+  const scannedPageNums: number[] = [];
+
+  for (let i = 1; i <= pagesTotal; i++) {
+    let text = "";
+    try {
+      const { text: pageText } = await extractText(pdf, { mergePages: false, pageNumbers: [i] });
+      const t = Array.isArray(pageText) ? (pageText[0] || "") : String(pageText || "");
+      text = normalizeText(t);
+    } catch (e) {
+      console.warn(`[ingest-document] unpdf page ${i} failed:`, e instanceof Error ? e.message : e);
+      text = "";
+    }
+    if (text.length < OCR_PAGE_TEXT_THRESHOLD) scannedPageNums.push(i);
+    pages.push({ page: i, text });
   }
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content || "";
+
+  const textPages = pages.filter((p) => p.text.length >= OCR_PAGE_TEXT_THRESHOLD).length;
+
+  // OCR fallback for scanned pages, capped at OCR_MAX_PAGES.
+  const ocrTargets = scannedPageNums.slice(0, OCR_MAX_PAGES);
+  const ocrUnread = Math.max(0, scannedPageNums.length - ocrTargets.length);
+  let ocrRead = 0;
+
+  if (ocrTargets.length > 0) {
+    // @ts-ignore dynamic esm import
+    const { PDFDocument } = await import("https://esm.sh/pdf-lib@1.17.1");
+
+    for (let start = 0; start < ocrTargets.length; start += OCR_BATCH_SIZE) {
+      const batchNums = ocrTargets.slice(start, start + OCR_BATCH_SIZE);
+      try {
+        const src = await PDFDocument.load(bytes);
+        const out = await PDFDocument.create();
+        const copied = await out.copyPages(src, batchNums.map((n) => n - 1));
+        for (const p of copied) out.addPage(p);
+        const batchBytes = await out.save();
+        const b64 = bytesToBase64(new Uint8Array(batchBytes));
+        const dataUrl = `data:application/pdf;base64,${b64}`;
+
+        const res = await fetchWithTimeout("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${lovableApiKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "google/gemini-3-flash-preview",
+            messages: [{
+              role: "user",
+              content: [
+                { type: "text", text: `This PDF contains ${batchNums.length} scanned page(s). Extract ALL text, preserving structure. Separate each page with the exact delimiter "\n===PAGE===\n" in order. Return ONLY raw text, no commentary.` },
+                { type: "image_url", image_url: { url: dataUrl } },
+              ],
+            }),
+          }),
+        }, 120000, "PDF OCR batch");
+
+        if (!res.ok) {
+          const t = await res.text().catch(() => "");
+          console.warn(`[ingest-document] OCR batch ${start}-${start + batchNums.length} API ${res.status}: ${t.slice(0, 200)}`);
+          continue;
+        }
+        const data = await res.json();
+        const raw: string = data.choices?.[0]?.message?.content || "";
+        const parts = raw.split(/\n===PAGE===\n/);
+        for (let j = 0; j < batchNums.length; j++) {
+          const pageNum = batchNums[j];
+          const chunk = normalizeText(parts[j] || (parts.length === 1 ? raw : ""));
+          if (chunk.length >= OCR_PAGE_TEXT_THRESHOLD) {
+            pages[pageNum - 1].text = chunk;
+            ocrRead += 1;
+          }
+        }
+      } catch (e) {
+        console.warn(`[ingest-document] OCR batch failed:`, e instanceof Error ? e.message : e);
+      }
+    }
+  }
+
+  const pagesRead = pages.filter((p) => p.text.length >= OCR_PAGE_TEXT_THRESHOLD).length;
+  let method: "text" | "ocr" | "mixed";
+  if (ocrRead === 0) method = "text";
+  else if (textPages === 0) method = "ocr";
+  else method = "mixed";
+
+  return { pages, pagesTotal, pagesRead, method, ocrUnread };
 }
 
 // Extract text from a DOCX using mammoth (pure JS, no native deps).
@@ -231,7 +311,7 @@ async function extractFromDocx(adminClient: any, doc: any): Promise<string> {
     : doc.file_url;
   const bytes = await downloadStorageBytes(adminClient, storagePath);
   if (bytes.byteLength > MAX_BYTES) {
-    throw new Error(`DOCX too large (${(bytes.byteLength / 1024 / 1024).toFixed(1)} MB, max 20 MB)`);
+    throw new Error(`DOCX too large (${(bytes.byteLength / 1024 / 1024).toFixed(1)} MB, max 50 MB)`);
   }
   // @ts-ignore dynamic esm import
   const mammoth = await import("https://esm.sh/mammoth@1.8.0?target=deno");
@@ -282,12 +362,14 @@ async function processDocument(
     }
 
     let extractedText = "";
+    let pdfResult: PdfResult | null = null;
     try {
       console.log(`[ingest-document] stage=extracting path=${extractionPath}`);
       if (kind === "image") {
         extractedText = await extractFromImage(adminClient, doc, lovableApiKey);
       } else if (kind === "pdf") {
-        extractedText = await extractFromPdf(adminClient, doc, lovableApiKey);
+        pdfResult = await extractFromPdf(adminClient, doc, lovableApiKey);
+        extractedText = pdfResult.pages.map((p) => p.text).filter(Boolean).join("\n\n");
       } else if (kind === "docx") {
         extractedText = await extractFromDocx(adminClient, doc);
       }
@@ -328,15 +410,40 @@ async function processDocument(
       console.error("[ingest-document] summary error (non-fatal):", e);
     }
 
-    const chunks = chunkText(extractedText);
-    console.log(`[ingest-document] chunking complete count=${chunks.length}`);
-    const chunkRows = chunks.map((content, i) => ({
-      document_id,
-      user_id: userId,
-      content,
-      chunk_index: i,
-      metadata: { filename: doc.filename, file_type: doc.file_type, kind },
-    }));
+    // Chunk with page provenance for PDFs; plain chunking otherwise.
+    let chunkRows: any[] = [];
+    if (pdfResult) {
+      let idx = 0;
+      for (const p of pdfResult.pages) {
+        if (!p.text || p.text.length < 20) continue;
+        const parts = chunkText(p.text);
+        for (const content of parts) {
+          chunkRows.push({
+            document_id,
+            user_id: userId,
+            content,
+            chunk_index: idx++,
+            metadata: {
+              filename: doc.filename,
+              file_type: doc.file_type,
+              kind,
+              page_start: p.page,
+              page_end: p.page,
+            },
+          });
+        }
+      }
+    } else {
+      const chunks = chunkText(extractedText);
+      chunkRows = chunks.map((content, i) => ({
+        document_id,
+        user_id: userId,
+        content,
+        chunk_index: i,
+        metadata: { filename: doc.filename, file_type: doc.file_type, kind },
+      }));
+    }
+    console.log(`[ingest-document] chunking complete count=${chunkRows.length}`);
 
     if (chunkRows.length > 0) {
       console.log(`[ingest-document] stage=chunking inserting ${chunkRows.length} rows`);
@@ -347,13 +454,26 @@ async function processDocument(
       }
     }
 
-    console.log(`[ingest-document] final status update -> completed (${chunks.length} chunks)`);
-    await adminClient.from("documents").update({
+    // Honest counts: page_count reflects real total pages for PDFs; null for DOCX/images.
+    const completionPayload: Record<string, unknown> = {
       status: "completed",
       summary: docSummary || extractedText.slice(0, 300),
-      page_count: chunks.length,
       error_message: null,
-    }).eq("id", document_id);
+    };
+    if (pdfResult) {
+      completionPayload.page_count = pdfResult.pagesTotal;
+      completionPayload.pages_total = pdfResult.pagesTotal;
+      completionPayload.pages_read = pdfResult.pagesRead;
+      completionPayload.extraction_method = pdfResult.method;
+      console.log(`[ingest-document] final status -> completed pdf pages ${pdfResult.pagesRead}/${pdfResult.pagesTotal} method=${pdfResult.method} ocrUnread=${pdfResult.ocrUnread}`);
+    } else {
+      completionPayload.page_count = null;
+      completionPayload.pages_total = null;
+      completionPayload.pages_read = null;
+      completionPayload.extraction_method = "text";
+      console.log(`[ingest-document] final status -> completed (${kind}, ${chunkRows.length} chunks)`);
+    }
+    await adminClient.from("documents").update(completionPayload).eq("id", document_id);
 
     // Write to entries so document uploads count toward capture score
     const { error: entryErr } = await adminClient
@@ -387,7 +507,11 @@ async function processDocument(
           event_type: "document",
           source_table: "documents",
           source_id: document_id,
-          payload: { page_count: chunks.length },
+          payload: {
+            page_count: pdfResult ? pdfResult.pagesTotal : null,
+            pages_read: pdfResult ? pdfResult.pagesRead : null,
+            extraction_method: pdfResult ? pdfResult.method : "text",
+          },
         }),
       });
       if (!res.ok) {
