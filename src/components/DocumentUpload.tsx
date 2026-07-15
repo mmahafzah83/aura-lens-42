@@ -47,7 +47,8 @@ const startDocumentWatcher = ({
   const toastId: string = `doc-processing-${documentId}`;
   sonnerToast.loading(`Processing ${filename}… this may take a minute`, {
     id: toastId,
-    duration: Infinity,
+    duration: 8000,
+    closeButton: true,
   });
   console.log(`[DocumentUpload] processing_toast_created doc=${documentId} toast=${toastId}`);
 
@@ -67,13 +68,14 @@ const startDocumentWatcher = ({
     }
     if (status === "timeout") {
       sonnerToast.error(`Processing ${filename} timed out. Check Sources for the latest status.`, {
-        duration: Infinity,
+        duration: 8000,
+        closeButton: true,
       });
       console.log(`[DocumentUpload] final_toast_shown doc=${documentId} type=timeout`);
       return;
     }
     const reason = errorMessage ? ` ${errorMessage}` : "";
-    sonnerToast.error(`Could not process ${filename}.${reason}`, { duration: Infinity });
+    sonnerToast.error(`Could not process ${filename}.${reason}`, { duration: 8000, closeButton: true });
     console.log(`[DocumentUpload] final_toast_shown doc=${documentId} type=error`);
   };
 
