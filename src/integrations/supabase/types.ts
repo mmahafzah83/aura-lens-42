@@ -1966,6 +1966,36 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_article_log: {
+        Row: {
+          core_practice: string | null
+          created_at: string
+          id: string
+          outcome: string
+          sector_focus: string | null
+          url: string | null
+          user_id: string | null
+        }
+        Insert: {
+          core_practice?: string | null
+          created_at?: string
+          id?: string
+          outcome: string
+          sector_focus?: string | null
+          url?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          core_practice?: string | null
+          created_at?: string
+          id?: string
+          outcome?: string
+          sector_focus?: string | null
+          url?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       page_backgrounds: {
         Row: {
           created_at: string | null
