@@ -1324,26 +1324,49 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         ) : (
           /* ─── Empty state ─── */
           <div className="mx-auto" style={{ maxWidth: 580 }}>
-            {/* Primary action for new users with no data */}
-            <div className="flex justify-center mb-5">
-              <AuraButton
-                variant="primary"
-                size="md"
-                onClick={() => window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "authority" } }))}
-                style={{ borderRadius: 6, padding: "12px 26px" }}
-              >
-                Create your first post →
-              </AuraButton>
-            </div>
+            {/* Primary action for new users with no data.
+                If LinkedIn isn't connected, lead with "Connect LinkedIn" —
+                connection powers automatic followers/impressions sync.
+                Otherwise, invite them to create their first post. */}
+            {!syncMeta.connected ? (
+              <div className="flex flex-col items-center mb-5 text-center">
+                <AuraButton
+                  variant="primary"
+                  size="md"
+                  onClick={handleConnectLinkedIn}
+                  loading={connectingLI}
+                  style={{ borderRadius: 6, padding: "12px 26px" }}
+                >
+                  <Linkedin className="w-4 h-4 mr-2 inline" /> Connect LinkedIn
+                </AuraButton>
+                <p className="text-xs mt-3 max-w-sm" style={{ color: "var(--ink-3)", lineHeight: 1.55 }}>
+                  Connection syncs your followers, impressions, and per-post performance automatically. Read-only — Aura never posts on your behalf.
+                </p>
+              </div>
+            ) : (
+              <div className="flex justify-center mb-5">
+                <AuraButton
+                  variant="primary"
+                  size="md"
+                  onClick={() => window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "authority" } }))}
+                  style={{ borderRadius: 6, padding: "12px 26px" }}
+                >
+                  Create your first post →
+                </AuraButton>
+              </div>
+            )}
 
             <details className="mb-3" style={{ background: "var(--color-background-primary, var(--surface-ink-raised))", border: "0.5px solid var(--color-border-tertiary, var(--brand-line))", borderRadius: 12 }}>
               <summary
                 className="cursor-pointer text-sm font-medium select-none"
                 style={{ color: "var(--ink)", padding: "14px 18px", listStyle: "none" }}
               >
-                Already posting on LinkedIn? Import your analytics
+                Add audience demographics (optional)
               </summary>
               <div style={{ padding: "0 18px 18px" }}>
+                <p className="text-xs mb-3" style={{ color: "var(--ink-3)", lineHeight: 1.55 }}>
+                  Followers, impressions, and per-post numbers sync automatically from your LinkedIn connection. Upload a LinkedIn export only if you also want audience demographics — seniority, industry, and geography breakdowns.
+                </p>
             <section
               className="flex flex-col items-center text-center"
               style={{
