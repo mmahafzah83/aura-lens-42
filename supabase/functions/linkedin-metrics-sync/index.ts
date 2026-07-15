@@ -204,7 +204,7 @@ async function syncConnection(
     const payload: Record<string, unknown> = {
       user_id: conn.user_id,
       snapshot_date: date,
-      source_type: "linkedin_export",
+      source_type: "linkedin_api",
       impressions: imp,
       reactions: rx,
       comments: cm,
