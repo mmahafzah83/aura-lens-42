@@ -141,3 +141,6 @@ verify_jwt = false
 
 [functions.linkedin-post-metrics-sync]
 verify_jwt = false
+
+[functions.reap-stuck-documents]
+verify_jwt = false
