@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, ArrowRight, FileText, Check, Eye, EyeOff, Lightbulb } from "lucide-react";
+import { Loader2, ArrowRight, FileText, Check, Eye, EyeOff, Lightbulb, Linkedin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import usePageMeta from "@/hooks/usePageMeta";
@@ -77,6 +77,27 @@ const Onboarding = () => {
   // Suppress the home first-visit hint for users who just completed onboarding.
   const goHome = () => {
     seedImprint();
+    // Insert the "Connect LinkedIn" screen at the end of onboarding.
+    // If the user hasn't seen it yet, show it and return; Connect or Skip will
+    // re-enter this function which will then proceed with the ceremony/home nav.
+    try {
+      const connectSeen = localStorage.getItem("aura_onboarding_connect_seen") === "1";
+      if (!connectSeen) {
+        setShowConnectStep(true);
+        // Persist that the user reached this step so it doesn't reappear.
+        (async () => {
+          try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user?.id) {
+              await (supabase.from("diagnostic_profiles" as any) as any)
+                .update({ onboarding_step: 4 })
+                .eq("user_id", session.user.id);
+            }
+          } catch (e) { console.warn("connect-step reached save failed:", e); }
+        })();
+        return;
+      }
+    } catch { /* fall through */ }
     // Play the ceremony exactly once per browser; subsequent visits go straight home.
     try {
       const alreadyPlayed = localStorage.getItem("aura_onboarding_ceremony_seen") === "true";
@@ -113,6 +134,40 @@ const Onboarding = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [checking, setChecking] = useState(true);
+
+  // Final "Connect LinkedIn" screen state (shown once, right before ceremony).
+  const [showConnectStep, setShowConnectStep] = useState(false);
+  const [connectingLI, setConnectingLI] = useState(false);
+
+  const markConnectSeen = () => {
+    try { localStorage.setItem("aura_onboarding_connect_seen", "1"); } catch {}
+  };
+
+  const handleConnectLinkedIn = async () => {
+    setConnectingLI(true);
+    markConnectSeen();
+    try {
+      const { data, error } = await supabase.functions.invoke("linkedin-oauth", {
+        body: { action: "get-auth-url", origin: window.location.origin },
+      });
+      if (error || !data?.url) {
+        toast.error("Couldn't start LinkedIn connection — you can connect from Analytics anytime.");
+        setConnectingLI(false);
+        return;
+      }
+      window.location.href = data.url;
+    } catch {
+      toast.error("Couldn't start LinkedIn connection — you can connect from Analytics anytime.");
+      setConnectingLI(false);
+    }
+  };
+
+  const handleSkipConnect = () => {
+    markConnectSeen();
+    setShowConnectStep(false);
+    // Re-enter goHome — the flag now lets it pass straight to the ceremony/home.
+    goHome();
+  };
 
   const seedImprint = () => {
     try {
@@ -761,6 +816,32 @@ const Onboarding = () => {
       <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--paper-2)" }}>
         <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--brand)" }} />
       </div>
+    );
+  }
+
+  // ───── FINAL STEP: Connect LinkedIn ─────
+  if (showConnectStep) {
+    return cardShell(
+      <>
+        {eyebrow("Final step — Bring your presence in")}
+        {heading("Connect LinkedIn to bring your presence to life.")}
+        <p className="mb-4" style={{ fontSize: 15, lineHeight: 1.7, color: "var(--ink-2)" }}>
+          Aura will read your post analytics automatically — impressions, engagement, follower trends. Read-only, never posts without you.
+        </p>
+        <div
+          className="flex items-center gap-2 mb-6 text-xs"
+          style={{ color: "var(--ink-3)", padding: "10px 12px", border: "1px solid var(--rule)", borderRadius: 8, background: "var(--paper-2)" }}
+        >
+          <Linkedin className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--brand)" }} />
+          <span>Read-only access · Aura will never post on your behalf.</span>
+        </div>
+        {primaryBtn(
+          <><Linkedin className="w-4 h-4" /> {connectingLI ? "Redirecting to LinkedIn…" : "Connect LinkedIn"}</>,
+          handleConnectLinkedIn,
+          { loading: connectingLI },
+        )}
+        <div className="mt-3">{ghostLink("Skip for now", handleSkipConnect)}</div>
+      </>,
     );
   }
 

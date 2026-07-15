@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { toast } from "sonner";
 
 const LinkedInCallback = () => {
   const [searchParams] = useSearchParams();
@@ -65,12 +66,22 @@ const LinkedInCallback = () => {
           return;
         }
 
-        // ── Trigger first sync immediately after connection ──
+        // ── Fire first sync immediately so Analytics is alive on day one ──
+        // Fire-and-forget both syncs with the current user's JWT (scope:"me").
+        // We do NOT use the stale linkedin-sync function.
         setStatus("syncing");
         try {
-          await supabase.functions.invoke("linkedin-sync", {});
+          supabase.functions
+            .invoke("linkedin-metrics-sync", { body: { scope: "me" } })
+            .catch((e) => console.warn("linkedin-metrics-sync (bg) failed:", e));
+          supabase.functions
+            .invoke("linkedin-post-metrics-sync", { body: { scope: "me" } })
+            .catch((e) => console.warn("linkedin-post-metrics-sync (bg) failed:", e));
+          toast.message("Syncing your LinkedIn analytics…", {
+            description: "This runs in the background. Analytics will populate shortly.",
+          });
         } catch (syncErr) {
-          console.warn("First sync failed (non-blocking):", syncErr);
+          console.warn("First sync dispatch failed (non-blocking):", syncErr);
         }
 
         setStatus("success");

@@ -1,7 +1,7 @@
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Upload, Loader2, ExternalLink, Sparkles, Check, BarChart3, ChevronDown, Info, HelpCircle, TrendingUp, Lock, Clock, RefreshCw, AlertTriangle, CheckCircle2, FileSpreadsheet } from "lucide-react";
+import { Upload, Loader2, ExternalLink, Sparkles, Check, BarChart3, ChevronDown, Info, HelpCircle, TrendingUp, Lock, Clock, RefreshCw, AlertTriangle, CheckCircle2, FileSpreadsheet, Linkedin } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { EMPTY_STATE } from "@/constants/language";
@@ -177,6 +177,25 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     lastSyncedAt: null,
   });
   const [refreshing, setRefreshing] = useState(false);
+  const [connectingLI, setConnectingLI] = useState(false);
+
+  const handleConnectLinkedIn = async () => {
+    setConnectingLI(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("linkedin-oauth", {
+        body: { action: "get-auth-url", origin: window.location.origin },
+      });
+      if (error || !data?.url) {
+        toast.error("Couldn't start LinkedIn connection.");
+        setConnectingLI(false);
+        return;
+      }
+      window.location.href = data.url;
+    } catch {
+      toast.error("Couldn't start LinkedIn connection.");
+      setConnectingLI(false);
+    }
+  };
 
   // Computed 365-day impressions sum (replaces removed total_impressions_annual column)
   const [annualImpressions, setAnnualImpressions] = useState<number | null>(null);
@@ -1305,26 +1324,49 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         ) : (
           /* ─── Empty state ─── */
           <div className="mx-auto" style={{ maxWidth: 580 }}>
-            {/* Primary action for new users with no data */}
-            <div className="flex justify-center mb-5">
-              <AuraButton
-                variant="primary"
-                size="md"
-                onClick={() => window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "authority" } }))}
-                style={{ borderRadius: 6, padding: "12px 26px" }}
-              >
-                Create your first post →
-              </AuraButton>
-            </div>
+            {/* Primary action for new users with no data.
+                If LinkedIn isn't connected, lead with "Connect LinkedIn" —
+                connection powers automatic followers/impressions sync.
+                Otherwise, invite them to create their first post. */}
+            {!syncMeta.connected ? (
+              <div className="flex flex-col items-center mb-5 text-center">
+                <AuraButton
+                  variant="primary"
+                  size="md"
+                  onClick={handleConnectLinkedIn}
+                  loading={connectingLI}
+                  style={{ borderRadius: 6, padding: "12px 26px" }}
+                >
+                  <Linkedin className="w-4 h-4 mr-2 inline" /> Connect LinkedIn
+                </AuraButton>
+                <p className="text-xs mt-3 max-w-sm" style={{ color: "var(--ink-3)", lineHeight: 1.55 }}>
+                  Connection syncs your followers, impressions, and per-post performance automatically. Read-only — Aura never posts on your behalf.
+                </p>
+              </div>
+            ) : (
+              <div className="flex justify-center mb-5">
+                <AuraButton
+                  variant="primary"
+                  size="md"
+                  onClick={() => window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "authority" } }))}
+                  style={{ borderRadius: 6, padding: "12px 26px" }}
+                >
+                  Create your first post →
+                </AuraButton>
+              </div>
+            )}
 
             <details className="mb-3" style={{ background: "var(--color-background-primary, var(--surface-ink-raised))", border: "0.5px solid var(--color-border-tertiary, var(--brand-line))", borderRadius: 12 }}>
               <summary
                 className="cursor-pointer text-sm font-medium select-none"
                 style={{ color: "var(--ink)", padding: "14px 18px", listStyle: "none" }}
               >
-                Already posting on LinkedIn? Import your analytics
+                Add audience demographics (optional)
               </summary>
               <div style={{ padding: "0 18px 18px" }}>
+                <p className="text-xs mb-3" style={{ color: "var(--ink-3)", lineHeight: 1.55 }}>
+                  Followers, impressions, and per-post numbers sync automatically from your LinkedIn connection. Upload a LinkedIn export only if you also want audience demographics — seniority, industry, and geography breakdowns.
+                </p>
             <section
               className="flex flex-col items-center text-center"
               style={{
@@ -2714,17 +2756,53 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                       style={{ border: "0.5px solid var(--color-border)", color: "var(--color-text-primary)", background: "transparent" }}
                     >
                       <Upload className="w-3.5 h-3.5" />
-                      {showUpdateUpload ? "Hide upload" : "Update post & audience data"}
+                      {showUpdateUpload ? "Hide upload" : "Add audience demographics (optional)"}
                     </button>
                   </div>
-                  {showUpdateUpload && UploadZone}
+                  {showUpdateUpload && (
+                    <div className="mt-3">
+                      <p className="text-xs mb-2" style={{ color: "var(--color-text-muted)", lineHeight: 1.55 }}>
+                        Followers, impressions, and per-post numbers sync automatically from your LinkedIn connection. Upload a LinkedIn export only to add seniority, industry, and geography breakdowns.
+                      </p>
+                      {UploadZone}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="mt-3">
-                  <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
-                    Connect your LinkedIn data to close the intelligence loop — see which signals drive real engagement.
-                  </p>
-                  {UploadZone}
+                  {!syncMeta.connected ? (
+                    <>
+                      <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
+                        Connect LinkedIn to sync followers, impressions, and per-post performance automatically.
+                      </p>
+                      <div className="mt-3">
+                        <AuraButton variant="primary" size="sm" onClick={handleConnectLinkedIn} loading={connectingLI}>
+                          <Linkedin className="w-4 h-4 mr-2 inline" /> Connect LinkedIn
+                        </AuraButton>
+                      </div>
+                      <details className="mt-3">
+                        <summary className="cursor-pointer text-xs select-none" style={{ color: "var(--color-text-muted)" }}>
+                          Add audience demographics (optional)
+                        </summary>
+                        <p className="text-xs mt-2 mb-2" style={{ color: "var(--color-text-muted)", lineHeight: 1.55 }}>
+                          Upload a LinkedIn export only if you also want seniority, industry, and geography breakdowns.
+                        </p>
+                        {UploadZone}
+                      </details>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
+                        Your LinkedIn analytics are syncing. Audience demographics can be added below (optional).
+                      </p>
+                      <details className="mt-3">
+                        <summary className="cursor-pointer text-xs select-none" style={{ color: "var(--color-text-muted)" }}>
+                          Add audience demographics (optional)
+                        </summary>
+                        {UploadZone}
+                      </details>
+                    </>
+                  )}
                 </div>
               )}
 
