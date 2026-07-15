@@ -177,6 +177,25 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     lastSyncedAt: null,
   });
   const [refreshing, setRefreshing] = useState(false);
+  const [connectingLI, setConnectingLI] = useState(false);
+
+  const handleConnectLinkedIn = async () => {
+    setConnectingLI(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("linkedin-oauth", {
+        body: { action: "get-auth-url", origin: window.location.origin },
+      });
+      if (error || !data?.url) {
+        toast.error("Couldn't start LinkedIn connection.");
+        setConnectingLI(false);
+        return;
+      }
+      window.location.href = data.url;
+    } catch {
+      toast.error("Couldn't start LinkedIn connection.");
+      setConnectingLI(false);
+    }
+  };
 
   // Computed 365-day impressions sum (replaces removed total_impressions_annual column)
   const [annualImpressions, setAnnualImpressions] = useState<number | null>(null);
