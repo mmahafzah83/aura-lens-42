@@ -748,19 +748,19 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
           }}
         >
           <div style={{ textAlign: "center", maxWidth: 360 }}>
-            <div style={{ color: "var(--spot)", fontSize: 16, marginBottom: 18 }}>{interlude.dots}</div>
+            <div style={{ color: "var(--action)", fontSize: 16, marginBottom: 18 }}>{interlude.dots}</div>
             <p
               style={{
                 fontFamily: "var(--serif)",
                 fontSize: 18,
-                color: "var(--spot)",
+                color: "var(--paper)",
                 lineHeight: 1.55,
                 margin: 0,
               }}
             >
               {interlude.text}
             </p>
-            <div style={{ color: "var(--spot)", fontSize: 16, marginTop: 18 }}>{interlude.dots}</div>
+            <div style={{ color: "var(--action)", fontSize: 16, marginTop: 18 }}>{interlude.dots}</div>
           </div>
         </div>
       )}
