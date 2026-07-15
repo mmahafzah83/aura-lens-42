@@ -138,3 +138,6 @@ verify_jwt = false
 
 [functions.backfill-theme-tags]
 verify_jwt = false
+
+[functions.linkedin-post-metrics-sync]
+verify_jwt = false
