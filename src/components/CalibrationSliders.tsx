@@ -227,7 +227,7 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
           <div key={i} style={{
             width: 8, height: 8, borderRadius: 999,
             background: i === 1 ? BRONZE : i < 1 ? "hsl(142 60% 45%)" : "transparent",
-            border: i > 1 ? "1px solid hsl(var(--border))" : "none",
+            border: i > 1 ? "1px solid var(--rule)" : "none",
           }} />
         ))}
       </div>
@@ -246,7 +246,7 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
           >
             <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
-              <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
+              <span style={{ fontSize: 12, color: "var(--ink-3)" }}>
                 {index + 1} of {CALIBRATION_DIMENSIONS.length}
               </span>
             </div>
@@ -269,7 +269,7 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
               />
             </motion.h2>
             <p style={{
-              fontSize: 15, lineHeight: 1.5, color: "hsl(var(--muted-foreground))",
+              fontSize: 15, lineHeight: 1.5, color: "var(--ink-3)",
               maxWidth: 360, marginBottom: 24,
             }}>
               {current.description}
@@ -299,7 +299,7 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
                 animate={{ opacity: insightVisible ? 1 : 0 }}
                 transition={{ duration: insightVisible ? 0.4 : 0.2 }}
                 style={{
-                  fontSize: 14, lineHeight: 1.55, color: "hsl(var(--muted-foreground))",
+                  fontSize: 14, lineHeight: 1.55, color: "var(--ink-3)",
                   textAlign: "center",
                 }}
               >
@@ -312,7 +312,7 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
                 <button
                   onClick={back}
                   className="flex items-center gap-1.5 text-sm"
-                  style={{ color: "hsl(var(--muted-foreground))", background: "transparent", padding: "10px 8px" }}
+                  style={{ color: "var(--ink-3)", background: "transparent", padding: "10px 8px" }}
                 >
                   <ArrowLeft className="w-4 h-4" /> Back
                 </button>
@@ -358,7 +358,7 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
-              style={{ fontSize: 13, color: "hsl(var(--muted-foreground))" }}
+              style={{ fontSize: 13, color: "var(--ink-3)" }}
             >
               {companionLine}
             </motion.p>
@@ -417,17 +417,17 @@ const SummaryCard = ({ summary, scores, submitting, reduceMotion, onFinish, onBa
       <div style={{ fontSize: 24, color: BRONZE, marginBottom: 12 }}>✦</div>
       <h2 style={{
         fontFamily: "var(--serif)",
-        fontSize: 22, color: "hsl(var(--foreground))", marginBottom: 24,
+        fontSize: 22, color: "var(--ink)", marginBottom: 24,
       }}>
         Your Calibration
       </h2>
 
       <div style={{ textAlign: "left", maxWidth: 360, margin: "0 auto 20px" }}>
-        <p style={{ fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: "hsl(var(--muted-foreground))", marginBottom: 8 }}>
+        <p style={{ fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 8 }}>
           Strongest edges
         </p>
         {summary.top2.map((d) => (
-          <p key={d.id} style={{ fontSize: 14, color: "hsl(var(--foreground))", marginBottom: 6, display: "flex", alignItems: "center", gap: 8 }}>
+          <p key={d.id} style={{ fontSize: 14, color: "var(--ink)", marginBottom: 6, display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ color: BRONZE }}>◆</span>
             <span>{d.name}</span>
             <span style={{
@@ -440,15 +440,15 @@ const SummaryCard = ({ summary, scores, submitting, reduceMotion, onFinish, onBa
           </p>
         ))}
 
-        <p style={{ fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: "hsl(var(--muted-foreground))", margin: "18px 0 8px" }}>
+        <p style={{ fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--ink-3)", margin: "18px 0 8px" }}>
           Biggest growth territory
         </p>
-        <p style={{ fontSize: 14, color: "hsl(var(--muted-foreground))", marginBottom: 6, display: "flex", alignItems: "center", gap: 8 }}>
+        <p style={{ fontSize: 14, color: "var(--ink-3)", marginBottom: 6, display: "flex", alignItems: "center", gap: 8 }}>
           <span>◇</span>
           <span>{summary.lowest.name}</span>
           <span style={{
             marginLeft: "auto", fontFamily: "'JetBrains Mono', monospace",
-            color: "hsl(var(--muted-foreground))",
+            color: "var(--ink-3)",
           }}>
             <CountUp value={scores[summary.lowest.id]} reduceMotion={reduceMotion} onDone={onNumDone} />
           </span>
@@ -458,7 +458,7 @@ const SummaryCard = ({ summary, scores, submitting, reduceMotion, onFinish, onBa
       <motion.p
         animate={{ opacity: showPercentile ? 1 : 0 }}
         transition={{ duration: 0.5 }}
-        style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginBottom: 12 }}
+        style={{ fontSize: 13, color: "var(--ink-3)", marginBottom: 12 }}
       >
         Your calibration places you in the {summary.percentile} of professionals who've completed this assessment.
       </motion.p>
@@ -468,7 +468,7 @@ const SummaryCard = ({ summary, scores, submitting, reduceMotion, onFinish, onBa
           <motion.p
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginBottom: 20, fontStyle: "italic" }}
+            style={{ fontSize: 13, color: "var(--ink-3)", marginBottom: 20, fontStyle: "italic" }}
           >
             {companion}
           </motion.p>
@@ -479,7 +479,7 @@ const SummaryCard = ({ summary, scores, submitting, reduceMotion, onFinish, onBa
         <button
           onClick={onBack}
           className="flex items-center gap-1.5 text-sm"
-          style={{ color: "hsl(var(--muted-foreground))", background: "transparent", padding: "10px 8px" }}
+          style={{ color: "var(--ink-3)", background: "transparent", padding: "10px 8px" }}
         >
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
