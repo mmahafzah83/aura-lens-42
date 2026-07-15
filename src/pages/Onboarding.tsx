@@ -503,6 +503,9 @@ const Onboarding = () => {
       try { localStorage.setItem("aura_onboarding_complete", "true"); } catch {}
 
       await saveProgress(1);
+      // Kill the race: kick off the article search NOW, at the start of
+      // calibration. The existing ref guard makes Step-2 fallback calls no-op.
+      triggerArticleSearch();
       // Breathing transition into Step 1 (Map your strengths).
       startBreathingTo(1, "Now let's map what makes you different.");
     } catch (e: any) {
