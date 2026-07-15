@@ -488,6 +488,7 @@ async function processDocument(
 
     if (chunkRows.length > 0) {
       console.log(`[ingest-document] stage=chunking inserting ${chunkRows.length} rows`);
+      await stage(adminClient, document_id, "chunking");
       const { error: insertErr } = await adminClient.from("document_chunks").insert(chunkRows);
       if (insertErr) {
         await markError(adminClient, document_id, `Chunk insert failed: ${insertErr.message}`);
