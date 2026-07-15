@@ -415,7 +415,7 @@ const Onboarding = () => {
     if (!articleSearchStartRef.current) return;
     const timer = window.setTimeout(() => {
       setArticleSearchDone(true);
-    }, 12000);
+    }, 20000);
     return () => clearTimeout(timer);
   }, [step, articleSearchDone]);
 
