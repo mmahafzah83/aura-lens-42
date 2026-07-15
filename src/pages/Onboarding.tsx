@@ -223,6 +223,7 @@ const Onboarding = () => {
 
   // Shared-learning consent (opt-in; persisted on diagnostic_profiles.shared_learning_consent).
   const [sharedLearningConsent, setSharedLearningConsent] = useState(false);
+  const [consentTouched, setConsentTouched] = useState(false);
 
   // Step 2
   const [foundArticle, setFoundArticle] = useState<FoundArticle | null>(null);
@@ -1206,13 +1207,36 @@ const Onboarding = () => {
               <input
                 type="checkbox"
                 checked={sharedLearningConsent}
-                onChange={(e) => setSharedLearningConsent(e.target.checked)}
+                onChange={(e) => { setSharedLearningConsent(e.target.checked); setConsentTouched(true); }}
                 style={{ marginTop: 3, width: 16, height: 16, accentColor: "var(--brand)" }}
               />
               <span style={{ fontSize: 13, lineHeight: 1.55, color: "var(--ink)" }}>
-                Help Aura get smarter for everyone. With your permission, Aura learns anonymous, aggregated patterns from how members across your field use it — never your actual content, identity, or drafts. You can turn this off anytime in Settings.
+                Help shape Aura for leaders in your field. With your permission, Aura learns anonymous, aggregated patterns from how members like you use it — never your content, drafts, or identity. You can change this anytime in Settings.
               </span>
             </label>
+            {consentTouched && !sharedLearningConsent && (
+              <div style={{ margin: "-8px 0 20px", padding: "14px 16px",
+                border: "1px solid var(--rule)", borderRadius: 10, background: "var(--paper-2)" }}>
+                <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--ink)", margin: 0 }}>
+                  <strong>No problem — you keep every feature.</strong><br />
+                  This never touches your content, drafts, or identity. Only anonymous patterns across your field.<br />
+                  With it on, you help sharpen how Aura serves leaders in your field — the same room you're
+                  building presence in. Off, you still benefit from everyone else; you just don't shape it.
+                </p>
+                <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+                  <button type="button" onClick={() => setSharedLearningConsent(true)}
+                    style={{ flex: 1, height: 40, borderRadius: 8, fontSize: 13, fontWeight: 600,
+                      background: "var(--brand)", color: "var(--ink)", border: 0, cursor: "pointer" }}>
+                    Keep it on
+                  </button>
+                  <button type="button" onClick={() => setConsentTouched(false)}
+                    style={{ flex: 1, height: 40, borderRadius: 8, fontSize: 13, fontWeight: 500,
+                      background: "transparent", color: "var(--ink-2)", border: "1px solid var(--rule)", cursor: "pointer" }}>
+                    Leave it off
+                  </button>
+                </div>
+              </div>
+            )}
             {primaryBtn(<>Confirm & continue <ArrowRight className="w-4 h-4" /></>, handleSaveProfile, { loading: savingProfile, disabled: !profileValid })}
           </>
         )}
