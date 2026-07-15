@@ -372,9 +372,9 @@ const ContributionBar = ({
 
   // Bar geometry: each segment width = its rounded contribution (out of 100).
   const segs = [
-    { key: "Signal",  v: s, color: "var(--live)",   slug: "signal-contribution",  text: "How strong and well-evidenced your signals are." },
-    { key: "Content", v: c, color: "var(--action)", slug: "content-contribution", text: "How much you've published, weighted by how it performs." },
-    { key: "Consistency",  v: r, color: RHYTHM_TEAL,     slug: "rhythm-contribution",  text: "How steadily you've been capturing, week to week." },
+    { key: "Signal",  v: s, color: "var(--live)",   slug: "signal-strength",  text: "How strong and well-evidenced your signals are." },
+    { key: "Content", v: c, color: "var(--action)", slug: "content-published", text: "How much you've published, weighted by how it performs." },
+    { key: "Consistency",  v: r, color: RHYTHM_TEAL,     slug: "weekly-rhythm",  text: "How steadily you've been capturing, week to week." },
   ];
 
   // Lever: largest (gap-to-100 × weight).
@@ -430,7 +430,7 @@ const ContributionBar = ({
               display: "inline-block",
             }} />
             <span style={{ color: "var(--glass)" }}>{seg.key}</span>
-            <InfoTooltip text={seg.text} label={`${seg.key} contribution`} side="top" triggerSize={12} />
+            <InfoTooltip slug={seg.slug} text={seg.text} label={`${seg.key} contribution`} side="top" triggerSize={12} />
           </span>
         ))}
       </div>
