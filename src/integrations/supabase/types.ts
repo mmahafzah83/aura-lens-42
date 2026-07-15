@@ -1568,11 +1568,16 @@ export type Database = {
           comments: number
           created_at: string
           engagement_rate: number
+          followers_gained: number
           id: string
           impressions: number
+          link_clicks: number
+          members_reached: number
           post_id: string
+          profile_views: number
           reactions: number
           saves: number
+          sends: number
           shares: number
           snapshot_date: string
           source_type: string
@@ -1582,11 +1587,16 @@ export type Database = {
           comments?: number
           created_at?: string
           engagement_rate?: number
+          followers_gained?: number
           id?: string
           impressions?: number
+          link_clicks?: number
+          members_reached?: number
           post_id: string
+          profile_views?: number
           reactions?: number
           saves?: number
+          sends?: number
           shares?: number
           snapshot_date?: string
           source_type?: string
@@ -1596,11 +1606,16 @@ export type Database = {
           comments?: number
           created_at?: string
           engagement_rate?: number
+          followers_gained?: number
           id?: string
           impressions?: number
+          link_clicks?: number
+          members_reached?: number
           post_id?: string
+          profile_views?: number
           reactions?: number
           saves?: number
+          sends?: number
           shares?: number
           snapshot_date?: string
           source_type?: string
