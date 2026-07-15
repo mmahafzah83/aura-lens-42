@@ -395,7 +395,14 @@ async function processDocument(
   const adminClient = createClient(supabaseUrl, serviceRoleKey);
   console.log(`[ingest-document] processDocument START id=${document_id} user=${userId}`);
 
-  try {
+  // Hard deadline: extraction must always end in completed or error.
+  let deadlineTimer: number | undefined;
+  const deadlinePromise = new Promise<"__deadline__">((resolve) => {
+    deadlineTimer = setTimeout(() => resolve("__deadline__"), PROCESS_DEADLINE_MS) as unknown as number;
+  });
+
+  const work = (async () => {
+   try {
     const { data: doc, error: docErr } = await adminClient
       .from("documents")
       .select("*")
@@ -642,6 +649,17 @@ async function processDocument(
     })());
   } catch (e) {
     await markError(adminClient, document_id, `Unexpected: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  })();
+
+  const outcome = await Promise.race([work, deadlinePromise]);
+  if (deadlineTimer !== undefined) clearTimeout(deadlineTimer);
+  if (outcome === "__deadline__") {
+    await markError(
+      adminClient,
+      document_id,
+      "Reading timed out — file too complex; try a smaller export",
+    );
   }
 }
 
