@@ -175,10 +175,13 @@ const AuraDial = ({
     }).join(" ");
   }
 
+  const PAD = 28;
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-      <div style={{ position: "relative", width: size, height: size }}>
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img"
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, width: "100%" }}>
+      <div style={{ position: "relative", width: "100%", maxWidth: size, aspectRatio: "1 / 1" }}>
+        <svg width="100%" height="100%" viewBox={`${-PAD} ${-PAD} ${size + PAD * 2} ${size + PAD * 2}`}
+             preserveAspectRatio="xMidYMid meet"
+             style={{ display: "block", overflow: "visible", height: "auto", maxWidth: "100%" }} role="img"
              aria-label={score != null ? `Imprint ${Math.round(score)} of 100` : "Imprint forming"}>
           <g>{ticks}</g>
           {/* numeric — serif */}
@@ -247,8 +250,11 @@ const ImprintCore = ({
   const n = FACET_ORDER.length;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label="Imprint core: 7 facets" style={{ overflow: "visible" }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, width: "100%" }}>
+      <svg width="100%" height="auto" viewBox={`-28 -28 ${size + 56} ${size + 56}`}
+           preserveAspectRatio="xMidYMid meet"
+           role="img" aria-label="Imprint core: 7 facets"
+           style={{ overflow: "visible", maxWidth: size, display: "block" }}>
         {/* outer guide ring */}
         <circle cx={cx} cy={cy} r={ringR} fill="none" stroke="var(--hair)" strokeWidth={0.5} />
         {/* core */}
