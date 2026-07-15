@@ -1619,7 +1619,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       {/* ─────────── SCORE HERO (compact: ring + tier card + KPIs) ─────────── */}
       <div data-tour="impact-hero">
       <FirstTimeHint hintKey="impact-score">
-        Your growth dashboard. Upload LinkedIn analytics to see who follows you and how your presence is compounding.
+        Your growth dashboard. Followers and impressions sync automatically; add your LinkedIn export for post-level and audience detail.
       </FirstTimeHint>
       <div
         style={{
@@ -1631,8 +1631,13 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           marginBottom: 6,
         }}
       >
-        Overall · all-time
+        Your standing
       </div>
+      {latestSnapshotDate && (
+        <div style={{ fontSize: 11, color: "var(--ink-5)", marginTop: -2, marginBottom: 10 }}>
+          Followers and impressions synced from LinkedIn · {fmtDateShort(latestSnapshotDate)}
+        </div>
+      )}
       <ScoreHero
         score={latestScore}
         tierName={tierName as any}
@@ -1905,7 +1910,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 ) : !hasData ? (
                   <div style={{ ...cardStyle, textAlign: "center", padding: "32px 18px" }}>
                     <p style={{ fontSize: 14, color: "var(--aura-t2)", margin: 0 }}>
-                      Upload your LinkedIn analytics to see who follows you
+                      Add your LinkedIn export to see your full audience breakdown
                     </p>
                   </div>
                 ) : (
@@ -2681,7 +2686,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     LinkedIn analytics
                     <InfoTooltip
                       label="LinkedIn data"
-                      text="Upload your LinkedIn analytics export to connect real engagement data. Go to linkedin.com/analytics/creator → Export."
+                      text="Post-level performance and audience come from your LinkedIn export — followers and impressions already sync automatically. Go to linkedin.com/analytics/creator → Export."
                       side="bottom"
                       triggerSize={13}
                     />
@@ -2709,7 +2714,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                       style={{ border: "0.5px solid var(--color-border)", color: "var(--color-text-primary)", background: "transparent" }}
                     >
                       <Upload className="w-3.5 h-3.5" />
-                      {showUpdateUpload ? "Hide upload" : "Update LinkedIn data"}
+                      {showUpdateUpload ? "Hide upload" : "Update post & audience data"}
                     </button>
                   </div>
                   {showUpdateUpload && UploadZone}
@@ -2834,7 +2839,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           Follower growth — daily new followers
         </h2>
         <p className="text-[12px] mb-3" style={{ color: "var(--color-text-muted)", marginTop: -8 }}>
-          Your audience trajectory — upload your LinkedIn analytics to see the connection between signals and followers
+          Your audience trajectory — synced daily; add your LinkedIn export to enrich it with audience breakdown.
         </p>
         {followerRows.length === 0 ? (
           <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
