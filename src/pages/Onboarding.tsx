@@ -415,7 +415,7 @@ const Onboarding = () => {
     if (!articleSearchStartRef.current) return;
     const timer = window.setTimeout(() => {
       setArticleSearchDone(true);
-    }, 12000);
+    }, 20000);
     return () => clearTimeout(timer);
   }, [step, articleSearchDone]);
 
@@ -503,6 +503,9 @@ const Onboarding = () => {
       try { localStorage.setItem("aura_onboarding_complete", "true"); } catch {}
 
       await saveProgress(1);
+      // Kill the race: kick off the article search NOW, at the start of
+      // calibration. The existing ref guard makes Step-2 fallback calls no-op.
+      triggerArticleSearch();
       // Breathing transition into Step 1 (Map your strengths).
       startBreathingTo(1, "Now let's map what makes you different.");
     } catch (e: any) {
@@ -1220,7 +1223,7 @@ const Onboarding = () => {
   // ───── STEP 3: FIRST CAPTURE ─────
   if (step === 3) {
     const elapsed = Date.now() - articleSearchStartRef.current;
-    const stillSearching = !articleSearchDone && elapsed < 10000;
+    const stillSearching = !articleSearchDone && elapsed < 20000;
 
     if (captureSuccess) {
       return cardShell(
@@ -1263,20 +1266,13 @@ const Onboarding = () => {
               <span className="text-sm">Aura is searching trusted sources...</span>
             </div>
             <ArticleManualPaste url={manualUrl} setUrl={setManualUrl} onSave={() => captureArticle(manualUrl)} loading={capturing} inputCls={inputCls} inputStyle={inputStyle} />
-            <div className="mt-4">
+            <div className="mt-4 text-center">
               <button
                 onClick={() => goHome()}
-                className="w-full font-medium transition-all flex items-center justify-center gap-2"
-                style={{
-                  height: 44,
-                  background: "transparent",
-                  color: "var(--ink-2)",
-                  border: "1px solid var(--rule)",
-                  borderRadius: 10,
-                  fontSize: 14,
-                }}
+                className="underline-offset-2 hover:underline"
+                style={{ background: "transparent", color: "var(--ink-3)", fontSize: 12 }}
               >
-                I'll capture later →
+                I'll capture later
               </button>
             </div>
           </>
@@ -1299,6 +1295,9 @@ const Onboarding = () => {
                   "{foundArticle.summary}"
                 </p>
               )}
+              <p className="text-xs mb-3" style={{ color: "var(--ink-3)", lineHeight: 1.6 }}>
+                This is how your first signal starts. One capture now — Aura does the rest.
+              </p>
               {primaryBtn(
                 <>Capture this article <ArrowRight className="w-4 h-4" /></>,
                 () => captureArticle(foundArticle.url, {
@@ -1311,20 +1310,13 @@ const Onboarding = () => {
             </div>
             <div className="my-4 text-xs text-center" style={{ color: "var(--ink-2)" }}>Or paste your own URL:</div>
             <ArticleManualPaste url={manualUrl} setUrl={setManualUrl} onSave={() => captureArticle(manualUrl)} loading={capturing} inputCls={inputCls} inputStyle={inputStyle} compact />
-            <div className="mt-4">
+            <div className="mt-4 text-center">
               <button
                 onClick={() => goHome()}
-                className="w-full font-medium transition-all flex items-center justify-center gap-2"
-                style={{
-                  height: 44,
-                  background: "transparent",
-                  color: "var(--ink-2)",
-                  border: "1px solid var(--rule)",
-                  borderRadius: 10,
-                  fontSize: 14,
-                }}
+                className="underline-offset-2 hover:underline"
+                style={{ background: "transparent", color: "var(--ink-3)", fontSize: 12 }}
               >
-                I'll capture later →
+                I'll capture later
               </button>
             </div>
           </>
@@ -1335,20 +1327,13 @@ const Onboarding = () => {
               The one you read at 11pm and thought 'this changes things'. Aura will turn it into your first signal.
             </p>
             <ArticleManualPaste url={manualUrl} setUrl={setManualUrl} onSave={() => captureArticle(manualUrl)} loading={capturing} inputCls={inputCls} inputStyle={inputStyle} />
-            <div className="mt-4">
+            <div className="mt-4 text-center">
               <button
                 onClick={() => goHome()}
-                className="w-full font-medium transition-all flex items-center justify-center gap-2"
-                style={{
-                  height: 44,
-                  background: "transparent",
-                  color: "var(--ink-2)",
-                  border: "1px solid var(--rule)",
-                  borderRadius: 10,
-                  fontSize: 14,
-                }}
+                className="underline-offset-2 hover:underline"
+                style={{ background: "transparent", color: "var(--ink-3)", fontSize: 12 }}
               >
-                I'll capture later →
+                I'll capture later
               </button>
             </div>
           </>
