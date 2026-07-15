@@ -1223,7 +1223,7 @@ const Onboarding = () => {
   // ───── STEP 3: FIRST CAPTURE ─────
   if (step === 3) {
     const elapsed = Date.now() - articleSearchStartRef.current;
-    const stillSearching = !articleSearchDone && elapsed < 10000;
+    const stillSearching = !articleSearchDone && elapsed < 20000;
 
     if (captureSuccess) {
       return cardShell(
