@@ -574,17 +574,17 @@ const ObsHeader = ({
       fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
       letterSpacing: "0.18em", color: "var(--glass-2)", textTransform: "uppercase",
     }}>
-      Observatory
+      Your reading, analyzed
     </div>
     <h1 style={{
       fontFamily: "var(--font-display, 'Newsreader', serif)",
       fontSize: 32, fontWeight: 500, color: "var(--glass)",
       margin: "6px 0 6px",
     }}>
-      The Scan
+      Signals
     </h1>
     <p style={{ fontSize: 13, color: "var(--glass-2)", margin: 0, lineHeight: 1.5 }}>
-      What the market doesn't know you know.
+      The themes and shifts Aura finds in what you capture — your reading, turned into intelligence.
     </p>
     <div style={{
       marginTop: 14, display: "inline-flex", gap: 18,
