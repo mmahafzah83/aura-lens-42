@@ -1177,11 +1177,11 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         className="statement-page space-y-7 max-w-5xl"
       >
         <div style={{ marginBottom: 8 }}>
-          <div className="font-serif text-base font-medium tracking-wide text-ink-4" style={{ marginBottom: 6 }}>
-            Your digital presence growth
+          <div className="font-medium tracking-wide text-ink-4" style={{ marginBottom: 6, fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+            Your presence, measured
           </div>
           <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
-            Statement
+            Analytics
           </h1>
         </div>
         <section
@@ -1227,11 +1227,11 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         className="statement-page space-y-7 max-w-5xl"
       >
         <div style={{ marginBottom: 8 }}>
-          <div className="font-serif text-base font-medium tracking-wide text-ink-4" style={{ marginBottom: 6 }}>
-            Your digital presence growth
+          <div className="font-medium tracking-wide text-ink-4" style={{ marginBottom: 6, fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+            Your presence, measured
           </div>
           <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
-            Statement
+            Analytics
           </h1>
         </div>
 
@@ -1512,14 +1512,14 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       {/* ─────────── 1. PAGE HEADER ─────────── */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24 }}>
         <div>
-          <div className="font-serif text-base font-medium tracking-wide text-ink-4" style={{ marginBottom: 6 }}>
-            Your digital presence growth
+          <div className="font-medium tracking-wide text-ink-4" style={{ marginBottom: 6, fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+            Your presence, measured
           </div>
           <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--glass)", letterSpacing: "-0.02em", margin: 0 }}>
-            Statement
+            Analytics
           </h1>
           <p style={{ fontSize: 14, color: "var(--glass-2)", marginTop: 8, lineHeight: 1.5, maxWidth: 640 }}>
-            Every week you show up, your name reaches rooms you've never been in. That's how advisory calls, board invitations, and speaking slots find you.
+            Followers, reach, and engagement — how your expertise is landing in the market, tracked over time.
           </p>
         </div>
         {/* Analytics period picker — drives selectedDays for chart / deltas / footprint only */}
