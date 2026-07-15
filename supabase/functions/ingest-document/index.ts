@@ -6,7 +6,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const MAX_BYTES = 20 * 1024 * 1024; // 20 MB safety guardrail
+const MAX_BYTES = 50 * 1024 * 1024; // 50 MB safety guardrail
+const OCR_PAGE_TEXT_THRESHOLD = 30; // <30 chars => treat as scanned
+const OCR_BATCH_SIZE = 5;
+const OCR_MAX_PAGES = 30;
 
 function chunkText(text: string, chunkSize = 800, overlap = 100): string[] {
   const chunks: string[] = [];
