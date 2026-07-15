@@ -62,7 +62,7 @@ const ARABIC_VOICE_PROMPT = `أنت محرك توليد المحتوى لـ Aura
 لا تضع إيموجي في الـ Hook أو الـ Question — فقط في منتصف البوست.
 
 مثال على التنسيق الصحيح:
-المشكلة مش في غياب البيانات.
+المشكلة ليست في غياب البيانات.
 المشكلة في أن أحداً لا يثق فيها.
 
 ◆ مهندس المحطة لا يثق في الـ dashboard
@@ -77,7 +77,7 @@ const ARABIC_VOICE_PROMPT = `أنت محرك توليد المحتوى لـ Aura
 📍 الثقة في البيانات لا تُبنى بالتقنية.
 تُبنى بالشفافية.
 
-خليني أسألك:
+دعني أسألك:
 كم مرة اتخذت قراراً بناءً على تقرير... وأنت تعرف في داخلك أن الأرقام ناقصة؟
 
 ممنوع منعاً باتاً:
@@ -367,7 +367,7 @@ FORMATTING RULES (mandatory):
 - No code fences, no horizontal rules, no markdown links.`;
 
       const langLabel = effectiveLanguage === "ar"
-        ? `اكتب المنشور بالعربية. المصطلحات التقنية تبقى بالإنجليزية (AI, KPI, dashboard, SCADA).`
+        ? `اكتب المنشور بالكامل بالعربية. الأدلة والحقائق أدناه قد تكون بالإنجليزية — استخرج المعنى واكتبه بالعربية، ولا تنسخ أي جملة أو عبارة إنجليزية كما هي. تبقى بالإنجليزية المصطلحات التقنية فقط (AI, KPI, dashboard, SCADA, OT, IT, digital twin).`
         : `Write the post ENTIRELY in English. Do not use any Arabic words or script, even if the examples or profile material contain Arabic.`;
 
       // Flash addendum (variation-aware)
@@ -455,8 +455,13 @@ Rewrite any sentence that uses these with concrete, specific language.${postType
         : variationNum === 3
         ? "\n\nWrite as a PRACTITIONER — share a specific operational tension from real project experience. Open with a scene."
         : "")
-    : ""
-}`;
+        : ""
+}
+
+===
+FINAL OUTPUT RULE (highest priority): Your response IS the post. The first character you output must be the first character of the hook. Never emit any preamble, acknowledgement, config/status summary, YAML, code fence, "System Initialization", "Thinking", a budget/token line, or a "KEY: value" setup line.
+
+قاعدة الإخراج النهائية: ردّك هو البوست نفسه. ابدأ بالـ Hook مباشرة من أول حرف. لا تكتب أي مقدمة أو ملخص إعداد أو YAML أو أسطر "KEY: value" قبل البوست.`;
 
       const userMessageContent = (() => {
         const themeStr = typeof theme === "string" ? theme.trim() : "";
@@ -513,21 +518,31 @@ Rewrite any sentence that uses these with concrete, specific language.${postType
       // (System Initialization / BUDGET CHECK / config KEY:value lines). Bounded: only
       // consumes leading scaffold-looking lines, stops at the first real content line.
       const stripLeadingScaffold = (text: string): string => {
-        const lines = text.split("\n");
-        let i = 0, sawScaffold = false;
-        const isScaffold = (l: string): boolean => {
-          const t = l.trim();
-          if (/^[A-Za-z][A-Za-z0-9 _-]{0,30}:\s?.+$/.test(t) && /(budget|token|model|system|config|status|available|window|check|init)/i.test(t)) return true;
-          if (/^[A-Z][A-Za-z ]{0,40}$/.test(t) && /(initialization|initialisation|system|budget|config|setup|status|thinking|token)/i.test(t)) return true;
-          return false;
-        };
-        while (i < lines.length) {
+        const lines = text.replace(/^\uFEFF/, "").split("\n");
+        const ANCHOR    = /(system\s*initial|budget[_\s-]?check|token|thinking|^```|number[_\s-]?integrity|evidence[_\s-]?source)/i;
+        const KEY_VALUE = /^[A-Za-z][A-Za-z0-9 _-]{0,40}:\s?\S/;
+        const TITLE     = /^[A-Za-z][A-Za-z ]{0,40}$/;
+        const FENCE     = /^```/;
+        const CONFIG_KEY = /^(budget[_\s-]?check|mode|framework|voice|evidence[_\s-]?source|number[_\s-]?integrity|format|model|status|config|token|window|system)\b/i;
+        let hasAnchor = false;
+        for (let k = 0; k < Math.min(lines.length, 20); k++) {
+          const t = lines[k].trim();
+          if (ANCHOR.test(t)) { hasAnchor = true; break; }
+          if (t.length > 0 && !KEY_VALUE.test(t) && !TITLE.test(t) && !FENCE.test(t)) break;
+        }
+        if (!hasAnchor) return text;
+        let i = 0, removed = 0, inFence = false;
+        while (i < lines.length && removed < 20) {
           const t = lines[i].trim();
-          if (t === "") { i++; continue; }
-          if (isScaffold(lines[i])) { sawScaffold = true; i++; continue; }
+          if (t === "") { i++; removed++; continue; }
+          if (FENCE.test(t)) { inFence = !inFence; i++; removed++; continue; }
+          if (inFence) { i++; removed++; continue; }
+          if (TITLE.test(t) && /(initial|system|budget|config|setup|status|thinking|token)/i.test(t)) { i++; removed++; continue; }
+          if (KEY_VALUE.test(t) && CONFIG_KEY.test(t)) { i++; removed++; continue; }
           break;
         }
-        return (sawScaffold && i < lines.length) ? lines.slice(i).join("\n") : text;
+        const rest = lines.slice(i).join("\n").trim();
+        return rest.length > 0 ? rest : text;
       };
       content = stripLeadingScaffold(content);
       content = content
