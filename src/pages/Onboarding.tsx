@@ -819,6 +819,32 @@ const Onboarding = () => {
     );
   }
 
+  // ───── FINAL STEP: Connect LinkedIn ─────
+  if (showConnectStep) {
+    return cardShell(
+      <>
+        {eyebrow("Final step — Bring your presence in")}
+        {heading("Connect LinkedIn to bring your presence to life.")}
+        <p className="mb-4" style={{ fontSize: 15, lineHeight: 1.7, color: "var(--ink-2)" }}>
+          Aura will read your post analytics automatically — impressions, engagement, follower trends. Read-only, never posts without you.
+        </p>
+        <div
+          className="flex items-center gap-2 mb-6 text-xs"
+          style={{ color: "var(--ink-3)", padding: "10px 12px", border: "1px solid var(--rule)", borderRadius: 8, background: "var(--paper-2)" }}
+        >
+          <Linkedin className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--brand)" }} />
+          <span>Read-only access · Aura will never post on your behalf.</span>
+        </div>
+        {primaryBtn(
+          <><Linkedin className="w-4 h-4" /> {connectingLI ? "Redirecting to LinkedIn…" : "Connect LinkedIn"}</>,
+          handleConnectLinkedIn,
+          { loading: connectingLI },
+        )}
+        <div className="mt-3">{ghostLink("Skip for now", handleSkipConnect)}</div>
+      </>,
+    );
+  }
+
   // ───── Identity confirmation gate (Fix 5) ─────
   if (needsIdentityConfirm) {
     return cardShell(
