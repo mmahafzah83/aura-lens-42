@@ -293,65 +293,76 @@ Deno.serve(async (req) => {
       if (!entryErr && entryRow?.id) {
         newEntryId = entryRow.id;
         console.log("[ingest-capture] entries insert ok:", newEntryId);
-        // Emit ledger event — non-blocking on failure
-        try {
-          const sbUrl = Deno.env.get("SUPABASE_URL")!;
-          const srk = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-          const res = await fetch(`${sbUrl}/functions/v1/ingest-source-event`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${srk}`,
-              apikey: srk,
-            },
-            body: JSON.stringify({
-              user_id: effectiveUserId,
-              event_type: "capture",
-              source_table: "entries",
-              source_id: newEntryId,
-              payload: { capture_type: type },
-            }),
-          });
-          if (!res.ok) {
-            console.error("[source-event] emit failed", res.status, await res.text());
-          }
-        } catch (e: any) {
-          console.error("[source-event] emit failed", e?.message);
-        }
-        // Generate entry embedding (non-blocking on failure).
-        try {
-          const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-          if (OPENAI_API_KEY && newEntryId) {
-            const embInput = `${extracted_title || ""}\n${finalCapture?.metadata?.summary || ""}\n${entryContent || ""}`.slice(0, 8000);
-            const embRes = await fetch("https://api.openai.com/v1/embeddings", {
-              method: "POST",
-              headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
-              body: JSON.stringify({ model: "text-embedding-3-small", input: [embInput] }),
-            });
-            if (embRes.ok) {
-              const embData = await embRes.json();
-              const vec = embData.data?.[0]?.embedding;
-              if (vec) {
-                const { error: updErr } = await supabase
-                  .from("entries")
-                  .update({ embedding: `[${vec.join(",")}]` } as any)
-                  .eq("id", newEntryId);
-                if (updErr) {
-                  console.error("[embed] update failed", updErr.message);
-                } else {
-                  console.log("[embed] ok", 1);
-                }
-              }
-            } else {
-              console.error("[embed] failed", embRes.status, await embRes.text());
-            }
-          }
-        } catch (embErr: any) {
-          console.error("[embed] failed", embErr?.message);
-        }
-        // Wire the full pipeline: extract-evidence creates fragments, then chains to detect-signals-v2
+        // Wire the full pipeline in the background: ledger event, embedding, extract-evidence.
+        // NOTHING here is awaited before the 201 response.
         // @ts-ignore EdgeRuntime.waitUntil is available in Supabase Edge Functions
         EdgeRuntime.waitUntil((async () => {
+          // 1) Emit ledger event — non-blocking on failure
+          try {
+            const sbUrl = Deno.env.get("SUPABASE_URL")!;
+            const srk = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+            const res = await fetch(`${sbUrl}/functions/v1/ingest-source-event`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${srk}`,
+                apikey: srk,
+              },
+              body: JSON.stringify({
+                user_id: effectiveUserId,
+                event_type: "capture",
+                source_table: "entries",
+                source_id: newEntryId,
+                payload: { capture_type: type },
+              }),
+            });
+            if (!res.ok) {
+              console.error("[source-event] emit failed", res.status, await res.text());
+            }
+          } catch (e: any) {
+            console.error("[source-event] emit failed", e?.message);
+          }
+
+          // 2) Generate entry embedding with an 8s timeout so it can never hang.
+          try {
+            const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+            if (OPENAI_API_KEY && newEntryId) {
+              const embInput = `${extracted_title || ""}\n${finalCapture?.metadata?.summary || ""}\n${entryContent || ""}`.slice(0, 8000);
+              const embController = new AbortController();
+              const embTimer = setTimeout(() => embController.abort(), 8000);
+              try {
+                const embRes = await fetch("https://api.openai.com/v1/embeddings", {
+                  method: "POST",
+                  headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
+                  body: JSON.stringify({ model: "text-embedding-3-small", input: [embInput] }),
+                  signal: embController.signal,
+                });
+                if (embRes.ok) {
+                  const embData = await embRes.json();
+                  const vec = embData.data?.[0]?.embedding;
+                  if (vec) {
+                    const { error: updErr } = await supabase
+                      .from("entries")
+                      .update({ embedding: `[${vec.join(",")}]` } as any)
+                      .eq("id", newEntryId);
+                    if (updErr) {
+                      console.error("[embed] update failed", updErr.message);
+                    } else {
+                      console.log("[embed] ok", 1);
+                    }
+                  }
+                } else {
+                  console.error("[embed] failed", embRes.status, await embRes.text());
+                }
+              } finally {
+                clearTimeout(embTimer);
+              }
+            }
+          } catch (embErr: any) {
+            console.error("[embed] failed", embErr?.message);
+          }
+
+          // 3) extract-evidence creates fragments, then chains to detect-signals-v2
           try {
             const { error: extractError } = await supabase.functions.invoke("extract-evidence", {
               body: {
@@ -367,7 +378,7 @@ Deno.serve(async (req) => {
             console.warn("[ingest-capture] extract-evidence invoke threw:", e?.message);
           }
         })());
-        console.log("[ingest-capture] extract-evidence invoked for entry:", newEntryId);
+        console.log("[ingest-capture] background pipeline scheduled for entry:", newEntryId);
       }
     } catch (entryWriteErr: any) {
       console.warn("[ingest-capture] entries write failed (non-fatal):", entryWriteErr?.message);
