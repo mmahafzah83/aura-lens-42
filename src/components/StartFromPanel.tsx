@@ -76,6 +76,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
   const [frameworks, setFrameworks] = useState<RawFramework[]>([]);
   const [usedIds, setUsedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [totalSignals, setTotalSignals] = useState<number>(0);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [voice, setVoice] = useState<{
     fullName: string | null;
@@ -87,7 +88,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [sRes, fRes, usedRes] = await Promise.all([
+      const [sRes, fRes, usedRes, countRes] = await Promise.all([
         supabase
           .from("strategic_signals")
           .select("id, signal_title, explanation, content_opportunity, confidence, created_at, status, strategic_implications, velocity_status")
@@ -105,9 +106,14 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
           .select("generation_params")
           .order("created_at", { ascending: false })
           .limit(50),
+        supabase
+          .from("strategic_signals")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "active"),
       ]);
       setSignals((sRes.data || []) as any);
       setFrameworks((fRes.data || []) as any);
+      setTotalSignals((countRes as any)?.count ?? 0);
       // Track used signal/framework titles to deprioritize
       const used = new Set<string>();
       (usedRes.data || []).forEach((item: any) => {
