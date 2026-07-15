@@ -362,12 +362,14 @@ async function processDocument(
     }
 
     let extractedText = "";
+    let pdfResult: PdfResult | null = null;
     try {
       console.log(`[ingest-document] stage=extracting path=${extractionPath}`);
       if (kind === "image") {
         extractedText = await extractFromImage(adminClient, doc, lovableApiKey);
       } else if (kind === "pdf") {
-        extractedText = await extractFromPdf(adminClient, doc, lovableApiKey);
+        pdfResult = await extractFromPdf(adminClient, doc, lovableApiKey);
+        extractedText = pdfResult.pages.map((p) => p.text).filter(Boolean).join("\n\n");
       } else if (kind === "docx") {
         extractedText = await extractFromDocx(adminClient, doc);
       }
@@ -408,15 +410,40 @@ async function processDocument(
       console.error("[ingest-document] summary error (non-fatal):", e);
     }
 
-    const chunks = chunkText(extractedText);
-    console.log(`[ingest-document] chunking complete count=${chunks.length}`);
-    const chunkRows = chunks.map((content, i) => ({
-      document_id,
-      user_id: userId,
-      content,
-      chunk_index: i,
-      metadata: { filename: doc.filename, file_type: doc.file_type, kind },
-    }));
+    // Chunk with page provenance for PDFs; plain chunking otherwise.
+    let chunkRows: any[] = [];
+    if (pdfResult) {
+      let idx = 0;
+      for (const p of pdfResult.pages) {
+        if (!p.text || p.text.length < 20) continue;
+        const parts = chunkText(p.text);
+        for (const content of parts) {
+          chunkRows.push({
+            document_id,
+            user_id: userId,
+            content,
+            chunk_index: idx++,
+            metadata: {
+              filename: doc.filename,
+              file_type: doc.file_type,
+              kind,
+              page_start: p.page,
+              page_end: p.page,
+            },
+          });
+        }
+      }
+    } else {
+      const chunks = chunkText(extractedText);
+      chunkRows = chunks.map((content, i) => ({
+        document_id,
+        user_id: userId,
+        content,
+        chunk_index: i,
+        metadata: { filename: doc.filename, file_type: doc.file_type, kind },
+      }));
+    }
+    console.log(`[ingest-document] chunking complete count=${chunkRows.length}`);
 
     if (chunkRows.length > 0) {
       console.log(`[ingest-document] stage=chunking inserting ${chunkRows.length} rows`);
@@ -427,13 +454,26 @@ async function processDocument(
       }
     }
 
-    console.log(`[ingest-document] final status update -> completed (${chunks.length} chunks)`);
-    await adminClient.from("documents").update({
+    // Honest counts: page_count reflects real total pages for PDFs; null for DOCX/images.
+    const completionPayload: Record<string, unknown> = {
       status: "completed",
       summary: docSummary || extractedText.slice(0, 300),
-      page_count: chunks.length,
       error_message: null,
-    }).eq("id", document_id);
+    };
+    if (pdfResult) {
+      completionPayload.page_count = pdfResult.pagesTotal;
+      completionPayload.pages_total = pdfResult.pagesTotal;
+      completionPayload.pages_read = pdfResult.pagesRead;
+      completionPayload.extraction_method = pdfResult.method;
+      console.log(`[ingest-document] final status -> completed pdf pages ${pdfResult.pagesRead}/${pdfResult.pagesTotal} method=${pdfResult.method} ocrUnread=${pdfResult.ocrUnread}`);
+    } else {
+      completionPayload.page_count = null;
+      completionPayload.pages_total = null;
+      completionPayload.pages_read = null;
+      completionPayload.extraction_method = "text";
+      console.log(`[ingest-document] final status -> completed (${kind}, ${chunkRows.length} chunks)`);
+    }
+    await adminClient.from("documents").update(completionPayload).eq("id", document_id);
 
     // Write to entries so document uploads count toward capture score
     const { error: entryErr } = await adminClient
@@ -467,7 +507,11 @@ async function processDocument(
           event_type: "document",
           source_table: "documents",
           source_id: document_id,
-          payload: { page_count: chunks.length },
+          payload: {
+            page_count: pdfResult ? pdfResult.pagesTotal : null,
+            pages_read: pdfResult ? pdfResult.pagesRead : null,
+            extraction_method: pdfResult ? pdfResult.method : "text",
+          },
         }),
       });
       if (!res.ok) {
