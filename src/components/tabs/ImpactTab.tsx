@@ -2756,17 +2756,53 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                       style={{ border: "0.5px solid var(--color-border)", color: "var(--color-text-primary)", background: "transparent" }}
                     >
                       <Upload className="w-3.5 h-3.5" />
-                      {showUpdateUpload ? "Hide upload" : "Update post & audience data"}
+                      {showUpdateUpload ? "Hide upload" : "Add audience demographics (optional)"}
                     </button>
                   </div>
-                  {showUpdateUpload && UploadZone}
+                  {showUpdateUpload && (
+                    <div className="mt-3">
+                      <p className="text-xs mb-2" style={{ color: "var(--color-text-muted)", lineHeight: 1.55 }}>
+                        Followers, impressions, and per-post numbers sync automatically from your LinkedIn connection. Upload a LinkedIn export only to add seniority, industry, and geography breakdowns.
+                      </p>
+                      {UploadZone}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="mt-3">
-                  <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
-                    Connect your LinkedIn data to close the intelligence loop — see which signals drive real engagement.
-                  </p>
-                  {UploadZone}
+                  {!syncMeta.connected ? (
+                    <>
+                      <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
+                        Connect LinkedIn to sync followers, impressions, and per-post performance automatically.
+                      </p>
+                      <div className="mt-3">
+                        <AuraButton variant="primary" size="sm" onClick={handleConnectLinkedIn} loading={connectingLI}>
+                          <Linkedin className="w-4 h-4 mr-2 inline" /> Connect LinkedIn
+                        </AuraButton>
+                      </div>
+                      <details className="mt-3">
+                        <summary className="cursor-pointer text-xs select-none" style={{ color: "var(--color-text-muted)" }}>
+                          Add audience demographics (optional)
+                        </summary>
+                        <p className="text-xs mt-2 mb-2" style={{ color: "var(--color-text-muted)", lineHeight: 1.55 }}>
+                          Upload a LinkedIn export only if you also want seniority, industry, and geography breakdowns.
+                        </p>
+                        {UploadZone}
+                      </details>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
+                        Your LinkedIn analytics are syncing. Audience demographics can be added below (optional).
+                      </p>
+                      <details className="mt-3">
+                        <summary className="cursor-pointer text-xs select-none" style={{ color: "var(--color-text-muted)" }}>
+                          Add audience demographics (optional)
+                        </summary>
+                        {UploadZone}
+                      </details>
+                    </>
+                  )}
                 </div>
               )}
 
