@@ -10,10 +10,19 @@ const MAX_BYTES = 50 * 1024 * 1024; // 50 MB safety guardrail
 const OCR_PAGE_TEXT_THRESHOLD = 30; // <30 chars => treat as scanned
 const OCR_BATCH_SIZE = 5;
 const OCR_MAX_PAGES = 30;
-const SEGMENT_BYTES_THRESHOLD = 12 * 1024 * 1024; // 12 MB
-const SEGMENT_PAGES_THRESHOLD = 60;
-const SEGMENT_PAGE_SIZE = 40;
 const PROCESS_DEADLINE_MS = 220_000;
+const PDF_EXTRACT_DEADLINE_MS = 180_000;
+
+async function stage(adminClient: any, document_id: string, note: string) {
+  try {
+    await adminClient
+      .from("documents")
+      .update({ error_message: `stage: ${note}`.slice(0, 500) })
+      .eq("id", document_id);
+  } catch (_) {
+    // non-fatal
+  }
+}
 
 function chunkText(text: string, chunkSize = 800, overlap = 100): string[] {
   const chunks: string[] = [];
@@ -209,6 +218,7 @@ async function extractFromPdf(
   doc: any,
   lovableApiKey: string,
 ): Promise<PdfResult> {
+  const run = async (): Promise<PdfResult> => {
   const storagePath = doc.file_url.includes("/storage/v1/")
     ? doc.file_url.split("/documents/")[1]
     : doc.file_url;
@@ -216,90 +226,35 @@ async function extractFromPdf(
   if (bytes.byteLength > MAX_BYTES) {
     throw new Error(`PDF too large (${(bytes.byteLength / 1024 / 1024).toFixed(1)} MB, max 50 MB)`);
   }
-  console.log(`[ingest-document] PDF bytes=${bytes.byteLength}, running streaming extraction`);
+  console.log(`[ingest-document] PDF bytes=${bytes.byteLength}, running single-pass extraction`);
+  await stage(adminClient, doc.id, "extracting text");
 
   // @ts-ignore dynamic esm import
   const { extractText, getDocumentProxy } = await import("https://esm.sh/unpdf@0.12.1");
   // @ts-ignore dynamic esm import
   const { PDFDocument } = await import("https://esm.sh/pdf-lib@1.17.1");
 
-  // Read pagesTotal cheaply, then release the top-level proxy immediately.
-  let probe: any = await getDocumentProxy(bytes);
-  const pagesTotal: number = probe.numPages;
-  probe = null;
+  // Single whole-document text extraction — one await, releases quickly.
+  let pdf: any = await getDocumentProxy(bytes);
+  const pagesTotal: number = pdf.numPages;
+  const all: any = await extractText(pdf, { mergePages: false });
+  pdf = null;
 
-  const shouldSegment =
-    bytes.byteLength > SEGMENT_BYTES_THRESHOLD || pagesTotal > SEGMENT_PAGES_THRESHOLD;
-  console.log(
-    `[ingest-document] pdf pagesTotal=${pagesTotal} segment=${shouldSegment} segSize=${SEGMENT_PAGE_SIZE}`,
-  );
+  const rawPages: string[] = Array.isArray(all?.text)
+    ? all.text
+    : (typeof all?.text === "string" ? [all.text] : []);
 
   const pages: PdfPage[] = new Array(pagesTotal);
-  for (let i = 1; i <= pagesTotal; i++) pages[i - 1] = { page: i, text: "" };
   const scannedPageNums: number[] = [];
-
-  // Helper: run unpdf per-page on the given bytes, mapping local index -> absolute page.
-  async function readSegmentText(segBytes: Uint8Array, absoluteStart: number, localPageCount: number) {
-    let segProxy: any = await getDocumentProxy(segBytes);
-    for (let local = 1; local <= localPageCount; local++) {
-      const absolute = absoluteStart + local - 1;
-      let text = "";
-      try {
-        const { text: pageText } = await extractText(segProxy, {
-          mergePages: false,
-          pageNumbers: [local],
-        });
-        const t = Array.isArray(pageText) ? (pageText[0] || "") : String(pageText || "");
-        text = normalizeText(t);
-      } catch (e) {
-        console.warn(
-          `[ingest-document] unpdf page ${absolute} failed:`,
-          e instanceof Error ? e.message : e,
-        );
-        text = "";
-      }
-      pages[absolute - 1].text = text;
-      if (text.length < OCR_PAGE_TEXT_THRESHOLD) scannedPageNums.push(absolute);
-    }
-    segProxy = null; // release per-segment
-  }
-
-  if (!shouldSegment) {
-    // Small PDF: still read one page at a time to release refs between pages.
-    await readSegmentText(bytes, 1, pagesTotal);
-  } else {
-    // Auto-split into SEGMENT_PAGE_SIZE-page slices; each slice is a fresh mini-PDF.
-    for (let start = 1; start <= pagesTotal; start += SEGMENT_PAGE_SIZE) {
-      const endInclusive = Math.min(start + SEGMENT_PAGE_SIZE - 1, pagesTotal);
-      const count = endInclusive - start + 1;
-      let segBytes: Uint8Array | null = null;
-      try {
-        let src: any = await PDFDocument.load(bytes);
-        let out: any = await PDFDocument.create();
-        const indices: number[] = [];
-        for (let p = start; p <= endInclusive; p++) indices.push(p - 1);
-        const copied = await out.copyPages(src, indices);
-        for (const p of copied) out.addPage(p);
-        const saved = await out.save();
-        segBytes = new Uint8Array(saved);
-        src = null;
-        out = null;
-        console.log(
-          `[ingest-document] segment ${start}-${endInclusive} bytes=${segBytes.byteLength}`,
-        );
-        await readSegmentText(segBytes, start, count);
-      } catch (e) {
-        console.warn(
-          `[ingest-document] segment ${start}-${endInclusive} failed:`,
-          e instanceof Error ? e.message : e,
-        );
-      } finally {
-        segBytes = null; // release segment bytes before next iteration
-      }
-    }
+  for (let i = 1; i <= pagesTotal; i++) {
+    const raw = rawPages[i - 1] || "";
+    const text = normalizeText(String(raw || ""));
+    pages[i - 1] = { page: i, text };
+    if (text.length < OCR_PAGE_TEXT_THRESHOLD) scannedPageNums.push(i);
   }
 
   const textPages = pages.filter((p) => p.text.length >= OCR_PAGE_TEXT_THRESHOLD).length;
+  console.log(`[ingest-document] text pass done pagesTotal=${pagesTotal} withText=${textPages} scanned=${scannedPageNums.length}`);
 
   // OCR fallback — still capped at OCR_MAX_PAGES total across the whole document.
   const ocrTargets = scannedPageNums.slice(0, OCR_MAX_PAGES);
@@ -307,6 +262,7 @@ async function extractFromPdf(
   let ocrRead = 0;
 
   if (ocrTargets.length > 0) {
+    await stage(adminClient, doc.id, `OCR ${ocrTargets.length} pages`);
     for (let start = 0; start < ocrTargets.length; start += OCR_BATCH_SIZE) {
       const batchNums = ocrTargets.slice(start, start + OCR_BATCH_SIZE);
       let batchBytes: Uint8Array | null = null;
@@ -368,6 +324,18 @@ async function extractFromPdf(
   else method = "mixed";
 
   return { pages, pagesTotal, pagesRead, method, ocrUnread };
+  };
+
+  // Real backstop: single-await text pass makes this timer actually effective.
+  let timer: number | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error("PDF read timed out")), PDF_EXTRACT_DEADLINE_MS) as unknown as number;
+  });
+  try {
+    return await Promise.race([run(), timeout]);
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
 }
 
 // Extract text from a DOCX using mammoth (pure JS, no native deps).
@@ -520,6 +488,7 @@ async function processDocument(
 
     if (chunkRows.length > 0) {
       console.log(`[ingest-document] stage=chunking inserting ${chunkRows.length} rows`);
+      await stage(adminClient, document_id, "chunking");
       const { error: insertErr } = await adminClient.from("document_chunks").insert(chunkRows);
       if (insertErr) {
         await markError(adminClient, document_id, `Chunk insert failed: ${insertErr.message}`);
