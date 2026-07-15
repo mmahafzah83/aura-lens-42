@@ -1,0 +1,142 @@
+{
+  "version": 1,
+  "sdk_version": "0.22.0",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://zddlsztxfzvevzjbuocc.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "aura-mcp",
+      "version": "0.1.0",
+      "title": "Aura"
+    },
+    "tools": [
+      {
+        "name": "list_active_signals",
+        "title": "List active strategic signals",
+        "description": "List the signed-in user's active strategic signals from Aura, ordered by confidence.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "limit": {
+              "description": "How many signals to return (default 10).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_signal_details",
+        "title": "Get signal details with evidence",
+        "description": "Get one Aura strategic signal by id, including its full explanation, strategic implications, and supporting evidence fragments.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "signal_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "The strategic signal id."
+            }
+          },
+          "required": [
+            "signal_id"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_recent_posts",
+        "title": "List recent LinkedIn posts",
+        "description": "List the signed-in user's recent LinkedIn posts tracked by Aura (drafts and published), most recent first.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "limit": {
+              "description": "How many posts to return (default 10).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            },
+            "tracking_status": {
+              "description": "Filter by tracking status.",
+              "type": "string",
+              "enum": [
+                "draft",
+                "published",
+                "scheduled"
+              ]
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_capture",
+        "title": "Capture a note into Aura",
+        "description": "Save a note, article link, or observation into the signed-in user's Aura knowledge base as an entry. Aura uses these captures to detect strategic signals.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "content": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The note text, quote, or article body to capture."
+            },
+            "title": {
+              "description": "Optional short title for the capture.",
+              "type": "string"
+            },
+            "type": {
+              "description": "What kind of capture this is (default note).",
+              "type": "string",
+              "enum": [
+                "note",
+                "article",
+                "observation",
+                "quote"
+              ]
+            }
+          },
+          "required": [
+            "content"
+          ]
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
