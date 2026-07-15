@@ -2416,7 +2416,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         ) : (
           <div className="space-y-4">
             {/* Stat cards */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="glass-card rounded-xl p-5 border border-border/8">
                 <div className="text-foreground font-bold text-lg">{contentPerf.postCount}</div>
                 <div className="text-xs text-muted-foreground mt-1" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
