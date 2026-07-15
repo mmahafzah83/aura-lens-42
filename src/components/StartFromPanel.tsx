@@ -450,6 +450,16 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
             })
           )}
 
+          {totalSignals > 4 && (
+            <a
+              href="/dashboard?tab=intelligence"
+              style={{ display: "inline-block", marginTop: 4, fontSize: 12, color: "var(--brand)", fontWeight: 600 }}
+              className="hover:opacity-80"
+            >
+              See all {totalSignals} signals →
+            </a>
+          )}
+
           {/* Voice match card */}
           <div
             style={{
