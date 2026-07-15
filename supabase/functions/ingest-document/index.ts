@@ -269,7 +269,7 @@ async function extractFromPdf(
                 { type: "text", text: `This PDF contains ${batchNums.length} scanned page(s). Extract ALL text, preserving structure. Separate each page with the exact delimiter "\n===PAGE===\n" in order. Return ONLY raw text, no commentary.` },
                 { type: "image_url", image_url: { url: dataUrl } },
               ],
-            }),
+            }],
           }),
         }, 120000, "PDF OCR batch");
 
