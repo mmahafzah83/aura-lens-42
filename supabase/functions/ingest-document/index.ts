@@ -311,7 +311,7 @@ async function extractFromDocx(adminClient: any, doc: any): Promise<string> {
     : doc.file_url;
   const bytes = await downloadStorageBytes(adminClient, storagePath);
   if (bytes.byteLength > MAX_BYTES) {
-    throw new Error(`DOCX too large (${(bytes.byteLength / 1024 / 1024).toFixed(1)} MB, max 20 MB)`);
+    throw new Error(`DOCX too large (${(bytes.byteLength / 1024 / 1024).toFixed(1)} MB, max 50 MB)`);
   }
   // @ts-ignore dynamic esm import
   const mammoth = await import("https://esm.sh/mammoth@1.8.0?target=deno");
