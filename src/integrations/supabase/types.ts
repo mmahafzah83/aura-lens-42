@@ -1494,7 +1494,7 @@ export type Database = {
           created_at?: string
           engagement_rate?: number
           follower_growth?: number
-          followers?: number
+          followers: number
           format_breakdown?: Json
           id?: string
           impressions?: number
@@ -1657,6 +1657,8 @@ export type Database = {
           connected_at: string | null
           created_at: string | null
           display_name: string | null
+          followers_total: number | null
+          followers_total_at: string | null
           handle: string | null
           id: string
           last_synced_at: string | null
@@ -1678,6 +1680,8 @@ export type Database = {
           connected_at?: string | null
           created_at?: string | null
           display_name?: string | null
+          followers_total?: number | null
+          followers_total_at?: string | null
           handle?: string | null
           id?: string
           last_synced_at?: string | null
@@ -1699,6 +1703,8 @@ export type Database = {
           connected_at?: string | null
           created_at?: string | null
           display_name?: string | null
+          followers_total?: number | null
+          followers_total_at?: string | null
           handle?: string | null
           id?: string
           last_synced_at?: string | null
