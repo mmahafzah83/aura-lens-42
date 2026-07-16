@@ -2803,6 +2803,19 @@ export type Database = {
         Args: { p_created_by?: string; p_new_tokens: Json }
         Returns: string
       }
+      admin_list_crons: {
+        Args: never
+        Returns: {
+          active: boolean
+          jobid: number
+          jobname: string
+          last_msg: string
+          last_start: string
+          last_status: string
+          schedule: string
+        }[]
+      }
+      admin_run_cron: { Args: { p_jobid: number }; Returns: string }
       is_current_user_admin: { Args: never; Returns: boolean }
       record_guide_miss: {
         Args: { _slug: string; _surface: string }
