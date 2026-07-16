@@ -471,7 +471,9 @@ Deno.serve(async (req) => {
         if (SELF_LOOP.has(g.function_name)) continue;
         const total = perFn.get(g.function_name) || 0;
 
-        if (g.severity === "critical") {
+        const sev = String(g.severity || "").toLowerCase();
+
+        if (sev === "critical") {
           await notify(
             `EF critical — ${g.function_name}`,
             `Function ${g.function_name} logged ${g.count} critical error(s) in the last 65m.\nSample: ${g.sample}`,
@@ -494,17 +496,19 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        if (g.severity === "high") {
-          await notify(
-            `EF high — ${g.function_name}`,
-            `Function ${g.function_name} logged ${g.count} high-severity error(s) in the last 65m.\nSample: ${g.sample}`,
-            `ef:high:${g.function_name}`,
-            "high",
-          );
-          efSummary.alerts_raised += 1;
+        if (sev === "info" || sev === "low") {
+          // digest sweeps, no email
           continue;
         }
-        // info/low → digest sweeps, no email
+
+        // Default fail-loud: 'high', legacy 'error', or any unknown severity.
+        await notify(
+          `EF ${sev || "unknown"} — ${g.function_name}`,
+          `Function ${g.function_name} logged ${g.count} ${sev || "unknown"}-severity error(s) in the last 65m.\nSample: ${g.sample}`,
+          `ef:high:${g.function_name}`,
+          "high",
+        );
+        efSummary.alerts_raised += 1;
       }
     } catch (e) {
       console.error("[sentinel] ef sink error", (e as Error).message);
