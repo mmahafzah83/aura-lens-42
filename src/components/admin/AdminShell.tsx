@@ -23,13 +23,12 @@ const NAV: { to: string; label: string }[] = [
   { to: "/admin", label: "Overview" },
   { to: "/admin/people", label: "People" },
   { to: "/admin/journey", label: "Journey" },
+  { to: "/admin/cost", label: "Cost" },
   { to: "/admin/crons", label: "Crons" },
   { to: "/admin/access", label: "Access" },
-  { to: "/admin/cost", label: "Cost" },
-  { to: "/admin/experience", label: "Experience" },
-  { to: "/admin/design-system", label: "Design system" },
   { to: "/admin/qa", label: "QA" },
   { to: "/admin/guide-health", label: "Guide health" },
+  { to: "/admin/appearance", label: "Appearance" },
   { to: "/admin/standard", label: "Standard" },
 ];
 
