@@ -419,6 +419,30 @@ Deno.serve(async (req) => {
           "high",
         );
       }
+
+      // --- CRON HTTP FAILURES (last 90m) ---
+      // cron.job_run_details reports 'succeeded' when the HTTP request is SENT,
+      // so 401/500 responses from edge functions are invisible there. Inspect
+      // net._http_response directly to catch silent failures.
+      const { data: httpFails, error: httpErr } = await admin.rpc(
+        "recent_cron_http_failures" as never,
+        { p_minutes: 90 },
+      );
+      if (httpErr) console.error("[sentinel] http failures rpc error", httpErr.message);
+      if (httpFails && (httpFails as any[]).length > 0) {
+        const rows = httpFails as Array<{ status_code: number | null; failures: number; sample_error: string | null }>;
+        const total = rows.reduce((s, r) => s + Number(r.failures || 0), 0);
+        const list = rows
+          .map((r) => `• HTTP ${r.status_code ?? "null"} × ${r.failures} — ${(r.sample_error || "").slice(0, 200)}`)
+          .join("\n");
+        watchdog.push({ check: "cron_http_failures", detail: `${total} response(s) across ${rows.length} status code(s)` });
+        await notify(
+          "Cron HTTP failures",
+          `Cron scheduler sent requests but got failing responses in the last 90m (cron.job_run_details would mark these as 'succeeded'):\n\n${list}`,
+          "cron:http-failure",
+          "high",
+        );
+      }
     } catch (e) {
       console.error("[sentinel] watchdog error", (e as Error).message);
     }
