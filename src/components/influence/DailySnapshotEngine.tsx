@@ -16,7 +16,7 @@ const DailySnapshotEngine = () => {
     setLoading(true);
     try {
       let query = supabase
-        .from("influence_snapshots")
+        .from("influence_timeline" as any)
         .select("snapshot_date, followers, follower_growth, impressions, reactions, comments, shares, engagement_rate, source_type")
         .order("snapshot_date", { ascending: false });
       if (range !== "all") {
