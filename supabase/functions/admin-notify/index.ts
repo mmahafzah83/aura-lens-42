@@ -53,29 +53,16 @@ Deno.serve(async (req) => {
 
     const admin = createClient(supabaseUrl, serviceKey);
 
-    // Dedupe: skip email if a notification with same source was created in last 20h
+    // Dedupe against ops_alerts: same source in last 20h
     const cutoff = new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString();
     const { data: recent } = await admin
-      .from("notifications")
+      .from("ops_alerts")
       .select("id")
-      .eq("user_id", ADMIN_USER_ID)
-      .eq("metadata->>source", dedupe_key)
+      .eq("source", dedupe_key)
       .gte("created_at", cutoff)
       .limit(1);
 
     const duplicate = !!(recent && recent.length > 0);
-
-    // Always insert a notification row (unless duplicate)
-    if (!duplicate) {
-      const { error: notifErr } = await admin.from("notifications").insert({
-        user_id: ADMIN_USER_ID,
-        title: subject,
-        body: message,
-        type: "system",
-        metadata: { severity, source: dedupe_key },
-      });
-      if (notifErr) console.error("[admin-notify] notif insert failed", notifErr.message);
-    }
 
     let emailed = false;
     const shouldEmail = severity === "critical" || severity === "high" || force_email;
@@ -97,6 +84,18 @@ Deno.serve(async (req) => {
       });
       emailed = er.ok;
       if (!er.ok) console.error("[admin-notify] email failed", er.status, (await er.text()).slice(0, 200));
+    }
+
+    // Persist ops alert (skip if duplicate)
+    if (!duplicate) {
+      const { error: opsErr } = await admin.from("ops_alerts").insert({
+        subject,
+        body: message,
+        severity,
+        source: dedupe_key,
+        emailed,
+      });
+      if (opsErr) console.error("[admin-notify] ops_alerts insert failed", opsErr.message);
     }
 
     return json({ ok: true, duplicate, emailed, severity, gated: !shouldEmail });
