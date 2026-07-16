@@ -2158,6 +2158,36 @@ export type Database = {
         }
         Relationships: []
       }
+      ops_alerts: {
+        Row: {
+          body: string | null
+          created_at: string
+          emailed: boolean
+          id: string
+          severity: string | null
+          source: string | null
+          subject: string | null
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          emailed?: boolean
+          id?: string
+          severity?: string | null
+          source?: string | null
+          subject?: string | null
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          emailed?: boolean
+          id?: string
+          severity?: string | null
+          source?: string | null
+          subject?: string | null
+        }
+        Relationships: []
+      }
       page_backgrounds: {
         Row: {
           created_at: string | null
