@@ -6,9 +6,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
-const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
-const ADMIN_EMAIL = "mohammad.mahafdhah@aura-intel.org";
-
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -182,33 +179,30 @@ Deno.serve(async (req) => {
     if (insertErr) console.error("[sentinel] insert failed", insertErr.message);
 
     if (failures.length > 0) {
-      const rows = failures.map((f) => ({
-        user_id: ADMIN_USER_ID,
-        title: `API DOWN: ${f.provider} ${f.status}`,
-        body: (f.detail || "request failed").slice(0, 500),
-        type: "system",
-        metadata: { urgency: "high", provider: f.provider, status: f.status, source: "api-health-sentinel" },
-      }));
-      const { error: notifErr } = await admin.from("notifications").insert(rows);
-      if (notifErr) console.error("[sentinel] notif insert failed", notifErr.message);
-
-      const resendDown = failures.some((f) => f.provider === "resend");
-      if (!resendDown && RESEND) {
-        const summary = failures
-          .map((f) => `• ${f.provider} — HTTP ${f.status}: ${(f.detail || "").slice(0, 160)}`)
-          .join("\n");
-        const html = `<p>The daily API health check detected failures:</p><pre style="font:13px/1.5 monospace;background:#0f0e0c;color:#ededed;padding:12px;border-radius:8px;white-space:pre-wrap;">${summary.replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c]!))}</pre><p>Run timestamp: ${new Date().toISOString()}</p>`;
-        const er = await fetch("https://api.resend.com/emails", {
+      const summary = failures
+        .map((f) => `• ${f.provider} — HTTP ${f.status}: ${(f.detail || "").slice(0, 160)}`)
+        .join("\n");
+      const subject = `API DOWN: ${failures.map((f) => f.provider).join(", ")}`;
+      try {
+        const notifyRes = await fetch(`${supabaseUrl}/functions/v1/admin-notify`, {
           method: "POST",
-          headers: { Authorization: `Bearer ${RESEND}`, "Content-Type": "application/json" },
+          headers: {
+            Authorization: `Bearer ${serviceKey}`,
+            apikey: serviceKey,
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify({
-            from: "Aura <Mohammad.Mahafdhah@aura-intel.org>",
-            to: [ADMIN_EMAIL],
-            subject: `API DOWN: ${failures.map((f) => f.provider).join(", ")}`,
-            html,
+            subject,
+            body: `The daily API health check detected failures:\n\n${summary}\n\nRun timestamp: ${new Date().toISOString()}`,
+            severity: "high",
+            dedupe_key: "api-health-sentinel",
           }),
         });
-        if (!er.ok) console.error("[sentinel] alert email failed", er.status, (await er.text()).slice(0, 200));
+        if (!notifyRes.ok) {
+          console.error("[sentinel] admin-notify failed", notifyRes.status, (await notifyRes.text()).slice(0, 200));
+        }
+      } catch (e) {
+        console.error("[sentinel] admin-notify error", (e as Error).message);
       }
     }
 
