@@ -631,6 +631,54 @@ const AdminQA = () => {
       {/* Hidden iframe container used by the DOM audit to load other routes without unmounting this page */}
       <div ref={iframeContainerRef} aria-hidden="true" style={{ position: "fixed", left: -99999, top: 0, width: 0, height: 0, overflow: "hidden", pointerEvents: "none" }} />
 
+      {/* End-to-end walkthrough (relocated from Access) */}
+      <Section title="End-to-end walkthrough">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+          <div style={{ fontSize: 14, color: "#D4CCBC" }}>
+            {qaReports[0]
+              ? `Last check: ${new Date(qaReports[0].run_at).toLocaleString()} — ${qaReports[0].passed}/${qaReports[0].total_checks} ${qaReports[0].failed === 0 ? "✅" : "⚠️"}`
+              : "No checks run yet."}
+          </div>
+          <PrimaryBtn onClick={runQaCheck} disabled={qaRunning}>
+            {qaRunning ? <Loader2 size={14} className="animate-spin" /> : null}
+            Run QA Check
+          </PrimaryBtn>
+        </div>
+        {qaReports.length === 0 ? (
+          <div style={{ marginTop: 12, fontSize: 14, color: "#B8B0A2" }}>No runs yet.</div>
+        ) : (
+          <div style={{ marginTop: 12, overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+              <thead>
+                <tr style={{ textAlign: "left", color: "#D4CCBC", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6, fontWeight: 600 }}>
+                  <th style={thStyle}>Date</th>
+                  <th style={thStyle}>Result</th>
+                  <th style={thStyle}>Failed steps</th>
+                </tr>
+              </thead>
+              <tbody>
+                {qaReports.map((r) => {
+                  const failed = (r.results || []).filter((x) => !x.passed);
+                  return (
+                    <tr key={r.id} style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                      <td style={{ ...tdStyle, whiteSpace: "nowrap", fontFamily: "var(--font-mono, monospace)" }}>
+                        {new Date(r.run_at).toLocaleString()}
+                      </td>
+                      <td style={{ ...tdStyle, color: r.failed === 0 ? STATUS_COLORS.pass : STATUS_COLORS.warn }}>
+                        {r.passed}/{r.total_checks} {r.failed === 0 ? "✅" : "⚠️"}
+                      </td>
+                      <td style={tdStyle}>
+                        {failed.length === 0 ? "—" : failed.map((f) => `${f.step}. ${f.action}`).join(", ")}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Section>
+
       {/* Section 1 — Run Controls */}
       <Section title="Run controls">
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
