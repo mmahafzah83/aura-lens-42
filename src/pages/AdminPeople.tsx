@@ -466,6 +466,61 @@ export default function AdminPeople() {
         </div>
       ) : (
         <>
+          {inactive48.length > 0 && (
+            <div
+              style={{
+                ...card,
+                marginBottom: 20,
+                borderLeft: "4px solid #F97316",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "var(--glass-1)", textTransform: "uppercase", letterSpacing: 0.6 }}>
+                  Inactive (48h+)
+                </span>
+                <span style={{ fontSize: 12, padding: "2px 8px", borderRadius: 999, background: "rgba(249,115,22,0.15)", color: "#F97316", border: "1px solid rgba(249,115,22,0.3)" }}>
+                  {inactive48.length}
+                </span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {inactive48.map((r) => {
+                  const name = r.first_name || r.email || r.user_id;
+                  const isCopied = copiedUid === r.user_id;
+                  return (
+                    <div
+                      key={r.user_id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 12,
+                        padding: "8px 10px",
+                        borderRadius: 6,
+                        border: "1px solid var(--hair)",
+                        background: "var(--ob-panel)",
+                      }}
+                    >
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 13, color: "var(--glass-1)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {name}
+                        </div>
+                        <div style={{ fontSize: 11, color: "var(--glass-2)" }}>
+                          Last seen {relativeSeen(r.last_seen)}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => copyWhatsApp(r)}
+                        style={{ ...btn, whiteSpace: "nowrap" }}
+                      >
+                        {isCopied ? <><Check size={12} /> Copied</> : <><Copy size={12} /> Copy WhatsApp</>}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
