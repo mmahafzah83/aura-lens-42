@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_action_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          detail: Json | null
+          id: string
+          result: string | null
+          target_ref: string | null
+          target_user_id: string | null
+          task: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          detail?: Json | null
+          id?: string
+          result?: string | null
+          target_ref?: string | null
+          target_user_id?: string | null
+          task?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          detail?: Json | null
+          id?: string
+          result?: string | null
+          target_ref?: string | null
+          target_user_id?: string | null
+          task?: string | null
+        }
+        Relationships: []
+      }
       admin_settings: {
         Row: {
           key: string
