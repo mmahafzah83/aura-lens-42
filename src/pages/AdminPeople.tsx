@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Download, Loader2, X, RefreshCw, Send } from "lucide-react";
 import AdminShell from "@/components/admin/AdminShell";
 import { downloadBlob } from "@/lib/download";
+import { formatSmartDate } from "@/lib/formatDate";
 
 type Row = {
   user_id: string;
@@ -16,6 +17,8 @@ type Row = {
   signals: number;
   posts: number;
   imprint: number | null;
+  last_nudge_type: string | null;
+  last_nudge_at: string | null;
 };
 
 type Stage = "Observer" | "Explorer" | "Strategist" | "Voice" | "Presence";
@@ -118,26 +121,35 @@ function Drilldown({
   const [signals, setSignals] = useState<any[]>([]);
   const [posts, setPosts] = useState<any[]>([]);
   const [snaps, setSnaps] = useState<any[]>([]);
+  const [nudges, setNudges] = useState<any[]>([]);
+  const [actions, setActions] = useState<any[]>([]);
   const [busy, setBusy] = useState(false);
   const [nudgeType, setNudgeType] = useState<string>("inactive");
   const [nudgeBusy, setNudgeBusy] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      const [e, s, p, sn] = await Promise.all([
-        supabase.from("entries").select("id, title, created_at").eq("user_id", row.user_id).order("created_at", { ascending: false }).limit(10),
-        supabase.from("strategic_signals").select("id, signal_title, created_at").eq("user_id", row.user_id).order("created_at", { ascending: false }).limit(10),
-        supabase.from("linkedin_posts").select("id, hook, created_at").eq("user_id", row.user_id).order("created_at", { ascending: false }).limit(10),
-        supabase.from("score_snapshots").select("score, created_at").eq("user_id", row.user_id).order("created_at", { ascending: false }).limit(20),
-      ]);
-      setCaptures(e.data ?? []);
-      setSignals(s.data ?? []);
-      setPosts(p.data ?? []);
-      setSnaps(sn.data ?? []);
+  const loadDetail = async () => {
+    setLoading(true);
+    const { data, error } = await supabase.functions.invoke("admin-console", {
+      body: { action: "user_detail", user_id: row.user_id },
+    });
+    if (error) {
+      toast.error(error.message || "Failed to load user detail");
       setLoading(false);
-    })();
-  }, [row.user_id]);
+      return;
+    }
+    const d = (data ?? {}) as any;
+    setCaptures(d.captures ?? []);
+    setSignals(d.signals ?? []);
+    setPosts(d.posts ?? []);
+    setSnaps(d.imprint_history ?? []);
+    setNudges(d.nudges ?? []);
+    setActions(d.actions ?? []);
+    setLoading(false);
+  };
+
+  useEffect(() => { loadDetail(); }, [row.user_id]);
+
+  const lastNudge = nudges[0];
 
   return (
     <div
@@ -171,6 +183,11 @@ function Drilldown({
             </div>
             <div style={{ fontSize: 12, color: "var(--glass-2)", marginTop: 4 }}>
               {row.email} · imprint {row.imprint ?? "—"} · {stageOf(row.imprint)}
+            </div>
+            <div style={{ fontSize: 12, color: "var(--glass-2)", marginTop: 4 }}>
+              {lastNudge
+                ? `Last nudge: ${lastNudge.email_type} · ${formatSmartDate(lastNudge.sent_at)}`
+                : "No nudge sent yet"}
             </div>
           </div>
           <button style={btn} onClick={onClose} aria-label="Close"><X size={12} /></button>
@@ -212,6 +229,7 @@ function Drilldown({
             onClick={async () => {
               setNudgeBusy(true);
               await onSendNudge(row.user_id, nudgeType);
+              await loadDetail();
               setNudgeBusy(false);
             }}
           >
@@ -225,22 +243,32 @@ function Drilldown({
           <>
             <Section title={`Recent captures (${captures.length})`}>
               {captures.map((c) => (
-                <li key={c.id}>{c.title || "(untitled)"} <span style={{ color: "var(--glass-2)" }}>· {fmtDate(c.created_at)}</span></li>
+                <li key={c.id}>{c.title || (c.snippet ? c.snippet.slice(0, 60) : "(untitled)")} <span style={{ color: "var(--glass-2)" }}>· {fmtDate(c.created_at)}</span></li>
               ))}
             </Section>
             <Section title={`Recent signals (${signals.length})`}>
               {signals.map((s) => (
-                <li key={s.id}>{s.signal_title || "(untitled)"} <span style={{ color: "var(--glass-2)" }}>· {fmtDate(s.created_at)}</span></li>
+                <li key={s.id}>{s.signal_title || "(untitled)"} <span style={{ color: "var(--glass-2)" }}>· conf {typeof s.confidence === "number" ? s.confidence.toFixed(2) : "—"} · {fmtDate(s.created_at)}</span></li>
               ))}
             </Section>
             <Section title={`Recent posts (${posts.length})`}>
               {posts.map((p) => (
-                <li key={p.id}>{(p.hook || "").slice(0, 90) || "(no hook)"} <span style={{ color: "var(--glass-2)" }}>· {fmtDate(p.created_at)}</span></li>
+                <li key={p.id}>{(p.snippet || "").slice(0, 90) || "(empty)"} <span style={{ color: "var(--glass-2)" }}>· {p.source_type} / {p.tracking_status} · {fmtDate(p.created_at)}</span></li>
               ))}
             </Section>
             <Section title={`Imprint history (${snaps.length})`}>
               {snaps.map((s, i) => (
-                <li key={i}>{Math.round(s.score)} <span style={{ color: "var(--glass-2)" }}>· {fmtDate(s.created_at)}</span></li>
+                <li key={i}>{Math.round(s.score)}{s.tier ? ` · ${s.tier}` : ""} <span style={{ color: "var(--glass-2)" }}>· {fmtDate(s.created_at)}</span></li>
+              ))}
+            </Section>
+            <Section title={`Nudge history (${nudges.length})`}>
+              {nudges.map((n, i) => (
+                <li key={i}>{n.email_type} <span style={{ color: "var(--glass-2)" }}>· {fmtDate(n.sent_at)}</span></li>
+              ))}
+            </Section>
+            <Section title={`Recent actions (${actions.length})`}>
+              {actions.map((a, i) => (
+                <li key={i}>{a.task || a.action} → {a.result || "—"} <span style={{ color: "var(--glass-2)" }}>· {fmtDate(a.created_at)}</span></li>
               ))}
             </Section>
           </>
