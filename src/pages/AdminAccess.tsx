@@ -602,6 +602,18 @@ const AdminAccess = () => {
           </Select>
         </div>
 
+        {/* Waitlist search */}
+        <div className="mb-3">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search waitlist by email or name…"
+            className="w-full sm:w-[360px] px-3 py-2 rounded-md text-sm outline-none"
+            style={{ backgroundColor: "var(--ink)", border: "1px solid var(--ink-3)", color: "var(--ink-7)" }}
+          />
+        </div>
+
         {/* Table */}
         <div
           className="rounded-2xl overflow-hidden mb-8"
