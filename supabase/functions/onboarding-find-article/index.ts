@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
+import { logError } from "../_shared/logError.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -200,6 +201,7 @@ serve(async (req) => {
     return json({ found: true, article: pick });
   } catch (e) {
     console.error("onboarding-find-article error:", e);
+    EdgeRuntime.waitUntil(logError("onboarding-find-article", e, { user_id: null }));
     // Even on unexpected error, prefer a curated fallback over dumping the user.
     const pick = CURATED_FALLBACKS[0];
     outcome = "error";
