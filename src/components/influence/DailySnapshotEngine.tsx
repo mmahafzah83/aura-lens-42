@@ -15,8 +15,7 @@ const DailySnapshotEngine = () => {
   const loadSnapshots = async () => {
     setLoading(true);
     try {
-      let query = supabase
-        .from("influence_snapshots")
+      let query: any = (supabase.from("influence_timeline" as any) as any)
         .select("snapshot_date, followers, follower_growth, impressions, reactions, comments, shares, engagement_rate, source_type")
         .order("snapshot_date", { ascending: false });
       if (range !== "all") {

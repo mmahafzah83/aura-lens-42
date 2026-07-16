@@ -36,9 +36,10 @@ const LinkedInConnector = ({ onConnectionChange, onSyncStateChange }: LinkedInCo
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { setStatus({ connected: false }); setLoading(false); return; }
 
-      const [statusRes, snapshotRes] = await Promise.all([
+      const [statusRes, timelineRes, postsRes] = await Promise.all([
         supabase.functions.invoke("linkedin-oauth", { body: { action: "status" } }),
-        (supabase.from("influence_snapshots" as any) as any).select("id, post_count").order("snapshot_date", { ascending: false }).limit(30),
+        (supabase.from("influence_timeline" as any) as any).select("snapshot_date").order("snapshot_date", { ascending: false }).limit(30),
+        (supabase.from("linkedin_post_metrics" as any) as any).select("post_id", { count: "exact", head: true }),
       ]);
 
       if (statusRes.error) {
@@ -48,9 +49,8 @@ const LinkedInConnector = ({ onConnectionChange, onSyncStateChange }: LinkedInCo
         onConnectionChange?.(statusRes.data?.connected || false, statusRes.data?.connection || null);
       }
 
-      const snaps = snapshotRes.data || [];
-      setSnapshotCount(snaps.length);
-      setPostCount(snaps[0]?.post_count || 0);
+      setSnapshotCount((timelineRes.data || []).length);
+      setPostCount(postsRes.count || 0);
     } catch {
       setStatus({ connected: false });
     }

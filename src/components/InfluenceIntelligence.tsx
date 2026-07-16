@@ -33,16 +33,27 @@ const EmptyPanel = ({ icon: Icon, message }: { icon: any; message: string }) => 
 
 const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = false, syncFailed = false, onSnapshotsLoaded }: Props) => {
   const [snapshots, setSnapshots] = useState<any[]>([]);
+  const [timeline, setTimeline] = useState<any[]>([]);
+  const [postsAnalyzed, setPostsAnalyzed] = useState<number>(0);
   const [loadingSnapshots, setLoadingSnapshots] = useState(true);
   const [performanceTab, setPerformanceTab] = useState<"authority" | "posts" | "audience">("authority");
 
   useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
-    const { data } = await (supabase.from("influence_snapshots" as any) as any)
-      .select("*").order("snapshot_date", { ascending: false }).limit(30);
-    setSnapshots(data || []);
-    onSnapshotsLoaded?.((data || []).length);
+    const [snapRes, tlRes, postsRes] = await Promise.all([
+      (supabase.from("influence_snapshots" as any) as any)
+        .select("*").order("snapshot_date", { ascending: false }).limit(30),
+      (supabase.from("influence_timeline" as any) as any)
+        .select("snapshot_date, followers, follower_growth, engagement_rate, impressions, reactions, comments, shares, source_type")
+        .order("snapshot_date", { ascending: false }).limit(30),
+      (supabase.from("linkedin_post_metrics" as any) as any)
+        .select("post_id", { count: "exact", head: true }),
+    ]);
+    setSnapshots(snapRes.data || []);
+    setTimeline(tlRes.data || []);
+    setPostsAnalyzed(postsRes.count || 0);
+    onSnapshotsLoaded?.((tlRes.data || []).length);
     setLoadingSnapshots(false);
   };
 
@@ -60,10 +71,10 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = fa
   }, [linkedInConnected, snapshots, syncing, syncFailed]);
 
   const latest = snapshots[0] || null;
-  const followers = latest?.followers || 0;
-  const growth = latest?.follower_growth || 0;
-  const engagement = Number(latest?.engagement_rate) || 0;
-  const postCount = latest?.post_count || 0;
+  const latestTl = timeline[0] || null;
+  const followers = latestTl?.followers || 0;
+  const growth = latestTl?.follower_growth || 0;
+  const engagement = Number(latestTl?.engagement_rate) || 0;
   const authorityTrajectory = latest?.authority_trajectory as string | null;
   const authorityThemes = (latest?.authority_themes || []) as string[];
   const toneAnalysis = (latest?.tone_analysis || []) as { tone: string; score: number; impact: string }[];
@@ -75,16 +86,16 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = fa
   const strategicRecs = recommendations.filter(r => !r.startsWith("📝"));
 
   const chartData = useMemo(() =>
-    [...snapshots].reverse().map((s: any) => ({
+    [...timeline].reverse().map((s: any) => ({
       date: s.snapshot_date?.slice(5) || "",
       followers: s.followers || 0,
     })),
-  [snapshots]);
+  [timeline]);
 
   const formatData = Object.entries(formatBreakdown).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
   const formatTotal = formatData.reduce((sum, i) => sum + i.count, 0);
 
-  const hasRealData = snapshots.length > 0;
+  const hasRealData = timeline.length > 0 || snapshots.length > 0;
 
   if (loadingSnapshots) {
     return (
@@ -169,7 +180,7 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = fa
             { label: "Followers", value: followers.toLocaleString() },
             { label: "Growth", value: `${growth > 0 ? "+" : ""}${growth}`, color: growth > 0 ? "text-emerald-400" : growth < 0 ? "text-destructive" : undefined },
             { label: "Engagement", value: engagement > 0 ? `${engagement.toFixed(1)}%` : "—" },
-            { label: "Posts Analyzed", value: postCount.toString() },
+            { label: "Posts Analyzed", value: postsAnalyzed.toString() },
           ].map((m) => (
             <div key={m.label} className="glass-card rounded-2xl p-5 text-center">
               <p className={`text-2xl font-bold tabular-nums ${m.color || "text-foreground"}`}>{m.value}</p>
