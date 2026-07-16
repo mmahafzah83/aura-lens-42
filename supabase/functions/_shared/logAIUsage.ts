@@ -3,6 +3,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 const RATES: Record<string, { in: number; out: number }> = {
   "claude-sonnet-4-5-20250929": { in: 3, out: 15 },
   "claude-sonnet-4-20250514":   { in: 3, out: 15 },
+  "sonar":                      { in: 1, out: 1 },
+  "sonar-pro":                  { in: 3, out: 15 },
+  "sonar-reasoning":            { in: 1, out: 5 },
 };
 function estimateCost(model: string, i: number, o: number) {
   const r = RATES[model] || { in: 0, out: 0 };
