@@ -163,7 +163,14 @@ async function syncConnection(
     ...reshares.keys(),
     ...followerGains.keys(),
   ]);
-  if (!allDates.size && membersReachedTotal === null) return report;
+  if (!allDates.size && membersReachedTotal === null) {
+    // Still record that we attempted a sync so the UI shows a truthful timestamp.
+    await adminClient
+      .from("linkedin_connections")
+      .update({ last_synced_at: new Date().toISOString() })
+      .eq("user_id", conn.user_id);
+    return report;
+  }
 
   const sortedDates = [...allDates].sort();
   const latestDate = sortedDates[sortedDates.length - 1] ?? new Date().toISOString().slice(0, 10);
