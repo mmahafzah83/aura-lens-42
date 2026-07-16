@@ -209,7 +209,7 @@ const LinkedInConnector = ({ onConnectionChange, onSyncStateChange }: LinkedInCo
                   <span className="text-label text-xs">Snapshots</span>
                 </div>
                 <p className="text-sm font-semibold text-foreground tabular-nums">
-                  {followers !== null ? followers.toLocaleString() : snapshotCount > 0 ? "Collecting…" : "—"}
+                  {snapshotCount > 0 ? snapshotCount : "—"}
                 </p>
               </div>
             </div>
