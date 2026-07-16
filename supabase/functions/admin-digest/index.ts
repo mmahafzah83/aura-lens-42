@@ -212,7 +212,41 @@ Deno.serve(async (req) => {
     const obTotal = (obRows || []).length;
     const onboardingOk = obDegraded === 0;
 
-    const pipelinesOk = !scoringStale && onboardingOk;
+    // Capture unprocessed — entries >30m old without a processed source_registry row.
+    const thirtyMinAgoIso = new Date(nowMs - 30 * 60 * 1000).toISOString();
+    const windowStartIso = new Date(nowMs - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: recentEntries } = await admin
+      .from("entries")
+      .select("id, user_id, created_at")
+      .lt("created_at", thirtyMinAgoIso)
+      .gte("created_at", windowStartIso);
+    const entryList = (recentEntries || []) as Array<{ id: string; user_id: string; created_at: string }>;
+    let captureUnprocessedCount = 0;
+    let captureOldestAgeH: number | null = null;
+    let captureDistinctUsers = 0;
+    if (entryList.length > 0) {
+      const ids = entryList.map((e) => e.id);
+      const { data: regRows } = await admin
+        .from("source_registry")
+        .select("source_id")
+        .eq("source_type", "entry")
+        .eq("processed", true)
+        .in("source_id", ids);
+      const processedSet = new Set((regRows || []).map((r: any) => r.source_id as string));
+      const unprocessed = entryList.filter((e) => !processedSet.has(e.id));
+      captureUnprocessedCount = unprocessed.length;
+      if (unprocessed.length > 0) {
+        const oldestTs = unprocessed.reduce(
+          (m, e) => Math.min(m, new Date(e.created_at).getTime()),
+          Number.POSITIVE_INFINITY,
+        );
+        captureOldestAgeH = Math.round((nowMs - oldestTs) / 3.6e6);
+        captureDistinctUsers = new Set(unprocessed.map((e) => e.user_id)).size;
+      }
+    }
+    const captureOk = captureUnprocessedCount === 0;
+
+    const pipelinesOk = !scoringStale && onboardingOk && captureOk;
 
     // ===== VERDICT =====
     const anyApiFailed = !!(apiLatest && (apiLatest.failed || 0) > 0);
@@ -226,6 +260,7 @@ Deno.serve(async (req) => {
       aiFail24 > 10,
       hasCriticalOrHigh,
       scoringStale,
+      !captureOk,
     ];
     const attentionCount = attentionFlags.filter(Boolean).length;
     const critical =
@@ -233,7 +268,8 @@ Deno.serve(async (req) => {
       cronFailCount > 0 ||
       pctBudget >= 100 ||
       hasCriticalOrHigh ||
-      scoringStale;
+      scoringStale ||
+      !captureOk;
     let verdictHtml: string;
     if (attentionCount === 0) {
       verdictHtml = `<div style="background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;padding:14px 16px;border-radius:8px;font-weight:600">🟢 All systems healthy — nothing needs you today.</div>`;
@@ -328,12 +364,17 @@ Deno.serve(async (req) => {
     const onboardingLine = onboardingOk
       ? `Onboarding: ✅ ${obTotal} run${obTotal === 1 ? "" : "s"} in 24h${obTotal > 0 ? " — all perplexity" : ""}`
       : `Onboarding: ⚠️ ${obDegraded}/${obTotal} degraded · ${obBreakdownTxt}`;
+    const captureLine = captureOk
+      ? `Capture → Signal: ✅ no entries stuck`
+      : `Capture → Signal: ⚠️ <strong>${captureUnprocessedCount}</strong> unprocessed · oldest <strong>${captureOldestAgeH}h</strong> · users: <strong>${captureDistinctUsers}</strong>`;
     const pipelinesAction =
       scoringStale
         ? action("Scoring cron did not produce output in 26h. Check calculate-aura-score / compute-imprint.")
-        : !onboardingOk
-          ? action("Onboarding is using fallback paths. Check perplexity API health.")
-          : "";
+        : !captureOk
+          ? action("extract-evidence not completing. Check ef_error_log and re-run for stuck entries.")
+          : !onboardingOk
+            ? action("Onboarding is using fallback paths. Check perplexity API health.")
+            : "";
 
     const html = `
 <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;max-width:640px;margin:0 auto;color:#111;line-height:1.5;padding:8px">
@@ -381,6 +422,7 @@ Deno.serve(async (req) => {
   ${meaning("Is each core loop actually moving?")}
   <div style="margin-top:4px">${scoringLine}</div>
   <div style="margin-top:4px">${onboardingLine}</div>
+  <div style="margin-top:4px">${captureLine}</div>
   ${pipelinesAction}
 
   ${sectionTitle("📈", "Growth", growthOk)}
@@ -424,6 +466,11 @@ Deno.serve(async (req) => {
       pipelines: {
         scoring_age_hours: scoreAgeH,
         onboarding: { total: obTotal, degraded: obDegraded, breakdown: obBreakdown },
+        capture_unprocessed: {
+          count: captureUnprocessedCount,
+          oldest_age_hours: captureOldestAgeH,
+          distinct_users: captureDistinctUsers,
+        },
       },
       new_profiles: newProfiles || 0, active_users: activeUsers,
     } });
