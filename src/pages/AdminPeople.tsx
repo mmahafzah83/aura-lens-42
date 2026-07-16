@@ -454,6 +454,7 @@ export default function AdminPeople() {
                   <th style={th}>Posts</th>
                   <th style={th}>Imprint</th>
                   <th style={th}>Stage</th>
+                  <th style={th}>Last nudge</th>
                   <th style={th}>Status</th>
                 </tr>
               </thead>
@@ -477,6 +478,11 @@ export default function AdminPeople() {
                       <td style={td}>{r.posts}</td>
                       <td style={td}>{r.imprint ?? "—"}</td>
                       <td style={td}>{stageOf(r.imprint)}</td>
+                      <td style={td}>
+                        {r.last_nudge_at
+                          ? <span>{r.last_nudge_type} <span style={{ color: "var(--glass-2)" }}>· {formatSmartDate(r.last_nudge_at)}</span></span>
+                          : "—"}
+                      </td>
                       <td style={td}>
                         <span style={{
                           background: STATUS_COLOR[st],
