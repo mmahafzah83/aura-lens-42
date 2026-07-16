@@ -36,10 +36,14 @@ const LinkedInConnector = ({ onConnectionChange, onSyncStateChange }: LinkedInCo
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { setStatus({ connected: false }); setLoading(false); return; }
 
+      const { data: { user } } = await supabase.auth.getUser();
+      const postsQuery = (supabase.from("linkedin_post_metrics" as any) as any)
+        .select("post_id", { count: "exact", head: true });
+      if (user?.id) postsQuery.eq("user_id", user.id);
       const [statusRes, timelineRes, postsRes] = await Promise.all([
         supabase.functions.invoke("linkedin-oauth", { body: { action: "status" } }),
-        (supabase.from("influence_timeline" as any) as any).select("snapshot_date").order("snapshot_date", { ascending: false }).limit(30),
-        (supabase.from("linkedin_post_metrics" as any) as any).select("post_id", { count: "exact", head: true }),
+        (supabase.from("influence_timeline" as any) as any).select("snapshot_date, followers").order("snapshot_date", { ascending: false }).limit(30),
+        postsQuery,
       ]);
 
       if (statusRes.error) {
@@ -191,7 +195,7 @@ const LinkedInConnector = ({ onConnectionChange, onSyncStateChange }: LinkedInCo
                   <FileText className="w-3.5 h-3.5 text-muted-foreground/50" />
                   <span className="text-label text-xs">Posts</span>
                 </div>
-                <p className="text-sm font-semibold text-foreground tabular-nums">{postCount}</p>
+                <p className="text-sm font-semibold text-foreground tabular-nums">{postCount > 0 ? postCount : "—"}</p>
               </div>
 
               <div className="p-3 rounded-xl bg-secondary/20 border border-border/10">
@@ -199,7 +203,9 @@ const LinkedInConnector = ({ onConnectionChange, onSyncStateChange }: LinkedInCo
                   <Database className="w-3.5 h-3.5 text-muted-foreground/50" />
                   <span className="text-label text-xs">Snapshots</span>
                 </div>
-                <p className="text-sm font-semibold text-foreground tabular-nums">{snapshotCount}</p>
+                <p className="text-sm font-semibold text-foreground tabular-nums">
+                  {snapshotCount > 0 ? snapshotCount : "—"}
+                </p>
               </div>
             </div>
 

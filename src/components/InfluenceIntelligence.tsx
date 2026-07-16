@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
+import { latestRealFollowers, realFollowerSeries } from "@/lib/influenceState";
 import {
   AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
@@ -41,14 +42,17 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = fa
   useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const postsQuery = (supabase.from("linkedin_post_metrics" as any) as any)
+      .select("post_id", { count: "exact", head: true });
+    if (user?.id) postsQuery.eq("user_id", user.id);
     const [snapRes, tlRes, postsRes] = await Promise.all([
       (supabase.from("influence_snapshots" as any) as any)
         .select("*").order("snapshot_date", { ascending: false }).limit(30),
       (supabase.from("influence_timeline" as any) as any)
         .select("snapshot_date, followers, follower_growth, engagement_rate, impressions, reactions, comments, shares, source_type")
         .order("snapshot_date", { ascending: false }).limit(30),
-      (supabase.from("linkedin_post_metrics" as any) as any)
-        .select("post_id", { count: "exact", head: true }),
+      postsQuery,
     ]);
     setSnapshots(snapRes.data || []);
     setTimeline(tlRes.data || []);
@@ -72,7 +76,7 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = fa
 
   const latest = snapshots[0] || null;
   const latestTl = timeline[0] || null;
-  const followers = latestTl?.followers || 0;
+  const realFollowers = latestRealFollowers(timeline);
   const growth = latestTl?.follower_growth || 0;
   const engagement = Number(latestTl?.engagement_rate) || 0;
   const authorityTrajectory = latest?.authority_trajectory as string | null;
@@ -85,17 +89,17 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = fa
   const writeNextRecs = recommendations.filter(r => r.startsWith("📝")).map(r => r.replace("📝 Write next: ", ""));
   const strategicRecs = recommendations.filter(r => !r.startsWith("📝"));
 
-  const chartData = useMemo(() =>
-    [...timeline].reverse().map((s: any) => ({
-      date: s.snapshot_date?.slice(5) || "",
-      followers: s.followers || 0,
-    })),
-  [timeline]);
+  const chartData = useMemo(() => realFollowerSeries(timeline), [timeline]);
 
   const formatData = Object.entries(formatBreakdown).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
   const formatTotal = formatData.reduce((sum, i) => sum + i.count, 0);
 
-  const hasRealData = timeline.length > 0 || snapshots.length > 0;
+  const hasRealData =
+    realFollowers !== null ||
+    postsAnalyzed > 0 ||
+    snapshots.some(
+      (s: any) => s.authority_trajectory || (s.authority_themes || []).length
+    );
 
   if (loadingSnapshots) {
     return (
@@ -116,12 +120,14 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = fa
         </div>
       );
     }
-    if (connectionState === "connected_no_sync") {
+    if (linkedInConnected) {
       return (
         <div className="glass-card rounded-2xl p-10 text-center animate-fade-in">
           <Activity className="w-10 h-10 text-primary/15 mx-auto mb-4" />
-          <p className="text-sm font-medium text-foreground mb-1">LinkedIn connected — awaiting first analytics sync.</p>
-          <p className="text-xs text-muted-foreground/70">Click "Sync Now" above to pull your first analytics snapshot.</p>
+          <p className="text-sm font-medium text-foreground mb-1">
+            We're collecting your first analytics — your dashboard fills in within 24 hours of connecting.
+          </p>
+          <p className="text-xs text-muted-foreground/70">You can also click "Sync Now" above to pull a snapshot immediately.</p>
         </div>
       );
     }
@@ -177,10 +183,14 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = fa
         {/* Metric row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           {[
-            { label: "Followers", value: followers.toLocaleString() },
-            { label: "Growth", value: `${growth > 0 ? "+" : ""}${growth}`, color: growth > 0 ? "text-emerald-400" : growth < 0 ? "text-destructive" : undefined },
+            { label: "Followers", value: realFollowers === null ? "Collecting…" : realFollowers.toLocaleString() },
+            {
+              label: "Growth",
+              value: realFollowers === null ? "—" : `${growth > 0 ? "+" : ""}${growth}`,
+              color: realFollowers !== null && growth > 0 ? "text-emerald-400" : realFollowers !== null && growth < 0 ? "text-destructive" : undefined,
+            },
             { label: "Engagement", value: engagement > 0 ? `${engagement.toFixed(1)}%` : "—" },
-            { label: "Posts Analyzed", value: postsAnalyzed.toString() },
+            { label: "Posts Analyzed", value: postsAnalyzed > 0 ? String(postsAnalyzed) : "—" },
           ].map((m) => (
             <div key={m.label} className="glass-card rounded-2xl p-5 text-center">
               <p className={`text-2xl font-bold tabular-nums ${m.color || "text-foreground"}`}>{m.value}</p>
@@ -215,7 +225,7 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = fa
         <div className="animate-fade-in">
           {performanceTab === "authority" && (
             <div className="glass-card rounded-2xl p-8 space-y-5">
-              {chartData.length > 1 ? (
+              {chartData.length >= 2 ? (
                 <div className="h-52">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={chartData}>
@@ -236,7 +246,7 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = fa
                   </ResponsiveContainer>
                 </div>
               ) : (
-                <EmptyPanel icon={TrendingUp} message="Sync LinkedIn at least twice to see follower trends." />
+                <EmptyPanel icon={TrendingUp} message="Building your follower trend — appears after your first couple of daily syncs." />
               )}
             </div>
           )}
