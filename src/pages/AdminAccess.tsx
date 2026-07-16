@@ -415,7 +415,7 @@ const AdminAccess = () => {
             {counts.pending} pending
           </span>
           <span className="text-xs px-3 py-1.5 rounded-full bg-green-500/15 text-green-300 border border-green-500/30">
-            {counts.approved} approved
+            {counts.invited} invited
           </span>
           <span className="text-xs px-3 py-1.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30">
             {counts.active} active
