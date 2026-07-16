@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
+import { logError } from "../_shared/logError.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -210,6 +211,7 @@ Analyse this professional using all six frameworks and provide the complete bran
     });
   } catch (e) {
     console.error("brand-assessment error:", e);
+    EdgeRuntime.waitUntil(logError("brand-assessment", e, { user_id: null }));
     return new Response(
       JSON.stringify({
         interpretation: "",

@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { buildConfidenceExplanation } from "../_shared/confidence.ts";
 import { canonicalizeTags } from "../_shared/themeCanon.ts";
+import { logError } from "../_shared/logError.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -469,6 +470,7 @@ ${identityCtx}`;
 
   } catch (error) {
     console.error("detect-signals-v2 error:", error);
+    EdgeRuntime.waitUntil(logError("detect-signals-v2", error, { user_id: null }));
     return new Response(JSON.stringify({ error: (error as Error).message }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

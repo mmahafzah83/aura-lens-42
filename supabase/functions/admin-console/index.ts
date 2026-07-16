@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.99.3";
+import { logError } from "../_shared/logError.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -520,6 +521,7 @@ serve(async (req) => {
 
     return json({ error: "unknown action" }, 400);
   } catch (e: any) {
+    EdgeRuntime.waitUntil(logError("admin-console", e, { user_id: null }));
     return json({ error: e?.message ?? "internal error" }, 500);
   }
 });
