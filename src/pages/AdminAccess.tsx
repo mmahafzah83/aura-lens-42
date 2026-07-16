@@ -872,7 +872,9 @@ const AdminAccess = () => {
             <div className="space-y-2">
               {rows.map((r) => {
                 const profile = activeUsers.find((u) => u.email.toLowerCase() === r.email.toLowerCase());
-                const isAdmin = r.email.toLowerCase() === "fayiz@aura-intel.org" || r.email.toLowerCase().includes("9e0c6ee1");
+                const isProtected =
+                  profile?.user_id === FOUNDER_ID ||
+                  r.email.toLowerCase() === PROTECTED_EMAIL;
                 const isDeleting = deletingEmail === r.email;
                 return (
                   <div
@@ -894,37 +896,18 @@ const AdminAccess = () => {
                         <span className="ml-2">Joined: {formatDate(r.invited_at || r.created_at || r.requested_at)}</span>
                       </div>
                     </div>
-                    {isAdmin ? (
-                      <span className="text-xs px-2 py-1 rounded" style={{ color: "var(--ink-5)", border: "1px dashed var(--ink-3)" }} title="Cannot delete your own account">
+                    {isProtected ? (
+                      <span className="text-xs px-2 py-1 rounded" style={{ color: "var(--ink-5)", border: "1px dashed var(--ink-3)" }} title="Protected admin account">
                         Protected
                       </span>
-                    ) : confirmEmail === r.email ? (
-                      <div className="flex items-center gap-2 shrink-0">
-                        <button
-                          onClick={() => setConfirmEmail(null)}
-                          disabled={isDeleting}
-                          className="px-3 py-1.5 text-xs rounded-md disabled:opacity-50"
-                          style={{ border: "1px solid var(--ink-3)", color: "var(--ink-7)" }}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={() => handleDeleteUser(r.email)}
-                          disabled={isDeleting}
-                          className="px-3 py-1.5 text-xs rounded-md font-medium inline-flex items-center gap-1.5 disabled:opacity-60"
-                          style={{ backgroundColor: "rgb(220,38,38)", color: "#fff" }}
-                        >
-                          {isDeleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
-                          Delete permanently
-                        </button>
-                      </div>
                     ) : (
                       <button
-                        onClick={() => setConfirmEmail(r.email)}
+                        onClick={() => setConfirmDeleteRow({ email: r.email, name: r.name })}
+                        disabled={isDeleting}
                         className="px-3 py-1.5 text-xs rounded-md inline-flex items-center gap-1.5 shrink-0"
                         style={{ border: "1px solid rgba(220,38,38,0.4)", color: "rgb(248,113,113)" }}
                       >
-                        <Trash2 className="w-3 h-3" /> Delete user
+                        {isDeleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />} Delete user
                       </button>
                     )}
                   </div>
