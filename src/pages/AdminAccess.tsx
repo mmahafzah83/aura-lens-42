@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Check, Copy, Loader2, Send, Trash2 } from "lucide-react";
+import { Loader2, Send, Trash2 } from "lucide-react";
 import AdminShell from "@/components/admin/AdminShell";
 import {
   AlertDialog,
@@ -103,48 +103,18 @@ const AdminAccess = () => {
   const [seedSending, setSeedSending] = useState(false);
 
   // Inactivity alert
-  const [copiedUser, setCopiedUser] = useState<string | null>(null);
 
   // Delete-user state
   const [confirmDeleteRow, setConfirmDeleteRow] = useState<{ email: string; name: string | null } | null>(null);
   const [deletingEmail, setDeletingEmail] = useState<string | null>(null);
 
   // In-page tabs + waitlist search (presentation only)
-  type TabKey = "waitlist" | "users" | "feedback" | "health";
+  type TabKey = "waitlist" | "users" | "feedback";
   const [activeTab, setActiveTab] = useState<TabKey>("waitlist");
   const [searchQuery, setSearchQuery] = useState("");
 
   const FOUNDER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
   const PROTECTED_EMAIL = "mmahafzah8386@gmail.com";
-
-  // QA health check
-  type QAResult = { step: number; action: string; passed: boolean; error: string | null; duration_ms: number };
-  type QAReport = { id: string; run_at: string; total_checks: number; passed: number; failed: number; results: QAResult[] };
-  const [qaReports, setQaReports] = useState<QAReport[]>([]);
-  const [qaRunning, setQaRunning] = useState(false);
-
-  const fetchQaReports = async () => {
-    const { data } = await supabase
-      .from("qa_reports")
-      .select("id, run_at, total_checks, passed, failed, results")
-      .order("run_at", { ascending: false })
-      .limit(10);
-    setQaReports((data || []) as QAReport[]);
-  };
-
-  const runQaCheck = async () => {
-    setQaRunning(true);
-    try {
-      const { error } = await supabase.functions.invoke("run-qa-walkthrough", { body: {} });
-      if (error) throw error;
-      toast.success("QA check complete");
-      await fetchQaReports();
-    } catch (e: any) {
-      toast.error(e?.message || "QA check failed");
-    } finally {
-      setQaRunning(false);
-    }
-  };
 
   const seedCapture = async () => {
     const url = seedUrl.trim();
@@ -206,7 +176,6 @@ const AdminAccess = () => {
   useEffect(() => {
     if (!authChecked) return;
     fetchRows();
-    fetchQaReports();
     (async () => {
       const { data } = await supabase
         .from("beta_feedback")
@@ -426,7 +395,6 @@ const AdminAccess = () => {
             { k: "waitlist", label: "Waitlist" },
             { k: "users", label: "Users" },
             { k: "feedback", label: "Feedback" },
-            { k: "health", label: "Health" },
           ] as { k: TabKey; label: string }[]).map((t) => (
             <button
               key={t.k}
@@ -456,91 +424,6 @@ const AdminAccess = () => {
             {counts.active} active
           </span>
         </div>
-
-        {/* Inactive users alert */}
-        {(() => {
-          const now = new Date();
-          const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
-          const inactiveUsers = (activeUsers || []).filter((u) => {
-            if (!u.last_sign_in_at) return true;
-            return new Date(u.last_sign_in_at) < fortyEightHoursAgo;
-          });
-          if (inactiveUsers.length === 0) {
-            return (
-              <div className="flex items-center gap-2 mb-6">
-                <span className="text-xs px-3 py-1.5 rounded-full bg-green-500/15 text-green-300 border border-green-500/30 inline-flex items-center gap-1.5">
-                  All users active <Check className="w-3 h-3" />
-                </span>
-              </div>
-            );
-          }
-          return (
-            <div
-              className="rounded-2xl p-5 mb-6"
-              style={{
-                backgroundColor: "var(--surface-ink-raised)",
-                border: "1px solid var(--ink-3)",
-                borderLeft: "4px solid #F97316",
-              }}
-            >
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-sm font-semibold" style={{ color: "var(--ink-7)" }}>
-                  ⚠ Needs Attention
-                </span>
-                <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: "rgba(249,115,22,0.15)", color: "#F97316", border: "1px solid rgba(249,115,22,0.3)" }}>
-                  {inactiveUsers.length}
-                </span>
-              </div>
-              <div className="space-y-2">
-                {inactiveUsers.map((u) => {
-                  const name = u.first_name || u.email;
-                  const message = `${name}، شفت إنك ما دخلت أورا من فترة. كل شيء تمام؟ أقدر أساعدك بشيء؟`;
-                  const isCopied = copiedUser === (u.user_id || u.email);
-                  return (
-                    <div
-                      key={u.user_id || u.email}
-                      className="flex items-center justify-between gap-3 p-2.5 rounded-md"
-                      style={{ backgroundColor: "var(--ink)", border: "1px solid var(--ink-3)" }}
-                    >
-                      <div className="min-w-0">
-                        <div className="text-sm font-medium truncate" style={{ color: "var(--ink-7)" }}>
-                          {name}
-                        </div>
-                        <div className="text-xs" style={{ color: "var(--ink-5)" }}>
-                          {relativeTime(u.last_sign_in_at)}
-                        </div>
-                      </div>
-                      <button
-                        onClick={async () => {
-                          try {
-                            await navigator.clipboard.writeText(message);
-                            setCopiedUser(u.user_id || u.email);
-                            toast.success("Message copied — send via WhatsApp");
-                            setTimeout(() => setCopiedUser((prev) => (prev === (u.user_id || u.email) ? null : prev)), 2000);
-                          } catch {
-                            toast.error("Copy failed");
-                          }
-                        }}
-                        className="text-xs px-3 py-1.5 rounded-md inline-flex items-center gap-1.5 shrink-0 transition-colors"
-                        style={{ border: "1px solid var(--ink-3)", color: "var(--ink-5)" }}
-                      >
-                        {isCopied ? (
-                          <>
-                            <Check className="w-3 h-3" style={{ color: "#22c55e" }} /> Copied
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3 h-3" /> Copy WhatsApp
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })()}
 
         {/* Filter bar */}
         <div className="flex flex-wrap gap-2 mb-5">
@@ -856,55 +739,6 @@ const AdminAccess = () => {
           </div>
         </div>
 
-        {/* Active users */}
-        <div
-          className="rounded-2xl p-6 mt-8"
-          style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}
-        >
-          <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--ink-7)" }}>
-            Active users
-          </h2>
-          <p className="text-xs mb-4" style={{ color: "var(--ink-5)" }}>
-            {activeUsers.length} {activeUsers.length === 1 ? "person has" : "people have"} signed in.
-          </p>
-          {activeLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--brand)" }} />
-            </div>
-          ) : activeUsers.length === 0 ? (
-            <div className="text-xs" style={{ color: "var(--ink-5)" }}>No active users yet.</div>
-          ) : (
-            <div className="overflow-x-auto rounded-xl" style={{ border: "1px solid var(--ink-3)" }}>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-xs uppercase tracking-wider" style={{ color: "var(--ink-5)", backgroundColor: "rgba(255,255,255,0.02)" }}>
-                    <th className="text-left px-4 py-3 font-medium">Name</th>
-                    <th className="text-left px-4 py-3 font-medium">Email</th>
-                    <th className="text-left px-4 py-3 font-medium">Sector</th>
-                    <th className="text-left px-4 py-3 font-medium">Last login</th>
-                    <th className="text-right px-4 py-3 font-medium">Captures</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {activeUsers.map((u) => (
-                    <tr key={u.email} style={{ borderTop: "1px solid var(--ink-3)" }}>
-                      <td className="px-4 py-3 text-sm" style={{ color: "var(--ink-7)" }}>
-                        {u.first_name || "—"}
-                      </td>
-                      <td className="px-4 py-3 text-xs" style={{ color: "var(--ink-5)" }}>{u.email}</td>
-                      <td className="px-4 py-3 text-xs" style={{ color: "var(--ink-5)" }}>{u.sector || "—"}</td>
-                      <td className="px-4 py-3 text-xs" style={{ color: "var(--ink-5)" }}>
-                        {formatDate(u.last_sign_in_at || u.activated_at)}
-                      </td>
-                      <td className="px-4 py-3 text-xs text-right" style={{ color: "var(--ink-7)" }}>{u.captures}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
         {/* User management — delete users + their data */}
         <div
           className="rounded-2xl p-6 mt-8"
@@ -1029,70 +863,6 @@ const AdminAccess = () => {
 
         </>)}
 
-        {activeTab === "health" && (<>
-        {/* System Health */}
-        <div
-          className="rounded-2xl p-6"
-          style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}
-        >
-          <div className="flex items-start justify-between gap-4 mb-4">
-            <div>
-              <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--ink-7)" }}>
-                System Health
-              </h2>
-              <p className="text-xs" style={{ color: "var(--ink-5)" }}>
-                {qaReports[0]
-                  ? `Last check: ${new Date(qaReports[0].run_at).toLocaleString()} — ${qaReports[0].passed}/${qaReports[0].total_checks} ${qaReports[0].failed === 0 ? "✅" : "⚠️"}`
-                  : "No checks run yet."}
-              </p>
-            </div>
-            <button
-              onClick={runQaCheck}
-              disabled={qaRunning}
-              className="px-4 py-2 rounded-md text-xs font-medium inline-flex items-center gap-2 disabled:opacity-60 whitespace-nowrap"
-              style={{ backgroundColor: "var(--brand)", color: "var(--ink)" }}
-            >
-              {qaRunning ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
-              Run QA Check
-            </button>
-          </div>
-          {qaReports.length === 0 ? (
-            <div className="text-xs" style={{ color: "var(--ink-5)" }}>No runs yet.</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-xs uppercase tracking-wider" style={{ color: "var(--ink-5)" }}>
-                    <th className="text-left px-3 py-2 font-medium">Date</th>
-                    <th className="text-left px-3 py-2 font-medium">Result</th>
-                    <th className="text-left px-3 py-2 font-medium">Failed steps</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {qaReports.map((r) => {
-                    const failed = (r.results || []).filter((x) => !x.passed);
-                    return (
-                      <tr key={r.id} style={{ borderTop: "1px solid var(--ink-3)" }}>
-                        <td className="px-3 py-2 text-xs" style={{ color: "var(--ink-5)" }}>
-                          {new Date(r.run_at).toLocaleString()}
-                        </td>
-                        <td className="px-3 py-2 text-xs" style={{ color: r.failed === 0 ? "#10b981" : "#f59e0b" }}>
-                          {r.passed}/{r.total_checks} {r.failed === 0 ? "✅" : "⚠️"}
-                        </td>
-                        <td className="px-3 py-2 text-xs" style={{ color: "var(--ink-7)" }}>
-                          {failed.length === 0
-                            ? "—"
-                            : failed.map((f) => `${f.step}. ${f.action}`).join(", ")}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-        </>)}
 
       <AlertDialog
         open={!!confirmInviteRow}

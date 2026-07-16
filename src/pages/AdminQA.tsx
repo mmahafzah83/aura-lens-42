@@ -204,6 +204,35 @@ const AdminQA = () => {
   const screenshotsRef = useRef<{ page: string; imageBase64: string }[]>([]);
   const iframeContainerRef = useRef<HTMLDivElement | null>(null);
 
+  // End-to-end walkthrough (run-qa-walkthrough + qa_reports)
+  type QAResult = { step: number; action: string; passed: boolean; error: string | null; duration_ms: number };
+  type QAReport = { id: string; run_at: string; total_checks: number; passed: number; failed: number; results: QAResult[] };
+  const [qaReports, setQaReports] = useState<QAReport[]>([]);
+  const [qaRunning, setQaRunning] = useState(false);
+
+  const fetchQaReports = async () => {
+    const { data } = await supabase
+      .from("qa_reports")
+      .select("id, run_at, total_checks, passed, failed, results")
+      .order("run_at", { ascending: false })
+      .limit(10);
+    setQaReports((data || []) as QAReport[]);
+  };
+
+  const runQaCheck = async () => {
+    setQaRunning(true);
+    try {
+      const { error } = await supabase.functions.invoke("run-qa-walkthrough", { body: {} });
+      if (error) throw error;
+      toast.success("QA check complete");
+      await fetchQaReports();
+    } catch (e: any) {
+      toast.error(e?.message || "QA check failed");
+    } finally {
+      setQaRunning(false);
+    }
+  };
+
   // Auth gate
   useEffect(() => {
     let cancelled = false;
@@ -234,6 +263,7 @@ const AdminQA = () => {
   useEffect(() => {
     if (!authChecked) return;
     fetchHistory();
+    fetchQaReports();
   }, [authChecked]);
 
   // Resume mid-run after navigation? We restrict cross-route DOM audits to same-page virtual paths via SPA navigate.
@@ -600,6 +630,54 @@ const AdminQA = () => {
     >
       {/* Hidden iframe container used by the DOM audit to load other routes without unmounting this page */}
       <div ref={iframeContainerRef} aria-hidden="true" style={{ position: "fixed", left: -99999, top: 0, width: 0, height: 0, overflow: "hidden", pointerEvents: "none" }} />
+
+      {/* End-to-end walkthrough (relocated from Access) */}
+      <Section title="End-to-end walkthrough">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+          <div style={{ fontSize: 14, color: "#D4CCBC" }}>
+            {qaReports[0]
+              ? `Last check: ${new Date(qaReports[0].run_at).toLocaleString()} — ${qaReports[0].passed}/${qaReports[0].total_checks} ${qaReports[0].failed === 0 ? "✅" : "⚠️"}`
+              : "No checks run yet."}
+          </div>
+          <PrimaryBtn onClick={runQaCheck} disabled={qaRunning}>
+            {qaRunning ? <Loader2 size={14} className="animate-spin" /> : null}
+            Run QA Check
+          </PrimaryBtn>
+        </div>
+        {qaReports.length === 0 ? (
+          <div style={{ marginTop: 12, fontSize: 14, color: "#B8B0A2" }}>No runs yet.</div>
+        ) : (
+          <div style={{ marginTop: 12, overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+              <thead>
+                <tr style={{ textAlign: "left", color: "#D4CCBC", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6, fontWeight: 600 }}>
+                  <th style={thStyle}>Date</th>
+                  <th style={thStyle}>Result</th>
+                  <th style={thStyle}>Failed steps</th>
+                </tr>
+              </thead>
+              <tbody>
+                {qaReports.map((r) => {
+                  const failed = (r.results || []).filter((x) => !x.passed);
+                  return (
+                    <tr key={r.id} style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                      <td style={{ ...tdStyle, whiteSpace: "nowrap", fontFamily: "var(--font-mono, monospace)" }}>
+                        {new Date(r.run_at).toLocaleString()}
+                      </td>
+                      <td style={{ ...tdStyle, color: r.failed === 0 ? STATUS_COLORS.pass : STATUS_COLORS.warn }}>
+                        {r.passed}/{r.total_checks} {r.failed === 0 ? "✅" : "⚠️"}
+                      </td>
+                      <td style={tdStyle}>
+                        {failed.length === 0 ? "—" : failed.map((f) => `${f.step}. ${f.action}`).join(", ")}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Section>
 
       {/* Section 1 — Run Controls */}
       <Section title="Run controls">

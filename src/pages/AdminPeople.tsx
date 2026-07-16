@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Download, Loader2, X, RefreshCw, Send } from "lucide-react";
+import { Copy, Check } from "lucide-react";
 import AdminShell from "@/components/admin/AdminShell";
 import { downloadBlob } from "@/lib/download";
 import { formatSmartDate } from "@/lib/formatDate";
@@ -296,6 +297,7 @@ export default function AdminPeople() {
   const [rows, setRows] = useState<Row[]>([]);
   const [hideTest, setHideTest] = useState(true);
   const [selected, setSelected] = useState<Row | null>(null);
+  const [copiedUid, setCopiedUid] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -327,6 +329,41 @@ export default function AdminPeople() {
     arr.sort((a, b) => (b.signed_up || "").localeCompare(a.signed_up || ""));
     return arr;
   }, [rows, hideTest]);
+
+  // Inactive (48h+): excludes test + founder; uses last_seen null OR > 48h.
+  const inactive48 = useMemo(() => {
+    const cutoff = Date.now() - 48 * 60 * 60 * 1000;
+    return rows.filter((r) => {
+      const e = (r.email || "").toLowerCase();
+      if (FOUNDER_HINTS.some((h) => e.includes(h))) return false;
+      if (e.includes("+test") || e.includes("test@")) return false;
+      if (!r.last_seen) return true;
+      return new Date(r.last_seen).getTime() < cutoff;
+    });
+  }, [rows]);
+
+  const relativeSeen = (iso: string | null) => {
+    if (!iso) return "never signed in";
+    const diff = Date.now() - new Date(iso).getTime();
+    const h = Math.floor(diff / 3600_000);
+    if (h < 24) return `${h}h ago`;
+    const d = Math.floor(h / 24);
+    return `${d}d ago`;
+  };
+
+  const copyWhatsApp = async (r: Row) => {
+    const name = r.first_name || (r.email ? r.email.split("@")[0] : "");
+    // Professional MSA (contemporary register, not dialect)
+    const msg = `مرحباً${name ? ` ${name}` : ""}،\nلاحظتُ أنك لم تدخل إلى أورا منذ فترة. أردتُ الاطمئنان عليك — هل كل شيء على ما يُرام؟ يسعدني مساعدتك في أي وقت.`;
+    try {
+      await navigator.clipboard.writeText(msg);
+      setCopiedUid(r.user_id);
+      toast.success("Copied — send via WhatsApp");
+      setTimeout(() => setCopiedUid((prev) => (prev === r.user_id ? null : prev)), 2000);
+    } catch {
+      toast.error("Copy failed");
+    }
+  };
 
   const totals = useMemo(() => {
     const t = { total: filtered.length, activated: 0, stalled: 0, atRisk: 0, newWeek: 0 };
@@ -429,6 +466,61 @@ export default function AdminPeople() {
         </div>
       ) : (
         <>
+          {inactive48.length > 0 && (
+            <div
+              style={{
+                ...card,
+                marginBottom: 20,
+                borderLeft: "4px solid #F97316",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "var(--glass-1)", textTransform: "uppercase", letterSpacing: 0.6 }}>
+                  Inactive (48h+)
+                </span>
+                <span style={{ fontSize: 12, padding: "2px 8px", borderRadius: 999, background: "rgba(249,115,22,0.15)", color: "#F97316", border: "1px solid rgba(249,115,22,0.3)" }}>
+                  {inactive48.length}
+                </span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {inactive48.map((r) => {
+                  const name = r.first_name || r.email || r.user_id;
+                  const isCopied = copiedUid === r.user_id;
+                  return (
+                    <div
+                      key={r.user_id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 12,
+                        padding: "8px 10px",
+                        borderRadius: 6,
+                        border: "1px solid var(--hair)",
+                        background: "var(--ob-panel)",
+                      }}
+                    >
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 13, color: "var(--glass-1)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {name}
+                        </div>
+                        <div style={{ fontSize: 11, color: "var(--glass-2)" }}>
+                          Last seen {relativeSeen(r.last_seen)}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => copyWhatsApp(r)}
+                        style={{ ...btn, whiteSpace: "nowrap" }}
+                      >
+                        {isCopied ? <><Check size={12} /> Copied</> : <><Copy size={12} /> Copy WhatsApp</>}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
