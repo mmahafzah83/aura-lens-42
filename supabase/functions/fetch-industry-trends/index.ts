@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.99.3";
+import { logAIUsage } from "../_shared/logAIUsage.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -673,6 +674,16 @@ async function perplexityDiscover(
 
       if (res.ok) {
         const data = await res.json();
+        try {
+          EdgeRuntime.waitUntil(logAIUsage({
+            user_id: null,
+            function_name: "fetch-industry-trends",
+            provider: "perplexity",
+            model: data.model,
+            input_tokens: data.usage?.prompt_tokens,
+            output_tokens: data.usage?.completion_tokens,
+          }));
+        } catch (_) { /* non-blocking */ }
         const citations = data?.citations || [];
         const content = data?.choices?.[0]?.message?.content || "";
 
