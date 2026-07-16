@@ -90,7 +90,7 @@ type SyncReport = {
 };
 
 async function syncConnection(
-  conn: { user_id: string; access_token: string },
+  conn: { user_id: string; access_token: string; linkedin_id?: string | null; followers_total?: number | null },
   adminClient: any,
   windowDays: number,
 ): Promise<SyncReport> {
@@ -167,34 +167,52 @@ async function syncConnection(
   const sortedDates = [...allDates].sort();
   const latestDate = sortedDates[sortedDates.length - 1] ?? new Date().toISOString().slice(0, 10);
 
-  // Best-effort cumulative followers baseline
-  let baselineFollowers: number | null = null;
-  let baselineDate: string | null = null;
-  try {
-    const { data: prior } = await adminClient
-      .from("influence_snapshots")
-      .select("snapshot_date, followers")
-      .eq("user_id", conn.user_id)
-      .gt("followers", 0)
-      .order("snapshot_date", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (prior?.followers != null) {
-      baselineFollowers = Number(prior.followers);
-      baselineDate = prior.snapshot_date;
+  // ── Establish an absolute-followers anchor for the newest date ──
+  // Priority: live networkSizes call → cached linkedin_connections.followers_total
+  // → newest influence_snapshots row with followers > 0. If none, anchor stays null
+  // and we never write a followers value for any row (unknown ≠ 0).
+  let anchor: number | null = null;
+  if (conn.linkedin_id) {
+    for (const edgeType of ["CompanyFollowedByMember", "FOLLOW"]) {
+      try {
+        const res = await fetch(
+          `https://api.linkedin.com/v2/networkSizes/urn:li:person:${conn.linkedin_id}?edgeType=${edgeType}`,
+          { headers: { Authorization: `Bearer ${conn.access_token}` } },
+        );
+        if (res.ok) {
+          const data = await res.json().catch(() => ({} as any));
+          if (typeof data?.firstDegreeSize === "number") {
+            anchor = data.firstDegreeSize;
+            break;
+          }
+        }
+      } catch (_e) { /* try next edgeType */ }
     }
-  } catch (_e) { /* best effort */ }
-
-  let cumulativeFollowers: number | null = null;
-  if (baselineFollowers !== null) {
-    const gainsSince = sortedDates
-      .filter((d) => !baselineDate || d > baselineDate)
-      .reduce((acc, d) => acc + (followerGains.get(d) ?? 0), 0);
-    cumulativeFollowers = baselineFollowers + gainsSince;
+  }
+  if (anchor !== null) {
+    await adminClient
+      .from("linkedin_connections")
+      .update({ followers_total: anchor, followers_total_at: new Date().toISOString() })
+      .eq("user_id", conn.user_id);
+  } else if (typeof conn.followers_total === "number" && conn.followers_total > 0) {
+    anchor = conn.followers_total;
+  } else {
+    try {
+      const { data: prior } = await adminClient
+        .from("influence_snapshots")
+        .select("followers")
+        .eq("user_id", conn.user_id)
+        .gt("followers", 0)
+        .order("snapshot_date", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (prior?.followers != null) anchor = Number(prior.followers);
+    } catch (_e) { /* best effort */ }
   }
 
   const rows: Array<Record<string, unknown>> = [];
-  for (const date of sortedDates) {
+  for (let i = 0; i < sortedDates.length; i++) {
+    const date = sortedDates[i];
     const imp = impressions.get(date) ?? 0;
     const rx = reactions.get(date) ?? 0;
     const cm = comments.get(date) ?? 0;
@@ -212,25 +230,48 @@ async function syncConnection(
       follower_growth: fg,
       engagement_rate: imp > 0 ? Math.round((eng / imp) * 10000) / 100 : 0,
     };
+    if (anchor !== null) {
+      // Sum follower_growth for all dates strictly AFTER this one and subtract.
+      let laterGains = 0;
+      for (let j = i + 1; j < sortedDates.length; j++) {
+        laterGains += followerGains.get(sortedDates[j]) ?? 0;
+      }
+      const v = anchor - laterGains;
+      if (v > 0) payload.followers = v;
+    }
     rows.push(payload);
   }
 
 
   if (rows.length) {
+    // Never overwrite an existing non-null followers with null/0.
+    // Fetch existing followers for these dates and drop `followers` from payload
+    // when the existing value is present and the new value would be missing/lower-quality.
+    const dates = rows.map((r) => r.snapshot_date as string);
+    const { data: existing } = await adminClient
+      .from("influence_snapshots")
+      .select("snapshot_date, followers")
+      .eq("user_id", conn.user_id)
+      .in("snapshot_date", dates);
+    const existingMap = new Map<string, number | null>();
+    for (const r of existing ?? []) existingMap.set(r.snapshot_date as string, (r as any).followers ?? null);
+    for (const row of rows) {
+      const existingVal = existingMap.get(row.snapshot_date as string);
+      if (existingVal != null && existingVal > 0 && (row.followers == null || Number(row.followers) <= 0)) {
+        delete row.followers;
+      }
+    }
     const { error: upErr } = await adminClient
       .from("influence_snapshots")
       .upsert(rows, { onConflict: "user_id,snapshot_date" });
     if (upErr) throw new Error(`upsert:${upErr.message}`);
     report.days_upserted = rows.length;
 
-    // Enrich the latest date with totals that may not be available for every row
-    const latestExtra: Record<string, unknown> = {};
-    if (membersReachedTotal !== null) latestExtra.members_reached = membersReachedTotal;
-    if (cumulativeFollowers !== null && cumulativeFollowers > 0) latestExtra.followers = cumulativeFollowers;
-    if (Object.keys(latestExtra).length) {
+    // Enrich the latest date with members_reached total (per-row API doesn't give daily).
+    if (membersReachedTotal !== null) {
       await adminClient
         .from("influence_snapshots")
-        .update(latestExtra)
+        .update({ members_reached: membersReachedTotal })
         .eq("user_id", conn.user_id)
         .eq("snapshot_date", latestDate);
     }
@@ -285,7 +326,7 @@ Deno.serve(async (req) => {
 
     let q = adminClient
       .from("linkedin_connections")
-      .select("user_id, access_token, linkedin_id")
+      .select("user_id, access_token, linkedin_id, followers_total")
       .eq("status", "active");
     if (targetUserId) q = q.eq("user_id", targetUserId);
 
