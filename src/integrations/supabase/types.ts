@@ -2916,6 +2916,18 @@ export type Database = {
       }
       admin_run_cron: { Args: { p_jobid: number }; Returns: string }
       is_current_user_admin: { Args: never; Returns: boolean }
+      pending_capture_entries: {
+        Args: {
+          p_limit?: number
+          p_max_attempts?: number
+          p_min_age_minutes?: number
+        }
+        Returns: {
+          extract_attempts: number
+          id: string
+          user_id: string
+        }[]
+      }
       record_guide_miss: {
         Args: { _slug: string; _surface: string }
         Returns: undefined
