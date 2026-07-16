@@ -42,6 +42,7 @@ Deno.serve(async (req) => {
     const message = String(body.body || "").slice(0, 4000);
     const severity = String(body.severity || "info");
     const dedupe_key = String(body.dedupe_key || "").slice(0, 200);
+    const isHtml = body.html === true;
 
     if (!subject || !message || !dedupe_key) {
       return json({ error: "subject, body, dedupe_key required" }, 400);
@@ -75,7 +76,11 @@ Deno.serve(async (req) => {
 
     let emailed = false;
     if (!duplicate && RESEND && ADMIN_ALERT_EMAIL) {
-      const html = `<p><strong>Severity:</strong> ${esc(severity)}</p><pre style="font:13px/1.5 monospace;background:#0f0e0c;color:#ededed;padding:12px;border-radius:8px;white-space:pre-wrap;">${esc(message)}</pre><p style="color:#888;font-size:12px;">source: ${esc(dedupe_key)} · ${new Date().toISOString()}</p>`;
+      const bodyBlock = isHtml
+        ? message
+        : `<pre style="font:13px/1.5 monospace;background:#0f0e0c;color:#ededed;padding:12px;border-radius:8px;white-space:pre-wrap;">${esc(message)}</pre>`;
+      const severityLine = isHtml ? "" : `<p><strong>Severity:</strong> ${esc(severity)}</p>`;
+      const html = `${severityLine}${bodyBlock}<p style="color:#888;font-size:12px;">source: ${esc(dedupe_key)} · ${new Date().toISOString()}</p>`;
       const er = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { Authorization: `Bearer ${RESEND}`, "Content-Type": "application/json" },
