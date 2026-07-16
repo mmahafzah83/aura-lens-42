@@ -88,6 +88,13 @@ serve(async (req) => {
       });
     }
 
+    // Hard guard: refuse to delete the founder user id, regardless of caller.
+    if (target_user_id === "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3") {
+      return new Response(JSON.stringify({ error: "cannot delete admin" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Remove from beta_allowlist (by email — covers pending users with no auth)
     if (resolvedEmail) {
       const { error: allowErr } = await admin
@@ -103,6 +110,19 @@ serve(async (req) => {
           status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+    }
+
+    // Audit log (non-blocking)
+    try {
+      await admin.from("admin_action_log").insert({
+        actor_id: callerId ?? null,
+        action: "delete_user",
+        task: "delete_user",
+        target_ref: resolvedEmail ?? target_user_id ?? "",
+        result: "deleted",
+      });
+    } catch (logErr) {
+      console.warn("[admin-delete-user] admin_action_log insert failed", logErr);
     }
 
     return new Response(JSON.stringify({
