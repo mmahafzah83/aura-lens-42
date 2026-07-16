@@ -194,7 +194,7 @@ Deno.serve(async (req) => {
           body: JSON.stringify({
             subject,
             body: `The daily API health check detected failures:\n\n${summary}\n\nRun timestamp: ${new Date().toISOString()}`,
-            severity: "high",
+            severity: "critical",
             dedupe_key: "api-health-sentinel",
           }),
         });
@@ -207,7 +207,12 @@ Deno.serve(async (req) => {
     }
 
     // ============ LinkedIn data-health checks ============
-    async function notify(subject: string, bodyText: string, dedupe_key: string) {
+    async function notify(
+      subject: string,
+      bodyText: string,
+      dedupe_key: string,
+      severity: "critical" | "high" | "info" = "high",
+    ) {
       try {
         const r = await fetch(`${supabaseUrl}/functions/v1/admin-notify`, {
           method: "POST",
@@ -216,7 +221,7 @@ Deno.serve(async (req) => {
             apikey: serviceKey,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ subject, body: bodyText, severity: "high", dedupe_key }),
+          body: JSON.stringify({ subject, body: bodyText, severity, dedupe_key }),
         });
         if (!r.ok) console.error("[sentinel] datahealth notify failed", r.status, (await r.text()).slice(0, 200));
       } catch (e) {
@@ -232,7 +237,7 @@ Deno.serve(async (req) => {
         .eq("status", "active");
 
       const now = Date.now();
-      const staleCutoff = new Date(now - 48 * 60 * 60 * 1000);
+      const staleCutoff = new Date(now - 72 * 60 * 60 * 1000); // LinkedIn analytics lag 1-2 days
       const dayCutoff = new Date(now - 24 * 60 * 60 * 1000).toISOString();
 
       for (const c of conns || []) {
@@ -247,27 +252,43 @@ Deno.serve(async (req) => {
           .limit(1)
           .maybeSingle();
 
-        // CHECK 1 — Stale (or missing entirely)
+        // Anchor check — has this user ever had followers > 0?
+        const { data: anchor } = await admin
+          .from("influence_timeline")
+          .select("snapshot_date")
+          .eq("user_id", c.user_id)
+          .gt("followers", 0)
+          .limit(1)
+          .maybeSingle();
+        const anchorExists = !!anchor;
+
         const latestDate = latest?.snapshot_date ? new Date(latest.snapshot_date as string) : null;
-        if (!latestDate || latestDate < staleCutoff) {
+        const stale = !latestDate || latestDate < staleCutoff;
+        const brokenFollowers = !latest || latest.followers === null || latest.followers === 0;
+
+        if (!anchorExists) {
+          // COLLECTING — new user, no anchor yet. Info-only (no email).
+          dataHealth.push({ user_id: c.user_id, check: "collecting", detail: "no follower anchor yet" });
+          await notify(
+            `LinkedIn collecting — ${label}`,
+            `${label} (${c.user_id}) is new: no influence_timeline row with followers>0 yet. Expected while first sync fills in.`,
+            `datahealth:collecting:${c.user_id}`,
+            "info",
+          );
+        } else if (stale || brokenFollowers) {
+          // BEHIND — had data, now stale or dropped to null/0. Actionable.
           const ageTxt = latestDate
             ? `${Math.round((now - latestDate.getTime()) / 3.6e6)}h old (${latest?.snapshot_date})`
-            : "no rows found";
-          dataHealth.push({ user_id: c.user_id, check: "stale", detail: ageTxt });
+            : "no recent rows";
+          const detail = stale
+            ? `latest is ${ageTxt}`
+            : `latest ${latest?.snapshot_date} has followers=${latest?.followers}`;
+          dataHealth.push({ user_id: c.user_id, check: "behind", detail });
           await notify(
-            `LinkedIn data stale — ${label}`,
-            `Newest influence_timeline row for ${label} (${c.user_id}) is ${ageTxt}.\nLinkedIn analytics lag is ~1–2 days; >48h suggests the sync is not landing rows.`,
-            `datahealth:stale:${c.user_id}`,
-          );
-        }
-
-        // CHECK 2 — Broken followers
-        if (latest && (latest.followers === null || latest.followers === 0)) {
-          dataHealth.push({ user_id: c.user_id, check: "followers_broken", detail: `followers=${latest.followers}` });
-          await notify(
-            `LinkedIn followers broken — ${label}`,
-            `Newest influence_timeline row for ${label} (${c.user_id}) on ${latest.snapshot_date} has followers=${latest.followers}. Anchor logic likely failed to resolve.`,
-            `datahealth:followers:${c.user_id}`,
+            `LinkedIn data behind — ${label}`,
+            `${label} (${c.user_id}) had follower data but is now behind: ${detail}.\nLinkedIn analytics lag ~1–2 days; >72h means the sync is not landing.`,
+            `datahealth:behind:${c.user_id}`,
+            "high",
           );
         }
 
@@ -295,6 +316,7 @@ Deno.serve(async (req) => {
             `LinkedIn sync failing — ${label}`,
             `In the last 24h for ${label} (${c.user_id}): failed sync_runs=${failedRuns || 0}, sync_errors=${syncErrs || 0}.`,
             `datahealth:sync:${c.user_id}`,
+            "high",
           );
         }
       }
@@ -331,7 +353,10 @@ Deno.serve(async (req) => {
       );
       const projected = dayOfMonth > 0 ? (spendMTD / dayOfMonth) * daysInMonth : spendMTD;
 
-      if (spendMTD >= budget || projected >= budget) {
+      const pctBudget = budget > 0 ? (spendMTD / budget) * 100 : 0;
+      const projectedPct = budget > 0 ? (projected / budget) * 100 : 0;
+      const worstPct = Math.max(pctBudget, projectedPct);
+      if (worstPct >= 80) {
         const byFn = new Map<string, number>();
         for (const r of usageRows || []) {
           const k = (r as any).function_name || "unknown";
@@ -340,10 +365,12 @@ Deno.serve(async (req) => {
         const top = [...byFn.entries()].sort((a, b) => b[1] - a[1])[0];
         const topTxt = top ? `${top[0]} ($${top[1].toFixed(2)})` : "n/a";
         watchdog.push({ check: "cost", detail: `spend=$${spendMTD.toFixed(2)} projected=$${projected.toFixed(2)}` });
+        const costSeverity: "high" | "info" = worstPct >= 100 ? "high" : "info";
         await notify(
           "AI budget alert",
-          `Spend MTD: $${spendMTD.toFixed(2)}\nProjected month-end: $${projected.toFixed(2)}\nBudget: $${budget.toFixed(2)}\nTop function this month: ${topTxt}`,
+          `Spend MTD: $${spendMTD.toFixed(2)} (${Math.round(pctBudget)}%)\nProjected month-end: $${projected.toFixed(2)} (${Math.round(projectedPct)}%)\nBudget: $${budget.toFixed(2)}\nTop function this month: ${topTxt}`,
           "cost:budget",
+          costSeverity,
         );
       }
 
@@ -373,6 +400,7 @@ Deno.serve(async (req) => {
           "AI failures spiking",
           `AI failures in last 24h: ${failCount}\nTop failing function: ${topTxt}`,
           "cost:ai-failures",
+          "high",
         );
       }
 
@@ -388,6 +416,7 @@ Deno.serve(async (req) => {
           `Cron failure(s)`,
           `Failed cron runs in last 24h:\n\n${list}`,
           "cron:failures",
+          "high",
         );
       }
     } catch (e) {
