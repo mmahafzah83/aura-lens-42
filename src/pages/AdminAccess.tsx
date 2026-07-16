@@ -805,6 +805,9 @@ const AdminAccess = () => {
           )}
         </div>
 
+        </>)}
+
+        {activeTab === "users" && (<>
         {/* Seed Captures */}
         <div
           className="rounded-2xl p-6 mt-8"
