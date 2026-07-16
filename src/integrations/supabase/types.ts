@@ -2799,6 +2799,22 @@ export type Database = {
         }
         Relationships: []
       }
+      influence_timeline: {
+        Row: {
+          comments: number | null
+          engagement_rate: number | null
+          follower_growth: number | null
+          followers: number | null
+          impressions: number | null
+          members_reached: number | null
+          reactions: number | null
+          shares: number | null
+          snapshot_date: string | null
+          source_type: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       linkedin_connections_safe: {
         Row: {
           connected_at: string | null
