@@ -206,11 +206,108 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ============ LinkedIn data-health checks ============
+    async function notify(subject: string, bodyText: string, dedupe_key: string) {
+      try {
+        const r = await fetch(`${supabaseUrl}/functions/v1/admin-notify`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${serviceKey}`,
+            apikey: serviceKey,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ subject, body: bodyText, severity: "high", dedupe_key }),
+        });
+        if (!r.ok) console.error("[sentinel] datahealth notify failed", r.status, (await r.text()).slice(0, 200));
+      } catch (e) {
+        console.error("[sentinel] datahealth notify error", (e as Error).message);
+      }
+    }
+
+    const dataHealth: Array<{ user_id: string; check: string; detail: string }> = [];
+    try {
+      const { data: conns } = await admin
+        .from("linkedin_connections")
+        .select("user_id, display_name, handle, status")
+        .eq("status", "active");
+
+      const now = Date.now();
+      const staleCutoff = new Date(now - 48 * 60 * 60 * 1000);
+      const dayCutoff = new Date(now - 24 * 60 * 60 * 1000).toISOString();
+
+      for (const c of conns || []) {
+        const label = c.display_name || c.handle || c.user_id;
+
+        // Newest influence_timeline row for user
+        const { data: latest } = await admin
+          .from("influence_timeline")
+          .select("snapshot_date, followers")
+          .eq("user_id", c.user_id)
+          .order("snapshot_date", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        // CHECK 1 — Stale (or missing entirely)
+        const latestDate = latest?.snapshot_date ? new Date(latest.snapshot_date as string) : null;
+        if (!latestDate || latestDate < staleCutoff) {
+          const ageTxt = latestDate
+            ? `${Math.round((now - latestDate.getTime()) / 3.6e6)}h old (${latest?.snapshot_date})`
+            : "no rows found";
+          dataHealth.push({ user_id: c.user_id, check: "stale", detail: ageTxt });
+          await notify(
+            `LinkedIn data stale — ${label}`,
+            `Newest influence_timeline row for ${label} (${c.user_id}) is ${ageTxt}.\nLinkedIn analytics lag is ~1–2 days; >48h suggests the sync is not landing rows.`,
+            `datahealth:stale:${c.user_id}`,
+          );
+        }
+
+        // CHECK 2 — Broken followers
+        if (latest && (latest.followers === null || latest.followers === 0)) {
+          dataHealth.push({ user_id: c.user_id, check: "followers_broken", detail: `followers=${latest.followers}` });
+          await notify(
+            `LinkedIn followers broken — ${label}`,
+            `Newest influence_timeline row for ${label} (${c.user_id}) on ${latest.snapshot_date} has followers=${latest.followers}. Anchor logic likely failed to resolve.`,
+            `datahealth:followers:${c.user_id}`,
+          );
+        }
+
+        // CHECK 3 — Sync failing in last 24h
+        const { count: failedRuns } = await admin
+          .from("sync_runs")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", c.user_id)
+          .eq("status", "failed")
+          .gte("created_at", dayCutoff);
+
+        const { count: syncErrs } = await admin
+          .from("sync_errors")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", c.user_id)
+          .gte("created_at", dayCutoff);
+
+        if ((failedRuns || 0) > 0 || (syncErrs || 0) > 0) {
+          dataHealth.push({
+            user_id: c.user_id,
+            check: "sync_failing",
+            detail: `failed_runs=${failedRuns || 0}, errors=${syncErrs || 0}`,
+          });
+          await notify(
+            `LinkedIn sync failing — ${label}`,
+            `In the last 24h for ${label} (${c.user_id}): failed sync_runs=${failedRuns || 0}, sync_errors=${syncErrs || 0}.`,
+            `datahealth:sync:${c.user_id}`,
+          );
+        }
+      }
+    } catch (e) {
+      console.error("[sentinel] datahealth error", (e as Error).message);
+    }
+
     return json({
       success: true,
       checked: results.length,
       failed: failures.length,
       results: results.map((r) => ({ provider: r.provider, ok: r.ok, status: r.status })),
+      data_health: dataHealth,
     });
   } catch (e) {
     console.error("api-health-sentinel error", e);
