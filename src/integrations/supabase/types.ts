@@ -2891,6 +2891,14 @@ export type Database = {
         Args: { p_created_by?: string; p_new_tokens: Json }
         Returns: string
       }
+      admin_cron_failures_24h: {
+        Args: never
+        Returns: {
+          failed: number
+          jobname: string
+          last_fail: string
+        }[]
+      }
       admin_list_crons: {
         Args: never
         Returns: {
