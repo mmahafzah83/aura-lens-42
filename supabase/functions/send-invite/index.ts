@@ -346,6 +346,19 @@ serve(async (req) => {
       // Email already sent — log but still return success
     }
 
+    // Audit log (non-blocking)
+    try {
+      await admin.from("admin_action_log").insert({
+        actor_id: callerId ?? null,
+        action: "invite",
+        task: "invite",
+        target_ref: email,
+        result: "sent",
+      });
+    } catch (logErr) {
+      console.warn("[send-invite] admin_action_log insert failed", logErr);
+    }
+
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
