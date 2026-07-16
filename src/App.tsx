@@ -32,6 +32,7 @@ const Admin = lazy(() => import("./pages/Admin"));
 const AdminAccess = lazy(() => import("./pages/AdminAccess"));
 const AdminCost = lazy(() => import("./pages/AdminCost"));
 const AdminPeople = lazy(() => import("./pages/AdminPeople"));
+const AdminCrons = lazy(() => import("./pages/AdminCrons"));
 const AdminDesignSystem = lazy(() => import("./pages/AdminDesignSystem"));
 const AdminExperience = lazy(() => import("./pages/AdminExperience"));
 const AdminQA = lazy(() => import("./pages/AdminQA"));
