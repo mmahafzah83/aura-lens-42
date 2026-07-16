@@ -113,19 +113,41 @@ serve(async (req) => {
       const target = String(body?.user_id || "");
       const task = String(body?.task || "");
       if (!target) return json({ error: "user_id required" }, 400);
-      if (task !== "recompute_score") return json({ error: "unknown task" }, 400);
 
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/calculate-aura-score`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${SERVICE}`,
-          apikey: SERVICE,
-        },
-        body: JSON.stringify({ user_id: target }),
-      });
-      const out = await res.json().catch(() => ({}));
-      return json({ ok: res.ok, result: out }, res.ok ? 200 : 500);
+      if (task === "recompute_score") {
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/calculate-aura-score`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${SERVICE}`,
+            apikey: SERVICE,
+          },
+          body: JSON.stringify({ user_id: target }),
+        });
+        const out = await res.json().catch(() => ({}));
+        return json({ ok: res.ok, result: out }, res.ok ? 200 : 500);
+      }
+
+      if (task === "send_nudge") {
+        const ALLOWED = ["day1", "day3", "day7", "inactive"] as const;
+        const requested = String(body?.email_type ?? "inactive");
+        if (!ALLOWED.includes(requested as any)) {
+          return json({ error: "invalid email_type" }, 400);
+        }
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/send-lifecycle-email`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${SERVICE}`,
+            apikey: SERVICE,
+          },
+          body: JSON.stringify({ user_id: target, email_type: requested }),
+        });
+        const out = await res.json().catch(() => ({}));
+        return json({ ok: res.ok, result: out }, res.ok ? 200 : 500);
+      }
+
+      return json({ error: "unknown task" }, 400);
     }
 
     if (action === "overview_brief") {

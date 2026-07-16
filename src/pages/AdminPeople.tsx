@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Download, Loader2, X, RefreshCw } from "lucide-react";
+import { Download, Loader2, X, RefreshCw, Send } from "lucide-react";
 import AdminShell from "@/components/admin/AdminShell";
 import { downloadBlob } from "@/lib/download";
 
@@ -106,10 +106,12 @@ function Drilldown({
   row,
   onClose,
   onRecompute,
+  onSendNudge,
 }: {
   row: Row;
   onClose: () => void;
   onRecompute: (uid: string) => Promise<void>;
+  onSendNudge: (uid: string, emailType: string) => Promise<void>;
 }) {
   const [loading, setLoading] = useState(true);
   const [captures, setCaptures] = useState<any[]>([]);
@@ -117,6 +119,8 @@ function Drilldown({
   const [posts, setPosts] = useState<any[]>([]);
   const [snaps, setSnaps] = useState<any[]>([]);
   const [busy, setBusy] = useState(false);
+  const [nudgeType, setNudgeType] = useState<string>("inactive");
+  const [nudgeBusy, setNudgeBusy] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -182,6 +186,38 @@ function Drilldown({
         >
           <RefreshCw size={12} /> {busy ? "Recomputing…" : "Recompute score"}
         </button>
+
+        <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 20, flexWrap: "wrap" }}>
+          <select
+            value={nudgeType}
+            onChange={(e) => setNudgeType(e.target.value)}
+            disabled={nudgeBusy}
+            style={{
+              background: "transparent",
+              color: "var(--glass)",
+              border: "1px solid var(--hair)",
+              borderRadius: 4,
+              padding: "6px 10px",
+              fontSize: 12,
+            }}
+          >
+            <option value="inactive">Re-engagement (inactive)</option>
+            <option value="day1">Day 1</option>
+            <option value="day3">Day 3</option>
+            <option value="day7">Day 7</option>
+          </select>
+          <button
+            style={btn}
+            disabled={nudgeBusy}
+            onClick={async () => {
+              setNudgeBusy(true);
+              await onSendNudge(row.user_id, nudgeType);
+              setNudgeBusy(false);
+            }}
+          >
+            <Send size={12} /> {nudgeBusy ? "Sending…" : "Send nudge"}
+          </button>
+        </div>
 
         {loading ? (
           <div style={{ color: "var(--glass-2)" }}><Loader2 className="animate-spin inline w-4 h-4" /> Loading…</div>
@@ -310,6 +346,20 @@ export default function AdminPeople() {
     }
   };
 
+  const sendNudge = async (uid: string, emailType: string) => {
+    const { data, error } = await supabase.functions.invoke("admin-console", {
+      body: { action: "run_for_user", task: "send_nudge", user_id: uid, email_type: emailType },
+    });
+    if (error) { toast.error(error.message || "Nudge failed"); return; }
+    const payload = data as any;
+    if (payload && payload.ok === false) {
+      const msg = payload?.result?.error || payload?.error || "Nudge failed";
+      toast.error(String(msg));
+      return;
+    }
+    toast.success("Nudge sent");
+  };
+
   return (
     <AdminShell title="People" subtitle="User journeys, activation, and imprint health">
       <div style={{ display: "flex", gap: 12, marginBottom: 20, alignItems: "center", flexWrap: "wrap" }}>
@@ -409,7 +459,7 @@ export default function AdminPeople() {
       )}
 
       {selected && (
-        <Drilldown row={selected} onClose={() => setSelected(null)} onRecompute={recompute} />
+        <Drilldown row={selected} onClose={() => setSelected(null)} onRecompute={recompute} onSendNudge={sendNudge} />
       )}
     </AdminShell>
   );
