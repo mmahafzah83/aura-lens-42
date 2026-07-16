@@ -30,6 +30,7 @@ import AuthorityJourney from "@/components/AuthorityJourney";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import MarketMirror from "@/components/MarketMirror";
 import { useTierFromImprint } from "@/hooks/useTierFromImprint";
+import { latestRealFollowers, realFollowerSeries } from "@/lib/influenceState";
 
 /* ── Types ── */
 interface Snapshot {
@@ -381,10 +382,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     // Follower / influence snapshots from LinkedIn export (within range, followers > 0)
     const folRes = await safeQuery(
       () => supabase
-        .from("influence_snapshots")
+        .from("influence_timeline")
         .select("snapshot_date, followers, follower_growth, impressions, engagement_rate")
         .eq("user_id", user.id)
-        .eq("source_type", "linkedin_export")
         .gte("snapshot_date", sinceDateOnly)
         .order("snapshot_date", { ascending: true }),
       { context: "Impact: influence snapshots", silent: true }
@@ -400,14 +400,17 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
     // Latest follower count (most recent snapshot, any date)
     const latestFolRes = await supabase
-      .from("influence_snapshots")
+      .from("influence_timeline")
       .select("followers, snapshot_date")
       .eq("user_id", user.id)
-      .eq("source_type", "linkedin_export")
       .gt("followers", 0)
       .order("snapshot_date", { ascending: false })
       .limit(1);
-    setLatestFollowers((latestFolRes.data?.[0] as any)?.followers ?? null);
+    const latestFolRow: any = latestFolRes.data?.[0];
+    setLatestFollowers(
+      latestRealFollowers(latestFolRow ? [latestFolRow] : []) ??
+        latestRealFollowers(folRowsAll as any),
+    );
     setLatestSnapshotDate((latestFolRes.data?.[0] as any)?.snapshot_date ?? null);
 
     // Published LinkedIn posts (for follower-growth chart annotations)
@@ -452,10 +455,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     const priorStartOnly = priorStart.toISOString().slice(0, 10);
     const priorRes = await safeQuery(
       () => supabase
-        .from("influence_snapshots")
+        .from("influence_timeline")
         .select("impressions, engagement_rate, follower_growth")
         .eq("user_id", user.id)
-        .eq("source_type", "linkedin_export")
         .gte("snapshot_date", priorStartOnly)
         .lt("snapshot_date", sinceDateOnly)
         .order("snapshot_date", { ascending: true }),
@@ -960,7 +962,12 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   /* ── Follower chart series ── */
   const followerSeries = useMemo(() => {
     const everyN = selectedDays <= 7 ? 1 : selectedDays <= 30 ? 3 : 7;
-    return followerRows.map((r, i, arr) => ({
+    const real = realFollowerSeries(followerRows as any);
+    if (real.length < 2) return [];
+    // Rebuild with full row metadata (growth, showLabel) — realFollowerSeries only kept date/followers.
+    const realDates = new Set(real.map(r => r.date.length === 5 ? r.date : r.date));
+    const rows = followerRows.filter(r => Number(r.followers) > 0);
+    return rows.map((r, i, arr) => ({
       date: r.snapshot_date,
       label: fmtDateShort(r.snapshot_date),
       followers: r.followers || 0,
@@ -1633,7 +1640,12 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               }}
             />
             <span>
-              Synced from LinkedIn · updated daily · last sync {relTime(syncMeta.lastSyncedAt)}
+              Synced from LinkedIn · updated daily · last sync {(() => {
+                const syncedAt = syncMeta.lastSyncedAt ? new Date(syncMeta.lastSyncedAt).getTime() : 0;
+                const stale = !syncedAt || Date.now() - syncedAt > 48 * 60 * 60 * 1000;
+                if (stale && latestSnapshotDate) return fmtDateShort(latestSnapshotDate);
+                return relTime(syncMeta.lastSyncedAt!);
+              })()}
             </span>
           </div>
           <button
