@@ -22,6 +22,7 @@ type AdminShellProps = {
 const NAV: { to: string; label: string }[] = [
   { to: "/admin", label: "Overview" },
   { to: "/admin/people", label: "People" },
+  { to: "/admin/journey", label: "Journey" },
   { to: "/admin/crons", label: "Crons" },
   { to: "/admin/access", label: "Access" },
   { to: "/admin/cost", label: "Cost" },
