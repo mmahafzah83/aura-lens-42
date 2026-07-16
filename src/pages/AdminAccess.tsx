@@ -110,7 +110,7 @@ const AdminAccess = () => {
   const [deletingEmail, setDeletingEmail] = useState<string | null>(null);
 
   // In-page tabs + waitlist search (presentation only)
-  type TabKey = "waitlist" | "users" | "feedback" | "health";
+  type TabKey = "waitlist" | "users" | "feedback";
   const [activeTab, setActiveTab] = useState<TabKey>("waitlist");
   const [searchQuery, setSearchQuery] = useState("");
 
