@@ -597,8 +597,7 @@ const AdminAccess = () => {
                 </thead>
                 <tbody>
                   {filtered.map((r) => (
-                    <Fragment key={r.id}>
-                      <tr style={{ borderTop: "1px solid var(--ink-3)" }}>
+                    <tr key={r.id} style={{ borderTop: "1px solid var(--ink-3)" }}>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <div
@@ -675,10 +674,28 @@ const AdminAccess = () => {
                               </button>
                             </div>
                           )}
-                          {r.status === "approved" && (
-                            <span className="text-xs" style={{ color: "var(--ink-5)" }}>
-                              Invited ✓
-                            </span>
+                          {(r.status === "invited" || r.status === "approved") && (
+                            <div className="inline-flex items-center gap-2">
+                              <span className="text-xs" style={{ color: "var(--ink-5)" }}>
+                                Invited ✓ · {formatDate(r.invited_at)}
+                              </span>
+                              <button
+                                onClick={() => resendInvite(r)}
+                                disabled={resendingId === r.id}
+                                className="text-xs px-3 py-1.5 rounded-md font-medium transition-colors disabled:opacity-60"
+                                style={{
+                                  backgroundColor: "transparent",
+                                  color: "var(--brand)",
+                                  border: "1px solid var(--bronze-line)",
+                                }}
+                              >
+                                {resendingId === r.id ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <span className="inline-flex items-center gap-1.5"><Send className="w-3 h-3" /> Resend</span>
+                                )}
+                              </button>
+                            </div>
                           )}
                           {r.status === "active" && (
                             <span className="text-xs text-green-400">Active ✓</span>
@@ -690,53 +707,6 @@ const AdminAccess = () => {
                           )}
                         </td>
                       </tr>
-                      {activeInvite === r.id && r.status === "pending" && (
-                        <tr style={{ borderTop: "1px solid var(--ink-3)", backgroundColor: "rgba(255,255,255,0.02)" }}>
-                          <td colSpan={5} className="px-4 py-4">
-                            <div className="space-y-3">
-                              <textarea
-                                value={noteByRow[r.id] || ""}
-                                onChange={(e) =>
-                                  setNoteByRow((prev) => ({ ...prev, [r.id]: e.target.value }))
-                                }
-                                placeholder="Add a personal note (optional)"
-                                rows={3}
-                                className="w-full px-3 py-2 rounded-md text-sm outline-none focus:border-brand transition-colors"
-                                style={{
-                                  backgroundColor: "var(--ink)",
-                                  border: "1px solid var(--ink-3)",
-                                  color: "var(--ink-7)",
-                                }}
-                              />
-                              <div className="flex justify-end items-center gap-3">
-                                <button
-                                  onClick={() => setActiveInvite(null)}
-                                  className="text-xs"
-                                  style={{ color: "var(--ink-5)" }}
-                                >
-                                  Cancel
-                                </button>
-                                <button
-                                  onClick={() => sendInvite(r)}
-                                  disabled={sendingId === r.id}
-                                  className="text-xs px-4 py-2 rounded-md font-medium inline-flex items-center gap-1.5 disabled:opacity-60"
-                                  style={{ backgroundColor: "var(--brand)", color: "var(--ink)" }}
-                                >
-                                  {sendingId === r.id ? (
-                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                  ) : (
-                                    <>
-                                      <Send className="w-3 h-3" />
-                                      Send invite
-                                    </>
-                                  )}
-                                </button>
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </Fragment>
                   ))}
                 </tbody>
               </table>
