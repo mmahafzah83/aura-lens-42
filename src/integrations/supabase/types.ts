@@ -2958,6 +2958,14 @@ export type Database = {
           user_id: string
         }[]
       }
+      recent_cron_http_failures: {
+        Args: { p_minutes?: number }
+        Returns: {
+          failures: number
+          sample_error: string
+          status_code: number
+        }[]
+      }
       record_guide_miss: {
         Args: { _slug: string; _surface: string }
         Returns: undefined
