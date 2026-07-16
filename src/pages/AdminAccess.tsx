@@ -420,6 +420,30 @@ const AdminAccess = () => {
 
   return (
     <AdminShell title="Access" subtitle="Manage waitlist and send invites">
+        {/* In-page tabs */}
+        <div className="flex flex-wrap gap-1 mb-6 p-1 rounded-lg" style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)", width: "fit-content" }}>
+          {([
+            { k: "waitlist", label: "Waitlist" },
+            { k: "users", label: "Users" },
+            { k: "feedback", label: "Feedback" },
+            { k: "health", label: "Health" },
+          ] as { k: TabKey; label: string }[]).map((t) => (
+            <button
+              key={t.k}
+              onClick={() => setActiveTab(t.k)}
+              className="text-xs px-3 py-1.5 rounded-md transition-colors"
+              style={
+                activeTab === t.k
+                  ? { backgroundColor: "var(--brand-muted)", color: "var(--brand)", border: "1px solid var(--bronze-line)" }
+                  : { backgroundColor: "transparent", color: "var(--ink-5)", border: "1px solid transparent" }
+              }
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === "waitlist" && (<>
         {/* Stats row */}
         <div className="flex flex-wrap gap-2 mb-6">
           <span className="text-xs px-3 py-1.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
