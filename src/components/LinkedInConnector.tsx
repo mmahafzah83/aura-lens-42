@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { formatSmartDate } from "@/lib/formatDate";
-import { latestRealFollowers } from "@/lib/influenceState";
 
 interface LinkedInConnectionStatus {
   connected: boolean;
@@ -30,7 +29,6 @@ const LinkedInConnector = ({ onConnectionChange, onSyncStateChange }: LinkedInCo
   const [disconnecting, setDisconnecting] = useState(false);
   const [snapshotCount, setSnapshotCount] = useState(0);
   const [postCount, setPostCount] = useState(0);
-  const [followers, setFollowers] = useState<number | null>(null);
   const { toast } = useToast();
 
   const checkStatus = useCallback(async () => {
@@ -55,10 +53,8 @@ const LinkedInConnector = ({ onConnectionChange, onSyncStateChange }: LinkedInCo
         onConnectionChange?.(statusRes.data?.connected || false, statusRes.data?.connection || null);
       }
 
-      const tl = timelineRes.data || [];
-      setSnapshotCount(tl.length);
+      setSnapshotCount((timelineRes.data || []).length);
       setPostCount(postsRes.count || 0);
-      setFollowers(latestRealFollowers(tl));
     } catch {
       setStatus({ connected: false });
     }
@@ -121,7 +117,6 @@ const LinkedInConnector = ({ onConnectionChange, onSyncStateChange }: LinkedInCo
         setStatus({ connected: false });
         setSnapshotCount(0);
         setPostCount(0);
-        setFollowers(null);
       }
     } catch {
       toast({ title: "Error", description: "Couldn't disconnect.", variant: "destructive" });
