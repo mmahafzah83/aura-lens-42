@@ -1467,7 +1467,7 @@ export type Database = {
           created_at: string
           engagement_rate: number
           follower_growth: number
-          followers: number
+          followers: number | null
           format_breakdown: Json
           id: string
           impressions: number
@@ -1494,7 +1494,7 @@ export type Database = {
           created_at?: string
           engagement_rate?: number
           follower_growth?: number
-          followers: number
+          followers?: number | null
           format_breakdown?: Json
           id?: string
           impressions?: number
@@ -1521,7 +1521,7 @@ export type Database = {
           created_at?: string
           engagement_rate?: number
           follower_growth?: number
-          followers?: number
+          followers?: number | null
           format_breakdown?: Json
           id?: string
           impressions?: number
