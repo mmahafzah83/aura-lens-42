@@ -32,6 +32,7 @@ const Admin = lazy(() => import("./pages/Admin"));
 const AdminAccess = lazy(() => import("./pages/AdminAccess"));
 const AdminCost = lazy(() => import("./pages/AdminCost"));
 const AdminPeople = lazy(() => import("./pages/AdminPeople"));
+const AdminJourney = lazy(() => import("./pages/AdminJourney"));
 const AdminCrons = lazy(() => import("./pages/AdminCrons"));
 const AdminDesignSystem = lazy(() => import("./pages/AdminDesignSystem"));
 const AdminExperience = lazy(() => import("./pages/AdminExperience"));
@@ -99,6 +100,7 @@ const App = () => (
             <Route path="/admin/access" element={<PasswordGate><AdminGate><AdminAccess /></AdminGate></PasswordGate>} />
             <Route path="/admin/cost" element={<PasswordGate><AdminGate><AdminCost /></AdminGate></PasswordGate>} />
             <Route path="/admin/people" element={<PasswordGate><AdminGate><AdminPeople /></AdminGate></PasswordGate>} />
+            <Route path="/admin/journey" element={<PasswordGate><AdminGate><AdminJourney /></AdminGate></PasswordGate>} />
             <Route path="/admin/crons" element={<PasswordGate><AdminGate><AdminCrons /></AdminGate></PasswordGate>} />
             <Route path="/admin/design-system" element={<PasswordGate><AdminGate><AdminDesignSystem /></AdminGate></PasswordGate>} />
             <Route path="/admin/experience" element={<PasswordGate><AdminGate><AdminExperience /></AdminGate></PasswordGate>} />
