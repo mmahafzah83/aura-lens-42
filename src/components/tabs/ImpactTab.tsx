@@ -1640,7 +1640,12 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               }}
             />
             <span>
-              Synced from LinkedIn · updated daily · last sync {relTime(syncMeta.lastSyncedAt)}
+              Synced from LinkedIn · updated daily · last sync {(() => {
+                const syncedAt = syncMeta.lastSyncedAt ? new Date(syncMeta.lastSyncedAt).getTime() : 0;
+                const stale = !syncedAt || Date.now() - syncedAt > 48 * 60 * 60 * 1000;
+                if (stale && latestSnapshotDate) return fmtDateShort(latestSnapshotDate);
+                return relTime(syncMeta.lastSyncedAt!);
+              })()}
             </span>
           </div>
           <button
