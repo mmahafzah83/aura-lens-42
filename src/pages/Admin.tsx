@@ -28,6 +28,21 @@ type HealthCheck = {
 
 const ADMIN_PAGES = [
   {
+    to: "/admin/access",
+    label: "Access",
+    description: "Manage beta allowlist and invitations",
+  },
+  {
+    to: "/admin/people",
+    label: "People",
+    description: "User journeys and lifecycle cockpit",
+  },
+  {
+    to: "/admin/cost",
+    label: "Cost",
+    description: "AI spend and budget tracking",
+  },
+  {
     to: "/admin/experience",
     label: "Experience",
     description: "Run QA walkthroughs and monitor flows",
@@ -91,6 +106,9 @@ export default function Admin() {
   const [latest, setLatest] = useState<HealthCheck | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [brief, setBrief] = useState<any | null>(null);
+  const [briefLoading, setBriefLoading] = useState(true);
+  const [briefError, setBriefError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -117,9 +135,130 @@ export default function Admin() {
     fetchLatest();
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setBriefLoading(true);
+        setBriefError(null);
+        const { data, error } = await supabase.functions.invoke("admin-console", {
+          body: { action: "overview_brief" },
+        });
+        if (cancelled) return;
+        if (error) throw error;
+        setBrief(data);
+      } catch (e: any) {
+        if (cancelled) return;
+        setBriefError(e?.message || "Could not load brief");
+      } finally {
+        if (!cancelled) setBriefLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const pct = (n: number, d: number) => (d > 0 ? Math.round((n / d) * 100) : 0);
+  const drop = (prev: number, curr: number) => (prev > 0 ? Math.round(((prev - curr) / prev) * 100) : 0);
+  const sevColor = (s: string) => (s === "high" ? "#dc2626" : s === "med" ? "#d97706" : "#16a34a");
+
   return (
     <AdminShell title="Overview" subtitle="Admin at-a-glance">
       <div className="grid gap-6">
+        {/* Founder brief */}
+        <section style={cardStyle}>
+          <div className="flex items-baseline justify-between flex-wrap gap-2 mb-4">
+            <h2 style={{ fontSize: 18, fontWeight: 600, margin: 0, color: "var(--glass)" }}>
+              Brief — {new Date().toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
+            </h2>
+            {brief && (
+              <span style={mutedStyle}>
+                {brief.today.new_users} new users · {brief.today.new_captures} captures · {brief.today.new_signals} signals today
+              </span>
+            )}
+          </div>
+
+          {briefLoading && (
+            <div className="flex items-center gap-2" style={mutedStyle}>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Loading brief…</span>
+            </div>
+          )}
+          {!briefLoading && briefError && (
+            <div className="flex items-start gap-2" style={{ ...mutedStyle, color: "#F87171" }}>
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+              <span>{briefError}</span>
+            </div>
+          )}
+          {!briefLoading && !briefError && brief && (
+            <div className="grid gap-5">
+              {/* KPI cards */}
+              <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))" }}>
+                {[
+                  { label: "Users", value: String(brief.totals.users) },
+                  { label: "Activated", value: `${pct(brief.totals.activated, brief.totals.users)}%`, sub: `${brief.totals.activated}/${brief.totals.users}` },
+                  { label: "With signal", value: `${pct(brief.totals.with_signal, brief.totals.users)}%`, sub: `${brief.totals.with_signal}/${brief.totals.users}` },
+                  { label: "New this week", value: String(brief.totals.new_this_week) },
+                  { label: "Spend this month", value: `$${brief.month.spend_usd.toFixed(2)}`, sub: `${brief.month.pct_budget}% of $${brief.month.budget_usd}` },
+                ].map((k) => (
+                  <div key={k.label} style={{ padding: "12px 14px", borderRadius: 8, backgroundColor: "var(--ob-raised)", border: "1px solid var(--hair)" }}>
+                    <div style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--glass-2)", marginBottom: 6 }}>{k.label}</div>
+                    <div style={{ fontSize: 22, color: "var(--glass)", fontWeight: 500, lineHeight: 1 }}>{k.value}</div>
+                    {k.sub && <div style={{ ...mutedStyle, marginTop: 6 }}>{k.sub}</div>}
+                  </div>
+                ))}
+              </div>
+
+              {/* Attention */}
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--glass)", marginBottom: 8 }}>Needs your attention</div>
+                <div className="grid gap-2">
+                  {brief.attention.map((a: any, i: number) => (
+                    <Link
+                      key={i}
+                      to={a.link}
+                      className="flex items-center justify-between"
+                      style={{
+                        padding: "10px 12px",
+                        borderRadius: 8,
+                        backgroundColor: "var(--ob-raised)",
+                        border: "1px solid var(--hair)",
+                        borderLeft: `3px solid ${sevColor(a.severity)}`,
+                        textDecoration: "none",
+                      }}
+                    >
+                      <span style={{ color: "var(--glass)", fontSize: 14 }}>{a.text}</span>
+                      <ArrowRight className="w-4 h-4 shrink-0" style={{ color: "var(--glass-2)" }} />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Funnel */}
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--glass)", marginBottom: 8 }}>Funnel</div>
+                <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))" }}>
+                  {[
+                    { label: "Signed up", value: brief.funnel.signed_up, prev: null as number | null },
+                    { label: "Onboarded", value: brief.funnel.onboarded, prev: brief.funnel.signed_up },
+                    { label: "First capture", value: brief.funnel.first_capture, prev: brief.funnel.onboarded },
+                    { label: "First signal", value: brief.funnel.first_signal, prev: brief.funnel.first_capture },
+                  ].map((f) => (
+                    <div key={f.label} style={{ padding: "10px 12px", borderRadius: 8, backgroundColor: "var(--ob-raised)", border: "1px solid var(--hair)" }}>
+                      <div style={{ ...mutedStyle }}>{f.label}</div>
+                      <div style={{ fontSize: 18, color: "var(--glass)", fontWeight: 500, marginTop: 4 }}>{f.value}</div>
+                      {f.prev !== null && (
+                        <div style={{ ...mutedStyle, marginTop: 2 }}>
+                          {drop(f.prev, f.value)}% drop
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+
         {/* API Health board */}
         <section style={cardStyle}>
           <div className="flex items-center gap-3 mb-5">
