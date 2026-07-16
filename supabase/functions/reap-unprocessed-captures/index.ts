@@ -23,40 +23,24 @@ const handler = async (req: Request): Promise<Response> => {
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const admin = createClient(supabaseUrl, serviceRoleKey);
 
-  // Candidates: entries older than 10 min, extract_attempts < 3, oldest first.
-  const cutoff = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-  const { data: candidates, error: candErr } = await admin
-    .from("entries")
-    .select("id, user_id, extract_attempts, created_at")
-    .lt("created_at", cutoff)
-    .lt("extract_attempts", 3)
-    .order("created_at", { ascending: true })
-    .limit(100);
-  if (candErr) {
-    console.error("[reap-unprocessed-captures] candidates error", candErr.message);
-    return new Response(JSON.stringify({ error: candErr.message }), {
+  // Ask Postgres for the actually-stuck entries via anti-join on source_registry.
+  // Avoids the fetch-oldest-100-then-filter bug that missed recent stuck captures.
+  const { data: stuckRows, error: rpcErr } = await admin.rpc("pending_capture_entries", {
+    p_limit: 25,
+  });
+  if (rpcErr) {
+    console.error("[reap-unprocessed-captures] rpc error", rpcErr.message);
+    return new Response(JSON.stringify({ error: rpcErr.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-
-  const scanned = (candidates || []).length;
-  if (scanned === 0) {
+  const stuck = (stuckRows || []) as Array<{ id: string; user_id: string; extract_attempts: number }>;
+  if (stuck.length === 0) {
     return new Response(JSON.stringify({ scanned: 0, reprocessed: 0 }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-
-  // Filter out those already processed by source_registry.
-  const ids = (candidates || []).map((e: any) => e.id);
-  const { data: regRows } = await admin
-    .from("source_registry")
-    .select("source_id")
-    .eq("source_type", "entry")
-    .eq("processed", true)
-    .in("source_id", ids);
-  const processedSet = new Set((regRows || []).map((r: any) => r.source_id as string));
-  const stuck = (candidates || []).filter((e: any) => !processedSet.has(e.id)).slice(0, 25);
 
   let reprocessed = 0;
   for (const e of stuck) {
