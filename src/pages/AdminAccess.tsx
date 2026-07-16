@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -84,9 +84,8 @@ const AdminAccess = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [seniorityFilter, setSeniorityFilter] = useState<string>("all");
   const [sectorFilter, setSectorFilter] = useState<string>("all");
-  const [activeInvite, setActiveInvite] = useState<string | null>(null);
-  const [noteByRow, setNoteByRow] = useState<Record<string, string>>({});
   const [sendingId, setSendingId] = useState<string | null>(null);
+  const [resendingId, setResendingId] = useState<string | null>(null);
   const [directEmail, setDirectEmail] = useState("");
   const [directName, setDirectName] = useState("");
   const [directSending, setDirectSending] = useState(false);
@@ -107,8 +106,11 @@ const AdminAccess = () => {
   const [copiedUser, setCopiedUser] = useState<string | null>(null);
 
   // Delete-user state
-  const [confirmEmail, setConfirmEmail] = useState<string | null>(null);
+  const [confirmDeleteRow, setConfirmDeleteRow] = useState<{ email: string; name: string | null } | null>(null);
   const [deletingEmail, setDeletingEmail] = useState<string | null>(null);
+
+  const FOUNDER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
+  const PROTECTED_EMAIL = "mmahafzah8386@gmail.com";
 
   // QA health check
   type QAResult = { step: number; action: string; passed: boolean; error: string | null; duration_ms: number };
@@ -258,15 +260,15 @@ const AdminAccess = () => {
       toast.error(e?.message || "Couldn't delete user");
     } finally {
       setDeletingEmail(null);
-      setConfirmEmail(null);
+      setConfirmDeleteRow(null);
     }
   };
 
   const counts = useMemo(() => {
-    const c = { pending: 0, approved: 0, active: 0 };
+    const c = { pending: 0, invited: 0, active: 0 };
     for (const r of rows) {
       if (r.status === "pending") c.pending++;
-      else if (r.status === "approved") c.approved++;
+      else if (r.status === "invited" || r.status === "approved") c.invited++;
       else if (r.status === "active") c.active++;
     }
     return c;
@@ -304,14 +306,29 @@ const AdminAccess = () => {
             : r
         )
       );
-      setActiveInvite(null);
-      setNoteByRow((prev) => ({ ...prev, [row.id]: "" }));
       toast.success(`Invite sent to ${row.email}`);
       fetchRows();
     } catch (err: any) {
       toast.error(err?.message || "Couldn't send invite");
     } finally {
       setSendingId(null);
+    }
+  };
+
+  const resendInvite = async (row: Row) => {
+    setResendingId(row.id);
+    try {
+      await callSendInvite(row.email, row.name);
+      setRows((prev) =>
+        prev.map((r) =>
+          r.id === row.id ? { ...r, invited_at: new Date().toISOString() } : r
+        )
+      );
+      toast.success(`Invite resent to ${row.email}`);
+    } catch (err: any) {
+      toast.error(err?.message || "Couldn't resend invite");
+    } finally {
+      setResendingId(null);
     }
   };
 
