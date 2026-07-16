@@ -553,6 +553,7 @@ export type Database = {
           last_visit_at: string | null
           leadership_style: string | null
           level: string | null
+          lifecycle_opt_out: boolean
           linkedin_handle: string | null
           linkedin_url: string | null
           north_star_goal: string | null
@@ -594,6 +595,7 @@ export type Database = {
           last_visit_at?: string | null
           leadership_style?: string | null
           level?: string | null
+          lifecycle_opt_out?: boolean
           linkedin_handle?: string | null
           linkedin_url?: string | null
           north_star_goal?: string | null
@@ -635,6 +637,7 @@ export type Database = {
           last_visit_at?: string | null
           leadership_style?: string | null
           level?: string | null
+          lifecycle_opt_out?: boolean
           linkedin_handle?: string | null
           linkedin_url?: string | null
           north_star_goal?: string | null
@@ -1472,6 +1475,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      lifecycle_email_log: {
+        Row: {
+          id: string
+          message_key: string
+          sent_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          message_key: string
+          sent_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          message_key?: string
+          sent_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       lifecycle_emails: {
         Row: {
