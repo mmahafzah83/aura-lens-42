@@ -378,14 +378,24 @@ export default function AdminPeople() {
     const { data, error } = await supabase.functions.invoke("admin-console", {
       body: { action: "run_for_user", task: "send_nudge", user_id: uid, email_type: emailType },
     });
-    if (error) { toast.error(error.message || "Nudge failed"); return; }
-    const payload = data as any;
-    if (payload && payload.ok === false) {
-      const msg = payload?.result?.error || payload?.error || "Nudge failed";
-      toast.error(String(msg));
-      return;
+    if (error) { toast.error(`Failed: ${error.message || "invoke error"}`); return; }
+    const payload = (data ?? {}) as any;
+    const status = payload.status as "sent" | "skipped" | "error" | undefined;
+    if (status === "sent") {
+      toast.success("Nudge sent ✓");
+    } else if (status === "skipped") {
+      toast.message(`Already sent — skipped (${payload.reason ?? "already_sent"})`);
+    } else {
+      toast.error(`Failed: ${payload.message ?? payload.error ?? "unknown"}`);
     }
-    toast.success("Nudge sent");
+    // Refresh row's last_nudge in the table
+    setRows((prev) => prev.map((r) => {
+      if (r.user_id !== uid) return r;
+      if (status === "sent") {
+        return { ...r, last_nudge_type: emailType, last_nudge_at: new Date().toISOString() };
+      }
+      return r;
+    }));
   };
 
   return (
