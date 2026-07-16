@@ -1027,9 +1027,12 @@ const AdminAccess = () => {
           )}
         </div>
 
+        </>)}
+
+        {activeTab === "health" && (<>
         {/* System Health */}
         <div
-          className="rounded-2xl p-6 mt-8"
+          className="rounded-2xl p-6"
           style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}
         >
           <div className="flex items-start justify-between gap-4 mb-4">
