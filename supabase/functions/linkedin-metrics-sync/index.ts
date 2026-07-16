@@ -252,6 +252,7 @@ async function syncConnection(
       .from("influence_snapshots")
       .select("snapshot_date, followers")
       .eq("user_id", conn.user_id)
+      .eq("source_type", "linkedin_api")
       .in("snapshot_date", dates);
     const existingMap = new Map<string, number | null>();
     for (const r of existing ?? []) existingMap.set(r.snapshot_date as string, (r as any).followers ?? null);
@@ -263,7 +264,7 @@ async function syncConnection(
     }
     const { error: upErr } = await adminClient
       .from("influence_snapshots")
-      .upsert(rows, { onConflict: "user_id,snapshot_date" });
+      .upsert(rows, { onConflict: "user_id,snapshot_date,source_type" });
     if (upErr) throw new Error(`upsert:${upErr.message}`);
     report.days_upserted = rows.length;
 
