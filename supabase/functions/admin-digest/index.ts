@@ -157,6 +157,82 @@ Deno.serve(async (req) => {
       .gte("created_at", dayAgo);
     const activeUsers = new Set((activeRows || []).map((r: any) => r.user_id).filter(Boolean)).size;
 
+    // ===== ERRORS (24h from ef_error_log) =====
+    const SELF_LOOP_ERR = new Set(["api-health-sentinel", "admin-notify", "admin-digest"]);
+    const { data: errRows } = await admin
+      .from("ef_error_log")
+      .select("function_name, severity")
+      .gte("created_at", dayAgo);
+    const filteredErrs = (errRows || []).filter(
+      (r: any) => !SELF_LOOP_ERR.has(r.function_name),
+    );
+    const errTotal = filteredErrs.length;
+    const sevRank: Record<string, number> = { critical: 3, high: 2, info: 1 };
+    const errByFn = new Map<string, { count: number; worst: string }>();
+    let hasCriticalOrHigh = false;
+    for (const r of filteredErrs) {
+      const fn = (r as any).function_name || "unknown";
+      const sev = String((r as any).severity || "high").toLowerCase();
+      if (sev === "critical" || sev === "high") hasCriticalOrHigh = true;
+      const cur = errByFn.get(fn) || { count: 0, worst: "info" };
+      cur.count += 1;
+      if ((sevRank[sev] || 2) > (sevRank[cur.worst] || 1)) cur.worst = sev;
+      errByFn.set(fn, cur);
+    }
+    const topErrFns = [...errByFn.entries()]
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 3);
+    const errorsOk = errTotal === 0 || !hasCriticalOrHigh;
+
+    // ===== PIPELINES =====
+    // Capture → Signal
+    const { data: unpRows } = await admin
+      .from("source_events")
+      .select("occurred_at")
+      .is("processed_at", null);
+    const nowMs = Date.now();
+    const sixHoursAgo = nowMs - 6 * 60 * 60 * 1000;
+    let oldestMs = Infinity;
+    let over6h = 0;
+    for (const r of unpRows || []) {
+      const t = new Date((r as any).occurred_at).getTime();
+      if (!Number.isFinite(t)) continue;
+      if (t < oldestMs) oldestMs = t;
+      if (t < sixHoursAgo) over6h += 1;
+    }
+    const unprocessed = (unpRows || []).length;
+    const oldestHours = Number.isFinite(oldestMs) ? Math.round((nowMs - oldestMs) / 3.6e6) : null;
+    const captureHigh = (oldestHours ?? 0) > 24 || over6h > 10;
+    const captureOk = over6h === 0;
+
+    // Scoring freshness
+    const { data: newestScore } = await admin
+      .from("score_snapshots")
+      .select("created_at")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const scoreTs = newestScore?.created_at ? new Date(newestScore.created_at as string).getTime() : null;
+    const scoreAgeH = scoreTs ? Math.round((nowMs - scoreTs) / 3.6e6) : null;
+    const scoringStale = !scoreTs || (scoreAgeH ?? 0) > 26;
+
+    // Onboarding (last 24h)
+    const { data: obRows } = await admin
+      .from("onboarding_article_log")
+      .select("outcome")
+      .gte("created_at", dayAgo);
+    const obBreakdown: Record<string, number> = {};
+    let obDegraded = 0;
+    for (const r of obRows || []) {
+      const o = String((r as any).outcome || "none");
+      obBreakdown[o] = (obBreakdown[o] || 0) + 1;
+      if (o !== "perplexity") obDegraded += 1;
+    }
+    const obTotal = (obRows || []).length;
+    const onboardingOk = obDegraded === 0;
+
+    const pipelinesOk = captureOk && !scoringStale && onboardingOk;
+
     // ===== VERDICT =====
     const anyApiFailed = !!(apiLatest && (apiLatest.failed || 0) > 0);
     const cronFailCount = failedList.length;
@@ -167,9 +243,18 @@ Deno.serve(async (req) => {
       cronFailCount > 0,
       behind > 0,
       aiFail24 > 10,
+      hasCriticalOrHigh,
+      captureHigh,
+      scoringStale,
     ];
     const attentionCount = attentionFlags.filter(Boolean).length;
-    const critical = anyApiFailed || cronFailCount > 0 || pctBudget >= 100;
+    const critical =
+      anyApiFailed ||
+      cronFailCount > 0 ||
+      pctBudget >= 100 ||
+      hasCriticalOrHigh ||
+      captureHigh ||
+      scoringStale;
     let verdictHtml: string;
     if (attentionCount === 0) {
       verdictHtml = `<div style="background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;padding:14px 16px;border-radius:8px;font-weight:600">🟢 All systems healthy — nothing needs you today.</div>`;
@@ -237,6 +322,47 @@ Deno.serve(async (req) => {
     // Growth — informational, always OK
     const growthOk = true;
 
+    // Errors section HTML
+    const topErrHtml = topErrFns.length
+      ? topErrFns
+          .map(
+            ([fn, v]) =>
+              `<li>${esc(fn)} — <strong>${v.count}</strong> error${v.count === 1 ? "" : "s"} · worst: ${esc(v.worst)}</li>`,
+          )
+          .join("")
+      : "<li>All green ✅</li>";
+    const errorsAction = !errorsOk
+      ? action(
+          topErrFns.length
+            ? `check ${esc(topErrFns[0][0])} — ${topErrFns[0][1].count} error${topErrFns[0][1].count === 1 ? "" : "s"}`
+            : "review ef_error_log",
+        )
+      : "";
+
+    // Pipelines section HTML
+    const captureLine = captureHigh
+      ? `Capture → Signal: ⚠️ <strong>${unprocessed}</strong> unprocessed · oldest <strong>${oldestHours ?? "n/a"}h</strong> · &gt;6h old: <strong>${over6h}</strong>`
+      : over6h > 0
+        ? `Capture → Signal: <strong>${unprocessed}</strong> unprocessed · oldest ${oldestHours ?? "n/a"}h · &gt;6h old: ${over6h}`
+        : `Capture → Signal: ✅ <strong>${unprocessed}</strong> unprocessed${oldestHours !== null ? ` · oldest ${oldestHours}h` : ""}`;
+    const scoringLine = scoringStale
+      ? `Scoring: ⚠️ newest snapshot ${scoreAgeH === null ? "never" : `<strong>${scoreAgeH}h</strong> old`} (threshold 26h)`
+      : `Scoring: ✅ newest snapshot <strong>${scoreAgeH}h</strong> old`;
+    const obBreakdownTxt = Object.entries(obBreakdown)
+      .map(([k, v]) => `${esc(k)}=${v}`)
+      .join(", ") || "none";
+    const onboardingLine = onboardingOk
+      ? `Onboarding: ✅ ${obTotal} run${obTotal === 1 ? "" : "s"} in 24h${obTotal > 0 ? " — all perplexity" : ""}`
+      : `Onboarding: ⚠️ ${obDegraded}/${obTotal} degraded · ${obBreakdownTxt}`;
+    const pipelinesAction =
+      captureHigh
+        ? action(`Capture backlog: ${unprocessed} unprocessed, oldest ${oldestHours}h. Check detect-signals-v2 / ingest-source-event logs.`)
+        : scoringStale
+          ? action("Scoring cron did not produce output in 26h. Check calculate-aura-score / compute-imprint.")
+          : !onboardingOk
+            ? action("Onboarding is using fallback paths. Check perplexity API health.")
+            : "";
+
     const html = `
 <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;max-width:640px;margin:0 auto;color:#111;line-height:1.5;padding:8px">
   <h2 style="margin:0 0 4px;font-size:20px">Aura — Daily Admin Digest</h2>
@@ -272,6 +398,20 @@ Deno.serve(async (req) => {
   <ul style="margin:4px 0 0 20px;font-size:13px">${cronHtml}</ul>
   ${cronAction}
 
+  ${sectionTitle("🐞", "Errors (24h)", errorsOk)}
+  ${meaning("Functions that threw errors in the last day.")}
+  <div>Total errors: <strong>${errTotal}</strong>${errByFn.size > 0 ? ` · functions affected: <strong>${errByFn.size}</strong>` : ""}</div>
+  <div style="margin-top:6px;font-size:13px;color:#374151">Top offenders:</div>
+  <ol style="margin:2px 0 0 20px;font-size:13px">${topErrHtml}</ol>
+  ${errorsAction}
+
+  ${sectionTitle("🔧", "Pipelines", pipelinesOk)}
+  ${meaning("Is each core loop actually moving?")}
+  <div style="margin-top:4px">${captureLine}</div>
+  <div style="margin-top:4px">${scoringLine}</div>
+  <div style="margin-top:4px">${onboardingLine}</div>
+  ${pipelinesAction}
+
   ${sectionTitle("📈", "Growth", growthOk)}
   ${meaning("New signups + who used Aura in 24h.")}
   <div>New profiles: <strong>${newProfiles || 0}</strong> · Active users: <strong>${activeUsers}</strong></div>
@@ -306,8 +446,16 @@ Deno.serve(async (req) => {
     const notifyBody = await notifyRes.json().catch(() => ({}));
 
     return json({ success: true, sent: notifyRes.ok, notify: notifyBody, stats: {
-      spendMTD, projected, budget, fresh, stale, followersBroken: followersBroken.length,
-      cron_failed_jobs: failedList.length, new_profiles: newProfiles || 0, active_users: activeUsers,
+      spendMTD, projected, budget,
+      linkedin: { upToDate, behind, collecting },
+      cron_failed_jobs: failedList.length,
+      errors_24h: errTotal,
+      pipelines: {
+        capture_backlog: { unprocessed, oldest_hours: oldestHours, over_6h: over6h },
+        scoring_age_hours: scoreAgeH,
+        onboarding: { total: obTotal, degraded: obDegraded, breakdown: obBreakdown },
+      },
+      new_profiles: newProfiles || 0, active_users: activeUsers,
     } });
   } catch (e) {
     console.error("admin-digest error", e);
