@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowUpRight, ArrowDownRight, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { latestRealFollowers, realFollowerSeries } from "@/lib/influenceState";
 
 type TimeRange = "7d" | "30d" | "90d" | "all";
 
@@ -35,8 +36,9 @@ const DailySnapshotEngine = () => {
   const avgEngagement = snapshots.length > 0
     ? Math.round(snapshots.reduce((s, r) => s + Number(r.engagement_rate || 0), 0) / snapshots.length * 10) / 10
     : 0;
-  const latestFollowers = snapshots[0]?.followers || 0;
-  const netGrowth = snapshots.length >= 2 ? (snapshots[0]?.followers || 0) - (snapshots[snapshots.length - 1]?.followers || 0) : 0;
+  const realFollowers = latestRealFollowers(snapshots);
+  const series = realFollowerSeries(snapshots);
+  const netGrowth = series.length >= 2 ? series[series.length - 1].followers - series[0].followers : 0;
 
   const ranges: { key: TimeRange; label: string }[] = [
     { key: "7d", label: "7 days" },
@@ -85,10 +87,14 @@ const DailySnapshotEngine = () => {
           {/* Key figures — restrained */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { label: "Followers", value: latestFollowers.toLocaleString(), change: netGrowth },
-              { label: "Impressions", value: totalImpressions.toLocaleString() },
-              { label: "Reactions", value: totalReactions.toLocaleString() },
-              { label: "Avg Engagement", value: `${avgEngagement}%` },
+              {
+                label: "Followers",
+                value: realFollowers === null ? "Collecting…" : realFollowers.toLocaleString(),
+                change: realFollowers === null ? 0 : netGrowth,
+              },
+              { label: "Impressions", value: totalImpressions > 0 ? totalImpressions.toLocaleString() : "—" },
+              { label: "Reactions", value: totalReactions > 0 ? totalReactions.toLocaleString() : "—" },
+              { label: "Avg Engagement", value: avgEngagement > 0 ? `${avgEngagement}%` : "—" },
             ].map(m => (
               <div key={m.label} className="p-3.5 rounded-xl bg-secondary/10 border border-border/5">
                 <p className="text-lg font-bold text-foreground tabular-nums">{m.value}</p>
@@ -108,7 +114,9 @@ const DailySnapshotEngine = () => {
             {snapshots.slice(0, 30).map(snap => (
               <div key={snap.snapshot_date} className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-secondary/8 transition-colors">
                 <span className="text-xs tabular-nums text-muted-foreground/60 w-24">{snap.snapshot_date}</span>
-                <span className="text-xs tabular-nums text-foreground/70">{snap.followers?.toLocaleString()}</span>
+                <span className="text-xs tabular-nums text-foreground/70">
+                  {snap.followers && snap.followers > 0 ? snap.followers.toLocaleString() : "—"}
+                </span>
                 {snap.follower_growth !== 0 && (
                   <span className={`text-xs tabular-nums w-12 text-right ${snap.follower_growth > 0 ? "text-primary/50" : "text-muted-foreground/40"}`}>
                     {snap.follower_growth > 0 ? "+" : ""}{snap.follower_growth}
