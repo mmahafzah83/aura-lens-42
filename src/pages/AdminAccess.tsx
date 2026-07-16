@@ -117,35 +117,6 @@ const AdminAccess = () => {
   const FOUNDER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
   const PROTECTED_EMAIL = "mmahafzah8386@gmail.com";
 
-  // QA health check
-  type QAResult = { step: number; action: string; passed: boolean; error: string | null; duration_ms: number };
-  type QAReport = { id: string; run_at: string; total_checks: number; passed: number; failed: number; results: QAResult[] };
-  const [qaReports, setQaReports] = useState<QAReport[]>([]);
-  const [qaRunning, setQaRunning] = useState(false);
-
-  const fetchQaReports = async () => {
-    const { data } = await supabase
-      .from("qa_reports")
-      .select("id, run_at, total_checks, passed, failed, results")
-      .order("run_at", { ascending: false })
-      .limit(10);
-    setQaReports((data || []) as QAReport[]);
-  };
-
-  const runQaCheck = async () => {
-    setQaRunning(true);
-    try {
-      const { error } = await supabase.functions.invoke("run-qa-walkthrough", { body: {} });
-      if (error) throw error;
-      toast.success("QA check complete");
-      await fetchQaReports();
-    } catch (e: any) {
-      toast.error(e?.message || "QA check failed");
-    } finally {
-      setQaRunning(false);
-    }
-  };
-
   const seedCapture = async () => {
     const url = seedUrl.trim();
     if (!seedUserId) { toast.error("Pick a user"); return; }
@@ -206,7 +177,6 @@ const AdminAccess = () => {
   useEffect(() => {
     if (!authChecked) return;
     fetchRows();
-    fetchQaReports();
     (async () => {
       const { data } = await supabase
         .from("beta_feedback")
