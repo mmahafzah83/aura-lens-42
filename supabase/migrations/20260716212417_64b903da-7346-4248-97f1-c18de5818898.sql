@@ -1,0 +1,1 @@
+ALTER TABLE public.entries ADD COLUMN IF NOT EXISTS extract_attempts integer NOT NULL DEFAULT 0;

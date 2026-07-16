@@ -923,6 +923,7 @@ export type Database = {
           content: string
           created_at: string
           embedding: string | null
+          extract_attempts: number
           framework_tag: string | null
           has_strategic_insight: boolean
           id: string
@@ -941,6 +942,7 @@ export type Database = {
           content: string
           created_at?: string
           embedding?: string | null
+          extract_attempts?: number
           framework_tag?: string | null
           has_strategic_insight?: boolean
           id?: string
@@ -959,6 +961,7 @@ export type Database = {
           content?: string
           created_at?: string
           embedding?: string | null
+          extract_attempts?: number
           framework_tag?: string | null
           has_strategic_insight?: boolean
           id?: string
