@@ -9,6 +9,8 @@ import {
   CheckCircle2,
   Loader2,
   XCircle,
+  TrendingDown,
+  Bug,
 } from "lucide-react";
 
 type ProviderResult = {
@@ -161,6 +163,15 @@ export default function Admin() {
   const drop = (prev: number, curr: number) => (prev > 0 ? Math.round(((prev - curr) / prev) * 100) : 0);
   const sevColor = (s: string) => (s === "high" ? "#dc2626" : s === "med" ? "#d97706" : "#16a34a");
 
+  const relTime = (iso: string) => {
+    const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+    if (diff < 60) return `${Math.floor(diff)}s ago`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
+  };
+  const trim = (s: string, n = 140) => (s && s.length > n ? s.slice(0, n) + "…" : s || "");
+
   return (
     <AdminShell title="Overview" subtitle="Admin at-a-glance">
       <div className="grid gap-6">
@@ -258,6 +269,81 @@ export default function Admin() {
             </div>
           )}
         </section>
+
+        {/* Biggest leak banner */}
+        {brief?.biggest_leak && brief.biggest_leak.stuck_count > 0 && (
+          <Link
+            to="/admin/journey"
+            className="flex items-center gap-3"
+            style={{
+              padding: "12px 16px",
+              borderRadius: 10,
+              backgroundColor: "var(--ob-panel)",
+              border: "1px solid var(--hair)",
+              borderLeft: "3px solid var(--brand)",
+              textDecoration: "none",
+            }}
+          >
+            <TrendingDown className="w-4 h-4 shrink-0" style={{ color: "var(--brand)" }} />
+            <span style={{ color: "var(--glass)", fontSize: 14 }}>
+              Biggest leak: <strong style={{ color: "var(--brand)" }}>{brief.biggest_leak.from_label} → {brief.biggest_leak.to_label}</strong> — {brief.biggest_leak.stuck_count} stuck
+            </span>
+            <ArrowRight className="w-4 h-4 shrink-0 ml-auto" style={{ color: "var(--glass-2)" }} />
+          </Link>
+        )}
+
+        {/* Issues today */}
+        {brief?.issues && (
+          <section style={cardStyle}>
+            <div className="flex items-center gap-3 mb-4">
+              <div
+                className="flex items-center justify-center"
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  backgroundColor: "var(--ob-raised)",
+                  border: "1px solid var(--hair)",
+                  color: brief.issues.count > 0 ? "#F87171" : "var(--brand)",
+                }}
+              >
+                <Bug className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 style={{ fontSize: 18, fontWeight: 600, margin: 0, color: "var(--glass)" }}>Issues today</h2>
+                <p style={{ margin: 0, ...mutedStyle }}>
+                  {brief.issues.count === 0 ? (
+                    "No errors in the last 24h ✓"
+                  ) : (
+                    <span style={{ color: "#F87171" }}>{brief.issues.count} error{brief.issues.count === 1 ? "" : "s"} in the last 24h</span>
+                  )}
+                </p>
+              </div>
+            </div>
+            {brief.issues.count > 0 && (
+              <div className="grid gap-2">
+                {brief.issues.recent.map((it: any, i: number) => (
+                  <div
+                    key={i}
+                    style={{
+                      padding: "10px 12px",
+                      borderRadius: 8,
+                      backgroundColor: "var(--ob-raised)",
+                      border: "1px solid var(--hair)",
+                      borderLeft: "3px solid #dc2626",
+                    }}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span style={{ color: "var(--glass)", fontSize: 13, fontFamily: "monospace" }}>{it.function_name}</span>
+                      <span style={mutedStyle}>{relTime(it.created_at)}</span>
+                    </div>
+                    <div style={{ ...mutedStyle, marginTop: 4 }}>{trim(it.error_message)}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
 
         {/* API Health board */}
         <section style={cardStyle}>

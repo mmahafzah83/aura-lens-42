@@ -404,13 +404,18 @@ serve(async (req) => {
       const realIds = realUsers.map((u) => u.id);
 
       // Parallel data fetch
-      const [profilesRes, entriesRes, signalsRes, spendTodayRes, spendMonthRes, budgetRes] = await Promise.all([
+      const safeIds = realIds.length ? realIds : ["00000000-0000-0000-0000-000000000000"];
+      const errWindow = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const [profilesRes, entriesRes, signalsRes, spendTodayRes, spendMonthRes, budgetRes, postsRes, snapsRes, errorsRes] = await Promise.all([
         admin.from("diagnostic_profiles").select("user_id, first_name, sector_focus").in("user_id", realIds.length ? realIds : ["00000000-0000-0000-0000-000000000000"]),
         admin.from("entries").select("user_id, created_at").in("user_id", realIds.length ? realIds : ["00000000-0000-0000-0000-000000000000"]),
-        admin.from("strategic_signals").select("user_id, created_at").in("user_id", realIds.length ? realIds : ["00000000-0000-0000-0000-000000000000"]),
+        admin.from("strategic_signals").select("user_id, created_at, status").in("user_id", realIds.length ? realIds : ["00000000-0000-0000-0000-000000000000"]),
         admin.from("ai_usage_log").select("est_cost_usd").gte("created_at", startOfToday.toISOString()),
         admin.from("ai_usage_log").select("est_cost_usd").gte("created_at", startOfMonth.toISOString()),
         admin.from("admin_settings").select("value").eq("key", "monthly_ai_budget_usd").maybeSingle(),
+        admin.from("linkedin_posts").select("user_id, source_type, tracking_status, created_at").in("user_id", safeIds),
+        admin.from("score_snapshots").select("user_id, score, created_at").in("user_id", safeIds).order("created_at", { ascending: false }),
+        admin.from("ef_error_log").select("function_name, error_message, created_at").gte("created_at", errWindow.toISOString()).order("created_at", { ascending: false }).limit(50),
       ]);
 
       const profiles = profilesRes.data ?? [];
@@ -483,6 +488,19 @@ serve(async (req) => {
 
       const severityRank: Record<string, number> = { high: 0, med: 1, low: 2 };
       attention.sort((a, b) => severityRank[a.severity] - severityRank[b.severity]);
+      // Issues in last 24h from ef_error_log
+      const errorRows = (errorsRes.data ?? []) as any[];
+      const issues = {
+        count: errorRows.length,
+        recent: errorRows.slice(0, 5).map((r) => ({
+          function_name: r.function_name,
+          error_message: r.error_message,
+          created_at: r.created_at,
+        })),
+      };
+      if (issues.count > 0) {
+        attention.unshift({ severity: "high", text: `${issues.count} function errors in last 24h`, link: "/admin" });
+      }
       const trimmed = attention.slice(0, 6);
       if (trimmed.length === 0) {
         trimmed.push({ severity: "low", text: "All healthy — no action needed.", link: "/admin/people" });
@@ -490,6 +508,89 @@ serve(async (req) => {
 
       const firstCapture = activated;
       const firstSignal = withSignal;
+
+      // Biggest leak — 8-stage journey drop
+      const posts = (postsRes.data ?? []) as any[];
+      const snaps = (snapsRes.data ?? []) as any[];
+      const activeSigCount = new Map<string, number>();
+      for (const s of signals as any[]) {
+        if (String(s.status ?? "active") === "active") {
+          activeSigCount.set(s.user_id, (activeSigCount.get(s.user_id) ?? 0) + 1);
+        }
+      }
+      const draftCount = new Map<string, number>();
+      const publishCount = new Map<string, number>();
+      for (const p of posts) {
+        if (p.source_type === "aura" || p.source_type === "aura_generated") {
+          draftCount.set(p.user_id, (draftCount.get(p.user_id) ?? 0) + 1);
+        }
+        if (p.tracking_status === "published") {
+          publishCount.set(p.user_id, (publishCount.get(p.user_id) ?? 0) + 1);
+        }
+      }
+      const latestScore = new Map<string, number>();
+      for (const s of snaps) {
+        if (!latestScore.has(s.user_id) && typeof s.score === "number") latestScore.set(s.user_id, Number(s.score));
+      }
+      type StageKey = "signed_up" | "onboarded" | "first_capture" | "first_signal" | "first_draft" | "first_publish" | "active_rhythm" | "growing";
+      const STAGES: { key: StageKey; label: string }[] = [
+        { key: "signed_up", label: "Signed up" },
+        { key: "onboarded", label: "Onboarded" },
+        { key: "first_capture", label: "First capture" },
+        { key: "first_signal", label: "First signal" },
+        { key: "first_draft", label: "First draft" },
+        { key: "first_publish", label: "First publish" },
+        { key: "active_rhythm", label: "Active rhythm" },
+        { key: "growing", label: "Growing" },
+      ];
+      const stageOf = (uid: string): StageKey => {
+        const prof = profileMap.get(uid);
+        const caps = captureCount.get(uid) ?? 0;
+        const sigs = activeSigCount.get(uid) ?? 0;
+        const drafts = draftCount.get(uid) ?? 0;
+        const pubs = publishCount.get(uid) ?? 0;
+        const last = lastCapture.get(uid);
+        const rhythm = !!last && (now.getTime() - last) / dayMs <= 7 && caps >= 3;
+        const score = latestScore.get(uid) ?? 0;
+        if (score >= 35 || pubs >= 3) return "growing";
+        if (rhythm) return "active_rhythm";
+        if (pubs > 0) return "first_publish";
+        if (drafts > 0) return "first_draft";
+        if (sigs > 0) return "first_signal";
+        if (caps > 0) return "first_capture";
+        if (prof?.sector_focus) return "onboarded";
+        return "signed_up";
+      };
+      const stageCounts: Record<StageKey, number> = {
+        signed_up: 0, onboarded: 0, first_capture: 0, first_signal: 0,
+        first_draft: 0, first_publish: 0, active_rhythm: 0, growing: 0,
+      };
+      for (const u of realUsers) {
+        const k = stageOf(u.id);
+        const idx = STAGES.findIndex((s) => s.key === k);
+        for (let i = 0; i <= idx; i++) stageCounts[STAGES[i].key] += 1;
+      }
+      const prePublish = new Set<StageKey>(["signed_up", "onboarded", "first_capture", "first_signal", "first_draft"]);
+      let leakIdx = 1;
+      let leakDrop = -1;
+      let leakPrePublish = false;
+      for (let i = 1; i < STAGES.length; i++) {
+        const prev = stageCounts[STAGES[i - 1].key];
+        const curr = stageCounts[STAGES[i].key];
+        const dropCount = prev - curr;
+        const isPre = prePublish.has(STAGES[i].key);
+        // Prefer pre-publish stage on tie
+        if (dropCount > leakDrop || (dropCount === leakDrop && isPre && !leakPrePublish)) {
+          leakIdx = i;
+          leakDrop = dropCount;
+          leakPrePublish = isPre;
+        }
+      }
+      const biggest_leak = {
+        from_label: STAGES[leakIdx - 1].label,
+        to_label: STAGES[leakIdx].label,
+        stuck_count: Math.max(0, leakDrop),
+      };
 
       return json({
         totals: {
@@ -516,6 +617,8 @@ serve(async (req) => {
           first_signal: firstSignal,
         },
         attention: trimmed,
+        issues,
+        biggest_leak,
       });
     }
 
