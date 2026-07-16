@@ -40,7 +40,10 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const subject = String(body.subject || "").slice(0, 300);
     const message = String(body.body || "").slice(0, 4000);
-    const severity = String(body.severity || "info");
+    const rawSeverity = String(body.severity || "info").toLowerCase();
+    const severity: "critical" | "high" | "info" =
+      rawSeverity === "critical" || rawSeverity === "high" ? rawSeverity : "info";
+    const force_email = body.force_email === true;
     const dedupe_key = String(body.dedupe_key || "").slice(0, 200);
     const isHtml = body.html === true;
 
@@ -75,7 +78,8 @@ Deno.serve(async (req) => {
     }
 
     let emailed = false;
-    if (!duplicate && RESEND && ADMIN_ALERT_EMAIL) {
+    const shouldEmail = severity === "critical" || severity === "high" || force_email;
+    if (!duplicate && shouldEmail && RESEND && ADMIN_ALERT_EMAIL) {
       const bodyBlock = isHtml
         ? message
         : `<pre style="font:13px/1.5 monospace;background:#0f0e0c;color:#ededed;padding:12px;border-radius:8px;white-space:pre-wrap;">${esc(message)}</pre>`;
@@ -95,7 +99,7 @@ Deno.serve(async (req) => {
       if (!er.ok) console.error("[admin-notify] email failed", er.status, (await er.text()).slice(0, 200));
     }
 
-    return json({ ok: true, duplicate, emailed });
+    return json({ ok: true, duplicate, emailed, severity, gated: !shouldEmail });
   } catch (e) {
     console.error("admin-notify error", e);
     return json({ error: (e as Error).message }, 500);
