@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.99.3";
+import { withObserve } from "../_shared/observe.ts";
 import * as XLSX from "https://esm.sh/xlsx@0.18.5";
 
 const corsHeaders = {
@@ -36,7 +37,7 @@ const toNum = (v: unknown): number => {
   return isNaN(n) ? 0 : n;
 };
 
-Deno.serve(async (req) => {
+Deno.serve(withObserve("import-linkedin-analytics", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -290,4 +291,4 @@ Deno.serve(async (req) => {
     console.error("import-linkedin-analytics error:", e);
     return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
   }
-});
+}));

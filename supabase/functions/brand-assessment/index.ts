@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
@@ -79,7 +80,7 @@ OUTPUT RULE: After the full prose output, add a line "---JSON---" followed by a 
 }`;
 
 
-serve(async (req) => {
+serve(withObserve("brand-assessment", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -221,4 +222,4 @@ Analyse this professional using all six frameworks and provide the complete bran
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
-});
+}));

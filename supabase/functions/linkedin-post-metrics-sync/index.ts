@@ -1,4 +1,5 @@
 // linkedin-post-metrics-sync — daily per-post LinkedIn analytics for Aura-published posts.
+import { withObserve } from "../_shared/observe.ts";
 // Uses memberCreatorPostAnalytics with q=entity (wrapped: (share:urn%3Ali%3Ashare%3A<id>)
 // or (ugc:urn%3Ali%3AugcPost%3A<id>)) and aggregation=TOTAL (lifetime totals per post).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -208,7 +209,7 @@ async function syncUser(
   return report;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withObserve("linkedin-post-metrics-sync", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -272,4 +273,4 @@ Deno.serve(async (req) => {
   } catch (e) {
     return json({ error: (e as Error)?.message || String(e) }, 500);
   }
-});
+}));

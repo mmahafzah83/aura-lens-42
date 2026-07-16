@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
@@ -34,7 +35,7 @@ YOUR 2 BLIND SPOTS Two lowest-scoring dimensions. For each: name the dimension, 
 
 Keep all language direct, specific, and commercial. No coaching jargon, no personality-development language, no generic motivation or filler.`;
 
-serve(async (req) => {
+serve(withObserve("audit-interpretation", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -109,4 +110,4 @@ serve(async (req) => {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-});
+}));
