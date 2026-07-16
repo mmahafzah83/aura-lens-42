@@ -499,9 +499,10 @@ Deno.serve(async (req) => {
       const windowStartIso = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
       const { data: recentEntries } = await admin
         .from("entries")
-        .select("id, user_id, created_at")
+        .select("id, user_id, created_at, extract_attempts")
         .lt("created_at", thirtyMinAgoIso)
-        .gte("created_at", windowStartIso);
+        .gte("created_at", windowStartIso)
+        .gte("extract_attempts", 3);
       const entryList = (recentEntries || []) as Array<{ id: string; user_id: string; created_at: string }>;
       if (entryList.length > 0) {
         const ids = entryList.map((e) => e.id);
