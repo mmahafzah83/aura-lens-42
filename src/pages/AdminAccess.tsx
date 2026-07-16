@@ -1092,6 +1092,8 @@ const AdminAccess = () => {
             </div>
           )}
         </div>
+        </>)}
+
       <AlertDialog
         open={!!confirmInviteRow}
         onOpenChange={(open) => { if (!open) setConfirmInviteRow(null); }}
