@@ -1,4 +1,5 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { buildConfidenceExplanation } from "../_shared/confidence.ts";
 import { canonicalizeTags } from "../_shared/themeCanon.ts";
@@ -141,7 +142,7 @@ function unique<T>(arr: T[]): T[] { return [...new Set(arr)]; }
 
 /* ── main ── */
 
-Deno.serve(async (req) => {
+Deno.serve(withObserve("detect-signals-v2", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -475,4 +476,4 @@ ${identityCtx}`;
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-});
+}));

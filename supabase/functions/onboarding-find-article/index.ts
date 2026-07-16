@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
@@ -99,7 +100,7 @@ function parseArticle(content: string, citations: string[]) {
   return null;
 }
 
-serve(async (req) => {
+serve(withObserve("onboarding-find-article", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -209,4 +210,4 @@ serve(async (req) => {
     logRow();
     return json({ found: true, article: pick });
   }
-});
+}));
