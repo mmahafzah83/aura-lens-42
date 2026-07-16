@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { logAIUsage } from "../_shared/logAIUsage.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -136,6 +137,16 @@ Deno.serve(async (req) => {
       });
       if (perpRes.ok) {
         const perpData = await perpRes.json();
+        try {
+          EdgeRuntime.waitUntil(logAIUsage({
+            user_id: user?.id ?? null,
+            function_name: "sovereign-reading-list",
+            provider: "perplexity",
+            model: perpData.model,
+            input_tokens: perpData.usage?.prompt_tokens,
+            output_tokens: perpData.usage?.completion_tokens,
+          }));
+        } catch (_) { /* non-blocking */ }
         perplexityContent = perpData?.choices?.[0]?.message?.content || "";
         perplexityCitations = (perpData?.citations || [])
           .filter((u: unknown): u is string => typeof u === "string" && u.startsWith("http"));
