@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { formatSmartDate } from "@/lib/formatDate";
+import { latestRealFollowers } from "@/lib/influenceState";
 
 interface LinkedInConnectionStatus {
   connected: boolean;
@@ -29,6 +30,7 @@ const LinkedInConnector = ({ onConnectionChange, onSyncStateChange }: LinkedInCo
   const [disconnecting, setDisconnecting] = useState(false);
   const [snapshotCount, setSnapshotCount] = useState(0);
   const [postCount, setPostCount] = useState(0);
+  const [followers, setFollowers] = useState<number | null>(null);
   const { toast } = useToast();
 
   const checkStatus = useCallback(async () => {
@@ -36,10 +38,14 @@ const LinkedInConnector = ({ onConnectionChange, onSyncStateChange }: LinkedInCo
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { setStatus({ connected: false }); setLoading(false); return; }
 
+      const { data: { user } } = await supabase.auth.getUser();
+      const postsQuery = (supabase.from("linkedin_post_metrics" as any) as any)
+        .select("post_id", { count: "exact", head: true });
+      if (user?.id) postsQuery.eq("user_id", user.id);
       const [statusRes, timelineRes, postsRes] = await Promise.all([
         supabase.functions.invoke("linkedin-oauth", { body: { action: "status" } }),
-        (supabase.from("influence_timeline" as any) as any).select("snapshot_date").order("snapshot_date", { ascending: false }).limit(30),
-        (supabase.from("linkedin_post_metrics" as any) as any).select("post_id", { count: "exact", head: true }),
+        (supabase.from("influence_timeline" as any) as any).select("snapshot_date, followers").order("snapshot_date", { ascending: false }).limit(30),
+        postsQuery,
       ]);
 
       if (statusRes.error) {
@@ -49,8 +55,10 @@ const LinkedInConnector = ({ onConnectionChange, onSyncStateChange }: LinkedInCo
         onConnectionChange?.(statusRes.data?.connected || false, statusRes.data?.connection || null);
       }
 
-      setSnapshotCount((timelineRes.data || []).length);
+      const tl = timelineRes.data || [];
+      setSnapshotCount(tl.length);
       setPostCount(postsRes.count || 0);
+      setFollowers(latestRealFollowers(tl));
     } catch {
       setStatus({ connected: false });
     }
@@ -113,6 +121,7 @@ const LinkedInConnector = ({ onConnectionChange, onSyncStateChange }: LinkedInCo
         setStatus({ connected: false });
         setSnapshotCount(0);
         setPostCount(0);
+        setFollowers(null);
       }
     } catch {
       toast({ title: "Error", description: "Couldn't disconnect.", variant: "destructive" });
@@ -191,7 +200,7 @@ const LinkedInConnector = ({ onConnectionChange, onSyncStateChange }: LinkedInCo
                   <FileText className="w-3.5 h-3.5 text-muted-foreground/50" />
                   <span className="text-label text-xs">Posts</span>
                 </div>
-                <p className="text-sm font-semibold text-foreground tabular-nums">{postCount}</p>
+                <p className="text-sm font-semibold text-foreground tabular-nums">{postCount > 0 ? postCount : "—"}</p>
               </div>
 
               <div className="p-3 rounded-xl bg-secondary/20 border border-border/10">
@@ -199,7 +208,9 @@ const LinkedInConnector = ({ onConnectionChange, onSyncStateChange }: LinkedInCo
                   <Database className="w-3.5 h-3.5 text-muted-foreground/50" />
                   <span className="text-label text-xs">Snapshots</span>
                 </div>
-                <p className="text-sm font-semibold text-foreground tabular-nums">{snapshotCount}</p>
+                <p className="text-sm font-semibold text-foreground tabular-nums">
+                  {followers !== null ? followers.toLocaleString() : snapshotCount > 0 ? "Collecting…" : "—"}
+                </p>
               </div>
             </div>
 
