@@ -434,9 +434,11 @@ Deno.serve(async (req) => {
     const pipelines: {
       scoring_fresh: { newest: string | null; age_hours: number | null; severity: "high" | "ok" };
       onboarding_degraded: { total: number; degraded: number; breakdown: Record<string, number>; severity: "info" | "ok" };
+      capture_unprocessed: { count: number; oldest_age_hours: number | null; distinct_users: number; severity: "high" | "ok" };
     } = {
       scoring_fresh: { newest: null, age_hours: null, severity: "ok" },
       onboarding_degraded: { total: 0, degraded: 0, breakdown: {}, severity: "ok" },
+      capture_unprocessed: { count: 0, oldest_age_hours: null, distinct_users: 0, severity: "ok" },
     };
     try {
       const now = Date.now();
@@ -488,6 +490,49 @@ Deno.serve(async (req) => {
           "pipeline:onboarding-fallback",
           "info",
         );
+      }
+
+      // 4) CAPTURE UNPROCESSED — entries older than 30m without a processed source_registry row.
+      // Uses source_registry.processed (the real per-capture outcome set by extract-evidence),
+      // so legitimate empty extractions (processed=true, fragment_count=0) don't fire.
+      const thirtyMinAgoIso = new Date(now - 30 * 60 * 1000).toISOString();
+      const windowStartIso = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const { data: recentEntries } = await admin
+        .from("entries")
+        .select("id, user_id, created_at")
+        .lt("created_at", thirtyMinAgoIso)
+        .gte("created_at", windowStartIso);
+      const entryList = (recentEntries || []) as Array<{ id: string; user_id: string; created_at: string }>;
+      if (entryList.length > 0) {
+        const ids = entryList.map((e) => e.id);
+        const { data: regRows } = await admin
+          .from("source_registry")
+          .select("source_id")
+          .eq("source_type", "entry")
+          .eq("processed", true)
+          .in("source_id", ids);
+        const processedSet = new Set((regRows || []).map((r: any) => r.source_id as string));
+        const unprocessed = entryList.filter((e) => !processedSet.has(e.id));
+        if (unprocessed.length > 0) {
+          const oldestTs = unprocessed.reduce(
+            (m, e) => Math.min(m, new Date(e.created_at).getTime()),
+            Number.POSITIVE_INFINITY,
+          );
+          const oldestAgeH = Math.round((now - oldestTs) / 3.6e6);
+          const distinctUsers = new Set(unprocessed.map((e) => e.user_id)).size;
+          pipelines.capture_unprocessed = {
+            count: unprocessed.length,
+            oldest_age_hours: oldestAgeH,
+            distinct_users: distinctUsers,
+            severity: "high",
+          };
+          await notify(
+            "Capture stuck — unprocessed entries",
+            `${unprocessed.length} entr${unprocessed.length === 1 ? "y" : "ies"} older than 30m have no processed source_registry row.\nOldest: ${oldestAgeH}h old · distinct users: ${distinctUsers}.\nThis means extract-evidence is not completing (or never fired) for the capture→signal chain.`,
+            "pipeline:capture-unprocessed",
+            "high",
+          );
+        }
       }
     } catch (e) {
       console.error("[sentinel] pipelines error", (e as Error).message);
