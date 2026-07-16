@@ -97,10 +97,12 @@ Deno.serve(async (req) => {
       .from("linkedin_connections")
       .select("user_id, display_name, handle")
       .eq("status", "active");
-    const staleCutoff = Date.now() - 48 * 60 * 60 * 1000;
-    let fresh = 0, stale = 0;
-    const followersBroken: string[] = [];
+    const staleCutoff = Date.now() - 72 * 60 * 60 * 1000; // LinkedIn analytics lag 1-2 days
+    let upToDate = 0, behind = 0, collecting = 0;
+    const behindNames: string[] = [];
+    const collectingNames: string[] = [];
     for (const c of conns || []) {
+      const label = c.display_name || c.handle || c.user_id;
       const { data: latest } = await admin
         .from("influence_timeline")
         .select("snapshot_date, followers")
@@ -108,11 +110,27 @@ Deno.serve(async (req) => {
         .order("snapshot_date", { ascending: false })
         .limit(1)
         .maybeSingle();
+      const { data: anchor } = await admin
+        .from("influence_timeline")
+        .select("snapshot_date")
+        .eq("user_id", c.user_id)
+        .gt("followers", 0)
+        .limit(1)
+        .maybeSingle();
+      const anchorExists = !!anchor;
+      if (!anchorExists) {
+        collecting++;
+        collectingNames.push(label);
+        continue;
+      }
       const d = latest?.snapshot_date ? new Date(latest.snapshot_date as string).getTime() : 0;
-      if (d && d >= staleCutoff) fresh++;
-      else stale++;
-      if (latest && (latest.followers === null || latest.followers === 0)) {
-        followersBroken.push(c.display_name || c.handle || c.user_id);
+      const stale = !d || d < staleCutoff;
+      const brokenFollowers = !latest || latest.followers === null || latest.followers === 0;
+      if (stale || brokenFollowers) {
+        behind++;
+        behindNames.push(label);
+      } else {
+        upToDate++;
       }
     }
 
@@ -139,41 +157,131 @@ Deno.serve(async (req) => {
       .gte("created_at", dayAgo);
     const activeUsers = new Set((activeRows || []).map((r: any) => r.user_id).filter(Boolean)).size;
 
+    // ===== VERDICT =====
+    const anyApiFailed = !!(apiLatest && (apiLatest.failed || 0) > 0);
+    const cronFailCount = failedList.length;
+    const aiFail24 = fail24hCount || 0;
+    const attentionFlags = [
+      pctBudget >= 80,
+      anyApiFailed,
+      cronFailCount > 0,
+      behind > 0,
+      aiFail24 > 10,
+    ];
+    const attentionCount = attentionFlags.filter(Boolean).length;
+    const critical = anyApiFailed || cronFailCount > 0 || pctBudget >= 100;
+    let verdictHtml: string;
+    if (attentionCount === 0) {
+      verdictHtml = `<div style="background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;padding:14px 16px;border-radius:8px;font-weight:600">🟢 All systems healthy — nothing needs you today.</div>`;
+    } else if (critical) {
+      verdictHtml = `<div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:14px 16px;border-radius:8px;font-weight:600">🔴 ${attentionCount} item${attentionCount === 1 ? "" : "s"} need attention</div>`;
+    } else {
+      verdictHtml = `<div style="background:#fffbeb;border:1px solid #fde68a;color:#92400e;padding:14px 16px;border-radius:8px;font-weight:600">🟡 ${attentionCount} item${attentionCount === 1 ? "" : "s"} to review</div>`;
+    }
+
     // ===== BUILD HTML =====
+    const pill = (ok: boolean) =>
+      ok
+        ? `<span style="display:inline-block;background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600;vertical-align:middle">✅ OK</span>`
+        : `<span style="display:inline-block;background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600;vertical-align:middle">⚠️ Needs attention</span>`;
+    const meaning = (t: string) =>
+      `<div style="color:#6b7280;font-style:italic;font-size:13px;margin:4px 0 8px">${t}</div>`;
+    const action = (t: string) =>
+      `<div style="margin-top:8px;color:#7c2d12;font-size:13px">→ ${t}</div>`;
+    const sectionTitle = (emoji: string, name: string, ok: boolean) =>
+      `<div style="display:flex;align-items:center;justify-content:space-between;margin-top:22px;margin-bottom:2px"><h3 style="margin:0;font-size:16px">${emoji} ${name}</h3>${pill(ok)}</div>`;
+
+    // Cost section
+    const costOk = pctBudget < 80 && aiFail24 <= 10;
     const top3Html = top3.length
       ? top3.map(([fn, v]) => `<li>${esc(fn)} — $${v.toFixed(2)}</li>`).join("")
       : "<li><em>no usage</em></li>";
-    const cronHtml = failedList.length
-      ? failedList.map((r: any) => `<li>${esc(r.jobname)} — ${r.failed} failure(s)</li>`).join("")
-      : "<li>All green ✅</li>";
-    const brokenHtml = followersBroken.length
-      ? `<div style="color:#b45309">Followers null/0 for: ${esc(followersBroken.join(", "))}</div>`
+    const costAction =
+      pctBudget >= 100
+        ? action("Over budget. Review top spenders and cap or optimize prompts.")
+        : pctBudget >= 80
+          ? action("Tracking above 80% of budget. Review top spenders before month-end.")
+          : aiFail24 > 10
+            ? action(`${aiFail24} AI calls failed in 24h. Check /admin/cost and provider status.`)
+            : "";
+
+    // API section
+    const apiOk = !anyApiFailed && !!apiLatest;
+    const apiAction = anyApiFailed
+      ? action("One or more providers failed. Check API health page and rotate keys if needed.")
+      : !apiLatest
+        ? action("No health check has run yet. Verify the sentinel cron is active.")
+        : "";
+
+    // LinkedIn section
+    const liOk = behind === 0;
+    const behindHtml = behindNames.length
+      ? `<div style="margin-top:6px">Behind: <strong>${esc(behindNames.join(", "))}</strong></div>`
+      : "";
+    const collectingHtml = collectingNames.length
+      ? `<div style="color:#6b7280;font-size:13px;margin-top:2px">Collecting (new, filling in): ${esc(collectingNames.join(", "))}</div>`
+      : "";
+    const liAction = behind > 0
+      ? action("Run linkedin-metrics-sync for affected users, or check sync_errors.")
       : "";
 
+    // Cron section
+    const cronOk = cronFailCount === 0;
+    const cronHtml = failedList.length
+      ? failedList.map((r: any) => `<li>${esc(r.jobname)} — ${r.failed} failure(s)${r.last_fail ? ` · last ${esc(String(r.last_fail))}` : ""}</li>`).join("")
+      : "<li>All green ✅</li>";
+    const cronAction = cronFailCount > 0
+      ? action("Open /admin/crons and re-run failed jobs; check edge-function logs.")
+      : "";
+
+    // Growth — informational, always OK
+    const growthOk = true;
+
     const html = `
-<div style="font-family:system-ui,sans-serif;max-width:640px;color:#111;line-height:1.5">
-  <h2 style="margin:0 0 4px">Aura — Daily Admin Digest</h2>
-  <div style="color:#666;font-size:12px;margin-bottom:16px">${esc(todayStr)}</div>
+<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;max-width:640px;margin:0 auto;color:#111;line-height:1.5;padding:8px">
+  <h2 style="margin:0 0 4px;font-size:20px">Aura — Daily Admin Digest</h2>
+  <div style="color:#6b7280;font-size:12px;margin-bottom:14px">${esc(todayStr)}</div>
 
-  <h3>💸 Cost</h3>
-  <div>Spend MTD: <strong>$${spendMTD.toFixed(2)}</strong> · Projected: <strong>$${projected.toFixed(2)}</strong> · Budget: $${budget.toFixed(2)} (<strong>${pctBudget}%</strong>)</div>
-  <div>AI success rate (24h): <strong>${successRate === null ? "n/a" : successRate + "%"}</strong> (${total24hCount || 0} calls, ${fail24hCount || 0} failed)</div>
-  <div style="margin-top:6px">Top 3 by spend this month:</div>
-  <ol style="margin:4px 0 12px 20px">${top3Html}</ol>
+  ${verdictHtml}
 
-  <h3>🩺 API Health</h3>
-  <div>${apiLatest ? `Latest run ${esc(String(apiLatest.run_at))}: ${providerRows} — ${apiLatest.checked} checked, ${apiLatest.failed} failed` : "no runs yet"}</div>
+  ${sectionTitle("💸", "Cost", costOk)}
+  ${meaning("What Aura spent on AI this month.")}
+  <div>Spend MTD: <strong>$${spendMTD.toFixed(2)}</strong> of <strong>$${budget.toFixed(2)}</strong> budget (<strong>${pctBudget}%</strong>)</div>
+  <div style="color:#374151">At this pace, ~<strong>$${projected.toFixed(2)}</strong> by month-end.</div>
+  <div style="margin-top:4px">24h AI calls: <strong>${total24hCount || 0}</strong> · failed: <strong>${aiFail24}</strong> · success rate: <strong>${successRate === null ? "n/a" : successRate + "%"}</strong></div>
+  <div style="margin-top:6px;font-size:13px;color:#374151">Top 3 spenders this month:</div>
+  <ol style="margin:2px 0 0 20px;font-size:13px">${top3Html}</ol>
+  ${costAction}
 
-  <h3>🔗 LinkedIn Data</h3>
-  <div>Active connections: <strong>${(conns || []).length}</strong> · fresh (&lt;48h): <strong>${fresh}</strong> · stale: <strong>${stale}</strong></div>
-  ${brokenHtml}
+  ${sectionTitle("🩺", "API Health", apiOk)}
+  ${meaning("Are the AI providers responding right now?")}
+  <div>${apiLatest ? `${providerRows} — <strong>${apiLatest.checked}</strong> checked, <strong>${apiLatest.failed}</strong> failed` : "No runs yet."}</div>
+  ${apiLatest ? `<div style="color:#6b7280;font-size:12px">Last checked ${esc(String(apiLatest.run_at))}</div>` : ""}
+  ${apiAction}
 
-  <h3>⏰ Crons (24h)</h3>
-  <div>Failed jobs: <strong>${failedList.length}</strong> · total failures: <strong>${totalFailed}</strong>${totalRunsCount !== null ? ` · total runs: <strong>${totalRunsCount}</strong>` : ""}</div>
-  <ul style="margin:4px 0 12px 20px">${cronHtml}</ul>
+  ${sectionTitle("🔗", "LinkedIn Data", liOk)}
+  ${meaning("Is each user's analytics current? (LinkedIn lags 1–2 days.)")}
+  <div>Active users: <strong>${(conns || []).length}</strong> · up to date: <strong>${upToDate}</strong> · collecting: <strong>${collecting}</strong> · behind: <strong>${behind}</strong></div>
+  ${behindHtml}
+  ${collectingHtml}
+  ${liAction}
 
-  <h3>📈 Growth (24h)</h3>
-  <div>New profiles: <strong>${newProfiles || 0}</strong> · Active users (AI usage): <strong>${activeUsers}</strong></div>
+  ${sectionTitle("⏰", "Background Jobs", cronOk)}
+  ${meaning("Scheduled syncs — all should run daily.")}
+  <div>Failed jobs (24h): <strong>${cronFailCount}</strong> · total failures: <strong>${totalFailed}</strong>${totalRunsCount !== null ? ` · total runs: <strong>${totalRunsCount}</strong>` : ""}</div>
+  <ul style="margin:4px 0 0 20px;font-size:13px">${cronHtml}</ul>
+  ${cronAction}
+
+  ${sectionTitle("📈", "Growth", growthOk)}
+  ${meaning("New signups + who used Aura in 24h.")}
+  <div>New profiles: <strong>${newProfiles || 0}</strong> · Active users: <strong>${activeUsers}</strong></div>
+
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:22px 0 10px" />
+  <div style="color:#6b7280;font-size:12px;line-height:1.6">
+    <strong>Legend:</strong> <em>Collecting</em> = new user, no follower total yet (expected).
+    <em>Behind</em> = we have a baseline but the latest snapshot is &gt;72h old or missing followers.
+    <em>MTD</em> = month-to-date spend. <em>Projected</em> = extrapolated month-end at current pace.
+  </div>
 </div>`.trim();
 
     // ===== SEND via admin-notify =====
