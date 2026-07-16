@@ -185,26 +185,7 @@ Deno.serve(async (req) => {
     const errorsOk = errTotal === 0 || !hasCriticalOrHigh;
 
     // ===== PIPELINES =====
-    // Capture → Signal
-    const { data: unpRows } = await admin
-      .from("source_events")
-      .select("occurred_at")
-      .is("processed_at", null);
     const nowMs = Date.now();
-    const sixHoursAgo = nowMs - 6 * 60 * 60 * 1000;
-    let oldestMs = Infinity;
-    let over6h = 0;
-    for (const r of unpRows || []) {
-      const t = new Date((r as any).occurred_at).getTime();
-      if (!Number.isFinite(t)) continue;
-      if (t < oldestMs) oldestMs = t;
-      if (t < sixHoursAgo) over6h += 1;
-    }
-    const unprocessed = (unpRows || []).length;
-    const oldestHours = Number.isFinite(oldestMs) ? Math.round((nowMs - oldestMs) / 3.6e6) : null;
-    const captureHigh = (oldestHours ?? 0) > 24 || over6h > 10;
-    const captureOk = over6h === 0;
-
     // Scoring freshness
     const { data: newestScore } = await admin
       .from("score_snapshots")
@@ -231,7 +212,7 @@ Deno.serve(async (req) => {
     const obTotal = (obRows || []).length;
     const onboardingOk = obDegraded === 0;
 
-    const pipelinesOk = captureOk && !scoringStale && onboardingOk;
+    const pipelinesOk = !scoringStale && onboardingOk;
 
     // ===== VERDICT =====
     const anyApiFailed = !!(apiLatest && (apiLatest.failed || 0) > 0);
@@ -244,7 +225,6 @@ Deno.serve(async (req) => {
       behind > 0,
       aiFail24 > 10,
       hasCriticalOrHigh,
-      captureHigh,
       scoringStale,
     ];
     const attentionCount = attentionFlags.filter(Boolean).length;
@@ -253,7 +233,6 @@ Deno.serve(async (req) => {
       cronFailCount > 0 ||
       pctBudget >= 100 ||
       hasCriticalOrHigh ||
-      captureHigh ||
       scoringStale;
     let verdictHtml: string;
     if (attentionCount === 0) {
@@ -340,11 +319,6 @@ Deno.serve(async (req) => {
       : "";
 
     // Pipelines section HTML
-    const captureLine = captureHigh
-      ? `Capture → Signal: ⚠️ <strong>${unprocessed}</strong> unprocessed · oldest <strong>${oldestHours ?? "n/a"}h</strong> · &gt;6h old: <strong>${over6h}</strong>`
-      : over6h > 0
-        ? `Capture → Signal: <strong>${unprocessed}</strong> unprocessed · oldest ${oldestHours ?? "n/a"}h · &gt;6h old: ${over6h}`
-        : `Capture → Signal: ✅ <strong>${unprocessed}</strong> unprocessed${oldestHours !== null ? ` · oldest ${oldestHours}h` : ""}`;
     const scoringLine = scoringStale
       ? `Scoring: ⚠️ newest snapshot ${scoreAgeH === null ? "never" : `<strong>${scoreAgeH}h</strong> old`} (threshold 26h)`
       : `Scoring: ✅ newest snapshot <strong>${scoreAgeH}h</strong> old`;
@@ -355,13 +329,11 @@ Deno.serve(async (req) => {
       ? `Onboarding: ✅ ${obTotal} run${obTotal === 1 ? "" : "s"} in 24h${obTotal > 0 ? " — all perplexity" : ""}`
       : `Onboarding: ⚠️ ${obDegraded}/${obTotal} degraded · ${obBreakdownTxt}`;
     const pipelinesAction =
-      captureHigh
-        ? action(`Capture backlog: ${unprocessed} unprocessed, oldest ${oldestHours}h. Check detect-signals-v2 / ingest-source-event logs.`)
-        : scoringStale
-          ? action("Scoring cron did not produce output in 26h. Check calculate-aura-score / compute-imprint.")
-          : !onboardingOk
-            ? action("Onboarding is using fallback paths. Check perplexity API health.")
-            : "";
+      scoringStale
+        ? action("Scoring cron did not produce output in 26h. Check calculate-aura-score / compute-imprint.")
+        : !onboardingOk
+          ? action("Onboarding is using fallback paths. Check perplexity API health.")
+          : "";
 
     const html = `
 <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;max-width:640px;margin:0 auto;color:#111;line-height:1.5;padding:8px">
@@ -407,7 +379,6 @@ Deno.serve(async (req) => {
 
   ${sectionTitle("🔧", "Pipelines", pipelinesOk)}
   ${meaning("Is each core loop actually moving?")}
-  <div style="margin-top:4px">${captureLine}</div>
   <div style="margin-top:4px">${scoringLine}</div>
   <div style="margin-top:4px">${onboardingLine}</div>
   ${pipelinesAction}
@@ -451,7 +422,6 @@ Deno.serve(async (req) => {
       cron_failed_jobs: failedList.length,
       errors_24h: errTotal,
       pipelines: {
-        capture_backlog: { unprocessed, oldest_hours: oldestHours, over_6h: over6h },
         scoring_age_hours: scoreAgeH,
         onboarding: { total: obTotal, degraded: obDegraded, breakdown: obBreakdown },
       },

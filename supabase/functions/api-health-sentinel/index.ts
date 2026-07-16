@@ -432,63 +432,15 @@ Deno.serve(async (req) => {
 
     // ============ Pipeline heartbeats (silent stall detection) ============
     const pipelines: {
-      capture_backlog: { unprocessed: number; oldest_hours: number | null; over_6h: number; severity: "high" | "info" | "ok" };
       scoring_fresh: { newest: string | null; age_hours: number | null; severity: "high" | "ok" };
       onboarding_degraded: { total: number; degraded: number; breakdown: Record<string, number>; severity: "info" | "ok" };
     } = {
-      capture_backlog: { unprocessed: 0, oldest_hours: null, over_6h: 0, severity: "ok" },
       scoring_fresh: { newest: null, age_hours: null, severity: "ok" },
       onboarding_degraded: { total: 0, degraded: 0, breakdown: {}, severity: "ok" },
     };
     try {
-      // 1) CAPTURE → SIGNAL backlog
-      const { data: unpRows } = await admin
-        .from("source_events")
-        .select("occurred_at, event_type")
-        .is("processed_at", null);
       const now = Date.now();
-      const sixHoursAgo = now - 6 * 60 * 60 * 1000;
-      let oldest = Infinity;
-      let over6h = 0;
-      const typeCounts = new Map<string, number>();
-      for (const r of unpRows || []) {
-        const t = new Date((r as any).occurred_at).getTime();
-        if (Number.isFinite(t)) {
-          if (t < oldest) oldest = t;
-          if (t < sixHoursAgo) over6h += 1;
-        }
-        const et = (r as any).event_type || "unknown";
-        typeCounts.set(et, (typeCounts.get(et) || 0) + 1);
-      }
-      const oldestHours = Number.isFinite(oldest) ? Math.round((now - oldest) / 3.6e6) : null;
-      pipelines.capture_backlog.unprocessed = (unpRows || []).length;
-      pipelines.capture_backlog.oldest_hours = oldestHours;
-      pipelines.capture_backlog.over_6h = over6h;
-
-      const typeTxt = [...typeCounts.entries()]
-        .sort((a, b) => b[1] - a[1])
-        .map(([k, v]) => `${k}=${v}`)
-        .join(", ") || "none";
-
-      if ((oldestHours ?? 0) > 24 || over6h > 10) {
-        pipelines.capture_backlog.severity = "high";
-        await notify(
-          "Capture → Signal backlog",
-          `Unprocessed source_events: ${pipelines.capture_backlog.unprocessed}\nOldest: ${oldestHours ?? "n/a"}h\n>6h old: ${over6h}\nEvent types: ${typeTxt}`,
-          "pipeline:capture-backlog",
-          "high",
-        );
-      } else if (over6h >= 1) {
-        pipelines.capture_backlog.severity = "info";
-        await notify(
-          "Capture backlog (minor)",
-          `Unprocessed source_events: ${pipelines.capture_backlog.unprocessed}\nOldest: ${oldestHours ?? "n/a"}h\n>6h old: ${over6h}\nEvent types: ${typeTxt}`,
-          "pipeline:capture-backlog-minor",
-          "info",
-        );
-      }
-
-      // 2) SCORING freshness
+      // 1) SCORING freshness
       const { data: newestScore } = await admin
         .from("score_snapshots")
         .select("created_at")
