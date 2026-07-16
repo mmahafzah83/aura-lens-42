@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { buildContentDNA, VOICE_PRECEDENCE, NUMBER_INTEGRITY } from "../_shared/contentDNA.ts";
+import { logAIUsage } from "../_shared/logAIUsage.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -510,6 +511,16 @@ FINAL OUTPUT RULE (highest priority): Your response IS the post. The first chara
       }
 
       const aiJson = await response.json();
+      try {
+        EdgeRuntime.waitUntil(logAIUsage({
+          user_id: effectiveUserId ?? null,
+          function_name: "generate-authority-content",
+          provider: "anthropic",
+          model: aiJson.model,
+          input_tokens: aiJson.usage?.input_tokens,
+          output_tokens: aiJson.usage?.output_tokens,
+        }));
+      } catch (_) { /* non-blocking */ }
       let content = (aiJson.content || []).map((c: any) => c.text || "").join("") || "";
       // Safety net: strip any meta format-label the model may have prepended,
       // and remove "---" horizontal rules / leading "# " headers that the

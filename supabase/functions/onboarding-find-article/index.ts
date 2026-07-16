@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { logAIUsage } from "../_shared/logAIUsage.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -36,7 +37,7 @@ const CURATED_FALLBACKS: Array<{ url: string; title: string; summary: string; so
   },
 ];
 
-async function callPerplexity(apiKey: string, prompt: string, userQuery: string) {
+async function callPerplexity(apiKey: string, prompt: string, userQuery: string, userId?: string | null) {
   const perpRes = await fetch("https://api.perplexity.ai/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
@@ -51,6 +52,16 @@ async function callPerplexity(apiKey: string, prompt: string, userQuery: string)
   });
   if (!perpRes.ok) return null;
   const perpData = await perpRes.json();
+  try {
+    EdgeRuntime.waitUntil(logAIUsage({
+      user_id: userId ?? null,
+      function_name: "onboarding-find-article",
+      provider: "perplexity",
+      model: perpData.model,
+      input_tokens: perpData.usage?.prompt_tokens,
+      output_tokens: perpData.usage?.completion_tokens,
+    }));
+  } catch (_) { /* non-blocking */ }
   const content: string = perpData?.choices?.[0]?.message?.content || "";
   const citations: string[] = (perpData?.citations || []).filter(
     (u: unknown): u is string => typeof u === "string" && u.startsWith("http"),
@@ -147,7 +158,7 @@ serve(async (req) => {
       try {
         const searchQuery = [core_practice, sector_focus].filter(Boolean).join(" ") + " strategic implications executive briefing";
         const prompt = `Find ONE recent high-quality article about ${sector_focus || core_practice} from a trusted source (McKinsey, HBR, BCG, Deloitte, EY, Gartner, industry publications). Return a JSON object: {"title": "article title", "url": "direct article URL", "summary": "2-sentence strategic summary", "source": "publisher name"}. Only 2025-2026 content.`;
-        const r = await callPerplexity(PERPLEXITY_KEY, prompt, searchQuery);
+        const r = await callPerplexity(PERPLEXITY_KEY, prompt, searchQuery, logUserId);
         if (r) {
           const article = parseArticle(r.content, r.citations);
           if (article) {
@@ -166,7 +177,7 @@ serve(async (req) => {
         const anchor = sector_focus || core_practice;
         const broadQuery = `${anchor} executive strategy 2026`;
         const prompt = `Find ONE strategic executive-level article about "${anchor}". Trusted publishers only (McKinsey, HBR, BCG, Deloitte, EY, Gartner, Bain, WEF). Return a JSON object: {"title": "article title", "url": "direct article URL", "summary": "2-sentence strategic summary", "source": "publisher name"}. If unsure, still return the closest match.`;
-        const r = await callPerplexity(PERPLEXITY_KEY, prompt, broadQuery);
+        const r = await callPerplexity(PERPLEXITY_KEY, prompt, broadQuery, logUserId);
         if (r) {
           const article = parseArticle(r.content, r.citations);
           if (article) {
