@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { logAIUsage } from "../_shared/logAIUsage.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -85,6 +86,16 @@ serve(async (req) => {
     }
 
     const data = await response.json();
+    try {
+      EdgeRuntime.waitUntil(logAIUsage({
+        user_id: userData.user.id,
+        function_name: "audit-interpretation",
+        provider: "anthropic",
+        model: data.model,
+        input_tokens: data.usage?.input_tokens,
+        output_tokens: data.usage?.output_tokens,
+      }));
+    } catch (_) { /* non-blocking */ }
     const interpretation = (data.content || []).map((c: any) => c.text || "").join("") || "";
 
     return new Response(JSON.stringify({ interpretation }), {
