@@ -45,6 +45,7 @@ const NotificationBell = () => {
   const fetchNotifications = async () => {
     const { data } = await (supabase.from("notifications" as any) as any)
       .select("*")
+      .neq("type", "system")
       .order("created_at", { ascending: false })
       .limit(20);
     if (data) setNotifications(data);
