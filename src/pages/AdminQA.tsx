@@ -204,6 +204,35 @@ const AdminQA = () => {
   const screenshotsRef = useRef<{ page: string; imageBase64: string }[]>([]);
   const iframeContainerRef = useRef<HTMLDivElement | null>(null);
 
+  // End-to-end walkthrough (run-qa-walkthrough + qa_reports)
+  type QAResult = { step: number; action: string; passed: boolean; error: string | null; duration_ms: number };
+  type QAReport = { id: string; run_at: string; total_checks: number; passed: number; failed: number; results: QAResult[] };
+  const [qaReports, setQaReports] = useState<QAReport[]>([]);
+  const [qaRunning, setQaRunning] = useState(false);
+
+  const fetchQaReports = async () => {
+    const { data } = await supabase
+      .from("qa_reports")
+      .select("id, run_at, total_checks, passed, failed, results")
+      .order("run_at", { ascending: false })
+      .limit(10);
+    setQaReports((data || []) as QAReport[]);
+  };
+
+  const runQaCheck = async () => {
+    setQaRunning(true);
+    try {
+      const { error } = await supabase.functions.invoke("run-qa-walkthrough", { body: {} });
+      if (error) throw error;
+      toast.success("QA check complete");
+      await fetchQaReports();
+    } catch (e: any) {
+      toast.error(e?.message || "QA check failed");
+    } finally {
+      setQaRunning(false);
+    }
+  };
+
   // Auth gate
   useEffect(() => {
     let cancelled = false;
@@ -234,6 +263,7 @@ const AdminQA = () => {
   useEffect(() => {
     if (!authChecked) return;
     fetchHistory();
+    fetchQaReports();
   }, [authChecked]);
 
   // Resume mid-run after navigation? We restrict cross-route DOM audits to same-page virtual paths via SPA navigate.
