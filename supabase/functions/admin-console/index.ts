@@ -150,10 +150,6 @@ serve(async (req) => {
       return json({ error: "unknown task" }, 400);
     }
 
-    if (action === "overview_brief") {
-      // handled below (keep existing block)
-    }
-
     if (action === "journey") {
       const now = new Date();
       const dayMs = 86400000;
@@ -368,7 +364,7 @@ serve(async (req) => {
       return json({ stages, stuck, flags: { churn_risk: churnRisk, near_win: nearWin } });
     }
 
-    if (action === "overview_brief_placeholder_unused") {
+    if (action === "overview_brief") {
       const now = new Date();
       const startOfToday = new Date(now); startOfToday.setUTCHours(0, 0, 0, 0);
       const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
