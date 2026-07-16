@@ -109,6 +109,11 @@ const AdminAccess = () => {
   const [confirmDeleteRow, setConfirmDeleteRow] = useState<{ email: string; name: string | null } | null>(null);
   const [deletingEmail, setDeletingEmail] = useState<string | null>(null);
 
+  // In-page tabs + waitlist search (presentation only)
+  type TabKey = "waitlist" | "users" | "feedback" | "health";
+  const [activeTab, setActiveTab] = useState<TabKey>("waitlist");
+  const [searchQuery, setSearchQuery] = useState("");
+
   const FOUNDER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
   const PROTECTED_EMAIL = "mmahafzah8386@gmail.com";
 
@@ -275,13 +280,19 @@ const AdminAccess = () => {
   }, [rows]);
 
   const filtered = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
     return rows.filter((r) => {
       if (statusFilter !== "all" && r.status !== statusFilter) return false;
       if (seniorityFilter !== "all" && r.seniority !== seniorityFilter) return false;
       if (sectorFilter !== "all" && r.sector !== sectorFilter) return false;
+      if (q) {
+        const email = (r.email || "").toLowerCase();
+        const name = (r.name || "").toLowerCase();
+        if (!email.includes(q) && !name.includes(q)) return false;
+      }
       return true;
     });
-  }, [rows, statusFilter, seniorityFilter, sectorFilter]);
+  }, [rows, statusFilter, seniorityFilter, sectorFilter, searchQuery]);
 
   const callSendInvite = async (email: string, name: string | null) => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -409,6 +420,30 @@ const AdminAccess = () => {
 
   return (
     <AdminShell title="Access" subtitle="Manage waitlist and send invites">
+        {/* In-page tabs */}
+        <div className="flex flex-wrap gap-1 mb-6 p-1 rounded-lg" style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)", width: "fit-content" }}>
+          {([
+            { k: "waitlist", label: "Waitlist" },
+            { k: "users", label: "Users" },
+            { k: "feedback", label: "Feedback" },
+            { k: "health", label: "Health" },
+          ] as { k: TabKey; label: string }[]).map((t) => (
+            <button
+              key={t.k}
+              onClick={() => setActiveTab(t.k)}
+              className="text-xs px-3 py-1.5 rounded-md transition-colors"
+              style={
+                activeTab === t.k
+                  ? { backgroundColor: "var(--brand-muted)", color: "var(--brand)", border: "1px solid var(--bronze-line)" }
+                  : { backgroundColor: "transparent", color: "var(--ink-5)", border: "1px solid transparent" }
+              }
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === "waitlist" && (<>
         {/* Stats row */}
         <div className="flex flex-wrap gap-2 mb-6">
           <span className="text-xs px-3 py-1.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
@@ -565,6 +600,18 @@ const AdminAccess = () => {
               ))}
             </SelectContent>
           </Select>
+        </div>
+
+        {/* Waitlist search */}
+        <div className="mb-3">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search waitlist by email or name…"
+            className="w-full sm:w-[360px] px-3 py-2 rounded-md text-sm outline-none"
+            style={{ backgroundColor: "var(--ink)", border: "1px solid var(--ink-3)", color: "var(--ink-7)" }}
+          />
         </div>
 
         {/* Table */}
@@ -758,6 +805,9 @@ const AdminAccess = () => {
           )}
         </div>
 
+        </>)}
+
+        {activeTab === "users" && (<>
         {/* Seed Captures */}
         <div
           className="rounded-2xl p-6 mt-8"
@@ -917,9 +967,12 @@ const AdminAccess = () => {
           )}
         </div>
 
+        </>)}
+
+        {activeTab === "feedback" && (<>
         {/* NPS responses */}
         <div
-          className="rounded-2xl p-6 mt-8"
+          className="rounded-2xl p-6"
           style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}
         >
           <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--ink-7)" }}>
@@ -974,9 +1027,12 @@ const AdminAccess = () => {
           )}
         </div>
 
+        </>)}
+
+        {activeTab === "health" && (<>
         {/* System Health */}
         <div
-          className="rounded-2xl p-6 mt-8"
+          className="rounded-2xl p-6"
           style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}
         >
           <div className="flex items-start justify-between gap-4 mb-4">
@@ -1036,6 +1092,8 @@ const AdminAccess = () => {
             </div>
           )}
         </div>
+        </>)}
+
       <AlertDialog
         open={!!confirmInviteRow}
         onOpenChange={(open) => { if (!open) setConfirmInviteRow(null); }}
