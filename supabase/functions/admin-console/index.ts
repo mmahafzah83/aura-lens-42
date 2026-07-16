@@ -36,6 +36,7 @@ serve(async (req) => {
     const { data: userData, error: userErr } = await userClient.auth.getUser();
     if (userErr || !userData?.user) return json({ error: "unauthorized" }, 401);
     if (userData.user.id !== FOUNDER_ID) return json({ error: "forbidden" }, 403);
+    const actorId = userData.user.id;
 
     // Service-role client for data work
     const admin = createClient(SUPABASE_URL, SERVICE);
@@ -71,12 +72,13 @@ serve(async (req) => {
       const ids = users.map((u) => u.id);
       if (ids.length === 0) return json({ rows: [] });
 
-      const [profiles, entries, signals, posts, snaps] = await Promise.all([
+      const [profiles, entries, signals, posts, snaps, nudges] = await Promise.all([
         admin.from("diagnostic_profiles").select("user_id, first_name, sector_focus").in("user_id", ids),
         admin.from("entries").select("user_id").in("user_id", ids),
         admin.from("strategic_signals").select("user_id").in("user_id", ids),
         admin.from("linkedin_posts").select("user_id").in("user_id", ids),
         admin.from("score_snapshots").select("user_id, score, created_at").in("user_id", ids).order("created_at", { ascending: false }),
+        admin.from("lifecycle_emails").select("user_id, email_type, sent_at").in("user_id", ids).order("sent_at", { ascending: false }),
       ]);
 
       const profileMap = new Map<string, { first_name: string | null; sector_focus: string | null }>();
@@ -89,6 +91,12 @@ serve(async (req) => {
       (snaps.data ?? []).forEach((s: any) => {
         if (!latestSnap.has(s.user_id) && typeof s.score === "number") {
           latestSnap.set(s.user_id, Math.round(s.score));
+        }
+      });
+      const latestNudge = new Map<string, { type: string; at: string }>();
+      (nudges.data ?? []).forEach((n: any) => {
+        if (!latestNudge.has(n.user_id) && n.sent_at) {
+          latestNudge.set(n.user_id, { type: n.email_type, at: n.sent_at });
         }
       });
 
@@ -105,9 +113,63 @@ serve(async (req) => {
           signals: count(signals.data as any[], u.id),
           posts: count(posts.data as any[], u.id),
           imprint: latestSnap.get(u.id) ?? null,
+          last_nudge_type: latestNudge.get(u.id)?.type ?? null,
+          last_nudge_at: latestNudge.get(u.id)?.at ?? null,
         };
       });
       return json({ rows });
+    }
+
+    if (action === "user_detail") {
+      const target = String(body?.user_id || "");
+      if (!target) return json({ error: "user_id required" }, 400);
+      const [capturesRes, signalsRes, postsRes, snapsRes, nudgesRes, actionsRes] = await Promise.all([
+        admin.from("entries")
+          .select("id, title, content, image_url, created_at")
+          .eq("user_id", target).order("created_at", { ascending: false }).limit(10),
+        admin.from("strategic_signals")
+          .select("id, signal_title, confidence, status, created_at")
+          .eq("user_id", target).eq("status", "active").order("created_at", { ascending: false }).limit(20),
+        admin.from("linkedin_posts")
+          .select("id, source_type, tracking_status, post_text, created_at")
+          .eq("user_id", target).order("created_at", { ascending: false }).limit(10),
+        admin.from("score_snapshots")
+          .select("score, tier, created_at")
+          .eq("user_id", target).order("created_at", { ascending: false }).limit(10),
+        admin.from("lifecycle_emails")
+          .select("email_type, sent_at, metadata")
+          .eq("user_id", target).order("sent_at", { ascending: false }).limit(10),
+        admin.from("admin_action_log")
+          .select("action, task, result, detail, target_ref, created_at")
+          .eq("target_user_id", target).order("created_at", { ascending: false }).limit(10),
+      ]);
+      const captures = (capturesRes.data ?? []).map((e: any) => ({
+        id: e.id,
+        title: e.title,
+        snippet: (e.content ?? "").slice(0, 200),
+        image_url: e.image_url,
+        created_at: e.created_at,
+      }));
+      const posts = (postsRes.data ?? []).map((p: any) => ({
+        id: p.id,
+        source_type: p.source_type,
+        tracking_status: p.tracking_status,
+        snippet: (p.post_text ?? "").slice(0, 200),
+        created_at: p.created_at,
+      }));
+      const nudges = (nudgesRes.data ?? []).map((n: any) => ({
+        email_type: n.email_type,
+        sent_at: n.sent_at,
+        subject: n.metadata?.subject ?? null,
+      }));
+      return json({
+        captures,
+        signals: signalsRes.data ?? [],
+        posts,
+        imprint_history: snapsRes.data ?? [],
+        nudges,
+        actions: actionsRes.data ?? [],
+      });
     }
 
     if (action === "run_for_user") {
@@ -126,6 +188,15 @@ serve(async (req) => {
           body: JSON.stringify({ user_id: target }),
         });
         const out = await res.json().catch(() => ({}));
+        const score = out?.score ?? out?.imprint ?? out?.total ?? out?.aura_score ?? null;
+        await admin.from("admin_action_log").insert({
+          actor_id: actorId,
+          action: "run_for_user",
+          task: "recompute_score",
+          target_user_id: target,
+          result: res.ok ? "ok" : "error",
+          detail: res.ok ? { imprint: score } : { message: out?.error ?? "invoke failed" },
+        });
         return json({ ok: res.ok, result: out }, res.ok ? 200 : 500);
       }
 
@@ -135,17 +206,47 @@ serve(async (req) => {
         if (!ALLOWED.includes(requested as any)) {
           return json({ error: "invalid email_type" }, 400);
         }
-        const res = await fetch(`${SUPABASE_URL}/functions/v1/send-lifecycle-email`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${SERVICE}`,
-            apikey: SERVICE,
-          },
-          body: JSON.stringify({ user_id: target, email_type: requested }),
+        let status: "sent" | "skipped" | "error" = "error";
+        let reason: string | null = null;
+        let message: string | null = null;
+        let out: any = {};
+        try {
+          const res = await fetch(`${SUPABASE_URL}/functions/v1/send-lifecycle-email`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${SERVICE}`,
+              apikey: SERVICE,
+            },
+            body: JSON.stringify({ user_id: target, email_type: requested }),
+          });
+          out = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            status = "error";
+            message = out?.error ?? `HTTP ${res.status}`;
+          } else if (out?.skipped) {
+            status = "skipped";
+            reason = String(out.skipped);
+          } else if (out?.success) {
+            status = "sent";
+          } else {
+            status = "error";
+            message = "unexpected response";
+          }
+        } catch (e: any) {
+          status = "error";
+          message = e?.message ?? "invoke error";
+        }
+        await admin.from("admin_action_log").insert({
+          actor_id: actorId,
+          action: "run_for_user",
+          task: "send_nudge",
+          target_user_id: target,
+          target_ref: requested,
+          result: status,
+          detail: status === "skipped" ? { reason } : status === "error" ? { message } : {},
         });
-        const out = await res.json().catch(() => ({}));
-        return json({ ok: res.ok, result: out }, res.ok ? 200 : 500);
+        return json({ ok: status !== "error", status, reason, message, result: out });
       }
 
       return json({ error: "unknown task" }, 400);
