@@ -1087,6 +1087,31 @@ const AdminAccess = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <AlertDialog
+        open={!!confirmDeleteRow}
+        onOpenChange={(open) => { if (!open) setConfirmDeleteRow(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this user permanently?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes {confirmDeleteRow?.name || confirmDeleteRow?.email}'s auth account and all associated data.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const email = confirmDeleteRow?.email;
+                if (email) handleDeleteUser(email);
+              }}
+            >
+              Delete permanently
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminShell>
   );
 };
