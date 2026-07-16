@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -84,9 +84,8 @@ const AdminAccess = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [seniorityFilter, setSeniorityFilter] = useState<string>("all");
   const [sectorFilter, setSectorFilter] = useState<string>("all");
-  const [activeInvite, setActiveInvite] = useState<string | null>(null);
-  const [noteByRow, setNoteByRow] = useState<Record<string, string>>({});
   const [sendingId, setSendingId] = useState<string | null>(null);
+  const [resendingId, setResendingId] = useState<string | null>(null);
   const [directEmail, setDirectEmail] = useState("");
   const [directName, setDirectName] = useState("");
   const [directSending, setDirectSending] = useState(false);
@@ -107,8 +106,11 @@ const AdminAccess = () => {
   const [copiedUser, setCopiedUser] = useState<string | null>(null);
 
   // Delete-user state
-  const [confirmEmail, setConfirmEmail] = useState<string | null>(null);
+  const [confirmDeleteRow, setConfirmDeleteRow] = useState<{ email: string; name: string | null } | null>(null);
   const [deletingEmail, setDeletingEmail] = useState<string | null>(null);
+
+  const FOUNDER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
+  const PROTECTED_EMAIL = "mmahafzah8386@gmail.com";
 
   // QA health check
   type QAResult = { step: number; action: string; passed: boolean; error: string | null; duration_ms: number };
@@ -258,15 +260,15 @@ const AdminAccess = () => {
       toast.error(e?.message || "Couldn't delete user");
     } finally {
       setDeletingEmail(null);
-      setConfirmEmail(null);
+      setConfirmDeleteRow(null);
     }
   };
 
   const counts = useMemo(() => {
-    const c = { pending: 0, approved: 0, active: 0 };
+    const c = { pending: 0, invited: 0, active: 0 };
     for (const r of rows) {
       if (r.status === "pending") c.pending++;
-      else if (r.status === "approved") c.approved++;
+      else if (r.status === "invited" || r.status === "approved") c.invited++;
       else if (r.status === "active") c.active++;
     }
     return c;
@@ -304,14 +306,29 @@ const AdminAccess = () => {
             : r
         )
       );
-      setActiveInvite(null);
-      setNoteByRow((prev) => ({ ...prev, [row.id]: "" }));
       toast.success(`Invite sent to ${row.email}`);
       fetchRows();
     } catch (err: any) {
       toast.error(err?.message || "Couldn't send invite");
     } finally {
       setSendingId(null);
+    }
+  };
+
+  const resendInvite = async (row: Row) => {
+    setResendingId(row.id);
+    try {
+      await callSendInvite(row.email, row.name);
+      setRows((prev) =>
+        prev.map((r) =>
+          r.id === row.id ? { ...r, invited_at: new Date().toISOString() } : r
+        )
+      );
+      toast.success(`Invite resent to ${row.email}`);
+    } catch (err: any) {
+      toast.error(err?.message || "Couldn't resend invite");
+    } finally {
+      setResendingId(null);
     }
   };
 
@@ -398,7 +415,7 @@ const AdminAccess = () => {
             {counts.pending} pending
           </span>
           <span className="text-xs px-3 py-1.5 rounded-full bg-green-500/15 text-green-300 border border-green-500/30">
-            {counts.approved} approved
+            {counts.invited} invited
           </span>
           <span className="text-xs px-3 py-1.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30">
             {counts.active} active
@@ -580,8 +597,7 @@ const AdminAccess = () => {
                 </thead>
                 <tbody>
                   {filtered.map((r) => (
-                    <Fragment key={r.id}>
-                      <tr style={{ borderTop: "1px solid var(--ink-3)" }}>
+                    <tr key={r.id} style={{ borderTop: "1px solid var(--ink-3)" }}>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <div
@@ -658,10 +674,28 @@ const AdminAccess = () => {
                               </button>
                             </div>
                           )}
-                          {r.status === "approved" && (
-                            <span className="text-xs" style={{ color: "var(--ink-5)" }}>
-                              Invited ✓
-                            </span>
+                          {(r.status === "invited" || r.status === "approved") && (
+                            <div className="inline-flex items-center gap-2">
+                              <span className="text-xs" style={{ color: "var(--ink-5)" }}>
+                                Invited ✓ · {formatDate(r.invited_at)}
+                              </span>
+                              <button
+                                onClick={() => resendInvite(r)}
+                                disabled={resendingId === r.id}
+                                className="text-xs px-3 py-1.5 rounded-md font-medium transition-colors disabled:opacity-60"
+                                style={{
+                                  backgroundColor: "transparent",
+                                  color: "var(--brand)",
+                                  border: "1px solid var(--bronze-line)",
+                                }}
+                              >
+                                {resendingId === r.id ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <span className="inline-flex items-center gap-1.5"><Send className="w-3 h-3" /> Resend</span>
+                                )}
+                              </button>
+                            </div>
                           )}
                           {r.status === "active" && (
                             <span className="text-xs text-green-400">Active ✓</span>
@@ -673,53 +707,6 @@ const AdminAccess = () => {
                           )}
                         </td>
                       </tr>
-                      {activeInvite === r.id && r.status === "pending" && (
-                        <tr style={{ borderTop: "1px solid var(--ink-3)", backgroundColor: "rgba(255,255,255,0.02)" }}>
-                          <td colSpan={5} className="px-4 py-4">
-                            <div className="space-y-3">
-                              <textarea
-                                value={noteByRow[r.id] || ""}
-                                onChange={(e) =>
-                                  setNoteByRow((prev) => ({ ...prev, [r.id]: e.target.value }))
-                                }
-                                placeholder="Add a personal note (optional)"
-                                rows={3}
-                                className="w-full px-3 py-2 rounded-md text-sm outline-none focus:border-brand transition-colors"
-                                style={{
-                                  backgroundColor: "var(--ink)",
-                                  border: "1px solid var(--ink-3)",
-                                  color: "var(--ink-7)",
-                                }}
-                              />
-                              <div className="flex justify-end items-center gap-3">
-                                <button
-                                  onClick={() => setActiveInvite(null)}
-                                  className="text-xs"
-                                  style={{ color: "var(--ink-5)" }}
-                                >
-                                  Cancel
-                                </button>
-                                <button
-                                  onClick={() => sendInvite(r)}
-                                  disabled={sendingId === r.id}
-                                  className="text-xs px-4 py-2 rounded-md font-medium inline-flex items-center gap-1.5 disabled:opacity-60"
-                                  style={{ backgroundColor: "var(--brand)", color: "var(--ink)" }}
-                                >
-                                  {sendingId === r.id ? (
-                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                  ) : (
-                                    <>
-                                      <Send className="w-3 h-3" />
-                                      Send invite
-                                    </>
-                                  )}
-                                </button>
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </Fragment>
                   ))}
                 </tbody>
               </table>
@@ -885,7 +872,9 @@ const AdminAccess = () => {
             <div className="space-y-2">
               {rows.map((r) => {
                 const profile = activeUsers.find((u) => u.email.toLowerCase() === r.email.toLowerCase());
-                const isAdmin = r.email.toLowerCase() === "fayiz@aura-intel.org" || r.email.toLowerCase().includes("9e0c6ee1");
+                const isProtected =
+                  profile?.user_id === FOUNDER_ID ||
+                  r.email.toLowerCase() === PROTECTED_EMAIL;
                 const isDeleting = deletingEmail === r.email;
                 return (
                   <div
@@ -907,37 +896,18 @@ const AdminAccess = () => {
                         <span className="ml-2">Joined: {formatDate(r.invited_at || r.created_at || r.requested_at)}</span>
                       </div>
                     </div>
-                    {isAdmin ? (
-                      <span className="text-xs px-2 py-1 rounded" style={{ color: "var(--ink-5)", border: "1px dashed var(--ink-3)" }} title="Cannot delete your own account">
+                    {isProtected ? (
+                      <span className="text-xs px-2 py-1 rounded" style={{ color: "var(--ink-5)", border: "1px dashed var(--ink-3)" }} title="Protected admin account">
                         Protected
                       </span>
-                    ) : confirmEmail === r.email ? (
-                      <div className="flex items-center gap-2 shrink-0">
-                        <button
-                          onClick={() => setConfirmEmail(null)}
-                          disabled={isDeleting}
-                          className="px-3 py-1.5 text-xs rounded-md disabled:opacity-50"
-                          style={{ border: "1px solid var(--ink-3)", color: "var(--ink-7)" }}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={() => handleDeleteUser(r.email)}
-                          disabled={isDeleting}
-                          className="px-3 py-1.5 text-xs rounded-md font-medium inline-flex items-center gap-1.5 disabled:opacity-60"
-                          style={{ backgroundColor: "rgb(220,38,38)", color: "#fff" }}
-                        >
-                          {isDeleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
-                          Delete permanently
-                        </button>
-                      </div>
                     ) : (
                       <button
-                        onClick={() => setConfirmEmail(r.email)}
+                        onClick={() => setConfirmDeleteRow({ email: r.email, name: r.name })}
+                        disabled={isDeleting}
                         className="px-3 py-1.5 text-xs rounded-md inline-flex items-center gap-1.5 shrink-0"
                         style={{ border: "1px solid rgba(220,38,38,0.4)", color: "rgb(248,113,113)" }}
                       >
-                        <Trash2 className="w-3 h-3" /> Delete user
+                        {isDeleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />} Delete user
                       </button>
                     )}
                   </div>
@@ -1113,6 +1083,31 @@ const AdminAccess = () => {
               }}
             >
               Decline
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog
+        open={!!confirmDeleteRow}
+        onOpenChange={(open) => { if (!open) setConfirmDeleteRow(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this user permanently?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes {confirmDeleteRow?.name || confirmDeleteRow?.email}'s auth account and all associated data.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const email = confirmDeleteRow?.email;
+                if (email) handleDeleteUser(email);
+              }}
+            >
+              Delete permanently
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
