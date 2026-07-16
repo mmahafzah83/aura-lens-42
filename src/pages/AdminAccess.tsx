@@ -396,7 +396,6 @@ const AdminAccess = () => {
             { k: "waitlist", label: "Waitlist" },
             { k: "users", label: "Users" },
             { k: "feedback", label: "Feedback" },
-            { k: "health", label: "Health" },
           ] as { k: TabKey; label: string }[]).map((t) => (
             <button
               key={t.k}
