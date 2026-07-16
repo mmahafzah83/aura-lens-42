@@ -2278,7 +2278,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           How your content performs in the market
         </p>
         <div style={{ fontSize:11, color:"var(--aura-t3)", margin:"0 0 12px" }}>
-          Impressions per post from your last import{importedAt ? ` · ${fmtDateShort(importedAt)}` : ""}; engagement synced daily.
+          Per-post history from your last import{importedAt ? ` (${fmtDateShort(importedAt)})` : ""}; recent posts and engagement synced daily from LinkedIn.
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <PillarCard
