@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Bell, Zap, Brain, Eye, TrendingUp, AlertTriangle, ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { formatDistanceToNow } from "date-fns";
@@ -37,6 +38,7 @@ const TYPE_COLORS: Record<string, string> = {
 const NotificationBell = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -156,10 +158,15 @@ const NotificationBell = () => {
             notifications.map((n) => {
               const Icon = TYPE_ICONS[n.type] || Bell;
               const iconColor = TYPE_COLORS[n.type] || "text-[color:var(--ink-3)]";
+              const cta = typeof n.metadata?.cta === "string" ? n.metadata.cta : null;
               return (
                 <div
                   key={n.id}
-                  className={`px-4 py-3 transition-colors ${n.read ? "opacity-60" : ""}`}
+                  role={cta ? "button" : undefined}
+                  tabIndex={cta ? 0 : undefined}
+                  onClick={cta ? () => { setOpen(false); navigate(cta); } : undefined}
+                  onKeyDown={cta ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen(false); navigate(cta); } } : undefined}
+                  className={`px-4 py-3 transition-colors ${n.read ? "opacity-60" : ""} ${cta ? "cursor-pointer hover:bg-[color:var(--paper-3)]" : ""}`}
                   style={{
                     borderBottom: "1px solid var(--rule)",
                     background: n.read ? "transparent" : "color-mix(in srgb, var(--action) 8%, transparent)",
