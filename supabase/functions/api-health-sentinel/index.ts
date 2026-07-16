@@ -423,6 +423,93 @@ Deno.serve(async (req) => {
       console.error("[sentinel] watchdog error", (e as Error).message);
     }
 
+    // ============ EF error sink (last 65 minutes) ============
+    const efSummary: {
+      errors_seen: number;
+      alerts_raised: number;
+      by_function: Array<{ function_name: string; severity: string; count: number }>;
+    } = { errors_seen: 0, alerts_raised: 0, by_function: [] };
+    try {
+      const SELF_LOOP = new Set(["api-health-sentinel", "admin-notify", "admin-digest"]);
+      const since = new Date(Date.now() - 65 * 60 * 1000).toISOString();
+      const { data: efRows, error: efErr } = await admin
+        .from("ef_error_log")
+        .select("function_name, severity, error_message, created_at")
+        .gte("created_at", since);
+      if (efErr) console.error("[sentinel] ef_error_log read error", efErr.message);
+
+      const groups = new Map<
+        string,
+        { function_name: string; severity: string; count: number; sample: string }
+      >();
+      for (const r of efRows || []) {
+        const fn = (r as any).function_name || "unknown";
+        const sev = String((r as any).severity || "high").toLowerCase();
+        const key = `${fn}::${sev}`;
+        const g = groups.get(key) || { function_name: fn, severity: sev, count: 0, sample: "" };
+        g.count += 1;
+        if (!g.sample) g.sample = String((r as any).error_message || "").slice(0, 200);
+        groups.set(key, g);
+      }
+
+      efSummary.errors_seen = (efRows || []).length;
+      efSummary.by_function = [...groups.values()].map((g) => ({
+        function_name: g.function_name,
+        severity: g.severity,
+        count: g.count,
+      }));
+
+      // Per-function totals across severities for burst detection
+      const perFn = new Map<string, number>();
+      for (const g of groups.values()) {
+        perFn.set(g.function_name, (perFn.get(g.function_name) || 0) + g.count);
+      }
+
+      const burstAlerted = new Set<string>();
+
+      for (const g of groups.values()) {
+        if (SELF_LOOP.has(g.function_name)) continue;
+        const total = perFn.get(g.function_name) || 0;
+
+        if (g.severity === "critical") {
+          await notify(
+            `EF critical — ${g.function_name}`,
+            `Function ${g.function_name} logged ${g.count} critical error(s) in the last 65m.\nSample: ${g.sample}`,
+            `ef:critical:${g.function_name}`,
+            "critical",
+          );
+          efSummary.alerts_raised += 1;
+          continue;
+        }
+
+        if (total >= 5 && !burstAlerted.has(g.function_name)) {
+          burstAlerted.add(g.function_name);
+          await notify(
+            `EF burst — ${g.function_name}`,
+            `Function ${g.function_name} logged ${total} error(s) in the last 65m.\nSample: ${g.sample}`,
+            `ef:burst:${g.function_name}`,
+            "high",
+          );
+          efSummary.alerts_raised += 1;
+          continue;
+        }
+
+        if (g.severity === "high") {
+          await notify(
+            `EF high — ${g.function_name}`,
+            `Function ${g.function_name} logged ${g.count} high-severity error(s) in the last 65m.\nSample: ${g.sample}`,
+            `ef:high:${g.function_name}`,
+            "high",
+          );
+          efSummary.alerts_raised += 1;
+          continue;
+        }
+        // info/low → digest sweeps, no email
+      }
+    } catch (e) {
+      console.error("[sentinel] ef sink error", (e as Error).message);
+    }
+
     return json({
       success: true,
       checked: results.length,
@@ -430,6 +517,7 @@ Deno.serve(async (req) => {
       results: results.map((r) => ({ provider: r.provider, ok: r.ok, status: r.status })),
       data_health: dataHealth,
       watchdog,
+      ef_errors: efSummary,
     });
   } catch (e) {
     console.error("api-health-sentinel error", e);
