@@ -45,16 +45,6 @@ const ADMIN_PAGES = [
     description: "AI spend and budget tracking",
   },
   {
-    to: "/admin/experience",
-    label: "Experience",
-    description: "Run QA walkthroughs and monitor flows",
-  },
-  {
-    to: "/admin/design-system",
-    label: "Design system",
-    description: "Manage design tokens and versions",
-  },
-  {
     to: "/admin/qa",
     label: "QA",
     description: "Review audit reports and checks",
@@ -63,6 +53,11 @@ const ADMIN_PAGES = [
     to: "/admin/guide-health",
     label: "Guide health",
     description: "Inspect guide page status",
+  },
+  {
+    to: "/admin/appearance",
+    label: "Appearance",
+    description: "Legacy design tokens and atmosphere panels",
   },
   {
     to: "/admin/standard",
