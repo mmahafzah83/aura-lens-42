@@ -967,9 +967,12 @@ const AdminAccess = () => {
           )}
         </div>
 
+        </>)}
+
+        {activeTab === "feedback" && (<>
         {/* NPS responses */}
         <div
-          className="rounded-2xl p-6 mt-8"
+          className="rounded-2xl p-6"
           style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}
         >
           <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--ink-7)" }}>
