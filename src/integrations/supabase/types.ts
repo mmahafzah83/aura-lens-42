@@ -851,6 +851,36 @@ export type Database = {
         }
         Relationships: []
       }
+      ef_error_log: {
+        Row: {
+          context: Json | null
+          created_at: string
+          error_message: string | null
+          function_name: string
+          id: string
+          severity: string
+          user_id: string | null
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string
+          error_message?: string | null
+          function_name: string
+          id?: string
+          severity?: string
+          user_id?: string | null
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string
+          error_message?: string | null
+          function_name?: string
+          id?: string
+          severity?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       entries: {
         Row: {
           account_name: string | null
