@@ -302,12 +302,105 @@ Deno.serve(async (req) => {
       console.error("[sentinel] datahealth error", (e as Error).message);
     }
 
+    // ============ Watchdog: cost / AI failures / cron failures ============
+    const watchdog: Array<{ check: string; detail: string }> = [];
+    try {
+      // --- COST ---
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      const dayOfMonth = now.getDate();
+
+      let budget = 150;
+      const { data: setting } = await admin
+        .from("admin_settings")
+        .select("value")
+        .eq("key", "monthly_ai_budget_usd")
+        .maybeSingle();
+      const amt = (setting?.value as any)?.amount;
+      if (typeof amt === "number" && amt > 0) budget = amt;
+
+      const { data: usageRows } = await admin
+        .from("ai_usage_log")
+        .select("est_cost_usd, function_name")
+        .gte("created_at", monthStart.toISOString());
+
+      const spendMTD = (usageRows || []).reduce(
+        (s, r) => s + (Number((r as any).est_cost_usd) || 0),
+        0,
+      );
+      const projected = dayOfMonth > 0 ? (spendMTD / dayOfMonth) * daysInMonth : spendMTD;
+
+      if (spendMTD >= budget || projected >= budget) {
+        const byFn = new Map<string, number>();
+        for (const r of usageRows || []) {
+          const k = (r as any).function_name || "unknown";
+          byFn.set(k, (byFn.get(k) || 0) + (Number((r as any).est_cost_usd) || 0));
+        }
+        const top = [...byFn.entries()].sort((a, b) => b[1] - a[1])[0];
+        const topTxt = top ? `${top[0]} ($${top[1].toFixed(2)})` : "n/a";
+        watchdog.push({ check: "cost", detail: `spend=$${spendMTD.toFixed(2)} projected=$${projected.toFixed(2)}` });
+        await notify(
+          "AI budget alert",
+          `Spend MTD: $${spendMTD.toFixed(2)}\nProjected month-end: $${projected.toFixed(2)}\nBudget: $${budget.toFixed(2)}\nTop function this month: ${topTxt}`,
+          "cost:budget",
+        );
+      }
+
+      // --- AI FAILURES (last 24h) ---
+      const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { count: failCount } = await admin
+        .from("ai_usage_log")
+        .select("id", { count: "exact", head: true })
+        .eq("success", false)
+        .gte("created_at", dayAgo);
+
+      if ((failCount || 0) > 10) {
+        const { data: failRows } = await admin
+          .from("ai_usage_log")
+          .select("function_name")
+          .eq("success", false)
+          .gte("created_at", dayAgo);
+        const byFn = new Map<string, number>();
+        for (const r of failRows || []) {
+          const k = (r as any).function_name || "unknown";
+          byFn.set(k, (byFn.get(k) || 0) + 1);
+        }
+        const top = [...byFn.entries()].sort((a, b) => b[1] - a[1])[0];
+        const topTxt = top ? `${top[0]} (${top[1]})` : "n/a";
+        watchdog.push({ check: "ai_failures", detail: `count=${failCount}` });
+        await notify(
+          "AI failures spiking",
+          `AI failures in last 24h: ${failCount}\nTop failing function: ${topTxt}`,
+          "cost:ai-failures",
+        );
+      }
+
+      // --- CRON FAILURES (last 24h) ---
+      const { data: cronFails, error: cronErr } = await admin.rpc("admin_cron_failures_24h" as never);
+      if (cronErr) console.error("[sentinel] cron rpc error", cronErr.message);
+      if (cronFails && (cronFails as any[]).length > 0) {
+        const list = (cronFails as any[])
+          .map((r) => `• ${r.jobname} — ${r.failed} failure(s), last ${r.last_fail}`)
+          .join("\n");
+        watchdog.push({ check: "cron_failures", detail: `${(cronFails as any[]).length} job(s)` });
+        await notify(
+          `Cron failure(s)`,
+          `Failed cron runs in last 24h:\n\n${list}`,
+          "cron:failures",
+        );
+      }
+    } catch (e) {
+      console.error("[sentinel] watchdog error", (e as Error).message);
+    }
+
     return json({
       success: true,
       checked: results.length,
       failed: failures.length,
       results: results.map((r) => ({ provider: r.provider, ok: r.ok, status: r.status })),
       data_health: dataHealth,
+      watchdog,
     });
   } catch (e) {
     console.error("api-health-sentinel error", e);
