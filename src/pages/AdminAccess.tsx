@@ -103,7 +103,6 @@ const AdminAccess = () => {
   const [seedSending, setSeedSending] = useState(false);
 
   // Inactivity alert
-  const [copiedUser, setCopiedUser] = useState<string | null>(null);
 
   // Delete-user state
   const [confirmDeleteRow, setConfirmDeleteRow] = useState<{ email: string; name: string | null } | null>(null);
