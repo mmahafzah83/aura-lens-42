@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { withObserve } from "../_shared/observe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -632,7 +633,7 @@ async function processDocument(
   }
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withObserve("ingest-document", async (req) => {
   console.log(`[ingest-document] handler start method=${req.method}`);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -716,4 +717,4 @@ Deno.serve(async (req) => {
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
-});
+}));

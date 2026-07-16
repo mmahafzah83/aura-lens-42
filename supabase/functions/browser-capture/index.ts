@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { withObserve } from "../_shared/observe.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
@@ -169,7 +170,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 /* ── Main ── */
 
-Deno.serve(async (req) => {
+Deno.serve(withObserve("browser-capture", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -445,4 +446,4 @@ Deno.serve(async (req) => {
     console.error("[browser-capture] Error:", err);
     return json({ error: err.message }, 500);
   }
-});
+}));
