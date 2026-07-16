@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
   emailShell, sectionLabel, divider, button,
@@ -151,7 +152,7 @@ async function sendResend(apiKey: string, to: string, subject: string, html: str
   }
 }
 
-serve(async (req) => {
+serve(withObserve("lifecycle-emails", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   // Gate: lowercase cron_secret vault secret. Also allow service-role key.
@@ -332,4 +333,4 @@ serve(async (req) => {
   return new Response(JSON.stringify({ processed: results.length, results, founderDigest: founderDigest.length }), {
     status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
-});
+}));

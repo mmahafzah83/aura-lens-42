@@ -1,4 +1,5 @@
 // linkedin-publish — redeploy 2026-06-25 (image upload support)
+import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const LINKEDIN_VERSION = "202605";
@@ -15,7 +16,7 @@ function json(body: unknown, status = 200) {
   });
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withObserve("linkedin-publish", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -179,4 +180,4 @@ Deno.serve(async (req) => {
     console.error("linkedin-publish error:", err);
     return json({ error: err instanceof Error ? err.message : String(err) }, 500);
   }
-});
+}));

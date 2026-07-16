@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.99.3";
 
 const corsHeaders = {
@@ -11,7 +12,7 @@ const corsHeaders = {
  * Accepts an array of row objects parsed by the client (PapaParse with header:true).
  * Tries to detect impressions / reactions / comments / shares / engagement / date / post URL columns.
  */
-serve(async (req) => {
+serve(withObserve("import-linkedin-csv", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -191,4 +192,4 @@ serve(async (req) => {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-});
+}));

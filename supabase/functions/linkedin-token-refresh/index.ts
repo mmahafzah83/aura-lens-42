@@ -1,4 +1,5 @@
 // linkedin-token-refresh — daily scheduled refresh
+import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -13,7 +14,7 @@ function json(body: unknown, status = 200) {
   });
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withObserve("linkedin-token-refresh", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -120,4 +121,4 @@ Deno.serve(async (req) => {
     console.error("linkedin-token-refresh error:", err);
     return json({ error: err instanceof Error ? err.message : String(err) }, 500);
   }
-});
+}));

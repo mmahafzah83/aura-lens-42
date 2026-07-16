@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
@@ -81,7 +82,7 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-serve(async (req) => {
+serve(withObserve("onboarding-linkedin-prefill", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -172,4 +173,4 @@ serve(async (req) => {
     console.error("onboarding-linkedin-prefill error:", e);
     return json({ error: "Could not process profile data", fallback: true }, 200);
   }
-});
+}));

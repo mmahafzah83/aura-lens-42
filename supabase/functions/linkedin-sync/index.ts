@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { withObserve } from "../_shared/observe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -541,7 +542,7 @@ async function syncUserLinkedIn(userId: string, adminClient: any) {
 
 /* ── HTTP Handler ── */
 
-Deno.serve(async (req) => {
+Deno.serve(withObserve("linkedin-sync", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -608,4 +609,4 @@ Deno.serve(async (req) => {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-});
+}));

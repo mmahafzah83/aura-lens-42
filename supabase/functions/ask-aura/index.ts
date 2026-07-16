@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
@@ -23,7 +24,7 @@ function safe<T>(p: Promise<{ data: T | null; error: any }>): Promise<T | null> 
   });
 }
 
-serve(async (req) => {
+serve(withObserve("ask-aura", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -587,4 +588,4 @@ RESPONSE RULES (v2 DEFINITIVE — ALWAYS APPLY):
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
-});
+}));

@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { buildContentDNA, VOICE_PRECEDENCE, NUMBER_INTEGRITY } from "../_shared/contentDNA.ts";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
@@ -195,7 +196,7 @@ IDENTITY:
 `;
 }
 
-serve(async (req) => {
+serve(withObserve("generate-authority-content", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -903,4 +904,4 @@ ${insightsSummary}`
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-});
+}));

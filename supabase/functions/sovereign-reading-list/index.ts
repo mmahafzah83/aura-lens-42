@@ -1,4 +1,5 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
@@ -16,7 +17,7 @@ const EMPTY_RESPONSE = {
   message: "Reading intelligence is refreshing. Check back shortly.",
 };
 
-Deno.serve(async (req) => {
+Deno.serve(withObserve("sovereign-reading-list", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -274,4 +275,4 @@ Output valid JSON:
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-});
+}));
