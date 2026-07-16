@@ -109,6 +109,11 @@ const AdminAccess = () => {
   const [confirmDeleteRow, setConfirmDeleteRow] = useState<{ email: string; name: string | null } | null>(null);
   const [deletingEmail, setDeletingEmail] = useState<string | null>(null);
 
+  // In-page tabs + waitlist search (presentation only)
+  type TabKey = "waitlist" | "users" | "feedback" | "health";
+  const [activeTab, setActiveTab] = useState<TabKey>("waitlist");
+  const [searchQuery, setSearchQuery] = useState("");
+
   const FOUNDER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
   const PROTECTED_EMAIL = "mmahafzah8386@gmail.com";
 
@@ -275,13 +280,19 @@ const AdminAccess = () => {
   }, [rows]);
 
   const filtered = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
     return rows.filter((r) => {
       if (statusFilter !== "all" && r.status !== statusFilter) return false;
       if (seniorityFilter !== "all" && r.seniority !== seniorityFilter) return false;
       if (sectorFilter !== "all" && r.sector !== sectorFilter) return false;
+      if (q) {
+        const email = (r.email || "").toLowerCase();
+        const name = (r.name || "").toLowerCase();
+        if (!email.includes(q) && !name.includes(q)) return false;
+      }
       return true;
     });
-  }, [rows, statusFilter, seniorityFilter, sectorFilter]);
+  }, [rows, statusFilter, seniorityFilter, sectorFilter, searchQuery]);
 
   const callSendInvite = async (email: string, name: string | null) => {
     const { data: { session } } = await supabase.auth.getSession();
