@@ -300,6 +300,7 @@ Deno.serve(async (req) => {
         severity: "info",
         dedupe_key,
         html: true,
+        force_email: true,
       }),
     });
     const notifyBody = await notifyRes.json().catch(() => ({}));
