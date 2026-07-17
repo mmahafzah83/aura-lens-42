@@ -211,7 +211,12 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
   const tierInfo = useTierFromImprint(user?.id ?? null);
   const reducedMotion = useMemo(prefersReducedMotion, []);
 
-  const [profile, setProfile] = useState<{ firstName: string; sectorFocus: string } | null>(null);
+  const [profile, setProfile] = useState<{
+    firstName: string;
+    sectorFocus: string;
+    brandAssessment: Record<string, any> | null;
+    brandPillars: string[];
+  } | null>(null);
   const publishedSignalsRef = useRef<Set<string> | null>(null);
 
   const loadPublishedSignalIds = useCallback(async (): Promise<Set<string>> => {
@@ -284,19 +289,30 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
       return raw ? raw.split(/\s+/)[0] : "";
     };
     if (!user) {
-      if (!cancelled) setProfile({ firstName: "", sectorFocus: "" });
+      if (!cancelled) setProfile({ firstName: "", sectorFocus: "", brandAssessment: null, brandPillars: [] });
       return;
     }
     (async () => {
       try {
         const { data } = await supabase
-          .from("diagnostic_profiles").select("first_name, sector_focus")
+          .from("diagnostic_profiles").select("first_name, sector_focus, brand_assessment_results, brand_pillars")
           .eq("user_id", user.id).maybeSingle();
         if (cancelled) return;
         const first = (data?.first_name || fallbackName() || "").toString().trim();
-        setProfile({ firstName: first, sectorFocus: (data?.sector_focus || "").toString().trim() });
+        const bar = (data as any)?.brand_assessment_results;
+        const brandAssessment = bar && typeof bar === "object" && Object.keys(bar).length > 0 ? bar : null;
+        const bpRaw = (data as any)?.brand_pillars;
+        const brandPillars = Array.isArray(bpRaw)
+          ? bpRaw.map((v: any) => (typeof v === "string" ? v.trim() : "")).filter(Boolean)
+          : [];
+        setProfile({
+          firstName: first,
+          sectorFocus: (data?.sector_focus || "").toString().trim(),
+          brandAssessment,
+          brandPillars,
+        });
       } catch {
-        if (!cancelled) setProfile({ firstName: fallbackName(), sectorFocus: "" });
+        if (!cancelled) setProfile({ firstName: fallbackName(), sectorFocus: "", brandAssessment: null, brandPillars: [] });
       }
     })();
     return () => { cancelled = true; };
@@ -639,17 +655,24 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
   const topSignal = away.status === "ready" && away.data.signals.length > 0 ? away.data.signals[0] : null;
   const draft = draftState.status === "ready" ? draftState.data.draft : null;
 
+  // Strategic Read data — surfaces the assessment output when the user has
+  // not yet published anything. Values come straight from the profile loader.
+  const brandAssessment = profile?.brandAssessment ?? null;
+  const brandPillars = profile?.brandPillars ?? [];
+  const hasStrategicRead = !!brandAssessment && !published;
+
   // Scenario for the lead spread
-  type Scenario = "published" | "new" | "away" | "draft" | "standing";
+  type Scenario = "published" | "new" | "away" | "read" | "draft" | "standing";
   const scenario: Scenario = useMemo(() => {
     if (published) return "published";
+    if (awayDays >= 4) return "away";
+    if (hasStrategicRead) return "read";
     const isNew = (proof.status === "ready" && proof.data.dayN === 1) ||
       (imprint.status === "ready" && imprint.data.imprint == null && proof.status === "ready" && proof.data.entriesTotal === 0);
     if (isNew) return "new";
-    if (awayDays >= 4) return "away";
     if (draft) return "draft";
     return "standing";
-  }, [published, proof, imprint, awayDays, draft]);
+  }, [published, proof, imprint, awayDays, draft, hasStrategicRead]);
 
   // Next tier from canonical TIER_BANDS
   const nextTier = useMemo(() => {
@@ -694,6 +717,23 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
         return { slug: "DAY ONE —", headline: "A Brief with your name on it starts printing tonight.", standfirst: "One capture, thirty seconds, and tomorrow's edition speaks your language." };
       case "away":
         return { slug: "CATCH-UP —", headline: `${awayDays} days out — the wire kept score.`, standfirst: "The signals below moved while you were quiet. Pick the one worth a paragraph." };
+      case "read": {
+        const ba: any = brandAssessment || {};
+        const firstSentence = (s: string) => {
+          const t = (s || "").toString().trim();
+          if (!t) return "";
+          const m = t.match(/^[^.!?]+[.!?]/);
+          return (m ? m[0] : t).trim();
+        };
+        const posRaw = (ba.positioning_statement || "").toString().trim();
+        const mrRaw = (ba.market_read || "").toString().trim();
+        const headline = firstSentence(posRaw) || firstSentence(mrRaw) || "Your read is on the page.";
+        const honest = (ba.honest_truth || "").toString().trim();
+        const space = (ba.uncontested_space || "").toString().trim();
+        const standfirst = [honest, space].filter(Boolean).join(" ") ||
+          "There is a gap between how you read the market and how the market has heard you.";
+        return { slug: "YOUR STRATEGIC READ —", headline, standfirst };
+      }
       case "draft":
         return { slug: "THIS WEEK —", headline: "The market is moving on your theme. Your draft holds the first word.", standfirst: "Ten minutes and the draft is yours in the feed." };
       default: {
@@ -712,7 +752,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
         return { slug: "THE WIRE —", headline, standfirst };
       }
     }
-  }, [scenario, awayDays, imprint, discernment, topSignal]);
+  }, [scenario, awayDays, imprint, discernment, topSignal, brandAssessment]);
 
   // ── Next Move ladder ────────────────────────────────────────────────
   const nextMove = useMemo(() => {
@@ -723,6 +763,18 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
       onClick: () => onOpenDraft(draft),
       voiceScore: draftState.status === "ready" ? draftState.data.voiceScore : null,
     };
+    if (scenario === "read") {
+      const pillar = (brandPillars[0] || "").toString().trim();
+      const shortPillar = pillar.length > 40 ? pillar.slice(0, 38).trim() + "\u2026" : pillar;
+      const raw = pillar ? `Turn "${shortPillar}" into your first post.` : "Write your first piece from your read.";
+      const body = raw.length > 68 ? raw.slice(0, 66).trim() + "\u2026" : raw;
+      return {
+        body,
+        cta: "Write your first piece",
+        onClick: () => onSwitchTab?.("authority"),
+        voiceScore: null,
+      };
+    }
     if (topSignal) return {
       body: `Speak on ${topSignal.title.length > 68 ? topSignal.title.slice(0, 66) + "\u2026" : topSignal.title} while it's still forming.`,
       cta: "Write from this signal",
@@ -741,7 +793,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
       onClick: () => onOpenCapture?.(),
       voiceScore: null,
     };
-  }, [draft, topSignal, rhythm, draftState, onOpenDraft, onSwitchTab, onOpenCapture]);
+  }, [draft, topSignal, rhythm, draftState, onOpenDraft, onSwitchTab, onOpenCapture, scenario, brandPillars]);
 
   // ── Render ──────────────────────────────────────────────────────────
 
@@ -817,6 +869,14 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
           <p style={{ margin: 0, fontSize: 17, lineHeight: 1.6, color: "var(--ink-2)" }}>
             {leadCopy.standfirst}
           </p>
+          {scenario === "read" && (
+            <p style={{
+              margin: "10px 0 0 0", fontFamily: "var(--font-serif)", fontStyle: "italic",
+              fontSize: 14, color: "var(--ink-2)", lineHeight: 1.55,
+            }}>
+              This is your starting read. It sharpens every time you capture something.
+            </p>
+          )}
           <div style={{ marginTop: 20, display: "flex", alignItems: "center", gap: 8 }}>
             <Mono>FROM AURA — YOUR CHIEF OF STAFF</Mono>
             <InfoTooltip
@@ -842,15 +902,37 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
 
           {imprint.status === "loading" && <SkeletonLine width="100%" height={90} />}
           {imprint.status === "error" && <ErrorLine what="Imprint" onRetry={loadImprint} />}
-          {imprint.status === "ready" && imprint.data.imprint == null && (
-            <div>
-              <div style={{ fontFamily: "var(--font-serif)", fontSize: 48, color: "var(--ink-3)", lineHeight: 1 }}>· · ·</div>
-              <div style={{ marginTop: 8 }}><Mono color="var(--spot)">FORMING</Mono></div>
-              <p style={{ marginTop: 10, fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 14, color: "var(--ink-2)", lineHeight: 1.55 }}>
-                Your first Imprint prints minutes after your first capture — then fresh every morning.
-              </p>
-            </div>
-          )}
+          {imprint.status === "ready" && imprint.data.imprint == null && (() => {
+            const ba: any = scenario === "read" ? (brandAssessment || {}) : {};
+            const barrier = (ba.key_barrier || "").toString().trim();
+            const invest = Array.isArray(ba.invest_next)
+              ? (ba.invest_next[0] || "").toString().trim()
+              : (ba.invest_next || "").toString().trim();
+            const useGap = scenario === "read" && barrier && invest;
+            if (useGap) {
+              return (
+                <div>
+                  <Mono color="var(--spot)">THE GAP</Mono>
+                  <p style={{
+                    marginTop: 10, fontFamily: "var(--font-serif)", fontSize: 18,
+                    color: "var(--ink)", lineHeight: 1.4,
+                  }}>{barrier}</p>
+                  <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--rule)" }}>
+                    <Mono size={10}>NEXT MOVE — {invest.toUpperCase()}</Mono>
+                  </div>
+                </div>
+              );
+            }
+            return (
+              <div>
+                <div style={{ fontFamily: "var(--font-serif)", fontSize: 48, color: "var(--ink-3)", lineHeight: 1 }}>· · ·</div>
+                <div style={{ marginTop: 8 }}><Mono color="var(--spot)">FORMING</Mono></div>
+                <p style={{ marginTop: 10, fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 14, color: "var(--ink-2)", lineHeight: 1.55 }}>
+                  Your first Imprint prints minutes after your first capture — then fresh every morning.
+                </p>
+              </div>
+            );
+          })()}
           {imprint.status === "ready" && imprint.data.imprint != null && (() => {
             const d = imprint.data;
             const rows: Array<{ label: string; value: number | null }> = [
