@@ -28,6 +28,13 @@ interface BriefProps {
   onSwitchTab?: (tab: string) => void;
   onOpenCapture?: () => void;
   onInvite?: () => void;
+  onDraftToStudio?: (prefill: {
+    topic: string;
+    context: string;
+    sourceType?: string;
+    sourceTitle?: string;
+    contentFormat?: "post" | "carousel" | "framework_summary";
+  }) => void;
 }
 
 type SectionState<T> =
@@ -206,7 +213,7 @@ function useCountUp(target: number | null, enabled: boolean): number {
 
 // ── Component ────────────────────────────────────────────────────────
 
-export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvite }: BriefProps) {
+export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvite, onDraftToStudio }: BriefProps) {
   const { user, isReady } = useAuthReady();
   const tierInfo = useTierFromImprint(user?.id ?? null);
   const reducedMotion = useMemo(prefersReducedMotion, []);
@@ -764,16 +771,39 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
       voiceScore: draftState.status === "ready" ? draftState.data.voiceScore : null,
     };
     if (scenario === "read") {
-      const pillar = (brandPillars[0] || "").toString().trim();
-      const shortPillar = pillar.length > 40 ? pillar.slice(0, 38).trim() + "\u2026" : pillar;
-      const raw = pillar ? `Turn "${shortPillar}" into your first post.` : "Write your first piece from your read.";
-      const body = raw.length > 68 ? raw.slice(0, 66).trim() + "\u2026" : raw;
-      return {
-        body,
-        cta: "Write your first piece",
-        onClick: () => onSwitchTab?.("authority"),
-        voiceScore: null,
-      };
+      const ba: any = brandAssessment || {};
+      const cpRaw = ba.content_pillars;
+      const contentPillars: string[] = Array.isArray(cpRaw)
+        ? cpRaw.map((v: any) => (typeof v === "string" ? v.trim() : "")).filter(Boolean)
+        : typeof cpRaw === "string" && cpRaw.trim() ? [cpRaw.trim()] : [];
+      const pillar = ((brandPillars[0] || contentPillars[0]) || "").toString().trim();
+      if (pillar) {
+        const shortPillar = pillar.length > 40 ? pillar.slice(0, 38).trim() + "\u2026" : pillar;
+        const raw = `Turn "${shortPillar}" into your first post.`;
+        const body = raw.length > 68 ? raw.slice(0, 66).trim() + "\u2026" : raw;
+        const space = (ba.uncontested_space || "").toString().trim();
+        const marketRead = (ba.market_read || "").toString().trim();
+        const voiceSig = (ba.voice_signature || "").toString().trim();
+        const parts: string[] = [];
+        const opener = space || marketRead;
+        if (opener) parts.push(opener.replace(/\.\s*$/, "") + ".");
+        parts.push(`Angle: ${pillar}.`);
+        if (voiceSig) parts.push(`Write in the author's own voice — ${voiceSig}.`);
+        const context = parts.join(" ");
+        return {
+          body,
+          cta: "Write your first piece",
+          onClick: () => onDraftToStudio?.({
+            topic: pillar,
+            context,
+            sourceType: "strategic_read",
+            sourceTitle: pillar,
+            contentFormat: "post",
+          }),
+          voiceScore: null,
+        };
+      }
+      // no pillars anywhere → fall through to capture CTA below
     }
     if (topSignal) return {
       body: `Speak on ${topSignal.title.length > 68 ? topSignal.title.slice(0, 66) + "\u2026" : topSignal.title} while it's still forming.`,
@@ -793,7 +823,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
       onClick: () => onOpenCapture?.(),
       voiceScore: null,
     };
-  }, [draft, topSignal, rhythm, draftState, onOpenDraft, onSwitchTab, onOpenCapture, scenario, brandPillars]);
+  }, [draft, topSignal, rhythm, draftState, onOpenDraft, onSwitchTab, onOpenCapture, onDraftToStudio, scenario, brandPillars, brandAssessment]);
 
   // ── Render ──────────────────────────────────────────────────────────
 
