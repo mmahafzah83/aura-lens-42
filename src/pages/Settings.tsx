@@ -65,6 +65,26 @@ const [signatures, setSignatures] = useState<{ id: string; name: string; text_en
 const [savingSig, setSavingSig] = useState(false);
 const [publication, setPublicationState] = useState<PublicationConfig>({ name: "", style: "classic" });
 const [savingPub, setSavingPub] = useState(false);
+const [dangerOpen, setDangerOpen] = useState(false);
+const [deleteConfirmText, setDeleteConfirmText] = useState("");
+const [deleting, setDeleting] = useState(false);
+
+const handleDeleteAccount = async () => {
+  if (deleteConfirmText !== "DELETE") return;
+  setDeleting(true);
+  try {
+    const { data, error } = await supabase.functions.invoke("delete-account");
+    if (error || (data && (data as any).error)) {
+      throw new Error((data as any)?.error || error?.message || "Delete failed");
+    }
+    await supabase.auth.signOut();
+    navigate("/");
+  } catch (e: any) {
+    console.error("[delete-account] failed", e);
+    toast.error(e?.message || "We couldn't delete your account. Please try again.");
+    setDeleting(false);
+  }
+};
 
   useEffect(() => {
     let cancelled = false;
@@ -725,6 +745,96 @@ const [savingPub, setSavingPub] = useState(false);
                   Complete brand assessment
                 </AuraButton>
               </>
+            )}
+          </AuraCard>
+        </div>
+
+        {/* Danger zone */}
+        <SectionHeader
+          label="Danger zone"
+          subtitle="Irreversible account actions."
+        />
+        <div className="mb-8">
+          <AuraCard variant="default" hover="none">
+            <p className="text-sm" style={{ color: "var(--ink-2)" }}>
+              Deleting your account permanently removes your profile, captures, signals, drafts, and all associated data. This cannot be undone.
+            </p>
+            <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 2 }}>
+              <p style={{ fontSize: 11, lineHeight: 1.6, color: "var(--ink-4)", margin: 0 }}>
+                Your live data is removed immediately; routine backups cycle out within 30 days.
+              </p>
+              <p
+                dir="rtl"
+                lang="ar"
+                style={{ fontSize: 11, lineHeight: 1.6, color: "var(--ink-4)", margin: 0, fontFamily: "'Cairo', var(--font-body), sans-serif" }}
+              >
+                تُحذف بياناتك الحية فوراً؛ ونسخ النسخ الاحتياطي المعتادة تنتهي دورتها خلال 30 يوماً.
+              </p>
+            </div>
+
+            {!dangerOpen ? (
+              <div className="mt-5">
+                <AuraButton
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setDangerOpen(true)}
+                  style={{ color: "var(--error)", borderColor: "color-mix(in srgb, var(--error) 40%, var(--rule))" }}
+                >
+                  Delete my account
+                </AuraButton>
+              </div>
+            ) : (
+              <div className="mt-5" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <label className="text-xs uppercase tracking-wide" style={{ color: "var(--ink-4)" }}>
+                  Type DELETE to confirm
+                </label>
+                <input
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="Type DELETE to confirm"
+                  autoFocus
+                  disabled={deleting}
+                  className="w-full text-sm bg-transparent outline-none"
+                  style={{
+                    color: "var(--ink)",
+                    borderBottom: "1px solid var(--rule)",
+                    padding: "6px 0",
+                  }}
+                />
+                <div style={{ display: "flex", gap: 8 }}>
+                  <AuraButton
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setDangerOpen(false);
+                      setDeleteConfirmText("");
+                    }}
+                    disabled={deleting}
+                  >
+                    Cancel
+                  </AuraButton>
+                  <AuraButton
+                    variant="primary"
+                    size="sm"
+                    onClick={handleDeleteAccount}
+                    disabled={deleteConfirmText !== "DELETE" || deleting}
+                    style={{
+                      background: "var(--error)",
+                      borderColor: "var(--error)",
+                      color: "var(--paper)",
+                    }}
+                  >
+                    {deleting ? (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        Deleting…
+                      </span>
+                    ) : (
+                      "Permanently delete"
+                    )}
+                  </AuraButton>
+                </div>
+              </div>
             )}
           </AuraCard>
         </div>

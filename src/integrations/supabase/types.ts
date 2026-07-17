@@ -2945,6 +2945,7 @@ export type Database = {
         }[]
       }
       admin_run_cron: { Args: { p_jobid: number }; Returns: string }
+      delete_account: { Args: { p_user_id: string }; Returns: undefined }
       is_current_user_admin: { Args: never; Returns: boolean }
       pending_capture_entries: {
         Args: {
