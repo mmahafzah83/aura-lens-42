@@ -869,6 +869,14 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
           <p style={{ margin: 0, fontSize: 17, lineHeight: 1.6, color: "var(--ink-2)" }}>
             {leadCopy.standfirst}
           </p>
+          {scenario === "read" && (
+            <p style={{
+              margin: "10px 0 0 0", fontFamily: "var(--font-serif)", fontStyle: "italic",
+              fontSize: 14, color: "var(--ink-2)", lineHeight: 1.55,
+            }}>
+              This is your starting read. It sharpens every time you capture something.
+            </p>
+          )}
           <div style={{ marginTop: 20, display: "flex", alignItems: "center", gap: 8 }}>
             <Mono>FROM AURA — YOUR CHIEF OF STAFF</Mono>
             <InfoTooltip
