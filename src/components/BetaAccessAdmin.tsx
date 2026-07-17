@@ -352,6 +352,39 @@ const BetaAccessAdmin = ({ userId }: Props) => {
     }
   };
 
+  const updateStatus = async (row: Row, value: string) => {
+    const { error } = await supabase
+      .from("beta_allowlist")
+      .update({ status: value })
+      .eq("id", row.id);
+    if (error) {
+      toast.error(error.message || "Couldn't update status");
+      return;
+    }
+    setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, status: value } : r)));
+    toast.success("Status updated");
+  };
+
+  const deleteRow = async (row: Row) => {
+    setDeletingId(row.id);
+    try {
+      const { error } = await supabase.from("beta_allowlist").delete().eq("id", row.id);
+      if (error) throw error;
+      setRows((prev) => prev.filter((r) => r.id !== row.id));
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(row.id);
+        return next;
+      });
+      toast.success("Removed");
+    } catch (err: any) {
+      toast.error(err?.message || "Couldn't remove entry");
+    } finally {
+      setDeletingId(null);
+      setConfirmDeleteRow(null);
+    }
+  };
+
   return (
     <div id="beta-admin-section" className="mt-8 pt-8 border-t border-border/40 scroll-mt-24">
       <div className="glass-card rounded-2xl p-6 sm:p-8">
