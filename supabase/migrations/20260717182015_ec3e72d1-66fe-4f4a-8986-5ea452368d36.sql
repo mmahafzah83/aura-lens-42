@@ -1,0 +1,2 @@
+ALTER TABLE public.beta_allowlist DROP CONSTRAINT beta_allowlist_status_check;
+ALTER TABLE public.beta_allowlist ADD CONSTRAINT beta_allowlist_status_check CHECK (status IN ('pending','approved','active','invited'));
