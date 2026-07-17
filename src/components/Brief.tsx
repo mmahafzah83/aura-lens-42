@@ -289,7 +289,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
       return raw ? raw.split(/\s+/)[0] : "";
     };
     if (!user) {
-      if (!cancelled) setProfile({ firstName: "", sectorFocus: "" });
+      if (!cancelled) setProfile({ firstName: "", sectorFocus: "", brandAssessment: null, brandPillars: [] });
       return;
     }
     (async () => {
