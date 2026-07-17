@@ -65,6 +65,26 @@ const [signatures, setSignatures] = useState<{ id: string; name: string; text_en
 const [savingSig, setSavingSig] = useState(false);
 const [publication, setPublicationState] = useState<PublicationConfig>({ name: "", style: "classic" });
 const [savingPub, setSavingPub] = useState(false);
+const [dangerOpen, setDangerOpen] = useState(false);
+const [deleteConfirmText, setDeleteConfirmText] = useState("");
+const [deleting, setDeleting] = useState(false);
+
+const handleDeleteAccount = async () => {
+  if (deleteConfirmText !== "DELETE") return;
+  setDeleting(true);
+  try {
+    const { data, error } = await supabase.functions.invoke("delete-account");
+    if (error || (data && (data as any).error)) {
+      throw new Error((data as any)?.error || error?.message || "Delete failed");
+    }
+    await supabase.auth.signOut();
+    navigate("/");
+  } catch (e: any) {
+    console.error("[delete-account] failed", e);
+    toast.error(e?.message || "We couldn't delete your account. Please try again.");
+    setDeleting(false);
+  }
+};
 
   useEffect(() => {
     let cancelled = false;
