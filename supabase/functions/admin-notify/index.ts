@@ -19,6 +19,54 @@ function esc(s: string) {
   return s.replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c]!));
 }
 
+function renderCard(opts: {
+  what: string;
+  impact: string;
+  action: string;
+  detail: string;
+  body: string;
+  severity: "critical" | "high" | "info";
+  dedupe_key: string;
+}) {
+  const { what, impact, action, detail, body, severity, dedupe_key } = opts;
+  const paper = "#F1ECE1", card = "#FBF8F1", ink = "#1B1712", rule = "#E2DACB", muted = "#6B6255";
+  const serif = "Georgia, 'Times New Roman', serif";
+  const mono = "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+
+  let pill = "";
+  if (severity === "critical") {
+    pill = `<div style="display:inline-block;font:11px/1 ${mono};letter-spacing:.14em;text-transform:uppercase;color:#FBF8F1;background:#6E2A26;padding:6px 10px;border-radius:2px;">NEEDS YOU</div>`;
+  } else if (severity === "high") {
+    pill = `<div style="display:inline-block;font:11px/1 ${mono};letter-spacing:.14em;text-transform:uppercase;color:#FBF8F1;background:#9A7218;padding:6px 10px;border-radius:2px;">HEADS UP</div>`;
+  }
+
+  let inner = "";
+  if (what) {
+    inner += `<h1 style="margin:16px 0 0;font:400 22px/1.35 ${serif};color:${ink};">${esc(what)}</h1>`;
+    if (impact) {
+      inner += `<p style="margin:14px 0 0;font:400 15px/1.55 ${serif};color:${ink};"><span style="color:${muted};">This affects:</span> ${esc(impact)}</p>`;
+    }
+    if (action) {
+      inner += `<p style="margin:10px 0 0;font:400 15px/1.55 ${serif};color:${ink};">👉 <span style="color:${muted};">What to do:</span> ${esc(action)}</p>`;
+    }
+    if (detail) {
+      inner += `<p style="margin:18px 0 0;font:400 13px/1.5 ${serif};color:${muted};"><em>Why:</em> ${esc(detail)}</p>`;
+    }
+  } else {
+    inner += `<div style="margin:16px 0 0;padding:14px 16px;border:1px solid ${rule};border-radius:4px;background:${card};font:400 14px/1.55 ${serif};color:${ink};white-space:pre-wrap;">${esc(body)}</div>`;
+  }
+
+  const footer = `<p style="margin:22px 0 0;font:11px/1.4 ${mono};letter-spacing:.06em;color:${muted};">source: ${esc(dedupe_key)} · ${new Date().toISOString()}</p>`;
+
+  return `<div style="background:${paper};padding:24px 12px;">
+    <div style="max-width:560px;margin:0 auto;background:${card};border:1px solid ${rule};border-radius:6px;padding:22px 22px 20px;">
+      ${pill}
+      ${inner}
+      ${footer}
+    </div>
+  </div>`;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -46,6 +94,10 @@ Deno.serve(async (req) => {
     const force_email = body.force_email === true;
     const dedupe_key = String(body.dedupe_key || "").slice(0, 200);
     const isHtml = body.html === true;
+    const what = String(body.what || "").slice(0, 400);
+    const impact = String(body.impact || "").slice(0, 400);
+    const action = String(body.action || "").slice(0, 400);
+    const detail = String(body.detail || "").slice(0, 1000);
 
     if (!subject || !message || !dedupe_key) {
       return json({ error: "subject, body, dedupe_key required" }, 400);
@@ -67,11 +119,9 @@ Deno.serve(async (req) => {
     let emailed = false;
     const shouldEmail = severity === "critical" || severity === "high" || force_email;
     if (!duplicate && shouldEmail && RESEND && ADMIN_ALERT_EMAIL) {
-      const bodyBlock = isHtml
+      const html = isHtml
         ? message
-        : `<pre style="font:13px/1.5 monospace;background:#0f0e0c;color:#ededed;padding:12px;border-radius:8px;white-space:pre-wrap;">${esc(message)}</pre>`;
-      const severityLine = isHtml ? "" : `<p><strong>Severity:</strong> ${esc(severity)}</p>`;
-      const html = `${severityLine}${bodyBlock}<p style="color:#888;font-size:12px;">source: ${esc(dedupe_key)} · ${new Date().toISOString()}</p>`;
+        : renderCard({ what, impact, action, detail, body: message, severity, dedupe_key });
       const er = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { Authorization: `Bearer ${RESEND}`, "Content-Type": "application/json" },
@@ -94,6 +144,9 @@ Deno.serve(async (req) => {
         severity,
         source: dedupe_key,
         emailed,
+        what: what || null,
+        impact: impact || null,
+        action: action || null,
       });
       if (opsErr) console.error("[admin-notify] ops_alerts insert failed", opsErr.message);
     }
