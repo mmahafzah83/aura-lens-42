@@ -179,30 +179,100 @@ Deno.serve(async (req) => {
     if (insertErr) console.error("[sentinel] insert failed", insertErr.message);
 
     if (failures.length > 0) {
-      const summary = failures
-        .map((f) => `• ${f.provider} — HTTP ${f.status}: ${(f.detail || "").slice(0, 160)}`)
-        .join("\n");
-      const subject = `API DOWN: ${failures.map((f) => f.provider).join(", ")}`;
-      try {
-        const notifyRes = await fetch(`${supabaseUrl}/functions/v1/admin-notify`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${serviceKey}`,
-            apikey: serviceKey,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            subject,
-            body: `The daily API health check detected failures:\n\n${summary}\n\nRun timestamp: ${new Date().toISOString()}`,
-            severity: "critical",
-            dedupe_key: "api-health-sentinel",
-          }),
+      const FEATURE: Record<string, string> = {
+        anthropic: "writing your Brand Assessments and LinkedIn posts",
+        openai: "understanding and filing your captures",
+        perplexity: "finding fresh articles and industry trends",
+        resend: "sending your emails and invites",
+      };
+      const STATUS_PAGE: Record<string, string> = {
+        anthropic: "https://status.anthropic.com",
+        openai: "https://status.openai.com",
+        perplexity: "https://status.perplexity.com",
+        resend: "https://resend.com/status",
+      };
+      const KEY_NAME: Record<string, string> = {
+        anthropic: "ANTHROPIC_API_KEY",
+        openai: "OPENAI_API_KEY",
+        perplexity: "PERPLEXITY_API_KEY",
+        resend: "RESEND_API_KEY",
+      };
+
+      // Read the two previous runs (before this one was inserted, current insert is rows[0] if included)
+      const { data: recentRows } = await admin
+        .from("api_health_checks")
+        .select("results, run_at")
+        .order("run_at", { ascending: false })
+        .limit(3);
+      const rows = recentRows || [];
+      // rows[0] is current run (just inserted). previous two:
+      const prev1 = rows[1];
+      const prev2 = rows[2];
+      const wasFailingIn = (row: any, provider: string): boolean => {
+        if (!row || !Array.isArray(row.results)) return false; // missing = was OK
+        const entry = row.results.find((x: any) => x.provider === provider);
+        return !!entry && entry.ok === false;
+      };
+
+      type Klass = "key" | "down" | "transient";
+      const classified = failures.map((f) => {
+        let klass: Klass;
+        if (f.status === 401 || f.status === 403) klass = "key";
+        else if (wasFailingIn(prev1, f.provider) && wasFailingIn(prev2, f.provider)) klass = "down";
+        else klass = "transient";
+        return { provider: f.provider, klass };
+      });
+
+      const actionable = classified.filter((c) => c.klass !== "transient");
+      console.log(
+        `[sentinel] api failures classified:`,
+        classified.map((c) => `${c.provider}:${c.klass}`).join(", "),
+      );
+
+      if (actionable.length > 0) {
+        const hasDown = actionable.some((a) => a.klass === "down");
+        const overallClass: "down" | "key" = hasDown ? "down" : "key";
+        const severity: "critical" | "high" = hasDown ? "critical" : "high";
+        const subject =
+          overallClass === "down"
+            ? "⚠️ Aura: a service is down — action needed"
+            : "🔑 Aura: an API key needs a look";
+
+        const intro =
+          overallClass === "down"
+            ? "One or more services have been failing for three checks in a row. Here's what's affected and what to do:"
+            : "An API key looks rejected. Here's what's affected and what to do:";
+
+        const blocks = actionable.map((a) => {
+          const feat = FEATURE[a.provider] || "part of Aura";
+          if (a.klass === "key") {
+            return `${a.provider}\nThis affects: ${feat}\n👉 What to do: Open Lovable → Cloud → Secrets and check/replace ${KEY_NAME[a.provider]} (it may have expired or run out of credit).`;
+          }
+          return `${a.provider}\nThis affects: ${feat}\n👉 What to do: Check ${STATUS_PAGE[a.provider]} — if they report an outage, just wait. If they're green, check ${KEY_NAME[a.provider]} in Lovable → Cloud → Secrets.`;
         });
-        if (!notifyRes.ok) {
-          console.error("[sentinel] admin-notify failed", notifyRes.status, (await notifyRes.text()).slice(0, 200));
+
+        const bodyText = `${intro}\n\n${blocks.join("\n\n")}`;
+        try {
+          const notifyRes = await fetch(`${supabaseUrl}/functions/v1/admin-notify`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${serviceKey}`,
+              apikey: serviceKey,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              subject,
+              body: bodyText,
+              severity,
+              dedupe_key: `api-health:${overallClass}`,
+            }),
+          });
+          if (!notifyRes.ok) {
+            console.error("[sentinel] admin-notify failed", notifyRes.status, (await notifyRes.text()).slice(0, 200));
+          }
+        } catch (e) {
+          console.error("[sentinel] admin-notify error", (e as Error).message);
         }
-      } catch (e) {
-        console.error("[sentinel] admin-notify error", (e as Error).message);
       }
     }
 
