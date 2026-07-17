@@ -902,15 +902,37 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
 
           {imprint.status === "loading" && <SkeletonLine width="100%" height={90} />}
           {imprint.status === "error" && <ErrorLine what="Imprint" onRetry={loadImprint} />}
-          {imprint.status === "ready" && imprint.data.imprint == null && (
-            <div>
-              <div style={{ fontFamily: "var(--font-serif)", fontSize: 48, color: "var(--ink-3)", lineHeight: 1 }}>· · ·</div>
-              <div style={{ marginTop: 8 }}><Mono color="var(--spot)">FORMING</Mono></div>
-              <p style={{ marginTop: 10, fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 14, color: "var(--ink-2)", lineHeight: 1.55 }}>
-                Your first Imprint prints minutes after your first capture — then fresh every morning.
-              </p>
-            </div>
-          )}
+          {imprint.status === "ready" && imprint.data.imprint == null && (() => {
+            const ba: any = scenario === "read" ? (brandAssessment || {}) : {};
+            const barrier = (ba.key_barrier || "").toString().trim();
+            const invest = Array.isArray(ba.invest_next)
+              ? (ba.invest_next[0] || "").toString().trim()
+              : (ba.invest_next || "").toString().trim();
+            const useGap = scenario === "read" && barrier && invest;
+            if (useGap) {
+              return (
+                <div>
+                  <Mono color="var(--spot)">THE GAP</Mono>
+                  <p style={{
+                    marginTop: 10, fontFamily: "var(--font-serif)", fontSize: 18,
+                    color: "var(--ink)", lineHeight: 1.4,
+                  }}>{barrier}</p>
+                  <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--rule)" }}>
+                    <Mono size={10}>NEXT MOVE — {invest.toUpperCase()}</Mono>
+                  </div>
+                </div>
+              );
+            }
+            return (
+              <div>
+                <div style={{ fontFamily: "var(--font-serif)", fontSize: 48, color: "var(--ink-3)", lineHeight: 1 }}>· · ·</div>
+                <div style={{ marginTop: 8 }}><Mono color="var(--spot)">FORMING</Mono></div>
+                <p style={{ marginTop: 10, fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 14, color: "var(--ink-2)", lineHeight: 1.55 }}>
+                  Your first Imprint prints minutes after your first capture — then fresh every morning.
+                </p>
+              </div>
+            );
+          })()}
           {imprint.status === "ready" && imprint.data.imprint != null && (() => {
             const d = imprint.data;
             const rows: Array<{ label: string; value: number | null }> = [
