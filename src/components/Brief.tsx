@@ -776,6 +776,12 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
   // ── Next Move ladder ────────────────────────────────────────────────
   const nextMove = useMemo(() => {
     const zeroCaptures7 = rhythm.status === "ready" && rhythm.data.totalCaptures === 0;
+    if (scenario === "prime_read") return {
+      body: "Unlock your Strategic Read.",
+      cta: "Take the Brand Assessment",
+      onClick: () => onOpenBrandAssessment?.(),
+      voiceScore: null,
+    };
     if (draft) return {
       body: "Your draft is one decision from published.",
       cta: "Open the draft",
@@ -835,7 +841,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
       onClick: () => onOpenCapture?.(),
       voiceScore: null,
     };
-  }, [draft, topSignal, rhythm, draftState, onOpenDraft, onSwitchTab, onOpenCapture, onDraftToStudio, scenario, brandPillars, brandAssessment]);
+  }, [draft, topSignal, rhythm, draftState, onOpenDraft, onSwitchTab, onOpenCapture, onOpenBrandAssessment, onDraftToStudio, scenario, brandPillars, brandAssessment]);
 
   // ── Render ──────────────────────────────────────────────────────────
 
