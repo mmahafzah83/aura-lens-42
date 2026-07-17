@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { CheckSquare, History, Loader2, Search, Send, Shield, Square, StickyNote, X } from "lucide-react";
+import { CheckSquare, History, Loader2, Search, Send, Shield, Square, StickyNote, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -72,9 +72,17 @@ const statusBadge = (status: string) => {
   const map: Record<string, string> = {
     pending: "bg-amber-500/15 text-amber-300 border-amber-500/30",
     approved: "bg-green-500/15 text-green-300 border-green-500/30",
+    invited: "bg-green-500/15 text-green-300 border-green-500/30",
     active: "bg-blue-500/15 text-blue-300 border-blue-500/30",
   };
   return map[status] || "bg-secondary text-muted-foreground border-border/40";
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  pending: "Pending",
+  approved: "Invited",
+  invited: "Invited",
+  active: "Active",
 };
 
 interface Props {
@@ -94,6 +102,8 @@ const BetaAccessAdmin = ({ userId }: Props) => {
   const [directSending, setDirectSending] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmInviteRow, setConfirmInviteRow] = useState<Row | null>(null);
+  const [confirmDeleteRow, setConfirmDeleteRow] = useState<Row | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [bulkNote, setBulkNote] = useState("");
   const [bulkNoteMode, setBulkNoteMode] = useState<"shared" | "per-row">("shared");
   const [bulkSending, setBulkSending] = useState(false);
@@ -125,7 +135,7 @@ const BetaAccessAdmin = ({ userId }: Props) => {
     const c = { pending: 0, approved: 0, active: 0 };
     for (const r of rows) {
       if (r.status === "pending") c.pending++;
-      else if (r.status === "approved") c.approved++;
+      else if (r.status === "approved" || r.status === "invited") c.approved++;
       else if (r.status === "active") c.active++;
     }
     return c;
@@ -134,7 +144,13 @@ const BetaAccessAdmin = ({ userId }: Props) => {
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return rows.filter((r) => {
-      if (statusFilter !== "all" && r.status !== statusFilter) return false;
+      if (statusFilter !== "all") {
+        if (statusFilter === "invited") {
+          if (r.status !== "invited" && r.status !== "approved") return false;
+        } else if (r.status !== statusFilter) {
+          return false;
+        }
+      }
       if (seniorityFilter !== "all" && r.seniority !== seniorityFilter) return false;
       if (sectorFilter !== "all" && r.sector !== sectorFilter) return false;
       if (q) {
@@ -232,7 +248,7 @@ const BetaAccessAdmin = ({ userId }: Props) => {
           succeededIds.includes(r.id)
             ? {
                 ...r,
-                status: "approved",
+                status: "invited",
                 invited_at: nowIso,
                 personal_note:
                   bulkNoteMode === "shared"
@@ -273,7 +289,7 @@ const BetaAccessAdmin = ({ userId }: Props) => {
       if (error) throw error;
       // optimistic update
       setRows((prev) =>
-        prev.map((r) => (r.id === row.id ? { ...r, status: "approved", invited_at: new Date().toISOString() } : r))
+        prev.map((r) => (r.id === row.id ? { ...r, status: "invited", invited_at: new Date().toISOString() } : r))
       );
       setActiveInvite(null);
       setNoteByRow((prev) => ({ ...prev, [row.id]: "" }));
@@ -336,6 +352,39 @@ const BetaAccessAdmin = ({ userId }: Props) => {
     }
   };
 
+  const updateStatus = async (row: Row, value: string) => {
+    const { error } = await supabase
+      .from("beta_allowlist")
+      .update({ status: value })
+      .eq("id", row.id);
+    if (error) {
+      toast.error(error.message || "Couldn't update status");
+      return;
+    }
+    setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, status: value } : r)));
+    toast.success("Status updated");
+  };
+
+  const deleteRow = async (row: Row) => {
+    setDeletingId(row.id);
+    try {
+      const { error } = await supabase.from("beta_allowlist").delete().eq("id", row.id);
+      if (error) throw error;
+      setRows((prev) => prev.filter((r) => r.id !== row.id));
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(row.id);
+        return next;
+      });
+      toast.success("Removed");
+    } catch (err: any) {
+      toast.error(err?.message || "Couldn't remove entry");
+    } finally {
+      setDeletingId(null);
+      setConfirmDeleteRow(null);
+    }
+  };
+
   return (
     <div id="beta-admin-section" className="mt-8 pt-8 border-t border-border/40 scroll-mt-24">
       <div className="glass-card rounded-2xl p-6 sm:p-8">
@@ -357,7 +406,7 @@ const BetaAccessAdmin = ({ userId }: Props) => {
             {counts.pending} pending
           </span>
           <span className="text-xs px-3 py-1.5 rounded-full bg-green-500/15 text-green-300 border border-green-500/30">
-            {counts.approved} approved
+            {counts.approved} Invited
           </span>
           <span className="text-xs px-3 py-1.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30">
             {counts.active} active
@@ -388,7 +437,7 @@ const BetaAccessAdmin = ({ userId }: Props) => {
 
         {/* Filter bar */}
         <div className="flex flex-wrap gap-2 mb-4">
-          {(["all", "pending", "approved", "active"] as const).map((s) => (
+          {(["all", "pending", "invited", "active"] as const).map((s) => (
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
@@ -398,7 +447,7 @@ const BetaAccessAdmin = ({ userId }: Props) => {
                   : "bg-secondary/40 text-muted-foreground border-border/40 hover:text-foreground"
               }`}
             >
-              {s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
+              {s === "all" ? "All" : s === "invited" ? "Invited" : s.charAt(0).toUpperCase() + s.slice(1)}
             </button>
           ))}
 
@@ -579,10 +628,11 @@ const BetaAccessAdmin = ({ userId }: Props) => {
                       </td>
                       <td className="px-3 py-3">
                         <span className={`text-xs px-2 py-0.5 rounded-full border ${statusBadge(r.status)}`}>
-                          {r.status}
+                          {STATUS_LABEL[r.status] || r.status}
                         </span>
                       </td>
                       <td className="px-3 py-3 text-right">
+                        <div className="flex flex-col items-end gap-2">
                         {r.status === "pending" && (
                           <Button
                             size="sm"
@@ -599,7 +649,7 @@ const BetaAccessAdmin = ({ userId }: Props) => {
                             Invite
                           </Button>
                         )}
-                        {r.status === "approved" && (
+                        {(r.status === "approved" || r.status === "invited") && (
                           <div className="flex items-center justify-end gap-2">
                             <span className="text-xs text-green-400">Invited ✓</span>
                             <Button
@@ -627,6 +677,36 @@ const BetaAccessAdmin = ({ userId }: Props) => {
                             </Button>
                           </div>
                         )}
+                          <div className="flex items-center justify-end gap-1">
+                            <Select
+                              value={r.status === "approved" ? "invited" : r.status}
+                              onValueChange={(value) => updateStatus(r, value)}
+                            >
+                              <SelectTrigger className="h-7 w-[110px] bg-secondary/40 border-border/40 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pending">Pending</SelectItem>
+                                <SelectItem value="invited">Invited</SelectItem>
+                                <SelectItem value="active">Active</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setConfirmDeleteRow(r)}
+                              disabled={deletingId === r.id}
+                              className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                              aria-label={`Remove ${r.email}`}
+                            >
+                              {deletingId === r.id ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-3.5 h-3.5" />
+                              )}
+                            </Button>
+                          </div>
+                        </div>
                       </td>
                     </tr>
                     {activeInvite === r.id && r.status === "pending" && (
@@ -780,7 +860,7 @@ const BetaAccessAdmin = ({ userId }: Props) => {
                       </td>
                       <td className="px-3 py-3">
                         <span className={`text-xs px-2 py-0.5 rounded-full border ${statusBadge(r.status)}`}>
-                          {r.status}
+                          {STATUS_LABEL[r.status] || r.status}
                         </span>
                       </td>
                     </tr>
@@ -825,6 +905,43 @@ const BetaAccessAdmin = ({ userId }: Props) => {
               className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!confirmDeleteRow}
+        onOpenChange={(open) => {
+          if (!open) setConfirmDeleteRow(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this person from the list?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You're about to remove{" "}
+              <span className="text-foreground font-medium">
+                {confirmDeleteRow?.name || confirmDeleteRow?.email}
+              </span>
+              {confirmDeleteRow?.name && (
+                <>
+                  {" "}(
+                  <span className="text-foreground">{confirmDeleteRow.email}</span>)
+                </>
+              )}
+              {" "}from the waitlist. This only removes their waitlist entry — if they already have a login account, that account is not deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (confirmDeleteRow) deleteRow(confirmDeleteRow);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Remove
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
