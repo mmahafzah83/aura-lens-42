@@ -28,6 +28,13 @@ interface BriefProps {
   onSwitchTab?: (tab: string) => void;
   onOpenCapture?: () => void;
   onInvite?: () => void;
+  onDraftToStudio?: (prefill: {
+    topic: string;
+    context: string;
+    sourceType?: string;
+    sourceTitle?: string;
+    contentFormat?: "post" | "carousel" | "framework_summary";
+  }) => void;
 }
 
 type SectionState<T> =
