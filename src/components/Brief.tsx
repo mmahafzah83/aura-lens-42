@@ -655,17 +655,24 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
   const topSignal = away.status === "ready" && away.data.signals.length > 0 ? away.data.signals[0] : null;
   const draft = draftState.status === "ready" ? draftState.data.draft : null;
 
+  // Strategic Read data — surfaces the assessment output when the user has
+  // not yet published anything. Values come straight from the profile loader.
+  const brandAssessment = profile?.brandAssessment ?? null;
+  const brandPillars = profile?.brandPillars ?? [];
+  const hasStrategicRead = !!brandAssessment && !published;
+
   // Scenario for the lead spread
-  type Scenario = "published" | "new" | "away" | "draft" | "standing";
+  type Scenario = "published" | "new" | "away" | "read" | "draft" | "standing";
   const scenario: Scenario = useMemo(() => {
     if (published) return "published";
+    if (awayDays >= 4) return "away";
+    if (hasStrategicRead) return "read";
     const isNew = (proof.status === "ready" && proof.data.dayN === 1) ||
       (imprint.status === "ready" && imprint.data.imprint == null && proof.status === "ready" && proof.data.entriesTotal === 0);
     if (isNew) return "new";
-    if (awayDays >= 4) return "away";
     if (draft) return "draft";
     return "standing";
-  }, [published, proof, imprint, awayDays, draft]);
+  }, [published, proof, imprint, awayDays, draft, hasStrategicRead]);
 
   // Next tier from canonical TIER_BANDS
   const nextTier = useMemo(() => {
@@ -710,6 +717,23 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
         return { slug: "DAY ONE —", headline: "A Brief with your name on it starts printing tonight.", standfirst: "One capture, thirty seconds, and tomorrow's edition speaks your language." };
       case "away":
         return { slug: "CATCH-UP —", headline: `${awayDays} days out — the wire kept score.`, standfirst: "The signals below moved while you were quiet. Pick the one worth a paragraph." };
+      case "read": {
+        const ba: any = brandAssessment || {};
+        const firstSentence = (s: string) => {
+          const t = (s || "").toString().trim();
+          if (!t) return "";
+          const m = t.match(/^[^.!?]+[.!?]/);
+          return (m ? m[0] : t).trim();
+        };
+        const posRaw = (ba.positioning_statement || "").toString().trim();
+        const mrRaw = (ba.market_read || "").toString().trim();
+        const headline = firstSentence(posRaw) || firstSentence(mrRaw) || "Your read is on the page.";
+        const honest = (ba.honest_truth || "").toString().trim();
+        const space = (ba.uncontested_space || "").toString().trim();
+        const standfirst = [honest, space].filter(Boolean).join(" ") ||
+          "There is a gap between how you read the market and how the market has heard you.";
+        return { slug: "YOUR STRATEGIC READ —", headline, standfirst };
+      }
       case "draft":
         return { slug: "THIS WEEK —", headline: "The market is moving on your theme. Your draft holds the first word.", standfirst: "Ten minutes and the draft is yours in the feed." };
       default: {
@@ -728,7 +752,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
         return { slug: "THE WIRE —", headline, standfirst };
       }
     }
-  }, [scenario, awayDays, imprint, discernment, topSignal]);
+  }, [scenario, awayDays, imprint, discernment, topSignal, brandAssessment]);
 
   // ── Next Move ladder ────────────────────────────────────────────────
   const nextMove = useMemo(() => {
@@ -739,6 +763,18 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
       onClick: () => onOpenDraft(draft),
       voiceScore: draftState.status === "ready" ? draftState.data.voiceScore : null,
     };
+    if (scenario === "read") {
+      const pillar = (brandPillars[0] || "").toString().trim();
+      const shortPillar = pillar.length > 40 ? pillar.slice(0, 38).trim() + "\u2026" : pillar;
+      const raw = pillar ? `Turn "${shortPillar}" into your first post.` : "Write your first piece from your read.";
+      const body = raw.length > 68 ? raw.slice(0, 66).trim() + "\u2026" : raw;
+      return {
+        body,
+        cta: "Write your first piece",
+        onClick: () => onSwitchTab?.("authority"),
+        voiceScore: null,
+      };
+    }
     if (topSignal) return {
       body: `Speak on ${topSignal.title.length > 68 ? topSignal.title.slice(0, 66) + "\u2026" : topSignal.title} while it's still forming.`,
       cta: "Write from this signal",
@@ -757,7 +793,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
       onClick: () => onOpenCapture?.(),
       voiceScore: null,
     };
-  }, [draft, topSignal, rhythm, draftState, onOpenDraft, onSwitchTab, onOpenCapture]);
+  }, [draft, topSignal, rhythm, draftState, onOpenDraft, onSwitchTab, onOpenCapture, scenario, brandPillars]);
 
   // ── Render ──────────────────────────────────────────────────────────
 
