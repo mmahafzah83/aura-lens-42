@@ -28,6 +28,7 @@ interface BriefProps {
   onSwitchTab?: (tab: string) => void;
   onOpenCapture?: () => void;
   onInvite?: () => void;
+  onOpenBrandAssessment?: () => void;
   onDraftToStudio?: (prefill: {
     topic: string;
     context: string;
@@ -213,7 +214,7 @@ function useCountUp(target: number | null, enabled: boolean): number {
 
 // ── Component ────────────────────────────────────────────────────────
 
-export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvite, onDraftToStudio }: BriefProps) {
+export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvite, onOpenBrandAssessment, onDraftToStudio }: BriefProps) {
   const { user, isReady } = useAuthReady();
   const tierInfo = useTierFromImprint(user?.id ?? null);
   const reducedMotion = useMemo(prefersReducedMotion, []);
@@ -668,9 +669,14 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
   const brandPillars = profile?.brandPillars ?? [];
   const hasStrategicRead = !!brandAssessment && !published;
 
+  // Prime-read: user is past onboarding but has no Brand Assessment yet.
+  // Without a Read, nothing else on home matters — funnel to the assessment.
+  const canPrimeRead = !!onOpenBrandAssessment && !!profile?.firstName && !brandAssessment;
+
   // Scenario for the lead spread
-  type Scenario = "published" | "new" | "away" | "read" | "draft" | "standing";
+  type Scenario = "prime_read" | "published" | "new" | "away" | "read" | "draft" | "standing";
   const scenario: Scenario = useMemo(() => {
+    if (canPrimeRead) return "prime_read";
     if (published) return "published";
     if (awayDays >= 4) return "away";
     if (hasStrategicRead) return "read";
@@ -679,7 +685,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
     if (isNew) return "new";
     if (draft) return "draft";
     return "standing";
-  }, [published, proof, imprint, awayDays, draft, hasStrategicRead]);
+  }, [published, proof, imprint, awayDays, draft, hasStrategicRead, canPrimeRead]);
 
   // Next tier from canonical TIER_BANDS
   const nextTier = useMemo(() => {
@@ -718,6 +724,12 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
   // Lead headline data
   const leadCopy = useMemo(() => {
     switch (scenario) {
+      case "prime_read":
+        return {
+          slug: "YOUR STRATEGIC READ —",
+          headline: "Your Strategic Read is one step away.",
+          standfirst: "A short Brand Assessment turns what you already know into a read of how the market sees you — and the space only you own. Everything here builds on it.",
+        };
       case "published":
         return { slug: "TRACKING —", headline: "Your piece is out. Early readers arriving.", standfirst: "The wire is watching how it lands — your Imprint will move with it." };
       case "new":
@@ -764,6 +776,12 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
   // ── Next Move ladder ────────────────────────────────────────────────
   const nextMove = useMemo(() => {
     const zeroCaptures7 = rhythm.status === "ready" && rhythm.data.totalCaptures === 0;
+    if (scenario === "prime_read") return {
+      body: "Unlock your Strategic Read.",
+      cta: "Take the Brand Assessment",
+      onClick: () => onOpenBrandAssessment?.(),
+      voiceScore: null,
+    };
     if (draft) return {
       body: "Your draft is one decision from published.",
       cta: "Open the draft",
@@ -823,7 +841,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
       onClick: () => onOpenCapture?.(),
       voiceScore: null,
     };
-  }, [draft, topSignal, rhythm, draftState, onOpenDraft, onSwitchTab, onOpenCapture, onDraftToStudio, scenario, brandPillars, brandAssessment]);
+  }, [draft, topSignal, rhythm, draftState, onOpenDraft, onSwitchTab, onOpenCapture, onOpenBrandAssessment, onDraftToStudio, scenario, brandPillars, brandAssessment]);
 
   // ── Render ──────────────────────────────────────────────────────────
 
