@@ -213,7 +213,7 @@ function useCountUp(target: number | null, enabled: boolean): number {
 
 // ── Component ────────────────────────────────────────────────────────
 
-export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvite }: BriefProps) {
+export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvite, onDraftToStudio }: BriefProps) {
   const { user, isReady } = useAuthReady();
   const tierInfo = useTierFromImprint(user?.id ?? null);
   const reducedMotion = useMemo(prefersReducedMotion, []);
