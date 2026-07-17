@@ -2160,31 +2160,40 @@ export type Database = {
       }
       ops_alerts: {
         Row: {
+          action: string | null
           body: string | null
           created_at: string
           emailed: boolean
           id: string
+          impact: string | null
           severity: string | null
           source: string | null
           subject: string | null
+          what: string | null
         }
         Insert: {
+          action?: string | null
           body?: string | null
           created_at?: string
           emailed?: boolean
           id?: string
+          impact?: string | null
           severity?: string | null
           source?: string | null
           subject?: string | null
+          what?: string | null
         }
         Update: {
+          action?: string | null
           body?: string | null
           created_at?: string
           emailed?: boolean
           id?: string
+          impact?: string | null
           severity?: string | null
           source?: string | null
           subject?: string | null
+          what?: string | null
         }
         Relationships: []
       }
