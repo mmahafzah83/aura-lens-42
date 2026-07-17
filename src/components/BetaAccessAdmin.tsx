@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { CheckSquare, History, Loader2, Search, Send, Shield, Square, StickyNote, X } from "lucide-react";
+import { CheckSquare, History, Loader2, Search, Send, Shield, Square, StickyNote, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -72,9 +72,17 @@ const statusBadge = (status: string) => {
   const map: Record<string, string> = {
     pending: "bg-amber-500/15 text-amber-300 border-amber-500/30",
     approved: "bg-green-500/15 text-green-300 border-green-500/30",
+    invited: "bg-green-500/15 text-green-300 border-green-500/30",
     active: "bg-blue-500/15 text-blue-300 border-blue-500/30",
   };
   return map[status] || "bg-secondary text-muted-foreground border-border/40";
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  pending: "Pending",
+  approved: "Invited",
+  invited: "Invited",
+  active: "Active",
 };
 
 interface Props {
@@ -94,6 +102,8 @@ const BetaAccessAdmin = ({ userId }: Props) => {
   const [directSending, setDirectSending] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmInviteRow, setConfirmInviteRow] = useState<Row | null>(null);
+  const [confirmDeleteRow, setConfirmDeleteRow] = useState<Row | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [bulkNote, setBulkNote] = useState("");
   const [bulkNoteMode, setBulkNoteMode] = useState<"shared" | "per-row">("shared");
   const [bulkSending, setBulkSending] = useState(false);
@@ -125,7 +135,7 @@ const BetaAccessAdmin = ({ userId }: Props) => {
     const c = { pending: 0, approved: 0, active: 0 };
     for (const r of rows) {
       if (r.status === "pending") c.pending++;
-      else if (r.status === "approved") c.approved++;
+      else if (r.status === "approved" || r.status === "invited") c.approved++;
       else if (r.status === "active") c.active++;
     }
     return c;
@@ -134,7 +144,13 @@ const BetaAccessAdmin = ({ userId }: Props) => {
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return rows.filter((r) => {
-      if (statusFilter !== "all" && r.status !== statusFilter) return false;
+      if (statusFilter !== "all") {
+        if (statusFilter === "invited") {
+          if (r.status !== "invited" && r.status !== "approved") return false;
+        } else if (r.status !== statusFilter) {
+          return false;
+        }
+      }
       if (seniorityFilter !== "all" && r.seniority !== seniorityFilter) return false;
       if (sectorFilter !== "all" && r.sector !== sectorFilter) return false;
       if (q) {
@@ -232,7 +248,7 @@ const BetaAccessAdmin = ({ userId }: Props) => {
           succeededIds.includes(r.id)
             ? {
                 ...r,
-                status: "approved",
+                status: "invited",
                 invited_at: nowIso,
                 personal_note:
                   bulkNoteMode === "shared"
@@ -273,7 +289,7 @@ const BetaAccessAdmin = ({ userId }: Props) => {
       if (error) throw error;
       // optimistic update
       setRows((prev) =>
-        prev.map((r) => (r.id === row.id ? { ...r, status: "approved", invited_at: new Date().toISOString() } : r))
+        prev.map((r) => (r.id === row.id ? { ...r, status: "invited", invited_at: new Date().toISOString() } : r))
       );
       setActiveInvite(null);
       setNoteByRow((prev) => ({ ...prev, [row.id]: "" }));
