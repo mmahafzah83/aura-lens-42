@@ -211,7 +211,12 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
   const tierInfo = useTierFromImprint(user?.id ?? null);
   const reducedMotion = useMemo(prefersReducedMotion, []);
 
-  const [profile, setProfile] = useState<{ firstName: string; sectorFocus: string } | null>(null);
+  const [profile, setProfile] = useState<{
+    firstName: string;
+    sectorFocus: string;
+    brandAssessment: Record<string, any> | null;
+    brandPillars: string[];
+  } | null>(null);
   const publishedSignalsRef = useRef<Set<string> | null>(null);
 
   const loadPublishedSignalIds = useCallback(async (): Promise<Set<string>> => {
@@ -290,13 +295,24 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
     (async () => {
       try {
         const { data } = await supabase
-          .from("diagnostic_profiles").select("first_name, sector_focus")
+          .from("diagnostic_profiles").select("first_name, sector_focus, brand_assessment_results, brand_pillars")
           .eq("user_id", user.id).maybeSingle();
         if (cancelled) return;
         const first = (data?.first_name || fallbackName() || "").toString().trim();
-        setProfile({ firstName: first, sectorFocus: (data?.sector_focus || "").toString().trim() });
+        const bar = (data as any)?.brand_assessment_results;
+        const brandAssessment = bar && typeof bar === "object" && Object.keys(bar).length > 0 ? bar : null;
+        const bpRaw = (data as any)?.brand_pillars;
+        const brandPillars = Array.isArray(bpRaw)
+          ? bpRaw.map((v: any) => (typeof v === "string" ? v.trim() : "")).filter(Boolean)
+          : [];
+        setProfile({
+          firstName: first,
+          sectorFocus: (data?.sector_focus || "").toString().trim(),
+          brandAssessment,
+          brandPillars,
+        });
       } catch {
-        if (!cancelled) setProfile({ firstName: fallbackName(), sectorFocus: "" });
+        if (!cancelled) setProfile({ firstName: fallbackName(), sectorFocus: "", brandAssessment: null, brandPillars: [] });
       }
     })();
     return () => { cancelled = true; };
