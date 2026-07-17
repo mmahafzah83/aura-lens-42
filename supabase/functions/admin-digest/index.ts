@@ -249,70 +249,58 @@ Deno.serve(async (req) => {
 
     const pipelinesOk = !scoringStale && onboardingOk && captureOk;
 
-    // ===== VERDICT =====
+    // Retained for reference in stats payload
     const anyApiFailed = !!(apiLatest && (apiLatest.failed || 0) > 0);
     const cronFailCount = failedList.length;
     const aiFail24 = fail24hCount || 0;
-    const attentionFlags = [
-      pctBudget >= 80,
-      anyApiFailed,
-      cronFailCount > 0,
-      behind > 0,
-      aiFail24 > 10,
-      hasCriticalOrHigh,
-      scoringStale,
-      !captureOk,
-    ];
-    const attentionCount = attentionFlags.filter(Boolean).length;
-    const critical =
-      anyApiFailed ||
-      cronFailCount > 0 ||
-      pctBudget >= 100 ||
-      hasCriticalOrHigh ||
-      scoringStale ||
-      !captureOk;
+
+    // ===== ALERTS (one brain — ops_alerts) =====
+    const { data: alertRows } = await admin
+      .from("ops_alerts")
+      .select("severity, source, subject, what, impact, action, created_at")
+      .gte("created_at", dayAgo)
+      .not("source", "ilike", "admin-digest%")
+      .order("created_at", { ascending: false });
+    const alerts = (alertRows || []) as any[];
+    const needsYou = alerts.filter((a) => a.severity === "critical");
+    const keepEye = alerts.filter((a) => a.severity === "high");
+    const handledCount = alerts.filter((a) => a.severity === "info").length;
+
     let verdictHtml: string;
-    if (attentionCount === 0) {
-      verdictHtml = `<div style="background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;padding:14px 16px;border-radius:8px;font-weight:600">🟢 All systems healthy — nothing needs you today.</div>`;
-    } else if (critical) {
-      verdictHtml = `<div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:14px 16px;border-radius:8px;font-weight:600">🔴 ${attentionCount} item${attentionCount === 1 ? "" : "s"} need attention</div>`;
+    if (needsYou.length > 0) {
+      const head = needsYou.length === 1 ? "1 thing needs you" : `${needsYou.length} things need you`;
+      const tail = keepEye.length ? ` · ${keepEye.length} to keep an eye on` : "";
+      verdictHtml = `<div style="background:#F1E1DD;border:1px solid #d9b3ad;color:#6E2A26;padding:14px 16px;border-radius:8px;font-weight:600">🔴 ${head}${tail}</div>`;
+    } else if (keepEye.length > 0) {
+      verdictHtml = `<div style="background:#F5EBD3;border:1px solid #e3cd97;color:#9A7218;padding:14px 16px;border-radius:8px;font-weight:600">🟡 ${keepEye.length === 1 ? "1 thing" : keepEye.length + " things"} to keep an eye on</div>`;
     } else {
-      verdictHtml = `<div style="background:#fffbeb;border:1px solid #fde68a;color:#92400e;padding:14px 16px;border-radius:8px;font-weight:600">🟡 ${attentionCount} item${attentionCount === 1 ? "" : "s"} to review</div>`;
+      verdictHtml = `<div style="background:#E6F1ED;border:1px solid #a7d8cc;color:#1F8F7B;padding:14px 16px;border-radius:8px;font-weight:600">🟢 All clear — nothing needs you today.${handledCount ? ` ${handledCount} minor item${handledCount === 1 ? "" : "s"} handled automatically.` : ""}</div>`;
     }
 
+    const alertCard = (a: any, accent: string) => `
+      <div style="border-left:3px solid ${accent};background:#FBF8F1;border:1px solid #E2DACB;border-radius:6px;padding:12px 14px;margin-top:10px">
+        <div style="font-weight:600;color:#1B1712;font-size:15px">${esc(a.what || a.subject || "Issue")}</div>
+        ${a.impact ? `<div style="color:#6B6255;font-size:13px;margin-top:4px">This affects: ${esc(a.impact)}</div>` : ""}
+        ${a.action ? `<div style="color:#6E2A26;font-size:13px;margin-top:6px">👉 ${esc(a.action)}</div>` : ""}
+      </div>`;
+    const alertsSection = (needsYou.length || keepEye.length)
+      ? `<div style="margin-top:16px">${needsYou.map((a) => alertCard(a, "#6E2A26")).join("")}${keepEye.map((a) => alertCard(a, "#D6A748")).join("")}</div>`
+      : "";
+
     // ===== BUILD HTML =====
-    const pill = (ok: boolean) =>
-      ok
-        ? `<span style="display:inline-block;background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600;vertical-align:middle">✅ OK</span>`
-        : `<span style="display:inline-block;background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600;vertical-align:middle">⚠️ Needs attention</span>`;
     const meaning = (t: string) =>
       `<div style="color:#6b7280;font-style:italic;font-size:13px;margin:4px 0 8px">${t}</div>`;
-    const action = (t: string) =>
-      `<div style="margin-top:8px;color:#7c2d12;font-size:13px">→ ${t}</div>`;
-    const sectionTitle = (emoji: string, name: string, ok: boolean) =>
-      `<div style="display:flex;align-items:center;justify-content:space-between;margin-top:22px;margin-bottom:2px"><h3 style="margin:0;font-size:16px">${emoji} ${name}</h3>${pill(ok)}</div>`;
+    const sectionTitle = (emoji: string, name: string, _ok: boolean) =>
+      `<div style="margin-top:22px;margin-bottom:2px"><h3 style="margin:0;font-size:16px">${emoji} ${name}</h3></div>`;
 
     // Cost section
     const costOk = pctBudget < 80 && aiFail24 <= 10;
     const top3Html = top3.length
       ? top3.map(([fn, v]) => `<li>${esc(fn)} — $${v.toFixed(2)}</li>`).join("")
       : "<li><em>no usage</em></li>";
-    const costAction =
-      pctBudget >= 100
-        ? action("Over budget. Review top spenders and cap or optimize prompts.")
-        : pctBudget >= 80
-          ? action("Tracking above 80% of budget. Review top spenders before month-end.")
-          : aiFail24 > 10
-            ? action(`${aiFail24} AI calls failed in 24h. Check /admin/cost and provider status.`)
-            : "";
 
     // API section
     const apiOk = !anyApiFailed && !!apiLatest;
-    const apiAction = anyApiFailed
-      ? action("One or more providers failed. Check API health page and rotate keys if needed.")
-      : !apiLatest
-        ? action("No health check has run yet. Verify the sentinel cron is active.")
-        : "";
 
     // LinkedIn section
     const liOk = behind === 0;
@@ -322,18 +310,12 @@ Deno.serve(async (req) => {
     const collectingHtml = collectingNames.length
       ? `<div style="color:#6b7280;font-size:13px;margin-top:2px">Collecting (new, filling in): ${esc(collectingNames.join(", "))}</div>`
       : "";
-    const liAction = behind > 0
-      ? action("Run linkedin-metrics-sync for affected users, or check sync_errors.")
-      : "";
 
     // Cron section
     const cronOk = cronFailCount === 0;
     const cronHtml = failedList.length
       ? failedList.map((r: any) => `<li>${esc(r.jobname)} — ${r.failed} failure(s)${r.last_fail ? ` · last ${esc(String(r.last_fail))}` : ""}</li>`).join("")
       : "<li>All green ✅</li>";
-    const cronAction = cronFailCount > 0
-      ? action("Open /admin/crons and re-run failed jobs; check edge-function logs.")
-      : "";
 
     // Growth — informational, always OK
     const growthOk = true;
@@ -347,13 +329,6 @@ Deno.serve(async (req) => {
           )
           .join("")
       : "<li>All green ✅</li>";
-    const errorsAction = !errorsOk
-      ? action(
-          topErrFns.length
-            ? `check ${esc(topErrFns[0][0])} — ${topErrFns[0][1].count} error${topErrFns[0][1].count === 1 ? "" : "s"}`
-            : "review ef_error_log",
-        )
-      : "";
 
     // Pipelines section HTML
     const scoringLine = scoringStale
@@ -368,14 +343,6 @@ Deno.serve(async (req) => {
     const captureLine = captureOk
       ? `Capture → Signal: ✅ no entries stuck`
       : `Capture → Signal: ⚠️ <strong>${captureUnprocessedCount}</strong> unprocessed · oldest <strong>${captureOldestAgeH}h</strong> · users: <strong>${captureDistinctUsers}</strong>`;
-    const pipelinesAction =
-      scoringStale
-        ? action("Scoring cron did not produce output in 26h. Check calculate-aura-score / compute-imprint.")
-        : !captureOk
-          ? action("extract-evidence not completing. Check ef_error_log and re-run for stuck entries.")
-          : !onboardingOk
-            ? action("Onboarding is using fallback paths. Check perplexity API health.")
-            : "";
 
     const html = `
 <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;max-width:640px;margin:0 auto;color:#111;line-height:1.5;padding:8px">
@@ -383,6 +350,9 @@ Deno.serve(async (req) => {
   <div style="color:#6b7280;font-size:12px;margin-bottom:14px">${esc(todayStr)}</div>
 
   ${verdictHtml}
+  ${alertsSection}
+
+  <div style="margin-top:24px;color:#6b7280;font-size:12px;text-transform:uppercase;letter-spacing:.05em">Snapshot — reference</div>
 
   ${sectionTitle("💸", "Cost", costOk)}
   ${meaning("What Aura spent on AI this month.")}
@@ -391,40 +361,34 @@ Deno.serve(async (req) => {
   <div style="margin-top:4px">24h AI calls: <strong>${total24hCount || 0}</strong> · failed: <strong>${aiFail24}</strong> · success rate: <strong>${successRate === null ? "n/a" : successRate + "%"}</strong></div>
   <div style="margin-top:6px;font-size:13px;color:#374151">Top 3 spenders this month:</div>
   <ol style="margin:2px 0 0 20px;font-size:13px">${top3Html}</ol>
-  ${costAction}
 
   ${sectionTitle("🩺", "API Health", apiOk)}
   ${meaning("Are the AI providers responding right now?")}
   <div>${apiLatest ? `${providerRows} — <strong>${apiLatest.checked}</strong> checked, <strong>${apiLatest.failed}</strong> failed` : "No runs yet."}</div>
   ${apiLatest ? `<div style="color:#6b7280;font-size:12px">Last checked ${esc(String(apiLatest.run_at))}</div>` : ""}
-  ${apiAction}
 
   ${sectionTitle("🔗", "LinkedIn Data", liOk)}
   ${meaning("Is each user's analytics current? (LinkedIn lags 1–2 days.)")}
   <div>Active users: <strong>${(conns || []).length}</strong> · up to date: <strong>${upToDate}</strong> · collecting: <strong>${collecting}</strong> · behind: <strong>${behind}</strong></div>
   ${behindHtml}
   ${collectingHtml}
-  ${liAction}
 
   ${sectionTitle("⏰", "Background Jobs", cronOk)}
   ${meaning("Scheduled syncs — all should run daily.")}
   <div>Failed jobs (24h): <strong>${cronFailCount}</strong> · total failures: <strong>${totalFailed}</strong>${totalRunsCount !== null ? ` · total runs: <strong>${totalRunsCount}</strong>` : ""}</div>
   <ul style="margin:4px 0 0 20px;font-size:13px">${cronHtml}</ul>
-  ${cronAction}
 
   ${sectionTitle("🐞", "Errors (24h)", errorsOk)}
   ${meaning("Functions that threw errors in the last day.")}
   <div>Total errors: <strong>${errTotal}</strong>${errByFn.size > 0 ? ` · functions affected: <strong>${errByFn.size}</strong>` : ""}</div>
   <div style="margin-top:6px;font-size:13px;color:#374151">Top offenders:</div>
   <ol style="margin:2px 0 0 20px;font-size:13px">${topErrHtml}</ol>
-  ${errorsAction}
 
   ${sectionTitle("🔧", "Pipelines", pipelinesOk)}
   ${meaning("Is each core loop actually moving?")}
   <div style="margin-top:4px">${scoringLine}</div>
   <div style="margin-top:4px">${onboardingLine}</div>
   <div style="margin-top:4px">${captureLine}</div>
-  ${pipelinesAction}
 
   ${sectionTitle("📈", "Growth", growthOk)}
   ${meaning("New signups + who used Aura in 24h.")}
@@ -460,7 +424,7 @@ Deno.serve(async (req) => {
     const notifyBody = await notifyRes.json().catch(() => ({}));
 
     const HEARTBEAT_URL = Deno.env.get("HEARTBEAT_URL");
-    if (HEARTBEAT_URL) {
+    if (HEARTBEAT_URL && notifyRes.ok) {
       try { await fetch(HEARTBEAT_URL); } catch (_) { /* never let the ping break or delay the digest */ }
     }
 
