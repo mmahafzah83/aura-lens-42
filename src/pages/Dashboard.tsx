@@ -1045,6 +1045,11 @@ const Dashboard = () => {
                     onSwitchTab={(t) => switchTab(t as TabValue)}
                     onInvite={() => setInviteOpen(true)}
                     onOpenDraft={(d) => { setDraftPrefill(d); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                    onDraftToStudio={(prefill) => {
+                      setSignalDraftPrefill(prefill);
+                      setActiveTab("authority");
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
                   />
                 </ErrorBoundary>
               </div>
