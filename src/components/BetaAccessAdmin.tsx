@@ -860,7 +860,7 @@ const BetaAccessAdmin = ({ userId }: Props) => {
                       </td>
                       <td className="px-3 py-3">
                         <span className={`text-xs px-2 py-0.5 rounded-full border ${statusBadge(r.status)}`}>
-                          {r.status}
+                          {STATUS_LABEL[r.status] || r.status}
                         </span>
                       </td>
                     </tr>
@@ -905,6 +905,43 @@ const BetaAccessAdmin = ({ userId }: Props) => {
               className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!confirmDeleteRow}
+        onOpenChange={(open) => {
+          if (!open) setConfirmDeleteRow(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this person from the list?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You're about to remove{" "}
+              <span className="text-foreground font-medium">
+                {confirmDeleteRow?.name || confirmDeleteRow?.email}
+              </span>
+              {confirmDeleteRow?.name && (
+                <>
+                  {" "}(
+                  <span className="text-foreground">{confirmDeleteRow.email}</span>)
+                </>
+              )}
+              {" "}from the waitlist. This only removes their waitlist entry — if they already have a login account, that account is not deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (confirmDeleteRow) deleteRow(confirmDeleteRow);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Remove
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
