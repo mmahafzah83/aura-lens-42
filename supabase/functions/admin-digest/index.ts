@@ -459,6 +459,11 @@ Deno.serve(async (req) => {
     });
     const notifyBody = await notifyRes.json().catch(() => ({}));
 
+    const HEARTBEAT_URL = Deno.env.get("HEARTBEAT_URL");
+    if (HEARTBEAT_URL) {
+      try { await fetch(HEARTBEAT_URL); } catch (_) { /* never let the ping break or delay the digest */ }
+    }
+
     return json({ success: true, sent: notifyRes.ok, notify: notifyBody, stats: {
       spendMTD, projected, budget,
       linkedin: { upToDate, behind, collecting },
