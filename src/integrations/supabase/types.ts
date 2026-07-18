@@ -3210,6 +3210,14 @@ export type Database = {
         Returns: undefined
       }
       delete_account: { Args: { p_user_id: string }; Returns: undefined }
+      email_crons_ran_without_sends: {
+        Args: { p_hours?: number }
+        Returns: {
+          crons_ran: number
+          ran_jobs: string[]
+          rows_added: number
+        }[]
+      }
       is_current_user_admin: { Args: never; Returns: boolean }
       pending_capture_entries: {
         Args: {
