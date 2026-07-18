@@ -43,8 +43,28 @@ Deno.serve(async (req) => {
   }
 
   const reaped = data?.length ?? 0;
-  console.log(`[reap-stuck-documents] reaped=${reaped}`);
-  return new Response(JSON.stringify({ reaped }), {
+
+  // Evidence-job watchdog: a job whose last_heartbeat is > 5 minutes old and
+  // whose status is not "complete"/"failed" is stuck. Mark it failed and keep
+  // the real error_detail if one exists.
+  const jobCutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+  const { data: stuckJobs, error: jobErr } = await admin
+    .from("evidence_jobs")
+    .update({
+      status: "failed",
+      error_detail:
+        // COALESCE-style: keep existing detail, otherwise write a default.
+        "watchdog: last_heartbeat older than 5 minutes",
+    })
+    .in("status", ["queued", "mapping", "reducing"])
+    .lt("last_heartbeat", jobCutoff)
+    .is("error_detail", null)
+    .select("id");
+  if (jobErr) console.error("[reap-stuck-documents] evidence_jobs update failed:", jobErr.message);
+
+  const reapedJobs = stuckJobs?.length ?? 0;
+  console.log(`[reap-stuck-documents] reaped=${reaped} evidence_jobs=${reapedJobs}`);
+  return new Response(JSON.stringify({ reaped, evidence_jobs_reaped: reapedJobs }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 });
