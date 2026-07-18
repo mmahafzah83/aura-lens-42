@@ -269,6 +269,9 @@ Deno.serve(async (req) => {
               body: bodyText,
               severity,
               dedupe_key: `api-health:${overallClass}`,
+              what: overallClass === "down" ? "A service Aura depends on has been failing for the last hour." : "An API key looks rejected.",
+              impact: overallClass === "down" ? "The affected features may be down until it recovers." : "The affected feature is failing until the key is fixed.",
+              action: overallClass === "down" ? "Check the provider's status page; if they report an outage, wait it out. If green, check the key in Lovable → Cloud → Secrets." : "Open Lovable → Cloud → Secrets and check or replace the affected API key.",
             }),
           });
           if (!notifyRes.ok) {
