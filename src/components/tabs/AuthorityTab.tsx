@@ -1073,6 +1073,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
       setConfirmLiveOpen(false);
       setAttachedImageUrl(null);
       const url = (data as any).postUrl;
+      track("post_published", { signal_id: selectedSignalId || null, route: "linkedin" });
       toast.success("Published to LinkedIn", url ? { action: { label: "View post", onClick: () => window.open(url, "_blank") } } : undefined);
     } catch (e: any) {
       toast.error(e?.message || "Couldn't publish to LinkedIn");
