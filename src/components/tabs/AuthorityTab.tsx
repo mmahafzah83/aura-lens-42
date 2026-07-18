@@ -3084,6 +3084,11 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
   const [signalCount, setSignalCount] = useState<number>(0);
   const [hasLinkedIn, setHasLinkedIn] = useState<boolean>(true); // default true → hides tutorial until we know
   const navigate = useNavigate();
+  // P4: search / filter / sort — all client-side against already-loaded rows.
+  const [librarySearch, setLibrarySearch] = useState<string>("");
+  const [libraryLang, setLibraryLang] = useState<"all" | "ar" | "en">("all");
+  const [libraryStatus, setLibraryStatus] = useState<"all" | "draft" | "published">("all");
+  const [librarySort, setLibrarySort] = useState<"recent" | "top">("recent");
   // Race-fix: don't let realtime INSERTs trigger a parallel refetch
   // before the initial loadPosts() has settled.
   const initialLoadDoneRef = useRef(false);
