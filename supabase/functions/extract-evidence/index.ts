@@ -226,6 +226,86 @@ const handler = async (req: Request): Promise<Response> => {
     // Fetch source content
     const { content, title } = await fetchSourceContent(adminClient, registry.source_type, registry.source_id);
 
+    // ── Document path: hand off to the sliced map-reduce pipeline. ──
+    // A single invocation cannot read a 384-chunk PDF; we enqueue an evidence_job
+    // and kick extract-evidence-slice, which is resumable across invocations.
+    if (registry.source_type === "document") {
+      // Reuse an in-flight job for this source if one exists.
+      const { data: existingJob } = await adminClient
+        .from("evidence_jobs")
+        .select("id, status")
+        .eq("source_registry_id", registryId)
+        .in("status", ["queued", "mapping", "reducing"])
+        .maybeSingle();
+
+      let jobId = existingJob?.id;
+      if (!jobId) {
+        // Clear stale fragments so the fresh job starts from a clean slate.
+        const { data: oldFragRows } = await adminClient
+          .from("evidence_fragments").select("id").eq("source_registry_id", registryId);
+        const oldFragmentIds: string[] = (oldFragRows || []).map((r: any) => r.id);
+        if (oldFragmentIds.length) {
+          await adminClient.from("evidence_fragments").delete().eq("source_registry_id", registryId);
+          const removedSet = new Set(oldFragmentIds);
+          const { data: sigs } = await adminClient
+            .from("strategic_signals")
+            .select("id, supporting_evidence_ids")
+            .eq("user_id", registry.user_id)
+            .overlaps("supporting_evidence_ids", oldFragmentIds);
+          for (const s of (sigs || []) as any[]) {
+            const cur: string[] = s.supporting_evidence_ids || [];
+            const pruned = cur.filter((fid) => !removedSet.has(fid));
+            if (pruned.length === cur.length) continue;
+            await adminClient.from("strategic_signals").update({
+              supporting_evidence_ids: pruned,
+              fragment_count: pruned.length,
+              updated_at: new Date().toISOString(),
+            }).eq("id", s.id);
+          }
+        }
+
+        const { count: totalChunks } = await adminClient
+          .from("document_chunks")
+          .select("id", { count: "exact", head: true })
+          .eq("document_id", registry.source_id);
+
+        const { data: newJob, error: jobInsErr } = await adminClient
+          .from("evidence_jobs")
+          .insert({
+            source_registry_id: registryId,
+            user_id: registry.user_id,
+            cursor: 0,
+            total: totalChunks || 0,
+            status: "queued",
+          })
+          .select("id")
+          .single();
+        if (jobInsErr) throw new Error(`evidence_jobs insert: ${jobInsErr.message}`);
+        jobId = newJob.id;
+      }
+
+      // Kick the slice worker (non-blocking).
+      try {
+        // @ts-ignore EdgeRuntime.waitUntil
+        EdgeRuntime.waitUntil((async () => {
+          try {
+            await adminClient.functions.invoke("extract-evidence-slice", {
+              body: { evidence_job_id: jobId },
+            });
+          } catch (e) {
+            console.error("[extract-evidence] slice kick failed:", (e as Error).message);
+          }
+        })());
+      } catch { /* noop */ }
+
+      return new Response(JSON.stringify({
+        success: true,
+        source_registry_id: registryId,
+        evidence_job_id: jobId,
+        pipeline: "sliced",
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     // Get user's skill context
     const { data: profile } = await adminClient
       .from("diagnostic_profiles")
