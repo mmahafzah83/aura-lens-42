@@ -330,7 +330,21 @@ ${identityCtx}`;
     }
 
     const aiData = await aiRes.json();
-    const signal = parseAiJson(aiData.choices?.[0]?.message?.content || "{}");
+    const rawContent: string = aiData.choices?.[0]?.message?.content || "{}";
+    const signal = parseAiJson(rawContent);
+    if (!signal) {
+      // Log the unparseable sample and skip this batch — never throw away the invocation.
+      EdgeRuntime.waitUntil(
+        logError("detect-signals-v2", new Error("ai_json_parse_failed"), {
+          user_id,
+          severity: "info",
+          context: { raw_sample: String(rawContent).slice(0, 300) },
+        }),
+      );
+      return new Response(JSON.stringify({ skipped: true, reason: "ai_json_parse_failed" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const newTitle = signal.title || "Untitled Signal";
     const newSummary = signal.summary || "";
