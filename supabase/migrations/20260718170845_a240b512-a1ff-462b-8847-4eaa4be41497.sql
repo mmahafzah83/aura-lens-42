@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.email_crons_ran_without_sends(int) FROM PUBLIC, anon, authenticated;
