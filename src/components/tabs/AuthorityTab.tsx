@@ -2983,6 +2983,10 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
   const [drafts, setDrafts] = useState<SavedPost[]>([]);
   const [publishedPosts, setPublishedPosts] = useState<SavedPost[]>([]);
   const [publishedTotal, setPublishedTotal] = useState<number>(0);
+  // Exact-count truth per authorship group (not derived from array.length).
+  const [auraTotal, setAuraTotal] = useState<number>(0);
+  const [earlierTotal, setEarlierTotal] = useState<number>(0);
+  const [showEarlier, setShowEarlier] = useState<boolean>(false);
   const [postMetrics, setPostMetrics] = useState<Record<string, { impressions?: number | null; reactions?: number | null }>>({});
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
