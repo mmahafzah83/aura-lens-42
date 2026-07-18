@@ -220,6 +220,9 @@ const Onboarding = () => {
   const [corePractice, setCorePractice] = useState("");
   const [northStar, setNorthStar] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
+  // Optional country (for Aura Card flag). Never blocks completion.
+  const [country, setCountry] = useState<string | null>(null);
+  const [countryCode, setCountryCode] = useState<string | null>(null);
 
   // Shared-learning consent (opt-in; persisted on diagnostic_profiles.shared_learning_consent).
   const [sharedLearningConsent, setSharedLearningConsent] = useState(false);
