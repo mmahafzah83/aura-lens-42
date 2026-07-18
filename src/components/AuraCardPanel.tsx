@@ -48,6 +48,9 @@ export default function AuraCardPanel({
     assessment: false, skills: false, photo: false, country: false, loaded: false,
   });
   const [busy, setBusy] = useState<null | "png" | "share">(null);
+  const [readyAt, setReadyAt] = useState<string | null>(null);
+  const [celebrate, setCelebrate] = useState(false);
+  const celebrateFiredRef = useRef(false);
   const mountRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -56,7 +59,7 @@ export default function AuraCardPanel({
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) { if (!cancelled) setReadiness((s) => ({ ...s, loaded: true })); return; }
       const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
-        .select("brand_assessment_completed_at, audit_completed_at, avatar_url, country_code")
+        .select("brand_assessment_completed_at, audit_completed_at, avatar_url, country_code, aura_card_ready_at")
         .eq("user_id", session.user.id)
         .maybeSingle();
       if (cancelled) return;
@@ -68,11 +71,40 @@ export default function AuraCardPanel({
         country: !!p.country_code,
         loaded: true,
       });
+      setReadyAt(p.aura_card_ready_at ?? null);
     })();
     return () => { cancelled = true; };
   }, []);
 
   const allReady = readiness.assessment && readiness.skills && readiness.photo && readiness.country;
+
+  // First time all 4 gates flip green AND we've never marked it before: celebrate once.
+  useEffect(() => {
+    if (!readiness.loaded) return;
+    if (!allReady) return;
+    if (readyAt) return;
+    if (celebrateFiredRef.current) return;
+    celebrateFiredRef.current = true;
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const uid = session?.user?.id;
+        if (!uid) return;
+        const nowIso = new Date().toISOString();
+        const { error } = await (supabase.from("diagnostic_profiles" as any) as any)
+          .update({ aura_card_ready_at: nowIso })
+          .eq("user_id", uid)
+          .is("aura_card_ready_at", null);
+        if (error) return;
+        setReadyAt(nowIso);
+        setCelebrate(true);
+        // Fire-and-forget lifecycle email
+        supabase.functions.invoke("send-lifecycle-email", {
+          body: { user_id: uid, email_type: "aura_card_ready" },
+        }).catch(() => {});
+      } catch { /* ignore */ }
+    })();
+  }, [readiness.loaded, allReady, readyAt]);
 
   // ── PNG via html2canvas (same primitive every export path in this app uses) ──
   const renderCanvas = async (): Promise<HTMLCanvasElement> => {
