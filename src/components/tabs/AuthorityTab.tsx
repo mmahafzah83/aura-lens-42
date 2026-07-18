@@ -575,6 +575,11 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
   // Apply signal prefill from Intelligence page
   useEffect(() => {
     if (signalPrefill) {
+      track("composer_opened", {
+        source: signalPrefill.source ?? "signal_prefill",
+        signal_id: signalPrefill.signalId ?? null,
+        move_state: signalPrefill.moveState ?? null,
+      });
       setTopic(signalPrefill.topic);
       setContext(signalPrefill.context);
       // Determine content type from explicit contentFormat or sourceType
@@ -623,6 +628,11 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
   // Mirrors the signalPrefill channel: hydrate state, then notify parent to clear.
   useEffect(() => {
     if (draftPrefill) {
+      track("composer_opened", {
+        source: "draft_prefill",
+        signal_id: null,
+        move_state: "drafted",
+      });
       const mappedType: ContentType =
         draftPrefill.type === "carousel" ? "carousel" :
         draftPrefill.type === "framework" ? "framework_summary" :
