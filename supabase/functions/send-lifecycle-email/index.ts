@@ -13,7 +13,7 @@ const APP_URL = "https://aura-intel.org";
 const FROM = "Aura <Mohammad.Mahafdhah@aura-intel.org>";
 const REPLY_TO = "mohammad.mahafdhah@aura-intel.org";
 
-type EmailType = "welcome" | "day1" | "day3" | "day7" | "inactive" | "silence" | "post_ready";
+type EmailType = "welcome" | "day1" | "day3" | "day7" | "inactive" | "silence" | "post_ready" | "aura_card_ready";
 
 const HEADING_FONT = "'Cormorant Garamond', Georgia, 'Times New Roman', serif";
 const BODY_FONT = "'DM Sans', -apple-system, BlinkMacSystemFont, Arial, sans-serif";
@@ -172,6 +172,17 @@ function buildEmail(
       <p style="margin:0 0 18px;padding:16px 20px;background:#f5f1e8;border-left:3px solid ${BRAND};font-style:italic;color:#3a3530;">"${preview}${preview.length >= 120 ? "..." : ""}"</p>
       <p style="margin:0 0 18px;">One tap and it's live. The professionals who build presence don't wait for the perfect moment.</p>
       ${ctaButton(BRAND, "Open in Publish tab →", `${APP_URL}/home?tab=authority`)}
+      ${signoff(name, level)}`;
+    return { subject, html: shell(BRAND, FONT, body) };
+  }
+
+  if (type === "aura_card_ready") {
+    const subject = "Your Aura Card is ready";
+    const body = `
+      ${heading(`${name}, your Aura Card is ready.`)}
+      <p style="margin:0 0 18px;">You finished the four steps — assessment, skills, photo, and country. Aura now has enough to render a shareable read of who you are, in one card.</p>
+      <p style="margin:0 0 18px;">Open My Story to preview it, download the PNG, or share it to LinkedIn.</p>
+      ${ctaButton(BRAND, "Open your card →", `${APP_URL}/home?tab=identity`)}
       ${signoff(name, level)}`;
     return { subject, html: shell(BRAND, FONT, body) };
   }
