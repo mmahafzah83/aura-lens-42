@@ -343,12 +343,14 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
         }
         if (allFragIds.length > 0) {
           const fragRes = await supabase.from("evidence_fragments")
-            .select("id, title, content, created_at")
+            .select("id, title, content, created_at, source_registry_id")
             .eq("user_id", user.id)
             .in("id", Array.from(new Set(allFragIds)));
-          const fragRows = (fragRes?.data || []) as Array<{ id: string; title: string | null; content: string | null; created_at: string }>;
+          const fragRows = ((fragRes?.data || []) as Array<{ id: string; title: string | null; content: string | null; created_at: string; source_registry_id: string | null }>)
+            .slice()
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
           const publishedAtById = new Map(publishedEntries);
-          const deltaCount = new Map<string, number>();
+          const deltaSources = new Map<string, Set<string>>();
           const deltaSummaries = new Map<string, string[]>();
           for (const f of fragRows) {
             const linkedSignals = fragToSignals.get(f.id) || [];
@@ -356,19 +358,25 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
               const pAt = publishedAtById.get(sid);
               if (!pAt) continue;
               if (new Date(f.created_at).getTime() > new Date(pAt).getTime()) {
-                deltaCount.set(sid, (deltaCount.get(sid) || 0) + 1);
+                // Count DISTINCT source_registry_id per signal. Fragments with a
+                // null registry each count once (keyed by fragment id).
+                const sourceKey = f.source_registry_id || `frag:${f.id}`;
+                const set = deltaSources.get(sid) || new Set<string>();
+                set.add(sourceKey);
+                deltaSources.set(sid, set);
                 const summary = (f.title || f.content || "").toString().trim();
                 if (summary) {
                   const arr = deltaSummaries.get(sid) || [];
+                  // Keep at most the 5 most recent summaries (rows are pre-sorted desc).
                   if (arr.length < 5) arr.push(summary.slice(0, 240));
                   deltaSummaries.set(sid, arr);
                 }
               }
             }
           }
-          for (const [sid, count] of deltaCount) {
+          for (const [sid, sources] of deltaSources) {
             const existing = map.get(sid) || {};
-            existing.evidenceDelta = count;
+            existing.evidenceDelta = sources.size;
             existing.evidenceSummaries = deltaSummaries.get(sid) || [];
             map.set(sid, existing);
           }
