@@ -131,11 +131,37 @@ async function calcPriorityScore(
   return base;
 }
 
-function parseAiJson(raw: string): any {
-  try { return JSON.parse(raw); } catch {
+// Robust JSON parser for LLM output. Never throws.
+// Returns the parsed object, or null if the response cannot be salvaged.
+function parseAiJson(raw: string): any | null {
+  if (!raw) return null;
+  // 1) direct parse
+  try { return JSON.parse(raw); } catch { /* fall through */ }
+  // 2) strip ``` fences + control chars, retry
+  try {
     const m = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
-    return JSON.parse((m ? m[1] : raw).replace(/[\u0000-\u001F\u007F]/g, " "));
-  }
+    const cleaned = (m ? m[1] : raw).replace(/[\u0000-\u001F\u007F]/g, " ");
+    return JSON.parse(cleaned);
+  } catch { /* fall through */ }
+  // 3) extract first balanced {...} block and try that (handles trailing prose)
+  try {
+    const cleaned = raw.replace(/[\u0000-\u001F\u007F]/g, " ");
+    const start = cleaned.indexOf("{");
+    if (start >= 0) {
+      let depth = 0;
+      for (let i = start; i < cleaned.length; i++) {
+        const c = cleaned[i];
+        if (c === "{") depth++;
+        else if (c === "}") {
+          depth--;
+          if (depth === 0) {
+            return JSON.parse(cleaned.slice(start, i + 1));
+          }
+        }
+      }
+    }
+  } catch { /* fall through */ }
+  return null;
 }
 
 function unique<T>(arr: T[]): T[] { return [...new Set(arr)]; }
