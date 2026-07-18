@@ -42,15 +42,9 @@ async function fetchSourceContent(
         .select("filename, summary, file_type")
         .eq("id", sourceId)
         .single();
-      const { data: chunks } = await supabase
-        .from("document_chunks")
-        .select("content")
-        .eq("document_id", sourceId)
-        .order("chunk_index", { ascending: true })
-        .limit(25);
       return {
         title: doc?.filename || "Unknown Document",
-        content: `Document: ${doc?.filename}\nType: ${doc?.file_type}\nSummary: ${doc?.summary || ""}\n\n${(chunks || []).map((c: any) => c.content).join("\n\n")}`,
+        content: `Document: ${doc?.filename}\nType: ${doc?.file_type}\nSummary: ${doc?.summary || ""}`,
       };
     }
     case "framework": {
