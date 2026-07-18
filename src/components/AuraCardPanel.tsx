@@ -115,7 +115,7 @@ export default function AuraCardPanel({
       if (!blob) throw new Error("Could not render image");
 
       // Upload to the existing public capture-images bucket so LinkedIn can fetch it.
-      const path = `aura-card/${uid}/${Date.now()}-${variant}.png`;
+      const path = `${uid}/aura-card/${Date.now()}-${variant}.png`;
       const { error: upErr } = await supabase.storage
         .from("capture-images")
         .upload(path, blob, { contentType: "image/png", upsert: true });
