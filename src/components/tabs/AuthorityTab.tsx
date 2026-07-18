@@ -307,7 +307,8 @@ async function insertPublishedLinkedInPost(opts: {
       authorship: "aura_drafted",
       acquisition: "published_via_aura",
       published_at: new Date().toISOString(),
-      linkedin_url: cleanUrl,
+      // Canonical URL column read by the archive, metric-matching, and open-link UI.
+      post_url: cleanUrl,
       published_confirmed_at: cleanUrl ? new Date().toISOString() : null,
       like_count: 0,
       comment_count: 0,
@@ -3298,7 +3299,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
           .update({
             tracking_status: "published",
             published_at: nowIso,
-            linkedin_url: trimmedUrl ?? null,
+            post_url: trimmedUrl ?? null,
             published_confirmed_at: trimmedUrl ? nowIso : null,
           })
           .eq("id", id);
