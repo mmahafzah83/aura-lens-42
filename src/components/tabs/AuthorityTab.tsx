@@ -3712,10 +3712,16 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
 
       {/* ── Section 2: Published Posts (collapsed by default) ── */}
       {(() => {
-        // Split rows by authorship. Fallback for un-tagged rows so we don't
-        // silently drop anything: no post_text → treat as "earlier".
-        const auraRows     = publishedPosts.filter((p: any) => p.authorship === "aura_drafted" || p.authorship === "aura_assisted");
-        const earlierRows  = publishedPosts.filter((p: any) => p.authorship === "user_written" || p.authorship === "unknown" || !p.authorship);
+        // Split rows by authorship using explicit predicates. Anything that
+        // doesn't match either known bucket falls into a visible "Unclassified"
+        // group instead of being silently absorbed — surfaces DB drift fast.
+        const AURA_AUTHORSHIP     = new Set(["aura_drafted", "aura_assisted"]);
+        const EARLIER_AUTHORSHIP  = new Set(["user_written", "unknown"]);
+        const auraRows          = publishedPosts.filter((p: any) => AURA_AUTHORSHIP.has(p.authorship));
+        const earlierRows       = publishedPosts.filter((p: any) => EARLIER_AUTHORSHIP.has(p.authorship));
+        const unclassifiedRows  = publishedPosts.filter(
+          (p: any) => !AURA_AUTHORSHIP.has(p.authorship) && !EARLIER_AUTHORSHIP.has(p.authorship),
+        );
 
         const renderCard = (p: any) => {
               const badge = FORMAT_BADGE[p.format_type || "post"] || FORMAT_BADGE.post;
@@ -3982,6 +3988,33 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                     )}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Group C — Unclassified. Only appears if the DB drifts (authorship
+                outside the known enum). Renders in a visible red-tinted band so
+                nothing can silently disappear into A or B. */}
+            {unclassifiedRows.length > 0 && (
+              <div>
+                <div
+                  className="flex items-center gap-2.5 w-full text-left"
+                  style={{ borderLeft: "2px solid var(--color-destructive, #b45309)", paddingLeft: 12, marginBottom: 12 }}
+                >
+                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    <h3 style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-destructive, #b45309)", margin: 0 }}>
+                      Unclassified
+                    </h3>
+                    <span style={{ fontFamily: "var(--font-display, var(--font-serif))", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", lineHeight: 1.4 }}>
+                      Authorship label doesn't match a known bucket — surfaced here so it isn't hidden.
+                    </span>
+                  </div>
+                  <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--bg-subtle)", color: "var(--color-destructive, #b45309)" }}>
+                    {unclassifiedRows.length}
+                  </span>
+                </div>
+                <div style={{ display: "grid", gap: 12 }}>
+                  {unclassifiedRows.map(renderCard)}
+                </div>
               </div>
             )}
           </>
