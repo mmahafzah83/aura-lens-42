@@ -1351,9 +1351,14 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
           {imprint.status === "ready" && imprint.data.imprint == null && (() => {
             const ba: any = scenario === "read" ? (brandAssessment || {}) : {};
             const barrier = (ba.key_barrier || "").toString().trim();
-            const invest = Array.isArray(ba.invest_next)
-              ? (ba.invest_next[0] || "").toString().trim()
-              : (ba.invest_next || "").toString().trim();
+            const investRaw = (ba as any).invest_next;
+            const firstInvest = Array.isArray(investRaw) ? investRaw[0] : investRaw;
+            const invest = (typeof firstInvest === "string"
+              ? firstInvest
+              : (firstInvest && typeof firstInvest === "object"
+                  ? (firstInvest.area || firstInvest.title || firstInvest.name || "")
+                  : "")
+            ).toString().trim();
             const useGap = scenario === "read" && barrier && invest;
             if (useGap) {
               return (
