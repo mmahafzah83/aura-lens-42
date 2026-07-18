@@ -1012,11 +1012,12 @@ const Dashboard = () => {
                     try { localStorage.setItem("aura_welcome_briefing_done", "1"); } catch {}
                   }}
                 />
-                {/* App-level overlays re-mounted here so they keep firing
-                    after the Brief swap. */}
-                <OnboardingChecklist
+                <FirstFlightCard
+                  userId={userId}
+                  onConnectLinkedIn={connectLinkedInFirstFlight}
                   onOpenCapture={() => handleOpenCapture()}
-                  onSwitchTab={switchTab}
+                  onOpenSignal={(sig) => navigateToSignal(sig.id)}
+                  onWriteFromSignal={writeFromFirstFlightSignal}
                 />
                 <FirstVisitHint page="home" />
                 <IdentityDriftBanner />
