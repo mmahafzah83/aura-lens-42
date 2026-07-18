@@ -222,12 +222,6 @@ serve(withObserve("send-lifecycle-email", async (req) => {
     const cronHeader = req.headers.get("x-cron-secret") || "";
     const isCron = !!CRON_SECRET && cronHeader === CRON_SECRET;
     const isServiceRole = !!SERVICE_KEY && apiKey === SERVICE_KEY;
-    if (!isCron && !isServiceRole) {
-      return new Response(JSON.stringify({ error: "Forbidden" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
     const reqBody = await req.json();
     const { user_id, email_type, post_id, post_title, post_preview } = reqBody;
     if (!user_id || !email_type) {
@@ -235,6 +229,37 @@ serve(withObserve("send-lifecycle-email", async (req) => {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+    // Allow authenticated user to trigger their own "aura_card_ready" email only.
+    let isSelfUser = false;
+    if (!isCron && !isServiceRole) {
+      if (email_type !== "aura_card_ready") {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      try {
+        const SUPABASE_URL_A = Deno.env.get("SUPABASE_URL")!;
+        const ANON = Deno.env.get("SUPABASE_ANON_KEY") || "";
+        const authHeader = req.headers.get("Authorization") || "";
+        const userClient = createClient(SUPABASE_URL_A, ANON, {
+          global: { headers: { Authorization: authHeader } },
+        });
+        const { data: u } = await userClient.auth.getUser();
+        if (!u?.user?.id || u.user.id !== user_id) {
+          return new Response(JSON.stringify({ error: "Forbidden" }), {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        isSelfUser = true;
+      } catch {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
     const types: EmailType[] = ["welcome", "day1", "day3", "day7", "inactive", "silence", "post_ready", "aura_card_ready"];
     if (!types.includes(email_type)) {
