@@ -951,15 +951,9 @@ const Observatory = ({
   const draftFromSignal = async (s: Signal) => {
     await supabase.from("strategic_signals")
       .update({ priority_score: (s.priority_score || 0) + 0.05 }).eq("id", s.id);
-    if (authUser?.id) {
-      try {
-        await (supabase.from("signal_engagements" as any) as any)
-          .upsert(
-            { user_id: authUser.id, signal_id: s.id, open_count: 1, last_opened_at: new Date().toISOString() },
-            { onConflict: "user_id,signal_id", ignoreDuplicates: false },
-          );
-      } catch { /* fire-and-forget — must not block draft handoff */ }
-    }
+    try {
+      void (supabase as any).rpc("bump_signal_engagement", { p_signal_id: s.id });
+    } catch { /* fire-and-forget — must not block draft handoff */ }
     onDraftToStudio?.({
       topic: s.signal_title,
       context: [s.explanation, s.strategic_implications, s.what_it_means_for_you].filter(Boolean).join("\n\n"),
