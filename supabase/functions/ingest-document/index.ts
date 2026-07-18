@@ -9,10 +9,42 @@ const corsHeaders = {
 
 const MAX_BYTES = 50 * 1024 * 1024; // 50 MB safety guardrail
 const OCR_PAGE_TEXT_THRESHOLD = 30; // <30 chars => treat as scanned
-const OCR_BATCH_SIZE = 5;
-const OCR_MAX_PAGES = 30;
-const PROCESS_DEADLINE_MS = 220_000;
-const PDF_EXTRACT_DEADLINE_MS = 180_000;
+const OCR_BATCH_SIZE = 3;         // per-slice OCR cap (was 5)
+const OCR_PER_SLICE_MAX = 3;      // hard cap: 3 OCR pages / invocation
+const DEFAULT_SLICE_SIZE = 25;    // pages per extract invocation
+const MIN_SLICE_SIZE = 3;         // below this => too_dense
+// NOTE: PROCESS_DEADLINE_MS / PDF_EXTRACT_DEADLINE_MS removed —
+// the staged cursor+heartbeat pattern (document_jobs) replaces them.
+
+type FailureCode =
+  | "password_protected"
+  | "corrupt_file"
+  | "no_text_layer"
+  | "too_dense"
+  | "unsupported_type"
+  | "download_failed"
+  | "partial_success"
+  | "internal_error";
+
+const FAILURE_COPY: Record<FailureCode, string> = {
+  password_protected: "This PDF is password-protected — we can't read it.",
+  corrupt_file: "This file appears corrupted and can't be read.",
+  no_text_layer: "This PDF has no readable text layer (image-only, no OCR match).",
+  too_dense: "This document is too visually dense for us to read reliably right now — we're looking into it.",
+  unsupported_type: "This file type isn't supported yet.",
+  download_failed: "We couldn't download the file from storage.",
+  partial_success: "We read most of the document but a few pages didn't come through.",
+  internal_error: "Something went wrong while reading this document.",
+};
+
+function classifyFailure(msg: string): FailureCode {
+  const m = (msg || "").toLowerCase();
+  if (m.includes("password") || m.includes("encrypted")) return "password_protected";
+  if (m.includes("invalid pdf") || m.includes("corrupt") || m.includes("malformed")) return "corrupt_file";
+  if (m.includes("no text") || m.includes("no usable text")) return "no_text_layer";
+  if (m.includes("storage") || m.includes("download")) return "download_failed";
+  return "internal_error";
+}
 
 async function stage(adminClient: any, document_id: string, note: string) {
   try {
@@ -23,6 +55,54 @@ async function stage(adminClient: any, document_id: string, note: string) {
   } catch (_) {
     // non-fatal
   }
+}
+
+// ---- memory telemetry -------------------------------------------------------
+function memMB(): { rss_mb: number; heap_mb: number } {
+  try {
+    // @ts-ignore Deno.memoryUsage
+    const u = Deno.memoryUsage();
+    return {
+      rss_mb: Math.round((u.rss || 0) / (1024 * 1024)),
+      heap_mb: Math.round((u.heapUsed || 0) / (1024 * 1024)),
+    };
+  } catch { return { rss_mb: 0, heap_mb: 0 }; }
+}
+
+async function heartbeat(
+  admin: any,
+  jobId: string,
+  patch: Record<string, unknown>,
+) {
+  const now = new Date().toISOString();
+  await admin
+    .from("document_jobs")
+    .update({ ...patch, last_heartbeat: now })
+    .eq("id", jobId);
+}
+
+async function logStageInfo(
+  admin: any,
+  args: { document_id: string; stage: string; cursor: number; ms_elapsed: number; extra?: Record<string, unknown> },
+) {
+  const mem = memMB();
+  try {
+    await admin.from("ef_error_log").insert({
+      function_name: "ingest-document",
+      severity: "info",
+      error_message: `stage=${args.stage}`,
+      context: {
+        document_id: args.document_id,
+        stage: args.stage,
+        cursor: args.cursor,
+        rss_mb: mem.rss_mb,
+        heap_mb: mem.heap_mb,
+        ms_elapsed: args.ms_elapsed,
+        ...(args.extra || {}),
+      },
+    });
+  } catch (_) { /* non-fatal */ }
+  return mem;
 }
 
 function chunkText(text: string, chunkSize = 800, overlap = 100): string[] {
