@@ -236,7 +236,7 @@ serve(withObserve("send-lifecycle-email", async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const types: EmailType[] = ["welcome", "day1", "day3", "day7", "inactive", "silence", "post_ready"];
+    const types: EmailType[] = ["welcome", "day1", "day3", "day7", "inactive", "silence", "post_ready", "aura_card_ready"];
     if (!types.includes(email_type)) {
       return new Response(JSON.stringify({ error: "invalid email_type" }), {
         status: 400,
