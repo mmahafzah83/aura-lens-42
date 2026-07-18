@@ -115,6 +115,11 @@ export default function AdminCost() {
   const [budget, setBudget] = useState<number>(150);
   const [budgetInput, setBudgetInput] = useState<string>("150");
   const [savingBudget, setSavingBudget] = useState(false);
+  const [subs, setSubs] = useState<ExternalCost[]>([]);
+  const [newName, setNewName] = useState("");
+  const [newAmt, setNewAmt] = useState("");
+  const [newCycle, setNewCycle] = useState("monthly");
+  const [newRenews, setNewRenews] = useState("");
 
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
