@@ -1094,6 +1094,15 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
             await (supabase as any).rpc("bump_signal_engagement", { p_signal_id: topSignal.id });
           } catch { /* fire-and-forget — must not block navigation */ }
         }
+        // Move-state at open-time: has a draft (fresh vs stale), has been opened, or untouched.
+        const _state = signalStates.get(topSignal.id);
+        const _draftDays = _state?.draft && _state.draftCreatedAt
+          ? Math.floor((Date.now() - new Date(_state.draftCreatedAt).getTime()) / 86400000)
+          : null;
+        const moveState: "untouched" | "opened" | "drafted" | "stale_draft" =
+          _state?.draft ? (_draftDays !== null && _draftDays >= 7 ? "stale_draft" : "drafted")
+          : _state?.openedAt ? "opened"
+          : "untouched";
         onDraftToStudio?.({
           topic: topSignal.title,
           context: [topSignal.what, topSignal.explanation].filter(Boolean).join("\n\n"),
@@ -1102,6 +1111,8 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
           sourceType: "signal",
           sourceTitle: topSignal.title,
           contentFormat: "post",
+          source: "brief",
+          moveState,
         });
       };
 
@@ -1135,6 +1146,8 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
             sourceType: "signal_evolution",
             sourceTitle: topSignal.title,
             contentFormat: "post",
+            source: "brief",
+            moveState: "evolution",
           }),
           voiceScore: null,
         };
