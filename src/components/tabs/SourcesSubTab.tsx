@@ -541,6 +541,17 @@ const SourcesSubTab = ({
 
     const combined = [...entryItems, ...docItems];
     setEntries(combined);
+    // Drop optimistic retrying flags for any doc that has moved out of processing.
+    setRetryingIds(prev => {
+      if (prev.size === 0) return prev;
+      const next = new Set(prev);
+      for (const d of docItems) {
+        if (next.has(d.id) && d.status !== "processing" && d.status !== "pending") {
+          next.delete(d.id);
+        }
+      }
+      return next;
+    });
     setTotalCount(combined.length);
     setHasMore(false);
     setLoading(false);
