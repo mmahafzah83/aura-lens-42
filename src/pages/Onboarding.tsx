@@ -79,27 +79,6 @@ const Onboarding = () => {
   // Suppress the home first-visit hint for users who just completed onboarding.
   const goHome = () => {
     seedImprint();
-    // Insert the "Connect LinkedIn" screen at the end of onboarding.
-    // If the user hasn't seen it yet, show it and return; Connect or Skip will
-    // re-enter this function which will then proceed with the ceremony/home nav.
-    try {
-      const connectSeen = localStorage.getItem("aura_onboarding_connect_seen") === "1";
-      if (!connectSeen) {
-        setShowConnectStep(true);
-        // Persist that the user reached this step so it doesn't reappear.
-        (async () => {
-          try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session?.user?.id) {
-              await (supabase.from("diagnostic_profiles" as any) as any)
-                .update({ onboarding_step: 4 })
-                .eq("user_id", session.user.id);
-            }
-          } catch (e) { console.warn("connect-step reached save failed:", e); }
-        })();
-        return;
-      }
-    } catch { /* fall through */ }
     // Play the ceremony exactly once per browser; subsequent visits go straight home.
     try {
       const alreadyPlayed = localStorage.getItem("aura_onboarding_ceremony_seen") === "true";
@@ -149,6 +128,7 @@ const Onboarding = () => {
     setConnectingLI(true);
     markConnectSeen();
     try {
+      try { sessionStorage.setItem("aura_li_return", "/onboarding"); } catch {}
       const { data, error } = await supabase.functions.invoke("linkedin-oauth", {
         body: { action: "get-auth-url", origin: window.location.origin },
       });
@@ -167,8 +147,7 @@ const Onboarding = () => {
   const handleSkipConnect = () => {
     markConnectSeen();
     setShowConnectStep(false);
-    // Re-enter goHome — the flag now lets it pass straight to the ceremony/home.
-    goHome();
+    startBreathingTo(1, "Now let's map what makes you different.");
   };
 
   const seedImprint = () => {
