@@ -576,8 +576,8 @@ const SubTabs = ({
    Header — instrument-styled, mono
    ────────────────────────────────────────────────────────── */
 const ObsHeader = ({
-  entryCount, evidenceCount, signalsTotal, movesCount,
-}: { entryCount: number; evidenceCount: number; signalsTotal: number; movesCount: number }) => (
+  entryCount, evidenceCount, signalsTotal,
+}: { entryCount: number; evidenceCount: number; signalsTotal: number }) => (
   <div style={{ textAlign: "center" }}>
     <div style={{
       fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
@@ -613,12 +613,6 @@ const ObsHeader = ({
         <span style={{ color: "var(--glass)" }}>{signalsTotal || "—"}</span> signals
         <InfoTooltip text="Themes Aura detected across your captures." label="Signals" side="bottom" triggerSize={12} />
       </span>
-      {movesCount > 0 && (
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-          <span style={{ color: "var(--glass)" }}>{movesCount}</span> moves
-          <InfoTooltip text="Suggested next actions ready for you." label="Moves" side="bottom" triggerSize={12} />
-        </span>
-      )}
     </div>
   </div>
 );
