@@ -2541,7 +2541,7 @@ export type Database = {
         }
         Relationships: []
       }
-      recommended_moves: {
+      recommended_moves_retired_20260718: {
         Row: {
           created_at: string
           expires_at: string
