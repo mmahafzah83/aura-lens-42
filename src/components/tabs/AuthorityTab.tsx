@@ -304,6 +304,8 @@ async function insertPublishedLinkedInPost(opts: {
       format_type: formatType || "post",
       tracking_status: "published",
       source_type: "aura_generated",
+      authorship: "aura_drafted",
+      acquisition: "published_via_aura",
       published_at: new Date().toISOString(),
       linkedin_url: cleanUrl,
       published_confirmed_at: cleanUrl ? new Date().toISOString() : null,
