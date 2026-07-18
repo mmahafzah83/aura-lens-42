@@ -35,6 +35,8 @@ interface BriefProps {
     sourceType?: string;
     sourceTitle?: string;
     contentFormat?: "post" | "carousel" | "framework_summary";
+    signalId?: string;
+    signalTitle?: string;
   }) => void;
 }
 
@@ -228,27 +230,96 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
     brandAssessment: Record<string, any> | null;
     brandPillars: string[];
   } | null>(null);
-  const publishedSignalsRef = useRef<Set<string> | null>(null);
+  const publishedSignalsRef = useRef<Map<string, string | null> | null>(null);
 
-  const loadPublishedSignalIds = useCallback(async (): Promise<Set<string>> => {
+  const loadPublishedSignalIds = useCallback(async (): Promise<Map<string, string | null>> => {
     if (publishedSignalsRef.current) return publishedSignalsRef.current;
-    if (!user) { publishedSignalsRef.current = new Set(); return publishedSignalsRef.current; }
+    if (!user) { publishedSignalsRef.current = new Map(); return publishedSignalsRef.current; }
     try {
       const { data } = await (supabase.from("linkedin_posts" as any) as any)
         .select("source_signal_id, published_at, tracking_status")
         .eq("user_id", user.id)
         .not("source_signal_id", "is", null);
       const rows = (data || []) as Array<{ source_signal_id: string | null; published_at: string | null; tracking_status: string | null }>;
-      const set = new Set<string>();
+      const map = new Map<string, string | null>();
       for (const r of rows) {
         if (!r.source_signal_id) continue;
-        if (r.published_at != null || r.tracking_status === "published") set.add(r.source_signal_id);
+        if (r.published_at != null || r.tracking_status === "published") {
+          const prev = map.get(r.source_signal_id);
+          // Keep the newest published_at if multiple rows exist for the same signal.
+          if (prev === undefined || (r.published_at && (!prev || r.published_at > prev))) {
+            map.set(r.source_signal_id, r.published_at);
+          }
+        }
       }
-      publishedSignalsRef.current = set;
-      return set;
+      publishedSignalsRef.current = map;
+      return map;
     } catch {
-      publishedSignalsRef.current = new Set();
+      publishedSignalsRef.current = new Map();
       return publishedSignalsRef.current;
+    }
+  }, [user]);
+
+  // Per-signal state map: which top signals have a draft or have been opened.
+  interface SignalState {
+    draft?: BriefDraft;
+    draftCreatedAt?: string;
+    openedAt?: string;
+  }
+  const [signalStates, setSignalStates] = useState<Map<string, SignalState>>(new Map());
+
+  const loadSignalStates = useCallback(async () => {
+    if (!user) { setSignalStates(new Map()); return; }
+    try {
+      const [ciRes, lpRes, engRes] = await Promise.all([
+        supabase.from("content_items")
+          .select("id, type, body, language, generation_params, created_at")
+          .eq("user_id", user.id).eq("status", "draft"),
+        (supabase.from("linkedin_posts" as any) as any)
+          .select("id, post_text, source_signal_id, created_at, tracking_status")
+          .eq("user_id", user.id).eq("tracking_status", "draft").not("source_signal_id", "is", null),
+        (supabase.from("signal_engagements" as any) as any)
+          .select("signal_id, last_opened_at").eq("user_id", user.id),
+      ]);
+      const map = new Map<string, SignalState>();
+      const consider = (sid: string, draft: BriefDraft, createdAt: string | null) => {
+        if (!sid) return;
+        const existing = map.get(sid) || {};
+        if (!existing.draftCreatedAt || (createdAt && createdAt > existing.draftCreatedAt)) {
+          existing.draft = draft;
+          existing.draftCreatedAt = createdAt || existing.draftCreatedAt;
+        }
+        map.set(sid, existing);
+      };
+      for (const r of ((ciRes?.data || []) as any[])) {
+        const sid = r?.generation_params?.source_signal_id;
+        if (typeof sid !== "string" || !sid) continue;
+        const lang: "en" | "ar" = r.language === "ar" ? "ar" : "en";
+        const type: BriefDraft["type"] = r.type === "carousel" ? "carousel" : r.type === "framework" ? "framework" : "linkedin_post";
+        consider(sid, {
+          id: r.id, body: r.body || "", language: lang, type,
+          topic: r?.generation_params?.topic ?? null, _source: "content_items",
+        }, r.created_at ?? null);
+      }
+      for (const r of ((lpRes?.data || []) as any[])) {
+        const sid = r.source_signal_id as string | null;
+        if (!sid) continue;
+        consider(sid, {
+          id: r.id, body: r.post_text || "", language: "en", type: "linkedin_post",
+          topic: null, _source: "linkedin_posts",
+        }, r.created_at ?? null);
+      }
+      for (const r of ((engRes?.data || []) as any[])) {
+        const sid = r.signal_id as string | null;
+        if (!sid) continue;
+        const existing = map.get(sid) || {};
+        existing.openedAt = r.last_opened_at ?? undefined;
+        map.set(sid, existing);
+      }
+      setSignalStates(map);
+    } catch (e) {
+      console.warn("[Brief] signal states load failed", e);
+      setSignalStates(new Map());
     }
   }, [user]);
 
@@ -644,28 +715,28 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
 
   useEffect(() => {
     if (!isReady) return;
-    void loadImprint(); void loadAway(); void loadDraft(); void loadDiscernment(); void loadProof(); void loadRhythm(); void loadPublished();
+    void loadImprint(); void loadAway(); void loadDraft(); void loadDiscernment(); void loadProof(); void loadRhythm(); void loadPublished(); void loadSignalStates();
     return () => {
       try { localStorage.setItem(LAST_VISIT_KEY, new Date().toISOString()); } catch { /* noop */ }
     };
-  }, [isReady, loadImprint, loadAway, loadDraft, loadDiscernment, loadProof, loadRhythm, loadPublished]);
+  }, [isReady, loadImprint, loadAway, loadDraft, loadDiscernment, loadProof, loadRhythm, loadPublished, loadSignalStates]);
 
   useEffect(() => {
     if (!user?.id) return;
     const handler = () => {
       publishedSignalsRef.current = null;
-      void loadImprint(); void loadAway(); void loadDraft(); void loadDiscernment(); void loadProof(); void loadRhythm(); void loadPublished();
+      void loadImprint(); void loadAway(); void loadDraft(); void loadDiscernment(); void loadProof(); void loadRhythm(); void loadPublished(); void loadSignalStates();
     };
     window.addEventListener("capture-complete", handler);
     return () => window.removeEventListener("capture-complete", handler);
-  }, [user?.id, loadImprint, loadAway, loadDraft, loadDiscernment, loadProof, loadRhythm, loadPublished]);
+  }, [user?.id, loadImprint, loadAway, loadDraft, loadDiscernment, loadProof, loadRhythm, loadPublished, loadSignalStates]);
 
   useEffect(() => {
     if (!user?.id) return;
     const uid = user.id;
     const refreshAll = () => {
       publishedSignalsRef.current = null;
-      void loadImprint(); void loadAway(); void loadDraft(); void loadDiscernment(); void loadProof(); void loadRhythm(); void loadPublished();
+      void loadImprint(); void loadAway(); void loadDraft(); void loadDiscernment(); void loadProof(); void loadRhythm(); void loadPublished(); void loadSignalStates();
     };
     const ch = supabase.channel(`brief-live-${uid}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "entries",            filter: `user_id=eq.${uid}` }, refreshAll)
@@ -674,7 +745,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
       .on("postgres_changes", { event: "*", schema: "public", table: "imprint_snapshots",  filter: `user_id=eq.${uid}` }, refreshAll)
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [user?.id, loadImprint, loadAway, loadDraft, loadDiscernment, loadProof, loadRhythm, loadPublished]);
+  }, [user?.id, loadImprint, loadAway, loadDraft, loadDiscernment, loadProof, loadRhythm, loadPublished, loadSignalStates]);
 
   // ── Derivations ─────────────────────────────────────────────────────
 
@@ -873,12 +944,90 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
       }
       // no pillars anywhere → fall through to capture CTA below
     }
-    if (topSignal) return {
-      body: `Speak on ${topSignal.title.length > 68 ? topSignal.title.slice(0, 66) + "\u2026" : topSignal.title} while it's still forming.`,
-      cta: "Write from this signal",
-      onClick: () => onSwitchTab?.("authority"),
-      voiceScore: null,
-    };
+    if (topSignal) {
+      const title = topSignal.title.length > 68 ? topSignal.title.slice(0, 66) + "\u2026" : topSignal.title;
+      const state = signalStates.get(topSignal.id);
+      const publishedAt = publishedSignalsRef.current?.get(topSignal.id) ?? null;
+
+      const openFromSignal = async () => {
+        if (user) {
+          try {
+            await (supabase.from("signal_engagements" as any) as any)
+              .upsert(
+                { user_id: user.id, signal_id: topSignal.id, open_count: 1, last_opened_at: new Date().toISOString() },
+                { onConflict: "user_id,signal_id", ignoreDuplicates: false },
+              );
+          } catch { /* fire-and-forget — must not block navigation */ }
+        }
+        onDraftToStudio?.({
+          topic: topSignal.title,
+          context: [topSignal.what, topSignal.explanation].filter(Boolean).join("\n\n"),
+          signalId: topSignal.id,
+          signalTitle: topSignal.title,
+          sourceType: "signal",
+          sourceTitle: topSignal.title,
+          contentFormat: "post",
+        });
+      };
+
+      // PUBLISHED + new evidence since you wrote it
+      if (publishedAt && topSignal.lastEvidenceAt &&
+          new Date(topSignal.lastEvidenceAt).getTime() > new Date(publishedAt).getTime()) {
+        return {
+          body: `Three things moved on ${title} since you wrote it.`,
+          cta: "Write the update",
+          onClick: () => onDraftToStudio?.({
+            topic: topSignal.title,
+            context: [topSignal.what, topSignal.explanation].filter(Boolean).join("\n\n"),
+            signalId: topSignal.id,
+            signalTitle: topSignal.title,
+            sourceType: "signal_evolution",
+            sourceTitle: topSignal.title,
+            contentFormat: "post",
+          }),
+          voiceScore: null,
+        };
+      }
+
+      // DRAFTED
+      if (state?.draft) {
+        const days = state.draftCreatedAt
+          ? Math.max(0, Math.floor((Date.now() - new Date(state.draftCreatedAt).getTime()) / 86400000))
+          : 0;
+        if (days >= 7) {
+          return {
+            body: `${title} has been written for ${days} days.`,
+            cta: "Publish it",
+            onClick: () => onOpenDraft(state.draft!),
+            voiceScore: null,
+          };
+        }
+        return {
+          body: `${title} is written. One decision from published.`,
+          cta: "Open the draft",
+          onClick: () => onOpenDraft(state.draft!),
+          voiceScore: null,
+        };
+      }
+
+      // OPENED, no draft
+      if (state?.openedAt) {
+        return {
+          body: `You started on ${title}. Pick it back up.`,
+          cta: "Continue",
+          onClick: openFromSignal,
+          voiceScore: null,
+        };
+      }
+
+      // UNTOUCHED
+      return {
+        body: `Speak on ${title} while it's still forming.`,
+        cta: "Write from this signal",
+        onClick: openFromSignal,
+        voiceScore: null,
+      };
+    }
     if (zeroCaptures7) return {
       body: "Re-open the week with one capture.",
       cta: "Capture something",
@@ -891,7 +1040,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
       onClick: () => onOpenCapture?.(),
       voiceScore: null,
     };
-  }, [draft, topSignal, rhythm, draftState, onOpenDraft, onSwitchTab, onOpenCapture, onOpenBrandAssessment, onDraftToStudio, scenario, brandPillars, brandAssessment]);
+  }, [draft, topSignal, rhythm, draftState, onOpenDraft, onSwitchTab, onOpenCapture, onOpenBrandAssessment, onDraftToStudio, scenario, brandPillars, brandAssessment, signalStates, user]);
 
   // ── Render ──────────────────────────────────────────────────────────
 
