@@ -26,7 +26,6 @@ import InviteColleagueModal from "@/components/InviteColleagueModal";
 import NpsSurveyModal from "@/components/NpsSurveyModal";
 import FirstLoginWelcome from "@/components/FirstLoginWelcome";
 import Brief from "@/components/Brief";
-import OnboardingChecklist from "@/components/OnboardingChecklist";
 import IdentityDriftBanner from "@/components/IdentityDriftBanner";
 import FirstFlightCard from "@/components/FirstFlightCard";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
