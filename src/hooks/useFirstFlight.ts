@@ -76,27 +76,32 @@ export function useFirstFlight(userId: string | null | undefined): FirstFlightSt
         explanation: sigRow.explanation ?? null,
       } : null);
 
-      // Grandfather: all four done on first-ever load, no prior FF keys → silently retire.
-      if (!alreadyDone && !alreadySkipped && s1 && s2 && s3 && s4) {
+      // Detect whether this is the very first FF evaluation for this user
+      // (no step-fired flags yet). Used to decide grandfathering vs celebration.
+      const anyStepFiredBefore = [1,2,3,4].some(n => !!safeGet(stepFiredKey(userId, n)));
+
+      // Grandfather: all four already true on the very first load → retire silently.
+      let grandfathered = false;
+      if (!alreadyDone && !alreadySkipped && !anyStepFiredBefore && s1 && s2 && s3 && s4) {
         safeSet(doneKey(userId), "1");
+        // Mark all step flags so we don't fire per-step events for grandfathered users.
+        ([1,2,3,4] as const).forEach(n => safeSet(stepFiredKey(userId, n), "1"));
         setRetiredLocal(true);
+        grandfathered = true;
       }
 
-      // Per-step tracking (fire once each).
-      const firedNow: number[] = [];
-      ([1,2,3,4] as const).forEach((n) => {
-        const flag = [s1, s2, s3, s4][n - 1];
-        if (flag && !safeGet(stepFiredKey(userId, n))) {
-          safeSet(stepFiredKey(userId, n), "1");
-          firedNow.push(n);
-        }
-      });
-      firedNow.forEach(n => { void track(`first_flight_step_${n}`); });
+      if (!grandfathered) {
+        // Per-step tracking (fire once each).
+        ([1,2,3,4] as const).forEach((n) => {
+          const flag = [s1, s2, s3, s4][n - 1];
+          if (flag && !safeGet(stepFiredKey(userId, n))) {
+            safeSet(stepFiredKey(userId, n), "1");
+            void track(`first_flight_step_${n}`);
+          }
+        });
 
-      // Completion celebration: s4 flipped true this session AND not already done AND not grandfathered.
-      if (s4 && !alreadyDone && !(alreadySkipped) && !(s1 && s2 && s3 && s4 && !safeGet(stepFiredKey(userId, 1)))) {
-        // Only celebrate if not just-grandfathered above. The grandfather branch already set doneKey.
-        if (safeGet(doneKey(userId)) !== "1") {
+        // Completion celebration: s4 true, not already done, not skipped.
+        if (s4 && !alreadyDone && !alreadySkipped) {
           safeSet(doneKey(userId), "1");
           setJustCompleted(true);
           void track("first_flight_complete");
