@@ -1078,6 +1078,45 @@ export type Database = {
           },
         ]
       }
+      evidence_jobs: {
+        Row: {
+          created_at: string
+          cursor: number
+          error_detail: string | null
+          fragments_written: number
+          id: string
+          last_heartbeat: string
+          source_registry_id: string
+          status: string
+          total: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          cursor?: number
+          error_detail?: string | null
+          fragments_written?: number
+          id?: string
+          last_heartbeat?: string
+          source_registry_id: string
+          status?: string
+          total?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          cursor?: number
+          error_detail?: string | null
+          fragments_written?: number
+          id?: string
+          last_heartbeat?: string
+          source_registry_id?: string
+          status?: string
+          total?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       external_costs: {
         Row: {
           amount_usd: number
