@@ -30,13 +30,39 @@ html *:not(canvas):not(video):not(iframe) {
 
 /* Fonts (Cormorant Garamond, DM Sans, Cairo, JetBrains Mono) are loaded via <link> tags in index.html */
 
+/* ── Cairo (Arabic-only subset) — restricted-range family ────────────────
+   The Google Fonts <link> in index.html loads Cairo for ALL its subsets
+   (arabic, latin-ext, latin), which means the family 'Cairo' contains
+   Latin glyphs and would win over Newsreader/IBM Plex Mono when placed
+   first in a stack. We redeclare Cairo under a new family name that only
+   matches the Arabic Unicode ranges, so Latin characters fall through to
+   the next family in the stack (Newsreader / IBM Plex Mono) untouched.
+
+   src points to the same gstatic woff2 file the Google Fonts stylesheet
+   uses for the arabic subset, so the browser reuses the cached asset. */
+@font-face {
+  font-family: 'CairoAR';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: local('Cairo'),
+       url(https://fonts.gstatic.com/s/cairo/v31/SLXVc1nY6HkvangtZmpQdkhzfH5lkSscQyyS4J0.woff2) format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
+}
+
 /* ── Arabic typography (Cairo + RTL formatting) ── */
 [dir="rtl"],
 .arabic-text,
 [lang="ar"] {
-  font-family: 'Cairo', var(--font-body), sans-serif;
+  font-family: 'CairoAR', 'Cairo', var(--font-body), sans-serif;
   line-height: 1.9;
   letter-spacing: 0;
+}
+/* dir="auto" nodes whose content resolves to Arabic — line-height only,
+   no structural change. */
+[dir="auto"]:lang(ar),
+[dir="auto"][lang="ar"] {
+  line-height: 1.9;
 }
 [dir="rtl"] .arabic-text,
 .arabic-text {
@@ -93,11 +119,15 @@ html *:not(canvas):not(video):not(iframe) {
   /* signals */
   --live: #36C5B0; --live-ink: #15776A; --action: #D6A748; --action-ink: #8A6A1E; --spot: #6E2A26; --pos: #6FBF8E; --neg: #D98A82;
   /* type */
-  --font-display: 'Newsreader', Georgia, 'Times New Roman', serif;
-  --font-serif:   'Newsreader', Georgia, 'Times New Roman', serif;
-  --font-body:    ui-sans-serif, system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
-  --font-arabic:  'Cairo', sans-serif;
-  --font-mono:    'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  /* 'CairoAR' is a restricted-range family (Arabic Unicode ranges only).
+     It is listed FIRST so Arabic glyphs resolve to Cairo automatically,
+     while Latin characters fall through untouched to Newsreader /
+     ui-sans-serif / IBM Plex Mono. */
+  --font-display: 'CairoAR', 'Newsreader', Georgia, 'Times New Roman', serif;
+  --font-serif:   'CairoAR', 'Newsreader', Georgia, 'Times New Roman', serif;
+  --font-body:    'CairoAR', ui-sans-serif, system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --font-arabic:  'CairoAR', 'Cairo', sans-serif;
+  --font-mono:    'CairoAR', 'IBM Plex Mono', ui-monospace, Menlo, monospace;
 
   /* Motion */
   --ease: cubic-bezier(0.32, 0.72, 0.35, 1);
@@ -1390,10 +1420,10 @@ aside .aura-theme-toggle {
   --radius-lg:  14px;
   --radius-xl:  20px;
   --radius-2xl: 24px;
-  --font-body:    ui-sans-serif, system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
-  --font-display: 'Newsreader', Georgia, serif;
-  --font-arabic:  'Cairo', sans-serif;
-  --font-mono:    'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  --font-body:    'CairoAR', ui-sans-serif, system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --font-display: 'CairoAR', 'Newsreader', Georgia, serif;
+  --font-arabic:  'CairoAR', 'Cairo', sans-serif;
+  --font-mono:    'CairoAR', 'IBM Plex Mono', ui-monospace, Menlo, monospace;
 
   /* DS-2 additions */
   --border:           rgba(0,0,0,0.12);
