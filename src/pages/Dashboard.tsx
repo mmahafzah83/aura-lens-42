@@ -28,6 +28,7 @@ import FirstLoginWelcome from "@/components/FirstLoginWelcome";
 import Brief from "@/components/Brief";
 import OnboardingChecklist from "@/components/OnboardingChecklist";
 import IdentityDriftBanner from "@/components/IdentityDriftBanner";
+import FirstFlightCard from "@/components/FirstFlightCard";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import IdentityTab from "@/components/tabs/IdentityTab";
 import Observatory from "@/components/Observatory";
