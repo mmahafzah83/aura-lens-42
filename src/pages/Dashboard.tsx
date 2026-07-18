@@ -297,6 +297,35 @@ const Dashboard = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // First Flight handlers.
+  const connectLinkedInFirstFlight = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("linkedin-oauth", {
+        body: { action: "get-auth-url", origin: window.location.origin },
+      });
+      if (error) throw error;
+      const url = (data as any)?.url;
+      if (url) window.location.href = url;
+    } catch (e) {
+      console.warn("[FirstFlight] LinkedIn connect failed", e);
+      toast.error("Couldn't start LinkedIn connect. Try again in a moment.");
+    }
+  };
+  const writeFromFirstFlightSignal = (sig: { id: string; title: string; what: string | null; explanation: string | null }) => {
+    const context = [sig.what, sig.explanation].filter(Boolean).join("\n\n");
+    setSignalDraftPrefill({
+      topic: sig.title,
+      context,
+      signalId: sig.id,
+      signalTitle: sig.title,
+      sourceType: "signal",
+      sourceTitle: sig.title,
+      contentFormat: "post",
+    });
+    setActiveTab("authority");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const checkStrategicNudge = useCallback(async (_accessToken: string) => {
     try {
       // Get fresh session to avoid expired JWT
