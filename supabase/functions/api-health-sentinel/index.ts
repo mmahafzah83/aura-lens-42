@@ -137,6 +137,8 @@ Deno.serve(async (req) => {
 
     const admin = createClient(supabaseUrl, serviceKey);
 
+    const raisedKeys = new Set<string>();
+
     if (body.latest === true) {
       const client = userClient || admin;
       const { data, error } = await client
@@ -224,6 +226,8 @@ Deno.serve(async (req) => {
       });
 
       const actionable = classified.filter((c) => c.klass !== "transient");
+      if (actionable.some((c) => c.klass === "down")) raisedKeys.add("api-health:down");
+      if (actionable.some((c) => c.klass === "key")) raisedKeys.add("api-health:key");
       console.log(
         `[sentinel] api failures classified:`,
         classified.map((c) => `${c.provider}:${c.klass}`).join(", "),
@@ -283,6 +287,7 @@ Deno.serve(async (req) => {
       dedupe_key: string,
       severity: "critical" | "high" | "info" = "high",
     ) {
+      raisedKeys.add(dedupe_key);
       try {
         const r = await fetch(`${supabaseUrl}/functions/v1/admin-notify`, {
           method: "POST",
@@ -718,6 +723,32 @@ Deno.serve(async (req) => {
       console.error("[sentinel] ef sink error", (e as Error).message);
     }
 
+    let autoResolved = 0;
+    try {
+      const SENTINEL_PREFIXES = ["api-health:", "datahealth:", "cost:", "cron:", "pipeline:", "ef:"];
+      const { data: openAlerts } = await admin
+        .from("ops_alerts")
+        .select("source")
+        .eq("status", "open");
+      const stale = [...new Set(
+        (openAlerts || [])
+          .map((r: any) => r.source as string)
+          .filter((s) => s && SENTINEL_PREFIXES.some((p) => s.startsWith(p)) && !raisedKeys.has(s)),
+      )];
+      if (stale.length > 0) {
+        const { data: closed } = await admin
+          .from("ops_alerts")
+          .update({ status: "resolved", resolved_at: new Date().toISOString() })
+          .in("source", stale)
+          .eq("status", "open")
+          .select("id");
+        autoResolved = (closed || []).length;
+        console.log(`[sentinel] auto-resolved ${autoResolved} recovered alert(s):`, stale.join(", "));
+      }
+    } catch (e) {
+      console.error("[sentinel] auto-resolve error", (e as Error).message);
+    }
+
     return json({
       success: true,
       checked: results.length,
@@ -727,6 +758,7 @@ Deno.serve(async (req) => {
       watchdog,
       ef_errors: efSummary,
       pipelines,
+      auto_resolved: autoResolved,
     });
   } catch (e) {
     console.error("api-health-sentinel error", e);
