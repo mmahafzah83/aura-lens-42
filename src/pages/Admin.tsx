@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import AdminShell from "@/components/admin/AdminShell";
+import TodaysStatus from "@/components/TodaysStatus";
 import {
   Activity,
   AlertCircle,
@@ -170,6 +171,7 @@ export default function Admin() {
   return (
     <AdminShell title="Overview" subtitle="Admin at-a-glance">
       <div className="grid gap-6">
+        <TodaysStatus />
         {/* Founder brief */}
         <section style={cardStyle}>
           <div className="flex items-baseline justify-between flex-wrap gap-2 mb-4">
