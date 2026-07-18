@@ -86,15 +86,7 @@ export const QAWARISH_TEXTURE = `TEXTURE (optional depth — apply lightly, stay
 
 export const VOICE_PRECEDENCE = `VOICE PROFILE PRECEDENCE: the voice profile adjusts TONE and VOCABULARY FLAVOR only. It NEVER overrides the ENGINE, REGISTER, FORMATTING, BANNED list, or NUMBER INTEGRITY — those are structural and always win.`;
 
-export const OUTPUT_CONTRACT = `OUTPUT CONTRACT (absolute — the response IS the post):
-
-- Return ONLY the finished post. Your very first line must be the hook itself.
-
-- NEVER prepend meta, scaffold, or setup text. Specifically forbidden as a preamble: "System Initialization", "BUDGET CHECK", token or budget counts, "Thinking", a config/status block, a role restatement, or any "KEY: value" line describing your own setup.
-
-- NEVER label the format ("POST", "LinkedIn Post", "LinkedIn Post — English", "منشور LinkedIn", "بوست").
-
-- No preamble, no explanation, no task sign-off. The post, and nothing else.`;
+export const OUTPUT_CONTRACT = `OUTPUT CONTRACT (absolute): Your entire response is the finished post and nothing else. The first character you output is the first character of the hook. Do not write anything before the hook or after the closing question — no setup, no notes, no labels of any kind, in any language.`;
 
 export function buildContentDNA(opts: { lang: DNALang; texture?: DNATexture }): string {
 

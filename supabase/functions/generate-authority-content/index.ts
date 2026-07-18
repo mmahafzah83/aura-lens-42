@@ -524,40 +524,103 @@ FINAL OUTPUT RULE (highest priority): Your response IS the post. The first chara
         }));
       } catch (_) { /* non-blocking */ }
       let content = (aiJson.content || []).map((c: any) => c.text || "").join("") || "";
-      // Safety net: strip any meta format-label the model may have prepended,
-      // and remove "---" horizontal rules / leading "# " headers that the
-      // model is instructed to avoid but sometimes still emits.
-      // Strip a leading scaffold/meta block the model sometimes emits before the post
-      // (System Initialization / BUDGET CHECK / config KEY:value lines). Bounded: only
-      // consumes leading scaffold-looking lines, stops at the first real content line.
+      const rawContent = content;
+
+      // Generic scaffold stripper — trigger-based, positive rules only.
+      const TRIGGER = /(system\s*initial|budget|token|thinking|^```)/i;
+      const KEY_VALUE_SHAPE = /^[A-Za-z][A-Za-z0-9 _-]{0,40}:\s?\S/;
+      const ARABIC = /[\u0600-\u06FF]/;
+      const SENTENCE_END = /[.!?…؟]$/;
+
       const stripLeadingScaffold = (text: string): string => {
-        const lines = text.replace(/^\uFEFF/, "").split("\n");
-        const ANCHOR    = /(system\s*initial|budget[_\s-]?check|token|thinking|^```|number[_\s-]?integrity|evidence[_\s-]?source)/i;
-        const KEY_VALUE = /^[A-Za-z][A-Za-z0-9 _-]{0,40}:\s?\S/;
-        const TITLE     = /^[A-Za-z][A-Za-z ]{0,40}$/;
-        const FENCE     = /^```/;
-        const CONFIG_KEY = /^(budget[_\s-]?check|mode|framework|voice|evidence[_\s-]?source|number[_\s-]?integrity|format|model|status|config|token|window|system)\b/i;
-        let hasAnchor = false;
+        const raw = text.replace(/^\uFEFF/, "");
+        const lines = raw.split("\n");
+        // Trigger: any of the first 20 lines matches the trigger regex.
+        let triggered = false;
         for (let k = 0; k < Math.min(lines.length, 20); k++) {
-          const t = lines[k].trim();
-          if (ANCHOR.test(t)) { hasAnchor = true; break; }
-          if (t.length > 0 && !KEY_VALUE.test(t) && !TITLE.test(t) && !FENCE.test(t)) break;
+          if (TRIGGER.test(lines[k].trim())) { triggered = true; break; }
         }
-        if (!hasAnchor) return text;
+        if (!triggered) return text;
+
         let i = 0, removed = 0, inFence = false;
-        while (i < lines.length && removed < 20) {
-          const t = lines[i].trim();
-          if (t === "") { i++; removed++; continue; }
-          if (FENCE.test(t)) { inFence = !inFence; i++; removed++; continue; }
+        const MAX_REMOVE = 30;
+        while (i < lines.length && removed < MAX_REMOVE) {
+          const rawLine = lines[i];
+          const t = rawLine.trim();
+          // (b) fence handling
+          if (/^```/.test(t)) { inFence = !inFence; i++; removed++; continue; }
           if (inFence) { i++; removed++; continue; }
-          if (TITLE.test(t) && /(initial|system|budget|config|setup|status|thinking|token)/i.test(t)) { i++; removed++; continue; }
-          if (KEY_VALUE.test(t) && CONFIG_KEY.test(t)) { i++; removed++; continue; }
+          // (a) empty
+          if (t === "") { i++; removed++; continue; }
+
+          // Stop conditions: prose line
+          const stripped = t.replace(/^[-*•◆↳]\s*/, "");
+          const wordCount = stripped.split(/\s+/).filter(Boolean).length;
+          if (ARABIC.test(stripped)) break;
+          if (wordCount >= 6) break;
+          if (SENTENCE_END.test(stripped)) break;
+
+          // (c) KEY: value shape (optionally with bullet prefix), english key ≤5 words
+          const kvMatch = stripped.match(/^([A-Za-z][A-Za-z0-9 _-]{0,60}):\s?\S/);
+          if (kvMatch) {
+            const keyWords = kvMatch[1].trim().split(/\s+/).filter(Boolean).length;
+            if (keyWords <= 5) { i++; removed++; continue; }
+          }
+          // (d) bare label ≤4 english words, no sentence punctuation, ascii only
+          if (/^[A-Za-z][A-Za-z0-9 _-]*$/.test(stripped) && wordCount <= 4) {
+            i++; removed++; continue;
+          }
           break;
         }
         const rest = lines.slice(i).join("\n").trim();
         return rest.length > 0 ? rest : text;
       };
+
+      const preStripTriggered = (() => {
+        const first20 = rawContent.split("\n").slice(0, 20);
+        return first20.some((l) => TRIGGER.test(l.trim()));
+      })();
+
       content = stripLeadingScaffold(content);
+
+      // Post-strip leak detection
+      const POST_STRIP_KV = /^[A-Za-z][A-Za-z0-9 _-]{0,40}:\s?\S/;
+      const first3 = content.split("\n").slice(0, 3);
+      const postStripLeak = first3.some((l) => {
+        const t = l.trim();
+        return TRIGGER.test(t) || POST_STRIP_KV.test(t);
+      });
+
+      if (preStripTriggered || postStripLeak) {
+        try {
+          const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+          const rows: any[] = [];
+          if (preStripTriggered) {
+            rows.push({
+              user_id: effectiveUserId,
+              function_name: "generate-authority-content",
+              language: effectiveLanguage,
+              leak_stage: "pre_strip",
+              first_lines: rawContent.split("\n").slice(0, 3).join("\n").slice(0, 300),
+            });
+          }
+          if (postStripLeak) {
+            rows.push({
+              user_id: effectiveUserId,
+              function_name: "generate-authority-content",
+              language: effectiveLanguage,
+              leak_stage: "post_strip",
+              first_lines: first3.join("\n").slice(0, 300),
+            });
+          }
+          const p = admin.from("output_leak_log").insert(rows).then(() => {}, () => {});
+          // @ts-ignore EdgeRuntime is available in Supabase runtime
+          if (typeof EdgeRuntime !== "undefined" && (EdgeRuntime as any).waitUntil) {
+            // @ts-ignore
+            EdgeRuntime.waitUntil(p);
+          }
+        } catch (_) { /* never block */ }
+      }
       content = content
         .replace(/^\s*(?:منشور\s*LinkedIn|LinkedIn\s*Post|POST|بوست)\s*[-—–:：]\s*(?:English|Arabic|عربي(?:ة)?|إنجليزي(?:ة)?)\s*\n?/i, '')
         .replace(/^\s*(?:منشور\s*LinkedIn|LinkedIn\s*Post|POST|بوست)\s*[:：\-—]?\s*\n?/i, '')
