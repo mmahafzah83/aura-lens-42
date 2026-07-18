@@ -140,6 +140,35 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
     };
     if (mediaContent) body.content = mediaContent;
 
+    // Diagnostics — do NOT modify commentary
+    try {
+      const reservedSet = new Set(["(",")","[","]","{","}","<",">","@","|","~","_","*","#"]);
+      const reserved: Array<{ char: string; index: number }> = [];
+      for (let i = 0; i < postText.length; i++) {
+        const ch = postText[i];
+        if (reservedSet.has(ch)) reserved.push({ char: ch, index: i });
+      }
+      const byteLength = new TextEncoder().encode(postText).length;
+      const tail60 = postText.slice(-60);
+      await adminClient.from("ef_error_log").insert({
+        function_name: "linkedin-publish",
+        severity: "info",
+        error_message: `pre-publish diagnostics postId=${postId} len=${postText.length} bytes=${byteLength}`,
+        user_id: user.id,
+        context: {
+          stage: "pre_publish",
+          postId,
+          length: postText.length,
+          byte_length: byteLength,
+          tail_60: tail60,
+          reserved,
+          has_media: Boolean(mediaContent),
+        },
+      });
+    } catch (e) {
+      console.error("pre-publish diagnostics failed:", e);
+    }
+
     const liRes = await fetch("https://api.linkedin.com/rest/posts", {
       method: "POST",
       headers: {
@@ -153,6 +182,15 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
 
     if (liRes.status === 201) {
       const urn = liRes.headers.get("x-restli-id") ?? "";
+      try {
+        await adminClient.from("ef_error_log").insert({
+          function_name: "linkedin-publish",
+          severity: "info",
+          error_message: `post-publish 201 postId=${postId} urn=${urn}`,
+          user_id: user.id,
+          context: { stage: "post_publish", postId, status: 201, x_restli_id: urn },
+        });
+      } catch (e) { console.error("post-publish diagnostics failed:", e); }
       const postUrl = `https://www.linkedin.com/feed/update/${urn}/`;
       const now = new Date().toISOString();
       await adminClient
@@ -171,10 +209,41 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
     }
 
     if (liRes.status === 401) {
+      try {
+        const bodyText = await liRes.clone().text();
+        await adminClient.from("ef_error_log").insert({
+          function_name: "linkedin-publish",
+          severity: "info",
+          error_message: `post-publish 401 postId=${postId}`,
+          user_id: user.id,
+          context: {
+            stage: "post_publish",
+            postId,
+            status: 401,
+            x_restli_id: liRes.headers.get("x-restli-id"),
+            body_head_300: bodyText.slice(0, 300),
+          },
+        });
+      } catch (e) { console.error("post-publish 401 diagnostics failed:", e); }
       return json({ success: false, error: "LinkedIn connection expired — reconnect in Settings" });
     }
 
     const detail = await liRes.text();
+    try {
+      await adminClient.from("ef_error_log").insert({
+        function_name: "linkedin-publish",
+        severity: "info",
+        error_message: `post-publish non-201 postId=${postId} status=${liRes.status}`,
+        user_id: user.id,
+        context: {
+          stage: "post_publish",
+          postId,
+          status: liRes.status,
+          x_restli_id: liRes.headers.get("x-restli-id"),
+          body_head_300: detail.slice(0, 300),
+        },
+      });
+    } catch (e) { console.error("post-publish non-201 diagnostics failed:", e); }
     return json({ success: false, error: "LinkedIn rejected the post", status: liRes.status, detail });
   } catch (err) {
     console.error("linkedin-publish error:", err);
