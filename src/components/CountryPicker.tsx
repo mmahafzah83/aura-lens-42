@@ -139,7 +139,6 @@ export default function CountryPicker({
   const ink = "var(--ink, #1B1B1B)";
   const ink3 = "var(--ink-3, rgba(27,27,27,0.55))";
   const rule = "var(--rule, rgba(27,27,27,0.14))";
-  const action = "var(--action, #1B1B1B)";
   const serif = "'Newsreader', Georgia, serif";
   const mono = "'IBM Plex Mono', ui-monospace, monospace";
 
@@ -295,7 +294,7 @@ export default function CountryPicker({
               letterSpacing: "0.08em",
               textTransform: "uppercase",
               color: ink3,
-              background: action === "#1B1B1B" ? "transparent" : "transparent",
+              background: "transparent",
             }}
           >
             {results.length} of {COUNTRIES.length}
