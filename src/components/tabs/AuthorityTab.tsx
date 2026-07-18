@@ -3247,13 +3247,19 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
     (liRes.data || []).forEach((p: any) => { if (p.linkedin_url) urls[p.id] = p.linkedin_url; });
     setSavedUrls(urls);
 
-    // Latest metrics per published post (dedupe to newest snapshot).
-    if (liPublished.length > 0) {
-      const ids = liPublished.map(p => p.id);
+    // Latest metrics per linkedin_posts row rendered in the library
+    // (published + any linkedin_posts drafts). Empty-text export rows
+    // have real metrics too — verified against DB.
+    const metricsIds = Array.from(new Set([
+      ...liPublished.map(p => p.id),
+      ...liCarouselDrafts.map(p => p.id),
+      ...liPostDrafts.map(p => p.id),
+    ]));
+    if (metricsIds.length > 0) {
       const { data: metricsRows } = await supabase
         .from("linkedin_post_metrics")
         .select("post_id, impressions, reactions, snapshot_date")
-        .in("post_id", ids)
+        .in("post_id", metricsIds)
         .order("snapshot_date", { ascending: false });
       const map: Record<string, { impressions?: number | null; reactions?: number | null }> = {};
       (metricsRows || []).forEach((m: any) => {
