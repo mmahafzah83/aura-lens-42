@@ -904,13 +904,13 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
           return {
             slug: "TRACKING —",
             headline: topic ? `Your post on ${topic} is live. ${imp} readers so far.` : `Your latest post is live. ${imp} readers so far.`,
-            standfirst: `${rx != null && rx > 0 ? `${rx} reactions in already. ` : ""}The first day or two is when a post travels furthest, so reply to everyone engaging now — that is what keeps LinkedIn showing it. I will keep an eye on the numbers for you.`,
+            standfirst: `${rx != null && rx > 0 ? `${rx} reactions in already. ` : ""}The conversation is happening on LinkedIn — ten minutes replying there now is what keeps it moving. I will keep an eye on the numbers for you.`,
           };
         }
         return {
           slug: "TRACKING —",
           headline: topic ? `Your post on ${topic} is live.` : "Your latest post is live.",
-          standfirst: "The numbers usually start landing within a day. Reply to every early comment while it is fresh — that first wave of replies is what tells LinkedIn to keep pushing it. I will surface the reach here the moment it syncs.",
+          standfirst: "The numbers usually start landing within a day. The conversation is happening on LinkedIn — ten minutes replying there now is what keeps it moving. I will surface the reach here the moment it syncs.",
         };
       }
       case "new":
