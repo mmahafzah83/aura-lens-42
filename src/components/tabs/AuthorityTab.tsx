@@ -3082,6 +3082,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
   const [profile, setProfile] = useState<{ first_name?: string | null; level?: string | null; avatar_url?: string | null } | null>(null);
   const [topSignal, setTopSignal] = useState<{ id: string; signal_title: string } | null>(null);
   const [signalCount, setSignalCount] = useState<number>(0);
+  const [hasLinkedIn, setHasLinkedIn] = useState<boolean>(true); // default true → hides tutorial until we know
   const navigate = useNavigate();
   // Race-fix: don't let realtime INSERTs trigger a parallel refetch
   // before the initial loadPosts() has settled.
@@ -3092,6 +3093,17 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
     loadPosts().finally(() => { initialLoadDoneRef.current = true; });
     loadProfile();
     loadSignalContext();
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setHasLinkedIn(false); return; }
+      const { data } = await supabase
+        .from("linkedin_connections")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .maybeSingle();
+      setHasLinkedIn(!!data);
+    })();
   }, []);
 
   // Realtime: refetch library when this user's linkedin_posts change.
@@ -3235,13 +3247,19 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
     (liRes.data || []).forEach((p: any) => { if (p.linkedin_url) urls[p.id] = p.linkedin_url; });
     setSavedUrls(urls);
 
-    // Latest metrics per published post (dedupe to newest snapshot).
-    if (liPublished.length > 0) {
-      const ids = liPublished.map(p => p.id);
+    // Latest metrics per linkedin_posts row rendered in the library
+    // (published + any linkedin_posts drafts). Empty-text export rows
+    // have real metrics too — verified against DB.
+    const metricsIds = Array.from(new Set([
+      ...liPublished.map(p => p.id),
+      ...liCarouselDrafts.map(p => p.id),
+      ...liPostDrafts.map(p => p.id),
+    ]));
+    if (metricsIds.length > 0) {
       const { data: metricsRows } = await supabase
         .from("linkedin_post_metrics")
         .select("post_id, impressions, reactions, snapshot_date")
-        .in("post_id", ids)
+        .in("post_id", metricsIds)
         .order("snapshot_date", { ascending: false });
       const map: Record<string, { impressions?: number | null; reactions?: number | null }> = {};
       (metricsRows || []).forEach((m: any) => {
@@ -3481,6 +3499,11 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
         document.body
       )}
 
+      {/* Tutorial — shown once, only when the user has no active LinkedIn connection. */}
+      {!hasLinkedIn && (
+        <LinkedInPostSteps shareLabel="Post on LinkedIn" />
+      )}
+
       {/* ── Section 1: Aura Drafts ── */}
       <div>
         <button
@@ -3513,6 +3536,9 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
             {drafts.map(p => {
               const lang = (p.source_metadata as any)?._language || "en";
               const badge = FORMAT_BADGE[p.format_type || "post"] || FORMAT_BADGE.post;
+              const expanded = expandedCards.has(p.id);
+              const metrics = postMetrics[p.id];
+              const hasMetrics = metrics && (typeof metrics.impressions === "number" || typeof metrics.reactions === "number");
               return (
                 <motion.div
                   key={p.id}
@@ -3530,40 +3556,51 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                   }}
                   className="hover:bg-muted/20 hover:border-l-brand"
                 >
-                  {/* LinkedIn preview (M-1-1) */}
-                  <LinkedInPreview text={p.post_text} profile={profile} />
-
-                  {/* Body text */}
-                  <p
-                    style={{
-                      fontSize: 14,
-                      color: "var(--ink)",
-                      lineHeight: 1.625,
-                      ...(expandedCards.has(p.id) ? {} : {
-                        display: "-webkit-box",
-                        WebkitBoxOrient: "vertical" as any,
-                        WebkitLineClamp: 2,
-                        overflow: "hidden",
-                        WebkitMaskImage: "linear-gradient(180deg, #000 60%, transparent 100%)",
-                        maskImage: "linear-gradient(180deg, #000 60%, transparent 100%)",
-                      }),
-                    }}
-                    dir="auto"
+                  {/* Compact clickable row: hook (1-line) + chips + date + metrics */}
+                  <button
+                    type="button"
+                    onClick={() => toggleCardExpand(p.id)}
+                    aria-expanded={expanded}
+                    className="w-full text-left flex items-center gap-3"
+                    style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
                   >
-                    {p.post_text || "Untitled draft"}
-                  </p>
-                  {(p.post_text?.split("\n").length || 0) > 2 || (p.post_text?.length || 0) > 140 ? (
-                    <button
-                      onClick={() => toggleCardExpand(p.id)}
-                      style={{ fontSize: 14, color: "var(--brand)", background: "none", border: "none", cursor: "pointer", padding: 0, marginTop: 4 }}
-                      className="hover:underline"
+                    <span
+                      className="flex-1 min-w-0 truncate"
+                      style={{ fontSize: 14, color: "var(--ink)", lineHeight: 1.5 }}
+                      dir="auto"
                     >
-                      {expandedCards.has(p.id) ? "Show less" : "Read more"}
-                    </button>
-                  ) : null}
+                      {(p.post_text?.split("\n")[0] || "Untitled draft").trim()}
+                    </span>
+                    <span className="shrink-0 flex items-center" style={{ gap: 6 }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 6px", borderRadius: 999, backgroundColor: "var(--bg-subtle)", color: "var(--color-muted)", textTransform: "uppercase" }}>
+                        {lang === "ar" ? "AR" : "EN"}
+                      </span>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 6px", borderRadius: 999, backgroundColor: "var(--warning-pale)", color: "var(--warning)" }}>
+                        Draft
+                      </span>
+                      <span style={{ fontSize: 11, color: "var(--color-muted)" }}>
+                        {formatSmartDate(p.created_at)}
+                      </span>
+                      {hasMetrics && (
+                        <span style={{ fontSize: 11, color: "var(--color-muted)" }}>
+                          · {typeof metrics!.impressions === "number" ? `${metrics!.impressions!.toLocaleString()} impressions` : ""}
+                          {typeof metrics!.impressions === "number" && typeof metrics!.reactions === "number" ? " · " : ""}
+                          {typeof metrics!.reactions === "number" ? `${metrics!.reactions!.toLocaleString()} reactions` : ""}
+                        </span>
+                      )}
+                      <ChevronDown className="w-3.5 h-3.5" style={{ color: "var(--color-muted)", transform: expanded ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.15s" }} />
+                    </span>
+                  </button>
 
-                  {/* Source signal label */}
-                  {(() => {
+                  {expanded && (
+                    <>
+                      {/* Full text */}
+                      <p style={{ fontSize: 14, color: "var(--ink)", lineHeight: 1.625, marginTop: 12, whiteSpace: "pre-wrap" }} dir="auto">
+                        {p.post_text || "Untitled draft"}
+                      </p>
+
+                      {/* Source signal label */}
+                      {(() => {
                     const sid = (p.source_metadata as any)?.source_signal_id || (p.source_metadata as any)?.signal_ids?.[0];
                     const titleFromMeta = (p.source_metadata as any)?.signal_titles?.[0];
                     const title = titleFromMeta || (sid ? signalTitleMap[sid] : null);
@@ -3576,24 +3613,15 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                     );
                   })()}
 
-                  {/* Badge row */}
-                  <div className="flex items-center flex-wrap" style={{ gap: 8, marginTop: 10 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--bg-subtle)", color: "var(--color-muted)", textTransform: "uppercase" }}>
-                      {lang === "ar" ? "AR" : "EN"}
-                    </span>
-                    <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--bg-subtle)" }} className={badge.cls.includes("text-") ? badge.cls.split(" ").filter(c => c.startsWith("text-")).join(" ") : "text-muted-foreground"}>
-                      {badge.label}
-                    </span>
-                    <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--warning-pale)", color: "var(--warning)" }}>
-                      Draft
-                    </span>
-                  </div>
+                      {/* Format badge (extra chip on expanded state) */}
+                      <div className="flex items-center flex-wrap" style={{ gap: 8, marginTop: 10 }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--bg-subtle)" }} className={badge.cls.includes("text-") ? badge.cls.split(" ").filter(c => c.startsWith("text-")).join(" ") : "text-muted-foreground"}>
+                          {badge.label}
+                        </span>
+                      </div>
 
-                  {/* Date + Actions */}
-                  <div className="flex items-center" style={{ marginTop: 12, gap: 16 }}>
-                    <span style={{ fontSize: 12, color: "var(--color-muted)" }}>
-                      {new Date(p.created_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
-                    </span>
+                      {/* Actions */}
+                      <div className="flex items-center" style={{ marginTop: 12, gap: 16 }}>
                     <div className="flex-1" />
                     <button
                       onClick={() => p.post_text && handleCopy(p.id, p.post_text)}
@@ -3609,7 +3637,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                       style={{ fontSize: 14, color: "var(--color-muted)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
                       className="hover:text-foreground transition-colors"
                     >
-                      <Check className="w-3.5 h-3.5" /> Published ✓
+                      <Check className="w-3.5 h-3.5" /> Mark as published
                     </button>
                     {onOpenDraft && (
                       <button
@@ -3667,7 +3695,6 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                  <LinkedInPostSteps shareLabel="Post on LinkedIn" />
 
                   {/* Inline confirmation (M-1-1) */}
                   {confirmingId === p.id && (
@@ -3703,6 +3730,8 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                       )}
                     </div>
                   )}
+                    </>
+                  )}
                 </motion.div>
               );
             })}
@@ -3731,17 +3760,35 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
               const metrics = postMetrics[p.id];
               const hasMetrics = metrics && (typeof metrics.impressions === "number" || typeof metrics.reactions === "number");
               const hasText = !!(p.post_text && p.post_text.trim().length > 0);
+              const expanded = expandedCards.has(p.id);
+              const publishedAtMs = (p as any).published_at ? new Date((p as any).published_at).getTime() : 0;
+              const older48h = publishedAtMs > 0 && (Date.now() - publishedAtMs) > 48 * 60 * 60 * 1000;
+              const savedUrl = savedUrls[p.id];
+              const lang = (p.source_metadata as any)?._language || ((p.post_text && isArabicText(p.post_text)) ? "ar" : "en");
 
-              // Compact row for rows with no post_text: date + Open on LinkedIn ↗ only.
+              const metricsChunk = hasMetrics ? (
+                <>
+                  {typeof metrics!.impressions === "number" && <>{metrics!.impressions!.toLocaleString()} impressions</>}
+                  {typeof metrics!.impressions === "number" && typeof metrics!.reactions === "number" && " · "}
+                  {typeof metrics!.reactions === "number" && <>{metrics!.reactions!.toLocaleString()} reactions</>}
+                </>
+              ) : (older48h && !savedUrl && p._source === "linkedin_posts" && !isExternal) ? (
+                <span style={{ fontStyle: "italic" }}>not linked — expand to add the post URL</span>
+              ) : null;
+
+              // Compact row for rows with no post_text: date · metrics · Open on LinkedIn ↗
               if (!hasText) {
                 return (
                   <div
                     key={p.id}
                     style={{ background: "var(--bg-card)", borderRadius: 8, padding: "10px 16px", border: "1px solid var(--color-border)", display: "flex", alignItems: "center", gap: 12 }}
                   >
-                    <span style={{ fontSize: 12, color: "var(--color-muted)", minWidth: 96 }}>
+                    <span style={{ fontSize: 12, color: "var(--color-muted)", minWidth: 88 }}>
                       {formatSmartDate((p as any).published_at || p.created_at)}
                     </span>
+                    {metricsChunk && (
+                      <span style={{ fontSize: 12, color: "var(--color-muted)" }}>{metricsChunk}</span>
+                    )}
                     <div style={{ flex: 1 }} />
                     {externalHref ? (
                       <a
@@ -3768,35 +3815,49 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                   style={{ background: "var(--bg-card)", borderRadius: 8, padding: 16, border: "1px solid var(--color-border)", transition: "border-color 0.2s" }}
                   className="hover:border-[color:var(--hairline)]"
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p
-                        style={{
-                          fontSize: 14,
-                          color: "var(--ink)",
-                          lineHeight: 1.5,
-                          ...(expandedCards.has(p.id) ? {} : {
-                            display: "-webkit-box",
-                            WebkitBoxOrient: "vertical" as any,
-                            WebkitLineClamp: 2,
-                            overflow: "hidden",
-                            WebkitMaskImage: "linear-gradient(180deg, #000 60%, transparent 100%)",
-                            maskImage: "linear-gradient(180deg, #000 60%, transparent 100%)",
-                          }),
-                        }}
-                        dir="auto"
-                      >
+                  {/* Compact row: hook (1-line) + chips + date + metrics */}
+                  <button
+                    type="button"
+                    onClick={() => toggleCardExpand(p.id)}
+                    aria-expanded={expanded}
+                    className="w-full text-left flex items-center gap-3"
+                    style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
+                  >
+                    <span
+                      className="flex-1 min-w-0 truncate"
+                      style={{ fontSize: 14, color: "var(--ink)", lineHeight: 1.5 }}
+                      dir="auto"
+                    >
+                      {(p.post_text?.split("\n")[0] || "").trim()}
+                    </span>
+                    <span className="shrink-0 flex items-center" style={{ gap: 6 }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 6px", borderRadius: 999, backgroundColor: "var(--bg-subtle)", color: "var(--color-muted)", textTransform: "uppercase" }}>
+                        {lang === "ar" ? "AR" : "EN"}
+                      </span>
+                      {isExternal ? (
+                        <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 6px", borderRadius: 999, backgroundColor: "var(--info-pale)", color: "var(--info)" }}>
+                          LinkedIn
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 6px", borderRadius: 999, backgroundColor: "var(--success-pale)", color: "var(--success)" }}>
+                          Published
+                        </span>
+                      )}
+                      <span style={{ fontSize: 11, color: "var(--color-muted)" }}>
+                        {formatSmartDate((p as any).published_at || p.created_at)}
+                      </span>
+                      {metricsChunk && (
+                        <span style={{ fontSize: 11, color: "var(--color-muted)" }}>· {metricsChunk}</span>
+                      )}
+                      <ChevronDown className="w-3.5 h-3.5" style={{ color: "var(--color-muted)", transform: expanded ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.15s" }} />
+                    </span>
+                  </button>
+
+                  {expanded && (
+                    <>
+                      <p style={{ fontSize: 14, color: "var(--ink)", lineHeight: 1.625, marginTop: 12, whiteSpace: "pre-wrap" }} dir="auto">
                         {p.post_text}
                       </p>
-                      {(p.post_text?.split("\n").length || 0) > 2 || (p.post_text?.length || 0) > 140 ? (
-                        <button
-                          onClick={() => toggleCardExpand(p.id)}
-                          style={{ fontSize: 14, color: "var(--brand)", background: "none", border: "none", cursor: "pointer", padding: 0, marginTop: 4 }}
-                          className="hover:underline"
-                        >
-                          {expandedCards.has(p.id) ? "Show less" : "Read more"}
-                        </button>
-                      ) : null}
                       {p.topic_label && (
                         <p style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 4 }} className="line-clamp-1">{p.topic_label}</p>
                       )}
@@ -3812,96 +3873,65 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                           </div>
                         );
                       })()}
-                    </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--bg-subtle)" }} className={badge.cls.includes("text-") ? badge.cls.split(" ").filter(c => c.startsWith("text-")).join(" ") : "text-muted-foreground"}>
-                        {badge.label}
-                      </span>
-                      {isExternal ? (
-                        <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--info-pale)", color: "var(--info)" }}>
-                          LinkedIn
+                      <div className="flex items-center flex-wrap" style={{ gap: 8, marginTop: 10 }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--bg-subtle)" }} className={badge.cls.includes("text-") ? badge.cls.split(" ").filter(c => c.startsWith("text-")).join(" ") : "text-muted-foreground"}>
+                          {badge.label}
                         </span>
-                      ) : (
-                        <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--success-pale)", color: "var(--success)" }}>
-                          Published
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center" style={{ marginTop: 12, gap: 16 }}>
-                    <span style={{ fontSize: 12, color: "var(--color-muted)" }}>{formatSmartDate((p as any).published_at || p.created_at)}</span>
-                    <span style={{ fontSize: 12, color: "var(--color-muted)" }}>
-                      {hasMetrics ? (
-                        <>
-                          {typeof metrics!.impressions === "number" && <>{metrics!.impressions!.toLocaleString()} impressions</>}
-                          {typeof metrics!.impressions === "number" && typeof metrics!.reactions === "number" && " · "}
-                          {typeof metrics!.reactions === "number" && <>{metrics!.reactions!.toLocaleString()} reactions</>}
-                        </>
-                      ) : (
-                        <span style={{ fontStyle: "italic" }}>metrics syncing</span>
-                      )}
-                    </span>
-                    <div className="flex-1" />
-                    {externalHref && (
-                      <a
-                        href={externalHref}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ fontSize: 14, color: "var(--color-muted)", display: "flex", alignItems: "center", gap: 5, textDecoration: "none" }}
-                        className="hover:text-foreground transition-colors"
-                      >
-                        <Linkedin className="w-3.5 h-3.5" /> Open on LinkedIn ↗
-                      </a>
-                    )}
-                    <button
-                      onClick={() => p.post_text && handleCopy(p.id, p.post_text)}
-                      disabled={!p.post_text}
-                      style={{ fontSize: 14, color: "var(--color-muted)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
-                      className="hover:text-foreground transition-colors disabled:opacity-30"
-                    >
-                      {copiedId === p.id ? <Check className="w-3.5 h-3.5" /> : <Linkedin className="w-3.5 h-3.5" />}
-                      {copiedId === p.id ? "Copied" : "Post on LinkedIn →"}
-                    </button>
-                    <button
-                      onClick={() => setPendingDeleteId(p.id)}
-                      style={{ fontSize: 14, color: "var(--error)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
-                      className="hover:text-[color:var(--error)] transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                  <LinkedInPostSteps shareLabel="Post on LinkedIn" />
-
-                  {/* LinkedIn URL tracker (M-1-1) */}
-                  {p._source === "linkedin_posts" && (
-                    savedUrls[p.id] ? (
-                      <div style={{ marginTop: 10, fontSize: 12, color: "var(--success)", display: "flex", alignItems: "center", gap: 6 }}>
-                        <Check className="w-3.5 h-3.5" /> URL linked ✓ —{" "}
-                        <a href={savedUrls[p.id]} target="_blank" rel="noopener noreferrer" style={{ color: "var(--brand)", textDecoration: "underline" }}>
-                          view on LinkedIn
-                        </a>
                       </div>
-                    ) : (
-                      <div style={{ marginTop: 10, display: "flex", gap: 6, alignItems: "center" }}>
-                        <input
-                          type="url"
-                          placeholder="Paste your LinkedIn post URL to track performance"
-                          value={urlDrafts[p.id] || ""}
-                          onChange={(e) => setUrlDrafts(prev => ({ ...prev, [p.id]: e.target.value }))}
-                          onKeyDown={(e) => { if (e.key === "Enter") saveLinkedInUrl(p.id, urlDrafts[p.id] || ""); }}
-                          maxLength={500}
-                          style={{ flex: 1, fontSize: 12, padding: "6px 10px", borderRadius: 4, border: "1px solid var(--color-border)", background: "var(--bg-subtle)", color: "var(--ink)" }}
-                        />
+                      <div className="flex items-center" style={{ marginTop: 12, gap: 16 }}>
+                        <div className="flex-1" />
+                        {externalHref && (
+                          <a
+                            href={externalHref}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ fontSize: 14, color: "var(--color-muted)", display: "flex", alignItems: "center", gap: 5, textDecoration: "none" }}
+                            className="hover:text-foreground transition-colors"
+                          >
+                            <Linkedin className="w-3.5 h-3.5" /> Open on LinkedIn ↗
+                          </a>
+                        )}
                         <button
-                          onClick={() => saveLinkedInUrl(p.id, urlDrafts[p.id] || "")}
-                          disabled={!urlDrafts[p.id]?.trim()}
-                          aria-label="Save LinkedIn URL"
-                          style={{ background: "var(--brand)", color: "#fff", border: 0, borderRadius: 4, padding: "6px 8px", cursor: "pointer", display: "inline-flex", alignItems: "center", opacity: urlDrafts[p.id]?.trim() ? 1 : 0.5 }}
+                          onClick={() => p.post_text && handleCopy(p.id, p.post_text)}
+                          disabled={!p.post_text}
+                          style={{ fontSize: 14, color: "var(--color-muted)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
+                          className="hover:text-foreground transition-colors disabled:opacity-30"
                         >
-                          <Save className="w-3.5 h-3.5" />
+                          {copiedId === p.id ? <Check className="w-3.5 h-3.5" /> : <Linkedin className="w-3.5 h-3.5" />}
+                          {copiedId === p.id ? "Copied" : "Post on LinkedIn →"}
+                        </button>
+                        <button
+                          onClick={() => setPendingDeleteId(p.id)}
+                          style={{ fontSize: 14, color: "var(--error)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
+                          className="hover:text-[color:var(--error)] transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
-                    )
+
+                      {/* URL field only appears when this row has no saved URL */}
+                      {p._source === "linkedin_posts" && !savedUrl && (
+                        <div style={{ marginTop: 10, display: "flex", gap: 6, alignItems: "center" }}>
+                          <input
+                            type="url"
+                            placeholder="Paste your LinkedIn post URL to track performance"
+                            value={urlDrafts[p.id] || ""}
+                            onChange={(e) => setUrlDrafts(prev => ({ ...prev, [p.id]: e.target.value }))}
+                            onKeyDown={(e) => { if (e.key === "Enter") saveLinkedInUrl(p.id, urlDrafts[p.id] || ""); }}
+                            maxLength={500}
+                            style={{ flex: 1, fontSize: 12, padding: "6px 10px", borderRadius: 4, border: "1px solid var(--color-border)", background: "var(--bg-subtle)", color: "var(--ink)" }}
+                          />
+                          <button
+                            onClick={() => saveLinkedInUrl(p.id, urlDrafts[p.id] || "")}
+                            disabled={!urlDrafts[p.id]?.trim()}
+                            aria-label="Save LinkedIn URL"
+                            style={{ background: "var(--brand)", color: "#fff", border: 0, borderRadius: 4, padding: "6px 8px", cursor: "pointer", display: "inline-flex", alignItems: "center", opacity: urlDrafts[p.id]?.trim() ? 1 : 0.5 }}
+                          >
+                            <Save className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
+                    </>
                   )}
                 </motion.div>
               );
