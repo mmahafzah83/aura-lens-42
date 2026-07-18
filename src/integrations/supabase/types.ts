@@ -1987,6 +1987,8 @@ export type Database = {
       }
       linkedin_posts: {
         Row: {
+          acquisition: string | null
+          authorship: string | null
           carousel_structure_type: string | null
           comment_count: number
           content_engine_output_type: string | null
@@ -2026,6 +2028,8 @@ export type Database = {
           visual_style: string | null
         }
         Insert: {
+          acquisition?: string | null
+          authorship?: string | null
           carousel_structure_type?: string | null
           comment_count?: number
           content_engine_output_type?: string | null
@@ -2065,6 +2069,8 @@ export type Database = {
           visual_style?: string | null
         }
         Update: {
+          acquisition?: string | null
+          authorship?: string | null
           carousel_structure_type?: string | null
           comment_count?: number
           content_engine_output_type?: string | null
