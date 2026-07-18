@@ -39,6 +39,8 @@ interface BriefProps {
     contentFormat?: "post" | "carousel" | "framework_summary";
     signalId?: string;
     signalTitle?: string;
+    source?: string;
+    moveState?: "untouched" | "opened" | "drafted" | "stale_draft" | "evolution";
   }) => void;
 }
 
