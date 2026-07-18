@@ -1045,6 +1045,7 @@ const Dashboard = () => {
                     onSwitchTab={(t) => switchTab(t as TabValue)}
                     onInvite={() => setInviteOpen(true)}
                     onOpenBrandAssessment={() => setBrandAssessmentOpen(true)}
+                    onOpenSignal={navigateToSignal}
                     onOpenDraft={(d) => { setDraftPrefill(d); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                     onDraftToStudio={(prefill) => {
                       setSignalDraftPrefill(prefill);
