@@ -3145,10 +3145,11 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
       .filter((p: any) => p.post_text && p.post_text.trim().length >= 20)
       .map((p: any) => ({ ...p, _source: "linkedin_posts" as const }));
 
-    // Published linkedin posts — source of truth is published_at IS NOT NULL.
+    // Published section — source of truth is published_at IS NOT NULL.
+    // Rows with no post_text (e.g. legacy LinkedIn export imports) are still
+    // valid entries; the row renderer falls back to date + Open on LinkedIn.
     const liPublished: SavedPost[] = (liRes.data || [])
       .filter((p: any) => !!p.published_at)
-      .filter((p: any) => p.post_text && p.post_text.trim().length >= 20)
       .sort((a: any, b: any) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
       .map((p: any) => ({
         ...p,
