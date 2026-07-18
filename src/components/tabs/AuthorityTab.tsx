@@ -1118,7 +1118,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
           published_at: new Date().toISOString(),
         };
         if (urlArg) {
-          update.linkedin_url = urlArg;
+          update.post_url = urlArg;
           update.published_confirmed_at = new Date().toISOString();
         }
         const { error } = await supabase
