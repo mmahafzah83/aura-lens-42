@@ -3201,6 +3201,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
           .eq("id", id);
       }
       setDrafts(prev => prev.filter(p => p.id !== id));
+      track("post_published", { signal_id: linkedSignalId || null, route: "manual" });
       // Fetch the related signal title to personalize the ceremony toast.
       let signalTitle = "strategic";
       if (linkedSignalId) {
