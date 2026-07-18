@@ -1714,6 +1714,58 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                   );
                 })()}
 
+                {/* Post-publish confirmation — shown in place of composer silence.
+                    Reads post_url from the linkedin-publish response. */}
+                {publishedInfo && (
+                  <div
+                    className="mt-3 rounded-lg overflow-hidden"
+                    style={{ border: "1px solid var(--brand-line, var(--border))", background: "var(--bg-card, var(--bg-subtle))" }}
+                    role="status"
+                    aria-live="polite"
+                  >
+                    <div className="p-4 flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4" style={{ color: "var(--gold-dark, var(--brand))" }} />
+                        <span className="text-sm font-semibold" style={{ color: "var(--ink)" }}>Published.</span>
+                        <span className="text-xs" style={{ color: "var(--color-muted)" }}>
+                          {new Date(publishedInfo.publishedAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
+                        </span>
+                      </div>
+                      {publishedInfo.signalTitle && (
+                        <div className="text-xs flex items-center gap-1.5" style={{ color: "var(--color-muted)" }}>
+                          <Lightbulb className="w-3.5 h-3.5" style={{ color: "var(--brand)" }} />
+                          <span>From signal: {publishedInfo.signalTitle}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-3 flex-wrap mt-1">
+                        {publishedInfo.url ? (
+                          <a
+                            href={publishedInfo.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 text-xs font-medium hover:underline"
+                            style={{ color: "var(--brand)" }}
+                          >
+                            <Linkedin className="w-3.5 h-3.5" /> Open on LinkedIn ↗
+                          </a>
+                        ) : (
+                          <span className="text-xs" style={{ color: "var(--color-muted)", fontStyle: "italic" }}>
+                            LinkedIn didn't return a URL — check your feed.
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => navigate("/home")}
+                          className="inline-flex items-center gap-1 text-xs font-medium hover:underline"
+                          style={{ color: "var(--color-muted)", background: "transparent", border: 0, cursor: "pointer" }}
+                        >
+                          Next signal →
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Back to full version link */}
                 {showingShort && !generatingShort && (
                   <button onClick={switchToFull} className="flex items-center gap-1 text-xs text-primary hover:underline">
