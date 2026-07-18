@@ -288,12 +288,71 @@ Deno.serve(withObserve("detect-signals-v2", async (req) => {
       ? `User context: Level=${profile.level || "N/A"}, Firm=${profile.firm || "N/A"}, Sector=${profile.sector_focus || "N/A"}, Practice=${profile.core_practice || "N/A"}, Goal=${profile.north_star_goal || "N/A"}`
       : "No user profile available.";
 
-    // Build content for AI from fragments
-    const fragmentText = fragments.map(f =>
-      `[${f.fragment_type}] "${f.title}": ${(f.content || "").slice(0, 500)} | Tags: ${(f.tags || []).join(",")}`
-    ).join("\n\n");
+    /* ── Phase A: cluster fragment titles into coherent themes ── */
+    const targetClusters = Math.max(1, Math.min(8, Math.round(fragments.length / 8)));
+    const fragmentIndex = fragments.map((f: any, i: number) => ({ i, id: f.id, title: f.title || "", content: f.content || "", tags: f.tags || [], fragment_type: f.fragment_type }));
 
-    /* ── AI classification ── */
+    type Cluster = { theme?: string; fragment_indexes: number[] };
+    let clusters: Cluster[] = [];
+
+    if (fragments.length <= 4 || targetClusters === 1) {
+      clusters = [{ theme: "all", fragment_indexes: fragmentIndex.map((f: any) => f.i) }];
+    } else {
+      const titlesForGrouping = fragmentIndex
+        .map((f: any) => `${f.i}: ${(f.title || "").slice(0, 160)}`)
+        .join("\n");
+      const groupSystem = `You group evidence fragment titles into coherent themes.
+Return ONLY valid JSON: {"clusters":[{"theme":"short label","fragment_indexes":[integers]}]}
+Rules:
+- Aim for about ${targetClusters} clusters (min 1, max 8).
+- Every fragment index must appear in exactly one cluster.
+- Group by subject/theme, not by fragment type.
+- Theme labels are 2-5 words, plain language, no jargon.`;
+
+      try {
+        const grpRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "google/gemini-3-flash-preview",
+            messages: [
+              { role: "system", content: groupSystem },
+              { role: "user", content: `Fragment titles (index: title):\n${titlesForGrouping}` },
+            ],
+            response_format: { type: "json_object" },
+          }),
+        });
+        if (grpRes.ok) {
+          const grpData = await grpRes.json();
+          const parsed = parseAiJson(grpData.choices?.[0]?.message?.content || "{}");
+          const rawClusters = Array.isArray(parsed?.clusters) ? parsed.clusters : [];
+          const seen = new Set<number>();
+          for (const c of rawClusters) {
+            const idxs = Array.isArray(c?.fragment_indexes)
+              ? c.fragment_indexes.filter((n: any) => Number.isInteger(n) && n >= 0 && n < fragments.length && !seen.has(n))
+              : [];
+            idxs.forEach((n: number) => seen.add(n));
+            if (idxs.length > 0) clusters.push({ theme: String(c?.theme || "").slice(0, 60), fragment_indexes: idxs });
+          }
+          // Attach any unassigned fragments to the largest cluster
+          const missing = fragmentIndex.filter((f: any) => !seen.has(f.i)).map((f: any) => f.i);
+          if (missing.length > 0) {
+            if (clusters.length === 0) clusters.push({ theme: "all", fragment_indexes: missing });
+            else {
+              const biggest = clusters.reduce((a, b) => (a.fragment_indexes.length >= b.fragment_indexes.length ? a : b));
+              biggest.fragment_indexes.push(...missing);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("[detect-signals-v2] clustering failed, falling back to single cluster:", (e as Error).message);
+      }
+      if (clusters.length === 0) {
+        clusters = [{ theme: "all", fragment_indexes: fragmentIndex.map((f: any) => f.i) }];
+      }
+    }
+
+    /* ── Phase B: classify each cluster with existing prompt ── */
     const systemPrompt = `You are a Strategic Signal Detector.
 Given evidence fragments and user context, classify them and return valid JSON with these exact fields:
 {
@@ -309,65 +368,45 @@ theme_tags are subject themes only — never signal types like market_trend or c
 
 ${identityCtx}`;
 
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: `Analyze these evidence fragments:\n\n${fragmentText.slice(0, 4000)}` },
-        ],
-        response_format: { type: "json_object" },
-      }),
-    });
-
-    if (!aiRes.ok) {
-      const errText = await aiRes.text();
-      if (aiRes.status === 429) return new Response(JSON.stringify({ error: "Aura is busy — try again in a moment." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      if (aiRes.status === 402) return new Response(JSON.stringify({ error: "Aura is temporarily unavailable. Try again later." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      throw new Error(`AI error: ${aiRes.status} ${errText}`);
-    }
-
-    const aiData = await aiRes.json();
-    const rawContent: string = aiData.choices?.[0]?.message?.content || "{}";
-    const signal = parseAiJson(rawContent);
-    if (!signal) {
-      // Log the unparseable sample and skip this batch — never throw away the invocation.
-      EdgeRuntime.waitUntil(
-        logError("detect-signals-v2", new Error("ai_json_parse_failed"), {
-          user_id,
-          severity: "info",
-          context: { raw_sample: String(rawContent).slice(0, 300) },
+    async function classifyCluster(clusterFragIds: string[]): Promise<any | null> {
+      const clusterFrags = fragmentIndex.filter((f: any) => clusterFragIds.includes(f.id)).slice(0, 12);
+      const text = clusterFrags.map((f: any) =>
+        `[${f.fragment_type}] "${f.title}": ${(f.content || "").slice(0, 400)} | Tags: ${(f.tags || []).join(",")}`
+      ).join("\n\n");
+      const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: `Analyze these evidence fragments:\n\n${text}` },
+          ],
+          response_format: { type: "json_object" },
         }),
-      );
-      return new Response(JSON.stringify({ skipped: true, reason: "ai_json_parse_failed" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-    }
-
-    const newTitle = signal.title || "Untitled Signal";
-    const newSummary = signal.summary || "";
-    const newType = signal.type || "market_trend";
-    const rawTags: string[] = Array.isArray(signal.theme_tags) ? signal.theme_tags.slice(0, 5) : [];
-    const newTags: string[] = canonicalizeTags(rawTags);
-    const aiBaseConfidence = Math.min(1, Math.max(0, signal.ai_base_confidence ?? 0.5));
-    const whatItMeans = signal.what_it_means_for_you || "";
-
-    // Quality gate: only accept signals with a real title and explanation
-    const cleanTitle = (newTitle || "").trim();
-    const cleanSummary = (newSummary || "").trim();
-    if (
-      !cleanTitle ||
-      cleanTitle === "Untitled Signal" ||
-      cleanTitle.length < 10 ||
-      !cleanSummary
-    ) {
-      console.warn("Skipping low-quality signal:", JSON.stringify({ title: cleanTitle, summary: cleanSummary }));
-      return new Response(JSON.stringify({
-        skipped: true,
-        reason: "low_quality_signal",
-      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (!res.ok) {
+        if (res.status === 429 || res.status === 402) {
+          const errBody = { status: res.status };
+          throw Object.assign(new Error(`ai_${res.status}`), errBody);
+        }
+        const errText = await res.text();
+        throw new Error(`AI error: ${res.status} ${errText}`);
+      }
+      const data = await res.json();
+      const raw = data.choices?.[0]?.message?.content || "{}";
+      const parsed = parseAiJson(raw);
+      if (!parsed) {
+        EdgeRuntime.waitUntil(
+          logError("detect-signals-v2", new Error("ai_json_parse_failed"), {
+            user_id,
+            severity: "info",
+            context: { raw_sample: String(raw).slice(0, 300) },
+          }),
+        );
+        return null;
+      }
+      return parsed;
     }
 
     /* ── Compute content gap based on user's prior posts on these tags ── */
@@ -393,32 +432,37 @@ ${identityCtx}`;
       return gap;
     }
 
-    const contentGap = await computeContentGap(newTags, newTitle);
-
     /* ── Dedup check against existing signals ── */
     const { data: existingSignals } = await admin
       .from("strategic_signals")
       .select("id, signal_title, theme_tags, confidence, fragment_count, supporting_evidence_ids, unique_orgs, updated_at, status")
       .eq("user_id", user_id).in("status", ["active", "dormant"]);
 
-    const allSignals = existingSignals || [];
+    const allSignals: any[] = existingSignals || [];
+    // Signals created in this invocation, eligible for matching by later clusters
+    const runtimeSignals: any[] = [];
 
-    function findMatches(tags: string[], title: string): typeof allSignals {
-      return allSignals.filter(s => {
+    function findMatches(tags: string[], title: string): any[] {
+      const pool = [...allSignals, ...runtimeSignals];
+      return pool.filter(s => {
         const overlap = tagOverlapCount(tags, s.theme_tags || []);
         const titleMatch = titleSharesCoreTopic(title, s.signal_title || "");
-        return overlap >= 2 || titleMatch;
+        return (overlap >= 2 && titleMatch) || overlap >= 3;
       });
     }
 
-    const matches = findMatches(newTags, newTitle);
-
-    /* ── Reinforce an existing signal ── */
-    async function reinforceSignal(signalRow: any): Promise<string> {
+    /* ── Reinforce an existing signal with a specific fragment set ── */
+    async function reinforceSignal(
+      signalRow: any,
+      clusterFragmentIds: string[],
+      newTags: string[],
+      aiBaseConfidence: number,
+      whatItMeans: string,
+      contentGap: number,
+    ): Promise<{ signal_id: string; fragments_attached: number }> {
       const existingEvidence: string[] = signalRow.supporting_evidence_ids || [];
-      // Check if ALL new fragments are already linked
-      const newIds = targetFragmentIds.filter(id => !existingEvidence.includes(id));
-      if (newIds.length === 0) return signalRow.id;
+      const newIds = clusterFragmentIds.filter(id => !existingEvidence.includes(id));
+      if (newIds.length === 0) return { signal_id: signalRow.id, fragments_attached: 0 };
 
       const mergedEvidence = unique([...existingEvidence, ...newIds]);
       const newFragCount = mergedEvidence.length;
@@ -440,28 +484,83 @@ ${identityCtx}`;
         priority_score: priorityScore,
         theme_tags: mergedTags,
         updated_at: now,
-        // Reactivate dormant signals when fresh evidence pushes confidence above threshold
         ...(signalRow.status === "dormant" && confidence >= 0.15
           ? { status: "active", velocity_status: "stable" }
           : {}),
       }).eq("id", signalRow.id);
 
-      return signalRow.id;
+      // Update runtime cache so later clusters can match against the reinforced row
+      signalRow.supporting_evidence_ids = mergedEvidence;
+      signalRow.fragment_count = newFragCount;
+      signalRow.theme_tags = mergedTags;
+      signalRow.status = signalRow.status === "dormant" && confidence >= 0.15 ? "active" : signalRow.status;
+
+      return { signal_id: signalRow.id, fragments_attached: newIds.length };
     }
 
-    let primarySignalId: string;
-    let isNew: boolean;
+    /* ── Iterate clusters ── */
+    const MAX_NEW_SIGNALS = 5;
+    const resultSignals: Array<{ signal_id: string; is_new: boolean; fragments_attached: number }> = [];
+    let newCount = 0;
+    let reinforcedCount = 0;
+    let droppedCount = 0;
+    const dropReasons: string[] = [];
 
-    if (matches.length > 0) {
-      const best = matches.sort((a, b) => (b.fragment_count || 0) - (a.fragment_count || 0))[0];
-      primarySignalId = await reinforceSignal(best);
-      isNew = false;
-    } else {
+    for (let ci = 0; ci < clusters.length; ci++) {
+      const cluster = clusters[ci];
+      const clusterFragIds = cluster.fragment_indexes
+        .map((idx) => fragmentIndex[idx]?.id)
+        .filter((x: any): x is string => typeof x === "string");
+      if (clusterFragIds.length === 0) { droppedCount++; dropReasons.push("empty_cluster"); continue; }
+
+      let signal: any;
+      try {
+        signal = await classifyCluster(clusterFragIds);
+      } catch (e: any) {
+        if (e?.status === 429 || e?.status === 402) {
+          return new Response(JSON.stringify({ error: e.status === 429 ? "Aura is busy — try again in a moment." : "Aura is temporarily unavailable. Try again later." }), { status: e.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        throw e;
+      }
+      if (!signal) { droppedCount++; dropReasons.push("ai_json_parse_failed"); continue; }
+
+      const newTitle = (signal.title || "").trim();
+      const newSummary = (signal.summary || "").trim();
+      const rawTags: string[] = Array.isArray(signal.theme_tags) ? signal.theme_tags.slice(0, 5) : [];
+      const newTags: string[] = canonicalizeTags(rawTags);
+      const aiBaseConfidence = Math.min(1, Math.max(0, signal.ai_base_confidence ?? 0.5));
+      const whatItMeans = signal.what_it_means_for_you || "";
+
+      // Quality gate per cluster
+      if (!newTitle || newTitle === "Untitled Signal" || newTitle.length < 10 || !newSummary) {
+        droppedCount++;
+        dropReasons.push("low_quality_signal");
+        continue;
+      }
+
+      const contentGap = await computeContentGap(newTags, newTitle);
+      const matches = findMatches(newTags, newTitle);
+
+      if (matches.length > 0) {
+        const best = matches.sort((a, b) => (b.fragment_count || 0) - (a.fragment_count || 0))[0];
+        const r = await reinforceSignal(best, clusterFragIds, newTags, aiBaseConfidence, whatItMeans, contentGap);
+        resultSignals.push({ signal_id: r.signal_id, is_new: false, fragments_attached: r.fragments_attached });
+        reinforcedCount++;
+        continue;
+      }
+
+      // No matches: create new, but cap at MAX_NEW_SIGNALS
+      if (newCount >= MAX_NEW_SIGNALS) {
+        droppedCount++;
+        dropReasons.push("new_signal_cap_reached");
+        continue;
+      }
+
       const now = new Date().toISOString();
-      const initialUniqueOrgs = await countUniqueOrgs(admin, targetFragmentIds);
-      const initialUniqueSources = await countUniqueSources(admin, targetFragmentIds);
+      const initialUniqueOrgs = await countUniqueOrgs(admin, clusterFragIds);
+      const initialUniqueSources = await countUniqueSources(admin, clusterFragIds);
       const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, initialUniqueSources, initialUniqueOrgs, now);
-      const priorityScore = await calcPriorityScore(confidence, now, 1.0, targetFragmentIds.length, admin, user_id, newTags, contentGap);
+      const priorityScore = await calcPriorityScore(confidence, now, 1.0, clusterFragIds.length, admin, user_id, newTags, contentGap);
 
       const { data: row, error: insErr } = await admin.from("strategic_signals").insert({
         user_id,
@@ -475,16 +574,43 @@ ${identityCtx}`;
         priority_score: priorityScore,
         status: "active",
         lifecycle_tier: "emerging",
-        supporting_evidence_ids: targetFragmentIds,
-        fragment_count: targetFragmentIds.length,
+        supporting_evidence_ids: clusterFragIds,
+        fragment_count: clusterFragIds.length,
         unique_orgs: initialUniqueOrgs,
-        strength_score: computeStrength(initialUniqueOrgs, targetFragmentIds.length),
+        strength_score: computeStrength(initialUniqueOrgs, clusterFragIds.length),
       }).select("id").single();
 
       if (insErr) throw new Error(`Insert: ${insErr.message}`);
-      primarySignalId = row.id;
-      isNew = true;
+
+      resultSignals.push({ signal_id: row.id, is_new: true, fragments_attached: clusterFragIds.length });
+      newCount++;
+
+      // Cache for later clusters so they can reinforce rather than duplicate
+      runtimeSignals.push({
+        id: row.id,
+        signal_title: newTitle,
+        theme_tags: newTags,
+        supporting_evidence_ids: clusterFragIds,
+        fragment_count: clusterFragIds.length,
+        status: "active",
+      });
     }
+
+    // Info-level summary log
+    EdgeRuntime.waitUntil(
+      logError("detect-signals-v2", new Error("cluster_summary"), {
+        user_id,
+        severity: "info",
+        context: {
+          clusters_found: clusters.length,
+          new_count: newCount,
+          reinforced_count: reinforcedCount,
+          dropped_count: droppedCount,
+          drop_reasons: dropReasons,
+          fragments: fragments.length,
+        },
+      }),
+    );
 
     // Trigger score recalc in background (non-blocking)
     try {
@@ -503,9 +629,11 @@ ${identityCtx}`;
 
     return new Response(JSON.stringify({
       success: true,
-      signal_id: primarySignalId,
-      is_new: isNew,
-      reinforced: !isNew,
+      signals: resultSignals,
+      clusters_found: clusters.length,
+      new_count: newCount,
+      reinforced_count: reinforcedCount,
+      dropped_count: droppedCount,
       fragments_processed: targetFragmentIds.length,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
