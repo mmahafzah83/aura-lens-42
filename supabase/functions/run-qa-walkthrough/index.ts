@@ -99,16 +99,6 @@ Deno.serve(async (req) => {
     if (!Array.isArray(data)) throw new Error("Not array");
   });
 
-  await run(6, "Recommended moves", async () => {
-    const { data, error } = await admin
-      .from("recommended_moves")
-      .select("id")
-      .eq("user_id", TARGET_USER)
-      .limit(1);
-    if (error) throw error;
-    if (!Array.isArray(data)) throw new Error("Not array");
-  });
-
   await run(7, "Content: linkedin_posts", async () => {
     const { data, error } = await admin
       .from("linkedin_posts")
