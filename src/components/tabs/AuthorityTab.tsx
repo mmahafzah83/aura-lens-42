@@ -3499,6 +3499,11 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
         document.body
       )}
 
+      {/* Tutorial — shown once, only when the user has no active LinkedIn connection. */}
+      {!hasLinkedIn && (
+        <LinkedInPostSteps shareLabel="Post on LinkedIn" />
+      )}
+
       {/* ── Section 1: Aura Drafts ── */}
       <div>
         <button
