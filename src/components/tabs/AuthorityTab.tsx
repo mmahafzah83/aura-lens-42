@@ -4283,6 +4283,14 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
   const [activeTab, setActiveTab] = useState<AuthoritySubTab>("create");
   const [brandDone, setBrandDone] = useState<boolean | null>(null);
   const [planPrefill, setPlanPrefill] = useState<PlanPrefill | null>(null);
+  // Local prefill channel for "Write from this" in the Library. Reuses the
+  // same SignalPrefill contract CreateTab already consumes.
+  const [libraryPrefill, setLibraryPrefill] = useState<SignalPrefill | null>(null);
+  const effectiveSignalPrefill = signalPrefill ?? libraryPrefill;
+  const handleSignalPrefillConsumed = () => {
+    setLibraryPrefill(null);
+    onSignalPrefillConsumed?.();
+  };
 
   useEffect(() => {
     supabase.from("diagnostic_profiles").select("brand_assessment_completed_at").limit(1).maybeSingle()
@@ -4294,12 +4302,12 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
     setActiveTab("create");
   };
 
-  // When signalPrefill arrives, switch to create tab
+  // When signalPrefill arrives (external or from library), switch to create tab
   useEffect(() => {
-    if (signalPrefill) {
+    if (effectiveSignalPrefill) {
       setActiveTab("create");
     }
-  }, [signalPrefill]);
+  }, [effectiveSignalPrefill]);
 
   // When draftPrefill arrives (user opened an existing draft), switch to create tab
   useEffect(() => {
@@ -4380,9 +4388,9 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
         })}
       </div>
 
-      {activeTab === "create" && <CreateTab planPrefill={planPrefill} signalPrefill={signalPrefill} onSignalPrefillConsumed={onSignalPrefillConsumed} draftPrefill={draftPrefill} onDraftPrefillConsumed={onDraftPrefillConsumed} />}
+      {activeTab === "create" && <CreateTab planPrefill={planPrefill} signalPrefill={effectiveSignalPrefill} onSignalPrefillConsumed={handleSignalPrefillConsumed} draftPrefill={draftPrefill} onDraftPrefillConsumed={onDraftPrefillConsumed} />}
       {activeTab === "plan" && <PlanTab onGenerateFromPlan={handleGenerateFromPlan} />}
-      {activeTab === "library" && <LibraryTab onSwitchToCreate={() => setActiveTab("create")} onOpenDraft={onOpenDraft} />}
+      {activeTab === "library" && <LibraryTab onSwitchToCreate={() => setActiveTab("create")} onOpenDraft={onOpenDraft} onWriteFromPost={(prefill) => { setLibraryPrefill(prefill); setActiveTab("create"); }} />}
     </div>
   );
 };
