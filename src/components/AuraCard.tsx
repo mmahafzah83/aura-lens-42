@@ -121,9 +121,11 @@ function Chips({ items }: { items: string[] }) {
     <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
       {items.map((t, i) => (
         <span key={i} style={{
-          fontFamily: SERIF, fontSize: 14, color: INK,
-          padding: "6px 12px", border: `1px solid ${RULE}`, borderRadius: 999,
+          display: "inline-flex", alignItems: "center",
+          fontFamily: SERIF, fontSize: 14, lineHeight: 1.35, color: INK,
+          padding: "12px 14px", border: `1px solid ${RULE}`, borderRadius: 999,
           background: "rgba(27,23,18,0.02)",
+          whiteSpace: "normal", wordBreak: "break-word",
         }}>{t}</span>
       ))}
     </div>
