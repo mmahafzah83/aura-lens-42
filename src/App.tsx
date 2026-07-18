@@ -42,6 +42,7 @@ const AdminGuideHealth = lazy(() => import("./pages/AdminGuideHealth"));
 const AdminStandard = lazy(() => import("./pages/AdminStandard"));
 const OurStory = lazy(() => import("./pages/OurStory"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
+const CardPreview = lazy(() => import("./pages/CardPreview"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -121,6 +122,7 @@ const App = () => (
             <Route path="/carousel-studio" element={<PasswordGate><CarouselStudio /></PasswordGate>} />
             <Route path="/edition" element={<PasswordGate><EditionStudio /></PasswordGate>} />
             <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
+            <Route path="/card-preview" element={<PasswordGate><CardPreview /></PasswordGate>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>
