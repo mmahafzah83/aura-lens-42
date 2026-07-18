@@ -11,6 +11,9 @@ import { TOAST, ERROR } from "@/constants/language";
 import { useCelebrationsEnabled } from "@/hooks/useCelebrationsEnabled";
 import { track } from "@/lib/track";
 
+const trackCaptureCompleted = (capture_type: string, source: string) =>
+  void track("capture_completed", { capture_type, source });
+
 type CaptureType = "link" | "voice" | "text" | "image" | "document";
 
 interface CaptureModalProps {
@@ -448,7 +451,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
         setTranscriptionFailed(false);
         onCaptured();
         window.dispatchEvent(new Event("capture-complete"));
-        void track("capture_completed", { capture_type: captureType, source: "modal" });
+        trackCaptureCompleted(captureType, "modal");
         void maybeTriggerFirstCeremony(session.user.id);
         onOpenChange(false);
 
@@ -646,7 +649,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
       onCaptured();
       // Notify any listening pages (Intelligence, etc.) that a capture completed
       window.dispatchEvent(new Event("capture-complete"));
-      void track("capture_completed", { capture_type: captureType, source: "modal" });
+      trackCaptureCompleted(captureType, "modal");
       onOpenChange(false);
 
       // M3-4 identity drift check (frontend only, fire-and-forget)
@@ -1427,7 +1430,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
               <DocumentUpload onUploaded={async () => {
                 onCaptured();
                 window.dispatchEvent(new Event("capture-complete"));
-                void track("capture_completed", { capture_type: "document", source: "upload" });
+                trackCaptureCompleted("document", "upload");
                 const { data: { user } } = await supabase.auth.getUser();
                 if (user) await maybeTriggerFirstCeremony(user.id);
                 onOpenChange(false);
