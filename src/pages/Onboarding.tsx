@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, ArrowRight, FileText, Check, Eye, EyeOff, Lightbulb, Linkedin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import CountryPicker from "@/components/CountryPicker";
 import { toast } from "sonner";
 import usePageMeta from "@/hooks/usePageMeta";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
