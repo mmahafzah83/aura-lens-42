@@ -626,6 +626,22 @@ const handleDeleteAccount = async () => {
           </AuraCard>
         </div>
 
+        {/* Location */}
+        <SectionHeader
+          label="Location"
+          subtitle="Sets the flag on your Aura Card and helps regionalise your insights."
+        />
+        <div className="space-y-4">
+          <AuraCard variant="default" hover="none">
+            <div style={{ maxWidth: 420, opacity: savingCountry ? 0.6 : 1 }}>
+              <CountryPicker
+                value={profile.country_code}
+                onChange={(name, code) => persistCountry(name, code)}
+              />
+            </div>
+          </AuraCard>
+        </div>
+
         {/* Profile summary */}
         <SectionHeader
           label="Profile summary"
