@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import CountryPicker from "@/components/CountryPicker";
 
 const SECTOR_OPTIONS = [
   "Consulting", "Energy", "Finance", "Government", "Technology",
@@ -27,6 +28,8 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
   const [firm, setFirm] = useState("");
   const [sectorFocus, setSectorFocus] = useState("");
   const [sectorOther, setSectorOther] = useState("");
+  const [country, setCountry] = useState<string | null>(null);
+  const [countryCode, setCountryCode] = useState<string | null>(null);
   const firstNameRef = useRef<HTMLInputElement>(null);
   const firmRef = useRef<HTMLInputElement>(null);
   const sectorRef = useRef<HTMLSelectElement>(null);
@@ -49,7 +52,7 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
     setLoading(true);
     (async () => {
       const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
-        .select("first_name, last_name, firm, sector_focus")
+        .select("first_name, last_name, firm, sector_focus, country, country_code")
         .eq("user_id", userId)
         .maybeSingle();
       if (cancelled) return;
@@ -57,6 +60,8 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
       setFirstName(p.first_name || "");
       setLastName(p.last_name || "");
       setFirm(p.firm || "");
+      setCountry(p.country || null);
+      setCountryCode(p.country_code || null);
       const sf = p.sector_focus || "";
       if (sf && !SECTOR_OPTIONS.includes(sf)) {
         setSectorFocus("Other");
@@ -89,6 +94,8 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
         last_name: lastName.trim() || null,
         firm: firm.trim() || null,
         sector_focus: resolvedSector || null,
+        country: country || null,
+        country_code: countryCode || null,
       })
       .eq("user_id", userId);
     setSaving(false);
@@ -204,6 +211,12 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
                   style={{ ...input, marginTop: 8 }}
                 />
               )}
+            </div>
+            <div>
+              <CountryPicker
+                value={countryCode}
+                onChange={(name, code) => { setCountry(name); setCountryCode(code); }}
+              />
             </div>
 
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 6 }}>
