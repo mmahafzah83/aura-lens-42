@@ -16,6 +16,9 @@ verify_jwt = false
 [functions.check-lifecycle-triggers]
 verify_jwt = false
 
+[functions.aura-card-emails]
+verify_jwt = false
+
 [functions.draft-post]
 verify_jwt = false
 
