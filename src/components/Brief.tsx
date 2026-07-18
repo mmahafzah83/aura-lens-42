@@ -1228,6 +1228,18 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
             fontSize: "clamp(2rem, 4.6vw, 3.2rem)", lineHeight: 1.08,
             letterSpacing: "-0.015em", color: "var(--ink)", margin: "8px 0 16px 0",
           }}>{leadCopy.headline}</h1>
+          {scenario === "published" && published?.linkedinUrl && (
+            <div style={{ margin: "-8px 0 12px 0" }}>
+              <a
+                href={published.linkedinUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ textDecoration: "none" }}
+              >
+                <Mono color="var(--action)" size={11}>Open the post on LinkedIn →</Mono>
+              </a>
+            </div>
+          )}
           <p style={{ margin: 0, fontSize: 17, lineHeight: 1.6, color: "var(--ink-2)" }}>
             {leadCopy.standfirst}
           </p>
