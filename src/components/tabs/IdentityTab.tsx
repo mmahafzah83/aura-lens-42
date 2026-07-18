@@ -18,6 +18,7 @@ import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import MilestoneShareModal, { type MilestoneShareData } from "@/components/MilestoneShareModal";
 import { computeIntelligenceStage, type IntelligenceStage } from "@/components/ui/IntelligenceStageBadge";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
+import AuraCardPanel from "@/components/AuraCardPanel";
 import GuidedJourney from "@/components/GuidedJourney";
 import { useJourneyState } from "@/hooks/useJourneyState";
 
@@ -1231,6 +1232,14 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       <div className="hidden">
         <MilestonesSection userId={authUser?.id ?? null} />
       </div>
+
+      {/* Your Aura Card — readiness gate + shareable card */}
+      <AuraCardPanel
+        onNavigateAssessment={() => setBrandOpen(true)}
+        onNavigateAudit={() => setAuditOpen(true)}
+        onNavigatePhoto={() => fileInputRef.current?.click()}
+        onNavigateSettings={() => { window.location.href = "/settings"; }}
+      />
 
       {/* Modals */}
       <ObjectiveAuditModal
