@@ -565,6 +565,7 @@ const SourcesSubTab = ({
   const retryDocument = useCallback(async (documentId: string) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { toast.error("Please sign in again."); return; }
+    setRetryingIds(prev => { const n = new Set(prev); n.add(documentId); return n; });
     await supabase
       .from("documents")
       .update({ status: "processing", error_message: null } as any)
@@ -574,6 +575,7 @@ const SourcesSubTab = ({
       body: { document_id: documentId },
     });
     if (error) {
+      setRetryingIds(prev => { const n = new Set(prev); n.delete(documentId); return n; });
       console.error("[SourcesSubTab] retry invoke error:", error);
       toast.error(`Retry failed: ${error.message || "unknown"}`);
       await supabase
