@@ -16,6 +16,10 @@ const SPOT = "var(--spot, #7A1F2B)";
 const SERIF = "var(--font-display, 'Newsreader', Georgia, serif)";
 const MONO = "'IBM Plex Mono', ui-monospace, monospace";
 
+// Skills variant is parked while we rework it. Flip to true to bring back
+// the VOICE / SKILLS toggle and render both variants.
+const SHOW_SKILLS = false;
+
 interface Readiness {
   assessment: boolean;
   skills: boolean;
@@ -215,29 +219,31 @@ export default function AuraCardPanel({
         </div>
 
         {/* Voice / Skills toggle */}
-        <div role="tablist" aria-label="Card variant" style={{ display: "inline-flex", border: `1px solid ${RULE}`, background: "transparent" }}>
-          {(["voice", "skills"] as const).map((v) => {
-            const active = variant === v;
-            return (
-              <button
-                key={v}
-                role="tab"
-                aria-selected={active}
-                onClick={() => setVariant(v)}
-                style={{
-                  fontFamily: MONO, fontSize: 11, letterSpacing: "0.12em",
-                  textTransform: "uppercase",
-                  padding: "8px 14px",
-                  background: active ? INK : "transparent",
-                  color: active ? PAPER : INK_2,
-                  border: 0, cursor: "pointer",
-                }}
-              >
-                {v}
-              </button>
-            );
-          })}
-        </div>
+        {SHOW_SKILLS && (
+          <div role="tablist" aria-label="Card variant" style={{ display: "inline-flex", border: `1px solid ${RULE}`, background: "transparent" }}>
+            {(["voice", "skills"] as const).map((v) => {
+              const active = variant === v;
+              return (
+                <button
+                  key={v}
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setVariant(v)}
+                  style={{
+                    fontFamily: MONO, fontSize: 11, letterSpacing: "0.12em",
+                    textTransform: "uppercase",
+                    padding: "8px 14px",
+                    background: active ? INK : "transparent",
+                    color: active ? PAPER : INK_2,
+                    border: 0, cursor: "pointer",
+                  }}
+                >
+                  {v}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </header>
 
       {!readiness.loaded ? (
