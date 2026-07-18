@@ -3082,6 +3082,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
   const [profile, setProfile] = useState<{ first_name?: string | null; level?: string | null; avatar_url?: string | null } | null>(null);
   const [topSignal, setTopSignal] = useState<{ id: string; signal_title: string } | null>(null);
   const [signalCount, setSignalCount] = useState<number>(0);
+  const [hasLinkedIn, setHasLinkedIn] = useState<boolean>(true); // default true → hides tutorial until we know
   const navigate = useNavigate();
   // Race-fix: don't let realtime INSERTs trigger a parallel refetch
   // before the initial loadPosts() has settled.
@@ -3092,6 +3093,17 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
     loadPosts().finally(() => { initialLoadDoneRef.current = true; });
     loadProfile();
     loadSignalContext();
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setHasLinkedIn(false); return; }
+      const { data } = await supabase
+        .from("linkedin_connections")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .maybeSingle();
+      setHasLinkedIn(!!data);
+    })();
   }, []);
 
   // Realtime: refetch library when this user's linkedin_posts change.
