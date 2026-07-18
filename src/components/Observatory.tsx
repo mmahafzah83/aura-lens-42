@@ -638,7 +638,6 @@ const Observatory = ({
   const [loadError, setLoadError] = useState(false);
   const [entryCount, setEntryCount] = useState(0);
   const [evidenceCount, setEvidenceCount] = useState(0);
-  const [movesCount, setMovesCount] = useState(0);
   const [signalsTotal, setSignalsTotal] = useState(0);
   const [imprint, setImprint] = useState<{
     score: number | null;
