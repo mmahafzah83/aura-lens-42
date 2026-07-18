@@ -3090,6 +3090,13 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
         _source: "linkedin_posts" as const,
       }));
 
+    // Non-carousel linkedin_posts drafts (e.g. rows left behind when
+    // linkedin-publish EF fails after the row is inserted).
+    const liPostDrafts: SavedPost[] = (liRes.data || [])
+      .filter((p: any) => p.tracking_status === "draft" && p.content_type !== "carousel")
+      .filter((p: any) => p.post_text && p.post_text.trim().length >= 20)
+      .map((p: any) => ({ ...p, _source: "linkedin_posts" as const }));
+
     // Published linkedin posts — filter out empty/short post_text
     const liPublished: SavedPost[] = (liRes.data || [])
       .filter((p: any) => p.post_text && p.post_text.trim().length >= 20)
@@ -3099,7 +3106,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
         _source: "linkedin_posts" as const,
       }));
 
-    const allDrafts = [...ciDrafts, ...liCarouselDrafts].sort(
+    const allDrafts = [...ciDrafts, ...liCarouselDrafts, ...liPostDrafts].sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
     );
     setDrafts(allDrafts);
@@ -3503,7 +3510,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                             language: ((p.source_metadata as any)?._language === "ar" ? "ar" : "en"),
                             type: mappedType,
                             topic: (p.source_metadata as any)?.topic || null,
-                            _source: "content_items",
+                            _source: p._source,
                           });
                         }}
                         title="Edit draft"
