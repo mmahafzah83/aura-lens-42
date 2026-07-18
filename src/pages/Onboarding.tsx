@@ -824,8 +824,8 @@ const Onboarding = () => {
   if (showConnectStep) {
     return cardShell(
       <>
-        {eyebrow("Final step — Bring your presence in")}
-        {heading("Connect LinkedIn to bring your presence to life.")}
+        {eyebrow("Before your assessment")}
+        {heading("Connect LinkedIn — so Aura reads your real presence before it assesses you.")}
         <p className="mb-4" style={{ fontSize: 15, lineHeight: 1.7, color: "var(--ink-2)" }}>
           Aura will read your post analytics automatically — impressions, engagement, follower trends. Read-only, never posts without you.
         </p>
