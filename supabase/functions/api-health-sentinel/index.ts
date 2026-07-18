@@ -49,10 +49,11 @@ const checkPerplexity = (key: string) => probe("perplexity", () => fetch("https:
   body: JSON.stringify({ model: "sonar", max_tokens: 16, messages: [{ role: "user", content: "hi" }] }),
 }));
 
-const checkResend = (key: string) => probe("resend", () => fetch("https://api.resend.com/emails", {
-  method: "GET",
-  headers: { Authorization: `Bearer ${key}` },
-}));
+// NOTE: Resend reachability is intentionally NOT probed here.
+// Send-only API keys return 401 on GET /emails by design, which produced a
+// permanent false-critical alert. Email health is judged by OUTCOME via the
+// `email.crons_ran_nothing_sent` check in aura-health-audit, which fires only
+// if cron jobs ran in the last 24h and lifecycle_email_log gained zero rows.
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -122,13 +123,11 @@ Deno.serve(async (req) => {
     const OPENAI = Deno.env.get("OPENAI_API_KEY") || "";
     const ANTHROPIC = Deno.env.get("ANTHROPIC_API_KEY") || "";
     const PERPLEXITY = Deno.env.get("PERPLEXITY_API_KEY") || "";
-    const RESEND = Deno.env.get("RESEND_API_KEY") || "";
 
     const results = await Promise.all([
       checkOpenAI(OPENAI),
       checkAnthropic(ANTHROPIC),
       checkPerplexity(PERPLEXITY),
-      checkResend(RESEND),
     ]);
 
     for (const r of results) {
@@ -150,19 +149,16 @@ Deno.serve(async (req) => {
         anthropic: "writing your Brand Assessments and LinkedIn posts",
         openai: "understanding and filing your captures",
         perplexity: "finding fresh articles and industry trends",
-        resend: "sending your emails and invites",
       };
       const STATUS_PAGE: Record<string, string> = {
         anthropic: "https://status.anthropic.com",
         openai: "https://status.openai.com",
         perplexity: "https://status.perplexity.com",
-        resend: "https://resend.com/status",
       };
       const KEY_NAME: Record<string, string> = {
         anthropic: "ANTHROPIC_API_KEY",
         openai: "OPENAI_API_KEY",
         perplexity: "PERPLEXITY_API_KEY",
-        resend: "RESEND_API_KEY",
       };
 
       // Read the two previous runs (before this one was inserted, current insert is rows[0] if included)

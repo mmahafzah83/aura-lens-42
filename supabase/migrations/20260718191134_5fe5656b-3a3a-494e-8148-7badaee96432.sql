@@ -1,0 +1,1 @@
+update ops_alerts set status='resolved', resolved_at=now() where status='open' and (subject ilike '%resend%' or body ilike '%resend%' or what ilike '%resend%');
