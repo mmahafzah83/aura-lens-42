@@ -31,6 +31,9 @@ interface SourceEntry {
   file_size?: number | null;
   status?: string | null;
   error_message?: string | null;
+  pages_read?: number | null;
+  pages_total?: number | null;
+  failure_code?: string | null;
 }
 
 type FilterKey = "all" | "link" | "image" | "text" | "voice" | "document";
@@ -70,6 +73,27 @@ const PAGE_SIZE = 20;
 
 const DOC_PROCESSING_TIMEOUT_MS = 10 * 60 * 1000;
 const DOC_SUCCESS_STATUSES = new Set(["processed", "completed", "ready"]);
+
+// Honest copy for each failure_code emitted by the ingest-document job spine.
+// Mirrors the server-side FAILURE_COPY so the card reads the same words the
+// user would see in an ops alert.
+const FAILURE_CODE_COPY: Record<string, { headline: string; detail: string | null }> = {
+  password_protected: { headline: "This PDF is password-protected", detail: "We can't read encrypted PDFs. Remove the password and re-upload." },
+  corrupt_file: { headline: "This file appears corrupted", detail: "The bytes we received won't parse as a PDF." },
+  no_text_layer: { headline: "No readable text layer", detail: "This looks like an image-only PDF and OCR didn't find matches." },
+  too_dense: { headline: "This document is too visually dense", detail: "We're looking into how to read documents like this reliably." },
+  unsupported_type: { headline: "Unsupported file type", detail: null },
+  download_failed: { headline: "Couldn't download the file", detail: "Storage didn't return the file bytes." },
+  partial_success: { headline: "Read most of the document", detail: "A few pages didn't come through, but we captured the majority." },
+  internal_error: { headline: "Something went wrong", detail: null },
+};
+
+function failureCopyFrom(entry: SourceEntry): { headline: string; detail: string | null } {
+  if (entry.failure_code && FAILURE_CODE_COPY[entry.failure_code]) {
+    return FAILURE_CODE_COPY[entry.failure_code];
+  }
+  return humanizeDocError(entry.error_message);
+}
 
 function isDocProcessingStuck(status: string | null | undefined, createdAt: string): boolean {
   if (status !== "processing") return false;
@@ -509,7 +533,7 @@ const SourcesSubTab = ({
 
     const [entriesRes, docsRes] = await Promise.all([
       supabase.from("entries").select("id, type, title, content, summary, image_url, skill_pillar, framework_tag, pinned, created_at"),
-      supabase.from("documents").select("id, filename, file_url, file_type, status, summary, page_count, file_size, created_at, error_message"),
+      supabase.from("documents").select("id, filename, file_url, file_type, status, summary, page_count, file_size, created_at, error_message, pages_read, pages_total"),
     ]);
 
     if (entriesRes.error) { toast.error("Couldn't load sources"); setLoading(false); return; }
@@ -526,7 +550,25 @@ const SourcesSubTab = ({
         dedupedDocsByName.set(key, d);
       }
     }
-    const docItems: SourceEntry[] = Array.from(dedupedDocsByName.values()).map((d: any) => ({
+    const docList = Array.from(dedupedDocsByName.values());
+
+    // Newest job per document, so the failure copy is authoritative.
+    let jobsByDoc = new Map<string, { failure_code: string | null; error_detail: string | null }>();
+    const docIds = docList.map((d: any) => d.id);
+    if (docIds.length > 0) {
+      const { data: jobs } = await supabase
+        .from("document_jobs" as any)
+        .select("document_id, failure_code, error_detail, created_at")
+        .in("document_id", docIds)
+        .order("created_at", { ascending: false });
+      for (const j of (jobs || []) as any[]) {
+        if (!jobsByDoc.has(j.document_id)) {
+          jobsByDoc.set(j.document_id, { failure_code: j.failure_code, error_detail: j.error_detail });
+        }
+      }
+    }
+
+    const docItems: SourceEntry[] = docList.map((d: any) => ({
       id: d.id,
       type: "document",
       title: d.filename,
@@ -543,6 +585,9 @@ const SourcesSubTab = ({
       file_size: d.file_size,
       status: d.status,
       error_message: d.error_message,
+      pages_read: d.pages_read,
+      pages_total: d.pages_total,
+      failure_code: jobsByDoc.get(d.id)?.failure_code ?? null,
     }));
 
     const combined = [...entryItems, ...docItems];
@@ -617,6 +662,69 @@ const SourcesSubTab = ({
     window.addEventListener(DOCUMENT_STATUS_EVENT, handleDocumentStatusChange);
     return () => window.removeEventListener(DOCUMENT_STATUS_EVENT, handleDocumentStatusChange);
   }, [loadEntries]);
+
+  // Realtime: subscribe to changes on this user's documents so the card
+  // reflects status/pages_read/pages_total the moment the job spine writes
+  // them — no reload needed. Same pattern the Brief uses for signals.
+  useEffect(() => {
+    let cancelled = false;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (cancelled || !user) return;
+
+      channel = supabase
+        .channel(`documents:${user.id}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "documents", filter: `user_id=eq.${user.id}` },
+          (payload) => {
+            const row: any = payload.new || payload.old;
+            if (!row?.id) return;
+            if (payload.eventType === "DELETE") {
+              setEntries((prev) => prev.filter((e) => !(e.type === "document" && e.id === row.id)));
+              return;
+            }
+            setEntries((prev) => {
+              const idx = prev.findIndex((e) => e.type === "document" && e.id === row.id);
+              if (idx === -1) return prev;
+              const next = prev.slice();
+              next[idx] = {
+                ...next[idx],
+                title: row.filename ?? next[idx].title,
+                summary: row.summary ?? next[idx].summary,
+                content: row.summary || next[idx].content,
+                file_url: row.file_url ?? next[idx].file_url,
+                file_type: row.file_type ?? next[idx].file_type,
+                page_count: row.page_count ?? next[idx].page_count,
+                file_size: row.file_size ?? next[idx].file_size,
+                status: row.status ?? next[idx].status,
+                error_message: row.error_message ?? next[idx].error_message,
+                pages_read: row.pages_read ?? next[idx].pages_read,
+                pages_total: row.pages_total ?? next[idx].pages_total,
+              };
+              return next;
+            });
+            // Clear optimistic "Retrying…" once the row leaves processing.
+            if (row.status && row.status !== "processing" && row.status !== "pending") {
+              setRetryingIds((prev) => {
+                if (!prev.has(row.id)) return prev;
+                const n = new Set(prev);
+                n.delete(row.id);
+                return n;
+              });
+            }
+          },
+        )
+        .subscribe();
+    })();
+
+    return () => {
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, []);
 
   // Client-side filter + search + sort
   const visibleEntries = useMemo(() => {
@@ -845,34 +953,42 @@ const SourcesSubTab = ({
                           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                             <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: "var(--warning)" }} />
                             <p style={{ color: "var(--warning)", fontSize: 12, lineHeight: 1.5, margin: 0, fontWeight: 500 }}>
-                              {retryingIds.has(entry.id) ? "Retrying…" : docStatus === "pending" ? "Queued…" : "Reading…"}
+                              {retryingIds.has(entry.id)
+                                ? "Retrying…"
+                                : docStatus === "pending"
+                                  ? "Queued…"
+                                  : entry.pages_total && entry.pages_total > 0
+                                    ? `Reading — ${entry.pages_read ?? 0} of ${entry.pages_total} pages`
+                                    : "Reading…"}
                             </p>
                             <span style={{ color: "var(--glass-2)", fontSize: 12 }}>· Started {relativeTime(entry.created_at)}</span>
                           </div>
                           {docStatus === "pending" && (
                             <button
                               onClick={(ev) => { ev.stopPropagation(); retryDocument(entry.id); }}
-                              style={{ background: "transparent", border: "none", color: "var(--brand)", fontSize: 12, padding: 0, marginTop: 4, cursor: "pointer", textDecoration: "underline" }}
+                              disabled={retryingIds.has(entry.id)}
+                              style={{ background: "transparent", border: "none", color: "var(--brand)", fontSize: 12, padding: 0, marginTop: 4, cursor: retryingIds.has(entry.id) ? "default" : "pointer", opacity: retryingIds.has(entry.id) ? 0.6 : 1, textDecoration: "underline" }}
                             >
-                              Tap to retry
+                              {retryingIds.has(entry.id) ? "Retrying…" : "Tap to retry"}
                             </button>
                           )}
                         </div>
                       ) : isErrored ? (
                         <div style={{ margin: "0 0 6px" }}>
                           <p style={{ color: "var(--error)", fontSize: 12, lineHeight: 1.5, margin: 0, fontWeight: 500 }}>
-                            {humanizeDocError(entry.error_message).headline}
+                            {failureCopyFrom(entry).headline}
                           </p>
-                          {humanizeDocError(entry.error_message).detail && (
+                          {failureCopyFrom(entry).detail && (
                             <p style={{ color: "var(--glass-2)", fontSize: 12, lineHeight: 1.45, margin: "2px 0 0", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                              {humanizeDocError(entry.error_message).detail}
+                              {failureCopyFrom(entry).detail}
                             </p>
                           )}
                           <button
                             onClick={(ev) => { ev.stopPropagation(); retryDocument(entry.id); }}
-                            style={{ background: "transparent", border: "none", color: "var(--brand)", fontSize: 12, padding: 0, marginTop: 4, cursor: "pointer", textDecoration: "underline" }}
+                            disabled={retryingIds.has(entry.id)}
+                            style={{ background: "transparent", border: "none", color: "var(--brand)", fontSize: 12, padding: 0, marginTop: 4, cursor: retryingIds.has(entry.id) ? "default" : "pointer", opacity: retryingIds.has(entry.id) ? 0.6 : 1, textDecoration: "underline" }}
                           >
-                            Tap to retry
+                            {retryingIds.has(entry.id) ? "Retrying…" : "Tap to retry"}
                           </button>
                         </div>
                       ) : preview ? (
