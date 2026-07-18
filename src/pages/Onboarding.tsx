@@ -79,27 +79,6 @@ const Onboarding = () => {
   // Suppress the home first-visit hint for users who just completed onboarding.
   const goHome = () => {
     seedImprint();
-    // Insert the "Connect LinkedIn" screen at the end of onboarding.
-    // If the user hasn't seen it yet, show it and return; Connect or Skip will
-    // re-enter this function which will then proceed with the ceremony/home nav.
-    try {
-      const connectSeen = localStorage.getItem("aura_onboarding_connect_seen") === "1";
-      if (!connectSeen) {
-        setShowConnectStep(true);
-        // Persist that the user reached this step so it doesn't reappear.
-        (async () => {
-          try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session?.user?.id) {
-              await (supabase.from("diagnostic_profiles" as any) as any)
-                .update({ onboarding_step: 4 })
-                .eq("user_id", session.user.id);
-            }
-          } catch (e) { console.warn("connect-step reached save failed:", e); }
-        })();
-        return;
-      }
-    } catch { /* fall through */ }
     // Play the ceremony exactly once per browser; subsequent visits go straight home.
     try {
       const alreadyPlayed = localStorage.getItem("aura_onboarding_ceremony_seen") === "true";
@@ -149,6 +128,7 @@ const Onboarding = () => {
     setConnectingLI(true);
     markConnectSeen();
     try {
+      try { sessionStorage.setItem("aura_li_return", "/onboarding"); } catch {}
       const { data, error } = await supabase.functions.invoke("linkedin-oauth", {
         body: { action: "get-auth-url", origin: window.location.origin },
       });
@@ -167,8 +147,7 @@ const Onboarding = () => {
   const handleSkipConnect = () => {
     markConnectSeen();
     setShowConnectStep(false);
-    // Re-enter goHome — the flag now lets it pass straight to the ceremony/home.
-    goHome();
+    startBreathingTo(1, "Now let's map what makes you different.");
   };
 
   const seedImprint = () => {
@@ -316,7 +295,7 @@ const Onboarding = () => {
       const p: any = profile || {};
       // Completion redirect — any user with onboarding_step >= 4
       // (or the legacy onboarding_completed flag) can never accidentally restart.
-      if (p && ((p.onboarding_step ?? 0) >= 4 || (p.onboarding_completed && p.first_name))) {
+      if (p && (p.onboarding_step ?? 0) >= 4) {
         goHome();
         return;
       }
@@ -518,6 +497,13 @@ const Onboarding = () => {
       // Kill the race: kick off the article search NOW, at the start of
       // calibration. The existing ref guard makes Step-2 fallback calls no-op.
       triggerArticleSearch();
+      // If the user hasn't seen the Connect LinkedIn screen, show it before calibration.
+      let connectSeen = false;
+      try { connectSeen = localStorage.getItem("aura_onboarding_connect_seen") === "1"; } catch {}
+      if (!connectSeen) {
+        setShowConnectStep(true);
+        return;
+      }
       // Breathing transition into Step 1 (Map your strengths).
       startBreathingTo(1, "Now let's map what makes you different.");
     } catch (e: any) {
@@ -838,8 +824,8 @@ const Onboarding = () => {
   if (showConnectStep) {
     return cardShell(
       <>
-        {eyebrow("Final step — Bring your presence in")}
-        {heading("Connect LinkedIn to bring your presence to life.")}
+        {eyebrow("Before your assessment")}
+        {heading("Connect LinkedIn — so Aura reads your real presence before it assesses you.")}
         <p className="mb-4" style={{ fontSize: 15, lineHeight: 1.7, color: "var(--ink-2)" }}>
           Aura will read your post analytics automatically — impressions, engagement, follower trends. Read-only, never posts without you.
         </p>

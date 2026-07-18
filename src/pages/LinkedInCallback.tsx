@@ -12,6 +12,15 @@ const LinkedInCallback = () => {
 
   useEffect(() => {
     const handleCallback = async () => {
+      const returnTo = sessionStorage.getItem("aura_li_return");
+      const goBack = (fallback: string) => {
+        if (returnTo) {
+          try { sessionStorage.removeItem("aura_li_return"); } catch {}
+          navigate(returnTo);
+        } else {
+          navigate(fallback);
+        }
+      };
       const code = searchParams.get("code");
       const error = searchParams.get("error");
       const errorDescription = searchParams.get("error_description");
@@ -24,14 +33,14 @@ const LinkedInCallback = () => {
         };
         setErrorMsg(messages[error] || errorDescription || `LinkedIn error: ${error}`);
         setStatus("error");
-        setTimeout(() => navigate("/dashboard?tab=influence"), 3000);
+        setTimeout(() => goBack("/dashboard?tab=influence"), 3000);
         return;
       }
 
       if (!code) {
         setErrorMsg("No authorization code received from LinkedIn.");
         setStatus("error");
-        setTimeout(() => navigate("/dashboard?tab=influence"), 3000);
+        setTimeout(() => goBack("/dashboard?tab=influence"), 3000);
         return;
       }
 
@@ -62,7 +71,7 @@ const LinkedInCallback = () => {
             setErrorMsg(msg);
           }
           setStatus("error");
-          setTimeout(() => navigate("/dashboard?tab=influence"), 4000);
+          setTimeout(() => goBack("/dashboard?tab=influence"), 4000);
           return;
         }
 
@@ -85,11 +94,11 @@ const LinkedInCallback = () => {
         }
 
         setStatus("success");
-        setTimeout(() => navigate("/dashboard?tab=influence"), 1500);
+        setTimeout(() => goBack("/dashboard?tab=influence"), 1500);
       } catch (err: any) {
         setErrorMsg(err.message || "An unexpected error occurred.");
         setStatus("error");
-        setTimeout(() => navigate("/dashboard?tab=influence"), 4000);
+        setTimeout(() => goBack("/dashboard?tab=influence"), 4000);
       }
     };
 
