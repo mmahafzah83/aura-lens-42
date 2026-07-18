@@ -308,7 +308,7 @@ const Onboarding = () => {
       }
       const { data: profile } = await supabase
         .from("diagnostic_profiles" as any)
-        .select("first_name, onboarding_completed, onboarding_step, skill_ratings")
+        .select("first_name, onboarding_completed, onboarding_step, skill_ratings, country, country_code")
         .eq("user_id", session.user.id)
         .maybeSingle();
       const p: any = profile || {};
@@ -336,6 +336,8 @@ const Onboarding = () => {
       if (p.sector_focus) setSectorFocus(p.sector_focus);
       if (p.core_practice) setCorePractice(p.core_practice);
       if (p.north_star_goal) setNorthStar(p.north_star_goal);
+      if (p.country) setCountry(p.country);
+      if (p.country_code) setCountryCode(p.country_code);
       setChecking(false);
     })();
   }, [navigate]);
@@ -494,6 +496,8 @@ const Onboarding = () => {
         sector_focus: sectorFocus,
         core_practice: corePractice.trim() || null,
         north_star_goal: northStar.trim() || null,
+        country: country || null,
+        country_code: countryCode || null,
         onboarding_completed: true,
         completed: true,
       };
