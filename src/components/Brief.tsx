@@ -859,6 +859,39 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
   const topSignal = away.status === "ready" && away.data.signals.length > 0 ? away.data.signals[0] : null;
   const draft = draftState.status === "ready" ? draftState.data.draft : null;
 
+  // activation_first_signal — fire at most ONCE per user, the first time a
+  // topSignal renders and no prior activation_first_signal event exists.
+  const firstSignalFiredRef = useRef(false);
+  useEffect(() => {
+    if (!user?.id || !topSignal || firstSignalFiredRef.current) return;
+    const flagKey = `aura_activation_first_signal:${user.id}`;
+    try { if (localStorage.getItem(flagKey)) { firstSignalFiredRef.current = true; return; } } catch { /* noop */ }
+    firstSignalFiredRef.current = true;
+    (async () => {
+      try {
+        const { data: existing } = await (supabase.from("product_events" as any) as any)
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("event", "activation_first_signal")
+          .limit(1);
+        if (Array.isArray(existing) && existing.length > 0) {
+          try { localStorage.setItem(flagKey, "1"); } catch { /* noop */ }
+          return;
+        }
+        const createdAt = (user as any)?.created_at;
+        const daysSinceSignup = createdAt
+          ? Math.max(0, Math.floor((Date.now() - new Date(createdAt).getTime()) / 86400000))
+          : null;
+        const capturesToReach = proof.status === "ready" ? proof.data.entriesTotal : null;
+        await track("activation_first_signal", {
+          days_since_signup: daysSinceSignup,
+          captures_to_reach: capturesToReach,
+        });
+        try { localStorage.setItem(flagKey, "1"); } catch { /* noop */ }
+      } catch { /* silent — tracking never breaks UI */ }
+    })();
+  }, [user?.id, topSignal, proof]);
+
   // Strategic Read data — surfaces the assessment output when the user has
   // not yet published anything. Values come straight from the profile loader.
   const brandAssessment = profile?.brandAssessment ?? null;
