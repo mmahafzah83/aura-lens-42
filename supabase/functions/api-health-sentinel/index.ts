@@ -15,79 +15,44 @@ function json(body: unknown, status = 200) {
 
 type Result = { provider: string; ok: boolean; status: number; detail?: string };
 
-async function checkOpenAI(key: string): Promise<Result> {
+// Strict rule: ok is TRUE only when HTTP status is 2xx. Any 4xx/5xx is recorded
+// with the code and the first 200 chars of the response body.
+async function probe(provider: string, req: () => Promise<Response>): Promise<Result> {
   try {
-    const r = await fetch("https://api.openai.com/v1/embeddings", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "text-embedding-3-small", input: "ping" }),
-    });
-    return { provider: "openai", ok: r.ok, status: r.status, detail: r.ok ? "" : (await r.text()).slice(0, 200) };
-  } catch (e) {
-    return { provider: "openai", ok: false, status: 0, detail: (e as Error).message };
-  }
-}
-
-async function checkAnthropic(key: string): Promise<Result> {
-  try {
-    const r = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": key,
-        "anthropic-version": "2023-06-01",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5",
-        max_tokens: 1,
-        messages: [{ role: "user", content: "hi" }],
-      }),
-    });
-    return { provider: "anthropic", ok: r.ok, status: r.status, detail: r.ok ? "" : (await r.text()).slice(0, 200) };
-  } catch (e) {
-    return { provider: "anthropic", ok: false, status: 0, detail: (e as Error).message };
-  }
-}
-
-async function checkPerplexity(key: string): Promise<Result> {
-  try {
-    const r = await fetch("https://api.perplexity.ai/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "sonar",
-        max_tokens: 16,
-        messages: [{ role: "user", content: "hi" }],
-      }),
-    });
-    return { provider: "perplexity", ok: r.ok, status: r.status, detail: r.ok ? "" : (await r.text()).slice(0, 200) };
-  } catch (e) {
-    return { provider: "perplexity", ok: false, status: 0, detail: (e as Error).message };
-  }
-}
-
-async function checkResend(key: string): Promise<Result> {
-  try {
-    const r = await fetch("https://api.resend.com/emails", {
-      method: "GET",
-      headers: { Authorization: `Bearer ${key}` },
-    });
-
-    if (r.ok) return { provider: "resend", ok: true, status: r.status, detail: "" };
-
-    const text = (await r.text()).slice(0, 200);
-    const isSendOnly =
-      r.status === 401 && /restricted_api_key|restricted to only send/i.test(text);
-
-    if (isSendOnly) {
-      return { provider: "resend", ok: true, status: r.status, detail: "send-only key (healthy)" };
+    const r = await req();
+    const is2xx = r.status >= 200 && r.status < 300;
+    let bodySnippet = "";
+    if (!is2xx) {
+      try { bodySnippet = (await r.text()).slice(0, 200); } catch { /* ignore */ }
     }
-
-    return { provider: "resend", ok: false, status: r.status, detail: text };
+    return { provider, ok: is2xx, status: r.status, detail: is2xx ? "" : bodySnippet };
   } catch (e) {
-    return { provider: "resend", ok: false, status: 0, detail: (e as Error).message };
+    return { provider, ok: false, status: 0, detail: (e as Error).message };
   }
 }
+
+const checkOpenAI = (key: string) => probe("openai", () => fetch("https://api.openai.com/v1/embeddings", {
+  method: "POST",
+  headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+  body: JSON.stringify({ model: "text-embedding-3-small", input: "ping" }),
+}));
+
+const checkAnthropic = (key: string) => probe("anthropic", () => fetch("https://api.anthropic.com/v1/messages", {
+  method: "POST",
+  headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "Content-Type": "application/json" },
+  body: JSON.stringify({ model: "claude-haiku-4-5", max_tokens: 1, messages: [{ role: "user", content: "hi" }] }),
+}));
+
+const checkPerplexity = (key: string) => probe("perplexity", () => fetch("https://api.perplexity.ai/chat/completions", {
+  method: "POST",
+  headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+  body: JSON.stringify({ model: "sonar", max_tokens: 16, messages: [{ role: "user", content: "hi" }] }),
+}));
+
+const checkResend = (key: string) => probe("resend", () => fetch("https://api.resend.com/emails", {
+  method: "GET",
+  headers: { Authorization: `Bearer ${key}` },
+}));
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
