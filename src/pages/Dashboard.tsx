@@ -125,6 +125,18 @@ const Dashboard = () => {
     document.documentElement.setAttribute("data-fx-score-ring", "true");
   }, []);
 
+  // Fire session_start once per browser session (guarded by sessionStorage flag).
+  useEffect(() => {
+    try {
+      const sid = getTrackSessionId();
+      if (!sid) return;
+      const flagKey = `aura_session_start_fired:${sid}`;
+      if (sessionStorage.getItem(flagKey)) return;
+      sessionStorage.setItem(flagKey, "1");
+      void track("session_start", { surface: "dashboard" });
+    } catch { /* noop */ }
+  }, []);
+
   // In-session Imprint recompute: after any capture-complete event, debounce
   // 25s (letting ingest-capture → extract-evidence → detect-signals land) then
   // fire-and-forget compute-imprint. Realtime subscribers on imprint_snapshots
