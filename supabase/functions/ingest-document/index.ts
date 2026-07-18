@@ -826,7 +826,7 @@ async function runNextStage(
     return;
   }
 
-  let next: "extracting" | "complete" | "failed" | "chunking" = "failed";
+  let next: "extracting" | "complete" | "failed" = "failed";
   if (job.stage === "queued" || job.stage === "probing") {
     if (job.stage === "queued") {
       await heartbeat(admin, job.id, { stage: "probing" });
@@ -843,7 +843,7 @@ async function runNextStage(
     return;
   }
 
-  if (next === "extracting" || next === "chunking") {
+  if (next === "extracting") {
     // Chain the next slice/finalize without blocking the current invocation.
     // @ts-ignore EdgeRuntime.waitUntil
     EdgeRuntime.waitUntil((async () => {
