@@ -352,7 +352,9 @@ Extract 3-8 fragments. Focus on ACTIONABLE, STRATEGIC content.`;
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Extract evidence from:\n\n${content.slice(0, 12000)}` },
+          // Non-document sources (entry / framework / intelligence) are already
+          // single rows and small — no truncation. Documents take the sliced path above.
+          { role: "user", content: `Extract evidence from:\n\n${content}` },
         ],
         response_format: { type: "json_object" },
       }),
