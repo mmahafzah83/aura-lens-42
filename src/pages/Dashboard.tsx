@@ -36,6 +36,7 @@ import MilestoneNotification from "@/components/MilestoneNotification";
 import useTierFromImprint from "@/hooks/useTierFromImprint";
 import { useCelebrationsEnabled } from "@/hooks/useCelebrationsEnabled";
 import usePageMeta from "@/hooks/usePageMeta";
+import { track, getTrackSessionId } from "@/lib/track";
 
 import AuthorityTab from "@/components/tabs/AuthorityTab";
 import ImpactTab from "@/components/tabs/ImpactTab";
