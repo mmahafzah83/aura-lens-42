@@ -3049,7 +3049,7 @@ const LinkedInPreview = ({
   );
 };
 
-const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () => void; onOpenDraft?: (draft: { id: string; body: string; language: "en" | "ar"; type: "carousel" | "framework" | "linkedin_post"; topic?: string | null; _source?: "content_items" | "linkedin_posts" }) => void }) => {
+const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwitchToCreate: () => void; onOpenDraft?: (draft: { id: string; body: string; language: "en" | "ar"; type: "carousel" | "framework" | "linkedin_post"; topic?: string | null; _source?: "content_items" | "linkedin_posts" }) => void; onWriteFromPost?: (prefill: SignalPrefill) => void }) => {
   const [drafts, setDrafts] = useState<SavedPost[]>([]);
   const [publishedPosts, setPublishedPosts] = useState<SavedPost[]>([]);
   const [publishedTotal, setPublishedTotal] = useState<number>(0);
@@ -4077,6 +4077,27 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                           {copiedId === p.id ? <Check className="w-3.5 h-3.5" /> : <Linkedin className="w-3.5 h-3.5" />}
                           {copiedId === p.id ? "Copied" : "Post on LinkedIn →"}
                         </button>
+                        {onWriteFromPost && p.post_text && (
+                          <button
+                            onClick={() => {
+                              const topic = firstNonEmptyLine(p.post_text) || "Write from this post";
+                              const context = (p.post_text || "").slice(0, 4000);
+                              onWriteFromPost({
+                                topic,
+                                context,
+                                sourceType: "past_post",
+                                sourceTitle: topic,
+                                contentFormat: "post",
+                                source: "library_past_post",
+                              });
+                            }}
+                            style={{ fontSize: 14, color: "var(--spot)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
+                            className="hover:opacity-80 transition-opacity"
+                            title="Draft a new post inspired by this one"
+                          >
+                            <Pencil className="w-3.5 h-3.5" /> Write from this →
+                          </button>
+                        )}
                         <button
                           onClick={() => setPendingDeleteId(p.id)}
                           style={{ fontSize: 14, color: "var(--error)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
@@ -4262,6 +4283,14 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
   const [activeTab, setActiveTab] = useState<AuthoritySubTab>("create");
   const [brandDone, setBrandDone] = useState<boolean | null>(null);
   const [planPrefill, setPlanPrefill] = useState<PlanPrefill | null>(null);
+  // Local prefill channel for "Write from this" in the Library. Reuses the
+  // same SignalPrefill contract CreateTab already consumes.
+  const [libraryPrefill, setLibraryPrefill] = useState<SignalPrefill | null>(null);
+  const effectiveSignalPrefill = signalPrefill ?? libraryPrefill;
+  const handleSignalPrefillConsumed = () => {
+    setLibraryPrefill(null);
+    onSignalPrefillConsumed?.();
+  };
 
   useEffect(() => {
     supabase.from("diagnostic_profiles").select("brand_assessment_completed_at").limit(1).maybeSingle()
@@ -4273,12 +4302,12 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
     setActiveTab("create");
   };
 
-  // When signalPrefill arrives, switch to create tab
+  // When signalPrefill arrives (external or from library), switch to create tab
   useEffect(() => {
-    if (signalPrefill) {
+    if (effectiveSignalPrefill) {
       setActiveTab("create");
     }
-  }, [signalPrefill]);
+  }, [effectiveSignalPrefill]);
 
   // When draftPrefill arrives (user opened an existing draft), switch to create tab
   useEffect(() => {
@@ -4359,9 +4388,9 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
         })}
       </div>
 
-      {activeTab === "create" && <CreateTab planPrefill={planPrefill} signalPrefill={signalPrefill} onSignalPrefillConsumed={onSignalPrefillConsumed} draftPrefill={draftPrefill} onDraftPrefillConsumed={onDraftPrefillConsumed} />}
+      {activeTab === "create" && <CreateTab planPrefill={planPrefill} signalPrefill={effectiveSignalPrefill} onSignalPrefillConsumed={handleSignalPrefillConsumed} draftPrefill={draftPrefill} onDraftPrefillConsumed={onDraftPrefillConsumed} />}
       {activeTab === "plan" && <PlanTab onGenerateFromPlan={handleGenerateFromPlan} />}
-      {activeTab === "library" && <LibraryTab onSwitchToCreate={() => setActiveTab("create")} onOpenDraft={onOpenDraft} />}
+      {activeTab === "library" && <LibraryTab onSwitchToCreate={() => setActiveTab("create")} onOpenDraft={onOpenDraft} onWriteFromPost={(prefill) => { setLibraryPrefill(prefill); setActiveTab("create"); }} />}
     </div>
   );
 };
