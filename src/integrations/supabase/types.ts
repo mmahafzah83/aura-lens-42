@@ -2440,6 +2440,30 @@ export type Database = {
         }
         Relationships: []
       }
+      signal_engagements: {
+        Row: {
+          created_at: string
+          last_opened_at: string
+          open_count: number
+          signal_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          last_opened_at?: string
+          open_count?: number
+          signal_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          last_opened_at?: string
+          open_count?: number
+          signal_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       signal_topic_preferences: {
         Row: {
           id: string
