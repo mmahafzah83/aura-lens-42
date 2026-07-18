@@ -268,6 +268,8 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
     draft?: BriefDraft;
     draftCreatedAt?: string;
     openedAt?: string;
+    evidenceDelta?: number;
+    evidenceSummaries?: string[];
   }
   const [signalStates, setSignalStates] = useState<Map<string, SignalState>>(new Map());
 
@@ -319,12 +321,70 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
         existing.openedAt = r.last_opened_at ?? undefined;
         map.set(sid, existing);
       }
+
+      // Evidence delta for published signals only — one batched pair of queries.
+      const publishedEntries = Array.from(publishedMap.entries()).filter(
+        ([, at]) => !!at
+      ) as Array<[string, string]>;
+      if (publishedEntries.length > 0) {
+        const publishedIds = publishedEntries.map(([id]) => id);
+        const sigRes = await (supabase.from("strategic_signals" as any) as any)
+          .select("id, supporting_evidence_ids")
+          .eq("user_id", user.id)
+          .in("id", publishedIds);
+        const sigRows = (sigRes?.data || []) as Array<{ id: string; supporting_evidence_ids: string[] | null }>;
+        const fragToSignals = new Map<string, string[]>();
+        const allFragIds: string[] = [];
+        for (const s of sigRows) {
+          const ids = Array.isArray(s.supporting_evidence_ids) ? s.supporting_evidence_ids : [];
+          for (const fid of ids) {
+            if (!fid) continue;
+            allFragIds.push(fid);
+            const arr = fragToSignals.get(fid) || [];
+            arr.push(s.id);
+            fragToSignals.set(fid, arr);
+          }
+        }
+        if (allFragIds.length > 0) {
+          const fragRes = await supabase.from("evidence_fragments")
+            .select("id, title, content, created_at")
+            .eq("user_id", user.id)
+            .in("id", Array.from(new Set(allFragIds)));
+          const fragRows = (fragRes?.data || []) as Array<{ id: string; title: string | null; content: string | null; created_at: string }>;
+          const publishedAtById = new Map(publishedEntries);
+          const deltaCount = new Map<string, number>();
+          const deltaSummaries = new Map<string, string[]>();
+          for (const f of fragRows) {
+            const linkedSignals = fragToSignals.get(f.id) || [];
+            for (const sid of linkedSignals) {
+              const pAt = publishedAtById.get(sid);
+              if (!pAt) continue;
+              if (new Date(f.created_at).getTime() > new Date(pAt).getTime()) {
+                deltaCount.set(sid, (deltaCount.get(sid) || 0) + 1);
+                const summary = (f.title || f.content || "").toString().trim();
+                if (summary) {
+                  const arr = deltaSummaries.get(sid) || [];
+                  if (arr.length < 5) arr.push(summary.slice(0, 240));
+                  deltaSummaries.set(sid, arr);
+                }
+              }
+            }
+          }
+          for (const [sid, count] of deltaCount) {
+            const existing = map.get(sid) || {};
+            existing.evidenceDelta = count;
+            existing.evidenceSummaries = deltaSummaries.get(sid) || [];
+            map.set(sid, existing);
+          }
+        }
+      }
+
       setSignalStates(map);
     } catch (e) {
       console.warn("[Brief] signal states load failed", e);
       setSignalStates(new Map());
     }
-  }, [user]);
+  }, [user, publishedMap]);
 
   const [imprint, setImprint] = useState<SectionState<ImprintData>>({ status: "loading" });
   const [away, setAway] = useState<SectionState<AwayData>>({ status: "loading" });
@@ -978,12 +1038,27 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
       // PUBLISHED + new evidence since you wrote it
       if (publishedAt && topSignal.lastEvidenceAt &&
           new Date(topSignal.lastEvidenceAt).getTime() > new Date(publishedAt).getTime()) {
+        const delta = state?.evidenceDelta ?? 0;
+        const summaries = state?.evidenceSummaries ?? [];
+        const body =
+          delta >= 2 ? `${delta} things moved on ${title} since you wrote it.`
+          : delta === 1 ? `Something moved on ${title} since you wrote it.`
+          : `${title} has moved since you wrote it.`;
+        const baseContext = [topSignal.what, topSignal.explanation].filter(Boolean).join("\n\n");
+        const publishedDate = new Date(publishedAt).toISOString().slice(0, 10);
+        const deltaBlock = summaries.length > 0
+          ? summaries.map((s, i) => `${i + 1}. ${s}`).join("\n")
+          : "(new evidence available since publication)";
+        const updateContext =
+          `UPDATE POST — the author already published on this signal on ${publishedDate}. ` +
+          `Do not restate the original argument. Frame this as what changed since:\n${deltaBlock}\n\n` +
+          baseContext;
         return {
-          body: `Three things moved on ${title} since you wrote it.`,
+          body,
           cta: "Write the update",
           onClick: () => onDraftToStudio?.({
             topic: topSignal.title,
-            context: [topSignal.what, topSignal.explanation].filter(Boolean).join("\n\n"),
+            context: updateContext,
             signalId: topSignal.id,
             signalTitle: topSignal.title,
             sourceType: "signal_evolution",
