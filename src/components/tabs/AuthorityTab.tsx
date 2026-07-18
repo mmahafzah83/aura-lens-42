@@ -3078,10 +3078,10 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
     setLoading(true);
     const { data: { user: authUser } } = await supabase.auth.getUser();
     const uid = authUser?.id;
-    const [liRes, ciRes, publishedCountRes] = await Promise.all([
+    const [liRes, ciRes, publishedCountRes, auraCountRes, earlierCountRes] = await Promise.all([
       supabase
         .from("linkedin_posts")
-        .select("id, title, post_text, format_type, tracking_status, topic_label, created_at, source_metadata, source_type, published_at, linkedin_url, post_url, source_signal_id, content_type")
+        .select("id, title, post_text, format_type, tracking_status, topic_label, created_at, source_metadata, source_type, authorship, acquisition, published_at, linkedin_url, post_url, source_signal_id, content_type")
         .order("created_at", { ascending: false })
         .limit(100),
       supabase
@@ -3097,8 +3097,24 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
             .eq("user_id", uid)
             .not("published_at", "is", null)
         : Promise.resolve({ count: 0 } as any),
+      uid
+        ? supabase
+            .from("linkedin_posts")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", uid)
+            .in("authorship", ["aura_drafted", "aura_assisted"])
+        : Promise.resolve({ count: 0 } as any),
+      uid
+        ? supabase
+            .from("linkedin_posts")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", uid)
+            .in("authorship", ["user_written", "unknown"])
+        : Promise.resolve({ count: 0 } as any),
     ]);
     setPublishedTotal(publishedCountRes?.count ?? 0);
+    setAuraTotal(auraCountRes?.count ?? 0);
+    setEarlierTotal(earlierCountRes?.count ?? 0);
 
     // Drafts from content_items
     const ciDrafts: SavedPost[] = (ciRes.data || []).map((ci: any) => ({
