@@ -3468,6 +3468,45 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
     );
   }
 
+  // P4: hook = first NON-EMPTY, trimmed line of post_text. Fixes rows whose
+  // post_text starts with blank lines (previously rendered as an empty hook).
+  const firstNonEmptyLine = (text: string | null | undefined): string => {
+    if (!text) return "";
+    for (const line of text.split(/\r?\n/)) {
+      const t = line.trim();
+      if (t) return t;
+    }
+    return "";
+  };
+
+  // Row-level filter shared by drafts and published sections. Client-side.
+  const langOf = (p: SavedPost): "ar" | "en" => {
+    const meta = (p as any).source_metadata as any;
+    if (meta?._language === "ar") return "ar";
+    if (meta?._language === "en") return "en";
+    return p.post_text && isArabicText(p.post_text) ? "ar" : "en";
+  };
+  const searchNeedle = librarySearch.trim().toLowerCase();
+  const matchesFilters = (p: SavedPost, status: "draft" | "published"): boolean => {
+    if (libraryStatus !== "all" && libraryStatus !== status) return false;
+    if (libraryLang !== "all" && langOf(p) !== libraryLang) return false;
+    if (searchNeedle) {
+      const hay = `${(p as any).title || ""} ${(p as any).post_text || ""}`.toLowerCase();
+      if (!hay.includes(searchNeedle)) return false;
+    }
+    return true;
+  };
+  const filteredDrafts = drafts.filter(p => matchesFilters(p, "draft"));
+  const impressionsOf = (id: string): number => {
+    const m = postMetrics[id];
+    return typeof m?.impressions === "number" ? m.impressions : -1;
+  };
+  const applyPublishedSort = (rows: SavedPost[]): SavedPost[] => {
+    if (librarySort !== "top") return rows;
+    // Rows without metrics sink to the bottom (impressionsOf returns -1).
+    return [...rows].sort((a, b) => impressionsOf(b.id) - impressionsOf(a.id));
+  };
+
   return (
     <div
       style={{
