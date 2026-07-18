@@ -850,6 +850,7 @@ export type Database = {
       }
       documents: {
         Row: {
+          attempt_count: number
           created_at: string
           error_message: string | null
           extraction_method: string | null
@@ -861,11 +862,13 @@ export type Database = {
           page_count: number | null
           pages_read: number | null
           pages_total: number | null
+          processing_started_at: string | null
           status: string
           summary: string | null
           user_id: string
         }
         Insert: {
+          attempt_count?: number
           created_at?: string
           error_message?: string | null
           extraction_method?: string | null
@@ -877,11 +880,13 @@ export type Database = {
           page_count?: number | null
           pages_read?: number | null
           pages_total?: number | null
+          processing_started_at?: string | null
           status?: string
           summary?: string | null
           user_id: string
         }
         Update: {
+          attempt_count?: number
           created_at?: string
           error_message?: string | null
           extraction_method?: string | null
@@ -893,6 +898,7 @@ export type Database = {
           page_count?: number | null
           pages_read?: number | null
           pages_total?: number | null
+          processing_started_at?: string | null
           status?: string
           summary?: string | null
           user_id?: string

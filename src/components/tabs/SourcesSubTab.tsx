@@ -110,6 +110,12 @@ function formatBytes(bytes: number | null | undefined): string | null {
 function humanizeDocError(raw: string | null | undefined): { headline: string; detail: string | null } {
   if (!raw) return { headline: "Processing failed", detail: null };
   const msg = raw.toLowerCase();
+  if (msg.startsWith("this document has failed twice")) {
+    return { headline: "We couldn't read this yet", detail: raw };
+  }
+  if (msg.startsWith("reading stopped unexpectedly")) {
+    return { headline: "Reading stopped unexpectedly", detail: null };
+  }
   if (msg.includes("timed out") || msg.includes("aborted") || msg.includes("timeout")) {
     return { headline: "Timed out during extraction", detail: raw };
   }
@@ -474,6 +480,9 @@ const SourcesSubTab = ({
   const [sortKey, setSortKey] = useState<SortKey>("recent");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  // Optimistic "Retrying…" flag per document id — cleared once the row's status
+  // flips out of "processing" on the next loadEntries.
+  const [retryingIds, setRetryingIds] = useState<Set<string>>(new Set());
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const typeCounts = useMemo(() => {
@@ -538,6 +547,17 @@ const SourcesSubTab = ({
 
     const combined = [...entryItems, ...docItems];
     setEntries(combined);
+    // Drop optimistic retrying flags for any doc that has moved out of processing.
+    setRetryingIds(prev => {
+      if (prev.size === 0) return prev;
+      const next = new Set(prev);
+      for (const d of docItems) {
+        if (next.has(d.id) && d.status !== "processing" && d.status !== "pending") {
+          next.delete(d.id);
+        }
+      }
+      return next;
+    });
     setTotalCount(combined.length);
     setHasMore(false);
     setLoading(false);
@@ -562,6 +582,7 @@ const SourcesSubTab = ({
   const retryDocument = useCallback(async (documentId: string) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { toast.error("Please sign in again."); return; }
+    setRetryingIds(prev => { const n = new Set(prev); n.add(documentId); return n; });
     await supabase
       .from("documents")
       .update({ status: "processing", error_message: null } as any)
@@ -571,6 +592,7 @@ const SourcesSubTab = ({
       body: { document_id: documentId },
     });
     if (error) {
+      setRetryingIds(prev => { const n = new Set(prev); n.delete(documentId); return n; });
       console.error("[SourcesSubTab] retry invoke error:", error);
       toast.error(`Retry failed: ${error.message || "unknown"}`);
       await supabase
@@ -823,7 +845,7 @@ const SourcesSubTab = ({
                           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                             <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: "var(--warning)" }} />
                             <p style={{ color: "var(--warning)", fontSize: 12, lineHeight: 1.5, margin: 0, fontWeight: 500 }}>
-                              {docStatus === "pending" ? "Queued…" : "Reading…"}
+                              {retryingIds.has(entry.id) ? "Retrying…" : docStatus === "pending" ? "Queued…" : "Reading…"}
                             </p>
                             <span style={{ color: "var(--glass-2)", fontSize: 12 }}>· Started {relativeTime(entry.created_at)}</span>
                           </div>
