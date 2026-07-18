@@ -25,7 +25,7 @@ interface Profile {
   country?: string | null;
   country_code?: string | null;
   sector_focus?: string | null;
-  primary_strength?: string | null;
+  core_practice?: string | null;
   brand_pillars?: string[] | null;
   audit_results?: Record<string, number> | null;
 }
@@ -39,7 +39,7 @@ function useProfile() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) { setLoading(false); return; }
       const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
-        .select("first_name,last_name,level,avatar_url,country,country_code,sector_focus,primary_strength,brand_pillars,audit_results")
+        .select("first_name,last_name,level,avatar_url,country,country_code,sector_focus,core_practice,brand_pillars,audit_results")
         .eq("user_id", session.user.id)
         .maybeSingle();
       if (!cancelled) { setProfile((data as any) || {}); setLoading(false); }
@@ -184,9 +184,9 @@ export default function AuraCard({ variant }: AuraCardProps) {
 
   const topVoice: string = useMemo(() => {
     if (!profile) return "";
-    return (profile.primary_strength && profile.primary_strength.trim())
-      || (pillars[0] || "")
-      || (profile.sector_focus || "");
+    return (profile.core_practice && profile.core_practice.trim())
+      || (profile.sector_focus && profile.sector_focus.trim())
+      || (pillars[0] || "");
   }, [profile, pillars]);
 
   const radarData = useMemo(() => {
