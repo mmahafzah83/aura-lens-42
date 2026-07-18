@@ -1078,6 +1078,42 @@ export type Database = {
           },
         ]
       }
+      external_costs: {
+        Row: {
+          amount_usd: number
+          created_at: string | null
+          cycle: string
+          id: string
+          last_verified: string | null
+          name: string
+          notes: string | null
+          renews_on: string | null
+          status: string
+        }
+        Insert: {
+          amount_usd?: number
+          created_at?: string | null
+          cycle?: string
+          id?: string
+          last_verified?: string | null
+          name: string
+          notes?: string | null
+          renews_on?: string | null
+          status?: string
+        }
+        Update: {
+          amount_usd?: number
+          created_at?: string | null
+          cycle?: string
+          id?: string
+          last_verified?: string | null
+          name?: string
+          notes?: string | null
+          renews_on?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       facet_states: {
         Row: {
           created_at: string
