@@ -105,6 +105,9 @@ interface RhythmData {
 
 interface PublishedRecent {
   publishedAt: string | null;
+  topic: string | null;
+  impressions: number | null;
+  reactions: number | null;
 }
 
 const LAST_VISIT_KEY = "aura-brief-last-visit";
@@ -610,14 +613,32 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
     try {
       const since = new Date(Date.now() - 48 * 3600_000).toISOString();
       const { data } = await (supabase.from("linkedin_posts" as any) as any)
-        .select("published_at")
+        .select("id, published_at, source_metadata")
         .eq("user_id", user.id)
         .not("published_at", "is", null)
         .gte("published_at", since)
         .order("published_at", { ascending: false })
         .limit(1);
       const row = (data || [])[0];
-      setPublished(row ? { publishedAt: row.published_at ?? null } : null);
+      if (!row) { setPublished(null); return; }
+      const meta = (row.source_metadata || {}) as any;
+      const topicRaw = (meta.topic || (Array.isArray(meta.signal_titles) ? meta.signal_titles[0] : "") || "").toString().trim();
+      const topic = topicRaw ? (topicRaw.length > 60 ? topicRaw.slice(0, 58).trim() + "\u2026" : topicRaw) : null;
+      let impressions: number | null = null;
+      let reactions: number | null = null;
+      try {
+        const { data: m } = await (supabase.from("linkedin_post_metrics" as any) as any)
+          .select("impressions, reactions, snapshot_date")
+          .eq("post_id", row.id)
+          .order("snapshot_date", { ascending: false })
+          .limit(1);
+        const mr = (m || [])[0];
+        if (mr) {
+          impressions = typeof mr.impressions === "number" ? mr.impressions : null;
+          reactions = typeof mr.reactions === "number" ? mr.reactions : null;
+        }
+      } catch { /* metrics optional — LinkedIn lags 1-2 days */ }
+      setPublished({ publishedAt: row.published_at ?? null, topic, impressions, reactions });
     } catch (e) { console.warn("[Brief] published load failed", e); setPublished(null); }
   }, [user]);
 
@@ -726,16 +747,39 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
     switch (scenario) {
       case "prime_read":
         return {
-          slug: "YOUR STRATEGIC READ —",
-          headline: "Your Strategic Read is one step away.",
-          standfirst: "A short Brand Assessment turns what you already know into a read of how the market sees you — and the space only you own. Everything here builds on it.",
+          slug: "START HERE —",
+          headline: "Aura can't read you yet. The assessment changes that.",
+          standfirst: "Five minutes turns what you already know into a read of how the market sees you, and the space only you own. Everything else here builds on it, so do this one first.",
         };
-      case "published":
-        return { slug: "TRACKING —", headline: "Your piece is out. Early readers arriving.", standfirst: "The wire is watching how it lands — your Imprint will move with it." };
+      case "published": {
+        const topic = published?.topic || null;
+        const imp = published?.impressions ?? null;
+        const rx = published?.reactions ?? null;
+        if (imp != null && imp > 0) {
+          return {
+            slug: "TRACKING —",
+            headline: topic ? `Your post on ${topic} is live. ${imp} readers so far.` : `Your latest post is live. ${imp} readers so far.`,
+            standfirst: `${rx != null && rx > 0 ? `${rx} reactions in already. ` : ""}The first day or two is when a post travels furthest, so reply to everyone engaging now — that is what keeps LinkedIn showing it. I will keep an eye on the numbers for you.`,
+          };
+        }
+        return {
+          slug: "TRACKING —",
+          headline: topic ? `Your post on ${topic} is live.` : "Your latest post is live.",
+          standfirst: "The numbers usually start landing within a day. Reply to every early comment while it is fresh — that first wave of replies is what tells LinkedIn to keep pushing it. I will surface the reach here the moment it syncs.",
+        };
+      }
       case "new":
-        return { slug: "DAY ONE —", headline: "A Brief with your name on it starts printing tonight.", standfirst: "One capture, thirty seconds, and tomorrow's edition speaks your language." };
+        return {
+          slug: "DAY ONE —",
+          headline: "Nothing here is yours yet. Your first capture changes that.",
+          standfirst: "Save one thing you read this week, and tomorrow morning you will see the first read of where your expertise stands. Pick something you would argue with — a strong opinion makes the sharpest signal.",
+        };
       case "away":
-        return { slug: "CATCH-UP —", headline: `${awayDays} days out — the wire kept score.`, standfirst: "The signals below moved while you were quiet. Pick the one worth a paragraph." };
+        return {
+          slug: "WHILE YOU WERE OUT —",
+          headline: `${awayDays} days away. Here is what moved without you.`,
+          standfirst: "The signals below shifted while you were quiet. Do not try to read all of them — pick the one you would have the strongest take on and turn it into a paragraph.",
+        };
       case "read": {
         const ba: any = brandAssessment || {};
         const firstSentence = (s: string) => {
@@ -750,28 +794,34 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
         const honest = (ba.honest_truth || "").toString().trim();
         const space = (ba.uncontested_space || "").toString().trim();
         const standfirst = [honest, space].filter(Boolean).join(" ") ||
-          "There is a gap between how you read the market and how the market has heard you.";
+          "There is a gap between how you read the market and how the market has heard you. Your first post is where you start closing it.";
         return { slug: "YOUR STRATEGIC READ —", headline, standfirst };
       }
-      case "draft":
-        return { slug: "THIS WEEK —", headline: "The market is moving on your theme. Your draft holds the first word.", standfirst: "Ten minutes and the draft is yours in the feed." };
+      case "draft": {
+        const t = (draft?.topic || "").toString().trim();
+        const shortT = t ? (t.length > 46 ? t.slice(0, 44).trim() + "\u2026" : t) : "";
+        return {
+          slug: "THIS WEEK —",
+          headline: shortT ? `The market is moving on ${shortT}. Your draft already has the first word.` : "The market is moving on your theme, and your draft already has the first word.",
+          standfirst: "It is written and it is in your voice. Ten minutes of edits and it is in the feed while the theme is still warm.",
+        };
+      }
       default: {
-        // "standing" — honest 3-branch on scores + the gap reframe
         const s  = imprint.status === "ready" ? imprint.data.signalScore  : null;
         const c  = imprint.status === "ready" ? imprint.data.contentScore : null;
         const dI = discernment.status === "ready" ? discernment.data : null;
         const headline = topSignal
-          ? "You see this more clearly than you've said it."
-          : (s != null && c != null) ? "Your reading is ahead of your voice this week." : "Your reading is taking shape.";
+          ? "You are seeing this more clearly than you have said it."
+          : (s != null && c != null) ? "You are reading the market faster than you are speaking to it." : "Your read is still taking shape.";
         const standfirst = (dI && dI.postsWithSignal != null && dI.published120d != null && s != null && c != null)
-          ? `Reading ${s}, voice ${c} — only ${dI.postsWithSignal} of your last ${dI.published120d} posts drew on a captured signal. That's the gap — and the opening.`
+          ? `Reading sits at ${s}, voice at ${c}. Only ${dI.postsWithSignal} of your last ${dI.published120d} posts came from something you captured; the rest were off the top of your head. Your next one lands harder pulled from a signal below.`
           : (s != null && c != null)
-            ? `Reading ${s}; voice ${c}. That's the gap — and the opening.`
-            : "Reading and voice are still forming. The gap is where the next post lives.";
+            ? `Reading ${s}, voice ${c}. The distance between them is where your next post lives — pull it from a signal below.`
+            : "Reading and voice are still forming. Your next capture is what starts moving them.";
         return { slug: "THE WIRE —", headline, standfirst };
       }
     }
-  }, [scenario, awayDays, imprint, discernment, topSignal, brandAssessment]);
+  }, [scenario, awayDays, imprint, discernment, topSignal, brandAssessment, published, draft]);
 
   // ── Next Move ladder ────────────────────────────────────────────────
   const nextMove = useMemo(() => {
@@ -930,7 +980,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
             <InfoTooltip
               label="Byline"
               triggerSize={13}
-              text="Aura writes this note fresh before every visit — from your signals, your drafts, and how long you have been away."
+              text="Aura tailors this to where you are right now: what you have published, your open drafts, your live signals, and how long you have been away."
               side="bottom"
             />
           </div>
