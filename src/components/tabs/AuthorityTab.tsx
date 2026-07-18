@@ -3084,6 +3084,11 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
   const [signalCount, setSignalCount] = useState<number>(0);
   const [hasLinkedIn, setHasLinkedIn] = useState<boolean>(true); // default true → hides tutorial until we know
   const navigate = useNavigate();
+  // P4: search / filter / sort — all client-side against already-loaded rows.
+  const [librarySearch, setLibrarySearch] = useState<string>("");
+  const [libraryLang, setLibraryLang] = useState<"all" | "ar" | "en">("all");
+  const [libraryStatus, setLibraryStatus] = useState<"all" | "draft" | "published">("all");
+  const [librarySort, setLibrarySort] = useState<"recent" | "top">("recent");
   // Race-fix: don't let realtime INSERTs trigger a parallel refetch
   // before the initial loadPosts() has settled.
   const initialLoadDoneRef = useRef(false);
@@ -3463,6 +3468,45 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
     );
   }
 
+  // P4: hook = first NON-EMPTY, trimmed line of post_text. Fixes rows whose
+  // post_text starts with blank lines (previously rendered as an empty hook).
+  const firstNonEmptyLine = (text: string | null | undefined): string => {
+    if (!text) return "";
+    for (const line of text.split(/\r?\n/)) {
+      const t = line.trim();
+      if (t) return t;
+    }
+    return "";
+  };
+
+  // Row-level filter shared by drafts and published sections. Client-side.
+  const langOf = (p: SavedPost): "ar" | "en" => {
+    const meta = (p as any).source_metadata as any;
+    if (meta?._language === "ar") return "ar";
+    if (meta?._language === "en") return "en";
+    return p.post_text && isArabicText(p.post_text) ? "ar" : "en";
+  };
+  const searchNeedle = librarySearch.trim().toLowerCase();
+  const matchesFilters = (p: SavedPost, status: "draft" | "published"): boolean => {
+    if (libraryStatus !== "all" && libraryStatus !== status) return false;
+    if (libraryLang !== "all" && langOf(p) !== libraryLang) return false;
+    if (searchNeedle) {
+      const hay = `${(p as any).title || ""} ${(p as any).post_text || ""}`.toLowerCase();
+      if (!hay.includes(searchNeedle)) return false;
+    }
+    return true;
+  };
+  const filteredDrafts = drafts.filter(p => matchesFilters(p, "draft"));
+  const impressionsOf = (id: string): number => {
+    const m = postMetrics[id];
+    return typeof m?.impressions === "number" ? m.impressions : -1;
+  };
+  const applyPublishedSort = (rows: SavedPost[]): SavedPost[] => {
+    if (librarySort !== "top") return rows;
+    // Rows without metrics sink to the bottom (impressionsOf returns -1).
+    return [...rows].sort((a, b) => impressionsOf(b.id) - impressionsOf(a.id));
+  };
+
   return (
     <div
       style={{
@@ -3504,6 +3548,94 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
         <LinkedInPostSteps shareLabel="Post on LinkedIn" />
       )}
 
+      {/* P4: Search + filter chips — System-A styling, client-side only. */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <input
+          type="search"
+          value={librarySearch}
+          onChange={(e) => setLibrarySearch(e.target.value)}
+          placeholder="Search your library"
+          dir="auto"
+          aria-label="Search library"
+          style={{
+            width: "100%",
+            fontSize: 14,
+            padding: "10px 14px",
+            borderRadius: 8,
+            border: "1px solid var(--rule)",
+            background: "var(--paper-2)",
+            color: "var(--ink)",
+            outline: "none",
+          }}
+        />
+        <div className="flex items-center flex-wrap" style={{ gap: 16, rowGap: 8 }}>
+          <div className="flex items-center" style={{ gap: 6 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)" }}>
+              Language
+            </span>
+            {([
+              { k: "all", label: "All" },
+              { k: "ar",  label: "AR" },
+              { k: "en",  label: "EN" },
+            ] as const).map(opt => {
+              const active = libraryLang === opt.k;
+              return (
+                <button
+                  key={opt.k}
+                  type="button"
+                  onClick={() => setLibraryLang(opt.k)}
+                  aria-pressed={active}
+                  style={{
+                    fontSize: 12,
+                    fontWeight: active ? 600 : 500,
+                    padding: "4px 10px",
+                    borderRadius: 999,
+                    border: "1px solid var(--rule)",
+                    background: active ? "var(--ink)" : "var(--paper-2)",
+                    color: active ? "var(--paper)" : "var(--ink)",
+                    cursor: "pointer",
+                  }}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex items-center" style={{ gap: 6 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)" }}>
+              Status
+            </span>
+            {([
+              { k: "all",       label: "All" },
+              { k: "draft",     label: "Draft" },
+              { k: "published", label: "Published" },
+            ] as const).map(opt => {
+              const active = libraryStatus === opt.k;
+              return (
+                <button
+                  key={opt.k}
+                  type="button"
+                  onClick={() => setLibraryStatus(opt.k)}
+                  aria-pressed={active}
+                  style={{
+                    fontSize: 12,
+                    fontWeight: active ? 600 : 500,
+                    padding: "4px 10px",
+                    borderRadius: 999,
+                    border: "1px solid var(--rule)",
+                    background: active ? "var(--ink)" : "var(--paper-2)",
+                    color: active ? "var(--paper)" : "var(--ink)",
+                    cursor: "pointer",
+                  }}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
       {/* ── Section 1: Aura Drafts ── */}
       <div>
         <button
@@ -3527,13 +3659,17 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
             style={{ width: 16, height: 16, color: "var(--spot)", transform: showDrafts ? "rotate(0deg)" : "rotate(-90deg)" }}
           />
         </button>
-        {showDrafts && (drafts.length === 0 ? (
+        {showDrafts && (filteredDrafts.length === 0 ? (
           <div style={{ background: "var(--paper)", borderRadius: 8, padding: 16, textAlign: "center" }}>
-            <p style={{ fontSize: 14, color: "var(--ink-3)" }}>No drafts yet. Generate content on the Create tab.</p>
+            <p style={{ fontSize: 14, color: "var(--ink-3)" }}>
+              {drafts.length === 0
+                ? "No drafts yet. Generate content on the Create tab."
+                : "No drafts match your search."}
+            </p>
           </div>
         ) : (
           <div style={{ display: "grid", gap: 12 }}>
-            {drafts.map(p => {
+            {filteredDrafts.map(p => {
               const lang = (p.source_metadata as any)?._language || "en";
               const badge = FORMAT_BADGE[p.format_type || "post"] || FORMAT_BADGE.post;
               const expanded = expandedCards.has(p.id);
@@ -3569,7 +3705,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                       style={{ fontSize: 14, color: "var(--ink)", lineHeight: 1.5 }}
                       dir="auto"
                     >
-                      {(p.post_text?.split("\n")[0] || "Untitled draft").trim()}
+                      {firstNonEmptyLine(p.post_text) || "Untitled draft"}
                     </span>
                     <span className="shrink-0 flex items-center" style={{ gap: 6 }}>
                       <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 6px", borderRadius: 999, backgroundColor: "var(--paper-2)", color: "var(--ink-3)", textTransform: "uppercase" }}>
@@ -3746,10 +3882,51 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
         // group instead of being silently absorbed — surfaces DB drift fast.
         const AURA_AUTHORSHIP     = new Set(["aura_drafted", "aura_assisted"]);
         const EARLIER_AUTHORSHIP  = new Set(["user_written", "unknown"]);
-        const auraRows          = publishedPosts.filter((p: any) => AURA_AUTHORSHIP.has(p.authorship));
-        const earlierRows       = publishedPosts.filter((p: any) => EARLIER_AUTHORSHIP.has(p.authorship));
-        const unclassifiedRows  = publishedPosts.filter(
+        // P4: filter published rows by the shared library controls first,
+        // then split by authorship. Sort (Recent | Top performing) is applied
+        // per-group so counts of the two sortable groups stay accurate.
+        const filteredPublished = publishedPosts.filter(p => matchesFilters(p, "published"));
+        const auraRows          = applyPublishedSort(filteredPublished.filter((p: any) => AURA_AUTHORSHIP.has(p.authorship)));
+        const earlierRows       = applyPublishedSort(filteredPublished.filter((p: any) => EARLIER_AUTHORSHIP.has(p.authorship)));
+        const unclassifiedRows  = filteredPublished.filter(
           (p: any) => !AURA_AUTHORSHIP.has(p.authorship) && !EARLIER_AUTHORSHIP.has(p.authorship),
+        );
+
+        // Small inline sort toggle placed in the Aura / Earlier group headers.
+        const SortToggle = () => (
+          <div
+            role="group"
+            aria-label="Sort published posts"
+            onClick={(e) => e.stopPropagation()}
+            style={{ display: "inline-flex", gap: 4, marginLeft: 8 }}
+          >
+            {([
+              { k: "recent", label: "Recent" },
+              { k: "top",    label: "Top performing" },
+            ] as const).map(opt => {
+              const active = librarySort === opt.k;
+              return (
+                <button
+                  key={opt.k}
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setLibrarySort(opt.k); }}
+                  aria-pressed={active}
+                  style={{
+                    fontSize: 11,
+                    fontWeight: active ? 600 : 500,
+                    padding: "2px 8px",
+                    borderRadius: 999,
+                    border: "1px solid var(--rule)",
+                    background: active ? "var(--ink)" : "var(--paper-2)",
+                    color: active ? "var(--paper)" : "var(--ink-3)",
+                    cursor: "pointer",
+                  }}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
         );
 
         const renderCard = (p: any) => {
@@ -3828,7 +4005,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                       style={{ fontSize: 14, color: "var(--ink)", lineHeight: 1.5 }}
                       dir="auto"
                     >
-                      {(p.post_text?.split("\n")[0] || "").trim()}
+                      {firstNonEmptyLine(p.post_text)}
                     </span>
                     <span className="shrink-0 flex items-center" style={{ gap: 6 }}>
                       <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 6px", borderRadius: 999, backgroundColor: "var(--paper-2)", color: "var(--ink-3)", textTransform: "uppercase" }}>
@@ -3957,6 +4134,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                 <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--paper-2)", color: "var(--ink-3)" }}>
                   {auraTotal}
                 </span>
+                <SortToggle />
                 <ChevronDown
                   className="ml-auto transition-transform duration-200 group-hover:text-primary"
                   style={{ width: 16, height: 16, color: "var(--ink-3)", transform: showPublished ? "rotate(0deg)" : "rotate(-90deg)" }}
@@ -3967,7 +4145,9 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                   {auraRows.length === 0 ? (
                     <div style={{ background: "var(--paper)", borderRadius: 8, padding: 16, textAlign: "center" }}>
                       <p style={{ fontSize: 14, color: "var(--ink-3)" }}>
-                        Nothing published through Aura yet. Your first post from a signal lands here.
+                        {(searchNeedle || libraryLang !== "all" || libraryStatus !== "all")
+                          ? "No posts match your search."
+                          : "Nothing published through Aura yet. Your first post from a signal lands here."}
                       </p>
                     </div>
                   ) : (
@@ -4003,6 +4183,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                   <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--paper-2)", color: "var(--ink-3)" }}>
                     {earlierTotal}
                   </span>
+                  <SortToggle />
                   <ChevronDown
                     className="ml-auto transition-transform duration-200 group-hover:text-primary"
                     style={{ width: 16, height: 16, color: "var(--ink-3)", transform: showEarlier ? "rotate(0deg)" : "rotate(-90deg)" }}
