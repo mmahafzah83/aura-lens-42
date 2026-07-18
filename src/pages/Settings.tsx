@@ -219,6 +219,17 @@ const handleDeleteAccount = async () => {
       setSavingCountry(false);
     }
   };
+
+  useEffect(() => {
+    if (loading) return;
+    if (typeof window === "undefined") return;
+    if (window.location.hash !== "#location") return;
+    const t = setTimeout(() => {
+      const el = document.getElementById("location");
+      el?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+    return () => clearTimeout(t);
+  }, [loading]);
   const addSignature = () =>
     setSignatures((s) => [
       ...s,
