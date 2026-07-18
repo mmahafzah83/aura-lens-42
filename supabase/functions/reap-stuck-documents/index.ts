@@ -80,8 +80,56 @@ Deno.serve(async (req) => {
   if (jobErr) console.error("[reap-stuck-documents] evidence_jobs update failed:", jobErr.message);
 
   const reapedJobs = stuckJobs?.length ?? 0;
-  console.log(`[reap-stuck-documents] reaped=${reaped} evidence_jobs=${reapedJobs}`);
-  return new Response(JSON.stringify({ reaped, evidence_jobs_reaped: reapedJobs }), {
+
+  // ---- document_jobs drain + watchdog -------------------------------------
+  // Any live job whose heartbeat is > 90s old is stuck. Two behaviors:
+  //  1) attempts >= 3 at the same cursor => fail with an honest failure_code.
+  //  2) Otherwise re-invoke ingest-document as a worker to resume from cursor.
+  let docJobsResumed = 0;
+  let docJobsFailed = 0;
+  const docJobCutoff = new Date(Date.now() - 90 * 1000).toISOString();
+  const { data: liveJobs } = await admin
+    .from("document_jobs")
+    .select("id, document_id, attempts, cursor, slice_size, failure_code")
+    .not("stage", "in", "(complete,failed)")
+    .lt("last_heartbeat", docJobCutoff);
+
+  for (const j of (liveJobs || []) as any[]) {
+    if ((j.attempts ?? 0) >= 3) {
+      const code = j.failure_code || "too_dense";
+      await admin.from("document_jobs").update({
+        stage: "failed",
+        failure_code: code,
+        error_detail: `watchdog: ${j.attempts} attempts at cursor=${j.cursor}, slice_size=${j.slice_size}`,
+        last_heartbeat: new Date().toISOString(),
+      }).eq("id", j.id);
+      // Honest doc-level copy.
+      const copy = code === "too_dense"
+        ? "This document is too visually dense for us to read reliably right now — we're looking into it."
+        : "Reading stopped and could not resume.";
+      await admin.from("documents").update({
+        status: "error", error_message: copy,
+      }).eq("id", j.document_id);
+      docJobsFailed += 1;
+      continue;
+    }
+    // Re-invoke ingest-document in worker mode with this job id.
+    try {
+      await admin.functions.invoke("ingest-document", {
+        body: { document_job_id: j.id },
+      });
+      docJobsResumed += 1;
+    } catch (e) {
+      console.error(`[reap-stuck-documents] resume failed for job ${j.id}:`, (e as Error).message);
+    }
+  }
+
+  console.log(`[reap-stuck-documents] reaped=${reaped} evidence_jobs=${reapedJobs} doc_jobs_resumed=${docJobsResumed} doc_jobs_failed=${docJobsFailed}`);
+  return new Response(JSON.stringify({
+    reaped, evidence_jobs_reaped: reapedJobs,
+    document_jobs_resumed: docJobsResumed,
+    document_jobs_failed: docJobsFailed,
+  }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 });

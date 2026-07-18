@@ -848,6 +848,62 @@ export type Database = {
           },
         ]
       }
+      document_jobs: {
+        Row: {
+          attempts: number
+          created_at: string
+          cursor: number
+          document_id: string
+          error_detail: string | null
+          failure_code: string | null
+          id: string
+          last_heartbeat: string
+          peak_memory_mb: number | null
+          slice_size: number
+          stage: string
+          total: number | null
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          cursor?: number
+          document_id: string
+          error_detail?: string | null
+          failure_code?: string | null
+          id?: string
+          last_heartbeat?: string
+          peak_memory_mb?: number | null
+          slice_size?: number
+          stage?: string
+          total?: number | null
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          cursor?: number
+          document_id?: string
+          error_detail?: string | null
+          failure_code?: string | null
+          id?: string
+          last_heartbeat?: string
+          peak_memory_mb?: number | null
+          slice_size?: number
+          stage?: string
+          total?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_jobs_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           attempt_count: number
