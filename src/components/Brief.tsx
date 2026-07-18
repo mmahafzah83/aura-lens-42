@@ -1038,12 +1038,27 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
       // PUBLISHED + new evidence since you wrote it
       if (publishedAt && topSignal.lastEvidenceAt &&
           new Date(topSignal.lastEvidenceAt).getTime() > new Date(publishedAt).getTime()) {
+        const delta = state?.evidenceDelta ?? 0;
+        const summaries = state?.evidenceSummaries ?? [];
+        const body =
+          delta >= 2 ? `${delta} things moved on ${title} since you wrote it.`
+          : delta === 1 ? `Something moved on ${title} since you wrote it.`
+          : `${title} has moved since you wrote it.`;
+        const baseContext = [topSignal.what, topSignal.explanation].filter(Boolean).join("\n\n");
+        const publishedDate = new Date(publishedAt).toISOString().slice(0, 10);
+        const deltaBlock = summaries.length > 0
+          ? summaries.map((s, i) => `${i + 1}. ${s}`).join("\n")
+          : "(new evidence available since publication)";
+        const updateContext =
+          `UPDATE POST — the author already published on this signal on ${publishedDate}. ` +
+          `Do not restate the original argument. Frame this as what changed since:\n${deltaBlock}\n\n` +
+          baseContext;
         return {
-          body: `Three things moved on ${title} since you wrote it.`,
+          body,
           cta: "Write the update",
           onClick: () => onDraftToStudio?.({
             topic: topSignal.title,
-            context: [topSignal.what, topSignal.explanation].filter(Boolean).join("\n\n"),
+            context: updateContext,
             signalId: topSignal.id,
             signalTitle: topSignal.title,
             sourceType: "signal_evolution",
