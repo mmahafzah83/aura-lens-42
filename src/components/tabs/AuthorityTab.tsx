@@ -3049,7 +3049,7 @@ const LinkedInPreview = ({
   );
 };
 
-const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () => void; onOpenDraft?: (draft: { id: string; body: string; language: "en" | "ar"; type: "carousel" | "framework" | "linkedin_post"; topic?: string | null; _source?: "content_items" | "linkedin_posts" }) => void }) => {
+const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwitchToCreate: () => void; onOpenDraft?: (draft: { id: string; body: string; language: "en" | "ar"; type: "carousel" | "framework" | "linkedin_post"; topic?: string | null; _source?: "content_items" | "linkedin_posts" }) => void; onWriteFromPost?: (prefill: SignalPrefill) => void }) => {
   const [drafts, setDrafts] = useState<SavedPost[]>([]);
   const [publishedPosts, setPublishedPosts] = useState<SavedPost[]>([]);
   const [publishedTotal, setPublishedTotal] = useState<number>(0);
