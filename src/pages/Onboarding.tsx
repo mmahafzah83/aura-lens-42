@@ -295,7 +295,7 @@ const Onboarding = () => {
       const p: any = profile || {};
       // Completion redirect — any user with onboarding_step >= 4
       // (or the legacy onboarding_completed flag) can never accidentally restart.
-      if (p && ((p.onboarding_step ?? 0) >= 4 || (p.onboarding_completed && p.first_name))) {
+      if (p && (p.onboarding_step ?? 0) >= 4) {
         goHome();
         return;
       }
