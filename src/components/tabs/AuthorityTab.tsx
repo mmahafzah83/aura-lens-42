@@ -1,4 +1,5 @@
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
+import { track } from "@/lib/track";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuraButton } from "@/components/ui/AuraButton";
