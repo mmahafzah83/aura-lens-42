@@ -3641,44 +3641,49 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
       </div>
 
       {/* ── Section 2: Published Posts (collapsed by default) ── */}
-      <div>
-        <button
-          onClick={() => setShowPublished(!showPublished)}
-          className="flex items-center gap-2.5 w-full text-left group"
-          style={{ borderLeft: "1px solid var(--ink-7)", paddingLeft: 12, marginBottom: showPublished ? 12 : 0, background: "none", border: "none", cursor: "pointer", borderLeftWidth: 1, borderLeftStyle: "solid", borderLeftColor: "var(--ink-7)" }}
-        >
-          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <h3 style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)", margin: 0 }}>
-              Published Posts
-            </h3>
-            <span style={{ fontFamily: "var(--font-display, var(--font-serif))", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", lineHeight: 1.4 }}>
-              Your published content — engagement data flows back to strengthen your signals
-            </span>
-          </div>
-          <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--bg-subtle)", color: "var(--color-muted)" }}>
-            {publishedTotal}
-          </span>
-          <ChevronDown
-            className="ml-auto transition-transform duration-200 group-hover:text-primary"
-            style={{ width: 16, height: 16, color: "var(--ink-3)", transform: showPublished ? "rotate(0deg)" : "rotate(-90deg)" }}
-          />
-        </button>
-        {showPublished && (
-          <div style={{ display: "grid", gap: 12 }}>
-            {publishedPosts.length === 0 ? (
-              <div style={{ background: "var(--bg-card)", borderRadius: 8, padding: 16, textAlign: "center" }}>
-                <p style={{ fontSize: 14, color: "var(--color-muted)" }}>
-                  Nothing published through Aura yet. Your first post from a signal lands here.
-                </p>
-              </div>
-            ) : (<>
-            {publishedPosts.map(p => {
+      {(() => {
+        // Split rows by authorship. Fallback for un-tagged rows so we don't
+        // silently drop anything: no post_text → treat as "earlier".
+        const auraRows     = publishedPosts.filter((p: any) => p.authorship === "aura_drafted" || p.authorship === "aura_assisted");
+        const earlierRows  = publishedPosts.filter((p: any) => p.authorship === "user_written" || p.authorship === "unknown" || !p.authorship);
+
+        const renderCard = (p: any) => {
               const badge = FORMAT_BADGE[p.format_type || "post"] || FORMAT_BADGE.post;
               const isExternal = (p as any).source_type === "external_reference"
                 || (p.source_metadata as any)?.source_type === "external_reference";
               const externalHref = (p as any).post_url || (p as any).linkedin_url || savedUrls[p.id];
               const metrics = postMetrics[p.id];
               const hasMetrics = metrics && (typeof metrics.impressions === "number" || typeof metrics.reactions === "number");
+              const hasText = !!(p.post_text && p.post_text.trim().length > 0);
+
+              // Compact row for rows with no post_text: date + Open on LinkedIn ↗ only.
+              if (!hasText) {
+                return (
+                  <div
+                    key={p.id}
+                    style={{ background: "var(--bg-card)", borderRadius: 8, padding: "10px 16px", border: "1px solid var(--color-border)", display: "flex", alignItems: "center", gap: 12 }}
+                  >
+                    <span style={{ fontSize: 12, color: "var(--color-muted)", minWidth: 96 }}>
+                      {formatSmartDate((p as any).published_at || p.created_at)}
+                    </span>
+                    <div style={{ flex: 1 }} />
+                    {externalHref ? (
+                      <a
+                        href={externalHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ fontSize: 14, color: "var(--color-muted)", display: "flex", alignItems: "center", gap: 5, textDecoration: "none" }}
+                        className="hover:text-foreground transition-colors"
+                      >
+                        <Linkedin className="w-3.5 h-3.5" /> Open on LinkedIn ↗
+                      </a>
+                    ) : (
+                      <span style={{ fontSize: 12, color: "var(--color-muted)", fontStyle: "italic" }}>no link</span>
+                    )}
+                  </div>
+                );
+              }
+
               return (
                 <motion.div
                   key={p.id}
@@ -3824,16 +3829,94 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                   )}
                 </motion.div>
               );
-            })}
-            {publishedPosts.length < publishedTotal && (
-              <div style={{ textAlign: "center", fontSize: 12, color: "var(--color-muted)", padding: "8px 0" }}>
-                Showing {publishedPosts.length} of {publishedTotal}
+        };
+
+        return (
+          <>
+            {/* Group A — Written with Aura (default open) */}
+            <div>
+              <button
+                onClick={() => setShowPublished(!showPublished)}
+                className="flex items-center gap-2.5 w-full text-left group"
+                style={{ borderLeft: "1px solid var(--ink-7)", paddingLeft: 12, marginBottom: showPublished ? 12 : 0, background: "none", border: "none", cursor: "pointer", borderLeftWidth: 1, borderLeftStyle: "solid", borderLeftColor: "var(--ink-7)" }}
+              >
+                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <h3 style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)", margin: 0 }}>
+                    Written with Aura
+                  </h3>
+                  <span style={{ fontFamily: "var(--font-display, var(--font-serif))", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", lineHeight: 1.4 }}>
+                    Posts you shipped through Aura — engagement flows back to strengthen your signals
+                  </span>
+                </div>
+                <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--bg-subtle)", color: "var(--color-muted)" }}>
+                  {auraTotal}
+                </span>
+                <ChevronDown
+                  className="ml-auto transition-transform duration-200 group-hover:text-primary"
+                  style={{ width: 16, height: 16, color: "var(--ink-3)", transform: showPublished ? "rotate(0deg)" : "rotate(-90deg)" }}
+                />
+              </button>
+              {showPublished && (
+                <div style={{ display: "grid", gap: 12 }}>
+                  {auraRows.length === 0 ? (
+                    <div style={{ background: "var(--bg-card)", borderRadius: 8, padding: 16, textAlign: "center" }}>
+                      <p style={{ fontSize: 14, color: "var(--color-muted)" }}>
+                        Nothing published through Aura yet. Your first post from a signal lands here.
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      {auraRows.map(renderCard)}
+                      {auraRows.length < auraTotal && (
+                        <div style={{ textAlign: "center", fontSize: 12, color: "var(--color-muted)", padding: "8px 0" }}>
+                          Showing {auraRows.length} of {auraTotal}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Group B — Your earlier work (collapsed by default). */}
+            {earlierTotal > 0 && (
+              <div>
+                <button
+                  onClick={() => setShowEarlier(!showEarlier)}
+                  className="flex items-center gap-2.5 w-full text-left group"
+                  style={{ borderLeft: "1px solid var(--ink-7)", paddingLeft: 12, marginBottom: showEarlier ? 12 : 0, background: "none", border: "none", cursor: "pointer", borderLeftWidth: 1, borderLeftStyle: "solid", borderLeftColor: "var(--ink-7)" }}
+                >
+                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    <h3 style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)", margin: 0 }}>
+                      Your earlier work
+                    </h3>
+                    <span style={{ fontFamily: "var(--font-display, var(--font-serif))", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", lineHeight: 1.4 }}>
+                      Posts Aura learned about — imported from your LinkedIn history or discovered on the web
+                    </span>
+                  </div>
+                  <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--bg-subtle)", color: "var(--color-muted)" }}>
+                    {earlierTotal}
+                  </span>
+                  <ChevronDown
+                    className="ml-auto transition-transform duration-200 group-hover:text-primary"
+                    style={{ width: 16, height: 16, color: "var(--ink-3)", transform: showEarlier ? "rotate(0deg)" : "rotate(-90deg)" }}
+                  />
+                </button>
+                {showEarlier && (
+                  <div style={{ display: "grid", gap: 12 }}>
+                    {earlierRows.map(renderCard)}
+                    {earlierRows.length < earlierTotal && (
+                      <div style={{ textAlign: "center", fontSize: 12, color: "var(--color-muted)", padding: "8px 0" }}>
+                        Showing {earlierRows.length} of {earlierTotal}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
-            </>)}
-          </div>
-        )}
-      </div>
+          </>
+        );
+      })()}
 
       {/* ── Section 3: Frameworks ── */}
       <FrameworkLibrarySection pendingDeleteId={pendingDeleteId} setPendingDeleteId={setPendingDeleteId} expandedCards={expandedCards} toggleCardExpand={toggleCardExpand} />
