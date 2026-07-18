@@ -2649,6 +2649,9 @@ const LibraryCard = ({
           <label className="text-xs text-muted-foreground block">
             Paste your LinkedIn post URL (optional)
           </label>
+          <p className="text-[11px] text-muted-foreground/70 leading-snug -mt-1">
+            Add the link so Aura can track how it performed.
+          </p>
           <Input
             value={pubUrl}
             onChange={e => setPubUrl(e.target.value)}
