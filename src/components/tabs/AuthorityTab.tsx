@@ -4077,6 +4077,27 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
                           {copiedId === p.id ? <Check className="w-3.5 h-3.5" /> : <Linkedin className="w-3.5 h-3.5" />}
                           {copiedId === p.id ? "Copied" : "Post on LinkedIn →"}
                         </button>
+                        {onWriteFromPost && p.post_text && (
+                          <button
+                            onClick={() => {
+                              const topic = firstNonEmptyLine(p.post_text) || "Write from this post";
+                              const context = (p.post_text || "").slice(0, 4000);
+                              onWriteFromPost({
+                                topic,
+                                context,
+                                sourceType: "past_post",
+                                sourceTitle: topic,
+                                contentFormat: "post",
+                                source: "library_past_post",
+                              });
+                            }}
+                            style={{ fontSize: 14, color: "var(--spot)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
+                            className="hover:opacity-80 transition-opacity"
+                            title="Draft a new post inspired by this one"
+                          >
+                            <Pencil className="w-3.5 h-3.5" /> Write from this →
+                          </button>
+                        )}
                         <button
                           onClick={() => setPendingDeleteId(p.id)}
                           style={{ fontSize: 14, color: "var(--error)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
