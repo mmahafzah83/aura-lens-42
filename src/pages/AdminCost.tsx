@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, Trash2, Plus } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import AdminShell from "@/components/admin/AdminShell";
 import { downloadBlob } from "@/lib/download";
@@ -18,6 +18,17 @@ type UsageRow = {
   total_tokens: number | null;
   est_cost_usd: number | string | null;
   success: boolean | null;
+};
+
+type ExternalCost = {
+  id: string;
+  name: string;
+  amount_usd: number;
+  cycle: string;
+  renews_on: string | null;
+  status: string;
+  notes: string | null;
+  last_verified: string | null;
 };
 
 const money = (n: number) =>
