@@ -282,142 +282,6 @@ async function extractFromImage(adminClient: any, doc: any, lovableApiKey: strin
   return data.choices?.[0]?.message?.content || "";
 }
 
-// Extract text from a PDF by sending base64 bytes with proper mime to Gemini.
-// Deterministic per-page PDF extraction using unpdf (pdf.js for Deno).
-// OCR fallback via Gemini gateway is applied only to pages with < OCR_PAGE_TEXT_THRESHOLD chars.
-type PdfPage = { page: number; text: string };
-type PdfResult = {
-  pages: PdfPage[];
-  pagesTotal: number;
-  pagesRead: number;
-  method: "text" | "ocr" | "mixed";
-  ocrUnread: number; // scanned pages skipped because OCR cap was hit
-};
-
-async function extractFromPdf(
-  adminClient: any,
-  doc: any,
-  lovableApiKey: string,
-): Promise<PdfResult> {
-  const run = async (): Promise<PdfResult> => {
-  const storagePath = doc.file_url.includes("/storage/v1/")
-    ? doc.file_url.split("/documents/")[1]
-    : doc.file_url;
-  const bytes = await downloadStorageBytes(adminClient, storagePath);
-  if (bytes.byteLength > MAX_BYTES) {
-    throw new Error(`PDF too large (${(bytes.byteLength / 1024 / 1024).toFixed(1)} MB, max 50 MB)`);
-  }
-  console.log(`[ingest-document] PDF bytes=${bytes.byteLength}, running single-pass extraction`);
-  await stage(adminClient, doc.id, "extracting text");
-
-  // @ts-ignore dynamic esm import
-  const { extractText, getDocumentProxy } = await import("https://esm.sh/unpdf@0.12.1");
-  // @ts-ignore dynamic esm import
-  const { PDFDocument } = await import("https://esm.sh/pdf-lib@1.17.1");
-
-  // Single whole-document text extraction — one await, releases quickly.
-  let pdf: any = await getDocumentProxy(bytes);
-  const pagesTotal: number = pdf.numPages;
-  const all: any = await extractText(pdf, { mergePages: false });
-  pdf = null;
-
-  const rawPages: string[] = Array.isArray(all?.text)
-    ? all.text
-    : (typeof all?.text === "string" ? [all.text] : []);
-
-  const pages: PdfPage[] = new Array(pagesTotal);
-  const scannedPageNums: number[] = [];
-  for (let i = 1; i <= pagesTotal; i++) {
-    const raw = rawPages[i - 1] || "";
-    const text = normalizeText(String(raw || ""));
-    pages[i - 1] = { page: i, text };
-    if (text.length < OCR_PAGE_TEXT_THRESHOLD) scannedPageNums.push(i);
-  }
-
-  const textPages = pages.filter((p) => p.text.length >= OCR_PAGE_TEXT_THRESHOLD).length;
-  console.log(`[ingest-document] text pass done pagesTotal=${pagesTotal} withText=${textPages} scanned=${scannedPageNums.length}`);
-
-  // OCR fallback — still capped at OCR_MAX_PAGES total across the whole document.
-  const ocrTargets = scannedPageNums.slice(0, OCR_MAX_PAGES);
-  const ocrUnread = Math.max(0, scannedPageNums.length - ocrTargets.length);
-  let ocrRead = 0;
-
-  if (ocrTargets.length > 0) {
-    await stage(adminClient, doc.id, `OCR ${ocrTargets.length} pages`);
-    for (let start = 0; start < ocrTargets.length; start += OCR_BATCH_SIZE) {
-      const batchNums = ocrTargets.slice(start, start + OCR_BATCH_SIZE);
-      let batchBytes: Uint8Array | null = null;
-      try {
-        let src: any = await PDFDocument.load(bytes);
-        let out: any = await PDFDocument.create();
-        const copied = await out.copyPages(src, batchNums.map((n) => n - 1));
-        for (const p of copied) out.addPage(p);
-        const saved = await out.save();
-        batchBytes = new Uint8Array(saved);
-        src = null;
-        out = null;
-        const b64 = bytesToBase64(batchBytes);
-        const dataUrl = `data:application/pdf;base64,${b64}`;
-
-        const res = await fetchWithTimeout("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${lovableApiKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: "google/gemini-3-flash-preview",
-            messages: [{
-              role: "user",
-              content: [
-                { type: "text", text: `This PDF contains ${batchNums.length} scanned page(s). Extract ALL text, preserving structure. Separate each page with the exact delimiter "\n===PAGE===\n" in order. Return ONLY raw text, no commentary.` },
-                { type: "image_url", image_url: { url: dataUrl } },
-              ],
-            }],
-          }),
-        }, 120000, "PDF OCR batch");
-
-        if (!res.ok) {
-          const t = await res.text().catch(() => "");
-          console.warn(`[ingest-document] OCR batch ${start}-${start + batchNums.length} API ${res.status}: ${t.slice(0, 200)}`);
-          continue;
-        }
-        const data = await res.json();
-        const raw: string = data.choices?.[0]?.message?.content || "";
-        const parts = raw.split(/\n===PAGE===\n/);
-        for (let j = 0; j < batchNums.length; j++) {
-          const pageNum = batchNums[j];
-          const chunk = normalizeText(parts[j] || (parts.length === 1 ? raw : ""));
-          if (chunk.length >= OCR_PAGE_TEXT_THRESHOLD) {
-            pages[pageNum - 1].text = chunk;
-            ocrRead += 1;
-          }
-        }
-      } catch (e) {
-        console.warn(`[ingest-document] OCR batch failed:`, e instanceof Error ? e.message : e);
-      } finally {
-        batchBytes = null;
-      }
-    }
-  }
-
-  const pagesRead = pages.filter((p) => p.text.length >= OCR_PAGE_TEXT_THRESHOLD).length;
-  let method: "text" | "ocr" | "mixed";
-  if (ocrRead === 0) method = "text";
-  else if (textPages === 0) method = "ocr";
-  else method = "mixed";
-
-  return { pages, pagesTotal, pagesRead, method, ocrUnread };
-  };
-
-  // Real backstop: single-await text pass makes this timer actually effective.
-  let timer: number | undefined;
-  const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error("PDF read timed out")), PDF_EXTRACT_DEADLINE_MS) as unknown as number;
-  });
-  try {
-    return await Promise.race([run(), timeout]);
-  } finally {
-    if (timer !== undefined) clearTimeout(timer);
-  }
-}
 
 // Extract text from a DOCX using mammoth (pure JS, no native deps).
 async function extractFromDocx(adminClient: any, doc: any): Promise<string> {
@@ -434,85 +298,394 @@ async function extractFromDocx(adminClient: any, doc: any): Promise<string> {
   return result?.value || "";
 }
 
-async function processDocument(
-  document_id: string,
-  userId: string,
-  supabaseUrl: string,
-  serviceRoleKey: string,
+// ============================================================================
+// Staged PDF pipeline — cursor + heartbeat pattern (mirrors evidence_jobs)
+// ============================================================================
+
+type PdfPage = { page: number; text: string };
+
+function storagePathOf(doc: any): string {
+  return doc.file_url.includes("/storage/v1/")
+    ? doc.file_url.split("/documents/")[1]
+    : doc.file_url;
+}
+
+// PROBE: load PDF only enough to read numPages. No text extraction.
+async function probePdf(bytes: Uint8Array): Promise<number> {
+  // Prefer pdf-lib (lighter for a numPages read) over unpdf.
+  // @ts-ignore dynamic esm import
+  const { PDFDocument } = await import("https://esm.sh/pdf-lib@1.17.1");
+  try {
+    const src: any = await PDFDocument.load(bytes, { ignoreEncryption: false });
+    return src.getPageCount();
+  } catch (e) {
+    const msg = (e instanceof Error ? e.message : String(e)).toLowerCase();
+    if (msg.includes("encrypt") || msg.includes("password")) {
+      const err: any = new Error("password_protected");
+      err.failure_code = "password_protected";
+      throw err;
+    }
+    const err: any = new Error("corrupt_file: " + msg.slice(0, 200));
+    err.failure_code = "corrupt_file";
+    throw err;
+  }
+}
+
+// EXTRACT: process ONE page range [from, to) of a PDF.
+// Copies the slice out via pdf-lib, runs unpdf whole-doc extractText on the
+// slice (not the whole document), then OCRs up to OCR_PER_SLICE_MAX scanned
+// pages. Returns page-scoped text.
+async function extractPdfSlice(
+  bytes: Uint8Array,
+  from: number, // 0-indexed inclusive
+  to: number,   // 0-indexed exclusive
   lovableApiKey: string,
-) {
-  const adminClient = createClient(supabaseUrl, serviceRoleKey);
-  console.log(`[ingest-document] processDocument START id=${document_id} user=${userId}`);
+): Promise<PdfPage[]> {
+  // @ts-ignore dynamic esm import
+  const { extractText, getDocumentProxy } = await import("https://esm.sh/unpdf@0.12.1");
+  // @ts-ignore dynamic esm import
+  const { PDFDocument } = await import("https://esm.sh/pdf-lib@1.17.1");
 
-  // Hard deadline: extraction must always end in completed or error.
-  let deadlineTimer: number | undefined;
-  const deadlinePromise = new Promise<"__deadline__">((resolve) => {
-    deadlineTimer = setTimeout(() => resolve("__deadline__"), PROCESS_DEADLINE_MS) as unknown as number;
-  });
+  const src: any = await PDFDocument.load(bytes);
+  const total = src.getPageCount();
+  const start = Math.max(0, from);
+  const end = Math.min(total, to);
+  if (end <= start) return [];
 
-  const work = (async () => {
-   try {
-    const { data: doc, error: docErr } = await adminClient
-      .from("documents")
-      .select("*")
-      .eq("id", document_id)
-      .single();
+  const out: any = await PDFDocument.create();
+  const indices: number[] = [];
+  for (let i = start; i < end; i++) indices.push(i);
+  const copied = await out.copyPages(src, indices);
+  for (const p of copied) out.addPage(p);
+  const saved = await out.save();
+  let sliceBytes: Uint8Array | null = new Uint8Array(saved);
 
-    if (docErr || !doc) {
-      await markError(adminClient, document_id, `Document not found: ${docErr?.message || "missing"}`);
-      return;
-    }
+  // Whole-slice extractText — proven fast path (~1s on 279 pages).
+  let pdf: any = await getDocumentProxy(sliceBytes);
+  const all: any = await extractText(pdf, { mergePages: false });
+  pdf = null;
+  const rawPages: string[] = Array.isArray(all?.text)
+    ? all.text
+    : (typeof all?.text === "string" ? [all.text] : []);
 
-    const kind = classifyKind(doc.file_type, doc.filename || "");
-    const extractionPath = getExtractionPath(kind);
-    console.log(`[ingest-document] file_type=${doc.file_type} filename=${doc.filename} -> kind=${kind}`);
-    console.log(`[ingest-document] extraction_path=${extractionPath}`);
+  const pages: PdfPage[] = [];
+  const scannedPositions: number[] = []; // 0-indexed within the slice
+  for (let i = 0; i < indices.length; i++) {
+    const pageNum = indices[i] + 1; // 1-indexed absolute
+    const text = normalizeText(String(rawPages[i] || ""));
+    pages.push({ page: pageNum, text });
+    if (text.length < OCR_PAGE_TEXT_THRESHOLD) scannedPositions.push(i);
+  }
 
-    if (kind === "unsupported") {
-      await markError(adminClient, document_id, `Unsupported file type: ${doc.file_type || "unknown"}`);
-      return;
-    }
+  // OCR fallback — capped per slice (not per document). Only the FIRST
+  // OCR_PER_SLICE_MAX scanned pages of the slice go through OCR.
+  const ocrPositions = scannedPositions.slice(0, OCR_PER_SLICE_MAX);
+  if (ocrPositions.length > 0) {
+    for (let s = 0; s < ocrPositions.length; s += OCR_BATCH_SIZE) {
+      const batch = ocrPositions.slice(s, s + OCR_BATCH_SIZE);
+      try {
+        let ocrDoc: any = await PDFDocument.create();
+        const ocrCopied = await ocrDoc.copyPages(src, batch.map((i) => indices[i]));
+        for (const p of ocrCopied) ocrDoc.addPage(p);
+        const ocrSaved = await ocrDoc.save();
+        const ocrBytes = new Uint8Array(ocrSaved);
+        ocrDoc = null;
+        const b64 = bytesToBase64(ocrBytes);
+        const dataUrl = `data:application/pdf;base64,${b64}`;
 
-    if (kind === "pdf" && extractionPath !== "pdf_base64") {
-      await markError(adminClient, document_id, "Routing error: PDF was not sent through pdf_base64 path");
-      return;
-    }
+        const res = await fetchWithTimeout("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${lovableApiKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "google/gemini-3-flash-preview",
+            messages: [{
+              role: "user",
+              content: [
+                { type: "text", text: `This PDF contains ${batch.length} scanned page(s). Extract ALL text, preserving structure. Separate each page with the exact delimiter "\n===PAGE===\n" in order. Return ONLY raw text, no commentary.` },
+                { type: "image_url", image_url: { url: dataUrl } },
+              ],
+            }],
+          }),
+        }, 90000, "PDF OCR slice batch");
 
-    if (kind === "docx" && extractionPath !== "docx_mammoth") {
-      await markError(adminClient, document_id, "Routing error: DOCX was not sent through docx_mammoth path");
-      return;
-    }
-
-    let extractedText = "";
-    let pdfResult: PdfResult | null = null;
-    try {
-      console.log(`[ingest-document] stage=extracting path=${extractionPath}`);
-      if (kind === "image") {
-        extractedText = await extractFromImage(adminClient, doc, lovableApiKey);
-      } else if (kind === "pdf") {
-        pdfResult = await extractFromPdf(adminClient, doc, lovableApiKey);
-        extractedText = pdfResult.pages.map((p) => p.text).filter(Boolean).join("\n\n");
-      } else if (kind === "docx") {
-        extractedText = await extractFromDocx(adminClient, doc);
+        if (!res.ok) {
+          const t = await res.text().catch(() => "");
+          console.warn(`[ingest-document] OCR batch API ${res.status}: ${t.slice(0, 200)}`);
+          continue;
+        }
+        const data = await res.json();
+        const raw: string = data.choices?.[0]?.message?.content || "";
+        const parts = raw.split(/\n===PAGE===\n/);
+        for (let j = 0; j < batch.length; j++) {
+          const pos = batch[j];
+          const text = normalizeText(parts[j] || (parts.length === 1 ? raw : ""));
+          if (text.length >= OCR_PAGE_TEXT_THRESHOLD) pages[pos].text = text;
+        }
+      } catch (e) {
+        console.warn(`[ingest-document] OCR slice batch failed:`, e instanceof Error ? e.message : e);
       }
+    }
+  }
+
+  sliceBytes = null;
+  return pages;
+}
+
+// ============================================================================
+// Job orchestration
+// ============================================================================
+
+async function markJobFailed(
+  admin: any,
+  job: any,
+  code: FailureCode,
+  detail: string,
+) {
+  const copy = FAILURE_COPY[code] || FAILURE_COPY.internal_error;
+  await admin.from("document_jobs")
+    .update({
+      stage: "failed",
+      failure_code: code,
+      error_detail: detail.slice(0, 500),
+      last_heartbeat: new Date().toISOString(),
+    })
+    .eq("id", job.id);
+  await admin.from("documents")
+    .update({ status: "error", error_message: copy })
+    .eq("id", job.document_id);
+}
+
+async function runProbe(
+  admin: any,
+  job: any,
+  doc: any,
+  lovableApiKey: string,
+): Promise<{ next: "extracting" | "complete" | "failed" }> {
+  const t0 = Date.now();
+  const kind = classifyKind(doc.file_type, doc.filename || "");
+
+  if (kind === "unsupported") {
+    await markJobFailed(admin, job, "unsupported_type", `file_type=${doc.file_type || ""}`);
+    return { next: "failed" };
+  }
+
+  // Non-PDF single-shot: image + docx run entirely in probing, then complete.
+  if (kind === "image" || kind === "docx") {
+    try {
+      const text = kind === "image"
+        ? await extractFromImage(admin, doc, lovableApiKey)
+        : await extractFromDocx(admin, doc);
+      const clean = normalizeText(text);
+      if (!clean || clean.length < 20) {
+        await markJobFailed(admin, job, "no_text_layer", `empty ${kind} extraction`);
+        return { next: "failed" };
+      }
+      const chunks = chunkText(clean).map((content, i) => ({
+        document_id: doc.id,
+        user_id: doc.user_id,
+        content,
+        chunk_index: i,
+        metadata: { filename: doc.filename, file_type: doc.file_type, kind },
+      }));
+      if (chunks.length > 0) {
+        await admin.from("document_chunks").insert(chunks);
+      }
+      const mem = await logStageInfo(admin, {
+        document_id: doc.id, stage: "probing", cursor: 0, ms_elapsed: Date.now() - t0,
+        extra: { kind, chunks: chunks.length },
+      });
+      await heartbeat(admin, job.id, {
+        stage: "complete",
+        total: null,
+        cursor: 0,
+        peak_memory_mb: Math.max(job.peak_memory_mb ?? 0, mem.rss_mb),
+      });
+      await admin.from("documents").update({
+        pages_total: null, pages_read: null,
+      }).eq("id", doc.id);
+      return { next: "complete" };
     } catch (e) {
       const raw = e instanceof Error ? e.message : String(e);
-      // Prefix with stage so the UI can name the failure clearly.
-      await markError(adminClient, document_id, `Extraction failed (${kind}): ${raw}`);
-      return;
+      await markJobFailed(admin, job, classifyFailure(raw), raw);
+      return { next: "failed" };
+    }
+  }
+
+  // PDF probe: read numPages ONLY.
+  try {
+    const bytes = await downloadStorageBytes(admin, storagePathOf(doc));
+    if (bytes.byteLength > MAX_BYTES) {
+      await markJobFailed(admin, job, "unsupported_type",
+        `PDF too large (${(bytes.byteLength / 1024 / 1024).toFixed(1)} MB, max 50 MB)`);
+      return { next: "failed" };
+    }
+    const total = await probePdf(bytes);
+    const mem = await logStageInfo(admin, {
+      document_id: doc.id, stage: "probing", cursor: 0, ms_elapsed: Date.now() - t0,
+      extra: { total, bytes: bytes.byteLength },
+    });
+    await heartbeat(admin, job.id, {
+      stage: "extracting",
+      total,
+      cursor: 0,
+      peak_memory_mb: Math.max(job.peak_memory_mb ?? 0, mem.rss_mb),
+    });
+    await admin.from("documents").update({
+      pages_total: total,
+      pages_read: 0,
+      page_count: total,
+    }).eq("id", doc.id);
+    return { next: "extracting" };
+  } catch (e: any) {
+    const code: FailureCode = (e && e.failure_code) || classifyFailure(e?.message || String(e));
+    await markJobFailed(admin, job, code, e?.message || String(e));
+    return { next: "failed" };
+  }
+}
+
+async function runExtractSlice(
+  admin: any,
+  job: any,
+  doc: any,
+  lovableApiKey: string,
+): Promise<{ next: "extracting" | "complete" | "failed" }> {
+  const t0 = Date.now();
+  const from = job.cursor as number;
+  const total = (job.total as number) ?? 0;
+  if (total <= 0) {
+    await markJobFailed(admin, job, "internal_error", "extract called before probe wrote total");
+    return { next: "failed" };
+  }
+  const sliceSize = Math.max(MIN_SLICE_SIZE, (job.slice_size as number) || DEFAULT_SLICE_SIZE);
+  const to = Math.min(total, from + sliceSize);
+
+  // Bump attempts BEFORE the risky work — the watchdog reads this on death.
+  const nextAttempts = (job.attempts as number) + 1;
+  await heartbeat(admin, job.id, { attempts: nextAttempts });
+
+  try {
+    const bytes = await downloadStorageBytes(admin, storagePathOf(doc));
+    const pages = await extractPdfSlice(bytes, from, to, lovableApiKey);
+
+    // Chunk and insert progressively — one range per invocation.
+    const rows: any[] = [];
+    let localIdx = 0;
+    // Get current max chunk_index so we don't collide across slices.
+    const { data: maxRow } = await admin
+      .from("document_chunks")
+      .select("chunk_index")
+      .eq("document_id", doc.id)
+      .order("chunk_index", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    let baseIdx = ((maxRow as any)?.chunk_index ?? -1) + 1;
+
+    let pagesReadInSlice = 0;
+    for (const p of pages) {
+      if (!p.text || p.text.length < 20) continue;
+      pagesReadInSlice += 1;
+      const parts = chunkText(p.text);
+      for (const content of parts) {
+        rows.push({
+          document_id: doc.id,
+          user_id: doc.user_id,
+          content,
+          chunk_index: baseIdx + localIdx++,
+          metadata: {
+            filename: doc.filename,
+            file_type: doc.file_type,
+            kind: "pdf",
+            page_start: p.page,
+            page_end: p.page,
+          },
+        });
+      }
+    }
+    if (rows.length > 0) {
+      const { error: insErr } = await admin.from("document_chunks").insert(rows);
+      if (insErr) throw new Error(`chunk insert: ${insErr.message}`);
     }
 
-    extractedText = normalizeText(extractedText);
-    if (!extractedText || extractedText.length < 20) {
-      await markError(adminClient, document_id, `No usable text extracted from ${kind.toUpperCase()} (empty extracted text).`);
-      return;
-    }
-    console.log(`[ingest-document] stage=extracted ok (${kind}), ${extractedText.length} chars`);
+    const newCursor = to;
+    const pagesReadTotal = ((doc.pages_read as number) || 0) + pagesReadInSlice;
 
-    // Summary (non-fatal)
-    let docSummary = "";
-    try {
-      console.log(`[ingest-document] before summary generation id=${document_id}`);
+    const mem = await logStageInfo(admin, {
+      document_id: doc.id, stage: "extracting", cursor: newCursor,
+      ms_elapsed: Date.now() - t0,
+      extra: { from, to, pages_in_slice: pages.length, chunks_inserted: rows.length, slice_size: sliceSize },
+    });
+
+    const nextStage = newCursor >= total ? "chunking" : "extracting";
+    await heartbeat(admin, job.id, {
+      cursor: newCursor,
+      stage: nextStage,
+      // Reset attempts on progress so the "twice at same cursor" rule works.
+      attempts: 0,
+      peak_memory_mb: Math.max(job.peak_memory_mb ?? 0, mem.rss_mb),
+    });
+
+    // Progress on documents so UI can render "Reading 47 of 279 pages".
+    await admin.from("documents").update({
+      pages_read: pagesReadTotal,
+    }).eq("id", doc.id);
+
+    if (newCursor >= total) return { next: "complete" };
+    return { next: "extracting" };
+  } catch (e) {
+    const raw = e instanceof Error ? e.message : String(e);
+    // Halve slice size and retry, unless we've been here twice at this cursor.
+    if (nextAttempts >= 2) {
+      const halved = Math.floor(sliceSize / 2);
+      if (halved < MIN_SLICE_SIZE) {
+        // We already tried size 3 twice — give up on this range.
+        // If we've read >85% of pages, mark partial_success and finish.
+        const readRatio = ((doc.pages_read as number) || 0) / Math.max(1, total);
+        if (readRatio >= 0.85) {
+          await heartbeat(admin, job.id, {
+            stage: "chunking",
+            failure_code: "partial_success",
+            error_detail: `stalled at page ${from}: ${raw.slice(0, 200)}`,
+          });
+          return { next: "complete" };
+        }
+        await markJobFailed(admin, job, "too_dense", `stalled at page ${from}: ${raw.slice(0, 200)}`);
+        return { next: "failed" };
+      }
+      await heartbeat(admin, job.id, { slice_size: halved, attempts: 0 });
+      console.log(`[ingest-document] halving slice_size ${sliceSize}->${halved} at cursor=${from}`);
+    }
+    await logStageInfo(admin, {
+      document_id: doc.id, stage: "extracting_error", cursor: from,
+      ms_elapsed: Date.now() - t0,
+      extra: { error: raw.slice(0, 300), attempts: nextAttempts, slice_size: sliceSize },
+    });
+    // Return "extracting" so orchestrator re-invokes us (retry same cursor).
+    return { next: "extracting" };
+  }
+}
+
+async function runComplete(
+  admin: any,
+  job: any,
+  doc: any,
+  lovableApiKey: string,
+) {
+  const t0 = Date.now();
+
+  // Assemble a short excerpt for summary + entries content — cap to 20k so we
+  // never pull megabytes into memory at completion.
+  const { data: chunkRows } = await admin
+    .from("document_chunks")
+    .select("content, chunk_index")
+    .eq("document_id", doc.id)
+    .order("chunk_index", { ascending: true })
+    .limit(60);
+  const excerpt = ((chunkRows || []) as any[])
+    .map((r) => r.content).join("\n\n").slice(0, 20000);
+
+  let docSummary = "";
+  try {
+    if (excerpt.length >= 200) {
       const summaryRes = await fetchWithTimeout("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: { Authorization: `Bearer ${lovableApiKey}`, "Content-Type": "application/json" },
@@ -520,7 +693,7 @@ async function processDocument(
           model: "google/gemini-3-flash-preview",
           messages: [
             { role: "system", content: "You are a senior executive summarizer. Produce a 2-3 sentence strategic summary. Focus on key themes, frameworks, and actionable insights." },
-            { role: "user", content: extractedText.slice(0, 4000) },
+            { role: "user", content: excerpt.slice(0, 4000) },
           ],
         }),
       }, 30000, "Summary generation");
@@ -528,190 +701,171 @@ async function processDocument(
         const sumData = await summaryRes.json();
         docSummary = sumData.choices?.[0]?.message?.content || "";
       }
-    } catch (e) {
-      console.error("[ingest-document] summary error (non-fatal):", e);
     }
+  } catch (e) {
+    console.error("[ingest-document] summary error (non-fatal):", e);
+  }
 
-    // Chunk with page provenance for PDFs; plain chunking otherwise.
-    let chunkRows: any[] = [];
-    if (pdfResult) {
-      let idx = 0;
-      for (const p of pdfResult.pages) {
-        if (!p.text || p.text.length < 20) continue;
-        const parts = chunkText(p.text);
-        for (const content of parts) {
-          chunkRows.push({
-            document_id,
-            user_id: userId,
-            content,
-            chunk_index: idx++,
-            metadata: {
-              filename: doc.filename,
-              file_type: doc.file_type,
-              kind,
-              page_start: p.page,
-              page_end: p.page,
-            },
-          });
-        }
-      }
-    } else {
-      const chunks = chunkText(extractedText);
-      chunkRows = chunks.map((content, i) => ({
-        document_id,
-        user_id: userId,
-        content,
-        chunk_index: i,
-        metadata: { filename: doc.filename, file_type: doc.file_type, kind },
-      }));
-    }
-    console.log(`[ingest-document] chunking complete count=${chunkRows.length}`);
+  const { count: chunkCount } = await admin
+    .from("document_chunks")
+    .select("id", { count: "exact", head: true })
+    .eq("document_id", doc.id);
 
-    if (chunkRows.length > 0) {
-      console.log(`[ingest-document] stage=chunking inserting ${chunkRows.length} rows`);
-      await stage(adminClient, document_id, "chunking");
-      const { error: insertErr } = await adminClient.from("document_chunks").insert(chunkRows);
-      if (insertErr) {
-        await markError(adminClient, document_id, `Chunk insert failed: ${insertErr.message}`);
-        return;
-      }
-    }
+  const pagesTotal = (job.total as number) ?? null;
+  const { data: freshDoc } = await admin
+    .from("documents").select("pages_read").eq("id", doc.id).maybeSingle();
+  const pagesRead = ((freshDoc as any)?.pages_read as number) ?? null;
 
-    // Honest counts: page_count reflects real total pages for PDFs; null for DOCX/images.
-    const completionPayload: Record<string, unknown> = {
-      status: "completed",
-      summary: docSummary || extractedText.slice(0, 300),
-      error_message: null,
-    };
-    if (pdfResult) {
-      completionPayload.page_count = pdfResult.pagesTotal;
-      completionPayload.pages_total = pdfResult.pagesTotal;
-      completionPayload.pages_read = pdfResult.pagesRead;
-      completionPayload.extraction_method = pdfResult.method;
-      console.log(`[ingest-document] final status -> completed pdf pages ${pdfResult.pagesRead}/${pdfResult.pagesTotal} method=${pdfResult.method} ocrUnread=${pdfResult.ocrUnread}`);
-    } else {
-      completionPayload.page_count = null;
-      completionPayload.pages_total = null;
-      completionPayload.pages_read = null;
-      completionPayload.extraction_method = "text";
-      console.log(`[ingest-document] final status -> completed (${kind}, ${chunkRows.length} chunks)`);
-    }
-    await adminClient.from("documents").update(completionPayload).eq("id", document_id);
+  await admin.from("documents").update({
+    status: "completed",
+    summary: docSummary || excerpt.slice(0, 300),
+    error_message: null,
+    page_count: pagesTotal,
+    pages_total: pagesTotal,
+    pages_read: pagesRead,
+    extraction_method: "text",
+  }).eq("id", doc.id);
 
-    // Write to entries so document uploads count toward capture score
-    const { error: entryErr } = await adminClient
-      .from("entries")
-      .insert({
-        user_id: userId,
-        type: "document",
-        title: doc.filename || null,
-        content: (extractedText || doc.filename || "Document upload").slice(0, 10000),
-        summary: docSummary || null,
-        image_url: doc.file_url || null,
-      });
-    if (entryErr) {
-      console.error("[ingest-document] entries insert failed:", entryErr.message);
-      // Non-blocking — document processing already succeeded
-    }
+  // Ledger event
+  try {
+    await admin.from("entries").insert({
+      user_id: doc.user_id,
+      type: "document",
+      title: doc.filename || null,
+      content: (excerpt || doc.filename || "Document upload").slice(0, 10000),
+      summary: docSummary || null,
+      image_url: doc.file_url || null,
+    });
+  } catch (e) {
+    console.error("[ingest-document] entries insert failed:", e);
+  }
 
-    // Emit ledger event — non-blocking on failure
+  await logStageInfo(admin, {
+    document_id: doc.id, stage: "complete", cursor: job.cursor,
+    ms_elapsed: Date.now() - t0,
+    extra: { chunks: chunkCount ?? null, pages_read: pagesRead, pages_total: pagesTotal },
+  });
+  await heartbeat(admin, job.id, {
+    stage: "complete",
+  });
+
+  // Fire-and-forget downstream pipeline.
+  // @ts-ignore EdgeRuntime.waitUntil
+  EdgeRuntime.waitUntil((async () => {
     try {
-      const sbUrl = Deno.env.get("SUPABASE_URL")!;
-      const srk = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const res = await fetch(`${sbUrl}/functions/v1/ingest-source-event`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${srk}`,
-          apikey: srk,
-        },
-        body: JSON.stringify({
-          user_id: userId,
-          event_type: "document",
-          source_table: "documents",
-          source_id: document_id,
-          payload: {
-            page_count: pdfResult ? pdfResult.pagesTotal : null,
-            pages_read: pdfResult ? pdfResult.pagesRead : null,
-            extraction_method: pdfResult ? pdfResult.method : "text",
-          },
-        }),
-      });
-      if (!res.ok) {
-        console.error("[source-event] emit failed", res.status, await res.text());
+      const { data: extractResult, error: extractError } = await admin.functions.invoke(
+        "extract-evidence",
+        { body: { source_type: "document", source_id: doc.id, user_id: doc.user_id } },
+      );
+      if (extractError) console.error("[ingest-document] deferred extract-evidence error:", extractError);
+      const registryId = extractResult?.source_registry_id;
+      if (registryId) {
+        const { error: sigError } = await admin.functions.invoke("detect-signals-v2", {
+          body: { source_registry_id: registryId, user_id: doc.user_id },
+        });
+        if (sigError) console.error("[ingest-document] deferred detect-signals-v2 error:", sigError);
       }
-    } catch (e: any) {
-      console.error("[source-event] emit failed", e?.message);
+    } catch (e) {
+      console.error("[ingest-document] deferred pipeline error:", e);
     }
 
-    // Defer ALL non-essential downstream work so the document row appears `completed`
-    // to the UI immediately. None of these block the perceived completion.
-    // @ts-ignore EdgeRuntime.waitUntil is available in Supabase Edge Functions
-    EdgeRuntime.waitUntil((async () => {
-      try {
-        const { data: extractResult, error: extractError } = await adminClient.functions.invoke(
-          "extract-evidence",
-          { body: { source_type: "document", source_id: document_id, user_id: userId } },
-        );
-        if (extractError) {
-          console.error("[ingest-document] deferred extract-evidence error:", extractError);
-        } else {
-          const registryId = extractResult?.source_registry_id;
-          if (registryId) {
-            const { error: sigError } = await adminClient.functions.invoke("detect-signals-v2", {
-              body: { source_registry_id: registryId, user_id: userId },
-            });
-            if (sigError) console.error("[ingest-document] deferred detect-signals-v2 error:", sigError);
-          }
-        }
-      } catch (e) {
-        console.error("[ingest-document] deferred pipeline error:", e);
-      }
-
-      const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-      if (!OPENAI_API_KEY || chunkRows.length === 0) return;
-      try {
+    // Embeddings for all chunks — batched.
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (!OPENAI_API_KEY) return;
+    try {
+      const { data: allChunks } = await admin
+        .from("document_chunks")
+        .select("id, content, chunk_index")
+        .eq("document_id", doc.id)
+        .order("chunk_index", { ascending: true });
+      if (!allChunks || allChunks.length === 0) return;
+      const BATCH = 100;
+      for (let i = 0; i < allChunks.length; i += BATCH) {
+        const batch = (allChunks as any[]).slice(i, i + BATCH);
         const embRes = await fetchWithTimeout("https://api.openai.com/v1/embeddings", {
           method: "POST",
           headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ model: "text-embedding-3-small", input: chunkRows.map((r) => r.content) }),
+          body: JSON.stringify({ model: "text-embedding-3-small", input: batch.map((r) => r.content) }),
         }, 30000, "Embedding generation");
-        if (!embRes.ok) return;
+        if (!embRes.ok) continue;
         const embData = await embRes.json();
-        const { data: insertedChunks } = await adminClient
-          .from("document_chunks")
-          .select("id, chunk_index")
-          .eq("document_id", document_id)
-          .order("chunk_index", { ascending: true });
-        if (!insertedChunks) return;
         for (const emb of embData.data || []) {
-          const chunk = insertedChunks[emb.index];
+          const chunk = batch[emb.index];
           if (chunk) {
-            await adminClient
-              .from("document_chunks")
+            await admin.from("document_chunks")
               .update({ embedding: `[${emb.embedding.join(",")}]` } as any)
               .eq("id", chunk.id);
           }
         }
-      } catch (embErr) {
-        console.error("[ingest-document] deferred embedding error:", embErr);
+      }
+    } catch (embErr) {
+      console.error("[ingest-document] deferred embedding error:", embErr);
+    }
+  })());
+}
+
+// The core orchestrator: read the job, dispatch to a stage runner, and
+// re-invoke self if there is more work to do.
+async function runNextStage(
+  admin: any,
+  jobId: string,
+  lovableApiKey: string,
+) {
+  const { data: job } = await admin
+    .from("document_jobs").select("*").eq("id", jobId).maybeSingle();
+  if (!job) {
+    console.error(`[ingest-document] job ${jobId} not found`);
+    return;
+  }
+  if (job.stage === "complete" || job.stage === "failed") return;
+
+  const { data: doc } = await admin
+    .from("documents").select("*").eq("id", job.document_id).maybeSingle();
+  if (!doc) {
+    await markJobFailed(admin, job, "internal_error", "document row missing");
+    return;
+  }
+
+  let next: "extracting" | "complete" | "failed" | "chunking" = "failed";
+  if (job.stage === "queued" || job.stage === "probing") {
+    if (job.stage === "queued") {
+      await heartbeat(admin, job.id, { stage: "probing" });
+    }
+    const r = await runProbe(admin, { ...job, stage: "probing" }, doc, lovableApiKey);
+    next = r.next;
+  } else if (job.stage === "extracting") {
+    const r = await runExtractSlice(admin, job, doc, lovableApiKey);
+    next = r.next;
+  } else if (job.stage === "chunking") {
+    // Explicit chunking stage exists mainly for partial_success bookkeeping —
+    // real chunking is progressive per slice. Just finalize.
+    await runComplete(admin, job, doc, lovableApiKey);
+    return;
+  }
+
+  if (next === "extracting" || next === "chunking") {
+    // Chain the next slice/finalize without blocking the current invocation.
+    // @ts-ignore EdgeRuntime.waitUntil
+    EdgeRuntime.waitUntil((async () => {
+      try {
+        await admin.functions.invoke("ingest-document", {
+          body: { document_job_id: job.id },
+        });
+      } catch (e) {
+        console.error("[ingest-document] self-invoke failed:", (e as Error).message);
       }
     })());
-  } catch (e) {
-    await markError(adminClient, document_id, `Unexpected: ${e instanceof Error ? e.message : String(e)}`);
+    return;
   }
-  })();
 
-  const outcome = await Promise.race([work, deadlinePromise]);
-  if (deadlineTimer !== undefined) clearTimeout(deadlineTimer);
-  if (outcome === "__deadline__") {
-    await markError(
-      adminClient,
-      document_id,
-      "Reading timed out — file too complex; try a smaller export",
-    );
+  if (next === "complete") {
+    await runComplete(admin, { ...job }, doc, lovableApiKey);
   }
 }
+
+// ============================================================================
+// HTTP handler
+// ============================================================================
 
 Deno.serve(withObserve("ingest-document", async (req) => {
   console.log(`[ingest-document] handler start method=${req.method}`);
@@ -720,9 +874,39 @@ Deno.serve(withObserve("ingest-document", async (req) => {
   }
 
   try {
-    const { document_id } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const document_id: string | undefined = body?.document_id;
+    const document_job_id: string | undefined = body?.document_job_id;
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    const admin = createClient(supabaseUrl, serviceRoleKey);
+
+    // ---- Worker mode: self-invoke or watchdog ----
+    if (document_job_id && !document_id) {
+      // Authorized: service-role bearer OR cron secret.
+      const bearer = (req.headers.get("Authorization") || "").replace("Bearer ", "");
+      const cronHeader = req.headers.get("x-cron-secret") || "";
+      const CRON_SECRET = Deno.env.get("CRON_SECRET") || "";
+      const ok = (bearer && bearer === serviceRoleKey) ||
+                 (CRON_SECRET && cronHeader === CRON_SECRET);
+      if (!ok) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      // @ts-ignore EdgeRuntime.waitUntil
+      EdgeRuntime.waitUntil(runNextStage(admin, document_job_id, LOVABLE_API_KEY));
+      return new Response(JSON.stringify({ success: true, worker: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ---- Client mode: initiate a new job for a fresh document ----
     if (!document_id) {
-      return new Response(JSON.stringify({ error: "document_id required" }), {
+      return new Response(JSON.stringify({ error: "document_id or document_job_id required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -733,80 +917,66 @@ Deno.serve(withObserve("ingest-document", async (req) => {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      console.error("[ingest-document] LOVABLE_API_KEY missing");
-      throw new Error("LOVABLE_API_KEY not configured");
-    }
-
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: authError } = await userClient.auth.getUser(token);
     if (authError || !user) {
-      console.error("[ingest-document] auth failed:", authError?.message);
       return new Response(JSON.stringify({ error: "Not authenticated" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    console.log(`[ingest-document] auth OK user=${user.id} doc=${document_id}`);
 
-    const adminClient = createClient(supabaseUrl, serviceRoleKey);
-
-    // Ownership guard: caller must own this document before we do anything.
-    const { data: ownershipRow, error: ownErr } = await adminClient
-      .from("documents")
-      .select("user_id")
-      .eq("id", document_id)
-      .maybeSingle();
-    if (ownErr) {
-      return new Response(JSON.stringify({ error: "Lookup failed" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // Ownership guard.
+    const { data: ownershipRow } = await admin
+      .from("documents").select("user_id, attempt_count").eq("id", document_id).maybeSingle();
     if (!ownershipRow || (ownershipRow as any).user_id !== user.id) {
       return new Response(JSON.stringify({ error: "Not found" }), {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Read current attempt_count so we can increment atomically-ish (single-writer path).
-    const { data: curRow } = await adminClient
-      .from("documents")
-      .select("attempt_count")
-      .eq("id", document_id)
-      .maybeSingle();
-    const nextAttempt = ((curRow as any)?.attempt_count ?? 0) + 1;
-    await adminClient
-      .from("documents")
-      .update({
-        status: "processing",
-        error_message: null,
-        processing_started_at: new Date().toISOString(),
-        attempt_count: nextAttempt,
-      } as any)
-      .eq("id", document_id);
+    const nextAttempt = ((ownershipRow as any).attempt_count ?? 0) + 1;
+    await admin.from("documents").update({
+      status: "processing",
+      error_message: null,
+      processing_started_at: new Date().toISOString(),
+      attempt_count: nextAttempt,
+      pages_read: 0,
+    }).eq("id", document_id);
 
-    console.log(`[ingest-document] kicking off background processDocument for ${document_id}`);
-    // @ts-ignore EdgeRuntime.waitUntil is available in Supabase Edge Functions
-    EdgeRuntime.waitUntil(
-      processDocument(document_id, user.id, supabaseUrl, serviceRoleKey, LOVABLE_API_KEY)
-    );
+    // Clear any previous chunks so retries don't duplicate.
+    await admin.from("document_chunks").delete().eq("document_id", document_id);
+
+    // Cancel any in-flight jobs for this doc.
+    await admin.from("document_jobs")
+      .update({ stage: "failed", failure_code: "internal_error", error_detail: "superseded by new job" })
+      .eq("document_id", document_id)
+      .not("stage", "in", "(complete,failed)");
+
+    const { data: job, error: jobErr } = await admin.from("document_jobs").insert({
+      document_id,
+      user_id: user.id,
+      stage: "queued",
+      cursor: 0,
+      slice_size: DEFAULT_SLICE_SIZE,
+    }).select("id").single();
+    if (jobErr) throw new Error(`document_jobs insert: ${jobErr.message}`);
+
+    // @ts-ignore EdgeRuntime.waitUntil
+    EdgeRuntime.waitUntil(runNextStage(admin, job.id, LOVABLE_API_KEY));
 
     return new Response(
-      JSON.stringify({ success: true, message: "Processing started" }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ success: true, document_job_id: job.id, message: "Processing started" }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
     console.error("[ingest-document] handler error:", e);
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 }));
