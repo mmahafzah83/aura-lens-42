@@ -645,6 +645,7 @@ const Observatory = ({
   const [entryCount, setEntryCount] = useState(0);
   const [evidenceCount, setEvidenceCount] = useState(0);
   const [movesCount, setMovesCount] = useState(0);
+  const [signalsTotal, setSignalsTotal] = useState(0);
   const [imprint, setImprint] = useState<{
     score: number | null;
     delta: number | null;
@@ -670,16 +671,22 @@ const Observatory = ({
   const loadSignals = useCallback(async (uid: string) => {
     setSignalsLoading(true); setLoadError(false);
     try {
-      const [signalsRes, entriesRes, documentsRes, evidenceRes, movesRes] = await Promise.all([
+      const nowIso = new Date().toISOString();
+      const thirtyDaysAgoIso = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const [signalsRes, signalsCountRes, entriesRes, documentsRes, evidenceRes, movesRes] = await Promise.all([
         supabase.from("strategic_signals")
           .select("*, signal_velocity, velocity_status, commercial_validation_score")
           .eq("user_id", uid)
-          .eq("status", "active").order("confidence", { ascending: false }).limit(50),
+          .eq("status", "active").order("confidence", { ascending: false }).limit(200),
+        supabase.from("strategic_signals").select("id", { count: "exact", head: true })
+          .eq("user_id", uid).eq("status", "active"),
         supabase.from("entries").select("id", { count: "exact", head: true }).eq("user_id", uid),
         supabase.from("documents").select("id", { count: "exact", head: true }).eq("user_id", uid),
         supabase.from("evidence_fragments").select("id", { count: "exact", head: true }).eq("user_id", uid),
         supabase.from("recommended_moves").select("id", { count: "exact", head: true })
-          .eq("status", "active").eq("user_id", uid),
+          .eq("status", "active").eq("user_id", uid)
+          .gt("created_at", thirtyDaysAgoIso)
+          .or(`expires_at.is.null,expires_at.gt.${nowIso}`),
       ]);
       const raw = (signalsRes.data || []) as any[];
 
@@ -710,6 +717,7 @@ const Observatory = ({
       }) as unknown as Signal[];
 
       setSignals(loaded);
+      setSignalsTotal(signalsCountRes.count || loaded.length);
       setEntryCount((entriesRes.count || 0) + (documentsRes.count || 0));
       setEvidenceCount(evidenceRes.count || 0);
       setMovesCount(movesRes.count || 0);
