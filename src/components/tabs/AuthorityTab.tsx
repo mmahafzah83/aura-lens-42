@@ -4134,6 +4134,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                 <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--paper-2)", color: "var(--ink-3)" }}>
                   {auraTotal}
                 </span>
+                <SortToggle />
                 <ChevronDown
                   className="ml-auto transition-transform duration-200 group-hover:text-primary"
                   style={{ width: 16, height: 16, color: "var(--ink-3)", transform: showPublished ? "rotate(0deg)" : "rotate(-90deg)" }}
@@ -4144,7 +4145,9 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                   {auraRows.length === 0 ? (
                     <div style={{ background: "var(--paper)", borderRadius: 8, padding: 16, textAlign: "center" }}>
                       <p style={{ fontSize: 14, color: "var(--ink-3)" }}>
-                        Nothing published through Aura yet. Your first post from a signal lands here.
+                        {(searchNeedle || libraryLang !== "all" || libraryStatus !== "all")
+                          ? "No posts match your search."
+                          : "Nothing published through Aura yet. Your first post from a signal lands here."}
                       </p>
                     </div>
                   ) : (
@@ -4180,6 +4183,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                   <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--paper-2)", color: "var(--ink-3)" }}>
                     {earlierTotal}
                   </span>
+                  <SortToggle />
                   <ChevronDown
                     className="ml-auto transition-transform duration-200 group-hover:text-primary"
                     style={{ width: 16, height: 16, color: "var(--ink-3)", transform: showEarlier ? "rotate(0deg)" : "rotate(-90deg)" }}
