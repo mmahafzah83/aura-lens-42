@@ -219,7 +219,17 @@ export default function AuraCard({ variant }: AuraCardProps) {
     <article style={cardStyle} aria-label={`Aura ${variant} card`}>
       {/* Header */}
       <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 22 }}>
-        <AuraLogo variant="light" size={22} withWordmark />
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+          <AuraLogo variant="light" size={22} withWordmark={false} />
+          <span style={{
+            fontFamily: SERIF,
+            fontWeight: 600,
+            fontSize: 20,
+            letterSpacing: "0.04em",
+            color: INK,
+            lineHeight: 1,
+          }}>Aura</span>
+        </span>
         <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.18em", color: INK_3 }}>
           {mastheadDate()}
         </div>
@@ -274,6 +284,10 @@ export default function AuraCard({ variant }: AuraCardProps) {
           )}
 
           <Label>What they're known for</Label>
+          <div style={{
+            fontFamily: MONO, fontSize: 10, letterSpacing: "0.14em",
+            textTransform: "uppercase", color: INK_3, marginTop: -4, marginBottom: 10,
+          }}>Their point of view on the field</div>
           {pillars.length > 0 ? (
             <Chips items={pillars.slice(0, 3)} />
           ) : (
