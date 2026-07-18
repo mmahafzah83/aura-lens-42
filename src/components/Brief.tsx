@@ -1458,13 +1458,11 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
                         <div
                           role="button"
                           tabIndex={0}
-                          onClick={() => {
-                            setOpenedRows(prev => { const n = new Set(prev); n.add(s.id); return n; });
-                          }}
+                          onClick={() => markRowOpened(s.id)}
                           onKeyDown={(e) => {
                             if (e.key === "Enter" || e.key === " ") {
                               e.preventDefault();
-                              setOpenedRows(prev => { const n = new Set(prev); n.add(s.id); return n; });
+                              markRowOpened(s.id);
                             }
                           }}
                           className="brief-row"
@@ -1505,7 +1503,11 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
                               </div>
                             )}
                             <div style={{ marginLeft: 20, marginTop: 8 }}>
-                              <button type="button" onClick={(e) => { e.stopPropagation(); onSwitchTab?.("intelligence"); }}
+                              <button type="button" onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (onOpenSignal) onOpenSignal(s.id);
+                                  else onSwitchTab?.("intelligence");
+                                }}
                                 style={{ background: "transparent", border: 0, cursor: "pointer", padding: 0, color: "var(--action)" }}>
                                 <Mono color="var(--action)" size={11}>View in Signals →</Mono>
                               </button>
