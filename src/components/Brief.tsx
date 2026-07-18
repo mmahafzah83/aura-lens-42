@@ -1557,7 +1557,21 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
                       const labelLines = words.join(" ").length <= 15 ? [words.join(" ").toUpperCase()] : words.map(w => w.toUpperCase());
                       const labelYbase = i % 2 === 0 ? cy - r - 4 - (labelLines.length - 1) * 8 : cy + r + 9;
                       return (
-                        <g key={m.id}>
+                        <g
+                          key={m.id}
+                          role="button"
+                          tabIndex={onOpenSignal ? 0 : -1}
+                          aria-label={`Open signal: ${m.title}`}
+                          style={{ cursor: onOpenSignal ? "pointer" : "default", outline: "none" }}
+                          onClick={onOpenSignal ? () => onOpenSignal(m.id) : undefined}
+                          onKeyDown={onOpenSignal ? (e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              onOpenSignal(m.id);
+                            }
+                          } : undefined}
+                        >
+                          <title>{m.title}</title>
                           <circle cx={cx} cy={cy} r={r}
                             fill={isFaded ? "none" : isHot ? "var(--live)" : "var(--ink)"}
                             stroke={isFaded ? "var(--ink-3)" : "none"} strokeWidth="1" />
