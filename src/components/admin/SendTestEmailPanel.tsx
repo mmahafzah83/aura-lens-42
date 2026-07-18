@@ -25,8 +25,8 @@ export default function SendTestEmailPanel() {
         // Extract the raw response body from the FunctionsHttpError context if present.
         let details = error.message;
         try {
-          // @ts-expect-error - context is present on FunctionsHttpError
-          if (error?.context?.text) details = await error.context.text();
+          const ctx = (error as unknown as { context?: { text?: () => Promise<string> } }).context;
+          if (ctx?.text) details = await ctx.text();
         } catch { /* ignore */ }
         setResult({ ok: false, error: details });
       } else {
