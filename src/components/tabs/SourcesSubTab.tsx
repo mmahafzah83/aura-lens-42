@@ -110,6 +110,12 @@ function formatBytes(bytes: number | null | undefined): string | null {
 function humanizeDocError(raw: string | null | undefined): { headline: string; detail: string | null } {
   if (!raw) return { headline: "Processing failed", detail: null };
   const msg = raw.toLowerCase();
+  if (msg.startsWith("this document has failed twice")) {
+    return { headline: "We couldn't read this yet", detail: raw };
+  }
+  if (msg.startsWith("reading stopped unexpectedly")) {
+    return { headline: "Reading stopped unexpectedly", detail: null };
+  }
   if (msg.includes("timed out") || msg.includes("aborted") || msg.includes("timeout")) {
     return { headline: "Timed out during extraction", detail: raw };
   }
