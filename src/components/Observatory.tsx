@@ -50,6 +50,8 @@ interface SignalDraftPrefill {
   signalTitle?: string;
   sourceType?: string;
   sourceTitle?: string;
+  source?: string;
+  moveState?: string;
 }
 
 interface ObservatoryProps {
@@ -951,6 +953,7 @@ const Observatory = ({
       topic: s.signal_title,
       context: [s.explanation, s.strategic_implications, s.what_it_means_for_you].filter(Boolean).join("\n\n"),
       signalId: s.id, signalTitle: s.signal_title,
+      source: "observatory",
     });
   };
 
