@@ -13,6 +13,7 @@ import ReportDocument from "@/components/ReportDocument";
 import { buildIdentityReport, type ReportData } from "@/lib/buildIdentityReport";
 import { getPublication, validate as validatePublication, type PublicationConfig } from "@/lib/publication";
 import { PAPER, INK, SPOT, RULE, SERIF, MONO, ARABIC } from "@/components/broadsheet/pressTokens";
+import CountryPicker from "@/components/CountryPicker";
 
 interface ProfileData {
   first_name: string | null;
@@ -36,6 +37,8 @@ interface ProfileData {
   generated_skills: Record<string, unknown>;
   audit_results: Record<string, unknown>;
   signature_presets: { id: string; name: string; text_en: string; text_ar: string }[] | null;
+  country: string | null;
+  country_code: string | null;
 }
 
 interface LinkedInConnection {
@@ -102,7 +105,7 @@ const handleDeleteAccount = async () => {
         const { data, error: qErr } = await supabase
           .from("diagnostic_profiles")
           .select(
-            "first_name, last_name, level, firm, core_practice, sector_focus, north_star_goal, linkedin_handle, linkedin_url, years_experience, leadership_style, primary_strength, avatar_url, brand_assessment_completed_at, brand_pillars, identity_intelligence, brand_assessment_results, skill_ratings, generated_skills, audit_results, signature_presets"
+            "first_name, last_name, level, firm, core_practice, sector_focus, north_star_goal, linkedin_handle, linkedin_url, years_experience, leadership_style, primary_strength, avatar_url, brand_assessment_completed_at, brand_pillars, identity_intelligence, brand_assessment_results, skill_ratings, generated_skills, audit_results, signature_presets, country, country_code"
           )
           .eq("user_id", session.user.id)
           .maybeSingle();
@@ -194,6 +197,26 @@ const handleDeleteAccount = async () => {
       toast.error(e?.message || "Couldn't save signatures");
     } finally {
       setSavingSig(false);
+    }
+  };
+
+  const [savingCountry, setSavingCountry] = useState(false);
+  const persistCountry = async (name: string | null, code: string | null) => {
+    setSavingCountry(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) throw new Error("Not signed in");
+      const { error } = await supabase
+        .from("diagnostic_profiles")
+        .update({ country: name, country_code: code })
+        .eq("user_id", session.user.id);
+      if (error) throw error;
+      setProfile((p) => (p ? { ...p, country: name, country_code: code } : p));
+      toast.success("Country saved");
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't save country");
+    } finally {
+      setSavingCountry(false);
     }
   };
   const addSignature = () =>
@@ -599,6 +622,22 @@ const handleDeleteAccount = async () => {
                   Save publication
                 </AuraButton>
               </div>
+            </div>
+          </AuraCard>
+        </div>
+
+        {/* Location */}
+        <SectionHeader
+          label="Location"
+          subtitle="Sets the flag on your Aura Card and helps regionalise your insights."
+        />
+        <div className="space-y-4">
+          <AuraCard variant="default" hover="none">
+            <div style={{ maxWidth: 420, opacity: savingCountry ? 0.6 : 1 }}>
+              <CountryPicker
+                value={profile.country_code}
+                onChange={(name, code) => persistCountry(name, code)}
+              />
             </div>
           </AuraCard>
         </div>
