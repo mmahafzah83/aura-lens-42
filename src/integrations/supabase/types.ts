@@ -640,6 +640,8 @@ export type Database = {
           brand_pillars: string[]
           completed: boolean
           core_practice: string | null
+          country: string | null
+          country_code: string | null
           created_at: string
           firm: string | null
           first_name: string | null
@@ -682,6 +684,8 @@ export type Database = {
           brand_pillars?: string[]
           completed?: boolean
           core_practice?: string | null
+          country?: string | null
+          country_code?: string | null
           created_at?: string
           firm?: string | null
           first_name?: string | null
@@ -724,6 +728,8 @@ export type Database = {
           brand_pillars?: string[]
           completed?: boolean
           core_practice?: string | null
+          country?: string | null
+          country_code?: string | null
           created_at?: string
           firm?: string | null
           first_name?: string | null
