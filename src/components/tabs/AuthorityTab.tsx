@@ -3705,7 +3705,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                       style={{ fontSize: 14, color: "var(--ink)", lineHeight: 1.5 }}
                       dir="auto"
                     >
-                      {(p.post_text?.split("\n")[0] || "Untitled draft").trim()}
+                      {firstNonEmptyLine(p.post_text) || "Untitled draft"}
                     </span>
                     <span className="shrink-0 flex items-center" style={{ gap: 6 }}>
                       <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 6px", borderRadius: 999, backgroundColor: "var(--paper-2)", color: "var(--ink-3)", textTransform: "uppercase" }}>
