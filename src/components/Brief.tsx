@@ -215,7 +215,7 @@ function useCountUp(target: number | null, enabled: boolean): number {
 
 // ── Component ────────────────────────────────────────────────────────
 
-export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvite, onOpenBrandAssessment, onDraftToStudio }: BriefProps) {
+export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvite, onOpenBrandAssessment, onOpenSignal, onDraftToStudio }: BriefProps) {
   const { user, isReady } = useAuthReady();
   const tierInfo = useTierFromImprint(user?.id ?? null);
   const reducedMotion = useMemo(prefersReducedMotion, []);
@@ -749,7 +749,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
     try {
       const since = new Date(Date.now() - 48 * 3600_000).toISOString();
       const { data } = await (supabase.from("linkedin_posts" as any) as any)
-        .select("id, published_at, source_metadata")
+        .select("id, published_at, source_metadata, linkedin_url")
         .eq("user_id", user.id)
         .not("published_at", "is", null)
         .gte("published_at", since)
@@ -774,7 +774,9 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
           reactions = typeof mr.reactions === "number" ? mr.reactions : null;
         }
       } catch { /* metrics optional — LinkedIn lags 1-2 days */ }
-      setPublished({ publishedAt: row.published_at ?? null, topic, impressions, reactions });
+      const rawUrl = (row as any).linkedin_url;
+      const linkedinUrl = typeof rawUrl === "string" && /^https?:\/\//i.test(rawUrl) ? rawUrl : null;
+      setPublished({ publishedAt: row.published_at ?? null, topic, impressions, reactions, linkedinUrl });
     } catch (e) { console.warn("[Brief] published load failed", e); setPublished(null); }
   }, [user]);
 
