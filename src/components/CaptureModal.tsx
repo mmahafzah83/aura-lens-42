@@ -444,7 +444,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
           return;
         }
 
-        sonnerToast.success(TOAST.captureSaved);
+        // Beat 1 — honest, no fabricated progress
+        try { sessionStorage.setItem("aura_pending_capture_at", String(Date.now())); } catch { /* noop */ }
+        sonnerToast("Saved. Aura is reading it — this usually takes a few minutes.");
 
         setContent("");
         setVoiceAudioUrl(null);
@@ -614,30 +616,13 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
       // Success — celebrate the FIRST EVER capture (count = 1 for this user)
       const didCelebrate = await maybeTriggerFirstCeremony(session.user.id);
       if (!didCelebrate) {
-        sonnerToast.custom(
-          () => (
-            <div
-              style={{
-                background: "var(--ob-raised)",
-                color: "var(--glass)",
-                border: "1px solid var(--hair)",
-                borderRadius: 12,
-                padding: "14px 18px",
-                boxShadow: "0 10px 30px -10px rgba(0,0,0,0.4)",
-                maxWidth: 380,
-              }}
-            >
-              <div style={{ fontSize: 12, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--action)", fontWeight: 600, marginBottom: 6, fontFamily: "'IBM Plex Mono', ui-monospace, monospace" }}>
-                ✦ Captured
-              </div>
-              <div style={{ fontSize: 14, lineHeight: 1.5, color: "var(--glass-2)" }}>
-                Aura is analyzing this. Patterns emerge as you capture more — your next source might connect the dots.
-              </div>
-            </div>
-          ),
-          { duration: 4500, position: "bottom-right" },
-        );
+        // Beat 1 — honest, no fabricated progress. Beat 2 lands via the
+        // realtime subscription in Dashboard when fragments actually arrive.
+        sonnerToast("Saved. Aura is reading it — this usually takes a few minutes.", {
+          duration: 4500,
+        });
       }
+      try { sessionStorage.setItem("aura_pending_capture_at", String(Date.now())); } catch { /* noop */ }
 
       setContent("");
       setVoiceAudioUrl(null);
