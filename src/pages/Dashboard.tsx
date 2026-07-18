@@ -26,8 +26,8 @@ import InviteColleagueModal from "@/components/InviteColleagueModal";
 import NpsSurveyModal from "@/components/NpsSurveyModal";
 import FirstLoginWelcome from "@/components/FirstLoginWelcome";
 import Brief from "@/components/Brief";
-import OnboardingChecklist from "@/components/OnboardingChecklist";
 import IdentityDriftBanner from "@/components/IdentityDriftBanner";
+import FirstFlightCard from "@/components/FirstFlightCard";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import IdentityTab from "@/components/tabs/IdentityTab";
 import Observatory from "@/components/Observatory";
@@ -294,6 +294,35 @@ const Dashboard = () => {
   const navigateToSignal = (signalId: string) => {
     setSearchParams({ signal: signalId });
     setActiveTab("intelligence");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // First Flight handlers.
+  const connectLinkedInFirstFlight = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("linkedin-oauth", {
+        body: { action: "get-auth-url", origin: window.location.origin },
+      });
+      if (error) throw error;
+      const url = (data as any)?.url;
+      if (url) window.location.href = url;
+    } catch (e) {
+      console.warn("[FirstFlight] LinkedIn connect failed", e);
+      toast.error("Couldn't start LinkedIn connect. Try again in a moment.");
+    }
+  };
+  const writeFromFirstFlightSignal = (sig: { id: string; title: string; what: string | null; explanation: string | null }) => {
+    const context = [sig.what, sig.explanation].filter(Boolean).join("\n\n");
+    setSignalDraftPrefill({
+      topic: sig.title,
+      context,
+      signalId: sig.id,
+      signalTitle: sig.title,
+      sourceType: "signal",
+      sourceTitle: sig.title,
+      contentFormat: "post",
+    });
+    setActiveTab("authority");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -1003,6 +1032,17 @@ const Dashboard = () => {
         >
           {/* Tab Content */}
           <div className="tab-content-spring aura-page-fade relative" key={activeTab} style={{ minHeight: "60vh" }}>
+            {activeTab !== "home" && (
+              <div className={activeTab === "intelligence" ? "max-w-[1400px] mx-auto px-5 sm:px-10 lg:px-14" : ""}>
+                <FirstFlightCard
+                  userId={userId}
+                  onConnectLinkedIn={connectLinkedInFirstFlight}
+                  onOpenCapture={() => handleOpenCapture()}
+                  onOpenSignal={(sig) => navigateToSignal(sig.id)}
+                  onWriteFromSignal={writeFromFirstFlightSignal}
+                />
+              </div>
+            )}
             {activeTab === "home" && (
               <div className="animate-tab-spring aura-page">
                 <FirstLoginWelcome
@@ -1012,11 +1052,12 @@ const Dashboard = () => {
                     try { localStorage.setItem("aura_welcome_briefing_done", "1"); } catch {}
                   }}
                 />
-                {/* App-level overlays re-mounted here so they keep firing
-                    after the Brief swap. */}
-                <OnboardingChecklist
+                <FirstFlightCard
+                  userId={userId}
+                  onConnectLinkedIn={connectLinkedInFirstFlight}
                   onOpenCapture={() => handleOpenCapture()}
-                  onSwitchTab={switchTab}
+                  onOpenSignal={(sig) => navigateToSignal(sig.id)}
+                  onWriteFromSignal={writeFromFirstFlightSignal}
                 />
                 <FirstVisitHint page="home" />
                 <IdentityDriftBanner />
