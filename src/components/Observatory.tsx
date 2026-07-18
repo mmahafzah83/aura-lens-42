@@ -475,14 +475,15 @@ const ThemeChips = ({
   selected: string | null;
   onSelect: (key: string | null) => void;
 }) => {
-  const themes = useMemo(() => {
+  const { themes, total } = useMemo(() => {
     const map = new Map<string, number>();
     signals.forEach(s => (s.theme_tags || []).forEach(t => {
       const k = t.toLowerCase().trim();
       if (!k) return;
       map.set(k, (map.get(k) || 0) + 1);
     }));
-    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]).slice(0, 12);
+    const sorted = Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+    return { themes: sorted.slice(0, 12), total: sorted.length };
   }, [signals]);
 
   if (themes.length === 0) return null;
@@ -493,7 +494,7 @@ const ThemeChips = ({
         fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
         color: "var(--glass-2)", letterSpacing: "0.14em", alignSelf: "center",
         marginInlineEnd: 4,
-      }}>THEMES</span>
+      }}>THEMES{total > themes.length ? ` · showing ${themes.length} of ${total}` : ""}</span>
       {themes.map(([k, count]) => {
         const active = selected === k;
         return (
@@ -575,8 +576,8 @@ const SubTabs = ({
    Header — instrument-styled, mono
    ────────────────────────────────────────────────────────── */
 const ObsHeader = ({
-  entryCount, evidenceCount, signalsCount, movesCount,
-}: { entryCount: number; evidenceCount: number; signalsCount: number; movesCount: number }) => (
+  entryCount, evidenceCount, signalsTotal, movesCount,
+}: { entryCount: number; evidenceCount: number; signalsTotal: number; movesCount: number }) => (
   <div style={{ textAlign: "center" }}>
     <div style={{
       fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
@@ -609,13 +610,15 @@ const ObsHeader = ({
         <InfoTooltip text="Facts and quotes pulled from your sources." label="Evidence" side="bottom" triggerSize={12} />
       </span>
       <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-        <span style={{ color: "var(--glass)" }}>{signalsCount || "—"}</span> signals
+        <span style={{ color: "var(--glass)" }}>{signalsTotal || "—"}</span> signals
         <InfoTooltip text="Themes Aura detected across your captures." label="Signals" side="bottom" triggerSize={12} />
       </span>
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-        <span style={{ color: "var(--glass)" }}>{movesCount || "—"}</span> moves
-        <InfoTooltip text="Suggested next actions ready for you." label="Moves" side="bottom" triggerSize={12} />
-      </span>
+      {movesCount > 0 && (
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+          <span style={{ color: "var(--glass)" }}>{movesCount}</span> moves
+          <InfoTooltip text="Suggested next actions ready for you." label="Moves" side="bottom" triggerSize={12} />
+        </span>
+      )}
     </div>
   </div>
 );
@@ -642,6 +645,7 @@ const Observatory = ({
   const [entryCount, setEntryCount] = useState(0);
   const [evidenceCount, setEvidenceCount] = useState(0);
   const [movesCount, setMovesCount] = useState(0);
+  const [signalsTotal, setSignalsTotal] = useState(0);
   const [imprint, setImprint] = useState<{
     score: number | null;
     delta: number | null;
@@ -667,16 +671,22 @@ const Observatory = ({
   const loadSignals = useCallback(async (uid: string) => {
     setSignalsLoading(true); setLoadError(false);
     try {
-      const [signalsRes, entriesRes, documentsRes, evidenceRes, movesRes] = await Promise.all([
+      const nowIso = new Date().toISOString();
+      const thirtyDaysAgoIso = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const [signalsRes, signalsCountRes, entriesRes, documentsRes, evidenceRes, movesRes] = await Promise.all([
         supabase.from("strategic_signals")
           .select("*, signal_velocity, velocity_status, commercial_validation_score")
           .eq("user_id", uid)
-          .eq("status", "active").order("confidence", { ascending: false }).limit(50),
+          .eq("status", "active").order("confidence", { ascending: false }).limit(200),
+        supabase.from("strategic_signals").select("id", { count: "exact", head: true })
+          .eq("user_id", uid).eq("status", "active"),
         supabase.from("entries").select("id", { count: "exact", head: true }).eq("user_id", uid),
         supabase.from("documents").select("id", { count: "exact", head: true }).eq("user_id", uid),
         supabase.from("evidence_fragments").select("id", { count: "exact", head: true }).eq("user_id", uid),
         supabase.from("recommended_moves").select("id", { count: "exact", head: true })
-          .eq("status", "active").eq("user_id", uid),
+          .eq("status", "active").eq("user_id", uid)
+          .gt("created_at", thirtyDaysAgoIso)
+          .or(`expires_at.is.null,expires_at.gt.${nowIso}`),
       ]);
       const raw = (signalsRes.data || []) as any[];
 
@@ -707,6 +717,7 @@ const Observatory = ({
       }) as unknown as Signal[];
 
       setSignals(loaded);
+      setSignalsTotal(signalsCountRes.count || loaded.length);
       setEntryCount((entriesRes.count || 0) + (documentsRes.count || 0));
       setEvidenceCount(evidenceRes.count || 0);
       setMovesCount(movesRes.count || 0);
@@ -940,15 +951,9 @@ const Observatory = ({
   const draftFromSignal = async (s: Signal) => {
     await supabase.from("strategic_signals")
       .update({ priority_score: (s.priority_score || 0) + 0.05 }).eq("id", s.id);
-    if (authUser?.id) {
-      try {
-        await (supabase.from("signal_engagements" as any) as any)
-          .upsert(
-            { user_id: authUser.id, signal_id: s.id, open_count: 1, last_opened_at: new Date().toISOString() },
-            { onConflict: "user_id,signal_id", ignoreDuplicates: false },
-          );
-      } catch { /* fire-and-forget — must not block draft handoff */ }
-    }
+    try {
+      void (supabase as any).rpc("bump_signal_engagement", { p_signal_id: s.id });
+    } catch { /* fire-and-forget — must not block draft handoff */ }
     onDraftToStudio?.({
       topic: s.signal_title,
       context: [s.explanation, s.strategic_implications, s.what_it_means_for_you].filter(Boolean).join("\n\n"),
@@ -1082,7 +1087,7 @@ const Observatory = ({
         <ObsHeader
           entryCount={entryCount}
           evidenceCount={evidenceCount}
-          signalsCount={signals.length}
+          signalsTotal={signalsTotal}
           movesCount={movesCount}
         />
 
@@ -1269,6 +1274,15 @@ const Observatory = ({
                   />
                 )}
                 {renderSignalList()}
+                {signals.length >= 200 && signalsTotal > signals.length && (
+                  <div style={{
+                    fontFamily: "'IBM Plex Mono', monospace", fontSize: 11,
+                    color: "var(--glass-2)", letterSpacing: "0.06em",
+                    textAlign: "center", padding: "10px 0",
+                  }}>
+                    Showing {signals.length} of {signalsTotal}
+                  </div>
+                )}
 
                 {/* Secondary editorial intel */}
                 <EditorialBlindSpots signals={signals} onOpenCapture={onOpenCapture} />
