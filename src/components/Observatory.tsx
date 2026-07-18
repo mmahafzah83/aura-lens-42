@@ -475,14 +475,15 @@ const ThemeChips = ({
   selected: string | null;
   onSelect: (key: string | null) => void;
 }) => {
-  const themes = useMemo(() => {
+  const { themes, total } = useMemo(() => {
     const map = new Map<string, number>();
     signals.forEach(s => (s.theme_tags || []).forEach(t => {
       const k = t.toLowerCase().trim();
       if (!k) return;
       map.set(k, (map.get(k) || 0) + 1);
     }));
-    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]).slice(0, 12);
+    const sorted = Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+    return { themes: sorted.slice(0, 12), total: sorted.length };
   }, [signals]);
 
   if (themes.length === 0) return null;
@@ -493,7 +494,7 @@ const ThemeChips = ({
         fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
         color: "var(--glass-2)", letterSpacing: "0.14em", alignSelf: "center",
         marginInlineEnd: 4,
-      }}>THEMES</span>
+      }}>THEMES{total > themes.length ? ` · showing ${themes.length} of ${total}` : ""}</span>
       {themes.map(([k, count]) => {
         const active = selected === k;
         return (
