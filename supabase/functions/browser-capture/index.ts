@@ -324,6 +324,8 @@ Deno.serve(withObserve("browser-capture", async (req) => {
             engagement_score: computedEngagement,
             tracking_status: "confirmed",
             source_type: "browser_capture",
+            authorship: "user_written",
+            acquisition: "discovered",
             source_trust: 3,
             enriched_by: ["browser_capture"],
             source_metadata: { captured_at: new Date().toISOString() },
