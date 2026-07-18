@@ -2980,6 +2980,8 @@ const LinkedInPreview = ({
 const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () => void; onOpenDraft?: (draft: { id: string; body: string; language: "en" | "ar"; type: "carousel" | "framework" | "linkedin_post"; topic?: string | null; _source?: "content_items" | "linkedin_posts" }) => void }) => {
   const [drafts, setDrafts] = useState<SavedPost[]>([]);
   const [publishedPosts, setPublishedPosts] = useState<SavedPost[]>([]);
+  const [publishedTotal, setPublishedTotal] = useState<number>(0);
+  const [postMetrics, setPostMetrics] = useState<Record<string, { impressions?: number | null; reactions?: number | null }>>({});
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
@@ -3068,10 +3070,12 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
 
   const loadPosts = async () => {
     setLoading(true);
-    const [liRes, ciRes] = await Promise.all([
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    const uid = authUser?.id;
+    const [liRes, ciRes, publishedCountRes] = await Promise.all([
       supabase
         .from("linkedin_posts")
-        .select("id, title, post_text, format_type, tracking_status, topic_label, created_at, source_metadata, source_type, published_at, linkedin_url, source_signal_id, content_type")
+        .select("id, title, post_text, format_type, tracking_status, topic_label, created_at, source_metadata, source_type, published_at, linkedin_url, post_url, source_signal_id, content_type")
         .order("created_at", { ascending: false })
         .limit(100),
       supabase
@@ -3080,7 +3084,15 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
         .eq("status", "draft")
         .order("created_at", { ascending: false })
         .limit(100),
+      uid
+        ? supabase
+            .from("linkedin_posts")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", uid)
+            .not("published_at", "is", null)
+        : Promise.resolve({ count: 0 } as any),
     ]);
+    setPublishedTotal(publishedCountRes?.count ?? 0);
 
     // Drafts from content_items
     const ciDrafts: SavedPost[] = (ciRes.data || []).map((ci: any) => ({
@@ -3111,10 +3123,11 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
       .filter((p: any) => p.post_text && p.post_text.trim().length >= 20)
       .map((p: any) => ({ ...p, _source: "linkedin_posts" as const }));
 
-    // Published linkedin posts — filter out empty/short post_text
+    // Published linkedin posts — source of truth is published_at IS NOT NULL.
     const liPublished: SavedPost[] = (liRes.data || [])
+      .filter((p: any) => !!p.published_at)
       .filter((p: any) => p.post_text && p.post_text.trim().length >= 20)
-      .filter((p: any) => p.published_at || isPublishedPost(p))
+      .sort((a: any, b: any) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
       .map((p: any) => ({
         ...p,
         _source: "linkedin_posts" as const,
@@ -3128,6 +3141,23 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
     const urls: Record<string, string> = {};
     (liRes.data || []).forEach((p: any) => { if (p.linkedin_url) urls[p.id] = p.linkedin_url; });
     setSavedUrls(urls);
+
+    // Latest metrics per published post (dedupe to newest snapshot).
+    if (liPublished.length > 0) {
+      const ids = liPublished.map(p => p.id);
+      const { data: metricsRows } = await supabase
+        .from("linkedin_post_metrics")
+        .select("post_id, impressions, reactions, snapshot_date")
+        .in("post_id", ids)
+        .order("snapshot_date", { ascending: false });
+      const map: Record<string, { impressions?: number | null; reactions?: number | null }> = {};
+      (metricsRows || []).forEach((m: any) => {
+        if (!map[m.post_id]) map[m.post_id] = { impressions: m.impressions, reactions: m.reactions };
+      });
+      setPostMetrics(map);
+    } else {
+      setPostMetrics({});
+    }
 
     // Resolve signal titles for cards that reference a source signal id
     const signalIds = new Set<string>();
