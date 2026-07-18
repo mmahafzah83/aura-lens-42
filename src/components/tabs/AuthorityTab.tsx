@@ -3548,6 +3548,94 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
         <LinkedInPostSteps shareLabel="Post on LinkedIn" />
       )}
 
+      {/* P4: Search + filter chips — System-A styling, client-side only. */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <input
+          type="search"
+          value={librarySearch}
+          onChange={(e) => setLibrarySearch(e.target.value)}
+          placeholder="Search your library"
+          dir="auto"
+          aria-label="Search library"
+          style={{
+            width: "100%",
+            fontSize: 14,
+            padding: "10px 14px",
+            borderRadius: 8,
+            border: "1px solid var(--rule)",
+            background: "var(--paper-2)",
+            color: "var(--ink)",
+            outline: "none",
+          }}
+        />
+        <div className="flex items-center flex-wrap" style={{ gap: 16, rowGap: 8 }}>
+          <div className="flex items-center" style={{ gap: 6 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)" }}>
+              Language
+            </span>
+            {([
+              { k: "all", label: "All" },
+              { k: "ar",  label: "AR" },
+              { k: "en",  label: "EN" },
+            ] as const).map(opt => {
+              const active = libraryLang === opt.k;
+              return (
+                <button
+                  key={opt.k}
+                  type="button"
+                  onClick={() => setLibraryLang(opt.k)}
+                  aria-pressed={active}
+                  style={{
+                    fontSize: 12,
+                    fontWeight: active ? 600 : 500,
+                    padding: "4px 10px",
+                    borderRadius: 999,
+                    border: "1px solid var(--rule)",
+                    background: active ? "var(--ink)" : "var(--paper-2)",
+                    color: active ? "var(--paper)" : "var(--ink)",
+                    cursor: "pointer",
+                  }}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex items-center" style={{ gap: 6 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)" }}>
+              Status
+            </span>
+            {([
+              { k: "all",       label: "All" },
+              { k: "draft",     label: "Draft" },
+              { k: "published", label: "Published" },
+            ] as const).map(opt => {
+              const active = libraryStatus === opt.k;
+              return (
+                <button
+                  key={opt.k}
+                  type="button"
+                  onClick={() => setLibraryStatus(opt.k)}
+                  aria-pressed={active}
+                  style={{
+                    fontSize: 12,
+                    fontWeight: active ? 600 : 500,
+                    padding: "4px 10px",
+                    borderRadius: 999,
+                    border: "1px solid var(--rule)",
+                    background: active ? "var(--ink)" : "var(--paper-2)",
+                    color: active ? "var(--paper)" : "var(--ink)",
+                    cursor: "pointer",
+                  }}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
       {/* ── Section 1: Aura Drafts ── */}
       <div>
         <button
