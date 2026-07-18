@@ -13,7 +13,7 @@ const APP_URL = "https://aura-intel.org";
 const FROM = "Aura <Mohammad.Mahafdhah@aura-intel.org>";
 const REPLY_TO = "mohammad.mahafdhah@aura-intel.org";
 
-type EmailType = "welcome" | "day1" | "day3" | "day7" | "inactive" | "silence" | "post_ready";
+type EmailType = "welcome" | "day1" | "day3" | "day7" | "inactive" | "silence" | "post_ready" | "aura_card_ready";
 
 const HEADING_FONT = "'Cormorant Garamond', Georgia, 'Times New Roman', serif";
 const BODY_FONT = "'DM Sans', -apple-system, BlinkMacSystemFont, Arial, sans-serif";
@@ -176,6 +176,17 @@ function buildEmail(
     return { subject, html: shell(BRAND, FONT, body) };
   }
 
+  if (type === "aura_card_ready") {
+    const subject = "Your Aura Card is ready";
+    const body = `
+      ${heading(`${name}, your Aura Card is ready.`)}
+      <p style="margin:0 0 18px;">You finished the four steps — assessment, skills, photo, and country. Aura now has enough to render a shareable read of who you are, in one card.</p>
+      <p style="margin:0 0 18px;">Open My Story to preview it, download the PNG, or share it to LinkedIn.</p>
+      ${ctaButton(BRAND, "Open your card →", `${APP_URL}/home?tab=identity`)}
+      ${signoff(name, level)}`;
+    return { subject, html: shell(BRAND, FONT, body) };
+  }
+
   // silence / inactive — both paths use the same signal-decay framing
   const f1 = fadingSignals[0];
   const f2 = fadingSignals[1];
@@ -211,12 +222,6 @@ serve(withObserve("send-lifecycle-email", async (req) => {
     const cronHeader = req.headers.get("x-cron-secret") || "";
     const isCron = !!CRON_SECRET && cronHeader === CRON_SECRET;
     const isServiceRole = !!SERVICE_KEY && apiKey === SERVICE_KEY;
-    if (!isCron && !isServiceRole) {
-      return new Response(JSON.stringify({ error: "Forbidden" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
     const reqBody = await req.json();
     const { user_id, email_type, post_id, post_title, post_preview } = reqBody;
     if (!user_id || !email_type) {
@@ -225,7 +230,38 @@ serve(withObserve("send-lifecycle-email", async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const types: EmailType[] = ["welcome", "day1", "day3", "day7", "inactive", "silence", "post_ready"];
+    // Allow authenticated user to trigger their own "aura_card_ready" email only.
+    let isSelfUser = false;
+    if (!isCron && !isServiceRole) {
+      if (email_type !== "aura_card_ready") {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      try {
+        const SUPABASE_URL_A = Deno.env.get("SUPABASE_URL")!;
+        const ANON = Deno.env.get("SUPABASE_ANON_KEY") || "";
+        const authHeader = req.headers.get("Authorization") || "";
+        const userClient = createClient(SUPABASE_URL_A, ANON, {
+          global: { headers: { Authorization: authHeader } },
+        });
+        const { data: u } = await userClient.auth.getUser();
+        if (!u?.user?.id || u.user.id !== user_id) {
+          return new Response(JSON.stringify({ error: "Forbidden" }), {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        isSelfUser = true;
+      } catch {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+    const types: EmailType[] = ["welcome", "day1", "day3", "day7", "inactive", "silence", "post_ready", "aura_card_ready"];
     if (!types.includes(email_type)) {
       return new Response(JSON.stringify({ error: "invalid email_type" }), {
         status: 400,
