@@ -1046,7 +1046,8 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
         const delta = state?.evidenceDelta ?? 0;
         const summaries = state?.evidenceSummaries ?? [];
         const body =
-          delta >= 2 ? `${delta} things moved on ${title} since you wrote it.`
+          delta >= 5 ? `5+ new readings landed on ${title} since you wrote it.`
+          : delta >= 2 ? `${delta} new readings landed on ${title} since you wrote it.`
           : delta === 1 ? `Something moved on ${title} since you wrote it.`
           : `${title} has moved since you wrote it.`;
         const baseContext = [topSignal.what, topSignal.explanation].filter(Boolean).join("\n\n");
