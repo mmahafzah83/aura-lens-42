@@ -13,6 +13,7 @@ import ReportDocument from "@/components/ReportDocument";
 import { buildIdentityReport, type ReportData } from "@/lib/buildIdentityReport";
 import { getPublication, validate as validatePublication, type PublicationConfig } from "@/lib/publication";
 import { PAPER, INK, SPOT, RULE, SERIF, MONO, ARABIC } from "@/components/broadsheet/pressTokens";
+import CountryPicker from "@/components/CountryPicker";
 
 interface ProfileData {
   first_name: string | null;
@@ -36,6 +37,8 @@ interface ProfileData {
   generated_skills: Record<string, unknown>;
   audit_results: Record<string, unknown>;
   signature_presets: { id: string; name: string; text_en: string; text_ar: string }[] | null;
+  country: string | null;
+  country_code: string | null;
 }
 
 interface LinkedInConnection {
@@ -102,7 +105,7 @@ const handleDeleteAccount = async () => {
         const { data, error: qErr } = await supabase
           .from("diagnostic_profiles")
           .select(
-            "first_name, last_name, level, firm, core_practice, sector_focus, north_star_goal, linkedin_handle, linkedin_url, years_experience, leadership_style, primary_strength, avatar_url, brand_assessment_completed_at, brand_pillars, identity_intelligence, brand_assessment_results, skill_ratings, generated_skills, audit_results, signature_presets"
+            "first_name, last_name, level, firm, core_practice, sector_focus, north_star_goal, linkedin_handle, linkedin_url, years_experience, leadership_style, primary_strength, avatar_url, brand_assessment_completed_at, brand_pillars, identity_intelligence, brand_assessment_results, skill_ratings, generated_skills, audit_results, signature_presets, country, country_code"
           )
           .eq("user_id", session.user.id)
           .maybeSingle();
