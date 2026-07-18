@@ -1093,7 +1093,7 @@ const Observatory = ({
         <ObsHeader
           entryCount={entryCount}
           evidenceCount={evidenceCount}
-          signalsCount={signals.length}
+          signalsTotal={signalsTotal}
           movesCount={movesCount}
         />
 
