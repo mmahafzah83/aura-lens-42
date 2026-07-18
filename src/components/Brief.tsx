@@ -825,7 +825,6 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
   // ── Derivations ─────────────────────────────────────────────────────
 
   const firstName = profile?.firstName || "";
-  const profileResolved = profile !== null;
 
   const topSignal = away.status === "ready" && away.data.signals.length > 0 ? away.data.signals[0] : null;
   const draft = draftState.status === "ready" ? draftState.data.draft : null;
