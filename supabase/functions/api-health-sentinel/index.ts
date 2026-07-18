@@ -700,6 +700,71 @@ Deno.serve(async (req) => {
       console.error("[sentinel] pipelines error", (e as Error).message);
     }
 
+    // ============ Journey heartbeats (did the user get what they came for?) ============
+    const journey: Record<string, any> = {};
+    try {
+      const nowMs = Date.now();
+      const dayAgoIso = new Date(nowMs - 24 * 3600_000).toISOString();
+      const halfHourAgoIso = new Date(nowMs - 30 * 60_000).toISOString();
+      const twoDaysAgoIso = new Date(nowMs - 48 * 3600_000).toISOString();
+
+      // A) fragments -> signal (the chain that broke)
+      const { count: fragCount } = await admin
+        .from("evidence_fragments")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", dayAgoIso)
+        .lt("created_at", halfHourAgoIso);
+      const { count: sigNew } = await admin
+        .from("strategic_signals")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", dayAgoIso);
+      const { count: sigTouched } = await admin
+        .from("strategic_signals")
+        .select("id", { count: "exact", head: true })
+        .gte("updated_at", dayAgoIso);
+      journey.signal_conversion = {
+        fragments: fragCount || 0, signals_created: sigNew || 0, signals_updated: sigTouched || 0,
+      };
+      if ((fragCount || 0) >= 3 && (sigNew || 0) === 0 && (sigTouched || 0) === 0) {
+        await notify(
+          "Signals not being created",
+          `${fragCount} evidence fragments were extracted in the last 24h, but zero signals were created or reinforced.\nThe capture -> signal chain is broken.`,
+          "journey:signal-conversion",
+          "critical",
+          {
+            what: "People are capturing, but nobody is getting a signal.",
+            impact: "Every user who captures right now gets silence — this is the moment Aura is supposed to prove itself.",
+            action: "Check detect-signals-v2 (and any trigger on strategic_signals). Re-run detection for affected users once fixed.",
+          },
+        );
+      }
+
+      // B) onboarded -> first capture (activation)
+      const { data: oldProfiles } = await admin
+        .from("diagnostic_profiles")
+        .select("user_id")
+        .lt("created_at", twoDaysAgoIso);
+      const { data: entryUsers } = await admin.from("entries").select("user_id");
+      const captured = new Set((entryUsers || []).map((r: any) => r.user_id));
+      const neverCaptured = (oldProfiles || []).filter((p: any) => !captured.has(p.user_id));
+      journey.never_captured = neverCaptured.length;
+      if (neverCaptured.length > 0) {
+        await notify(
+          "Users onboarded but never captured",
+          `${neverCaptured.length} user(s) finished onboarding more than 48h ago and have never captured anything.`,
+          "journey:activation",
+          "high",
+          {
+            what: `${neverCaptured.length} user(s) signed up, set up their profile, and then stopped.`,
+            impact: "They will never see a signal, so they have no reason to come back.",
+            action: "Open /admin/people, pick the newest one, and send a personal message with one article worth saving.",
+          },
+        );
+      }
+    } catch (e) {
+      console.error("[sentinel] journey error", (e as Error).message);
+    }
+
     try {
       const SELF_LOOP = new Set(["api-health-sentinel", "admin-notify", "admin-digest"]);
       const since = new Date(Date.now() - 65 * 60 * 1000).toISOString();
@@ -802,7 +867,7 @@ Deno.serve(async (req) => {
 
     let autoResolved = 0;
     try {
-      const SENTINEL_PREFIXES = ["api-health:", "datahealth:", "cost:", "cron:", "pipeline:", "ef:"];
+      const SENTINEL_PREFIXES = ["api-health:", "datahealth:", "cost:", "cron:", "pipeline:", "ef:", "journey:"];
       const { data: openAlerts } = await admin
         .from("ops_alerts")
         .select("source")
@@ -835,6 +900,7 @@ Deno.serve(async (req) => {
       watchdog,
       ef_errors: efSummary,
       pipelines,
+      journey,
       auto_resolved: autoResolved,
     });
   } catch (e) {
