@@ -168,6 +168,8 @@ export default function AuraCardPanel({
           content_type: "post",
           format_type: "post",
           source_type: "aura_generated",
+          authorship: "aura_drafted",
+          acquisition: "published_via_aura",
           tracking_status: "draft",
           source_metadata: { origin: "aura_card", variant, image_url: imageUrl },
         })

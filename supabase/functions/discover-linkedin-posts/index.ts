@@ -789,6 +789,8 @@ Deno.serve(withObserve("discover-linkedin-posts", async (req) => {
         content_type: post.contentType,
         tracking_status: trackingStatus,
         source_type: "search_discovery",
+        authorship: "unknown",
+        acquisition: "discovered",
         source_trust: 1,
         enriched_by: ["search_discovery"],
         source_metadata: { discovery_mode: mode, discovered_at: new Date().toISOString() },
