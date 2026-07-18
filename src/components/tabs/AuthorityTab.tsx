@@ -384,6 +384,11 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
   const [publishing, setPublishing] = useState(false);
   const [publishedFromCreate, setPublishedFromCreate] = useState(false);
   const [publishingLive, setPublishingLive] = useState(false);
+  // Post-publish confirmation state — surfaces the returned post_url, time,
+  // and originating signal so the composer never falls silent after a live publish.
+  const [publishedInfo, setPublishedInfo] = useState<
+    { url: string | null; publishedAt: string; signalId: string | null; signalTitle: string | null } | null
+  >(null);
   const [confirmLiveOpen, setConfirmLiveOpen] = useState(false);
   const [attachedImageUrl, setAttachedImageUrl] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
