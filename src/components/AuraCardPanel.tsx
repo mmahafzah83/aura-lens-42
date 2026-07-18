@@ -284,6 +284,36 @@ export default function AuraCardPanel({
         </div>
       ) : allReady ? (
         <>
+          {celebrate && (
+            <div
+              role="status"
+              style={{
+                border: `1px solid ${RULE}`,
+                background: "rgba(122,31,43,0.06)",
+                padding: "12px 14px",
+                marginBottom: 14,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+              }}
+            >
+              <div style={{ fontFamily: SERIF, fontSize: 16, color: INK }}>
+                🎉 Your Aura Card is ready
+              </div>
+              <button
+                onClick={() => setCelebrate(false)}
+                aria-label="Dismiss"
+                style={{
+                  fontFamily: MONO, fontSize: 10, letterSpacing: "0.12em",
+                  textTransform: "uppercase", color: INK_2,
+                  background: "transparent", border: 0, cursor: "pointer",
+                }}
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
           <div style={{ display: "flex", justifyContent: "center", padding: "8px 0 18px" }}>
             <div ref={mountRef} data-report-page style={{ background: "transparent" }}>
               <AuraCard variant={variant} />
