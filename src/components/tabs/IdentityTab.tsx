@@ -1238,7 +1238,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         onNavigateAssessment={() => setBrandOpen(true)}
         onNavigateAudit={() => setAuditOpen(true)}
         onNavigatePhoto={() => fileInputRef.current?.click()}
-        onNavigateSettings={() => { window.location.href = "/settings"; }}
+        onNavigateSettings={() => { window.location.href = "/settings#location"; }}
       />
 
       {/* Modals */}
