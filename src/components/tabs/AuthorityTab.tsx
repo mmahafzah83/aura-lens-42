@@ -3712,10 +3712,16 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
 
       {/* ── Section 2: Published Posts (collapsed by default) ── */}
       {(() => {
-        // Split rows by authorship. Fallback for un-tagged rows so we don't
-        // silently drop anything: no post_text → treat as "earlier".
-        const auraRows     = publishedPosts.filter((p: any) => p.authorship === "aura_drafted" || p.authorship === "aura_assisted");
-        const earlierRows  = publishedPosts.filter((p: any) => p.authorship === "user_written" || p.authorship === "unknown" || !p.authorship);
+        // Split rows by authorship using explicit predicates. Anything that
+        // doesn't match either known bucket falls into a visible "Unclassified"
+        // group instead of being silently absorbed — surfaces DB drift fast.
+        const AURA_AUTHORSHIP     = new Set(["aura_drafted", "aura_assisted"]);
+        const EARLIER_AUTHORSHIP  = new Set(["user_written", "unknown"]);
+        const auraRows          = publishedPosts.filter((p: any) => AURA_AUTHORSHIP.has(p.authorship));
+        const earlierRows       = publishedPosts.filter((p: any) => EARLIER_AUTHORSHIP.has(p.authorship));
+        const unclassifiedRows  = publishedPosts.filter(
+          (p: any) => !AURA_AUTHORSHIP.has(p.authorship) && !EARLIER_AUTHORSHIP.has(p.authorship),
+        );
 
         const renderCard = (p: any) => {
               const badge = FORMAT_BADGE[p.format_type || "post"] || FORMAT_BADGE.post;
