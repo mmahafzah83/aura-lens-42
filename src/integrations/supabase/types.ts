@@ -2302,6 +2302,33 @@ export type Database = {
         }
         Relationships: []
       }
+      product_events: {
+        Row: {
+          event: string
+          id: string
+          occurred_at: string
+          props: Json
+          session_id: string | null
+          user_id: string
+        }
+        Insert: {
+          event: string
+          id?: string
+          occurred_at?: string
+          props?: Json
+          session_id?: string | null
+          user_id: string
+        }
+        Update: {
+          event?: string
+          id?: string
+          occurred_at?: string
+          props?: Json
+          session_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       qa_audit_results: {
         Row: {
           category: string
