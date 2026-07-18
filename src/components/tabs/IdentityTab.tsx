@@ -1233,6 +1233,14 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         <MilestonesSection userId={authUser?.id ?? null} />
       </div>
 
+      {/* Your Aura Card — readiness gate + shareable card */}
+      <AuraCardPanel
+        onNavigateAssessment={() => setBrandOpen(true)}
+        onNavigateAudit={() => setAuditOpen(true)}
+        onNavigatePhoto={() => fileInputRef.current?.click()}
+        onNavigateSettings={() => { window.location.href = "/settings"; }}
+      />
+
       {/* Modals */}
       <ObjectiveAuditModal
         open={auditOpen}
