@@ -1045,7 +1045,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
       onClick: () => onOpenCapture?.(),
       voiceScore: null,
     };
-  }, [draft, topSignal, rhythm, draftState, onOpenDraft, onSwitchTab, onOpenCapture, onOpenBrandAssessment, onDraftToStudio, scenario, brandPillars, brandAssessment, signalStates, user]);
+  }, [draft, topSignal, rhythm, draftState, onOpenDraft, onSwitchTab, onOpenCapture, onOpenBrandAssessment, onDraftToStudio, scenario, brandPillars, brandAssessment, signalStates, user, publishedMap]);
 
   // ── Render ──────────────────────────────────────────────────────────
 
