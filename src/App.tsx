@@ -22,6 +22,7 @@ import PasswordGate from "./components/PasswordGate";
 import AdminGate from "./components/AdminGate";
 import { ThemeProvider } from "./components/ThemeProvider";
 import CookieConsent from "./components/CookieConsent";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 // Lazy-loaded heavy / rarely-visited routes
 const Landing = lazy(() => import("./pages/Landing"));
@@ -63,6 +64,7 @@ const App = () => (
       <TooltipProvider delayDuration={300}>
         <Toaster />
         <Sonner />
+        <ErrorBoundary>
         <BrowserRouter>
           <CookieConsent />
           <Suspense
@@ -127,6 +129,7 @@ const App = () => (
           </Routes>
           </Suspense>
         </BrowserRouter>
+        </ErrorBoundary>
       </TooltipProvider>
       </ThemeProvider>
     </LanguageProvider>

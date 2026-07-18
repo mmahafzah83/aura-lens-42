@@ -1,81 +1,101 @@
 import React from "react";
+import AuraLogo from "@/components/brand/AuraLogo";
+import { reportClientError } from "@/lib/clientErrorLog";
 
 interface State {
   hasError: boolean;
-  error: Error | null;
 }
 
 class ErrorBoundary extends React.Component<React.PropsWithChildren, State> {
-  state: State = { hasError: false, error: null };
+  state: State = { hasError: false };
 
-  static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
+  static getDerivedStateFromError(): State {
+    return { hasError: true };
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error("Aura error boundary caught:", error, info);
+    try {
+      void reportClientError(error?.message ?? "render error", "high", {
+        componentStack: info?.componentStack,
+        route: typeof location !== "undefined" ? location.pathname : "unknown",
+      });
+    } catch {
+      // logging must never re-throw
+    }
   }
 
   render() {
-    if (this.state.hasError) {
-      return (
-        <div
+    if (!this.state.hasError) return this.props.children;
+
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 20,
+          padding: "48px 24px",
+          background: "var(--paper)",
+          color: "var(--ink)",
+          textAlign: "center",
+        }}
+      >
+        <AuraLogo size={44} />
+        <h1
           style={{
-            padding: "48px 32px",
-            textAlign: "center",
-            background: "var(--paper)",
-            borderRadius: "12px",
-            border: "1px solid var(--vellum)",
-            margin: "24px",
+            margin: 0,
+            fontSize: 22,
+            fontWeight: 600,
+            letterSpacing: "-0.01em",
+            color: "var(--ink)",
           }}
         >
-          <h3
-            style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
-              fontSize: 26,
-              fontWeight: 500,
-              color: "var(--ink)",
-              marginBottom: "10px",
-              letterSpacing: "-0.01em",
-            }}
-          >
-            Something went wrong
-          </h3>
-          <p style={{ color: "var(--ink-4)", fontSize: "14px", marginBottom: "24px", lineHeight: 1.6 }}>
-            Your data is safe. Try refreshing the page.
-          </p>
-          <button
-            onClick={() => window.location.reload()}
-            style={{
-              background: "var(--brand)",
-              color: "var(--paper)",
-              border: "none",
-              borderRadius: "8px",
-              padding: "12px 28px",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: 600,
-            }}
-          >
-            Refresh →
-          </button>
-          <div style={{ marginTop: 18 }}>
-            <a
-              href="mailto:support@aura-intel.org?subject=Aura%20issue%20report"
-              style={{
-                fontSize: 12,
-                color: "var(--ink-5)",
-                textDecoration: "underline",
-                textUnderlineOffset: 3,
-              }}
-            >
-              Report this issue
-            </a>
-          </div>
-        </div>
-      );
-    }
-    return this.props.children;
+          Something went wrong.
+        </h1>
+        <p
+          style={{
+            margin: 0,
+            maxWidth: 420,
+            fontSize: 14,
+            lineHeight: 1.6,
+            color: "var(--ink-3)",
+          }}
+        >
+          Your data is safe. The page hit an unexpected error — reloading usually fixes it.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          style={{
+            marginTop: 4,
+            background: "var(--action)",
+            color: "var(--paper)",
+            border: "none",
+            borderRadius: 8,
+            padding: "10px 22px",
+            cursor: "pointer",
+            fontSize: 14,
+            fontWeight: 600,
+          }}
+        >
+          Reload
+        </button>
+        <a
+          href="mailto:support@aura-intel.org?subject=Aura%20issue%20report"
+          style={{
+            marginTop: 4,
+            fontSize: 12,
+            color: "var(--ink-3)",
+            textDecoration: "underline",
+            textUnderlineOffset: 3,
+          }}
+        >
+          Report this issue
+        </a>
+      </div>
+    );
   }
 }
 
