@@ -880,15 +880,38 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
           try { localStorage.setItem(flagKey, "1"); } catch { /* noop */ }
           return;
         }
-        const createdAt = (user as any)?.created_at;
-        const daysSinceSignup = createdAt
-          ? Math.max(0, Math.floor((Date.now() - new Date(createdAt).getTime()) / 86400000))
-          : null;
+        // Detect backfill: if the first signal predates the earliest
+        // product_events row for this user, days_since_signup would be a
+        // false number. In that case omit it and mark backfill=true.
+        const [firstEventRes, signalRes] = await Promise.all([
+          (supabase.from("product_events" as any) as any)
+            .select("created_at")
+            .eq("user_id", user.id)
+            .order("created_at", { ascending: true })
+            .limit(1)
+            .maybeSingle(),
+          (supabase.from("strategic_signals" as any) as any)
+            .select("created_at")
+            .eq("id", topSignal.id)
+            .maybeSingle(),
+        ]);
+        const firstEventAt = firstEventRes?.data?.created_at
+          ? new Date(firstEventRes.data.created_at).getTime() : null;
+        const signalCreatedAt = signalRes?.data?.created_at
+          ? new Date(signalRes.data.created_at).getTime() : null;
+        const isBackfill = !!(firstEventAt && signalCreatedAt && signalCreatedAt < firstEventAt);
+
         const capturesToReach = proof.status === "ready" ? proof.data.entriesTotal : null;
-        await track("activation_first_signal", {
-          days_since_signup: daysSinceSignup,
-          captures_to_reach: capturesToReach,
-        });
+        const props: Record<string, unknown> = { captures_to_reach: capturesToReach };
+        if (isBackfill) {
+          props.backfill = true;
+        } else {
+          const createdAt = (user as any)?.created_at;
+          props.days_since_signup = createdAt
+            ? Math.max(0, Math.floor((Date.now() - new Date(createdAt).getTime()) / 86400000))
+            : null;
+        }
+        await track("activation_first_signal", props);
         try { localStorage.setItem(flagKey, "1"); } catch { /* noop */ }
       } catch { /* silent — tracking never breaks UI */ }
     })();
