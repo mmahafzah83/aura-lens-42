@@ -497,6 +497,13 @@ const Onboarding = () => {
       // Kill the race: kick off the article search NOW, at the start of
       // calibration. The existing ref guard makes Step-2 fallback calls no-op.
       triggerArticleSearch();
+      // If the user hasn't seen the Connect LinkedIn screen, show it before calibration.
+      let connectSeen = false;
+      try { connectSeen = localStorage.getItem("aura_onboarding_connect_seen") === "1"; } catch {}
+      if (!connectSeen) {
+        setShowConnectStep(true);
+        return;
+      }
       // Breathing transition into Step 1 (Map your strengths).
       startBreathingTo(1, "Now let's map what makes you different.");
     } catch (e: any) {
