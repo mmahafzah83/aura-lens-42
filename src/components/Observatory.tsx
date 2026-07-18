@@ -1274,6 +1274,15 @@ const Observatory = ({
                   />
                 )}
                 {renderSignalList()}
+                {signals.length >= 200 && signalsTotal > signals.length && (
+                  <div style={{
+                    fontFamily: "'IBM Plex Mono', monospace", fontSize: 11,
+                    color: "var(--glass-2)", letterSpacing: "0.06em",
+                    textAlign: "center", padding: "10px 0",
+                  }}>
+                    Showing {signals.length} of {signalsTotal}
+                  </div>
+                )}
 
                 {/* Secondary editorial intel */}
                 <EditorialBlindSpots signals={signals} onOpenCapture={onOpenCapture} />
