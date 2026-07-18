@@ -3509,27 +3509,27 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
         <button
           onClick={() => setShowDrafts(!showDrafts)}
           className="flex items-center gap-2.5 w-full text-left group"
-          style={{ borderLeft: "1px solid var(--brand)", paddingLeft: 12, marginBottom: showDrafts ? 12 : 0, background: "none", border: "none", cursor: "pointer", borderLeftWidth: 1, borderLeftStyle: "solid", borderLeftColor: "var(--brand)" }}
+          style={{ borderLeft: "1px solid var(--spot)", paddingLeft: 12, marginBottom: showDrafts ? 12 : 0, background: "none", border: "none", cursor: "pointer", borderLeftWidth: 1, borderLeftStyle: "solid", borderLeftColor: "var(--spot)" }}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <h3 style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--brand)", margin: 0 }}>
+            <h3 style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--spot)", margin: 0 }}>
               Your Drafts
             </h3>
             <span style={{ fontFamily: "var(--font-display, var(--font-serif))", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", lineHeight: 1.4 }}>
               These are ready to go. One click, and your expertise is out there working for you — even while you sleep.
             </span>
           </div>
-          <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--bg-subtle)", color: "var(--brand)" }}>
+          <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--paper-2)", color: "var(--spot)" }}>
             {drafts.length}
           </span>
           <ChevronDown
             className="ml-auto transition-transform duration-200 group-hover:text-primary"
-            style={{ width: 16, height: 16, color: "var(--brand)", transform: showDrafts ? "rotate(0deg)" : "rotate(-90deg)" }}
+            style={{ width: 16, height: 16, color: "var(--spot)", transform: showDrafts ? "rotate(0deg)" : "rotate(-90deg)" }}
           />
         </button>
         {showDrafts && (drafts.length === 0 ? (
-          <div style={{ background: "var(--bg-card)", borderRadius: 8, padding: 16, textAlign: "center" }}>
-            <p style={{ fontSize: 14, color: "var(--color-muted)" }}>No drafts yet. Generate content on the Create tab.</p>
+          <div style={{ background: "var(--paper)", borderRadius: 8, padding: 16, textAlign: "center" }}>
+            <p style={{ fontSize: 14, color: "var(--ink-3)" }}>No drafts yet. Generate content on the Create tab.</p>
           </div>
         ) : (
           <div style={{ display: "grid", gap: 12 }}>
@@ -3545,13 +3545,13 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   style={{
-                    background: "var(--bg-card)",
-                    borderLeft: "2px solid var(--brand)",
+                    background: "var(--paper)",
+                    borderLeft: "2px solid var(--spot)",
                     borderRadius: 8,
                     padding: 16,
-                    border: "1px solid var(--color-border)",
+                    border: "1px solid var(--rule)",
                     borderLeftWidth: 2,
-                    borderLeftColor: "var(--brand)",
+                    borderLeftColor: "var(--spot)",
                     transition: "all 0.2s",
                   }}
                   className="hover:bg-muted/20 hover:border-l-brand"
@@ -3572,23 +3572,23 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                       {(p.post_text?.split("\n")[0] || "Untitled draft").trim()}
                     </span>
                     <span className="shrink-0 flex items-center" style={{ gap: 6 }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 6px", borderRadius: 999, backgroundColor: "var(--bg-subtle)", color: "var(--color-muted)", textTransform: "uppercase" }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 6px", borderRadius: 999, backgroundColor: "var(--paper-2)", color: "var(--ink-3)", textTransform: "uppercase" }}>
                         {lang === "ar" ? "AR" : "EN"}
                       </span>
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 6px", borderRadius: 999, backgroundColor: "var(--warning-pale)", color: "var(--warning)" }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 6px", borderRadius: 999, backgroundColor: "var(--paper-2)", color: "var(--warning)" }}>
                         Draft
                       </span>
-                      <span style={{ fontSize: 11, color: "var(--color-muted)" }}>
+                      <span style={{ fontSize: 11, color: "var(--ink-3)" }}>
                         {formatSmartDate(p.created_at)}
                       </span>
                       {hasMetrics && (
-                        <span style={{ fontSize: 11, color: "var(--color-muted)" }}>
+                        <span style={{ fontSize: 11, color: "var(--ink-3)" }}>
                           · {typeof metrics!.impressions === "number" ? `${metrics!.impressions!.toLocaleString()} impressions` : ""}
                           {typeof metrics!.impressions === "number" && typeof metrics!.reactions === "number" ? " · " : ""}
                           {typeof metrics!.reactions === "number" ? `${metrics!.reactions!.toLocaleString()} reactions` : ""}
                         </span>
                       )}
-                      <ChevronDown className="w-3.5 h-3.5" style={{ color: "var(--color-muted)", transform: expanded ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.15s" }} />
+                      <ChevronDown className="w-3.5 h-3.5" style={{ color: "var(--ink-3)", transform: expanded ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.15s" }} />
                     </span>
                   </button>
 
@@ -3606,8 +3606,8 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                     const title = titleFromMeta || (sid ? signalTitleMap[sid] : null);
                     if (!title) return null;
                     return (
-                      <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 8, fontSize: 12, color: "var(--color-muted)" }}>
-                        <Lightbulb className="w-3.5 h-3.5" style={{ color: "var(--brand)" }} />
+                      <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 8, fontSize: 12, color: "var(--ink-3)" }}>
+                        <Lightbulb className="w-3.5 h-3.5" style={{ color: "var(--spot)" }} />
                         <span className="line-clamp-1">From signal: {title}</span>
                       </div>
                     );
@@ -3615,7 +3615,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
 
                       {/* Format badge (extra chip on expanded state) */}
                       <div className="flex items-center flex-wrap" style={{ gap: 8, marginTop: 10 }}>
-                        <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--bg-subtle)" }} className={badge.cls.includes("text-") ? badge.cls.split(" ").filter(c => c.startsWith("text-")).join(" ") : "text-muted-foreground"}>
+                        <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--paper-2)" }} className={badge.cls.includes("text-") ? badge.cls.split(" ").filter(c => c.startsWith("text-")).join(" ") : "text-muted-foreground"}>
                           {badge.label}
                         </span>
                       </div>
@@ -3626,7 +3626,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                     <button
                       onClick={() => p.post_text && handleCopy(p.id, p.post_text)}
                       disabled={!p.post_text}
-                      style={{ fontSize: 14, color: "var(--color-muted)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
+                      style={{ fontSize: 14, color: "var(--ink-3)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
                       className="hover:text-foreground transition-colors disabled:opacity-30"
                     >
                       {copiedId === p.id ? <Check className="w-3.5 h-3.5" /> : <Linkedin className="w-3.5 h-3.5" />}
@@ -3634,7 +3634,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                     </button>
                     <button
                       onClick={() => { setConfirmingId(p.id); setConfirmPubUrl(""); setConfirmPubUrlError(""); }}
-                      style={{ fontSize: 14, color: "var(--color-muted)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
+                      style={{ fontSize: 14, color: "var(--ink-3)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
                       className="hover:text-foreground transition-colors"
                     >
                       <Check className="w-3.5 h-3.5" /> Mark as published
@@ -3681,7 +3681,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                         }}
                         title="Edit draft"
                         aria-label="Edit draft"
-                        style={{ fontSize: 14, color: "var(--color-muted)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
+                        style={{ fontSize: 14, color: "var(--ink-3)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
                         className="hover:text-foreground transition-colors"
                       >
                         <Pencil className="w-3.5 h-3.5" /> Edit
@@ -3698,7 +3698,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
 
                   {/* Inline confirmation (M-1-1) */}
                   {confirmingId === p.id && (
-                    <div style={{ marginTop: 12, padding: 10, background: "var(--bg-subtle)", borderRadius: 6, display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ marginTop: 12, padding: 10, background: "var(--paper-2)", borderRadius: 6, display: "flex", flexDirection: "column", gap: 8 }}>
                       <span style={{ fontSize: 14, color: "var(--ink)" }}>Did you publish this on LinkedIn?</span>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                         <Input
@@ -3714,17 +3714,17 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                             setConfirmingId(null);
                             await markPublished(p.id, confirmPubUrl.trim() || undefined);
                           }}
-                          style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-on-brand)", background: "var(--brand)", border: 0, borderRadius: 4, padding: "5px 10px", cursor: "pointer" }}
+                          style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-on-brand)", background: "var(--spot)", border: 0, borderRadius: 4, padding: "5px 10px", cursor: "pointer" }}
                         >Yes, it's live</button>
                         <button
                           onClick={() => { setConfirmingId(null); setConfirmPubUrl(""); setConfirmPubUrlError(""); }}
-                          style={{ fontSize: 12, color: "var(--color-muted)", background: "transparent", border: 0, cursor: "pointer" }}
+                          style={{ fontSize: 12, color: "var(--ink-3)", background: "transparent", border: 0, cursor: "pointer" }}
                         >Not yet</button>
                       </div>
                       {confirmPubUrlError ? (
                         <span style={{ fontSize: 12, color: "var(--warning)" }}>{confirmPubUrlError}</span>
                       ) : (
-                        <span style={{ fontSize: 12, color: "var(--color-muted)" }}>
+                        <span style={{ fontSize: 12, color: "var(--ink-3)" }}>
                           Optional — paste the post's link so Aura can track how it performs and learn from it.
                         </span>
                       )}
@@ -3781,13 +3781,13 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                 return (
                   <div
                     key={p.id}
-                    style={{ background: "var(--bg-card)", borderRadius: 8, padding: "10px 16px", border: "1px solid var(--color-border)", display: "flex", alignItems: "center", gap: 12 }}
+                    style={{ background: "var(--paper)", borderRadius: 8, padding: "10px 16px", border: "1px solid var(--rule)", display: "flex", alignItems: "center", gap: 12 }}
                   >
-                    <span style={{ fontSize: 12, color: "var(--color-muted)", minWidth: 88 }}>
+                    <span style={{ fontSize: 12, color: "var(--ink-3)", minWidth: 88 }}>
                       {formatSmartDate((p as any).published_at || p.created_at)}
                     </span>
                     {metricsChunk && (
-                      <span style={{ fontSize: 12, color: "var(--color-muted)" }}>{metricsChunk}</span>
+                      <span style={{ fontSize: 12, color: "var(--ink-3)" }}>{metricsChunk}</span>
                     )}
                     <div style={{ flex: 1 }} />
                     {externalHref ? (
@@ -3795,13 +3795,13 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                         href={externalHref}
                         target="_blank"
                         rel="noopener noreferrer"
-                        style={{ fontSize: 14, color: "var(--color-muted)", display: "flex", alignItems: "center", gap: 5, textDecoration: "none" }}
+                        style={{ fontSize: 14, color: "var(--ink-3)", display: "flex", alignItems: "center", gap: 5, textDecoration: "none" }}
                         className="hover:text-foreground transition-colors"
                       >
                         <Linkedin className="w-3.5 h-3.5" /> Open on LinkedIn ↗
                       </a>
                     ) : (
-                      <span style={{ fontSize: 12, color: "var(--color-muted)", fontStyle: "italic" }}>no link</span>
+                      <span style={{ fontSize: 12, color: "var(--ink-3)", fontStyle: "italic" }}>no link</span>
                     )}
                   </div>
                 );
@@ -3812,7 +3812,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                   key={p.id}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  style={{ background: "var(--bg-card)", borderRadius: 8, padding: 16, border: "1px solid var(--color-border)", transition: "border-color 0.2s" }}
+                  style={{ background: "var(--paper)", borderRadius: 8, padding: 16, border: "1px solid var(--rule)", transition: "border-color 0.2s" }}
                   className="hover:border-[color:var(--hairline)]"
                 >
                   {/* Compact row: hook (1-line) + chips + date + metrics */}
@@ -3831,25 +3831,25 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                       {(p.post_text?.split("\n")[0] || "").trim()}
                     </span>
                     <span className="shrink-0 flex items-center" style={{ gap: 6 }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 6px", borderRadius: 999, backgroundColor: "var(--bg-subtle)", color: "var(--color-muted)", textTransform: "uppercase" }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 6px", borderRadius: 999, backgroundColor: "var(--paper-2)", color: "var(--ink-3)", textTransform: "uppercase" }}>
                         {lang === "ar" ? "AR" : "EN"}
                       </span>
                       {isExternal ? (
-                        <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 6px", borderRadius: 999, backgroundColor: "var(--info-pale)", color: "var(--info)" }}>
+                        <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 6px", borderRadius: 999, backgroundColor: "var(--paper-2)", color: "var(--info)" }}>
                           LinkedIn
                         </span>
                       ) : (
-                        <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 6px", borderRadius: 999, backgroundColor: "var(--success-pale)", color: "var(--success)" }}>
+                        <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 6px", borderRadius: 999, backgroundColor: "var(--paper-2)", color: "var(--success)" }}>
                           Published
                         </span>
                       )}
-                      <span style={{ fontSize: 11, color: "var(--color-muted)" }}>
+                      <span style={{ fontSize: 11, color: "var(--ink-3)" }}>
                         {formatSmartDate((p as any).published_at || p.created_at)}
                       </span>
                       {metricsChunk && (
-                        <span style={{ fontSize: 11, color: "var(--color-muted)" }}>· {metricsChunk}</span>
+                        <span style={{ fontSize: 11, color: "var(--ink-3)" }}>· {metricsChunk}</span>
                       )}
-                      <ChevronDown className="w-3.5 h-3.5" style={{ color: "var(--color-muted)", transform: expanded ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.15s" }} />
+                      <ChevronDown className="w-3.5 h-3.5" style={{ color: "var(--ink-3)", transform: expanded ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.15s" }} />
                     </span>
                   </button>
 
@@ -3859,7 +3859,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                         {p.post_text}
                       </p>
                       {p.topic_label && (
-                        <p style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 4 }} className="line-clamp-1">{p.topic_label}</p>
+                        <p style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 4 }} className="line-clamp-1">{p.topic_label}</p>
                       )}
                       {(() => {
                         const sid = (p as any).source_signal_id || (p.source_metadata as any)?.source_signal_id || (p.source_metadata as any)?.signal_ids?.[0];
@@ -3867,14 +3867,14 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                         const title = titleFromMeta || (sid ? signalTitleMap[sid] : null);
                         if (!title) return null;
                         return (
-                          <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 6, fontSize: 12, color: "var(--color-muted)" }}>
-                            <Lightbulb className="w-3.5 h-3.5" style={{ color: "var(--brand)" }} />
+                          <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 6, fontSize: 12, color: "var(--ink-3)" }}>
+                            <Lightbulb className="w-3.5 h-3.5" style={{ color: "var(--spot)" }} />
                             <span className="line-clamp-1">From signal: {title}</span>
                           </div>
                         );
                       })()}
                       <div className="flex items-center flex-wrap" style={{ gap: 8, marginTop: 10 }}>
-                        <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--bg-subtle)" }} className={badge.cls.includes("text-") ? badge.cls.split(" ").filter(c => c.startsWith("text-")).join(" ") : "text-muted-foreground"}>
+                        <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--paper-2)" }} className={badge.cls.includes("text-") ? badge.cls.split(" ").filter(c => c.startsWith("text-")).join(" ") : "text-muted-foreground"}>
                           {badge.label}
                         </span>
                       </div>
@@ -3885,7 +3885,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                             href={externalHref}
                             target="_blank"
                             rel="noopener noreferrer"
-                            style={{ fontSize: 14, color: "var(--color-muted)", display: "flex", alignItems: "center", gap: 5, textDecoration: "none" }}
+                            style={{ fontSize: 14, color: "var(--ink-3)", display: "flex", alignItems: "center", gap: 5, textDecoration: "none" }}
                             className="hover:text-foreground transition-colors"
                           >
                             <Linkedin className="w-3.5 h-3.5" /> Open on LinkedIn ↗
@@ -3894,7 +3894,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                         <button
                           onClick={() => p.post_text && handleCopy(p.id, p.post_text)}
                           disabled={!p.post_text}
-                          style={{ fontSize: 14, color: "var(--color-muted)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
+                          style={{ fontSize: 14, color: "var(--ink-3)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
                           className="hover:text-foreground transition-colors disabled:opacity-30"
                         >
                           {copiedId === p.id ? <Check className="w-3.5 h-3.5" /> : <Linkedin className="w-3.5 h-3.5" />}
@@ -3919,13 +3919,13 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                             onChange={(e) => setUrlDrafts(prev => ({ ...prev, [p.id]: e.target.value }))}
                             onKeyDown={(e) => { if (e.key === "Enter") saveLinkedInUrl(p.id, urlDrafts[p.id] || ""); }}
                             maxLength={500}
-                            style={{ flex: 1, fontSize: 12, padding: "6px 10px", borderRadius: 4, border: "1px solid var(--color-border)", background: "var(--bg-subtle)", color: "var(--ink)" }}
+                            style={{ flex: 1, fontSize: 12, padding: "6px 10px", borderRadius: 4, border: "1px solid var(--rule)", background: "var(--paper-2)", color: "var(--ink)" }}
                           />
                           <button
                             onClick={() => saveLinkedInUrl(p.id, urlDrafts[p.id] || "")}
                             disabled={!urlDrafts[p.id]?.trim()}
                             aria-label="Save LinkedIn URL"
-                            style={{ background: "var(--brand)", color: "#fff", border: 0, borderRadius: 4, padding: "6px 8px", cursor: "pointer", display: "inline-flex", alignItems: "center", opacity: urlDrafts[p.id]?.trim() ? 1 : 0.5 }}
+                            style={{ background: "var(--spot)", color: "var(--paper)", border: 0, borderRadius: 4, padding: "6px 8px", cursor: "pointer", display: "inline-flex", alignItems: "center", opacity: urlDrafts[p.id]?.trim() ? 1 : 0.5 }}
                           >
                             <Save className="w-3.5 h-3.5" />
                           </button>
@@ -3954,7 +3954,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                     Posts you shipped through Aura — engagement flows back to strengthen your signals
                   </span>
                 </div>
-                <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--bg-subtle)", color: "var(--color-muted)" }}>
+                <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--paper-2)", color: "var(--ink-3)" }}>
                   {auraTotal}
                 </span>
                 <ChevronDown
@@ -3965,8 +3965,8 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
               {showPublished && (
                 <div style={{ display: "grid", gap: 12 }}>
                   {auraRows.length === 0 ? (
-                    <div style={{ background: "var(--bg-card)", borderRadius: 8, padding: 16, textAlign: "center" }}>
-                      <p style={{ fontSize: 14, color: "var(--color-muted)" }}>
+                    <div style={{ background: "var(--paper)", borderRadius: 8, padding: 16, textAlign: "center" }}>
+                      <p style={{ fontSize: 14, color: "var(--ink-3)" }}>
                         Nothing published through Aura yet. Your first post from a signal lands here.
                       </p>
                     </div>
@@ -3974,7 +3974,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                     <>
                       {auraRows.map(renderCard)}
                       {auraRows.length < auraTotal && (
-                        <div style={{ textAlign: "center", fontSize: 12, color: "var(--color-muted)", padding: "8px 0" }}>
+                        <div style={{ textAlign: "center", fontSize: 12, color: "var(--ink-3)", padding: "8px 0" }}>
                           Showing {auraRows.length} of {auraTotal}
                         </div>
                       )}
@@ -4000,7 +4000,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                       Posts Aura learned about — imported from your LinkedIn history or discovered on the web
                     </span>
                   </div>
-                  <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--bg-subtle)", color: "var(--color-muted)" }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--paper-2)", color: "var(--ink-3)" }}>
                     {earlierTotal}
                   </span>
                   <ChevronDown
@@ -4012,7 +4012,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                   <div style={{ display: "grid", gap: 12 }}>
                     {earlierRows.map(renderCard)}
                     {earlierRows.length < earlierTotal && (
-                      <div style={{ textAlign: "center", fontSize: 12, color: "var(--color-muted)", padding: "8px 0" }}>
+                      <div style={{ textAlign: "center", fontSize: 12, color: "var(--ink-3)", padding: "8px 0" }}>
                         Showing {earlierRows.length} of {earlierTotal}
                       </div>
                     )}
@@ -4038,7 +4038,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                       Authorship label doesn't match a known bucket — surfaced here so it isn't hidden.
                     </span>
                   </div>
-                  <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--bg-subtle)", color: "var(--color-destructive, #b45309)" }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--paper-2)", color: "var(--color-destructive, #b45309)" }}>
                     {unclassifiedRows.length}
                   </span>
                 </div>
