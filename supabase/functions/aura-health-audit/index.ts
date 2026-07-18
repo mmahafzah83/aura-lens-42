@@ -17,7 +17,6 @@ type Severity = "critical" | "warn" | "info";
 type Finding = { code: string; severity: Severity; detail: string };
 
 const FRESHNESS: Array<{ table: string; days: number; severity: Severity }> = [
-  { table: "recommended_moves",      days: 7,  severity: "critical" },
   { table: "lifecycle_email_log",    days: 3,  severity: "warn" },
   { table: "imprint_snapshots",      days: 2,  severity: "critical" },
   { table: "linkedin_post_metrics",  days: 3,  severity: "warn" },

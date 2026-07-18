@@ -1193,7 +1193,6 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
   const [selectedSignalId, setSelectedSignalId] = useState<string | null>(null);
   const [entryCount, setEntryCount] = useState(0);
   const [evidenceCount, setEvidenceCount] = useState(0);
-  const [movesCount, setMovesCount] = useState(0);
   const [activeSubTab, setActiveSubTab] = useState<SubTab>("signals");
   const [detecting, setDetecting] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -1211,14 +1210,13 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
-      const [signalsRes, entriesRes, documentsRes, evidenceRes, movesRes] = await Promise.all([
+      const [signalsRes, entriesRes, documentsRes, evidenceRes] = await Promise.all([
         supabase.from("strategic_signals")
           .select("*, signal_velocity, velocity_status, commercial_validation_score")
           .eq("status", "active").order("confidence", { ascending: false }).limit(50),
         supabase.from("entries").select("id", { count: "exact", head: true }),
         supabase.from("documents").select("id", { count: "exact", head: true }),
         supabase.from("evidence_fragments").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-        supabase.from("recommended_moves").select("id", { count: "exact", head: true }).eq("status", "active").eq("user_id", user.id),
       ]);
       const loadedRaw = (signalsRes.data || []) as any[];
       // W2-A-2: compute LIVE evidence count per signal in ONE batched query.
@@ -1264,7 +1262,6 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
       setSignals(loaded);
       setEntryCount((entriesRes.count || 0) + (documentsRes.count || 0));
       setEvidenceCount(evidenceRes.count || 0);
-      setMovesCount(movesRes.count || 0);
       if (loaded.length > 0 && !selectedSignalId) setSelectedSignalId(loaded[0].id);
     } catch (e) {
       console.error("[IntelligenceTab]", e);
@@ -1286,7 +1283,6 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
       .on("postgres_changes", { event: "*", schema: "public", table: "entries", filter: `user_id=eq.${authUser.id}` }, () => loadSignals())
       .on("postgres_changes", { event: "*", schema: "public", table: "documents", filter: `user_id=eq.${authUser.id}` }, () => loadSignals())
       .on("postgres_changes", { event: "*", schema: "public", table: "strategic_signals", filter: `user_id=eq.${authUser.id}` }, () => loadSignals())
-      .on("postgres_changes", { event: "*", schema: "public", table: "recommended_moves", filter: `user_id=eq.${authUser.id}` }, () => loadSignals())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [authUser?.id, loadSignals]);
@@ -1383,7 +1379,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
     return (
       <div style={{ minHeight: "100vh", paddingBottom: 80 }}>
         <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 16px" }}>
-          <Header entryCount={entryCount} evidenceCount={0} signalsCount={0} movesCount={0} />
+          <Header entryCount={entryCount} evidenceCount={0} signalsCount={0} />
           <div style={{
             marginTop: 40, padding: "28px 28px",
             background: "var(--surface-ink-raised)", border: "0.5px solid var(--surface-ink-subtle)",
@@ -1410,7 +1406,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
         {signals.length === 0 && <FirstVisitHint page="intelligence" />}
 
         {/* HEADER */}
-        <Header entryCount={entryCount} evidenceCount={evidenceCount} signalsCount={signals.length} movesCount={movesCount} />
+        <Header entryCount={entryCount} evidenceCount={evidenceCount} signalsCount={signals.length} />
 
         {/* TAB SWITCHER */}
         <div style={{
@@ -1667,7 +1663,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
 };
 
 /* Header with editorial title + inline stats */
-const Header = ({ entryCount, evidenceCount, signalsCount, movesCount }: { entryCount: number; evidenceCount: number; signalsCount: number; movesCount: number }) => (
+const Header = ({ entryCount, evidenceCount, signalsCount }: { entryCount: number; evidenceCount: number; signalsCount: number }) => (
   <div style={{ textAlign: "center" }}>
     <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".12em", color: "var(--glass-2)", textTransform: "uppercase" }}>
       Your strategic radar
@@ -1706,21 +1702,6 @@ const Header = ({ entryCount, evidenceCount, signalsCount, movesCount }: { entry
           )}
         </div>
       ))}
-      {/* Divider + Moves (separate from funnel) */}
-      <span style={{ width: 0.5, height: 20, background: "var(--surface-ink-subtle)", margin: "0 8px" }} />
-      <div style={{ display: "inline-flex", alignItems: "center" }}>
-        <div style={{
-          display: "flex", flexDirection: "column", alignItems: "center",
-          padding: "0 10px", background: "none", border: "none",
-        }}>
-          <div className="text-metric" style={{ color: movesCount === 0 ? "var(--glass-2)" : "var(--success, hsl(140 60% 45%))" }}>
-            {movesCount === 0 ? "—" : movesCount}
-          </div>
-          <div style={{ fontSize: 11, color: "var(--glass-2)", textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 4 }}>
-            {movesCount === 1 ? "move" : "moves"}
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 );

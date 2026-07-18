@@ -576,8 +576,8 @@ const SubTabs = ({
    Header — instrument-styled, mono
    ────────────────────────────────────────────────────────── */
 const ObsHeader = ({
-  entryCount, evidenceCount, signalsTotal, movesCount,
-}: { entryCount: number; evidenceCount: number; signalsTotal: number; movesCount: number }) => (
+  entryCount, evidenceCount, signalsTotal,
+}: { entryCount: number; evidenceCount: number; signalsTotal: number }) => (
   <div style={{ textAlign: "center" }}>
     <div style={{
       fontFamily: "'IBM Plex Mono', monospace", fontSize: 10,
@@ -613,12 +613,6 @@ const ObsHeader = ({
         <span style={{ color: "var(--glass)" }}>{signalsTotal || "—"}</span> signals
         <InfoTooltip text="Themes Aura detected across your captures." label="Signals" side="bottom" triggerSize={12} />
       </span>
-      {movesCount > 0 && (
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-          <span style={{ color: "var(--glass)" }}>{movesCount}</span> moves
-          <InfoTooltip text="Suggested next actions ready for you." label="Moves" side="bottom" triggerSize={12} />
-        </span>
-      )}
     </div>
   </div>
 );
@@ -644,7 +638,6 @@ const Observatory = ({
   const [loadError, setLoadError] = useState(false);
   const [entryCount, setEntryCount] = useState(0);
   const [evidenceCount, setEvidenceCount] = useState(0);
-  const [movesCount, setMovesCount] = useState(0);
   const [signalsTotal, setSignalsTotal] = useState(0);
   const [imprint, setImprint] = useState<{
     score: number | null;
@@ -671,9 +664,7 @@ const Observatory = ({
   const loadSignals = useCallback(async (uid: string) => {
     setSignalsLoading(true); setLoadError(false);
     try {
-      const nowIso = new Date().toISOString();
-      const thirtyDaysAgoIso = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-      const [signalsRes, signalsCountRes, entriesRes, documentsRes, evidenceRes, movesRes] = await Promise.all([
+      const [signalsRes, signalsCountRes, entriesRes, documentsRes, evidenceRes] = await Promise.all([
         supabase.from("strategic_signals")
           .select("*, signal_velocity, velocity_status, commercial_validation_score")
           .eq("user_id", uid)
@@ -683,10 +674,6 @@ const Observatory = ({
         supabase.from("entries").select("id", { count: "exact", head: true }).eq("user_id", uid),
         supabase.from("documents").select("id", { count: "exact", head: true }).eq("user_id", uid),
         supabase.from("evidence_fragments").select("id", { count: "exact", head: true }).eq("user_id", uid),
-        supabase.from("recommended_moves").select("id", { count: "exact", head: true })
-          .eq("status", "active").eq("user_id", uid)
-          .gt("created_at", thirtyDaysAgoIso)
-          .or(`expires_at.is.null,expires_at.gt.${nowIso}`),
       ]);
       const raw = (signalsRes.data || []) as any[];
 
@@ -720,7 +707,6 @@ const Observatory = ({
       setSignalsTotal(signalsCountRes.count || loaded.length);
       setEntryCount((entriesRes.count || 0) + (documentsRes.count || 0));
       setEvidenceCount(evidenceRes.count || 0);
-      setMovesCount(movesRes.count || 0);
       if (loaded.length > 0 && !selectedSignalId) setSelectedSignalId(loaded[0].id);
     } catch (e) {
       console.error("[Observatory] signals load failed", e);
@@ -1088,7 +1074,6 @@ const Observatory = ({
           entryCount={entryCount}
           evidenceCount={evidenceCount}
           signalsTotal={signalsTotal}
-          movesCount={movesCount}
         />
 
         {/* ZONE 1 — INSTRUMENTS */}
