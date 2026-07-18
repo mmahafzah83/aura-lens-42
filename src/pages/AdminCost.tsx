@@ -348,6 +348,47 @@ export default function AdminCost() {
     toast.success("Budget updated");
   };
 
+  const reloadSubs = async () => {
+    const { data } = await (supabase as any)
+      .from("external_costs")
+      .select("*")
+      .order("created_at", { ascending: false });
+    setSubs((data ?? []) as ExternalCost[]);
+  };
+
+  const addSub = async () => {
+    const amt = parseFloat(newAmt);
+    if (!newName.trim() || !isFinite(amt) || amt < 0) {
+      toast.error("Enter a name and valid amount");
+      return;
+    }
+    const { error } = await (supabase as any).from("external_costs").insert({
+      name: newName.trim(),
+      amount_usd: amt,
+      cycle: newCycle,
+      renews_on: newRenews || null,
+    });
+    if (error) { toast.error(error.message); return; }
+    setNewName(""); setNewAmt(""); setNewRenews(""); setNewCycle("monthly");
+    toast.success("Subscription added");
+    reloadSubs();
+  };
+
+  const toggleSub = async (s: ExternalCost) => {
+    const next = s.status === "active" ? "cancelled" : "active";
+    const { error } = await (supabase as any).from("external_costs").update({ status: next }).eq("id", s.id);
+    if (error) { toast.error(error.message); return; }
+    reloadSubs();
+  };
+
+  const deleteSub = async (s: ExternalCost) => {
+    if (!confirm(`Delete "${s.name}"?`)) return;
+    const { error } = await (supabase as any).from("external_costs").delete().eq("id", s.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Deleted");
+    reloadSubs();
+  };
+
   const exportCsv = () => {
     const header = [
       "created_at",
@@ -403,8 +444,165 @@ export default function AdminCost() {
 
   const empty = rows30.length === 0;
 
+  const subsMonthly = subs
+    .filter((s) => s.status === "active")
+    .reduce((sum, s) => {
+      const a = Number(s.amount_usd) || 0;
+      if (s.cycle === "monthly") return sum + a;
+      if (s.cycle === "annual") return sum + a / 12;
+      return sum;
+    }, 0);
+  const trueRunRate = spendMonth + subsMonthly;
+  const daysUntil = (d: string | null) => {
+    if (!d) return null;
+    const t = new Date(d).getTime() - Date.now();
+    return Math.ceil(t / 86400_000);
+  };
+
   return (
     <AdminShell title="AI cost & usage" subtitle="Executive spend report — current month + trailing 30 days">
+      {/* True run rate — logged AI + fixed subscriptions */}
+      <div style={{ ...card, marginBottom: 28 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 20 }}>
+          <div>
+            <div style={kpiLabel}>Logged AI this month</div>
+            <div style={{ ...kpiValue, fontSize: 28 }}>{money(spendMonth)}</div>
+            <div style={{ marginTop: 6, fontSize: 11, color: "var(--glass-2)" }}>
+              Only calls Aura records — Anthropic and Perplexity. OpenAI embeddings are not logged yet.
+            </div>
+          </div>
+          <div>
+            <div style={kpiLabel}>Subscriptions</div>
+            <div style={{ ...kpiValue, fontSize: 28 }}>
+              {money(subsMonthly)} <span style={{ fontSize: 13, color: "var(--glass-2)" }}>/ month</span>
+            </div>
+            <div style={{ marginTop: 6, fontSize: 11, color: "var(--glass-2)" }}>
+              Fixed costs billed outside the app.
+            </div>
+          </div>
+        </div>
+        <div style={{ borderTop: "1px solid var(--hair)", paddingTop: 16 }}>
+          <div style={kpiLabel}>True run rate</div>
+          <div style={{ ...kpiValue, fontSize: 44 }}>~{money(trueRunRate)}</div>
+          <div style={{ marginTop: 6, fontSize: 11, color: "var(--glass-2)" }}>
+            {money(spendMonth)} logged AI + {money(subsMonthly)} subscriptions
+          </div>
+        </div>
+
+        <div style={{ marginTop: 24 }}>
+          <div style={{ ...kpiLabel, marginBottom: 8 }}>Active subscriptions</div>
+          {subs.filter((s) => s.status === "active").length === 0 ? (
+            <div style={{ fontSize: 13, color: "var(--glass-2)" }}>None recorded.</div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {subs.filter((s) => s.status === "active").map((s) => {
+                const d = daysUntil(s.renews_on);
+                const soon = d !== null && d <= 14 && d >= 0;
+                return (
+                  <div key={s.id} style={{ fontSize: 13, color: "var(--glass)" }}>
+                    <span style={{ fontWeight: 600 }}>{s.name}</span>
+                    {" — "}{money(Number(s.amount_usd) || 0)} / {s.cycle}
+                    {s.renews_on && <> · renews {s.renews_on}</>}
+                    {soon && (
+                      <div style={{ color: "#d97706", fontSize: 12, marginTop: 2 }}>
+                        renews in {d} day{d === 1 ? "" : "s"} — confirm you still use it.
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div style={{ marginTop: 20, borderTop: "1px solid var(--hair)", paddingTop: 16 }}>
+          <div style={{ ...kpiLabel, marginBottom: 8 }}>Manage subscriptions</div>
+          <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 12 }}>
+            <thead>
+              <tr>
+                <th style={th}>Name</th>
+                <th style={th}>Amount</th>
+                <th style={th}>Cycle</th>
+                <th style={th}>Renews</th>
+                <th style={th}>Status</th>
+                <th style={th}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {subs.map((s) => (
+                <tr key={s.id}>
+                  <td style={td}>{s.name}</td>
+                  <td style={td}>{money(Number(s.amount_usd) || 0)}</td>
+                  <td style={td}>{s.cycle}</td>
+                  <td style={td}>{s.renews_on || "—"}</td>
+                  <td style={td}>
+                    <button
+                      onClick={() => toggleSub(s)}
+                      style={{
+                        background: "transparent",
+                        color: s.status === "active" ? "#16a34a" : "var(--glass-2)",
+                        border: "1px solid var(--hair)",
+                        borderRadius: 4,
+                        padding: "2px 8px",
+                        fontSize: 11,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {s.status}
+                    </button>
+                  </td>
+                  <td style={td}>
+                    <button
+                      onClick={() => deleteSub(s)}
+                      style={{ background: "transparent", border: "none", color: "var(--glass-2)", cursor: "pointer" }}
+                      aria-label="Delete"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <input
+              placeholder="Name"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              style={{ background: "var(--ob-bg)", border: "1px solid var(--hair)", color: "var(--glass)", padding: "6px 10px", borderRadius: 4, fontSize: 13, flex: "1 1 160px" }}
+            />
+            <input
+              type="number"
+              placeholder="Amount USD"
+              value={newAmt}
+              onChange={(e) => setNewAmt(e.target.value)}
+              style={{ background: "var(--ob-bg)", border: "1px solid var(--hair)", color: "var(--glass)", padding: "6px 10px", borderRadius: 4, fontSize: 13, width: 120 }}
+            />
+            <select
+              value={newCycle}
+              onChange={(e) => setNewCycle(e.target.value)}
+              style={{ background: "var(--ob-bg)", border: "1px solid var(--hair)", color: "var(--glass)", padding: "6px 10px", borderRadius: 4, fontSize: 13 }}
+            >
+              <option value="monthly">monthly</option>
+              <option value="annual">annual</option>
+              <option value="one_off">one_off</option>
+            </select>
+            <input
+              type="date"
+              value={newRenews}
+              onChange={(e) => setNewRenews(e.target.value)}
+              style={{ background: "var(--ob-bg)", border: "1px solid var(--hair)", color: "var(--glass)", padding: "6px 10px", borderRadius: 4, fontSize: 13 }}
+            />
+            <button
+              onClick={addSub}
+              style={{ background: "var(--glass)", color: "var(--ob-bg)", border: "none", borderRadius: 4, padding: "6px 12px", fontSize: 12, cursor: "pointer", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}
+            >
+              <Plus size={12} /> Add
+            </button>
+          </div>
+        </div>
+      </div>
+
       {empty ? (
         <div style={{ ...card, textAlign: "center", padding: 48, color: "var(--glass-2)" }}>
           No AI usage logged yet — data appears after the next AI call or cron run.
