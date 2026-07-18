@@ -3041,6 +3041,10 @@ export type Database = {
         }[]
       }
       admin_run_cron: { Args: { p_jobid: number }; Returns: string }
+      bump_signal_engagement: {
+        Args: { p_signal_id: string }
+        Returns: undefined
+      }
       delete_account: { Args: { p_user_id: string }; Returns: undefined }
       is_current_user_admin: { Args: never; Returns: boolean }
       pending_capture_entries: {
