@@ -1382,6 +1382,42 @@ export type Database = {
         }
         Relationships: []
       }
+      health_findings: {
+        Row: {
+          code: string
+          created_at: string
+          detail: string
+          first_seen: string
+          id: string
+          last_seen: string
+          resolved_at: string | null
+          severity: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          detail: string
+          first_seen?: string
+          id?: string
+          last_seen?: string
+          resolved_at?: string | null
+          severity: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          detail?: string
+          first_seen?: string
+          id?: string
+          last_seen?: string
+          resolved_at?: string | null
+          severity?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       impact_narratives: {
         Row: {
           content_insight: string
