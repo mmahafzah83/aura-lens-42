@@ -149,19 +149,16 @@ Deno.serve(async (req) => {
         anthropic: "writing your Brand Assessments and LinkedIn posts",
         openai: "understanding and filing your captures",
         perplexity: "finding fresh articles and industry trends",
-        resend: "sending your emails and invites",
       };
       const STATUS_PAGE: Record<string, string> = {
         anthropic: "https://status.anthropic.com",
         openai: "https://status.openai.com",
         perplexity: "https://status.perplexity.com",
-        resend: "https://resend.com/status",
       };
       const KEY_NAME: Record<string, string> = {
         anthropic: "ANTHROPIC_API_KEY",
         openai: "OPENAI_API_KEY",
         perplexity: "PERPLEXITY_API_KEY",
-        resend: "RESEND_API_KEY",
       };
 
       // Read the two previous runs (before this one was inserted, current insert is rows[0] if included)
