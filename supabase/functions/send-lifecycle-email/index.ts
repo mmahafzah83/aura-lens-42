@@ -11,9 +11,10 @@ const corsHeaders = {
 
 const APP_URL = "https://aura-intel.org";
 const FROM = "Aura <Mohammad.Mahafdhah@aura-intel.org>";
+const FROM_INVITES = "Aura <invites@aura-intel.org>";
 const REPLY_TO = "mohammad.mahafdhah@aura-intel.org";
 
-type EmailType = "welcome" | "day1" | "day3" | "day7" | "inactive" | "silence" | "post_ready" | "aura_card_ready";
+type EmailType = "welcome" | "day1" | "day3" | "day7" | "inactive" | "silence" | "post_ready" | "aura_card_ready" | "aura_card_nudge" | "aura_card_monthly";
 
 const HEADING_FONT = "'Cormorant Garamond', Georgia, 'Times New Roman', serif";
 const BODY_FONT = "'DM Sans', -apple-system, BlinkMacSystemFont, Arial, sans-serif";
@@ -83,9 +84,11 @@ function buildEmail(
     recentTrend: { headline: string; source: string } | null;
     postTitle?: string;
     postPreview?: string;
+    missingGates?: string[];
+    monthName?: string;
   },
 ): { subject: string; html: string } {
-  const { BRAND, FONT, firstName, sectorFocus, level, entriesCount, topSignals, score, tier, signalCount, fadingSignals, fadingCount, publishedCount, recentTrend, postTitle, postPreview } = ctx;
+  const { BRAND, FONT, firstName, sectorFocus, level, entriesCount, topSignals, score, tier, signalCount, fadingSignals, fadingCount, publishedCount, recentTrend, postTitle, postPreview, missingGates, monthName } = ctx;
   const name = firstName || "there";
   const focus = sectorFocus && sectorFocus.trim() ? sectorFocus.trim() : "your sector";
   const tierMessage = (() => {
@@ -182,7 +185,42 @@ function buildEmail(
       ${heading(`${name}, your Aura Card is ready.`)}
       <p style="margin:0 0 18px;">You finished the four steps — assessment, skills, photo, and country. Aura now has enough to render a shareable read of who you are, in one card.</p>
       <p style="margin:0 0 18px;">Open My Story to preview it, download the PNG, or share it to LinkedIn.</p>
-      ${ctaButton(BRAND, "Open your card →", `${APP_URL}/home?tab=identity`)}
+      ${ctaButton(BRAND, "See your card →", `${APP_URL}/dashboard?tab=identity`)}
+      ${signoff(name, level)}`;
+    return { subject, html: shell(BRAND, FONT, body) };
+  }
+
+  if (type === "aura_card_nudge") {
+    const gates = (missingGates && missingGates.length > 0) ? missingGates : ["assessment"];
+    const n = gates.length;
+    const subject = `You're ${n} step${n === 1 ? "" : "s"} from your Aura Card`;
+    const labelFor = (g: string) => {
+      const k = g.toLowerCase();
+      if (k === "photo") return "Add a profile photo";
+      if (k === "country") return "Set your country";
+      if (k === "assessment") return "Complete the Brand Assessment";
+      if (k === "radar" || k === "skills") return "Fill in your skills radar";
+      return g;
+    };
+    const bullets = gates.map((g) => `<li style="margin:0 0 8px;">${labelFor(g)}</li>`).join("");
+    const body = `
+      ${heading(`${name}, you're ${n} step${n === 1 ? "" : "s"} away.`)}
+      <p style="margin:0 0 14px;">Your Aura Card renders as soon as these are done:</p>
+      <ul style="margin:0 0 18px;padding-left:20px;color:#3a3530;">${bullets}</ul>
+      <p style="margin:0 0 18px;">A few minutes and the card is yours to preview, download, and share.</p>
+      ${ctaButton(BRAND, "Finish and see your card →", `${APP_URL}/dashboard?tab=identity`)}
+      ${signoff(name, level)}`;
+    return { subject, html: shell(BRAND, FONT, body) };
+  }
+
+  if (type === "aura_card_monthly") {
+    const month = monthName || new Date().toLocaleString("en-US", { month: "long" });
+    const subject = `Your ${month} Aura Card`;
+    const body = `
+      ${heading(`${name}, your ${month} card is ready.`)}
+      <p style="margin:0 0 18px;">A fresh read of who you are this month — your practice, your skills, your point of view. One card, made from your own signals.</p>
+      <p style="margin:0 0 18px;">Open it, download the PNG, or share it to LinkedIn.</p>
+      ${ctaButton(BRAND, "View this month's card →", `${APP_URL}/dashboard?tab=identity`)}
       ${signoff(name, level)}`;
     return { subject, html: shell(BRAND, FONT, body) };
   }
@@ -223,17 +261,18 @@ serve(withObserve("send-lifecycle-email", async (req) => {
     const isCron = !!CRON_SECRET && cronHeader === CRON_SECRET;
     const isServiceRole = !!SERVICE_KEY && apiKey === SERVICE_KEY;
     const reqBody = await req.json();
-    const { user_id, email_type, post_id, post_title, post_preview } = reqBody;
+    const { user_id, email_type, post_id, post_title, post_preview, missing_gates, month_name } = reqBody;
     if (!user_id || !email_type) {
       return new Response(JSON.stringify({ error: "user_id and email_type required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    // Allow authenticated user to trigger their own "aura_card_ready" email only.
+    // Allow authenticated user to trigger their own "aura_card_*" emails only.
     let isSelfUser = false;
+    const SELF_ALLOWED: EmailType[] = ["aura_card_ready", "aura_card_nudge", "aura_card_monthly"];
     if (!isCron && !isServiceRole) {
-      if (email_type !== "aura_card_ready") {
+      if (!SELF_ALLOWED.includes(email_type)) {
         return new Response(JSON.stringify({ error: "Forbidden" }), {
           status: 403,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -261,7 +300,7 @@ serve(withObserve("send-lifecycle-email", async (req) => {
         });
       }
     }
-    const types: EmailType[] = ["welcome", "day1", "day3", "day7", "inactive", "silence", "post_ready", "aura_card_ready"];
+    const types: EmailType[] = ["welcome", "day1", "day3", "day7", "inactive", "silence", "post_ready", "aura_card_ready", "aura_card_nudge", "aura_card_monthly"];
     if (!types.includes(email_type)) {
       return new Response(JSON.stringify({ error: "invalid email_type" }), {
         status: 400,
@@ -319,7 +358,7 @@ serve(withObserve("send-lifecycle-email", async (req) => {
         .eq("user_id", user_id)
         .eq("email_type", email_type)
         .limit(1);
-      if (existing && existing.length > 0 && email_type !== "inactive" && email_type !== "silence") {
+      if (existing && existing.length > 0 && email_type !== "inactive" && email_type !== "silence" && email_type !== "aura_card_nudge" && email_type !== "aura_card_monthly") {
         return new Response(JSON.stringify({ skipped: "already_sent" }), {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -421,13 +460,19 @@ serve(withObserve("send-lifecycle-email", async (req) => {
       recentTrend: trendRow ? { headline: (trendRow as any).headline, source: (trendRow as any).source } : null,
       postTitle: post_title || undefined,
       postPreview: post_preview || undefined,
+      missingGates: Array.isArray(missing_gates) ? missing_gates : undefined,
+      monthName: typeof month_name === "string" ? month_name : undefined,
     });
+
+    const fromAddress = (email_type === "aura_card_ready" || email_type === "aura_card_nudge" || email_type === "aura_card_monthly")
+      ? FROM_INVITES
+      : FROM;
 
     const resendRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        from: FROM,
+        from: fromAddress,
         to: [recipient],
         reply_to: REPLY_TO,
         subject,
