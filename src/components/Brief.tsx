@@ -276,7 +276,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
           .select("id, type, body, language, generation_params, created_at")
           .eq("user_id", user.id).eq("status", "draft"),
         (supabase.from("linkedin_posts" as any) as any)
-          .select("id, content, language, source_signal_id, created_at, tracking_status")
+          .select("id, post_text, source_signal_id, created_at, tracking_status")
           .eq("user_id", user.id).eq("tracking_status", "draft").not("source_signal_id", "is", null),
         (supabase.from("signal_engagements" as any) as any)
           .select("signal_id, last_opened_at").eq("user_id", user.id),
@@ -304,9 +304,8 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
       for (const r of ((lpRes?.data || []) as any[])) {
         const sid = r.source_signal_id as string | null;
         if (!sid) continue;
-        const lang: "en" | "ar" = r.language === "ar" ? "ar" : "en";
         consider(sid, {
-          id: r.id, body: r.content || "", language: lang, type: "linkedin_post",
+          id: r.id, body: r.post_text || "", language: "en", type: "linkedin_post",
           topic: null, _source: "linkedin_posts",
         }, r.created_at ?? null);
       }
