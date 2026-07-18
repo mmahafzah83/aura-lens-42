@@ -462,9 +462,9 @@ Rewrite any sentence that uses these with concrete, specific language.${postType
 }
 
 ===
-FINAL OUTPUT RULE (highest priority): Your response IS the post. The first character you output must be the first character of the hook. Never emit any preamble, acknowledgement, config/status summary, YAML, code fence, "System Initialization", "Thinking", a budget/token line, or a "KEY: value" setup line.
+FINAL OUTPUT RULE (highest priority): Your entire response is the finished post and nothing else. The first character you output is the first character of the hook. Write nothing before the hook and nothing after the closing question — no setup, no notes, no labels of any kind, in any language.
 
-قاعدة الإخراج النهائية: ردّك هو البوست نفسه. ابدأ بالـ Hook مباشرة من أول حرف. لا تكتب أي مقدمة أو ملخص إعداد أو YAML أو أسطر "KEY: value" قبل البوست.`;
+قاعدة الإخراج النهائية: ردّك بالكامل هو البوست النهائي ولا شيء غيره. أول حرف تكتبه هو أول حرف من الـ Hook. لا تكتب أي شيء قبل الـ Hook ولا بعد السؤال الختامي — بأي لغة.`;
 
       const userMessageContent = (() => {
         const themeStr = typeof theme === "string" ? theme.trim() : "";
@@ -553,14 +553,15 @@ FINAL OUTPUT RULE (highest priority): Your response IS the post. The first chara
           // (a) empty
           if (t === "") { i++; removed++; continue; }
 
-          // Stop conditions: prose line
           const stripped = t.replace(/^[-*•◆↳]\s*/, "");
           const wordCount = stripped.split(/\s+/).filter(Boolean).length;
+
+          // Absolute stops (must come first)
           if (ARABIC.test(stripped)) break;
-          if (wordCount >= 6) break;
           if (SENTENCE_END.test(stripped)) break;
 
-          // (c) KEY: value shape (optionally with bullet prefix), english key ≤5 words
+          // (c) KEY: value shape (optionally with bullet prefix), english key ≤5 words —
+          // check BEFORE the prose-length heuristic so long values don't slip through.
           const kvMatch = stripped.match(/^([A-Za-z][A-Za-z0-9 _-]{0,60}):\s?\S/);
           if (kvMatch) {
             const keyWords = kvMatch[1].trim().split(/\s+/).filter(Boolean).length;
@@ -570,6 +571,8 @@ FINAL OUTPUT RULE (highest priority): Your response IS the post. The first chara
           if (/^[A-Za-z][A-Za-z0-9 _-]*$/.test(stripped) && wordCount <= 4) {
             i++; removed++; continue;
           }
+          // Prose heuristic (last)
+          if (wordCount >= 6) break;
           break;
         }
         const rest = lines.slice(i).join("\n").trim();
