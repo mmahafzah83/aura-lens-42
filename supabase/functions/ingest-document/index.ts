@@ -695,9 +695,21 @@ Deno.serve(withObserve("ingest-document", async (req) => {
       });
     }
 
+    // Read current attempt_count so we can increment atomically-ish (single-writer path).
+    const { data: curRow } = await adminClient
+      .from("documents")
+      .select("attempt_count")
+      .eq("id", document_id)
+      .maybeSingle();
+    const nextAttempt = ((curRow as any)?.attempt_count ?? 0) + 1;
     await adminClient
       .from("documents")
-      .update({ status: "processing", error_message: null })
+      .update({
+        status: "processing",
+        error_message: null,
+        processing_started_at: new Date().toISOString(),
+        attempt_count: nextAttempt,
+      } as any)
       .eq("id", document_id);
 
     console.log(`[ingest-document] kicking off background processDocument for ${document_id}`);
