@@ -1074,7 +1074,6 @@ const Observatory = ({
           entryCount={entryCount}
           evidenceCount={evidenceCount}
           signalsTotal={signalsTotal}
-          movesCount={movesCount}
         />
 
         {/* ZONE 1 — INSTRUMENTS */}
