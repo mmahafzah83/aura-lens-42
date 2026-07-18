@@ -417,7 +417,36 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
   const weekNumber = useMemo(() => isoWeekNumber(now), [now]);
 
   // Track unread count in "What Moved" locally.
+  const openedRowsKey = user?.id ? `aura-brief-opened-${user.id}` : null;
   const [openedRows, setOpenedRows] = useState<Set<string>>(new Set());
+
+  // Hydrate opened ids from localStorage on mount / user change.
+  useEffect(() => {
+    if (!openedRowsKey) { setOpenedRows(new Set()); return; }
+    try {
+      const raw = localStorage.getItem(openedRowsKey);
+      if (!raw) { setOpenedRows(new Set()); return; }
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) setOpenedRows(new Set(arr.filter((v) => typeof v === "string")));
+    } catch { /* corrupt payload — start fresh */ }
+  }, [openedRowsKey]);
+
+  const markRowOpened = useCallback((signalId: string) => {
+    setOpenedRows(prev => {
+      if (prev.has(signalId)) return prev;
+      const next = new Set(prev);
+      next.add(signalId);
+      if (openedRowsKey) {
+        try {
+          // Cap at 200 most recent — drop the oldest ids first.
+          const arr = Array.from(next);
+          const trimmed = arr.slice(Math.max(0, arr.length - 200));
+          localStorage.setItem(openedRowsKey, JSON.stringify(trimmed));
+        } catch { /* quota / privacy mode — count still lives in memory */ }
+      }
+      return next;
+    });
+  }, [openedRowsKey]);
 
   // Away-since gap in days (for the "away" scenario branch).
   const awayDays = useMemo(() => {
