@@ -29,6 +29,7 @@ interface BriefProps {
   onOpenCapture?: () => void;
   onInvite?: () => void;
   onOpenBrandAssessment?: () => void;
+  onOpenSignal?: (signalId: string) => void;
   onDraftToStudio?: (prefill: {
     topic: string;
     context: string;
@@ -110,6 +111,7 @@ interface PublishedRecent {
   topic: string | null;
   impressions: number | null;
   reactions: number | null;
+  linkedinUrl: string | null;
 }
 
 const LAST_VISIT_KEY = "aura-brief-last-visit";
@@ -151,12 +153,6 @@ function derivePreview(body: string): string {
   const s = cleanBody(body).replace(/\s+/g, " ").trim();
   if (!s) return "";
   return s.length > 180 ? s.slice(0, 178).trim() + "\u2026" : s;
-}
-
-function deriveHook(body: string): string {
-  const first = cleanBody(body).split(/\r?\n/).find((l) => l.trim().length > 0) || "";
-  const cleaned = first.replace(/^[#>*\-\s]+/, "").trim();
-  return cleaned.length > 110 ? cleaned.slice(0, 108).trim() + "\u2026" : cleaned;
 }
 
 function prefersReducedMotion(): boolean {
