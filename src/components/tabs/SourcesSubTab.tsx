@@ -474,6 +474,9 @@ const SourcesSubTab = ({
   const [sortKey, setSortKey] = useState<SortKey>("recent");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  // Optimistic "Retrying…" flag per document id — cleared once the row's status
+  // flips out of "processing" on the next loadEntries.
+  const [retryingIds, setRetryingIds] = useState<Set<string>>(new Set());
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const typeCounts = useMemo(() => {
