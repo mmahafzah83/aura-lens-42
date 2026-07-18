@@ -1195,6 +1195,13 @@ const Onboarding = () => {
               </div>
             </div>
             <div className="mb-3">
+              <CountryPicker
+                value={countryCode}
+                onChange={(name, code) => { setCountry(name); setCountryCode(code); }}
+                label="Country (optional)"
+              />
+            </div>
+            <div className="mb-3">
               <label className="text-xs font-medium block mb-1" style={{ color: "var(--ink-2)" }}>Core practice</label>
               <input className={inputCls} style={inputStyle} value={corePractice} onChange={(e) => setCorePractice(e.target.value)} placeholder="e.g. Strategy, Operations, Technology" />
             </div>
