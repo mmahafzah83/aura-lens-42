@@ -231,10 +231,11 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
     brandPillars: string[];
   } | null>(null);
   const publishedSignalsRef = useRef<Map<string, string | null> | null>(null);
+  const [publishedMap, setPublishedMap] = useState<Map<string, string | null>>(new Map());
 
   const loadPublishedSignalIds = useCallback(async (): Promise<Map<string, string | null>> => {
     if (publishedSignalsRef.current) return publishedSignalsRef.current;
-    if (!user) { publishedSignalsRef.current = new Map(); return publishedSignalsRef.current; }
+    if (!user) { publishedSignalsRef.current = new Map(); setPublishedMap(publishedSignalsRef.current); return publishedSignalsRef.current; }
     try {
       const { data } = await (supabase.from("linkedin_posts" as any) as any)
         .select("source_signal_id, published_at, tracking_status")
@@ -253,9 +254,11 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
         }
       }
       publishedSignalsRef.current = map;
+      setPublishedMap(map);
       return map;
     } catch {
       publishedSignalsRef.current = new Map();
+      setPublishedMap(publishedSignalsRef.current);
       return publishedSignalsRef.current;
     }
   }, [user]);
@@ -493,8 +496,14 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
         explanation: r.explanation ?? null,
       });
       const sigRows = (sigRes?.data || []) as any[];
+      const stillWorthSurfacing = (r: any) => {
+        const publishedAt = publishedSet.get(r.id);
+        if (publishedAt === undefined) return true;        // never published
+        if (!publishedAt || !r.last_evidence_at) return false;
+        return new Date(r.last_evidence_at).getTime() > new Date(publishedAt).getTime();
+      };
       let signals: AwaySignalRow[] = sigRows
-        .filter((r) => !publishedSet.has(r.id))
+        .filter(stillWorthSurfacing)
         .slice(0, 3)
         .map(mapRow);
       const newCaptureCount = (capRes?.count ?? 0) + (docSinceCount ?? 0);
@@ -507,7 +516,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
           .order("confidence", { ascending: false }).limit(10);
         if (radarError) throw radarError;
         const radarRows = (radarData || []) as any[];
-        const filtered = radarRows.filter((r) => !publishedSet.has(r.id)).slice(0, 3);
+        const filtered = radarRows.filter(stillWorthSurfacing).slice(0, 3);
         if (filtered.length > 0) { signals = filtered.map(mapRow); mode = "radar"; }
       }
 
@@ -947,16 +956,12 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
     if (topSignal) {
       const title = topSignal.title.length > 68 ? topSignal.title.slice(0, 66) + "\u2026" : topSignal.title;
       const state = signalStates.get(topSignal.id);
-      const publishedAt = publishedSignalsRef.current?.get(topSignal.id) ?? null;
+      const publishedAt = publishedMap.get(topSignal.id) ?? null;
 
       const openFromSignal = async () => {
         if (user) {
           try {
-            await (supabase.from("signal_engagements" as any) as any)
-              .upsert(
-                { user_id: user.id, signal_id: topSignal.id, open_count: 1, last_opened_at: new Date().toISOString() },
-                { onConflict: "user_id,signal_id", ignoreDuplicates: false },
-              );
+            await (supabase as any).rpc("bump_signal_engagement", { p_signal_id: topSignal.id });
           } catch { /* fire-and-forget — must not block navigation */ }
         }
         onDraftToStudio?.({
