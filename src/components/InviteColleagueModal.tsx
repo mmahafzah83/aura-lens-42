@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AuraButton } from "@/components/ui/AuraButton";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { toast } from "sonner";
+import { track } from "@/lib/track";
 
 interface Props {
   open: boolean;
@@ -61,6 +62,7 @@ export function InviteColleagueModal({ open, onClose }: Props) {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      void track("invite_sent");
       toast.success(`Sent. They're about to discover what you already know.`);
       setRemaining(typeof data?.remaining === "number" ? data.remaining : (remaining ?? 1) - 1);
       setEmail("");
