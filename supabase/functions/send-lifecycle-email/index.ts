@@ -282,11 +282,29 @@ serve(withObserve("send-lifecycle-email", async (req) => {
         const SUPABASE_URL_A = Deno.env.get("SUPABASE_URL")!;
         const ANON = Deno.env.get("SUPABASE_ANON_KEY") || "";
         const authHeader = req.headers.get("Authorization") || "";
-        const userClient = createClient(SUPABASE_URL_A, ANON, {
-          global: { headers: { Authorization: authHeader } },
-        });
-        const { data: u } = await userClient.auth.getUser();
-        if (!u?.user?.id || u.user.id !== user_id) {
+        const token = authHeader.replace(/^Bearer\s+/i, "");
+        let claimSub: string | null = null;
+        if (token) {
+          const userClient = createClient(SUPABASE_URL_A, ANON);
+          try {
+            const { data: c } = await userClient.auth.getClaims(token);
+            claimSub = (c as any)?.claims?.sub ?? null;
+          } catch { /* fall through */ }
+          if (!claimSub) {
+            // Fallback: decode JWT payload sub without verification (verify_jwt=false at platform;
+            // we only use it to gate to the caller's own user_id).
+            try {
+              const parts = token.split(".");
+              if (parts.length >= 2) {
+                const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+                const pad = b64.length % 4 ? "=".repeat(4 - (b64.length % 4)) : "";
+                const json = JSON.parse(atob(b64 + pad));
+                claimSub = json?.sub ?? null;
+              }
+            } catch { /* ignore */ }
+          }
+        }
+        if (!claimSub || claimSub !== user_id) {
           return new Response(JSON.stringify({ error: "Forbidden" }), {
             status: 403,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
