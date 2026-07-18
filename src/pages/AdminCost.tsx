@@ -158,6 +158,12 @@ export default function AdminCost() {
         setBudgetInput(String(amt));
       }
 
+      const { data: subData } = await (supabase as any)
+        .from("external_costs")
+        .select("*")
+        .order("created_at", { ascending: false });
+      setSubs((subData ?? []) as ExternalCost[]);
+
       const userIds = Array.from(
         new Set(usage.map((r) => r.user_id).filter((x): x is string => !!x))
       );
