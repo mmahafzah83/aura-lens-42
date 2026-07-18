@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import AdminShell from "@/components/admin/AdminShell";
 import TodaysStatus from "@/components/TodaysStatus";
 import HealthFindingsPanel from "@/components/admin/HealthFindingsPanel";
+import SendTestEmailPanel from "@/components/admin/SendTestEmailPanel";
 import {
   Activity,
   AlertCircle,
@@ -174,6 +175,7 @@ export default function Admin() {
       <div className="grid gap-6">
         <TodaysStatus />
         <HealthFindingsPanel />
+        <SendTestEmailPanel />
         {/* Founder brief */}
         <section style={cardStyle}>
           <div className="flex items-baseline justify-between flex-wrap gap-2 mb-4">

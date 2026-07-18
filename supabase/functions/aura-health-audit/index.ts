@@ -197,6 +197,27 @@ async function checkErrorRate(admin: any): Promise<Finding[]> {
   }];
 }
 
+async function checkEmailCronsSilent(admin: any): Promise<Finding[]> {
+  try {
+    const { data, error } = await admin.rpc("email_crons_ran_without_sends", { p_hours: 24 });
+    if (error) return [];
+    const row = Array.isArray(data) ? data[0] : data;
+    const cronsRan: number = row?.crons_ran ?? 0;
+    const rowsAdded: number = row?.rows_added ?? 0;
+    const ranJobs: string[] = row?.ran_jobs ?? [];
+    if (cronsRan > 0 && rowsAdded === 0) {
+      return [{
+        code: "email.crons_ran_nothing_sent",
+        severity: "critical",
+        detail: `Email crons ran in last 24h (${ranJobs.join(", ")}) but lifecycle_email_log gained 0 rows. Email path may be broken.`,
+      }];
+    }
+    return [];
+  } catch {
+    return [];
+  }
+}
+
 async function reconcile(admin: any, findings: Finding[]): Promise<{ opened: number; refreshed: number; resolved: number }> {
   const seenCodes = new Set(findings.map(f => f.code));
   let opened = 0;
@@ -228,7 +249,7 @@ async function reconcile(admin: any, findings: Finding[]): Promise<{ opened: num
   const familyPrefixes = [
     "freshness.", "coverage.document.", "orphan.source_registry",
     "pipeline.dead_end_fragments", "stuck.evidence_jobs", "stuck.document_jobs",
-    "errors.ef_high_24h",
+    "errors.ef_high_24h", "email.crons_ran_nothing_sent",
   ];
   const { data: openNow } = await admin
     .from("health_findings")
@@ -285,6 +306,7 @@ Deno.serve(async (req) => {
     findings.push(...await checkDeadEndFragments(admin));
     findings.push(...await checkStuckJobs(admin));
     findings.push(...await checkErrorRate(admin));
+    findings.push(...await checkEmailCronsSilent(admin));
 
     const summary = await reconcile(admin, findings);
 
