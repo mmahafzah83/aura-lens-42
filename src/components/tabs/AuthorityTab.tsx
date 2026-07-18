@@ -1079,9 +1079,18 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
       setPublishedFromCreate(true);
       setConfirmLiveOpen(false);
       setAttachedImageUrl(null);
-      const url = (data as any).postUrl;
+      // The linkedin-publish edge function returns the LinkedIn URL as `postUrl`
+      // (which it also writes to linkedin_posts.post_url). We read it straight
+      // from that response — no hardcoded string.
+      const url: string | null = (data as any).postUrl ?? null;
       track("post_published", { signal_id: selectedSignalId || null, route: "linkedin" });
-      toast.success("Published to LinkedIn", url ? { action: { label: "View post", onClick: () => window.open(url, "_blank") } } : undefined);
+      setPublishedInfo({
+        url,
+        publishedAt: new Date().toISOString(),
+        signalId: selectedSignalId || null,
+        signalTitle: selectedSignalTitle || null,
+      });
+      toast.success("Published to LinkedIn");
     } catch (e: any) {
       toast.error(e?.message || "Couldn't publish to LinkedIn");
     } finally {
