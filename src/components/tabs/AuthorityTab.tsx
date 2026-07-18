@@ -3882,10 +3882,51 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
         // group instead of being silently absorbed — surfaces DB drift fast.
         const AURA_AUTHORSHIP     = new Set(["aura_drafted", "aura_assisted"]);
         const EARLIER_AUTHORSHIP  = new Set(["user_written", "unknown"]);
-        const auraRows          = publishedPosts.filter((p: any) => AURA_AUTHORSHIP.has(p.authorship));
-        const earlierRows       = publishedPosts.filter((p: any) => EARLIER_AUTHORSHIP.has(p.authorship));
-        const unclassifiedRows  = publishedPosts.filter(
+        // P4: filter published rows by the shared library controls first,
+        // then split by authorship. Sort (Recent | Top performing) is applied
+        // per-group so counts of the two sortable groups stay accurate.
+        const filteredPublished = publishedPosts.filter(p => matchesFilters(p, "published"));
+        const auraRows          = applyPublishedSort(filteredPublished.filter((p: any) => AURA_AUTHORSHIP.has(p.authorship)));
+        const earlierRows       = applyPublishedSort(filteredPublished.filter((p: any) => EARLIER_AUTHORSHIP.has(p.authorship)));
+        const unclassifiedRows  = filteredPublished.filter(
           (p: any) => !AURA_AUTHORSHIP.has(p.authorship) && !EARLIER_AUTHORSHIP.has(p.authorship),
+        );
+
+        // Small inline sort toggle placed in the Aura / Earlier group headers.
+        const SortToggle = () => (
+          <div
+            role="group"
+            aria-label="Sort published posts"
+            onClick={(e) => e.stopPropagation()}
+            style={{ display: "inline-flex", gap: 4, marginLeft: 8 }}
+          >
+            {([
+              { k: "recent", label: "Recent" },
+              { k: "top",    label: "Top performing" },
+            ] as const).map(opt => {
+              const active = librarySort === opt.k;
+              return (
+                <button
+                  key={opt.k}
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setLibrarySort(opt.k); }}
+                  aria-pressed={active}
+                  style={{
+                    fontSize: 11,
+                    fontWeight: active ? 600 : 500,
+                    padding: "2px 8px",
+                    borderRadius: 999,
+                    border: "1px solid var(--rule)",
+                    background: active ? "var(--ink)" : "var(--paper-2)",
+                    color: active ? "var(--paper)" : "var(--ink-3)",
+                    cursor: "pointer",
+                  }}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
         );
 
         const renderCard = (p: any) => {
