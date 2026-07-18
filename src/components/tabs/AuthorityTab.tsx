@@ -1,4 +1,5 @@
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
+import { track } from "@/lib/track";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuraButton } from "@/components/ui/AuraButton";
@@ -224,6 +225,8 @@ interface SignalPrefill {
   sourceTitle?: string;
   contentFormat?: "post" | "carousel" | "framework_summary";
   trendHeadline?: string;
+  source?: string;
+  moveState?: string;
 }
 
 interface SignalSuggestion {
@@ -572,6 +575,11 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
   // Apply signal prefill from Intelligence page
   useEffect(() => {
     if (signalPrefill) {
+      track("composer_opened", {
+        source: signalPrefill.source ?? "signal_prefill",
+        signal_id: signalPrefill.signalId ?? null,
+        move_state: signalPrefill.moveState ?? null,
+      });
       setTopic(signalPrefill.topic);
       setContext(signalPrefill.context);
       // Determine content type from explicit contentFormat or sourceType
@@ -620,6 +628,11 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
   // Mirrors the signalPrefill channel: hydrate state, then notify parent to clear.
   useEffect(() => {
     if (draftPrefill) {
+      track("composer_opened", {
+        source: "draft_prefill",
+        signal_id: null,
+        move_state: "drafted",
+      });
       const mappedType: ContentType =
         draftPrefill.type === "carousel" ? "carousel" :
         draftPrefill.type === "framework" ? "framework_summary" :
@@ -1060,6 +1073,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
       setConfirmLiveOpen(false);
       setAttachedImageUrl(null);
       const url = (data as any).postUrl;
+      track("post_published", { signal_id: selectedSignalId || null, route: "linkedin" });
       toast.success("Published to LinkedIn", url ? { action: { label: "View post", onClick: () => window.open(url, "_blank") } } : undefined);
     } catch (e: any) {
       toast.error(e?.message || "Couldn't publish to LinkedIn");
@@ -3187,6 +3201,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
           .eq("id", id);
       }
       setDrafts(prev => prev.filter(p => p.id !== id));
+      track("post_published", { signal_id: linkedSignalId || null, route: "manual" });
       // Fetch the related signal title to personalize the ceremony toast.
       let signalTitle = "strategic";
       if (linkedSignalId) {

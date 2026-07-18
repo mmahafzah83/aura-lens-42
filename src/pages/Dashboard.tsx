@@ -36,6 +36,7 @@ import MilestoneNotification from "@/components/MilestoneNotification";
 import useTierFromImprint from "@/hooks/useTierFromImprint";
 import { useCelebrationsEnabled } from "@/hooks/useCelebrationsEnabled";
 import usePageMeta from "@/hooks/usePageMeta";
+import { track, getTrackSessionId } from "@/lib/track";
 
 import AuthorityTab from "@/components/tabs/AuthorityTab";
 import ImpactTab from "@/components/tabs/ImpactTab";
@@ -122,6 +123,18 @@ const Dashboard = () => {
   // Force-enable elevation motion globally (count-up + ring draw-in).
   useEffect(() => {
     document.documentElement.setAttribute("data-fx-score-ring", "true");
+  }, []);
+
+  // Fire session_start once per browser session (guarded by sessionStorage flag).
+  useEffect(() => {
+    try {
+      const sid = getTrackSessionId();
+      if (!sid) return;
+      const flagKey = `aura_session_start_fired:${sid}`;
+      if (sessionStorage.getItem(flagKey)) return;
+      sessionStorage.setItem(flagKey, "1");
+      void track("session_start", { surface: "dashboard" });
+    } catch { /* noop */ }
   }, []);
 
   // In-session Imprint recompute: after any capture-complete event, debounce

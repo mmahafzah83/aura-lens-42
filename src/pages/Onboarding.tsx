@@ -10,6 +10,7 @@ import BrandAssessmentModal from "@/components/BrandAssessmentModal";
 import CalibrationSliders from "@/components/CalibrationSliders";
 import { SECTORS, normalizeSector } from "@/constants/sectors";
 import { initThemeFromStorage } from "@/lib/applyTheme";
+import { track } from "@/lib/track";
 
 type Step = 0 | 1 | 2 | 3;
 
@@ -428,6 +429,8 @@ const Onboarding = () => {
 
   const goStep = (next: Step) => {
     setDirection(next > step ? 1 : -1);
+    // Track step completion — the step we are LEAVING.
+    void track("onboarding_step", { step: `step_${step}`, step_index: step });
     setStep(next);
   };
 
