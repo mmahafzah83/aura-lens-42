@@ -123,13 +123,11 @@ Deno.serve(async (req) => {
     const OPENAI = Deno.env.get("OPENAI_API_KEY") || "";
     const ANTHROPIC = Deno.env.get("ANTHROPIC_API_KEY") || "";
     const PERPLEXITY = Deno.env.get("PERPLEXITY_API_KEY") || "";
-    const RESEND = Deno.env.get("RESEND_API_KEY") || "";
 
     const results = await Promise.all([
       checkOpenAI(OPENAI),
       checkAnthropic(ANTHROPIC),
       checkPerplexity(PERPLEXITY),
-      checkResend(RESEND),
     ]);
 
     for (const r of results) {
