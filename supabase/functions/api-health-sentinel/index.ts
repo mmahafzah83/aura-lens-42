@@ -289,6 +289,7 @@ Deno.serve(async (req) => {
       bodyText: string,
       dedupe_key: string,
       severity: "critical" | "high" | "info" = "high",
+      card?: { what?: string; impact?: string; action?: string },
     ) {
       raisedKeys.add(dedupe_key);
       try {
@@ -299,7 +300,15 @@ Deno.serve(async (req) => {
             apikey: serviceKey,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ subject, body: bodyText, severity, dedupe_key }),
+          body: JSON.stringify({
+            subject,
+            body: bodyText,
+            severity,
+            dedupe_key,
+            ...(card?.what ? { what: card.what } : {}),
+            ...(card?.impact ? { impact: card.impact } : {}),
+            ...(card?.action ? { action: card.action } : {}),
+          }),
         });
         if (!r.ok) console.error("[sentinel] datahealth notify failed", r.status, (await r.text()).slice(0, 200));
       } catch (e) {
@@ -352,6 +361,11 @@ Deno.serve(async (req) => {
             `${label} (${c.user_id}) is new: no influence_timeline row with followers>0 yet. Expected while first sync fills in.`,
             `datahealth:collecting:${c.user_id}`,
             "info",
+            {
+              what: `${label}'s LinkedIn analytics are still filling in.`,
+              impact: "Their numbers look blank until the first sync completes — normal for a new connection.",
+              action: "No action needed; it clears itself once LinkedIn returns data.",
+            },
           );
         } else if (stale || brokenFollowers) {
           // BEHIND — had data, now stale or dropped to null/0. Actionable.
@@ -367,6 +381,11 @@ Deno.serve(async (req) => {
             `${label} (${c.user_id}) had follower data but is now behind: ${detail}.\nLinkedIn analytics lag ~1–2 days; >72h means the sync is not landing.`,
             `datahealth:behind:${c.user_id}`,
             "high",
+            {
+              what: `${label}'s LinkedIn analytics have gone stale.`,
+              impact: "Their dashboard is showing numbers more than 3 days old.",
+              action: `Re-run linkedin-metrics-sync for ${label}, or check sync_errors.`,
+            },
           );
         }
 
@@ -395,6 +414,11 @@ Deno.serve(async (req) => {
             `In the last 24h for ${label} (${c.user_id}): failed sync_runs=${failedRuns || 0}, sync_errors=${syncErrs || 0}.`,
             `datahealth:sync:${c.user_id}`,
             "high",
+            {
+              what: `${label}'s LinkedIn sync is failing.`,
+              impact: "Their metrics won't update until it's fixed.",
+              action: `Check sync_errors for ${label} and re-run the sync.`,
+            },
           );
         }
       }
@@ -449,6 +473,11 @@ Deno.serve(async (req) => {
           `Spend MTD: $${spendMTD.toFixed(2)} (${Math.round(pctBudget)}%)\nProjected month-end: $${projected.toFixed(2)} (${Math.round(projectedPct)}%)\nBudget: $${budget.toFixed(2)}\nTop function this month: ${topTxt}`,
           "cost:budget",
           costSeverity,
+          {
+            what: "AI spending is running high this month.",
+            impact: `On track to reach about ${Math.round(worstPct)}% of your $${budget.toFixed(0)} budget.`,
+            action: `Review the top spender in /admin/cost and cap or optimize it (top: ${topTxt}).`,
+          },
         );
       }
 
@@ -479,6 +508,11 @@ Deno.serve(async (req) => {
           `AI failures in last 24h: ${failCount}\nTop failing function: ${topTxt}`,
           "cost:ai-failures",
           "high",
+          {
+            what: `AI calls are failing more than usual (${failCount} in 24h).`,
+            impact: "Some AI features may be intermittently broken for users.",
+            action: `Check /admin/cost and provider status — top failing: ${topTxt}.`,
+          },
         );
       }
 
@@ -495,6 +529,11 @@ Deno.serve(async (req) => {
           `Failed cron runs in last 24h:\n\n${list}`,
           "cron:failures",
           "high",
+          {
+            what: `${(cronFails as any[]).length} scheduled job(s) failed in the last day.`,
+            impact: "Whatever they do — syncs, scoring, emails — did not run.",
+            action: "Open /admin/crons and re-run the failed jobs.",
+          },
         );
       }
 
@@ -519,6 +558,11 @@ Deno.serve(async (req) => {
           `Cron scheduler sent requests but got failing responses in the last 90m (cron.job_run_details would mark these as 'succeeded'):\n\n${list}`,
           "cron:http-failure",
           "high",
+          {
+            what: "A scheduled job got a real failing response.",
+            impact: "That job may not have completed its work.",
+            action: "Check /admin/crons and the function logs for the failing status code.",
+          },
         );
       }
     } catch (e) {
@@ -562,6 +606,11 @@ Deno.serve(async (req) => {
           `Newest score_snapshots row: ${pipelines.scoring_fresh.newest ?? "none"} (${ageH ?? "n/a"}h old).\nThreshold is 26h — the daily scoring cron did not produce output.`,
           "pipeline:scoring-stale",
           "high",
+          {
+            what: "The daily scoring run has not produced fresh numbers.",
+            impact: "Everyone's Imprint may be stuck on yesterday's value.",
+            action: "Check calculate-aura-score / compute-imprint — the scoring cron did not complete.",
+          },
         );
       }
 
@@ -591,6 +640,11 @@ Deno.serve(async (req) => {
           `Onboarding article discovery in last 24h — total=${pipelines.onboarding_degraded.total}, degraded=${degraded}.\nBreakdown: ${breakdownTxt}\n(perplexity is the healthy primary path; anything else is degraded. Hard failures alert separately via ef_error_log.)`,
           "pipeline:onboarding-fallback",
           "info",
+          {
+            what: "Onboarding used a backup path to find a new user's first article.",
+            impact: "New users still got an article, just not from the primary source.",
+            action: "Usually harmless. If it repeats, check the Perplexity API.",
+          },
         );
       }
 
@@ -634,6 +688,11 @@ Deno.serve(async (req) => {
             `${unprocessed.length} entr${unprocessed.length === 1 ? "y" : "ies"} older than 30m have no processed source_registry row.\nOldest: ${oldestAgeH}h old · distinct users: ${distinctUsers}.\nThis means extract-evidence is not completing (or never fired) for the capture→signal chain.`,
             "pipeline:capture-unprocessed",
             "high",
+            {
+              what: `${unprocessed.length} capture(s) are stuck without being processed.`,
+              impact: "Those users' captures are not turning into signals.",
+              action: "Check extract-evidence and re-run for the stuck entries.",
+            },
           );
         }
       }
@@ -691,6 +750,11 @@ Deno.serve(async (req) => {
             `Function ${g.function_name} logged ${g.count} critical error(s) in the last 65m.\nSample: ${g.sample}`,
             `ef:critical:${g.function_name}`,
             "critical",
+            {
+              what: `${g.function_name} threw a critical error.`,
+              impact: "That function is failing for users right now.",
+              action: `Check ef_error_log and the logs for ${g.function_name}.`,
+            },
           );
           efSummary.alerts_raised += 1;
           continue;
@@ -703,6 +767,11 @@ Deno.serve(async (req) => {
             `Function ${g.function_name} logged ${total} error(s) in the last 65m.\nSample: ${g.sample}`,
             `ef:burst:${g.function_name}`,
             "high",
+            {
+              what: `${g.function_name} is erroring repeatedly (${total} in the last hour).`,
+              impact: "It is likely broken for multiple users.",
+              action: `Check ef_error_log for ${g.function_name}.`,
+            },
           );
           efSummary.alerts_raised += 1;
           continue;
@@ -719,6 +788,11 @@ Deno.serve(async (req) => {
           `Function ${g.function_name} logged ${g.count} ${sev || "unknown"}-severity error(s) in the last 65m.\nSample: ${g.sample}`,
           `ef:high:${g.function_name}`,
           "high",
+          {
+            what: `${g.function_name} logged ${g.count} error(s) in the last hour.`,
+            impact: "Some users may be hitting failures in that feature.",
+            action: `Check ef_error_log for ${g.function_name}.`,
+          },
         );
         efSummary.alerts_raised += 1;
       }
