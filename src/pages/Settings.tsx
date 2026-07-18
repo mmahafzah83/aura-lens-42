@@ -627,6 +627,7 @@ const handleDeleteAccount = async () => {
         </div>
 
         {/* Location */}
+        <section id="location" style={{ scrollMarginTop: 96 }}>
         <SectionHeader
           label="Location"
           subtitle="Sets the flag on your Aura Card and helps regionalise your insights."
@@ -641,6 +642,7 @@ const handleDeleteAccount = async () => {
             </div>
           </AuraCard>
         </div>
+        </section>
 
         {/* Profile summary */}
         <SectionHeader
