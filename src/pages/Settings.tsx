@@ -199,6 +199,26 @@ const handleDeleteAccount = async () => {
       setSavingSig(false);
     }
   };
+
+  const [savingCountry, setSavingCountry] = useState(false);
+  const persistCountry = async (name: string | null, code: string | null) => {
+    setSavingCountry(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) throw new Error("Not signed in");
+      const { error } = await supabase
+        .from("diagnostic_profiles")
+        .update({ country: name, country_code: code })
+        .eq("user_id", session.user.id);
+      if (error) throw error;
+      setProfile((p) => (p ? { ...p, country: name, country_code: code } : p));
+      toast.success("Country saved");
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't save country");
+    } finally {
+      setSavingCountry(false);
+    }
+  };
   const addSignature = () =>
     setSignatures((s) => [
       ...s,
