@@ -3531,6 +3531,9 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
             {drafts.map(p => {
               const lang = (p.source_metadata as any)?._language || "en";
               const badge = FORMAT_BADGE[p.format_type || "post"] || FORMAT_BADGE.post;
+              const expanded = expandedCards.has(p.id);
+              const metrics = postMetrics[p.id];
+              const hasMetrics = metrics && (typeof metrics.impressions === "number" || typeof metrics.reactions === "number");
               return (
                 <motion.div
                   key={p.id}
@@ -3548,40 +3551,51 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                   }}
                   className="hover:bg-muted/20 hover:border-l-brand"
                 >
-                  {/* LinkedIn preview (M-1-1) */}
-                  <LinkedInPreview text={p.post_text} profile={profile} />
-
-                  {/* Body text */}
-                  <p
-                    style={{
-                      fontSize: 14,
-                      color: "var(--ink)",
-                      lineHeight: 1.625,
-                      ...(expandedCards.has(p.id) ? {} : {
-                        display: "-webkit-box",
-                        WebkitBoxOrient: "vertical" as any,
-                        WebkitLineClamp: 2,
-                        overflow: "hidden",
-                        WebkitMaskImage: "linear-gradient(180deg, #000 60%, transparent 100%)",
-                        maskImage: "linear-gradient(180deg, #000 60%, transparent 100%)",
-                      }),
-                    }}
-                    dir="auto"
+                  {/* Compact clickable row: hook (1-line) + chips + date + metrics */}
+                  <button
+                    type="button"
+                    onClick={() => toggleCardExpand(p.id)}
+                    aria-expanded={expanded}
+                    className="w-full text-left flex items-center gap-3"
+                    style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
                   >
-                    {p.post_text || "Untitled draft"}
-                  </p>
-                  {(p.post_text?.split("\n").length || 0) > 2 || (p.post_text?.length || 0) > 140 ? (
-                    <button
-                      onClick={() => toggleCardExpand(p.id)}
-                      style={{ fontSize: 14, color: "var(--brand)", background: "none", border: "none", cursor: "pointer", padding: 0, marginTop: 4 }}
-                      className="hover:underline"
+                    <span
+                      className="flex-1 min-w-0 truncate"
+                      style={{ fontSize: 14, color: "var(--ink)", lineHeight: 1.5 }}
+                      dir="auto"
                     >
-                      {expandedCards.has(p.id) ? "Show less" : "Read more"}
-                    </button>
-                  ) : null}
+                      {(p.post_text?.split("\n")[0] || "Untitled draft").trim()}
+                    </span>
+                    <span className="shrink-0 flex items-center" style={{ gap: 6 }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 6px", borderRadius: 999, backgroundColor: "var(--bg-subtle)", color: "var(--color-muted)", textTransform: "uppercase" }}>
+                        {lang === "ar" ? "AR" : "EN"}
+                      </span>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 6px", borderRadius: 999, backgroundColor: "var(--warning-pale)", color: "var(--warning)" }}>
+                        Draft
+                      </span>
+                      <span style={{ fontSize: 11, color: "var(--color-muted)" }}>
+                        {formatSmartDate(p.created_at)}
+                      </span>
+                      {hasMetrics && (
+                        <span style={{ fontSize: 11, color: "var(--color-muted)" }}>
+                          · {typeof metrics!.impressions === "number" ? `${metrics!.impressions!.toLocaleString()} impressions` : ""}
+                          {typeof metrics!.impressions === "number" && typeof metrics!.reactions === "number" ? " · " : ""}
+                          {typeof metrics!.reactions === "number" ? `${metrics!.reactions!.toLocaleString()} reactions` : ""}
+                        </span>
+                      )}
+                      <ChevronDown className="w-3.5 h-3.5" style={{ color: "var(--color-muted)", transform: expanded ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.15s" }} />
+                    </span>
+                  </button>
 
-                  {/* Source signal label */}
-                  {(() => {
+                  {expanded && (
+                    <>
+                      {/* Full text */}
+                      <p style={{ fontSize: 14, color: "var(--ink)", lineHeight: 1.625, marginTop: 12, whiteSpace: "pre-wrap" }} dir="auto">
+                        {p.post_text || "Untitled draft"}
+                      </p>
+
+                      {/* Source signal label */}
+                      {(() => {
                     const sid = (p.source_metadata as any)?.source_signal_id || (p.source_metadata as any)?.signal_ids?.[0];
                     const titleFromMeta = (p.source_metadata as any)?.signal_titles?.[0];
                     const title = titleFromMeta || (sid ? signalTitleMap[sid] : null);
@@ -3594,24 +3608,15 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                     );
                   })()}
 
-                  {/* Badge row */}
-                  <div className="flex items-center flex-wrap" style={{ gap: 8, marginTop: 10 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--bg-subtle)", color: "var(--color-muted)", textTransform: "uppercase" }}>
-                      {lang === "ar" ? "AR" : "EN"}
-                    </span>
-                    <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--bg-subtle)" }} className={badge.cls.includes("text-") ? badge.cls.split(" ").filter(c => c.startsWith("text-")).join(" ") : "text-muted-foreground"}>
-                      {badge.label}
-                    </span>
-                    <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--warning-pale)", color: "var(--warning)" }}>
-                      Draft
-                    </span>
-                  </div>
+                      {/* Format badge (extra chip on expanded state) */}
+                      <div className="flex items-center flex-wrap" style={{ gap: 8, marginTop: 10 }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--bg-subtle)" }} className={badge.cls.includes("text-") ? badge.cls.split(" ").filter(c => c.startsWith("text-")).join(" ") : "text-muted-foreground"}>
+                          {badge.label}
+                        </span>
+                      </div>
 
-                  {/* Date + Actions */}
-                  <div className="flex items-center" style={{ marginTop: 12, gap: 16 }}>
-                    <span style={{ fontSize: 12, color: "var(--color-muted)" }}>
-                      {new Date(p.created_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
-                    </span>
+                      {/* Actions */}
+                      <div className="flex items-center" style={{ marginTop: 12, gap: 16 }}>
                     <div className="flex-1" />
                     <button
                       onClick={() => p.post_text && handleCopy(p.id, p.post_text)}
@@ -3627,7 +3632,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                       style={{ fontSize: 14, color: "var(--color-muted)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
                       className="hover:text-foreground transition-colors"
                     >
-                      <Check className="w-3.5 h-3.5" /> Published ✓
+                      <Check className="w-3.5 h-3.5" /> Mark as published
                     </button>
                     {onOpenDraft && (
                       <button
@@ -3685,7 +3690,6 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                  <LinkedInPostSteps shareLabel="Post on LinkedIn" />
 
                   {/* Inline confirmation (M-1-1) */}
                   {confirmingId === p.id && (
@@ -3720,6 +3724,8 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
                         </span>
                       )}
                     </div>
+                  )}
+                    </>
                   )}
                 </motion.div>
               );
