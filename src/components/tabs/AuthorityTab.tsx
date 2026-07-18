@@ -307,7 +307,8 @@ async function insertPublishedLinkedInPost(opts: {
       authorship: "aura_drafted",
       acquisition: "published_via_aura",
       published_at: new Date().toISOString(),
-      linkedin_url: cleanUrl,
+      // Canonical URL column read by the archive, metric-matching, and open-link UI.
+      post_url: cleanUrl,
       published_confirmed_at: cleanUrl ? new Date().toISOString() : null,
       like_count: 0,
       comment_count: 0,
@@ -384,6 +385,11 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
   const [publishing, setPublishing] = useState(false);
   const [publishedFromCreate, setPublishedFromCreate] = useState(false);
   const [publishingLive, setPublishingLive] = useState(false);
+  // Post-publish confirmation state — surfaces the returned post_url, time,
+  // and originating signal so the composer never falls silent after a live publish.
+  const [publishedInfo, setPublishedInfo] = useState<
+    { url: string | null; publishedAt: string; signalId: string | null; signalTitle: string | null } | null
+  >(null);
   const [confirmLiveOpen, setConfirmLiveOpen] = useState(false);
   const [attachedImageUrl, setAttachedImageUrl] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -1074,9 +1080,18 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
       setPublishedFromCreate(true);
       setConfirmLiveOpen(false);
       setAttachedImageUrl(null);
-      const url = (data as any).postUrl;
+      // The linkedin-publish edge function returns the LinkedIn URL as `postUrl`
+      // (which it also writes to linkedin_posts.post_url). We read it straight
+      // from that response — no hardcoded string.
+      const url: string | null = (data as any).postUrl ?? null;
       track("post_published", { signal_id: selectedSignalId || null, route: "linkedin" });
-      toast.success("Published to LinkedIn", url ? { action: { label: "View post", onClick: () => window.open(url, "_blank") } } : undefined);
+      setPublishedInfo({
+        url,
+        publishedAt: new Date().toISOString(),
+        signalId: selectedSignalId || null,
+        signalTitle: selectedSignalTitle || null,
+      });
+      toast.success("Published to LinkedIn");
     } catch (e: any) {
       toast.error(e?.message || "Couldn't publish to LinkedIn");
     } finally {
@@ -1103,7 +1118,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
           published_at: new Date().toISOString(),
         };
         if (urlArg) {
-          update.linkedin_url = urlArg;
+          update.post_url = urlArg;
           update.published_confirmed_at = new Date().toISOString();
         }
         const { error } = await supabase
@@ -1699,6 +1714,58 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                     </div>
                   );
                 })()}
+
+                {/* Post-publish confirmation — shown in place of composer silence.
+                    Reads post_url from the linkedin-publish response. */}
+                {publishedInfo && (
+                  <div
+                    className="mt-3 rounded-lg overflow-hidden"
+                    style={{ border: "1px solid var(--brand-line, var(--border))", background: "var(--bg-card, var(--bg-subtle))" }}
+                    role="status"
+                    aria-live="polite"
+                  >
+                    <div className="p-4 flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4" style={{ color: "var(--gold-dark, var(--brand))" }} />
+                        <span className="text-sm font-semibold" style={{ color: "var(--ink)" }}>Published.</span>
+                        <span className="text-xs" style={{ color: "var(--color-muted)" }}>
+                          {new Date(publishedInfo.publishedAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
+                        </span>
+                      </div>
+                      {publishedInfo.signalTitle && (
+                        <div className="text-xs flex items-center gap-1.5" style={{ color: "var(--color-muted)" }}>
+                          <Lightbulb className="w-3.5 h-3.5" style={{ color: "var(--brand)" }} />
+                          <span>From signal: {publishedInfo.signalTitle}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-3 flex-wrap mt-1">
+                        {publishedInfo.url ? (
+                          <a
+                            href={publishedInfo.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 text-xs font-medium hover:underline"
+                            style={{ color: "var(--brand)" }}
+                          >
+                            <Linkedin className="w-3.5 h-3.5" /> Open on LinkedIn ↗
+                          </a>
+                        ) : (
+                          <span className="text-xs" style={{ color: "var(--color-muted)", fontStyle: "italic" }}>
+                            LinkedIn didn't return a URL — check your feed.
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => navigate("/home")}
+                          className="inline-flex items-center gap-1 text-xs font-medium hover:underline"
+                          style={{ color: "var(--color-muted)", background: "transparent", border: 0, cursor: "pointer" }}
+                        >
+                          Next signal →
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Back to full version link */}
                 {showingShort && !generatingShort && (
@@ -2582,6 +2649,9 @@ const LibraryCard = ({
           <label className="text-xs text-muted-foreground block">
             Paste your LinkedIn post URL (optional)
           </label>
+          <p className="text-[11px] text-muted-foreground/70 leading-snug -mt-1">
+            Add the link so Aura can track how it performed.
+          </p>
           <Input
             value={pubUrl}
             onChange={e => setPubUrl(e.target.value)}
@@ -3232,7 +3302,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
           .update({
             tracking_status: "published",
             published_at: nowIso,
-            linkedin_url: trimmedUrl ?? null,
+            post_url: trimmedUrl ?? null,
             published_confirmed_at: trimmedUrl ? nowIso : null,
           })
           .eq("id", id);
