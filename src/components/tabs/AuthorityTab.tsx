@@ -3659,13 +3659,17 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft }: { onSwitchToCreate: () =>
             style={{ width: 16, height: 16, color: "var(--spot)", transform: showDrafts ? "rotate(0deg)" : "rotate(-90deg)" }}
           />
         </button>
-        {showDrafts && (drafts.length === 0 ? (
+        {showDrafts && (filteredDrafts.length === 0 ? (
           <div style={{ background: "var(--paper)", borderRadius: 8, padding: 16, textAlign: "center" }}>
-            <p style={{ fontSize: 14, color: "var(--ink-3)" }}>No drafts yet. Generate content on the Create tab.</p>
+            <p style={{ fontSize: 14, color: "var(--ink-3)" }}>
+              {drafts.length === 0
+                ? "No drafts yet. Generate content on the Create tab."
+                : "No drafts match your search."}
+            </p>
           </div>
         ) : (
           <div style={{ display: "grid", gap: 12 }}>
-            {drafts.map(p => {
+            {filteredDrafts.map(p => {
               const lang = (p.source_metadata as any)?._language || "en";
               const badge = FORMAT_BADGE[p.format_type || "post"] || FORMAT_BADGE.post;
               const expanded = expandedCards.has(p.id);
