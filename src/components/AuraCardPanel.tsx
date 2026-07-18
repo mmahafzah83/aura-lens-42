@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Download, FileText, Linkedin, Loader2, CheckCircle2, Circle } from "lucide-react";
+import { Download, Linkedin, Loader2, CheckCircle2, Circle } from "lucide-react";
 import AuraCard, { type AuraCardVariant } from "@/components/AuraCard";
 import { downloadBlob } from "@/lib/download";
-import { exportReportPdf } from "@/lib/exportReportPdf";
 
 // Colors read from CSS variables where possible; safe fallbacks preserve calm bone look
 // even before the page's tokens hydrate. No hardcoded names/scores anywhere.
@@ -44,7 +43,7 @@ export default function AuraCardPanel({
   const [readiness, setReadiness] = useState<Readiness>({
     assessment: false, skills: false, photo: false, country: false, loaded: false,
   });
-  const [busy, setBusy] = useState<null | "png" | "pdf" | "share">(null);
+  const [busy, setBusy] = useState<null | "png" | "share">(null);
   const mountRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -92,18 +91,6 @@ export default function AuraCardPanel({
       downloadBlob(blob, `aura-card-${variant}.png`);
     } catch (e: any) {
       toast.error(e?.message || "PNG export failed");
-    } finally { setBusy(null); }
-  };
-
-  // Reuse the shared PDF utility exportReportPdf — it rasterises every
-  // [data-report-page] child of the mount and fits each to A4.
-  const downloadPdf = async () => {
-    if (busy || !mountRef.current) return;
-    setBusy("pdf");
-    try {
-      await exportReportPdf(mountRef.current, `aura-card-${variant}.pdf`);
-    } catch (e: any) {
-      toast.error(e?.message || "PDF export failed");
     } finally { setBusy(null); }
   };
 
@@ -268,9 +255,6 @@ export default function AuraCardPanel({
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "flex-end", borderTop: `1px solid ${RULE}`, paddingTop: 14 }}>
             <ActionButton onClick={downloadPng} disabled={!!busy} icon={busy === "png" ? <Loader2 className="animate-spin" size={14} /> : <Download size={14} />}>
               Download PNG
-            </ActionButton>
-            <ActionButton onClick={downloadPdf} disabled={!!busy} icon={busy === "pdf" ? <Loader2 className="animate-spin" size={14} /> : <FileText size={14} />}>
-              Download PDF
             </ActionButton>
             <ActionButton onClick={shareToLinkedIn} disabled={!!busy} icon={busy === "share" ? <Loader2 className="animate-spin" size={14} /> : <Linkedin size={14} />} primary>
               Share to LinkedIn
