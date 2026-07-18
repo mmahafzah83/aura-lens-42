@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, ArrowRight, FileText, Check, Eye, EyeOff, Lightbulb, Linkedin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import CountryPicker from "@/components/CountryPicker";
 import { toast } from "sonner";
 import usePageMeta from "@/hooks/usePageMeta";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
@@ -220,6 +221,9 @@ const Onboarding = () => {
   const [corePractice, setCorePractice] = useState("");
   const [northStar, setNorthStar] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
+  // Optional country (for Aura Card flag). Never blocks completion.
+  const [country, setCountry] = useState<string | null>(null);
+  const [countryCode, setCountryCode] = useState<string | null>(null);
 
   // Shared-learning consent (opt-in; persisted on diagnostic_profiles.shared_learning_consent).
   const [sharedLearningConsent, setSharedLearningConsent] = useState(false);
@@ -305,7 +309,7 @@ const Onboarding = () => {
       }
       const { data: profile } = await supabase
         .from("diagnostic_profiles" as any)
-        .select("first_name, onboarding_completed, onboarding_step, skill_ratings")
+        .select("first_name, onboarding_completed, onboarding_step, skill_ratings, country, country_code")
         .eq("user_id", session.user.id)
         .maybeSingle();
       const p: any = profile || {};
@@ -333,6 +337,8 @@ const Onboarding = () => {
       if (p.sector_focus) setSectorFocus(p.sector_focus);
       if (p.core_practice) setCorePractice(p.core_practice);
       if (p.north_star_goal) setNorthStar(p.north_star_goal);
+      if (p.country) setCountry(p.country);
+      if (p.country_code) setCountryCode(p.country_code);
       setChecking(false);
     })();
   }, [navigate]);
@@ -491,6 +497,8 @@ const Onboarding = () => {
         sector_focus: sectorFocus,
         core_practice: corePractice.trim() || null,
         north_star_goal: northStar.trim() || null,
+        country: country || null,
+        country_code: countryCode || null,
         onboarding_completed: true,
         completed: true,
       };
@@ -1186,6 +1194,13 @@ const Onboarding = () => {
                   {SECTORS.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
+            </div>
+            <div className="mb-3">
+              <CountryPicker
+                value={countryCode}
+                onChange={(name, code) => { setCountry(name); setCountryCode(code); }}
+                label="Country (optional)"
+              />
             </div>
             <div className="mb-3">
               <label className="text-xs font-medium block mb-1" style={{ color: "var(--ink-2)" }}>Core practice</label>
