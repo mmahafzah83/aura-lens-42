@@ -497,12 +497,68 @@ const Dashboard = () => {
       } catch {}
     };
     check();
+    // Beat 2 — capture receipt. Piggybacks the existing realtime channel;
+    // no polling. Fires at most once per pending capture within a 10-min
+    // window and silently drops after that.
+    const receiptShownRef = { current: false };
+    const maybeShowReceipt = async (payload: any) => {
+      try {
+        const pendingRaw = sessionStorage.getItem("aura_pending_capture_at");
+        if (!pendingRaw) return;
+        const pendingAt = Number(pendingRaw);
+        if (!pendingAt || Number.isNaN(pendingAt)) return;
+        if (Date.now() - pendingAt > 10 * 60 * 1000) {
+          sessionStorage.removeItem("aura_pending_capture_at");
+          return;
+        }
+        if (receiptShownRef.current) return;
+        const row = (payload?.new || {}) as {
+          id?: string;
+          signal_title?: string;
+          supporting_evidence_ids?: string[];
+          updated_at?: string;
+        };
+        const ids = Array.isArray(row.supporting_evidence_ids) ? row.supporting_evidence_ids : [];
+        if (!row.id || !row.signal_title || ids.length === 0) return;
+        // Exact fragment count via a count query — never array.length.
+        const { count: fragCount } = await supabase
+          .from("evidence_fragments")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", userId)
+          .in("id", ids);
+        if (!fragCount || fragCount <= 0) return;
+        receiptShownRef.current = true;
+        sessionStorage.removeItem("aura_pending_capture_at");
+        const title = row.signal_title.length > 60 ? row.signal_title.slice(0, 58) + "…" : row.signal_title;
+        sonnerToast(`Your reading strengthened ${title} — now backed by ${fragCount} sources`, {
+          duration: 9000,
+          action: {
+            label: "See it →",
+            onClick: () => {
+              setActiveTab("intelligence");
+              const next = new URLSearchParams(window.location.search);
+              next.set("tab", "intelligence");
+              next.set("signal", row.id!);
+              setSearchParams(next);
+            },
+          },
+        });
+      } catch { /* silent — never break UI */ }
+    };
     const channel = supabase
       .channel(`intel-badge-${userId}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "strategic_signals", filter: `user_id=eq.${userId}` },
-        () => { if (activeTab !== "intelligence") check(); },
+        (payload) => {
+          if (activeTab !== "intelligence") check();
+          void maybeShowReceipt(payload);
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "strategic_signals", filter: `user_id=eq.${userId}` },
+        (payload) => { void maybeShowReceipt(payload); },
       )
       .subscribe();
     return () => { cancelled = true; supabase.removeChannel(channel); };
