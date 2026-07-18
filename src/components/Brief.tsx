@@ -29,6 +29,7 @@ interface BriefProps {
   onOpenCapture?: () => void;
   onInvite?: () => void;
   onOpenBrandAssessment?: () => void;
+  onOpenSignal?: (signalId: string) => void;
   onDraftToStudio?: (prefill: {
     topic: string;
     context: string;
@@ -110,6 +111,7 @@ interface PublishedRecent {
   topic: string | null;
   impressions: number | null;
   reactions: number | null;
+  linkedinUrl: string | null;
 }
 
 const LAST_VISIT_KEY = "aura-brief-last-visit";
@@ -151,12 +153,6 @@ function derivePreview(body: string): string {
   const s = cleanBody(body).replace(/\s+/g, " ").trim();
   if (!s) return "";
   return s.length > 180 ? s.slice(0, 178).trim() + "\u2026" : s;
-}
-
-function deriveHook(body: string): string {
-  const first = cleanBody(body).split(/\r?\n/).find((l) => l.trim().length > 0) || "";
-  const cleaned = first.replace(/^[#>*\-\s]+/, "").trim();
-  return cleaned.length > 110 ? cleaned.slice(0, 108).trim() + "\u2026" : cleaned;
 }
 
 function prefersReducedMotion(): boolean {
@@ -219,7 +215,7 @@ function useCountUp(target: number | null, enabled: boolean): number {
 
 // ── Component ────────────────────────────────────────────────────────
 
-export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvite, onOpenBrandAssessment, onDraftToStudio }: BriefProps) {
+export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvite, onOpenBrandAssessment, onOpenSignal, onDraftToStudio }: BriefProps) {
   const { user, isReady } = useAuthReady();
   const tierInfo = useTierFromImprint(user?.id ?? null);
   const reducedMotion = useMemo(prefersReducedMotion, []);
@@ -347,12 +343,14 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
         }
         if (allFragIds.length > 0) {
           const fragRes = await supabase.from("evidence_fragments")
-            .select("id, title, content, created_at")
+            .select("id, title, content, created_at, source_registry_id")
             .eq("user_id", user.id)
             .in("id", Array.from(new Set(allFragIds)));
-          const fragRows = (fragRes?.data || []) as Array<{ id: string; title: string | null; content: string | null; created_at: string }>;
+          const fragRows = ((fragRes?.data || []) as Array<{ id: string; title: string | null; content: string | null; created_at: string; source_registry_id: string | null }>)
+            .slice()
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
           const publishedAtById = new Map(publishedEntries);
-          const deltaCount = new Map<string, number>();
+          const deltaSources = new Map<string, Set<string>>();
           const deltaSummaries = new Map<string, string[]>();
           for (const f of fragRows) {
             const linkedSignals = fragToSignals.get(f.id) || [];
@@ -360,19 +358,25 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
               const pAt = publishedAtById.get(sid);
               if (!pAt) continue;
               if (new Date(f.created_at).getTime() > new Date(pAt).getTime()) {
-                deltaCount.set(sid, (deltaCount.get(sid) || 0) + 1);
+                // Count DISTINCT source_registry_id per signal. Fragments with a
+                // null registry each count once (keyed by fragment id).
+                const sourceKey = f.source_registry_id || `frag:${f.id}`;
+                const set = deltaSources.get(sid) || new Set<string>();
+                set.add(sourceKey);
+                deltaSources.set(sid, set);
                 const summary = (f.title || f.content || "").toString().trim();
                 if (summary) {
                   const arr = deltaSummaries.get(sid) || [];
+                  // Keep at most the 5 most recent summaries (rows are pre-sorted desc).
                   if (arr.length < 5) arr.push(summary.slice(0, 240));
                   deltaSummaries.set(sid, arr);
                 }
               }
             }
           }
-          for (const [sid, count] of deltaCount) {
+          for (const [sid, sources] of deltaSources) {
             const existing = map.get(sid) || {};
-            existing.evidenceDelta = count;
+            existing.evidenceDelta = sources.size;
             existing.evidenceSummaries = deltaSummaries.get(sid) || [];
             map.set(sid, existing);
           }
@@ -413,7 +417,36 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
   const weekNumber = useMemo(() => isoWeekNumber(now), [now]);
 
   // Track unread count in "What Moved" locally.
+  const openedRowsKey = user?.id ? `aura-brief-opened-${user.id}` : null;
   const [openedRows, setOpenedRows] = useState<Set<string>>(new Set());
+
+  // Hydrate opened ids from localStorage on mount / user change.
+  useEffect(() => {
+    if (!openedRowsKey) { setOpenedRows(new Set()); return; }
+    try {
+      const raw = localStorage.getItem(openedRowsKey);
+      if (!raw) { setOpenedRows(new Set()); return; }
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) setOpenedRows(new Set(arr.filter((v) => typeof v === "string")));
+    } catch { /* corrupt payload — start fresh */ }
+  }, [openedRowsKey]);
+
+  const markRowOpened = useCallback((signalId: string) => {
+    setOpenedRows(prev => {
+      if (prev.has(signalId)) return prev;
+      const next = new Set(prev);
+      next.add(signalId);
+      if (openedRowsKey) {
+        try {
+          // Cap at 200 most recent — drop the oldest ids first.
+          const arr = Array.from(next);
+          const trimmed = arr.slice(Math.max(0, arr.length - 200));
+          localStorage.setItem(openedRowsKey, JSON.stringify(trimmed));
+        } catch { /* quota / privacy mode — count still lives in memory */ }
+      }
+      return next;
+    });
+  }, [openedRowsKey]);
 
   // Away-since gap in days (for the "away" scenario branch).
   const awayDays = useMemo(() => {
@@ -753,7 +786,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
     try {
       const since = new Date(Date.now() - 48 * 3600_000).toISOString();
       const { data } = await (supabase.from("linkedin_posts" as any) as any)
-        .select("id, published_at, source_metadata")
+        .select("id, published_at, source_metadata, linkedin_url")
         .eq("user_id", user.id)
         .not("published_at", "is", null)
         .gte("published_at", since)
@@ -778,7 +811,9 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
           reactions = typeof mr.reactions === "number" ? mr.reactions : null;
         }
       } catch { /* metrics optional — LinkedIn lags 1-2 days */ }
-      setPublished({ publishedAt: row.published_at ?? null, topic, impressions, reactions });
+      const rawUrl = (row as any).linkedin_url;
+      const linkedinUrl = typeof rawUrl === "string" && /^https?:\/\//i.test(rawUrl) ? rawUrl : null;
+      setPublished({ publishedAt: row.published_at ?? null, topic, impressions, reactions, linkedinUrl });
     } catch (e) { console.warn("[Brief] published load failed", e); setPublished(null); }
   }, [user]);
 
@@ -819,7 +854,6 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
   // ── Derivations ─────────────────────────────────────────────────────
 
   const firstName = profile?.firstName || "";
-  const profileResolved = profile !== null;
 
   const topSignal = away.status === "ready" && away.data.signals.length > 0 ? away.data.signals[0] : null;
   const draft = draftState.status === "ready" ? draftState.data.draft : null;
@@ -899,13 +933,13 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
           return {
             slug: "TRACKING —",
             headline: topic ? `Your post on ${topic} is live. ${imp} readers so far.` : `Your latest post is live. ${imp} readers so far.`,
-            standfirst: `${rx != null && rx > 0 ? `${rx} reactions in already. ` : ""}The first day or two is when a post travels furthest, so reply to everyone engaging now — that is what keeps LinkedIn showing it. I will keep an eye on the numbers for you.`,
+            standfirst: `${rx != null && rx > 0 ? `${rx} reactions in already. ` : ""}The conversation is happening on LinkedIn — ten minutes replying there now is what keeps it moving. I will keep an eye on the numbers for you.`,
           };
         }
         return {
           slug: "TRACKING —",
           headline: topic ? `Your post on ${topic} is live.` : "Your latest post is live.",
-          standfirst: "The numbers usually start landing within a day. Reply to every early comment while it is fresh — that first wave of replies is what tells LinkedIn to keep pushing it. I will surface the reach here the moment it syncs.",
+          standfirst: "The numbers usually start landing within a day. The conversation is happening on LinkedIn — ten minutes replying there now is what keeps it moving. I will surface the reach here the moment it syncs.",
         };
       }
       case "new":
@@ -1041,8 +1075,9 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
         const delta = state?.evidenceDelta ?? 0;
         const summaries = state?.evidenceSummaries ?? [];
         const body =
-          delta >= 2 ? `${delta} things moved on ${title} since you wrote it.`
-          : delta === 1 ? `Something moved on ${title} since you wrote it.`
+          delta >= 5 ? `5+ new readings landed on ${title} since you wrote it.`
+          : delta >= 2 ? `${delta} new readings landed on ${title} since you wrote it.`
+          : delta === 1 ? `Something new landed on ${title} since you wrote it.`
           : `${title} has moved since you wrote it.`;
         const baseContext = [topSignal.what, topSignal.explanation].filter(Boolean).join("\n\n");
         const publishedDate = new Date(publishedAt).toISOString().slice(0, 10);
@@ -1193,6 +1228,18 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
             fontSize: "clamp(2rem, 4.6vw, 3.2rem)", lineHeight: 1.08,
             letterSpacing: "-0.015em", color: "var(--ink)", margin: "8px 0 16px 0",
           }}>{leadCopy.headline}</h1>
+          {scenario === "published" && published?.linkedinUrl && (
+            <div style={{ margin: "-8px 0 12px 0" }}>
+              <a
+                href={published.linkedinUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ textDecoration: "none" }}
+              >
+                <Mono color="var(--action)" size={11}>Open the post on LinkedIn →</Mono>
+              </a>
+            </div>
+          )}
           <p style={{ margin: 0, fontSize: 17, lineHeight: 1.6, color: "var(--ink-2)" }}>
             {leadCopy.standfirst}
           </p>
@@ -1423,13 +1470,11 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
                         <div
                           role="button"
                           tabIndex={0}
-                          onClick={() => {
-                            setOpenedRows(prev => { const n = new Set(prev); n.add(s.id); return n; });
-                          }}
+                          onClick={() => markRowOpened(s.id)}
                           onKeyDown={(e) => {
                             if (e.key === "Enter" || e.key === " ") {
                               e.preventDefault();
-                              setOpenedRows(prev => { const n = new Set(prev); n.add(s.id); return n; });
+                              markRowOpened(s.id);
                             }
                           }}
                           className="brief-row"
@@ -1470,7 +1515,11 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
                               </div>
                             )}
                             <div style={{ marginLeft: 20, marginTop: 8 }}>
-                              <button type="button" onClick={(e) => { e.stopPropagation(); onSwitchTab?.("intelligence"); }}
+                              <button type="button" onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (onOpenSignal) onOpenSignal(s.id);
+                                  else onSwitchTab?.("intelligence");
+                                }}
                                 style={{ background: "transparent", border: 0, cursor: "pointer", padding: 0, color: "var(--action)" }}>
                                 <Mono color="var(--action)" size={11}>View in Signals →</Mono>
                               </button>
@@ -1520,7 +1569,21 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
                       const labelLines = words.join(" ").length <= 15 ? [words.join(" ").toUpperCase()] : words.map(w => w.toUpperCase());
                       const labelYbase = i % 2 === 0 ? cy - r - 4 - (labelLines.length - 1) * 8 : cy + r + 9;
                       return (
-                        <g key={m.id}>
+                        <g
+                          key={m.id}
+                          role="button"
+                          tabIndex={onOpenSignal ? 0 : -1}
+                          aria-label={`Open signal: ${m.title}`}
+                          style={{ cursor: onOpenSignal ? "pointer" : "default", outline: "none" }}
+                          onClick={onOpenSignal ? () => onOpenSignal(m.id) : undefined}
+                          onKeyDown={onOpenSignal ? (e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              onOpenSignal(m.id);
+                            }
+                          } : undefined}
+                        >
+                          <title>{m.title}</title>
                           <circle cx={cx} cy={cy} r={r}
                             fill={isFaded ? "none" : isHot ? "var(--live)" : "var(--ink)"}
                             stroke={isFaded ? "var(--ink-3)" : "none"} strokeWidth="1" />
