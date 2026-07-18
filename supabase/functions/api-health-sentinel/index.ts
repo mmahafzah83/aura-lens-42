@@ -49,10 +49,11 @@ const checkPerplexity = (key: string) => probe("perplexity", () => fetch("https:
   body: JSON.stringify({ model: "sonar", max_tokens: 16, messages: [{ role: "user", content: "hi" }] }),
 }));
 
-const checkResend = (key: string) => probe("resend", () => fetch("https://api.resend.com/emails", {
-  method: "GET",
-  headers: { Authorization: `Bearer ${key}` },
-}));
+// NOTE: Resend reachability is intentionally NOT probed here.
+// Send-only API keys return 401 on GET /emails by design, which produced a
+// permanent false-critical alert. Email health is judged by OUTCOME via the
+// `email.crons_ran_nothing_sent` check in aura-health-audit, which fires only
+// if cron jobs ran in the last 24h and lifecycle_email_log gained zero rows.
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
