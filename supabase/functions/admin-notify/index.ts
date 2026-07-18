@@ -98,60 +98,72 @@ Deno.serve(async (req) => {
     const impact = String(body.impact || "").slice(0, 400);
     const action = String(body.action || "").slice(0, 400);
     const detail = String(body.detail || "").slice(0, 1000);
+    const resolve = body.resolve === true;
+
+    const admin = createClient(supabaseUrl, serviceKey);
+
+    if (resolve) {
+      if (!dedupe_key) return json({ error: "dedupe_key required for resolve" }, 400);
+      const { data: closed } = await admin
+        .from("ops_alerts")
+        .update({ status: "resolved", resolved_at: new Date().toISOString() })
+        .eq("source", dedupe_key).eq("status", "open").select("id");
+      return json({ ok: true, resolved: (closed || []).length });
+    }
 
     if (!subject || !message || !dedupe_key) {
       return json({ error: "subject, body, dedupe_key required" }, 400);
     }
 
-    const admin = createClient(supabaseUrl, serviceKey);
+    const nowIso = new Date().toISOString();
+    const isProblem = severity === "critical" || severity === "high";
+    const shouldEmail = isProblem || force_email;
 
-    // Dedupe against ops_alerts: same source in last 20h
-    const cutoff = new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString();
-    const { data: recent } = await admin
-      .from("ops_alerts")
-      .select("id")
-      .eq("source", dedupe_key)
-      .gte("created_at", cutoff)
-      .limit(1);
+    let openRow: any = null;
+    if (isProblem) {
+      const { data } = await admin.from("ops_alerts")
+        .select("id, last_emailed, occurrences")
+        .eq("source", dedupe_key).eq("status", "open")
+        .order("created_at", { ascending: false }).limit(1);
+      openRow = data && data[0] ? data[0] : null;
+    }
 
-    const duplicate = !!(recent && recent.length > 0);
+    const twentyH = 20 * 60 * 60 * 1000;
+    const recentlyEmailed = !!(openRow?.last_emailed && Date.now() - new Date(openRow.last_emailed).getTime() < twentyH);
+    const doEmail = shouldEmail && !!RESEND && !!ADMIN_ALERT_EMAIL && !(openRow && recentlyEmailed);
 
     let emailed = false;
-    const shouldEmail = severity === "critical" || severity === "high" || force_email;
-    if (!duplicate && shouldEmail && RESEND && ADMIN_ALERT_EMAIL) {
-      const html = isHtml
-        ? message
-        : renderCard({ what, impact, action, detail, body: message, severity, dedupe_key });
+    if (doEmail) {
+      const htmlOut = isHtml ? message : renderCard({ what, impact, action, detail, body: message, severity, dedupe_key });
       const er = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { Authorization: `Bearer ${RESEND}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          from: "Aura <alerts@aura-intel.org>",
-          to: [ADMIN_ALERT_EMAIL],
-          subject,
-          html,
-        }),
+        body: JSON.stringify({ from: "Aura <alerts@aura-intel.org>", to: [ADMIN_ALERT_EMAIL], subject, html: htmlOut }),
       });
       emailed = er.ok;
       if (!er.ok) console.error("[admin-notify] email failed", er.status, (await er.text()).slice(0, 200));
     }
 
-    // Persist ops alert (skip if duplicate)
-    if (!duplicate) {
+    if (openRow) {
+      await admin.from("ops_alerts").update({
+        last_seen: nowIso,
+        occurrences: (openRow.occurrences || 1) + 1,
+        severity, subject, body: message,
+        what: what || null, impact: impact || null, action: action || null,
+        ...(emailed ? { emailed: true, last_emailed: nowIso } : {}),
+      }).eq("id", openRow.id);
+      return json({ ok: true, updated: true, emailed });
+    } else {
       const { error: opsErr } = await admin.from("ops_alerts").insert({
-        subject,
-        body: message,
-        severity,
-        source: dedupe_key,
-        emailed,
-        what: what || null,
-        impact: impact || null,
-        action: action || null,
+        subject, body: message, severity, source: dedupe_key, emailed,
+        what: what || null, impact: impact || null, action: action || null,
+        status: isProblem ? "open" : "resolved",
+        last_seen: nowIso, occurrences: 1,
+        last_emailed: emailed ? nowIso : null,
       });
       if (opsErr) console.error("[admin-notify] ops_alerts insert failed", opsErr.message);
+      return json({ ok: true, created: true, emailed });
     }
-
-    return json({ ok: true, duplicate, emailed, severity, gated: !shouldEmail });
   } catch (e) {
     console.error("admin-notify error", e);
     return json({ error: (e as Error).message }, 500);

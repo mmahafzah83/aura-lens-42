@@ -2166,8 +2166,13 @@ export type Database = {
           emailed: boolean
           id: string
           impact: string | null
+          last_emailed: string | null
+          last_seen: string | null
+          occurrences: number
+          resolved_at: string | null
           severity: string | null
           source: string | null
+          status: string
           subject: string | null
           what: string | null
         }
@@ -2178,8 +2183,13 @@ export type Database = {
           emailed?: boolean
           id?: string
           impact?: string | null
+          last_emailed?: string | null
+          last_seen?: string | null
+          occurrences?: number
+          resolved_at?: string | null
           severity?: string | null
           source?: string | null
+          status?: string
           subject?: string | null
           what?: string | null
         }
@@ -2190,8 +2200,13 @@ export type Database = {
           emailed?: boolean
           id?: string
           impact?: string | null
+          last_emailed?: string | null
+          last_seen?: string | null
+          occurrences?: number
+          resolved_at?: string | null
           severity?: string | null
           source?: string | null
+          status?: string
           subject?: string | null
           what?: string | null
         }
