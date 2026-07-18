@@ -22,27 +22,44 @@ Deno.serve(async (req) => {
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const admin = createClient(supabaseUrl, serviceRoleKey);
 
-  const cutoff = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-  const { data, error } = await admin
+  // Reap by CURRENT ATTEMPT age (processing_started_at), not upload age.
+  // Fall back to created_at only for legacy rows where processing_started_at is null.
+  const cutoff = new Date(Date.now() - 4 * 60 * 1000).toISOString();
+  const { data: candidates, error: findErr } = await admin
     .from("documents")
-    .update({
-      status: "error",
-      error_message:
-        "Processing exceeded time limit — please re-upload or split the file.",
-    })
+    .select("id, attempt_count, processing_started_at, created_at")
     .eq("status", "processing")
-    .lt("created_at", cutoff)
-    .select("id");
+    // PostgREST or() supports embedded and() for the legacy-fallback case.
+    .or(
+      `processing_started_at.lt.${cutoff},and(processing_started_at.is.null,created_at.lt.${cutoff})`,
+    );
 
-  if (error) {
-    console.error("[reap-stuck-documents] update failed:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
+  if (findErr) {
+    console.error("[reap-stuck-documents] select failed:", findErr.message);
+    return new Response(JSON.stringify({ error: findErr.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
-  const reaped = data?.length ?? 0;
+  let reaped = 0;
+  for (const row of candidates ?? []) {
+    const attempts = (row as any).attempt_count ?? 0;
+    const message =
+      attempts >= 2
+        ? "This document has failed twice. It may be too complex for us to read right now — we're looking into it."
+        : "Reading stopped unexpectedly. Tap to retry.";
+    const { error: upErr } = await admin
+      .from("documents")
+      .update({ status: "error", error_message: message })
+      .eq("id", (row as any).id)
+      .eq("status", "processing");
+    if (upErr) {
+      console.error(`[reap-stuck-documents] update failed for ${(row as any).id}:`, upErr.message);
+      continue;
+    }
+    reaped += 1;
+  }
 
   // Evidence-job watchdog: a job whose last_heartbeat is > 5 minutes old and
   // whose status is not "complete"/"failed" is stuck. Mark it failed and keep
