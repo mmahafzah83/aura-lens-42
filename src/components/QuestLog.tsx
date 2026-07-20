@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Phase, useQuestProgress } from "@/hooks/useQuestProgress";
+import useFirstFlight from "@/hooks/useFirstFlight";
 
 interface Props {
   userId: string | null;
@@ -10,12 +11,31 @@ interface Props {
 
 const QuestLog = ({ userId, compact = true, onQuestAction, onViewFullJourney }: Props) => {
   const { phases, loading } = useQuestProgress(userId);
+  const ff = useFirstFlight(userId);
   const [expanded, setExpanded] = useState(!compact);
 
   const currentPhase: Phase | null = useMemo(() => {
     if (phases.length === 0) return null;
-    return phases.find(p => p.unlocked && p.completed < p.total) || phases[phases.length - 1];
-  }, [phases]);
+    // While First Flight is active, it owns the day-0 beats (connect,
+    // capture, signal, publish). Hide those quest ids from the menu so
+    // there is only one narrator — the tutorial card. Everything else
+    // (assessment, voice, rhythm, analytics, phase-2/3) stays as-is.
+    const suppressed = new Set([
+      "p1_first_capture",
+      "p1_three_sources",
+      "p1_first_post",
+      "p2_first_signal",
+    ]);
+    const filtered = ff.active
+      ? phases.map(p => ({
+          ...p,
+          quests: p.quests.filter(q => !suppressed.has(q.id)),
+          total: p.quests.filter(q => !suppressed.has(q.id)).length,
+          completed: p.quests.filter(q => !suppressed.has(q.id) && q.done).length,
+        }))
+      : phases;
+    return filtered.find(p => p.unlocked && p.completed < p.total) || filtered[filtered.length - 1];
+  }, [phases, ff.active]);
 
   if (loading || !currentPhase) {
     return (
