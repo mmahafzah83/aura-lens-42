@@ -344,9 +344,10 @@ const responseFor = (v: number) => {
 
 export default function PublicWelcome() {
   usePageMeta({
-    title: "Aura — Turns your expertise into presence",
-    description: "Turns your expertise into presence. A strategic intelligence system for senior professionals.",
-    path: "/",
+    title: "Welcome to Aura — Strategic Intelligence for Executives",
+    description:
+      "See how Aura turns what senior professionals read every day into a distinct point of view, a clear cadence, and measurable market presence.",
+    path: "/welcome",
   });
 
   const [slider, setSlider] = useState(30);
