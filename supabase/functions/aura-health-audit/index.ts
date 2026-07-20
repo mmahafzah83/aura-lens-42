@@ -148,6 +148,45 @@ async function checkDeadEndFragments(admin: any): Promise<Finding[]> {
   }];
 }
 
+async function checkSilentSignalDrops(admin: any): Promise<Finding[]> {
+  // Processed sources with fragments but whose fragments feed NO signal.
+  // 30-min grace avoids flagging captures whose async detect-signals is still in flight.
+  const graceCutoff = new Date(Date.now() - 30 * 60_000).toISOString();
+  const weekAgo = new Date(Date.now() - 7 * 24 * 3600_000).toISOString();
+  const { data: sources } = await admin
+    .from("source_registry")
+    .select("id, user_id, title, fragment_count, processed_at")
+    .eq("processed", true)
+    .gt("fragment_count", 0)
+    .lt("processed_at", graceCutoff)
+    .gt("processed_at", weekAgo)
+    .limit(500);
+  if (!sources?.length) return [];
+  const out: Finding[] = [];
+  for (const s of sources as Array<any>) {
+    const { data: frags } = await admin
+      .from("evidence_fragments")
+      .select("id")
+      .eq("source_registry_id", s.id);
+    const fragIds = (frags || []).map((f: any) => f.id);
+    if (!fragIds.length) continue;
+    const { count } = await admin
+      .from("strategic_signals")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", s.user_id)
+      .overlaps("supporting_evidence_ids", fragIds);
+    if ((count || 0) === 0) {
+      out.push({
+        code: `pipeline.silent_signal_drop.${s.id}`,
+        severity: "warn",
+        detail: `Source "${s.title || s.id}" produced ${s.fragment_count} fragments but no signal (>30m). Possible silent drop in detect-signals-v2.`,
+      });
+      if (out.length >= 25) break;
+    }
+  }
+  return out;
+}
+
 async function checkStuckJobs(admin: any): Promise<Finding[]> {
   const cutoff = new Date(Date.now() - 15 * 60_000).toISOString();
   const out: Finding[] = [];
@@ -249,6 +288,7 @@ async function reconcile(admin: any, findings: Finding[]): Promise<{ opened: num
     "freshness.", "coverage.document.", "orphan.source_registry",
     "pipeline.dead_end_fragments", "stuck.evidence_jobs", "stuck.document_jobs",
     "errors.ef_high_24h", "email.crons_ran_nothing_sent",
+    "pipeline.silent_signal_drop.",
   ];
   const { data: openNow } = await admin
     .from("health_findings")
@@ -303,6 +343,7 @@ Deno.serve(async (req) => {
     findings.push(...await checkCoverage(admin));
     findings.push(...await checkOrphanSources(admin));
     findings.push(...await checkDeadEndFragments(admin));
+    findings.push(...await checkSilentSignalDrops(admin));
     findings.push(...await checkStuckJobs(admin));
     findings.push(...await checkErrorRate(admin));
     findings.push(...await checkEmailCronsSilent(admin));
