@@ -1,7 +1,7 @@
-import { useFirstFlight, type FirstFlightSignal } from "@/hooks/useFirstFlight";
+import { type FirstFlightSignal, type FirstFlightState } from "@/hooks/useFirstFlight";
 
 export interface FirstFlightCardProps {
-  userId: string | null;
+  state: FirstFlightState;
   onConnectLinkedIn: () => void;
   onOpenCapture: () => void;
   onOpenSignal: (signal: FirstFlightSignal) => void;
@@ -71,8 +71,7 @@ function Dot({ state }: { state: "done" | "current" | "future" }) {
 }
 
 export function FirstFlightCard(props: FirstFlightCardProps) {
-  const { userId, onConnectLinkedIn, onOpenCapture, onOpenSignal, onWriteFromSignal } = props;
-  const ff = useFirstFlight(userId);
+  const { state: ff, onConnectLinkedIn, onOpenCapture, onOpenSignal, onWriteFromSignal } = props;
 
   if (!ff.active) return null;
 
