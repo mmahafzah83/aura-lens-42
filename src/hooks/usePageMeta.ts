@@ -7,6 +7,7 @@ interface PageMeta {
   description?: string;
   path?: string; // canonical path, e.g. "/auth"
   ogImage?: string; // absolute URL
+  ogType?: string; // e.g. "article", defaults to inherited/"website"
   jsonLd?: Record<string, any> | Record<string, any>[];
 }
 
@@ -15,7 +16,7 @@ interface PageMeta {
  * og:title/description/url, and optional JSON-LD. Restores previous
  * values on unmount so navigation between routes stays clean.
  */
-export function usePageMeta({ title, description, path, ogImage, jsonLd }: PageMeta) {
+export function usePageMeta({ title, description, path, ogImage, ogType, jsonLd }: PageMeta) {
   useEffect(() => {
     const prevTitle = document.title;
     document.title = title;
@@ -47,6 +48,9 @@ export function usePageMeta({ title, description, path, ogImage, jsonLd }: PageM
     restorers.push(setMeta('meta[property="og:title"]', "property", "og:title", title));
     restorers.push(setMeta('meta[name="twitter:title"]', "name", "twitter:title", title));
     restorers.push(setMeta('meta[property="og:url"]', "property", "og:url", url));
+    if (ogType) {
+      restorers.push(setMeta('meta[property="og:type"]', "property", "og:type", ogType));
+    }
     if (ogImage) {
       restorers.push(setMeta('meta[property="og:image"]', "property", "og:image", ogImage));
       restorers.push(setMeta('meta[name="twitter:image"]', "name", "twitter:image", ogImage));
