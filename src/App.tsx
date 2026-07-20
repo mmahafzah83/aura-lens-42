@@ -44,6 +44,7 @@ const AdminStandard = lazy(() => import("./pages/AdminStandard"));
 const OurStory = lazy(() => import("./pages/OurStory"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 const CardPreview = lazy(() => import("./pages/CardPreview"));
+const GuideThoughtLeadershipStrategy = lazy(() => import("./pages/GuideThoughtLeadershipStrategy"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -120,6 +121,7 @@ const App = () => (
             <Route path="/trust" element={<Trust />} />
             <Route path="/our-story" element={<OurStory />} />
             <Route path="/guide" element={<Guide />} />
+            <Route path="/guide/thought-leadership-strategy" element={<GuideThoughtLeadershipStrategy />} />
             <Route path="/settings" element={<PasswordGate><Settings /></PasswordGate>} />
             <Route path="/carousel-studio" element={<PasswordGate><CarouselStudio /></PasswordGate>} />
             <Route path="/edition" element={<PasswordGate><EditionStudio /></PasswordGate>} />
