@@ -98,40 +98,40 @@ Deno.serve(async (req) => {
       }, "db_health", `db.${table}`, `Table ${table}`);
     }
 
-    // GROUP 2 — Edge Function Health
-    for (const fn of EDGE_FUNCTIONS) {
-      await safe(async () => {
-        const url = `${supabaseUrl}/functions/v1/${fn}`;
-        const t0 = Date.now();
-        const ctrl = new AbortController();
-        const timeout = setTimeout(() => ctrl.abort(), 15000);
-        let statusCode = 0;
-        let errored = false;
-        try {
-          const r = await fetch(url, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${serviceKey}`,
-              apikey: serviceKey,
-            },
-            body: JSON.stringify({ healthCheck: true }),
-            signal: ctrl.signal,
-          });
-          statusCode = r.status;
-          await r.text().catch(() => "");
-        } catch (_e) {
-          errored = true;
-        } finally {
-          clearTimeout(timeout);
-        }
-        const ms = Date.now() - t0;
-        const timedOut = errored && ms >= 15000;
-        const status: "pass" | "warn" | "fail" =
-          timedOut || statusCode >= 500 ? "fail" : (statusCode === 0 ? "warn" : "pass");
-        push("ef_health", `ef.${fn}`, `Edge function ${fn}`, status,
-          { http_status: statusCode, response_ms: ms, timed_out: timedOut });
-      }, "ef_health", `ef.${fn}`, `Edge function ${fn}`);
+    // GROUP 2 — Edge Function Health (parallel, short per-request timeout)
+    const efResults = await Promise.all(EDGE_FUNCTIONS.map(async (fn) => {
+      const url = `${supabaseUrl}/functions/v1/${fn}`;
+      const t0 = Date.now();
+      const ctrl = new AbortController();
+      const timeout = setTimeout(() => ctrl.abort(), 5000);
+      let statusCode = 0;
+      let errored = false;
+      try {
+        const r = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${serviceKey}`,
+            apikey: serviceKey,
+          },
+          body: JSON.stringify({ healthCheck: true }),
+          signal: ctrl.signal,
+        });
+        statusCode = r.status;
+        await r.text().catch(() => "");
+      } catch (_e) {
+        errored = true;
+      } finally {
+        clearTimeout(timeout);
+      }
+      const ms = Date.now() - t0;
+      const timedOut = errored && ms >= 5000;
+      const status: "pass" | "warn" | "fail" =
+        timedOut || statusCode >= 500 ? "fail" : (statusCode === 0 ? "warn" : "pass");
+      return { fn, status, details: { http_status: statusCode, response_ms: ms, timed_out: timedOut } };
+    }));
+    for (const r of efResults) {
+      push("ef_health", `ef.${r.fn}`, `Edge function ${r.fn}`, r.status, r.details);
     }
 
     // GROUP 3 — Data Integrity
