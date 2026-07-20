@@ -315,7 +315,7 @@ async function insertPublishedLinkedInPost(opts: {
       repost_count: 0,
       engagement_score: 0,
       source_trust: 100,
-      source_metadata: sourceMetadata || {},
+      source_metadata: { ...(sourceMetadata || {}), _language: (lang === "ar" || isArabicText(postText)) ? "ar" : "en" },
       source_signal_id: sourceSignalId || null,
       framework_type: frameworkType ?? null,
       enriched_by: [],
@@ -1060,6 +1060,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
               source: "create_view",
               topic: topic || null,
               language: lang,
+              _language: (lang === "ar" || isArabicText(text)) ? "ar" : "en",
               signal_ids: selectedSignalId ? [selectedSignalId] : [],
               signal_titles: selectedSignalTitle ? [selectedSignalTitle] : [],
               ...(attachedImageUrl ? { image_url: attachedImageUrl } : {}),
@@ -3338,7 +3339,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
           sourceMetadata: item.source_metadata || {},
           sourceSignalId: linkedSignalId,
           url: trimmedUrl ?? null,
-          language: ((item.source_metadata as any)?.language === "ar" ? "ar" : "en"),
+          language: (((item.source_metadata as any)?._language ?? (item.source_metadata as any)?.language ?? (isArabicText(item.post_text || "") ? "ar" : "en")) === "ar" ? "ar" : "en"),
           frameworkType: (item as any).framework_type ?? null,
         });
         await supabase
@@ -3670,7 +3671,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
         ) : (
           <div style={{ display: "grid", gap: 12 }}>
             {filteredDrafts.map(p => {
-              const lang = (p.source_metadata as any)?._language || "en";
+              const lang = (p.source_metadata as any)?._language || (p.source_metadata as any)?.language || (isArabicText(p.post_text || "") ? "ar" : "en");
               const badge = FORMAT_BADGE[p.format_type || "post"] || FORMAT_BADGE.post;
               const expanded = expandedCards.has(p.id);
               const metrics = postMetrics[p.id];
@@ -3809,7 +3810,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
                           onOpenDraft({
                             id: p.id,
                             body: p.post_text || "",
-                            language: ((p.source_metadata as any)?._language === "ar" ? "ar" : "en"),
+                            language: (((p.source_metadata as any)?._language ?? (p.source_metadata as any)?.language ?? (isArabicText(p.post_text || "") ? "ar" : "en")) === "ar" ? "ar" : "en"),
                             type: mappedType,
                             topic: (p.source_metadata as any)?.topic || null,
                             _source: p._source,
@@ -3941,7 +3942,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
               const publishedAtMs = (p as any).published_at ? new Date((p as any).published_at).getTime() : 0;
               const older48h = publishedAtMs > 0 && (Date.now() - publishedAtMs) > 48 * 60 * 60 * 1000;
               const savedUrl = savedUrls[p.id];
-              const lang = (p.source_metadata as any)?._language || ((p.post_text && isArabicText(p.post_text)) ? "ar" : "en");
+              const lang = (p.source_metadata as any)?._language || (p.source_metadata as any)?.language || ((p.post_text && isArabicText(p.post_text)) ? "ar" : "en");
 
               const metricsChunk = hasMetrics ? (
                 <>
