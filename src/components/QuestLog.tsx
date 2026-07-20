@@ -1,17 +1,16 @@
 import { useMemo, useState } from "react";
 import { Phase, useQuestProgress } from "@/hooks/useQuestProgress";
-import useFirstFlight from "@/hooks/useFirstFlight";
 
 interface Props {
   userId: string | null;
   compact?: boolean;
   onQuestAction?: (questId: string) => void;
   onViewFullJourney?: () => void;
+  firstFlightActive?: boolean;
 }
 
-const QuestLog = ({ userId, compact = true, onQuestAction, onViewFullJourney }: Props) => {
+const QuestLog = ({ userId, compact = true, onQuestAction, onViewFullJourney, firstFlightActive = false }: Props) => {
   const { phases, loading } = useQuestProgress(userId);
-  const ff = useFirstFlight(userId);
   const [expanded, setExpanded] = useState(!compact);
 
   const currentPhase: Phase | null = useMemo(() => {
@@ -26,7 +25,7 @@ const QuestLog = ({ userId, compact = true, onQuestAction, onViewFullJourney }: 
       "p1_first_post",
       "p2_first_signal",
     ]);
-    const filtered = ff.active
+    const filtered = firstFlightActive
       ? phases.map(p => ({
           ...p,
           quests: p.quests.filter(q => !suppressed.has(q.id)),
@@ -35,7 +34,7 @@ const QuestLog = ({ userId, compact = true, onQuestAction, onViewFullJourney }: 
         }))
       : phases;
     return filtered.find(p => p.unlocked && p.completed < p.total) || filtered[filtered.length - 1];
-  }, [phases, ff.active]);
+  }, [phases, firstFlightActive]);
 
   if (loading || !currentPhase) {
     return (
