@@ -151,7 +151,7 @@ async function checkDeadEndFragments(admin: any): Promise<Finding[]> {
 async function checkSilentSignalDrops(admin: any): Promise<Finding[]> {
   // Gate: only report silent drops when detect-signals-v2 has actually errored recently.
   // A source's fragments not rising to a signal is normal detection behaviour, not a drop.
-  const errSince = new Date(Date.now() - 7 * 24 * 3600_000).toISOString();
+  const errSince = new Date(Date.now() - 48 * 3600_000).toISOString();
   const { count: errCount } = await admin
     .from("ef_error_log")
     .select("id", { count: "exact", head: true })
