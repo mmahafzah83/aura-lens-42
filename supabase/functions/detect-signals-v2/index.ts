@@ -276,13 +276,10 @@ Deno.serve(withObserve("detect-signals-v2", async (req) => {
       }
     }
 
-    // Use profile terms for relevance (no hardcoded RELEVANCE_TERMS)
-    const hasRelevance = profileTerms.length === 0 || profileTerms.some(term => combinedContent.includes(term));
-    if (!hasRelevance) {
-      return new Response(JSON.stringify({ skipped: true, reason: "not relevant to profile" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // Relevance is a soft hint only — never a hard drop. The AI classifier's
+    // ai_base_confidence is the real relevance judge; the CONFIDENCE_FLOOR below
+    // routes weak clusters to 'dormant' instead of discarding the user's capture.
+    const profileRelevanceHint = profileTerms.length === 0 || profileTerms.some(term => combinedContent.includes(term));
 
     const identityCtx = profile
       ? `User context: Level=${profile.level || "N/A"}, Firm=${profile.firm || "N/A"}, Sector=${profile.sector_focus || "N/A"}, Practice=${profile.core_practice || "N/A"}, Goal=${profile.north_star_goal || "N/A"}`
@@ -500,11 +497,13 @@ ${identityCtx}`;
 
     /* ── Iterate clusters ── */
     const MAX_NEW_SIGNALS = 5;
+    const CONFIDENCE_FLOOR = 0.35; // ai_base_confidence below this → create as 'dormant', never active. TODO: validate via metrics.
     const resultSignals: Array<{ signal_id: string; is_new: boolean; fragments_attached: number }> = [];
     let newCount = 0;
     let reinforcedCount = 0;
     let droppedCount = 0;
     const dropReasons: string[] = [];
+    let dormantCount = 0;
 
     for (let ci = 0; ci < clusters.length; ci++) {
       const cluster = clusters[ci];
@@ -556,6 +555,7 @@ ${identityCtx}`;
         continue;
       }
 
+      const belowFloor = aiBaseConfidence < CONFIDENCE_FLOOR;
       const now = new Date().toISOString();
       const initialUniqueOrgs = await countUniqueOrgs(admin, clusterFragIds);
       const initialUniqueSources = await countUniqueSources(admin, clusterFragIds);
@@ -572,7 +572,7 @@ ${identityCtx}`;
         confidence_explanation,
         what_it_means_for_you: whatItMeans,
         priority_score: priorityScore,
-        status: "active",
+        status: belowFloor ? "dormant" : "active",
         lifecycle_tier: "emerging",
         supporting_evidence_ids: clusterFragIds,
         fragment_count: clusterFragIds.length,
@@ -584,6 +584,7 @@ ${identityCtx}`;
 
       resultSignals.push({ signal_id: row.id, is_new: true, fragments_attached: clusterFragIds.length });
       newCount++;
+      if (belowFloor) dormantCount++;
 
       // Cache for later clusters so they can reinforce rather than duplicate
       runtimeSignals.push({
@@ -592,7 +593,7 @@ ${identityCtx}`;
         theme_tags: newTags,
         supporting_evidence_ids: clusterFragIds,
         fragment_count: clusterFragIds.length,
-        status: "active",
+        status: belowFloor ? "dormant" : "active",
       });
     }
 
@@ -608,6 +609,8 @@ ${identityCtx}`;
           dropped_count: droppedCount,
           drop_reasons: dropReasons,
           fragments: fragments.length,
+          dormant_count: dormantCount,
+          relevance_hint: profileRelevanceHint,
         },
       }),
     );
