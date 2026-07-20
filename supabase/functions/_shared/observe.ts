@@ -15,9 +15,13 @@ export async function logEfError(
   try {
     const raw = (opts.error as any)?.message ?? opts.error;
     const error_message = String(raw ?? "unknown error").slice(0, 1000);
-    await admin.from("ef_error_log").insert({
+    const severity = opts.severity ?? "high";
+    // Route non-error telemetry (info/low) to ef_event_log so ef_error_log stays a
+    // true error stream. Success summaries (e.g. cluster_summary) are events, not errors.
+    const table = (severity === "info" || severity === "low") ? "ef_event_log" : "ef_error_log";
+    await admin.from(table).insert({
       function_name: opts.function_name,
-      severity: opts.severity ?? "high",
+      severity,
       error_message,
       user_id: opts.user_id ?? null,
       context: opts.context ?? {},
