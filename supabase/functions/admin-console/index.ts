@@ -586,7 +586,7 @@ serve(async (req) => {
       const withSignalPctNow = totalUsers > 0 ? Math.round((withSignal / totalUsers) * 100) : 0;
       const withSignalPctPrev = usersPrev > 0 ? Math.round((withSignalPrev / usersPrev) * 100) : 0;
       const projectedSpend = dayOfMonth > 0 ? (spendMonth / dayOfMonth) * daysInMonth : spendMonth;
-      const overPace = spendMonth > pacedBudgetForKpi(budget, dayOfMonth, daysInMonth);
+      const overPace = spendMonth > budget * (dayOfMonth / daysInMonth);
 
       // Attention rules
       type Item = { severity: "high" | "med" | "low"; text: string; link: string };
