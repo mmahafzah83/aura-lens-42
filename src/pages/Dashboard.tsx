@@ -390,7 +390,7 @@ const Dashboard = () => {
         } catch {}
         const { data: profile } = await supabase
           .from("diagnostic_profiles" as any)
-          .select("completed, onboarding_completed, first_name, firm, level, sector_focus, avatar_url")
+          .select("completed, onboarding_completed, onboarding_step, first_name, firm, level, sector_focus, avatar_url")
           .eq("user_id", uid)
           .maybeSingle();
 
@@ -404,21 +404,24 @@ const Dashboard = () => {
           }));
         }
 
-        // Single field-based gate. Dashboard NEVER creates a profile row —
-        // Onboarding.tsx is the only place a real profile is born.
+        // Onboarding must fully complete (onboarding_step >= 4, set at the ceremony)
+        // before the dashboard loads. onboarding_completed alone is unreliable — it flips
+        // true at the first-step profile save. The inline checklist was retired in favor
+        // of First Flight. Dashboard NEVER creates a profile row — Onboarding.tsx is the
+        // only place a real profile is born.
+        const onboardingDone = Number((profile as any)?.onboarding_step ?? 0) >= 4;
         console.log("[Dashboard] onboarding gate", {
           uid: uid.slice(0, 8),
           hasProfile: !!profile,
           complete: isProfileComplete(profile),
+          onboardingDone,
         });
-        if (!isProfileComplete(profile)) {
+        if (!isProfileComplete(profile) || !onboardingDone) {
           navigate("/onboarding", { replace: true });
           return;
         }
 
-        if (profile && ((profile as any).completed || (profile as any).onboarding_completed)) {
-          checkStrategicNudge(session.access_token);
-        }
+        checkStrategicNudge(session.access_token);
       }
     });
 
