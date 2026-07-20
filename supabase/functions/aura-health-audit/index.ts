@@ -149,6 +149,17 @@ async function checkDeadEndFragments(admin: any): Promise<Finding[]> {
 }
 
 async function checkSilentSignalDrops(admin: any): Promise<Finding[]> {
+  // Gate: only report silent drops when detect-signals-v2 has actually errored recently.
+  // A source's fragments not rising to a signal is normal detection behaviour, not a drop.
+  const errSince = new Date(Date.now() - 7 * 24 * 3600_000).toISOString();
+  const { count: errCount } = await admin
+    .from("ef_error_log")
+    .select("id", { count: "exact", head: true })
+    .eq("function_name", "detect-signals-v2")
+    .eq("severity", "high")
+    .gte("created_at", errSince);
+  if (!errCount || errCount === 0) return [];
+
   // Processed sources with fragments but whose fragments feed NO signal.
   // 30-min grace avoids flagging captures whose async detect-signals is still in flight.
   const graceCutoff = new Date(Date.now() - 30 * 60_000).toISOString();
@@ -178,8 +189,8 @@ async function checkSilentSignalDrops(admin: any): Promise<Finding[]> {
     if ((count || 0) === 0) {
       out.push({
         code: `pipeline.silent_signal_drop.${s.id}`,
-        severity: "warn",
-        detail: `Source "${s.title || s.id}" produced ${s.fragment_count} fragments but no signal (>30m). Possible silent drop in detect-signals-v2.`,
+        severity: "critical",
+        detail: `Source "${s.title || s.id}" produced ${s.fragment_count} fragments but no signal (>30m). Possible silent drop in detect-signals-v2. (detect-signals-v2 logged ${errCount} high-severity errors in last 7d — these sources may be genuinely dropped)`,
       });
       if (out.length >= 25) break;
     }
