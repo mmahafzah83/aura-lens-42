@@ -6,10 +6,11 @@ import PublicFooter from "@/components/PublicFooter";
 
 export default function GuideThoughtLeadershipStrategy() {
   usePageMeta({
-    title: "Thought Leadership Strategy: A Practical Guide for Executives",
+    title: "Thought Leadership Strategy: A Practical Executive Guide",
     description:
-      "A step-by-step thought leadership strategy for executives — move from passive reading to a strategic market presence with a clear point of view, cadence, and measurement.",
+      "A practical thought leadership strategy for executives — turn what you read into a clear point of view, cadence, and measurable market presence.",
     path: "/guide/thought-leadership-strategy",
+    ogType: "article",
     jsonLd: [
       {
         "@context": "https://schema.org",
