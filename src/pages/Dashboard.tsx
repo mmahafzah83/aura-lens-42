@@ -37,6 +37,7 @@ import useTierFromImprint from "@/hooks/useTierFromImprint";
 import { useCelebrationsEnabled } from "@/hooks/useCelebrationsEnabled";
 import usePageMeta from "@/hooks/usePageMeta";
 import { track, getTrackSessionId } from "@/lib/track";
+import { isProfileComplete } from "@/lib/onboarding";
 
 import AuthorityTab from "@/components/tabs/AuthorityTab";
 import ImpactTab from "@/components/tabs/ImpactTab";
@@ -389,7 +390,7 @@ const Dashboard = () => {
         } catch {}
         const { data: profile } = await supabase
           .from("diagnostic_profiles" as any)
-          .select("completed, onboarding_completed, first_name, avatar_url")
+          .select("completed, onboarding_completed, first_name, firm, level, sector_focus, avatar_url")
           .eq("user_id", uid)
           .maybeSingle();
 
@@ -403,40 +404,14 @@ const Dashboard = () => {
           }));
         }
 
-        // Gate: redirect to fullscreen /onboarding if no profile row exists
-        // OR if first_name is missing (user hasn't completed Step 1 of the
-        // onboarding flow). Once first_name is set, the user can land on /home
-        // and finish remaining steps via the inline checklist (GuidedJourney).
-        const hasProfile = !!profile;
-        const hasFirstName = !!(profile && (profile as any).first_name && String((profile as any).first_name).trim());
-        const onboardingDone = !!(profile && (profile as any).onboarding_completed);
+        // Single field-based gate. Dashboard NEVER creates a profile row —
+        // Onboarding.tsx is the only place a real profile is born.
         console.log("[Dashboard] onboarding gate", {
           uid: uid.slice(0, 8),
-          hasProfile,
-          hasFirstName,
-          first_name: profile ? (profile as any).first_name : null,
-          onboarding_completed: onboardingDone,
+          hasProfile: !!profile,
+          complete: isProfileComplete(profile),
         });
-        if (!hasProfile) {
-          // No profile row at all — create a minimal one so onboarding
-          // can reliably UPDATE instead of depending on a later INSERT.
-          try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-              await (supabase.from("diagnostic_profiles" as any) as any).upsert({
-                user_id: user.id,
-                first_name: (user.user_metadata as any)?.first_name || "",
-                onboarding_completed: false,
-                onboarding_step: 0,
-              }, { onConflict: "user_id" });
-            }
-          } catch (e) {
-            console.warn("[Dashboard] minimal profile create failed:", e);
-          }
-          navigate("/onboarding", { replace: true });
-          return;
-        }
-        if (!hasFirstName || !onboardingDone) {
+        if (!isProfileComplete(profile)) {
           navigate("/onboarding", { replace: true });
           return;
         }

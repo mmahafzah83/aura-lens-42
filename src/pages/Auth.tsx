@@ -6,6 +6,7 @@ import AuraLogo from "@/components/brand/AuraLogo";
 import { useToast } from "@/hooks/use-toast";
 import usePageMeta from "@/hooks/usePageMeta";
 import PublicFooter from "@/components/PublicFooter";
+import { isProfileComplete } from "@/lib/onboarding";
 
 const Auth = () => {
   usePageMeta({
@@ -69,19 +70,16 @@ const Auth = () => {
     } catch {}
     const { data: profile } = await supabase
       .from("diagnostic_profiles")
-      .select("onboarding_completed")
+      .select("first_name, firm, level, sector_focus")
       .eq("user_id", session.user.id)
       .maybeSingle();
-    // No profile row → go to /home where the onboarding wizard (G1) will trigger.
-    if (!profile) {
-      navigate(returnTo || "/home");
+    // Field-based gate — a row alone is not "onboarded". Any user missing
+    // first_name / firm / level / sector_focus goes to /onboarding.
+    if (!isProfileComplete(profile)) {
+      navigate("/onboarding");
       return;
     }
-    if (!(profile as any).onboarding_completed) {
-      navigate("/onboarding");
-    } else {
-      navigate(returnTo || "/home");
-    }
+    navigate(returnTo || "/home");
   };
 
   useEffect(() => {
