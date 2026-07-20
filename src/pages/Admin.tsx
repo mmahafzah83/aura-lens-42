@@ -205,19 +205,37 @@ export default function Admin() {
             <div className="grid gap-5">
               {/* KPI cards */}
               <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))" }}>
-                {[
+                {(brief.kpis && Array.isArray(brief.kpis) ? brief.kpis : [
                   { label: "Users", value: String(brief.totals.users) },
                   { label: "Activated", value: `${pct(brief.totals.activated, brief.totals.users)}%`, sub: `${brief.totals.activated}/${brief.totals.users}` },
                   { label: "With signal", value: `${pct(brief.totals.with_signal, brief.totals.users)}%`, sub: `${brief.totals.with_signal}/${brief.totals.users}` },
                   { label: "New this week", value: String(brief.totals.new_this_week) },
                   { label: "Spend this month", value: `$${brief.month.spend_usd.toFixed(2)}`, sub: `${brief.month.pct_budget}% of $${brief.month.budget_usd}` },
-                ].map((k) => (
-                  <div key={k.label} style={{ padding: "12px 14px", borderRadius: 8, backgroundColor: "var(--ob-raised)", border: "1px solid var(--hair)" }}>
-                    <div style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--glass-2)", marginBottom: 6 }}>{k.label}</div>
-                    <div style={{ fontSize: 22, color: "var(--glass)", fontWeight: 500, lineHeight: 1 }}>{k.value}</div>
-                    {k.sub && <div style={{ ...mutedStyle, marginTop: 6 }}>{k.sub}</div>}
-                  </div>
-                ))}
+                ]).map((k: any) => {
+                  const sentimentColor = k.sentiment === "good" ? "#36C5B0" : k.sentiment === "bad" ? "#F87171" : "var(--glass-2)";
+                  return (
+                    <div key={k.key || k.label} style={{ padding: "12px 14px", borderRadius: 8, backgroundColor: "var(--ob-raised)", border: "1px solid var(--hair)" }}>
+                      <div style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--glass-2)", marginBottom: 6 }}>{k.label}</div>
+                      <div style={{ fontSize: 22, color: "var(--glass)", fontWeight: 500, lineHeight: 1 }}>{k.value}</div>
+                      {k.delta && (
+                        <div style={{ display: "inline-block", marginTop: 8, fontSize: 11, color: sentimentColor, backgroundColor: "var(--ob-panel)", border: "1px solid var(--hair)", borderRadius: 999, padding: "2px 8px" }}>
+                          {k.delta}
+                        </div>
+                      )}
+                      {k.sub && <div style={{ ...mutedStyle, marginTop: 6 }}>{k.sub}</div>}
+                      {k.target && <div style={{ ...mutedStyle, marginTop: 4, fontSize: 11 }}>{k.target}</div>}
+                      {k.note && (
+                        k.link ? (
+                          <Link to={k.link} style={{ display: "block", marginTop: 6, fontSize: 12, color: "var(--brand)", textDecoration: "none" }}>
+                            {k.note} →
+                          </Link>
+                        ) : (
+                          <div style={{ ...mutedStyle, marginTop: 6, fontSize: 12 }}>{k.note}</div>
+                        )
+                      )}
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Attention */}

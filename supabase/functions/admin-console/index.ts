@@ -475,6 +475,9 @@ serve(async (req) => {
       const daysInMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0)).getUTCDate();
       const dayOfMonth = now.getUTCDate();
 
+      const TARGET_ACTIVATION_PCT = 70;
+      const TARGET_WITH_SIGNAL_PCT = 50;
+
       // Auth users (paged)
       const users: Array<{ id: string; email: string | null; created_at: string | null; last_sign_in_at: string | null }> = [];
       let page = 1;
@@ -556,6 +559,34 @@ serve(async (req) => {
       const budgetVal = (budgetRes.data as any)?.value;
       const budget = Number(budgetVal?.amount ?? budgetVal ?? 150) || 150;
       const pctBudget = budget > 0 ? (spendMonth / budget) * 100 : 0;
+
+      // Prev-week comparison — derived only from already-fetched arrays
+      const weekAgoMs = weekAgo.getTime();
+      const twoWeeksAgoMs = weekAgoMs - 7 * dayMs;
+      const existedPrev = realUsers.filter((u) => u.created_at && new Date(u.created_at).getTime() <= weekAgoMs);
+      const existedPrevIds = new Set(existedPrev.map((u) => u.id));
+      const usersPrev = existedPrev.length;
+      const capturedByPrev = new Set<string>();
+      for (const e of entries as any[]) {
+        if (new Date(e.created_at).getTime() <= weekAgoMs && existedPrevIds.has(e.user_id)) capturedByPrev.add(e.user_id);
+      }
+      const signalByPrev = new Set<string>();
+      for (const s of signals as any[]) {
+        if (new Date(s.created_at).getTime() <= weekAgoMs && existedPrevIds.has(s.user_id)) signalByPrev.add(s.user_id);
+      }
+      const activatedPrev = capturedByPrev.size;
+      const withSignalPrev = signalByPrev.size;
+      const newPrevWeek = realUsers.filter((u) => {
+        if (!u.created_at) return false;
+        const t = new Date(u.created_at).getTime();
+        return t >= twoWeeksAgoMs && t < weekAgoMs;
+      }).length;
+      const activationPctNow = totalUsers > 0 ? Math.round((activated / totalUsers) * 100) : 0;
+      const activationPctPrev = usersPrev > 0 ? Math.round((activatedPrev / usersPrev) * 100) : 0;
+      const withSignalPctNow = totalUsers > 0 ? Math.round((withSignal / totalUsers) * 100) : 0;
+      const withSignalPctPrev = usersPrev > 0 ? Math.round((withSignalPrev / usersPrev) * 100) : 0;
+      const projectedSpend = dayOfMonth > 0 ? (spendMonth / dayOfMonth) * daysInMonth : spendMonth;
+      const overPace = spendMonth > budget * (dayOfMonth / daysInMonth);
 
       // Attention rules
       type Item = { severity: "high" | "med" | "low"; text: string; link: string };
@@ -693,6 +724,72 @@ serve(async (req) => {
         stuck_count: Math.max(0, leakDrop),
       };
 
+      const signed = (n: number) => n === 0 ? "±0" : (n > 0 ? `+${n}` : `−${Math.abs(n)}`);
+      const usersDelta = totalUsers - usersPrev;
+      const activationDelta = activationPctNow - activationPctPrev;
+      const withSignalDelta = withSignalPctNow - withSignalPctPrev;
+      const newWeekDelta = newThisWeek - newPrevWeek;
+      const activationNote = activationPctNow < TARGET_ACTIVATION_PCT ? `${totalUsers - activated} not activated yet` : null;
+      const withSignalNote = withSignalPctNow < TARGET_WITH_SIGNAL_PCT ? `${activated - withSignal} capturing, no signal yet` : null;
+      const spendNote = overPace ? `over pace — projected $${projectedSpend.toFixed(0)}` : null;
+      const kpis = [
+        {
+          key: "users",
+          label: "Users",
+          value: String(totalUsers),
+          sub: null,
+          delta: signed(usersDelta),
+          sentiment: usersDelta > 0 ? "good" : "neutral",
+          target: null,
+          note: null,
+          link: null,
+        },
+        {
+          key: "activation",
+          label: "Activated",
+          value: `${activationPctNow}%`,
+          sub: `${activated}/${totalUsers}`,
+          delta: `${signed(activationDelta)}pts`,
+          sentiment: activationDelta > 0 ? "good" : activationDelta < 0 ? "bad" : "neutral",
+          target: `target ${TARGET_ACTIVATION_PCT}%`,
+          note: activationNote,
+          link: activationNote ? "/admin/journey" : null,
+        },
+        {
+          key: "with_signal",
+          label: "With signal",
+          value: `${withSignalPctNow}%`,
+          sub: `${withSignal}/${totalUsers}`,
+          delta: `${signed(withSignalDelta)}pts`,
+          sentiment: withSignalDelta > 0 ? "good" : withSignalDelta < 0 ? "bad" : "neutral",
+          target: `target ${TARGET_WITH_SIGNAL_PCT}%`,
+          note: withSignalNote,
+          link: withSignalNote ? "/admin/journey" : null,
+        },
+        {
+          key: "new_this_week",
+          label: "New this week",
+          value: String(newThisWeek),
+          sub: null,
+          delta: `${signed(newWeekDelta)} vs last wk`,
+          sentiment: newWeekDelta > 0 ? "good" : newWeekDelta < 0 ? "bad" : "neutral",
+          target: null,
+          note: null,
+          link: null,
+        },
+        {
+          key: "spend",
+          label: "Spend this month",
+          value: `$${spendMonth.toFixed(2)}`,
+          sub: `${pctBudget.toFixed(0)}% of $${budget}`,
+          delta: `proj $${projectedSpend.toFixed(0)}`,
+          sentiment: overPace ? "bad" : "good",
+          target: `budget $${budget}`,
+          note: spendNote,
+          link: spendNote ? "/admin/cost" : null,
+        },
+      ];
+
       return json({
         totals: {
           users: totalUsers,
@@ -720,6 +817,7 @@ serve(async (req) => {
         attention: trimmed,
         issues,
         biggest_leak,
+        kpis,
       });
     }
 
