@@ -8,6 +8,7 @@ import { useAuthReady } from "@/hooks/useAuthReady";
 import { formatSmartDate } from "@/lib/formatDate";
 import { addTrendToSignals } from "@/lib/addTrendToSignals";
 import { toast } from "sonner";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 interface SignalRow {
   id: string;
@@ -83,6 +84,39 @@ export default function TrendDetail() {
   const [whyMatters, setWhyMatters] = useState<string | null>(null);
   const [whyLoading, setWhyLoading] = useState(false);
   const [whyFailed, setWhyFailed] = useState(false);
+
+  // Per-route SEO: unique title, description, and Article schema for each trend.
+  const rawHeadline = (signal?.headline || "").trim();
+  const headlineForTitle =
+    rawHeadline.length > 45 ? rawHeadline.slice(0, 44).trimEnd() + "…" : rawHeadline;
+  const metaTitle = rawHeadline
+    ? `${headlineForTitle} — Aura Trend`
+    : "Industry Trend — Aura";
+  const insightText = (signal?.insight || signal?.summary || "").trim();
+  const descBase = insightText || "A curated industry trend with strategic context for senior professionals.";
+  const metaDescription =
+    descBase.length > 155 ? descBase.slice(0, 154).trimEnd() + "…" : descBase;
+  usePageMeta({
+    title: metaTitle,
+    description: metaDescription,
+    path: id ? `/trends/${id}` : "/trends",
+    ogType: "article",
+    jsonLd: signal
+      ? {
+          "@context": "https://schema.org",
+          "@type": "Article",
+          headline: rawHeadline || "Industry trend",
+          description: metaDescription,
+          datePublished: signal.fetched_at,
+          publisher: {
+            "@type": "Organization",
+            name: "Aura",
+            url: "https://www.aura-intel.org",
+          },
+          mainEntityOfPage: `https://www.aura-intel.org/trends/${signal.id}`,
+        }
+      : undefined,
+  });
 
   const handleDraftPost = async () => {
     if (!signal || drafting) return;
