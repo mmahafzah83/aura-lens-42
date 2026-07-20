@@ -21,6 +21,7 @@ export interface FirstFlightState {
   retire: () => void;
   skip: () => void;
   refresh: () => void;
+  dimmedTabs: Set<string>;
 }
 
 const skipKey = (uid: string) => `aura_first_flight_skipped_${uid}`;
@@ -161,6 +162,12 @@ export function useFirstFlight(userId: string | null | undefined): FirstFlightSt
     && !retiredLocal
     && !(alreadyDonePersisted && !justCompleted);
 
+  const litTabs = new Set<string>(["home"]);
+  if (currentStep >= 3) litTabs.add("intelligence");
+  if (currentStep >= 4) litTabs.add("authority");
+  const ALL_TABS = ["home", "intelligence", "authority", "influence", "identity"];
+  const dimmedTabs = new Set<string>(active ? ALL_TABS.filter((t) => !litTabs.has(t)) : []);
+
   return {
     loading,
     active,
@@ -173,6 +180,7 @@ export function useFirstFlight(userId: string | null | undefined): FirstFlightSt
     retire,
     skip,
     refresh: compute,
+    dimmedTabs,
   };
 }
 
