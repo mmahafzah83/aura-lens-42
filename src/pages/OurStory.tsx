@@ -40,6 +40,24 @@ const OurStory = () => {
     description:
       "Why Aura exists, from the founder. Turning hard-won expertise into presence — without the noise, and never in your name without your say.",
     path: "/our-story",
+    ogType: "article",
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      headline: "Why Aura exists",
+      description:
+        "Why Aura exists, from the founder. Turning hard-won expertise into presence — without the noise, and never in your name without your say.",
+      author: {
+        "@type": "Person",
+        name: "Mohammad Mahafdhah",
+      },
+      publisher: {
+        "@type": "Organization",
+        name: "Aura",
+        url: "https://www.aura-intel.org",
+      },
+      mainEntityOfPage: "https://www.aura-intel.org/our-story",
+    },
   });
 
   return (
