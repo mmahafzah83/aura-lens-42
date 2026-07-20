@@ -88,6 +88,7 @@ const Dashboard = () => {
   const [user, setUser] = useState<{ email?: string; fullName?: string | null; firstName?: string | null; avatarUrl?: string | null } | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const firstFlight = useFirstFlight(userId);
+  const isFfDimmed = (val: string, isActive: boolean) => firstFlight.dimmedTabs.has(val) && !isActive;
   const [newIntelSignalCount, setNewIntelSignalCount] = useState(0);
   const showOnboarding = false;
   const [showDiagnostic, setShowDiagnostic] = useState(false);
@@ -717,7 +718,9 @@ const Dashboard = () => {
                   style={{
                     padding: "10px 24px",
                     fontWeight: isActive ? 500 : 400,
+                    opacity: isFfDimmed(item.value, isActive) ? 0.45 : 1,
                   }}
+                  title={isFfDimmed(item.value, isActive) ? "Your first post comes first" : undefined}
                 >
                   <item.icon
                     key={item.value === "intelligence" ? `intel-icon-${intelPulseToken}` : undefined}
@@ -859,7 +862,9 @@ const Dashboard = () => {
                     style={{
                       padding: "10px 24px",
                       fontWeight: isActive ? 500 : 400,
+                      opacity: isFfDimmed(item.value, isActive) ? 0.45 : 1,
                     }}
+                    title={isFfDimmed(item.value, isActive) ? "Your first post comes first" : undefined}
                   >
                     <item.icon
                       className="w-4.5 h-4.5"
@@ -1081,7 +1086,9 @@ const Dashboard = () => {
                             cursor: "pointer",
                             paddingBottom: 6,
                             position: "relative",
+                            opacity: isFfDimmed(item.value, isActive) ? 0.45 : 1,
                           }}
+                          title={isFfDimmed(item.value, isActive) ? "Your first post comes first" : undefined}
                         >
                           {item.label}
                         </button>
@@ -1284,7 +1291,8 @@ const Dashboard = () => {
                     key={`mobile-${tab.value}`}
                     onClick={() => switchTab(tab.value)}
                     className="flex flex-col items-center justify-center"
-                    style={{ gap: 4 }}
+                    style={{ gap: 4, opacity: isFfDimmed(tab.value, isActive) ? 0.45 : 1 }}
+                    title={isFfDimmed(tab.value, isActive) ? "Your first post comes first" : undefined}
                   >
                     <span
                       className="flex items-center justify-center"
