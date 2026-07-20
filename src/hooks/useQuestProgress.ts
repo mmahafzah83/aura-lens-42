@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { isProfileComplete } from "@/lib/onboarding";
 
 export interface Quest {
   id: string;
@@ -54,7 +55,7 @@ export function useQuestProgress(userId: string | null) {
     ]);
 
     const p: any = profile.data || {};
-    const profileFilled = !!(p.first_name && p.firm && p.level && p.sector_focus);
+    const profileFilled = isProfileComplete(p);
     const assessmentDone = !!p.brand_assessment_completed_at || (Array.isArray(p.brand_pillars) && p.brand_pillars.length > 0);
 
     const entriesRows: any[] = entriesAll.data || [];
