@@ -28,6 +28,7 @@ import FirstLoginWelcome from "@/components/FirstLoginWelcome";
 import Brief from "@/components/Brief";
 import IdentityDriftBanner from "@/components/IdentityDriftBanner";
 import FirstFlightCard from "@/components/FirstFlightCard";
+import useFirstFlight from "@/hooks/useFirstFlight";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import IdentityTab from "@/components/tabs/IdentityTab";
 import Observatory from "@/components/Observatory";
@@ -86,6 +87,7 @@ const Dashboard = () => {
   const [chatContext, setChatContext] = useState<ChatContext | undefined>();
   const [user, setUser] = useState<{ email?: string; fullName?: string | null; firstName?: string | null; avatarUrl?: string | null } | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const firstFlight = useFirstFlight(userId);
   const [newIntelSignalCount, setNewIntelSignalCount] = useState(0);
   const showOnboarding = false;
   const [showDiagnostic, setShowDiagnostic] = useState(false);
@@ -1013,7 +1015,7 @@ const Dashboard = () => {
             {activeTab !== "home" && activeTab !== "identity" && (
               <div className={activeTab === "intelligence" ? "max-w-[1400px] mx-auto px-5 sm:px-10 lg:px-14" : ""}>
                 <FirstFlightCard
-                  userId={userId}
+                  state={firstFlight}
                   onConnectLinkedIn={connectLinkedInFirstFlight}
                   onOpenCapture={() => handleOpenCapture()}
                   onOpenSignal={(sig) => navigateToSignal(sig.id)}
@@ -1031,7 +1033,7 @@ const Dashboard = () => {
                   }}
                 />
                 <FirstFlightCard
-                  userId={userId}
+                  state={firstFlight}
                   onConnectLinkedIn={connectLinkedInFirstFlight}
                   onOpenCapture={() => handleOpenCapture()}
                   onOpenSignal={(sig) => navigateToSignal(sig.id)}
