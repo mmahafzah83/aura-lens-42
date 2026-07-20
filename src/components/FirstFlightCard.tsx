@@ -76,7 +76,7 @@ export function FirstFlightCard(props: FirstFlightCardProps) {
 
   if (!ff.active) return null;
 
-  const { currentStep, steps, topSignal, justCompleted } = ff;
+  const { currentStep, steps, topSignal, justCompleted, markSignalSeen } = ff;
 
   const stepStates: Array<"done" | "current" | "future"> = [1, 2, 3, 4].map((n) => {
     const done = [steps.s1, steps.s2, steps.s3, steps.s4][n - 1];
@@ -126,7 +126,11 @@ export function FirstFlightCard(props: FirstFlightCardProps) {
   const cta = () => {
     if (currentStep === 1) return { label: "Connect LinkedIn", onClick: onConnectLinkedIn, disabled: false };
     if (currentStep === 2) return { label: "Capture something", onClick: onOpenCapture, disabled: false };
-    if (currentStep === 3) return { label: "Open the signal", onClick: () => topSignal && onOpenSignal(topSignal), disabled: !topSignal };
+    if (currentStep === 3) return {
+      label: "Open the signal",
+      onClick: () => { if (topSignal) { onOpenSignal(topSignal); markSignalSeen(); } },
+      disabled: !topSignal,
+    };
     return { label: "Write it", onClick: () => topSignal && onWriteFromSignal(topSignal), disabled: !topSignal };
   };
 
@@ -195,41 +199,44 @@ export function FirstFlightCard(props: FirstFlightCardProps) {
         })}
       </ol>
 
-      {/* Current step copy */}
-      <p style={{ ...proseStyle, marginBottom: 18 }}>{stepCopy[currentStep]}</p>
-
       {/* Action row */}
       {isWaitingForSignal ? (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span
-              aria-hidden
-              className="ff-pulse"
-              style={{
-                width: 8, height: 8, borderRadius: "50%",
-                background: "var(--live)",
-                animation: "firstFlightPulse 1.6s ease-in-out infinite",
-                display: "inline-block",
-              }}
-            />
-            <span style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 15, color: "var(--ink-2)" }}>
-              Reading what you saved… your first signal usually appears within a few minutes.
-            </span>
+        <>
+          <p style={{ ...proseStyle, marginBottom: 18 }}>Aura is building your first signal.</p>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span
+                aria-hidden
+                className="ff-pulse"
+                style={{
+                  width: 8, height: 8, borderRadius: "50%",
+                  background: "var(--live)",
+                  animation: "firstFlightPulse 1.6s ease-in-out infinite",
+                  display: "inline-block",
+                }}
+              />
+              <span style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 15, color: "var(--ink-2)" }}>
+                Reading what you saved… your first signal usually appears within a few minutes.
+              </span>
+            </div>
+            <button type="button" onClick={ff.skip} style={skipStyle} className="ff-skip">I'll explore on my own</button>
           </div>
-          <button type="button" onClick={ff.skip} style={skipStyle} className="ff-skip">I'll explore on my own</button>
-        </div>
+        </>
       ) : (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
-          {(() => {
-            const c = cta();
-            return (
-              <button type="button" onClick={c.onClick} disabled={c.disabled} style={{ ...ctaStyle, opacity: c.disabled ? 0.5 : 1 }}>
-                {c.label}
-              </button>
-            );
-          })()}
-          <button type="button" onClick={ff.skip} style={skipStyle} className="ff-skip">I'll explore on my own</button>
-        </div>
+        <>
+          <p style={{ ...proseStyle, marginBottom: 18 }}>{stepCopy[currentStep]}</p>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+            {(() => {
+              const c = cta();
+              return (
+                <button type="button" onClick={c.onClick} disabled={c.disabled} style={{ ...ctaStyle, opacity: c.disabled ? 0.5 : 1 }}>
+                  {c.label}
+                </button>
+              );
+            })()}
+            <button type="button" onClick={ff.skip} style={skipStyle} className="ff-skip">I'll explore on my own</button>
+          </div>
+        </>
       )}
     </section>
   );

@@ -16,6 +16,8 @@ export interface FirstFlightState {
   steps: { s1: boolean; s2: boolean; s3: boolean; s4: boolean };
   topSignal: FirstFlightSignal | null;
   justCompleted: boolean;
+  signalSeen: boolean;
+  markSignalSeen: () => void;
   retire: () => void;
   skip: () => void;
   refresh: () => void;
@@ -24,6 +26,7 @@ export interface FirstFlightState {
 const skipKey = (uid: string) => `aura_first_flight_skipped_${uid}`;
 const doneKey = (uid: string) => `aura_first_flight_done_${uid}`;
 const stepFiredKey = (uid: string, n: number) => `aura_first_flight_step_${n}_fired_${uid}`;
+const signalSeenKey = (uid: string) => `aura_first_flight_signal_seen_${uid}`;
 
 function safeGet(key: string): string | null {
   try { return localStorage.getItem(key); } catch { return null; }
@@ -39,6 +42,7 @@ export function useFirstFlight(userId: string | null | undefined): FirstFlightSt
   const [skipped, setSkipped] = useState(false);
   const [retiredLocal, setRetiredLocal] = useState(false);
   const [justCompleted, setJustCompleted] = useState(false);
+  const [signalSeen, setSignalSeen] = useState(false);
 
   const compute = useCallback(async () => {
     if (!userId) { setLoading(false); return; }
@@ -46,6 +50,7 @@ export function useFirstFlight(userId: string | null | undefined): FirstFlightSt
     const alreadyDone = safeGet(doneKey(userId)) === "1";
     const alreadySkipped = safeGet(skipKey(userId)) === "1";
     setSkipped(alreadySkipped);
+    setSignalSeen(safeGet(signalSeenKey(userId)) === "1");
 
     try {
       const [connRes, entryRes, docRes, sigRes, postRes] = await Promise.all([
@@ -140,9 +145,15 @@ export function useFirstFlight(userId: string | null | undefined): FirstFlightSt
     setJustCompleted(false);
   }, [userId]);
 
+  const markSignalSeen = useCallback(() => {
+    if (!userId) return;
+    safeSet(signalSeenKey(userId), "1");
+    setSignalSeen(true);
+  }, [userId]);
+
   const alreadyDonePersisted = userId ? safeGet(doneKey(userId)) === "1" : false;
 
-  const currentStep: 1 | 2 | 3 | 4 = !steps.s1 ? 1 : !steps.s2 ? 2 : !steps.s3 ? 3 : 4;
+  const currentStep: 1 | 2 | 3 | 4 = !steps.s1 ? 1 : !steps.s2 ? 2 : (!steps.s3 || !signalSeen) ? 3 : 4;
 
   const active = !!userId
     && !loading
@@ -157,6 +168,8 @@ export function useFirstFlight(userId: string | null | undefined): FirstFlightSt
     steps,
     topSignal,
     justCompleted,
+    signalSeen,
+    markSignalSeen,
     retire,
     skip,
     refresh: compute,
