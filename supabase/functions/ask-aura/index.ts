@@ -514,66 +514,63 @@ RESPONSE RULES (v2 DEFINITIVE — ALWAYS APPLY):
           controller.close();
         }
 
-        // STEP 4 — fire-and-forget side effects
+        // STEP 4 — persistent side effect: summarize the session into memory.
+        // Wrapped in EdgeRuntime.waitUntil so it survives stream close — Supabase
+        // tears down the isolate once the response stream ends, which is why these
+        // writes were previously dropped. Runs for every response that has content;
+        // the row is keyed by (user_id, session_date) so repeated turns in a day
+        // update one row rather than piling up.
         const reply = fullReply.trim();
         if (reply) {
-          admin.from("notification_events").insert({
-            user_id,
-            type: "inapp",
-            channel: "inapp",
-            title: "Ask Aura response",
-            body: reply.slice(0, 240),
-            read: false,
-          }).then(({ error }) => { if (error) console.error("notif insert:", error.message); });
-        }
-
-        if (messages.length >= 4 && reply) {
-          try {
-            const summaryRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${LOVABLE_API_KEY}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                model: "google/gemini-3-flash-preview",
-                max_tokens: 120,
-                temperature: 0.3,
-                messages: [
-                  { role: "system", content: "Summarize this advisory conversation in exactly 2 sentences. Plain prose, no preamble." },
-                  ...messages,
-                  { role: "assistant", content: reply },
-                ],
-              }),
-            });
-            if (summaryRes.ok) {
-              const sj = await summaryRes.json();
-              const summary: string = sj?.choices?.[0]?.message?.content?.trim() || "";
-              if (summary) {
-                const today = new Date().toISOString().slice(0, 10);
-                const { data: existing } = await admin
-                  .from("aura_conversation_memory")
-                  .select("id")
-                  .eq("user_id", user_id)
-                  .eq("session_date", today)
-                  .maybeSingle();
-                if (existing?.id) {
-                  await admin
+          // @ts-ignore
+          EdgeRuntime.waitUntil((async () => {
+            try {
+              const summaryRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${LOVABLE_API_KEY}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  model: "google/gemini-3-flash-preview",
+                  max_tokens: 120,
+                  temperature: 0.3,
+                  messages: [
+                    { role: "system", content: "Summarize this advisory conversation in exactly 2 sentences. Plain prose, no preamble." },
+                    ...messages,
+                    { role: "assistant", content: reply },
+                  ],
+                }),
+              });
+              if (summaryRes.ok) {
+                const sj = await summaryRes.json();
+                const summary: string = sj?.choices?.[0]?.message?.content?.trim() || "";
+                if (summary) {
+                  const today = new Date().toISOString().slice(0, 10);
+                  const { data: existing } = await admin
                     .from("aura_conversation_memory")
-                    .update({ summary, updated_at: new Date().toISOString() })
-                    .eq("id", existing.id);
-                } else {
-                  await admin.from("aura_conversation_memory").insert({
-                    user_id,
-                    session_date: today,
-                    summary,
-                  });
+                    .select("id")
+                    .eq("user_id", user_id)
+                    .eq("session_date", today)
+                    .maybeSingle();
+                  if (existing?.id) {
+                    await admin
+                      .from("aura_conversation_memory")
+                      .update({ summary, updated_at: new Date().toISOString() })
+                      .eq("id", existing.id);
+                  } else {
+                    await admin.from("aura_conversation_memory").insert({
+                      user_id,
+                      session_date: today,
+                      summary,
+                    });
+                  }
                 }
               }
+            } catch (e) {
+              console.error("memory upsert failed:", e);
             }
-          } catch (e) {
-            console.error("memory upsert failed:", e);
-          }
+          })());
         }
       },
     });
