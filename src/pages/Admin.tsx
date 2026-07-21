@@ -147,6 +147,9 @@ export default function Admin() {
   const [brief, setBrief] = useState<any | null>(null);
   const [briefLoading, setBriefLoading] = useState(true);
   const [briefError, setBriefError] = useState<string | null>(null);
+  const [output, setOutput] = useState<any | null>(null);
+  const [outputLoading, setOutputLoading] = useState(true);
+  const [outputError, setOutputError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -190,6 +193,28 @@ export default function Admin() {
         setBriefError(e?.message || "Could not load brief");
       } finally {
         if (!cancelled) setBriefLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setOutputLoading(true);
+        setOutputError(null);
+        const { data, error } = await supabase.functions.invoke("admin-console", {
+          body: { action: "output_rollup" },
+        });
+        if (cancelled) return;
+        if (error) throw error;
+        setOutput(data);
+      } catch (e: any) {
+        if (cancelled) return;
+        setOutputError(e?.message || "Could not load output");
+      } finally {
+        if (!cancelled) setOutputLoading(false);
       }
     })();
     return () => { cancelled = true; };
