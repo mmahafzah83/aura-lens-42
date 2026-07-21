@@ -3345,8 +3345,42 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
     }
   };
 
+  const resolveNeedsReviewLive = async (id: string) => {
+    try {
+      const nowIso = new Date().toISOString();
+      const { error } = await supabase
+        .from("linkedin_posts")
+        .update({
+          tracking_status: "published",
+          published_at: nowIso,
+          published_confirmed_at: nowIso,
+          authorship: "aura_drafted",
+          acquisition: "published_via_aura",
+        })
+        .eq("id", id);
+      if (error) throw error;
+      toast.success("Marked as published");
+      await loadPosts();
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't update this post");
+    }
+  };
+
+  const resolveNeedsReviewDraft = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("linkedin_posts")
+        .update({ tracking_status: "draft" })
+        .eq("id", id);
+      if (error) throw error;
+      toast.success("Returned to drafts");
+      await loadPosts();
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't return to drafts");
+    }
+  };
+
   const markPublished = async (id: string, url?: string) => {
-    void 0;
     const trimmedUrl = url ? url.trim() : undefined;
     const item = drafts.find(p => p.id === id);
     if (!item) return;
