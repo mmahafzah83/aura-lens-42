@@ -2775,6 +2775,36 @@ export type Database = {
         }
         Relationships: []
       }
+      signature_events: {
+        Row: {
+          action: string
+          created_at: string
+          family: string | null
+          id: string
+          lang: string | null
+          payload: Json | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          family?: string | null
+          id?: string
+          lang?: string | null
+          payload?: Json | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          family?: string | null
+          id?: string
+          lang?: string | null
+          payload?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       skill_targets: {
         Row: {
           created_at: string
