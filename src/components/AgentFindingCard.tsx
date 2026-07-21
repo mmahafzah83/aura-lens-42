@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { track } from "@/lib/track";
 
@@ -39,6 +40,12 @@ interface AddressProfile {
   sector_focus: string | null;
 }
 
+interface GhostDraft {
+  id: string;
+  source_metadata: Record<string, any> | null;
+  created_at: string;
+}
+
 const AgentFindingCard = ({ userId }: { userId: string | null }) => {
   const [pending, setPending] = useState<Finding[]>([]);
   const [totalEver, setTotalEver] = useState<number>(0);
@@ -50,6 +57,9 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
   const [explainerOpen, setExplainerOpen] = useState(false);
   const explainerInitedRef = useRef(false);
   const seenIdRef = useRef<string | null>(null);
+  const [ghostDraft, setGhostDraft] = useState<GhostDraft | null>(null);
+  const [ghostBusy, setGhostBusy] = useState(false);
+  const navigate = useNavigate();
 
   const current = pending[0] ?? null;
 
@@ -58,7 +68,8 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const [{ data: pendingRows }, { count: allCount }, { data: profileRow }] = await Promise.all([
+      const fortyEightAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+      const [{ data: pendingRows }, { count: allCount }, { data: profileRow }, { data: ghostRows }] = await Promise.all([
         supabase
           .from("agent_findings" as any)
           .select("id, title, url, source, implication, entry_id, created_at, themes, dropped_themes")
@@ -76,11 +87,22 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
           .select("first_name, level, sector_focus")
           .eq("user_id", userId)
           .maybeSingle(),
+        supabase
+          .from("linkedin_posts" as any)
+          .select("id, source_metadata, created_at")
+          .eq("user_id", userId)
+          .eq("tracking_status", "draft")
+          .eq("source_metadata->>ghost_draft", "true")
+          .is("source_metadata->>ghost_draft_opened", null)
+          .gte("created_at", fortyEightAgo)
+          .order("created_at", { ascending: false })
+          .limit(1),
       ]);
       if (cancelled) return;
       setPending(((pendingRows as any) || []) as Finding[]);
       setTotalEver(allCount ?? 0);
       setProfile((profileRow as any) ?? null);
+      setGhostDraft(((ghostRows as any)?.[0] as GhostDraft) ?? null);
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -94,7 +116,125 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
     track("agent_card_seen", { finding_id: current.id });
   }, [current]);
 
-  if (loading || !current) return null;
+  if (loading) return null;
+
+  // Ghost draft branch — shown ONLY when there is no pending finding to clear.
+  // Pending card takes priority.
+  if (!current) {
+    if (!ghostDraft) return null;
+
+    const PANEL_BG = "#131009";
+    const PANEL_BORDER = "rgba(241,236,225,0.12)";
+    const INK_HI = "#F6F2E8";
+    const INK_LOW = "rgba(241,236,225,0.55)";
+    const TEAL = "#36C5B0";
+
+    const handleOpenGhost = async () => {
+      if (ghostBusy) return;
+      setGhostBusy(true);
+      try {
+        const prev = (ghostDraft.source_metadata ?? {}) as Record<string, any>;
+        const merged = { ...prev, ghost_draft_opened: true, ghost_draft_opened_at: new Date().toISOString() };
+        await supabase
+          .from("linkedin_posts" as any)
+          .update({ source_metadata: merged })
+          .eq("id", ghostDraft.id);
+        track("ghost_draft_opened", { post_id: ghostDraft.id });
+        setGhostDraft(null);
+        navigate("/?tab=authority");
+      } catch {
+        setGhostBusy(false);
+      }
+    };
+
+    return (
+      <section
+        aria-label="Written for you overnight"
+        style={{ overflow: "hidden", marginBottom: 22 }}
+      >
+        <div
+          style={{
+            position: "relative",
+            background: "var(--ob-bg, #131009)",
+            border: `1px solid ${PANEL_BORDER}`,
+            boxShadow: "0 8px 28px -10px rgba(27,23,18,0.45)",
+            padding: 20,
+          }}
+        >
+          <span
+            aria-hidden
+            style={{
+              position: "absolute", top: 0, left: 0, right: 0, height: 1,
+              background: "linear-gradient(90deg, transparent, rgba(54,197,176,0.7), transparent)",
+              pointerEvents: "none",
+            }}
+          />
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span
+              aria-hidden
+              className="agent-finding-dot"
+              style={{
+                width: 6, height: 6, borderRadius: "50%", background: TEAL,
+                boxShadow: "0 0 12px rgba(54,197,176,0.8)",
+                display: "inline-block", flexShrink: 0,
+              }}
+            />
+            <span
+              style={{
+                ...MONO, fontSize: 10, letterSpacing: "0.18em",
+                textTransform: "uppercase", color: INK_LOW,
+              }}
+            >
+              Written for you · Overnight
+            </span>
+          </div>
+          <p
+            style={{
+              margin: "12px 0 16px 0",
+              fontFamily: "var(--font-serif)",
+              fontSize: 15, fontWeight: 400, lineHeight: 1.5,
+              color: INK_HI,
+            }}
+          >
+            A draft is waiting — written the way you write.
+          </p>
+          <button
+            type="button"
+            onClick={handleOpenGhost}
+            disabled={ghostBusy}
+            style={{
+              ...MONO,
+              minHeight: 44,
+              padding: "0 18px",
+              background: TEAL,
+              color: PANEL_BG,
+              fontWeight: 500,
+              border: 0,
+              fontSize: 12,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              cursor: ghostBusy ? "wait" : "pointer",
+              opacity: ghostBusy ? 0.7 : 1,
+            }}
+          >
+            Open it
+          </button>
+        </div>
+
+        <style>{`
+          @keyframes agent-finding-ring {
+            0%   { box-shadow: 0 0 0 0 rgba(54,197,176,0.55); }
+            70%  { box-shadow: 0 0 0 8px rgba(54,197,176,0);   }
+            100% { box-shadow: 0 0 0 0 rgba(54,197,176,0);     }
+          }
+          .agent-finding-dot { animation: agent-finding-ring 2.4s ease-out infinite; }
+          @media (prefers-reduced-motion: reduce) {
+            .agent-finding-dot { animation: none; }
+          }
+        `}</style>
+      </section>
+    );
+  }
 
   const remainingBeyondShown = Math.max(0, pending.length - 1);
   const isFirstEver = totalEver === 1;
