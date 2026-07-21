@@ -31,6 +31,12 @@ function hostFromUrl(u: string | null): string {
   try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return ""; }
 }
 
+interface AddressProfile {
+  first_name: string | null;
+  level: string | null;
+  sector_focus: string | null;
+}
+
 const AgentFindingCard = ({ userId }: { userId: string | null }) => {
   const [pending, setPending] = useState<Finding[]>([]);
   const [totalEver, setTotalEver] = useState<number>(0);
@@ -38,6 +44,9 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
   const [confirming, setConfirming] = useState(false);
   const [collapsing, setCollapsing] = useState(false);
   const [busy, setBusy] = useState<"keep" | "dismiss" | null>(null);
+  const [profile, setProfile] = useState<AddressProfile | null>(null);
+  const [explainerOpen, setExplainerOpen] = useState(false);
+  const explainerInitedRef = useRef(false);
   const seenIdRef = useRef<string | null>(null);
 
   const current = pending[0] ?? null;
@@ -47,7 +56,7 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const [{ data: pendingRows }, { count: allCount }] = await Promise.all([
+      const [{ data: pendingRows }, { count: allCount }, { data: profileRow }] = await Promise.all([
         supabase
           .from("agent_findings" as any)
           .select("id, title, url, source, implication, entry_id, created_at")
@@ -60,10 +69,16 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
           .from("agent_findings" as any)
           .select("id", { count: "exact", head: true })
           .eq("user_id", userId),
+        supabase
+          .from("diagnostic_profiles" as any)
+          .select("first_name, level, sector_focus")
+          .eq("user_id", userId)
+          .maybeSingle(),
       ]);
       if (cancelled) return;
       setPending(((pendingRows as any) || []) as Finding[]);
       setTotalEver(allCount ?? 0);
+      setProfile((profileRow as any) ?? null);
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -81,12 +96,21 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
 
   const remainingBeyondShown = Math.max(0, pending.length - 1);
   const isFirstEver = totalEver === 1;
+  // Initialize explainer open-state once per finding shown: expanded on first-ever, else collapsed.
+  if (!explainerInitedRef.current) {
+    explainerInitedRef.current = true;
+    if (isFirstEver) setExplainerOpen(true);
+  }
   const heroText =
     (current.implication && current.implication.trim()) ||
     current.title ||
     "";
   const sourceLabel = (current.source || hostFromUrl(current.url) || "").trim();
   const articleTitle = (current.title || current.url || "").trim();
+  const addressParts = [profile?.first_name, profile?.level, profile?.sector_focus]
+    .map((p) => (p ?? "").toString().trim())
+    .filter((p) => p.length > 0);
+  const addressLine = addressParts.length > 0 ? `TO: ${addressParts.join(" · ")}` : "";
 
   const handleKeep = async () => {
     if (busy) return;
@@ -122,78 +146,165 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
     setBusy(null);
   };
 
+  const PANEL_BG = "#131009";
+  const PANEL_BORDER = "rgba(241,236,225,0.12)";
+  const INK_HI = "#F6F2E8";
+  const INK_MID = "rgba(241,236,225,0.7)";
+  const INK_LOW = "rgba(241,236,225,0.55)";
+  const INK_DIM = "rgba(241,236,225,0.45)";
+  const INK_MUTE = "rgba(241,236,225,0.6)";
+  const RULE_SOFT = "rgba(241,236,225,0.15)";
+  const STRIP_BG = "rgba(241,236,225,0.08)";
+  const STRIP_BORDER = "rgba(241,236,225,0.1)";
+  const TEAL = "#36C5B0";
+  const AMBER = "#D6A748";
+
   return (
     <section
       aria-label="Found for you overnight"
       style={{
         overflow: "hidden",
         transition: "max-height 320ms ease, opacity 260ms ease, margin 260ms ease",
-        maxHeight: collapsing ? 0 : 1200,
+        maxHeight: collapsing ? 0 : 1600,
         opacity: collapsing ? 0 : 1,
         marginBottom: collapsing ? 0 : 22,
       }}
     >
       <div
         style={{
-          background: "#FDFBF6",
-          border: "1px solid var(--rule)",
-          borderInlineStart: "3px solid #36C5B0",
-          boxShadow: "0 1px 0 rgba(27,23,18,0.06)",
-          padding: "16px 18px",
+          position: "relative",
+          background: "var(--ob-bg, #131009)",
+          border: `1px solid ${PANEL_BORDER}`,
+          boxShadow: "0 8px 28px -10px rgba(27,23,18,0.45)",
+          padding: 20,
         }}
       >
+        {/* Top edge glow */}
+        <span
+          aria-hidden
+          style={{
+            position: "absolute",
+            top: 0, left: 0, right: 0,
+            height: 1,
+            background: "linear-gradient(90deg, transparent, rgba(54,197,176,0.7), transparent)",
+            pointerEvents: "none",
+          }}
+        />
         {confirming ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span
-              aria-hidden
-              style={{
-                width: 28, height: 28, borderRadius: "50%",
-                background: "#36C5B0",
-                display: "inline-flex", alignItems: "center", justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden>
-                <path d="M4.5 10.5l3.2 3.2 7.8-7.8" stroke="#FDFBF6" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </span>
-            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-              <span style={{ ...MONO, fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink)" }}>
-                In your radar now
-              </span>
-              <span style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 13, color: "var(--ink-2)" }}>
-                The signal is live in your Observatory.
-              </span>
-            </div>
-          </div>
-        ) : (
           <>
-            {/* Eyebrow row: pulsing dot + mono label */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span
-                aria-hidden
-                className="agent-finding-dot"
-                style={{
-                  width: 6, height: 6, borderRadius: "50%",
-                  background: "#36C5B0", display: "inline-block", flexShrink: 0,
-                }}
-              />
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
               <span
                 style={{
-                  ...MONO, fontSize: 10, letterSpacing: "0.16em",
-                  textTransform: "uppercase", color: "var(--ink-3)",
+                  ...MONO,
+                  fontSize: 9.5,
+                  letterSpacing: "0.2em",
+                  textTransform: "uppercase",
+                  color: TEAL,
+                  border: `1px solid ${TEAL}`,
+                  padding: "4px 8px",
+                  transform: "rotate(-1.2deg)",
+                  display: "inline-block",
                 }}
               >
-                Found for you · Overnight
+                Cleared
               </span>
             </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <span
+                aria-hidden
+                style={{
+                  width: 28, height: 28, borderRadius: "50%",
+                  background: TEAL,
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden>
+                  <path d="M4.5 10.5l3.2 3.2 7.8-7.8" stroke="#131009" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+              <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                <span style={{ ...MONO, fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", color: INK_HI }}>
+                  In your radar now
+                </span>
+                <span style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 13, color: INK_MUTE }}>
+                  The signal is live in your Observatory.
+                </span>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Header row: eyebrow left, clearance stamp right */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+                flexWrap: "wrap",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span
+                  aria-hidden
+                  className="agent-finding-dot"
+                  style={{
+                    width: 6, height: 6, borderRadius: "50%",
+                    background: TEAL,
+                    boxShadow: "0 0 12px rgba(54,197,176,0.8)",
+                    display: "inline-block", flexShrink: 0,
+                  }}
+                />
+                <span
+                  style={{
+                    ...MONO, fontSize: 10, letterSpacing: "0.18em",
+                    textTransform: "uppercase", color: INK_LOW,
+                  }}
+                >
+                  Found for you · Overnight
+                </span>
+              </div>
+              <span
+                style={{
+                  ...MONO,
+                  fontSize: 9.5,
+                  letterSpacing: "0.2em",
+                  textTransform: "uppercase",
+                  color: AMBER,
+                  border: `1px solid ${AMBER}`,
+                  padding: "4px 8px",
+                  transform: "rotate(-1.2deg)",
+                  display: "inline-block",
+                }}
+              >
+                For your clearance
+              </span>
+            </div>
+
+            {/* Addressed line */}
+            {addressLine && (
+              <div
+                style={{
+                  ...MONO,
+                  marginTop: 10,
+                  fontSize: 10,
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  color: INK_DIM,
+                  wordBreak: "break-word",
+                }}
+              >
+                {addressLine}
+              </div>
+            )}
 
             {/* Italic serif line */}
             <p
               style={{
-                margin: "8px 0 12px 0",
+                margin: "10px 0 12px 0",
                 fontFamily: "var(--font-serif)", fontStyle: "italic",
-                fontSize: 14, color: "var(--ink-2)", lineHeight: 1.5,
+                fontSize: 13.5, color: INK_MUTE, lineHeight: 1.5,
               }}
             >
               While you were busy, this moved in your market.
@@ -205,8 +316,8 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
               style={{
                 margin: "0 0 14px 0",
                 fontFamily: "var(--font-serif)",
-                fontSize: 21, fontWeight: 500, lineHeight: 1.34,
-                color: "var(--ink)",
+                fontSize: 22, fontWeight: 400, lineHeight: 1.36,
+                color: INK_HI,
                 wordBreak: "break-word", overflowWrap: "anywhere",
               }}
             >
@@ -221,8 +332,8 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
                 rel="noopener noreferrer"
                 style={{
                   display: "block",
-                  background: "var(--paper-2)",
-                  border: "1px solid var(--rule)",
+                  background: STRIP_BG,
+                  border: `1px solid ${STRIP_BORDER}`,
                   padding: "8px 10px",
                   textDecoration: "none",
                   marginBottom: 14,
@@ -231,12 +342,12 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
                 <span
                   style={{
                     ...MONO, fontSize: 11, lineHeight: 1.5,
-                    color: "var(--ink-2)",
+                    color: INK_MID,
                     wordBreak: "break-word", overflowWrap: "anywhere",
                   }}
                 >
                   {sourceLabel && (
-                    <span style={{ color: "#6E2A26", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                    <span style={{ color: AMBER, textTransform: "uppercase", letterSpacing: "0.08em" }}>
                       {sourceLabel}
                     </span>
                   )}
@@ -256,8 +367,9 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
                   ...MONO,
                   minHeight: 44,
                   padding: "0 18px",
-                  background: "var(--ink)",
-                  color: "var(--paper)",
+                  background: TEAL,
+                  color: PANEL_BG,
+                  fontWeight: 500,
                   border: 0,
                   fontSize: 12,
                   letterSpacing: "0.08em",
@@ -277,7 +389,7 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
                   minHeight: 44,
                   padding: "0 12px",
                   background: "transparent",
-                  color: "var(--ink-3)",
+                  color: INK_DIM,
                   border: 0,
                   fontSize: 12,
                   letterSpacing: "0.08em",
@@ -290,32 +402,57 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
               {remainingBeyondShown > 0 && (
                 <span
                   style={{
-                    ...MONO, fontSize: 10.5, color: "var(--ink-3)",
-                    marginInlineStart: "auto",
+                    ...MONO, fontSize: 10.5, color: INK_DIM,
                   }}
                 >
                   {remainingBeyondShown} more waiting
                 </span>
               )}
+              <button
+                type="button"
+                onClick={() => setExplainerOpen((v) => !v)}
+                style={{
+                  ...MONO,
+                  marginInlineStart: "auto",
+                  background: "transparent",
+                  border: 0,
+                  padding: 0,
+                  fontSize: 10.5,
+                  color: INK_DIM,
+                  textDecoration: "underline",
+                  cursor: "pointer",
+                }}
+                aria-expanded={explainerOpen}
+              >
+                {explainerOpen ? "Got it" : "What is this?"}
+              </button>
             </div>
 
-            {/* First-ever footnote */}
-            {isFirstEver && (
+            {/* Explainer (replaces old first-ever footnote) */}
+            {explainerOpen && (
               <div
                 style={{
                   marginTop: 14, paddingTop: 12,
-                  borderTop: "1px dashed var(--rule)",
+                  borderTop: `1px dashed ${RULE_SOFT}`,
+                  display: "flex", flexDirection: "column", gap: 6,
                 }}
               >
-                <p
-                  style={{
-                    margin: 0,
-                    fontFamily: "var(--font-serif)", fontStyle: "italic",
-                    fontSize: 13, color: "var(--ink-3)", lineHeight: 1.5,
-                  }}
-                >
-                  Aura now reads your territory overnight. Only what clears the bar reaches you.
-                </p>
+                {[
+                  "Aura works while you're away — reading your territory so you don't have to.",
+                  "Only what's directly relevant to you clears the bar. Everything else is filtered out.",
+                  "Nothing enters your radar without your say. Keep it, or dismiss it — your call, always.",
+                ].map((line, i) => (
+                  <p
+                    key={i}
+                    style={{
+                      margin: 0,
+                      fontFamily: "var(--font-serif)", fontStyle: "italic",
+                      fontSize: 13, color: INK_MUTE, lineHeight: 1.5,
+                    }}
+                  >
+                    {line}
+                  </p>
+                ))}
               </div>
             )}
           </>
