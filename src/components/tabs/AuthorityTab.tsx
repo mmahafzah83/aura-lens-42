@@ -363,7 +363,7 @@ async function insertPublishedLinkedInPost(opts: {
     .catch((e) => console.error("calculate-aura-score failed:", e));
 }
 
-const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftPrefill, onDraftPrefillConsumed }: { planPrefill?: PlanPrefill | null; signalPrefill?: SignalPrefill | null; onSignalPrefillConsumed?: () => void; draftPrefill?: DraftPrefill | null; onDraftPrefillConsumed?: () => void }) => {
+const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftPrefill, onDraftPrefillConsumed, onGoToLibrary }: { planPrefill?: PlanPrefill | null; signalPrefill?: SignalPrefill | null; onSignalPrefillConsumed?: () => void; draftPrefill?: DraftPrefill | null; onDraftPrefillConsumed?: () => void; onGoToLibrary?: () => void }) => {
   const navigate = useNavigate();
   const [topic, setTopic] = useState("");
   const [context, setContext] = useState("");
@@ -1030,6 +1030,23 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
     } finally {
       setUploadingImage(false);
     }
+  };
+  const resetComposerForNext = () => {
+    setOutput("");
+    setFullVersion("");
+    setShortVersion("");
+    setShowingShort(false);
+    setEditingDraftId(null);
+    setEditingSource("content_items");
+    setSelectedSignalId(null);
+    setSelectedSignalTitle(null);
+    setTopic("");
+    setAttachedImageUrl(null);
+    setPublishedFromCreate(false);
+    setPublishedInfo(null);
+    setConfirmLiveOpen(false);
+    setDraftSaved(false);
+    try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch {}
   };
   const handlePublishToLinkedIn = async () => {
     if (publishingLive || publishedFromCreate) return;
@@ -1764,11 +1781,19 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                         )}
                         <button
                           type="button"
-                          onClick={() => navigate("/home")}
-                          className="inline-flex items-center gap-1 text-xs font-medium hover:underline"
-                          style={{ color: "var(--color-muted)", background: "transparent", border: 0, cursor: "pointer" }}
+                          onClick={resetComposerForNext}
+                          style={{ color: "var(--brand)", background: "transparent", border: 0, cursor: "pointer" }}
+                          className="inline-flex items-center gap-1 text-xs font-semibold hover:underline"
                         >
-                          Next signal →
+                          Start next →
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onGoToLibrary?.()}
+                          style={{ color: "var(--color-muted)", background: "transparent", border: 0, cursor: "pointer" }}
+                          className="inline-flex items-center gap-1 text-xs font-medium hover:underline"
+                        >
+                          View in Library
                         </button>
                       </div>
                     </div>
@@ -4396,7 +4421,7 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
         })}
       </div>
 
-      {activeTab === "create" && <CreateTab planPrefill={planPrefill} signalPrefill={effectiveSignalPrefill} onSignalPrefillConsumed={handleSignalPrefillConsumed} draftPrefill={draftPrefill} onDraftPrefillConsumed={onDraftPrefillConsumed} />}
+      {activeTab === "create" && <CreateTab planPrefill={planPrefill} signalPrefill={effectiveSignalPrefill} onSignalPrefillConsumed={handleSignalPrefillConsumed} draftPrefill={draftPrefill} onDraftPrefillConsumed={onDraftPrefillConsumed} onGoToLibrary={() => setActiveTab("library")} />}
       {activeTab === "plan" && <PlanTab onGenerateFromPlan={handleGenerateFromPlan} />}
       {activeTab === "library" && <LibraryTab onSwitchToCreate={() => setActiveTab("create")} onOpenDraft={onOpenDraft} onWriteFromPost={(prefill) => { setLibraryPrefill(prefill); setActiveTab("create"); }} />}
     </div>
