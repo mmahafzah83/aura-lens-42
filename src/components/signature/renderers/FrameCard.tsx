@@ -1,6 +1,6 @@
 import {
   AuraMark, MONO, PhotoPlaceholder, RendererProps, SvgRoot, T, TextBlock,
-  anchorStart, getGeometry, isAr, moodColor, pickQuoteFont, quoteLineHeight, xStart,
+  anchorStart, getGeometry, isAr, moodColor, moodWashRGBA, pickQuoteFont, quoteLineHeight, xStart,
 } from "./shared";
 import { fitText } from "../fitText";
 
@@ -40,6 +40,7 @@ export default function FrameCard(props: RendererProps & { square?: boolean }) {
         </linearGradient>
       </defs>
       <rect x="0" y="0" width={g.W} height={g.H} fill={`url(#${scrimId})`} />
+      <rect x="0" y="0" width={g.W} height={g.H} fill={moodWashRGBA(mood, 0.10)} />
       <line x1={xS} y1={quoteY - fit.size - 24} x2={ar ? xS - 72 : xS + 72} y2={quoteY - fit.size - 24} stroke={accent} strokeWidth="3" />
       <TextBlock lines={fit.lines} x={xS} y={quoteY} lineHeight={lineH} fill={T.paper} fontFamily={font.family} fontSize={fit.size} fontStyle={font.style} fontWeight={font.weight} anchor={anchor} lang={lang} letterSpacing={ar ? "0" : "-0.01em"} />
       {(() => {
