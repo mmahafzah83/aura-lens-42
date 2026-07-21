@@ -148,5 +148,8 @@ verify_jwt = false
 [functions.reap-stuck-documents]
 verify_jwt = false
 
+[functions.night-agent-hunt]
+verify_jwt = false
+
 [functions.lifecycle-emails]
 verify_jwt = false
