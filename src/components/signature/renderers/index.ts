@@ -3,7 +3,10 @@ import SignatureCard from "./SignatureCard";
 import FrameCard from "./FrameCard";
 import LineCard from "./LineCard";
 import MilestoneCard from "./MilestoneCard";
+import type { ComponentType } from "react";
 import type { RendererProps } from "./shared";
+
+export type RendererComponent = ComponentType<RendererProps & { square?: boolean }>;
 
 export { CoverCard, SignatureCard, FrameCard, LineCard, MilestoneCard };
 export type { RendererProps, Lang, Mood } from "./shared";
@@ -14,7 +17,7 @@ export type FamilyId = "cover" | "signature" | "frame" | "line" | "milestone";
 export interface FamilyEntry {
   id: FamilyId;
   label: string;
-  component: React.ComponentType<RendererProps>;
+  component: RendererComponent;
   door: DoorId | null;
 }
 

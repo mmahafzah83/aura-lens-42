@@ -19,16 +19,38 @@ export interface RendererProps {
   meta?: string;
 }
 
-export const CANVAS = { W: 1080, H: 1350 };
-export const SAFE = 0.12;
-export const PAD = Math.round(CANVAS.W * SAFE); // 130
-export const SAFE_X0 = PAD;
-export const SAFE_X1 = CANVAS.W - PAD;
-export const SAFE_Y0 = PAD;
-export const SAFE_Y1 = CANVAS.H - PAD;
-export const CONTENT_W = SAFE_X1 - SAFE_X0;
-export const CONTENT_H = SAFE_Y1 - SAFE_Y0;
-export const QUOTE_MEASURE = Math.round(CONTENT_W * 0.92); // ~76% of full width
+/**
+ * Geometry helper — single source of canvas + safe-zone constants for
+ * every renderer. Pass square=true for 1080×1080 exports; default is 4:5
+ * (1080×1350). Every renderer must derive x/y from this — never hardcode.
+ */
+export interface Geometry {
+  W: number;
+  H: number;
+  PAD: number;
+  SAFE_X0: number;
+  SAFE_X1: number;
+  SAFE_Y0: number;
+  SAFE_Y1: number;
+  CONTENT_W: number;
+  CONTENT_H: number;
+  QUOTE_MEASURE: number;
+  square: boolean;
+}
+
+export function getGeometry(square = false): Geometry {
+  const W = 1080;
+  const H = square ? 1080 : 1350;
+  const PAD = Math.round(W * 0.12);
+  const SAFE_X0 = PAD;
+  const SAFE_X1 = W - PAD;
+  const SAFE_Y0 = PAD;
+  const SAFE_Y1 = H - PAD;
+  const CONTENT_W = SAFE_X1 - SAFE_X0;
+  const CONTENT_H = SAFE_Y1 - SAFE_Y0;
+  const QUOTE_MEASURE = Math.round(CONTENT_W * 0.92);
+  return { W, H, PAD, SAFE_X0, SAFE_X1, SAFE_Y0, SAFE_Y1, CONTENT_W, CONTENT_H, QUOTE_MEASURE, square };
+}
 
 // System-A literal tokens (mirrors src/components/broadsheet/pressTokens.ts).
 export const T = {
@@ -69,12 +91,12 @@ export function anchorEnd(lang: Lang): "start" | "end" {
   return isAr(lang) ? "start" : "end";
 }
 /** X of the inline-start edge inside the safe zone. */
-export function xStart(lang: Lang): number {
-  return isAr(lang) ? SAFE_X1 : SAFE_X0;
+export function xStart(lang: Lang, g: Geometry): number {
+  return isAr(lang) ? g.SAFE_X1 : g.SAFE_X0;
 }
 /** X of the inline-end edge inside the safe zone. */
-export function xEnd(lang: Lang): number {
-  return isAr(lang) ? SAFE_X0 : SAFE_X1;
+export function xEnd(lang: Lang, g: Geometry): number {
+  return isAr(lang) ? g.SAFE_X0 : g.SAFE_X1;
 }
 
 export const DEFAULT_SVG_STYLE: CSSProperties = {
@@ -87,15 +109,16 @@ export interface SvgRootProps {
   children: React.ReactNode;
   role?: string;
   ariaLabel?: string;
+  geom: Geometry;
 }
 
-export function SvgRoot({ children, role = "img", ariaLabel }: SvgRootProps) {
+export function SvgRoot({ children, role = "img", ariaLabel, geom }: SvgRootProps) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      viewBox={`0 0 ${CANVAS.W} ${CANVAS.H}`}
-      width={CANVAS.W}
-      height={CANVAS.H}
+      viewBox={`0 0 ${geom.W} ${geom.H}`}
+      width={geom.W}
+      height={geom.H}
       role={role}
       aria-label={ariaLabel}
       style={DEFAULT_SVG_STYLE}
@@ -109,11 +132,11 @@ export function SvgRoot({ children, role = "img", ariaLabel }: SvgRootProps) {
  * AuraMark — quiet horizon-eye glyph + AURA wordmark. Placed at the
  * bottom inline-end corner of every card, inside the safe zone.
  */
-export function AuraMark({ lang, color = T.paper }: { lang: Lang; color?: string }) {
+export function AuraMark({ lang, color = T.paper, geom }: { lang: Lang; color?: string; geom: Geometry }) {
   const ar = isAr(lang);
   // Anchor to the inline-end corner just inside the safe zone.
-  const x = ar ? SAFE_X0 : SAFE_X1;
-  const y = SAFE_Y1;
+  const x = ar ? geom.SAFE_X0 : geom.SAFE_X1;
+  const y = geom.SAFE_Y1;
   const glyph = (
     <g transform={`translate(${ar ? 0 : -14}, -6)`} fill={color} stroke={color}>
       <ellipse cx="0" cy="0" rx="14" ry="6" fill="none" strokeWidth="1.4" />

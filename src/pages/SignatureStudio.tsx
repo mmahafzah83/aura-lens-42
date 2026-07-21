@@ -1,5 +1,11 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import MiniPreview from "@/components/signature/MiniPreview";
+import FilmStrip from "@/components/signature/FilmStrip";
+import Editor, { type EditorFields } from "@/components/signature/Editor";
+import Preview from "@/components/signature/Preview";
+import { useLiveData, defaultsFor } from "@/components/signature/useLiveData";
+import type { FamilyEntry } from "@/components/signature/renderers";
+import type { Lang, Mood } from "@/components/signature/renderers/shared";
 
 /**
  * Signature Studio — shell.
@@ -36,6 +42,14 @@ const STEP_LABEL: Record<Step, string> = {
 export default function SignatureStudio() {
   const [openDoor, setOpenDoor] = useState<DoorId | null>(null);
   const [step, setStep] = useState<Step>("doors");
+  const [family, setFamily] = useState<FamilyEntry | null>(null);
+  const [lang, setLang] = useState<Lang>("en");
+  const [mood, setMood] = useState<Mood>("oxblood");
+  const [fields, setFields] = useState<EditorFields>({
+    name: "", title: "", line1: "", line2: "", meta: "",
+  });
+  const [photoUrl, setPhotoUrl] = useState<string | undefined>(undefined);
+  const live = useLiveData();
   const doorRefs = useRef<Record<DoorId, HTMLDivElement | null>>({
     me: null, photo: null, words: null,
   });
@@ -48,15 +62,36 @@ export default function SignatureStudio() {
   const closeAll = useCallback(() => {
     setOpenDoor(null);
     setStep("doors");
+    setFamily(null);
   }, []);
+
+  const selectFamily = useCallback((fam: FamilyEntry) => {
+    setFamily(fam);
+    const d = defaultsFor(fam.id, live);
+    setFields({
+      name: d.name,
+      title: d.title,
+      line1: d.lines[0] || "",
+      line2: d.lines[1] || "",
+      meta: d.meta,
+    });
+    setStep("editor");
+  }, [live]);
+
+  const stepBack = useCallback(() => {
+    if (step === "publish") setStep("preview");
+    else if (step === "preview") setStep("editor");
+    else if (step === "editor") setStep("filmstrip");
+    else if (step === "filmstrip") { setOpenDoor(null); setStep("doors"); setFamily(null); }
+  }, [step]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeAll();
+      if (e.key === "Escape") stepBack();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [closeAll]);
+  }, [stepBack]);
 
   return (
     <div
@@ -176,29 +211,41 @@ export default function SignatureStudio() {
             />
           ))}
         </section>
+      ) : step === "filmstrip" ? (
+        <FilmStrip
+          door={openDoor}
+          lang={lang}
+          mood={mood}
+          live={live}
+          onSelect={selectFamily}
+          onBack={() => { setOpenDoor(null); setStep("doors"); setFamily(null); }}
+        />
+      ) : step === "editor" && family ? (
+        <Editor
+          family={family}
+          lang={lang}
+          mood={mood}
+          fields={fields}
+          photoUrl={photoUrl}
+          onLang={setLang}
+          onMood={setMood}
+          onFields={setFields}
+          onPhoto={setPhotoUrl}
+          onBack={() => setStep("filmstrip")}
+          onContinue={() => setStep("preview")}
+        />
+      ) : step === "preview" && family ? (
+        <Preview
+          family={family}
+          lang={lang}
+          mood={mood}
+          fields={fields}
+          photoUrl={photoUrl}
+          onBack={() => setStep("editor")}
+          onContinue={() => setStep("publish")}
+        />
       ) : (
-        <StepPlaceholder step={step} onBack={closeAll} doorId={openDoor} />
-      )}
-
-      {openDoor && step === "filmstrip" && (
-        <div style={{ maxWidth: 1120, margin: "24px auto 0", textAlign: "center" }}>
-          <button
-            onClick={closeAll}
-            style={{
-              background: "transparent",
-              color: "var(--ink-2)",
-              border: "1px solid var(--rule)",
-              padding: "10px 22px",
-              fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
-              fontSize: 10,
-              letterSpacing: "0.24em",
-              textTransform: "uppercase",
-              cursor: "pointer",
-            }}
-          >
-            ← Back to doors
-          </button>
-        </div>
+        <StepPlaceholder step={step} onBack={() => setStep("preview")} doorId={openDoor} />
       )}
     </div>
   );
