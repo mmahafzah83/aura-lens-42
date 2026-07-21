@@ -413,79 +413,24 @@ function DoorCard({ door, isOpen, onOpen, onClose, refCb }: DoorCardProps) {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Step placeholder                                                           */
-/* -------------------------------------------------------------------------- */
-
-function StepPlaceholder({
-  step,
-  onBack,
-  doorId,
-}: {
-  step: Step;
-  onBack: () => void;
-  doorId: DoorId;
-}) {
-  return (
-    <section
-      style={{
-        maxWidth: 900,
-        margin: "0 auto",
-        background: "var(--paper)",
-        border: "1px solid var(--rule)",
-        padding: 40,
-        textAlign: "center",
-      }}
-    >
-      <div
-        style={{
-          fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
-          fontSize: 10,
-          letterSpacing: "0.24em",
-          textTransform: "uppercase",
-          color: "var(--spot)",
-        }}
-      >
-        {STEP_LABEL[step]} — placeholder
-      </div>
-      <h2
-        style={{
-          margin: "12px 0",
-          fontFamily: "'Newsreader', serif",
-          fontStyle: "italic",
-          fontSize: 28,
-          color: "var(--ink)",
-        }}
-      >
-        Coming next
-      </h2>
-      <p style={{ color: "var(--ink-2)", margin: "0 0 20px" }}>
-        You opened <em>{doorId}</em>. The {step} panel will live here.
-      </p>
-      <button
-        onClick={onBack}
-        style={{
-          background: "transparent",
-          color: "var(--ink)",
-          border: "1px solid var(--spot)",
-          padding: "10px 22px",
-          fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
-          fontSize: 10,
-          letterSpacing: "0.24em",
-          textTransform: "uppercase",
-          cursor: "pointer",
-        }}
-      >
-        ← Back
-      </button>
-    </section>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
 /* CSS — 3D doors, mobile stack, reduced motion                               */
 /* -------------------------------------------------------------------------- */
 
 const CSS_3D = `
+.sig-step-anim { animation: sigStepInFwd 280ms cubic-bezier(.22,1,.36,1) both; }
+.sig-step-anim.sig-step-back { animation-name: sigStepInBack; }
+@keyframes sigStepInFwd {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes sigStepInBack {
+  from { opacity: 0; transform: translateX(-24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sig-step-anim { animation: none !important; }
+}
+
 .sig-door-frame {
   position: relative;
   aspect-ratio: 3 / 4;
