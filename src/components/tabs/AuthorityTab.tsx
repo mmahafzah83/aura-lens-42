@@ -3959,6 +3959,23 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
                       {firstNonEmptyLine(p.post_text) || "Untitled draft"}
                     </span>
                     <span className="shrink-0 flex items-center" style={{ gap: 6 }}>
+                      {(p.source_metadata as any)?.ghost_draft === true || String((p.source_metadata as any)?.ghost_draft) === "true" ? (
+                        <span
+                          style={{
+                            fontFamily: "var(--font-mono, 'IBM Plex Mono', ui-monospace, monospace)",
+                            fontSize: 9,
+                            letterSpacing: "0.18em",
+                            textTransform: "uppercase",
+                            color: "#36C5B0",
+                            background: "#131009",
+                            border: "1px solid rgba(54,197,176,0.4)",
+                            padding: "2px 6px",
+                            borderRadius: 999,
+                          }}
+                        >
+                          THE OVERNIGHT
+                        </span>
+                      ) : null}
                       <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 6px", borderRadius: 999, backgroundColor: "var(--paper-2)", color: "var(--ink-3)", textTransform: "uppercase" }}>
                         {lang === "ar" ? "AR" : "EN"}
                       </span>
