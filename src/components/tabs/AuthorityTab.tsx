@@ -4421,7 +4421,7 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
         })}
       </div>
 
-      {activeTab === "create" && <CreateTab planPrefill={planPrefill} signalPrefill={effectiveSignalPrefill} onSignalPrefillConsumed={handleSignalPrefillConsumed} draftPrefill={draftPrefill} onDraftPrefillConsumed={onDraftPrefillConsumed} />}
+      {activeTab === "create" && <CreateTab planPrefill={planPrefill} signalPrefill={effectiveSignalPrefill} onSignalPrefillConsumed={handleSignalPrefillConsumed} draftPrefill={draftPrefill} onDraftPrefillConsumed={onDraftPrefillConsumed} onGoToLibrary={() => setActiveTab("library")} />}
       {activeTab === "plan" && <PlanTab onGenerateFromPlan={handleGenerateFromPlan} />}
       {activeTab === "library" && <LibraryTab onSwitchToCreate={() => setActiveTab("create")} onOpenDraft={onOpenDraft} onWriteFromPost={(prefill) => { setLibraryPrefill(prefill); setActiveTab("create"); }} />}
     </div>
