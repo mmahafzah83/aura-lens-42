@@ -207,22 +207,15 @@ export default function Publish({
 
   return (
     <section style={{ maxWidth: 1240, margin: "0 auto" }}>
+      <style>{PUBLISH_CSS}</style>
       <div style={topRow}>
-        <button onClick={onBack} style={backBtn}>← Preview</button>
-        <div style={crumb}>{family.label} · publish</div>
+        <button onClick={onBack} style={backBtn}>← Back</button>
+        <div style={crumb}>{family.label} · share</div>
         <span style={{ width: 84 }} />
       </div>
 
-      <div style={grid}>
-        <div style={stage}>
-          <div style={{ width: "100%", maxWidth: 560 }}>
-            <C lang={lang} mood={mood} photoUrl={photoUrl}
-               name={fields.name} title={fields.title}
-               lines={[fields.line1, fields.line2]} meta={fields.meta} />
-          </div>
-        </div>
-
-        <div style={panel}>
+      <div className="sig-publish-grid">
+        <div className="sig-publish-panel">
           {publishedUrl !== null ? (
             <div style={successBox}>
               <div style={successKicker}>Published</div>
@@ -283,6 +276,14 @@ export default function Publish({
             </>
           )}
         </div>
+
+        <div className="sig-publish-stage">
+          <div className="sig-publish-inner">
+            <C lang={lang} mood={mood} photoUrl={photoUrl}
+               name={fields.name} title={fields.title}
+               lines={[fields.line1, fields.line2]} meta={fields.meta} />
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -290,7 +291,7 @@ export default function Publish({
 
 /* -------- styles (System-A tokens only) -------- */
 
-const topRow: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 };
+const topRow: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 };
 const crumb: React.CSSProperties = {
   fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
   fontSize: 10, letterSpacing: "0.24em", textTransform: "uppercase",
@@ -358,3 +359,34 @@ const successTitle: React.CSSProperties = {
 const successBody: React.CSSProperties = {
   margin: 0, fontFamily: "'Newsreader', serif", fontSize: 14.5, color: "var(--ink-2)",
 };
+
+const PUBLISH_CSS = `
+.sig-publish-grid {
+  display: grid; gap: 22px;
+  grid-template-columns: minmax(360px, 420px) minmax(0, 1fr);
+  align-items: start;
+}
+.sig-publish-panel {
+  background: var(--paper); border: 1px solid var(--rule);
+  padding: 16px; display: flex; flex-direction: column; gap: 12px;
+}
+.sig-publish-stage {
+  position: sticky; top: 16px;
+  background: var(--paper); border: 1px solid var(--rule);
+  padding: 16px; display: flex; align-items: center; justify-content: center;
+  max-height: 62vh;
+}
+.sig-publish-inner {
+  display: flex; align-items: center; justify-content: center;
+  max-height: calc(62vh - 32px);
+}
+.sig-publish-inner > svg {
+  max-height: calc(62vh - 32px);
+  width: auto !important; height: auto; max-width: 100%;
+}
+@media (max-width: 900px) {
+  .sig-publish-grid { grid-template-columns: 1fr; }
+  .sig-publish-stage { position: sticky; top: 8px; max-height: 40vh; order: -1; }
+  .sig-publish-inner > svg { max-height: calc(40vh - 32px); }
+}
+`;
