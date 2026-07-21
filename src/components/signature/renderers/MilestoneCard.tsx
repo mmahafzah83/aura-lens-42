@@ -32,10 +32,23 @@ export default function MilestoneCard(props: RendererProps & { square?: boolean 
         <text x={cx} y={cy + r * 0.5} fill={accent} fontFamily={MONO} fontSize="20" letterSpacing="0.32em" textAnchor="middle" direction={ar ? "rtl" : "ltr"}>{insideLabel.toUpperCase()}</text>
       )}
       <TextBlock lines={messageFit.lines} x={cx} y={cy + r + 90} lineHeight={messageFit.lineHeight} fill={T.paper} fontFamily={ar ? "Cairo" : SERIF} fontSize={messageFit.size} fontStyle={ar ? "normal" : "italic"} fontWeight={500} anchor="middle" lang={lang} />
-      <text x={xS} y={g.SAFE_Y1 - 44} fill={T.paper} fontFamily={MONO} fontSize="22" letterSpacing="0.24em" textAnchor={anchor} direction={ar ? "rtl" : "ltr"}>{name.toUpperCase()}</text>
-      {meta && (
-        <text x={xS} y={g.SAFE_Y1 - 14} fill={T.paperFaint} fontFamily={MONO} fontSize="15" letterSpacing="0.28em" textAnchor={anchor} direction={ar ? "rtl" : "ltr"}>{meta.toUpperCase()}</text>
-      )}
+      {(() => {
+        const nameFit = fitText(name.toUpperCase(), {
+          font: { family: "IBM Plex Mono", weight: 600 },
+          maxWidth: g.QUOTE_MEASURE,
+          minSize: 14, maxSize: 22, maxLines: 1, lineHeightRatio: 1.2,
+        });
+        return <text x={xS} y={g.SAFE_Y1 - 44} fill={T.paper} fontFamily={MONO} fontSize={nameFit.size} letterSpacing="0.24em" textAnchor={anchor} direction={ar ? "rtl" : "ltr"}>{nameFit.lines[0] || name.toUpperCase()}</text>;
+      })()}
+      {meta && (() => {
+        const cap = meta.toUpperCase();
+        const capFit = fitText(cap, {
+          font: { family: "IBM Plex Mono", weight: 400 },
+          maxWidth: g.QUOTE_MEASURE,
+          minSize: 10, maxSize: 15, maxLines: 1, lineHeightRatio: 1.2,
+        });
+        return <text x={xS} y={g.SAFE_Y1 - 14} fill={T.paperFaint} fontFamily={MONO} fontSize={capFit.size} letterSpacing="0.28em" textAnchor={anchor} direction={ar ? "rtl" : "ltr"}>{capFit.lines[0] || cap}</text>;
+      })()}
       <AuraMark lang={lang} color={T.paperFaint} geom={g} />
     </SvgRoot>
   );

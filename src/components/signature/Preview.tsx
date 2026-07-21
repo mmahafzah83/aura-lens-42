@@ -4,6 +4,7 @@ import type { FamilyEntry } from "./renderers";
 import type { Lang, Mood } from "./renderers/shared";
 import type { EditorFields } from "./Editor";
 import { logSignatureEvent } from "./logEvent";
+import { photoUrlToDataUrl } from "./photoToDataUrl";
 import {
   FONT_IMPORT_CSS,
   downloadBlob,
@@ -29,6 +30,7 @@ async function renderToBlob(
 ): Promise<Blob> {
   const w = 1080;
   const h = square ? 1080 : 1350;
+  const embeddedPhoto = await photoUrlToDataUrl(photoUrl);
   const host = document.createElement("div");
   host.style.cssText = "position:absolute;left:-99999px;top:0;width:1080px;height:auto;";
   document.body.appendChild(host);
@@ -38,7 +40,7 @@ async function renderToBlob(
     const C = family.component;
     await new Promise<void>((resolve) => {
       root.render(
-        <C lang={lang} mood={mood} photoUrl={photoUrl}
+        <C lang={lang} mood={mood} photoUrl={embeddedPhoto}
            name={fields.name} title={fields.title}
            lines={[fields.line1, fields.line2]} meta={fields.meta}
            square={square} />,
