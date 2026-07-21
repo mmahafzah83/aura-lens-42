@@ -46,6 +46,7 @@ const OurStory = lazy(() => import("./pages/OurStory"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 const CardPreview = lazy(() => import("./pages/CardPreview"));
 const GuideThoughtLeadershipStrategy = lazy(() => import("./pages/GuideThoughtLeadershipStrategy"));
+const SignatureStudio = lazy(() => import("./pages/SignatureStudio"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -129,6 +130,7 @@ const App = () => (
             <Route path="/edition" element={<PasswordGate><EditionStudio /></PasswordGate>} />
             <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             <Route path="/card-preview" element={<PasswordGate><CardPreview /></PasswordGate>} />
+            <Route path="/signature" element={<PasswordGate><SignatureStudio /></PasswordGate>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>
