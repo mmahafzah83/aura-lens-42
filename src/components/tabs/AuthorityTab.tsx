@@ -962,15 +962,17 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
           toast.success("Draft updated in Library");
         }
       } else {
-        const { error } = await supabase.from("content_items").insert({
+        const { data: inserted, error } = await supabase.from("content_items").insert({
           user_id: session.user.id,
           type: mappedType,
           body,
           language: lang,
           status: "draft",
           generation_params: generationParams,
-        });
+        }).select("id").single();
         if (error) throw error;
+        // Step 2: adopt the freshly-saved draft so a later publish promotes THIS row, not a new twin
+        if (inserted?.id) { setEditingDraftId(inserted.id); setEditingSource("content_items"); }
         setMonthlyGenerationCount(prev => prev + 1);
         setDraftSaved(true);
         toast.success("Draft saved to Library");
@@ -1054,6 +1056,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
             format_type: (contentType as string) === "carousel" ? "carousel" : "post",
             tracking_status: "draft",
             source_type: "aura_generated",
+            authorship: "aura_drafted",
             source_signal_id: selectedSignalId || null,
             framework_type: framework !== "auto" ? framework : null,
             source_metadata: {
@@ -1081,6 +1084,10 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
       setPublishedFromCreate(true);
       setConfirmLiveOpen(false);
       setAttachedImageUrl(null);
+      // Step 2: retire the source content_items draft twin so it can't linger as a duplicate
+      if (editingDraftId && editingSource === "content_items") {
+        await supabase.from("content_items").update({ status: "published" }).eq("id", editingDraftId);
+      }
       // The linkedin-publish edge function returns the LinkedIn URL as `postUrl`
       // (which it also writes to linkedin_posts.post_url). We read it straight
       // from that response — no hardcoded string.
