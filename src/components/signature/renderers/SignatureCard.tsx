@@ -57,6 +57,7 @@ export default function SignatureCard(props: RendererProps & { square?: boolean 
   return (
     <SvgRoot ariaLabel={`Signature card for ${name}`} geom={g}>
       <rect x="0" y="0" width={g.W} height={g.H} fill={T.paper} />
+      <rect x={g.SAFE_X0} y={g.SAFE_Y0 - 12} width={g.SAFE_X1 - g.SAFE_X0} height="3" fill={accent} />
       <defs>
         <clipPath id={clipId}>
           <rect x={g.SAFE_X0} y={photoY} width={g.SAFE_X1 - g.SAFE_X0} height={photoH} />
@@ -67,7 +68,7 @@ export default function SignatureCard(props: RendererProps & { square?: boolean 
       ) : (
         <PhotoPlaceholder x={g.SAFE_X0} y={photoY} w={g.SAFE_X1 - g.SAFE_X0} h={photoH} tone="paper" />
       )}
-      <line x1={g.SAFE_X0} y1={photoY + photoH + 14} x2={g.SAFE_X1} y2={photoY + photoH + 14} stroke={T.rule} strokeWidth="1" />
+      <line x1={g.SAFE_X0} y1={photoY + photoH + 14} x2={g.SAFE_X1} y2={photoY + photoH + 14} stroke={accent} strokeWidth="2" opacity="0.7" />
       {line1 && (
         <TextBlock lines={line1Fit.lines} x={xS} y={line1Y} lineHeight={line1Fit.lineHeight}
           fill={T.ink} fontFamily={ar ? "Cairo" : SERIF} fontSize={line1Fit.size}
