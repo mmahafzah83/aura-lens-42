@@ -376,6 +376,11 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   const [editingSource, setEditingSource] = useState<"content_items" | "linkedin_posts">("content_items");
   const [isEditingBody, setIsEditingBody] = useState(false);
+  const [ghostMeta, setGhostMeta] = useState<{
+    finding_source: string | null;
+    finding_url: string | null;
+    finding_implication: string | null;
+  } | null>(null);
   const [generating, setGenerating] = useState(false);
   const [showSlowHint, setShowSlowHint] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -647,6 +652,27 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
         "post";
       setEditingDraftId(draftPrefill.id);
       setEditingSource(draftPrefill._source === "linkedin_posts" ? "linkedin_posts" : "content_items");
+      // Detect Overnight ghost draft to render provenance strip above editor.
+      setGhostMeta(null);
+      if (draftPrefill._source === "linkedin_posts") {
+        (async () => {
+          try {
+            const { data } = await supabase
+              .from("linkedin_posts")
+              .select("source_metadata")
+              .eq("id", draftPrefill.id)
+              .maybeSingle();
+            const meta: any = (data as any)?.source_metadata || {};
+            if (meta?.ghost_draft === true || String(meta?.ghost_draft) === "true") {
+              setGhostMeta({
+                finding_source: meta.finding_source ?? null,
+                finding_url: meta.finding_url ?? null,
+                finding_implication: meta.finding_implication ?? null,
+              });
+            }
+          } catch { /* silent — strip just won't render */ }
+        })();
+      }
       setTopic(draftPrefill.topic || "");
       setContext("");
       setContentType(mappedType);
@@ -1038,6 +1064,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
     setShowingShort(false);
     setEditingDraftId(null);
     setEditingSource("content_items");
+    setGhostMeta(null);
     setSelectedSignalId(null);
     setSelectedSignalTitle(null);
     setTopic("");
