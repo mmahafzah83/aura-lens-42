@@ -1,6 +1,8 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import type { FamilyEntry } from "./renderers";
 import type { Lang, Mood } from "./renderers/shared";
+import { useSuggestions, type Suggestion } from "./useSuggestions";
+import { logSignatureEvent } from "./logEvent";
 
 export interface EditorFields {
   name: string;
@@ -55,6 +57,47 @@ export default function Editor({
   const usesLine2 = family.id === "signature";
 
   const C = family.component;
+  const { suggestions, loading: suggestLoading } = useSuggestions(family, lang);
+
+  // Debounced 'edited' event: fires ONCE per picked-then-edited session.
+  const pickedRef = useRef<{ fields: EditorFields; suggestion: Suggestion } | null>(null);
+  const editedFiredRef = useRef(false);
+  const editTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!pickedRef.current || editedFiredRef.current) return;
+    if (editTimerRef.current) window.clearTimeout(editTimerRef.current);
+    editTimerRef.current = window.setTimeout(() => {
+      if (!pickedRef.current || editedFiredRef.current) return;
+      const before = pickedRef.current.fields;
+      // Only log if something actually changed vs the picked snapshot.
+      const changed = (Object.keys(before) as (keyof EditorFields)[])
+        .some((k) => before[k] !== fields[k]);
+      if (!changed) return;
+      editedFiredRef.current = true;
+      void logSignatureEvent("edited", family.id, lang, {
+        before,
+        after: fields,
+        suggestion: pickedRef.current.suggestion,
+      });
+    }, 900);
+    return () => {
+      if (editTimerRef.current) window.clearTimeout(editTimerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fields.name, fields.title, fields.line1, fields.line2, fields.meta]);
+
+  const pickSuggestion = (s: Suggestion) => {
+    const next: EditorFields = {
+      ...fields,
+      line1: s.lines[0] || fields.line1,
+      line2: s.lines[1] ?? (usesLine2 ? fields.line2 : ""),
+    };
+    pickedRef.current = { fields: next, suggestion: s };
+    editedFiredRef.current = false;
+    onFields(next);
+    void logSignatureEvent("picked", family.id, lang, { suggestion: s });
+  };
 
   const set = useCallback((key: keyof EditorFields, v: string) => {
     onFields({ ...fields, [key]: v });
@@ -90,6 +133,31 @@ export default function Editor({
         </div>
 
         <div style={panel}>
+          <div style={suggestWrap}>
+            <div style={fieldLabel}>
+              Suggestions {suggestLoading && <span style={thinkingDot}>· thinking…</span>}
+            </div>
+            {suggestions.length === 0 && !suggestLoading && (
+              <div style={suggestEmpty}>No AI suggestions yet — defaults below are ready to edit.</div>
+            )}
+            <div style={suggestList}>
+              {suggestions.map((s, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => pickSuggestion(s)}
+                  style={suggestCard}
+                  title={`Fill from ${s.source}`}
+                >
+                  <span style={suggestSource}>{s.source}</span>
+                  <span style={suggestLines}>
+                    {s.lines.map((l, j) => <span key={j} style={{ display: "block" }}>{l}</span>)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {usesPhoto && (
             <Field label="Photo">
               <input ref={fileRef} type="file" accept="image/*" onChange={onPick} style={fileInput} />
@@ -254,4 +322,34 @@ const primaryBtn: React.CSSProperties = {
 const secondaryBtn: React.CSSProperties = {
   ...backBtn,
   marginTop: 8,
+};
+const suggestWrap: React.CSSProperties = {
+  display: "flex", flexDirection: "column", gap: 8,
+  paddingBottom: 12, borderBottom: "1px solid var(--rule)",
+};
+const suggestList: React.CSSProperties = { display: "flex", flexDirection: "column", gap: 6 };
+const suggestCard: React.CSSProperties = {
+  textAlign: "left" as const,
+  background: "var(--paper-3, var(--paper-2))",
+  border: "1px solid var(--rule)",
+  padding: "10px 12px",
+  cursor: "pointer",
+  display: "flex", flexDirection: "column", gap: 4,
+  color: "var(--ink)",
+};
+const suggestSource: React.CSSProperties = {
+  fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+  fontSize: 9, letterSpacing: "0.22em", textTransform: "uppercase",
+  color: "var(--spot)",
+};
+const suggestLines: React.CSSProperties = {
+  fontFamily: "'Newsreader', serif", fontSize: 14, lineHeight: 1.35,
+};
+const suggestEmpty: React.CSSProperties = {
+  fontFamily: "'Newsreader', serif", fontSize: 13, color: "var(--ink-3)",
+  fontStyle: "italic",
+};
+const thinkingDot: React.CSSProperties = {
+  color: "var(--ink-3)", fontStyle: "italic", textTransform: "none",
+  letterSpacing: 0, marginLeft: 6,
 };
