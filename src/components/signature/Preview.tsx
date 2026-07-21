@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import type { FamilyEntry } from "./renderers";
 import type { Lang, Mood } from "./renderers/shared";
 import type { EditorFields } from "./Editor";
+import { logSignatureEvent } from "./logEvent";
 import {
   FONT_IMPORT_CSS,
   downloadBlob,
@@ -76,6 +77,7 @@ export default function Preview({ family, lang, mood, fields, photoUrl, onBack, 
       const dim = square ? "1080x1080" : "1080x1350";
       downloadBlob(blob, `signature-${family.id}-${slugify(fields.name || "card")}-${dim}.png`);
       toast.success(`Exported ${dim}`);
+      void logSignatureEvent("exported", family.id, lang, { family: family.id, lang, mood, dim });
     } catch (e: any) {
       console.error(e);
       toast.error(e?.message || "Export failed");
