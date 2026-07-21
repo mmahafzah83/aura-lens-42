@@ -23,6 +23,7 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 
+  let postId: string | undefined;
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return json({ error: "Unauthorized" }, 401);
@@ -33,7 +34,7 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
     const { data: { user }, error: userError } = await userClient.auth.getUser();
     if (userError || !user) return json({ error: "Unauthorized" }, 401);
 
-    const { postId } = await req.json().catch(() => ({}));
+    ({ postId } = await req.json().catch(() => ({})));
     if (!postId) return json({ error: "Missing postId" }, 400);
 
     const adminClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -56,6 +57,17 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
 
     if (postErr || !post) return json({ error: "Post not found" }, 404);
     if (post.published_confirmed_at) return json({ success: false, error: "Already published" });
+
+    const { data: claimed, error: claimErr } = await adminClient
+      .from("linkedin_posts")
+      .update({ tracking_status: "publishing" })
+      .eq("id", postId).eq("user_id", user.id)
+      .is("published_confirmed_at", null)
+      .neq("tracking_status", "publishing")
+      .select("id");
+    if (claimErr) return json({ success: false, error: "Could not lock post for publishing" });
+    if (!claimed || claimed.length === 0)
+      return json({ success: false, error: "This post is already publishing or published." });
 
     const postText: string = post.post_text ?? "";
     if (!postText.trim()) return json({ error: "Empty post_text" }, 400);
@@ -201,6 +213,8 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
           published_at: now,
           published_confirmed_at: now,
           tracking_status: "published",
+          authorship: "aura_drafted",
+          acquisition: "published_via_aura",
         })
         .eq("id", postId)
         .eq("user_id", user.id);
@@ -225,6 +239,7 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
           },
         });
       } catch (e) { console.error("post-publish 401 diagnostics failed:", e); }
+      await adminClient.from("linkedin_posts").update({ tracking_status: "draft" }).eq("id", postId).eq("user_id", user.id);
       return json({ success: false, error: "LinkedIn connection expired — reconnect in Settings" });
     }
 
@@ -244,9 +259,16 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
         },
       });
     } catch (e) { console.error("post-publish non-201 diagnostics failed:", e); }
+    await adminClient.from("linkedin_posts").update({ tracking_status: "draft" }).eq("id", postId).eq("user_id", user.id);
     return json({ success: false, error: "LinkedIn rejected the post", status: liRes.status, detail });
   } catch (err) {
     console.error("linkedin-publish error:", err);
+    if (typeof postId === "string") {
+      try {
+        const adminClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+        await adminClient.from("linkedin_posts").update({ tracking_status: "needs_review" }).eq("id", postId);
+      } catch {}
+    }
     return json({ error: err instanceof Error ? err.message : String(err) }, 500);
   }
 }));
