@@ -14,14 +14,15 @@ interface Door {
   id: DoorId;
   title: string;
   plate: string;
+  desc: string;
   variant: "cover" | "frame" | "line";
   delayMs: number;
 }
 
 const DOORS: Door[] = [
-  { id: "me", title: "Me", plate: "Cover · Signature", variant: "cover", delayMs: 0 },
-  { id: "photo", title: "A photo", plate: "The Frame", variant: "frame", delayMs: 110 },
-  { id: "words", title: "Just words", plate: "The Line", variant: "line", delayMs: 220 },
+  { id: "me", title: "Me", plate: "Cover · Signature", desc: "A card about you — your name, your title, your standing.", variant: "cover", delayMs: 0 },
+  { id: "photo", title: "A photo", plate: "The Frame", desc: "Any picture you have — Aura adds one sharp line.", variant: "frame", delayMs: 110 },
+  { id: "words", title: "Just words", plate: "The Line", desc: "No photo. Your line, framed.", variant: "line", delayMs: 220 },
 ];
 
 const STEP_LABEL: Record<Step, string> = {
@@ -247,7 +248,10 @@ function DoorCard({ door, isOpen, onOpen, onClose, refCb }: DoorCardProps) {
       <div className="sig-door-leaf">
         <div className="sig-door-leaf-face">
           <div className="sig-door-plate">{door.plate}</div>
+        <div>
           <div className="sig-door-title">{door.title}</div>
+          <div className="sig-door-desc">{door.desc}</div>
+        </div>
           <div className="sig-door-handle" aria-hidden />
         </div>
         <div className="sig-door-light" aria-hidden />
@@ -416,6 +420,15 @@ const CSS_3D = `
   letter-spacing: -0.02em;
   color: var(--ink);
   line-height: 1.05;
+}
+.sig-door-desc {
+  font-family: 'Newsreader', serif;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  max-width: 90%;
+  margin-top: 8px;
+  padding-right: 26px;
 }
 .sig-door-handle {
   position: absolute;
