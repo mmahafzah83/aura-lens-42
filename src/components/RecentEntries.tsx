@@ -305,7 +305,7 @@ const RecentEntries = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: (
                           marginTop: 2,
                         }}
                       >
-                        Aura found this for you
+                        THE OVERNIGHT · FOUND FOR YOU
                       </div>
                     )}
                     <div className="flex items-center gap-2 pt-0.5 flex-wrap">
