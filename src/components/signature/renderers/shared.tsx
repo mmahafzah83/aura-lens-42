@@ -84,11 +84,16 @@ export function isAr(lang: Lang): boolean {
   return lang === "ar";
 }
 
-export function anchorStart(lang: Lang): "start" | "end" {
-  return isAr(lang) ? "end" : "start";
+// Under `direction=rtl` (which we always set for Arabic), SVG `text-anchor`
+// follows the inline progression direction: "start" already means the
+// right visual edge in RTL. So the inline-start anchor is "start" for both
+// LTR and RTL — we just pair it with the correct x (SAFE_X0 for LTR,
+// SAFE_X1 for RTL).
+export function anchorStart(_lang: Lang): "start" | "end" {
+  return "start";
 }
-export function anchorEnd(lang: Lang): "start" | "end" {
-  return isAr(lang) ? "start" : "end";
+export function anchorEnd(_lang: Lang): "start" | "end" {
+  return "end";
 }
 /** X of the inline-start edge inside the safe zone. */
 export function xStart(lang: Lang, g: Geometry): number {
@@ -101,9 +106,24 @@ export function xEnd(lang: Lang, g: Geometry): number {
 
 export const DEFAULT_SVG_STYLE: CSSProperties = {
   display: "block",
-  width: "100%",
+  width: "auto",
   height: "auto",
+  maxWidth: "100%",
+  maxHeight: "100%",
 };
+
+/**
+ * Mood wash colour (very low-alpha rgba) for tinting dark card backgrounds
+ * so oxblood / teal / amber produce visibly different cards.
+ */
+export function moodWashRGBA(m: Mood, alpha = 0.09): string {
+  // literal RGB triplets for the three mood hexes
+  const rgb =
+    m === "oxblood" ? "110,42,38" :
+    m === "teal"    ? "54,197,176" :
+                      "214,167,72";
+  return `rgba(${rgb},${alpha})`;
+}
 
 export interface SvgRootProps {
   children: React.ReactNode;

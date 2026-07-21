@@ -47,6 +47,7 @@ const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 const CardPreview = lazy(() => import("./pages/CardPreview"));
 const GuideThoughtLeadershipStrategy = lazy(() => import("./pages/GuideThoughtLeadershipStrategy"));
 const SignatureStudio = lazy(() => import("./pages/SignatureStudio"));
+const SignatureHarness = lazy(() => import("./pages/SignatureHarness"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -131,6 +132,7 @@ const App = () => (
             <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             <Route path="/card-preview" element={<PasswordGate><CardPreview /></PasswordGate>} />
             <Route path="/signature" element={<PasswordGate><SignatureStudio /></PasswordGate>} />
+            <Route path="/signature-harness" element={<SignatureHarness />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>

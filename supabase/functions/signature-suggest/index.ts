@@ -79,7 +79,7 @@ function sanitizeSuggestions(raw: unknown, family: Family, lang: Lang): Suggesti
   return clean;
 }
 
-function buildSystemPrompt(family: Family, lang: Lang): string {
+function buildSystemPrompt(family: Family, lang: Lang, prefer?: string[], nonce?: number): string {
   const target = (family === "frame" || family === "line")
     ? "ONE sharp insight sentence drawn from the user's signals, placed in lines[0] only"
     : "two descriptor lines about the person — specific, commercial, dignified";
@@ -89,17 +89,26 @@ function buildSystemPrompt(family: Family, lang: Lang): string {
     ? "Language: Arabic ONLY. Contemporary professional GCC register. No dialect. NO English words inside Arabic lines. No transliteration."
     : "Language: English ONLY.";
 
+  const preferLine = (Array.isArray(prefer) && prefer.length)
+    ? `Source bias: emphasise suggestions drawn from these sources — ${prefer.join(", ")}. Try to include at least one from each requested source; skip other sources unless nothing else fits.`
+    : "";
+  const nonceLine = nonce
+    ? `Variation seed: ${nonce}. Produce a genuinely different set from previous calls with this seed differing — different angles, different phrasings, not paraphrases.`
+    : "";
+
   return [
     "You write signature card copy for a senior professional's own visual card.",
     `Family: ${family}. Target: ${target}.`,
     langRule,
+    preferLine,
+    nonceLine,
     `Hard limits: max 2 lines per suggestion (frame/line: 1 line). Max ${wordCap} per line.`,
     "Never use these words in any language: authority (as a noun), thought leader, personal brand, leverage, elevate, unlock, empower, seamless, game-changer, delve, journey.",
     "No emojis. No hashtags. No exclamation marks. No quotation marks around the whole line.",
     "Return STRICT JSON only, no prose, no code fences:",
     `{"suggestions":[{"lines":["..."],"source":"profile|signal|voice"}, ...]}`,
     "Exactly 3 suggestions, ranked best-first.",
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 }
 
 function buildUserPrompt(ctx: {
@@ -160,6 +169,10 @@ Deno.serve(async (req) => {
     const mode = (body?.mode === "caption") ? "caption" : "suggest";
     const family = (["cover", "signature", "frame", "line"].includes(body?.family) ? body.family : "cover") as Family;
     const lang = (body?.lang === "ar" ? "ar" : "en") as Lang;
+    const prefer: string[] = Array.isArray(body?.prefer)
+      ? body.prefer.filter((s: any) => ["profile","signal","voice"].includes(s)).slice(0, 3)
+      : [];
+    const nonce: number | undefined = typeof body?.nonce === "number" ? body.nonce : undefined;
     const cardLines: string[] = Array.isArray(body?.cardLines)
       ? body.cardLines.map((s: any) => String(s || "").slice(0, 240)).filter(Boolean).slice(0, 4)
       : [];
@@ -256,7 +269,7 @@ Deno.serve(async (req) => {
     }
     // ── /CAPTION MODE ────────────────────────────────────────────────────
 
-    const system = buildSystemPrompt(family, lang);
+    const system = buildSystemPrompt(family, lang, prefer, nonce);
     const user = buildUserPrompt({
       family, lang,
       profile: profileRes.data,
@@ -278,6 +291,7 @@ Deno.serve(async (req) => {
           { role: "user", content: user },
         ],
         response_format: { type: "json_object" },
+        temperature: nonce ? 1.0 : 0.7,
       }),
     });
 
