@@ -3346,6 +3346,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
   };
 
   const markPublished = async (id: string, url?: string) => {
+    void 0;
     const trimmedUrl = url ? url.trim() : undefined;
     const item = drafts.find(p => p.id === id);
     if (!item) return;
