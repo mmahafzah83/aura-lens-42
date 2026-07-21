@@ -3710,6 +3710,82 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
         </div>
       </div>
 
+      {needsReview.length > 0 && (
+        <div>
+          <div
+            className="flex items-center gap-2.5 w-full text-left"
+            style={{ borderLeft: "2px solid var(--action, #D6A748)", paddingLeft: 12, marginBottom: 12 }}
+          >
+            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <h3 style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--action, #D6A748)", margin: 0 }}>
+                Needs review
+              </h3>
+              <span style={{ fontFamily: "var(--font-display, var(--font-serif))", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", lineHeight: 1.4 }}>
+                We couldn't confirm these reached LinkedIn. Check your feed before reposting — don't blind-retry.
+              </span>
+            </div>
+            <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--paper-2)", color: "var(--action, #D6A748)" }}>
+              {needsReview.length}
+            </span>
+          </div>
+          <div style={{ display: "grid", gap: 12 }}>
+            {needsReview.map((row) => {
+              const text = row.post_text || "";
+              const rtl = isArabicText(text);
+              return (
+                <div
+                  key={row.id}
+                  style={{
+                    border: "1px solid var(--paper-2)",
+                    borderLeft: "2px solid var(--action, #D6A748)",
+                    padding: 14,
+                    background: "var(--paper)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 10,
+                  }}
+                >
+                  <div
+                    dir={rtl ? "rtl" : "ltr"}
+                    style={{
+                      fontSize: 14,
+                      lineHeight: 1.5,
+                      color: "var(--ink-1)",
+                      whiteSpace: "pre-wrap",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 4,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                      textAlign: rtl ? "right" : "left",
+                    }}
+                  >
+                    {text || <span style={{ fontStyle: "italic", color: "var(--ink-3)" }}>(no text)</span>}
+                  </div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      onClick={() => resolveNeedsReviewLive(row.id)}
+                      className="inline-flex items-center gap-1 text-xs font-semibold hover:underline"
+                      style={{ color: "var(--brand)", background: "transparent", border: 0, cursor: "pointer", padding: "4px 0" }}
+                    >
+                      It's live on LinkedIn
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => resolveNeedsReviewDraft(row.id)}
+                      className="inline-flex items-center gap-1 text-xs font-medium hover:underline"
+                      style={{ color: "var(--color-muted)", background: "transparent", border: 0, cursor: "pointer", padding: "4px 0" }}
+                    >
+                      Return to drafts
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* ── Section 1: Aura Drafts ── */}
       <div>
         <button
