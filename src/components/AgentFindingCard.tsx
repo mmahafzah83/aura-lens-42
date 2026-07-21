@@ -20,6 +20,8 @@ interface Finding {
   implication: string | null;
   entry_id: string | null;
   created_at: string;
+  themes: string[] | null;
+  dropped_themes: string[] | null;
 }
 
 const MONO: React.CSSProperties = {
@@ -59,7 +61,7 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
       const [{ data: pendingRows }, { count: allCount }, { data: profileRow }] = await Promise.all([
         supabase
           .from("agent_findings" as any)
-          .select("id, title, url, source, implication, entry_id, created_at")
+          .select("id, title, url, source, implication, entry_id, created_at, themes, dropped_themes")
           .eq("user_id", userId)
           .eq("status", "pending")
           .not("entry_id", "is", null)
@@ -355,6 +357,23 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
                   {articleTitle}
                 </span>
               </a>
+            )}
+
+            {/* Learning trace: newly dropped themes */}
+            {current.dropped_themes && current.dropped_themes.length > 0 && (
+              <div
+                style={{
+                  ...MONO,
+                  fontSize: 10,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  color: "rgba(241,236,225,0.45)",
+                  marginBottom: 10,
+                  wordBreak: "break-word",
+                }}
+              >
+                No longer tracking: {current.dropped_themes.join(" · ")}
+              </div>
             )}
 
             {/* Actions */}
