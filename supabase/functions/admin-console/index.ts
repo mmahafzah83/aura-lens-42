@@ -870,6 +870,7 @@ serve(async (req) => {
         issues,
         biggest_leak,
         kpis,
+        trends,
       });
     }
 
