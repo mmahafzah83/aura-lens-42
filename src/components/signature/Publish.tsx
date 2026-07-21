@@ -14,6 +14,7 @@ import {
   slugify,
   svgToImageBlob,
 } from "@/lib/broadsheetExport";
+import { ensureCardFontsLoaded } from "./fitText";
 
 interface Props {
   family: FamilyEntry;
@@ -33,6 +34,7 @@ async function renderCardBlob(
   family: FamilyEntry, lang: Lang, mood: Mood, fields: EditorFields, photoUrl: string | undefined,
 ): Promise<Blob> {
   const w = 1080, h = 1350;
+  await ensureCardFontsLoaded();
   const embeddedPhoto = await photoUrlToDataUrl(photoUrl);
   const host = document.createElement("div");
   host.style.cssText = "position:absolute;left:-99999px;top:0;width:1080px;height:auto;";
