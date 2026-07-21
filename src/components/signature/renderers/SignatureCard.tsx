@@ -1,7 +1,6 @@
 import {
   AuraMark,
   MONO,
-  PhotoPlaceholder,
   RendererProps,
   SERIF,
   SvgRoot,
@@ -10,80 +9,206 @@ import {
   anchorStart,
   getGeometry,
   isAr,
-  moodColor,
   xStart,
 } from "./shared";
 import { fitText } from "../fitText";
 
+/**
+ * The Portrait — full-bleed photo + solid bottom band + gradient spine.
+ * Modeled on editorial people-cards (EY Laurent).
+ */
 export default function SignatureCard(props: RendererProps & { square?: boolean }) {
   const { lang, mood, photoUrl, name, title, lines, meta, square } = props;
   const ar = isAr(lang);
-  const accent = moodColor(mood);
   const g = getGeometry(square);
-  const photoH = Math.round((g.SAFE_Y1 - g.SAFE_Y0) * 0.62);
-  const photoY = g.SAFE_Y0;
-  const bandY = photoY + photoH + 40;
   const anchor = anchorStart(lang);
   const xS = xStart(lang, g);
+
+  // Band: bottom 30% of canvas.
+  const bandY = Math.round(g.H * 0.70);      // 1350 → 945
+  const bandH = g.H - bandY;
+  const bandPadTop = 44;
+  const bandContentW = g.SAFE_X1 - g.SAFE_X0;
+
   const line1 = lines[0] || "";
   const line2 = lines[1] || "";
-  const line1Fit = fitText(line1, {
-    font: { family: ar ? "Cairo" : SERIF, weight: 500, style: ar ? "normal" : "italic" },
-    maxWidth: g.QUOTE_MEASURE,
-    minSize: 22, maxSize: 32, maxLines: 2,
-    lineHeightRatio: ar ? 1.6 : 1.2,
-  });
-  const line2Fit = fitText(line2, {
-    font: { family: ar ? "Cairo" : SERIF, weight: 400, style: ar ? "normal" : "italic" },
-    maxWidth: g.QUOTE_MEASURE,
-    minSize: 16, maxSize: 24, maxLines: 2,
-    lineHeightRatio: ar ? 1.6 : 1.2,
-  });
+
+  // NAME — large.
   const nameFit = fitText(name, {
-    font: { family: MONO, weight: 600 },
-    maxWidth: g.QUOTE_MEASURE,
-    minSize: 18, maxSize: 30, maxLines: 1, lineHeightRatio: 1.2,
+    font: { family: ar ? "Cairo" : SERIF, weight: 600 },
+    maxWidth: bandContentW * 0.78, // leave room for AuraMark on the opposite edge
+    minSize: 44, maxSize: 64, maxLines: 1, lineHeightRatio: 1.1,
   });
+
+  // TITLE + META — mono all-caps.
   const captionText = [title, meta].filter(Boolean).join(" · ").toUpperCase();
   const captionFit = fitText(captionText, {
     font: { family: MONO, weight: 400 },
-    maxWidth: g.QUOTE_MEASURE,
-    minSize: 11, maxSize: 16, maxLines: 1, lineHeightRatio: 1.2,
+    maxWidth: bandContentW,
+    minSize: 12, maxSize: 17, maxLines: 1, lineHeightRatio: 1.2,
   });
-  const clipId = `sig-photo-${mood}${square ? "-sq" : ""}`;
-  const line1Y = bandY + line1Fit.size;
-  const line1Block = line1Fit.lines.length * line1Fit.lineHeight;
-  const line2Y = line1Y + line1Block - line1Fit.size + 20 + line2Fit.size;
+
+  // Layout rows (top-of-glyph baselines computed from bandY).
+  const nameBaselineY = bandY + bandPadTop + nameFit.size;                 // baseline of the single-line name
+  const titleY = nameBaselineY + 14 + captionFit.size;                     // 14px gap after name descender
+  const spineY = titleY + 26;                                              // 26px below title baseline
+  const spineH = 4;
+
+  // DESCRIPTOR — fit; if the 2-line block + optional line2 won't fit,
+  // drop line2 rather than overflow the band.
+  const descTop = spineY + spineH + 30;                                    // 30px below spine
+  const bandBottom = g.H;
+  const bandBottomPad = 44;
+  const available = bandBottom - bandBottomPad - descTop;
+
+  const descFont = { family: ar ? "Cairo" : SERIF, weight: (ar ? 600 : 500) as number, style: "normal" as const };
+  const descLHR = ar ? 1.7 : 1.35;
+
+  // Try 2 lines first with a line2, then 2 lines w/o line2, then 1 line.
+  let line1Fit = fitText(line1, {
+    font: descFont, maxWidth: bandContentW,
+    minSize: 22, maxSize: 30, maxLines: 2, lineHeightRatio: descLHR,
+  });
+  const line2FontFamily = ar ? "Cairo" : SERIF;
+  let line2Fit = line2 ? fitText(line2, {
+    font: { family: line2FontFamily, weight: 400, style: ar ? "normal" : "italic" },
+    maxWidth: bandContentW,
+    minSize: 15, maxSize: 19, maxLines: 1, lineHeightRatio: ar ? 1.6 : 1.25,
+  }) : null;
+
+  const line1BlockH = () => line1Fit.lines.length * line1Fit.lineHeight;
+  const line2BlockH = () => (line2Fit ? line2Fit.lineHeight + 14 : 0); // 14px gap
+  let totalH = line1BlockH() + line2BlockH();
+  if (totalH > available && line2Fit) {
+    // Drop line2 rather than overflow.
+    line2Fit = null;
+    totalH = line1BlockH();
+  }
+  if (totalH > available) {
+    // Force 1 line at min size for descriptor.
+    line1Fit = fitText(line1, {
+      font: descFont, maxWidth: bandContentW,
+      minSize: 22, maxSize: 26, maxLines: 1, lineHeightRatio: descLHR,
+    });
+  }
+
+  const line1Y = descTop + line1Fit.size;
+  const line2Y = line2Fit ? line1Y + line1BlockH() - line1Fit.size + 14 + line2Fit.size : 0;
+
+  // Gradient stops keyed by mood.
+  const gradId = `portrait-spine-${mood}${square ? "-sq" : ""}${ar ? "-ar" : ""}`;
+  const stops: string[] =
+    mood === "teal"    ? ["#36C5B0", "#D6A748", "#6E2A26"] :
+    mood === "amber"   ? ["#D6A748", "#F0C97A", "#36C5B0"] :
+                         ["#6E2A26", "#D6A748", "#36C5B0"]; // oxblood default
+
+  // AuraMark placed on the name row (inline-end). We pass a modified geom
+  // where SAFE_Y1 sits at the name baseline+padding so the mark lines up.
+  const markGeom = { ...g, SAFE_Y1: nameBaselineY + 8 };
+
+  const placeholderId = `portrait-photo-ph-${mood}${square ? "-sq" : ""}${ar ? "-ar" : ""}`;
+
   return (
-    <SvgRoot ariaLabel={`Signature card for ${name}`} geom={g}>
-      <rect x="0" y="0" width={g.W} height={g.H} fill={T.paper} />
-      <rect x={g.SAFE_X0} y={g.SAFE_Y0 - 12} width={g.SAFE_X1 - g.SAFE_X0} height="3" fill={accent} />
+    <SvgRoot ariaLabel={`Portrait card for ${name}`} geom={g}>
       <defs>
-        <clipPath id={clipId}>
-          <rect x={g.SAFE_X0} y={photoY} width={g.SAFE_X1 - g.SAFE_X0} height={photoH} />
-        </clipPath>
+        <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor={stops[0]} />
+          <stop offset="0.5" stopColor={stops[1]} />
+          <stop offset="1" stopColor={stops[2]} />
+        </linearGradient>
+        <linearGradient id={placeholderId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor={T.darkBg1} />
+          <stop offset="1" stopColor={T.darkBg2} />
+        </linearGradient>
       </defs>
+
+      {/* LAYER 1 — full-bleed photo */}
       {photoUrl ? (
-        <image href={photoUrl} x={g.SAFE_X0} y={photoY} width={g.SAFE_X1 - g.SAFE_X0} height={photoH} preserveAspectRatio="xMidYMid slice" clipPath={`url(#${clipId})`} />
+        <image href={photoUrl} x={0} y={0} width={g.W} height={g.H} preserveAspectRatio="xMidYMid slice" />
       ) : (
-        <PhotoPlaceholder x={g.SAFE_X0} y={photoY} w={g.SAFE_X1 - g.SAFE_X0} h={photoH} tone="paper" />
+        <rect x={0} y={0} width={g.W} height={g.H} fill={`url(#${placeholderId})`} />
       )}
-      <line x1={g.SAFE_X0} y1={photoY + photoH + 14} x2={g.SAFE_X1} y2={photoY + photoH + 14} stroke={accent} strokeWidth="2" opacity="0.7" />
+
+      {/* LAYER 2 — solid bottom band */}
+      <rect x={0} y={bandY} width={g.W} height={bandH} fill={T.panel} />
+
+      {/* NAME */}
+      <TextBlock
+        lines={nameFit.lines}
+        x={xS}
+        y={nameBaselineY}
+        lineHeight={nameFit.lineHeight}
+        fill={T.paper}
+        fontFamily={ar ? "Cairo" : SERIF}
+        fontSize={nameFit.size}
+        fontWeight={600}
+        anchor={anchor}
+        lang={lang}
+      />
+
+      {/* AuraMark on the name row, opposite edge */}
+      <AuraMark lang={lang} color={T.paperFaint} geom={markGeom} />
+
+      {/* TITLE + META */}
+      {captionText && (
+        <text
+          x={xS}
+          y={titleY}
+          fill={T.paperFaint}
+          fontFamily={MONO}
+          fontSize={captionFit.size}
+          letterSpacing="0.18em"
+          textAnchor={anchor}
+          direction={ar ? "rtl" : "ltr"}
+        >
+          {captionFit.lines[0] || captionText}
+        </text>
+      )}
+
+      {/* GRADIENT SPINE */}
+      <rect
+        x={g.SAFE_X0}
+        y={spineY}
+        width={bandContentW}
+        height={spineH}
+        rx={spineH / 2}
+        ry={spineH / 2}
+        fill={`url(#${gradId})`}
+      />
+
+      {/* DESCRIPTOR line1 */}
       {line1 && (
-        <TextBlock lines={line1Fit.lines} x={xS} y={line1Y} lineHeight={line1Fit.lineHeight}
-          fill={T.ink} fontFamily={ar ? "Cairo" : SERIF} fontSize={line1Fit.size}
-          fontStyle={ar ? "normal" : "italic"} fontWeight={500} anchor={anchor} lang={lang} />
+        <TextBlock
+          lines={line1Fit.lines}
+          x={xS}
+          y={line1Y}
+          lineHeight={line1Fit.lineHeight}
+          fill={T.paper}
+          fontFamily={ar ? "Cairo" : SERIF}
+          fontSize={line1Fit.size}
+          fontWeight={ar ? 600 : 500}
+          anchor={anchor}
+          lang={lang}
+        />
       )}
-      {line2 && (
-        <TextBlock lines={line2Fit.lines} x={xS} y={line2Y} lineHeight={line2Fit.lineHeight}
-          fill={accent} fontFamily={ar ? "Cairo" : SERIF} fontSize={line2Fit.size}
-          fontStyle={ar ? "normal" : "italic"} fontWeight={400} anchor={anchor} lang={lang} />
+
+      {/* DESCRIPTOR line2 */}
+      {line2Fit && (
+        <TextBlock
+          lines={line2Fit.lines}
+          x={xS}
+          y={line2Y}
+          lineHeight={line2Fit.lineHeight}
+          fill={T.paperFaint}
+          fontFamily={line2FontFamily}
+          fontSize={line2Fit.size}
+          fontStyle={ar ? "normal" : "italic"}
+          fontWeight={400}
+          anchor={anchor}
+          lang={lang}
+        />
       )}
-      <TextBlock lines={nameFit.lines} x={xS} y={g.SAFE_Y1 - 44} lineHeight={nameFit.lineHeight} fill={T.ink} fontFamily={MONO} fontSize={nameFit.size} fontWeight={600} anchor={anchor} lang={lang} letterSpacing="0.16em" />
-      {(title || meta) && (
-        <text x={xS} y={g.SAFE_Y1 - 16} fill={T.ink2} fontFamily={MONO} fontSize={captionFit.size} letterSpacing="0.28em" textAnchor={anchor} direction={ar ? "rtl" : "ltr"}>{captionFit.lines[0] || captionText}</text>
-      )}
-      <AuraMark lang={lang} color={T.ink2} geom={g} />
+
     </SvgRoot>
   );
 }

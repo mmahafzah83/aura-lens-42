@@ -8,6 +8,8 @@ import { ensureCardFontsLoaded } from "@/components/signature/fitText";
 
 const AR_LINE = "بناء منظومات رقمية متكاملة لقطاع المياه تتجاوز الحلول التقنية المنعزلة";
 const EN_LINE = "Building integrated digital ecosystems for water utilities beyond isolated point solutions";
+const EN_LINE2 = "Directing enterprise transformation through digital capital investment";
+const PORTRAIT_PHOTO = "/hero-head.png";
 
 function Cell({ label, w = 360, children }: { label: string; w?: number; children: React.ReactNode }) {
   return (
@@ -36,6 +38,26 @@ export default function SignatureHarness() {
     { label: "Frame AR oxblood", lang: "ar", mood: "oxblood", Comp: FrameCard, lines: [AR_LINE] },
     { label: "Signature EN amber", lang: "en", mood: "amber", Comp: SignatureCard, lines: [EN_LINE, "GCC Water Advisory · 20 years"] },
   ];
+  const portraits = [
+    {
+      label: "Portrait EN oxblood",
+      lang: "en" as Lang, mood: "oxblood" as Mood,
+      name: "Mohammad Mahafzah",
+      title: "Director of Digital Transformation",
+      meta: "EY",
+      lines: ["Architecting integrated digital ecosystems for modern water and energy utilities", EN_LINE2],
+      photoUrl: PORTRAIT_PHOTO,
+    },
+    {
+      label: "Portrait AR teal",
+      lang: "ar" as Lang, mood: "teal" as Mood,
+      name: "محمد محافظة",
+      title: "مدير التحول الرقمي",
+      meta: "",
+      lines: [AR_LINE],
+      photoUrl: PORTRAIT_PHOTO,
+    },
+  ];
   return (
     <div style={{ minHeight: "100vh", background: "#eeeae0", padding: 24 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 20 }}>
@@ -44,6 +66,34 @@ export default function SignatureHarness() {
             <r.Comp lang={r.lang} mood={r.mood} name={common.name} title={common.title} meta={common.meta} lines={r.lines} />
           </Cell>
         ))}
+        {portraits.map((p) => (
+          <Cell key={p.label} label={p.label}>
+            <SignatureCard lang={p.lang} mood={p.mood} name={p.name} title={p.title} meta={p.meta} lines={p.lines} photoUrl={p.photoUrl} />
+          </Cell>
+        ))}
+      </div>
+      {/* Full-size render targets for Playwright proof (on-screen so element.screenshot works) */}
+      <div style={{ marginTop: 40, display: "flex", flexDirection: "column", gap: 40 }}>
+        <div id="portrait-en" style={{ width: 1080, height: 1350 }}>
+          <SignatureCard
+            lang="en" mood="oxblood"
+            name="Mohammad Mahafzah"
+            title="Director of Digital Transformation"
+            meta="EY"
+            lines={["Architecting integrated digital ecosystems for modern water and energy utilities", EN_LINE2]}
+            photoUrl={PORTRAIT_PHOTO}
+          />
+        </div>
+        <div id="portrait-ar" style={{ width: 1080, height: 1350 }}>
+          <SignatureCard
+            lang="ar" mood="teal"
+            name="محمد محافظة"
+            title="مدير التحول الرقمي"
+            meta=""
+            lines={[AR_LINE]}
+            photoUrl={PORTRAIT_PHOTO}
+          />
+        </div>
       </div>
     </div>
   );
