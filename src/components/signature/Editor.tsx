@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef } from "react";
 import type { FamilyEntry } from "./renderers";
 import type { Lang, Mood } from "./renderers/shared";
-import { useSuggestions, type Suggestion } from "./useSuggestions";
+import { useMemo, useState } from "react";
+import { useSuggestions, type Suggestion, type SuggestSource } from "./useSuggestions";
 import { logSignatureEvent } from "./logEvent";
 import { ensureCardFontsLoaded } from "./fitText";
 
@@ -59,7 +60,22 @@ export default function Editor({
   const usesLine2 = family.id === "signature";
 
   const C = family.component;
-  const { suggestions, loading: suggestLoading } = useSuggestions(family, lang);
+  const { suggestions, loading: suggestLoading, regenerate } = useSuggestions(family, lang);
+  const [preferSet, setPreferSet] = useState<Set<SuggestSource>>(new Set(["profile", "signal", "voice"]));
+  const filtered = useMemo(
+    () => suggestions.filter((s) => preferSet.has(s.source)),
+    [suggestions, preferSet],
+  );
+  const togglePrefer = (k: SuggestSource) => {
+    setPreferSet((prev) => {
+      const next = new Set(prev);
+      if (next.has(k)) { if (next.size > 1) next.delete(k); }
+      else next.add(k);
+      // Ask the EF to bias next set toward the chosen mix.
+      void regenerate(Array.from(next));
+      return next;
+    });
+  };
 
   // Ensure Cairo / Newsreader / IBM Plex Mono are in the browser font
   // cache before fitText's canvas measurement runs — otherwise Arabic
@@ -135,14 +151,42 @@ export default function Editor({
       <div className="sig-editor-grid">
         <div className="sig-editor-panel">
           <div style={suggestWrap}>
-            <div style={fieldLabel}>
-              Suggestions {suggestLoading && <span style={thinkingDot}>· thinking…</span>}
+            <div style={suggestHeaderRow}>
+              <div style={fieldLabel}>
+                Suggestions {suggestLoading && <span style={thinkingDot}>· thinking…</span>}
+              </div>
+              <button
+                type="button"
+                onClick={() => regenerate(Array.from(preferSet))}
+                disabled={suggestLoading}
+                style={regenBtn}
+                title="Fetch a fresh set"
+              >
+                ↻ New set
+              </button>
+            </div>
+            <div style={filterRow}>
+              {(["profile", "signal", "voice"] as SuggestSource[]).map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => togglePrefer(k)}
+                  style={{
+                    ...filterChip,
+                    color: preferSet.has(k) ? "var(--ob-bg)" : "var(--ink-2)",
+                    background: preferSet.has(k) ? "var(--spot)" : "transparent",
+                    borderColor: preferSet.has(k) ? "var(--spot)" : "var(--rule)",
+                  }}
+                >
+                  {k}
+                </button>
+              ))}
             </div>
             {suggestions.length === 0 && !suggestLoading && (
               <div style={suggestEmpty}>No AI suggestions yet — defaults below are ready to edit.</div>
             )}
             <div style={suggestList}>
-              {suggestions.map((s, i) => (
+              {(filtered.length ? filtered : suggestions).map((s, i) => (
                 <button
                   key={i}
                   type="button"
@@ -341,6 +385,26 @@ const secondaryBtn: React.CSSProperties = {
 const suggestWrap: React.CSSProperties = {
   display: "flex", flexDirection: "column", gap: 8,
   paddingBottom: 12, borderBottom: "1px solid var(--rule)",
+};
+const suggestHeaderRow: React.CSSProperties = {
+  display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
+};
+const regenBtn: React.CSSProperties = {
+  background: "transparent",
+  color: "var(--spot)",
+  border: "1px solid var(--rule)",
+  padding: "4px 10px",
+  fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+  fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase",
+  cursor: "pointer",
+};
+const filterRow: React.CSSProperties = { display: "flex", gap: 6, flexWrap: "wrap" };
+const filterChip: React.CSSProperties = {
+  padding: "3px 10px",
+  fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+  fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase",
+  border: "1px solid var(--rule)",
+  cursor: "pointer",
 };
 const suggestList: React.CSSProperties = { display: "flex", flexDirection: "column", gap: 6 };
 const suggestCard: React.CSSProperties = {
