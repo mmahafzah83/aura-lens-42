@@ -102,6 +102,37 @@ const mutedStyle = {
   fontSize: 13,
 };
 
+function Sparkline({ values, color }: { values: number[]; color: string }) {
+  const w = 120;
+  const h = 32;
+  const pad = 2;
+  if (!values || values.length === 0) {
+    return <svg width={w} height={h} />;
+  }
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const n = values.length;
+  const xAt = (i: number) => n === 1 ? w / 2 : pad + (i * (w - pad * 2)) / (n - 1);
+  const yAt = (v: number) => max === min ? h / 2 : pad + (h - pad * 2) - ((v - min) / range) * (h - pad * 2);
+  const points = values.map((v, i) => `${xAt(i)},${yAt(v)}`).join(" ");
+  const lastX = xAt(n - 1);
+  const lastY = yAt(values[n - 1]);
+  return (
+    <svg width={w} height={h} style={{ display: "block" }}>
+      <polyline
+        fill="none"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        points={points}
+      />
+      <circle cx={lastX} cy={lastY} r={2.5} fill={color} />
+    </svg>
+  );
+}
+
 export default function Admin() {
   const [latest, setLatest] = useState<HealthCheck | null>(null);
   const [loading, setLoading] = useState(true);
