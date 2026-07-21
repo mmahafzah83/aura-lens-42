@@ -102,6 +102,37 @@ const mutedStyle = {
   fontSize: 13,
 };
 
+function Sparkline({ values, color }: { values: number[]; color: string }) {
+  const w = 120;
+  const h = 32;
+  const pad = 2;
+  if (!values || values.length === 0) {
+    return <svg width={w} height={h} />;
+  }
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const n = values.length;
+  const xAt = (i: number) => n === 1 ? w / 2 : pad + (i * (w - pad * 2)) / (n - 1);
+  const yAt = (v: number) => max === min ? h / 2 : pad + (h - pad * 2) - ((v - min) / range) * (h - pad * 2);
+  const points = values.map((v, i) => `${xAt(i)},${yAt(v)}`).join(" ");
+  const lastX = xAt(n - 1);
+  const lastY = yAt(values[n - 1]);
+  return (
+    <svg width={w} height={h} style={{ display: "block" }}>
+      <polyline
+        fill="none"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        points={points}
+      />
+      <circle cx={lastX} cy={lastY} r={2.5} fill={color} />
+    </svg>
+  );
+}
+
 export default function Admin() {
   const [latest, setLatest] = useState<HealthCheck | null>(null);
   const [loading, setLoading] = useState(true);
@@ -237,6 +268,27 @@ export default function Admin() {
                   );
                 })}
               </div>
+
+              {/* Last 14 days trends */}
+              {brief.trends && Array.isArray(brief.trends.series) && (
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--glass)", marginBottom: 8 }}>Last 14 days</div>
+                  <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
+                    {brief.trends.series.map((s: any) => {
+                      const total = (s.values || []).reduce((a: number, b: number) => a + Number(b || 0), 0);
+                      return (
+                        <div key={s.key} style={{ padding: "12px 14px", borderRadius: 8, backgroundColor: "var(--ob-raised)", border: "1px solid var(--hair)" }}>
+                          <div style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--glass-2)" }}>{s.label}</div>
+                          <div style={{ fontSize: 20, color: "var(--glass)", fontWeight: 500, marginTop: 4 }}>{total}</div>
+                          <div style={{ marginTop: 8 }}>
+                            <Sparkline values={s.values || []} color={s.color} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Attention */}
               <div>

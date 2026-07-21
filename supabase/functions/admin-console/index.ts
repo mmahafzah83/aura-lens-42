@@ -724,6 +724,58 @@ serve(async (req) => {
         stuck_count: Math.max(0, leakDrop),
       };
 
+      // Last-14-days trends — derived from already-fetched entries/signals/posts (no new queries)
+      const trendDays = 14;
+      const trendStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+      trendStart.setUTCDate(trendStart.getUTCDate() - (trendDays - 1));
+      const dayKeys: string[] = [];
+      const dayLabels: string[] = [];
+      const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      for (let i = 0; i < trendDays; i++) {
+        const d = new Date(trendStart.getTime() + i * dayMs);
+        const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+        dayKeys.push(key);
+        dayLabels.push(`${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`);
+      }
+      const dayIndex = new Map<string, number>(dayKeys.map((k, i) => [k, i]));
+      const bucketKey = (iso: string) => {
+        const d = new Date(iso);
+        return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+      };
+      const capturesArr = new Array(trendDays).fill(0);
+      const activeSets: Set<string>[] = Array.from({ length: trendDays }, () => new Set<string>());
+      const signalsArr = new Array(trendDays).fill(0);
+      const postsArr = new Array(trendDays).fill(0);
+      for (const e of entries as any[]) {
+        if (!e.created_at) continue;
+        const idx = dayIndex.get(bucketKey(e.created_at));
+        if (idx === undefined) continue;
+        capturesArr[idx] += 1;
+        if (e.user_id) activeSets[idx].add(e.user_id);
+      }
+      for (const s of signals as any[]) {
+        if (!s.created_at) continue;
+        const idx = dayIndex.get(bucketKey(s.created_at));
+        if (idx === undefined) continue;
+        signalsArr[idx] += 1;
+      }
+      for (const p of posts as any[]) {
+        if (!p.created_at) continue;
+        const idx = dayIndex.get(bucketKey(p.created_at));
+        if (idx === undefined) continue;
+        postsArr[idx] += 1;
+      }
+      const activeArr = activeSets.map((s) => s.size);
+      const trends = {
+        labels: dayLabels,
+        series: [
+          { key: "captures", label: "Captures",     color: "#B08D3A", values: capturesArr },
+          { key: "active",   label: "Active users", color: "#36C5B0", values: activeArr },
+          { key: "signals",  label: "Signals",      color: "#D4B056", values: signalsArr },
+          { key: "posts",    label: "Posts",        color: "#8B8B8B", values: postsArr },
+        ],
+      };
+
       const signed = (n: number) => n === 0 ? "±0" : (n > 0 ? `+${n}` : `−${Math.abs(n)}`);
       const usersDelta = totalUsers - usersPrev;
       const activationDelta = activationPctNow - activationPctPrev;
@@ -818,6 +870,7 @@ serve(async (req) => {
         issues,
         biggest_leak,
         kpis,
+        trends,
       });
     }
 
