@@ -248,8 +248,10 @@ function DoorCard({ door, isOpen, onOpen, onClose, refCb }: DoorCardProps) {
       <div className="sig-door-leaf">
         <div className="sig-door-leaf-face">
           <div className="sig-door-plate">{door.plate}</div>
-        <div className="sig-door-title">{door.title}</div>
-        <div className="sig-door-desc">{door.desc}</div>
+        <div>
+          <div className="sig-door-title">{door.title}</div>
+          <div className="sig-door-desc">{door.desc}</div>
+        </div>
           <div className="sig-door-handle" aria-hidden />
         </div>
         <div className="sig-door-light" aria-hidden />
