@@ -3,6 +3,7 @@ import MiniPreview from "@/components/signature/MiniPreview";
 import FilmStrip from "@/components/signature/FilmStrip";
 import Editor, { type EditorFields } from "@/components/signature/Editor";
 import Preview from "@/components/signature/Preview";
+import Publish from "@/components/signature/Publish";
 import { useLiveData, defaultsFor } from "@/components/signature/useLiveData";
 import type { FamilyEntry } from "@/components/signature/renderers";
 import type { Lang, Mood } from "@/components/signature/renderers/shared";
@@ -49,6 +50,7 @@ export default function SignatureStudio() {
     name: "", title: "", line1: "", line2: "", meta: "",
   });
   const [photoUrl, setPhotoUrl] = useState<string | undefined>(undefined);
+  const [pickedSource, setPickedSource] = useState<"profile" | "signal" | "voice" | null>(null);
   const live = useLiveData();
   const doorRefs = useRef<Record<DoorId, HTMLDivElement | null>>({
     me: null, photo: null, words: null,
@@ -75,6 +77,7 @@ export default function SignatureStudio() {
       line2: d.lines[1] || "",
       meta: d.meta,
     });
+    setPickedSource(null);
     setStep("editor");
   }, [live]);
 
@@ -231,6 +234,7 @@ export default function SignatureStudio() {
           onMood={setMood}
           onFields={setFields}
           onPhoto={setPhotoUrl}
+          onPickedSource={setPickedSource}
           onBack={() => setStep("filmstrip")}
           onContinue={() => setStep("preview")}
         />
@@ -243,6 +247,24 @@ export default function SignatureStudio() {
           photoUrl={photoUrl}
           onBack={() => setStep("editor")}
           onContinue={() => setStep("publish")}
+        />
+      ) : step === "publish" && family ? (
+        <Publish
+          family={family}
+          lang={lang}
+          mood={mood}
+          fields={fields}
+          photoUrl={photoUrl}
+          pickedSource={pickedSource}
+          onBack={() => setStep("preview")}
+          onMakeAnother={() => {
+            setOpenDoor(null);
+            setFamily(null);
+            setPhotoUrl(undefined);
+            setPickedSource(null);
+            setFields({ name: "", title: "", line1: "", line2: "", meta: "" });
+            setStep("doors");
+          }}
         />
       ) : (
         <StepPlaceholder step={step} onBack={() => setStep("preview")} doorId={openDoor} />
