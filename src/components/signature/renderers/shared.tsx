@@ -84,11 +84,16 @@ export function isAr(lang: Lang): boolean {
   return lang === "ar";
 }
 
-export function anchorStart(lang: Lang): "start" | "end" {
-  return isAr(lang) ? "end" : "start";
+// Under `direction=rtl` (which we always set for Arabic), SVG `text-anchor`
+// follows the inline progression direction: "start" already means the
+// right visual edge in RTL. So the inline-start anchor is "start" for both
+// LTR and RTL — we just pair it with the correct x (SAFE_X0 for LTR,
+// SAFE_X1 for RTL).
+export function anchorStart(_lang: Lang): "start" | "end" {
+  return "start";
 }
-export function anchorEnd(lang: Lang): "start" | "end" {
-  return isAr(lang) ? "start" : "end";
+export function anchorEnd(_lang: Lang): "start" | "end" {
+  return "end";
 }
 /** X of the inline-start edge inside the safe zone. */
 export function xStart(lang: Lang, g: Geometry): number {
