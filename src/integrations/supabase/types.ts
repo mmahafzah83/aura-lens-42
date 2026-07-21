@@ -3348,6 +3348,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      publish_invariants: { Args: never; Returns: Json }
       recent_cron_http_failures: {
         Args: { p_minutes?: number }
         Returns: {
