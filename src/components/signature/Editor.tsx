@@ -22,6 +22,7 @@ interface Props {
   onMood: (m: Mood) => void;
   onFields: (f: EditorFields) => void;
   onPhoto: (url: string | undefined) => void;
+  onPickedSource?: (src: "profile" | "signal" | "voice") => void;
   onBack: () => void;
   onContinue: () => void;
 }
@@ -50,7 +51,7 @@ async function downscaleToObjectUrl(file: File, max = 2000): Promise<string> {
 
 export default function Editor({
   family, lang, mood, fields, photoUrl,
-  onLang, onMood, onFields, onPhoto, onBack, onContinue,
+  onLang, onMood, onFields, onPhoto, onPickedSource, onBack, onContinue,
 }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const usesPhoto = family.id === "frame" || family.id === "signature";
@@ -96,6 +97,7 @@ export default function Editor({
     pickedRef.current = { fields: next, suggestion: s };
     editedFiredRef.current = false;
     onFields(next);
+    onPickedSource?.(s.source);
     void logSignatureEvent("picked", family.id, lang, { suggestion: s });
   };
 
