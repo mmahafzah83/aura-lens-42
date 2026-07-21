@@ -1834,6 +1834,80 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                   </button>
                 )}
 
+                {ghostMeta && (
+                  <div
+                    style={{
+                      background: "var(--paper-2)",
+                      border: "1px solid var(--rule)",
+                      padding: "10px 12px",
+                      marginBottom: 10,
+                      borderRadius: 8,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontFamily: "var(--font-mono, 'IBM Plex Mono', ui-monospace, monospace)",
+                        fontSize: 9.5,
+                        letterSpacing: "0.22em",
+                        textTransform: "uppercase",
+                        color: "#36C5B0",
+                      }}
+                    >
+                      THE OVERNIGHT · WRITTEN FOR YOU
+                    </div>
+                    {ghostMeta.finding_source && (
+                      <div
+                        style={{
+                          marginTop: 6,
+                          fontFamily: "var(--font-serif)",
+                          fontStyle: "italic",
+                          fontSize: 12.5,
+                          color: "var(--ink-2)",
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        Drafted from a finding you kept:{" "}
+                        {ghostMeta.finding_url ? (
+                          <a
+                            href={ghostMeta.finding_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: "var(--spot)", textDecoration: "underline" }}
+                          >
+                            {ghostMeta.finding_source}
+                          </a>
+                        ) : (
+                          <span>{ghostMeta.finding_source}</span>
+                        )}
+                      </div>
+                    )}
+                    {ghostMeta.finding_implication && (
+                      <div
+                        style={{
+                          marginTop: 4,
+                          fontStyle: "italic",
+                          fontSize: 12,
+                          color: "var(--ink-3)",
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        {ghostMeta.finding_implication}
+                      </div>
+                    )}
+                    <div
+                      style={{
+                        marginTop: 8,
+                        fontFamily: "var(--font-mono, 'IBM Plex Mono', ui-monospace, monospace)",
+                        fontSize: 9,
+                        letterSpacing: "0.18em",
+                        textTransform: "uppercase",
+                        color: "var(--ink-3)",
+                      }}
+                    >
+                      YOURS TO EDIT — NOTHING PUBLISHES WITHOUT YOU
+                    </div>
+                  </div>
+                )}
                 <div className="relative">
                   {isEditingBody && output.trim() ? (
                     <textarea
