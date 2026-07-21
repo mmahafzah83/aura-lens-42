@@ -33,6 +33,7 @@ import { isPublishedPost } from "@/lib/postProvenance";
 import { markSuggestionDrafted } from "@/lib/markSuggestionDrafted";
 import FlashPanel from "@/components/FlashPanel";
 import EmptyState from "@/components/ui/EmptyState";
+import { AuraLogo } from "@/components/brand/AuraLogo";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { CollapsibleList } from "@/components/ui/CollapsibleList";
 import { ChevronRight } from "lucide-react";
@@ -1289,6 +1290,73 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Signature Studio entry — quiet, always visible */}
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => navigate("/signature")}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            navigate("/signature");
+          }
+        }}
+        className="group cursor-pointer flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full"
+        style={{
+          background: "var(--paper-2)",
+          border: "0.5px solid var(--rule)",
+          borderRadius: 14,
+          padding: "14px 18px",
+          color: "var(--ink)",
+          transition: "border-color 160ms ease, background 160ms ease",
+        }}
+        onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "var(--spot)"; }}
+        onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "var(--rule)"; }}
+        aria-label="Open Signature Studio"
+      >
+        <div
+          aria-hidden
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 36,
+            height: 36,
+            borderRadius: 10,
+            background: "var(--paper)",
+            border: "0.5px solid var(--rule)",
+            color: "var(--spot)",
+            flexShrink: 0,
+          }}
+        >
+          <AuraLogo size={22} variant="auto" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div style={{ fontFamily: "var(--font-serif)", fontSize: 16, fontWeight: 500, color: "var(--ink)", lineHeight: 1.25 }}>
+            Signature
+          </div>
+          <div style={{ fontSize: 12.5, color: "var(--ink-2)", marginTop: 2, lineHeight: 1.4 }}>
+            Turn your expertise into a shareable card — for LinkedIn.
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); navigate("/signature"); }}
+          className="self-start sm:self-auto"
+          style={{
+            background: "transparent",
+            border: "0.5px solid var(--rule)",
+            borderRadius: 999,
+            padding: "6px 14px",
+            fontSize: 12.5,
+            color: "var(--ink)",
+            cursor: "pointer",
+            whiteSpace: "nowrap",
+          }}
+        >
+          Open →
+        </button>
+      </div>
       <div className="flex flex-col lg:flex-row gap-6">
       {/* Main Editor */}
       <div data-tour="content-generator" className="flex-1 min-w-0 space-y-6">
