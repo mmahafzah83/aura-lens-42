@@ -172,7 +172,7 @@ export default function Editor({
           <Field label="Language">
             <div style={rowBtns}>
               <PillBtn active={lang === "en"} onClick={() => onLang("en")}>EN</PillBtn>
-              <PillBtn active={lang === "ar"} onClick={() => onLang("ar")}>عربي</PillBtn>
+              <PillBtn active={lang === "ar"} onClick={() => onLang("ar")} fontFamily="'Cairo', system-ui, sans-serif">عربي</PillBtn>
             </div>
           </Field>
 
@@ -239,12 +239,13 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function PillBtn({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+function PillBtn({ active, onClick, children, fontFamily }: { active: boolean; onClick: () => void; children: React.ReactNode; fontFamily?: string }) {
   return (
     <button
       onClick={onClick}
       style={{
         ...pill,
+        ...(fontFamily ? { fontFamily } : null),
         color: active ? "var(--ob-bg)" : "var(--ink)",
         background: active ? "var(--spot)" : "transparent",
         borderColor: active ? "var(--spot)" : "var(--rule)",
