@@ -323,3 +323,33 @@ const secondaryBtn: React.CSSProperties = {
   ...backBtn,
   marginTop: 8,
 };
+const suggestWrap: React.CSSProperties = {
+  display: "flex", flexDirection: "column", gap: 8,
+  paddingBottom: 12, borderBottom: "1px solid var(--rule)",
+};
+const suggestList: React.CSSProperties = { display: "flex", flexDirection: "column", gap: 6 };
+const suggestCard: React.CSSProperties = {
+  textAlign: "left" as const,
+  background: "var(--paper-3, var(--paper-2))",
+  border: "1px solid var(--rule)",
+  padding: "10px 12px",
+  cursor: "pointer",
+  display: "flex", flexDirection: "column", gap: 4,
+  color: "var(--ink)",
+};
+const suggestSource: React.CSSProperties = {
+  fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+  fontSize: 9, letterSpacing: "0.22em", textTransform: "uppercase",
+  color: "var(--spot)",
+};
+const suggestLines: React.CSSProperties = {
+  fontFamily: "'Newsreader', serif", fontSize: 14, lineHeight: 1.35,
+};
+const suggestEmpty: React.CSSProperties = {
+  fontFamily: "'Newsreader', serif", fontSize: 13, color: "var(--ink-3)",
+  fontStyle: "italic",
+};
+const thinkingDot: React.CSSProperties = {
+  color: "var(--ink-3)", fontStyle: "italic", textTransform: "none",
+  letterSpacing: 0, marginLeft: 6,
+};
