@@ -24,6 +24,7 @@ interface Props {
   pickedSource?: "profile" | "signal" | "voice" | null;
   onBack: () => void;
   onMakeAnother: () => void;
+  onBackToAura?: () => void;
 }
 
 /** Render the final card SVG to a PNG blob at 1080×1350 using the exact
@@ -68,7 +69,7 @@ async function renderCardBlob(
 }
 
 export default function Publish({
-  family, lang, mood, fields, photoUrl, pickedSource, onBack, onMakeAnother,
+  family, lang, mood, fields, photoUrl, pickedSource, onBack, onMakeAnother, onBackToAura,
 }: Props) {
   const [caption, setCaption] = useState<string>("");
   const [writing, setWriting] = useState(false);
@@ -228,6 +229,9 @@ export default function Publish({
                   </a>
                 )}
                 <button onClick={onMakeAnother} style={secondaryBtn}>Make another →</button>
+                {onBackToAura && (
+                  <button onClick={onBackToAura} style={secondaryBtn}>Back to Aura →</button>
+                )}
               </div>
             </div>
           ) : (
