@@ -282,6 +282,14 @@ Deno.serve(withObserve("night-agent-hunt", async (req) => {
 
   for (const userId of candidateUserIds) {
     try {
+      // Expiry: silently retire pending findings older than 7 days.
+      await admin
+        .from("agent_findings")
+        .update({ status: "skipped" })
+        .eq("user_id", userId)
+        .eq("status", "pending")
+        .lt("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+
       // Skip if already has ≥3 pending findings
       const { count: pendingCount } = await admin
         .from("agent_findings")
@@ -296,10 +304,18 @@ Deno.serve(withObserve("night-agent-hunt", async (req) => {
       // Diagnostic profile
       const { data: profile } = await admin
         .from("diagnostic_profiles")
-        .select("sector_focus, core_practice, level")
+        .select("sector_focus, core_practice, level, notification_prefs")
         .eq("user_id", userId)
         .maybeSingle();
       if (!profile) { summary.skipped++; continue; }
+
+      // Consent toggle: overnight_reading_enabled (default true) lives in
+      // diagnostic_profiles.notification_prefs. false → skip user entirely.
+      const prefs = ((profile as any).notification_prefs ?? {}) as Record<string, unknown>;
+      if (prefs.overnight_reading_enabled === false) {
+        summary.skipped++;
+        continue;
+      }
 
       // Active signals count + theme_tags
       const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -320,10 +336,43 @@ Deno.serve(withObserve("night-agent-hunt", async (req) => {
           tagCounts.set(k, (tagCounts.get(k) || 0) + 1);
         }
       }
-      const topThemes = [...tagCounts.entries()]
+      let topThemes = [...tagCounts.entries()]
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5)
         .map(([t]) => t);
+
+      // Learning rule: drop themes that appear in BOTH of the user's two
+      // most recent dismissals.
+      const { data: recentDismissed } = await admin
+        .from("agent_findings")
+        .select("themes, dropped_themes")
+        .eq("user_id", userId)
+        .eq("status", "dismissed")
+        .order("created_at", { ascending: false })
+        .limit(2);
+      const dismissed = (recentDismissed || []) as Array<{ themes: string[] | null; dropped_themes: string[] | null }>;
+      let learnedDrop: string[] = [];
+      if (dismissed.length === 2) {
+        const a = new Set((dismissed[0].themes || []).map((t) => String(t).toLowerCase()));
+        const b = new Set((dismissed[1].themes || []).map((t) => String(t).toLowerCase()));
+        learnedDrop = [...a].filter((t) => b.has(t));
+      }
+      // Only surface newly-dropped themes: exclude ones already recorded as
+      // dropped on the most recent finding row.
+      const { data: lastFindingRow } = await admin
+        .from("agent_findings")
+        .select("dropped_themes")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      const alreadyDropped = new Set(
+        ((lastFindingRow?.[0]?.dropped_themes as string[] | null) || []).map((t) => String(t).toLowerCase()),
+      );
+      const newlyDropped = learnedDrop.filter((t) => !alreadyDropped.has(t));
+      if (learnedDrop.length > 0) {
+        const dropSet = new Set(learnedDrop);
+        topThemes = topThemes.filter((t) => !dropSet.has(t));
+      }
 
       const ctx = {
         level: String((profile as any).level ?? ""),
@@ -347,6 +396,7 @@ Deno.serve(withObserve("night-agent-hunt", async (req) => {
       if (!perp) {
         await admin.from("agent_findings").insert({
           user_id: userId, status: "error", error_detail: "perplexity_failed",
+          themes: topThemes, dropped_themes: newlyDropped,
         });
         summary.error++;
         continue;
@@ -357,6 +407,7 @@ Deno.serve(withObserve("night-agent-hunt", async (req) => {
         await admin.from("agent_findings").insert({
           user_id: userId, status: "error", error_detail: "no_article_extracted",
           perplexity_raw: perp,
+          themes: topThemes, dropped_themes: newlyDropped,
         });
         summary.error++;
         continue;
@@ -373,6 +424,7 @@ Deno.serve(withObserve("night-agent-hunt", async (req) => {
         await admin.from("agent_findings").insert({
           user_id: userId, status: "duplicate", url: article.url,
           title: article.title, source: article.source,
+          themes: topThemes, dropped_themes: newlyDropped,
         });
         summary.duplicate++;
         continue;
@@ -390,6 +442,7 @@ Deno.serve(withObserve("night-agent-hunt", async (req) => {
         await admin.from("agent_findings").insert({
           user_id: userId, status: "duplicate", url: article.url,
           title: article.title, source: article.source,
+          themes: topThemes, dropped_themes: newlyDropped,
         });
         summary.duplicate++;
         continue;
@@ -402,6 +455,7 @@ Deno.serve(withObserve("night-agent-hunt", async (req) => {
           user_id: userId, status: "error", error_detail: "relevance_gate_failed",
           url: article.url, title: article.title, source: article.source,
           perplexity_raw: perp,
+          themes: topThemes, dropped_themes: newlyDropped,
         });
         summary.error++;
         continue;
@@ -412,6 +466,7 @@ Deno.serve(withObserve("night-agent-hunt", async (req) => {
           url: article.url, title: article.title, source: article.source,
           relevance_score: gate.score, implication: gate.implication || null,
           perplexity_raw: perp,
+          themes: topThemes, dropped_themes: newlyDropped,
         });
         summary.below_bar++;
         continue;
@@ -439,6 +494,7 @@ Deno.serve(withObserve("night-agent-hunt", async (req) => {
           url: article.url, title: article.title, source: article.source,
           relevance_score: gate.score, implication: gate.implication || null,
           perplexity_raw: perp,
+          themes: topThemes, dropped_themes: newlyDropped,
         });
         summary.error++;
         continue;
@@ -459,6 +515,7 @@ Deno.serve(withObserve("night-agent-hunt", async (req) => {
         url: article.url, title: article.title, source: article.source,
         relevance_score: gate.score, implication: gate.implication || null,
         entry_id: entryRow.id, perplexity_raw: perp,
+        themes: topThemes, dropped_themes: newlyDropped,
       });
       summary.kept++;
     } catch (e) {
