@@ -419,6 +419,15 @@ const CSS_3D = `
   color: var(--ink);
   line-height: 1.05;
 }
+.sig-door-desc {
+  font-family: 'Newsreader', serif;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  max-width: 90%;
+  margin-top: 8px;
+  padding-right: 26px;
+}
 .sig-door-handle {
   position: absolute;
   right: 16px;
