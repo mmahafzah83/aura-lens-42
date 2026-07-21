@@ -50,6 +50,7 @@ interface RelatedEntry {
   content: string;
   type: string;
   created_at: string;
+  source_type?: string | null;
 }
 
 interface RelatedFramework {
@@ -91,7 +92,7 @@ const SignalExplorer = ({ signal, open, onClose }: SignalExplorerProps) => {
       const tagQuery = sig.theme_tags.slice(0, 3).join(" | ");
       const entriesPromise = supabase
         .from("entries")
-        .select("id, title, content, type, created_at")
+        .select("id, title, content, type, source_type, created_at")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(8)
@@ -317,6 +318,20 @@ const SignalExplorer = ({ signal, open, onClose }: SignalExplorerProps) => {
                       </div>
                       <p className="text-xs font-medium text-foreground/80">{entry.title || "Untitled"}</p>
                       <p className="text-xs text-muted-foreground/45 line-clamp-2 mt-0.5 leading-relaxed">{entry.content}</p>
+                      {entry.source_type === "aura_agent" && (
+                        <p
+                          style={{
+                            fontFamily: "var(--font-mono, 'IBM Plex Mono', ui-monospace, monospace)",
+                            fontSize: 10,
+                            letterSpacing: "0.08em",
+                            textTransform: "uppercase",
+                            marginTop: 6,
+                          }}
+                          className="text-muted-foreground/60"
+                        >
+                          Aura found this for you
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>

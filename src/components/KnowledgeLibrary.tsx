@@ -11,6 +11,7 @@ interface KnowledgeItem {
   subtype: string;
   date: string;
   pillar?: string | null;
+  agentFound?: boolean;
 }
 
 const ENTRY_ICONS: Record<string, typeof Link> = { link: Link, voice: Mic, text: Type, image: ImageIcon };
@@ -27,13 +28,14 @@ const KnowledgeLibrary = () => {
 
   const loadLibrary = async () => {
     const [entriesRes, docsRes] = await Promise.all([
-      supabase.from("entries").select("id, type, title, content, skill_pillar, created_at").order("created_at", { ascending: false }).limit(200),
+      supabase.from("entries").select("id, type, title, content, skill_pillar, source_type, created_at").order("created_at", { ascending: false }).limit(200),
       supabase.from("documents").select("id, filename, file_type, created_at").order("created_at", { ascending: false }).limit(100),
     ]);
 
     const entryItems: KnowledgeItem[] = (entriesRes.data || []).map((e: any) => ({
       id: e.id, type: "entry", title: e.title || e.content?.slice(0, 80) || "Untitled",
       subtype: e.type, date: e.created_at, pillar: e.skill_pillar,
+      agentFound: e.source_type === "aura_agent",
     }));
 
     const docItems: KnowledgeItem[] = (docsRes.data || []).map((d: any) => ({
