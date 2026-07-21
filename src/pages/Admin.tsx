@@ -269,6 +269,27 @@ export default function Admin() {
                 })}
               </div>
 
+              {/* Last 14 days trends */}
+              {brief.trends && Array.isArray(brief.trends.series) && (
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--glass)", marginBottom: 8 }}>Last 14 days</div>
+                  <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
+                    {brief.trends.series.map((s: any) => {
+                      const total = (s.values || []).reduce((a: number, b: number) => a + Number(b || 0), 0);
+                      return (
+                        <div key={s.key} style={{ padding: "12px 14px", borderRadius: 8, backgroundColor: "var(--ob-raised)", border: "1px solid var(--hair)" }}>
+                          <div style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--glass-2)" }}>{s.label}</div>
+                          <div style={{ fontSize: 20, color: "var(--glass)", fontWeight: 500, marginTop: 4 }}>{total}</div>
+                          <div style={{ marginTop: 8 }}>
+                            <Sparkline values={s.values || []} color={s.color} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Attention */}
               <div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: "var(--glass)", marginBottom: 8 }}>Needs your attention</div>
