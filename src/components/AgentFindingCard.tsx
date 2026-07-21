@@ -20,6 +20,8 @@ interface Finding {
   implication: string | null;
   entry_id: string | null;
   created_at: string;
+  themes: string[] | null;
+  dropped_themes: string[] | null;
 }
 
 const MONO: React.CSSProperties = {
@@ -59,7 +61,7 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
       const [{ data: pendingRows }, { count: allCount }, { data: profileRow }] = await Promise.all([
         supabase
           .from("agent_findings" as any)
-          .select("id, title, url, source, implication, entry_id, created_at")
+          .select("id, title, url, source, implication, entry_id, created_at, themes, dropped_themes")
           .eq("user_id", userId)
           .eq("status", "pending")
           .not("entry_id", "is", null)
