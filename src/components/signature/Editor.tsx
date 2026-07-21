@@ -3,6 +3,7 @@ import type { FamilyEntry } from "./renderers";
 import type { Lang, Mood } from "./renderers/shared";
 import { useSuggestions, type Suggestion } from "./useSuggestions";
 import { logSignatureEvent } from "./logEvent";
+import { ensureCardFontsLoaded } from "./fitText";
 
 export interface EditorFields {
   name: string;
@@ -59,6 +60,11 @@ export default function Editor({
 
   const C = family.component;
   const { suggestions, loading: suggestLoading } = useSuggestions(family, lang);
+
+  // Ensure Cairo / Newsreader / IBM Plex Mono are in the browser font
+  // cache before fitText's canvas measurement runs — otherwise Arabic
+  // words each measure as "too wide" and stack one-per-line.
+  useEffect(() => { void ensureCardFontsLoaded(); }, []);
 
   // Debounced 'edited' event: fires ONCE per picked-then-edited session.
   const pickedRef = useRef<{ fields: EditorFields; suggestion: Suggestion } | null>(null);
