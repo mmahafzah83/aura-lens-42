@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { track } from "@/lib/track";
 
@@ -39,6 +40,12 @@ interface AddressProfile {
   sector_focus: string | null;
 }
 
+interface GhostDraft {
+  id: string;
+  source_metadata: Record<string, any> | null;
+  created_at: string;
+}
+
 const AgentFindingCard = ({ userId }: { userId: string | null }) => {
   const [pending, setPending] = useState<Finding[]>([]);
   const [totalEver, setTotalEver] = useState<number>(0);
@@ -50,6 +57,9 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
   const [explainerOpen, setExplainerOpen] = useState(false);
   const explainerInitedRef = useRef(false);
   const seenIdRef = useRef<string | null>(null);
+  const [ghostDraft, setGhostDraft] = useState<GhostDraft | null>(null);
+  const [ghostBusy, setGhostBusy] = useState(false);
+  const navigate = useNavigate();
 
   const current = pending[0] ?? null;
 
@@ -58,7 +68,8 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const [{ data: pendingRows }, { count: allCount }, { data: profileRow }] = await Promise.all([
+      const fortyEightAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+      const [{ data: pendingRows }, { count: allCount }, { data: profileRow }, { data: ghostRows }] = await Promise.all([
         supabase
           .from("agent_findings" as any)
           .select("id, title, url, source, implication, entry_id, created_at, themes, dropped_themes")
@@ -76,11 +87,22 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
           .select("first_name, level, sector_focus")
           .eq("user_id", userId)
           .maybeSingle(),
+        supabase
+          .from("linkedin_posts" as any)
+          .select("id, source_metadata, created_at")
+          .eq("user_id", userId)
+          .eq("tracking_status", "draft")
+          .eq("source_metadata->>ghost_draft", "true")
+          .is("source_metadata->>ghost_draft_opened", null)
+          .gte("created_at", fortyEightAgo)
+          .order("created_at", { ascending: false })
+          .limit(1),
       ]);
       if (cancelled) return;
       setPending(((pendingRows as any) || []) as Finding[]);
       setTotalEver(allCount ?? 0);
       setProfile((profileRow as any) ?? null);
+      setGhostDraft(((ghostRows as any)?.[0] as GhostDraft) ?? null);
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -94,7 +116,7 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
     track("agent_card_seen", { finding_id: current.id });
   }, [current]);
 
-  if (loading || !current) return null;
+  if (loading) return null;
 
   const remainingBeyondShown = Math.max(0, pending.length - 1);
   const isFirstEver = totalEver === 1;
