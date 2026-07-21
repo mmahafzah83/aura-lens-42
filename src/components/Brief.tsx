@@ -7,6 +7,7 @@ import TierExplainer from "@/components/ui/TierExplainer";
 import InfoTooltip from "@/components/ui/InfoTooltip";
 import { FORCES, HEADERS } from "@/constants/language";
 import { track } from "@/lib/track";
+import AgentFindingCard from "@/components/AgentFindingCard";
 
 /**
  * Brief — Editorial Broadsheet (System-A tokens).
@@ -1274,6 +1275,10 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
           <Mono>{dateline}</Mono>
         </div>
       </div>
+
+      {/* Overnight finding — first block under the masthead. Renders only when
+          the user has a pending finding; shows one at a time, never a stack. */}
+      <AgentFindingCard userId={user?.id ?? null} />
 
       {/* 2. LEAD SPREAD ────────────────────────────────────── */}
       <section className="brief-lead" style={{

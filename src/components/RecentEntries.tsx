@@ -255,6 +255,7 @@ const RecentEntries = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: (
               const contentDir = detectDir(entry.content);
               const isPinned = (entry as any).pinned === true;
               const imageUrl = (entry as any).image_url;
+              const isAgentFound = (entry as any).source_type === "aura_agent";
 
               return (
                 <div
@@ -293,6 +294,20 @@ const RecentEntries = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: (
                       </p>
                     )}
                     {entry.summary && <ExpandableSummary text={entry.summary} />}
+                    {isAgentFound && (
+                      <div
+                        style={{
+                          fontFamily: "var(--font-mono, 'IBM Plex Mono', ui-monospace, monospace)",
+                          fontSize: 10,
+                          letterSpacing: "0.08em",
+                          color: "var(--ink-3)",
+                          textTransform: "uppercase",
+                          marginTop: 2,
+                        }}
+                      >
+                        Aura found this for you
+                      </div>
+                    )}
                     <div className="flex items-center gap-2 pt-0.5 flex-wrap">
                       {pillar && (
                         <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/15 text-primary">
