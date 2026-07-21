@@ -1,4 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { AuraLogo } from "@/components/brand/AuraLogo";
 import MiniPreview from "@/components/signature/MiniPreview";
 import FilmStrip from "@/components/signature/FilmStrip";
 import Editor, { type EditorFields } from "@/components/signature/Editor";
@@ -41,6 +43,7 @@ const DOORS: Door[] = [
 ];
 
 export default function SignatureStudio() {
+  const navigate = useNavigate();
   const [openDoor, setOpenDoor] = useState<DoorId | null>(null);
   const [step, setStep] = useState<Step>("doors");
   const [family, setFamily] = useState<FamilyEntry | null>(null);
@@ -165,6 +168,7 @@ export default function SignatureStudio() {
 
       {step === "doors" ? (
         <header style={{ maxWidth: 1120, margin: "0 auto 28px" }}>
+          <EscapeRow navigate={navigate} />
           <div style={{
             fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
             fontSize: 10, letterSpacing: "0.28em", textTransform: "uppercase",
@@ -189,6 +193,7 @@ export default function SignatureStudio() {
           openDoor={openDoor}
           currentIdx={currentIdx}
           onJump={jumpToStep}
+          navigate={navigate}
         />
       )}
 
@@ -261,6 +266,7 @@ export default function SignatureStudio() {
           photoUrl={photoUrl}
           pickedSource={pickedSource}
           onBack={() => setStep("preview")}
+          onBackToAura={() => navigate("/dashboard")}
           onMakeAnother={() => {
             setOpenDoor(null);
             setFamily(null);
@@ -281,12 +287,13 @@ export default function SignatureStudio() {
 /* -------------------------------------------------------------------------- */
 
 function StepHeader({
-  step, openDoor, currentIdx, onJump,
+  step, openDoor, currentIdx, onJump, navigate,
 }: {
   step: Step;
   openDoor: DoorId | null;
   currentIdx: number;
   onJump: (s: Step) => void;
+  navigate: (to: string) => void;
 }) {
   const fams = openDoor ? DOOR_FAMILIES[openDoor] : [];
   const styleSkipped = fams.length <= 1;
@@ -296,8 +303,12 @@ function StepHeader({
         maxWidth: 1240, margin: "0 auto 18px",
         display: "flex", alignItems: "center", gap: 20,
         flexWrap: "wrap",
+        position: "sticky", top: 0, zIndex: 20,
+        background: "var(--ob-bg)",
+        paddingTop: 8, paddingBottom: 8,
       }}
     >
+      <EscapeRow navigate={navigate} compact />
       <div style={{
         fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
         fontSize: 10, letterSpacing: "0.28em", textTransform: "uppercase",
@@ -350,7 +361,63 @@ function StepHeader({
           );
         })}
       </nav>
+      <button
+        type="button"
+        onClick={() => navigate("/dashboard?tab=authority")}
+        aria-label="Close Signature Studio"
+        style={{
+          background: "transparent", border: "1px solid var(--rule)",
+          color: "var(--ink-2)", cursor: "pointer",
+          padding: "6px 10px",
+          fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+          fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase",
+        }}
+      >
+        Close ✕
+      </button>
     </header>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Escape row: AuraLogo home link + "Back to Composer" text link              */
+/* -------------------------------------------------------------------------- */
+
+function EscapeRow({ navigate, compact }: { navigate: (to: string) => void; compact?: boolean }) {
+  return (
+    <div
+      style={{
+        display: "flex", alignItems: "center", gap: 14,
+        marginBottom: compact ? 0 : 14,
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => navigate("/dashboard")}
+        aria-label="Back to Aura home"
+        title="Back to Aura"
+        style={{
+          background: "transparent", border: "none", padding: 0,
+          cursor: "pointer", display: "inline-flex", alignItems: "center",
+          color: "var(--ink)",
+        }}
+      >
+        <AuraLogo size={compact ? 22 : 26} variant="dark" />
+      </button>
+      <button
+        type="button"
+        onClick={() => navigate("/dashboard?tab=authority")}
+        style={{
+          background: "transparent", border: "none", padding: 0,
+          cursor: "pointer",
+          color: "var(--ink-2)",
+          fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+          fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase",
+        }}
+      >
+        ← Back to Composer
+      </button>
+    </div>
   );
 }
 
