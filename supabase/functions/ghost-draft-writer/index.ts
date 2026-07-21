@@ -15,6 +15,24 @@ const corsHeaders = {
 
 const STALENESS_MS = 72 * 60 * 60 * 1000; // 72h — skip stale kept findings
 
+/**
+ * Strip markdown that LinkedIn renders literally so the body reads clean:
+ *   **bold** / __bold__ → bold
+ *   leading # heading   → heading
+ *   [text](url)         → text
+ */
+function sanitizeForLinkedIn(input: string): string {
+  let s = String(input || "");
+  // Markdown links first so any ** inside the label survives cleanly.
+  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1");
+  // Bold markers.
+  s = s.replace(/\*\*(.+?)\*\*/gs, "$1");
+  s = s.replace(/__(.+?)__/gs, "$1");
+  // Leading heading hashes (any number of #, then a space).
+  s = s.replace(/^\s{0,3}#{1,6}\s+/gm, "");
+  return s;
+}
+
 Deno.serve(withObserve("ghost-draft-writer", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -140,7 +158,8 @@ Deno.serve(withObserve("ghost-draft-writer", async (req) => {
         continue;
       }
       const genJson = await genRes.json();
-      const body: string = String(genJson?.content || "").trim();
+      const rawBody: string = String(genJson?.content || "").trim();
+      const body: string = sanitizeForLinkedIn(rawBody).trim();
       if (!body) {
         summary.error++;
         continue;
@@ -165,6 +184,7 @@ Deno.serve(withObserve("ghost-draft-writer", async (req) => {
           ghost_draft_finding_id: finding.id,
           finding_url: finding.url || null,
           finding_source: finding.source || null,
+          finding_implication: finding.implication || null,
         },
       });
       if (insErr) {
