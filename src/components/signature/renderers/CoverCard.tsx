@@ -10,6 +10,7 @@ import {
   getGeometry,
   isAr,
   moodColor,
+  moodWashRGBA,
   xStart,
 } from "./shared";
 import { fitText } from "../fitText";
@@ -25,19 +26,35 @@ export default function CoverCard(props: RendererProps & { square?: boolean }) {
   const g = getGeometry(square);
   const gradId = `cover-bg-${mood}${square ? "-sq" : ""}`;
 
+  const anchor = anchorStart(lang);
+  const xS = xStart(lang, g);
+  const xE = ar ? g.SAFE_X0 : g.SAFE_X1;
+  const anchorEnd: "start" | "end" = ar ? "start" : "end";
+
+  // ── Masthead geometry
+  const mastY = g.SAFE_Y0 + 8;
+  const mastRuleY = mastY + 26;
+
+  // ── Hero name — big cover headline in the lower-middle third
   const nameFit = fitText(name, {
     font: { family: ar ? "Cairo" : "Newsreader", weight: 500, style: ar ? "normal" : "italic" },
     maxWidth: g.QUOTE_MEASURE,
-    minSize: 72,
-    maxSize: square ? 132 : 168,
+    minSize: 84,
+    maxSize: square ? 148 : 188,
     maxLines: 2,
-    lineHeightRatio: ar ? 1.4 : 1.02,
+    lineHeightRatio: ar ? 1.35 : 1.0,
   });
 
-  const anchor = anchorStart(lang);
-  const xS = xStart(lang, g);
-  const label = (title || "").toUpperCase();
-  const under = lines[0] || "";
+  const kicker = "THE PRESENCE EDITION";
+  const coverline = lines[0] || "";
+  const byline = [title, meta].filter(Boolean).join(" · ").toUpperCase();
+  const issueLine = "VOL. 01";
+
+  // Positioning: name sits ~62% down the card
+  const nameBaseY = Math.round(g.H * 0.62);
+  const nameBlock = nameFit.lines.length * nameFit.lineHeight;
+  const nameStartY = nameBaseY - (nameBlock - nameFit.size) / 2;
+  const nameRuleY = nameStartY - nameFit.size - 28;
 
   return (
     <SvgRoot ariaLabel={`Cover card for ${name}`} geom={g}>
@@ -48,30 +65,50 @@ export default function CoverCard(props: RendererProps & { square?: boolean }) {
         </linearGradient>
       </defs>
       <rect x="0" y="0" width={g.W} height={g.H} fill={`url(#${gradId})`} />
+      <rect x="0" y="0" width={g.W} height={g.H} fill={moodWashRGBA(mood, 0.09)} />
+
+      {/* MASTHEAD — AURA wordmark left, kicker right */}
       <text
         x={xS}
-        y={g.SAFE_Y0 + 12}
-        fill={accent}
+        y={mastY + 16}
+        fill={T.paper}
         fontFamily={MONO}
         fontSize="20"
-        letterSpacing="0.32em"
+        fontWeight={700}
+        letterSpacing="0.36em"
         textAnchor={anchor}
         direction={ar ? "rtl" : "ltr"}
       >
-        {label}
+        AURA
       </text>
-      <line
-        x1={ar ? g.SAFE_X1 - 96 : g.SAFE_X0}
-        y1={g.SAFE_Y0 + 26}
-        x2={ar ? g.SAFE_X1 : g.SAFE_X0 + 96}
-        y2={g.SAFE_Y0 + 26}
-        stroke={accent}
-        strokeWidth="2"
+      <text
+        x={xE}
+        y={mastY + 16}
+        fill={accent}
+        fontFamily={MONO}
+        fontSize="13"
+        letterSpacing="0.32em"
+        textAnchor={anchorEnd}
+        direction={ar ? "rtl" : "ltr"}
+      >
+        {kicker}
+      </text>
+      <line x1={g.SAFE_X0} y1={mastRuleY} x2={g.SAFE_X1} y2={mastRuleY} stroke={T.ruleOnDark} strokeWidth="1" />
+
+      {/* Mood-coloured short rule above the hero name */}
+      <rect
+        x={ar ? g.SAFE_X1 - 96 : g.SAFE_X0}
+        y={nameRuleY}
+        width="96"
+        height="4"
+        fill={accent}
       />
+
+      {/* HERO NAME — giant cover headline */}
       <TextBlock
         lines={nameFit.lines}
         x={xS}
-        y={g.SAFE_Y0 + (square ? 90 : 140) + nameFit.size}
+        y={nameStartY}
         lineHeight={nameFit.lineHeight}
         fill={T.paper}
         fontFamily={ar ? "Cairo" : SERIF}
@@ -82,23 +119,25 @@ export default function CoverCard(props: RendererProps & { square?: boolean }) {
         lang={lang}
         letterSpacing="-0.01em"
       />
-      {under && (() => {
-        const underFit = fitText(under, {
+
+      {/* COVERLINE — descriptor line under name */}
+      {coverline && (() => {
+        const coverFit = fitText(coverline, {
           font: { family: ar ? "Cairo" : "Newsreader", weight: 400, style: ar ? "normal" : "italic" },
           maxWidth: g.QUOTE_MEASURE,
-          minSize: 20, maxSize: 30, maxLines: 2,
-          lineHeightRatio: ar ? 1.6 : 1.2,
+          minSize: 22, maxSize: 34, maxLines: 2,
+          lineHeightRatio: ar ? 1.6 : 1.25,
         });
-        const block = underFit.lines.length * underFit.lineHeight;
+        const covY = nameStartY + (nameBlock - nameFit.size) + 46 + coverFit.size;
         return (
           <TextBlock
-            lines={underFit.lines}
+            lines={coverFit.lines}
             x={xS}
-            y={g.SAFE_Y1 - 120 - (block - underFit.size)}
-            lineHeight={underFit.lineHeight}
+            y={covY}
+            lineHeight={coverFit.lineHeight}
             fill={T.paperFaint}
             fontFamily={ar ? "Cairo" : SERIF}
-            fontSize={underFit.size}
+            fontSize={coverFit.size}
             fontStyle={ar ? "normal" : "italic"}
             fontWeight={400}
             anchor={anchor}
@@ -106,20 +145,38 @@ export default function CoverCard(props: RendererProps & { square?: boolean }) {
           />
         );
       })()}
-      {meta && (
+
+      {/* BYLINE — mono credit line above the AuraMark */}
+      {byline && (
         <text
           x={xS}
-          y={g.SAFE_Y1 - 20}
+          y={g.SAFE_Y1 - 52}
           fill={T.paperFaint}
           fontFamily={MONO}
-          fontSize="16"
+          fontSize="14"
           letterSpacing="0.28em"
           textAnchor={anchor}
           direction={ar ? "rtl" : "ltr"}
         >
-          {meta.toUpperCase()}
+          {byline}
         </text>
       )}
+
+      {/* ISSUE LINE — top opposite corner, quiet */}
+      <text
+        x={xE}
+        y={g.SAFE_Y1 - 52}
+        fill={T.paperFaint}
+        fontFamily={MONO}
+        fontSize="11"
+        letterSpacing="0.3em"
+        textAnchor={anchorEnd}
+        direction={ar ? "rtl" : "ltr"}
+        opacity="0.7"
+      >
+        {issueLine}
+      </text>
+
       <AuraMark lang={lang} color={T.paperFaint} geom={g} />
     </SvgRoot>
   );
