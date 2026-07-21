@@ -60,7 +60,7 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
 
     const { data: claimed, error: claimErr } = await adminClient
       .from("linkedin_posts")
-      .update({ tracking_status: "publishing" })
+      .update({ tracking_status: "publishing", claimed_at: new Date().toISOString() })
       .eq("id", postId).eq("user_id", user.id)
       .is("published_confirmed_at", null)
       .neq("tracking_status", "publishing")
