@@ -56,7 +56,7 @@ export function moodColor(m: Mood): string {
 
 export const SERIF = "'Newsreader', Georgia, serif";
 export const MONO = "'IBM Plex Mono', ui-monospace, monospace";
-export const ARABIC = "'Cairo', 'DM Sans', sans-serif";
+export const ARABIC = "'Cairo', system-ui, sans-serif";
 
 export function isAr(lang: Lang): boolean {
   return lang === "ar";
