@@ -1,0 +1,2 @@
+ALTER TABLE public.linkedin_posts ADD COLUMN IF NOT EXISTS claimed_at timestamptz;
+CREATE INDEX IF NOT EXISTS idx_linkedin_posts_publishing_claimed ON public.linkedin_posts (claimed_at) WHERE tracking_status = 'publishing';

@@ -2068,6 +2068,7 @@ export type Database = {
           acquisition: string
           authorship: string
           carousel_structure_type: string | null
+          claimed_at: string | null
           comment_count: number
           content_engine_output_type: string | null
           content_type: string | null
@@ -2109,6 +2110,7 @@ export type Database = {
           acquisition?: string
           authorship?: string
           carousel_structure_type?: string | null
+          claimed_at?: string | null
           comment_count?: number
           content_engine_output_type?: string | null
           content_type?: string | null
@@ -2150,6 +2152,7 @@ export type Database = {
           acquisition?: string
           authorship?: string
           carousel_structure_type?: string | null
+          claimed_at?: string | null
           comment_count?: number
           content_engine_output_type?: string | null
           content_type?: string | null
