@@ -68,6 +68,51 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_findings: {
+        Row: {
+          created_at: string
+          entry_id: string | null
+          error_detail: string | null
+          id: string
+          implication: string | null
+          perplexity_raw: Json | null
+          relevance_score: number | null
+          source: string | null
+          status: string
+          title: string | null
+          url: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entry_id?: string | null
+          error_detail?: string | null
+          id?: string
+          implication?: string | null
+          perplexity_raw?: Json | null
+          relevance_score?: number | null
+          source?: string | null
+          status?: string
+          title?: string | null
+          url?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entry_id?: string | null
+          error_detail?: string | null
+          id?: string
+          implication?: string | null
+          perplexity_raw?: Json | null
+          relevance_score?: number | null
+          source?: string | null
+          status?: string
+          title?: string | null
+          url?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_usage_log: {
         Row: {
           created_at: string
@@ -1034,6 +1079,7 @@ export type Database = {
           image_url: string | null
           pinned: boolean
           skill_pillar: string | null
+          source_type: string
           summary: string | null
           title: string | null
           tsv: unknown
@@ -1053,6 +1099,7 @@ export type Database = {
           image_url?: string | null
           pinned?: boolean
           skill_pillar?: string | null
+          source_type?: string
           summary?: string | null
           title?: string | null
           tsv?: unknown
@@ -1072,6 +1119,7 @@ export type Database = {
           image_url?: string | null
           pinned?: boolean
           skill_pillar?: string | null
+          source_type?: string
           summary?: string | null
           title?: string | null
           tsv?: unknown
