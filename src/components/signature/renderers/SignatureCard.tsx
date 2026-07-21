@@ -1,7 +1,6 @@
 import {
   AuraMark,
   MONO,
-  PhotoPlaceholder,
   RendererProps,
   SERIF,
   SvgRoot,
@@ -10,7 +9,6 @@ import {
   anchorStart,
   getGeometry,
   isAr,
-  moodColor,
   xStart,
 } from "./shared";
 import { fitText } from "../fitText";
@@ -211,8 +209,6 @@ export default function SignatureCard(props: RendererProps & { square?: boolean 
         />
       )}
 
-      {/* Silence unused-import warning without altering behavior */}
-      {false && <PhotoPlaceholder x={0} y={0} w={0} h={0} />}
     </SvgRoot>
   );
 }
