@@ -82,20 +82,30 @@ export default function CoverCard(props: RendererProps & { square?: boolean }) {
         lang={lang}
         letterSpacing="-0.01em"
       />
-      {under && (
-        <text
-          x={xS}
-          y={g.SAFE_Y1 - 120}
-          fill={T.paperFaint}
-          fontFamily={ar ? "Cairo" : SERIF}
-          fontSize="30"
-          fontStyle={ar ? "normal" : "italic"}
-          textAnchor={anchor}
-          direction={ar ? "rtl" : "ltr"}
-        >
-          {under}
-        </text>
-      )}
+      {under && (() => {
+        const underFit = fitText(under, {
+          font: { family: ar ? "Cairo" : "Newsreader", weight: 400, style: ar ? "normal" : "italic" },
+          maxWidth: g.QUOTE_MEASURE,
+          minSize: 20, maxSize: 30, maxLines: 2,
+          lineHeightRatio: ar ? 1.6 : 1.2,
+        });
+        const block = underFit.lines.length * underFit.lineHeight;
+        return (
+          <TextBlock
+            lines={underFit.lines}
+            x={xS}
+            y={g.SAFE_Y1 - 120 - (block - underFit.size)}
+            lineHeight={underFit.lineHeight}
+            fill={T.paperFaint}
+            fontFamily={ar ? "Cairo" : SERIF}
+            fontSize={underFit.size}
+            fontStyle={ar ? "normal" : "italic"}
+            fontWeight={400}
+            anchor={anchor}
+            lang={lang}
+          />
+        );
+      })()}
       {meta && (
         <text
           x={xS}
