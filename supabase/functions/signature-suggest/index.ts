@@ -149,16 +149,21 @@ Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get("Authorization") || "";
     const token = authHeader.replace("Bearer ", "").trim();
-    if (!token) return ok({ suggestions: [] });
+    if (!token) return ok({ suggestions: [], caption: "" });
 
     const anon = createClient(SUPABASE_URL, ANON_KEY);
     const { data: userData, error: userErr } = await anon.auth.getUser(token);
-    if (userErr || !userData?.user) return ok({ suggestions: [] });
+    if (userErr || !userData?.user) return ok({ suggestions: [], caption: "" });
     const userId = userData.user.id;
 
     const body = await req.json().catch(() => ({}));
+    const mode = (body?.mode === "caption") ? "caption" : "suggest";
     const family = (["cover", "signature", "frame", "line"].includes(body?.family) ? body.family : "cover") as Family;
     const lang = (body?.lang === "ar" ? "ar" : "en") as Lang;
+    const cardLines: string[] = Array.isArray(body?.cardLines)
+      ? body.cardLines.map((s: any) => String(s || "").slice(0, 240)).filter(Boolean).slice(0, 4)
+      : [];
+    const pickedSource: string = typeof body?.pickedSource === "string" ? body.pickedSource : "";
 
     // Service-role reads: bypass RLS to load the user's own data server-side.
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
@@ -182,7 +187,73 @@ Deno.serve(async (req) => {
         .limit(3),
     ]);
 
-    if (!LOVABLE_API_KEY) return ok({ suggestions: [] });
+    if (!LOVABLE_API_KEY) return ok({ suggestions: [], caption: "" });
+
+    // ── CAPTION MODE ─────────────────────────────────────────────────────
+    if (mode === "caption") {
+      const wordCap = lang === "ar" ? "60 Arabic words" : "70 English words";
+      const langRule = lang === "ar"
+        ? "Language: Arabic ONLY. Contemporary professional GCC register. No dialect. NO English words. No transliteration."
+        : "Language: English ONLY.";
+      const capSystem = [
+        "You write a LinkedIn caption to accompany a signature card image the user just made.",
+        "Voice: the user's — calm, specific, first-person, no fanfare.",
+        langRule,
+        `Length: 2 to 3 short sentences. Max ${wordCap} total.`,
+        "Ground the caption in the card's own lines. Do NOT restate the card verbatim. Add one sentence of context, one sentence of point of view.",
+        pickedSource === "signal"
+          ? "The card's line came from one of the user's tracked signals — you may reference the underlying observation briefly, without naming it as a 'signal'."
+          : "",
+        "Never use these words in any language: authority (as a noun), thought leader, personal brand, leverage, elevate, unlock, empower, seamless, game-changer, delve, journey.",
+        "No emojis. No hashtags. No exclamation marks. No quote marks around the whole caption.",
+        "Return STRICT JSON only, no prose, no code fences: {\"caption\":\"...\"}",
+      ].filter(Boolean).join("\n");
+
+      const capUser = [
+        "PROFILE:",
+        `- first_name: ${profileRes.data?.first_name || ""}`,
+        `- level: ${profileRes.data?.level || ""}`,
+        `- firm: ${profileRes.data?.firm || ""}`,
+        `- core_practice: ${profileRes.data?.core_practice || ""}`,
+        `- sector_focus: ${profileRes.data?.sector_focus || ""}`,
+        "",
+        "CARD LINES:",
+        ...cardLines.map((l, i) => `${i + 1}. ${l}`),
+        (signalsRes.data && signalsRes.data.length && pickedSource === "signal")
+          ? `\nSOURCE SIGNAL (context, do not name):\n- ${signalsRes.data[0]?.signal_title || ""}\n- implications: ${String(signalsRes.data[0]?.strategic_implications || "").slice(0, 300)}`
+          : "",
+        (voiceRes.data?.tone) ? `\nVOICE tone: ${voiceRes.data.tone}` : "",
+        (postsRes.data && postsRes.data.length)
+          ? `\nRECENT POSTS (style hints only, do not copy):\n${postsRes.data.map((p: any, i: number) => `${i + 1}. ${String(p.body || "").slice(0, 220)}`).join("\n")}`
+          : "",
+      ].filter(Boolean).join("\n");
+
+      const capResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages: [{ role: "system", content: capSystem }, { role: "user", content: capUser }],
+          response_format: { type: "json_object" },
+        }),
+      });
+      if (!capResp.ok) {
+        console.warn("signature-suggest caption gateway error", capResp.status, await capResp.text().catch(() => ""));
+        return ok({ caption: "" });
+      }
+      const capJson = await capResp.json();
+      const capText = capJson?.choices?.[0]?.message?.content || "";
+      const capParsed = parseJson<{ caption?: string }>(capText);
+      let caption = String(capParsed?.caption || "").trim();
+      if (!caption) return ok({ caption: "" });
+      // Enforce banlist + basic cleanliness on the whole caption
+      if (violatesBanlist(caption)) return ok({ caption: "" });
+      // Hard length cap (character safety net)
+      const maxChars = lang === "ar" ? 500 : 550;
+      if (caption.length > maxChars) caption = caption.slice(0, maxChars).replace(/\s+\S*$/, "").trim();
+      return ok({ caption });
+    }
+    // ── /CAPTION MODE ────────────────────────────────────────────────────
 
     const system = buildSystemPrompt(family, lang);
     const user = buildUserPrompt({
