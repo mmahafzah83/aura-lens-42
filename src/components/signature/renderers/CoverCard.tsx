@@ -1,5 +1,6 @@
 import {
   AuraMark,
+  anchorEnd,
   MONO,
   RendererProps,
   SERIF,
@@ -12,6 +13,7 @@ import {
   moodColor,
   moodWashRGBA,
   xStart,
+  xEnd,
 } from "./shared";
 import { fitText } from "../fitText";
 
@@ -27,9 +29,9 @@ export default function CoverCard(props: RendererProps & { square?: boolean }) {
   const gradId = `cover-bg-${mood}${square ? "-sq" : ""}`;
 
   const anchor = anchorStart(lang);
+  const anchorE = anchorEnd(lang);
   const xS = xStart(lang, g);
-  const xE = ar ? g.SAFE_X0 : g.SAFE_X1;
-  const anchorEnd: "start" | "end" = ar ? "start" : "end";
+  const xE = xEnd(lang, g);
 
   // ── Masthead geometry
   const mastY = g.SAFE_Y0 + 8;
