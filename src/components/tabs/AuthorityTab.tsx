@@ -3085,6 +3085,7 @@ const LinkedInPreview = ({
 const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwitchToCreate: () => void; onOpenDraft?: (draft: { id: string; body: string; language: "en" | "ar"; type: "carousel" | "framework" | "linkedin_post"; topic?: string | null; _source?: "content_items" | "linkedin_posts" }) => void; onWriteFromPost?: (prefill: SignalPrefill) => void }) => {
   const [drafts, setDrafts] = useState<SavedPost[]>([]);
   const [publishedPosts, setPublishedPosts] = useState<SavedPost[]>([]);
+  const [needsReview, setNeedsReview] = useState<SavedPost[]>([]);
   const [publishedTotal, setPublishedTotal] = useState<number>(0);
   // Exact-count truth per authorship group (not derived from array.length).
   const [auraTotal, setAuraTotal] = useState<number>(0);
@@ -3276,11 +3277,16 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
         _source: "linkedin_posts" as const,
       }));
 
+    const liNeedsReview: SavedPost[] = (liRes.data || [])
+      .filter((p: any) => p.tracking_status === "needs_review")
+      .map((p: any) => ({ ...p, _source: "linkedin_posts" as const }));
+
     const allDrafts = [...ciDrafts, ...liCarouselDrafts, ...liPostDrafts].sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
     );
     setDrafts(allDrafts);
     setPublishedPosts(liPublished);
+    setNeedsReview(liNeedsReview);
     const urls: Record<string, string> = {};
     (liRes.data || []).forEach((p: any) => { if (p.linkedin_url) urls[p.id] = p.linkedin_url; });
     setSavedUrls(urls);
@@ -3336,6 +3342,41 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
     } catch (err) {
       console.error("[Library] copy failed", err);
       toast.error("Could not copy — please select and copy manually");
+    }
+  };
+
+  const resolveNeedsReviewLive = async (id: string) => {
+    try {
+      const nowIso = new Date().toISOString();
+      const { error } = await supabase
+        .from("linkedin_posts")
+        .update({
+          tracking_status: "published",
+          published_at: nowIso,
+          published_confirmed_at: nowIso,
+          authorship: "aura_drafted",
+          acquisition: "published_via_aura",
+        })
+        .eq("id", id);
+      if (error) throw error;
+      toast.success("Marked as published");
+      await loadPosts();
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't update this post");
+    }
+  };
+
+  const resolveNeedsReviewDraft = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("linkedin_posts")
+        .update({ tracking_status: "draft" })
+        .eq("id", id);
+      if (error) throw error;
+      toast.success("Returned to drafts");
+      await loadPosts();
+    } catch (e: any) {
+      toast.error(e?.message || "Couldn't return to drafts");
     }
   };
 
@@ -3668,6 +3709,82 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
           </div>
         </div>
       </div>
+
+      {needsReview.length > 0 && (
+        <div>
+          <div
+            className="flex items-center gap-2.5 w-full text-left"
+            style={{ borderLeft: "2px solid var(--action, #D6A748)", paddingLeft: 12, marginBottom: 12 }}
+          >
+            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <h3 style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--action, #D6A748)", margin: 0 }}>
+                Needs review
+              </h3>
+              <span style={{ fontFamily: "var(--font-display, var(--font-serif))", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", lineHeight: 1.4 }}>
+                We couldn't confirm these reached LinkedIn. Check your feed before reposting — don't blind-retry.
+              </span>
+            </div>
+            <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--paper-2)", color: "var(--action, #D6A748)" }}>
+              {needsReview.length}
+            </span>
+          </div>
+          <div style={{ display: "grid", gap: 12 }}>
+            {needsReview.map((row) => {
+              const text = row.post_text || "";
+              const rtl = isArabicText(text);
+              return (
+                <div
+                  key={row.id}
+                  style={{
+                    border: "1px solid var(--paper-2)",
+                    borderLeft: "2px solid var(--action, #D6A748)",
+                    padding: 14,
+                    background: "var(--paper)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 10,
+                  }}
+                >
+                  <div
+                    dir={rtl ? "rtl" : "ltr"}
+                    style={{
+                      fontSize: 14,
+                      lineHeight: 1.5,
+                      color: "var(--ink-1)",
+                      whiteSpace: "pre-wrap",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 4,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                      textAlign: rtl ? "right" : "left",
+                    }}
+                  >
+                    {text || <span style={{ fontStyle: "italic", color: "var(--ink-3)" }}>(no text)</span>}
+                  </div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      onClick={() => resolveNeedsReviewLive(row.id)}
+                      className="inline-flex items-center gap-1 text-xs font-semibold hover:underline"
+                      style={{ color: "var(--brand)", background: "transparent", border: 0, cursor: "pointer", padding: "4px 0" }}
+                    >
+                      It's live on LinkedIn
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => resolveNeedsReviewDraft(row.id)}
+                      className="inline-flex items-center gap-1 text-xs font-medium hover:underline"
+                      style={{ color: "var(--color-muted)", background: "transparent", border: 0, cursor: "pointer", padding: "4px 0" }}
+                    >
+                      Return to drafts
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ── Section 1: Aura Drafts ── */}
       <div>
