@@ -7,6 +7,7 @@ import TierExplainer from "@/components/ui/TierExplainer";
 import InfoTooltip from "@/components/ui/InfoTooltip";
 import { FORCES, HEADERS } from "@/constants/language";
 import { track } from "@/lib/track";
+import AgentFindingCard from "@/components/AgentFindingCard";
 
 /**
  * Brief — Editorial Broadsheet (System-A tokens).
