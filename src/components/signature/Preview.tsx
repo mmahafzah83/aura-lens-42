@@ -185,16 +185,19 @@ const PREVIEW_CSS = `
   border: 1px solid var(--rule);
   padding: 16px;
   display: flex; align-items: center; justify-content: center;
-  max-height: 62vh;
+  height: min(70vh, 640px);
+  overflow: hidden;
 }
 .sig-preview-inner {
   display: flex; align-items: center; justify-content: center;
-  max-height: calc(62vh - 32px);
+  width: 100%; height: 100%;
+  overflow: hidden;
 }
 .sig-preview-inner > svg {
-  max-height: calc(62vh - 32px);
-  width: auto !important;
-  height: auto;
+  max-height: 100%;
   max-width: 100%;
+  width: auto;
+  height: auto;
+  display: block;
 }
 `;
