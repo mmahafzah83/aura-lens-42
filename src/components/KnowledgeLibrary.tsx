@@ -140,7 +140,7 @@ const KnowledgeLibrary = () => {
                               color: "var(--ink-3)",
                             }}
                           >
-                            Aura found this for you
+                            THE OVERNIGHT · FOUND FOR YOU
                           </span>
                         )}
                       </div>
