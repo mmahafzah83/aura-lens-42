@@ -3277,11 +3277,16 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
         _source: "linkedin_posts" as const,
       }));
 
+    const liNeedsReview: SavedPost[] = (liRes.data || [])
+      .filter((p: any) => p.tracking_status === "needs_review")
+      .map((p: any) => ({ ...p, _source: "linkedin_posts" as const }));
+
     const allDrafts = [...ciDrafts, ...liCarouselDrafts, ...liPostDrafts].sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
     );
     setDrafts(allDrafts);
     setPublishedPosts(liPublished);
+    setNeedsReview(liNeedsReview);
     const urls: Record<string, string> = {};
     (liRes.data || []).forEach((p: any) => { if (p.linkedin_url) urls[p.id] = p.linkedin_url; });
     setSavedUrls(urls);
