@@ -130,6 +130,19 @@ const KnowledgeLibrary = () => {
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-meta capitalize">{item.type === "document" ? "Document" : item.subtype}</span>
                         {item.pillar && <span className="text-meta bg-primary/10 text-primary/60 px-2 py-0.5 rounded-full">{item.pillar}</span>}
+                        {item.agentFound && (
+                          <span
+                            style={{
+                              fontFamily: "var(--font-mono, 'IBM Plex Mono', ui-monospace, monospace)",
+                              fontSize: 10,
+                              letterSpacing: "0.08em",
+                              textTransform: "uppercase",
+                              color: "var(--ink-3)",
+                            }}
+                          >
+                            Aura found this for you
+                          </span>
+                        )}
                       </div>
                     </div>
                     <span className="text-meta shrink-0">{formatSmartDate(item.date)}</span>
