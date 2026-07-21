@@ -92,14 +92,15 @@ export default function Preview({ family, lang, mood, fields, photoUrl, onBack, 
 
   return (
     <section style={{ maxWidth: 1120, margin: "0 auto" }}>
+      <style>{PREVIEW_CSS}</style>
       <div style={topRow}>
-        <button onClick={onBack} style={backBtn}>← Editor</button>
-        <div style={crumb}>{family.label} · preview</div>
-        <button onClick={onContinue} style={primaryBtn}>Continue to publish →</button>
+        <button onClick={onBack} style={backBtn}>← Back</button>
+        <div style={crumb}>{family.label}</div>
+        <button onClick={onContinue} style={primaryBtn}>Continue to share →</button>
       </div>
 
-      <div style={stage}>
-        <div ref={stageRef} style={{ width: "100%", maxWidth: 720 }}>
+      <div className="sig-preview-stage">
+        <div ref={stageRef} className="sig-preview-inner">
           <C lang={lang} mood={mood} photoUrl={photoUrl}
              name={fields.name} title={fields.title}
              lines={[fields.line1, fields.line2]} meta={fields.meta} />
@@ -120,7 +121,7 @@ export default function Preview({ family, lang, mood, fields, photoUrl, onBack, 
 
 const topRow: React.CSSProperties = {
   display: "flex", alignItems: "center", justifyContent: "space-between",
-  marginBottom: 20,
+  marginBottom: 14,
 };
 const crumb: React.CSSProperties = {
   fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
@@ -134,7 +135,7 @@ const stage: React.CSSProperties = {
   display: "flex", alignItems: "center", justifyContent: "center",
 };
 const exportRow: React.CSSProperties = {
-  marginTop: 24,
+  marginTop: 16,
   display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap",
 };
 const exportBtn: React.CSSProperties = {
@@ -165,3 +166,23 @@ const primaryBtn: React.CSSProperties = {
   background: "var(--spot)",
   borderColor: "var(--spot)",
 };
+
+const PREVIEW_CSS = `
+.sig-preview-stage {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  padding: 16px;
+  display: flex; align-items: center; justify-content: center;
+  max-height: 62vh;
+}
+.sig-preview-inner {
+  display: flex; align-items: center; justify-content: center;
+  max-height: calc(62vh - 32px);
+}
+.sig-preview-inner > svg {
+  max-height: calc(62vh - 32px);
+  width: auto !important;
+  height: auto;
+  max-width: 100%;
+}
+`;

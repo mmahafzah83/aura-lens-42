@@ -5,7 +5,7 @@ import Editor, { type EditorFields } from "@/components/signature/Editor";
 import Preview from "@/components/signature/Preview";
 import Publish from "@/components/signature/Publish";
 import { useLiveData, defaultsFor } from "@/components/signature/useLiveData";
-import type { FamilyEntry } from "@/components/signature/renderers";
+import { DOOR_FAMILIES, type FamilyEntry } from "@/components/signature/renderers";
 import type { Lang, Mood } from "@/components/signature/renderers/shared";
 
 /**
@@ -16,6 +16,14 @@ import type { Lang, Mood } from "@/components/signature/renderers/shared";
 
 type DoorId = "me" | "photo" | "words";
 type Step = "doors" | "filmstrip" | "editor" | "preview" | "publish";
+const STEP_ORDER: Step[] = ["doors", "filmstrip", "editor", "preview", "publish"];
+const STEP_HUMAN: Record<Step, string> = {
+  doors: "Choose",
+  filmstrip: "Style",
+  editor: "Make it yours",
+  preview: "Preview",
+  publish: "Share",
+};
 
 interface Door {
   id: DoorId;
@@ -32,14 +40,6 @@ const DOORS: Door[] = [
   { id: "words", title: "Just words", plate: "The Line", desc: "No photo. Your line, framed.", variant: "line", delayMs: 220 },
 ];
 
-const STEP_LABEL: Record<Step, string> = {
-  doors: "Doors",
-  filmstrip: "Filmstrip",
-  editor: "Editor",
-  preview: "Preview",
-  publish: "Publish",
-};
-
 export default function SignatureStudio() {
   const [openDoor, setOpenDoor] = useState<DoorId | null>(null);
   const [step, setStep] = useState<Step>("doors");
@@ -55,11 +55,35 @@ export default function SignatureStudio() {
   const doorRefs = useRef<Record<DoorId, HTMLDivElement | null>>({
     me: null, photo: null, words: null,
   });
+  const prevStepIdxRef = useRef<number>(0);
+  const [direction, setDirection] = useState<"fwd" | "back">("fwd");
+
+  const currentIdx = STEP_ORDER.indexOf(step);
+  useEffect(() => {
+    const prev = prevStepIdxRef.current;
+    setDirection(currentIdx >= prev ? "fwd" : "back");
+    prevStepIdxRef.current = currentIdx;
+  }, [currentIdx]);
+
+  // A door with a single family skips the style step entirely.
+  const goAfterDoor = useCallback((id: DoorId) => {
+    setOpenDoor(id);
+    const fams = DOOR_FAMILIES[id];
+    if (fams.length <= 1 && fams[0]) {
+      const fam = fams[0];
+      const d = defaultsFor(fam.id, live);
+      setFamily(fam);
+      setFields({ name: d.name, title: d.title, line1: d.lines[0] || "", line2: d.lines[1] || "", meta: d.meta });
+      setPickedSource(null);
+      setStep("editor");
+    } else {
+      setStep("filmstrip");
+    }
+  }, [live]);
 
   const openDoorNow = useCallback((id: DoorId) => {
-    setOpenDoor(id);
-    setStep("filmstrip");
-  }, []);
+    goAfterDoor(id);
+  }, [goAfterDoor]);
 
   const closeAll = useCallback(() => {
     setOpenDoor(null);
@@ -84,9 +108,28 @@ export default function SignatureStudio() {
   const stepBack = useCallback(() => {
     if (step === "publish") setStep("preview");
     else if (step === "preview") setStep("editor");
-    else if (step === "editor") setStep("filmstrip");
+    else if (step === "editor") {
+      // If door has only one family, style step was skipped — jump to doors.
+      const fams = openDoor ? DOOR_FAMILIES[openDoor] : [];
+      if (fams.length <= 1) { setOpenDoor(null); setStep("doors"); setFamily(null); }
+      else setStep("filmstrip");
+    }
     else if (step === "filmstrip") { setOpenDoor(null); setStep("doors"); setFamily(null); }
-  }, [step]);
+  }, [step, openDoor]);
+
+  // Rail: allow jumping BACK to any completed step (never forward).
+  const jumpToStep = useCallback((target: Step) => {
+    const ti = STEP_ORDER.indexOf(target);
+    if (ti < 0 || ti > currentIdx) return;
+    if (target === "doors") { setOpenDoor(null); setStep("doors"); setFamily(null); return; }
+    if (target === "filmstrip") {
+      const fams = openDoor ? DOOR_FAMILIES[openDoor] : [];
+      if (fams.length <= 1) { setOpenDoor(null); setStep("doors"); setFamily(null); return; }
+      setStep("filmstrip");
+      return;
+    }
+    setStep(target);
+  }, [currentIdx, openDoor]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -115,84 +158,45 @@ export default function SignatureStudio() {
         ["--spot" as any]: "#D4B056",
         ["--font-serif" as any]: "'Newsreader', serif",
         fontFamily: "'Newsreader', serif",
-        padding: "56px 24px 96px",
+        padding: step === "doors" ? "56px 24px 96px" : "18px 24px 48px",
       }}
     >
       <style>{CSS_3D}</style>
 
-      <header style={{ maxWidth: 1120, margin: "0 auto 40px" }}>
-        <div
-          style={{
+      {step === "doors" ? (
+        <header style={{ maxWidth: 1120, margin: "0 auto 28px" }}>
+          <div style={{
             fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
-            fontSize: 10,
-            letterSpacing: "0.28em",
-            textTransform: "uppercase",
+            fontSize: 10, letterSpacing: "0.28em", textTransform: "uppercase",
             color: "var(--spot)",
-          }}
-        >
-          Signature Studio
-        </div>
-        <h1
-          style={{
+          }}>Signature Studio</div>
+          <h1 style={{
             margin: "8px 0 6px",
             fontFamily: "'Newsreader', serif",
-            fontStyle: "italic",
-            fontWeight: 500,
-            fontSize: "clamp(2.4rem, 5vw, 3.6rem)",
-            letterSpacing: "-0.02em",
-            lineHeight: 1.05,
+            fontStyle: "italic", fontWeight: 500,
+            fontSize: "clamp(2rem, 4vw, 3rem)",
+            letterSpacing: "-0.02em", lineHeight: 1.05,
             color: "var(--ink)",
-          }}
-        >
-          Signature
-        </h1>
-        <p
-          style={{
-            margin: 0,
-            fontFamily: "'Newsreader', serif",
-            fontSize: 18,
-            lineHeight: 1.5,
-            color: "var(--ink-2)",
-            maxWidth: 620,
-          }}
-        >
-          Your expertise, in one frame.
-        </p>
-      </header>
+          }}>Signature</h1>
+          <p style={{
+            margin: 0, fontFamily: "'Newsreader', serif",
+            fontSize: 17, lineHeight: 1.5, color: "var(--ink-2)", maxWidth: 620,
+          }}>Your expertise, in one frame.</p>
+        </header>
+      ) : (
+        <StepHeader
+          step={step}
+          openDoor={openDoor}
+          currentIdx={currentIdx}
+          onJump={jumpToStep}
+        />
+      )}
 
-      {/* Step indicator */}
-      <nav
-        aria-label="Studio steps"
-        style={{
-          maxWidth: 1120,
-          margin: "0 auto 32px",
-          display: "flex",
-          gap: 18,
-          flexWrap: "wrap",
-          fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
-          fontSize: 10,
-          letterSpacing: "0.22em",
-          textTransform: "uppercase",
-        }}
+      <div
+        key={step}
+        className={`sig-step-anim sig-step-${direction}`}
       >
-        {(Object.keys(STEP_LABEL) as Step[]).map((s, i) => {
-          const active = s === step;
-          return (
-            <span
-              key={s}
-              style={{
-                color: active ? "var(--spot)" : "var(--ink-3)",
-                borderBottom: active ? "1px solid var(--spot)" : "1px solid transparent",
-                paddingBottom: 4,
-              }}
-            >
-              {String(i + 1).padStart(2, "0")} · {STEP_LABEL[s]}
-            </span>
-          );
-        })}
-      </nav>
-
-      {step === "doors" || openDoor === null ? (
+      {step === "doors" ? (
         <section
           className="sig-doors"
           style={{
@@ -214,7 +218,7 @@ export default function SignatureStudio() {
             />
           ))}
         </section>
-      ) : step === "filmstrip" ? (
+      ) : step === "filmstrip" && openDoor ? (
         <FilmStrip
           door={openDoor}
           lang={lang}
@@ -235,7 +239,7 @@ export default function SignatureStudio() {
           onFields={setFields}
           onPhoto={setPhotoUrl}
           onPickedSource={setPickedSource}
-          onBack={() => setStep("filmstrip")}
+          onBack={stepBack}
           onContinue={() => setStep("preview")}
         />
       ) : step === "preview" && family ? (
@@ -266,10 +270,87 @@ export default function SignatureStudio() {
             setStep("doors");
           }}
         />
-      ) : (
-        <StepPlaceholder step={step} onBack={() => setStep("preview")} doorId={openDoor} />
-      )}
+      ) : null}
+      </div>
     </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Compact step header (wordmark + rail)                                      */
+/* -------------------------------------------------------------------------- */
+
+function StepHeader({
+  step, openDoor, currentIdx, onJump,
+}: {
+  step: Step;
+  openDoor: DoorId | null;
+  currentIdx: number;
+  onJump: (s: Step) => void;
+}) {
+  const fams = openDoor ? DOOR_FAMILIES[openDoor] : [];
+  const styleSkipped = fams.length <= 1;
+  return (
+    <header
+      style={{
+        maxWidth: 1240, margin: "0 auto 18px",
+        display: "flex", alignItems: "center", gap: 20,
+        flexWrap: "wrap",
+      }}
+    >
+      <div style={{
+        fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+        fontSize: 10, letterSpacing: "0.28em", textTransform: "uppercase",
+        color: "var(--spot)", whiteSpace: "nowrap",
+      }}>
+        Signature
+      </div>
+      <nav
+        aria-label="Studio steps"
+        style={{
+          display: "flex", gap: 14, flexWrap: "wrap",
+          fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+          fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase",
+          flex: 1,
+        }}
+      >
+        {STEP_ORDER.map((s, i) => {
+          const idx = i;
+          const active = s === step;
+          const completed = idx < currentIdx;
+          const future = idx > currentIdx;
+          const skipped = s === "filmstrip" && styleSkipped;
+          const clickable = completed && !skipped;
+          return (
+            <button
+              key={s}
+              type="button"
+              onClick={() => clickable && onJump(s)}
+              disabled={!clickable}
+              aria-current={active ? "step" : undefined}
+              style={{
+                background: "transparent",
+                border: "none",
+                padding: "4px 0",
+                cursor: clickable ? "pointer" : "default",
+                color: active ? "var(--spot)"
+                  : future || skipped ? "var(--ink-3)"
+                  : "var(--ink-2)",
+                borderBottom: active ? "1px solid var(--spot)" : "1px solid transparent",
+                opacity: skipped ? 0.45 : 1,
+                fontFamily: "inherit",
+                fontSize: "inherit",
+                letterSpacing: "inherit",
+                textTransform: "inherit",
+              }}
+              title={skipped ? "Not needed for this choice" : undefined}
+            >
+              {String(idx + 1).padStart(2, "0")} · {STEP_HUMAN[s]}
+            </button>
+          );
+        })}
+      </nav>
+    </header>
   );
 }
 
@@ -332,79 +413,24 @@ function DoorCard({ door, isOpen, onOpen, onClose, refCb }: DoorCardProps) {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Step placeholder                                                           */
-/* -------------------------------------------------------------------------- */
-
-function StepPlaceholder({
-  step,
-  onBack,
-  doorId,
-}: {
-  step: Step;
-  onBack: () => void;
-  doorId: DoorId;
-}) {
-  return (
-    <section
-      style={{
-        maxWidth: 900,
-        margin: "0 auto",
-        background: "var(--paper)",
-        border: "1px solid var(--rule)",
-        padding: 40,
-        textAlign: "center",
-      }}
-    >
-      <div
-        style={{
-          fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
-          fontSize: 10,
-          letterSpacing: "0.24em",
-          textTransform: "uppercase",
-          color: "var(--spot)",
-        }}
-      >
-        {STEP_LABEL[step]} — placeholder
-      </div>
-      <h2
-        style={{
-          margin: "12px 0",
-          fontFamily: "'Newsreader', serif",
-          fontStyle: "italic",
-          fontSize: 28,
-          color: "var(--ink)",
-        }}
-      >
-        Coming next
-      </h2>
-      <p style={{ color: "var(--ink-2)", margin: "0 0 20px" }}>
-        You opened <em>{doorId}</em>. The {step} panel will live here.
-      </p>
-      <button
-        onClick={onBack}
-        style={{
-          background: "transparent",
-          color: "var(--ink)",
-          border: "1px solid var(--spot)",
-          padding: "10px 22px",
-          fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
-          fontSize: 10,
-          letterSpacing: "0.24em",
-          textTransform: "uppercase",
-          cursor: "pointer",
-        }}
-      >
-        ← Back
-      </button>
-    </section>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
 /* CSS — 3D doors, mobile stack, reduced motion                               */
 /* -------------------------------------------------------------------------- */
 
 const CSS_3D = `
+.sig-step-anim { animation: sigStepInFwd 280ms cubic-bezier(.22,1,.36,1) both; }
+.sig-step-anim.sig-step-back { animation-name: sigStepInBack; }
+@keyframes sigStepInFwd {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes sigStepInBack {
+  from { opacity: 0; transform: translateX(-24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sig-step-anim { animation: none !important; }
+}
+
 .sig-door-frame {
   position: relative;
   aspect-ratio: 3 / 4;

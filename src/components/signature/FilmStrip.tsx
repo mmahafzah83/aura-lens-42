@@ -20,26 +20,24 @@ interface Props {
 export default function FilmStrip({ door, lang, mood, live, onSelect, onBack }: Props) {
   const families = useMemo(() => DOOR_FAMILIES[door], [door]);
   return (
-    <section style={{ maxWidth: 1120, margin: "0 auto" }}>
+    <section style={{ maxWidth: 1240, margin: "0 auto" }}>
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        marginBottom: 20,
+        marginBottom: 16,
       }}>
-        <div style={{
-          fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
-          fontSize: 10, letterSpacing: "0.24em", textTransform: "uppercase",
-          color: "var(--spot)",
-        }}>
-          Choose a family
-        </div>
-        <button onClick={onBack} style={backBtn}>← Back to doors</button>
+        <h2 style={{
+          margin: 0,
+          fontFamily: "'Newsreader', serif", fontStyle: "italic", fontWeight: 500,
+          fontSize: "clamp(1.4rem, 2.4vw, 1.9rem)",
+          color: "var(--ink)", letterSpacing: "-0.01em",
+        }}>Pick a card style</h2>
+        <button onClick={onBack} style={backBtn}>← Back</button>
       </div>
 
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: `repeat(${families.length}, minmax(0, 1fr))`,
-          gap: 24,
+          display: "flex", flexWrap: "wrap",
+          gap: 24, justifyContent: "center", alignItems: "flex-start",
         }}
       >
         {families.map((fam) => {
@@ -82,11 +80,12 @@ const STRIP_CSS = `
 .sig-strip-tile {
   background: transparent;
   border: 1px solid var(--rule);
-  padding: 14px;
+  padding: 10px;
   cursor: pointer;
   display: block;
   text-align: inherit;
   color: inherit;
+  width: 210px;
   transition: transform .35s cubic-bezier(.22,1,.36,1), border-color .3s ease, box-shadow .35s ease;
 }
 .sig-strip-tile:hover {
@@ -106,7 +105,8 @@ const STRIP_CSS = `
 }
 .sig-strip-preview svg { width: 100%; height: 100%; display: block; }
 .sig-strip-caption {
-  margin-top: 10px;
+  margin-top: 8px;
+  text-align: center;
   font-family: 'IBM Plex Mono', ui-monospace, monospace;
   font-size: 10px;
   letter-spacing: 0.24em;

@@ -119,22 +119,15 @@ export default function Editor({
 
   return (
     <section style={{ maxWidth: 1240, margin: "0 auto" }}>
+      <style>{EDITOR_CSS}</style>
       <div style={topRow}>
-        <button onClick={onBack} style={backBtn}>← Filmstrip</button>
-        <div style={crumb}>{family.label} · editor</div>
+        <button onClick={onBack} style={backBtn}>← Back</button>
+        <div style={crumb}>{family.label}</div>
         <button onClick={onContinue} style={primaryBtn}>Continue →</button>
       </div>
 
-      <div style={grid}>
-        <div style={stage}>
-          <div style={stageInner}>
-            <C lang={lang} mood={mood} photoUrl={photoUrl}
-               name={fields.name} title={fields.title}
-               lines={[fields.line1, fields.line2]} meta={fields.meta} />
-          </div>
-        </div>
-
-        <div style={panel}>
+      <div className="sig-editor-grid">
+        <div className="sig-editor-panel">
           <div style={suggestWrap}>
             <div style={fieldLabel}>
               Suggestions {suggestLoading && <span style={thinkingDot}>· thinking…</span>}
@@ -148,11 +141,12 @@ export default function Editor({
                   key={i}
                   type="button"
                   onClick={() => pickSuggestion(s)}
+                  className="sig-suggest-card"
                   style={suggestCard}
                   title={`Fill from ${s.source}`}
                 >
                   <span style={suggestSource}>{s.source}</span>
-                  <span style={suggestLines}>
+                  <span className="sig-suggest-lines" style={suggestLines}>
                     {s.lines.map((l, j) => <span key={j} style={{ display: "block" }}>{l}</span>)}
                   </span>
                 </button>
@@ -212,6 +206,18 @@ export default function Editor({
           <Field label="Byline / firm">
             <input value={fields.meta} onChange={(e) => set("meta", e.target.value)} style={input} />
           </Field>
+
+          <div className="sig-editor-continue">
+            <button onClick={onContinue} style={{ ...primaryBtn, width: "100%" }}>Continue →</button>
+          </div>
+        </div>
+
+        <div className="sig-editor-stage">
+          <div className="sig-editor-stage-inner">
+            <C lang={lang} mood={mood} photoUrl={photoUrl}
+               name={fields.name} title={fields.title}
+               lines={[fields.line1, fields.line2]} meta={fields.meta} />
+          </div>
         </div>
       </div>
     </section>
@@ -355,3 +361,60 @@ const thinkingDot: React.CSSProperties = {
   color: "var(--ink-3)", fontStyle: "italic", textTransform: "none",
   letterSpacing: 0, marginLeft: 6,
 };
+
+const EDITOR_CSS = `
+.sig-editor-grid {
+  display: grid;
+  gap: 22px;
+  grid-template-columns: minmax(360px, 420px) minmax(0, 1fr);
+  align-items: start;
+}
+.sig-editor-panel {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  padding: 16px;
+  display: flex; flex-direction: column; gap: 12px;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+}
+.sig-editor-stage {
+  position: sticky; top: 16px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  padding: 16px;
+  display: flex; align-items: center; justify-content: center;
+  max-height: 62vh;
+}
+.sig-editor-stage-inner {
+  width: 100%; height: 100%;
+  max-height: calc(62vh - 32px);
+  display: flex; align-items: center; justify-content: center;
+}
+.sig-editor-stage-inner > svg { max-height: calc(62vh - 32px); width: auto !important; height: auto; max-width: 100%; }
+.sig-editor-continue { padding-top: 8px; border-top: 1px solid var(--rule); margin-top: 4px; position: sticky; bottom: -16px; background: var(--paper); }
+
+.sig-suggest-card { position: relative; }
+.sig-suggest-lines {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  transition: -webkit-line-clamp .2s ease;
+}
+.sig-suggest-card:hover .sig-suggest-lines,
+.sig-suggest-card:focus-visible .sig-suggest-lines {
+  -webkit-line-clamp: 8;
+}
+
+@media (max-width: 900px) {
+  .sig-editor-grid { grid-template-columns: 1fr; }
+  .sig-editor-stage { position: sticky; top: 8px; max-height: 40vh; order: -1; }
+  .sig-editor-stage-inner > svg { max-height: calc(40vh - 32px); }
+  .sig-editor-panel { max-height: none; overflow: visible; padding-bottom: 88px; }
+  .sig-editor-continue {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    padding: 12px 16px; margin: 0; border-top: 1px solid var(--rule);
+    background: var(--paper); z-index: 20;
+  }
+}
+`;
