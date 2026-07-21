@@ -1,6 +1,6 @@
 import {
   AuraMark, MONO, RendererProps, SERIF, SvgRoot, T, TextBlock,
-  anchorStart, getGeometry, isAr, moodColor, xStart,
+  anchorStart, getGeometry, isAr, moodColor, moodWashRGBA, xStart,
 } from "./shared";
 import { fitText } from "../fitText";
 
