@@ -90,6 +90,13 @@ const formatRunAt = (iso: string | null) => {
   });
 };
 
+const fmt = (n: number) => {
+  if (!Number.isFinite(n)) return "0";
+  if (n >= 1_000_000) return (n / 1e6).toFixed(1) + "M";
+  if (n >= 1000) return (n / 1000).toFixed(n >= 10000 ? 0 : 1) + "K";
+  return String(n);
+};
+
 const cardStyle = {
   backgroundColor: "var(--ob-panel)",
   border: "1px solid var(--hair)",
