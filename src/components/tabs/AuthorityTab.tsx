@@ -363,7 +363,7 @@ async function insertPublishedLinkedInPost(opts: {
     .catch((e) => console.error("calculate-aura-score failed:", e));
 }
 
-const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftPrefill, onDraftPrefillConsumed }: { planPrefill?: PlanPrefill | null; signalPrefill?: SignalPrefill | null; onSignalPrefillConsumed?: () => void; draftPrefill?: DraftPrefill | null; onDraftPrefillConsumed?: () => void }) => {
+const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftPrefill, onDraftPrefillConsumed, onGoToLibrary }: { planPrefill?: PlanPrefill | null; signalPrefill?: SignalPrefill | null; onSignalPrefillConsumed?: () => void; draftPrefill?: DraftPrefill | null; onDraftPrefillConsumed?: () => void; onGoToLibrary?: () => void }) => {
   const navigate = useNavigate();
   const [topic, setTopic] = useState("");
   const [context, setContext] = useState("");
