@@ -109,15 +109,16 @@ export interface SvgRootProps {
   children: React.ReactNode;
   role?: string;
   ariaLabel?: string;
+  geom: Geometry;
 }
 
-export function SvgRoot({ children, role = "img", ariaLabel }: SvgRootProps) {
+export function SvgRoot({ children, role = "img", ariaLabel, geom }: SvgRootProps) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      viewBox={`0 0 ${CANVAS.W} ${CANVAS.H}`}
-      width={CANVAS.W}
-      height={CANVAS.H}
+      viewBox={`0 0 ${geom.W} ${geom.H}`}
+      width={geom.W}
+      height={geom.H}
       role={role}
       aria-label={ariaLabel}
       style={DEFAULT_SVG_STYLE}
@@ -131,11 +132,11 @@ export function SvgRoot({ children, role = "img", ariaLabel }: SvgRootProps) {
  * AuraMark — quiet horizon-eye glyph + AURA wordmark. Placed at the
  * bottom inline-end corner of every card, inside the safe zone.
  */
-export function AuraMark({ lang, color = T.paper }: { lang: Lang; color?: string }) {
+export function AuraMark({ lang, color = T.paper, geom }: { lang: Lang; color?: string; geom: Geometry }) {
   const ar = isAr(lang);
   // Anchor to the inline-end corner just inside the safe zone.
-  const x = ar ? SAFE_X0 : SAFE_X1;
-  const y = SAFE_Y1;
+  const x = ar ? geom.SAFE_X0 : geom.SAFE_X1;
+  const y = geom.SAFE_Y1;
   const glyph = (
     <g transform={`translate(${ar ? 0 : -14}, -6)`} fill={color} stroke={color}>
       <ellipse cx="0" cy="0" rx="14" ry="6" fill="none" strokeWidth="1.4" />
