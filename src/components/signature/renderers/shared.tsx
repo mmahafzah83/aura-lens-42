@@ -321,6 +321,7 @@ export function TextBlock({
           fontWeight={fontWeight}
           textAnchor={anchor}
           direction={isAr(lang) ? "rtl" : "ltr"}
+          unicodeBidi={isAr(lang) ? "plaintext" : undefined as any}
           letterSpacing={letterSpacing}
         >
           {line}
