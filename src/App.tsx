@@ -23,6 +23,7 @@ import AdminGate from "./components/AdminGate";
 import { ThemeProvider } from "./components/ThemeProvider";
 import CookieConsent from "./components/CookieConsent";
 import ErrorBoundary from "./components/ErrorBoundary";
+import PageViewTracker from "./components/PageViewTracker";
 
 // Lazy-loaded heavy / rarely-visited routes
 const Landing = lazy(() => import("./pages/Landing"));
@@ -68,6 +69,7 @@ const App = () => (
         <ErrorBoundary>
         <BrowserRouter>
           <CookieConsent />
+          <PageViewTracker />
           <Suspense
             fallback={
               <div
