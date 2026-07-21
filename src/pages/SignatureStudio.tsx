@@ -4,7 +4,7 @@ import MiniPreview from "@/components/signature/MiniPreview";
 /**
  * Signature Studio — shell.
  * System-A tokens only. Dark stage (--ob-bg) with three 3D doors.
- * Motion: pure CSS 3D, no library, no infinite animation.
+ * Motion: pure CSS 3D, no library, no looping animation.
  */
 
 type DoorId = "me" | "photo" | "words";
