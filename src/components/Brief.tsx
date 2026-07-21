@@ -1276,6 +1276,10 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
         </div>
       </div>
 
+      {/* Overnight finding — first block under the masthead. Renders only when
+          the user has a pending finding; shows one at a time, never a stack. */}
+      <AgentFindingCard userId={user?.id ?? null} />
+
       {/* 2. LEAD SPREAD ────────────────────────────────────── */}
       <section className="brief-lead" style={{
         display: "grid", gridTemplateColumns: "1fr 310px", gap: 40, marginBottom: 48,
