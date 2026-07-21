@@ -1,6 +1,6 @@
 import {
   AuraMark, MONO, RendererProps, SvgRoot, T, TextBlock,
-  anchorStart, getGeometry, isAr, moodColor, pickQuoteFont, quoteLineHeight, xStart,
+  anchorStart, getGeometry, isAr, moodColor, moodWashRGBA, pickQuoteFont, quoteLineHeight, xStart,
 } from "./shared";
 import { fitText } from "../fitText";
 
@@ -26,6 +26,7 @@ export default function LineCard(props: RendererProps & { square?: boolean }) {
   return (
     <SvgRoot ariaLabel={`Line card: ${quote}`} geom={g}>
       <rect x="0" y="0" width={g.W} height={g.H} fill={T.panel} />
+      <rect x="0" y="0" width={g.W} height={g.H} fill={moodWashRGBA(mood, 0.10)} />
       <rect x={ar ? g.SAFE_X1 - 48 : g.SAFE_X0} y={quoteY - fit.size - 44} width="48" height="4" fill={accent} />
       <TextBlock lines={fit.lines} x={xS} y={quoteY} lineHeight={lineH} fill={T.paper} fontFamily={font.family} fontSize={fit.size} fontStyle={font.style} fontWeight={font.weight} anchor={anchor} lang={lang} letterSpacing={ar ? "0" : "-0.01em"} />
       {(() => {
