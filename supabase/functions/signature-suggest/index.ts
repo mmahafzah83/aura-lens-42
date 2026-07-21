@@ -130,7 +130,7 @@ function buildUserPrompt(ctx: {
   if (ctx.posts?.length) {
     parts.push("\nRECENT POSTS (style hints only, do not copy):");
     ctx.posts.forEach((pp, i) => {
-      const body = String(pp.body || "").slice(0, 200);
+      const body = String(pp.post_text || "").slice(0, 200);
       parts.push(`${i + 1}. ${body}`);
     });
   }
@@ -181,8 +181,9 @@ Deno.serve(async (req) => {
         .select("tone, preferred_structures")
         .eq("user_id", userId).maybeSingle(),
       admin.from("linkedin_posts")
-        .select("body, likes, comments, created_at")
+        .select("post_text, engagement_score, created_at")
         .eq("user_id", userId)
+        .not("post_text", "is", null)
         .order("created_at", { ascending: false })
         .limit(3),
     ]);
@@ -224,7 +225,7 @@ Deno.serve(async (req) => {
           : "",
         (voiceRes.data?.tone) ? `\nVOICE tone: ${voiceRes.data.tone}` : "",
         (postsRes.data && postsRes.data.length)
-          ? `\nRECENT POSTS (style hints only, do not copy):\n${postsRes.data.map((p: any, i: number) => `${i + 1}. ${String(p.body || "").slice(0, 220)}`).join("\n")}`
+          ? `\nRECENT POSTS (style hints only, do not copy):\n${postsRes.data.map((p: any, i: number) => `${i + 1}. ${String(p.post_text || "").slice(0, 220)}`).join("\n")}`
           : "",
       ].filter(Boolean).join("\n");
 
