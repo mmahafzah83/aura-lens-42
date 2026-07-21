@@ -111,10 +111,12 @@ export default function Preview({ family, lang, mood, fields, photoUrl, onBack, 
 
       <div style={exportRow}>
         <button disabled={busy !== null} onClick={() => doExport(false)} style={exportBtn}>
-          {busy === "portrait" ? "Rendering…" : "Download 1080 × 1350"}
+          <span style={exportLabel}>{busy === "portrait" ? "Rendering…" : "LinkedIn & feeds"}</span>
+          <span style={exportSub}>Portrait 4:5 · best for LinkedIn, feeds</span>
         </button>
         <button disabled={busy !== null} onClick={() => doExport(true)} style={exportBtn}>
-          {busy === "square" ? "Rendering…" : "Download 1080 × 1080"}
+          <span style={exportLabel}>{busy === "square" ? "Rendering…" : "Square"}</span>
+          <span style={exportSub}>1:1 · Instagram, X</span>
         </button>
       </div>
     </section>
@@ -144,12 +146,20 @@ const exportBtn: React.CSSProperties = {
   background: "transparent",
   color: "var(--ink)",
   border: "1px solid var(--spot)",
-  padding: "12px 26px",
-  fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
-  fontSize: 11,
-  letterSpacing: "0.24em",
-  textTransform: "uppercase",
+  padding: "12px 22px",
   cursor: "pointer",
+  display: "flex", flexDirection: "column", gap: 4, alignItems: "center",
+  minWidth: 220,
+};
+const exportLabel: React.CSSProperties = {
+  fontFamily: "'Newsreader', serif",
+  fontSize: 15, fontWeight: 600, letterSpacing: "0.01em",
+  color: "var(--ink)",
+};
+const exportSub: React.CSSProperties = {
+  fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+  fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase",
+  color: "var(--ink-3)",
 };
 const backBtn: React.CSSProperties = {
   background: "transparent",
