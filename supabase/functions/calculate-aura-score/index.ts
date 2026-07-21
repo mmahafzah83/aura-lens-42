@@ -66,6 +66,10 @@ serve(withObserve("calculate-aura-score", async (req) => {
       .from("entries")
       .select("created_at")
       .eq("user_id", userId)
+      // Sleeping Agent P2 filter: capture consistency measures the user's own
+      // rhythm. Agent-found entries (source_type='aura_agent') never count
+      // toward it — kept or not — to prevent one-tap gaming.
+      .neq("source_type", "aura_agent")
       .gte("created_at", twelveWeeksAgoForCapture.toISOString());
     const weekly_data: boolean[] = [];
     for (let i = 0; i < 12; i++) {
@@ -93,10 +97,65 @@ serve(withObserve("calculate-aura-score", async (req) => {
     // --- signal_score: depth + breadth + liveness ---
     const { data: signalsData } = await admin
       .from("strategic_signals")
-      .select("strength_score, lifecycle_tier, theme_tags")
+      .select("id, strength_score, lifecycle_tier, theme_tags, supporting_evidence_ids")
       .eq("user_id", userId)
       .eq("status", "active");
-    const activeSignalsForScore = signalsData || [];
+    let activeSignalsForScore: any[] = signalsData || [];
+
+    // Sleeping Agent P2 filter: signals whose ONLY supporting evidence traces
+    // back to unaccepted agent-found entries must not count toward the signal
+    // component. Kept agent entries → their signals count normally. Signals
+    // with any user or kept-agent evidence remain in the pool.
+    try {
+      const { data: agentEntries } = await admin
+        .from("entries")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("source_type", "aura_agent");
+      const agentEntryIds = (agentEntries || []).map((e: any) => e.id);
+      if (agentEntryIds.length > 0) {
+        const { data: findings } = await admin
+          .from("agent_findings")
+          .select("entry_id, status")
+          .eq("user_id", userId)
+          .in("entry_id", agentEntryIds);
+        const keptSet = new Set(
+          (findings || [])
+            .filter((f: any) => f.status === "kept")
+            .map((f: any) => f.entry_id),
+        );
+        const notKeptEntryIds = agentEntryIds.filter((id: string) => !keptSet.has(id));
+        if (notKeptEntryIds.length > 0) {
+          const { data: srRows } = await admin
+            .from("source_registry")
+            .select("id")
+            .eq("user_id", userId)
+            .eq("source_type", "entry")
+            .in("source_id", notKeptEntryIds);
+          const notKeptSrIds = (srRows || []).map((r: any) => r.id);
+          if (notKeptSrIds.length > 0) {
+            const { data: fragRows } = await admin
+              .from("evidence_fragments")
+              .select("id")
+              .eq("user_id", userId)
+              .in("source_registry_id", notKeptSrIds);
+            const notKeptFragIds = new Set((fragRows || []).map((r: any) => r.id));
+            if (notKeptFragIds.size > 0) {
+              activeSignalsForScore = activeSignalsForScore.filter((s: any) => {
+                const ev: string[] = Array.isArray(s.supporting_evidence_ids)
+                  ? s.supporting_evidence_ids
+                  : [];
+                if (ev.length === 0) return true;
+                // Exclude only if EVERY piece of evidence is not-kept-agent
+                return !ev.every((fid) => notKeptFragIds.has(fid));
+              });
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error("[calculate-aura-score] agent-signal filter failed", (e as Error).message);
+    }
 
     const TIER_WEIGHT: Record<string, number> = { live: 1.0, evergreen: 0.6, emerging: 0.3 };
     let liveEvergreenStrengthSum = 0;
