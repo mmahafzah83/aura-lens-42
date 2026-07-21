@@ -389,14 +389,15 @@ const EDITOR_CSS = `
   border: 1px solid var(--rule);
   padding: 16px;
   display: flex; align-items: center; justify-content: center;
-  max-height: 62vh;
+  height: min(62vh, 560px);
+  overflow: hidden;
 }
 .sig-editor-stage-inner {
   width: 100%; height: 100%;
-  max-height: calc(62vh - 32px);
   display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
 }
-.sig-editor-stage-inner > svg { max-height: calc(62vh - 32px); width: auto !important; height: auto; max-width: 100%; }
+.sig-editor-stage-inner > svg { max-height: 100%; max-width: 100%; width: auto; height: auto; display: block; }
 .sig-editor-continue { padding-top: 8px; border-top: 1px solid var(--rule); margin-top: 4px; position: sticky; bottom: -16px; background: var(--paper); }
 
 .sig-suggest-card { position: relative; }
@@ -414,8 +415,7 @@ const EDITOR_CSS = `
 
 @media (max-width: 900px) {
   .sig-editor-grid { grid-template-columns: 1fr; }
-  .sig-editor-stage { position: sticky; top: 8px; max-height: 40vh; order: -1; }
-  .sig-editor-stage-inner > svg { max-height: calc(40vh - 32px); }
+  .sig-editor-stage { position: sticky; top: 8px; height: 40vh; order: -1; }
   .sig-editor-panel { max-height: none; overflow: visible; padding-bottom: 88px; }
   .sig-editor-continue {
     position: fixed; left: 0; right: 0; bottom: 0;
