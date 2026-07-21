@@ -17,7 +17,7 @@ export async function logSignatureEvent(
       family,
       lang,
       action,
-      payload,
+      payload: payload as any,
     });
   } catch (err) {
     console.warn("signature_events log failed", err);
