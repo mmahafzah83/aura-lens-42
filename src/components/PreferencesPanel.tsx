@@ -233,6 +233,7 @@ export default function PreferencesPanel({
   const prefs = (profile?.notification_prefs ?? {}) as Record<string, unknown>;
   const weeklyBriefOn = prefs.weekly_brief !== false; // default true
   const dailyNudgesOn = prefs.daily_nudges !== false; // default true
+  const overnightReadingOn = prefs.overnight_reading_enabled !== false; // default true
   const sharedLearningOn = profile?.shared_learning_consent === true;
 
   const updatePref = async (key: string, value: boolean) => {
@@ -406,6 +407,12 @@ export default function PreferencesPanel({
             description="In-app reminders when signals need attention or content is due."
             on={dailyNudgesOn}
             onChange={(v) => updatePref("daily_nudges", v)}
+          />
+          <ToggleRow
+            label="Aura reads for you overnight"
+            description="One relevant finding, only when it clears the bar. Turn off any time."
+            on={overnightReadingOn}
+            onChange={(v) => updatePref("overnight_reading_enabled", v)}
           />
 
           {/* PRIVACY */}
