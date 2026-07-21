@@ -874,6 +874,63 @@ serve(async (req) => {
       });
     }
 
+    if (action === "output_rollup") {
+      const [postsRes, metricsRes] = await Promise.all([
+        admin.from("linkedin_posts").select("tracking_status, source_type, source_signal_id, published_at, created_at"),
+        admin.from("linkedin_post_metrics").select("post_id, snapshot_date, impressions, members_reached"),
+      ]);
+      if (postsRes.error) return json({ error: postsRes.error.message }, 500);
+      if (metricsRes.error) return json({ error: metricsRes.error.message }, 500);
+
+      const posts = postsRes.data ?? [];
+      const metrics = metricsRes.data ?? [];
+
+      const published = posts.filter((p: any) => p.tracking_status === "published");
+      const publishedTotal = published.length;
+      const cutoff = Date.now() - 30 * 24 * 3600 * 1000;
+      const published30d = published.filter((p: any) => {
+        const t = new Date(p.published_at ?? p.created_at ?? 0).getTime();
+        return t >= cutoff;
+      }).length;
+      const fromSignal = published.filter((p: any) => p.source_signal_id != null);
+      const fromSignalCount = fromSignal.length;
+      const fromSignalPct = publishedTotal > 0 ? Math.round((fromSignalCount / publishedTotal) * 100) : 0;
+      const signalsConverted = new Set(fromSignal.map((p: any) => p.source_signal_id)).size;
+      const auraGenerated = posts.filter((p: any) => p.source_type === "aura" || p.source_type === "aura_generated").length;
+
+      // Dedupe metrics to latest snapshot per post_id
+      const latestByPost = new Map<string, any>();
+      let metricsAsOf: string | null = null;
+      for (const m of metrics) {
+        if (!m.post_id) continue;
+        const prev = latestByPost.get(m.post_id);
+        if (!prev || String(m.snapshot_date) > String(prev.snapshot_date)) {
+          latestByPost.set(m.post_id, m);
+        }
+        if (!metricsAsOf || String(m.snapshot_date) > metricsAsOf) {
+          metricsAsOf = m.snapshot_date;
+        }
+      }
+      let impressions = 0;
+      let membersReached = 0;
+      for (const m of latestByPost.values()) {
+        impressions += Number(m.impressions ?? 0);
+        membersReached += Number(m.members_reached ?? 0);
+      }
+
+      return json({
+        published_total: publishedTotal,
+        published_30d: published30d,
+        from_signal_pct: fromSignalPct,
+        from_signal_count: fromSignalCount,
+        signals_converted: signalsConverted,
+        aura_generated: auraGenerated,
+        impressions,
+        members_reached: membersReached,
+        metrics_as_of: metricsAsOf,
+      });
+    }
+
     return json({ error: "unknown action" }, 400);
   } catch (e: any) {
     EdgeRuntime.waitUntil(logError("admin-console", e, { user_id: null }));

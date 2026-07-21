@@ -90,6 +90,13 @@ const formatRunAt = (iso: string | null) => {
   });
 };
 
+const fmt = (n: number) => {
+  if (!Number.isFinite(n)) return "0";
+  if (n >= 1_000_000) return (n / 1e6).toFixed(1) + "M";
+  if (n >= 1000) return (n / 1000).toFixed(n >= 10000 ? 0 : 1) + "K";
+  return String(n);
+};
+
 const cardStyle = {
   backgroundColor: "var(--ob-panel)",
   border: "1px solid var(--hair)",
@@ -140,6 +147,9 @@ export default function Admin() {
   const [brief, setBrief] = useState<any | null>(null);
   const [briefLoading, setBriefLoading] = useState(true);
   const [briefError, setBriefError] = useState<string | null>(null);
+  const [output, setOutput] = useState<any | null>(null);
+  const [outputLoading, setOutputLoading] = useState(true);
+  const [outputError, setOutputError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -183,6 +193,28 @@ export default function Admin() {
         setBriefError(e?.message || "Could not load brief");
       } finally {
         if (!cancelled) setBriefLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setOutputLoading(true);
+        setOutputError(null);
+        const { data, error } = await supabase.functions.invoke("admin-console", {
+          body: { action: "output_rollup" },
+        });
+        if (cancelled) return;
+        if (error) throw error;
+        setOutput(data);
+      } catch (e: any) {
+        if (cancelled) return;
+        setOutputError(e?.message || "Could not load output");
+      } finally {
+        if (!cancelled) setOutputLoading(false);
       }
     })();
     return () => { cancelled = true; };
@@ -337,6 +369,45 @@ export default function Admin() {
                   ))}
                 </div>
               </div>
+            </div>
+          )}
+        </section>
+
+        {/* Content output roll-up */}
+        <section style={cardStyle}>
+          <div className="flex items-baseline justify-between flex-wrap gap-2 mb-4">
+            <h2 style={{ fontSize: 18, fontWeight: 600, margin: 0, color: "var(--glass)" }}>
+              Content output
+            </h2>
+            <span style={mutedStyle}>Across all accounts</span>
+          </div>
+          {outputLoading && (
+            <div className="flex items-center gap-2" style={mutedStyle}>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Loading…</span>
+            </div>
+          )}
+          {!outputLoading && outputError && (
+            <div className="flex items-start gap-2" style={{ ...mutedStyle, color: "#F87171" }}>
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+              <span>{outputError}</span>
+            </div>
+          )}
+          {!outputLoading && !outputError && output && (
+            <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
+              {[
+                { label: "Published", value: String(output.published_total ?? 0), sub: `${output.published_30d ?? 0} in last 30d` },
+                { label: "From signal", value: `${output.from_signal_pct ?? 0}%`, sub: `${output.from_signal_count ?? 0}/${output.published_total ?? 0} publishes · ${output.signals_converted ?? 0} signals` },
+                { label: "Aura-generated", value: String(output.aura_generated ?? 0), sub: "drafts + published" },
+                { label: "Impressions", value: fmt(Number(output.impressions ?? 0)), sub: "tracked content" },
+                { label: "Reach", value: fmt(Number(output.members_reached ?? 0)), sub: output.metrics_as_of ? `as of ${new Date(output.metrics_as_of).toLocaleDateString(undefined, { month: "short", day: "numeric" })}` : "—" },
+              ].map((k) => (
+                <div key={k.label} style={{ padding: "12px 14px", borderRadius: 8, backgroundColor: "var(--ob-raised)", border: "1px solid var(--hair)" }}>
+                  <div style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--glass-2)", marginBottom: 6 }}>{k.label}</div>
+                  <div style={{ fontSize: 22, color: "var(--glass)", fontWeight: 500, lineHeight: 1 }}>{k.value}</div>
+                  <div style={{ ...mutedStyle, marginTop: 6 }}>{k.sub}</div>
+                </div>
+              ))}
             </div>
           )}
         </section>
