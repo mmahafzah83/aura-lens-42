@@ -90,7 +90,7 @@ export default function CoverCard(props: RendererProps & { square?: boolean }) {
         fontFamily={MONO}
         fontSize="13"
         letterSpacing="0.32em"
-        textAnchor={anchorEnd}
+        textAnchor={anchorE}
         direction={ar ? "rtl" : "ltr"}
       >
         {kicker}
@@ -172,7 +172,7 @@ export default function CoverCard(props: RendererProps & { square?: boolean }) {
         fontFamily={MONO}
         fontSize="11"
         letterSpacing="0.3em"
-        textAnchor={anchorEnd}
+        textAnchor={anchorE}
         direction={ar ? "rtl" : "ltr"}
         opacity="0.7"
       >
