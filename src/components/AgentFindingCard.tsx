@@ -359,6 +359,23 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
               </a>
             )}
 
+            {/* Learning trace: newly dropped themes */}
+            {current.dropped_themes && current.dropped_themes.length > 0 && (
+              <div
+                style={{
+                  ...MONO,
+                  fontSize: 10,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  color: "rgba(241,236,225,0.45)",
+                  marginBottom: 10,
+                  wordBreak: "break-word",
+                }}
+              >
+                No longer tracking: {current.dropped_themes.join(" · ")}
+              </div>
+            )}
+
             {/* Actions */}
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
               <button
