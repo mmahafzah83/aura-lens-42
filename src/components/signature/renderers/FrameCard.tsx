@@ -42,10 +42,23 @@ export default function FrameCard(props: RendererProps & { square?: boolean }) {
       <rect x="0" y="0" width={g.W} height={g.H} fill={`url(#${scrimId})`} />
       <line x1={xS} y1={quoteY - fit.size - 24} x2={ar ? xS - 72 : xS + 72} y2={quoteY - fit.size - 24} stroke={accent} strokeWidth="3" />
       <TextBlock lines={fit.lines} x={xS} y={quoteY} lineHeight={lineH} fill={T.paper} fontFamily={font.family} fontSize={fit.size} fontStyle={font.style} fontWeight={font.weight} anchor={anchor} lang={lang} letterSpacing={ar ? "0" : "-0.01em"} />
-      <text x={xS} y={g.SAFE_Y1 - 44} fill={T.paper} fontFamily={MONO} fontSize="22" letterSpacing="0.24em" textAnchor={anchor} direction={ar ? "rtl" : "ltr"}>{name.toUpperCase()}</text>
-      {(title || meta) && (
-        <text x={xS} y={g.SAFE_Y1 - 14} fill={T.paperFaint} fontFamily={MONO} fontSize="15" letterSpacing="0.28em" textAnchor={anchor} direction={ar ? "rtl" : "ltr"}>{[title, meta].filter(Boolean).join(" · ").toUpperCase()}</text>
-      )}
+      {(() => {
+        const nameFit = fitText(name.toUpperCase(), {
+          font: { family: "IBM Plex Mono", weight: 600 },
+          maxWidth: g.QUOTE_MEASURE,
+          minSize: 14, maxSize: 22, maxLines: 1, lineHeightRatio: 1.2,
+        });
+        return <text x={xS} y={g.SAFE_Y1 - 44} fill={T.paper} fontFamily={MONO} fontSize={nameFit.size} letterSpacing="0.24em" textAnchor={anchor} direction={ar ? "rtl" : "ltr"}>{nameFit.lines[0] || name.toUpperCase()}</text>;
+      })()}
+      {(title || meta) && (() => {
+        const caption = [title, meta].filter(Boolean).join(" · ").toUpperCase();
+        const capFit = fitText(caption, {
+          font: { family: "IBM Plex Mono", weight: 400 },
+          maxWidth: g.QUOTE_MEASURE,
+          minSize: 10, maxSize: 15, maxLines: 1, lineHeightRatio: 1.2,
+        });
+        return <text x={xS} y={g.SAFE_Y1 - 14} fill={T.paperFaint} fontFamily={MONO} fontSize={capFit.size} letterSpacing="0.28em" textAnchor={anchor} direction={ar ? "rtl" : "ltr"}>{capFit.lines[0] || caption}</text>;
+      })()}
       <AuraMark lang={lang} color={T.paperFaint} geom={g} />
     </SvgRoot>
   );
