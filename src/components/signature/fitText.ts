@@ -19,7 +19,50 @@ export interface FontSpec {
 function fontString(spec: FontSpec, size: number): string {
   const style = spec.style ?? "normal";
   const weight = spec.weight ?? 400;
-  return `${style} ${weight} ${size}px ${spec.family}`;
+  // Strip surrounding quotes/fallbacks — canvas `font` wants a single family
+  // token to reliably match a loaded face.
+  const fam = String(spec.family).split(",")[0].replace(/['"]/g, "").trim();
+  return `${style} ${weight} ${size}px "${fam}"`;
+}
+
+/**
+ * Load every font face fitText/measureText and the SVG renderers depend on.
+ * Must be awaited once before any renderer measures text — otherwise
+ * canvas.measureText silently falls back to a default face, returning
+ * wildly wrong widths (Arabic words then each land on their own line and
+ * spill past the safe zone).
+ */
+let _fontsLoadedPromise: Promise<void> | null = null;
+export function ensureCardFontsLoaded(): Promise<void> {
+  if (_fontsLoadedPromise) return _fontsLoadedPromise;
+  const specs: string[] = [
+    // Cairo — Arabic quote font
+    '400 24px "Cairo"',
+    '600 24px "Cairo"',
+    '700 24px "Cairo"',
+    // Newsreader — EN quote font (normal + italic)
+    '400 24px "Newsreader"',
+    '500 24px "Newsreader"',
+    'italic 400 24px "Newsreader"',
+    'italic 500 24px "Newsreader"',
+    // IBM Plex Mono — captions / wordmark
+    '400 14px "IBM Plex Mono"',
+    '600 14px "IBM Plex Mono"',
+  ];
+  const anyDoc: any = typeof document !== "undefined" ? document : null;
+  if (!anyDoc?.fonts?.load) {
+    _fontsLoadedPromise = Promise.resolve();
+    return _fontsLoadedPromise;
+  }
+  _fontsLoadedPromise = (async () => {
+    try {
+      await Promise.all(specs.map((s) => anyDoc.fonts.load(s).catch(() => null)));
+      await anyDoc.fonts.ready;
+    } catch {
+      /* non-fatal — measurement will still run, guard #2 caps damage */
+    }
+  })();
+  return _fontsLoadedPromise;
 }
 
 /** Greedy word-wrap into up to `maxLines` lines that each fit within maxWidth. */
@@ -35,20 +78,48 @@ export function wrapLines(
   const words = text.split(/\s+/).filter(Boolean);
   const lines: string[] = [];
   let current = "";
-  for (const w of words) {
+  let overflow = false;
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i];
     const trial = current ? current + " " + w : w;
     if (c.measureText(trial).width <= maxWidth) {
       current = trial;
-    } else {
-      if (current) lines.push(current);
-      // Never split a word: if the word alone exceeds width, still keep it
-      // as its own line — rendering can shrink further via fitText.
-      current = w;
-      if (lines.length >= maxLines) break;
+      continue;
     }
+    // Trial doesn't fit. Flush current line (if any) and try w alone.
+    if (current) {
+      if (lines.length >= maxLines) { overflow = true; break; }
+      lines.push(current);
+      current = "";
+    }
+    // Word-split guard: if a single word alone is wider than maxWidth,
+    // this is the pathological case (fonts not loaded / genuinely long
+    // token). Do NOT keep pushing single-word lines forever — mark
+    // overflow so fitText drops to a smaller size and stop.
+    if (c.measureText(w).width > maxWidth) {
+      overflow = true;
+      // Still emit it as one line if capacity remains, so caller can
+      // fall back at min size.
+      if (lines.length < maxLines) lines.push(w);
+      // Skip remaining words — we've already overflowed.
+      if (i < words.length - 1) overflow = true;
+      break;
+    }
+    current = w;
+    if (lines.length >= maxLines) { overflow = true; break; }
   }
-  if (current && lines.length < maxLines) lines.push(current);
-  const overflow = lines.join(" ").split(/\s+/).length < words.length;
+  if (current) {
+    if (lines.length < maxLines) lines.push(current);
+    else overflow = true;
+  }
+  // Never emit more than maxLines lines.
+  if (lines.length > maxLines) {
+    lines.length = maxLines;
+    overflow = true;
+  }
+  // If not every word made it into lines, report overflow.
+  const emittedWords = lines.join(" ").split(/\s+/).filter(Boolean).length;
+  if (emittedWords < words.length) overflow = true;
   return { lines, overflow };
 }
 
