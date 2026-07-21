@@ -71,6 +71,7 @@ export type Database = {
       agent_findings: {
         Row: {
           created_at: string
+          dropped_themes: string[]
           entry_id: string | null
           error_detail: string | null
           id: string
@@ -79,12 +80,14 @@ export type Database = {
           relevance_score: number | null
           source: string | null
           status: string
+          themes: string[]
           title: string | null
           url: string | null
           user_id: string
         }
         Insert: {
           created_at?: string
+          dropped_themes?: string[]
           entry_id?: string | null
           error_detail?: string | null
           id?: string
@@ -93,12 +96,14 @@ export type Database = {
           relevance_score?: number | null
           source?: string | null
           status?: string
+          themes?: string[]
           title?: string | null
           url?: string | null
           user_id: string
         }
         Update: {
           created_at?: string
+          dropped_themes?: string[]
           entry_id?: string | null
           error_detail?: string | null
           id?: string
@@ -107,6 +112,7 @@ export type Database = {
           relevance_score?: number | null
           source?: string | null
           status?: string
+          themes?: string[]
           title?: string | null
           url?: string | null
           user_id?: string
