@@ -329,7 +329,7 @@ const SignalExplorer = ({ signal, open, onClose }: SignalExplorerProps) => {
                           }}
                           className="text-muted-foreground/60"
                         >
-                          Aura found this for you
+                          THE OVERNIGHT · FOUND FOR YOU
                         </p>
                       )}
                     </div>

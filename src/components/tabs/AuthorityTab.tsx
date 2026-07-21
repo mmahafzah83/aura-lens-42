@@ -376,6 +376,11 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   const [editingSource, setEditingSource] = useState<"content_items" | "linkedin_posts">("content_items");
   const [isEditingBody, setIsEditingBody] = useState(false);
+  const [ghostMeta, setGhostMeta] = useState<{
+    finding_source: string | null;
+    finding_url: string | null;
+    finding_implication: string | null;
+  } | null>(null);
   const [generating, setGenerating] = useState(false);
   const [showSlowHint, setShowSlowHint] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -647,6 +652,27 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
         "post";
       setEditingDraftId(draftPrefill.id);
       setEditingSource(draftPrefill._source === "linkedin_posts" ? "linkedin_posts" : "content_items");
+      // Detect Overnight ghost draft to render provenance strip above editor.
+      setGhostMeta(null);
+      if (draftPrefill._source === "linkedin_posts") {
+        (async () => {
+          try {
+            const { data } = await supabase
+              .from("linkedin_posts")
+              .select("source_metadata")
+              .eq("id", draftPrefill.id)
+              .maybeSingle();
+            const meta: any = (data as any)?.source_metadata || {};
+            if (meta?.ghost_draft === true || String(meta?.ghost_draft) === "true") {
+              setGhostMeta({
+                finding_source: meta.finding_source ?? null,
+                finding_url: meta.finding_url ?? null,
+                finding_implication: meta.finding_implication ?? null,
+              });
+            }
+          } catch { /* silent — strip just won't render */ }
+        })();
+      }
       setTopic(draftPrefill.topic || "");
       setContext("");
       setContentType(mappedType);
@@ -1038,6 +1064,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
     setShowingShort(false);
     setEditingDraftId(null);
     setEditingSource("content_items");
+    setGhostMeta(null);
     setSelectedSignalId(null);
     setSelectedSignalTitle(null);
     setTopic("");
@@ -1807,6 +1834,80 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                   </button>
                 )}
 
+                {ghostMeta && (
+                  <div
+                    style={{
+                      background: "var(--paper-2)",
+                      border: "1px solid var(--rule)",
+                      padding: "10px 12px",
+                      marginBottom: 10,
+                      borderRadius: 8,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontFamily: "var(--font-mono, 'IBM Plex Mono', ui-monospace, monospace)",
+                        fontSize: 9.5,
+                        letterSpacing: "0.22em",
+                        textTransform: "uppercase",
+                        color: "#36C5B0",
+                      }}
+                    >
+                      THE OVERNIGHT · WRITTEN FOR YOU
+                    </div>
+                    {ghostMeta.finding_source && (
+                      <div
+                        style={{
+                          marginTop: 6,
+                          fontFamily: "var(--font-serif)",
+                          fontStyle: "italic",
+                          fontSize: 12.5,
+                          color: "var(--ink-2)",
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        Drafted from a finding you kept:{" "}
+                        {ghostMeta.finding_url ? (
+                          <a
+                            href={ghostMeta.finding_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: "var(--spot)", textDecoration: "underline" }}
+                          >
+                            {ghostMeta.finding_source}
+                          </a>
+                        ) : (
+                          <span>{ghostMeta.finding_source}</span>
+                        )}
+                      </div>
+                    )}
+                    {ghostMeta.finding_implication && (
+                      <div
+                        style={{
+                          marginTop: 4,
+                          fontStyle: "italic",
+                          fontSize: 12,
+                          color: "var(--ink-3)",
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        {ghostMeta.finding_implication}
+                      </div>
+                    )}
+                    <div
+                      style={{
+                        marginTop: 8,
+                        fontFamily: "var(--font-mono, 'IBM Plex Mono', ui-monospace, monospace)",
+                        fontSize: 9,
+                        letterSpacing: "0.18em",
+                        textTransform: "uppercase",
+                        color: "var(--ink-3)",
+                      }}
+                    >
+                      YOURS TO EDIT — NOTHING PUBLISHES WITHOUT YOU
+                    </div>
+                  </div>
+                )}
                 <div className="relative">
                   {isEditingBody && output.trim() ? (
                     <textarea
@@ -3858,6 +3959,23 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
                       {firstNonEmptyLine(p.post_text) || "Untitled draft"}
                     </span>
                     <span className="shrink-0 flex items-center" style={{ gap: 6 }}>
+                      {(p.source_metadata as any)?.ghost_draft === true || String((p.source_metadata as any)?.ghost_draft) === "true" ? (
+                        <span
+                          style={{
+                            fontFamily: "var(--font-mono, 'IBM Plex Mono', ui-monospace, monospace)",
+                            fontSize: 9,
+                            letterSpacing: "0.18em",
+                            textTransform: "uppercase",
+                            color: "#36C5B0",
+                            background: "#131009",
+                            border: "1px solid rgba(54,197,176,0.4)",
+                            padding: "2px 6px",
+                            borderRadius: 999,
+                          }}
+                        >
+                          THE OVERNIGHT
+                        </span>
+                      ) : null}
                       <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 6px", borderRadius: 999, backgroundColor: "var(--paper-2)", color: "var(--ink-3)", textTransform: "uppercase" }}>
                         {lang === "ar" ? "AR" : "EN"}
                       </span>

@@ -181,11 +181,19 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
             />
             <span
               style={{
+                ...MONO, fontSize: 10, letterSpacing: "0.22em",
+                textTransform: "uppercase", color: TEAL,
+              }}
+            >
+              THE OVERNIGHT
+            </span>
+            <span
+              style={{
                 ...MONO, fontSize: 10, letterSpacing: "0.18em",
                 textTransform: "uppercase", color: INK_LOW,
               }}
             >
-              Written for you · Overnight
+              · Written for you
             </span>
           </div>
           <p
@@ -400,11 +408,19 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
                 />
                 <span
                   style={{
+                    ...MONO, fontSize: 10, letterSpacing: "0.22em",
+                    textTransform: "uppercase", color: TEAL,
+                  }}
+                >
+                  THE OVERNIGHT
+                </span>
+                <span
+                  style={{
                     ...MONO, fontSize: 10, letterSpacing: "0.18em",
                     textTransform: "uppercase", color: INK_LOW,
                   }}
                 >
-                  Found for you · Overnight
+                  · Found for you
                 </span>
               </div>
               <span
