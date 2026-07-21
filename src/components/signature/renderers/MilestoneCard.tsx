@@ -1,6 +1,6 @@
 import {
   AuraMark, MONO, RendererProps, SERIF, SvgRoot, T, TextBlock,
-  anchorStart, getGeometry, isAr, moodColor, xStart,
+  anchorStart, getGeometry, isAr, moodColor, moodWashRGBA, xStart,
 } from "./shared";
 import { fitText } from "../fitText";
 
@@ -26,6 +26,7 @@ export default function MilestoneCard(props: RendererProps & { square?: boolean 
   return (
     <SvgRoot ariaLabel={`Milestone card: ${number}`} geom={g}>
       <rect x="0" y="0" width={g.W} height={g.H} fill={T.darkBg1} />
+      <rect x="0" y="0" width={g.W} height={g.H} fill={moodWashRGBA(mood, 0.10)} />
       <circle cx={cx} cy={cy} r={r} fill="none" stroke={accent} strokeWidth="2" />
       <text x={cx} y={cy + r * 0.16} fill={T.paper} fontFamily={ar ? "Cairo" : SERIF} fontStyle={ar ? "normal" : "italic"} fontWeight={500} fontSize={r * 0.9} textAnchor="middle" letterSpacing="-0.02em">{number}</text>
       {insideLabel && (
