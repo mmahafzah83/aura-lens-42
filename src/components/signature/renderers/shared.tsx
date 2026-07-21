@@ -101,9 +101,24 @@ export function xEnd(lang: Lang, g: Geometry): number {
 
 export const DEFAULT_SVG_STYLE: CSSProperties = {
   display: "block",
-  width: "100%",
+  width: "auto",
   height: "auto",
+  maxWidth: "100%",
+  maxHeight: "100%",
 };
+
+/**
+ * Mood wash colour (very low-alpha rgba) for tinting dark card backgrounds
+ * so oxblood / teal / amber produce visibly different cards.
+ */
+export function moodWashRGBA(m: Mood, alpha = 0.09): string {
+  // literal RGB triplets for the three mood hexes
+  const rgb =
+    m === "oxblood" ? "110,42,38" :
+    m === "teal"    ? "54,197,176" :
+                      "214,167,72";
+  return `rgba(${rgb},${alpha})`;
+}
 
 export interface SvgRootProps {
   children: React.ReactNode;
