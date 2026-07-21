@@ -72,8 +72,8 @@ export default function SignatureHarness() {
           </Cell>
         ))}
       </div>
-      {/* Full-size render targets for Playwright proof */}
-      <div style={{ position: "absolute", left: -99999, top: 0 }}>
+      {/* Full-size render targets for Playwright proof (on-screen so element.screenshot works) */}
+      <div style={{ marginTop: 40, display: "flex", flexDirection: "column", gap: 40 }}>
         <div id="portrait-en" style={{ width: 1080, height: 1350 }}>
           <SignatureCard
             lang="en" mood="oxblood"
