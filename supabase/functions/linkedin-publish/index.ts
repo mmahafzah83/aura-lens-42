@@ -58,6 +58,12 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
     if (postErr || !post) return json({ error: "Post not found" }, 404);
     if (post.published_confirmed_at) return json({ success: false, error: "Already published" });
 
+    const postText: string = post.post_text ?? "";
+    if (!postText.trim()) return json({ error: "Empty post_text" }, 400);
+    if (postText.length > 3000) {
+      return json({ success: false, error: "Post exceeds LinkedIn's 3000-character limit" });
+    }
+
     const { data: claimed, error: claimErr } = await adminClient
       .from("linkedin_posts")
       .update({ tracking_status: "publishing", claimed_at: new Date().toISOString() })
@@ -69,11 +75,9 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
     if (!claimed || claimed.length === 0)
       return json({ success: false, error: "This post is already publishing or published." });
 
-    const postText: string = post.post_text ?? "";
-    if (!postText.trim()) return json({ error: "Empty post_text" }, 400);
-    if (postText.length > 3000) {
-      return json({ success: false, error: "Post exceeds LinkedIn's 3000-character limit" });
-    }
+    const releaseToDraft = async () => {
+      await adminClient.from("linkedin_posts").update({ tracking_status: "draft" }).eq("id", postId).eq("user_id", user.id);
+    };
 
     // Optional single image (additive — text-only posts are unaffected)
     const imageUrl: string | undefined = (post as any)?.source_metadata?.image_url;
@@ -84,9 +88,11 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
       try {
         parsedImg = new URL(imageUrl);
       } catch {
+        await releaseToDraft();
         return json({ success: false, error: "Invalid image URL" }, 400);
       }
       if (parsedImg.protocol !== "https:") {
+        await releaseToDraft();
         return json({ success: false, error: "Image URL must be https" }, 400);
       }
       const imgHost = parsedImg.hostname.toLowerCase();
@@ -96,6 +102,7 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
         imgHost.endsWith(".lovable.app") ||
         imgHost.endsWith(".lovable.dev");
       if (!allowedHost) {
+        await releaseToDraft();
         return json({ success: false, error: "Image must be hosted on approved storage" }, 400);
       }
       const initRes = await fetch("https://api.linkedin.com/rest/images?action=initializeUpload", {
@@ -110,17 +117,20 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
       });
       if (!initRes.ok) {
         const d = await initRes.text();
+        await releaseToDraft();
         return json({ success: false, error: "Image init failed", status: initRes.status, detail: d });
       }
       const initJson = await initRes.json();
       const uploadUrl: string = initJson?.value?.uploadUrl;
       const imageUrn: string = initJson?.value?.image;
       if (!uploadUrl || !imageUrn) {
+        await releaseToDraft();
         return json({ success: false, error: "Image init returned no upload URL", detail: JSON.stringify(initJson) });
       }
 
       const imgRes = await fetch(parsedImg.toString());
       if (!imgRes.ok) {
+        await releaseToDraft();
         return json({ success: false, error: "Could not read the stored image", status: imgRes.status });
       }
       const imgBytes = new Uint8Array(await imgRes.arrayBuffer());
@@ -132,6 +142,7 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
       });
       if (!(upRes.status === 200 || upRes.status === 201)) {
         const d = await upRes.text();
+        await releaseToDraft();
         return json({ success: false, error: "Image upload failed", status: upRes.status, detail: d });
       }
 
