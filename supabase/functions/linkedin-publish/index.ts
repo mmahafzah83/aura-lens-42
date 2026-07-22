@@ -1,6 +1,7 @@
 // linkedin-publish — redeploy 2026-06-25 (image upload support)
 import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { linkedinFetch } from "../_shared/linkedinFetch.ts";
 
 const LINKEDIN_VERSION = "202605";
 
@@ -105,7 +106,7 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
         await releaseToDraft();
         return json({ success: false, error: "Image must be hosted on approved storage" }, 400);
       }
-      const initRes = await fetch("https://api.linkedin.com/rest/images?action=initializeUpload", {
+      const initRes = await linkedinFetch("https://api.linkedin.com/rest/images?action=initializeUpload", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${connection.access_token}`,
@@ -114,7 +115,7 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ initializeUploadRequest: { owner: `urn:li:person:${connection.linkedin_id}` } }),
-      });
+      }, { userId: user.id, adminClient, purpose: "image-init" });
       if (!initRes.ok) {
         const d = await initRes.text();
         await releaseToDraft();
@@ -135,11 +136,11 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
       }
       const imgBytes = new Uint8Array(await imgRes.arrayBuffer());
 
-      const upRes = await fetch(uploadUrl, {
+      const upRes = await linkedinFetch(uploadUrl, {
         method: "PUT",
         headers: { Authorization: `Bearer ${connection.access_token}` },
         body: imgBytes,
-      });
+      }, { userId: user.id, adminClient, purpose: "image-upload" });
       if (!(upRes.status === 200 || upRes.status === 201)) {
         const d = await upRes.text();
         await releaseToDraft();
@@ -192,7 +193,7 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
       console.error("pre-publish diagnostics failed:", e);
     }
 
-    const liRes = await fetch("https://api.linkedin.com/rest/posts", {
+    const liRes = await linkedinFetch("https://api.linkedin.com/rest/posts", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${connection.access_token}`,
@@ -201,7 +202,7 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
-    });
+    }, { userId: user.id, adminClient, purpose: "publish" });
 
     if (liRes.status === 201) {
       const urn = liRes.headers.get("x-restli-id") ?? "";
