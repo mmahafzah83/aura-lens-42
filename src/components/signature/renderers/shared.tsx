@@ -472,7 +472,7 @@ export function TextBlock({
           fontWeight={fontWeight}
           textAnchor={anchor}
           direction={ar ? "rtl" : "ltr"}
-          unicodeBidi={ar ? "isolate" : undefined as any}
+          unicodeBidi={ar ? "embed" : undefined as any}
           letterSpacing={track}
         >
           {ar ? renderArabicBidi(line) : line}
