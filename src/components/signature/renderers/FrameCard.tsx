@@ -172,7 +172,7 @@ export default function FrameCard(
       )}
 
       {/* Layer 2b: legibility shadow — duplicated text offset 0/1.5px. */}
-      <g transform="translate(0, 1.5)" opacity="0.35">
+      {!useInk && <g transform="translate(0, 1.5)" opacity="0.35">
         <EmphasisTextBlock
           lines={fit.lines}
           x={xText}
@@ -189,7 +189,7 @@ export default function FrameCard(
           emphasis={[]}
           accentColor={accent}
         />
-      </g>
+      </g>}
 
       {/* Layer 3: quote with emphasis */}
       <EmphasisTextBlock
