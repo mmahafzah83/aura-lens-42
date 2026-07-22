@@ -1,6 +1,7 @@
 import {
   ARABIC, AuraMark, EmphasisTextBlock, MONO, PhotoPlaceholder, RendererProps, SERIF, SvgRoot, T,
-  anchorStart, getGeometry, isAr, moodColor, pickQuoteFont, xStart,
+  anchorStart, capsText, captionFontFamily, captionSize, captionTrack, captionWeight,
+  emphasisColorFor, getGeometry, isAr, moodColor, pickQuoteFont, xStart,
 } from "./shared";
 import { fitText } from "../fitText";
 
@@ -29,11 +30,11 @@ export default function FrameCard(
   const { lang, mood, photoUrl, name, title, lines, meta, emphasisOff } = props;
   const ar = isAr(lang);
   const g = getGeometry(false);
-  const accent = moodColor(mood);
   const decision = props.decision ?? (ar ? DEFAULT_AR : DEFAULT_EN);
   const emphasis = emphasisOff ? [] : (decision.emphasis || []);
   const useInk = decision.textColor === "ink" && decision.scrim === "none";
   const textFill = useInk ? T.ink : T.paper;
+  const accent = emphasisColorFor(decision.textColor, decision.scrim, mood);
 
   // Name plate band — bottom 14%
   const bandH = Math.round(g.H * 0.14);
@@ -76,11 +77,13 @@ export default function FrameCard(
 
   // Scrim behind the quote block (never full-canvas).
   const scrimAlpha = decision.scrim === "strong" ? 0.55 : decision.scrim === "soft" ? 0.35 : 0;
-  const scrimPad = 28;
+  const scrimPad = 34;
   const scrimW = measureWidth + scrimPad * 2;
   const scrimX = visualLeft ? g.SAFE_X0 - scrimPad : g.SAFE_X1 - measureWidth - scrimPad;
   const scrimY = topY - scrimPad;
   const scrimH = blockH + scrimPad * 2;
+  const isLower = decision.textZone.startsWith("lower");
+  const scrimGradId = `frame-scrim-grad-${mood}-${decision.textZone}`;
 
   // Multi-color gradient spine — mood becomes leftmost stop for character.
   const gradId = `frame-spine-${mood}`;
@@ -98,11 +101,12 @@ export default function FrameCard(
   const nameXStart = xStart(lang, g);
   const nameY = bandTop + 60;
   const titleY = nameY + 24;
-  const titleText = [title, meta].filter(Boolean).join(" · ").toUpperCase();
+  const titleRaw = [title, meta].filter(Boolean).join(" · ");
+  const titleText = capsText(titleRaw, lang);
   const titleFit = fitText(titleText, {
-    font: { family: "IBM Plex Mono", weight: 400 },
+    font: { family: ar ? "Cairo" : "IBM Plex Mono", weight: ar ? 600 : 400 },
     maxWidth: g.CONTENT_W - 120,
-    minSize: 11, maxSize: 14, maxLines: 1, lineHeightRatio: 1.2,
+    minSize: ar ? 12 : 11, maxSize: ar ? 15 : 14, maxLines: 1, lineHeightRatio: 1.2,
   });
   // Shift AuraMark up into the band, aligned to the name row.
   const auraDy = Math.round(bandTop + bandH / 2 - g.SAFE_Y1);
@@ -115,6 +119,13 @@ export default function FrameCard(
           <stop offset="0.5" stopColor={spineStops[1]} />
           <stop offset="1" stopColor={spineStops[2]} />
         </linearGradient>
+        {isLower && scrimAlpha > 0 && (
+          <linearGradient id={scrimGradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor={`rgba(5,8,12,0)`} />
+            <stop offset="0.55" stopColor={`rgba(5,8,12,${scrimAlpha * 0.6})`} />
+            <stop offset="1" stopColor={`rgba(5,8,12,${scrimAlpha})`} />
+          </linearGradient>
+        )}
       </defs>
 
       {/* Layer 1: full-bleed photo */}
@@ -127,23 +138,58 @@ export default function FrameCard(
         </>
       )}
 
-      {/* Layer 2: scrim behind quote text only */}
-      {scrimAlpha > 0 && (
-        <>
+      {/* Layer 2: feathered scrim — 3-layer stacked-alpha, export-safe.
+          Lower zones get a subtle vertical fade instead of a slab. */}
+      {scrimAlpha > 0 && !isLower && (
+        <g>
           <rect
-            x={scrimX - 10} y={scrimY - 10}
-            width={scrimW + 20} height={scrimH + 20}
-            rx="20"
-            fill={`rgba(5,8,12,${scrimAlpha * 0.45})`}
+            x={scrimX - 24} y={scrimY - 24}
+            width={scrimW + 48} height={scrimH + 48}
+            rx="34"
+            fill={`rgba(5,8,12,${scrimAlpha * 0.15})`}
+          />
+          <rect
+            x={scrimX - 12} y={scrimY - 12}
+            width={scrimW + 24} height={scrimH + 24}
+            rx="26"
+            fill={`rgba(5,8,12,${scrimAlpha * 0.35})`}
           />
           <rect
             x={scrimX} y={scrimY}
             width={scrimW} height={scrimH}
-            rx="14"
-            fill={`rgba(5,8,12,${scrimAlpha})`}
+            rx="18"
+            fill={`rgba(5,8,12,${scrimAlpha * 0.75})`}
           />
-        </>
+        </g>
       )}
+      {scrimAlpha > 0 && isLower && (
+        <rect
+          x={scrimX - 12} y={scrimY - 12}
+          width={scrimW + 24} height={scrimH + 24 + 40}
+          rx="18"
+          fill={`url(#${scrimGradId})`}
+        />
+      )}
+
+      {/* Layer 2b: legibility shadow — duplicated text offset 0/1.5px. */}
+      <g transform="translate(0, 1.5)" opacity="0.35">
+        <EmphasisTextBlock
+          lines={fit.lines}
+          x={xText}
+          y={firstBaselineY}
+          lineHeight={lineH}
+          fill={"#000000"}
+          fontFamily={font.family}
+          fontSize={fit.size}
+          fontStyle={font.style}
+          fontWeight={font.weight}
+          anchor={quoteAnchor}
+          lang={lang}
+          letterSpacing={ar ? "0" : "-0.005em"}
+          emphasis={[]}
+          accentColor={accent}
+        />
+      </g>
 
       {/* Layer 3: quote with emphasis */}
       <EmphasisTextBlock
@@ -196,9 +242,10 @@ export default function FrameCard(
           x={nameXStart}
           y={titleY}
           fill={T.paperFaint}
-          fontFamily={MONO}
+          fontFamily={captionFontFamily(lang)}
           fontSize={titleFit.size}
-          letterSpacing="0.22em"
+          letterSpacing={captionTrack(lang, "0.22em")}
+          fontWeight={captionWeight(lang, 400)}
           textAnchor={anchorStart(lang)}
           direction={ar ? "rtl" : "ltr"}
         >
