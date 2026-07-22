@@ -4,6 +4,8 @@ import LineCard from "@/components/signature/renderers/LineCard";
 import FrameCard, { type FrameDecision } from "@/components/signature/renderers/FrameCard";
 import SignatureCard from "@/components/signature/renderers/SignatureCard";
 import MilestoneCard from "@/components/signature/renderers/MilestoneCard";
+import StatementQuoteCard from "@/components/signature/renderers/StatementQuoteCard";
+import StatementHeadlineCard from "@/components/signature/renderers/StatementHeadlineCard";
 import type { Lang, Mood } from "@/components/signature/renderers/shared";
 import { ensureCardFontsLoaded } from "@/components/signature/fitText";
 
@@ -54,6 +56,10 @@ export default function SignatureHarness() {
     { label: "Frame EN oxblood", lang: "en", mood: "oxblood", Comp: FrameCard, lines: [EN_LINE] },
     { label: "Frame AR oxblood", lang: "ar", mood: "oxblood", Comp: FrameCard, lines: [AR_LINE] },
     { label: "Signature EN amber", lang: "en", mood: "amber", Comp: SignatureCard, lines: [EN_LINE, "GCC Water Advisory · 20 years"] },
+    { label: "Stmt-Quote EN teal",    lang: "en", mood: "teal",    Comp: StatementQuoteCard,    lines: [EN_LINE] },
+    { label: "Stmt-Quote AR oxblood", lang: "ar", mood: "oxblood", Comp: StatementQuoteCard,    lines: [AR_LINE] },
+    { label: "Stmt-Head EN amber",    lang: "en", mood: "amber",   Comp: StatementHeadlineCard, lines: [EN_LINE] },
+    { label: "Stmt-Head AR teal",     lang: "ar", mood: "teal",    Comp: StatementHeadlineCard, lines: [AR_LINE] },
   ];
   const portraits = [
     {
@@ -200,6 +206,20 @@ export default function SignatureHarness() {
         </div>
         <div id="line-ar" style={{ width: 1080, height: 1350 }}>
           <LineCard lang="ar" mood="oxblood" name="محمد محافظة" title="مدير التحول الرقمي" meta="" lines={[AR_LINE]} />
+        </div>
+        <div id="stmt-quote-en" style={{ width: 1080, height: 1350 }}>
+          <StatementQuoteCard lang="en" mood="teal" name="Rashid Al Mansoori" title="PARTNER" meta="GCC Water Advisory" lines={[EN_LINE]}
+            decision={{ textZone: "upper-left", scrim: "strong", cropFocusY: 0.5, emphasis: [{ phrase: "integrated digital ecosystems", style: "color" }] }} />
+        </div>
+        <div id="stmt-quote-ar" style={{ width: 1080, height: 1350 }}>
+          <StatementQuoteCard lang="ar" mood="oxblood" name="محمد محافظة" title="مدير التحول الرقمي" meta="" lines={[AR_LINE]}
+            decision={{ textZone: "upper-right", scrim: "strong", cropFocusY: 0.5, emphasis: [{ phrase: "منظومات رقمية", style: "color" }] }} />
+        </div>
+        <div id="stmt-head-en" style={{ width: 1080, height: 1350 }}>
+          <StatementHeadlineCard lang="en" mood="amber" name="Rashid Al Mansoori" title="PARTNER" meta="GCC Water Advisory" lines={[EN_LINE]} />
+        </div>
+        <div id="stmt-head-ar" style={{ width: 1080, height: 1350 }}>
+          <StatementHeadlineCard lang="ar" mood="teal" name="محمد محافظة" title="مدير التحول الرقمي" meta="" lines={[AR_LINE]} />
         </div>
         <div id="milestone-en" style={{ width: 1080, height: 1350 }}>
           <MilestoneCard lang="en" mood="amber" name="Rashid Al Mansoori" title="10" meta="GCC Water Advisory" lines={["YEARS", "Building integrated water infrastructure across the Gulf"]} />
