@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import CoverCard from "@/components/signature/renderers/CoverCard";
 import LineCard from "@/components/signature/renderers/LineCard";
-import FrameCard from "@/components/signature/renderers/FrameCard";
+import FrameCard, { type FrameDecision } from "@/components/signature/renderers/FrameCard";
 import SignatureCard from "@/components/signature/renderers/SignatureCard";
 import type { Lang, Mood } from "@/components/signature/renderers/shared";
 import { ensureCardFontsLoaded } from "@/components/signature/fitText";
@@ -10,6 +10,22 @@ const AR_LINE = "بناء منظومات رقمية متكاملة لقطاع ا
 const EN_LINE = "Building integrated digital ecosystems for water utilities beyond isolated point solutions";
 const EN_LINE2 = "Directing enterprise transformation through digital capital investment";
 const PORTRAIT_PHOTO = "/hero-head.png";
+const BRIGHT_PHOTO = "/test-bright.jpg";
+
+const FRAME_EN_DECISION: FrameDecision = {
+  textZone: "upper-left",
+  scrim: "soft",
+  cropFocusY: 0.65,
+  emphasis: [{ phrase: "isolated pilots", style: "color" }],
+};
+const FRAME_AR_DECISION: FrameDecision = {
+  textZone: "upper-right",
+  scrim: "strong",
+  cropFocusY: 0.35,
+  emphasis: [{ phrase: "بنية تحتية", style: "color" }],
+};
+const FRAME_EN_LINE = "Water utilities must move beyond isolated pilots toward integrated ecosystems";
+const FRAME_AR_LINE = "الثقة لم تعد قيمة أخلاقية.. أصبحت بنية تحتية";
 
 function Cell({ label, w = 360, children }: { label: string; w?: number; children: React.ReactNode }) {
   return (
@@ -92,6 +108,38 @@ export default function SignatureHarness() {
             meta=""
             lines={[AR_LINE]}
             photoUrl={PORTRAIT_PHOTO}
+          />
+        </div>
+        <div id="frame-en" style={{ width: 1080, height: 1350 }}>
+          <FrameCard
+            lang="en" mood="amber"
+            name="Mohammad Mahafzah"
+            title="Director of Digital Transformation"
+            meta="EY"
+            lines={[FRAME_EN_LINE]}
+            photoUrl={BRIGHT_PHOTO}
+            decision={FRAME_EN_DECISION}
+          />
+        </div>
+        <div id="frame-ar" style={{ width: 1080, height: 1350 }}>
+          <FrameCard
+            lang="ar" mood="teal"
+            name="محمد محافظة"
+            title="مدير التحول الرقمي"
+            meta=""
+            lines={[FRAME_AR_LINE]}
+            photoUrl={PORTRAIT_PHOTO}
+            decision={FRAME_AR_DECISION}
+          />
+        </div>
+        <div id="frame-default" style={{ width: 1080, height: 1350 }}>
+          <FrameCard
+            lang="en" mood="oxblood"
+            name="Rashid Al Mansoori"
+            title="Partner"
+            meta="GCC Water Advisory"
+            lines={[FRAME_EN_LINE]}
+            photoUrl={BRIGHT_PHOTO}
           />
         </div>
       </div>
