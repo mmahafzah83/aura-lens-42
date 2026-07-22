@@ -464,11 +464,25 @@ export default function Admin() {
               <div>
                 <h2 style={{ fontSize: 18, fontWeight: 600, margin: 0, color: "var(--glass)" }}>Issues today</h2>
                 <p style={{ margin: 0, ...mutedStyle }}>
-                  {brief.issues.count === 0 ? (
-                    "No errors in the last 24h ✓"
-                  ) : (
+                  {brief.issues.count > 0 ? (
                     <span style={{ color: "#F87171" }}>{brief.issues.count} error{brief.issues.count === 1 ? "" : "s"} in the last 24h</span>
-                  )}
+                  ) : (() => {
+                    const hb = brief.heartbeat ?? { captures_today: 0, signals_today: 0, ef_errors_today: 0 };
+                    const activity = (hb.captures_today ?? 0) + (hb.signals_today ?? 0);
+                    if (activity > 0) {
+                      return (
+                        <span style={{ color: "#36C5B0" }}>
+                          No errors — and the platform is alive: {hb.captures_today} capture{hb.captures_today === 1 ? "" : "s"}, {hb.signals_today} signal{hb.signals_today === 1 ? "" : "s"} today.
+                        </span>
+                      );
+                    }
+                    return (
+                      <span style={{ color: "#D6A748" }}>
+                        No errors logged — but no activity either. Silence can mean breakage:{" "}
+                        <Link to="/admin/crons" style={{ color: "#D6A748", textDecoration: "underline" }}>open Crons</Link> and check the schedules.
+                      </span>
+                    );
+                  })()}
                 </p>
               </div>
             </div>
@@ -485,11 +499,20 @@ export default function Admin() {
                       borderLeft: "3px solid #dc2626",
                     }}
                   >
-                    <div className="flex items-center justify-between gap-3">
-                      <span style={{ color: "var(--glass)", fontSize: 13, fontFamily: "monospace" }}>{it.function_name}</span>
-                      <span style={mutedStyle}>{relTime(it.created_at)}</span>
+                    <div style={{ color: "var(--glass)", fontSize: 13, lineHeight: 1.45 }}>
+                      {it.plain?.impact ?? "One background task did not complete."}
                     </div>
-                    <div style={{ ...mutedStyle, marginTop: 4 }}>{trim(it.error_message)}</div>
+                    <div style={{ color: "var(--glass-2)", fontSize: 13, lineHeight: 1.45, marginTop: 4 }}>
+                      → {it.plain?.action ?? "Flag to Mohammad with the error text below."}
+                    </div>
+                    <details style={{ marginTop: 8 }}>
+                      <summary style={{ color: "var(--glass-2)", fontSize: 11, fontFamily: "monospace", cursor: "pointer" }}>
+                        {it.function_name} · {relTime(it.created_at)}
+                      </summary>
+                      <div style={{ color: "var(--glass-2)", fontSize: 11, fontFamily: "monospace", marginTop: 6, whiteSpace: "pre-wrap" }}>
+                        {trim(it.error_message)}
+                      </div>
+                    </details>
                   </div>
                 ))}
               </div>
