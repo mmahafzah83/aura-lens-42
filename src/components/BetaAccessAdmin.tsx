@@ -108,8 +108,6 @@ const BetaAccessAdmin = ({ userId }: Props) => {
   const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  if (userId !== ADMIN_USER_ID) return null;
-
   const fetchRows = async () => {
     const { data, error } = await supabase
       .from("beta_allowlist")
