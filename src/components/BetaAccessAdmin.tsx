@@ -24,8 +24,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
-
 type Row = {
   id: string;
   email: string;
@@ -109,8 +107,6 @@ const BetaAccessAdmin = ({ userId }: Props) => {
   const [bulkSending, setBulkSending] = useState(false);
   const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-
-  if (userId !== ADMIN_USER_ID) return null;
 
   const fetchRows = async () => {
     const { data, error } = await supabase

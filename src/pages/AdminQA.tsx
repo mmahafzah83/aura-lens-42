@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
@@ -7,7 +6,6 @@ import { runDomAudit } from "@/utils/qaInteractionAudit";
 import { Loader2, Copy, ChevronDown, ChevronRight, X, Download } from "lucide-react";
 import AdminShell from "@/components/admin/AdminShell";
 
-const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 // Map "page label" → real SPA URL. The app renders those areas as tabs on /home
 // (NAV_ITEMS in Dashboard: home, intelligence, authority, influence, identity).
 // Loading bare /intelligence etc. hits the NotFound route — the iframe needs the tab param.
@@ -183,9 +181,6 @@ function formatRunDate(s: string): string {
 }
 
 const AdminQA = () => {
-  const navigate = useNavigate();
-  const [authChecked, setAuthChecked] = useState(false);
-
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState<string>("");
   const [currentRunId, setCurrentRunId] = useState<string | null>(null);
@@ -233,19 +228,6 @@ const AdminQA = () => {
     }
   };
 
-  // Auth gate
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (cancelled) return;
-      if (!session) { navigate("/auth", { replace: true }); return; }
-      if (session.user.id !== ADMIN_USER_ID) { navigate("/home", { replace: true }); return; }
-      setAuthChecked(true);
-    })();
-    return () => { cancelled = true; };
-  }, [navigate]);
-
   // Load known issues
   useEffect(() => {
     try {
@@ -261,10 +243,9 @@ const AdminQA = () => {
 
   // Load history on mount
   useEffect(() => {
-    if (!authChecked) return;
     fetchHistory();
     fetchQaReports();
-  }, [authChecked]);
+  }, []);
 
   // Resume mid-run after navigation? We restrict cross-route DOM audits to same-page virtual paths via SPA navigate.
   // The SPA stays mounted, so this component remains alive across navigate() calls.
@@ -487,7 +468,7 @@ const AdminQA = () => {
     const run_id = crypto.randomUUID();
     setCurrentRunId(run_id);
     const { data: { session } } = await supabase.auth.getSession();
-    const userId = session?.user.id || ADMIN_USER_ID;
+    const userId = session?.user.id || "";
     try {
       if (layers.backend) await runBackend(run_id);
       if (layers.dom) await runDomAcrossRoutes(run_id, userId);
@@ -619,10 +600,6 @@ const AdminQA = () => {
   }, [compareData]);
 
   // ---------------- Render ----------------
-  if (!authChecked) {
-    return <div style={{ padding: 32, color: "var(--ink)", background: "var(--paper)", minHeight: "100vh" }}>Checking access…</div>;
-  }
-
   return (
     <AdminShell
       title="QA Audit Console"
