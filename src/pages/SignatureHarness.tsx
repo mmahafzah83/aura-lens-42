@@ -224,6 +224,16 @@ export default function SignatureHarness() {
         <div id="milestone-en" style={{ width: 1080, height: 1350 }}>
           <MilestoneCard lang="en" mood="amber" name="Rashid Al Mansoori" title="10" meta="GCC Water Advisory" lines={["YEARS", "Building integrated water infrastructure across the Gulf"]} />
         </div>
+        {/* Latin-name-in-AR bug repros */}
+        <div id="portrait-ar-latin" style={{ width: 1080, height: 1350 }}>
+          <SignatureCard lang="ar" mood="teal" name="Mohammad Mahafzah" title="Director of Digital Transformation" meta="EY" lines={[AR_LINE]} photoUrl={PORTRAIT_PHOTO} />
+        </div>
+        <div id="stmt-quote-ar-latin" style={{ width: 1080, height: 1350 }}>
+          <StatementQuoteCard lang="ar" mood="oxblood" name="Mohammad Mahafzah" title="Director of Digital Transformation" meta="EY" lines={[AR_LINE]} />
+        </div>
+        <div id="stmt-head-ar-latin" style={{ width: 1080, height: 1350 }}>
+          <StatementHeadlineCard lang="ar" mood="teal" name="Mohammad Mahafzah" title="Director of Digital Transformation" meta="EY" lines={[AR_LINE]} />
+        </div>
       </div>
     </div>
   );
