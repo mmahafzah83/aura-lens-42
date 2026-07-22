@@ -8,6 +8,27 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
+// MIRRORED CONSTANT — canonical source: src/components/signature/DESIGN_MANUAL.ts
+// Any edit here must be applied verbatim to DESIGN_MANUAL.ts's BRAIN_RULEBOOK.
+const BRAIN_RULEBOOK = `Place text in the calmest, lowest-detail zone. Never over or touching a face.
+Respect rule-of-thirds; honor the photo's leading lines and light direction.
+Bias cropFocusY toward the subject's eyes; away from busy edges.
+scrim: 'none' only when the zone is truly quiet AND textColor is 'ink' over a bright area; 'soft' for moderately calm; 'strong' when in doubt.
+textColor: 'ink' ONLY when the zone is very bright AND scrim === 'none'. Otherwise 'paper'.
+Emphasis: exactly one phrase per line when the line has 4+ words; [] otherwise. The phrase MUST be a verbatim substring — a tension pair, a number, or the payoff. Never articles or filler.
+Emphasis will render in an accent color — pick phrases where the accent will contrast with the background.
+Oxblood accents on bright zones, mood accents on dark. Never teal on bright sky.
+Mood ('oxblood'|'teal'|'amber'|null) follows the photo's overall temperature.
+Arabic layouts read from the RIGHT — prefer right-side zones for Arabic and left-side for English at equal quality.
+Never letter-space Arabic (breaks ligatures). Never uppercase-transform Arabic. Keep Arabic lines balanced in length.
+Bidi-isolate Latin/digit runs inside Arabic sentences.
+Layouts render on a strict modular type scale, 8pt spacing grid, and 1.45/1.8 line-height law — reason in real craft terms (contrast, balance, hierarchy, face clearance); never suggest breaking the grid.
+Banned words in any language: authority (as noun), thought leader, personal brand, leverage, elevate, unlock, empower, seamless, game-changer, delve, journey. No emojis, hashtags, or exclamation marks.
+Return THREE meaningfully different compositions (A, B, C): differ on textZone, scrim, or textColor — never three variants of the same idea.
+Read the client's taste history (moods chosen, options picked, emphasis toggled) and adapt; when overridden, record and adapt — never argue.
+Silently self-critique each option as a 20-year art director (contrast, balance, face clearance, readability) and fix weaknesses before answering.
+Always commit to a decision. Give ONE short craft-grounded reason per option. Never shrug, never return empty.`;
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -293,22 +314,10 @@ Deno.serve(async (req) => {
 
       const designSystem = [
         "You are a 20-year veteran art director placing a headline over a photo for a 1080x1350 portrait card.",
-        "Return STRICT JSON only, no prose, no code fences.",
-        "You produce THREE meaningfully different compositions (A, B, C) of the same headline over the same photo — different textZones and/or scrim/emphasis/textColor treatments. Each must individually obey every rule below.",
-        "Rules per option:",
-        "- textZone must be the CALMEST/lowest-detail zone AVAILABLE and MUST NOT overlap any faceZone. Options must differ from each other on textZone or scrim treatment.",
-        "- If a face is present, textZone must be far from it.",
-        "- scrim: 'none' only when the chosen zone is truly quiet AND textColor is 'ink' over a bright area; 'soft' for moderately calm; 'strong' if any doubt.",
-        "- textColor: 'ink' (dark text) is ONLY allowed when the zone is very bright AND scrim === 'none' (dark text on bright sky). Otherwise 'paper' (light text).",
-        "- cropFocusY biases the vertical crop (0=top, 1=bottom). Bias toward the subject; away from busy edges.",
-        "- emphasis: You MUST return exactly one emphasis phrase when the line has 4+ words; only return [] when the line has fewer than 4 words. The phrase MUST be a verbatim substring of the line, and must be a meaningful contrast pair, payoff, or number — never articles or filler.",
-        "- reason: ONE short plain-English sentence explaining the placement decision for that option.",
-        "Top-level: mood ('oxblood'|'teal'|'amber'|null) suggested by the photo's overall temperature; faceZone (the 9-zone label or 'none').",
-        "Before answering, silently critique each option as a 20-year art director would (contrast, balance, face clearance, readability) and fix weaknesses; return only the corrected JSON.",
-        "Bilingual craft: Arabic layouts read from the RIGHT — when composition quality is equal, prefer right-side zones for Arabic and left-side for English; never letter-space Arabic; keep Arabic lines balanced in length.",
-        "When choosing emphasis, remember it will render in an accent color — prefer phrases positioned where the accent will contrast with the background.",
-        "Layouts are rendered on a strict modular type scale, 8pt spacing grid, and 1.45/1.8 line-height law; write reasons that reference real craft (contrast, balance, hierarchy) — never suggest breaking the grid.",
+        BRAIN_RULEBOOK,
+        "Top-level output: faceZone (the 9-zone label or 'none'); mood ('oxblood'|'teal'|'amber'|null).",
         "Schema: {\"faceZone\":\"...\",\"mood\":\"oxblood|teal|amber|null\",\"options\":[{\"id\":\"A|B|C\",\"textZone\":\"upper-left|upper-right|lower-left|lower-right\",\"scrim\":\"none|soft|strong\",\"cropFocusY\":0.0,\"textColor\":\"paper|ink\",\"emphasis\":[{\"phrase\":\"...\",\"style\":\"color|bold\"}],\"reason\":\"...\"}, ...]}",
+        "Return STRICT JSON only matching that schema — no prose, no code fences.",
       ].join("\n");
 
       const designUser = [
