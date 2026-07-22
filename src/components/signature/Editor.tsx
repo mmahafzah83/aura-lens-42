@@ -302,7 +302,7 @@ export default function Editor({
               {MOODS.map((m) => (
                 <button
                   key={m.key}
-                  onClick={() => onMood(m.key)}
+                  onClick={() => wrappedOnMood(m.key)}
                   aria-label={m.label}
                   title={m.label}
                   style={{
