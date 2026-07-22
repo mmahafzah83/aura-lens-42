@@ -775,6 +775,113 @@ const thinkingDot: React.CSSProperties = {
   letterSpacing: 0, marginLeft: 6,
 };
 
+/* ---- new grouped-panel styles ---- */
+const designerNote: React.CSSProperties = {
+  fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+  fontSize: 13, lineHeight: 1.4,
+  color: "var(--ink-2)",
+  padding: "10px 12px",
+  background: "var(--paper-3, var(--paper-2))",
+  border: "1px solid var(--rule)",
+  borderLeft: "2px solid var(--spot)",
+};
+const groupWrap: React.CSSProperties = {
+  display: "flex", flexDirection: "column", gap: 10,
+  paddingTop: 16, borderTop: "1px solid var(--rule)",
+};
+const groupHeader: React.CSSProperties = {
+  display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12,
+};
+const groupTitle: React.CSSProperties = {
+  fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+  fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase",
+  color: "var(--ink)",
+};
+const groupCaption: React.CSSProperties = {
+  fontFamily: "'Newsreader', serif",
+  fontSize: 13, lineHeight: 1.4, color: "var(--ink-3)", fontStyle: "italic",
+};
+const groupBody: React.CSSProperties = { display: "flex", flexDirection: "column", gap: 10 };
+const subLabel: React.CSSProperties = {
+  fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+  fontSize: 9, letterSpacing: "0.22em", textTransform: "uppercase",
+  color: "var(--ink-3)",
+};
+const quietLink: React.CSSProperties = {
+  background: "transparent", border: "none", padding: "12px 4px",
+  minHeight: 44,
+  fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+  fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase",
+  color: "var(--spot)", cursor: "pointer",
+};
+const mutedNote: React.CSSProperties = {
+  fontFamily: "'Newsreader', serif", fontSize: 13, color: "var(--ink-3)",
+  fontStyle: "italic", padding: "6px 0",
+};
+const layoutRow: React.CSSProperties = { display: "flex", gap: 8, flexWrap: "wrap" };
+const layoutCard: React.CSSProperties = {
+  flex: "1 1 30%", minWidth: 100, minHeight: 60,
+  padding: "10px 12px",
+  display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4,
+  background: "transparent", border: "1px solid var(--rule)",
+  cursor: "pointer", color: "var(--ink)",
+  textAlign: "left" as const,
+};
+const layoutHint: React.CSSProperties = {
+  fontFamily: "'Newsreader', serif", fontSize: 12, color: "var(--ink-2)",
+};
+const activeReason: React.CSSProperties = {
+  fontFamily: "'Newsreader', serif", fontSize: 13, lineHeight: 1.4,
+  color: "var(--ink-2)", fontStyle: "italic",
+  paddingLeft: 10, borderLeft: "2px solid var(--spot)",
+};
+const switchRow: React.CSSProperties = { display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" };
+const switchBtn: React.CSSProperties = {
+  display: "inline-flex", alignItems: "center", gap: 10,
+  background: "transparent", border: "none",
+  padding: "10px 4px", minHeight: 44,
+  color: "var(--ink)",
+};
+const switchTrack: React.CSSProperties = {
+  position: "relative", width: 44, height: 24, borderRadius: 999,
+  transition: "background .18s ease", display: "inline-block",
+};
+const switchThumb: React.CSSProperties = {
+  position: "absolute", top: 2, left: 2, width: 20, height: 20, borderRadius: 999,
+  background: "var(--paper)", transition: "transform .18s ease",
+  boxShadow: "0 1px 3px rgba(0,0,0,0.4)",
+};
+const switchLabel: React.CSSProperties = {
+  fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+  fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase",
+  color: "var(--ink-2)",
+};
+const emphasisChip: React.CSSProperties = {
+  display: "inline-flex", alignItems: "center",
+  padding: "6px 10px", minHeight: 28,
+  border: "1px solid var(--spot)", color: "var(--spot)",
+  fontFamily: "'Newsreader', serif", fontSize: 13, fontStyle: "italic",
+};
+const swatchRow: React.CSSProperties = { display: "flex", gap: 18, flexWrap: "wrap" };
+const swatchBtn: React.CSSProperties = {
+  background: "transparent", border: "none",
+  display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+  padding: 4, minWidth: 44, minHeight: 44,
+  cursor: "pointer",
+};
+const detailsWrap: React.CSSProperties = {
+  paddingTop: 16, borderTop: "1px solid var(--rule)",
+  display: "flex", flexDirection: "column", gap: 12,
+};
+const detailsToggle: React.CSSProperties = {
+  background: "transparent", border: "none", padding: "10px 0",
+  textAlign: "left" as const, minHeight: 44,
+  fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+  fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase",
+  color: "var(--ink-2)", cursor: "pointer",
+};
+const detailsBody: React.CSSProperties = { display: "flex", flexDirection: "column", gap: 12 };
+
 const EDITOR_CSS = `
 .sig-editor-grid {
   display: grid;
