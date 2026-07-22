@@ -267,7 +267,7 @@ serve(withObserve("generate-authority-content", async (req) => {
           // Fetch the signal first — we need its own supporting_evidence_ids to ground on ITS chain.
           const { data: sigData } = await supabase.from("strategic_signals")
             .select("signal_title, explanation, strategic_implications, confidence, supporting_evidence_ids")
-            .eq("id", signal_id).maybeSingle();
+            .eq("id", signal_id).eq("user_id", effectiveUserId).maybeSingle();
           groundingSignal = sigData || null;
 
           const evidenceIds = Array.isArray(sigData?.supporting_evidence_ids)
@@ -877,8 +877,8 @@ Return ONLY a JSON object matching this exact schema:
       const voiceContext = buildVoiceContext(voiceProfile);
 
       const [signalsRes, insightsRes] = await Promise.all([
-        supabase.from("strategic_signals").select("signal_title, explanation, theme_tags, content_opportunity, framework_opportunity").eq("status", "active").order("confidence", { ascending: false }).limit(10),
-        supabase.from("learned_intelligence").select("title, intelligence_type, skill_pillars, tags").order("created_at", { ascending: false }).limit(15),
+        supabase.from("strategic_signals").select("signal_title, explanation, theme_tags, content_opportunity, framework_opportunity").eq("status", "active").eq("user_id", effectiveUserId).order("confidence", { ascending: false }).limit(10),
+        supabase.from("learned_intelligence").select("title, intelligence_type, skill_pillars, tags").eq("user_id", effectiveUserId).order("created_at", { ascending: false }).limit(15),
       ]);
 
       const signalsSummary = (signalsRes.data || []).map(s => `- ${s.signal_title}: ${s.explanation?.substring(0, 150)}`).join("\n");
