@@ -1,6 +1,7 @@
 import {
   AuraMark, MONO, RendererProps, SvgRoot, T, TextBlock,
-  anchorStart, getGeometry, isAr, moodColor, moodWashRGBA, pickQuoteFont, quoteLineHeight, xStart,
+  anchorStart, capsText, captionFontFamily, captionSize, captionTrack, captionWeight,
+  getGeometry, isAr, moodColor, moodWashRGBA, pickQuoteFont, quoteLineHeight, xStart,
 } from "./shared";
 import { fitText } from "../fitText";
 
@@ -30,21 +31,23 @@ export default function LineCard(props: RendererProps & { square?: boolean }) {
       <rect x={ar ? g.SAFE_X1 - 48 : g.SAFE_X0} y={quoteY - fit.size - 44} width="48" height="4" fill={accent} />
       <TextBlock lines={fit.lines} x={xS} y={quoteY} lineHeight={lineH} fill={T.paper} fontFamily={font.family} fontSize={fit.size} fontStyle={font.style} fontWeight={font.weight} anchor={anchor} lang={lang} letterSpacing={ar ? "0" : "-0.01em"} />
       {(() => {
-        const nameFit = fitText(name.toUpperCase(), {
-          font: { family: "IBM Plex Mono", weight: 600 },
+        const nameText = capsText(name, lang);
+        const nameFit = fitText(nameText, {
+          font: { family: ar ? "Cairo" : "IBM Plex Mono", weight: 600 },
           maxWidth: g.QUOTE_MEASURE,
-          minSize: 14, maxSize: 22, maxLines: 1, lineHeightRatio: 1.2,
+          minSize: captionSize(lang, 14), maxSize: captionSize(lang, 22), maxLines: 1, lineHeightRatio: 1.2,
         });
-        return <text x={xS} y={g.SAFE_Y1 - 44} fill={T.paper} fontFamily={MONO} fontSize={nameFit.size} letterSpacing="0.24em" textAnchor={anchor} direction={ar ? "rtl" : "ltr"}>{nameFit.lines[0] || name.toUpperCase()}</text>;
+        return <text x={xS} y={g.SAFE_Y1 - 44} fill={T.paper} fontFamily={captionFontFamily(lang)} fontSize={nameFit.size} fontWeight={captionWeight(lang, 600)} letterSpacing={captionTrack(lang, "0.24em")} textAnchor={anchor} direction={ar ? "rtl" : "ltr"}>{nameFit.lines[0] || nameText}</text>;
       })()}
       {(title || meta) && (() => {
-        const caption = [title, meta].filter(Boolean).join(" · ").toUpperCase();
+        const captionRaw = [title, meta].filter(Boolean).join(" · ");
+        const caption = capsText(captionRaw, lang);
         const capFit = fitText(caption, {
-          font: { family: "IBM Plex Mono", weight: 400 },
+          font: { family: ar ? "Cairo" : "IBM Plex Mono", weight: ar ? 600 : 400 },
           maxWidth: g.QUOTE_MEASURE,
-          minSize: 10, maxSize: 15, maxLines: 1, lineHeightRatio: 1.2,
+          minSize: captionSize(lang, 10), maxSize: captionSize(lang, 15), maxLines: 1, lineHeightRatio: 1.2,
         });
-        return <text x={xS} y={g.SAFE_Y1 - 14} fill={T.paperFaint} fontFamily={MONO} fontSize={capFit.size} letterSpacing="0.28em" textAnchor={anchor} direction={ar ? "rtl" : "ltr"}>{capFit.lines[0] || caption}</text>;
+        return <text x={xS} y={g.SAFE_Y1 - 14} fill={T.paperFaint} fontFamily={captionFontFamily(lang)} fontSize={capFit.size} fontWeight={captionWeight(lang, 400)} letterSpacing={captionTrack(lang, "0.28em")} textAnchor={anchor} direction={ar ? "rtl" : "ltr"}>{capFit.lines[0] || caption}</text>;
       })()}
       <AuraMark lang={lang} color={T.paperFaint} geom={g} />
     </SvgRoot>
