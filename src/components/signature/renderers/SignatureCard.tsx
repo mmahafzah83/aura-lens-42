@@ -44,7 +44,7 @@ export default function SignatureCard(props: RendererProps & { square?: boolean 
   // NAME — large.
   const nameFit = fitText(name, {
     font: { family: ar ? "Cairo" : SERIF, weight: 600 },
-    maxWidth: bandContentW * 0.78, // leave room for AuraMark on the opposite edge
+    maxWidth: bandContentW * 0.68, // reserve the opposite side for AuraMark
     minSize: 44, maxSize: 64, maxLines: 1, lineHeightRatio: 1.1,
   });
 

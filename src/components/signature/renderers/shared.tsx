@@ -460,24 +460,33 @@ export function TextBlock({
   const track = ar ? undefined : letterSpacing;
   return (
     <g>
-      {lines.map((line, i) => (
-        <text
-          key={i}
-          x={x}
-          y={y + i * lineHeight}
-          fill={fill}
-          fontFamily={fontFamily}
-          fontSize={fontSize}
-          fontStyle={fontStyle}
-          fontWeight={fontWeight}
-          textAnchor={anchor}
-          direction={ar ? "rtl" : "ltr"}
-          unicodeBidi={ar ? "plaintext" : undefined as any}
-          letterSpacing={track}
-        >
-          {ar ? renderArabicBidi(line) : line}
-        </text>
-      ))}
+      {lines.map((line, i) => {
+        // An Arabic card can still contain an entirely Latin proper name.
+        // Keep that row LTR as one isolated unit, but mirror its physical
+        // anchor so inline-start remains the safe zone's RIGHT edge.
+        const latinOnlyInAr = ar && !/[\u0600-\u06FF]/.test(line);
+        const resolvedAnchor = latinOnlyInAr
+          ? anchor === "start" ? "end" : anchor === "end" ? "start" : "middle"
+          : anchor;
+        return (
+          <text
+            key={i}
+            x={x}
+            y={y + i * lineHeight}
+            fill={fill}
+            fontFamily={fontFamily}
+            fontSize={fontSize}
+            fontStyle={fontStyle}
+            fontWeight={fontWeight}
+            textAnchor={resolvedAnchor}
+            direction={latinOnlyInAr ? "ltr" : ar ? "rtl" : "ltr"}
+            unicodeBidi={ar ? (latinOnlyInAr ? "isolate" : "plaintext") as any : undefined}
+            letterSpacing={track}
+          >
+            {ar && !latinOnlyInAr ? renderArabicBidi(line) : line}
+          </text>
+        );
+      })}
     </g>
   );
 }

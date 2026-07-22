@@ -68,7 +68,7 @@ export default function StatementQuoteCard(
   const nameText = capsText(name, lang);
   const nameFit = fitText(nameText, {
     font: { family: ar ? "Cairo" : "IBM Plex Mono", weight: 600 },
-    maxWidth: g.QUOTE_MEASURE,
+    maxWidth: g.CONTENT_W * 0.68,
     minSize: captionSize(lang, 12), maxSize: captionSize(lang, 18), maxLines: 1, lineHeightRatio: 1.3,
   });
 
