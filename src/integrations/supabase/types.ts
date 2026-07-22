@@ -3393,6 +3393,14 @@ export type Database = {
           status_code: number
         }[]
       }
+      reconcile_signal_counts: {
+        Args: never
+        Returns: {
+          dead_ids_pruned: number
+          signals_checked: number
+          signals_fixed: number
+        }[]
+      }
       record_guide_miss: {
         Args: { _slug: string; _surface: string }
         Returns: undefined
