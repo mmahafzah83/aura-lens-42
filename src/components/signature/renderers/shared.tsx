@@ -472,7 +472,7 @@ export function TextBlock({
           fontWeight={fontWeight}
           textAnchor={anchor}
           direction={ar ? "rtl" : "ltr"}
-          unicodeBidi={ar ? "embed" : undefined as any}
+          unicodeBidi={ar ? "plaintext" : undefined as any}
           letterSpacing={track}
         >
           {ar ? renderArabicBidi(line) : line}
@@ -488,7 +488,14 @@ export function TextBlock({
  * word order inside RTL text.
  */
 export function renderArabicBidi(line: string): React.ReactNode {
-  const parts = line.split(/([A-Za-z0-9%]+)/g);
+  // Force RTL base direction for the whole line by prefixing an RLM
+  // (U+200F). This guarantees `text-anchor="start"` under `direction="rtl"`
+  // + `unicode-bidi: plaintext` resolves to the visual RIGHT edge even
+  // when the content is entirely Latin (e.g. an English name inside an
+  // Arabic card). Without the RLM, plaintext infers LTR base direction
+  // from Latin-only content and the row anchors to the left, clipping
+  // off the right edge of the safe zone.
+  const parts = ("\u200F" + line).split(/([A-Za-z0-9%]+)/g);
   return parts.map((part, i) => {
     if (!part) return null;
     if (/^[A-Za-z0-9%]+$/.test(part)) {
