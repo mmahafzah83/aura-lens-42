@@ -8,6 +8,11 @@ import {
   T,
   TextBlock,
   anchorStart,
+  capsText,
+  captionFontFamily,
+  captionSize,
+  captionTrack,
+  captionWeight,
   getGeometry,
   isAr,
   moodColor,
@@ -49,7 +54,8 @@ export default function CoverCard(props: RendererProps & { square?: boolean }) {
 
   const kicker = "THE PRESENCE EDITION";
   const coverline = lines[0] || "";
-  const byline = [title, meta].filter(Boolean).join(" · ").toUpperCase();
+  const bylineRaw = [title, meta].filter(Boolean).join(" · ");
+  const byline = capsText(bylineRaw, lang);
   const issueLine = "VOL. 01";
 
   // Positioning: name sits ~62% down the card
@@ -154,9 +160,10 @@ export default function CoverCard(props: RendererProps & { square?: boolean }) {
           x={xS}
           y={g.SAFE_Y1 - 52}
           fill={T.paperFaint}
-          fontFamily={MONO}
-          fontSize="14"
-          letterSpacing="0.28em"
+          fontFamily={captionFontFamily(lang)}
+          fontSize={captionSize(lang, 14)}
+          fontWeight={captionWeight(lang, 400)}
+          letterSpacing={captionTrack(lang, "0.28em")}
           textAnchor={anchor}
           direction={ar ? "rtl" : "ltr"}
         >
