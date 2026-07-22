@@ -85,6 +85,15 @@ export function defaultsFor(family: string, live: LiveData): Defaults {
       meta,
     };
   }
+  if (family === "statement-quote" || family === "statement-headline") {
+    const quote = live.topSignal || practice || "One sentence you would sign.";
+    return {
+      name,
+      title: level || "Perspective",
+      lines: [quote, ""],
+      meta,
+    };
+  }
   const quote = live.topSignal || "One sentence you would sign.";
   return {
     name,
