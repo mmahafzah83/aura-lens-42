@@ -189,7 +189,7 @@ export default function Publish({
             _language: lang,
             image_url: imageUrl,
             designOption: designOption || null,
-            designDecision: decision || null,
+            designDecision: (decision as any) || null,
             emphasisOff: !!emphasisOff,
           },
         })
