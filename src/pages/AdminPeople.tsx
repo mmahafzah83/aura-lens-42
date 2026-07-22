@@ -522,13 +522,6 @@ export default function AdminPeople() {
             </div>
           )}
 
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-            gap: 12,
-            marginBottom: 24,
-          }}>
-          </div>
           <div style={{ marginBottom: 16 }}>
             <AdminLegend
               title="What these statuses mean"
