@@ -15,6 +15,9 @@ import {
   getGeometry,
   isAr,
   xStart,
+  SPACE,
+  snapToScale,
+  TYPE_SCALE,
 } from "./shared";
 import { fitText } from "../fitText";
 
@@ -32,7 +35,7 @@ export default function SignatureCard(props: RendererProps & { square?: boolean 
   // Band: bottom 30% of canvas.
   const bandY = Math.round(g.H * 0.70);      // 1350 → 945
   const bandH = g.H - bandY;
-  const bandPadTop = 44;
+  const bandPadTop = SPACE.xl;                                             // 48 (was 44)
   const bandContentW = g.SAFE_X1 - g.SAFE_X0;
 
   const line1 = lines[0] || "";
@@ -48,42 +51,56 @@ export default function SignatureCard(props: RendererProps & { square?: boolean 
   // TITLE + META — mono all-caps (EN); Cairo untracked (AR).
   const captionRaw = [title, meta].filter(Boolean).join(" · ");
   const captionText = capsText(captionRaw, lang);
-  const captionFit = fitText(captionText, {
+  let captionFit = fitText(captionText, {
     font: { family: ar ? "Cairo" : MONO, weight: ar ? 600 : 400 },
     maxWidth: bandContentW,
-    minSize: captionSize(lang, 12), maxSize: captionSize(lang, 17), maxLines: 1, lineHeightRatio: 1.2,
+    minSize: 12, maxSize: 16, maxLines: 1, lineHeightRatio: 1.3,
   });
+
+  // Law 6 — two-step hierarchy: name must be ≥2 ladder steps above caption.
+  const idxOf = (s: number) => TYPE_SCALE.indexOf(snapToScale(s));
+  if (idxOf(nameFit.size) - idxOf(captionFit.size) < 2) {
+    const targetIdx = Math.max(0, idxOf(nameFit.size) - 2);
+    const target = TYPE_SCALE[targetIdx];
+    if (target < captionFit.size) {
+      captionFit = fitText(captionText, {
+        font: { family: ar ? "Cairo" : MONO, weight: ar ? 600 : 400 },
+        maxWidth: bandContentW,
+        minSize: 12, maxSize: target, maxLines: 1, lineHeightRatio: 1.3,
+      });
+    }
+  }
 
   // Layout rows (top-of-glyph baselines computed from bandY).
   const nameBaselineY = bandY + bandPadTop + nameFit.size;                 // baseline of the single-line name
-  const titleY = nameBaselineY + 14 + captionFit.size;                     // 14px gap after name descender
-  const spineY = titleY + 26;                                              // 26px below title baseline
+  const titleY = nameBaselineY + SPACE.s + captionFit.size;                // 16px gap after name descender
+  const spineY = titleY + SPACE.m;                                         // 24px below title baseline
   const spineH = 4;
 
   // DESCRIPTOR — fit; if the 2-line block + optional line2 won't fit,
   // drop line2 rather than overflow the band.
-  const descTop = spineY + spineH + 30;                                    // 30px below spine
+  const descTop = spineY + spineH + SPACE.l;                               // 32px below spine
   const bandBottom = g.H;
-  const bandBottomPad = 44;
+  const bandBottomPad = SPACE.xl;                                          // 48
   const available = bandBottom - bandBottomPad - descTop;
 
   const descFont = { family: ar ? "Cairo" : SERIF, weight: (ar ? 600 : 500) as number, style: "normal" as const };
-  const descLHR = ar ? 1.7 : 1.35;
+  const descLHR = ar ? 1.8 : 1.45;
 
   // Try 2 lines first with a line2, then 2 lines w/o line2, then 1 line.
   let line1Fit = fitText(line1, {
     font: descFont, maxWidth: bandContentW,
-    minSize: 22, maxSize: 30, maxLines: 2, lineHeightRatio: descLHR,
+    minSize: 20, maxSize: 32, maxLines: 2, lineHeightRatio: descLHR,
   });
   const line2FontFamily = ar ? "Cairo" : SERIF;
   let line2Fit = line2 ? fitText(line2, {
     font: { family: line2FontFamily, weight: 400, style: ar ? "normal" : "italic" },
     maxWidth: bandContentW,
-    minSize: 15, maxSize: 19, maxLines: 1, lineHeightRatio: ar ? 1.6 : 1.25,
+    minSize: 16, maxSize: 20, maxLines: 1, lineHeightRatio: ar ? 1.8 : 1.3,
   }) : null;
 
   const line1BlockH = () => line1Fit.lines.length * line1Fit.lineHeight;
-  const line2BlockH = () => (line2Fit ? line2Fit.lineHeight + 14 : 0); // 14px gap
+  const line2BlockH = () => (line2Fit ? line2Fit.lineHeight + SPACE.s : 0); // 16px gap
   let totalH = line1BlockH() + line2BlockH();
   if (totalH > available && line2Fit) {
     // Drop line2 rather than overflow.
@@ -94,12 +111,12 @@ export default function SignatureCard(props: RendererProps & { square?: boolean 
     // Force 1 line at min size for descriptor.
     line1Fit = fitText(line1, {
       font: descFont, maxWidth: bandContentW,
-      minSize: 22, maxSize: 26, maxLines: 1, lineHeightRatio: descLHR,
+      minSize: 20, maxSize: 24, maxLines: 1, lineHeightRatio: descLHR,
     });
   }
 
   const line1Y = descTop + line1Fit.size;
-  const line2Y = line2Fit ? line1Y + line1BlockH() - line1Fit.size + 14 + line2Fit.size : 0;
+  const line2Y = line2Fit ? line1Y + line1BlockH() - line1Fit.size + SPACE.s + line2Fit.size : 0;
 
   // Gradient stops keyed by mood.
   const gradId = `portrait-spine-${mood}${square ? "-sq" : ""}${ar ? "-ar" : ""}`;

@@ -307,6 +307,7 @@ Deno.serve(async (req) => {
         "Before answering, silently critique each option as a 20-year art director would (contrast, balance, face clearance, readability) and fix weaknesses; return only the corrected JSON.",
         "Bilingual craft: Arabic layouts read from the RIGHT — when composition quality is equal, prefer right-side zones for Arabic and left-side for English; never letter-space Arabic; keep Arabic lines balanced in length.",
         "When choosing emphasis, remember it will render in an accent color — prefer phrases positioned where the accent will contrast with the background.",
+        "Layouts are rendered on a strict modular type scale, 8pt spacing grid, and 1.45/1.8 line-height law; write reasons that reference real craft (contrast, balance, hierarchy) — never suggest breaking the grid.",
         "Schema: {\"faceZone\":\"...\",\"mood\":\"oxblood|teal|amber|null\",\"options\":[{\"id\":\"A|B|C\",\"textZone\":\"upper-left|upper-right|lower-left|lower-right\",\"scrim\":\"none|soft|strong\",\"cropFocusY\":0.0,\"textColor\":\"paper|ink\",\"emphasis\":[{\"phrase\":\"...\",\"style\":\"color|bold\"}],\"reason\":\"...\"}, ...]}",
       ].join("\n");
 

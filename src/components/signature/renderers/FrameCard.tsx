@@ -2,6 +2,7 @@ import {
   ARABIC, AuraMark, EmphasisTextBlock, MONO, PhotoPlaceholder, RendererProps, SERIF, SvgRoot, T,
   anchorStart, capsText, captionFontFamily, captionSize, captionTrack, captionWeight,
   emphasisColorFor, getGeometry, isAr, moodColor, pickQuoteFont, xStart,
+  SPACE, RADII,
 } from "./shared";
 import { fitText } from "../fitText";
 
@@ -54,12 +55,12 @@ export default function FrameCard(
   const fit = fitText(quote, {
     font: { family: ar ? "Cairo" : "Newsreader", weight: ar ? 700 : 500, style: ar ? "normal" : "italic" },
     maxWidth: measureWidth,
-    minSize: ar ? 26 : 30,
-    maxSize: ar ? 38 : 44,
+    minSize: ar ? 24 : 32,
+    maxSize: ar ? 40 : 48,
     maxLines: 3,
-    lineHeightRatio: ar ? 1.8 : 1.3,
+    lineHeightRatio: ar ? 1.8 : 1.45,
   });
-  const lineH = fit.size * (ar ? 1.8 : 1.3);
+  const lineH = fit.size * (ar ? 1.8 : 1.45);
   const blockH = Math.round(fit.lines.length * lineH);
 
   // Zone → visual anchor (visual left/right, not lang-flipped).
@@ -72,12 +73,12 @@ export default function FrameCard(
     ? (visualLeft ? "end" : "start")
     : (visualLeft ? "start" : "end");
   const xText = visualLeft ? g.SAFE_X0 : g.SAFE_X1;
-  const topY = isUpper ? g.SAFE_Y0 + 40 : Math.max(g.SAFE_Y0 + 40, bandTop - 40 - blockH);
+  const topY = isUpper ? g.SAFE_Y0 + SPACE.xl : Math.max(g.SAFE_Y0 + SPACE.xl, bandTop - SPACE.xl - blockH);
   const firstBaselineY = topY + fit.size;
 
   // Scrim behind the quote block (never full-canvas).
   const scrimAlpha = decision.scrim === "strong" ? 0.55 : decision.scrim === "soft" ? 0.35 : 0;
-  const scrimPad = 34;
+  const scrimPad = SPACE.l;
   const scrimW = measureWidth + scrimPad * 2;
   const scrimX = visualLeft ? g.SAFE_X0 - scrimPad : g.SAFE_X1 - measureWidth - scrimPad;
   const scrimY = topY - scrimPad;
@@ -96,17 +97,17 @@ export default function FrameCard(
   const nameFit = fitText(name, {
     font: { family: ar ? "Cairo" : "Newsreader", weight: 600 },
     maxWidth: g.CONTENT_W - 120,
-    minSize: 28, maxSize: 38, maxLines: 1, lineHeightRatio: 1.1,
+    minSize: 24, maxSize: 40, maxLines: 1, lineHeightRatio: 1.1,
   });
   const nameXStart = xStart(lang, g);
-  const nameY = bandTop + 60;
-  const titleY = nameY + 24;
+  const nameY = bandTop + SPACE.xl + SPACE.s;
+  const titleY = nameY + SPACE.m;
   const titleRaw = [title, meta].filter(Boolean).join(" · ");
   const titleText = capsText(titleRaw, lang);
   const titleFit = fitText(titleText, {
     font: { family: ar ? "Cairo" : "IBM Plex Mono", weight: ar ? 600 : 400 },
     maxWidth: g.CONTENT_W - 120,
-    minSize: ar ? 12 : 11, maxSize: ar ? 15 : 14, maxLines: 1, lineHeightRatio: 1.2,
+    minSize: 12, maxSize: 16, maxLines: 1, lineHeightRatio: 1.3,
   });
   // Shift AuraMark up into the band, aligned to the name row.
   const auraDy = Math.round(bandTop + bandH / 2 - g.SAFE_Y1);
@@ -143,30 +144,30 @@ export default function FrameCard(
       {scrimAlpha > 0 && !isLower && (
         <g>
           <rect
-            x={scrimX - 24} y={scrimY - 24}
-            width={scrimW + 48} height={scrimH + 48}
-            rx="34"
+            x={scrimX - SPACE.m} y={scrimY - SPACE.m}
+            width={scrimW + SPACE.m * 2} height={scrimH + SPACE.m * 2}
+            rx={RADII.l}
             fill={`rgba(5,8,12,${scrimAlpha * 0.15})`}
           />
           <rect
-            x={scrimX - 12} y={scrimY - 12}
-            width={scrimW + 24} height={scrimH + 24}
-            rx="26"
+            x={scrimX - SPACE.xs} y={scrimY - SPACE.xs}
+            width={scrimW + SPACE.xs * 2} height={scrimH + SPACE.xs * 2}
+            rx={Math.max(4, RADII.l - SPACE.xs)}
             fill={`rgba(5,8,12,${scrimAlpha * 0.35})`}
           />
           <rect
             x={scrimX} y={scrimY}
             width={scrimW} height={scrimH}
-            rx="18"
+            rx={RADII.s}
             fill={`rgba(5,8,12,${scrimAlpha * 0.75})`}
           />
         </g>
       )}
       {scrimAlpha > 0 && isLower && (
         <rect
-          x={scrimX - 12} y={scrimY - 12}
-          width={scrimW + 24} height={scrimH + 24 + 40}
-          rx="18"
+          x={scrimX - SPACE.xs} y={scrimY - SPACE.xs}
+          width={scrimW + SPACE.xs * 2} height={scrimH + SPACE.xs * 2 + SPACE.xl}
+          rx={RADII.m}
           fill={`url(#${scrimGradId})`}
         />
       )}

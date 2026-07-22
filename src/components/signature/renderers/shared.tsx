@@ -1,4 +1,6 @@
 import { CSSProperties } from "react";
+export { TYPE_SCALE, snapToScale } from "../fitText";
+import type { FrameDecision, FrameZone } from "./FrameCard";
 
 /**
  * Shared props + tokens for every Signature Studio SVG card.
@@ -8,6 +10,11 @@ import { CSSProperties } from "react";
 
 export type Lang = "en" | "ar";
 export type Mood = "oxblood" | "teal" | "amber";
+
+/** 8-point spacing grid (Law 3). Use tokens, never bare literals. */
+export const SPACE = { xs: 8, s: 16, m: 24, l: 32, xl: 48 } as const;
+/** Nested-radius tokens (Law 4). Inner radius = max(4, outer − padding). */
+export const RADII = { l: 24, m: 16, s: 8 } as const;
 
 export interface RendererProps {
   lang: Lang;
@@ -74,6 +81,95 @@ export function moodColor(m: Mood): string {
   if (m === "oxblood") return T.oxblood;
   if (m === "teal") return T.teal;
   return T.amber;
+}
+
+/* ────────────────────────────────────────────────────────────────
+   Law 5 — deterministic contrast-aware scrim adjustment.
+   Samples the average luminance under the chosen text block and
+   escalates scrim (and finally textColor) until WCAG ≥ 4.5.
+   ──────────────────────────────────────────────────────────────── */
+
+function relLum(l255: number): number {
+  const s = l255 / 255;
+  return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+}
+function contrastRatio(a: number, b: number): number {
+  const L1 = Math.max(a, b);
+  const L2 = Math.min(a, b);
+  return (L1 + 0.05) / (L2 + 0.05);
+}
+function zoneRect(z: FrameZone): { u0: number; v0: number; u1: number; v1: number } {
+  const left = z.endsWith("left");
+  const upper = z.startsWith("upper");
+  return {
+    u0: left ? 0.10 : 0.50,
+    u1: left ? 0.50 : 0.90,
+    v0: upper ? 0.12 : 0.55,
+    v1: upper ? 0.45 : 0.86,
+  };
+}
+function loadImageEl(src: string): Promise<HTMLImageElement> {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => res(img);
+    img.onerror = rej;
+    img.src = src;
+  });
+}
+
+export async function adjustEffectiveScrim(
+  decision: FrameDecision,
+  photoUrl: string,
+): Promise<{ decision: FrameDecision; ratioBefore: number; ratioAfter: number }> {
+  try {
+    const img = await loadImageEl(photoUrl);
+    const rect = zoneRect(decision.textZone);
+    const S = 48;
+    const cnv = document.createElement("canvas");
+    cnv.width = S; cnv.height = S;
+    const c = cnv.getContext("2d")!;
+    const sx = img.naturalWidth * rect.u0;
+    const sy = img.naturalHeight * rect.v0;
+    const sw = img.naturalWidth * (rect.u1 - rect.u0);
+    const sh = img.naturalHeight * (rect.v1 - rect.v0);
+    c.drawImage(img, sx, sy, sw, sh, 0, 0, S, S);
+    const data = c.getImageData(0, 0, S, S).data;
+    let sumL = 0;
+    const n = data.length / 4;
+    for (let i = 0; i < data.length; i += 4) {
+      const r = relLum(data[i]);
+      const g = relLum(data[i + 1]);
+      const b = relLum(data[i + 2]);
+      sumL += 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    }
+    const photoL = sumL / n; // 0..1 rel-luminance
+
+    const textL = (tc: "paper" | "ink" | undefined) => (tc === "ink" ? 0.03 : 0.90);
+    const scrimAlpha = (s: "none" | "soft" | "strong") =>
+      s === "strong" ? 0.55 : s === "soft" ? 0.35 : 0;
+    const effectiveL = (s: "none" | "soft" | "strong") => photoL * (1 - scrimAlpha(s));
+
+    let scrim = decision.scrim;
+    let textColor = decision.textColor;
+    const ratioBefore = contrastRatio(effectiveL(scrim), textL(textColor));
+    let ratio = ratioBefore;
+    for (let i = 0; i < 4; i++) {
+      if (ratio >= 4.5) break;
+      if (scrim === "none") scrim = "soft";
+      else if (scrim === "soft") scrim = "strong";
+      else if (scrim === "strong" && textColor === "ink") { textColor = "paper"; }
+      else break;
+      ratio = contrastRatio(effectiveL(scrim), textL(textColor));
+    }
+    return {
+      decision: { ...decision, scrim, textColor },
+      ratioBefore,
+      ratioAfter: ratio,
+    };
+  } catch {
+    return { decision, ratioBefore: NaN, ratioAfter: NaN };
+  }
 }
 
 /**
