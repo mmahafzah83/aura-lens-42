@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 import type { FamilyEntry } from "./renderers";
 import type { Lang, Mood } from "./renderers/shared";
+import type { FrameDecision } from "./renderers/FrameCard";
 import type { EditorFields } from "./Editor";
 import { logSignatureEvent } from "./logEvent";
 import { photoUrlToDataUrl } from "./photoToDataUrl";
@@ -21,6 +22,8 @@ interface Props {
   mood: Mood;
   fields: EditorFields;
   photoUrl?: string;
+  decision?: FrameDecision;
+  emphasisOff?: boolean;
   onBack: () => void;
   onContinue: () => void;
 }
@@ -28,6 +31,7 @@ interface Props {
 async function renderToBlob(
   family: FamilyEntry, lang: Lang, mood: Mood, fields: EditorFields,
   photoUrl: string | undefined, square: boolean,
+  decision: FrameDecision | undefined, emphasisOff: boolean,
 ): Promise<Blob> {
   const w = 1080;
   const h = square ? 1080 : 1350;
@@ -40,12 +44,13 @@ async function renderToBlob(
     const ReactDOM = await import("react-dom/client");
     const root = ReactDOM.createRoot(host);
     const C = family.component;
+    const frameProps = family.id === "frame" ? { decision, emphasisOff } : {};
     await new Promise<void>((resolve) => {
       root.render(
         <C lang={lang} mood={mood} photoUrl={embeddedPhoto}
            name={fields.name} title={fields.title}
            lines={[fields.line1, fields.line2]} meta={fields.meta}
-           square={square} />,
+           square={square} {...frameProps} />,
       );
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
     });
@@ -68,7 +73,7 @@ async function renderToBlob(
   }
 }
 
-export default function Preview({ family, lang, mood, fields, photoUrl, onBack, onContinue }: Props) {
+export default function Preview({ family, lang, mood, fields, photoUrl, decision, emphasisOff, onBack, onContinue }: Props) {
   const [busy, setBusy] = useState<null | "portrait" | "square">(null);
   const stageRef = useRef<HTMLDivElement>(null);
 
@@ -77,7 +82,7 @@ export default function Preview({ family, lang, mood, fields, photoUrl, onBack, 
     setBusy(key);
     try {
       await ensureFontsReady(lang);
-      const blob = await renderToBlob(family, lang, mood, fields, photoUrl, square);
+      const blob = await renderToBlob(family, lang, mood, fields, photoUrl, square, decision, !!emphasisOff);
       const dim = square ? "1080x1080" : "1080x1350";
       downloadBlob(blob, `signature-${family.id}-${slugify(fields.name || "card")}-${dim}.png`);
       toast.success(`Exported ${dim}`);
@@ -105,7 +110,8 @@ export default function Preview({ family, lang, mood, fields, photoUrl, onBack, 
         <div ref={stageRef} className="sig-preview-inner">
           <C lang={lang} mood={mood} photoUrl={photoUrl}
              name={fields.name} title={fields.title}
-             lines={[fields.line1, fields.line2]} meta={fields.meta} />
+             lines={[fields.line1, fields.line2]} meta={fields.meta}
+             {...(family.id === "frame" ? { decision, emphasisOff } : {})} />
         </div>
       </div>
 

@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { FamilyEntry } from "./renderers";
 import type { Lang, Mood } from "./renderers/shared";
+import type { FrameDecision } from "./renderers/FrameCard";
 import type { EditorFields } from "./Editor";
 import { logSignatureEvent } from "./logEvent";
 import { photoUrlToDataUrl } from "./photoToDataUrl";
@@ -23,6 +24,9 @@ interface Props {
   fields: EditorFields;
   photoUrl?: string;
   pickedSource?: "profile" | "signal" | "voice" | null;
+  decision?: FrameDecision;
+  emphasisOff?: boolean;
+  designOption?: "A" | "B" | "C" | null;
   onBack: () => void;
   onMakeAnother: () => void;
   onBackToAura?: () => void;
@@ -32,6 +36,7 @@ interface Props {
  *  same pipeline as Preview.tsx (svgToImageBlob + embedded font CSS). */
 async function renderCardBlob(
   family: FamilyEntry, lang: Lang, mood: Mood, fields: EditorFields, photoUrl: string | undefined,
+  decision: FrameDecision | undefined, emphasisOff: boolean,
 ): Promise<Blob> {
   const w = 1080, h = 1350;
   await ensureCardFontsLoaded();
@@ -43,11 +48,13 @@ async function renderCardBlob(
     const ReactDOM = await import("react-dom/client");
     const root = ReactDOM.createRoot(host);
     const C = family.component;
+    const frameProps = family.id === "frame" ? { decision, emphasisOff } : {};
     await new Promise<void>((resolve) => {
       root.render(
         <C lang={lang} mood={mood} photoUrl={embeddedPhoto}
            name={fields.name} title={fields.title}
-           lines={[fields.line1, fields.line2]} meta={fields.meta} />,
+           lines={[fields.line1, fields.line2]} meta={fields.meta}
+           {...frameProps} />,
       );
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
     });
@@ -71,7 +78,8 @@ async function renderCardBlob(
 }
 
 export default function Publish({
-  family, lang, mood, fields, photoUrl, pickedSource, onBack, onMakeAnother, onBackToAura,
+  family, lang, mood, fields, photoUrl, pickedSource, decision, emphasisOff, designOption,
+  onBack, onMakeAnother, onBackToAura,
 }: Props) {
   const [caption, setCaption] = useState<string>("");
   const [writing, setWriting] = useState(false);
@@ -123,7 +131,7 @@ export default function Publish({
   const buildBlob = async (): Promise<Blob> => {
     if (cachedBlobRef.current) return cachedBlobRef.current;
     await ensureFontsReady(lang);
-    const blob = await renderCardBlob(family, lang, mood, fields, photoUrl);
+    const blob = await renderCardBlob(family, lang, mood, fields, photoUrl, decision, !!emphasisOff);
     cachedBlobRef.current = blob;
     return blob;
   };
@@ -180,6 +188,9 @@ export default function Publish({
             signature: true,
             _language: lang,
             image_url: imageUrl,
+            designOption: designOption || null,
+            designDecision: decision || null,
+            emphasisOff: !!emphasisOff,
           },
         })
         .select("id")
@@ -199,6 +210,8 @@ export default function Publish({
       setPublishedUrl(url);
       void logSignatureEvent("published", family.id, lang, {
         family: family.id, lang, mood, hasCaption: !!trimmedCaption,
+        designOption: designOption || null,
+        decision: decision || null,
       });
     } catch (e: any) {
       toast.error(e?.message || "Couldn't publish to LinkedIn");
@@ -287,7 +300,8 @@ export default function Publish({
           <div className="sig-publish-inner">
             <C lang={lang} mood={mood} photoUrl={photoUrl}
                name={fields.name} title={fields.title}
-               lines={[fields.line1, fields.line2]} meta={fields.meta} />
+               lines={[fields.line1, fields.line2]} meta={fields.meta}
+               {...(family.id === "frame" ? { decision, emphasisOff } : {})} />
           </div>
         </div>
       </div>
