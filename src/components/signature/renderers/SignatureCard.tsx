@@ -7,6 +7,11 @@ import {
   T,
   TextBlock,
   anchorStart,
+  capsText,
+  captionFontFamily,
+  captionSize,
+  captionTrack,
+  captionWeight,
   getGeometry,
   isAr,
   xStart,
@@ -40,12 +45,13 @@ export default function SignatureCard(props: RendererProps & { square?: boolean 
     minSize: 44, maxSize: 64, maxLines: 1, lineHeightRatio: 1.1,
   });
 
-  // TITLE + META — mono all-caps.
-  const captionText = [title, meta].filter(Boolean).join(" · ").toUpperCase();
+  // TITLE + META — mono all-caps (EN); Cairo untracked (AR).
+  const captionRaw = [title, meta].filter(Boolean).join(" · ");
+  const captionText = capsText(captionRaw, lang);
   const captionFit = fitText(captionText, {
-    font: { family: MONO, weight: 400 },
+    font: { family: ar ? "Cairo" : MONO, weight: ar ? 600 : 400 },
     maxWidth: bandContentW,
-    minSize: 12, maxSize: 17, maxLines: 1, lineHeightRatio: 1.2,
+    minSize: captionSize(lang, 12), maxSize: captionSize(lang, 17), maxLines: 1, lineHeightRatio: 1.2,
   });
 
   // Layout rows (top-of-glyph baselines computed from bandY).
@@ -155,9 +161,10 @@ export default function SignatureCard(props: RendererProps & { square?: boolean 
           x={xS}
           y={titleY}
           fill={T.paperFaint}
-          fontFamily={MONO}
+          fontFamily={captionFontFamily(lang)}
           fontSize={captionFit.size}
-          letterSpacing="0.18em"
+          letterSpacing={captionTrack(lang, "0.18em")}
+          fontWeight={captionWeight(lang, 400)}
           textAnchor={anchor}
           direction={ar ? "rtl" : "ltr"}
         >
