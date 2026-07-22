@@ -218,7 +218,7 @@ export default function SignatureHarness() {
           <LineCard lang="ar" mood="oxblood" name="محمد محافظة" title="مدير التحول الرقمي" meta="" lines={[AR_LINE]} />
         </div>
         <div id="stmt-quote-en" style={{ width: 1080, height: 1350 }}>
-          <StatementQuoteCard lang="en" mood="teal" name="Rashid Al Mansoori" title="PARTNER" meta="GCC Water Advisory" lines={[EN_LINE]}
+          <StatementQuoteCard lang="en" mood="teal" name="Mohammad Mahafzah" title="Director of Digital Transformation" meta="EY" lines={[EN_LINE]}
             decision={{ textZone: "upper-left", scrim: "strong", cropFocusY: 0.5, emphasis: [{ phrase: "integrated digital ecosystems", style: "color" }] }} />
         </div>
         <div id="stmt-quote-ar" style={{ width: 1080, height: 1350 }}>
@@ -226,7 +226,7 @@ export default function SignatureHarness() {
             decision={{ textZone: "upper-right", scrim: "strong", cropFocusY: 0.5, emphasis: [{ phrase: "منظومات رقمية", style: "color" }] }} />
         </div>
         <div id="stmt-head-en" style={{ width: 1080, height: 1350 }}>
-          <StatementHeadlineCard lang="en" mood="amber" name="Rashid Al Mansoori" title="PARTNER" meta="GCC Water Advisory" lines={[EN_LINE]} />
+          <StatementHeadlineCard lang="en" mood="amber" name="Mohammad Mahafzah" title="Director of Digital Transformation" meta="EY" lines={[EN_LINE]} />
         </div>
         <div id="stmt-head-ar" style={{ width: 1080, height: 1350 }}>
           <StatementHeadlineCard lang="ar" mood="teal" name="Mohammad Mahafzah" title="مدير التحول الرقمي" meta="" lines={[AR_LINE]} />
