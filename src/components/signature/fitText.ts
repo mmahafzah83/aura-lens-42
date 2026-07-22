@@ -138,6 +138,20 @@ export interface FitOptions {
   maxLines?: number;
   /** Multiplier applied to size to derive line height. */
   lineHeightRatio?: number;
+  /** When true (default) snap the fitted size DOWN to the modular type
+   *  scale ladder and re-wrap. Renderers rely on this to enforce Law 1. */
+  snap?: boolean;
+}
+
+/** Modular type scale — 1.25 ratio, rounded to multiples of 4, plus a 12
+ *  absolute floor. Kept here so fitText can snap without importing shared. */
+export const TYPE_SCALE = [12, 16, 20, 24, 32, 40, 48, 64] as const;
+
+/** Nearest ladder value ≤ size. */
+export function snapToScale(size: number): number {
+  let best = TYPE_SCALE[0];
+  for (const s of TYPE_SCALE) if (s <= size) best = s;
+  return best;
 }
 
 /**
@@ -149,17 +163,32 @@ export function fitText(text: string, opts: FitOptions): FitResult {
   const { font, maxWidth, minSize, maxSize } = opts;
   const maxLines = opts.maxLines ?? 2;
   const lhr = opts.lineHeightRatio ?? 1.15;
+  const doSnap = opts.snap !== false;
   for (let size = maxSize; size >= minSize; size--) {
     const w = wrapLines(text, font, size, maxWidth, maxLines);
     if (!w.overflow && w.lines.length <= maxLines) {
-      const balanced = rebalanceWidow(w.lines, font, size, maxWidth);
-      return { size, lines: balanced, lineHeight: size * lhr };
+      let picked = size;
+      let pickedLines = w.lines;
+      if (doSnap) {
+        const snapped = snapToScale(size);
+        if (snapped !== size && snapped >= minSize) {
+          const w2 = wrapLines(text, font, snapped, maxWidth, maxLines);
+          if (!w2.overflow) {
+            picked = snapped;
+            pickedLines = w2.lines;
+          }
+        }
+      }
+      const balanced = rebalanceWidow(pickedLines, font, picked, maxWidth);
+      return { size: picked, lines: balanced, lineHeight: picked * lhr };
     }
   }
   // Fallback: min size with one extra line.
-  const wrapped = wrapLines(text, font, minSize, maxWidth, maxLines + 1);
-  const balanced = rebalanceWidow(wrapped.lines, font, minSize, maxWidth);
-  return { size: minSize, lines: balanced, lineHeight: minSize * lhr };
+  const snappedMin = doSnap ? snapToScale(minSize) : minSize;
+  const useSize = snappedMin >= 12 ? snappedMin : minSize;
+  const wrapped = wrapLines(text, font, useSize, maxWidth, maxLines + 1);
+  const balanced = rebalanceWidow(wrapped.lines, font, useSize, maxWidth);
+  return { size: useSize, lines: balanced, lineHeight: useSize * lhr };
 }
 
 /**
