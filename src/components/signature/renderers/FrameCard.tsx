@@ -60,7 +60,12 @@ export default function FrameCard(
   // Zone → visual anchor (visual left/right, not lang-flipped).
   const visualLeft = decision.textZone.endsWith("left");
   const isUpper = decision.textZone.startsWith("upper");
-  const quoteAnchor: "start" | "end" = visualLeft ? "start" : "end";
+  // In SVG with direction=rtl, text-anchor "start" places x at the visual
+  // right edge (inline-start) and "end" at the visual left edge. So the
+  // LTR anchor must flip for AR to honor the *visual* zone.
+  const quoteAnchor: "start" | "end" = ar
+    ? (visualLeft ? "end" : "start")
+    : (visualLeft ? "start" : "end");
   const xText = visualLeft ? g.SAFE_X0 : g.SAFE_X1;
   const topY = isUpper ? g.SAFE_Y0 + 40 : Math.max(g.SAFE_Y0 + 40, bandTop - 40 - blockH);
   const firstBaselineY = topY + fit.size;
