@@ -42,7 +42,7 @@ export const NUMBER_INTEGRITY = `NUMBER INTEGRITY (absolute — credibility is t
 
 export const REGISTER_AR = `اللغة: عربية احترافية معاصرة (خليجية) — واضحة ومباشرة، كأنك تحدث مديرًا لا تكتب مقالًا. ليست عامية، وليست فصحى بيروقراطية.
 
-- المصطلحات التقنية تبقى بالإنجليزية: AI, KPI, dashboard, smart meter, SCADA, digital twin, OT, IT.
+- المصطلحات التقنية تبقى بالإنجليزية: AI, KPI, dashboard, API, roadmap, governance.
 
 - أسطر قصيرة تصنع إيقاعًا؛ جملة واحدة لكل سطر؛ التوتر قبل البصيرة.
 
