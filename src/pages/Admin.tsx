@@ -33,19 +33,29 @@ type HealthCheck = {
 
 const ADMIN_PAGES = [
   {
-    to: "/admin/access",
-    label: "Access",
-    description: "Manage beta allowlist and invitations",
-  },
-  {
     to: "/admin/people",
     label: "People",
     description: "User journeys and lifecycle cockpit",
   },
   {
+    to: "/admin/journey",
+    label: "Journey",
+    description: "Funnel stages and where users are stuck",
+  },
+  {
     to: "/admin/cost",
     label: "Cost",
     description: "AI spend and budget tracking",
+  },
+  {
+    to: "/admin/crons",
+    label: "Crons",
+    description: "Scheduled jobs — status and manual runs",
+  },
+  {
+    to: "/admin/access",
+    label: "Access",
+    description: "Manage beta allowlist and invitations",
   },
   {
     to: "/admin/qa",

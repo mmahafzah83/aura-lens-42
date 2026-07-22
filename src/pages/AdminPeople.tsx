@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Download, Loader2, X, RefreshCw, Send } from "lucide-react";
 import { Copy, Check } from "lucide-react";
 import AdminShell from "@/components/admin/AdminShell";
+import AdminLegend from "@/components/admin/AdminLegend";
 import { downloadBlob } from "@/lib/download";
 import { formatSmartDate } from "@/lib/formatDate";
 
@@ -521,6 +522,24 @@ export default function AdminPeople() {
             </div>
           )}
 
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+            gap: 12,
+            marginBottom: 24,
+          }}>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <AdminLegend
+              title="What these statuses mean"
+              items={[
+                { color: STATUS_COLOR.new, label: "New", text: "signed up in the last 24h" },
+                { color: STATUS_COLOR["at-risk"], label: "At-risk", text: "zero captures yet" },
+                { color: STATUS_COLOR.stalled, label: "Stalled", text: "2 or fewer captures and not seen for 3+ days" },
+                { color: STATUS_COLOR.activated, label: "Activated", text: "capturing regularly" },
+              ]}
+            />
+          </div>
           <div style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
