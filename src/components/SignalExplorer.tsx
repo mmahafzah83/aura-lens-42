@@ -79,14 +79,26 @@ const SignalExplorer = ({ signal, open, onClose }: SignalExplorerProps) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Fetch supporting evidence fragments
-      const evidencePromise = sig.supporting_evidence_ids.length > 0
-        ? supabase
+      // Fetch supporting evidence fragments in chunks to avoid URL-length limits on large signals.
+      const evidencePromise = (async () => {
+        const ids = sig.supporting_evidence_ids || [];
+        if (ids.length === 0) return [] as EvidenceFragment[];
+        const CHUNK = 100;
+        const out: EvidenceFragment[] = [];
+        for (let i = 0; i < ids.length; i += CHUNK) {
+          const slice = ids.slice(i, i + CHUNK);
+          const { data, error } = await supabase
             .from("evidence_fragments")
             .select("id, title, content, fragment_type, tags, confidence, source_registry_id")
-            .in("id", sig.supporting_evidence_ids)
-            .then(r => r.data || [])
-        : Promise.resolve([]);
+            .in("id", slice);
+          if (error) {
+            console.error("[SignalExplorer] evidence_fragments fetch failed", error);
+            continue;
+          }
+          if (data) out.push(...(data as EvidenceFragment[]));
+        }
+        return out;
+      })();
 
       // Fetch related entries by theme tags (text search)
       const tagQuery = sig.theme_tags.slice(0, 3).join(" | ");

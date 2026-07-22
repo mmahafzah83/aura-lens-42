@@ -457,7 +457,7 @@ export const SignalHero = ({
 
   const confPct = Math.round(signal.confidence * 100);
   const orgs = signal.unique_orgs || 1;
-  const fragCount = (signal as any).evidenceCount ?? signal.supporting_evidence_ids?.length ?? signal.fragment_count ?? 0;
+  const fragCount = signal.fragment_count ?? (signal as any).evidenceCount ?? 0;
   const sourceCount = (signal as any).sourceCount ?? evidence.length ?? 0;
   const isRising = signal.velocity_status === "accelerating";
   const isFading = signal.velocity_status === "fading";
@@ -1219,46 +1219,12 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
         supabase.from("evidence_fragments").select("id", { count: "exact", head: true }).eq("user_id", user.id),
       ]);
       const loadedRaw = (signalsRes.data || []) as any[];
-      // W2-A-2: compute LIVE evidence count per signal in ONE batched query.
-      // Stored fragment_count is grow-only; this reflects only fragments that still exist.
-      const allIds = Array.from(new Set(
-        loadedRaw.flatMap((s) => (s.supporting_evidence_ids || []) as string[]),
-      ));
-      // Map fragment_id -> source_registry_id (for existing fragments only).
-      const fragToReg = new Map<string, string>();
-      if (allIds.length) {
-        const { data: existRows } = await supabase
-          .from("evidence_fragments")
-          .select("id, source_registry_id")
-          .eq("user_id", user.id)
-          .in("id", allIds);
-        (existRows || []).forEach((r: any) => fragToReg.set(r.id, r.source_registry_id));
-      }
-      // Map source_registry.id -> stable source key (source_id when present, else registry id).
-      const regIds = Array.from(new Set(Array.from(fragToReg.values()).filter(Boolean))) as string[];
-      const regToSource = new Map<string, string>();
-      if (regIds.length) {
-        const { data: regRows } = await supabase
-          .from("source_registry" as any)
-          .select("id, source_id")
-          .in("id", regIds);
-        (regRows || []).forEach((r: any) => regToSource.set(r.id, r.source_id || r.id));
-      }
-      const loaded = loadedRaw.map((s) => {
-        const liveIds = ((s.supporting_evidence_ids || []) as string[])
-          .filter((id) => fragToReg.has(id));
-        const sourceKeys = new Set<string>();
-        liveIds.forEach((id) => {
-          const reg = fragToReg.get(id);
-          if (!reg) return;
-          sourceKeys.add(regToSource.get(reg) || reg);
-        });
-        return {
-          ...s,
-          evidenceCount: liveIds.length,
-          sourceCount: sourceKeys.size,
-        };
-      }) as unknown as Signal[];
+      // Read counts from stamped columns to avoid URL-length limits on large .in() queries.
+      const loaded = loadedRaw.map((s) => ({
+        ...s,
+        evidenceCount: s.fragment_count ?? 0,
+        sourceCount: s.unique_orgs ?? 0,
+      })) as unknown as Signal[];
       setSignals(loaded);
       setEntryCount((entriesRes.count || 0) + (documentsRes.count || 0));
       setEvidenceCount(evidenceRes.count || 0);
