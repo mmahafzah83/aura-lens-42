@@ -153,7 +153,7 @@ const LinkedInConnector = ({ onConnectionChange, onSyncStateChange }: LinkedInCo
             <div>
               <h3 className="text-card-title text-foreground">LinkedIn Connection</h3>
               <p className="text-xs text-muted-foreground/50">
-                {isConnected ? "Read-only access · No publishing" : "Connect to sync analytics"}
+                {isConnected ? "Publishes only when you click · Never deletes" : "Connect to sync analytics"}
               </p>
             </div>
           </div>
@@ -238,7 +238,7 @@ const LinkedInConnector = ({ onConnectionChange, onSyncStateChange }: LinkedInCo
             <div className="flex items-start gap-3 p-4 rounded-xl bg-[hsl(207_100%_62%/0.05)] border border-[hsl(207_100%_62%/0.1)]">
               <AlertCircle className="w-4 h-4 text-[hsl(207_100%_62%/0.6)] mt-0.5 shrink-0" />
               <p className="text-sm text-muted-foreground/70 leading-relaxed">
-                Connect your LinkedIn account to sync follower analytics, post performance, and engagement trends. Read-only access — Aura will never post on your behalf.
+                Connect LinkedIn to sync your follower analytics and post performance, and to publish drafts you approve. Aura publishes only when you click Publish — it never deletes or edits your existing posts, and never posts without your action. LinkedIn bundles these permissions into one consent screen; Aura only ever uses read and publish.
               </p>
             </div>
             <Button
