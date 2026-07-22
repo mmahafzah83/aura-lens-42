@@ -75,6 +75,12 @@ export default function Editor({
   const fileRef = useRef<HTMLInputElement>(null);
   const usesPhoto = family.id === "frame" || family.id === "signature";
   const usesLine2 = family.id === "signature";
+  const usesLayout = family.id === "frame";
+  const usesHighlight = family.id === "frame";
+
+  // "More details" is collapsed by default when core fields already have data.
+  const hasCoreData = Boolean(fields.name || fields.title || fields.meta);
+  const [detailsOpen, setDetailsOpen] = useState<boolean>(!hasCoreData);
 
   const C = family.component as React.ComponentType<React.ComponentProps<typeof family.component> & {
     decision?: FrameDecision;
@@ -284,6 +290,15 @@ export default function Editor({
 
       <div className="sig-editor-grid">
         <div className="sig-editor-panel">
+          {/* Designer's note — moved OFF the photo, calm caption above the panel. */}
+          {usesLayout && (designReason || designLoading || photoUrl) && (
+            <div style={designerNote} aria-live="polite">
+              ◈ {designLoading
+                ? "Looking at your photo…"
+                : (designReason || (photoUrl ? "Ready when you pick a layout." : ""))}
+            </div>
+          )}
+
           <div style={suggestWrap}>
             <div style={suggestHeaderRow}>
               <div style={fieldLabel}>
@@ -338,58 +353,177 @@ export default function Editor({
             </div>
           </div>
 
+          {/* GROUP: Your line — always first, always visible */}
+          <Group title="Your line" caption="What your card says.">
+            <textarea
+              value={fields.line1}
+              onChange={(e) => set("line1", e.target.value)}
+              style={textarea}
+              rows={3}
+              aria-label="Your line"
+            />
+            {usesLine2 && (
+              <>
+                <span style={subLabel}>Second line</span>
+                <input
+                  value={fields.line2}
+                  onChange={(e) => set("line2", e.target.value)}
+                  style={input}
+                  aria-label="Second line"
+                />
+              </>
+            )}
+          </Group>
+
+          {/* GROUP: Layout — Frame family only, human-labelled */}
+          {usesLayout && (
+            <Group
+              title="Layout"
+              caption="Where the words sit on your photo."
+              headerRight={
+                <button
+                  type="button"
+                  onClick={() => void runDesign()}
+                  disabled={!photoUrl || designLoading}
+                  style={quietLink}
+                  title="Fetch fresh layout options"
+                >
+                  New options ↻
+                </button>
+              }
+            >
+              {!photoUrl ? (
+                <div style={mutedNote}>Add a photo to see layout options.</div>
+              ) : options.length === 0 ? (
+                <div style={mutedNote}>{designLoading ? "Looking at your photo…" : "No options yet."}</div>
+              ) : (
+                <>
+                  <div style={layoutRow}>
+                    {options.map((o, i) => {
+                      const active = designOption === o.id;
+                      return (
+                        <button
+                          key={o.id}
+                          type="button"
+                          onClick={() => applyOption(o)}
+                          style={{
+                            ...layoutCard,
+                            borderColor: active ? "var(--spot)" : "var(--rule)",
+                            background: active ? "rgba(212,176,86,0.10)" : "transparent",
+                          }}
+                          aria-pressed={active}
+                        >
+                          <span style={{ ...suggestSource, color: active ? "var(--spot)" : "var(--ink-3)" }}>
+                            Layout {i + 1}
+                          </span>
+                          <span style={layoutHint}>
+                            {o.textZone.startsWith("upper") ? "Top" : "Bottom"}
+                            {" "}
+                            {o.textZone.endsWith("left") ? "left" : "right"}
+                            {" · "}
+                            {o.scrim === "none" ? "no wash" : o.scrim.replace("-", " ")}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {activeOption?.reason && (
+                    <div style={activeReason}>{activeOption.reason}</div>
+                  )}
+                </>
+              )}
+            </Group>
+          )}
+
+          {/* GROUP: Highlight a phrase — Frame family only, real switch */}
+          {usesHighlight && (
+            <Group title="Highlight a phrase" caption="Emphasise one key phrase.">
+              <div style={switchRow}>
+                <SwitchBtn
+                  on={!emphasisOff}
+                  onClick={toggleEmphasis}
+                  disabled={!decision}
+                  label={emphasisOff ? "Off" : "On"}
+                />
+                {!emphasisOff && decision?.emphasis && decision.emphasis.length > 0 && (
+                  <span style={emphasisChip}>{decision.emphasis.join(" · ")}</span>
+                )}
+              </div>
+            </Group>
+          )}
+
+          {/* GROUP: Language */}
+          <Group title="Language" caption="Which script the card reads in.">
+            <div style={rowBtns} role="tablist" aria-label="Language">
+              <PillBtn active={lang === "en"} onClick={() => onLang("en")}>EN</PillBtn>
+              <PillBtn active={lang === "ar"} onClick={() => onLang("ar")} fontFamily="'Cairo', system-ui, sans-serif">عربي</PillBtn>
+            </div>
+          </Group>
+
+          {/* GROUP: Colour mood */}
+          <Group title="Colour mood" caption="Sets the card's accent.">
+            <div style={swatchRow}>
+              {MOODS.map((m) => {
+                const active = mood === m.key;
+                const plain = m.key === "oxblood" ? "Warm" : m.key === "teal" ? "Cool" : "Gold";
+                return (
+                  <button
+                    key={m.key}
+                    type="button"
+                    onClick={() => wrappedOnMood(m.key)}
+                    aria-label={plain}
+                    aria-pressed={active}
+                    style={swatchBtn}
+                  >
+                    <span
+                      style={{
+                        ...swatch,
+                        background: m.hex,
+                        outline: active ? "2px solid var(--spot)" : "1px solid var(--rule)",
+                        outlineOffset: active ? "3px" : "0",
+                      }}
+                    />
+                    <span style={{ ...subLabel, color: active ? "var(--spot)" : "var(--ink-2)" }}>{plain}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </Group>
+
+          {/* GROUP: Photo (only for families that use one) */}
           {usesPhoto && (
-            <Field label="Photo">
+            <Group title="Photo" caption={photoUrl ? "Change or remove your photo." : "Upload a portrait or scene."}>
               <input ref={fileRef} type="file" accept="image/*" onChange={onPick} style={fileInput} />
               {photoUrl && (
                 <button onClick={() => onPhoto(undefined)} style={secondaryBtn}>Remove photo</button>
               )}
-            </Field>
+            </Group>
           )}
 
-          <Field label="Language">
-            <div style={rowBtns}>
-              <PillBtn active={lang === "en"} onClick={() => onLang("en")}>EN</PillBtn>
-              <PillBtn active={lang === "ar"} onClick={() => onLang("ar")} fontFamily="'Cairo', system-ui, sans-serif">عربي</PillBtn>
-            </div>
-          </Field>
-
-          <Field label="Mood">
-            <div style={rowBtns}>
-              {MOODS.map((m) => (
-                <button
-                  key={m.key}
-                  onClick={() => wrappedOnMood(m.key)}
-                  aria-label={m.label}
-                  title={m.label}
-                  style={{
-                    ...swatch,
-                    background: m.hex,
-                    outline: mood === m.key ? "2px solid var(--spot)" : "1px solid var(--rule)",
-                    outlineOffset: mood === m.key ? "3px" : "0",
-                  }}
-                />
-              ))}
-            </div>
-          </Field>
-
-          <Field label="Name">
-            <input value={fields.name} onChange={(e) => set("name", e.target.value)} style={input} />
-          </Field>
-          <Field label="Title / label">
-            <input value={fields.title} onChange={(e) => set("title", e.target.value)} style={input} />
-          </Field>
-          <Field label={family.id === "line" || family.id === "frame" ? "Quote" : "Descriptor line 1"}>
-            <textarea value={fields.line1} onChange={(e) => set("line1", e.target.value)} style={textarea} rows={3} />
-          </Field>
-          {usesLine2 && (
-            <Field label="Descriptor line 2">
-              <input value={fields.line2} onChange={(e) => set("line2", e.target.value)} style={input} />
-            </Field>
-          )}
-          <Field label="Byline / firm">
-            <input value={fields.meta} onChange={(e) => set("meta", e.target.value)} style={input} />
-          </Field>
+          {/* MORE DETAILS — collapsed by default when populated */}
+          <div style={detailsWrap}>
+            <button
+              type="button"
+              onClick={() => setDetailsOpen((v) => !v)}
+              style={detailsToggle}
+              aria-expanded={detailsOpen}
+            >
+              More details {detailsOpen ? "▾" : "▸"}
+            </button>
+            {detailsOpen && (
+              <div style={detailsBody}>
+                <Field label="Name">
+                  <input value={fields.name} onChange={(e) => set("name", e.target.value)} style={input} />
+                </Field>
+                <Field label="Title / label">
+                  <input value={fields.title} onChange={(e) => set("title", e.target.value)} style={input} />
+                </Field>
+                <Field label="Byline / firm">
+                  <input value={fields.meta} onChange={(e) => set("meta", e.target.value)} style={input} />
+                </Field>
+              </div>
+            )}
+          </div>
 
           <div className="sig-editor-continue">
             <button onClick={onContinue} style={{ ...primaryBtn, width: "100%" }}>Continue →</button>
@@ -398,43 +532,6 @@ export default function Editor({
 
         <div className="sig-editor-stage">
           <div className="sig-editor-stage-inner">
-            {family.id === "frame" && (designReason || designLoading) && (
-              <div style={reasonBar}>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
-                  {options.length > 0 && (
-                    <span style={{ display: "inline-flex", gap: 4 }}>
-                      {options.map((o) => (
-                        <button
-                          key={o.id}
-                          type="button"
-                          onClick={() => applyOption(o)}
-                          style={{
-                            ...reasonBtn,
-                            color: designOption === o.id ? "var(--ob-bg)" : "var(--spot)",
-                            background: designOption === o.id ? "var(--spot)" : "transparent",
-                            borderColor: "var(--spot)",
-                          }}
-                          title={o.reason}
-                        >
-                          {o.id}
-                        </button>
-                      ))}
-                    </span>
-                  )}
-                  <span>◈ {designLoading ? "looking…" : designReason}</span>
-                </span>
-                {photoUrl && (
-                  <span style={{ display: "inline-flex", gap: 10 }}>
-                    <button type="button" onClick={() => void runDesign()} style={reasonBtn}>↻ re-look</button>
-                    {decision?.emphasis?.length ? (
-                      <button type="button" onClick={toggleEmphasis} style={reasonBtn}>
-                        {emphasisOff ? "emphasis on" : "emphasis off"}
-                      </button>
-                    ) : null}
-                  </span>
-                )}
-              </div>
-            )}
             <C
               lang={lang} mood={mood} photoUrl={photoUrl}
               name={fields.name} title={fields.title}
@@ -454,6 +551,55 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <span style={fieldLabel}>{label}</span>
       {children}
     </label>
+  );
+}
+
+function Group({
+  title, caption, headerRight, children,
+}: { title: string; caption?: string; headerRight?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <section style={groupWrap}>
+      <header style={groupHeader}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <span style={groupTitle}>{title}</span>
+          {caption && <span style={groupCaption}>{caption}</span>}
+        </div>
+        {headerRight}
+      </header>
+      <div style={groupBody}>{children}</div>
+    </section>
+  );
+}
+
+function SwitchBtn({ on, onClick, disabled, label }: { on: boolean; onClick: () => void; disabled?: boolean; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      role="switch"
+      aria-checked={on}
+      style={{
+        ...switchBtn,
+        opacity: disabled ? 0.5 : 1,
+        cursor: disabled ? "not-allowed" : "pointer",
+      }}
+    >
+      <span
+        style={{
+          ...switchTrack,
+          background: on ? "var(--spot)" : "var(--rule)",
+        }}
+      >
+        <span
+          style={{
+            ...switchThumb,
+            transform: on ? "translateX(20px)" : "translateX(0)",
+          }}
+        />
+      </span>
+      <span style={switchLabel}>{label}</span>
+    </button>
   );
 }
 
@@ -628,6 +774,113 @@ const thinkingDot: React.CSSProperties = {
   color: "var(--ink-3)", fontStyle: "italic", textTransform: "none",
   letterSpacing: 0, marginLeft: 6,
 };
+
+/* ---- new grouped-panel styles ---- */
+const designerNote: React.CSSProperties = {
+  fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+  fontSize: 13, lineHeight: 1.4,
+  color: "var(--ink-2)",
+  padding: "10px 12px",
+  background: "var(--paper-3, var(--paper-2))",
+  border: "1px solid var(--rule)",
+  borderLeft: "2px solid var(--spot)",
+};
+const groupWrap: React.CSSProperties = {
+  display: "flex", flexDirection: "column", gap: 10,
+  paddingTop: 16, borderTop: "1px solid var(--rule)",
+};
+const groupHeader: React.CSSProperties = {
+  display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12,
+};
+const groupTitle: React.CSSProperties = {
+  fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+  fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase",
+  color: "var(--ink)",
+};
+const groupCaption: React.CSSProperties = {
+  fontFamily: "'Newsreader', serif",
+  fontSize: 13, lineHeight: 1.4, color: "var(--ink-3)", fontStyle: "italic",
+};
+const groupBody: React.CSSProperties = { display: "flex", flexDirection: "column", gap: 10 };
+const subLabel: React.CSSProperties = {
+  fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+  fontSize: 9, letterSpacing: "0.22em", textTransform: "uppercase",
+  color: "var(--ink-3)",
+};
+const quietLink: React.CSSProperties = {
+  background: "transparent", border: "none", padding: "12px 4px",
+  minHeight: 44,
+  fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+  fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase",
+  color: "var(--spot)", cursor: "pointer",
+};
+const mutedNote: React.CSSProperties = {
+  fontFamily: "'Newsreader', serif", fontSize: 13, color: "var(--ink-3)",
+  fontStyle: "italic", padding: "6px 0",
+};
+const layoutRow: React.CSSProperties = { display: "flex", gap: 8, flexWrap: "wrap" };
+const layoutCard: React.CSSProperties = {
+  flex: "1 1 30%", minWidth: 100, minHeight: 60,
+  padding: "10px 12px",
+  display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4,
+  background: "transparent", border: "1px solid var(--rule)",
+  cursor: "pointer", color: "var(--ink)",
+  textAlign: "left" as const,
+};
+const layoutHint: React.CSSProperties = {
+  fontFamily: "'Newsreader', serif", fontSize: 12, color: "var(--ink-2)",
+};
+const activeReason: React.CSSProperties = {
+  fontFamily: "'Newsreader', serif", fontSize: 13, lineHeight: 1.4,
+  color: "var(--ink-2)", fontStyle: "italic",
+  paddingLeft: 10, borderLeft: "2px solid var(--spot)",
+};
+const switchRow: React.CSSProperties = { display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" };
+const switchBtn: React.CSSProperties = {
+  display: "inline-flex", alignItems: "center", gap: 10,
+  background: "transparent", border: "none",
+  padding: "10px 4px", minHeight: 44,
+  color: "var(--ink)",
+};
+const switchTrack: React.CSSProperties = {
+  position: "relative", width: 44, height: 24, borderRadius: 999,
+  transition: "background .18s ease", display: "inline-block",
+};
+const switchThumb: React.CSSProperties = {
+  position: "absolute", top: 2, left: 2, width: 20, height: 20, borderRadius: 999,
+  background: "var(--paper)", transition: "transform .18s ease",
+  boxShadow: "0 1px 3px rgba(0,0,0,0.4)",
+};
+const switchLabel: React.CSSProperties = {
+  fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+  fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase",
+  color: "var(--ink-2)",
+};
+const emphasisChip: React.CSSProperties = {
+  display: "inline-flex", alignItems: "center",
+  padding: "6px 10px", minHeight: 28,
+  border: "1px solid var(--spot)", color: "var(--spot)",
+  fontFamily: "'Newsreader', serif", fontSize: 13, fontStyle: "italic",
+};
+const swatchRow: React.CSSProperties = { display: "flex", gap: 18, flexWrap: "wrap" };
+const swatchBtn: React.CSSProperties = {
+  background: "transparent", border: "none",
+  display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+  padding: 4, minWidth: 44, minHeight: 44,
+  cursor: "pointer",
+};
+const detailsWrap: React.CSSProperties = {
+  paddingTop: 16, borderTop: "1px solid var(--rule)",
+  display: "flex", flexDirection: "column", gap: 12,
+};
+const detailsToggle: React.CSSProperties = {
+  background: "transparent", border: "none", padding: "10px 0",
+  textAlign: "left" as const, minHeight: 44,
+  fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+  fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase",
+  color: "var(--ink-2)", cursor: "pointer",
+};
+const detailsBody: React.CSSProperties = { display: "flex", flexDirection: "column", gap: 12 };
 
 const EDITOR_CSS = `
 .sig-editor-grid {
