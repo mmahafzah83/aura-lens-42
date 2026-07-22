@@ -144,30 +144,30 @@ export default function FrameCard(
       {scrimAlpha > 0 && !isLower && (
         <g>
           <rect
-            x={scrimX - 24} y={scrimY - 24}
-            width={scrimW + 48} height={scrimH + 48}
-            rx="34"
+            x={scrimX - SPACE.m} y={scrimY - SPACE.m}
+            width={scrimW + SPACE.m * 2} height={scrimH + SPACE.m * 2}
+            rx={RADII.l}
             fill={`rgba(5,8,12,${scrimAlpha * 0.15})`}
           />
           <rect
-            x={scrimX - 12} y={scrimY - 12}
-            width={scrimW + 24} height={scrimH + 24}
-            rx="26"
+            x={scrimX - SPACE.xs} y={scrimY - SPACE.xs}
+            width={scrimW + SPACE.xs * 2} height={scrimH + SPACE.xs * 2}
+            rx={Math.max(4, RADII.l - SPACE.xs)}
             fill={`rgba(5,8,12,${scrimAlpha * 0.35})`}
           />
           <rect
             x={scrimX} y={scrimY}
             width={scrimW} height={scrimH}
-            rx="18"
+            rx={RADII.s}
             fill={`rgba(5,8,12,${scrimAlpha * 0.75})`}
           />
         </g>
       )}
       {scrimAlpha > 0 && isLower && (
         <rect
-          x={scrimX - 12} y={scrimY - 12}
-          width={scrimW + 24} height={scrimH + 24 + 40}
-          rx="18"
+          x={scrimX - SPACE.xs} y={scrimY - SPACE.xs}
+          width={scrimW + SPACE.xs * 2} height={scrimH + SPACE.xs * 2 + SPACE.xl}
+          rx={RADII.m}
           fill={`url(#${scrimGradId})`}
         />
       )}
