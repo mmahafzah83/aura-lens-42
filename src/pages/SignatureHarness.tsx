@@ -142,6 +142,22 @@ export default function SignatureHarness() {
             photoUrl={BRIGHT_PHOTO}
           />
         </div>
+        <div id="frame-lower-right" style={{ width: 1080, height: 1350 }}>
+          <FrameCard
+            lang="en" mood="amber"
+            name="Mohammad Mahafzah"
+            title="Director"
+            meta="EY"
+            lines={[FRAME_EN_LINE]}
+            photoUrl={BRIGHT_PHOTO}
+            decision={{
+              textZone: "lower-right",
+              scrim: "soft",
+              cropFocusY: 0.35,
+              emphasis: [{ phrase: "integrated ecosystems", style: "color" }],
+            }}
+          />
+        </div>
       </div>
     </div>
   );
