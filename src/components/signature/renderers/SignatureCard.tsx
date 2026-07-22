@@ -174,19 +174,19 @@ export default function SignatureCard(props: RendererProps & { square?: boolean 
 
       {/* TITLE + META */}
       {captionText && (
-        <text
+        <TextBlock
+          lines={[captionFit.lines[0] || captionText]}
           x={xS}
           y={titleY}
+          lineHeight={captionFit.lineHeight}
           fill={T.paperFaint}
           fontFamily={captionFontFamily(lang)}
           fontSize={captionFit.size}
-          letterSpacing={captionTrack(lang, "0.18em")}
           fontWeight={captionWeight(lang, 400)}
-          textAnchor={anchor}
-          direction={ar ? "rtl" : "ltr"}
-        >
-          {captionFit.lines[0] || captionText}
-        </text>
+          letterSpacing={captionTrack(lang, "0.18em")}
+          anchor={anchor}
+          lang={lang}
+        />
       )}
 
       {/* GRADIENT SPINE */}
