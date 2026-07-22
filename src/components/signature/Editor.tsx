@@ -27,6 +27,13 @@ interface Props {
   onFields: (f: EditorFields) => void;
   onPhoto: (url: string | undefined) => void;
   onPickedSource?: (src: "profile" | "signal" | "voice") => void;
+  // Frame designer-brain state, lifted so Preview/Publish render the same composition.
+  decision?: FrameDecision;
+  emphasisOff?: boolean;
+  designOption?: "A" | "B" | "C" | null;
+  onDecision?: (d: FrameDecision | undefined) => void;
+  onEmphasisOff?: (v: boolean) => void;
+  onDesignOption?: (id: "A" | "B" | "C" | null) => void;
   onBack: () => void;
   onContinue: () => void;
 }
@@ -53,9 +60,17 @@ async function downscaleToObjectUrl(file: File, max = 2000): Promise<string> {
   return URL.createObjectURL(blob);
 }
 
+interface FrameOption extends FrameDecision {
+  id: "A" | "B" | "C";
+  reason: string;
+}
+
 export default function Editor({
   family, lang, mood, fields, photoUrl,
-  onLang, onMood, onFields, onPhoto, onPickedSource, onBack, onContinue,
+  onLang, onMood, onFields, onPhoto, onPickedSource,
+  decision, emphasisOff, designOption,
+  onDecision, onEmphasisOff, onDesignOption,
+  onBack, onContinue,
 }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const usesPhoto = family.id === "frame" || family.id === "signature";
@@ -65,11 +80,27 @@ export default function Editor({
   const { suggestions, loading: suggestLoading, regenerate } = useSuggestions(family, lang);
 
   // ── Frame family designer brain ─────────────────────────────────
-  const [decision, setDecision] = useState<FrameDecision | undefined>(undefined);
-  const [designReason, setDesignReason] = useState<string>("");
+  // Decision + emphasisOff live at studio level (props). Options list
+  // is local — the user's pick copies one option up via onDecision.
+  const [options, setOptions] = useState<FrameOption[]>([]);
   const [designLoading, setDesignLoading] = useState(false);
-  const [emphasisOff, setEmphasisOff] = useState(false);
   const moodTouchedRef = useRef(false);
+  const activeOption = designOption
+    ? options.find((o) => o.id === designOption) || null
+    : null;
+  const designReason = activeOption?.reason || "";
+
+  const applyOption = useCallback((opt: FrameOption, log = true) => {
+    onDecision?.({
+      textZone: opt.textZone,
+      scrim: opt.scrim,
+      cropFocusY: opt.cropFocusY,
+      emphasis: opt.emphasis,
+      textColor: opt.textColor,
+    });
+    onDesignOption?.(opt.id);
+    if (log) void logSignatureEvent("picked", family.id, lang, { designOption: opt.id, decision: opt });
+  }, [family.id, lang, onDecision, onDesignOption]);
 
   const runDesign = useCallback(async () => {
     if (family.id !== "frame" || !photoUrl) return;
@@ -97,29 +128,39 @@ export default function Editor({
           family: "frame",
         },
       });
-      const d = (data as any)?.decision;
-      if (d && d.textZone) {
-        setDecision({
-          textZone: d.textZone,
-          scrim: d.scrim,
-          cropFocusY: typeof d.cropFocusY === "number" ? d.cropFocusY : 0.5,
-          emphasis: Array.isArray(d.emphasis) ? d.emphasis : [],
-        });
-        setDesignReason(typeof d.reason === "string" ? d.reason : "");
-        // Only auto-apply mood if user hasn't manually picked one.
-        if (d.mood && !moodTouchedRef.current) onMood(d.mood);
-        void logSignatureEvent("suggested", family.id, lang, { design: true, decision: d });
+      const opts = Array.isArray((data as any)?.options) ? (data as any).options : null;
+      const suggestedMood = (data as any)?.mood;
+      if (opts && opts.length) {
+        const normalized: FrameOption[] = opts.slice(0, 3).map((o: any, i: number) => ({
+          id: (["A","B","C"] as const)[i],
+          textZone: o.textZone,
+          scrim: o.scrim,
+          cropFocusY: typeof o.cropFocusY === "number" ? o.cropFocusY : 0.5,
+          emphasis: Array.isArray(o.emphasis) ? o.emphasis : [],
+          textColor: o.textColor === "ink" ? "ink" : "paper",
+          reason: typeof o.reason === "string" ? o.reason : "",
+        }));
+        setOptions(normalized);
+        // Apply option A by default; don't log picked on auto-apply.
+        if (normalized[0]) applyOption(normalized[0], false);
+        if (suggestedMood && !moodTouchedRef.current) onMood(suggestedMood);
+        void logSignatureEvent("suggested", family.id, lang, { design: true, options: normalized, mood: suggestedMood });
       }
     } catch (err) {
       console.warn("frame design failed", err);
     } finally {
       setDesignLoading(false);
     }
-  }, [family.id, photoUrl, lang, fields.line1, fields.line2, onMood]);
+  }, [family.id, photoUrl, lang, fields.line1, fields.line2, onMood, applyOption]);
 
   // Auto-run when photo or line1 changes (debounced), for frame only.
   useEffect(() => {
-    if (family.id !== "frame" || !photoUrl) { setDecision(undefined); setDesignReason(""); return; }
+    if (family.id !== "frame" || !photoUrl) {
+      setOptions([]);
+      onDecision?.(undefined);
+      onDesignOption?.(null);
+      return;
+    }
     const t = window.setTimeout(() => { void runDesign(); }, 1500);
     return () => window.clearTimeout(t);
   }, [family.id, photoUrl, fields.line1, lang]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -213,7 +254,7 @@ export default function Editor({
     if (decision) {
       void logSignatureEvent("edited", family.id, lang, { overrode: "emphasis", off: !emphasisOff });
     }
-    setEmphasisOff((v) => !v);
+    onEmphasisOff?.(!emphasisOff);
   };
 
   return (
@@ -343,7 +384,29 @@ export default function Editor({
           <div className="sig-editor-stage-inner">
             {family.id === "frame" && (designReason || designLoading) && (
               <div style={reasonBar}>
-                <span>◈ {designLoading ? "looking…" : designReason}</span>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+                  {options.length > 0 && (
+                    <span style={{ display: "inline-flex", gap: 4 }}>
+                      {options.map((o) => (
+                        <button
+                          key={o.id}
+                          type="button"
+                          onClick={() => applyOption(o)}
+                          style={{
+                            ...reasonBtn,
+                            color: designOption === o.id ? "var(--ob-bg)" : "var(--spot)",
+                            background: designOption === o.id ? "var(--spot)" : "transparent",
+                            borderColor: "var(--spot)",
+                          }}
+                          title={o.reason}
+                        >
+                          {o.id}
+                        </button>
+                      ))}
+                    </span>
+                  )}
+                  <span>◈ {designLoading ? "looking…" : designReason}</span>
+                </span>
                 {photoUrl && (
                   <span style={{ display: "inline-flex", gap: 10 }}>
                     <button type="button" onClick={() => void runDesign()} style={reasonBtn}>↻ re-look</button>
