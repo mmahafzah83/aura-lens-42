@@ -3,6 +3,7 @@ import CoverCard from "@/components/signature/renderers/CoverCard";
 import LineCard from "@/components/signature/renderers/LineCard";
 import FrameCard, { type FrameDecision } from "@/components/signature/renderers/FrameCard";
 import SignatureCard from "@/components/signature/renderers/SignatureCard";
+import MilestoneCard from "@/components/signature/renderers/MilestoneCard";
 import type { Lang, Mood } from "@/components/signature/renderers/shared";
 import { ensureCardFontsLoaded } from "@/components/signature/fitText";
 
@@ -190,6 +191,18 @@ export default function SignatureHarness() {
               emphasis: [{ phrase: "infrastructure", style: "color" }],
             }}
           />
+        </div>
+        <div id="cover-en" style={{ width: 1080, height: 1350 }}>
+          <CoverCard lang="en" mood="oxblood" name="Rashid Al Mansoori" title="PARTNER" meta="GCC Water Advisory" lines={[EN_LINE]} />
+        </div>
+        <div id="line-en" style={{ width: 1080, height: 1350 }}>
+          <LineCard lang="en" mood="teal" name="Rashid Al Mansoori" title="PARTNER" meta="GCC Water Advisory" lines={[EN_LINE]} />
+        </div>
+        <div id="line-ar" style={{ width: 1080, height: 1350 }}>
+          <LineCard lang="ar" mood="oxblood" name="محمد محافظة" title="مدير التحول الرقمي" meta="" lines={[AR_LINE]} />
+        </div>
+        <div id="milestone-en" style={{ width: 1080, height: 1350 }}>
+          <MilestoneCard lang="en" mood="amber" name="Rashid Al Mansoori" title="10" meta="GCC Water Advisory" lines={["YEARS", "Building integrated water infrastructure across the Gulf"]} />
         </div>
       </div>
     </div>
