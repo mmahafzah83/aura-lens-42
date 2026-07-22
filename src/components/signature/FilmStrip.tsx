@@ -85,7 +85,7 @@ const STRIP_CSS = `
   display: block;
   text-align: inherit;
   color: inherit;
-  width: 210px;
+  width: 280px;
   transition: transform .35s cubic-bezier(.22,1,.36,1), border-color .3s ease, box-shadow .35s ease;
 }
 .sig-strip-tile:hover {
@@ -108,7 +108,7 @@ const STRIP_CSS = `
   margin-top: 8px;
   text-align: center;
   font-family: 'IBM Plex Mono', ui-monospace, monospace;
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.24em;
   text-transform: uppercase;
   color: var(--ink-2);
