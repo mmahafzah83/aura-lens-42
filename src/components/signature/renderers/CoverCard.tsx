@@ -19,6 +19,7 @@ import {
   moodWashRGBA,
   xStart,
   xEnd,
+  SPACE,
 } from "./shared";
 import { fitText } from "../fitText";
 
@@ -38,18 +39,18 @@ export default function CoverCard(props: RendererProps & { square?: boolean }) {
   const xS = xStart(lang, g);
   const xE = xEnd(lang, g);
 
-  // ── Masthead geometry
-  const mastY = g.SAFE_Y0 + 8;
-  const mastRuleY = mastY + 26;
+  // ── Masthead geometry (8pt grid)
+  const mastY = g.SAFE_Y0 + SPACE.xs;
+  const mastRuleY = mastY + SPACE.m + 2; // baseline + hairline
 
   // ── Hero name — big cover headline in the lower-middle third
   const nameFit = fitText(name, {
     font: { family: ar ? "Cairo" : "Newsreader", weight: 500, style: ar ? "normal" : "italic" },
     maxWidth: g.QUOTE_MEASURE,
-    minSize: 84,
-    maxSize: square ? 148 : 188,
+    minSize: 80,
+    maxSize: square ? 128 : 160,
     maxLines: 2,
-    lineHeightRatio: ar ? 1.35 : 1.0,
+    lineHeightRatio: ar ? 1.8 : 1.1,
   });
 
   const kicker = "THE PRESENCE EDITION";
@@ -62,7 +63,7 @@ export default function CoverCard(props: RendererProps & { square?: boolean }) {
   const nameBaseY = Math.round(g.H * 0.62);
   const nameBlock = nameFit.lines.length * nameFit.lineHeight;
   const nameStartY = nameBaseY - (nameBlock - nameFit.size) / 2;
-  const nameRuleY = nameStartY - nameFit.size - 28;
+  const nameRuleY = nameStartY - nameFit.size - SPACE.m;
 
   return (
     <SvgRoot ariaLabel={`Cover card for ${name}`} geom={g}>
@@ -78,10 +79,10 @@ export default function CoverCard(props: RendererProps & { square?: boolean }) {
       {/* MASTHEAD — AURA wordmark left, kicker right */}
       <text
         x={xS}
-        y={mastY + 16}
+        y={mastY + SPACE.s}
         fill={T.paper}
         fontFamily={MONO}
-        fontSize="20"
+        fontSize={20}
         fontWeight={700}
         letterSpacing="0.36em"
         textAnchor={anchor}
@@ -91,10 +92,10 @@ export default function CoverCard(props: RendererProps & { square?: boolean }) {
       </text>
       <text
         x={xE}
-        y={mastY + 16}
+        y={mastY + SPACE.s}
         fill={accent}
         fontFamily={MONO}
-        fontSize="13"
+        fontSize={12}
         letterSpacing="0.32em"
         textAnchor={anchorE}
         direction={ar ? "rtl" : "ltr"}
@@ -105,9 +106,9 @@ export default function CoverCard(props: RendererProps & { square?: boolean }) {
 
       {/* Mood-coloured short rule above the hero name */}
       <rect
-        x={ar ? g.SAFE_X1 - 96 : g.SAFE_X0}
+        x={ar ? g.SAFE_X1 - SPACE.xl * 2 : g.SAFE_X0}
         y={nameRuleY}
-        width="96"
+        width={SPACE.xl * 2}
         height="4"
         fill={accent}
       />
@@ -133,10 +134,10 @@ export default function CoverCard(props: RendererProps & { square?: boolean }) {
         const coverFit = fitText(coverline, {
           font: { family: ar ? "Cairo" : "Newsreader", weight: 400, style: ar ? "normal" : "italic" },
           maxWidth: g.QUOTE_MEASURE,
-          minSize: 22, maxSize: 34, maxLines: 2,
-          lineHeightRatio: ar ? 1.6 : 1.25,
+          minSize: 20, maxSize: 32, maxLines: 2,
+          lineHeightRatio: ar ? 1.8 : 1.45,
         });
-        const covY = nameStartY + (nameBlock - nameFit.size) + 46 + coverFit.size;
+        const covY = nameStartY + (nameBlock - nameFit.size) + SPACE.xl + coverFit.size;
         return (
           <TextBlock
             lines={coverFit.lines}
@@ -158,12 +159,12 @@ export default function CoverCard(props: RendererProps & { square?: boolean }) {
       {byline && (
         <text
           x={xS}
-          y={g.SAFE_Y1 - 52}
+          y={g.SAFE_Y1 - SPACE.xl}
           fill={T.paperFaint}
           fontFamily={captionFontFamily(lang)}
-          fontSize={captionSize(lang, 14)}
+          fontSize={captionSize(lang, 12)}
           fontWeight={captionWeight(lang, 400)}
-          letterSpacing={captionTrack(lang, "0.28em")}
+          letterSpacing={captionTrack(lang, "0.24em")}
           textAnchor={anchor}
           direction={ar ? "rtl" : "ltr"}
         >
@@ -174,10 +175,10 @@ export default function CoverCard(props: RendererProps & { square?: boolean }) {
       {/* ISSUE LINE — top opposite corner, quiet */}
       <text
         x={xE}
-        y={g.SAFE_Y1 - 52}
+        y={g.SAFE_Y1 - SPACE.xl}
         fill={T.paperFaint}
         fontFamily={MONO}
-        fontSize="11"
+        fontSize={12}
         letterSpacing="0.3em"
         textAnchor={anchorE}
         direction={ar ? "rtl" : "ltr"}

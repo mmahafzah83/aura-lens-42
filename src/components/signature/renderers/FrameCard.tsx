@@ -93,6 +93,12 @@ export default function FrameCard(
     mood === "amber"  ? ["#D6A748", "#F0C97A", "#36C5B0"] :
                         ["#6E2A26", "#D6A748", "#36C5B0"];
 
+  // Text-shadow filter id — one per card instance so multiple frames on the
+  // same page don't collide. Used for the quote group only when text sits
+  // over the photo (i.e. NOT in the ink-on-bright variant, where a dark
+  // shadow on dark text would create the exact ghost we're avoiding).
+  const shadowFilterId = `frame-text-shadow-${mood}-${decision.textZone}`;
+
   // Name plate content
   const nameFit = fitText(name, {
     font: { family: ar ? "Cairo" : "Newsreader", weight: 600 },
@@ -126,6 +132,21 @@ export default function FrameCard(
             <stop offset="0.55" stopColor={`rgba(5,8,12,${scrimAlpha * 0.6})`} />
             <stop offset="1" stopColor={`rgba(5,8,12,${scrimAlpha})`} />
           </linearGradient>
+        )}
+        {/* Subtle drop-shadow filter — reads as depth, not a second copy of
+            the letters. Replaces the earlier duplicate-text approach that
+            produced a visible ghost on busy photos. */}
+        {!useInk && (
+          <filter
+            id={shadowFilterId}
+            x="-10%"
+            y="-10%"
+            width="120%"
+            height="120%"
+            filterUnits="objectBoundingBox"
+          >
+            <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodColor="#000000" floodOpacity="0.45" />
+          </filter>
         )}
       </defs>
 
@@ -172,14 +193,15 @@ export default function FrameCard(
         />
       )}
 
-      {/* Layer 2b: legibility shadow — duplicated text offset 0/1.5px. */}
-      {!useInk && <g transform="translate(0, 1.5)" opacity="0.35">
+      {/* Layer 3: quote — a single glyph pass with a soft SVG drop shadow
+          for legibility over photos. No duplicate text layer (no ghost). */}
+      <g filter={!useInk ? `url(#${shadowFilterId})` : undefined}>
         <EmphasisTextBlock
           lines={fit.lines}
           x={xText}
           y={firstBaselineY}
           lineHeight={lineH}
-          fill={"#000000"}
+          fill={textFill}
           fontFamily={font.family}
           fontSize={fit.size}
           fontStyle={font.style}
@@ -187,28 +209,10 @@ export default function FrameCard(
           anchor={quoteAnchor}
           lang={lang}
           letterSpacing={ar ? "0" : "-0.005em"}
-          emphasis={[]}
+          emphasis={emphasis}
           accentColor={accent}
         />
-      </g>}
-
-      {/* Layer 3: quote with emphasis */}
-      <EmphasisTextBlock
-        lines={fit.lines}
-        x={xText}
-        y={firstBaselineY}
-        lineHeight={lineH}
-        fill={textFill}
-        fontFamily={font.family}
-        fontSize={fit.size}
-        fontStyle={font.style}
-        fontWeight={font.weight}
-        anchor={quoteAnchor}
-        lang={lang}
-        letterSpacing={ar ? "0" : "-0.005em"}
-        emphasis={emphasis}
-        accentColor={accent}
-      />
+      </g>
 
       {/* Layer 4: gradient spine on band top edge */}
       <rect

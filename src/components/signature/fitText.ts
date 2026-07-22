@@ -144,8 +144,10 @@ export interface FitOptions {
 }
 
 /** Modular type scale — 1.25 ratio, rounded to multiples of 4, plus a 12
- *  absolute floor. Kept here so fitText can snap without importing shared. */
-export const TYPE_SCALE: number[] = [12, 16, 20, 24, 32, 40, 48, 64];
+ *  absolute floor. Display sizes (>64) added so cover-headline fits can
+ *  snap without falling through to the min-size fallback. Kept here so
+ *  fitText can snap without importing shared. */
+export const TYPE_SCALE: number[] = [12, 16, 20, 24, 32, 40, 48, 64, 80, 96, 128, 160];
 
 /** Nearest ladder value ≤ size. */
 export function snapToScale(size: number): number {
