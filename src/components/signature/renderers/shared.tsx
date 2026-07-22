@@ -360,6 +360,8 @@ export function TextBlock({
   lang: Lang;
   letterSpacing?: string;
 }) {
+  const ar = isAr(lang);
+  const track = ar ? undefined : letterSpacing;
   return (
     <g>
       {lines.map((line, i) => (
@@ -373,15 +375,35 @@ export function TextBlock({
           fontStyle={fontStyle}
           fontWeight={fontWeight}
           textAnchor={anchor}
-          direction={isAr(lang) ? "rtl" : "ltr"}
-          unicodeBidi={isAr(lang) ? "plaintext" : undefined as any}
-          letterSpacing={letterSpacing}
+          direction={ar ? "rtl" : "ltr"}
+          unicodeBidi={ar ? "plaintext" : undefined as any}
+          letterSpacing={track}
         >
-          {line}
+          {ar ? renderArabicBidi(line) : line}
         </text>
       ))}
     </g>
   );
+}
+
+/**
+ * Split an Arabic line so Latin/digit runs render inside their own
+ * isolated LTR tspans. Prevents "AI", "2026", "IoT" etc. from fracturing
+ * word order inside RTL text.
+ */
+export function renderArabicBidi(line: string): React.ReactNode {
+  const parts = line.split(/([A-Za-z0-9%]+)/g);
+  return parts.map((part, i) => {
+    if (!part) return null;
+    if (/^[A-Za-z0-9%]+$/.test(part)) {
+      return (
+        <tspan key={i} direction="ltr" unicodeBidi={"isolate" as any}>
+          {part}
+        </tspan>
+      );
+    }
+    return <tspan key={i}>{part}</tspan>;
+  });
 }
 
 export function pickQuoteFont(lang: Lang, bold = false) {
