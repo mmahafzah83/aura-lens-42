@@ -700,7 +700,7 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
       }
 
       const langRule = lang === "ar"
-        ? `All output text MUST be in فصحى معاصرة (modern standard Arabic). Short, sharp sentences. Keep technical terms in English (AI, KPI, OT, IT, dashboard, smart meter, digital twin). No classical filler.`
+        ? `All output text MUST be in فصحى معاصرة (modern standard Arabic). Short, sharp sentences. Keep technical terms in English (AI, KPI, dashboard, API). No classical filler.`
         : `All output text in English. Sharp, specific, executive register. No buzzwords (no "leverage", "synergy", "cutting-edge", "unlock"). No vague abstractions.`;
 
       const systemPrompt = `You are a senior consulting content strategist restructuring a LinkedIn post into 8 different visual card formats.
