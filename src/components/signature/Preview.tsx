@@ -43,14 +43,16 @@ async function renderToBlob(
   try {
     const ReactDOM = await import("react-dom/client");
     const root = ReactDOM.createRoot(host);
-    const C = family.component;
-    const frameProps = family.id === "frame" ? { decision, emphasisOff } : {};
+    const C = family.component as React.ComponentType<React.ComponentProps<typeof family.component> & {
+      decision?: FrameDecision;
+      emphasisOff?: boolean;
+    }>;
     await new Promise<void>((resolve) => {
       root.render(
         <C lang={lang} mood={mood} photoUrl={embeddedPhoto}
            name={fields.name} title={fields.title}
            lines={[fields.line1, fields.line2]} meta={fields.meta}
-           square={square} {...frameProps} />,
+           square={square} decision={decision} emphasisOff={emphasisOff} />,
       );
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
     });
@@ -95,7 +97,10 @@ export default function Preview({ family, lang, mood, fields, photoUrl, decision
     }
   };
 
-  const C = family.component;
+  const C = family.component as React.ComponentType<React.ComponentProps<typeof family.component> & {
+    decision?: FrameDecision;
+    emphasisOff?: boolean;
+  }>;
 
   return (
     <section style={{ maxWidth: 1120, margin: "0 auto" }}>
@@ -111,7 +116,7 @@ export default function Preview({ family, lang, mood, fields, photoUrl, decision
           <C lang={lang} mood={mood} photoUrl={photoUrl}
              name={fields.name} title={fields.title}
              lines={[fields.line1, fields.line2]} meta={fields.meta}
-             {...(family.id === "frame" ? { decision, emphasisOff } : {})} />
+             decision={decision} emphasisOff={emphasisOff} />
         </div>
       </div>
 

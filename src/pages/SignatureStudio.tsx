@@ -84,6 +84,9 @@ export default function SignatureStudio() {
       setFamily(fam);
       setFields({ name: d.name, title: d.title, line1: d.lines[0] || "", line2: d.lines[1] || "", meta: d.meta });
       setPickedSource(null);
+      setDesignDecision(undefined);
+      setEmphasisOff(false);
+      setDesignOption(null);
       setStep("editor");
     } else {
       setStep("filmstrip");
@@ -111,6 +114,9 @@ export default function SignatureStudio() {
       meta: d.meta,
     });
     setPickedSource(null);
+    setDesignDecision(undefined);
+    setEmphasisOff(false);
+    setDesignOption(null);
     setStep("editor");
   }, [live]);
 

@@ -222,15 +222,32 @@ Deno.serve(async (req) => {
         return "upper-left";
       };
       const defaultZone: Zone = lang === "ar" ? "upper-right" : "upper-left";
-      const safeOption = (id: "A"|"B"|"C", zone: Zone) => ({
-        id, textZone: zone, scrim: "strong" as const, cropFocusY: 0.35,
-        textColor: "paper" as const, emphasis: [] as any[], reason: "",
+      const fallbackEmphasis = () => {
+        const words = line1.trim().split(/\s+/).filter(Boolean);
+        return words.length >= 4
+          ? [{ phrase: words.slice(-2).join(" "), style: "color" as const }]
+          : [];
+      };
+      const safeOption = (
+        id: "A"|"B"|"C",
+        zone: Zone,
+        scrim: "soft"|"strong" = "strong",
+        cropFocusY = 0.5,
+      ) => ({
+        id, textZone: zone, scrim, cropFocusY,
+        textColor: "paper" as const,
+        emphasis: fallbackEmphasis(),
+        reason: `${zone} keeps the line clear of the subject with a ${scrim} readability layer.`,
       });
 
       if (!imageBase64 || !line1) {
         return ok({
           faceZone: "none", mood: null,
-          options: [safeOption("A", defaultZone), safeOption("B", opposite(defaultZone)), safeOption("C", defaultZone === "upper-left" ? "lower-left" : "lower-right")],
+           options: [
+             safeOption("A", defaultZone, "strong", 0.35),
+             safeOption("B", opposite(defaultZone), "soft", 0.65),
+             safeOption("C", defaultZone === "upper-left" ? "lower-left" : "lower-right", "strong", 0.5),
+           ],
         });
       }
 
@@ -242,20 +259,20 @@ Deno.serve(async (req) => {
           .select("action, payload, created_at")
           .eq("user_id", userId)
           .eq("family", "frame")
-          .in("action", ["edited", "suggested", "published"])
+          .in("action", ["edited", "suggested", "picked", "published"])
           .order("created_at", { ascending: false })
           .limit(25);
         if (events && events.length) {
           const overrides: string[] = [];
           let emphasisOffCount = 0;
           let emphasisOnCount = 0;
-          const publishedOptions: string[] = [];
+           const keptOptions: string[] = [];
           const moodsChosen: string[] = [];
           for (const e of events) {
             const p: any = e.payload || {};
             if (e.action === "edited" && p.overrode === "mood" && p.to) moodsChosen.push(String(p.to));
             if (e.action === "edited" && p.overrode === "emphasis") { if (p.off) emphasisOffCount++; else emphasisOnCount++; }
-            if (e.action === "published" && p.designOption) publishedOptions.push(String(p.designOption));
+             if ((e.action === "picked" || e.action === "published") && p.designOption) keptOptions.push(String(p.designOption));
           }
           const tally = (arr: string[]) => {
             const m: Record<string, number> = {};
@@ -264,7 +281,7 @@ Deno.serve(async (req) => {
           };
           const bits: string[] = [];
           if (moodsChosen.length) bits.push(`moods manually chosen: ${tally(moodsChosen)}`);
-          if (publishedOptions.length) bits.push(`options kept at publish: ${tally(publishedOptions)}`);
+           if (keptOptions.length) bits.push(`options picked or kept at publish: ${tally(keptOptions)}`);
           if (emphasisOffCount || emphasisOnCount) bits.push(`emphasis toggled off ${emphasisOffCount}x, on ${emphasisOnCount}x`);
           if (bits.length) tasteBlock = `USER TASTE (from history): ${bits.join("; ")}.`;
         }
@@ -322,7 +339,11 @@ Deno.serve(async (req) => {
           console.warn("signature-suggest design gateway error", dResp.status);
           return ok({
             faceZone: "none", mood: null,
-            options: [safeOption("A", defaultZone), safeOption("B", opposite(defaultZone)), safeOption("C", defaultZone === "upper-left" ? "lower-left" : "lower-right")],
+           options: [
+             safeOption("A", defaultZone, "strong", 0.35),
+             safeOption("B", opposite(defaultZone), "soft", 0.65),
+             safeOption("C", defaultZone === "upper-left" ? "lower-left" : "lower-right", "strong", 0.5),
+           ],
           });
         }
         const dJson = await dResp.json();
@@ -331,59 +352,67 @@ Deno.serve(async (req) => {
         const words = line1.trim().split(/\s+/).filter(Boolean).length;
         const needEmphasis = words >= 4;
 
-        const rawOptions: any[] = Array.isArray(parsed.options) ? parsed.options.slice(0, 3) : [];
+         const faceZone = typeof parsed.faceZone === "string" ? parsed.faceZone : "none";
+         const rawOptions: any[] = Array.isArray(parsed.options) ? parsed.options.slice(0, 3) : [];
         const cleaned: any[] = [];
-        const seenZones = new Set<string>();
+         const seenCompositions = new Set<string>();
         for (let i = 0; i < rawOptions.length; i++) {
           const o = rawOptions[i] || {};
           const zone: Zone = (validZones as readonly string[]).includes(o.textZone) ? o.textZone : defaultZone;
-          let scrim: "none"|"soft"|"strong" = (validScrim as readonly string[]).includes(o.scrim) ? o.scrim : "strong";
+           const scrim: "none"|"soft"|"strong" = (validScrim as readonly string[]).includes(o.scrim) ? o.scrim : "strong";
           let textColor: "paper"|"ink" = o.textColor === "ink" ? "ink" : "paper";
           if (textColor === "ink" && scrim !== "none") textColor = "paper"; // guardrail
           const cropFocusY = typeof o.cropFocusY === "number" ? Math.max(0, Math.min(1, o.cropFocusY)) : 0.5;
           const emphasisIn = Array.isArray(o.emphasis) ? o.emphasis.slice(0, 1) : [];
-          let emphasis = emphasisIn
+           let emphasis = needEmphasis ? emphasisIn
             .filter((e: any) => e && typeof e.phrase === "string" && e.phrase.trim() && line1.includes(e.phrase))
-            .map((e: any) => ({ phrase: String(e.phrase), style: e.style === "bold" ? "bold" : "color" }));
+             .map((e: any) => ({ phrase: String(e.phrase), style: e.style === "bold" ? "bold" : "color" })) : [];
           if (needEmphasis && emphasis.length === 0) {
             // Synthesize a safe fallback: last two words of the line.
             const parts = line1.trim().split(/\s+/);
             const tail = parts.slice(Math.max(0, parts.length - 2)).join(" ");
             if (tail && line1.includes(tail)) emphasis = [{ phrase: tail, style: "color" }];
           }
-          const id = (["A","B","C"] as const)[cleaned.length];
+           const compositionKey = `${zone}:${scrim}:${textColor}`;
+           if (seenCompositions.has(compositionKey)) continue;
+           const id = (["A","B","C"] as const)[cleaned.length];
           cleaned.push({
             id,
             textZone: zone,
             scrim, cropFocusY, textColor, emphasis,
             reason: typeof o.reason === "string" ? o.reason.slice(0, 240) : "",
           });
-          seenZones.add(`${zone}:${scrim}`);
+           seenCompositions.add(compositionKey);
         }
-        // Synthesize missing ones from opposite-zone + strong-scrim variants.
+         // Synthesize distinct safe variants when the model returns fewer than three valid options.
+         const fallbackZones: Zone[] = [
+           cleaned[0]?.textZone ? opposite(cleaned[0].textZone as Zone) : defaultZone,
+           defaultZone === "upper-left" ? "lower-left" : "lower-right",
+           opposite(defaultZone),
+           defaultZone,
+         ];
         while (cleaned.length < 3) {
-          const first = cleaned[0]?.textZone as Zone | undefined;
-          const fallbackZone: Zone = first ? opposite(first) : defaultZone;
           const id = (["A","B","C"] as const)[cleaned.length];
-          cleaned.push({
-            id,
-            textZone: fallbackZone,
-            scrim: "strong",
-            cropFocusY: 0.35,
-            textColor: "paper",
-            emphasis: cleaned[0]?.emphasis || [],
-            reason: `Safer counterpoint: ${fallbackZone} with strong scrim for readability.`,
-          });
+           const fallbackZone = fallbackZones.shift() || defaultZone;
+           const fallbackScrim = cleaned.length === 1 ? "soft" : "strong";
+           const candidate = safeOption(id, fallbackZone, fallbackScrim, cleaned.length === 1 ? 0.65 : 0.35);
+           const key = `${candidate.textZone}:${candidate.scrim}:${candidate.textColor}`;
+           if (seenCompositions.has(key)) candidate.scrim = candidate.scrim === "soft" ? "strong" : "soft";
+           seenCompositions.add(`${candidate.textZone}:${candidate.scrim}:${candidate.textColor}`);
+           cleaned.push(candidate);
         }
 
         const mood = (validMood as readonly string[]).includes(parsed.mood) ? parsed.mood : null;
-        const faceZone = typeof parsed.faceZone === "string" ? parsed.faceZone : "none";
         return ok({ faceZone, mood, options: cleaned });
       } catch (e) {
         console.warn("signature-suggest design failed", e);
         return ok({
           faceZone: "none", mood: null,
-          options: [safeOption("A", defaultZone), safeOption("B", opposite(defaultZone)), safeOption("C", defaultZone === "upper-left" ? "lower-left" : "lower-right")],
+           options: [
+             safeOption("A", defaultZone, "strong", 0.35),
+             safeOption("B", opposite(defaultZone), "soft", 0.65),
+             safeOption("C", defaultZone === "upper-left" ? "lower-left" : "lower-right", "strong", 0.5),
+           ],
         });
       }
     }

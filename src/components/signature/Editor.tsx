@@ -76,7 +76,10 @@ export default function Editor({
   const usesPhoto = family.id === "frame" || family.id === "signature";
   const usesLine2 = family.id === "signature";
 
-  const C = family.component;
+  const C = family.component as React.ComponentType<React.ComponentProps<typeof family.component> & {
+    decision?: FrameDecision;
+    emphasisOff?: boolean;
+  }>;
   const { suggestions, loading: suggestLoading, regenerate } = useSuggestions(family, lang);
 
   // ── Frame family designer brain ─────────────────────────────────
@@ -423,7 +426,7 @@ export default function Editor({
               lang={lang} mood={mood} photoUrl={photoUrl}
               name={fields.name} title={fields.title}
               lines={[fields.line1, fields.line2]} meta={fields.meta}
-              {...(family.id === "frame" ? { decision, emphasisOff } : {})}
+              decision={decision} emphasisOff={emphasisOff}
             />
           </div>
         </div>
