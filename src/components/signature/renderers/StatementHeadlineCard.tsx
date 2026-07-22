@@ -63,7 +63,7 @@ export default function StatementHeadlineCard(
   const kicker = "THE STATEMENT";
 
   // Name row + spine at bottom
-  const nameText = capsText(name, lang);
+  const nameText = name;
   const nameFit = fitText(nameText, {
     font: { family: ar ? "Cairo" : "IBM Plex Mono", weight: 600 },
     maxWidth: g.CONTENT_W * 0.68,
