@@ -94,16 +94,29 @@ export default function Editor({
   const designReason = activeOption?.reason || "";
 
   const applyOption = useCallback((opt: FrameOption, log = true) => {
-    onDecision?.({
+    const initial: FrameDecision = {
       textZone: opt.textZone,
       scrim: opt.scrim,
       cropFocusY: opt.cropFocusY,
       emphasis: opt.emphasis,
       textColor: opt.textColor,
-    });
+    };
+    onDecision?.(initial);
     onDesignOption?.(opt.id);
     if (log) void logSignatureEvent("picked", family.id, lang, { designOption: opt.id, decision: opt });
-  }, [family.id, lang, onDecision, onDesignOption]);
+    // Law 5 — deterministic contrast escalation on top of the brain's pick.
+    if (photoUrl) {
+      void (async () => {
+        const { adjustEffectiveScrim } = await import("./renderers/shared");
+        const res = await adjustEffectiveScrim(initial, photoUrl);
+        const before = { scrim: initial.scrim, textColor: initial.textColor ?? "paper" };
+        const after = { scrim: res.decision.scrim, textColor: res.decision.textColor ?? "paper" };
+        if (before.scrim !== after.scrim || before.textColor !== after.textColor) {
+          onDecision?.(res.decision);
+        }
+      })();
+    }
+  }, [family.id, lang, onDecision, onDesignOption, photoUrl]);
 
   const runDesign = useCallback(async () => {
     if (family.id !== "frame" || !photoUrl) return;
