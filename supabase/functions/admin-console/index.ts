@@ -10,6 +10,181 @@ const corsHeaders = {
 
 const FOUNDER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 
+// Plain-English explainers for the Issues panel. Each entry:
+//   what   — one sentence of what this job does for the user
+//   impact — one sentence of what breaks when it fails (who, what they won't see)
+//   action — one concrete next step for a junior admin
+// Wording: plain English, no jargon, no banned words (authority/leverage/utilize/facilitate).
+type Explainer = { what: string; impact: string; action: string };
+const FUNCTION_EXPLAINERS: Record<string, Explainer> = {
+  "ingest-document": {
+    what: "Reads an uploaded file and pulls out the text so it can be used later.",
+    impact: "The user's document sits in their library but shows no summary or evidence.",
+    action: "Open Crons and run reap-stuck-documents, then retry the upload from the user's Library.",
+  },
+  "detect-signals-v2": {
+    what: "Groups a user's recent notes into a strategic signal on the Intelligence page.",
+    impact: "The user finished a capture but no new signal will appear for them.",
+    action: "Open Crons and run reap-unprocessed-captures to retry the affected entries.",
+  },
+  "linkedin-publish": {
+    what: "Posts a finished draft to the user's LinkedIn account.",
+    impact: "The user pressed Publish but nothing went out to LinkedIn.",
+    action: "Ask the user to reconnect LinkedIn in Settings, then retry the post.",
+  },
+  "linkedin-egress": {
+    what: "Checks that we only make allowed LinkedIn API calls.",
+    impact: "A LinkedIn request was blocked before it left the server — no user harm, but a real block happened.",
+    action: "Read the error text below and flag to Mohammad if the same call repeats.",
+  },
+  "linkedin-metrics-sync": {
+    what: "Pulls fresh follower and post numbers from LinkedIn.",
+    impact: "Impact numbers on the user's Influence page will be stale.",
+    action: "Open Crons and run linkedin-metrics-sync manually.",
+  },
+  "linkedin-post-metrics-sync": {
+    what: "Refreshes impressions and reactions for each published post.",
+    impact: "Per-post analytics on the Influence tab will be stale.",
+    action: "Open Crons and run linkedin-post-metrics-sync manually.",
+  },
+  "linkedin-oauth-callback": {
+    what: "Finishes connecting a user's LinkedIn account after they approve access.",
+    impact: "The user tried to connect LinkedIn and it silently failed.",
+    action: "Ask the user to try connecting LinkedIn again from Settings.",
+  },
+  "linkedin-token-refresh": {
+    what: "Renews a user's LinkedIn access before it expires.",
+    impact: "Publishing and metrics for that user will start failing until they reconnect.",
+    action: "Ask the affected user to reconnect LinkedIn in Settings.",
+  },
+  "ghost-draft-writer": {
+    what: "Writes the overnight LinkedIn draft for each user's morning card.",
+    impact: "Affected users will open a morning card with no draft.",
+    action: "Open Crons and run ghost-draft-writer manually, or flag to Mohammad.",
+  },
+  "night-agent-hunt": {
+    what: "Runs the overnight search that finds fresh reading for each user.",
+    impact: "Users will see no new overnight findings in the morning.",
+    action: "Open Crons and run night-agent-hunt manually.",
+  },
+  "detect-signals-v2-cluster": {
+    what: "Groups recent notes together so we can turn them into a signal.",
+    impact: "Signals stop appearing on Intelligence for the affected users.",
+    action: "Open Crons and run reap-unprocessed-captures.",
+  },
+  "extract-evidence": {
+    what: "Pulls quotes and facts out of a captured document for later reuse.",
+    impact: "The user's document has no evidence card attached.",
+    action: "Open Crons and run reap-stuck-documents, then retry.",
+  },
+  "extract-evidence-slice": {
+    what: "Processes one part of a large document in the background.",
+    impact: "A large document will stay stuck at 'processing' for the user.",
+    action: "Open Crons and run reap-stuck-documents.",
+  },
+  "ingest-capture": {
+    what: "Turns a quick capture (text, link, voice) into a stored entry.",
+    impact: "The user pressed Save on a capture but nothing shows up in their Library.",
+    action: "Open Crons and run reap-unprocessed-captures.",
+  },
+  "reap-unprocessed-captures": {
+    what: "Retries captures that got stuck without becoming an entry.",
+    impact: "Stuck captures will not be retried automatically.",
+    action: "Open Crons and run reap-unprocessed-captures manually.",
+  },
+  "reap-stuck-documents": {
+    what: "Retries uploads that got stuck mid-processing.",
+    impact: "Stuck documents will stay stuck for their owners.",
+    action: "Open Crons and run reap-stuck-documents manually.",
+  },
+  "reap-stuck-publishes": {
+    what: "Recovers LinkedIn publishes that got stuck in flight.",
+    impact: "Some published posts may stay in 'publishing' state on Publish.",
+    action: "Open Crons and run reap-stuck-publishes.",
+  },
+  "publish-invariants-check": {
+    what: "Nightly self-check that Publish data is still consistent.",
+    impact: "No direct user impact yet, but a data inconsistency was spotted.",
+    action: "Read the error text below and flag to Mohammad.",
+  },
+  "api-health-sentinel": {
+    what: "Watches every scheduled job and pings if any of them is failing.",
+    impact: "We may miss quiet outages of other jobs until this comes back.",
+    action: "Open Crons and check recent runs; flag to Mohammad if repeated.",
+  },
+  "aura-health-audit": {
+    what: "Nightly rule check across the whole product database.",
+    impact: "Silent inconsistencies won't be flagged until this runs again.",
+    action: "Open Crons and run aura-health-audit.",
+  },
+  "admin-digest": {
+    what: "Sends the daily ops summary email to Mohammad.",
+    impact: "The daily admin digest email won't arrive.",
+    action: "Open Crons and run admin-digest.",
+  },
+  "admin-notify": {
+    what: "Sends alert emails when something breaks on the platform.",
+    impact: "Real alerts may be silently dropped until this comes back.",
+    action: "Flag to Mohammad — alerting itself is failing.",
+  },
+  "check-lifecycle-triggers": {
+    what: "Decides which lifecycle emails a user should get next.",
+    impact: "Onboarding and re-engagement emails will pause for affected users.",
+    action: "Open Crons and run check-lifecycle-triggers.",
+  },
+  "lifecycle-emails": {
+    what: "Sends the scheduled lifecycle emails to users.",
+    impact: "The user won't receive the scheduled email today.",
+    action: "Open Crons and run lifecycle-emails.",
+  },
+  "aura-card-emails": {
+    what: "Sends the morning card email when a user's overnight draft is ready.",
+    impact: "The user's morning card email won't arrive.",
+    action: "Open Crons and run aura-card-emails.",
+  },
+  "linkedin-sync": {
+    what: "Pulls the user's LinkedIn posts and profile into the platform.",
+    impact: "The user's published posts and profile info will be out of date.",
+    action: "Ask the user to reconnect LinkedIn or open Crons to run linkedin-sync.",
+  },
+  "discover-linkedin-posts": {
+    what: "Finds LinkedIn posts a user wrote that we don't have yet.",
+    impact: "Some of the user's own posts will be missing from Publish and Influence.",
+    action: "Open Crons and run discover-linkedin-posts.",
+  },
+  "calculate-aura-score": {
+    what: "Recomputes each user's Aura score.",
+    impact: "Scores on Impact and Identity will not refresh.",
+    action: "Open Crons and run calculate-aura-score.",
+  },
+  "fetch-industry-trends": {
+    what: "Fetches fresh industry trend items for the Intelligence page.",
+    impact: "The Intelligence page will show yesterday's trends.",
+    action: "Open Crons and run fetch-industry-trends.",
+  },
+  "log-client-error": {
+    what: "Records front-end crashes so we can see them here.",
+    impact: "Client-side errors may go unreported.",
+    action: "Flag to Mohammad — this is our own error reporter.",
+  },
+};
+function explainFunction(name: string): Explainer {
+  // Front-end crashes are logged as "client:/route" — treat them as one class.
+  if (name.startsWith("client:")) {
+    const route = name.slice("client:".length) || "/";
+    return {
+      what: `A user hit a crash on the page ${route}.`,
+      impact: "That user saw a broken screen or error on this page.",
+      action: "Open the page yourself and reproduce; flag to Mohammad with the error text below.",
+    };
+  }
+  return FUNCTION_EXPLAINERS[name] ?? {
+    what: `Background job ${name}.`,
+    impact: "One background task did not complete.",
+    action: "Flag to Mohammad with the error text below.",
+  };
+}
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
