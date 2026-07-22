@@ -29,7 +29,7 @@ const ARABIC_VOICE_PROMPT = `أنت محرك توليد المحتوى لـ Aura
 
 السجل اللغوي:
 فصحى معاصرة خليجية — واضحة، مباشرة، كأنك تحكي مع مدير لا تكتب مقالاً.
-الكلمات التقنية تبقى بالإنجليزية: AI، KPI، dashboard، smart meter، digital twin، OT، IT.
+الكلمات التقنية تبقى بالإنجليزية: AI، KPI، dashboard، API، roadmap.
 لا عامية كاملة، لا لغة إعلامية رسمية.
 
 هيكل البوست الإلزامي — بهذا الترتيب:
@@ -65,23 +65,23 @@ const ARABIC_VOICE_PROMPT = `أنت محرك توليد المحتوى لـ Aura
 لا تضع إيموجي في الـ Hook أو الـ Question — فقط في منتصف البوست.
 
 مثال على التنسيق الصحيح:
-المشكلة ليست في غياب البيانات.
-المشكلة في أن أحداً لا يثق فيها.
+المشكلة ليست في غياب الخطة.
+المشكلة في أن أحداً لا يملكها.
 
-◆ مهندس المحطة لا يثق في الـ dashboard
-↳ لأنه يعرف أن البيانات لم تُعايَر منذ 8 أشهر
+◆ الفريق التنفيذي وافق على الاستراتيجية
+↳ لكن لا أحد يعرف من يقود التنفيذ
 
-◆ المدير التنفيذي لا يثق في التقرير
-↳ لأنه يختلف عما يسمعه في الاجتماع
+◆ الإدارة الوسطى تنتظر التوجيه
+↳ لأن الأولويات تتغير كل ربع
 
-◆ فريق IT يثق في النظام
-↳ لكنه لا يفهم ما يقيسه فعلاً
+◆ الجميع مشغول
+↳ لكن لا أحد يتقدم
 
-📍 الثقة في البيانات لا تُبنى بالتقنية.
-تُبنى بالشفافية.
+📍 الخطة بلا مالك ليست خطة.
+هي وثيقة.
 
 دعني أسألك:
-كم مرة اتخذت قراراً بناءً على تقرير... وأنت تعرف في داخلك أن الأرقام ناقصة؟
+كم مبادرة في جهتك لها راعٍ رسمي... ولا مالك حقيقي؟
 
 ممنوع منعاً باتاً:
 - "في عالم اليوم المتغير"
@@ -99,8 +99,8 @@ const ARABIC_VOICE_PROMPT = `أنت محرك توليد المحتوى لـ Aura
 قواعد افتتاح البوست (إلزامية):
 - لا تبدأ البوست أبداً بكلمة "منشور" أو "منشور LinkedIn" أو أي تسمية للصيغة. ابدأ بالـ Hook مباشرة.
 - السطر الأول يجب أن يكون كسراً للنمط: ادعاء جريء، رقم محدد، سؤال استفزازي، أو مشهد قصير.
-- مثال خاطئ: "منشور LinkedIn معظم مشاريع العدادات الذكية..."
-- مثال صحيح: "معظم مشاريع العدادات الذكية في قطاع المياه تنتهي عند التركيب."
+- مثال خاطئ: "منشور LinkedIn معظم مشاريع التحول الرقمي..."
+- مثال صحيح: "معظم مشاريع التحول الرقمي تنجح في العرض التقديمي وتفشل في التشغيل."
 
 قواعد التنسيق الصارمة:
 - لا تستخدم "---" كفاصل بين الأقسام. استخدم سطراً فارغاً.
@@ -114,7 +114,7 @@ const ARABIC_VOICE_PROMPT = `أنت محرك توليد المحتوى لـ Aura
 - البنية ج — قصة: مشهد قصير (2-3 أسطر) → الدرس → إطار مستخلص → تطبيق → سؤال
 
 الهاشتاقات — 3 فقط في نهاية البوست:
-- واحد للقطاع: #التحول_الرقمي أو #قطاع_المياه أو #البنية_التحتية
+- واحد لقطاع القارئ: استخدم قطاع المستخدم من ملفه الشخصي (sector_focus) بصيغة هاشتاق عربي مناسب. إن لم يوجد قطاع، استخدم #التحول_الرقمي
 - واحد جغرافي: #السعودية أو #الخليج أو #رؤية2030
 - واحد للجمهور: #قيادة أو #التحول_المؤسسي
 
@@ -370,7 +370,7 @@ FORMATTING RULES (mandatory):
 - No code fences, no horizontal rules, no markdown links.`;
 
       const langLabel = effectiveLanguage === "ar"
-        ? `اكتب المنشور بالكامل بالعربية. الأدلة والحقائق أدناه قد تكون بالإنجليزية — استخرج المعنى واكتبه بالعربية، ولا تنسخ أي جملة أو عبارة إنجليزية كما هي. تبقى بالإنجليزية المصطلحات التقنية فقط (AI, KPI, dashboard, SCADA, OT, IT, digital twin).`
+        ? `اكتب المنشور بالكامل بالعربية. الأدلة والحقائق أدناه قد تكون بالإنجليزية — استخرج المعنى واكتبه بالعربية، ولا تنسخ أي جملة أو عبارة إنجليزية كما هي. تبقى بالإنجليزية المصطلحات التقنية فقط (AI, KPI, dashboard, API).`
         : `Write the post ENTIRELY in English. Do not use any Arabic words or script, even if the examples or profile material contain Arabic.`;
 
       // Flash addendum (variation-aware)
@@ -700,7 +700,7 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
       }
 
       const langRule = lang === "ar"
-        ? `All output text MUST be in فصحى معاصرة (modern standard Arabic). Short, sharp sentences. Keep technical terms in English (AI, KPI, OT, IT, dashboard, smart meter, digital twin). No classical filler.`
+        ? `All output text MUST be in فصحى معاصرة (modern standard Arabic). Short, sharp sentences. Keep technical terms in English (AI, KPI, dashboard, API). No classical filler.`
         : `All output text in English. Sharp, specific, executive register. No buzzwords (no "leverage", "synergy", "cutting-edge", "unlock"). No vague abstractions.`;
 
       const systemPrompt = `You are a senior consulting content strategist restructuring a LinkedIn post into 8 different visual card formats.
