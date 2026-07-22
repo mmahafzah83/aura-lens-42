@@ -12,6 +12,8 @@ export interface FrameDecision {
   scrim: "none" | "soft" | "strong";
   cropFocusY: number; // 0..1
   emphasis: { phrase: string; style: "color" | "bold" }[];
+  /** Optional dark-on-bright variant. 'ink' only valid when scrim === 'none'. */
+  textColor?: "paper" | "ink";
 }
 
 const DEFAULT_EN: FrameDecision = {
@@ -30,6 +32,8 @@ export default function FrameCard(
   const accent = moodColor(mood);
   const decision = props.decision ?? (ar ? DEFAULT_AR : DEFAULT_EN);
   const emphasis = emphasisOff ? [] : (decision.emphasis || []);
+  const useInk = decision.textColor === "ink" && decision.scrim === "none";
+  const textFill = useInk ? T.ink : T.paper;
 
   // Name plate band — bottom 14%
   const bandH = Math.round(g.H * 0.14);
@@ -147,7 +151,7 @@ export default function FrameCard(
         x={xText}
         y={firstBaselineY}
         lineHeight={lineH}
-        fill={T.paper}
+        fill={textFill}
         fontFamily={font.family}
         fontSize={fit.size}
         fontStyle={font.style}
