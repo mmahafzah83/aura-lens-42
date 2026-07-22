@@ -206,39 +206,93 @@ Deno.serve(async (req) => {
 
     // ── DESIGN MODE (multimodal, art-director) ──────────────────────────
     if (isDesign) {
-      const safeDefault = {
-        faceZone: "none",
-        textZone: lang === "ar" ? "upper-right" : "upper-left",
-        scrim: "strong",
-        cropFocusY: 0.35,
-        mood: null as null | string,
-        emphasis: [] as { phrase: string; style: string }[],
-        reason: "",
-      };
       const imageBase64 = typeof body?.imageBase64 === "string" ? body.imageBase64 : "";
       const line1 = String(body?.line1 || "").slice(0, 400);
       const line2 = String(body?.line2 || "").slice(0, 400);
-      if (!imageBase64 || !line1) return ok({ decision: safeDefault });
+
+      const validZones = ["upper-left","upper-right","lower-left","lower-right"] as const;
+      type Zone = typeof validZones[number];
+      const validScrim = ["none","soft","strong"] as const;
+      const validMood = ["oxblood","teal","amber"] as const;
+
+      const opposite = (z: Zone): Zone => {
+        if (z === "upper-left") return "lower-right";
+        if (z === "upper-right") return "lower-left";
+        if (z === "lower-left") return "upper-right";
+        return "upper-left";
+      };
+      const defaultZone: Zone = lang === "ar" ? "upper-right" : "upper-left";
+      const safeOption = (id: "A"|"B"|"C", zone: Zone) => ({
+        id, textZone: zone, scrim: "strong" as const, cropFocusY: 0.35,
+        textColor: "paper" as const, emphasis: [] as any[], reason: "",
+      });
+
+      if (!imageBase64 || !line1) {
+        return ok({
+          faceZone: "none", mood: null,
+          options: [safeOption("A", defaultZone), safeOption("B", opposite(defaultZone)), safeOption("C", defaultZone === "upper-left" ? "lower-left" : "lower-right")],
+        });
+      }
+
+      // Taste memory — last 25 signature_events for this user, frame family.
+      let tasteBlock = "";
+      try {
+        const { data: events } = await admin
+          .from("signature_events")
+          .select("action, payload, created_at")
+          .eq("user_id", userId)
+          .eq("family", "frame")
+          .in("action", ["edited", "suggested", "published"])
+          .order("created_at", { ascending: false })
+          .limit(25);
+        if (events && events.length) {
+          const overrides: string[] = [];
+          let emphasisOffCount = 0;
+          let emphasisOnCount = 0;
+          const publishedOptions: string[] = [];
+          const moodsChosen: string[] = [];
+          for (const e of events) {
+            const p: any = e.payload || {};
+            if (e.action === "edited" && p.overrode === "mood" && p.to) moodsChosen.push(String(p.to));
+            if (e.action === "edited" && p.overrode === "emphasis") { if (p.off) emphasisOffCount++; else emphasisOnCount++; }
+            if (e.action === "published" && p.designOption) publishedOptions.push(String(p.designOption));
+          }
+          const tally = (arr: string[]) => {
+            const m: Record<string, number> = {};
+            arr.forEach((x) => { m[x] = (m[x] || 0) + 1; });
+            return Object.entries(m).sort((a,b) => b[1]-a[1]).map(([k,v]) => `${k}(${v})`).join(", ");
+          };
+          const bits: string[] = [];
+          if (moodsChosen.length) bits.push(`moods manually chosen: ${tally(moodsChosen)}`);
+          if (publishedOptions.length) bits.push(`options kept at publish: ${tally(publishedOptions)}`);
+          if (emphasisOffCount || emphasisOnCount) bits.push(`emphasis toggled off ${emphasisOffCount}x, on ${emphasisOnCount}x`);
+          if (bits.length) tasteBlock = `USER TASTE (from history): ${bits.join("; ")}.`;
+        }
+      } catch (_) { /* taste memory is best-effort */ }
 
       const dataUrl = imageBase64.startsWith("data:")
         ? imageBase64
         : `data:image/jpeg;base64,${imageBase64}`;
 
       const designSystem = [
-        "You are an art director placing a headline over a photo for a 1080x1350 portrait card.",
+        "You are a 20-year veteran art director placing a headline over a photo for a 1080x1350 portrait card.",
         "Return STRICT JSON only, no prose, no code fences.",
-        "Rules:",
-        "- textZone must be the CALMEST/lowest-detail zone of the image and MUST NOT overlap any faceZone.",
+        "You produce THREE meaningfully different compositions (A, B, C) of the same headline over the same photo — different textZones and/or scrim/emphasis/textColor treatments. Each must individually obey every rule below.",
+        "Rules per option:",
+        "- textZone must be the CALMEST/lowest-detail zone AVAILABLE and MUST NOT overlap any faceZone. Options must differ from each other on textZone or scrim treatment.",
         "- If a face is present, textZone must be far from it.",
-        "- scrim = 'none' only if the chosen zone is truly quiet (flat sky, plain wall); 'soft' if moderately calm; 'strong' if any doubt.",
+        "- scrim: 'none' only when the chosen zone is truly quiet AND textColor is 'ink' over a bright area; 'soft' for moderately calm; 'strong' if any doubt.",
+        "- textColor: 'ink' (dark text) is ONLY allowed when the zone is very bright AND scrim === 'none' (dark text on bright sky). Otherwise 'paper' (light text).",
         "- cropFocusY biases the vertical crop (0=top, 1=bottom). Bias toward the subject; away from busy edges.",
-        "- emphasis: MAX ONE phrase, a verbatim substring of the line, only meaningful words (a contrast pair, payoff, or number). Never articles or filler. Return [] if unsure.",
-        "- mood: pick 'oxblood' (warm red), 'teal' (cool green) or 'amber' (warm gold) based on the photo's overall temperature. If unsure return null.",
-        "- reason: ONE short plain-English sentence explaining the placement.",
-        "Schema: {\"faceZone\":\"top-left|top-center|top-right|middle-left|middle-center|middle-right|bottom-left|bottom-center|bottom-right|none\",\"textZone\":\"upper-left|upper-right|lower-left|lower-right\",\"scrim\":\"none|soft|strong\",\"cropFocusY\":0.0,\"mood\":\"oxblood|teal|amber|null\",\"emphasis\":[{\"phrase\":\"...\",\"style\":\"color|bold\"}],\"reason\":\"...\"}",
+        "- emphasis: You MUST return exactly one emphasis phrase when the line has 4+ words; only return [] when the line has fewer than 4 words. The phrase MUST be a verbatim substring of the line, and must be a meaningful contrast pair, payoff, or number — never articles or filler.",
+        "- reason: ONE short plain-English sentence explaining the placement decision for that option.",
+        "Top-level: mood ('oxblood'|'teal'|'amber'|null) suggested by the photo's overall temperature; faceZone (the 9-zone label or 'none').",
+        "Before answering, silently critique each option as a 20-year art director would (contrast, balance, face clearance, readability) and fix weaknesses; return only the corrected JSON.",
+        "Schema: {\"faceZone\":\"...\",\"mood\":\"oxblood|teal|amber|null\",\"options\":[{\"id\":\"A|B|C\",\"textZone\":\"upper-left|upper-right|lower-left|lower-right\",\"scrim\":\"none|soft|strong\",\"cropFocusY\":0.0,\"textColor\":\"paper|ink\",\"emphasis\":[{\"phrase\":\"...\",\"style\":\"color|bold\"}],\"reason\":\"...\"}, ...]}",
       ].join("\n");
 
       const designUser = [
+        tasteBlock,
         `Language: ${lang}.`,
         `Line 1: ${line1}`,
         line2 ? `Line 2: ${line2}` : "",
@@ -261,42 +315,76 @@ Deno.serve(async (req) => {
               },
             ],
             response_format: { type: "json_object" },
-            temperature: 0.4,
+            temperature: 0.2,
           }),
         });
         if (!dResp.ok) {
           console.warn("signature-suggest design gateway error", dResp.status);
-          return ok({ decision: safeDefault });
+          return ok({
+            faceZone: "none", mood: null,
+            options: [safeOption("A", defaultZone), safeOption("B", opposite(defaultZone)), safeOption("C", defaultZone === "upper-left" ? "lower-left" : "lower-right")],
+          });
         }
         const dJson = await dResp.json();
         const dText = dJson?.choices?.[0]?.message?.content || "";
         const parsed = parseJson<any>(dText) || {};
-        // Sanitize + guardrails.
-        const validZone = ["upper-left","upper-right","lower-left","lower-right"];
-        const validScrim = ["none","soft","strong"];
-        const validMood = ["oxblood","teal","amber"];
-        const emphasisIn = Array.isArray(parsed.emphasis) ? parsed.emphasis.slice(0, 1) : [];
-        const emphasis = emphasisIn
-          .filter((e: any) => e && typeof e.phrase === "string" && e.phrase.trim() && line1.includes(e.phrase))
-          .map((e: any) => ({
-            phrase: String(e.phrase),
-            style: e.style === "bold" ? "bold" : "color",
-          }));
-        const decision = {
-          faceZone: typeof parsed.faceZone === "string" ? parsed.faceZone : "none",
-          textZone: validZone.includes(parsed.textZone) ? parsed.textZone : safeDefault.textZone,
-          scrim: validScrim.includes(parsed.scrim) ? parsed.scrim : "strong",
-          cropFocusY: typeof parsed.cropFocusY === "number"
-            ? Math.max(0, Math.min(1, parsed.cropFocusY))
-            : 0.5,
-          mood: validMood.includes(parsed.mood) ? parsed.mood : null,
-          emphasis,
-          reason: typeof parsed.reason === "string" ? parsed.reason.slice(0, 240) : "",
-        };
-        return ok({ decision });
+        const words = line1.trim().split(/\s+/).filter(Boolean).length;
+        const needEmphasis = words >= 4;
+
+        const rawOptions: any[] = Array.isArray(parsed.options) ? parsed.options.slice(0, 3) : [];
+        const cleaned: any[] = [];
+        const seenZones = new Set<string>();
+        for (let i = 0; i < rawOptions.length; i++) {
+          const o = rawOptions[i] || {};
+          const zone: Zone = (validZones as readonly string[]).includes(o.textZone) ? o.textZone : defaultZone;
+          let scrim: "none"|"soft"|"strong" = (validScrim as readonly string[]).includes(o.scrim) ? o.scrim : "strong";
+          let textColor: "paper"|"ink" = o.textColor === "ink" ? "ink" : "paper";
+          if (textColor === "ink" && scrim !== "none") textColor = "paper"; // guardrail
+          const cropFocusY = typeof o.cropFocusY === "number" ? Math.max(0, Math.min(1, o.cropFocusY)) : 0.5;
+          const emphasisIn = Array.isArray(o.emphasis) ? o.emphasis.slice(0, 1) : [];
+          let emphasis = emphasisIn
+            .filter((e: any) => e && typeof e.phrase === "string" && e.phrase.trim() && line1.includes(e.phrase))
+            .map((e: any) => ({ phrase: String(e.phrase), style: e.style === "bold" ? "bold" : "color" }));
+          if (needEmphasis && emphasis.length === 0) {
+            // Synthesize a safe fallback: last two words of the line.
+            const parts = line1.trim().split(/\s+/);
+            const tail = parts.slice(Math.max(0, parts.length - 2)).join(" ");
+            if (tail && line1.includes(tail)) emphasis = [{ phrase: tail, style: "color" }];
+          }
+          const id = (["A","B","C"] as const)[cleaned.length];
+          cleaned.push({
+            id,
+            textZone: zone,
+            scrim, cropFocusY, textColor, emphasis,
+            reason: typeof o.reason === "string" ? o.reason.slice(0, 240) : "",
+          });
+          seenZones.add(`${zone}:${scrim}`);
+        }
+        // Synthesize missing ones from opposite-zone + strong-scrim variants.
+        while (cleaned.length < 3) {
+          const first = cleaned[0]?.textZone as Zone | undefined;
+          const fallbackZone: Zone = first ? opposite(first) : defaultZone;
+          const id = (["A","B","C"] as const)[cleaned.length];
+          cleaned.push({
+            id,
+            textZone: fallbackZone,
+            scrim: "strong",
+            cropFocusY: 0.35,
+            textColor: "paper",
+            emphasis: cleaned[0]?.emphasis || [],
+            reason: `Safer counterpoint: ${fallbackZone} with strong scrim for readability.`,
+          });
+        }
+
+        const mood = (validMood as readonly string[]).includes(parsed.mood) ? parsed.mood : null;
+        const faceZone = typeof parsed.faceZone === "string" ? parsed.faceZone : "none";
+        return ok({ faceZone, mood, options: cleaned });
       } catch (e) {
         console.warn("signature-suggest design failed", e);
-        return ok({ decision: safeDefault });
+        return ok({
+          faceZone: "none", mood: null,
+          options: [safeOption("A", defaultZone), safeOption("B", opposite(defaultZone)), safeOption("C", defaultZone === "upper-left" ? "lower-left" : "lower-right")],
+        });
       }
     }
     // ── /DESIGN MODE ────────────────────────────────────────────────────

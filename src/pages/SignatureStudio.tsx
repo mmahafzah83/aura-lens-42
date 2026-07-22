@@ -9,6 +9,7 @@ import Publish from "@/components/signature/Publish";
 import { useLiveData, defaultsFor } from "@/components/signature/useLiveData";
 import { DOOR_FAMILIES, type FamilyEntry } from "@/components/signature/renderers";
 import type { Lang, Mood } from "@/components/signature/renderers/shared";
+import type { FrameDecision } from "@/components/signature/renderers/FrameCard";
 
 /**
  * Signature Studio — shell.
@@ -54,6 +55,11 @@ export default function SignatureStudio() {
   });
   const [photoUrl, setPhotoUrl] = useState<string | undefined>(undefined);
   const [pickedSource, setPickedSource] = useState<"profile" | "signal" | "voice" | null>(null);
+  // Frame designer-brain state — lifted so Preview + Publish render the SAME
+  // composition the user picked in Editor (critical persistence fix).
+  const [designDecision, setDesignDecision] = useState<FrameDecision | undefined>(undefined);
+  const [emphasisOff, setEmphasisOff] = useState<boolean>(false);
+  const [designOption, setDesignOption] = useState<"A" | "B" | "C" | null>(null);
   const live = useLiveData();
   const doorRefs = useRef<Record<DoorId, HTMLDivElement | null>>({
     me: null, photo: null, words: null,
@@ -244,6 +250,12 @@ export default function SignatureStudio() {
           onFields={setFields}
           onPhoto={setPhotoUrl}
           onPickedSource={setPickedSource}
+          decision={designDecision}
+          emphasisOff={emphasisOff}
+          designOption={designOption}
+          onDecision={setDesignDecision}
+          onEmphasisOff={setEmphasisOff}
+          onDesignOption={setDesignOption}
           onBack={stepBack}
           onContinue={() => setStep("preview")}
         />
@@ -254,6 +266,8 @@ export default function SignatureStudio() {
           mood={mood}
           fields={fields}
           photoUrl={photoUrl}
+          decision={designDecision}
+          emphasisOff={emphasisOff}
           onBack={() => setStep("editor")}
           onContinue={() => setStep("publish")}
         />
@@ -265,6 +279,9 @@ export default function SignatureStudio() {
           fields={fields}
           photoUrl={photoUrl}
           pickedSource={pickedSource}
+          decision={designDecision}
+          emphasisOff={emphasisOff}
+          designOption={designOption}
           onBack={() => setStep("preview")}
           onBackToAura={() => navigate("/dashboard")}
           onMakeAnother={() => {
@@ -273,6 +290,9 @@ export default function SignatureStudio() {
             setPhotoUrl(undefined);
             setPickedSource(null);
             setFields({ name: "", title: "", line1: "", line2: "", meta: "" });
+            setDesignDecision(undefined);
+            setEmphasisOff(false);
+            setDesignOption(null);
             setStep("doors");
           }}
         />
