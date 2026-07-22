@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef } from "react";
 import type { FamilyEntry } from "./renderers";
+import type { FrameDecision } from "./renderers/FrameCard";
 import type { Lang, Mood } from "./renderers/shared";
 import { useMemo, useState } from "react";
 import { useSuggestions, type Suggestion, type SuggestSource } from "./useSuggestions";
 import { logSignatureEvent } from "./logEvent";
 import { ensureCardFontsLoaded } from "./fitText";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface EditorFields {
   name: string;
@@ -61,6 +63,67 @@ export default function Editor({
 
   const C = family.component;
   const { suggestions, loading: suggestLoading, regenerate } = useSuggestions(family, lang);
+
+  // ── Frame family designer brain ─────────────────────────────────
+  const [decision, setDecision] = useState<FrameDecision | undefined>(undefined);
+  const [designReason, setDesignReason] = useState<string>("");
+  const [designLoading, setDesignLoading] = useState(false);
+  const [emphasisOff, setEmphasisOff] = useState(false);
+  const moodTouchedRef = useRef(false);
+
+  const runDesign = useCallback(async () => {
+    if (family.id !== "frame" || !photoUrl) return;
+    setDesignLoading(true);
+    try {
+      // Downscale current photo to <=1024px JPEG base64.
+      const res = await fetch(photoUrl);
+      const blob = await res.blob();
+      const bmp = await createImageBitmap(blob);
+      const scale = Math.min(1, 1024 / Math.max(bmp.width, bmp.height));
+      const w = Math.round(bmp.width * scale);
+      const h = Math.round(bmp.height * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d")!.drawImage(bmp, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+      const base64 = dataUrl.split(",")[1];
+      const { data } = await supabase.functions.invoke("signature-suggest", {
+        body: {
+          mode: "design",
+          lang,
+          imageBase64: base64,
+          line1: fields.line1,
+          line2: fields.line2,
+          family: "frame",
+        },
+      });
+      const d = (data as any)?.decision;
+      if (d && d.textZone) {
+        setDecision({
+          textZone: d.textZone,
+          scrim: d.scrim,
+          cropFocusY: typeof d.cropFocusY === "number" ? d.cropFocusY : 0.5,
+          emphasis: Array.isArray(d.emphasis) ? d.emphasis : [],
+        });
+        setDesignReason(typeof d.reason === "string" ? d.reason : "");
+        // Only auto-apply mood if user hasn't manually picked one.
+        if (d.mood && !moodTouchedRef.current) onMood(d.mood);
+        void logSignatureEvent("suggested", family.id, lang, { design: true, decision: d });
+      }
+    } catch (err) {
+      console.warn("frame design failed", err);
+    } finally {
+      setDesignLoading(false);
+    }
+  }, [family.id, photoUrl, lang, fields.line1, fields.line2, onMood]);
+
+  // Auto-run when photo or line1 changes (debounced), for frame only.
+  useEffect(() => {
+    if (family.id !== "frame" || !photoUrl) { setDecision(undefined); setDesignReason(""); return; }
+    const t = window.setTimeout(() => { void runDesign(); }, 1500);
+    return () => window.clearTimeout(t);
+  }, [family.id, photoUrl, fields.line1, lang]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const [preferSet, setPreferSet] = useState<Set<SuggestSource>>(new Set(["profile", "signal", "voice"]));
   const filtered = useMemo(
     () => suggestions.filter((s) => preferSet.has(s.source)),
@@ -137,6 +200,20 @@ export default function Editor({
     } catch (err) {
       console.warn("photo downscale failed", err);
     }
+  };
+
+  const wrappedOnMood = (m: Mood) => {
+    if (decision) {
+      void logSignatureEvent("edited", family.id, lang, { overrode: "mood", from: mood, to: m });
+    }
+    moodTouchedRef.current = true;
+    onMood(m);
+  };
+  const toggleEmphasis = () => {
+    if (decision) {
+      void logSignatureEvent("edited", family.id, lang, { overrode: "emphasis", off: !emphasisOff });
+    }
+    setEmphasisOff((v) => !v);
   };
 
   return (
@@ -225,7 +302,7 @@ export default function Editor({
               {MOODS.map((m) => (
                 <button
                   key={m.key}
-                  onClick={() => onMood(m.key)}
+                  onClick={() => wrappedOnMood(m.key)}
                   aria-label={m.label}
                   title={m.label}
                   style={{
@@ -264,9 +341,27 @@ export default function Editor({
 
         <div className="sig-editor-stage">
           <div className="sig-editor-stage-inner">
-            <C lang={lang} mood={mood} photoUrl={photoUrl}
-               name={fields.name} title={fields.title}
-               lines={[fields.line1, fields.line2]} meta={fields.meta} />
+            {family.id === "frame" && (designReason || designLoading) && (
+              <div style={reasonBar}>
+                <span>◈ {designLoading ? "looking…" : designReason}</span>
+                {photoUrl && (
+                  <span style={{ display: "inline-flex", gap: 10 }}>
+                    <button type="button" onClick={() => void runDesign()} style={reasonBtn}>↻ re-look</button>
+                    {decision?.emphasis?.length ? (
+                      <button type="button" onClick={toggleEmphasis} style={reasonBtn}>
+                        {emphasisOff ? "emphasis on" : "emphasis off"}
+                      </button>
+                    ) : null}
+                  </span>
+                )}
+              </div>
+            )}
+            <C
+              lang={lang} mood={mood} photoUrl={photoUrl}
+              name={fields.name} title={fields.title}
+              lines={[fields.line1, fields.line2]} meta={fields.meta}
+              {...(family.id === "frame" ? { decision, emphasisOff } : {})}
+            />
           </div>
         </div>
       </div>
@@ -360,6 +455,19 @@ const pill: React.CSSProperties = {
 const swatch: React.CSSProperties = {
   width: 36, height: 36, borderRadius: 999, cursor: "pointer",
   border: "none",
+};
+const reasonBar: React.CSSProperties = {
+  position: "absolute", top: 4, left: 12, right: 12,
+  display: "flex", justifyContent: "space-between", alignItems: "center",
+  fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+  fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase",
+  color: "var(--ink-3)", pointerEvents: "auto",
+};
+const reasonBtn: React.CSSProperties = {
+  background: "transparent", border: "1px solid var(--rule)",
+  padding: "3px 8px", fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+  fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase",
+  color: "var(--spot)", cursor: "pointer",
 };
 const backBtn: React.CSSProperties = {
   background: "transparent",

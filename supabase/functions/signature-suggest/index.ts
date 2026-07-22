@@ -167,6 +167,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const mode = (body?.mode === "caption") ? "caption" : "suggest";
+    const isDesign = body?.mode === "design";
     const family = (["cover", "signature", "frame", "line"].includes(body?.family) ? body.family : "cover") as Family;
     const lang = (body?.lang === "ar" ? "ar" : "en") as Lang;
     const prefer: string[] = Array.isArray(body?.prefer)
@@ -202,6 +203,103 @@ Deno.serve(async (req) => {
     ]);
 
     if (!LOVABLE_API_KEY) return ok({ suggestions: [], caption: "" });
+
+    // ── DESIGN MODE (multimodal, art-director) ──────────────────────────
+    if (isDesign) {
+      const safeDefault = {
+        faceZone: "none",
+        textZone: lang === "ar" ? "upper-right" : "upper-left",
+        scrim: "strong",
+        cropFocusY: 0.35,
+        mood: null as null | string,
+        emphasis: [] as { phrase: string; style: string }[],
+        reason: "",
+      };
+      const imageBase64 = typeof body?.imageBase64 === "string" ? body.imageBase64 : "";
+      const line1 = String(body?.line1 || "").slice(0, 400);
+      const line2 = String(body?.line2 || "").slice(0, 400);
+      if (!imageBase64 || !line1) return ok({ decision: safeDefault });
+
+      const dataUrl = imageBase64.startsWith("data:")
+        ? imageBase64
+        : `data:image/jpeg;base64,${imageBase64}`;
+
+      const designSystem = [
+        "You are an art director placing a headline over a photo for a 1080x1350 portrait card.",
+        "Return STRICT JSON only, no prose, no code fences.",
+        "Rules:",
+        "- textZone must be the CALMEST/lowest-detail zone of the image and MUST NOT overlap any faceZone.",
+        "- If a face is present, textZone must be far from it.",
+        "- scrim = 'none' only if the chosen zone is truly quiet (flat sky, plain wall); 'soft' if moderately calm; 'strong' if any doubt.",
+        "- cropFocusY biases the vertical crop (0=top, 1=bottom). Bias toward the subject; away from busy edges.",
+        "- emphasis: MAX ONE phrase, a verbatim substring of the line, only meaningful words (a contrast pair, payoff, or number). Never articles or filler. Return [] if unsure.",
+        "- mood: pick 'oxblood' (warm red), 'teal' (cool green) or 'amber' (warm gold) based on the photo's overall temperature. If unsure return null.",
+        "- reason: ONE short plain-English sentence explaining the placement.",
+        "Schema: {\"faceZone\":\"top-left|top-center|top-right|middle-left|middle-center|middle-right|bottom-left|bottom-center|bottom-right|none\",\"textZone\":\"upper-left|upper-right|lower-left|lower-right\",\"scrim\":\"none|soft|strong\",\"cropFocusY\":0.0,\"mood\":\"oxblood|teal|amber|null\",\"emphasis\":[{\"phrase\":\"...\",\"style\":\"color|bold\"}],\"reason\":\"...\"}",
+      ].join("\n");
+
+      const designUser = [
+        `Language: ${lang}.`,
+        `Line 1: ${line1}`,
+        line2 ? `Line 2: ${line2}` : "",
+      ].filter(Boolean).join("\n");
+
+      try {
+        const dResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "google/gemini-3-flash-preview",
+            messages: [
+              { role: "system", content: designSystem },
+              {
+                role: "user",
+                content: [
+                  { type: "text", text: designUser },
+                  { type: "image_url", image_url: { url: dataUrl } },
+                ],
+              },
+            ],
+            response_format: { type: "json_object" },
+            temperature: 0.4,
+          }),
+        });
+        if (!dResp.ok) {
+          console.warn("signature-suggest design gateway error", dResp.status);
+          return ok({ decision: safeDefault });
+        }
+        const dJson = await dResp.json();
+        const dText = dJson?.choices?.[0]?.message?.content || "";
+        const parsed = parseJson<any>(dText) || {};
+        // Sanitize + guardrails.
+        const validZone = ["upper-left","upper-right","lower-left","lower-right"];
+        const validScrim = ["none","soft","strong"];
+        const validMood = ["oxblood","teal","amber"];
+        const emphasisIn = Array.isArray(parsed.emphasis) ? parsed.emphasis.slice(0, 1) : [];
+        const emphasis = emphasisIn
+          .filter((e: any) => e && typeof e.phrase === "string" && e.phrase.trim() && line1.includes(e.phrase))
+          .map((e: any) => ({
+            phrase: String(e.phrase),
+            style: e.style === "bold" ? "bold" : "color",
+          }));
+        const decision = {
+          faceZone: typeof parsed.faceZone === "string" ? parsed.faceZone : "none",
+          textZone: validZone.includes(parsed.textZone) ? parsed.textZone : safeDefault.textZone,
+          scrim: validScrim.includes(parsed.scrim) ? parsed.scrim : "strong",
+          cropFocusY: typeof parsed.cropFocusY === "number"
+            ? Math.max(0, Math.min(1, parsed.cropFocusY))
+            : 0.5,
+          mood: validMood.includes(parsed.mood) ? parsed.mood : null,
+          emphasis,
+          reason: typeof parsed.reason === "string" ? parsed.reason.slice(0, 240) : "",
+        };
+        return ok({ decision });
+      } catch (e) {
+        console.warn("signature-suggest design failed", e);
+        return ok({ decision: safeDefault });
+      }
+    }
+    // ── /DESIGN MODE ────────────────────────────────────────────────────
 
     // ── CAPTION MODE ─────────────────────────────────────────────────────
     if (mode === "caption") {

@@ -1,66 +1,211 @@
 import {
-  AuraMark, MONO, PhotoPlaceholder, RendererProps, SvgRoot, T, TextBlock,
-  anchorStart, getGeometry, isAr, moodColor, moodWashRGBA, pickQuoteFont, quoteLineHeight, xStart,
+  ARABIC, AuraMark, EmphasisTextBlock, MONO, PhotoPlaceholder, RendererProps, SERIF, SvgRoot, T,
+  anchorStart, getGeometry, isAr, moodColor, pickQuoteFont, xStart,
 } from "./shared";
 import { fitText } from "../fitText";
 
-export default function FrameCard(props: RendererProps & { square?: boolean }) {
-  const { lang, mood, photoUrl, name, title, lines, meta, square } = props;
+export type FrameZone =
+  | "upper-left" | "upper-right" | "lower-left" | "lower-right";
+
+export interface FrameDecision {
+  textZone: FrameZone;
+  scrim: "none" | "soft" | "strong";
+  cropFocusY: number; // 0..1
+  emphasis: { phrase: string; style: "color" | "bold" }[];
+}
+
+const DEFAULT_EN: FrameDecision = {
+  textZone: "upper-left", scrim: "strong", cropFocusY: 0.5, emphasis: [],
+};
+const DEFAULT_AR: FrameDecision = {
+  textZone: "upper-right", scrim: "strong", cropFocusY: 0.5, emphasis: [],
+};
+
+export default function FrameCard(
+  props: RendererProps & { decision?: FrameDecision; emphasisOff?: boolean },
+) {
+  const { lang, mood, photoUrl, name, title, lines, meta, emphasisOff } = props;
   const ar = isAr(lang);
+  const g = getGeometry(false);
   const accent = moodColor(mood);
-  const g = getGeometry(square);
+  const decision = props.decision ?? (ar ? DEFAULT_AR : DEFAULT_EN);
+  const emphasis = emphasisOff ? [] : (decision.emphasis || []);
+
+  // Name plate band — bottom 14%
+  const bandH = Math.round(g.H * 0.14);
+  const bandTop = g.H - bandH;
+
+  // cropFocusY → preserveAspectRatio alignment (simple three-band mapping).
+  const par =
+    decision.cropFocusY < 0.35 ? "xMidYMin slice" :
+    decision.cropFocusY > 0.65 ? "xMidYMax slice" :
+                                 "xMidYMid slice";
+
+  // Quote fit (measured at base weight; shrink maxWidth when emphasized
+  // to leave room for bolded segments).
   const quote = lines[0] || "";
   const font = pickQuoteFont(lang, ar);
+  const measureWidth = Math.round(g.QUOTE_MEASURE * (emphasis.length ? 0.96 : 1));
   const fit = fitText(quote, {
     font: { family: ar ? "Cairo" : "Newsreader", weight: ar ? 700 : 500, style: ar ? "normal" : "italic" },
-    maxWidth: g.QUOTE_MEASURE,
-    minSize: 42, maxSize: square ? 66 : 78, maxLines: 2,
-    lineHeightRatio: ar ? 1.9 : 1.18,
+    maxWidth: measureWidth,
+    minSize: ar ? 26 : 30,
+    maxSize: ar ? 38 : 44,
+    maxLines: 3,
+    lineHeightRatio: ar ? 1.8 : 1.3,
   });
-  const lineH = quoteLineHeight(lang, fit.size);
-  const opticalCenterY = Math.round(g.H * 0.43);
-  const block = fit.lines.length * lineH;
-  const quoteY = opticalCenterY - block / 2 + fit.size;
-  const anchor = anchorStart(lang);
-  const xS = xStart(lang, g);
-  const scrimId = `frame-scrim-${mood}${square ? "-sq" : ""}`;
+  const lineH = fit.size * (ar ? 1.8 : 1.3);
+  const blockH = Math.round(fit.lines.length * lineH);
+
+  // Zone → visual anchor (visual left/right, not lang-flipped).
+  const visualLeft = decision.textZone.endsWith("left");
+  const isUpper = decision.textZone.startsWith("upper");
+  // In SVG with direction=rtl, text-anchor "start" places x at the visual
+  // right edge (inline-start) and "end" at the visual left edge. So the
+  // LTR anchor must flip for AR to honor the *visual* zone.
+  const quoteAnchor: "start" | "end" = ar
+    ? (visualLeft ? "end" : "start")
+    : (visualLeft ? "start" : "end");
+  const xText = visualLeft ? g.SAFE_X0 : g.SAFE_X1;
+  const topY = isUpper ? g.SAFE_Y0 + 40 : Math.max(g.SAFE_Y0 + 40, bandTop - 40 - blockH);
+  const firstBaselineY = topY + fit.size;
+
+  // Scrim behind the quote block (never full-canvas).
+  const scrimAlpha = decision.scrim === "strong" ? 0.55 : decision.scrim === "soft" ? 0.35 : 0;
+  const scrimPad = 28;
+  const scrimW = measureWidth + scrimPad * 2;
+  const scrimX = visualLeft ? g.SAFE_X0 - scrimPad : g.SAFE_X1 - measureWidth - scrimPad;
+  const scrimY = topY - scrimPad;
+  const scrimH = blockH + scrimPad * 2;
+
+  // Multi-color gradient spine — mood becomes leftmost stop for character.
+  const gradId = `frame-spine-${mood}`;
+  const spineStops =
+    mood === "teal"   ? ["#36C5B0", "#D6A748", "#6E2A26"] :
+    mood === "amber"  ? ["#D6A748", "#F0C97A", "#36C5B0"] :
+                        ["#6E2A26", "#D6A748", "#36C5B0"];
+
+  // Name plate content
+  const nameFit = fitText(name, {
+    font: { family: ar ? "Cairo" : "Newsreader", weight: 600 },
+    maxWidth: g.CONTENT_W - 120,
+    minSize: 28, maxSize: 38, maxLines: 1, lineHeightRatio: 1.1,
+  });
+  const nameXStart = xStart(lang, g);
+  const nameY = bandTop + 60;
+  const titleY = nameY + 24;
+  const titleText = [title, meta].filter(Boolean).join(" · ").toUpperCase();
+  const titleFit = fitText(titleText, {
+    font: { family: "IBM Plex Mono", weight: 400 },
+    maxWidth: g.CONTENT_W - 120,
+    minSize: 11, maxSize: 14, maxLines: 1, lineHeightRatio: 1.2,
+  });
+  // Shift AuraMark up into the band, aligned to the name row.
+  const auraDy = Math.round(bandTop + bandH / 2 - g.SAFE_Y1);
+
   return (
-    <SvgRoot ariaLabel={`Frame card: ${quote}`} geom={g}>
-      <rect x="0" y="0" width={g.W} height={g.H} fill={T.darkBg2} />
-      {photoUrl ? (
-        <image href={photoUrl} x="0" y="0" width={g.W} height={g.H} preserveAspectRatio="xMidYMid slice" />
-      ) : (
-        <PhotoPlaceholder x={0} y={0} w={g.W} h={g.H} tone="dark" />
-      )}
+    <SvgRoot ariaLabel={`Frame: ${quote}`} geom={g}>
       <defs>
-        <linearGradient id={scrimId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="rgba(5,8,12,0)" />
-          <stop offset="0.55" stopColor="rgba(5,8,12,0.35)" />
-          <stop offset="1" stopColor="rgba(5,8,12,0.86)" />
+        <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor={spineStops[0]} />
+          <stop offset="0.5" stopColor={spineStops[1]} />
+          <stop offset="1" stopColor={spineStops[2]} />
         </linearGradient>
       </defs>
-      <rect x="0" y="0" width={g.W} height={g.H} fill={`url(#${scrimId})`} />
-      <rect x="0" y="0" width={g.W} height={g.H} fill={moodWashRGBA(mood, 0.10)} />
-      <line x1={xS} y1={quoteY - fit.size - 24} x2={ar ? xS - 72 : xS + 72} y2={quoteY - fit.size - 24} stroke={accent} strokeWidth="3" />
-      <TextBlock lines={fit.lines} x={xS} y={quoteY} lineHeight={lineH} fill={T.paper} fontFamily={font.family} fontSize={fit.size} fontStyle={font.style} fontWeight={font.weight} anchor={anchor} lang={lang} letterSpacing={ar ? "0" : "-0.01em"} />
-      {(() => {
-        const nameFit = fitText(name.toUpperCase(), {
-          font: { family: "IBM Plex Mono", weight: 600 },
-          maxWidth: g.QUOTE_MEASURE,
-          minSize: 14, maxSize: 22, maxLines: 1, lineHeightRatio: 1.2,
-        });
-        return <text x={xS} y={g.SAFE_Y1 - 44} fill={T.paper} fontFamily={MONO} fontSize={nameFit.size} letterSpacing="0.24em" textAnchor={anchor} direction={ar ? "rtl" : "ltr"}>{nameFit.lines[0] || name.toUpperCase()}</text>;
-      })()}
-      {(title || meta) && (() => {
-        const caption = [title, meta].filter(Boolean).join(" · ").toUpperCase();
-        const capFit = fitText(caption, {
-          font: { family: "IBM Plex Mono", weight: 400 },
-          maxWidth: g.QUOTE_MEASURE,
-          minSize: 10, maxSize: 15, maxLines: 1, lineHeightRatio: 1.2,
-        });
-        return <text x={xS} y={g.SAFE_Y1 - 14} fill={T.paperFaint} fontFamily={MONO} fontSize={capFit.size} letterSpacing="0.28em" textAnchor={anchor} direction={ar ? "rtl" : "ltr"}>{capFit.lines[0] || caption}</text>;
-      })()}
-      <AuraMark lang={lang} color={T.paperFaint} geom={g} />
+
+      {/* Layer 1: full-bleed photo */}
+      {photoUrl ? (
+        <image href={photoUrl} x="0" y="0" width={g.W} height={g.H} preserveAspectRatio={par} />
+      ) : (
+        <>
+          <rect x="0" y="0" width={g.W} height={g.H} fill={T.darkBg1} />
+          <PhotoPlaceholder x={0} y={0} w={g.W} h={g.H} tone="dark" />
+        </>
+      )}
+
+      {/* Layer 2: scrim behind quote text only */}
+      {scrimAlpha > 0 && (
+        <>
+          <rect
+            x={scrimX - 10} y={scrimY - 10}
+            width={scrimW + 20} height={scrimH + 20}
+            rx="20"
+            fill={`rgba(5,8,12,${scrimAlpha * 0.45})`}
+          />
+          <rect
+            x={scrimX} y={scrimY}
+            width={scrimW} height={scrimH}
+            rx="14"
+            fill={`rgba(5,8,12,${scrimAlpha})`}
+          />
+        </>
+      )}
+
+      {/* Layer 3: quote with emphasis */}
+      <EmphasisTextBlock
+        lines={fit.lines}
+        x={xText}
+        y={firstBaselineY}
+        lineHeight={lineH}
+        fill={T.paper}
+        fontFamily={font.family}
+        fontSize={fit.size}
+        fontStyle={font.style}
+        fontWeight={font.weight}
+        anchor={quoteAnchor}
+        lang={lang}
+        letterSpacing={ar ? "0" : "-0.005em"}
+        emphasis={emphasis}
+        accentColor={accent}
+      />
+
+      {/* Layer 4: gradient spine on band top edge */}
+      <rect
+        x={g.SAFE_X0}
+        y={bandTop - 2}
+        width={g.CONTENT_W}
+        height="4"
+        rx="2"
+        fill={`url(#${gradId})`}
+      />
+
+      {/* Layer 5: solid name plate */}
+      <rect x="0" y={bandTop} width={g.W} height={bandH} fill={T.panel} />
+
+      {/* Layer 6: name */}
+      <text
+        x={nameXStart}
+        y={nameY}
+        fill={T.paper}
+        fontFamily={ar ? ARABIC : SERIF}
+        fontSize={nameFit.size}
+        fontWeight={600}
+        textAnchor={anchorStart(lang)}
+        direction={ar ? "rtl" : "ltr"}
+      >
+        {nameFit.lines[0] || name}
+      </text>
+
+      {/* Layer 7: title/meta caps */}
+      {titleText && (
+        <text
+          x={nameXStart}
+          y={titleY}
+          fill={T.paperFaint}
+          fontFamily={MONO}
+          fontSize={titleFit.size}
+          letterSpacing="0.22em"
+          textAnchor={anchorStart(lang)}
+          direction={ar ? "rtl" : "ltr"}
+        >
+          {titleFit.lines[0] || titleText}
+        </text>
+      )}
+
+      {/* Layer 8: AuraMark inline-end, shifted into the band */}
+      <g transform={`translate(0, ${auraDy})`}>
+        <AuraMark lang={lang} color={T.paperFaint} geom={g} />
+      </g>
     </SvgRoot>
   );
 }

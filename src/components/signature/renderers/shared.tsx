@@ -360,3 +360,107 @@ export function pickQuoteFont(lang: Lang, bold = false) {
 export function quoteLineHeight(lang: Lang, size: number): number {
   return isAr(lang) ? size * 1.9 : size * 1.18;
 }
+
+/** Emphasis segment spec used by EmphasisTextBlock — a verbatim phrase
+ *  found inside a rendered line, and how it should be visually emphasized. */
+export interface EmphasisSpec {
+  phrase: string;
+  style: "color" | "bold";
+}
+
+/**
+ * Text block with per-phrase emphasis via <tspan> segments.
+ * Same measurement contract as TextBlock (lines are already wrapped by
+ * fitText at base weight — callers pass a slightly reduced maxWidth so
+ * bolded segments don't overflow). Phrase matching is a simple
+ * left-to-right substring split; a phrase that spans a wrap break is
+ * emphasized in each line it appears in.
+ */
+export function EmphasisTextBlock({
+  lines,
+  x,
+  y,
+  lineHeight,
+  fill,
+  fontFamily,
+  fontSize,
+  fontStyle,
+  fontWeight,
+  anchor,
+  lang,
+  letterSpacing,
+  emphasis,
+  accentColor,
+}: {
+  lines: string[];
+  x: number;
+  y: number;
+  lineHeight: number;
+  fill: string;
+  fontFamily: string;
+  fontSize: number;
+  fontStyle?: "normal" | "italic";
+  fontWeight?: number | string;
+  anchor: "start" | "end" | "middle";
+  lang: Lang;
+  letterSpacing?: string;
+  emphasis?: EmphasisSpec[];
+  accentColor?: string;
+}) {
+  const dir = isAr(lang) ? "rtl" : "ltr";
+  const phrases = (emphasis || []).filter((e) => e && e.phrase && e.phrase.trim());
+
+  function splitLine(line: string): Array<{ text: string; style?: "color" | "bold" }> {
+    let segs: Array<{ text: string; style?: "color" | "bold" }> = [{ text: line }];
+    for (const p of phrases) {
+      const next: typeof segs = [];
+      for (const s of segs) {
+        if (s.style) { next.push(s); continue; }
+        const idx = s.text.indexOf(p.phrase);
+        if (idx < 0) { next.push(s); continue; }
+        if (idx > 0) next.push({ text: s.text.slice(0, idx) });
+        next.push({ text: p.phrase, style: p.style });
+        const rest = s.text.slice(idx + p.phrase.length);
+        if (rest) next.push({ text: rest });
+      }
+      segs = next;
+    }
+    return segs;
+  }
+
+  return (
+    <g>
+      {lines.map((line, i) => {
+        const segs = splitLine(line);
+        return (
+          <text
+            key={i}
+            x={x}
+            y={y + i * lineHeight}
+            fill={fill}
+            fontFamily={fontFamily}
+            fontSize={fontSize}
+            fontStyle={fontStyle}
+            fontWeight={fontWeight}
+            textAnchor={anchor}
+            direction={dir}
+            unicodeBidi={isAr(lang) ? ("plaintext" as any) : undefined}
+            letterSpacing={letterSpacing}
+          >
+            {segs.map((s, j) => (
+              <tspan
+                key={j}
+                fill={s.style === "color" ? (accentColor || fill) : fill}
+                fontWeight={
+                  s.style === "bold" ? 700 : s.style === "color" ? 600 : fontWeight
+                }
+              >
+                {s.text}
+              </tspan>
+            ))}
+          </text>
+        );
+      })}
+    </g>
+  );
+}
