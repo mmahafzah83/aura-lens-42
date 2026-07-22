@@ -488,10 +488,32 @@ export function TextBlock({
  * word order inside RTL text.
  */
 export function renderArabicBidi(line: string): React.ReactNode {
-  const parts = line.split(/([A-Za-z0-9%]+)/g);
+  // Force RTL base direction for the whole line by prefixing an RLM
+  // (U+200F). This guarantees `text-anchor="start"` under `direction="rtl"`
+  // + `unicode-bidi: plaintext` resolves to the visual RIGHT edge even
+  // when the content is entirely Latin (e.g. an English name inside an
+  // Arabic card). Without the RLM, plaintext infers LTR base direction
+  // from Latin-only content and the row anchors to the left, clipping
+  // off the right edge of the safe zone.
+  //
+  // Additionally: if the line has NO Arabic characters at all, wrap the
+  // whole content in a single LTR-isolated tspan so multi-word Latin
+  // (e.g. "Mohammad Mahafzah", "Director of Digital Transformation")
+  // preserves word order — otherwise the RTL base reorders neutral
+  // whitespace-separated Latin runs.
+  const hasAr = /[\u0600-\u06FF]/.test(line);
+  if (!hasAr) {
+    return (
+      <>
+        <tspan>{"\u200F"}</tspan>
+        <tspan direction="ltr" unicodeBidi={"isolate" as any}>{line}</tspan>
+      </>
+    );
+  }
+  const parts = ("\u200F" + line).split(/([A-Za-z0-9%]+(?:[\s.,·\-]+[A-Za-z0-9%]+)*)/g);
   return parts.map((part, i) => {
     if (!part) return null;
-    if (/^[A-Za-z0-9%]+$/.test(part)) {
+    if (/^[A-Za-z0-9%]/.test(part)) {
       return (
         <tspan key={i} direction="ltr" unicodeBidi={"isolate" as any}>
           {part}
