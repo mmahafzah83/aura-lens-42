@@ -1,9 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import AdminShell from "@/components/admin/AdminShell";
-
-const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 
 type MissRow = {
   slug: string;
@@ -22,29 +19,13 @@ type ArticleRow = {
 const SURFACES = ["tooltip", "faq", "guide", "hint"] as const;
 
 export default function AdminGuideHealth() {
-  const navigate = useNavigate();
-  const [authChecked, setAuthChecked] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [misses, setMisses] = useState<MissRow[]>([]);
   const [articles, setArticles] = useState<ArticleRow[]>([]);
   const [openCats, setOpenCats] = useState<Record<string, boolean>>({});
 
-  // Admin gate — matches /admin/qa
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (cancelled) return;
-      if (!session) { navigate("/auth", { replace: true }); return; }
-      if (session.user.id !== ADMIN_USER_ID) { navigate("/home", { replace: true }); return; }
-      setAuthChecked(true);
-    })();
-    return () => { cancelled = true; };
-  }, [navigate]);
-
-  useEffect(() => {
-    if (!authChecked) return;
     let cancelled = false;
     (async () => {
       try {
@@ -72,7 +53,7 @@ export default function AdminGuideHealth() {
       }
     })();
     return () => { cancelled = true; };
-  }, [authChecked]);
+  }, []);
 
   const total = articles.length;
 
@@ -97,7 +78,6 @@ export default function AdminGuideHealth() {
     return counts;
   }, [articles]);
 
-  if (!authChecked) return null;
   const sectionTitle: React.CSSProperties = {
     fontFamily: "'Cormorant Garamond', Georgia, serif",
     fontSize: 24,
