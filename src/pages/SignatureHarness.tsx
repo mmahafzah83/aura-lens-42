@@ -22,7 +22,7 @@ const FRAME_AR_DECISION: FrameDecision = {
   textZone: "upper-right",
   scrim: "strong",
   cropFocusY: 0.35,
-  emphasis: [{ phrase: "بنية تحتية", style: "color" }],
+  emphasis: [{ phrase: "بنية", style: "color" }],
 };
 const FRAME_EN_LINE = "Water utilities must move beyond isolated pilots toward integrated ecosystems";
 const FRAME_AR_LINE = "الثقة لم تعد قيمة أخلاقية.. أصبحت بنية تحتية";
