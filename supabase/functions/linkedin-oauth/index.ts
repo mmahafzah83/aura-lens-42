@@ -81,9 +81,45 @@ Deno.serve(withObserve("linkedin-oauth", async (req) => {
     }
 
     if (action === "disconnect") {
+      // Read live token so we can revoke it upstream before nulling locally.
+      const { data: conn } = await adminClient
+        .from("linkedin_connections")
+        .select("access_token")
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .maybeSingle();
+
+      const token = conn?.access_token as string | undefined;
+      if (token) {
+        try {
+          const clientSecret = Deno.env.get("LINKEDIN_CLIENT_SECRET") ?? "";
+          const form = new URLSearchParams({
+            client_id: LINKEDIN_CLIENT_ID,
+            client_secret: clientSecret,
+            token,
+          });
+          await fetch("https://www.linkedin.com/oauth/v2/revoke", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: form.toString(),
+          });
+          try {
+            await adminClient.from("ef_error_log").insert({
+              function_name: "linkedin-egress",
+              severity: "info",
+              user_id: user.id,
+              error_message: "POST /oauth/v2/revoke (revoke)",
+              context: { method: "POST", path: "/oauth/v2/revoke", purpose: "revoke" },
+            });
+          } catch {}
+        } catch (e) {
+          console.error("linkedin revoke failed (non-blocking):", e);
+        }
+      }
+
       await adminClient
         .from("linkedin_connections")
-        .update({ status: "disconnected" })
+        .update({ status: "disconnected", access_token: null })
         .eq("user_id", user.id);
 
       return new Response(JSON.stringify({ success: true }), {
