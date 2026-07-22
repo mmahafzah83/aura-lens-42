@@ -462,7 +462,9 @@ export function EmphasisTextBlock({
   emphasis?: EmphasisSpec[];
   accentColor?: string;
 }) {
-  const dir = isAr(lang) ? "rtl" : "ltr";
+  const ar = isAr(lang);
+  const dir = ar ? "rtl" : "ltr";
+  const track = ar ? undefined : letterSpacing;
   const phrases = (emphasis || []).filter((e) => e && e.phrase && e.phrase.trim());
 
   function splitLine(line: string): Array<{ text: string; style?: "color" | "bold" }> {
@@ -499,8 +501,8 @@ export function EmphasisTextBlock({
             fontWeight={fontWeight}
             textAnchor={anchor}
             direction={dir}
-            unicodeBidi={isAr(lang) ? ("plaintext" as any) : undefined}
-            letterSpacing={letterSpacing}
+            unicodeBidi={ar ? ("plaintext" as any) : undefined}
+            letterSpacing={track}
           >
             {segs.map((s, j) => (
               <tspan
@@ -510,7 +512,7 @@ export function EmphasisTextBlock({
                   s.style === "bold" ? 700 : s.style === "color" ? 600 : fontWeight
                 }
               >
-                {s.text}
+                {ar ? renderArabicBidi(s.text) : s.text}
               </tspan>
             ))}
           </text>
