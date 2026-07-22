@@ -6,6 +6,7 @@ import SignatureCard from "@/components/signature/renderers/SignatureCard";
 import MilestoneCard from "@/components/signature/renderers/MilestoneCard";
 import StatementQuoteCard from "@/components/signature/renderers/StatementQuoteCard";
 import StatementHeadlineCard from "@/components/signature/renderers/StatementHeadlineCard";
+import FilmStrip from "@/components/signature/FilmStrip";
 import type { Lang, Mood } from "@/components/signature/renderers/shared";
 import { ensureCardFontsLoaded } from "@/components/signature/fitText";
 
@@ -74,6 +75,15 @@ export default function SignatureHarness() {
     {
       label: "Portrait AR teal",
       lang: "ar" as Lang, mood: "teal" as Mood,
+      name: "Mohammad Mahafzah",
+      title: "مدير التحول الرقمي",
+      meta: "",
+      lines: [AR_LINE],
+      photoUrl: PORTRAIT_PHOTO,
+    },
+    {
+      label: "Portrait AR Arabic name",
+      lang: "ar" as Lang, mood: "teal" as Mood,
       name: "محمد محافظة",
       title: "مدير التحول الرقمي",
       meta: "",
@@ -110,7 +120,7 @@ export default function SignatureHarness() {
         <div id="portrait-ar" style={{ width: 1080, height: 1350 }}>
           <SignatureCard
             lang="ar" mood="teal"
-            name="محمد محافظة"
+            name="Mohammad Mahafzah"
             title="مدير التحول الرقمي"
             meta=""
             lines={[AR_LINE]}
@@ -212,27 +222,47 @@ export default function SignatureHarness() {
             decision={{ textZone: "upper-left", scrim: "strong", cropFocusY: 0.5, emphasis: [{ phrase: "integrated digital ecosystems", style: "color" }] }} />
         </div>
         <div id="stmt-quote-ar" style={{ width: 1080, height: 1350 }}>
-          <StatementQuoteCard lang="ar" mood="oxblood" name="محمد محافظة" title="مدير التحول الرقمي" meta="" lines={[AR_LINE]}
+          <StatementQuoteCard lang="ar" mood="oxblood" name="Mohammad Mahafzah" title="مدير التحول الرقمي" meta="" lines={[AR_LINE]}
             decision={{ textZone: "upper-right", scrim: "strong", cropFocusY: 0.5, emphasis: [{ phrase: "منظومات رقمية", style: "color" }] }} />
         </div>
         <div id="stmt-head-en" style={{ width: 1080, height: 1350 }}>
           <StatementHeadlineCard lang="en" mood="amber" name="Rashid Al Mansoori" title="PARTNER" meta="GCC Water Advisory" lines={[EN_LINE]} />
         </div>
         <div id="stmt-head-ar" style={{ width: 1080, height: 1350 }}>
-          <StatementHeadlineCard lang="ar" mood="teal" name="محمد محافظة" title="مدير التحول الرقمي" meta="" lines={[AR_LINE]} />
+          <StatementHeadlineCard lang="ar" mood="teal" name="Mohammad Mahafzah" title="مدير التحول الرقمي" meta="" lines={[AR_LINE]} />
         </div>
         <div id="milestone-en" style={{ width: 1080, height: 1350 }}>
           <MilestoneCard lang="en" mood="amber" name="Rashid Al Mansoori" title="10" meta="GCC Water Advisory" lines={["YEARS", "Building integrated water infrastructure across the Gulf"]} />
         </div>
-        {/* Latin-name-in-AR bug repros */}
-        <div id="portrait-ar-latin" style={{ width: 1080, height: 1350 }}>
-          <SignatureCard lang="ar" mood="teal" name="Mohammad Mahafzah" title="Director of Digital Transformation" meta="EY" lines={[AR_LINE]} photoUrl={PORTRAIT_PHOTO} />
+        {/* Arabic-name controls retained alongside the primary Latin-name AR cases. */}
+        <div id="portrait-ar-arabic-name" style={{ width: 1080, height: 1350 }}>
+          <SignatureCard lang="ar" mood="teal" name="محمد محافظة" title="مدير التحول الرقمي" meta="" lines={[AR_LINE]} photoUrl={PORTRAIT_PHOTO} />
         </div>
-        <div id="stmt-quote-ar-latin" style={{ width: 1080, height: 1350 }}>
-          <StatementQuoteCard lang="ar" mood="oxblood" name="Mohammad Mahafzah" title="Director of Digital Transformation" meta="EY" lines={[AR_LINE]} />
+        <div id="stmt-quote-ar-arabic-name" style={{ width: 1080, height: 1350 }}>
+          <StatementQuoteCard lang="ar" mood="oxblood" name="محمد محافظة" title="مدير التحول الرقمي" meta="" lines={[AR_LINE]} />
         </div>
-        <div id="stmt-head-ar-latin" style={{ width: 1080, height: 1350 }}>
-          <StatementHeadlineCard lang="ar" mood="teal" name="Mohammad Mahafzah" title="Director of Digital Transformation" meta="EY" lines={[AR_LINE]} />
+        <div id="stmt-head-ar-arabic-name" style={{ width: 1080, height: 1350 }}>
+          <StatementHeadlineCard lang="ar" mood="teal" name="محمد محافظة" title="مدير التحول الرقمي" meta="" lines={[AR_LINE]} />
+        </div>
+        <div id="filmstrip-ar" style={{ width: 980, padding: 24, background: "#eeeae0" }}>
+          <FilmStrip
+            door="me"
+            lang="ar"
+            mood="teal"
+            live={{
+              profile: {
+                first_name: "Mohammad Mahafzah",
+                level: "مدير التحول الرقمي",
+                firm: "",
+                core_practice: AR_LINE,
+                sector_focus: null,
+              },
+              topSignal: AR_LINE,
+              loading: false,
+            }}
+            onSelect={() => undefined}
+            onBack={() => undefined}
+          />
         </div>
       </div>
     </div>

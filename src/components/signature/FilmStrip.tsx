@@ -103,7 +103,7 @@ const STRIP_CSS = `
   overflow: hidden;
   background: var(--paper-2);
 }
-.sig-strip-preview svg { width: 100%; height: 100%; display: block; }
+.sig-strip-preview svg { width: 100%; height: 100%; object-fit: contain; display: block; }
 .sig-strip-caption {
   margin-top: 8px;
   text-align: center;
