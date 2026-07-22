@@ -76,6 +76,39 @@ export function moodColor(m: Mood): string {
   return T.amber;
 }
 
+/**
+ * Contrast-aware emphasis colour. Dark text on a bright zone → OXBLOOD
+ * (never mood teal, which would vanish). Light text on scrim → mood as
+ * usual, except teal on `scrim: none` bright zones falls back to amber
+ * for legibility.
+ */
+export function emphasisColorFor(
+  textColor: "paper" | "ink" | undefined,
+  scrim: "none" | "soft" | "strong",
+  mood: Mood,
+): string {
+  if (textColor === "ink") return T.oxblood;
+  if (scrim === "none" && mood === "teal") return T.amber;
+  return moodColor(mood);
+}
+
+/** Caption helpers — Arabic never gets uppercased, tracked, or mono-set. */
+export function capsText(text: string, lang: Lang): string {
+  return isAr(lang) ? text : text.toUpperCase();
+}
+export function captionFontFamily(lang: Lang): string {
+  return isAr(lang) ? ARABIC : MONO;
+}
+export function captionTrack(lang: Lang, enTrack: string): string {
+  return isAr(lang) ? "0" : enTrack;
+}
+export function captionWeight(lang: Lang, enWeight: number = 400): number {
+  return isAr(lang) ? 600 : enWeight;
+}
+export function captionSize(lang: Lang, enSize: number): number {
+  return isAr(lang) ? enSize + 1 : enSize;
+}
+
 export const SERIF = "'Newsreader', Georgia, serif";
 export const MONO = "'IBM Plex Mono', ui-monospace, monospace";
 export const ARABIC = "'Cairo', system-ui, sans-serif";
@@ -327,6 +360,8 @@ export function TextBlock({
   lang: Lang;
   letterSpacing?: string;
 }) {
+  const ar = isAr(lang);
+  const track = ar ? undefined : letterSpacing;
   return (
     <g>
       {lines.map((line, i) => (
@@ -340,15 +375,35 @@ export function TextBlock({
           fontStyle={fontStyle}
           fontWeight={fontWeight}
           textAnchor={anchor}
-          direction={isAr(lang) ? "rtl" : "ltr"}
-          unicodeBidi={isAr(lang) ? "plaintext" : undefined as any}
-          letterSpacing={letterSpacing}
+          direction={ar ? "rtl" : "ltr"}
+          unicodeBidi={ar ? "plaintext" : undefined as any}
+          letterSpacing={track}
         >
-          {line}
+          {ar ? renderArabicBidi(line) : line}
         </text>
       ))}
     </g>
   );
+}
+
+/**
+ * Split an Arabic line so Latin/digit runs render inside their own
+ * isolated LTR tspans. Prevents "AI", "2026", "IoT" etc. from fracturing
+ * word order inside RTL text.
+ */
+export function renderArabicBidi(line: string): React.ReactNode {
+  const parts = line.split(/([A-Za-z0-9%]+)/g);
+  return parts.map((part, i) => {
+    if (!part) return null;
+    if (/^[A-Za-z0-9%]+$/.test(part)) {
+      return (
+        <tspan key={i} direction="ltr" unicodeBidi={"isolate" as any}>
+          {part}
+        </tspan>
+      );
+    }
+    return <tspan key={i}>{part}</tspan>;
+  });
 }
 
 export function pickQuoteFont(lang: Lang, bold = false) {
@@ -407,7 +462,9 @@ export function EmphasisTextBlock({
   emphasis?: EmphasisSpec[];
   accentColor?: string;
 }) {
-  const dir = isAr(lang) ? "rtl" : "ltr";
+  const ar = isAr(lang);
+  const dir = ar ? "rtl" : "ltr";
+  const track = ar ? undefined : letterSpacing;
   const phrases = (emphasis || []).filter((e) => e && e.phrase && e.phrase.trim());
 
   function splitLine(line: string): Array<{ text: string; style?: "color" | "bold" }> {
@@ -444,8 +501,8 @@ export function EmphasisTextBlock({
             fontWeight={fontWeight}
             textAnchor={anchor}
             direction={dir}
-            unicodeBidi={isAr(lang) ? ("plaintext" as any) : undefined}
-            letterSpacing={letterSpacing}
+            unicodeBidi={ar ? ("plaintext" as any) : undefined}
+            letterSpacing={track}
           >
             {segs.map((s, j) => (
               <tspan
@@ -455,7 +512,7 @@ export function EmphasisTextBlock({
                   s.style === "bold" ? 700 : s.style === "color" ? 600 : fontWeight
                 }
               >
-                {s.text}
+                {ar ? renderArabicBidi(s.text) : s.text}
               </tspan>
             ))}
           </text>

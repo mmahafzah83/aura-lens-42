@@ -158,6 +158,39 @@ export default function SignatureHarness() {
             }}
           />
         </div>
+        <div id="frame-ar-ai" style={{ width: 1080, height: 1350 }}>
+          <FrameCard
+            lang="ar" mood="teal"
+            name="محمد محافظة"
+            title="مدير التحول الرقمي"
+            meta=""
+            lines={["يقود الذكاء الاصطناعي AI موجة التحول في 2026 عبر بنية البيانات"]}
+            photoUrl={PORTRAIT_PHOTO}
+            decision={{
+              textZone: "upper-right",
+              scrim: "soft",
+              cropFocusY: 0.65,
+              emphasis: [{ phrase: "AI", style: "color" }],
+            }}
+          />
+        </div>
+        <div id="frame-en-ink" style={{ width: 1080, height: 1350 }}>
+          <FrameCard
+            lang="en" mood="teal"
+            name="Rashid Al Mansoori"
+            title="Partner"
+            meta="Advisory"
+            lines={["Trust is no longer a value — it is infrastructure"]}
+            photoUrl={BRIGHT_PHOTO}
+            decision={{
+              textZone: "upper-left",
+              scrim: "none",
+              cropFocusY: 0.7,
+              textColor: "ink",
+              emphasis: [{ phrase: "infrastructure", style: "color" }],
+            }}
+          />
+        </div>
       </div>
     </div>
   );

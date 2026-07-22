@@ -152,10 +152,43 @@ export function fitText(text: string, opts: FitOptions): FitResult {
   for (let size = maxSize; size >= minSize; size--) {
     const w = wrapLines(text, font, size, maxWidth, maxLines);
     if (!w.overflow && w.lines.length <= maxLines) {
-      return { size, lines: w.lines, lineHeight: size * lhr };
+      const balanced = rebalanceWidow(w.lines, font, size, maxWidth);
+      return { size, lines: balanced, lineHeight: size * lhr };
     }
   }
   // Fallback: min size with one extra line.
   const wrapped = wrapLines(text, font, minSize, maxWidth, maxLines + 1);
-  return { size: minSize, lines: wrapped.lines, lineHeight: minSize * lhr };
+  const balanced = rebalanceWidow(wrapped.lines, font, minSize, maxWidth);
+  return { size: minSize, lines: balanced, lineHeight: minSize * lhr };
+}
+
+/**
+ * Widow/orphan control: if the last line contains exactly one word and
+ * there are 2+ lines, pull the last word of the previous line down —
+ * but only if both resulting lines still fit within maxWidth. Otherwise
+ * leave the layout alone (fitText will drop a size and retry).
+ */
+function rebalanceWidow(
+  lines: string[],
+  font: FontSpec,
+  size: number,
+  maxWidth: number,
+): string[] {
+  if (lines.length < 2) return lines;
+  const last = lines[lines.length - 1];
+  const lastWords = last.trim().split(/\s+/).filter(Boolean);
+  if (lastWords.length !== 1) return lines;
+  const prev = lines[lines.length - 2];
+  const prevWords = prev.trim().split(/\s+/).filter(Boolean);
+  if (prevWords.length < 2) return lines;
+  const c = ctx();
+  c.font = fontString(font, size);
+  const newPrev = prevWords.slice(0, -1).join(" ");
+  const newLast = prevWords[prevWords.length - 1] + " " + lastWords[0];
+  if (c.measureText(newPrev).width > maxWidth) return lines;
+  if (c.measureText(newLast).width > maxWidth) return lines;
+  const out = lines.slice();
+  out[out.length - 2] = newPrev;
+  out[out.length - 1] = newLast;
+  return out;
 }
