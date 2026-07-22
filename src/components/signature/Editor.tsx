@@ -513,13 +513,15 @@ const fileInput: React.CSSProperties = {
 const rowBtns: React.CSSProperties = { display: "flex", gap: 8, flexWrap: "wrap" };
 const pill: React.CSSProperties = {
   padding: "8px 16px",
+  minWidth: 44, minHeight: 44,
+  display: "inline-flex", alignItems: "center", justifyContent: "center",
   fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
   fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase",
   border: "1px solid var(--rule)",
   cursor: "pointer",
 };
 const swatch: React.CSSProperties = {
-  width: 36, height: 36, borderRadius: 999, cursor: "pointer",
+  width: 44, height: 44, borderRadius: 999, cursor: "pointer",
   border: "none",
 };
 const reasonBar: React.CSSProperties = {
@@ -531,7 +533,10 @@ const reasonBar: React.CSSProperties = {
 };
 const reasonBtn: React.CSSProperties = {
   background: "transparent", border: "1px solid var(--rule)",
-  padding: "3px 8px", fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+  padding: "12px 14px",
+  minWidth: 44, minHeight: 44,
+  display: "inline-flex", alignItems: "center", justifyContent: "center",
+  fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
   fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase",
   color: "var(--spot)", cursor: "pointer",
 };
@@ -567,14 +572,18 @@ const regenBtn: React.CSSProperties = {
   background: "transparent",
   color: "var(--spot)",
   border: "1px solid var(--rule)",
-  padding: "4px 10px",
+  padding: "12px 14px",
+  minWidth: 44, minHeight: 44,
+  display: "inline-flex", alignItems: "center", justifyContent: "center",
   fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
   fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase",
   cursor: "pointer",
 };
 const filterRow: React.CSSProperties = { display: "flex", gap: 6, flexWrap: "wrap" };
 const filterChip: React.CSSProperties = {
-  padding: "3px 10px",
+  padding: "12px 14px",
+  minWidth: 44, minHeight: 44,
+  display: "inline-flex", alignItems: "center", justifyContent: "center",
   fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
   fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase",
   border: "1px solid var(--rule)",
