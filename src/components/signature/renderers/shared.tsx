@@ -76,6 +76,39 @@ export function moodColor(m: Mood): string {
   return T.amber;
 }
 
+/**
+ * Contrast-aware emphasis colour. Dark text on a bright zone → OXBLOOD
+ * (never mood teal, which would vanish). Light text on scrim → mood as
+ * usual, except teal on `scrim: none` bright zones falls back to amber
+ * for legibility.
+ */
+export function emphasisColorFor(
+  textColor: "paper" | "ink" | undefined,
+  scrim: "none" | "soft" | "strong",
+  mood: Mood,
+): string {
+  if (textColor === "ink") return T.oxblood;
+  if (scrim === "none" && mood === "teal") return T.amber;
+  return moodColor(mood);
+}
+
+/** Caption helpers — Arabic never gets uppercased, tracked, or mono-set. */
+export function capsText(text: string, lang: Lang): string {
+  return isAr(lang) ? text : text.toUpperCase();
+}
+export function captionFontFamily(lang: Lang): string {
+  return isAr(lang) ? ARABIC : MONO;
+}
+export function captionTrack(lang: Lang, enTrack: string): string {
+  return isAr(lang) ? "0" : enTrack;
+}
+export function captionWeight(lang: Lang, enWeight: number = 400): number {
+  return isAr(lang) ? 600 : enWeight;
+}
+export function captionSize(lang: Lang, enSize: number): number {
+  return isAr(lang) ? enSize + 1 : enSize;
+}
+
 export const SERIF = "'Newsreader', Georgia, serif";
 export const MONO = "'IBM Plex Mono', ui-monospace, monospace";
 export const ARABIC = "'Cairo', system-ui, sans-serif";
