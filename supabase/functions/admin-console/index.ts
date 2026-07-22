@@ -510,7 +510,7 @@ serve(async (req) => {
       // Parallel data fetch
       const safeIds = realIds.length ? realIds : ["00000000-0000-0000-0000-000000000000"];
       const errWindow = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-      const [profilesRes, entriesRes, signalsRes, spendTodayRes, spendMonthRes, budgetRes, postsRes, snapsRes, errorsRes] = await Promise.all([
+      const [profilesRes, entriesRes, signalsRes, spendTodayRes, spendMonthRes, budgetRes, postsRes, snapsRes, errorsRes, hbCapRes, hbSigRes, hbErrRes] = await Promise.all([
         admin.from("diagnostic_profiles").select("user_id, first_name, sector_focus").in("user_id", realIds.length ? realIds : ["00000000-0000-0000-0000-000000000000"]),
         admin.from("entries").select("user_id, created_at").in("user_id", realIds.length ? realIds : ["00000000-0000-0000-0000-000000000000"]),
         admin.from("strategic_signals").select("user_id, created_at, status").in("user_id", realIds.length ? realIds : ["00000000-0000-0000-0000-000000000000"]),
@@ -520,6 +520,9 @@ serve(async (req) => {
         admin.from("linkedin_posts").select("user_id, source_type, tracking_status, created_at").in("user_id", safeIds),
         admin.from("score_snapshots").select("user_id, score, created_at").in("user_id", safeIds).order("created_at", { ascending: false }),
         admin.from("ef_error_log").select("function_name, error_message, created_at").gte("created_at", errWindow.toISOString()).order("created_at", { ascending: false }).limit(50),
+        admin.from("entries").select("id", { count: "exact", head: true }).gte("created_at", startOfToday.toISOString()),
+        admin.from("strategic_signals").select("id", { count: "exact", head: true }).gte("created_at", startOfToday.toISOString()),
+        admin.from("ef_error_log").select("id", { count: "exact", head: true }).gte("created_at", startOfToday.toISOString()),
       ]);
 
       const profiles = profilesRes.data ?? [];
@@ -628,7 +631,13 @@ serve(async (req) => {
           function_name: r.function_name,
           error_message: r.error_message,
           created_at: r.created_at,
+          plain: explainFunction(String(r.function_name || "")),
         })),
+      };
+      const heartbeat = {
+        captures_today: Number(hbCapRes.count ?? 0),
+        signals_today: Number(hbSigRes.count ?? 0),
+        ef_errors_today: Number(hbErrRes.count ?? 0),
       };
       if (issues.count > 0) {
         attention.unshift({ severity: "high", text: `${issues.count} function errors in last 24h`, link: "/admin" });
@@ -868,6 +877,7 @@ serve(async (req) => {
         },
         attention: trimmed,
         issues,
+        heartbeat,
         biggest_leak,
         kpis,
         trends,
