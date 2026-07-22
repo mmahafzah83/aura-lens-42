@@ -417,7 +417,9 @@ export default function Editor({
                             Layout {i + 1}
                           </span>
                           <span style={layoutHint}>
-                            {o.textZone === "top" ? "Top" : o.textZone === "bottom" ? "Bottom" : "Middle"}
+                            {o.textZone.startsWith("upper") ? "Top" : "Bottom"}
+                            {" "}
+                            {o.textZone.endsWith("left") ? "left" : "right"}
                             {" · "}
                             {o.scrim === "none" ? "no wash" : o.scrim.replace("-", " ")}
                           </span>
