@@ -677,31 +677,12 @@ const Observatory = ({
       ]);
       const raw = (signalsRes.data || []) as any[];
 
-      // Live evidence + source count, batched (mirrors IntelligenceTab logic).
-      const allIds = Array.from(new Set(raw.flatMap(s => (s.supporting_evidence_ids || []) as string[])));
-      const fragToReg = new Map<string, string>();
-      if (allIds.length) {
-        const { data: existRows } = await supabase
-          .from("evidence_fragments").select("id, source_registry_id")
-          .eq("user_id", uid).in("id", allIds);
-        (existRows || []).forEach((r: any) => fragToReg.set(r.id, r.source_registry_id));
-      }
-      const regIds = Array.from(new Set(Array.from(fragToReg.values()).filter(Boolean))) as string[];
-      const regToSource = new Map<string, string>();
-      if (regIds.length) {
-        const { data: regRows } = await supabase.from("source_registry" as any)
-          .select("id, source_id").in("id", regIds);
-        (regRows || []).forEach((r: any) => regToSource.set(r.id, r.source_id || r.id));
-      }
-      const loaded = raw.map(s => {
-        const liveIds = ((s.supporting_evidence_ids || []) as string[]).filter(id => fragToReg.has(id));
-        const sourceKeys = new Set<string>();
-        liveIds.forEach(id => {
-          const reg = fragToReg.get(id); if (!reg) return;
-          sourceKeys.add(regToSource.get(reg) || reg);
-        });
-        return { ...s, evidenceCount: liveIds.length, sourceCount: sourceKeys.size };
-      }) as unknown as Signal[];
+      // Read counts from stamped columns; avoids URL-length limits on large .in() queries.
+      const loaded = raw.map(s => ({
+        ...s,
+        evidenceCount: s.fragment_count ?? 0,
+        sourceCount: s.unique_orgs ?? 0,
+      })) as unknown as Signal[];
 
       setSignals(loaded);
       setSignalsTotal(signalsCountRes.count || loaded.length);
