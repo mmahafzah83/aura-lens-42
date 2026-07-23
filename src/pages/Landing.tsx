@@ -1293,18 +1293,18 @@ const Landing = () => {
   useEffect(() => {
     if (!authChecked) return;
     let cancelled = false;
-    supabase
-      .rpc("founding_seats")
-      .then(({ data, error }) => {
-        if (cancelled || error || !data || !data.length) return;
-        const row = Array.isArray(data) ? data[0] : data;
+    (async () => {
+      try {
+        const { data, error } = await supabase.rpc("founding_seats");
+        if (cancelled || error || !data || !(data as any).length) return;
+        const row = Array.isArray(data) ? (data as any)[0] : (data as any);
         const claimed = Number(row?.claimed);
         const cap = Number(row?.cap);
         if (!Number.isFinite(claimed) || !Number.isFinite(cap) || cap <= 0) return;
         const el = rootRef.current?.querySelector("#seatline");
         if (el) el.textContent = `${claimed} of ${cap} founding places claimed.`;
-      })
-      .catch(() => {});
+      } catch {}
+    })();
     return () => { cancelled = true; };
   }, [authChecked]);
 
