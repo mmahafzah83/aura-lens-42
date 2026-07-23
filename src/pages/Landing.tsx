@@ -638,7 +638,7 @@ const LANDING_HTML = `
 <section class="dark hero">
   <div class="wrap">
     <p class="eyebrow">PERSONAL INTELLIGENCE SYSTEM</p>
-    <h1><span class="sr-only">Aura — a personal intelligence system that turns your expertise into presence. </span><span aria-hidden="true">You have the <span class="hw hw1">experience</span>,<br>the <span class="hw hw2">identity</span>, the <span class="hw hw3">presence</span>.</span></h1>
+    <h1><span class="sr-only">Aura — a personal intelligence system that turns your expertise into presence. </span><span aria-hidden="true">You have the<br><span class="hw hw1">experience</span>,<br>the <span class="hw hw2">identity</span>,<br>the <span class="hw hw3">presence</span>.</span></h1>
     <p class="lede heroline2">Now you have the <em>intelligence system</em> that works for you.</p>
     <p class="lede sub">Aura learns who you are, reads what you read, and turns your expertise into presence — in your own voice, without adding a thing to your week.</p>
   </div>
