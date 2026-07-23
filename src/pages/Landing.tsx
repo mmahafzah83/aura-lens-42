@@ -655,6 +655,8 @@ const LANDING_CSS = `
   .aura-landing .nums .num{background:linear-gradient(180deg,rgba(237,231,217,.05),rgba(237,231,217,.018));border:1px solid rgba(237,231,217,.12);border-radius:14px;padding:30px 26px 26px;position:relative;overflow:hidden}
   .aura-landing .nums .num::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:linear-gradient(180deg,var(--amber),rgba(214,167,72,0))}
   .aura-landing .nums .num .lbl{margin-top:10px}
+  .aura-landing .ecard .emetric{margin-top:14px;padding-top:12px;border-top:1px dashed rgba(237,231,217,.13);font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.4px;color:#9aa39e}
+  .aura-landing .ecard .emetric b{color:var(--amber);font-weight:500}
 `;
 const LANDING_HTML = `
 <canvas id="bg"></canvas>
