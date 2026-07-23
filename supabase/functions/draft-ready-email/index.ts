@@ -43,37 +43,101 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
+function deriveShortTopic(opts: {
+  themeTags: string[] | null;
+  signalTitle: string | null;
+  fallbackTitle: string | null;
+}): string {
+  const { themeTags, signalTitle, fallbackTitle } = opts;
+  if (Array.isArray(themeTags) && themeTags.length > 0) {
+    const t = (themeTags[0] || "").trim();
+    if (t && t.length <= 40) return t;
+  }
+  if (signalTitle && signalTitle.trim().length > 0) {
+    const words = signalTitle.trim().split(/\s+/).slice(0, 6).join(" ");
+    return words.replace(/[.,;:!?—–-]+$/g, "").trim();
+  }
+  return (fallbackTitle || "").trim();
+}
+
+function clampForSubject(shortTopic: string): string {
+  // Subject template: `Your post on ${shortTopic} is ready` = 20 chars of chrome.
+  // Keep total under 60 → shortTopic max 39.
+  const MAX = 39;
+  if (shortTopic.length <= MAX) return shortTopic;
+  return shortTopic.slice(0, MAX - 1).replace(/[\s,;:.\-–—]+$/g, "") + "…";
+}
+
+function whenPhrase(newestFragmentIso: string | null): string {
+  if (!newestFragmentIso) return "";
+  const ageDays = (Date.now() - new Date(newestFragmentIso).getTime()) / 86400000;
+  if (ageDays < 4) return "this week";
+  if (ageDays >= 4 && ageDays <= 10) return "last week";
+  return "";
+}
+
 function buildEmail(opts: {
-  topic: string;
+  firstName: string | null;
+  shortTopic: string;
+  fullTopic: string;
   excerpt: string;
   nReadings: number | null;
   nSources: number | null;
-}): { subject: string; html: string } {
-  const { topic, excerpt, nReadings, nSources } = opts;
-  const subject = `Aura wrote your post on ${topic}`;
+  newestFragmentIso: string | null;
+  velocityStatus: string | null;
+}): { subject: string; preheader: string; html: string } {
+  const {
+    firstName, shortTopic, fullTopic, excerpt,
+    nReadings, nSources, newestFragmentIso, velocityStatus,
+  } = opts;
+
+  const shortForSubject = clampForSubject(shortTopic || fullTopic);
+  const subject = `Your post on ${shortForSubject} is ready`;
 
   const haveCounts =
     typeof nReadings === "number" && nReadings > 0 &&
     typeof nSources === "number" && nSources > 0;
 
-  const line1 = haveCounts
-    ? `You saved ${nReadings} reading${nReadings === 1 ? "" : "s"} across ${nSources} source${nSources === 1 ? "" : "s"} on ${escapeHtml(topic)} this week. Aura turned them into a post in your voice.`
-    : `Aura turned your recent saves on ${escapeHtml(topic)} into a post in your voice.`;
+  const preheader = haveCounts
+    ? `${nReadings} readings you saved. One post. Ten minutes.`
+    : `One post. Ten minutes.`;
 
-  // dir="auto" so Arabic excerpts render RTL correctly inside an LTR email body.
+  const namePrefix = firstName ? `${escapeHtml(firstName)} — you` : "You";
+  const when = whenPhrase(newestFragmentIso);
+  const whenSuffix = when ? ` ${when}` : "";
+  const fullTopicEsc = escapeHtml(fullTopic);
+
+  const p1 = haveCounts
+    ? `${namePrefix} saved ${nReadings} readings on ${fullTopicEsc}${whenSuffix}. Nobody asked you to. That was your judgment picking out what mattered while everyone else scrolled past it.`
+    : `${namePrefix} kept a finding on ${fullTopicEsc}. That was your judgment, not an algorithm's.`;
+
+  const p2 = `Aura put that judgment into a post, written the way you write.`;
+
   const excerptClean = escapeHtml(excerpt.slice(0, 140)) + (excerpt.length > 140 ? "…" : "");
   const quote =
     `<blockquote dir="auto" style="margin:18px 0;padding:4px 0 4px 18px;border-left:2px solid #D6A748;font-family:Georgia,'Times New Roman',serif;font-style:italic;color:#1B1712;">${excerptClean}</blockquote>`;
 
+  const p3 = `It isn't finished until you've argued with it. Cut what isn't you. Sharpen what is. Then it's yours to publish — or not.`;
+
+  const closer = `Ten minutes. Nothing goes out without you.`;
+
+  let ps = "";
+  if (velocityStatus === "accelerating") {
+    ps = `<p style="font-size:13px;line-height:1.55;margin:22px 0 0;color:#8A8073;">P.S. — ${escapeHtml(shortTopic)} is moving right now. The people reading about it this week are the ones who will remember who said it first.</p>`;
+  }
+
   const body = `
-    ${headingHtml("Your post is written.")}
-    <p style="font-size:15px;line-height:1.6;margin:0 0 6px;color:${INK_BODY};">${line1}</p>
+    ${headingHtml("You already made this argument.")}
+    <p style="font-size:15px;line-height:1.6;margin:0 0 12px;color:${INK_BODY};">${p1}</p>
+    <p style="font-size:15px;line-height:1.6;margin:0 0 6px;color:${INK_BODY};">${p2}</p>
     ${quote}
-    <p style="font-size:15px;line-height:1.6;margin:0 0 6px;color:${INK_BODY};">It's written and waiting. Ten minutes of edits and it's live.</p>
-    <p style="margin:24px 0;">${button(CTA_URL, "Open your draft")}</p>
+    <p style="font-size:15px;line-height:1.6;margin:0 0 6px;color:${INK_BODY};">${p3}</p>
+    <p style="margin:22px 0 8px;">${button(CTA_URL, "Open your draft")}</p>
+    <p style="font-size:12px;line-height:1.5;margin:0;color:#8A8073;">${closer}</p>
+    ${ps}
   `;
 
-  return { subject, html: emailShell({ preheader: subject, body }) };
+  return { subject, preheader, html: emailShell({ preheader, body }) };
 }
 
 serve(async (req) => {
