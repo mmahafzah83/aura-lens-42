@@ -81,7 +81,7 @@ serve(async (req) => {
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
   const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const CRON_SECRET = Deno.env.get("CRON_SECRET") || "";
+  const CRON_SECRET = Deno.env.get("cron_secret") || Deno.env.get("CRON_SECRET") || "";
   const RESEND_KEY = Deno.env.get("RESEND_API_KEY") || "";
 
   const apiKey = req.headers.get("apikey") || req.headers.get("x-api-key") ||
