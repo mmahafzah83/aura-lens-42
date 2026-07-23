@@ -506,11 +506,14 @@ Deno.serve(async (req) => {
   await admin.from("ef_error_log").insert({
     function_name: "aura-ops-report",
     severity: "info",
-    error_message: `OPS_REPORT verdict=${verdict} silent=${silentCount} failures=${failures.length} dead_jobs=${qDead ?? 0} unclassified=${unclassifiedNow}`,
+    error_message: `OPS_REPORT verdict=${verdict} silent=${notRunCount + failingCount} mute=${muteCount} failures=${failures.length} dead_jobs=${qDead ?? 0} unclassified=${unclassifiedNow}`,
     context: {
       verdict, worst_reason: worstReason, subject,
-      silent: silentCount, failures: failures.length,
+      silent: notRunCount + failingCount, mute: muteCount,
+      not_run: notRunCount, failing: failingCount,
+      failures: failures.length,
       dead_jobs: qDead ?? 0, unclassified: unclassifiedNow,
+      open_findings: openFindings,
       dry_run: dryRun, resend_status: resendStatus,
       resend_error: resendError || null,
       founder_email_present: !!founderEmail,
