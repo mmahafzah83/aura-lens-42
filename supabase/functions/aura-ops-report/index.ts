@@ -140,7 +140,7 @@ Deno.serve(async (req) => {
   };
   type CronReport = {
     row: CronRow; windowMin: number;
-    state: "OK" | "NOT_RUN" | "NEVER" | "FAILING";
+    state: "OK" | "NOT_RUN" | "NEVER" | "PENDING" | "FAILING";
     ageMin: number | null;
   };
   const cronReport: CronReport[] = [];
@@ -156,10 +156,17 @@ Deno.serve(async (req) => {
     const age = raw.last_end ? ageMinutes(raw.last_end) : null;
     let state: CronReport["state"] = "OK";
     if (!raw.last_end) {
-      state = "NEVER";
-      notRunCount++;
-      verdict = worse(verdict, "RED");
-      worstReason = `Cron ${raw.jobname} has never run`;
+      // NEVER RUN: hard-red only for high-frequency jobs where "never" is a real failure
+      // signal. For hourly+ (>= 60 min) treat as PENDING FIRST RUN — this is the weekly /
+      // monthly / newly-installed-daily case the user flagged as the false-positive class.
+      if (win < 60) {
+        state = "NEVER";
+        notRunCount++;
+        verdict = worse(verdict, "RED");
+        worstReason = `Cron ${raw.jobname} has never run`;
+      } else {
+        state = "PENDING";
+      }
     } else if (age != null && age > win) {
       state = "NOT_RUN";
       notRunCount++;
