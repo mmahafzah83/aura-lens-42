@@ -284,21 +284,29 @@ serve(async (req) => {
       }
 
       // Resolve topic + counts from the linked signal (if any).
-      let topic = "";
+      let fullTopic = "";
+      let shortTopic = "";
+      let themeTags: string[] | null = null;
+      let signalTitle: string | null = null;
+      let velocityStatus: string | null = null;
       let nReadings: number | null = null;
       let nSources: number | null = null;
+      let newestFragmentIso: string | null = null;
+
       if (pick.signal_id) {
         const { data: sig } = await admin
           .from("strategic_signals")
-          .select("signal_title, supporting_evidence_ids")
+          .select("signal_title, supporting_evidence_ids, theme_tags, velocity_status")
           .eq("id", pick.signal_id)
           .maybeSingle();
-        if (sig?.signal_title) topic = sig.signal_title as string;
+        signalTitle = (sig?.signal_title as string | null) ?? null;
+        themeTags = (sig?.theme_tags as string[] | null) ?? null;
+        velocityStatus = (sig?.velocity_status as string | null) ?? null;
         const evIds = (sig?.supporting_evidence_ids as string[] | null) || [];
         if (evIds.length > 0) {
           const { data: frags } = await admin
             .from("evidence_fragments")
-            .select("source_registry_id")
+            .select("source_registry_id, created_at")
             .in("id", evIds);
           const distinctSources = new Set(
             (frags || [])
@@ -307,12 +315,51 @@ serve(async (req) => {
           );
           nReadings = evIds.length;
           nSources = distinctSources.size;
+          const dates = (frags || [])
+            .map((f) => (f.created_at as string | null))
+            .filter((v): v is string => !!v)
+            .sort();
+          if (dates.length > 0) newestFragmentIso = dates[dates.length - 1];
+        }
+        if (signalTitle) fullTopic = signalTitle;
+      }
+
+      // Ghost-draft fallback: use provenance from linkedin_posts.source_metadata.
+      if (!fullTopic && pick.src === "linkedin_posts" && pick.source_metadata) {
+        const sm = pick.source_metadata;
+        if (sm["ghost_draft"] === true) {
+          const fs = typeof sm["finding_source"] === "string" ? sm["finding_source"] as string : "";
+          const fi = typeof sm["finding_implication"] === "string" ? sm["finding_implication"] as string : "";
+          if (fs || fi) fullTopic = [fs, fi].filter(Boolean).join(" — ");
         }
       }
-      if (!topic) topic = (pick.title || "your latest topic").trim();
+
+      if (!fullTopic) fullTopic = (pick.title || "").trim();
+      shortTopic = deriveShortTopic({ themeTags, signalTitle, fallbackTitle: pick.title });
+      if (!shortTopic) shortTopic = fullTopic;
+      if (!fullTopic) fullTopic = shortTopic || "a finding you kept";
+      if (!shortTopic) shortTopic = "a finding you kept";
+
+      // First name for greeting.
+      const { data: prof } = await admin
+        .from("diagnostic_profiles")
+        .select("first_name")
+        .eq("user_id", pick.user_id)
+        .maybeSingle();
+      const firstName = (prof?.first_name as string | null)?.trim() || null;
 
       const excerpt = (pick.body || "").trim();
-      const { subject, html } = buildEmail({ topic, excerpt, nReadings, nSources });
+      const { subject, preheader, html } = buildEmail({
+        firstName,
+        shortTopic,
+        fullTopic,
+        excerpt,
+        nReadings,
+        nSources,
+        newestFragmentIso,
+        velocityStatus,
+      });
+      void preheader;
 
       // Recipient email
       const { data: userData, error: userErr } = await admin.auth.admin.getUserById(pick.user_id);
