@@ -648,6 +648,13 @@ const LANDING_CSS = `
     .aura-landing .founder-portrait{max-width:280px;margin:0 auto}
     .aura-landing .founder-tail{margin-top:10px}
   }
+  .aura-landing .sec-eyebrow{display:inline-flex;align-items:center;gap:12px}
+  .aura-landing .sec-eyebrow::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 4px rgba(54,197,176,.14);flex:0 0 auto}
+  .aura-landing .sec-eyebrow::after{content:"";width:clamp(40px,7vw,96px);height:1px;background:linear-gradient(90deg,rgba(214,167,72,.55),transparent);flex:0 0 auto}
+  .aura-landing h2 em{font-style:italic;color:var(--amber)}
+  .aura-landing .nums .num{background:linear-gradient(180deg,rgba(237,231,217,.05),rgba(237,231,217,.018));border:1px solid rgba(237,231,217,.12);border-radius:14px;padding:30px 26px 26px;position:relative;overflow:hidden}
+  .aura-landing .nums .num::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:linear-gradient(180deg,var(--amber),rgba(214,167,72,0))}
+  .aura-landing .nums .num .lbl{margin-top:10px}
 `;
 const LANDING_HTML = `
 <canvas id="bg"></canvas>
@@ -691,8 +698,9 @@ const LANDING_HTML = `
 <section class="dark">
   <div class="sweep"></div>
   <div class="wrap">
-    <p class="eyebrow" data-reveal>THE PROOF</p>
-    <h2 class="sr-only">The proof: visibility drives trust and opportunity</h2>
+    <p class="eyebrow sec-eyebrow" data-reveal>THE PROOF</p>
+    <h2 data-reveal style="max-width:20ch">The people your market trusts aren't sharper than you. <em>They just show up.</em></h2>
+    <p class="lede" data-reveal style="max-width:54ch">You read more than most of them. But reading isn't showing up — and staying quiet has a price.</p>
     <div class="nums">
       <div class="num" data-reveal><div class="big"><span data-count="73">0</span>%</div><div class="lbl">of decision-makers trust expertise content over marketing.</div></div>
       <div class="num" data-reveal><div class="big"><span data-count="82">0</span>%</div><div class="lbl">trust a company more when its leaders are visible online.</div></div>
