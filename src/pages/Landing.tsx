@@ -655,6 +655,8 @@ const LANDING_CSS = `
   .aura-landing .nums .num{background:linear-gradient(180deg,rgba(237,231,217,.05),rgba(237,231,217,.018));border:1px solid rgba(237,231,217,.12);border-radius:14px;padding:30px 26px 26px;position:relative;overflow:hidden}
   .aura-landing .nums .num::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:linear-gradient(180deg,var(--amber),rgba(214,167,72,0))}
   .aura-landing .nums .num .lbl{margin-top:10px}
+  .aura-landing .ecard .emetric{margin-top:14px;padding-top:12px;border-top:1px dashed rgba(237,231,217,.13);font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.4px;color:#9aa39e}
+  .aura-landing .ecard .emetric b{color:var(--amber);font-weight:500}
 `;
 const LANDING_HTML = `
 <canvas id="bg"></canvas>
@@ -718,9 +720,9 @@ const LANDING_HTML = `
   <div class="wrap">
     <div class="loophead">
       <div data-reveal>
-        <p class="eyebrow">HOW AURA WORKS</p>
-        <h2 style="max-width:15ch">The world is loud. You can read everything and still miss the one signal that's yours.</h2>
-        <p class="lede" style="margin-bottom:0">Aura starts with who you are — then turns what you read every day into presence that could only be yours. Four engines. One system.</p>
+        <p class="eyebrow sec-eyebrow">THE SYSTEM</p>
+        <h2 style="max-width:17ch">One system that knows you — <em>then works for you.</em></h2>
+        <p class="lede" style="margin-bottom:0">The world is loud. You can read everything and still miss the one signal that's yours. Aura starts with who you are, then turns what you read every day into presence that could only be yours. Four engines. One system.</p>
       </div>
       <div class="instr" data-reveal><p class="ik">THE INSTRUMENT · SIGNAL IN THE NOISE</p><svg id="miniradar" viewBox="0 0 240 240"></svg></div>
     </div>
@@ -737,7 +739,7 @@ const LANDING_HTML = `
           <circle cx="150" cy="26" r="3.5" fill="#EDE7D9" class="np" style="animation-delay:.6s"/><circle cx="150" cy="144" r="3.5" fill="#EDE7D9" class="np" style="animation-delay:1s"/>
           <circle cx="150" cy="84" r="14" fill="none" stroke="#36C5B0" stroke-width="1" class="halo"/><circle cx="150" cy="84" r="7.5" fill="#36C5B0"/>
         </svg></div>
-        <div class="body"><h3>The identity map</h3><p>Aura doesn't start with content. It starts with you — your strengths, your sector, your natural voice — and builds a complete map of who you are professionally, so nothing it makes is generic.</p></div>
+        <div class="body"><h3>The identity map</h3><p>Aura starts with you — your strengths, your sector, your natural voice — so nothing it makes is generic.</p><p class="emetric">Your standing in <b>one honest number</b>.</p></div>
       </div>
       <div class="ecard" data-reveal>
         <div class="poster"><svg viewBox="0 0 300 168">
@@ -748,7 +750,7 @@ const LANDING_HTML = `
           </g>
           <rect x="0" y="28" width="28" height="112" fill="url(#aura-beam-grad)" class="beam"/>
         </svg></div>
-        <div class="body"><h3>The intelligence engine</h3><p>You read an article. Aura reads it too — and finds the strategic pattern you'd miss on a busy Tuesday, then connects it to what matters in your sector right now.</p></div>
+        <div class="body"><h3>The intelligence engine</h3><p>You read an article. Aura reads it too — and finds the strategic pattern you'd miss on a busy Tuesday.</p><p class="emetric"><b>~9 fragments</b> from every capture.</p></div>
       </div>
       <div class="ecard" data-reveal>
         <div class="poster"><svg viewBox="0 0 300 168">
@@ -764,7 +766,7 @@ const LANDING_HTML = `
             <rect x="238" y="44" width="8" height="80" rx="4" fill="#36C5B0" class="eb" style="animation-delay:.55s"/>
           </g>
         </svg></div>
-        <div class="body"><h3>The voice studio</h3><p>Aura writes in your voice. Not templates. Not AI speak. Content that sounds like you wrote it at your best — the version of you with three uninterrupted hours to think.</p></div>
+        <div class="body"><h3>The voice studio</h3><p>Aura writes in your voice. Not templates, not AI speak — the version of you with three uninterrupted hours to think.</p><p class="emetric">A draft <b>minutes</b> after a capture.</p></div>
       </div>
       <div class="ecard" data-reveal>
         <div class="poster"><svg viewBox="0 0 300 168">
@@ -773,7 +775,7 @@ const LANDING_HTML = `
           <text x="150" y="90" text-anchor="middle" font-family="'Newsreader',serif" font-size="36" fill="#EDE7D9">84</text>
           <text x="150" y="146" text-anchor="middle" font-family="'IBM Plex Mono',monospace" font-size="9" letter-spacing="2" fill="#7c8682">IMPRINT</text>
         </svg></div>
-        <div class="body"><h3>The Imprint</h3><p>Aura turns your progress into one score — the Imprint. It shows what's working, what's growing, and who is starting to notice. The full story is just below.</p></div>
+        <div class="body"><h3>The Imprint</h3><p>Aura turns your progress into one score. It shows what's working, what's growing, and who is starting to notice.</p><p class="emetric">Moves only for <b>real presence</b>.</p></div>
       </div>
     </div>
   </div>
