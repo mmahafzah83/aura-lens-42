@@ -205,6 +205,9 @@ serve(async (req) => {
   let dryRun = true;
   let onlyUserId: string | null = null;
   let onlyUserIdRaw: unknown = undefined;
+  let onlyDraftId: string | null = null;
+  let onlyDraftIdRaw: unknown = undefined;
+  let onlyDraftSrc: "content_items" | "linkedin_posts" | null = null;
   try {
     const raw = await req.text();
     if (raw && raw.trim().length > 0) {
@@ -214,6 +217,14 @@ serve(async (req) => {
       }
       if (parsed && Object.prototype.hasOwnProperty.call(parsed, "only_user_id")) {
         onlyUserIdRaw = parsed.only_user_id;
+      }
+      if (parsed && Object.prototype.hasOwnProperty.call(parsed, "only_draft_id")) {
+        onlyDraftIdRaw = parsed.only_draft_id;
+      }
+      if (parsed && typeof parsed.src === "string") {
+        if (parsed.src === "content_items" || parsed.src === "linkedin_posts") {
+          onlyDraftSrc = parsed.src;
+        }
       }
     }
   } catch { /* ignore body parse errors — stay in dry-run */ }
@@ -235,6 +246,24 @@ serve(async (req) => {
     onlyUserId = onlyUserIdRaw;
   }
 
+  // only_draft_id: same strict validation as only_user_id. A typo must NEVER
+  // fall through to selecting every user's drafts.
+  if (onlyDraftIdRaw !== undefined) {
+    if (typeof onlyDraftIdRaw !== "string" || !UUID_RE.test(onlyDraftIdRaw)) {
+      await admin.from("ef_error_log").insert({
+        function_name: "draft-ready-email",
+        severity: "high",
+        error_message: `DRAFT_READY_EMAIL invalid_only_draft_id value=${String(onlyDraftIdRaw).slice(0, 80)}`,
+        context: { only_draft_id: String(onlyDraftIdRaw).slice(0, 200) },
+      });
+      return new Response(JSON.stringify({ error: "invalid only_draft_id" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    onlyDraftId = onlyDraftIdRaw;
+  }
+
   const results: Array<{
     user_id: string;
     draft_id: string;
@@ -252,27 +281,68 @@ serve(async (req) => {
   let failed = 0;
 
   try {
-    // Pick each user's single newest draft older than 12h.
+    // Pick each user's single newest draft older than 12h — UNLESS only_draft_id
+    // targets a specific rehearsal draft, in which case we select that row
+    // directly and skip the age gate.
     const cutoffIso = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
 
-    let ciQuery = admin
-      .from("content_items")
-      .select("id, user_id, created_at, body, title, signal_id, generation_params")
-      .eq("status", "draft")
-      .lt("created_at", cutoffIso);
-    if (onlyUserId) ciQuery = ciQuery.eq("user_id", onlyUserId);
-    const { data: ciDrafts, error: ciErr } = await ciQuery;
-    if (ciErr) throw ciErr;
+    let ciDrafts: any[] | null = null;
+    let lpDrafts: any[] | null = null;
 
-    let lpQuery = admin
-      .from("linkedin_posts")
-      .select("id, user_id, created_at, post_text, title, source_signal_id, source_metadata")
-      .eq("tracking_status", "draft")
-      .is("published_at", null)
-      .lt("created_at", cutoffIso);
-    if (onlyUserId) lpQuery = lpQuery.eq("user_id", onlyUserId);
-    const { data: lpDrafts, error: lpErr } = await lpQuery;
-    if (lpErr) throw lpErr;
+    if (onlyDraftId) {
+      // Rehearsal path: fetch exactly the targeted draft. Honour `src` hint;
+      // otherwise probe content_items first, then linkedin_posts.
+      const probeOrder: Array<"content_items" | "linkedin_posts"> = onlyDraftSrc
+        ? [onlyDraftSrc]
+        : ["content_items", "linkedin_posts"];
+      for (const src of probeOrder) {
+        if (src === "content_items") {
+          let q = admin
+            .from("content_items")
+            .select("id, user_id, created_at, body, title, signal_id, generation_params")
+            .eq("id", onlyDraftId)
+            .eq("status", "draft");
+          if (onlyUserId) q = q.eq("user_id", onlyUserId);
+          const { data, error } = await q.limit(1);
+          if (error) throw error;
+          if (data && data.length > 0) { ciDrafts = data; break; }
+        } else {
+          let q = admin
+            .from("linkedin_posts")
+            .select("id, user_id, created_at, post_text, title, source_signal_id, source_metadata")
+            .eq("id", onlyDraftId)
+            .eq("tracking_status", "draft")
+            .is("published_at", null);
+          if (onlyUserId) q = q.eq("user_id", onlyUserId);
+          const { data, error } = await q.limit(1);
+          if (error) throw error;
+          if (data && data.length > 0) { lpDrafts = data; break; }
+        }
+      }
+      // If neither source matched, both remain null → candidates=0, logged in
+      // the summary row. Never silently fall back to the newest draft.
+    } else {
+      let ciQuery = admin
+        .from("content_items")
+        .select("id, user_id, created_at, body, title, signal_id, generation_params")
+        .eq("status", "draft")
+        .lt("created_at", cutoffIso);
+      if (onlyUserId) ciQuery = ciQuery.eq("user_id", onlyUserId);
+      const { data, error } = await ciQuery;
+      if (error) throw error;
+      ciDrafts = data;
+
+      let lpQuery = admin
+        .from("linkedin_posts")
+        .select("id, user_id, created_at, post_text, title, source_signal_id, source_metadata")
+        .eq("tracking_status", "draft")
+        .is("published_at", null)
+        .lt("created_at", cutoffIso);
+      if (onlyUserId) lpQuery = lpQuery.eq("user_id", onlyUserId);
+      const { data: lp, error: lpErr } = await lpQuery;
+      if (lpErr) throw lpErr;
+      lpDrafts = lp;
+    }
 
     const all: DraftRow[] = [];
     for (const r of ciDrafts || []) {
@@ -548,8 +618,8 @@ serve(async (req) => {
     await admin.from("ef_error_log").insert({
       function_name: "draft-ready-email",
       severity: "info",
-      error_message: `DRAFT_READY_EMAIL dry_run=${dryRun} only_user=${onlyUserId ?? "none"} candidates=${candidates} sent=${sent} skipped_already=${skippedAlready} failed=${failed}`,
-      context: { dry_run: dryRun, only_user_id: onlyUserId, candidates, sent, skipped_already: skippedAlready, failed },
+      error_message: `DRAFT_READY_EMAIL dry_run=${dryRun} only_user=${onlyUserId ?? "none"} only_draft=${onlyDraftId ?? "none"} candidates=${candidates} sent=${sent} skipped_already=${skippedAlready} failed=${failed}`,
+      context: { dry_run: dryRun, only_user_id: onlyUserId, only_draft_id: onlyDraftId, candidates, sent, skipped_already: skippedAlready, failed },
     });
 
     return new Response(
@@ -557,6 +627,7 @@ serve(async (req) => {
         ok: true,
         dry_run: dryRun,
         only_user_id: onlyUserId,
+        only_draft_id: onlyDraftId,
         candidates,
         sent,
         skipped_already: skippedAlready,
