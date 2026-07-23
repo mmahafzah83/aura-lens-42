@@ -715,6 +715,12 @@ const LANDING_CSS = `
   .aura-landing .mth-cta{display:block;text-align:center;margin-top:22px}
   .aura-landing .mth-fine{margin:12px 0 0;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted)}
   @media (max-width:900px){.aura-landing .mth{grid-template-columns:1fr;gap:40px}.aura-landing .mth-stamp{right:6px;top:-20px;width:96px;height:96px;font-size:8px}}
+  .aura-landing #amk-combo .a-idtwrap{text-align:center;max-width:560px}
+  .aura-landing #amk-combo .a-idtl{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:2px;color:#5f6a66;margin:0 0 20px}
+  .aura-landing #amk-combo .a-idtchips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+  .aura-landing #amk-combo .a-idtchip{border:1px solid #233330;border-radius:100px;padding:9px 17px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#9aa39e;background:#070c0b}
+  .aura-landing #amk-combo .a-idtchip.on{border-color:var(--teal);color:var(--teal);box-shadow:0 0 18px rgba(54,197,176,.22)}
+  @media (max-width:700px){.aura-landing #amk-combo .a-idtchip{font-size:10.5px;padding:8px 13px}}
 `;
 const LANDING_HTML = `
 <canvas id="bg"></canvas>
@@ -850,7 +856,8 @@ const LANDING_HTML = `
       <div class="line">
         <div class="ltrack"></div>
         <div class="lstations">
-          <div class="lstation lit"><span class="ring"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="13" height="18" rx="2"/><line x1="8" y1="8" x2="15" y2="8"/><line x1="8" y1="12" x2="15" y2="12"/></svg></span><span class="nm">CAPTURE</span></div>
+          <div class="lstation lit"><span class="ring"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 19a6.5 6.5 0 0 1 13 0"/></svg></span><span class="nm">YOU</span></div>
+          <div class="lstation"><span class="ring"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="13" height="18" rx="2"/><line x1="8" y1="8" x2="15" y2="8"/><line x1="8" y1="12" x2="15" y2="12"/></svg></span><span class="nm">CAPTURE</span></div>
           <div class="lstation"><span class="ring"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none"/></svg></span><span class="nm">READS</span></div>
           <div class="lstation"><span class="ring"><svg viewBox="0 0 24 24"><path d="M12 4l3 5-3 2-3-2z"/><path d="M6 14l3.5 1.5.5 3.5-4-1.2z"/><path d="M18 14l-3.5 1.5-.5 3.5 4-1.2z"/></svg></span><span class="nm">FRAGMENTS</span></div>
           <div class="lstation"><span class="ring"><svg viewBox="0 0 24 24"><line x1="6" y1="7" x2="12" y2="12"/><line x1="18" y1="7" x2="12" y2="12"/><line x1="6" y1="17" x2="12" y2="12"/><line x1="18" y1="17" x2="12" y2="12"/><circle cx="6" cy="7" r="1.7"/><circle cx="18" cy="7" r="1.7"/><circle cx="6" cy="17" r="1.7"/><circle cx="18" cy="17" r="1.7"/><circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none"/></svg></span><span class="nm">SIGNALS</span></div>
@@ -865,6 +872,17 @@ const LANDING_HTML = `
       <div class="beamzone"><div class="dropbeam"></div></div>
       <div class="stage">
         <div class="stat"><span class="amk-dot"></span><span class="a-stat">CAPTURE</span></div>
+        <div class="a-phase a-idt">
+          <div class="a-idtwrap">
+            <p class="a-idtl">YOUR PROFILE — AFTER THE ASSESSMENT</p>
+            <div class="a-idtchips">
+              <span class="a-idtchip on">Digital transformation governance</span>
+              <span class="a-idtchip">Public-sector delivery</span>
+              <span class="a-idtchip">Regulatory strategy</span>
+              <span class="a-idtchip">Data &amp; AI policy</span>
+            </div>
+          </div>
+        </div>
         <div class="a-phase a-cap">
           <div class="a-drop">
             <div class="a-srcname">SDAIA — National Data &amp; AI annual report</div>
@@ -1307,11 +1325,11 @@ tio.observe(document.getElementById("tiers"));
 (function(){var e=document.getElementById("amk-markRead");if(e&&typeof svgMark==="function")svgMark(e,"#EDE7D9");})();
 (function(){
   var root=document.getElementById("amk-combo"); if(!root)return;
-  var ph=["cap","read","frag","sig","out"], lbl=["CAPTURE","AURA READS","FRAGMENTS","SIGNALS","OUTPUT"], dur=[5000,5200,6200,5600,8200];
+  var ph=["idt","cap","read","frag","sig","out"], lbl=["WHO YOU ARE","CAPTURE","AURA READS","FRAGMENTS","SIGNALS","OUTPUT"], dur=[4600,5000,5200,6200,5600,8200];
   var stations=[].slice.call(root.querySelectorAll(".lstation"));
   var beam=root.querySelector(".dropbeam"), bz=root.querySelector(".beamzone");
   var stage=root.querySelector(".stage"), statEl=root.querySelector(".a-stat"), capEl=root.querySelector(".cap-l");
-  var caps=["One tap, the moment you read it — a link, a report, a voice note.","Aura reads each one, breaks it down, and connects it across your field.","The ideas worth keeping are saved — each tied to your profile, your sector, the trend behind it.","Week by week, the patterns turn into the few themes that are yours to own.","A post, a carousel, a diagram, a framework — in your voice, ready when you are."];
+  var caps=["A short assessment maps your skills and your sector — so nothing after this is generic.","One tap, the moment you read it — a link, a report, a voice note.","Aura reads each one, breaks it down, and connects it across your field.","The ideas worth keeping are saved — each tied to your profile, your sector, the trend behind it.","Week by week, the patterns turn into the few themes that are yours to own.","A post, a carousel, a diagram, a framework — in your voice, ready when you are."];
   var i=0,timer=null;
   function beamTo(n){var r=stations[n].getBoundingClientRect(),c=bz.getBoundingClientRect();beam.style.left=(r.left-c.left+r.width/2)+"px";beam.style.opacity="1";}
   function countSig(){stage.querySelectorAll(".a-sigrow").forEach(function(r){var pct=r.querySelector(".a-pct"),target=+r.dataset.v,t0=performance.now();(function tk(now){var pr=Math.min((now-t0)/1100,1);pct.textContent=Math.round(target*pr)+"%";if(pr<1)requestAnimationFrame(tk);})(performance.now());});}
@@ -1321,11 +1339,11 @@ tio.observe(document.getElementById("tiers"));
     ph.forEach(function(pp,k){stage.querySelector(".a-"+pp).classList.toggle("on",k===n);});
     statEl.textContent=lbl[n];
     if(capEl){capEl.style.opacity="0";setTimeout(function(){capEl.textContent=caps[n];capEl.style.opacity="1";},170);}
-    if(n===3)countSig();
+    if(n===4)countSig();
   }
   function loop(){set(i);timer=setTimeout(function(){i=(i+1)%ph.length;loop();},dur[i]);}
   addEventListener("resize",function(){if(timer)beamTo(i);});
-  if(typeof RED!=="undefined"&&RED){set(4);return;}
+  if(typeof RED!=="undefined"&&RED){set(5);return;}
   new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting&&!timer)loop();});},{threshold:.2}).observe(root);
 })();
 `;
