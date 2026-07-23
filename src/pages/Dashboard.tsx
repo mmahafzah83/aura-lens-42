@@ -274,6 +274,73 @@ const Dashboard = () => {
         setSearchParams(next, { replace: true });
       })();
     }
+
+    // If we landed on the Publish tab with a draft id (from a lifecycle email),
+    // fetch that specific draft and hand it to the Composer. Mirrors the
+    // signal-param path exactly: same effect, same setSearchParams cleanup.
+    const draftParam = searchParams.get("draft");
+    const srcParam = searchParams.get("src");
+    if (draftParam && resolvedTab === "authority") {
+      (async () => {
+        const tryContentItems = async () => {
+          const { data: r } = await (supabase
+            .from("content_items" as any) as any)
+            .select("id, body, language, type, generation_params")
+            .eq("id", draftParam)
+            .maybeSingle();
+          if (!r) return null;
+          const lang: "en" | "ar" = r.language === "ar" ? "ar" : "en";
+          const type: "carousel" | "framework" | "linkedin_post" =
+            r.type === "carousel" ? "carousel" : r.type === "framework" ? "framework" : "linkedin_post";
+          return {
+            id: r.id,
+            body: r.body || "",
+            language: lang,
+            type,
+            topic: r?.generation_params?.topic ?? null,
+            _source: "content_items" as const,
+          };
+        };
+        const tryLinkedInPosts = async () => {
+          const { data: r } = await (supabase
+            .from("linkedin_posts" as any) as any)
+            .select("id, post_text, created_at")
+            .eq("id", draftParam)
+            .maybeSingle();
+          if (!r) return null;
+          return {
+            id: r.id,
+            body: r.post_text || "",
+            language: "en" as const,
+            type: "linkedin_post" as const,
+            topic: null,
+            _source: "linkedin_posts" as const,
+          };
+        };
+
+        let prefill: Awaited<ReturnType<typeof tryContentItems>> = null;
+        if (srcParam === "linkedin_posts") {
+          prefill = await tryLinkedInPosts();
+        } else if (srcParam === "content_items") {
+          prefill = await tryContentItems();
+        } else {
+          prefill = (await tryContentItems()) || (await tryLinkedInPosts());
+        }
+
+        if (prefill) {
+          setDraftPrefill(prefill);
+          setActiveTab("authority");
+        } else {
+          toast("That draft is no longer available");
+        }
+
+        // Clear so a refresh doesn't reapply
+        const next = new URLSearchParams(window.location.search);
+        next.delete("draft");
+        next.delete("src");
+        setSearchParams(next, { replace: true });
+      })();
+    }
   }, []);
 
   // Handle prefill from trend Draft Post (passed via React Router state)
