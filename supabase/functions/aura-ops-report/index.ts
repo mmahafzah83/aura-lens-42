@@ -444,12 +444,21 @@ Deno.serve(async (req) => {
   lines.push(`${verdict} — ${worstReason}`);
   lines.push(`If you did not receive this email today, that is itself the alert.`);
   lines.push("");
-  lines.push(`A. Silence detector`);
+  lines.push(`A. Did every scheduled job fire?`);
+  for (const c of cronReport) {
+    if (c.state === "OK") lines.push(`  ${c.row.jobname}: OK — last run ${fmtAge(c.ageMin)} (${c.row.succeeded_24h}/24h ok, ${c.row.failed_24h} failed)`);
+    else if (c.state === "NEVER") lines.push(`  ${c.row.jobname}: NEVER RUN`);
+    else if (c.state === "NOT_RUN") lines.push(`  ${c.row.jobname}: NOT RUN since ${c.row.last_end} (expected inside ${c.windowMin} min)`);
+    else lines.push(`  ${c.row.jobname}: FAILING — ${c.row.failed_24h} failed runs in 24h`);
+  }
+  lines.push("");
+  lines.push(`A2. Heartbeats from functions that write one`);
   for (const h of heartbeats) {
     if (h.state === "OK") lines.push(`  ${h.hb.label}: OK — last heard ${fmtAge(h.ageMin)}`);
-    else if (h.state === "NEVER") lines.push(`  ${h.hb.label}: NEVER SEEN (expected inside every ${h.windowMin} min)`);
-    else lines.push(`  ${h.hb.label}: SILENT since ${h.lastSeen} (${fmtAge(h.ageMin)})`);
+    else if (h.state === "NEVER") lines.push(`  ${h.hb.label}: never wrote a heartbeat`);
+    else lines.push(`  ${h.hb.label}: cron ran but wrote no heartbeat since ${h.lastSeen}`);
   }
+  lines.push(`  Open health findings (24h): ${openFindings}${newestFinding ? ` — newest: ${newestFinding.title}` : ""}`);
   lines.push("");
   lines.push(`B. Failures in the last 24 hours`);
   if (failures.length === 0) lines.push(`  No failures in 24h.`);
