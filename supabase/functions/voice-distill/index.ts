@@ -109,10 +109,13 @@ Deno.serve(async (req) => {
       let users_checked = 0;
       let distilled = 0;
       let skipped = 0;
+      let below_corpus = 0;
       let failed = 0;
       let deferred = 0;
-      const BATCH_CAP = 10;
-      const INNER_TIMEOUT_MS = 180_000;
+      const BATCH_CAP = 1;
+      const INNER_TIMEOUT_MS = 110_000;
+      const MIN_CORPUS = 5;
+      const sweepStartedAt = Date.now();
 
       try {
         // Candidate users = anyone with at least one aura_generated + published post.
@@ -127,8 +130,8 @@ Deno.serve(async (req) => {
         const uniqUsers = Array.from(new Set((candidates ?? []).map((r: any) => r.user_id).filter(Boolean)));
         users_checked = uniqUsers.length;
 
-        // Compute eligible count per user, sort DESC (most-stale first).
-        const scored: Array<{ uid: string; eligible: number; hasLog: boolean }> = [];
+        // Compute eligibility per user, sort DESC (most-stale first).
+        const scored: Array<{ uid: string; eligible: number; totalCorpus: number; hasLog: boolean; daysSinceLastRun: number }> = [];
         for (const uid of uniqUsers) {
           try {
             const { data: lastLog } = await admin
@@ -139,6 +142,16 @@ Deno.serve(async (req) => {
               .order("created_at", { ascending: false })
               .limit(1)
               .maybeSingle();
+            // Total eligible corpus (not since-last-run).
+            const { count: totalCount } = await admin
+              .from("linkedin_posts")
+              .select("id", { count: "exact", head: true })
+              .eq("user_id", uid)
+              .eq("source_type", "aura_generated")
+              .eq("tracking_status", "published")
+              .not("post_text", "is", null);
+            const totalCorpus = typeof totalCount === "number" ? totalCount : 0;
+            // New since last distill run.
             let q = admin
               .from("linkedin_posts")
               .select("id", { count: "exact", head: true })
@@ -149,22 +162,49 @@ Deno.serve(async (req) => {
             if (lastLog?.created_at) q = q.gt("published_at", lastLog.created_at);
             const { count } = await q;
             const eligible = typeof count === "number" ? count : 0;
-            scored.push({ uid, eligible, hasLog: !!lastLog });
+            const daysSinceLastRun = lastLog?.created_at
+              ? (Date.now() - Date.parse(lastLog.created_at)) / 86_400_000
+              : Number.POSITIVE_INFINITY;
+            scored.push({ uid, eligible, totalCorpus, hasLog: !!lastLog, daysSinceLastRun });
           } catch (e) {
-            scored.push({ uid, eligible: 0, hasLog: true });
-            console.error("voice-distill sweep: eligibility probe failed", uid, e);
+            // Do not silently absorb a probe failure into "quiet user".
+            failed += 1;
+            try {
+              await admin.from("ef_error_log").insert({
+                function_name: "voice-distill",
+                severity: "high",
+                user_id: uid,
+                error_message: `VOICE_DISTILL_PROBE_FAILED user=${uid}`,
+                context: { stage: "weekly_sweep_probe", detail: String((e as any)?.message ?? e).slice(0, 500) },
+              });
+            } catch (logErr) { console.error("voice-distill sweep: log probe_failed failed", logErr); }
           }
         }
-        scored.sort((a, b) => b.eligible - a.eligible);
+        // Below-corpus users are counted, never attempted.
+        const qualified = scored.filter((s) => s.totalCorpus >= MIN_CORPUS);
+        below_corpus = scored.length - qualified.length;
 
-        const eligibleToRun = scored.filter((s) => !s.hasLog || s.eligible >= 3);
-        const belowThreshold = scored.length - eligibleToRun.length;
-        skipped += belowThreshold;
+        // Trigger: no prior run, OR 3+ new since last, OR 30+ days since last.
+        const eligibleToRun = qualified.filter(
+          (s) => !s.hasLog || s.eligible >= 3 || s.daysSinceLastRun >= 30,
+        );
+        skipped += qualified.length - eligibleToRun.length;
+
+        // Most-stale first: prefer users with the longest gap, then largest new-post backlog.
+        eligibleToRun.sort((a, b) => {
+          if (b.daysSinceLastRun !== a.daysSinceLastRun) return b.daysSinceLastRun - a.daysSinceLastRun;
+          return b.eligible - a.eligible;
+        });
 
         const toAttempt = eligibleToRun.slice(0, BATCH_CAP);
         deferred = Math.max(0, eligibleToRun.length - toAttempt.length);
 
         for (const { uid, eligible } of toAttempt) {
+          // Time-budget check: never start a user if we've already burned the inner budget.
+          if (Date.now() - sweepStartedAt > INNER_TIMEOUT_MS) {
+            deferred += 1;
+            break;
+          }
           const ctrl = new AbortController();
           const timer = setTimeout(() => ctrl.abort(), INNER_TIMEOUT_MS);
           try {
@@ -220,13 +260,13 @@ Deno.serve(async (req) => {
         await admin.from("ef_error_log").insert({
           function_name: "voice-distill",
           severity: "info",
-          error_message: `VOICE_DISTILL_SWEEP users=${users_checked} distilled=${distilled} skipped=${skipped} failed=${failed} deferred=${deferred}`,
-          context: { stage: "weekly_sweep", users_checked, distilled, skipped, failed, deferred, cap: BATCH_CAP },
+          error_message: `VOICE_DISTILL_SWEEP users=${users_checked} distilled=${distilled} skipped=${skipped} below_corpus=${below_corpus} failed=${failed} deferred=${deferred}`,
+          context: { stage: "weekly_sweep", users_checked, distilled, skipped, below_corpus, failed, deferred, cap: BATCH_CAP, min_corpus: MIN_CORPUS, inner_timeout_ms: INNER_TIMEOUT_MS },
         });
       } catch (e) { console.error("voice-distill sweep log failed:", e); }
 
       return new Response(
-        JSON.stringify({ success: true, sweep: true, users_checked, distilled, skipped, failed, deferred }),
+        JSON.stringify({ success: true, sweep: true, users_checked, distilled, skipped, below_corpus, failed, deferred }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
