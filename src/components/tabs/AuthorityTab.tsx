@@ -1405,6 +1405,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
         </FirstTimeHint>
         {/* Hero CTA — top signal */}
         {(() => {
+          if (editingDraftId) return null;
           if (contentType === "flash" || contentType === "framework_summary") return null;
           // Race-fix: avoid an empty-pill flash by waiting for profile resolve
           if (!profileLoaded) {
