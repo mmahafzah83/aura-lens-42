@@ -131,14 +131,17 @@ function buildEmail(opts: {
   const namePrefix = firstName ? `${escapeHtml(firstName)} — you` : "You";
   const when = whenPhrase(newestFragmentIso);
   const whenSuffix = when ? ` ${when}` : "";
-  const topicClean = stripTrailingPunct(fullTopic);
-  const topicEsc = escapeHtml(topicClean);
-  const shortTopicClean = stripTrailingPunct(shortTopic);
+  // Body sentence needs a NOUN PHRASE after "on" — use the theme tag
+  // (shortTopic), never the full signal title. fullTopic is retained only
+  // as a subject-line fallback above; it is intentionally not rendered
+  // into any body sentence.
+  const shortTopicClean = stripTrailingPunct(shortTopic || fullTopic);
+  const shortTopicEsc = escapeHtml(shortTopicClean);
 
   // One idea per line. Each <p> stands on its own so the eye lands on a beat.
   const line1 = haveCounts
-    ? `${namePrefix} saved ${nReadings} readings on ${topicEsc}${whenSuffix}.`
-    : `${namePrefix} kept a finding on ${topicEsc}.`;
+    ? `${namePrefix} saved ${nReadings} readings on ${shortTopicEsc}${whenSuffix}.`
+    : `${namePrefix} kept a finding on ${shortTopicEsc}.`;
   const line2 = `Nobody asked you to. That was your judgment, not an algorithm's.`;
   const line3 = `Aura put that judgment into a post, written the way you write.`;
   const line4 = `It isn't finished until you've argued with it.`;
