@@ -100,174 +100,24 @@ Deno.serve(async (req) => {
     }
     resolvedUid = user_id;
 
-    // ---- BATCH BRANCH (weekly safety net) ----
-    // Service-role/cron caller with no user_id and no ad-hoc posts → sweep
-    // every user with >= 3 eligible published posts since their last
-    // voice_distill training_logs row (or no such row at all).
+    // ---- RETIRED SWEEP BRANCH ----
+    // The service-role/cron sweep is retired. voice_distill now runs via the
+    // job_queue: enqueue_voice_distill_jobs() (Postgres) fills the queue and
+    // job-worker-voice-distill drains it one user per invocation. Any caller
+    // that still POSTs with no user_id must fail loudly, never silently no-op.
     if (!user_id && (isServiceRole || isCron) && !Array.isArray(body?.posts)) {
       const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
-      let users_checked = 0;
-      let distilled = 0;
-      let skipped = 0;
-      let below_corpus = 0;
-      let failed = 0;
-      let deferred = 0;
-      const BATCH_CAP = 1;
-      const INNER_TIMEOUT_MS = 110_000;
-      const MIN_CORPUS = 5;
-      const sweepStartedAt = Date.now();
-
-      try {
-        // Candidate users = anyone with at least one aura_generated + published post.
-        const { data: candidates } = await admin
-          .from("linkedin_posts")
-          .select("user_id")
-          .eq("source_type", "aura_generated")
-          .eq("tracking_status", "published")
-          .not("post_text", "is", null)
-          .not("user_id", "is", null)
-          .limit(5000);
-        const uniqUsers = Array.from(new Set((candidates ?? []).map((r: any) => r.user_id).filter(Boolean)));
-        users_checked = uniqUsers.length;
-
-        // Compute eligibility per user, sort DESC (most-stale first).
-        const scored: Array<{ uid: string; eligible: number; totalCorpus: number; hasLog: boolean; daysSinceLastRun: number }> = [];
-        for (const uid of uniqUsers) {
-          try {
-            const { data: lastLog } = await admin
-              .from("training_logs")
-              .select("created_at")
-              .eq("user_id", uid)
-              .eq("pillar", "voice_distill")
-              .order("created_at", { ascending: false })
-              .limit(1)
-              .maybeSingle();
-            // Total eligible corpus (not since-last-run).
-            const { count: totalCount } = await admin
-              .from("linkedin_posts")
-              .select("id", { count: "exact", head: true })
-              .eq("user_id", uid)
-              .eq("source_type", "aura_generated")
-              .eq("tracking_status", "published")
-              .not("post_text", "is", null);
-            const totalCorpus = typeof totalCount === "number" ? totalCount : 0;
-            // New since last distill run.
-            let q = admin
-              .from("linkedin_posts")
-              .select("id", { count: "exact", head: true })
-              .eq("user_id", uid)
-              .eq("source_type", "aura_generated")
-              .eq("tracking_status", "published")
-              .not("post_text", "is", null);
-            if (lastLog?.created_at) q = q.gt("published_at", lastLog.created_at);
-            const { count } = await q;
-            const eligible = typeof count === "number" ? count : 0;
-            const daysSinceLastRun = lastLog?.created_at
-              ? (Date.now() - Date.parse(lastLog.created_at)) / 86_400_000
-              : Number.POSITIVE_INFINITY;
-            scored.push({ uid, eligible, totalCorpus, hasLog: !!lastLog, daysSinceLastRun });
-          } catch (e) {
-            // Do not silently absorb a probe failure into "quiet user".
-            failed += 1;
-            try {
-              await admin.from("ef_error_log").insert({
-                function_name: "voice-distill",
-                severity: "high",
-                user_id: uid,
-                error_message: `VOICE_DISTILL_PROBE_FAILED user=${uid}`,
-                context: { stage: "weekly_sweep_probe", detail: String((e as any)?.message ?? e).slice(0, 500) },
-              });
-            } catch (logErr) { console.error("voice-distill sweep: log probe_failed failed", logErr); }
-          }
-        }
-        // Below-corpus users are counted, never attempted.
-        const qualified = scored.filter((s) => s.totalCorpus >= MIN_CORPUS);
-        below_corpus = scored.length - qualified.length;
-
-        // Trigger: no prior run, OR 3+ new since last, OR 30+ days since last.
-        const eligibleToRun = qualified.filter(
-          (s) => !s.hasLog || s.eligible >= 3 || s.daysSinceLastRun >= 30,
-        );
-        skipped += qualified.length - eligibleToRun.length;
-
-        // Most-stale first: prefer users with the longest gap, then largest new-post backlog.
-        eligibleToRun.sort((a, b) => {
-          if (b.daysSinceLastRun !== a.daysSinceLastRun) return b.daysSinceLastRun - a.daysSinceLastRun;
-          return b.eligible - a.eligible;
-        });
-
-        const toAttempt = eligibleToRun.slice(0, BATCH_CAP);
-        deferred = Math.max(0, eligibleToRun.length - toAttempt.length);
-
-        for (const { uid, eligible } of toAttempt) {
-          // Time-budget check: never start a user if we've already burned the inner budget.
-          if (Date.now() - sweepStartedAt > INNER_TIMEOUT_MS) {
-            deferred += 1;
-            break;
-          }
-          const ctrl = new AbortController();
-          const timer = setTimeout(() => ctrl.abort(), INNER_TIMEOUT_MS);
-          try {
-            const r = await fetch(`${SUPABASE_URL}/functions/v1/voice-distill`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${SERVICE_ROLE}`,
-                apikey: SERVICE_ROLE,
-              },
-              body: JSON.stringify({ user_id: uid }),
-              signal: ctrl.signal,
-            });
-            clearTimeout(timer);
-            if (r.ok) {
-              distilled += 1;
-            } else {
-              failed += 1;
-              let body_snippet = "";
-              try { body_snippet = (await r.text()).slice(0, 500); } catch { /* ignore */ }
-              try {
-                await admin.from("ef_error_log").insert({
-                  function_name: "voice-distill",
-                  severity: "high",
-                  user_id: uid,
-                  error_message: `VOICE_DISTILL_USER_FAILED user=${uid} status=${r.status}`,
-                  context: { stage: "weekly_sweep_user", status: r.status, body_snippet, eligible_count: eligible },
-                });
-              } catch (logErr) { console.error("voice-distill sweep: log user_failed failed", logErr); }
-            }
-          } catch (e: any) {
-            clearTimeout(timer);
-            failed += 1;
-            const isAbort = e?.name === "AbortError";
-            const reason = isAbort ? "timeout" : String(e?.name ?? "Error");
-            const detail = String(e?.message ?? e).slice(0, 500);
-            try {
-              await admin.from("ef_error_log").insert({
-                function_name: "voice-distill",
-                severity: "high",
-                user_id: uid,
-                error_message: `VOICE_DISTILL_USER_ERROR user=${uid} reason=${reason}`,
-                context: { stage: "weekly_sweep_user", reason, detail, eligible_count: eligible, timeout_ms: INNER_TIMEOUT_MS },
-              });
-            } catch (logErr) { console.error("voice-distill sweep: log user_error failed", logErr); }
-          }
-        }
-      } catch (e) {
-        console.error("voice-distill sweep: outer failure", e);
-      }
-
       try {
         await admin.from("ef_error_log").insert({
           function_name: "voice-distill",
-          severity: "info",
-          error_message: `VOICE_DISTILL_SWEEP users=${users_checked} distilled=${distilled} skipped=${skipped} below_corpus=${below_corpus} failed=${failed} deferred=${deferred}`,
-          context: { stage: "weekly_sweep", users_checked, distilled, skipped, below_corpus, failed, deferred, cap: BATCH_CAP, min_corpus: MIN_CORPUS, inner_timeout_ms: INNER_TIMEOUT_MS },
+          severity: "high",
+          error_message: "SWEEP_RETIRED — voice_distill now runs via job_queue; caller must be updated",
+          context: { stage: "sweep_retired", caller_is_cron: isCron, caller_is_service_role: isServiceRole },
         });
-      } catch (e) { console.error("voice-distill sweep log failed:", e); }
-
+      } catch (logErr) { console.error("voice-distill: log SWEEP_RETIRED failed", logErr); }
       return new Response(
-        JSON.stringify({ success: true, sweep: true, users_checked, distilled, skipped, below_corpus, failed, deferred }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        JSON.stringify({ error: "sweep_retired" }),
+        { status: 410, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
