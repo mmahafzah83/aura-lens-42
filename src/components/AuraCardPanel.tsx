@@ -50,6 +50,7 @@ export default function AuraCardPanel({
   const [busy, setBusy] = useState<null | "png" | "share">(null);
   const [readyAt, setReadyAt] = useState<string | null>(null);
   const [celebrate, setCelebrate] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
   const celebrateFiredRef = useRef(false);
   const mountRef = useRef<HTMLDivElement | null>(null);
 
@@ -137,10 +138,14 @@ export default function AuraCardPanel({
   const shareToLinkedIn = async () => {
     if (busy) return;
     setBusy("share");
+    setShareError(null);
+    let insertedId: string | null = null;
+    let uidForLog: string | null = null;
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.id) throw new Error("Sign in first");
       const uid = session.user.id;
+      uidForLog = uid;
 
       const c = await renderCanvas();
       const blob: Blob | null = await new Promise((res) => c.toBlob((b) => res(b), "image/png", 1));
@@ -176,6 +181,7 @@ export default function AuraCardPanel({
         .select("id")
         .single();
       if (insErr) throw insErr;
+      insertedId = (ins as any)?.id ?? null;
 
       const { data, error } = await supabase.functions.invoke("linkedin-publish", {
         body: { postId: (ins as any).id },
@@ -191,7 +197,38 @@ export default function AuraCardPanel({
         url ? { action: { label: "View post", onClick: () => window.open(url, "_blank") } } : undefined,
       );
     } catch (e: any) {
-      toast.error(e?.message || "Couldn't share to LinkedIn");
+      const message = e?.message || "Couldn't share to LinkedIn";
+      // 1. Retire the orphan (rename tracking_status → 'failed'). Wrapped so a
+      //    failure here cannot mask the original error.
+      if (insertedId) {
+        try {
+          await supabase
+            .from("linkedin_posts")
+            .update({
+              tracking_status: "failed",
+              source_metadata: {
+                origin: "aura_card",
+                variant,
+                publish_error: String(message).slice(0, 500),
+                failed_at: new Date().toISOString(),
+              },
+            })
+            .eq("id", insertedId);
+        } catch { /* swallow: never let retire mask the real error */ }
+      }
+      // 2. Log server-side — a client failure that leaves a DB row must leave
+      //    an ef_error_log row. Wrapped for the same reason.
+      try {
+        await (supabase.from("ef_error_log" as any) as any).insert({
+          function_name: "aura-card-share",
+          severity: "high",
+          error_message: String(message).slice(0, 1000),
+          user_id: uidForLog,
+          context: { post_id: insertedId, variant },
+        });
+      } catch { /* swallow */ }
+      // 3. Persistent inline error — replaces the vanishing toast.
+      setShareError(message);
     } finally { setBusy(null); }
   };
 
@@ -314,6 +351,59 @@ export default function AuraCardPanel({
               >
                 Dismiss
               </button>
+            </div>
+          )}
+          {shareError && (
+            <div
+              role="alert"
+              style={{
+                border: `1px solid ${SPOT}`,
+                background: "rgba(122,31,43,0.06)",
+                padding: "12px 14px",
+                marginBottom: 14,
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
+                <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.18em", color: SPOT, textTransform: "uppercase" }}>
+                  Not posted to LinkedIn
+                </div>
+                <button
+                  onClick={() => setShareError(null)}
+                  aria-label="Dismiss"
+                  style={{
+                    fontFamily: MONO, fontSize: 10, letterSpacing: "0.12em",
+                    textTransform: "uppercase", color: INK_2,
+                    background: "transparent", border: 0, cursor: "pointer",
+                  }}
+                >
+                  Dismiss
+                </button>
+              </div>
+              <p style={{ margin: 0, fontFamily: SERIF, fontSize: 15, color: INK }}>
+                {/not connected/i.test(shareError)
+                  ? "Your card wasn't posted. Connect LinkedIn in Settings, then try again."
+                  : `Your card wasn't posted. ${shareError}`}
+              </p>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <ActionButton
+                  onClick={() => { setShareError(null); void shareToLinkedIn(); }}
+                  disabled={!!busy}
+                  icon={busy === "share" ? <Loader2 className="animate-spin" size={14} /> : <Linkedin size={14} />}
+                  primary
+                >
+                  Try again
+                </ActionButton>
+                <ActionButton
+                  onClick={downloadPng}
+                  disabled={!!busy}
+                  icon={busy === "png" ? <Loader2 className="animate-spin" size={14} /> : <Download size={14} />}
+                >
+                  Download PNG
+                </ActionButton>
+              </div>
             </div>
           )}
           <div style={{ display: "flex", justifyContent: "center", padding: "8px 0 18px" }}>
