@@ -628,6 +628,15 @@ const LANDING_CSS = `
   .aura-landing .hero h1{max-width:15ch;text-shadow:0 2px 44px rgba(0,0,0,.5),0 0 20px rgba(4,7,6,.8)}
   .aura-landing .hero .heroline2{max-width:19ch}
   @media (max-width:900px){.aura-landing .hero h1{max-width:100%}.aura-landing .hero .heroline2{max-width:100%}}
+  .aura-landing .faq-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 48px;margin-top:34px}
+  .aura-landing .faq-i{border-top:1px solid rgba(237,231,217,.14);padding:18px 2px}
+  .aura-landing .faq-col .faq-i:last-child{border-bottom:1px solid rgba(237,231,217,.14)}
+  .aura-landing .faq-i summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:flex-start;gap:18px;font-size:clamp(16px,1.5vw,19px);font-weight:500;color:var(--paper)}
+  .aura-landing .faq-i summary::-webkit-details-marker{display:none}
+  .aura-landing .faq-i summary::after{content:"+";font-family:'IBM Plex Mono',monospace;font-size:20px;line-height:1;color:var(--amber);flex:0 0 auto}
+  .aura-landing .faq-i[open] summary::after{content:"\\2013"}
+  .aura-landing .faq-i p{margin:12px 0 2px;font-size:clamp(15px,1.35vw,16.5px);line-height:1.65;color:var(--muted);max-width:46ch}
+  @media (max-width:860px){.aura-landing .faq-grid{grid-template-columns:1fr;gap:0}}
 `;
 const LANDING_HTML = `
 <canvas id="bg"></canvas>
@@ -982,6 +991,28 @@ const LANDING_HTML = `
 </section>
 
 <div class="seam"></div>
+
+<!-- FAQ · last objections before the ask -->
+<section class="dark" id="faq">
+  <div class="wrap">
+    <p class="eyebrow" data-reveal>BEFORE YOU ASK</p>
+    <h2 data-reveal>The questions you're already thinking.</h2>
+    <div class="faq-grid" data-reveal>
+      <div class="faq-col">
+        <details class="faq-i" open><summary>So what is Aura, in one line?</summary><p>A personal intelligence system. It learns who you are, keeps everything you read from vanishing, and turns it into posts in your own voice.</p></details>
+        <details class="faq-i"><summary>How is this different from ChatGPT or a ghostwriter?</summary><p>Both start from a blank prompt. Aura starts from you — your assessment, your reading, your voice — and works from real signals inside what you actually read. A ghostwriter has to guess your view. Aura already knows it.</p></details>
+        <details class="faq-i"><summary>How much of my time does this take?</summary><p>Minutes a week. You capture what you already read with one tap. Aura does the reading for patterns, the drafting and the images. You read, edit a line, approve. Nothing is published without you.</p></details>
+        <details class="faq-i"><summary>Will it actually sound like me, and not like AI?</summary><p>That is the whole point. It writes from your voice profile and a real signal, with the source attached — not from a generic prompt. The interchangeable AI post is exactly what Aura exists to avoid.</p></details>
+      </div>
+      <div class="faq-col">
+        <details class="faq-i"><summary>Who is Aura for?</summary><p>Senior professionals who already read widely and hold real views, but whose expertise stays invisible outside the room. If you read more than you publish, you are the reader we built this for.</p></details>
+        <details class="faq-i"><summary>What does it cost?</summary><p>Free during the founding beta. When pricing is set after beta, founding members keep the best terms. No card to join, no commitment.</p></details>
+        <details class="faq-i"><summary>Does it work in Arabic?</summary><p>Yes. Contemporary professional Arabic written for a GCC readership, with your English technical terms kept in English. Your voice leads in both languages.</p></details>
+        <details class="faq-i"><summary>How do I get in?</summary><p>Request access — it takes about thirty seconds. You get a decision within twenty-four hours. The founding circle is capped at fifty places.</p></details>
+      </div>
+    </div>
+  </div>
+</section>
 
 <!-- FINAL CTA -->
 <section class="dark final">
