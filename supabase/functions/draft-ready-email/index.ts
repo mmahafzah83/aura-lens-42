@@ -115,8 +115,8 @@ function buildEmail(opts: {
     typeof nSources === "number" && nSources > 0;
 
   const preheader = haveCounts
-    ? `${nReadings} readings you saved. One post. Ten minutes.`
-    : `One post. Ten minutes.`;
+    ? `${nReadings} readings you saved. One post. Four minutes.`
+    : `One post. Four minutes.`;
 
   const namePrefix = firstName ? `${escapeHtml(firstName)} — you` : "You";
   const when = whenPhrase(newestFragmentIso);
@@ -135,7 +135,7 @@ function buildEmail(opts: {
 
   const p3 = `It isn't finished until you've argued with it. Cut what isn't you. Sharpen what is. Then it's yours to publish — or not.`;
 
-  const closer = `Ten minutes. Nothing goes out without you.`;
+  const closer = `Four minutes. Nothing goes out without you.`;
 
   let ps = "";
   if (velocityStatus === "accelerating") {
