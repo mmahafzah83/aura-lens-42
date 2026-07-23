@@ -625,6 +625,9 @@ const LANDING_CSS = `
   @keyframes hwIn{to{opacity:1;transform:none}}
   @media (prefers-reduced-motion: reduce){.aura-landing .hw{animation:none;opacity:1;transform:none}}
   .aura-landing .pcine-key{position:absolute;inset:0;background:radial-gradient(46% 62% at 50% 38%,rgba(255,244,228,.30) 0%,rgba(255,244,228,.13) 45%,rgba(255,244,228,0) 72%);mix-blend-mode:screen;z-index:1;pointer-events:none}
+  .aura-landing .hero h1{max-width:15ch;text-shadow:0 2px 44px rgba(0,0,0,.5),0 0 20px rgba(4,7,6,.8)}
+  .aura-landing .hero .heroline2{max-width:19ch}
+  @media (max-width:900px){.aura-landing .hero h1{max-width:100%}.aura-landing .hero .heroline2{max-width:100%}}
 `;
 const LANDING_HTML = `
 <canvas id="bg"></canvas>
