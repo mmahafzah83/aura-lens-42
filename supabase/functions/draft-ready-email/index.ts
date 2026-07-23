@@ -44,6 +44,22 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
+// Mirror of cleanBody() in src/components/Brief.tsx — strips generator artifacts
+// (leading POST / بوست / منشور linkedin header lines and markdown asterisks)
+// so the quoted excerpt reads as a real sentence.
+function cleanBody(raw: string): string {
+  return (raw || "")
+    .replace(/^[ \t]*(post|بوست|منشور\s+linkedin)[ \t]*$/gim, "")
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/(^|[\s(])\*(?!\s)([^*\n]+?)\*(?=[\s.,;:!?)]|$)/g, "$1$2")
+    .replace(/\*\*/g, "")
+    .replace(/^\s*\n+/, "");
+}
+
+function excerptFor(raw: string): string {
+  return cleanBody(raw).replace(/\s+/g, " ").trim();
+}
+
 function deriveShortTopic(opts: {
   themeTags: string[] | null;
   signalTitle: string | null;
@@ -327,17 +343,20 @@ serve(async (req) => {
       }
 
       // Ghost-draft fallback: use provenance from linkedin_posts.source_metadata.
+      let ghostShortTopic: string | null = null;
       if (!fullTopic && pick.src === "linkedin_posts" && pick.source_metadata) {
         const sm = pick.source_metadata;
         if (sm["ghost_draft"] === true) {
           const fs = typeof sm["finding_source"] === "string" ? sm["finding_source"] as string : "";
           const fi = typeof sm["finding_implication"] === "string" ? sm["finding_implication"] as string : "";
           if (fs || fi) fullTopic = [fs, fi].filter(Boolean).join(" — ");
+          if (fs) ghostShortTopic = fs.trim();
         }
       }
 
       if (!fullTopic) fullTopic = (pick.title || "").trim();
-      shortTopic = deriveShortTopic({ themeTags, signalTitle, fallbackTitle: pick.title });
+      shortTopic = ghostShortTopic
+        || deriveShortTopic({ themeTags, signalTitle, fallbackTitle: pick.title });
       if (!shortTopic) shortTopic = fullTopic;
       if (!fullTopic) fullTopic = shortTopic || "a finding you kept";
       if (!shortTopic) shortTopic = "a finding you kept";
@@ -350,7 +369,7 @@ serve(async (req) => {
         .maybeSingle();
       const firstName = (prof?.first_name as string | null)?.trim() || null;
 
-      const excerpt = (pick.body || "").trim();
+      const excerpt = excerptFor(pick.body || "");
       const { subject, preheader, html } = buildEmail({
         firstName,
         shortTopic,
