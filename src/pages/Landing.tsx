@@ -993,7 +993,7 @@ const LANDING_HTML = `
     <p class="micro" data-reveal>Takes 30 seconds. Your invitation decision within 24 hours.</p>
     <p class="ar" data-reveal lang="ar" dir="rtl">&#x62D;&#x62A;&#x649; &#x627;&#x644;&#x633;&#x648;&#x642; &#x64A;&#x639;&#x631;&#x641;&#x643; &#x642;&#x628;&#x644; &#x645;&#x627; &#x64A;&#x634;&#x648;&#x641;&#x643; &#x2726;</p>
     <p class="beta" data-reveal>PRIVATE BETA &middot; BY INVITATION ONLY</p>
-    <p class="micro" data-reveal>Join 50 professionals already on the list.</p>
+    <p class="micro" id="seatline" data-reveal></p>
   </div>
 </section>
 
@@ -1289,6 +1289,24 @@ const Landing = () => {
       void ranOk;
     };
   }, [authChecked, navigate]);
+
+  useEffect(() => {
+    if (!authChecked) return;
+    let cancelled = false;
+    supabase
+      .rpc("founding_seats")
+      .then(({ data, error }) => {
+        if (cancelled || error || !data || !data.length) return;
+        const row = Array.isArray(data) ? data[0] : data;
+        const claimed = Number(row?.claimed);
+        const cap = Number(row?.cap);
+        if (!Number.isFinite(claimed) || !Number.isFinite(cap) || cap <= 0) return;
+        const el = rootRef.current?.querySelector("#seatline");
+        if (el) el.textContent = `${claimed} of ${cap} founding places claimed.`;
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [authChecked]);
 
   if (!authChecked) {
     return <div style={{ minHeight: "100vh", background: "#040706" }} />;
