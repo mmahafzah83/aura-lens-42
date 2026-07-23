@@ -231,12 +231,13 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
         .eq("id", postId)
         .eq("user_id", user.id);
 
-      // Fire-and-forget: re-learn voice from the growing published corpus.
-      // Never allowed to slow, block, or fail the publish response.
+      // Fire-and-forget: enqueue a voice_distill job so the worker re-learns
+      // this user's voice from the growing published corpus. The partial
+      // unique index (job_type, user_id) WHERE status IN ('pending','claimed')
+      // collapses rapid re-publishes into a single job. Never blocks publish.
       try {
         const kickVoiceDistill = async () => {
           try {
-            const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
             const MIN_CORPUS = 5;
             // Total eligible corpus — floor gate. Prevents distilling
             // confident-looking voice models from tiny (e.g. 2-post) samples.
@@ -278,15 +279,25 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
             const shouldRun = !lastLog || newSince >= 3 || daysSinceLastRun >= 30;
             if (!shouldRun) return;
 
-            await fetch(`${SUPABASE_URL}/functions/v1/voice-distill`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${serviceKey}`,
-                apikey: serviceKey,
-              },
-              body: JSON.stringify({ user_id: user.id }),
-            });
+            // Insert a queue row instead of invoking voice-distill directly.
+            // ON CONFLICT DO NOTHING against job_queue_one_live so three
+            // publishes in five minutes still produce exactly ONE job.
+            const daysInt = Number.isFinite(daysSinceLastRun)
+              ? Math.max(0, Math.min(9999, Math.floor(daysSinceLastRun)))
+              : 9999;
+            await adminClient
+              .from("job_queue")
+              .insert({
+                job_type: "voice_distill",
+                user_id: user.id,
+                payload: {
+                  total_corpus: totalCorpus,
+                  new_since: newSince,
+                  days_since: daysInt,
+                  trigger: "linkedin_publish",
+                },
+                priority: 100,
+              }, { onConflict: "job_type,user_id", ignoreDuplicates: true } as any);
           } catch (e) {
             console.error("voice-distill kick failed (non-blocking):", e);
           }
