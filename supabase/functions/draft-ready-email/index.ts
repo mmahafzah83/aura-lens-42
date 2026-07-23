@@ -362,7 +362,7 @@ serve(async (req) => {
         newestFragmentIso,
         velocityStatus,
       });
-      void preheader;
+
 
       // Recipient email
       const { data: userData, error: userErr } = await admin.auth.admin.getUserById(pick.user_id);
