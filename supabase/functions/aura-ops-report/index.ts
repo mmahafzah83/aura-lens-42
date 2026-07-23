@@ -363,10 +363,12 @@ Deno.serve(async (req) => {
     const color =
       c.state === "OK" ? GREEN :
       c.state === "NEVER" ? RED :
+      c.state === "PENDING" ? INK_MUTE :
       c.state === "NOT_RUN" ? RED : RED;
     const text =
       c.state === "OK"      ? `OK — last run ${fmtAge(c.ageMin)} (${c.row.succeeded_24h}/24h ok, ${c.row.failed_24h} failed)` :
       c.state === "NEVER"   ? `NEVER RUN` :
+      c.state === "PENDING" ? `PENDING FIRST RUN (window ${c.windowMin} min)` :
       c.state === "NOT_RUN" ? `NOT RUN since ${esc((c.row.last_end || "").replace("T"," ").slice(0,16))} (expected inside ${c.windowMin} min)` :
                               `FAILING — ${c.row.failed_24h} failed runs in 24h`;
     html += `<tr><td style="padding:4px 8px 4px 0;color:${INK};white-space:nowrap;">${esc(c.row.jobname)}</td><td style="padding:4px 0;color:${color};">${text}</td></tr>`;
@@ -455,6 +457,7 @@ Deno.serve(async (req) => {
   for (const c of cronReport) {
     if (c.state === "OK") lines.push(`  ${c.row.jobname}: OK — last run ${fmtAge(c.ageMin)} (${c.row.succeeded_24h}/24h ok, ${c.row.failed_24h} failed)`);
     else if (c.state === "NEVER") lines.push(`  ${c.row.jobname}: NEVER RUN`);
+    else if (c.state === "PENDING") lines.push(`  ${c.row.jobname}: pending first run (window ${c.windowMin} min)`);
     else if (c.state === "NOT_RUN") lines.push(`  ${c.row.jobname}: NOT RUN since ${c.row.last_end} (expected inside ${c.windowMin} min)`);
     else lines.push(`  ${c.row.jobname}: FAILING — ${c.row.failed_24h} failed runs in 24h`);
   }
