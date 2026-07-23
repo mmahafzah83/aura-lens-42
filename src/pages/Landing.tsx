@@ -1319,11 +1319,11 @@ tio.observe(document.getElementById("tiers"));
 (function(){var e=document.getElementById("amk-markRead");if(e&&typeof svgMark==="function")svgMark(e,"#EDE7D9");})();
 (function(){
   var root=document.getElementById("amk-combo"); if(!root)return;
-  var ph=["cap","read","frag","sig","out"], lbl=["CAPTURE","AURA READS","FRAGMENTS","SIGNALS","OUTPUT"], dur=[5000,5200,6200,5600,8200];
+  var ph=["idt","cap","read","frag","sig","out"], lbl=["WHO YOU ARE","CAPTURE","AURA READS","FRAGMENTS","SIGNALS","OUTPUT"], dur=[4600,5000,5200,6200,5600,8200];
   var stations=[].slice.call(root.querySelectorAll(".lstation"));
   var beam=root.querySelector(".dropbeam"), bz=root.querySelector(".beamzone");
   var stage=root.querySelector(".stage"), statEl=root.querySelector(".a-stat"), capEl=root.querySelector(".cap-l");
-  var caps=["One tap, the moment you read it — a link, a report, a voice note.","Aura reads each one, breaks it down, and connects it across your field.","The ideas worth keeping are saved — each tied to your profile, your sector, the trend behind it.","Week by week, the patterns turn into the few themes that are yours to own.","A post, a carousel, a diagram, a framework — in your voice, ready when you are."];
+  var caps=["A short assessment maps your skills and your sector — so nothing after this is generic.","One tap, the moment you read it — a link, a report, a voice note.","Aura reads each one, breaks it down, and connects it across your field.","The ideas worth keeping are saved — each tied to your profile, your sector, the trend behind it.","Week by week, the patterns turn into the few themes that are yours to own.","A post, a carousel, a diagram, a framework — in your voice, ready when you are."];
   var i=0,timer=null;
   function beamTo(n){var r=stations[n].getBoundingClientRect(),c=bz.getBoundingClientRect();beam.style.left=(r.left-c.left+r.width/2)+"px";beam.style.opacity="1";}
   function countSig(){stage.querySelectorAll(".a-sigrow").forEach(function(r){var pct=r.querySelector(".a-pct"),target=+r.dataset.v,t0=performance.now();(function tk(now){var pr=Math.min((now-t0)/1100,1);pct.textContent=Math.round(target*pr)+"%";if(pr<1)requestAnimationFrame(tk);})(performance.now());});}
@@ -1333,11 +1333,11 @@ tio.observe(document.getElementById("tiers"));
     ph.forEach(function(pp,k){stage.querySelector(".a-"+pp).classList.toggle("on",k===n);});
     statEl.textContent=lbl[n];
     if(capEl){capEl.style.opacity="0";setTimeout(function(){capEl.textContent=caps[n];capEl.style.opacity="1";},170);}
-    if(n===3)countSig();
+    if(n===4)countSig();
   }
   function loop(){set(i);timer=setTimeout(function(){i=(i+1)%ph.length;loop();},dur[i]);}
   addEventListener("resize",function(){if(timer)beamTo(i);});
-  if(typeof RED!=="undefined"&&RED){set(4);return;}
+  if(typeof RED!=="undefined"&&RED){set(5);return;}
   new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting&&!timer)loop();});},{threshold:.2}).observe(root);
 })();
 `;
