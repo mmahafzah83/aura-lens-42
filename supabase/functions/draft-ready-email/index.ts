@@ -36,6 +36,7 @@ type DraftRow = {
   title: string | null;
   signal_id: string | null;
   src: "content_items" | "linkedin_posts";
+  source_metadata: Record<string, unknown> | null;
 };
 
 function escapeHtml(s: string): string {
@@ -200,7 +201,7 @@ serve(async (req) => {
 
     const { data: lpDrafts, error: lpErr } = await admin
       .from("linkedin_posts")
-      .select("id, user_id, created_at, post_text, title, source_signal_id")
+      .select("id, user_id, created_at, post_text, title, source_signal_id, source_metadata")
       .eq("tracking_status", "draft")
       .is("published_at", null)
       .lt("created_at", cutoffIso);
@@ -218,6 +219,7 @@ serve(async (req) => {
         title: (r.title as string | null) ?? null,
         signal_id: (r.signal_id as string | null) ?? sigFromParams,
         src: "content_items",
+        source_metadata: null,
       });
     }
     for (const r of lpDrafts || []) {
@@ -229,6 +231,7 @@ serve(async (req) => {
         title: (r.title as string | null) ?? null,
         signal_id: (r.source_signal_id as string | null) ?? null,
         src: "linkedin_posts",
+        source_metadata: (r.source_metadata as Record<string, unknown> | null) ?? null,
       });
     }
 
