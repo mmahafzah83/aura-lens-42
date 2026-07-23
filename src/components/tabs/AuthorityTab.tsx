@@ -3428,11 +3428,26 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
     setLoading(true);
     const { data: { user: authUser } } = await supabase.auth.getUser();
     const uid = authUser?.id;
-    const [liRes, ciRes, publishedCountRes, auraCountRes, earlierCountRes] = await Promise.all([
+    const LI_COLS = "id, title, post_text, format_type, tracking_status, topic_label, created_at, source_metadata, source_type, authorship, acquisition, published_at, linkedin_url, post_url, source_signal_id, content_type";
+    const [liDraftsRes, liNeedsReviewRes, liPublishedRes, ciRes, publishedCountRes, auraCountRes, earlierCountRes] = await Promise.all([
       supabase
         .from("linkedin_posts")
-        .select("id, title, post_text, format_type, tracking_status, topic_label, created_at, source_metadata, source_type, authorship, acquisition, published_at, linkedin_url, post_url, source_signal_id, content_type")
+        .select(LI_COLS)
+        .eq("tracking_status", "draft")
+        .is("published_at", null)
         .order("created_at", { ascending: false })
+        .limit(200),
+      supabase
+        .from("linkedin_posts")
+        .select(LI_COLS)
+        .eq("tracking_status", "needs_review")
+        .order("created_at", { ascending: false })
+        .limit(200),
+      supabase
+        .from("linkedin_posts")
+        .select(LI_COLS)
+        .not("published_at", "is", null)
+        .order("published_at", { ascending: false })
         .limit(100),
       supabase
         .from("content_items")
@@ -3479,18 +3494,11 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
       _source: "content_items" as const,
     }));
 
-    // Library shows EVERY linkedin_posts draft for the current user:
-    // tracking_status === 'draft' AND published_at IS NULL, regardless of
-    // content_type. The only body guard is empty/whitespace-only — matching
-    // the acceptance criteria. Carousel rows keep format_type: "carousel"
-    // so the card renders as a carousel; everything else keeps its own type.
-    const liAllDrafts: SavedPost[] = (liRes.data || [])
-      .filter((p: any) =>
-        p.tracking_status === "draft" &&
-        p.published_at == null &&
-        typeof p.post_text === "string" &&
-        p.post_text.trim().length > 0,
-      )
+    // Library shows EVERY linkedin_posts draft for the current user (server-scoped:
+    // tracking_status='draft' AND published_at IS NULL). The only client-side guard
+    // is empty/whitespace-only body. Carousel rows keep format_type: "carousel".
+    const liAllDrafts: SavedPost[] = (liDraftsRes.data || [])
+      .filter((p: any) => typeof p.post_text === "string" && p.post_text.trim().length > 0)
       .map((p: any) => ({
         ...p,
         format_type: p.content_type === "carousel" ? "carousel" : p.format_type,
@@ -3500,20 +3508,18 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
     const liCarouselDrafts = liAllDrafts.filter((p: any) => p.format_type === "carousel");
     const liPostDrafts = liAllDrafts.filter((p: any) => p.format_type !== "carousel");
 
-    // Published section — source of truth is published_at IS NOT NULL.
-    // Rows with no post_text (e.g. legacy LinkedIn export imports) are still
+    // Published section — server-scoped by published_at IS NOT NULL, ordered by
+    // published_at DESC. Rows with no post_text (legacy export imports) are still
     // valid entries; the row renderer falls back to date + Open on LinkedIn.
-    const liPublished: SavedPost[] = (liRes.data || [])
-      .filter((p: any) => !!p.published_at)
-      .sort((a: any, b: any) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime())
-      .map((p: any) => ({
-        ...p,
-        _source: "linkedin_posts" as const,
-      }));
+    const liPublished: SavedPost[] = (liPublishedRes.data || []).map((p: any) => ({
+      ...p,
+      _source: "linkedin_posts" as const,
+    }));
 
-    const liNeedsReview: SavedPost[] = (liRes.data || [])
-      .filter((p: any) => p.tracking_status === "needs_review")
-      .map((p: any) => ({ ...p, _source: "linkedin_posts" as const }));
+    const liNeedsReview: SavedPost[] = (liNeedsReviewRes.data || []).map((p: any) => ({
+      ...p,
+      _source: "linkedin_posts" as const,
+    }));
 
     // De-duplicate by draft id so a draft present in both stores appears once.
     // linkedin_posts wins over content_items (it's the row the publish path uses).
@@ -3528,8 +3534,16 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
     setDrafts(allDrafts);
     setPublishedPosts(liPublished);
     setNeedsReview(liNeedsReview);
+    // Union of all three result sets, de-duplicated by id, so no row that was
+    // previously mapped stops being mapped.
     const urls: Record<string, string> = {};
-    (liRes.data || []).forEach((p: any) => { if (p.linkedin_url) urls[p.id] = p.linkedin_url; });
+    const seenUrlIds = new Set<string>();
+    [...(liDraftsRes.data || []), ...(liNeedsReviewRes.data || []), ...(liPublishedRes.data || [])]
+      .forEach((p: any) => {
+        if (!p?.id || seenUrlIds.has(p.id)) return;
+        seenUrlIds.add(p.id);
+        if (p.linkedin_url) urls[p.id] = p.linkedin_url;
+      });
     setSavedUrls(urls);
 
     // Latest metrics per linkedin_posts row rendered in the library
@@ -3557,7 +3571,13 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
 
     // Resolve signal titles for cards that reference a source signal id
     const signalIds = new Set<string>();
-    (liRes.data || []).forEach((p: any) => { if (p.source_signal_id) signalIds.add(p.source_signal_id); });
+    const seenSigRowIds = new Set<string>();
+    [...(liDraftsRes.data || []), ...(liNeedsReviewRes.data || []), ...(liPublishedRes.data || [])]
+      .forEach((p: any) => {
+        if (!p?.id || seenSigRowIds.has(p.id)) return;
+        seenSigRowIds.add(p.id);
+        if (p.source_signal_id) signalIds.add(p.source_signal_id);
+      });
     (ciRes.data || []).forEach((ci: any) => {
       const sid = ci.generation_params?.source_signal_id || ci.generation_params?.signal_ids?.[0];
       if (sid) signalIds.add(sid);
