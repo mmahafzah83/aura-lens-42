@@ -691,8 +691,9 @@ const LANDING_HTML = `
 <section class="dark">
   <div class="sweep"></div>
   <div class="wrap">
-    <p class="eyebrow" data-reveal>THE PROOF</p>
-    <h2 class="sr-only">The proof: visibility drives trust and opportunity</h2>
+    <p class="eyebrow sec-eyebrow" data-reveal>THE PROOF</p>
+    <h2 data-reveal style="max-width:20ch">The people your market trusts aren't sharper than you. <em>They just show up.</em></h2>
+    <p class="lede" data-reveal style="max-width:54ch">You read more than most of them. But reading isn't showing up — and staying quiet has a price.</p>
     <div class="nums">
       <div class="num" data-reveal><div class="big"><span data-count="73">0</span>%</div><div class="lbl">of decision-makers trust expertise content over marketing.</div></div>
       <div class="num" data-reveal><div class="big"><span data-count="82">0</span>%</div><div class="lbl">trust a company more when its leaders are visible online.</div></div>
