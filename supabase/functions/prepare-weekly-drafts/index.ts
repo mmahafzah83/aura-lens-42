@@ -85,6 +85,48 @@ Deno.serve(async (req) => {
     const weekStartIso = startOfIsoWeekUtc(now).toISOString();
     const twentyOneDaysAgoIso = new Date(now.getTime() - 21 * 86400000).toISOString();
 
+    // ---- Writer gate: don't generate on top of an unlearned voice. ----
+    // Cron passes {attempt: 1|2|3} to distinguish the 04:30/04:45/05:00 runs.
+    // Manual/user-triggered calls default to attempt=3 (proceed) so a single
+    // ad-hoc invocation is never blocked by a stray queue row.
+    const attemptRaw = Number((body as any)?.attempt);
+    const attempt = Number.isFinite(attemptRaw) && attemptRaw >= 1 && attemptRaw <= 3
+      ? Math.floor(attemptRaw)
+      : (isCron ? 1 : 3);
+
+    const { count: vdPending } = await admin
+      .from("job_queue")
+      .select("id", { count: "exact", head: true })
+      .eq("job_type", "voice_distill")
+      .in("status", ["pending", "claimed"]);
+    const pendingN = typeof vdPending === "number" ? vdPending : 0;
+
+    if (pendingN > 0 && attempt < 3) {
+      try {
+        await admin.from("ef_error_log").insert({
+          function_name: "prepare-weekly-drafts",
+          severity: "info",
+          error_message: `WRITER_DEFERRED pending=${pendingN} attempt=${attempt}`,
+          context: { stage: "writer_gate", pending: pendingN, attempt },
+        });
+      } catch (e) { console.error("writer_gate log failed:", e); }
+      return new Response(
+        JSON.stringify({ deferred: true, pending: pendingN, attempt }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    if (pendingN > 0 && attempt >= 3) {
+      try {
+        await admin.from("ef_error_log").insert({
+          function_name: "prepare-weekly-drafts",
+          severity: "high",
+          error_message: `WRITER_PROCEEDED_STALE pending=${pendingN}`,
+          context: { stage: "writer_gate", pending: pendingN, attempt },
+        });
+      } catch (e) { console.error("writer_gate stale log failed:", e); }
+    }
+
     const skipped: Array<{ user_id: string; reason: string; detail?: string }> = [];
     let usersProcessed = 0;
     let draftsCreated = 0;
