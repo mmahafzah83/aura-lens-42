@@ -1051,9 +1051,8 @@ svgMark(document.getElementById("navmark"),"#9aa39e");svgMark(document.getElemen
 (function(){const a=document.getElementById("armark");if(a)svgMark(a,"#EDE7D9");})();
 
 const nav=document.getElementById("nav");addEventListener("scroll",()=>nav.classList.toggle("solid",scrollY>40));
-const words=["invisible","unspoken","unseen","visible"];const fw=document.getElementById("flipw");
+const words=["invisible","unspoken","unseen","visible"];const fw=document.getElementById("flipw");let fi=0,ftimer=null,heroIn=false;
 if(fw){
-let fi=0,ftimer=null,heroIn=false;
 function flipShow(i){fw.textContent=words[i];fw.style.color=words[i]==="visible"?"var(--teal)":"#EDE7D9";}
 function flipStep(){fw.style.transition="transform .5s cubic-bezier(.5,0,.2,1),opacity .5s";fw.style.transform="translateY(-110%)";fw.style.opacity="0";setTimeout(()=>{fi++;flipShow(fi);fw.style.transition="none";fw.style.transform="translateY(110%)";fw.style.opacity="0";requestAnimationFrame(()=>{fw.style.transition="transform .5s cubic-bezier(.5,0,.2,1),opacity .5s";fw.style.transform="translateY(0)";fw.style.opacity="1";});if(fi<words.length-1)ftimer=setTimeout(flipStep,2800);},520);}
 function flipStart(){clearTimeout(ftimer);fi=0;fw.style.transition="none";flipShow(0);fw.style.transform="translateY(0)";fw.style.opacity="1";ftimer=setTimeout(flipStep,2800);}
