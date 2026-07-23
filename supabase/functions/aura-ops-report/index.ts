@@ -39,21 +39,62 @@ function esc(s: string): string {
   return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+// Heartbeats: only functions that ACTUALLY write to ef_error_log with a heartbeat row.
+// "cron ran but wrote no heartbeat" is a rare secondary problem — AMBER, not RED.
+// Do NOT list functions that report through health_findings/notifications instead
+// (e.g. api-health-sentinel, aura-health-audit). Those are covered by Section A on
+// cron.job_run_details.
 type Heartbeat = {
   key: string;
   label: string;
   windowMin: number;
   functionName: string;
-  match?: string; // substring in error_message
+  match?: string;
 };
 
 const HEARTBEATS: Heartbeat[] = [
   { key: "reap-stuck-jobs", label: "Job queue reaper", windowMin: 20, functionName: "reap-stuck-jobs", match: "JOB_QUEUE_HEALTH" },
   { key: "publish-invariants-check", label: "Publish invariants", windowMin: 26 * 60, functionName: "publish-invariants-check" },
   { key: "reconcile-signal-counts", label: "Signal-count reconciler", windowMin: 26 * 60, functionName: "reconcile-signal-counts" },
-  { key: "api-health-sentinel", label: "API health sentinel", windowMin: 3 * 60, functionName: "api-health-sentinel" },
-  { key: "aura-health-audit", label: "Aura health audit", windowMin: 26 * 60, functionName: "aura-health-audit" },
+  { key: "draft-ready-email", label: "Draft-ready email (dry run)", windowMin: 26 * 60, functionName: "draft-ready-email" },
+  { key: "aura-ops-report", label: "This report itself", windowMin: 26 * 60, functionName: "aura-ops-report" },
 ];
+
+// Parse a cron schedule string into an expected max-gap window in minutes.
+// Falls back to generous defaults per class so a weekly job is never flagged
+// simply because it is not Monday.
+function scheduleWindowMin(schedule: string): number {
+  const s = (schedule || "").trim();
+  // Interval form: "N seconds/minutes/hours"
+  const iv = s.match(/^(\d+)\s+(second|minute|hour)s?$/i);
+  if (iv) {
+    const n = parseInt(iv[1], 10);
+    if (/second/i.test(iv[2])) return Math.max(30, Math.ceil(n / 60) + 5);
+    if (/minute/i.test(iv[2])) return n + 10;
+    if (/hour/i.test(iv[2])) return Math.max(3 * 60, n * 60 + 30);
+  }
+  // Standard 5-field cron: min hour dom month dow
+  const p = s.split(/\s+/);
+  if (p.length === 5) {
+    const [mi, hr, dom, _mon, dow] = p;
+    // Weekly (day-of-week pinned to specific day)
+    if (dow !== "*" && !/[*/,]/.test(dow.replace(/^\d+$/, ""))) return 8 * 24 * 60;
+    // Every N minutes: "*/N"
+    if (mi.startsWith("*/")) {
+      const n = parseInt(mi.slice(2), 10) || 5;
+      return Math.max(15, n * 3 + 5);
+    }
+    if (mi === "*") return 30; // every minute
+    // Hourly (specific minute, hour="*")
+    if (hr === "*") return 3 * 60;
+    // Daily (specific hour, no day pinning)
+    if (dom === "*") return 26 * 60;
+    // Monthly (dom pinned)
+    if (/^\d+$/.test(dom)) return 32 * 24 * 60;
+  }
+  // Unknown — be generous rather than crying wolf.
+  return 26 * 60;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -90,9 +131,53 @@ Deno.serve(async (req) => {
   let verdict: Verdict = "GREEN";
   let worstReason = "everything reporting, nothing stuck";
 
-  // ---------- SECTION A: Silence detection ----------
-  const heartbeats: Array<{ hb: Heartbeat; state: "OK" | "SILENT" | "NEVER"; lastSeen: string | null; ageMin: number | null; windowMin: number }> = [];
-  let silentCount = 0;
+  // ---------- SECTION A: Did every scheduled job fire? ----------
+  // Source of truth: cron.job_run_details via public.ops_cron_status().
+  type CronRow = {
+    jobid: number; jobname: string; schedule: string; active: boolean;
+    last_end: string | null; last_status: string | null;
+    succeeded_24h: number; failed_24h: number;
+  };
+  type CronReport = {
+    row: CronRow; windowMin: number;
+    state: "OK" | "NOT_RUN" | "NEVER" | "FAILING";
+    ageMin: number | null;
+  };
+  const cronReport: CronReport[] = [];
+  let notRunCount = 0, failingCount = 0;
+  const { data: cronRows, error: cronErr } = await admin.rpc("ops_cron_status", { p_hours: 24 });
+  if (cronErr) {
+    // Cron visibility itself failed — that is RED. Do not silently continue.
+    verdict = worse(verdict, "RED");
+    worstReason = `Cannot read cron status: ${cronErr.message}`;
+  }
+  for (const raw of (cronRows || []) as CronRow[]) {
+    const win = heartbeatWindowOverride[raw.jobname] ?? scheduleWindowMin(raw.schedule);
+    const age = raw.last_end ? ageMinutes(raw.last_end) : null;
+    let state: CronReport["state"] = "OK";
+    if (!raw.last_end) {
+      state = "NEVER";
+      notRunCount++;
+      verdict = worse(verdict, "RED");
+      worstReason = `Cron ${raw.jobname} has never run`;
+    } else if (age != null && age > win) {
+      state = "NOT_RUN";
+      notRunCount++;
+      verdict = worse(verdict, "RED");
+      worstReason = `Cron ${raw.jobname} last ran ${fmtAge(age)}`;
+    } else if ((raw.failed_24h || 0) > 0 && (raw.succeeded_24h || 0) === 0) {
+      state = "FAILING";
+      failingCount++;
+      verdict = worse(verdict, "RED");
+      worstReason = `Cron ${raw.jobname} failed ${raw.failed_24h}× in 24h`;
+    }
+    cronReport.push({ row: raw, windowMin: win, state, ageMin: age });
+  }
+
+  // ---------- SECTION A2: heartbeat presence for functions that DO write one ----------
+  type HbReport = { hb: Heartbeat; state: "OK" | "MUTE" | "NEVER"; lastSeen: string | null; ageMin: number | null; windowMin: number };
+  const heartbeats: HbReport[] = [];
+  let muteCount = 0;
   for (const hb of HEARTBEATS) {
     const win = heartbeatWindowOverride[hb.key] ?? hb.windowMin;
     let q = admin.from("ef_error_log")
@@ -105,21 +190,36 @@ Deno.serve(async (req) => {
     const last = rows && rows[0] ? (rows[0] as any).created_at as string : null;
     if (!last) {
       heartbeats.push({ hb, state: "NEVER", lastSeen: null, ageMin: null, windowMin: win });
-      silentCount++;
-      verdict = worse(verdict, "RED");
-      worstReason = `${hb.label} has never reported`;
+      // NEVER-SEEN heartbeat + we don't know the cron ran → AMBER (cron layer will catch a genuinely dead cron).
+      muteCount++;
+      verdict = worse(verdict, "AMBER");
+      if (verdict === "AMBER") worstReason = `${hb.label} has never written a heartbeat`;
       continue;
     }
     const age = ageMinutes(last)!;
     if (age > win) {
-      heartbeats.push({ hb, state: "SILENT", lastSeen: last, ageMin: age, windowMin: win });
-      silentCount++;
-      verdict = worse(verdict, "RED");
-      worstReason = `${hb.label} silent for ${fmtAge(age)}`;
+      heartbeats.push({ hb, state: "MUTE", lastSeen: last, ageMin: age, windowMin: win });
+      muteCount++;
+      verdict = worse(verdict, "AMBER");
+      if (verdict === "AMBER") worstReason = `${hb.label} cron ran but wrote no heartbeat`;
     } else {
       heartbeats.push({ hb, state: "OK", lastSeen: last, ageMin: age, windowMin: win });
     }
   }
+
+  // ---------- Health findings summary (the other health channel) ----------
+  let openFindings = 0;
+  let newestFinding: { title: string; at: string } | null = null;
+  try {
+    const { data: hf } = await admin.rpc("ops_health_findings_summary", { p_hours: 24 });
+    const row = Array.isArray(hf) ? hf[0] : hf;
+    if (row) {
+      openFindings = Number((row as any).open_count || 0);
+      const t = (row as any).newest_title;
+      const at = (row as any).newest_at;
+      if (t) newestFinding = { title: String(t), at: String(at || "") };
+    }
+  } catch (_) { /* keep zero */ }
 
   // ---------- SECTION B: Failures 24h ----------
   const since24h = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
@@ -249,18 +349,41 @@ Deno.serve(async (req) => {
   html += `<div style="font-family:${SERIF};font-size:22px;font-weight:500;color:${verdictColor};margin:0 0 6px;">${verdict} — ${esc(worstReason)}</div>`;
   html += `<p style="font-family:${BODY};font-size:14px;color:${INK_BODY};margin:0 0 22px;">If you did not receive this email today, that is itself the alert.</p>`;
 
-  // Section A
-  html += `<h2 style="font-family:${SERIF};font-size:16px;color:${INK};margin:22px 0 8px;">A. Silence detector</h2>`;
+  // Section A — every active scheduled job
+  html += `<h2 style="font-family:${SERIF};font-size:16px;color:${INK};margin:22px 0 8px;">A. Did every scheduled job fire?</h2>`;
   html += `<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;font-family:${BODY};font-size:14px;color:${INK_BODY};border-collapse:collapse;">`;
-  for (const h of heartbeats) {
-    const stateColor = h.state === "OK" ? GREEN : RED;
-    const stateText =
-      h.state === "OK" ? `OK — last heard ${fmtAge(h.ageMin)}` :
-      h.state === "NEVER" ? `NEVER SEEN — expected inside every ${h.windowMin} min` :
-      `SILENT since ${esc((h.lastSeen || "").replace("T", " ").slice(0, 16))} (${fmtAge(h.ageMin)})`;
-    html += `<tr><td style="padding:4px 8px 4px 0;color:${INK};white-space:nowrap;">${esc(h.hb.label)}</td><td style="padding:4px 0;color:${stateColor};">${stateText}</td></tr>`;
+  for (const c of cronReport) {
+    const color =
+      c.state === "OK" ? GREEN :
+      c.state === "NEVER" ? RED :
+      c.state === "NOT_RUN" ? RED : RED;
+    const text =
+      c.state === "OK"      ? `OK — last run ${fmtAge(c.ageMin)} (${c.row.succeeded_24h}/24h ok, ${c.row.failed_24h} failed)` :
+      c.state === "NEVER"   ? `NEVER RUN` :
+      c.state === "NOT_RUN" ? `NOT RUN since ${esc((c.row.last_end || "").replace("T"," ").slice(0,16))} (expected inside ${c.windowMin} min)` :
+                              `FAILING — ${c.row.failed_24h} failed runs in 24h`;
+    html += `<tr><td style="padding:4px 8px 4px 0;color:${INK};white-space:nowrap;">${esc(c.row.jobname)}</td><td style="padding:4px 0;color:${color};">${text}</td></tr>`;
   }
   html += `</table>`;
+
+  // Section A2 — heartbeat presence
+  html += `<h2 style="font-family:${SERIF};font-size:16px;color:${INK};margin:22px 0 8px;">A2. Heartbeats from functions that write one</h2>`;
+  html += `<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;font-family:${BODY};font-size:14px;color:${INK_BODY};border-collapse:collapse;">`;
+  for (const h of heartbeats) {
+    const color = h.state === "OK" ? GREEN : AMBER;
+    const text =
+      h.state === "OK"    ? `OK — last heard ${fmtAge(h.ageMin)}` :
+      h.state === "NEVER" ? `never wrote a heartbeat` :
+                            `cron ran but wrote no heartbeat since ${esc((h.lastSeen || "").replace("T"," ").slice(0,16))}`;
+    html += `<tr><td style="padding:4px 8px 4px 0;color:${INK};white-space:nowrap;">${esc(h.hb.label)}</td><td style="padding:4px 0;color:${color};">${text}</td></tr>`;
+  }
+  html += `</table>`;
+
+  // Health findings summary
+  html += `<p style="font-family:${BODY};font-size:14px;color:${INK_BODY};margin:10px 0 0;">`
+       + `Open health findings in the last 24h: <span style="color:${openFindings > 0 ? AMBER : INK_BODY};">${openFindings}</span>`
+       + (newestFinding ? ` — newest: ${esc(newestFinding.title)}` : "")
+       + `.</p>`;
 
   // Section B
   html += `<h2 style="font-family:${SERIF};font-size:16px;color:${INK};margin:22px 0 8px;">B. Failures in the last 24 hours</h2>`;
