@@ -375,6 +375,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
   const [output, setOutput] = useState("");
   const [sigPresets, setSigPresets] = useState<{ id: string; name: string; text_en: string; text_ar: string }[]>([]);
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
+  const [editingDraftSavedAt, setEditingDraftSavedAt] = useState<string | null>(null);
   const [editingSource, setEditingSource] = useState<"content_items" | "linkedin_posts">("content_items");
   const [isEditingBody, setIsEditingBody] = useState(false);
   const [ghostMeta, setGhostMeta] = useState<{
@@ -640,6 +641,21 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
 
   // Apply draft prefill — opens an existing content_items draft in the editor.
   // Mirrors the signalPrefill channel: hydrate state, then notify parent to clear.
+  const hydrateDraftSignal = async (sigId: string) => {
+    try {
+      const { data: sig } = await supabase
+        .from("strategic_signals")
+        .select("signal_title, explanation, what_it_means_for_you")
+        .eq("id", sigId)
+        .maybeSingle();
+      if (!sig) return;
+      setSelectedSignalId(sigId);
+      pendingSignalIdRef.current = sigId;
+      setSelectedSignalTitle((sig as any).signal_title || null);
+      setSelectedSignalInsight(((sig as any).what_it_means_for_you || (sig as any).explanation) || null);
+      setTopic(prev => (prev && prev.trim()) ? prev : ((sig as any).signal_title || ""));
+    } catch { /* silent — never blank the editor */ }
+  };
   useEffect(() => {
     if (draftPrefill) {
       track("composer_opened", {
@@ -655,12 +671,13 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
       setEditingSource(draftPrefill._source === "linkedin_posts" ? "linkedin_posts" : "content_items");
       // Detect Overnight ghost draft to render provenance strip above editor.
       setGhostMeta(null);
+      setEditingDraftSavedAt(null);
       if (draftPrefill._source === "linkedin_posts") {
         (async () => {
           try {
             const { data } = await supabase
               .from("linkedin_posts")
-              .select("source_metadata")
+              .select("source_metadata, source_signal_id, created_at")
               .eq("id", draftPrefill.id)
               .maybeSingle();
             const meta: any = (data as any)?.source_metadata || {};
@@ -671,7 +688,25 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                 finding_implication: meta.finding_implication ?? null,
               });
             }
+            if ((data as any)?.created_at) setEditingDraftSavedAt((data as any).created_at);
+            const sigId = (data as any)?.source_signal_id || null;
+            if (sigId) await hydrateDraftSignal(sigId);
           } catch { /* silent — strip just won't render */ }
+        })();
+      } else {
+        (async () => {
+          try {
+            const { data } = await supabase
+              .from("content_items")
+              .select("signal_id, generation_params, created_at")
+              .eq("id", draftPrefill.id)
+              .maybeSingle();
+            if ((data as any)?.created_at) setEditingDraftSavedAt((data as any).created_at);
+            const sigId = (data as any)?.signal_id
+              || (data as any)?.generation_params?.source_signal_id
+              || null;
+            if (sigId) await hydrateDraftSignal(sigId);
+          } catch { /* silent — body already set */ }
         })();
       }
       setTopic(draftPrefill.topic || "");
@@ -687,6 +722,11 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
       setDraftSaved(false);
       setPublishedFromCreate(false);
       onDraftPrefillConsumed?.();
+      // Scroll the opened draft into view — mirrors the signalPrefill pattern.
+      setTimeout(() => {
+        document.querySelector('[data-testid="pub-output"]')
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 250);
     }
   }, [draftPrefill]);
 
@@ -1365,6 +1405,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
         </FirstTimeHint>
         {/* Hero CTA — top signal */}
         {(() => {
+          if (editingDraftId) return null;
           if (contentType === "flash" || contentType === "framework_summary") return null;
           // Race-fix: avoid an empty-pill flash by waiting for profile resolve
           if (!profileLoaded) {
@@ -1716,6 +1757,25 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
             {/* Output */}
             {displayedOutput && (
               <motion.div data-testid="pub-output" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
+                {editingDraftId && (
+                  <div
+                    data-testid="composer-editing-strip"
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 11,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.14em",
+                      color: "var(--ink-3)",
+                      borderBottom: "0.5px solid var(--rule)",
+                      paddingBottom: 8,
+                      marginBottom: 4,
+                    }}
+                  >
+                    {editingDraftSavedAt
+                      ? `Editing your draft · Saved ${new Date(editingDraftSavedAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }).toUpperCase()}`
+                      : "Editing your draft"}
+                  </div>
+                )}
                 <div className="flex items-center justify-between">
                   <span className="text-label uppercase tracking-wider text-xs font-semibold">
                     {showingShort ? "Short Version" : "Generated Content"}
