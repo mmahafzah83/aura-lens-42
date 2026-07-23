@@ -89,6 +89,7 @@ export default function Publish({
   const [downloading, setDownloading] = useState(false);
   const [hasLinkedIn, setHasLinkedIn] = useState<boolean | null>(null);
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
+  const [publishError, setPublishError] = useState<string | null>(null);
   const cachedBlobRef = useRef<Blob | null>(null);
 
   // Check LinkedIn connection using the same query AuthorityTab uses.
@@ -154,10 +155,14 @@ export default function Publish({
   const publishToLinkedIn = async () => {
     if (publishing) return;
     setPublishing(true);
+    setPublishError(null);
+    let insertedId: string | null = null;
+    let uidForLog: string | null = null;
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.id) throw new Error("Sign in first");
       const uid = session.user.id;
+      uidForLog = uid;
 
       // 1. Render + upload PNG to the same public bucket AuraCardPanel uses.
       const blob = await buildBlob();
@@ -198,6 +203,7 @@ export default function Publish({
         .select("id")
         .single();
       if (insErr) throw insErr;
+      insertedId = (ins as any)?.id ?? null;
 
       // 3. Invoke linkedin-publish — identical to AuthorityTab.
       const { data, error } = await supabase.functions.invoke("linkedin-publish", {
@@ -216,7 +222,42 @@ export default function Publish({
         decision: decision || null,
       });
     } catch (e: any) {
-      toast.error(e?.message || "Couldn't publish to LinkedIn");
+      const message = e?.message || "Couldn't publish to LinkedIn";
+      // 1. Retire the orphan draft (rename tracking_status → 'failed').
+      if (insertedId) {
+        try {
+          await supabase
+            .from("linkedin_posts")
+            .update({
+              tracking_status: "failed",
+              source_metadata: {
+                origin: "signature_studio",
+                family: family.id,
+                lang,
+                mood,
+                signature: true,
+                _language: lang,
+                designOption: designOption || null,
+                emphasisOff: !!emphasisOff,
+                publish_error: String(message).slice(0, 500),
+                failed_at: new Date().toISOString(),
+              },
+            })
+            .eq("id", insertedId);
+        } catch { /* never let retire mask the real error */ }
+      }
+      // 2. Log server-side.
+      try {
+        await (supabase.from("ef_error_log" as any) as any).insert({
+          function_name: "signature-card-share",
+          severity: "high",
+          error_message: String(message).slice(0, 1000),
+          user_id: uidForLog,
+          context: { post_id: insertedId, family: family.id, lang },
+        });
+      } catch { /* swallow */ }
+      // 3. Persistent inline error — replaces vanishing toast.
+      setPublishError(message);
     } finally { setPublishing(false); }
   };
 
@@ -279,6 +320,43 @@ export default function Publish({
                   </p>
                 </div>
               ) : null}
+
+              {publishError && (
+                <div style={warnBox} role="alert">
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
+                    <div style={warnKicker}>Not posted to LinkedIn</div>
+                    <button
+                      onClick={() => setPublishError(null)}
+                      aria-label="Dismiss"
+                      style={{
+                        background: "transparent", border: 0, cursor: "pointer",
+                        fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+                        fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase",
+                        color: "var(--ink-2)",
+                      }}
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                  <p style={warnBody}>
+                    {/not connected/i.test(publishError)
+                      ? "Your card wasn't posted. Connect LinkedIn in Settings, then try again."
+                      : `Your card wasn't posted. ${publishError}`}
+                  </p>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 4 }}>
+                    <button
+                      onClick={() => { setPublishError(null); void publishToLinkedIn(); }}
+                      disabled={publishing}
+                      style={primaryBtn}
+                    >
+                      {publishing ? "Publishing…" : "Try again"}
+                    </button>
+                    <button onClick={downloadInstead} disabled={downloading} style={secondaryBtn}>
+                      {downloading ? "Rendering…" : "Download PNG"}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 <button
