@@ -287,7 +287,7 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
               : 9999;
             await adminClient
               .from("job_queue")
-              .insert({
+              .upsert({
                 job_type: "voice_distill",
                 user_id: user.id,
                 payload: {
@@ -297,7 +297,7 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
                   trigger: "linkedin_publish",
                 },
                 priority: 100,
-              }, { onConflict: "job_type,user_id", ignoreDuplicates: true } as any);
+              }, { onConflict: "job_type,user_id", ignoreDuplicates: true });
           } catch (e) {
             console.error("voice-distill kick failed (non-blocking):", e);
           }
