@@ -628,6 +628,15 @@ const LANDING_CSS = `
   .aura-landing .hero h1{max-width:15ch;text-shadow:0 2px 44px rgba(0,0,0,.5),0 0 20px rgba(4,7,6,.8)}
   .aura-landing .hero .heroline2{max-width:19ch}
   @media (max-width:900px){.aura-landing .hero h1{max-width:100%}.aura-landing .hero .heroline2{max-width:100%}}
+  .aura-landing .faq-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 48px;margin-top:34px}
+  .aura-landing .faq-i{border-top:1px solid rgba(237,231,217,.14);padding:18px 2px}
+  .aura-landing .faq-col .faq-i:last-child{border-bottom:1px solid rgba(237,231,217,.14)}
+  .aura-landing .faq-i summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:flex-start;gap:18px;font-size:clamp(16px,1.5vw,19px);font-weight:500;color:var(--paper)}
+  .aura-landing .faq-i summary::-webkit-details-marker{display:none}
+  .aura-landing .faq-i summary::after{content:"+";font-family:'IBM Plex Mono',monospace;font-size:20px;line-height:1;color:var(--amber);flex:0 0 auto}
+  .aura-landing .faq-i[open] summary::after{content:"\\2013"}
+  .aura-landing .faq-i p{margin:12px 0 2px;font-size:clamp(15px,1.35vw,16.5px);line-height:1.65;color:var(--muted);max-width:46ch}
+  @media (max-width:860px){.aura-landing .faq-grid{grid-template-columns:1fr;gap:0}}
 `;
 const LANDING_HTML = `
 <canvas id="bg"></canvas>
