@@ -657,6 +657,14 @@ const LANDING_CSS = `
   .aura-landing .nums .num .lbl{margin-top:10px}
   .aura-landing .ecard .emetric{margin-top:14px;padding-top:12px;border-top:1px dashed rgba(237,231,217,.13);font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.4px;color:#9aa39e}
   .aura-landing .ecard .emetric b{color:var(--amber);font-weight:500}
+  .aura-landing .a-srcname{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.5px;color:var(--amber);text-align:center;margin-bottom:12px;opacity:.92}
+  .aura-landing .lloop{position:relative;height:58px;margin-top:14px}
+  .aura-landing .lloop .arc{position:absolute;left:7%;right:7%;top:0;height:24px;border:1px dashed rgba(214,167,72,.32);border-top:0;border-radius:0 0 24px 24px;display:block}
+  .aura-landing .lloop .ldot{position:absolute;top:20px;left:7%;width:7px;height:7px;margin-left:-3.5px;border-radius:50%;background:var(--amber);box-shadow:0 0 14px rgba(214,167,72,.85);animation:auraLoopBack 7s linear infinite}
+  .aura-landing .lloop .llbl{position:absolute;left:0;right:0;top:32px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:#7c8682}
+  @keyframes auraLoopBack{0%{left:93%;opacity:0}8%{opacity:1}92%{opacity:1}100%{left:7%;opacity:0}}
+  @media (prefers-reduced-motion: reduce){.aura-landing .lloop .ldot{animation:none;left:50%;opacity:.9}}
+  @media (max-width:700px){.aura-landing .lloop{height:52px}.aura-landing .lloop .llbl{font-size:9px;letter-spacing:1px}}
 `;
 const LANDING_HTML = `
 <canvas id="bg"></canvas>
