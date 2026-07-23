@@ -26,7 +26,10 @@ const corsHeaders = {
 
 const FROM = "Aura <invites@aura-intel.org>";
 const REPLY_TO = "mohammad.mahafdhah@aura-intel.org";
-const CTA_URL = "https://www.aura-intel.org/dashboard?tab=authority";
+const CTA_BASE = "https://www.aura-intel.org/dashboard?tab=authority";
+function ctaFor(draftId: string, src: "content_items" | "linkedin_posts"): string {
+  return `${CTA_BASE}&draft=${encodeURIComponent(draftId)}&src=${src}`;
+}
 
 type DraftRow = {
   draft_id: string;
@@ -101,10 +104,11 @@ function buildEmail(opts: {
   nSources: number | null;
   newestFragmentIso: string | null;
   velocityStatus: string | null;
+  ctaUrl: string;
 }): { subject: string; preheader: string; html: string } {
   const {
     firstName, shortTopic, fullTopic, excerpt,
-    nReadings, nSources, newestFragmentIso, velocityStatus,
+    nReadings, nSources, newestFragmentIso, velocityStatus, ctaUrl,
   } = opts;
 
   const shortForSubject = clampForSubject(shortTopic || fullTopic);
@@ -148,7 +152,7 @@ function buildEmail(opts: {
     <p style="font-size:15px;line-height:1.6;margin:0 0 6px;color:${INK_BODY};">${p2}</p>
     ${quote}
     <p style="font-size:15px;line-height:1.6;margin:0 0 6px;color:${INK_BODY};">${p3}</p>
-    <p style="margin:22px 0 8px;">${button(CTA_URL, "Open your draft")}</p>
+    <p style="margin:22px 0 8px;">${button(ctaUrl, "Open your draft")}</p>
     <p style="font-size:12px;line-height:1.5;margin:0;color:#8A8073;">${closer}</p>
     ${ps}
   `;
@@ -405,6 +409,7 @@ serve(async (req) => {
         nSources,
         newestFragmentIso,
         velocityStatus,
+        ctaUrl: ctaFor(pick.draft_id, pick.src),
       });
 
 
