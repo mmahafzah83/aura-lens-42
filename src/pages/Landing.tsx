@@ -727,8 +727,8 @@ const LANDING_CSS = `
   .aura-landing .ovn-agent .ant::after{content:"";position:absolute;top:-4px;left:-2.3px;width:5px;height:5px;border-radius:50%;background:var(--amber);box-shadow:0 0 9px var(--amber);animation:ovnPulse 2s infinite}
   .aura-landing .ovn-agent .beam{position:absolute;left:50%;top:34px;width:34px;margin-left:-17px;height:46px;background:linear-gradient(180deg,rgba(54,197,176,.34),transparent);clip-path:polygon(38% 0,62% 0,100% 100%,0 100%);animation:ovnBeam 26s linear infinite}
   @keyframes ovnBeam{0%,4%{opacity:0}8%,15%{opacity:1}19%,22%{opacity:0}23%,26%{opacity:1}30%,41%{opacity:0}42%,45%{opacity:1}49%,60%{opacity:0}61%,64%{opacity:1}68%,79%{opacity:0}80%,88%{opacity:1}92%,100%{opacity:0}}
-  .aura-landing .ovn-log{position:absolute;left:26px;bottom:18px;height:17px;overflow:hidden;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.6px;color:var(--teal)}
-  .aura-landing .ovn-log span{position:absolute;left:0;top:0;white-space:nowrap;opacity:0;animation:ovnLine 26s linear infinite}
+  .aura-landing .ovn-log{position:absolute;left:26px;bottom:18px;display:grid;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.6px;color:var(--teal);text-align:left}
+  .aura-landing .ovn-log span{grid-area:1/1;justify-self:start;white-space:nowrap;opacity:0;animation:ovnLine 26s linear infinite}
   .aura-landing .ovn-log .l1{animation-delay:2.4s}
   .aura-landing .ovn-log .l2{animation-delay:11.4s}
   .aura-landing .ovn-log .l3{animation-delay:20.4s}
