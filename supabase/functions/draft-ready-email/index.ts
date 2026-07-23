@@ -180,6 +180,8 @@ serve(async (req) => {
 
   // dry_run defaults to TRUE when the key is absent from the body.
   let dryRun = true;
+  let onlyUserId: string | null = null;
+  let onlyUserIdRaw: unknown = undefined;
   try {
     const raw = await req.text();
     if (raw && raw.trim().length > 0) {
@@ -187,8 +189,28 @@ serve(async (req) => {
       if (parsed && Object.prototype.hasOwnProperty.call(parsed, "dry_run")) {
         dryRun = parsed.dry_run !== false;
       }
+      if (parsed && Object.prototype.hasOwnProperty.call(parsed, "only_user_id")) {
+        onlyUserIdRaw = parsed.only_user_id;
+      }
     }
   } catch { /* ignore body parse errors — stay in dry-run */ }
+
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (onlyUserIdRaw !== undefined) {
+    if (typeof onlyUserIdRaw !== "string" || !UUID_RE.test(onlyUserIdRaw)) {
+      await admin.from("ef_error_log").insert({
+        function_name: "draft-ready-email",
+        severity: "high",
+        error_message: `DRAFT_READY_EMAIL invalid_only_user_id value=${String(onlyUserIdRaw).slice(0, 80)}`,
+        context: { only_user_id: String(onlyUserIdRaw).slice(0, 200) },
+      });
+      return new Response(JSON.stringify({ error: "invalid only_user_id" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    onlyUserId = onlyUserIdRaw;
+  }
 
   const results: Array<{
     user_id: string;
@@ -210,19 +232,23 @@ serve(async (req) => {
     // Pick each user's single newest draft older than 12h.
     const cutoffIso = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
 
-    const { data: ciDrafts, error: ciErr } = await admin
+    let ciQuery = admin
       .from("content_items")
       .select("id, user_id, created_at, body, title, signal_id, generation_params")
       .eq("status", "draft")
       .lt("created_at", cutoffIso);
+    if (onlyUserId) ciQuery = ciQuery.eq("user_id", onlyUserId);
+    const { data: ciDrafts, error: ciErr } = await ciQuery;
     if (ciErr) throw ciErr;
 
-    const { data: lpDrafts, error: lpErr } = await admin
+    let lpQuery = admin
       .from("linkedin_posts")
       .select("id, user_id, created_at, post_text, title, source_signal_id, source_metadata")
       .eq("tracking_status", "draft")
       .is("published_at", null)
       .lt("created_at", cutoffIso);
+    if (onlyUserId) lpQuery = lpQuery.eq("user_id", onlyUserId);
+    const { data: lpDrafts, error: lpErr } = await lpQuery;
     if (lpErr) throw lpErr;
 
     const all: DraftRow[] = [];
@@ -495,14 +521,15 @@ serve(async (req) => {
     await admin.from("ef_error_log").insert({
       function_name: "draft-ready-email",
       severity: "info",
-      error_message: `DRAFT_READY_EMAIL dry_run=${dryRun} candidates=${candidates} sent=${sent} skipped_already=${skippedAlready} failed=${failed}`,
-      context: { dry_run: dryRun, candidates, sent, skipped_already: skippedAlready, failed },
+      error_message: `DRAFT_READY_EMAIL dry_run=${dryRun} only_user=${onlyUserId ?? "none"} candidates=${candidates} sent=${sent} skipped_already=${skippedAlready} failed=${failed}`,
+      context: { dry_run: dryRun, only_user_id: onlyUserId, candidates, sent, skipped_already: skippedAlready, failed },
     });
 
     return new Response(
       JSON.stringify({
         ok: true,
         dry_run: dryRun,
+        only_user_id: onlyUserId,
         candidates,
         sent,
         skipped_already: skippedAlready,
