@@ -3460,6 +3460,27 @@ export type Database = {
         }[]
       }
       is_current_user_admin: { Args: never; Returns: boolean }
+      ops_cron_status: {
+        Args: { p_hours?: number }
+        Returns: {
+          active: boolean
+          failed_24h: number
+          jobid: number
+          jobname: string
+          last_end: string
+          last_status: string
+          schedule: string
+          succeeded_24h: number
+        }[]
+      }
+      ops_health_findings_summary: {
+        Args: { p_hours?: number }
+        Returns: {
+          newest_at: string
+          newest_title: string
+          open_count: number
+        }[]
+      }
       pending_capture_entries: {
         Args: {
           p_limit?: number
