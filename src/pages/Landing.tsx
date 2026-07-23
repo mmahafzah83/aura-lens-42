@@ -657,6 +657,14 @@ const LANDING_CSS = `
   .aura-landing .nums .num .lbl{margin-top:10px}
   .aura-landing .ecard .emetric{margin-top:14px;padding-top:12px;border-top:1px dashed rgba(237,231,217,.13);font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.4px;color:#9aa39e}
   .aura-landing .ecard .emetric b{color:var(--amber);font-weight:500}
+  .aura-landing .a-srcname{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.5px;color:var(--amber);text-align:center;margin-bottom:12px;opacity:.92}
+  .aura-landing .lloop{position:relative;height:58px;margin-top:14px}
+  .aura-landing .lloop .arc{position:absolute;left:7%;right:7%;top:0;height:24px;border:1px dashed rgba(214,167,72,.32);border-top:0;border-radius:0 0 24px 24px;display:block}
+  .aura-landing .lloop .ldot{position:absolute;top:20px;left:7%;width:7px;height:7px;margin-left:-3.5px;border-radius:50%;background:var(--amber);box-shadow:0 0 14px rgba(214,167,72,.85);animation:auraLoopBack 7s linear infinite}
+  .aura-landing .lloop .llbl{position:absolute;left:0;right:0;top:32px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:#7c8682}
+  @keyframes auraLoopBack{0%{left:93%;opacity:0}8%{opacity:1}92%{opacity:1}100%{left:7%;opacity:0}}
+  @media (prefers-reduced-motion: reduce){.aura-landing .lloop .ldot{animation:none;left:50%;opacity:.9}}
+  @media (max-width:700px){.aura-landing .lloop{height:52px}.aura-landing .lloop .llbl{font-size:9px;letter-spacing:1px}}
 `;
 const LANDING_HTML = `
 <canvas id="bg"></canvas>
@@ -799,12 +807,18 @@ const LANDING_HTML = `
           <div class="lstation"><span class="ring"><svg viewBox="0 0 24 24"><line x1="6" y1="7" x2="12" y2="12"/><line x1="18" y1="7" x2="12" y2="12"/><line x1="6" y1="17" x2="12" y2="12"/><line x1="18" y1="17" x2="12" y2="12"/><circle cx="6" cy="7" r="1.7"/><circle cx="18" cy="7" r="1.7"/><circle cx="6" cy="17" r="1.7"/><circle cx="18" cy="17" r="1.7"/><circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none"/></svg></span><span class="nm">SIGNALS</span></div>
           <div class="lstation"><span class="ring"><svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/></svg></span><span class="nm">OUTPUT</span></div>
         </div>
+        <div class="lloop" aria-hidden="true">
+          <span class="arc"></span>
+          <span class="ldot"></span>
+          <span class="llbl">and it compounds — every capture sharpens the next signal</span>
+        </div>
       </div>
       <div class="beamzone"><div class="dropbeam"></div></div>
       <div class="stage">
         <div class="stat"><span class="amk-dot"></span><span class="a-stat">CAPTURE</span></div>
         <div class="a-phase a-cap">
           <div class="a-drop">
+            <div class="a-srcname">SDAIA — National Data &amp; AI annual report</div>
             <div class="a-doc"><span class="a-tick">captured</span></div>
             <div class="a-types">
               <svg viewBox="0 0 24 24"><path d="M9.5 14.5l5-5"/><path d="M11 7l1.6-1.6a3.4 3.4 0 0 1 4.8 4.8L15.5 12"/><path d="M13 17l-1.6 1.6a3.4 3.4 0 0 1-4.8-4.8L8.5 12"/></svg>
