@@ -231,6 +231,60 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
         .eq("id", postId)
         .eq("user_id", user.id);
 
+      // Fire-and-forget: re-learn voice from the growing published corpus.
+      // Never allowed to slow, block, or fail the publish response.
+      try {
+        const kickVoiceDistill = async () => {
+          try {
+            const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+            // Count eligible aura_generated + published posts newer than the
+            // user's most recent voice_distill training_logs row.
+            const { data: lastLog } = await adminClient
+              .from("training_logs")
+              .select("created_at")
+              .eq("user_id", user.id)
+              .eq("pillar", "voice_distill")
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+
+            let q = adminClient
+              .from("linkedin_posts")
+              .select("id", { count: "exact", head: true })
+              .eq("user_id", user.id)
+              .eq("source_type", "aura_generated")
+              .eq("tracking_status", "published")
+              .not("post_text", "is", null);
+            if (lastLog?.created_at) q = q.gt("published_at", lastLog.created_at);
+            const { count } = await q;
+
+            const shouldRun = !lastLog || (typeof count === "number" && count >= 3);
+            if (!shouldRun) return;
+
+            await fetch(`${SUPABASE_URL}/functions/v1/voice-distill`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${serviceKey}`,
+                apikey: serviceKey,
+              },
+              body: JSON.stringify({ user_id: user.id }),
+            });
+          } catch (e) {
+            console.error("voice-distill kick failed (non-blocking):", e);
+          }
+        };
+        // @ts-ignore EdgeRuntime is provided by Supabase Deno runtime
+        if (typeof EdgeRuntime !== "undefined" && (EdgeRuntime as any)?.waitUntil) {
+          // @ts-ignore
+          EdgeRuntime.waitUntil(kickVoiceDistill());
+        } else {
+          kickVoiceDistill();
+        }
+      } catch (e) {
+        console.error("voice-distill kick outer failure (non-blocking):", e);
+      }
+
       return json({ success: true, urn, postUrl });
     }
 
