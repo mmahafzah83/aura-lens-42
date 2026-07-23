@@ -3451,6 +3451,7 @@ export type Database = {
           rows_added: number
         }[]
       }
+      enqueue_voice_distill_jobs: { Args: never; Returns: number }
       founding_seats: {
         Args: never
         Returns: {
