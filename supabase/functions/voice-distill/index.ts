@@ -48,6 +48,16 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let resolvedUid: string | null = null;
+  const adminForCatch = (() => {
+    try {
+      return createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      );
+    } catch { return null as any; }
+  })();
+
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -88,6 +98,7 @@ Deno.serve(async (req) => {
       }
       user_id = user.id;
     }
+    resolvedUid = user_id;
 
     // ---- BATCH BRANCH (weekly safety net) ----
     // Service-role/cron caller with no user_id and no ad-hoc posts → sweep
@@ -98,6 +109,10 @@ Deno.serve(async (req) => {
       let users_checked = 0;
       let distilled = 0;
       let skipped = 0;
+      let failed = 0;
+      let deferred = 0;
+      const BATCH_CAP = 10;
+      const INNER_TIMEOUT_MS = 180_000;
 
       try {
         // Candidate users = anyone with at least one aura_generated + published post.
@@ -112,6 +127,8 @@ Deno.serve(async (req) => {
         const uniqUsers = Array.from(new Set((candidates ?? []).map((r: any) => r.user_id).filter(Boolean)));
         users_checked = uniqUsers.length;
 
+        // Compute eligible count per user, sort DESC (most-stale first).
+        const scored: Array<{ uid: string; eligible: number; hasLog: boolean }> = [];
         for (const uid of uniqUsers) {
           try {
             const { data: lastLog } = await admin
@@ -122,7 +139,6 @@ Deno.serve(async (req) => {
               .order("created_at", { ascending: false })
               .limit(1)
               .maybeSingle();
-
             let q = admin
               .from("linkedin_posts")
               .select("id", { count: "exact", head: true })
@@ -133,9 +149,25 @@ Deno.serve(async (req) => {
             if (lastLog?.created_at) q = q.gt("published_at", lastLog.created_at);
             const { count } = await q;
             const eligible = typeof count === "number" ? count : 0;
-            const shouldRun = !lastLog || eligible >= 3;
-            if (!shouldRun) { skipped += 1; continue; }
+            scored.push({ uid, eligible, hasLog: !!lastLog });
+          } catch (e) {
+            scored.push({ uid, eligible: 0, hasLog: true });
+            console.error("voice-distill sweep: eligibility probe failed", uid, e);
+          }
+        }
+        scored.sort((a, b) => b.eligible - a.eligible);
 
+        const eligibleToRun = scored.filter((s) => !s.hasLog || s.eligible >= 3);
+        const belowThreshold = scored.length - eligibleToRun.length;
+        skipped += belowThreshold;
+
+        const toAttempt = eligibleToRun.slice(0, BATCH_CAP);
+        deferred = Math.max(0, eligibleToRun.length - toAttempt.length);
+
+        for (const { uid, eligible } of toAttempt) {
+          const ctrl = new AbortController();
+          const timer = setTimeout(() => ctrl.abort(), INNER_TIMEOUT_MS);
+          try {
             const r = await fetch(`${SUPABASE_URL}/functions/v1/voice-distill`, {
               method: "POST",
               headers: {
@@ -144,12 +176,40 @@ Deno.serve(async (req) => {
                 apikey: SERVICE_ROLE,
               },
               body: JSON.stringify({ user_id: uid }),
+              signal: ctrl.signal,
             });
-            if (r.ok) distilled += 1;
-            else skipped += 1;
-          } catch (e) {
-            skipped += 1;
-            console.error("voice-distill sweep: user failed", uid, e);
+            clearTimeout(timer);
+            if (r.ok) {
+              distilled += 1;
+            } else {
+              failed += 1;
+              let body_snippet = "";
+              try { body_snippet = (await r.text()).slice(0, 500); } catch { /* ignore */ }
+              try {
+                await admin.from("ef_error_log").insert({
+                  function_name: "voice-distill",
+                  severity: "high",
+                  user_id: uid,
+                  error_message: `VOICE_DISTILL_USER_FAILED user=${uid} status=${r.status}`,
+                  context: { stage: "weekly_sweep_user", status: r.status, body_snippet, eligible_count: eligible },
+                });
+              } catch (logErr) { console.error("voice-distill sweep: log user_failed failed", logErr); }
+            }
+          } catch (e: any) {
+            clearTimeout(timer);
+            failed += 1;
+            const isAbort = e?.name === "AbortError";
+            const reason = isAbort ? "timeout" : String(e?.name ?? "Error");
+            const detail = String(e?.message ?? e).slice(0, 500);
+            try {
+              await admin.from("ef_error_log").insert({
+                function_name: "voice-distill",
+                severity: "high",
+                user_id: uid,
+                error_message: `VOICE_DISTILL_USER_ERROR user=${uid} reason=${reason}`,
+                context: { stage: "weekly_sweep_user", reason, detail, eligible_count: eligible, timeout_ms: INNER_TIMEOUT_MS },
+              });
+            } catch (logErr) { console.error("voice-distill sweep: log user_error failed", logErr); }
           }
         }
       } catch (e) {
@@ -160,13 +220,13 @@ Deno.serve(async (req) => {
         await admin.from("ef_error_log").insert({
           function_name: "voice-distill",
           severity: "info",
-          error_message: `VOICE_DISTILL_SWEEP users=${users_checked} distilled=${distilled} skipped=${skipped}`,
-          context: { stage: "weekly_sweep", users_checked, distilled, skipped },
+          error_message: `VOICE_DISTILL_SWEEP users=${users_checked} distilled=${distilled} skipped=${skipped} failed=${failed} deferred=${deferred}`,
+          context: { stage: "weekly_sweep", users_checked, distilled, skipped, failed, deferred, cap: BATCH_CAP },
         });
       } catch (e) { console.error("voice-distill sweep log failed:", e); }
 
       return new Response(
-        JSON.stringify({ success: true, sweep: true, users_checked, distilled, skipped }),
+        JSON.stringify({ success: true, sweep: true, users_checked, distilled, skipped, failed, deferred }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -782,6 +842,17 @@ Deno.serve(async (req) => {
     );
   } catch (e) {
     console.error("voice-distill: unhandled error", e);
+    try {
+      if (adminForCatch) {
+        await adminForCatch.from("ef_error_log").insert({
+          function_name: "voice-distill",
+          severity: "high",
+          user_id: resolvedUid,
+          error_message: `internal_error user=${resolvedUid ?? "unknown"}`,
+          context: { stage: "internal_error", detail: String((e as any)?.message ?? e).slice(0, 500) },
+        });
+      }
+    } catch (logErr) { console.error("voice-distill: internal_error log failed", logErr); }
     return new Response(
       JSON.stringify({
         error: "internal_error",
