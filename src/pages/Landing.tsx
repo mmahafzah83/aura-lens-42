@@ -850,7 +850,8 @@ const LANDING_HTML = `
       <div class="line">
         <div class="ltrack"></div>
         <div class="lstations">
-          <div class="lstation lit"><span class="ring"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="13" height="18" rx="2"/><line x1="8" y1="8" x2="15" y2="8"/><line x1="8" y1="12" x2="15" y2="12"/></svg></span><span class="nm">CAPTURE</span></div>
+          <div class="lstation lit"><span class="ring"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 19a6.5 6.5 0 0 1 13 0"/></svg></span><span class="nm">YOU</span></div>
+          <div class="lstation"><span class="ring"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="13" height="18" rx="2"/><line x1="8" y1="8" x2="15" y2="8"/><line x1="8" y1="12" x2="15" y2="12"/></svg></span><span class="nm">CAPTURE</span></div>
           <div class="lstation"><span class="ring"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none"/></svg></span><span class="nm">READS</span></div>
           <div class="lstation"><span class="ring"><svg viewBox="0 0 24 24"><path d="M12 4l3 5-3 2-3-2z"/><path d="M6 14l3.5 1.5.5 3.5-4-1.2z"/><path d="M18 14l-3.5 1.5-.5 3.5 4-1.2z"/></svg></span><span class="nm">FRAGMENTS</span></div>
           <div class="lstation"><span class="ring"><svg viewBox="0 0 24 24"><line x1="6" y1="7" x2="12" y2="12"/><line x1="18" y1="7" x2="12" y2="12"/><line x1="6" y1="17" x2="12" y2="12"/><line x1="18" y1="17" x2="12" y2="12"/><circle cx="6" cy="7" r="1.7"/><circle cx="18" cy="7" r="1.7"/><circle cx="6" cy="17" r="1.7"/><circle cx="18" cy="17" r="1.7"/><circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none"/></svg></span><span class="nm">SIGNALS</span></div>
@@ -865,6 +866,17 @@ const LANDING_HTML = `
       <div class="beamzone"><div class="dropbeam"></div></div>
       <div class="stage">
         <div class="stat"><span class="amk-dot"></span><span class="a-stat">CAPTURE</span></div>
+        <div class="a-phase a-idt">
+          <div class="a-idtwrap">
+            <p class="a-idtl">YOUR PROFILE — AFTER THE ASSESSMENT</p>
+            <div class="a-idtchips">
+              <span class="a-idtchip on">Digital transformation governance</span>
+              <span class="a-idtchip">Public-sector delivery</span>
+              <span class="a-idtchip">Regulatory strategy</span>
+              <span class="a-idtchip">Data &amp; AI policy</span>
+            </div>
+          </div>
+        </div>
         <div class="a-phase a-cap">
           <div class="a-drop">
             <div class="a-srcname">SDAIA — National Data &amp; AI annual report</div>
