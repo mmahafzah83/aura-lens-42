@@ -665,6 +665,32 @@ const LANDING_CSS = `
   @keyframes auraLoopBack{0%{left:93%;opacity:0}8%{opacity:1}92%{opacity:1}100%{left:7%;opacity:0}}
   @media (prefers-reduced-motion: reduce){.aura-landing .lloop .ldot{animation:none;left:50%;opacity:.9}}
   @media (max-width:700px){.aura-landing .lloop{height:52px}.aura-landing .lloop .llbl{font-size:9px;letter-spacing:1px}}
+  .aura-landing .ovn{background:linear-gradient(180deg,#040706 0%,#06100e 45%,#040706 100%)}
+  .aura-landing .ovn-em{font-style:italic;color:var(--teal)}
+  .aura-landing .ovn-band{position:relative;height:210px;margin:38px 0 34px;border:1px solid rgba(237,231,217,.1);border-radius:16px;overflow:hidden;background:radial-gradient(120% 90% at 50% 110%,rgba(54,197,176,.09),transparent 60%),#050b0a}
+  .aura-landing .ovn-hz{position:absolute;left:0;right:0;bottom:52px;height:1px;background:linear-gradient(90deg,transparent,rgba(237,231,217,.16),transparent)}
+  .aura-landing .ovn-sweep{position:absolute;top:0;bottom:0;width:150px;background:linear-gradient(90deg,transparent,rgba(54,197,176,.16),rgba(54,197,176,.34),rgba(54,197,176,.16),transparent);filter:blur(1px);animation:ovnSweep 9s linear infinite}
+  @keyframes ovnSweep{0%{left:-160px}100%{left:100%}}
+  .aura-landing .ovn-cap{position:absolute;width:8px;height:8px;border-radius:2px;background:rgba(237,231,217,.2);animation:ovnLit 9s linear infinite}
+  .aura-landing .ovn-cap.c1{left:12%;bottom:96px;animation-delay:.9s}
+  .aura-landing .ovn-cap.c2{left:26%;bottom:132px;animation-delay:2.1s}
+  .aura-landing .ovn-cap.c3{left:41%;bottom:80px;animation-delay:3.4s}
+  .aura-landing .ovn-cap.c4{left:57%;bottom:146px;animation-delay:4.8s}
+  .aura-landing .ovn-cap.c5{left:72%;bottom:104px;animation-delay:6.1s}
+  .aura-landing .ovn-cap.c6{left:86%;bottom:128px;animation-delay:7.3s}
+  @keyframes ovnLit{0%,100%{background:rgba(237,231,217,.2);box-shadow:none}6%{background:var(--teal);box-shadow:0 0 14px rgba(54,197,176,.9)}22%{background:rgba(54,197,176,.5);box-shadow:0 0 6px rgba(54,197,176,.4)}}
+  .aura-landing .ovn-log{position:absolute;bottom:20px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:#7c8682;opacity:0;animation:ovnLog 9s linear infinite}
+  .aura-landing .ovn-log.l1{left:10%;animation-delay:.9s}
+  .aura-landing .ovn-log.l2{left:39%;animation-delay:3.4s}
+  .aura-landing .ovn-log.l3{left:70%;animation-delay:6.1s}
+  @keyframes ovnLog{0%{opacity:0}5%{opacity:1;color:var(--teal)}30%{opacity:.55;color:#7c8682}75%{opacity:.55}100%{opacity:0}}
+  .aura-landing .ovn-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .aura-landing .ovn-card{background:rgba(12,19,17,.6);border:1px solid #18221f;border-radius:14px;padding:24px 24px 26px;transition:transform .3s,border-color .3s}
+  .aura-landing .ovn-card:hover{transform:translateY(-4px);border-color:rgba(54,197,176,.4)}
+  .aura-landing .ovn-card .t{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.8px;color:var(--teal);margin:0 0 10px}
+  .aura-landing .ovn-card p{font-size:15px;line-height:1.55;color:#9aa39e;margin:0}
+  @media (prefers-reduced-motion: reduce){.aura-landing .ovn-sweep{animation:none;left:40%}.aura-landing .ovn-cap{animation:none;background:rgba(54,197,176,.45)}.aura-landing .ovn-log{animation:none;opacity:.6}}
+  @media (max-width:820px){.aura-landing .ovn-grid{grid-template-columns:1fr}.aura-landing .ovn-band{height:170px}.aura-landing .ovn-log{font-size:9px;letter-spacing:1px}}
 `;
 const LANDING_HTML = `
 <canvas id="bg"></canvas>
