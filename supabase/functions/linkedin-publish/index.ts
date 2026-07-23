@@ -237,8 +237,21 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
         const kickVoiceDistill = async () => {
           try {
             const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-            // Count eligible aura_generated + published posts newer than the
-            // user's most recent voice_distill training_logs row.
+            const MIN_CORPUS = 5;
+            // Total eligible corpus — floor gate. Prevents distilling
+            // confident-looking voice models from tiny (e.g. 2-post) samples.
+            const { count: totalCount } = await adminClient
+              .from("linkedin_posts")
+              .select("id", { count: "exact", head: true })
+              .eq("user_id", user.id)
+              .eq("source_type", "aura_generated")
+              .eq("tracking_status", "published")
+              .not("post_text", "is", null);
+            const totalCorpus = typeof totalCount === "number" ? totalCount : 0;
+            if (totalCorpus < MIN_CORPUS) return;
+
+            // Count eligible posts newer than the user's most recent
+            // voice_distill training_logs row, and time since that run.
             const { data: lastLog } = await adminClient
               .from("training_logs")
               .select("created_at")
@@ -257,8 +270,12 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
               .not("post_text", "is", null);
             if (lastLog?.created_at) q = q.gt("published_at", lastLog.created_at);
             const { count } = await q;
+            const newSince = typeof count === "number" ? count : 0;
+            const daysSinceLastRun = lastLog?.created_at
+              ? (Date.now() - Date.parse(lastLog.created_at)) / 86_400_000
+              : Number.POSITIVE_INFINITY;
 
-            const shouldRun = !lastLog || (typeof count === "number" && count >= 3);
+            const shouldRun = !lastLog || newSince >= 3 || daysSinceLastRun >= 30;
             if (!shouldRun) return;
 
             await fetch(`${SUPABASE_URL}/functions/v1/voice-distill`, {
