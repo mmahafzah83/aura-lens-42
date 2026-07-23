@@ -715,6 +715,12 @@ const LANDING_CSS = `
   .aura-landing .mth-cta{display:block;text-align:center;margin-top:22px}
   .aura-landing .mth-fine{margin:12px 0 0;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted)}
   @media (max-width:900px){.aura-landing .mth{grid-template-columns:1fr;gap:40px}.aura-landing .mth-stamp{right:6px;top:-20px;width:96px;height:96px;font-size:8px}}
+  .aura-landing #amk-combo .a-idtwrap{text-align:center;max-width:560px}
+  .aura-landing #amk-combo .a-idtl{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:2px;color:#5f6a66;margin:0 0 20px}
+  .aura-landing #amk-combo .a-idtchips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+  .aura-landing #amk-combo .a-idtchip{border:1px solid #233330;border-radius:100px;padding:9px 17px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#9aa39e;background:#070c0b}
+  .aura-landing #amk-combo .a-idtchip.on{border-color:var(--teal);color:var(--teal);box-shadow:0 0 18px rgba(54,197,176,.22)}
+  @media (max-width:700px){.aura-landing #amk-combo .a-idtchip{font-size:10.5px;padding:8px 13px}}
 `;
 const LANDING_HTML = `
 <canvas id="bg"></canvas>
