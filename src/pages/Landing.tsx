@@ -692,6 +692,29 @@ const LANDING_CSS = `
   .aura-landing .ovn-card p{font-size:15px;line-height:1.55;color:#9aa39e;margin:0}
   @media (prefers-reduced-motion: reduce){.aura-landing .ovn-sweep{animation:none;left:40%}.aura-landing .ovn-cap{animation:none;background:rgba(54,197,176,.45)}.aura-landing .ovn-log{animation:none;opacity:.6}}
   @media (max-width:820px){.aura-landing .ovn-grid{grid-template-columns:1fr}.aura-landing .ovn-band{height:170px}.aura-landing .ovn-log{font-size:9px;letter-spacing:1px}}
+  .aura-landing .mth{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:start;margin-top:34px}
+  .aura-landing .mth-head,.aura-landing .mth-row{display:grid;grid-template-columns:1fr 96px 96px;gap:16px;align-items:center}
+  .aura-landing .mth-head{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding-bottom:14px;border-bottom:1px solid rgba(27,23,18,.18)}
+  .aura-landing .mth-head span+span,.aura-landing .mth-row span+span{text-align:right}
+  .aura-landing .mth-row{padding:16px 0;border-bottom:1px solid rgba(27,23,18,.12);font-size:16px}
+  .aura-landing .mth-row span+span{font-family:'IBM Plex Mono',monospace;font-size:14px}
+  .aura-landing .mth-total{border-bottom:0;border-top:2px solid var(--ink);font-weight:600;margin-top:6px}
+  .aura-landing .mth-total span+span{color:var(--ox)}
+  .aura-landing .mth-note{margin-top:20px;font-size:15.5px;line-height:1.6;color:#5a5348}
+  .aura-landing .mth-card{position:relative;background:#FBF8F1;border:1px solid var(--ink);border-radius:16px;box-shadow:0 22px 52px rgba(27,23,18,.16)}
+  .aura-landing .mth-stamp{position:absolute;top:-26px;right:-16px;width:112px;height:112px;border-radius:50%;background:var(--ox);color:#F1ECE1;display:flex;align-items:center;justify-content:center;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:1.75;letter-spacing:1.2px;text-transform:uppercase;box-shadow:0 12px 26px rgba(110,42,38,.4);transform:rotate(8deg);z-index:2}
+  .aura-landing .mth-top{background:var(--ink);color:#F1ECE1;padding:28px 30px;border-radius:16px 16px 0 0}
+  .aura-landing .mth-nm{font-family:'IBM Plex Mono',monospace;letter-spacing:5px;font-size:13px;margin:0}
+  .aura-landing .mth-price{font-size:36px;margin:12px 0 0;font-weight:500}
+  .aura-landing .mth-price small{font-size:15px;color:#B9AF9D}
+  .aura-landing .mth-seats{margin-top:16px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--amber);min-height:16px}
+  .aura-landing .mth-body{padding:24px 30px 28px}
+  .aura-landing .mth-body ul{list-style:none;margin:0;padding:0}
+  .aura-landing .mth-body li{padding:9px 0;font-size:15.5px;border-bottom:1px dashed rgba(27,23,18,.14)}
+  .aura-landing .mth-body li::before{content:"\\2713\\00a0\\00a0";color:var(--teal);font-family:'IBM Plex Mono',monospace}
+  .aura-landing .mth-cta{display:block;text-align:center;margin-top:22px}
+  .aura-landing .mth-fine{margin:12px 0 0;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted)}
+  @media (max-width:900px){.aura-landing .mth{grid-template-columns:1fr;gap:40px}.aura-landing .mth-stamp{right:6px;top:-20px;width:96px;height:96px;font-size:8px}}
 `;
 const LANDING_HTML = `
 <canvas id="bg"></canvas>
@@ -1081,16 +1104,58 @@ const LANDING_HTML = `
       <div class="cmp-head"><span>The option</span><div class="caps-h"><span>Voice</span><span>Signal</span><span>Effortless</span><span>Yours</span></div><span>Where it leaves you</span></div>
       <p class="cmp-key">Voice — sounds like you · Signal — built on what you actually read · Effortless — no work added to your week · Yours — your own thinking, not a template.</p>
       <div class="cmp-row"><span class="alt">Doing nothing</span><div class="pips"><i></i><i></i><i class="on"></i><i></i></div><span class="gap">You read more than the people who quote you — then watch it fade by Friday, while a louder, thinner voice owns the topic that was yours.</span></div>
-      <div class="cmp-row"><span class="alt">A ghostwriter<span class="cmp-eg">$50–400 / month</span></span><div class="pips"><i class="on"></i><i></i><i class="on"></i><i></i></div><span class="gap">They can borrow your tone — but they never read what you read, can't watch your market, and reset to zero the moment a brief ends.</span></div>
-      <div class="cmp-row"><span class="alt">Generic AI<span class="cmp-eg">$20–40 / month</span></span><div class="pips"><i></i><i></i><i></i><i></i></div><span class="gap">Brilliant on the world, blank on you — no memory of your field, your week, or your edge, so it answers like everyone with the same prompt.</span></div>
-      <div class="cmp-row"><span class="alt">Posting &amp; scheduling tools<span class="cmp-eg">$20–100 / month</span></span><div class="pips"><i></i><i></i><i class="on"></i><i></i></div><span class="gap">Built to schedule and format. The words still come from models trained on everyone — so they go out fast, and sound like anyone.</span></div>
-      <div class="cmp-row aura"><span class="alt">Aura<span class="cmp-eg">Free during founding beta</span><span class="cmp-only">only this</span></span><div class="pips"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div><span class="gap">It reads what you read, holds your whole story, and watches your market the way no person or tool can — then writes in your voice, published only when you say. The one edge no rival can copy: you.</span></div>
+      <div class="cmp-row"><span class="alt">A ghostwriter</span><div class="pips"><i class="on"></i><i></i><i class="on"></i><i></i></div><span class="gap">They can borrow your tone — but they never read what you read, can't watch your market, and reset to zero the moment a brief ends.</span></div>
+      <div class="cmp-row"><span class="alt">Generic AI</span><div class="pips"><i></i><i></i><i></i><i></i></div><span class="gap">Brilliant on the world, blank on you — no memory of your field, your week, or your edge, so it answers like everyone with the same prompt.</span></div>
+      <div class="cmp-row"><span class="alt">Posting &amp; scheduling tools</span><div class="pips"><i></i><i></i><i class="on"></i><i></i></div><span class="gap">Built to schedule and format. The words still come from models trained on everyone — so they go out fast, and sound like anyone.</span></div>
+      <div class="cmp-row aura"><span class="alt">Aura<span class="cmp-only">only this</span></span><div class="pips"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div><span class="gap">It reads what you read, holds your whole story, and watches your market the way no person or tool can — then writes in your voice, published only when you say. The one edge no rival can copy: you.</span></div>
     </div>
-      <p class="cmp-kicker" data-reveal>Stack the three that cost money and you are at $90–540 a month, across three vendors, none of which read what you read. Everyone in your field reads the same articles — the edge goes to whoever turns them into a point of view first.</p>
+      <p class="cmp-kicker" data-reveal>Everyone in your field reads the same articles. The edge goes to whoever turns them into a point of view first.</p>
   </div>
 </section>
 
 <div class="seam"></div>
+
+<div class="seam"></div>
+
+<!-- THE MATH · what it would otherwise cost -->
+<section class="bone" data-veil>
+  <div class="veil"></div>
+  <div class="wrap">
+    <p class="eyebrow sec-eyebrow" data-reveal>THE MATH</p>
+    <h2 data-reveal style="max-width:19ch">To match Aura, you'd hire five things — <em>and still not have this.</em></h2>
+    <div class="mth">
+      <div class="mth-tbl" data-reveal>
+        <div class="mth-head"><span>What people buy elsewhere</span><span>Low</span><span>High</span></div>
+        <div class="mth-row"><span>A ghostwriter</span><span>$50</span><span>$400</span></div>
+        <div class="mth-row"><span>A positioning consultant</span><span>$30</span><span>$300</span></div>
+        <div class="mth-row"><span>A content &amp; scheduling tool</span><span>$20</span><span>$100</span></div>
+        <div class="mth-row"><span>An AI writing assistant</span><span>$20</span><span>$40</span></div>
+        <div class="mth-row"><span>A designer for your visuals</span><span>$30</span><span>$160</span></div>
+        <div class="mth-row mth-total"><span>Total, every month</span><span>~$150</span><span>~$1,000</span></div>
+        <p class="mth-note">And two things no money buys elsewhere: <b>the overnight agent</b>, and a system <b>built entirely around you</b>.</p>
+      </div>
+      <div class="mth-card" data-reveal>
+        <span class="mth-stamp">Founding<br>circle<br>closes when full</span>
+        <div class="mth-top">
+          <p class="mth-nm">AURA</p>
+          <p class="mth-price">Free <small>during founding beta</small></p>
+          <div class="mth-seats"><span id="seatline2"></span></div>
+        </div>
+        <div class="mth-body">
+          <ul>
+            <li>All five, in one system</li>
+            <li>The overnight agent, included</li>
+            <li>Signature Studio images, included</li>
+            <li>Built entirely around you</li>
+            <li>No credit card. No commitment.</li>
+          </ul>
+          <a class="req mth-cta" href="/request-access">Request your access</a>
+          <p class="mth-fine">30 seconds to ask &middot; decision within 24 hours</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
 <!-- FAQ · last objections before the ask -->
 <section class="dark" id="faq">
@@ -1434,6 +1499,8 @@ const Landing = () => {
         if (!Number.isFinite(claimed) || !Number.isFinite(cap) || cap <= 0) return;
         const el = rootRef.current?.querySelector("#seatline");
         if (el) el.textContent = `${claimed} of ${cap} founding places claimed.`;
+        const el2 = rootRef.current?.querySelector("#seatline2");
+        if (el2) el2.textContent = `${claimed} of ${cap} founding places claimed`;
       } catch {}
     })();
     return () => { cancelled = true; };
