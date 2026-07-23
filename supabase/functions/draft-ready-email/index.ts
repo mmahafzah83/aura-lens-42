@@ -44,6 +44,22 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
+// Mirror of cleanBody() in src/components/Brief.tsx — strips generator artifacts
+// (leading POST / بوست / منشور linkedin header lines and markdown asterisks)
+// so the quoted excerpt reads as a real sentence.
+function cleanBody(raw: string): string {
+  return (raw || "")
+    .replace(/^[ \t]*(post|بوست|منشور\s+linkedin)[ \t]*$/gim, "")
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/(^|[\s(])\*(?!\s)([^*\n]+?)\*(?=[\s.,;:!?)]|$)/g, "$1$2")
+    .replace(/\*\*/g, "")
+    .replace(/^\s*\n+/, "");
+}
+
+function excerptFor(raw: string): string {
+  return cleanBody(raw).replace(/\s+/g, " ").trim();
+}
+
 function deriveShortTopic(opts: {
   themeTags: string[] | null;
   signalTitle: string | null;
