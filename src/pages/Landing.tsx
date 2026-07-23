@@ -1056,10 +1056,10 @@ const LANDING_HTML = `
 <div class="seam"></div>
 
 <!-- IMPRINT · Persepolis reveal -->
-<section class="bone" data-veil id="imprint">
-  <div class="veil"></div>
+<section class="dark" id="imprint">
+  <div class="sweep"></div>
   <div class="wrap">
-    <p class="eyebrow sec-eyebrow" data-reveal>THE IMPRINT</p>
+    <p class="eyebrow sec-eyebrow" data-reveal>THE MEASURE</p>
     <div class="impwrap">
       <div class="dialcard" data-reveal><svg id="dial" viewBox="0 0 280 280"></svg></div>
       <div data-reveal>
@@ -1067,18 +1067,10 @@ const LANDING_HTML = `
         <p class="lede">Imprint is a single score from 0 to 100 — how far your expertise has turned into presence. It climbs when you publish something only you could say, holds steady when you're just reading, and never moves for noise. Not followers. Not likes. Evidence you can watch grow, a little every week.</p>
       </div>
     </div>
-  </div>
-</section>
-
-<div class="seam"></div>
-
-<!-- CLIMB · Orano gravitas -->
-<section class="dark" id="climb">
-  <div class="sweep"></div>
-  <div class="wrap climb-grid">
-    <div class="climbcol">
-      <p class="eyebrow sec-eyebrow" data-reveal>THE CLIMB</p>
-      <h2 data-reveal>Five tiers. One direction.</h2>
+    <span id="climb" class="jump-anchor" aria-hidden="true"></span>
+    <div class="climb-grid climb-merged">
+      <div class="climbcol">
+        <h3 class="climb-h" data-reveal>Five tiers. One direction.</h3>
       <p class="lede" data-reveal style="margin-bottom:8px">Presence isn't a switch you flip. It's a climb — and Aura shows you exactly where you stand, and the next rung.</p>
       <div class="tiers" id="tiers">
         <div class="tier" data-reveal><div class="tinfo"><span class="tn">OBSERVER</span><span class="tm">You're reading the field, taking it all in.</span></div><span class="tb"><i data-w="20"></i></span></div>
@@ -1105,6 +1097,7 @@ const LANDING_HTML = `
       <circle r="13" fill="#36C5B0" fill-opacity=".18" class="climbhalo"/>
       <circle r="6.5" fill="#36C5B0" class="climber"/>
     </svg></div>
+    </div>
   </div>
 </section>
 
