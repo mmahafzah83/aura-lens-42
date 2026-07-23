@@ -648,9 +648,10 @@ const LANDING_CSS = `
     .aura-landing .founder-portrait{max-width:280px;margin:0 auto}
     .aura-landing .founder-tail{margin-top:10px}
   }
-  .aura-landing .sec-eyebrow{display:inline-flex;align-items:center;gap:12px}
-  .aura-landing .sec-eyebrow::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 4px rgba(54,197,176,.14);flex:0 0 auto}
-  .aura-landing .sec-eyebrow::after{content:"";width:clamp(40px,7vw,96px);height:1px;background:linear-gradient(90deg,rgba(214,167,72,.55),transparent);flex:0 0 auto}
+  .aura-landing .sec-eyebrow{display:inline-flex;align-items:center;gap:9px;padding:7px 16px 7px 13px;border:1px solid rgba(214,167,72,.34);border-radius:100px;background:rgba(214,167,72,.06);font-size:10px;letter-spacing:2.2px;color:var(--amber);margin-bottom:18px}
+  .aura-landing .sec-eyebrow::before{content:"";width:6px;height:6px;background:var(--teal);transform:rotate(45deg);box-shadow:0 0 9px rgba(54,197,176,.7);flex:0 0 auto}
+  .aura-landing .bone .sec-eyebrow{border-color:rgba(110,42,38,.3);background:rgba(110,42,38,.05);color:var(--ox)}
+  .aura-landing .bone .sec-eyebrow::before{background:var(--ox);box-shadow:none}
   .aura-landing h2 em{font-style:italic;color:var(--amber)}
   .aura-landing .nums .num{background:linear-gradient(180deg,rgba(237,231,217,.05),rgba(237,231,217,.018));border:1px solid rgba(237,231,217,.12);border-radius:14px;padding:30px 26px 26px;position:relative;overflow:hidden}
   .aura-landing .nums .num::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:linear-gradient(180deg,var(--amber),rgba(214,167,72,0))}
@@ -743,7 +744,6 @@ const LANDING_HTML = `
       <div class="num" data-reveal><div class="big">&lt;<span data-count="3">0</span>%</div><div class="lbl">of LinkedIn's 1B+ members create original content weekly.</div></div>
     </div>
     <p class="src-line" data-reveal>EDELMAN-LINKEDIN 2024/2025 &middot; WEBER SHANDWICK &middot; BRUNSWICK GROUP</p>
-    <p class="punch" data-reveal style="max-width:40ch">You're already in the top 1% of expertise. Aura puts you in the top 1% of <span class="gold">visibility</span> — without changing how you spend your week.</p>
   </div>
 </section>
 
@@ -819,7 +819,7 @@ const LANDING_HTML = `
 <!-- WHAT AURA MAKES · pipeline + Arabic output gallery -->
 <section class="dark">
   <div class="wrap">
-    <p class="eyebrow" data-reveal>WHAT YOU GET</p>
+    <p class="eyebrow sec-eyebrow" data-reveal>WHAT YOU GET</p>
     <h2 data-reveal>From what you already read —<br>to what the market reads.</h2>
     <p class="lede" data-reveal style="max-width:54ch">No prompts. No blank page. Aura works quietly from your own intake — and hands back finished pieces in your voice, ready the moment you are.</p>
 
@@ -931,7 +931,7 @@ const LANDING_HTML = `
 <section class="dark">
   <div class="wrap wc-grid">
     <div class="tlcol">
-      <p class="eyebrow" data-reveal>WHAT CHANGES FOR YOU</p>
+      <p class="eyebrow sec-eyebrow" data-reveal>WHAT CHANGES FOR YOU</p>
       <h2 data-reveal>From invisible to undeniable.</h2>
       <div class="morph" data-reveal><span class="m-inv">Invisible</span><span class="m-und">Undeniable</span></div>
       <div class="timeline" data-reveal>
@@ -994,7 +994,7 @@ const LANDING_HTML = `
 <section class="bone" data-veil id="imprint">
   <div class="veil"></div>
   <div class="wrap">
-    <p class="eyebrow" data-reveal>THE IMPRINT</p>
+    <p class="eyebrow sec-eyebrow" data-reveal>THE IMPRINT</p>
     <div class="impwrap">
       <div class="dialcard" data-reveal><svg id="dial" viewBox="0 0 280 280"></svg></div>
       <div data-reveal>
@@ -1012,7 +1012,7 @@ const LANDING_HTML = `
   <div class="sweep"></div>
   <div class="wrap climb-grid">
     <div class="climbcol">
-      <p class="eyebrow" data-reveal>THE CLIMB</p>
+      <p class="eyebrow sec-eyebrow" data-reveal>THE CLIMB</p>
       <h2 data-reveal>Five tiers. One direction.</h2>
       <p class="lede" data-reveal style="margin-bottom:8px">Presence isn't a switch you flip. It's a climb — and Aura shows you exactly where you stand, and the next rung.</p>
       <div class="tiers" id="tiers">
@@ -1054,7 +1054,7 @@ const LANDING_HTML = `
       <figcaption>Mohammad Mahafzah · Aura Builder</figcaption>
     </figure>
     <div class="founder-copy">
-      <p class="eyebrow" data-reveal>WHY I BUILT THIS</p>
+      <p class="eyebrow sec-eyebrow" data-reveal>WHY I BUILT THIS</p>
       <h2 data-reveal>Because I'm one of you.</h2>
       <p class="lede wide" data-reveal>I read 30+ articles a week. I see patterns in digital transformation that most reports miss. I hold views that could shape how organizations think about their future.</p>
       <p class="lede wide" data-reveal>But for years it never left my own notebooks. No one outside the room knew any of it existed.</p>
@@ -1073,7 +1073,7 @@ const LANDING_HTML = `
 <section class="bone" data-veil>
   <div class="veil"></div>
   <div class="wrap">
-    <p class="eyebrow" data-reveal>WHY AURA</p>
+    <p class="eyebrow sec-eyebrow" data-reveal>WHY AURA</p>
     <h2 data-reveal>You have other options. None of them are this.</h2>
     <p class="lede" data-reveal style="max-width:52ch">The honest comparison — what you'd otherwise reach for, and where each one leaves you.</p>
     <p class="cmp-legend">Pips, left to right: your voice · your signal · effortless · truly yours</p>
@@ -1095,7 +1095,7 @@ const LANDING_HTML = `
 <!-- FAQ · last objections before the ask -->
 <section class="dark" id="faq">
   <div class="wrap">
-    <p class="eyebrow" data-reveal>BEFORE YOU ASK</p>
+    <p class="eyebrow sec-eyebrow" data-reveal>BEFORE YOU ASK</p>
     <h2 data-reveal>The questions you're already thinking.</h2>
     <div class="faq-grid" data-reveal>
       <div class="faq-col">
