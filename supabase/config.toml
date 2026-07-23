@@ -156,3 +156,6 @@ verify_jwt = false
 
 [functions.ghost-draft-writer]
 verify_jwt = false
+
+[functions.aura-ops-report]
+verify_jwt = false
