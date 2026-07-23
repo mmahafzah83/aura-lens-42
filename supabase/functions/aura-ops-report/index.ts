@@ -57,44 +57,98 @@ const HEARTBEATS: Heartbeat[] = [
   { key: "publish-invariants-check", label: "Publish invariants", windowMin: 26 * 60, functionName: "publish-invariants-check" },
   { key: "reconcile-signal-counts", label: "Signal-count reconciler", windowMin: 26 * 60, functionName: "reconcile-signal-counts" },
   { key: "draft-ready-email", label: "Draft-ready email (dry run)", windowMin: 26 * 60, functionName: "draft-ready-email" },
-  { key: "aura-ops-report", label: "This report itself", windowMin: 26 * 60, functionName: "aura-ops-report" },
 ];
+// Deliberately NOT listing "aura-ops-report" here: this run IS its heartbeat.
+// On the first cron fire the row hasn't been inserted yet, so a self-check
+// would always false-positive to AMBER. The email arriving is the true heartbeat.
 
-// Parse a cron schedule string into an expected max-gap window in minutes.
-// Falls back to generous defaults per class so a weekly job is never flagged
-// simply because it is not Monday.
-function scheduleWindowMin(schedule: string): number {
+// One source of truth for cron cadence. Both the staleness window and the
+// "never run" verdict branch derive from analyzeSchedule() — never diverge.
+//
+// The bucket determines the never-run rule (per spec):
+//   sub-hourly / hourly       -> RED NEVER RUN (genuinely broken)
+//   daily / weekly / monthly  -> PENDING FIRST RUN, informational
+//
+// The window is spec baseline (sub-hourly=30m, hourly=3h, daily=26h,
+// weekly=8d, monthly=32d) but widened when the schedule itself declares a
+// longer natural interval (e.g. "*/6" in the hour field, or a comma-list
+// like "5,11,17" whose largest gap is 12h). This keeps a 6-hourly job from
+// tripping the 3h hourly window on legitimate spacing.
+type Cadence = "sub-hourly" | "hourly" | "daily" | "weekly" | "monthly";
+function analyzeSchedule(schedule: string): { cadence: Cadence; windowMin: number } {
   const s = (schedule || "").trim();
+
   // Interval form: "N seconds/minutes/hours"
   const iv = s.match(/^(\d+)\s+(second|minute|hour)s?$/i);
   if (iv) {
     const n = parseInt(iv[1], 10);
-    if (/second/i.test(iv[2])) return Math.max(30, Math.ceil(n / 60) + 5);
-    if (/minute/i.test(iv[2])) return n + 10;
-    if (/hour/i.test(iv[2])) return Math.max(3 * 60, n * 60 + 30);
+    if (/second/i.test(iv[2])) return { cadence: "sub-hourly", windowMin: 30 };
+    if (/minute/i.test(iv[2])) {
+      return n < 60
+        ? { cadence: "sub-hourly", windowMin: Math.max(30, n * 3 + 5) }
+        : { cadence: "hourly",     windowMin: Math.max(3 * 60, (n / 60 + 1) * 60) };
+    }
+    // hours
+    if (n <= 1)  return { cadence: "hourly", windowMin: 3 * 60 };
+    if (n < 24)  return { cadence: "daily",  windowMin: (n + 1) * 60 };
+    return { cadence: "daily", windowMin: 26 * 60 };
   }
-  // Standard 5-field cron: min hour dom month dow
+
   const p = s.split(/\s+/);
   if (p.length === 5) {
     const [mi, hr, dom, _mon, dow] = p;
-    // Weekly (day-of-week pinned to specific day)
-    if (dow !== "*" && !/[*/,]/.test(dow.replace(/^\d+$/, ""))) return 8 * 24 * 60;
-    // Every N minutes: "*/N"
+
+    // dow pinned to a specific weekday -> weekly
+    if (dow !== "*") return { cadence: "weekly", windowMin: 8 * 24 * 60 };
+    // dom pinned to a specific day-of-month -> monthly
+    if (dom !== "*") return { cadence: "monthly", windowMin: 32 * 24 * 60 };
+
+    // Sub-hourly minute expressions
+    if (mi === "*") return { cadence: "sub-hourly", windowMin: 30 };
     if (mi.startsWith("*/")) {
       const n = parseInt(mi.slice(2), 10) || 5;
-      return Math.max(15, n * 3 + 5);
+      return { cadence: "sub-hourly", windowMin: Math.max(15, n * 3 + 5) };
     }
-    if (mi === "*") return 30; // every minute
-    // Hourly (specific minute, hour="*")
-    if (hr === "*") return 3 * 60;
-    // Daily (specific hour, no day pinning)
-    if (dom === "*") return 26 * 60;
-    // Monthly (dom pinned)
-    if (/^\d+$/.test(dom)) return 32 * 24 * 60;
+
+    // Hour="*" and specific minute -> once per hour
+    if (hr === "*") return { cadence: "hourly", windowMin: 3 * 60 };
+
+    // "*/N" in hour: every N hours. N>=2 is really multi-hour daily-ish
+    // spacing; do not treat as pure hourly.
+    if (hr.startsWith("*/")) {
+      const n = parseInt(hr.slice(2), 10) || 1;
+      if (n <= 1) return { cadence: "hourly", windowMin: 3 * 60 };
+      return { cadence: "daily", windowMin: (n + 1) * 60 };
+    }
+
+    // Comma-list of hours (e.g. "5,11,17"): compute the largest gap between
+    // adjacent fires (with wrap) so window = biggest expected silence + 1h.
+    if (hr.includes(",")) {
+      const hours = hr.split(",")
+        .map((x) => parseInt(x, 10))
+        .filter((x) => !Number.isNaN(x))
+        .sort((a, b) => a - b);
+      if (hours.length > 0) {
+        let maxGap = 0;
+        for (let i = 0; i < hours.length; i++) {
+          const next = i + 1 < hours.length ? hours[i + 1] : hours[0] + 24;
+          maxGap = Math.max(maxGap, next - hours[i]);
+        }
+        // >1 fire/day -> treat as daily bucket; single fire -> daily too.
+        return { cadence: "daily", windowMin: Math.max(26 * 60, (maxGap + 1) * 60) };
+      }
+    }
+
+    // Single fixed hour + day fields "*" -> daily
+    if (/^\d+$/.test(hr)) return { cadence: "daily", windowMin: 26 * 60 };
   }
-  // Unknown — be generous rather than crying wolf.
-  return 26 * 60;
+
+  // Unknown -> be generous, do not cry wolf.
+  return { cadence: "daily", windowMin: 26 * 60 };
 }
+
+function cadenceBucket(schedule: string): Cadence { return analyzeSchedule(schedule).cadence; }
+function scheduleWindowMin(schedule: string): number { return analyzeSchedule(schedule).windowMin; }
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -152,14 +206,17 @@ Deno.serve(async (req) => {
     worstReason = `Cannot read cron status: ${cronErr.message}`;
   }
   for (const raw of (cronRows || []) as CronRow[]) {
-    const win = heartbeatWindowOverride[raw.jobname] ?? scheduleWindowMin(raw.schedule);
+    const { cadence, windowMin: baseWin } = analyzeSchedule(raw.schedule);
+    const win = heartbeatWindowOverride[raw.jobname] ?? baseWin;
     const age = raw.last_end ? ageMinutes(raw.last_end) : null;
     let state: CronReport["state"] = "OK";
     if (!raw.last_end) {
-      // NEVER RUN: hard-red only for high-frequency jobs where "never" is a real failure
-      // signal. For hourly+ (>= 60 min) treat as PENDING FIRST RUN — this is the weekly /
-      // monthly / newly-installed-daily case the user flagged as the false-positive class.
-      if (win < 60) {
+      // "Never run" dispatches on cadence — SAME helper as the staleness branch.
+      // - sub-hourly / hourly : genuinely broken -> RED NEVER RUN
+      // - daily / weekly / monthly : first fire hasn't arrived yet -> PENDING FIRST RUN,
+      //   informational; does not affect verdict. A newly-installed weekly cron on
+      //   Thursday is not a fault.
+      if (cadence === "sub-hourly" || cadence === "hourly") {
         state = "NEVER";
         notRunCount++;
         verdict = worse(verdict, "RED");
