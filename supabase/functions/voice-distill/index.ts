@@ -89,6 +89,88 @@ Deno.serve(async (req) => {
       user_id = user.id;
     }
 
+    // ---- BATCH BRANCH (weekly safety net) ----
+    // Service-role/cron caller with no user_id and no ad-hoc posts → sweep
+    // every user with >= 3 eligible published posts since their last
+    // voice_distill training_logs row (or no such row at all).
+    if (!user_id && (isServiceRole || isCron) && !Array.isArray(body?.posts)) {
+      const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+      let users_checked = 0;
+      let distilled = 0;
+      let skipped = 0;
+
+      try {
+        // Candidate users = anyone with at least one aura_generated + published post.
+        const { data: candidates } = await admin
+          .from("linkedin_posts")
+          .select("user_id")
+          .eq("source_type", "aura_generated")
+          .eq("tracking_status", "published")
+          .not("post_text", "is", null)
+          .not("user_id", "is", null)
+          .limit(5000);
+        const uniqUsers = Array.from(new Set((candidates ?? []).map((r: any) => r.user_id).filter(Boolean)));
+        users_checked = uniqUsers.length;
+
+        for (const uid of uniqUsers) {
+          try {
+            const { data: lastLog } = await admin
+              .from("training_logs")
+              .select("created_at")
+              .eq("user_id", uid)
+              .eq("pillar", "voice_distill")
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+
+            let q = admin
+              .from("linkedin_posts")
+              .select("id", { count: "exact", head: true })
+              .eq("user_id", uid)
+              .eq("source_type", "aura_generated")
+              .eq("tracking_status", "published")
+              .not("post_text", "is", null);
+            if (lastLog?.created_at) q = q.gt("published_at", lastLog.created_at);
+            const { count } = await q;
+            const eligible = typeof count === "number" ? count : 0;
+            const shouldRun = !lastLog || eligible >= 3;
+            if (!shouldRun) { skipped += 1; continue; }
+
+            const r = await fetch(`${SUPABASE_URL}/functions/v1/voice-distill`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${SERVICE_ROLE}`,
+                apikey: SERVICE_ROLE,
+              },
+              body: JSON.stringify({ user_id: uid }),
+            });
+            if (r.ok) distilled += 1;
+            else skipped += 1;
+          } catch (e) {
+            skipped += 1;
+            console.error("voice-distill sweep: user failed", uid, e);
+          }
+        }
+      } catch (e) {
+        console.error("voice-distill sweep: outer failure", e);
+      }
+
+      try {
+        await admin.from("ef_error_log").insert({
+          function_name: "voice-distill",
+          severity: "info",
+          error_message: `VOICE_DISTILL_SWEEP users=${users_checked} distilled=${distilled} skipped=${skipped}`,
+          context: { stage: "weekly_sweep", users_checked, distilled, skipped },
+        });
+      } catch (e) { console.error("voice-distill sweep log failed:", e); }
+
+      return new Response(
+        JSON.stringify({ success: true, sweep: true, users_checked, distilled, skipped }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     if (!user_id) {
       return new Response(
         JSON.stringify({ error: "user_id is required" }),
