@@ -509,6 +509,15 @@ Deno.serve(async (req) => {
       if (!aiResp.ok) {
         const t = await aiResp.text();
         console.error(`voice-distill[${L}]: AI gateway error`, aiResp.status, t);
+        try {
+          await supabase.from("ef_error_log").insert({
+            function_name: "voice-distill",
+            severity: "high",
+            error_message: `ai_gateway_error user=${user_id} lang=${L} status=${aiResp.status}`,
+            user_id,
+            context: { stage: "ai_gateway_error", language: L, status: aiResp.status, detail: String(t).slice(0, 500) },
+          });
+        } catch (_) {}
         return new Response(
           JSON.stringify({ error: "ai_gateway_error", details: aiResp.status }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -537,6 +546,15 @@ Deno.serve(async (req) => {
           distillation = JSON.parse(slice);
         } catch (e) {
           console.error(`voice-distill[${L}]: JSON parse failed`, e, "raw:", raw);
+          try {
+            await supabase.from("ef_error_log").insert({
+              function_name: "voice-distill",
+              severity: "high",
+              error_message: `distillation_failed user=${user_id} lang=${L}`,
+              user_id,
+              context: { stage: "distillation_failed", language: L, parse_error: (e as any)?.message ?? String(e) },
+            });
+          } catch (_) {}
           return new Response(
             JSON.stringify({ error: "distillation_failed" }),
             { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -562,6 +580,15 @@ Deno.serve(async (req) => {
 
       if (existErr) {
         console.error(`voice-distill[${L}]: existence check failed`, existErr);
+        try {
+          await supabase.from("ef_error_log").insert({
+            function_name: "voice-distill",
+            severity: "high",
+            error_message: `db_write_failed user=${user_id} lang=${L} stage=exist_check`,
+            user_id,
+            context: { stage: "db_write_failed", language: L, detail: existErr.message },
+          });
+        } catch (_) {}
         return new Response(
           JSON.stringify({ error: "db_write_failed", details: existErr.message }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -617,6 +644,15 @@ Deno.serve(async (req) => {
           .eq("language", L);
         if (updErr) {
           console.error(`voice-distill[${L}]: update failed`, updErr);
+          try {
+            await supabase.from("ef_error_log").insert({
+              function_name: "voice-distill",
+              severity: "high",
+              error_message: `db_write_failed user=${user_id} lang=${L} stage=update`,
+              user_id,
+              context: { stage: "db_write_failed", language: L, detail: updErr.message },
+            });
+          } catch (_) {}
           return new Response(
             JSON.stringify({ error: "db_write_failed", details: updErr.message }),
             { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -628,6 +664,15 @@ Deno.serve(async (req) => {
           .insert({ user_id, language: L, is_primary: false, ...writePayload });
         if (insErr) {
           console.error(`voice-distill[${L}]: insert failed`, insErr);
+          try {
+            await supabase.from("ef_error_log").insert({
+              function_name: "voice-distill",
+              severity: "high",
+              error_message: `db_write_failed user=${user_id} lang=${L} stage=insert`,
+              user_id,
+              context: { stage: "db_write_failed", language: L, detail: insErr.message },
+            });
+          } catch (_) {}
           return new Response(
             JSON.stringify({ error: "db_write_failed", details: insErr.message }),
             { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
