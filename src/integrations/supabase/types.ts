@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      _probe_resp: {
+        Row: {
+          content: string | null
+          id: number | null
+          status: number | null
+          ts: string | null
+        }
+        Insert: {
+          content?: string | null
+          id?: number | null
+          status?: number | null
+          ts?: string | null
+        }
+        Update: {
+          content?: string | null
+          id?: number | null
+          status?: number | null
+          ts?: string | null
+        }
+        Relationships: []
+      }
       admin_action_log: {
         Row: {
           action: string

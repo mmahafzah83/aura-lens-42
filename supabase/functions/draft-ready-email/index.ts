@@ -26,9 +26,8 @@ const corsHeaders = {
 
 const FROM = "Aura <invites@aura-intel.org>";
 const REPLY_TO = "mohammad.mahafdhah@aura-intel.org";
-const CTA_BASE = "https://www.aura-intel.org/dashboard?tab=authority";
 function ctaFor(draftId: string, src: "content_items" | "linkedin_posts"): string {
-  return `${CTA_BASE}&draft=${encodeURIComponent(draftId)}&src=${src}`;
+  return `https://www.aura-intel.org/dashboard?tab=authority&draft=${encodeURIComponent(draftId)}&src=${src}`;
 }
 
 type DraftRow = {
@@ -45,6 +44,13 @@ type DraftRow = {
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+// Topic values are dropped into the middle of a sentence, so they must not
+// carry their own terminal punctuation. Signal titles are frequently full
+// sentences and would otherwise produce `standards..`.
+function stripTrailingPunct(s: string): string {
+  return (s || "").replace(/[\s.,;:]+$/g, "").trim();
 }
 
 // Mirror of cleanBody() in src/components/Brief.tsx — strips generator artifacts
@@ -111,7 +117,7 @@ function buildEmail(opts: {
     nReadings, nSources, newestFragmentIso, velocityStatus, ctaUrl,
   } = opts;
 
-  const shortForSubject = clampForSubject(shortTopic || fullTopic);
+  const shortForSubject = clampForSubject(stripTrailingPunct(shortTopic || fullTopic));
   const subject = `Your post on ${shortForSubject} is ready`;
 
   const haveCounts =
@@ -125,34 +131,44 @@ function buildEmail(opts: {
   const namePrefix = firstName ? `${escapeHtml(firstName)} — you` : "You";
   const when = whenPhrase(newestFragmentIso);
   const whenSuffix = when ? ` ${when}` : "";
-  const fullTopicEsc = escapeHtml(fullTopic);
+  const topicClean = stripTrailingPunct(fullTopic);
+  const topicEsc = escapeHtml(topicClean);
+  const shortTopicClean = stripTrailingPunct(shortTopic);
 
-  const p1 = haveCounts
-    ? `${namePrefix} saved ${nReadings} readings on ${fullTopicEsc}${whenSuffix}. Nobody asked you to. That was your judgment picking out what mattered while everyone else scrolled past it.`
-    : `${namePrefix} kept a finding on ${fullTopicEsc}. That was your judgment, not an algorithm's.`;
-
-  const p2 = `Aura put that judgment into a post, written the way you write.`;
+  // One idea per line. Each <p> stands on its own so the eye lands on a beat.
+  const line1 = haveCounts
+    ? `${namePrefix} saved ${nReadings} readings on ${topicEsc}${whenSuffix}.`
+    : `${namePrefix} kept a finding on ${topicEsc}.`;
+  const line2 = `Nobody asked you to. That was your judgment, not an algorithm's.`;
+  const line3 = `Aura put that judgment into a post, written the way you write.`;
+  const line4 = `It isn't finished until you've argued with it.`;
+  const line5 = `Cut what isn't you. Sharpen what is.`;
+  const line6 = `Then it's yours to publish — or not.`;
 
   const excerptClean = escapeHtml(excerpt.slice(0, 140)) + (excerpt.length > 140 ? "…" : "");
   const quote =
     `<blockquote dir="auto" style="margin:18px 0;padding:4px 0 4px 18px;border-left:2px solid #D6A748;font-family:Georgia,'Times New Roman',serif;font-style:italic;color:#1B1712;">${excerptClean}</blockquote>`;
 
-  const p3 = `It isn't finished until you've argued with it. Cut what isn't you. Sharpen what is. Then it's yours to publish — or not.`;
-
   const closer = `Four minutes. Nothing goes out without you.`;
+
+  const bodyLine = (t: string, mb = 14) =>
+    `<p style="font-size:16px;line-height:1.65;margin:0 0 ${mb}px;color:${INK_BODY};">${t}</p>`;
 
   let ps = "";
   if (velocityStatus === "accelerating") {
-    ps = `<p style="font-size:13px;line-height:1.55;margin:22px 0 0;color:#8A8073;">P.S. — ${escapeHtml(shortTopic)} is moving right now. The people reading about it this week are the ones who will remember who said it first.</p>`;
+    ps = `<p style="font-size:13px;line-height:1.55;margin:22px 0 0;color:#8A8073;">P.S. — ${escapeHtml(shortTopicClean)} is moving right now. The people reading about it this week are the ones who will remember who said it first.</p>`;
   }
 
   const body = `
     ${headingHtml("You already made this argument.")}
-    <p style="font-size:15px;line-height:1.6;margin:0 0 12px;color:${INK_BODY};">${p1}</p>
-    <p style="font-size:15px;line-height:1.6;margin:0 0 6px;color:${INK_BODY};">${p2}</p>
+    ${bodyLine(line1)}
+    ${bodyLine(line2)}
+    ${bodyLine(line3)}
     ${quote}
-    <p style="font-size:15px;line-height:1.6;margin:0 0 6px;color:${INK_BODY};">${p3}</p>
-    <p style="margin:22px 0 8px;">${button(ctaUrl, "Open your draft")}</p>
+    ${bodyLine(line4, 8)}
+    ${bodyLine(line5, 8)}
+    ${bodyLine(line6, 20)}
+    <p style="margin:0 0 8px;">${button(ctaUrl, "Open your draft")}</p>
     <p style="font-size:12px;line-height:1.5;margin:0;color:#8A8073;">${closer}</p>
     ${ps}
   `;
@@ -378,9 +394,12 @@ serve(async (req) => {
         const sm = pick.source_metadata;
         if (sm["ghost_draft"] === true) {
           const fs = typeof sm["finding_source"] === "string" ? sm["finding_source"] as string : "";
-          const fi = typeof sm["finding_implication"] === "string" ? sm["finding_implication"] as string : "";
-          if (fs || fi) fullTopic = [fs, fi].filter(Boolean).join(" — ");
-          if (fs) ghostShortTopic = fs.trim();
+          // finding_implication is a paragraph, not a topic — never splice it
+          // into the topic sentence.
+          if (fs) {
+            fullTopic = fs.trim();
+            ghostShortTopic = fs.trim();
+          }
         }
       }
 
