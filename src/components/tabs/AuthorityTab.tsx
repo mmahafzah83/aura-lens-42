@@ -656,12 +656,13 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
       setEditingSource(draftPrefill._source === "linkedin_posts" ? "linkedin_posts" : "content_items");
       // Detect Overnight ghost draft to render provenance strip above editor.
       setGhostMeta(null);
+      setEditingDraftSavedAt(null);
       if (draftPrefill._source === "linkedin_posts") {
         (async () => {
           try {
             const { data } = await supabase
               .from("linkedin_posts")
-              .select("source_metadata")
+              .select("source_metadata, source_signal_id, created_at")
               .eq("id", draftPrefill.id)
               .maybeSingle();
             const meta: any = (data as any)?.source_metadata || {};
@@ -672,7 +673,25 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                 finding_implication: meta.finding_implication ?? null,
               });
             }
+            if ((data as any)?.created_at) setEditingDraftSavedAt((data as any).created_at);
+            const sigId = (data as any)?.source_signal_id || null;
+            if (sigId) await hydrateDraftSignal(sigId);
           } catch { /* silent — strip just won't render */ }
+        })();
+      } else {
+        (async () => {
+          try {
+            const { data } = await supabase
+              .from("content_items")
+              .select("signal_id, generation_params, created_at")
+              .eq("id", draftPrefill.id)
+              .maybeSingle();
+            if ((data as any)?.created_at) setEditingDraftSavedAt((data as any).created_at);
+            const sigId = (data as any)?.signal_id
+              || (data as any)?.generation_params?.source_signal_id
+              || null;
+            if (sigId) await hydrateDraftSignal(sigId);
+          } catch { /* silent — body already set */ }
         })();
       }
       setTopic(draftPrefill.topic || "");
@@ -688,6 +707,11 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
       setDraftSaved(false);
       setPublishedFromCreate(false);
       onDraftPrefillConsumed?.();
+      // Scroll the opened draft into view — mirrors the signalPrefill pattern.
+      setTimeout(() => {
+        document.querySelector('[data-testid="pub-output"]')
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 250);
     }
   }, [draftPrefill]);
 
