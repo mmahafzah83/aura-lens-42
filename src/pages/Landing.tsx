@@ -990,7 +990,7 @@ const LANDING_HTML = `
     <h2 data-reveal style="text-align:center">Stop being the best-kept secret in your field.</h2>
     <p class="lede" data-reveal style="max-width:36ch;margin:0 auto 32px;text-align:center">Your expertise has earned its place. Give Aura ten minutes — and it will show you who you really are in the market.</p>
     <a class="req big" data-reveal href="/request-access">Request your access &rarr;</a>
-    <p class="micro" data-reveal>Takes 30 seconds. We respond within a week.</p>
+    <p class="micro" data-reveal>Takes 30 seconds. Your invitation decision within 24 hours.</p>
     <p class="ar" data-reveal lang="ar" dir="rtl">&#x62D;&#x62A;&#x649; &#x627;&#x644;&#x633;&#x648;&#x642; &#x64A;&#x639;&#x631;&#x641;&#x643; &#x642;&#x628;&#x644; &#x645;&#x627; &#x64A;&#x634;&#x648;&#x641;&#x643; &#x2726;</p>
     <p class="beta" data-reveal>PRIVATE BETA &middot; BY INVITATION ONLY</p>
     <p class="micro" data-reveal>Join 40+ professionals already on the list.</p>
