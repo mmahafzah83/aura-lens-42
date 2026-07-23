@@ -1757,6 +1757,25 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
             {/* Output */}
             {displayedOutput && (
               <motion.div data-testid="pub-output" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
+                {editingDraftId && (
+                  <div
+                    data-testid="composer-editing-strip"
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 11,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.14em",
+                      color: "var(--ink-3)",
+                      borderBottom: "0.5px solid var(--rule)",
+                      paddingBottom: 8,
+                      marginBottom: 4,
+                    }}
+                  >
+                    {editingDraftSavedAt
+                      ? `Editing your draft · Saved ${new Date(editingDraftSavedAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }).toUpperCase()}`
+                      : "Editing your draft"}
+                  </div>
+                )}
                 <div className="flex items-center justify-between">
                   <span className="text-label uppercase tracking-wider text-xs font-semibold">
                     {showingShort ? "Short Version" : "Generated Content"}
