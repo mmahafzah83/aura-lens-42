@@ -742,6 +742,10 @@ const LANDING_CSS = `
   .aura-landing .ovn-count .n5{animation-delay:21.6s}
   @keyframes ovnTick{0%{opacity:0}2%{opacity:1}18%{opacity:1}19%,100%{opacity:0}}
   @media (max-width:820px){.aura-landing .ovn-agent{transform:scale(.82)}.aura-landing .ovn-log{font-size:10px}.aura-landing .ovn-count{font-size:9.5px}.aura-landing .ovn-sched{font-size:9px;right:14px}}
+  .aura-landing .jump-anchor{display:block;height:0;overflow:hidden;scroll-margin-top:90px}
+  .aura-landing .climb-merged{margin-top:clamp(56px,7vw,88px)}
+  .aura-landing .climb-h{font-family:'Newsreader',serif;font-size:clamp(24px,2.7vw,34px);line-height:1.18;font-weight:500;margin:0 0 12px;color:var(--paper)}
+  .aura-landing #imprint .dialcard{border:1px solid rgba(237,231,217,.12)}
 `;
 const LANDING_HTML = `
 <canvas id="bg"></canvas>
