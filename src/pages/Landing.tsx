@@ -616,6 +616,8 @@ const LANDING_CSS = `
   .aura-landing .soon[data-soon]:hover::after{opacity:1;transform:translate(-50%,0)}
   .aura-landing .socials .soc{color:#9aa39e}
   .aura-landing .soc-soon{align-self:center;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1.5px;color:#6f7873;text-transform:uppercase}
+  .aura-landing .heroline2{font-size:clamp(24px,3vw,38px);line-height:1.15;color:var(--paper);margin:18px 0 0;max-width:24ch;text-shadow:0 2px 26px rgba(4,7,6,.92)}
+  .aura-landing .heroline2 em{font-style:italic;color:var(--teal)}
 `;
 const LANDING_HTML = `
 <canvas id="bg"></canvas>
@@ -628,9 +630,10 @@ const LANDING_HTML = `
 <!-- HERO · Lusion craft + Orano gravitas -->
 <section class="dark hero">
   <div class="wrap">
-    <p class="eyebrow">PERSONAL STRATEGIC INTELLIGENCE</p>
-    <h1><span class="sr-only">Aura — Strategic Intelligence for Professionals. </span><span aria-hidden="true">Your expertise is<br><span class="flip"><span class="w" id="flipw">invisible</span></span>.</span></h1>
-    <p class="lede sub">Aura turns what you already read into presence — without adding a thing to your week.</p>
+    <p class="eyebrow">PERSONAL INTELLIGENCE SYSTEM</p>
+    <h1><span class="sr-only">Aura — a personal intelligence system that turns your expertise into presence. </span><span aria-hidden="true">You have the experience,<br>the identity, the presence.</span></h1>
+    <p class="lede heroline2">Now you have the <em>intelligence system</em> that works for you.</p>
+    <p class="lede sub">Aura learns who you are, reads what you read, and turns your expertise into presence — in your own voice, without adding a thing to your week.</p>
   </div>
   <div class="scrollhint">SCROLL</div>
 </section>
@@ -1049,10 +1052,12 @@ svgMark(document.getElementById("navmark"),"#9aa39e");svgMark(document.getElemen
 
 const nav=document.getElementById("nav");addEventListener("scroll",()=>nav.classList.toggle("solid",scrollY>40));
 const words=["invisible","unspoken","unseen","visible"];const fw=document.getElementById("flipw");let fi=0,ftimer=null,heroIn=false;
+if(fw){
 function flipShow(i){fw.textContent=words[i];fw.style.color=words[i]==="visible"?"var(--teal)":"#EDE7D9";}
 function flipStep(){fw.style.transition="transform .5s cubic-bezier(.5,0,.2,1),opacity .5s";fw.style.transform="translateY(-110%)";fw.style.opacity="0";setTimeout(()=>{fi++;flipShow(fi);fw.style.transition="none";fw.style.transform="translateY(110%)";fw.style.opacity="0";requestAnimationFrame(()=>{fw.style.transition="transform .5s cubic-bezier(.5,0,.2,1),opacity .5s";fw.style.transform="translateY(0)";fw.style.opacity="1";});if(fi<words.length-1)ftimer=setTimeout(flipStep,2800);},520);}
 function flipStart(){clearTimeout(ftimer);fi=0;fw.style.transition="none";flipShow(0);fw.style.transform="translateY(0)";fw.style.opacity="1";ftimer=setTimeout(flipStep,2800);}
 new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){if(!heroIn){heroIn=true;flipStart();}}else{heroIn=false;clearTimeout(ftimer);}}),{threshold:.4}).observe(document.querySelector(".hero"));
+}
 
 function countUp(el){const tgt=+el.dataset.count,d=1500,s=performance.now();function st(n){const p=Math.min(1,(n-s)/d);el.textContent=Math.round(tgt*(1-Math.pow(1-p,3))).toLocaleString();if(p<1)requestAnimationFrame(st);}requestAnimationFrame(st);}
 const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add("in");if(e.target.matches("[data-count]"))countUp(e.target);io.unobserve(e.target);}}),{threshold:.25});
