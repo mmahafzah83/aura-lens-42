@@ -285,9 +285,9 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
             const daysInt = Number.isFinite(daysSinceLastRun)
               ? Math.max(0, Math.min(9999, Math.floor(daysSinceLastRun)))
               : 9999;
-            await adminClient
+            const { error: insErr } = await adminClient
               .from("job_queue")
-              .upsert({
+              .insert({
                 job_type: "voice_distill",
                 user_id: user.id,
                 payload: {
@@ -297,7 +297,13 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
                   trigger: "linkedin_publish",
                 },
                 priority: 100,
-              }, { onConflict: "job_type,user_id", ignoreDuplicates: true });
+              });
+            // 23505 = unique_violation from job_queue_one_live: another
+            // pending/claimed voice_distill job already exists for this user.
+            // That is the intended collapse behavior, not an error.
+            if (insErr && (insErr as any).code !== "23505") {
+              console.error("voice-distill enqueue failed (non-blocking):", insErr.message);
+            }
           } catch (e) {
             console.error("voice-distill kick failed (non-blocking):", e);
           }
