@@ -318,7 +318,8 @@ const Dashboard = () => {
           };
         };
 
-        let prefill: Awaited<ReturnType<typeof tryContentItems>> = null;
+        type DraftPrefillType = NonNullable<typeof draftPrefill>;
+        let prefill: DraftPrefillType | null = null;
         if (srcParam === "linkedin_posts") {
           prefill = await tryLinkedInPosts();
         } else if (srcParam === "content_items") {
