@@ -181,6 +181,9 @@ serve(async (req) => {
     outcome: "sent" | "would_send" | "skipped_already" | "failed";
     resend_status?: number;
     error?: string;
+    subject?: string;
+    preheader?: string;
+    html?: string;
   }> = [];
 
   let candidates = 0;
@@ -391,6 +394,9 @@ serve(async (req) => {
           user_id: pick.user_id,
           draft_id: pick.draft_id,
           outcome: "would_send",
+          subject,
+          preheader,
+          html,
         });
         // In dry-run we do NOT increment `sent`. It counts real Resend successes only.
         continue;
