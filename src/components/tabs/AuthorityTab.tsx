@@ -3479,21 +3479,26 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
       _source: "content_items" as const,
     }));
 
-    // Carousel drafts live in linkedin_posts (saved by CarouselStudio).
-    const liCarouselDrafts: SavedPost[] = (liRes.data || [])
-      .filter((p: any) => p.tracking_status === "draft" && p.content_type === "carousel")
+    // Library shows EVERY linkedin_posts draft for the current user:
+    // tracking_status === 'draft' AND published_at IS NULL, regardless of
+    // content_type. The only body guard is empty/whitespace-only — matching
+    // the acceptance criteria. Carousel rows keep format_type: "carousel"
+    // so the card renders as a carousel; everything else keeps its own type.
+    const liAllDrafts: SavedPost[] = (liRes.data || [])
+      .filter((p: any) =>
+        p.tracking_status === "draft" &&
+        p.published_at == null &&
+        typeof p.post_text === "string" &&
+        p.post_text.trim().length > 0,
+      )
       .map((p: any) => ({
         ...p,
-        format_type: "carousel",
+        format_type: p.content_type === "carousel" ? "carousel" : p.format_type,
         _source: "linkedin_posts" as const,
       }));
-
-    // Non-carousel linkedin_posts drafts (e.g. rows left behind when
-    // linkedin-publish EF fails after the row is inserted).
-    const liPostDrafts: SavedPost[] = (liRes.data || [])
-      .filter((p: any) => p.tracking_status === "draft" && p.content_type !== "carousel")
-      .filter((p: any) => p.post_text && p.post_text.trim().length >= 20)
-      .map((p: any) => ({ ...p, _source: "linkedin_posts" as const }));
+    // Kept for the metrics-id set below (published + linkedin_posts drafts).
+    const liCarouselDrafts = liAllDrafts.filter((p: any) => p.format_type === "carousel");
+    const liPostDrafts = liAllDrafts.filter((p: any) => p.format_type !== "carousel");
 
     // Published section — source of truth is published_at IS NOT NULL.
     // Rows with no post_text (e.g. legacy LinkedIn export imports) are still
@@ -3510,9 +3515,16 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
       .filter((p: any) => p.tracking_status === "needs_review")
       .map((p: any) => ({ ...p, _source: "linkedin_posts" as const }));
 
-    const allDrafts = [...ciDrafts, ...liCarouselDrafts, ...liPostDrafts].sort(
-      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-    );
+    // De-duplicate by draft id so a draft present in both stores appears once.
+    // linkedin_posts wins over content_items (it's the row the publish path uses).
+    const seenDraftIds = new Set<string>();
+    const allDrafts = [...liAllDrafts, ...ciDrafts]
+      .filter((d) => {
+        if (!d?.id || seenDraftIds.has(d.id)) return false;
+        seenDraftIds.add(d.id);
+        return true;
+      })
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     setDrafts(allDrafts);
     setPublishedPosts(liPublished);
     setNeedsReview(liNeedsReview);
