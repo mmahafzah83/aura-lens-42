@@ -870,6 +870,37 @@ const LANDING_HTML = `
 
 <div class="seam"></div>
 
+<!-- THE OVERNIGHT · the night shift -->
+<section class="dark ovn">
+  <div class="wrap">
+    <p class="eyebrow sec-eyebrow" data-reveal>THE OVERNIGHT</p>
+    <h2 data-reveal style="max-width:16ch">You sleep. <em class="ovn-em">Aura reads.</em></h2>
+    <p class="lede" data-reveal style="max-width:56ch">Every night it works through what you saved, finds the one point worth saying, and drafts it in your voice — waiting for you before your coffee.</p>
+
+    <div class="ovn-band" data-reveal aria-hidden="true">
+      <span class="ovn-sweep"></span>
+      <span class="ovn-hz"></span>
+      <span class="ovn-cap c1"></span>
+      <span class="ovn-cap c2"></span>
+      <span class="ovn-cap c3"></span>
+      <span class="ovn-cap c4"></span>
+      <span class="ovn-cap c5"></span>
+      <span class="ovn-cap c6"></span>
+      <span class="ovn-log l1">02:14 &middot; reading</span>
+      <span class="ovn-log l2">03:47 &middot; pattern found</span>
+      <span class="ovn-log l3">05:12 &middot; draft ready</span>
+    </div>
+
+    <div class="ovn-grid">
+      <div class="ovn-card" data-reveal><p class="t">WHILE YOU SLEEP</p><p>It reads on your behalf and hunts the pattern worth saying.</p></div>
+      <div class="ovn-card" data-reveal><p class="t">AT DAWN</p><p>A drafted post in your voice — built on a real signal, with its source attached.</p></div>
+      <div class="ovn-card" data-reveal><p class="t">FOR TOMORROW</p><p>It suggests what to read next, matched to your profile — so tomorrow is easier than today.</p></div>
+    </div>
+  </div>
+</section>
+
+<div class="seam"></div>
+
 <!-- WHAT CHANGES FOR YOU · word morph + scroll-driven scenes -->
 <section class="dark">
   <div class="wrap wc-grid">
