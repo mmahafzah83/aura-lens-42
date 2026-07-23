@@ -966,17 +966,20 @@ const LANDING_HTML = `
     <p class="lede" data-reveal style="max-width:56ch">Every night it works through what you saved, finds the one point worth saying, and drafts it in your voice — waiting for you before your coffee.</p>
 
     <div class="ovn-band" data-reveal aria-hidden="true">
-      <span class="ovn-sweep"></span>
       <span class="ovn-hz"></span>
-      <span class="ovn-cap c1"></span>
-      <span class="ovn-cap c2"></span>
-      <span class="ovn-cap c3"></span>
-      <span class="ovn-cap c4"></span>
-      <span class="ovn-cap c5"></span>
-      <span class="ovn-cap c6"></span>
-      <span class="ovn-log l1">02:14 &middot; reading</span>
-      <span class="ovn-log l2">03:47 &middot; pattern found</span>
-      <span class="ovn-log l3">05:12 &middot; draft ready</span>
+      <span class="ovn-sched"><i></i>Wakes 02:00 &middot; sleeps 06:00</span>
+      <span class="ovn-doc d1"></span>
+      <span class="ovn-doc d2"></span>
+      <span class="ovn-doc d3"></span>
+      <span class="ovn-doc d4"></span>
+      <span class="ovn-doc d5"></span>
+      <span class="ovn-agent"><span class="ab"><i class="ant"></i><i class="eye"></i><i class="beam"></i></span></span>
+      <span class="ovn-log">
+        <span class="l1">&gt; reading your captures&hellip;</span>
+        <span class="l2">&gt; pattern found &middot; 3 captures agree</span>
+        <span class="l3">&gt; drafting in your voice&hellip;</span>
+      </span>
+      <span class="ovn-count"><b class="n1">1</b><b class="n2">2</b><b class="n3">3</b><b class="n4">4</b><b class="n5">5</b> captures read tonight</span>
     </div>
 
     <div class="ovn-grid">
