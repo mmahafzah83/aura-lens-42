@@ -618,6 +618,12 @@ const LANDING_CSS = `
   .aura-landing .soc-soon{align-self:center;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1.5px;color:#6f7873;text-transform:uppercase}
   .aura-landing .heroline2{font-size:clamp(24px,3vw,38px);line-height:1.15;color:var(--paper);margin:18px 0 0;max-width:24ch;text-shadow:0 2px 26px rgba(4,7,6,.92)}
   .aura-landing .heroline2 em{font-style:italic;color:var(--teal)}
+  .aura-landing .hw{display:inline-block;opacity:0;transform:translateY(14px);animation:hwIn .85s cubic-bezier(.22,1,.36,1) forwards}
+  .aura-landing .hw1{color:var(--amber);animation-delay:.15s}
+  .aura-landing .hw2{color:#C9847C;animation-delay:.33s}
+  .aura-landing .hw3{color:var(--teal);animation-delay:.51s}
+  @keyframes hwIn{to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion: reduce){.aura-landing .hw{animation:none;opacity:1;transform:none}}
 `;
 const LANDING_HTML = `
 <canvas id="bg"></canvas>
@@ -631,7 +637,7 @@ const LANDING_HTML = `
 <section class="dark hero">
   <div class="wrap">
     <p class="eyebrow">PERSONAL INTELLIGENCE SYSTEM</p>
-    <h1><span class="sr-only">Aura — a personal intelligence system that turns your expertise into presence. </span><span aria-hidden="true">You have the experience,<br>the identity, the presence.</span></h1>
+    <h1><span class="sr-only">Aura — a personal intelligence system that turns your expertise into presence. </span><span aria-hidden="true">You have the <span class="hw hw1">experience</span>,<br>the <span class="hw hw2">identity</span>, the <span class="hw hw3">presence</span>.</span></h1>
     <p class="lede heroline2">Now you have the <em>intelligence system</em> that works for you.</p>
     <p class="lede sub">Aura learns who you are, reads what you read, and turns your expertise into presence — in your own voice, without adding a thing to your week.</p>
   </div>
