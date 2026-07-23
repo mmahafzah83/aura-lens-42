@@ -74,7 +74,10 @@ export function emailFooter(): string {
 
 export function emailShell(opts: { preheader?: string; body: string; maxWidth?: number }): string {
   const { preheader = "", body, maxWidth = 560 } = opts;
-  return `<!doctype html><html><body style="margin:0;padding:0;background:${PAPER_BG};font-family:${BODY};color:${INK_BODY};">
+  return `<!doctype html><html><head>
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
+</head><body style="margin:0;padding:0;background:${PAPER_BG};font-family:${BODY};color:${INK_BODY};">
 <span style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;overflow:hidden;mso-hide:all;">${preheader}</span>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${PAPER_BG};padding:32px 16px;">
   <tr><td align="center">
