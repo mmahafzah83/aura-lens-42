@@ -54,17 +54,16 @@ function deriveShortTopic(opts: {
     const t = (themeTags[0] || "").trim();
     if (t && t.length <= 40) return t;
   }
-  if (signalTitle && signalTitle.trim().length > 0) {
-    const words = signalTitle.trim().split(/\s+/).slice(0, 6).join(" ");
-    return words.replace(/[.,;:!?—–-]+$/g, "").trim();
-  }
-  return (fallbackTitle || "").trim();
+  const src = (signalTitle && signalTitle.trim()) || (fallbackTitle && fallbackTitle.trim()) || "";
+  if (!src) return "";
+  const words = src.split(/\s+/).slice(0, 6).join(" ");
+  return words.replace(/[.,;:!?—–-]+$/g, "").trim();
 }
 
 function clampForSubject(shortTopic: string): string {
-  // Subject template: `Your post on ${shortTopic} is ready` = 20 chars of chrome.
-  // Keep total under 60 → shortTopic max 39.
-  const MAX = 39;
+  // Subject template: `Your post on ${shortTopic} is ready` = 22 chars of chrome.
+  // Keep total under 60 → shortTopic max 38.
+  const MAX = 38;
   if (shortTopic.length <= MAX) return shortTopic;
   return shortTopic.slice(0, MAX - 1).replace(/[\s,;:.\-–—]+$/g, "") + "…";
 }
