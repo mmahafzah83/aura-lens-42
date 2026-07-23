@@ -26,9 +26,8 @@ const corsHeaders = {
 
 const FROM = "Aura <invites@aura-intel.org>";
 const REPLY_TO = "mohammad.mahafdhah@aura-intel.org";
-const CTA_BASE = "https://www.aura-intel.org/dashboard?tab=authority";
 function ctaFor(draftId: string, src: "content_items" | "linkedin_posts"): string {
-  return `${CTA_BASE}&draft=${encodeURIComponent(draftId)}&src=${src}`;
+  return `https://www.aura-intel.org/dashboard?tab=authority&draft=${encodeURIComponent(draftId)}&src=${src}`;
 }
 
 type DraftRow = {
