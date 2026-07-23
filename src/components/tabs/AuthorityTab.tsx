@@ -641,6 +641,21 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
 
   // Apply draft prefill — opens an existing content_items draft in the editor.
   // Mirrors the signalPrefill channel: hydrate state, then notify parent to clear.
+  const hydrateDraftSignal = async (sigId: string) => {
+    try {
+      const { data: sig } = await supabase
+        .from("strategic_signals")
+        .select("signal_title, explanation, what_it_means_for_you")
+        .eq("id", sigId)
+        .maybeSingle();
+      if (!sig) return;
+      setSelectedSignalId(sigId);
+      pendingSignalIdRef.current = sigId;
+      setSelectedSignalTitle((sig as any).signal_title || null);
+      setSelectedSignalInsight(((sig as any).what_it_means_for_you || (sig as any).explanation) || null);
+      setTopic(prev => (prev && prev.trim()) ? prev : ((sig as any).signal_title || ""));
+    } catch { /* silent — never blank the editor */ }
+  };
   useEffect(() => {
     if (draftPrefill) {
       track("composer_opened", {
