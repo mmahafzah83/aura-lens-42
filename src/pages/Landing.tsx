@@ -214,7 +214,7 @@ const LANDING_CSS = `
   .aura-landing .wrap{max-width:1000px;margin:0 auto;position:relative;z-index:2}
   .aura-landing .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:3px;color:var(--teal);margin:0 0 20px}
   .aura-landing .bone .eyebrow{color:var(--ox)}
-  .aura-landing h1{font-size:clamp(42px,7.4vw,92px);line-height:1.03;font-weight:500;margin:0;letter-spacing:-.01em;color:var(--paper);text-shadow:0 2px 44px rgba(0,0,0,.5)}
+  .aura-landing h1{font-size:clamp(38px,5.6vw,68px);line-height:1.06;font-weight:500;margin:0;letter-spacing:-.012em;color:var(--paper);text-shadow:0 2px 44px rgba(0,0,0,.5)}
   .aura-landing .sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
   .aura-landing h2{font-size:clamp(28px,4.6vw,54px);line-height:1.1;font-weight:500;margin:0 0 18px;letter-spacing:-.01em}
   .aura-landing .dark h2{color:var(--paper);text-shadow:0 2px 30px rgba(0,0,0,.5)}
@@ -223,7 +223,7 @@ const LANDING_CSS = `
   .aura-landing .hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center}
   .aura-landing .flip{display:inline-block;position:relative;color:var(--teal)}
   .aura-landing .flip .w{display:inline-block;transition:transform .5s cubic-bezier(.5,0,.2,1),opacity .5s}
-  .aura-landing .hero .sub{margin:clamp(76px,14vh,170px) 0 40px;max-width:34ch;text-shadow:0 2px 26px rgba(4,7,6,.92)}
+  .aura-landing .hero .sub{margin:clamp(26px,4.5vh,52px) 0 40px;max-width:34ch;text-shadow:0 2px 26px rgba(4,7,6,.92)}
   .aura-landing .cta-row{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
   .aura-landing .req{font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:1px;color:#241a06;background:var(--amber);text-decoration:none;border-radius:11px;padding:14px 26px;transition:transform .15s}
   .aura-landing .req:active{transform:scale(.97)}
