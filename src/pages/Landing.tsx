@@ -637,6 +637,17 @@ const LANDING_CSS = `
   .aura-landing .faq-i[open] summary::after{content:"\\2013"}
   .aura-landing .faq-i p{margin:12px 0 2px;font-size:clamp(15px,1.35vw,16.5px);line-height:1.65;color:var(--muted);max-width:46ch}
   @media (max-width:860px){.aura-landing .faq-grid{grid-template-columns:1fr;gap:0}}
+  .aura-landing .founder-wrap{display:grid;grid-template-columns:300px 1fr;column-gap:56px;align-items:start}
+  .aura-landing .founder-portrait{margin:0;position:relative;z-index:2}
+  .aura-landing .founder-portrait img{display:block;width:100%;height:auto;border-radius:22px;background:#0d1512;border:1px solid rgba(237,231,217,.14);box-shadow:0 26px 60px rgba(0,0,0,.55);filter:saturate(.92) contrast(1.02) brightness(.97)}
+  .aura-landing .founder-portrait figcaption{margin-top:16px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted)}
+  .aura-landing .founder-copy{min-width:0}
+  .aura-landing .founder-tail{grid-column:1 / -1;margin-top:34px}
+  @media (max-width:860px){
+    .aura-landing .founder-wrap{grid-template-columns:1fr;row-gap:34px}
+    .aura-landing .founder-portrait{max-width:280px;margin:0 auto}
+    .aura-landing .founder-tail{margin-top:10px}
+  }
 `;
 const LANDING_HTML = `
 <canvas id="bg"></canvas>
@@ -956,14 +967,22 @@ const LANDING_HTML = `
 <!-- WHY I BUILT THIS -->
 <section class="dark founder">
   <div class="watermark" aria-hidden="true">AURA</div>
-  <div class="wrap">
-    <p class="eyebrow" data-reveal>WHY I BUILT THIS</p>
-    <h2 data-reveal>Because I'm one of you.</h2>
-    <p class="lede wide" data-reveal>I read 30+ articles a week. I see patterns in digital transformation that most reports miss. I hold views that could shape how organizations think about their future.</p>
-    <p class="lede wide" data-reveal>But for years it never left my own notebooks. No one outside the room knew any of it existed.</p>
-    <p class="lede wide" data-reveal>So I built the system I wished existed — one that takes what I already read, finds the strategic patterns, understands my voice and my expertise, and turns it into a presence that compounds over time.</p>
-    <div class="rule-sm" data-reveal></div>
-    <p class="founder-close" data-reveal>I called it Aura. And now it's ready for you.</p>
+  <div class="wrap founder-wrap">
+    <figure class="founder-portrait" data-reveal>
+      <img src="/aura-founder.jpg" alt="Mohammad Mahafzah, who built Aura" loading="lazy" decoding="async" width="760" height="1013">
+      <figcaption>Mohammad Mahafzah · Aura Builder</figcaption>
+    </figure>
+    <div class="founder-copy">
+      <p class="eyebrow" data-reveal>WHY I BUILT THIS</p>
+      <h2 data-reveal>Because I'm one of you.</h2>
+      <p class="lede wide" data-reveal>I read 30+ articles a week. I see patterns in digital transformation that most reports miss. I hold views that could shape how organizations think about their future.</p>
+      <p class="lede wide" data-reveal>But for years it never left my own notebooks. No one outside the room knew any of it existed.</p>
+      <p class="lede wide" data-reveal>So I built the system I wished existed — one that takes what I already read, finds the strategic patterns, understands my voice and my expertise, and turns it into a presence that compounds over time.</p>
+    </div>
+    <div class="founder-tail">
+      <div class="rule-sm" data-reveal></div>
+      <p class="founder-close" data-reveal>I called it Aura. And now it's ready for you.</p>
+    </div>
   </div>
 </section>
 
