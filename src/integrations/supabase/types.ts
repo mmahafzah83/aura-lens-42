@@ -3371,6 +3371,13 @@ export type Database = {
           rows_added: number
         }[]
       }
+      founding_seats: {
+        Args: never
+        Returns: {
+          cap: number
+          claimed: number
+        }[]
+      }
       is_current_user_admin: { Args: never; Returns: boolean }
       pending_capture_entries: {
         Args: {
