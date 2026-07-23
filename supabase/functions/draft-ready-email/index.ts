@@ -36,6 +36,7 @@ type DraftRow = {
   title: string | null;
   signal_id: string | null;
   src: "content_items" | "linkedin_posts";
+  source_metadata: Record<string, unknown> | null;
 };
 
 function escapeHtml(s: string): string {
@@ -43,37 +44,100 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
+function deriveShortTopic(opts: {
+  themeTags: string[] | null;
+  signalTitle: string | null;
+  fallbackTitle: string | null;
+}): string {
+  const { themeTags, signalTitle, fallbackTitle } = opts;
+  if (Array.isArray(themeTags) && themeTags.length > 0) {
+    const t = (themeTags[0] || "").trim();
+    if (t && t.length <= 40) return t;
+  }
+  const src = (signalTitle && signalTitle.trim()) || (fallbackTitle && fallbackTitle.trim()) || "";
+  if (!src) return "";
+  const words = src.split(/\s+/).slice(0, 6).join(" ");
+  return words.replace(/[.,;:!?—–-]+$/g, "").trim();
+}
+
+function clampForSubject(shortTopic: string): string {
+  // Subject template: `Your post on ${shortTopic} is ready` = 22 chars of chrome.
+  // Keep total under 60 → shortTopic max 38.
+  const MAX = 38;
+  if (shortTopic.length <= MAX) return shortTopic;
+  return shortTopic.slice(0, MAX - 1).replace(/[\s,;:.\-–—]+$/g, "") + "…";
+}
+
+function whenPhrase(newestFragmentIso: string | null): string {
+  if (!newestFragmentIso) return "";
+  const ageDays = (Date.now() - new Date(newestFragmentIso).getTime()) / 86400000;
+  if (ageDays < 4) return "this week";
+  if (ageDays >= 4 && ageDays <= 10) return "last week";
+  return "";
+}
+
 function buildEmail(opts: {
-  topic: string;
+  firstName: string | null;
+  shortTopic: string;
+  fullTopic: string;
   excerpt: string;
   nReadings: number | null;
   nSources: number | null;
-}): { subject: string; html: string } {
-  const { topic, excerpt, nReadings, nSources } = opts;
-  const subject = `Aura wrote your post on ${topic}`;
+  newestFragmentIso: string | null;
+  velocityStatus: string | null;
+}): { subject: string; preheader: string; html: string } {
+  const {
+    firstName, shortTopic, fullTopic, excerpt,
+    nReadings, nSources, newestFragmentIso, velocityStatus,
+  } = opts;
+
+  const shortForSubject = clampForSubject(shortTopic || fullTopic);
+  const subject = `Your post on ${shortForSubject} is ready`;
 
   const haveCounts =
     typeof nReadings === "number" && nReadings > 0 &&
     typeof nSources === "number" && nSources > 0;
 
-  const line1 = haveCounts
-    ? `You saved ${nReadings} reading${nReadings === 1 ? "" : "s"} across ${nSources} source${nSources === 1 ? "" : "s"} on ${escapeHtml(topic)} this week. Aura turned them into a post in your voice.`
-    : `Aura turned your recent saves on ${escapeHtml(topic)} into a post in your voice.`;
+  const preheader = haveCounts
+    ? `${nReadings} readings you saved. One post. Ten minutes.`
+    : `One post. Ten minutes.`;
 
-  // dir="auto" so Arabic excerpts render RTL correctly inside an LTR email body.
+  const namePrefix = firstName ? `${escapeHtml(firstName)} — you` : "You";
+  const when = whenPhrase(newestFragmentIso);
+  const whenSuffix = when ? ` ${when}` : "";
+  const fullTopicEsc = escapeHtml(fullTopic);
+
+  const p1 = haveCounts
+    ? `${namePrefix} saved ${nReadings} readings on ${fullTopicEsc}${whenSuffix}. Nobody asked you to. That was your judgment picking out what mattered while everyone else scrolled past it.`
+    : `${namePrefix} kept a finding on ${fullTopicEsc}. That was your judgment, not an algorithm's.`;
+
+  const p2 = `Aura put that judgment into a post, written the way you write.`;
+
   const excerptClean = escapeHtml(excerpt.slice(0, 140)) + (excerpt.length > 140 ? "…" : "");
   const quote =
     `<blockquote dir="auto" style="margin:18px 0;padding:4px 0 4px 18px;border-left:2px solid #D6A748;font-family:Georgia,'Times New Roman',serif;font-style:italic;color:#1B1712;">${excerptClean}</blockquote>`;
 
+  const p3 = `It isn't finished until you've argued with it. Cut what isn't you. Sharpen what is. Then it's yours to publish — or not.`;
+
+  const closer = `Ten minutes. Nothing goes out without you.`;
+
+  let ps = "";
+  if (velocityStatus === "accelerating") {
+    ps = `<p style="font-size:13px;line-height:1.55;margin:22px 0 0;color:#8A8073;">P.S. — ${escapeHtml(shortTopic)} is moving right now. The people reading about it this week are the ones who will remember who said it first.</p>`;
+  }
+
   const body = `
-    ${headingHtml("Your post is written.")}
-    <p style="font-size:15px;line-height:1.6;margin:0 0 6px;color:${INK_BODY};">${line1}</p>
+    ${headingHtml("You already made this argument.")}
+    <p style="font-size:15px;line-height:1.6;margin:0 0 12px;color:${INK_BODY};">${p1}</p>
+    <p style="font-size:15px;line-height:1.6;margin:0 0 6px;color:${INK_BODY};">${p2}</p>
     ${quote}
-    <p style="font-size:15px;line-height:1.6;margin:0 0 6px;color:${INK_BODY};">It's written and waiting. Ten minutes of edits and it's live.</p>
-    <p style="margin:24px 0;">${button(CTA_URL, "Open your draft")}</p>
+    <p style="font-size:15px;line-height:1.6;margin:0 0 6px;color:${INK_BODY};">${p3}</p>
+    <p style="margin:22px 0 8px;">${button(CTA_URL, "Open your draft")}</p>
+    <p style="font-size:12px;line-height:1.5;margin:0;color:#8A8073;">${closer}</p>
+    ${ps}
   `;
 
-  return { subject, html: emailShell({ preheader: subject, body }) };
+  return { subject, preheader, html: emailShell({ preheader, body }) };
 }
 
 serve(async (req) => {
@@ -116,6 +180,9 @@ serve(async (req) => {
     outcome: "sent" | "would_send" | "skipped_already" | "failed";
     resend_status?: number;
     error?: string;
+    subject?: string;
+    preheader?: string;
+    html?: string;
   }> = [];
 
   let candidates = 0;
@@ -136,7 +203,7 @@ serve(async (req) => {
 
     const { data: lpDrafts, error: lpErr } = await admin
       .from("linkedin_posts")
-      .select("id, user_id, created_at, post_text, title, source_signal_id")
+      .select("id, user_id, created_at, post_text, title, source_signal_id, source_metadata")
       .eq("tracking_status", "draft")
       .is("published_at", null)
       .lt("created_at", cutoffIso);
@@ -154,6 +221,7 @@ serve(async (req) => {
         title: (r.title as string | null) ?? null,
         signal_id: (r.signal_id as string | null) ?? sigFromParams,
         src: "content_items",
+        source_metadata: null,
       });
     }
     for (const r of lpDrafts || []) {
@@ -165,6 +233,7 @@ serve(async (req) => {
         title: (r.title as string | null) ?? null,
         signal_id: (r.source_signal_id as string | null) ?? null,
         src: "linkedin_posts",
+        source_metadata: (r.source_metadata as Record<string, unknown> | null) ?? null,
       });
     }
 
@@ -217,21 +286,29 @@ serve(async (req) => {
       }
 
       // Resolve topic + counts from the linked signal (if any).
-      let topic = "";
+      let fullTopic = "";
+      let shortTopic = "";
+      let themeTags: string[] | null = null;
+      let signalTitle: string | null = null;
+      let velocityStatus: string | null = null;
       let nReadings: number | null = null;
       let nSources: number | null = null;
+      let newestFragmentIso: string | null = null;
+
       if (pick.signal_id) {
         const { data: sig } = await admin
           .from("strategic_signals")
-          .select("signal_title, supporting_evidence_ids")
+          .select("signal_title, supporting_evidence_ids, theme_tags, velocity_status")
           .eq("id", pick.signal_id)
           .maybeSingle();
-        if (sig?.signal_title) topic = sig.signal_title as string;
+        signalTitle = (sig?.signal_title as string | null) ?? null;
+        themeTags = (sig?.theme_tags as string[] | null) ?? null;
+        velocityStatus = (sig?.velocity_status as string | null) ?? null;
         const evIds = (sig?.supporting_evidence_ids as string[] | null) || [];
         if (evIds.length > 0) {
           const { data: frags } = await admin
             .from("evidence_fragments")
-            .select("source_registry_id")
+            .select("source_registry_id, created_at")
             .in("id", evIds);
           const distinctSources = new Set(
             (frags || [])
@@ -240,12 +317,51 @@ serve(async (req) => {
           );
           nReadings = evIds.length;
           nSources = distinctSources.size;
+          const dates = (frags || [])
+            .map((f) => (f.created_at as string | null))
+            .filter((v): v is string => !!v)
+            .sort();
+          if (dates.length > 0) newestFragmentIso = dates[dates.length - 1];
+        }
+        if (signalTitle) fullTopic = signalTitle;
+      }
+
+      // Ghost-draft fallback: use provenance from linkedin_posts.source_metadata.
+      if (!fullTopic && pick.src === "linkedin_posts" && pick.source_metadata) {
+        const sm = pick.source_metadata;
+        if (sm["ghost_draft"] === true) {
+          const fs = typeof sm["finding_source"] === "string" ? sm["finding_source"] as string : "";
+          const fi = typeof sm["finding_implication"] === "string" ? sm["finding_implication"] as string : "";
+          if (fs || fi) fullTopic = [fs, fi].filter(Boolean).join(" — ");
         }
       }
-      if (!topic) topic = (pick.title || "your latest topic").trim();
+
+      if (!fullTopic) fullTopic = (pick.title || "").trim();
+      shortTopic = deriveShortTopic({ themeTags, signalTitle, fallbackTitle: pick.title });
+      if (!shortTopic) shortTopic = fullTopic;
+      if (!fullTopic) fullTopic = shortTopic || "a finding you kept";
+      if (!shortTopic) shortTopic = "a finding you kept";
+
+      // First name for greeting.
+      const { data: prof } = await admin
+        .from("diagnostic_profiles")
+        .select("first_name")
+        .eq("user_id", pick.user_id)
+        .maybeSingle();
+      const firstName = (prof?.first_name as string | null)?.trim() || null;
 
       const excerpt = (pick.body || "").trim();
-      const { subject, html } = buildEmail({ topic, excerpt, nReadings, nSources });
+      const { subject, preheader, html } = buildEmail({
+        firstName,
+        shortTopic,
+        fullTopic,
+        excerpt,
+        nReadings,
+        nSources,
+        newestFragmentIso,
+        velocityStatus,
+      });
+
 
       // Recipient email
       const { data: userData, error: userErr } = await admin.auth.admin.getUserById(pick.user_id);
@@ -277,6 +393,9 @@ serve(async (req) => {
           user_id: pick.user_id,
           draft_id: pick.draft_id,
           outcome: "would_send",
+          subject,
+          preheader,
+          html,
         });
         // In dry-run we do NOT increment `sent`. It counts real Resend successes only.
         continue;
