@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
   // 1) Find rows that will transition to 'dead' due to this reap? No: reap only reclaims 'claimed'.
   // Instead we look for rows that became 'dead' since the previous reap heartbeat.
   const { data: lastHeartbeat } = await admin
-    .from("ef_error_log")
+    .from("ef_event_log")
     .select("created_at")
     .eq("function_name", "reap-stuck-jobs")
     .like("error_message", "JOB_QUEUE_HEALTH%")
@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
     : 0;
 
   // ALWAYS write heartbeat
-  await admin.from("ef_error_log").insert({
+  await admin.from("ef_event_log").insert({
     function_name: "reap-stuck-jobs",
     severity: "info",
     error_message:

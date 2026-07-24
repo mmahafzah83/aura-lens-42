@@ -39,7 +39,7 @@ function esc(s: string): string {
   return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-// Heartbeats: only functions that ACTUALLY write to ef_error_log with a heartbeat row.
+// Heartbeats: only functions that ACTUALLY write to ef_event_log with a heartbeat row.
 // "cron ran but wrote no heartbeat" is a rare secondary problem — AMBER, not RED.
 // Do NOT list functions that report through health_findings/notifications instead
 // (e.g. api-health-sentinel, aura-health-audit). Those are covered by Section A on
@@ -244,7 +244,7 @@ Deno.serve(async (req) => {
   let muteCount = 0;
   for (const hb of HEARTBEATS) {
     const win = heartbeatWindowOverride[hb.key] ?? hb.windowMin;
-    let q = admin.from("ef_error_log")
+    let q = admin.from("ef_event_log")
       .select("created_at, error_message")
       .eq("function_name", hb.functionName)
       .order("created_at", { ascending: false })
@@ -355,7 +355,7 @@ Deno.serve(async (req) => {
   }
 
   // ---------- SECTION E: Publish integrity ----------
-  const { data: invRows } = await admin.from("ef_error_log")
+  const { data: invRows } = await admin.from("ef_event_log")
     .select("context, created_at")
     .eq("function_name", "publish-invariants-check")
     .order("created_at", { ascending: false })
@@ -570,7 +570,7 @@ Deno.serve(async (req) => {
   }
 
   // Own heartbeat — one row per run, no matter what.
-  await admin.from("ef_error_log").insert({
+  await admin.from("ef_event_log").insert({
     function_name: "aura-ops-report",
     severity: "info",
     error_message: `OPS_REPORT verdict=${verdict} silent=${notRunCount + failingCount} mute=${muteCount} failures=${failures.length} dead_jobs=${qDead ?? 0} unclassified=${unclassifiedNow}`,
