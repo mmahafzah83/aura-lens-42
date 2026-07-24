@@ -51,7 +51,7 @@ export async function linkedinFetch(
 
   // Best-effort audit — never throw, never block the return.
   try {
-    await ctx.adminClient.from("ef_event_log").insert({
+    await ctx.adminClient.from("ef_error_log").insert({
       function_name: "linkedin-egress",
       severity: "info",
       user_id: ctx.userId,

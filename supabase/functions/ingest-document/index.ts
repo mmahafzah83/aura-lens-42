@@ -87,7 +87,7 @@ async function logStageInfo(
 ) {
   const mem = memMB();
   try {
-    await admin.from("ef_event_log").insert({
+    await admin.from("ef_error_log").insert({
       function_name: "ingest-document",
       severity: "info",
       error_message: `stage=${args.stage}`,
