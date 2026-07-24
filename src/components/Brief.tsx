@@ -436,6 +436,11 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
   }, [openedRowsKey]);
 
   const markRowOpened = useCallback((signalId: string) => {
+    if (user) {
+      try {
+        void (supabase as any).rpc("bump_signal_engagement", { p_signal_id: signalId });
+      } catch { /* fire-and-forget — must not block row interaction */ }
+    }
     setOpenedRows(prev => {
       if (prev.has(signalId)) return prev;
       const next = new Set(prev);
@@ -1162,17 +1167,24 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
         return {
           body,
           cta: "Write the update",
-          onClick: () => onDraftToStudio?.({
-            topic: topSignal.title,
-            context: updateContext,
-            signalId: topSignal.id,
-            signalTitle: topSignal.title,
-            sourceType: "signal_evolution",
-            sourceTitle: topSignal.title,
-            contentFormat: "post",
-            source: "brief",
-            moveState: "evolution",
-          }),
+          onClick: () => {
+            if (user) {
+              try {
+                void (supabase as any).rpc("bump_signal_engagement", { p_signal_id: topSignal.id });
+              } catch { /* fire-and-forget — must not block draft handoff */ }
+            }
+            onDraftToStudio?.({
+              topic: topSignal.title,
+              context: updateContext,
+              signalId: topSignal.id,
+              signalTitle: topSignal.title,
+              sourceType: "signal_evolution",
+              sourceTitle: topSignal.title,
+              contentFormat: "post",
+              source: "brief",
+              moveState: "evolution",
+            });
+          },
           voiceScore: null,
         };
       }
@@ -1186,14 +1198,28 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
           return {
             body: `${title} has been written for ${days} days.`,
             cta: "Publish it",
-            onClick: () => onOpenDraft(state.draft!),
+            onClick: () => {
+              if (user) {
+                try {
+                  void (supabase as any).rpc("bump_signal_engagement", { p_signal_id: topSignal.id });
+                } catch { /* fire-and-forget — must not block draft open */ }
+              }
+              onOpenDraft(state.draft!);
+            },
             voiceScore: null,
           };
         }
         return {
           body: `${title} is written. One decision from published.`,
           cta: "Open the draft",
-          onClick: () => onOpenDraft(state.draft!),
+          onClick: () => {
+            if (user) {
+              try {
+                void (supabase as any).rpc("bump_signal_engagement", { p_signal_id: topSignal.id });
+              } catch { /* fire-and-forget — must not block draft open */ }
+            }
+            onOpenDraft(state.draft!);
+          },
           voiceScore: null,
         };
       }
@@ -1599,6 +1625,11 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
                             <div style={{ marginLeft: 20, marginTop: 8 }}>
                               <button type="button" onClick={(e) => {
                                   e.stopPropagation();
+                                  if (user) {
+                                    try {
+                                      void (supabase as any).rpc("bump_signal_engagement", { p_signal_id: s.id });
+                                    } catch { /* fire-and-forget — must not block navigation */ }
+                                  }
                                   if (onOpenSignal) onOpenSignal(s.id);
                                   else onSwitchTab?.("intelligence");
                                 }}
@@ -1657,10 +1688,22 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
                           tabIndex={onOpenSignal ? 0 : -1}
                           aria-label={`Open signal: ${m.title}`}
                           style={{ cursor: onOpenSignal ? "pointer" : "default", outline: "none" }}
-                          onClick={onOpenSignal ? () => onOpenSignal(m.id) : undefined}
+                          onClick={onOpenSignal ? () => {
+                            if (user) {
+                              try {
+                                void (supabase as any).rpc("bump_signal_engagement", { p_signal_id: m.id });
+                              } catch { /* fire-and-forget — must not block navigation */ }
+                            }
+                            onOpenSignal(m.id);
+                          } : undefined}
                           onKeyDown={onOpenSignal ? (e) => {
                             if (e.key === "Enter" || e.key === " ") {
                               e.preventDefault();
+                              if (user) {
+                                try {
+                                  void (supabase as any).rpc("bump_signal_engagement", { p_signal_id: m.id });
+                                } catch { /* fire-and-forget — must not block navigation */ }
+                              }
                               onOpenSignal(m.id);
                             }
                           } : undefined}
