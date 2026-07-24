@@ -846,6 +846,9 @@ const Observatory = ({
       const found = signals.find(s => s.id === sigParam);
       if (found) {
         setSelectedSignalId(sigParam);
+        try {
+          void (supabase as any).rpc("bump_signal_engagement", { p_signal_id: sigParam });
+        } catch { /* fire-and-forget — must not block navigation */ }
         setActiveSubTab("signals");
         searchParams.delete("signal");
         setSearchParams(searchParams, { replace: true });
@@ -941,7 +944,12 @@ const Observatory = ({
     <div
       key={s.id}
       data-testid="intel-signal-card"
-      onClick={() => setSelectedSignalId(s.id)}
+      onClick={() => {
+        try {
+          void (supabase as any).rpc("bump_signal_engagement", { p_signal_id: s.id });
+        } catch { /* fire-and-forget — must not block selection */ }
+        setSelectedSignalId(s.id);
+      }}
       style={{
         display: "grid",
         gridTemplateColumns: "1fr auto auto",
