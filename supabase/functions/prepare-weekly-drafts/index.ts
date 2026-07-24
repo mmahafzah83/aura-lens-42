@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
 
     if (pendingN > 0 && attempt < 3) {
       try {
-        await admin.from("ef_event_log").insert({
+        await admin.from("ef_error_log").insert({
           function_name: "prepare-weekly-drafts",
           severity: "info",
           error_message: `WRITER_DEFERRED pending=${pendingN} attempt=${attempt}`,

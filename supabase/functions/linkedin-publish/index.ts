@@ -174,7 +174,7 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
       }
       const byteLength = new TextEncoder().encode(postText).length;
       const tail60 = postText.slice(-60);
-      await adminClient.from("ef_event_log").insert({
+      await adminClient.from("ef_error_log").insert({
         function_name: "linkedin-publish",
         severity: "info",
         error_message: `pre-publish diagnostics postId=${postId} len=${postText.length} bytes=${byteLength}`,
@@ -207,7 +207,7 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
     if (liRes.status === 201) {
       const urn = liRes.headers.get("x-restli-id") ?? "";
       try {
-        await adminClient.from("ef_event_log").insert({
+        await adminClient.from("ef_error_log").insert({
           function_name: "linkedin-publish",
           severity: "info",
           error_message: `post-publish 201 postId=${postId} urn=${urn}`,
@@ -325,7 +325,7 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
     if (liRes.status === 401) {
       try {
         const bodyText = await liRes.clone().text();
-        await adminClient.from("ef_event_log").insert({
+        await adminClient.from("ef_error_log").insert({
           function_name: "linkedin-publish",
           severity: "info",
           error_message: `post-publish 401 postId=${postId}`,
@@ -345,7 +345,7 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
 
     const detail = await liRes.text();
     try {
-      await adminClient.from("ef_event_log").insert({
+      await adminClient.from("ef_error_log").insert({
         function_name: "linkedin-publish",
         severity: "info",
         error_message: `post-publish non-201 postId=${postId} status=${liRes.status}`,

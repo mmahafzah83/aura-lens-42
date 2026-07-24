@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
     ` stale_review=${counts.stale_needs_review}`;
 
   try {
-    await admin.from(anyViolation ? "ef_error_log" : "ef_event_log").insert({
+    await admin.from(anyViolation ? "ef_error_log" : "ef_error_log").insert({
       function_name: "publish-invariants-check",
       severity: anyViolation ? "warning" : "info",
       error_message: summary,

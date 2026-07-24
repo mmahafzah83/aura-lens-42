@@ -222,7 +222,7 @@ Deno.serve(async (req) => {
         });
       }
     } else {
-      await admin.from("ef_event_log").insert({
+      await admin.from("ef_error_log").insert({
         function_name: "completion-invariants-check",
         severity: "info",
         error_message: "COMPLETION_INVARIANTS ok assertions=7",

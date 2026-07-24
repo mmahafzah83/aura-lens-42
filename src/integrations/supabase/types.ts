@@ -1063,7 +1063,7 @@ export type Database = {
         }
         Relationships: []
       }
-      ef_event_log: {
+      ef_event_log_retired_20260724: {
         Row: {
           context: Json | null
           created_at: string
