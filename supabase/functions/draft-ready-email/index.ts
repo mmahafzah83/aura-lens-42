@@ -615,7 +615,7 @@ serve(async (req) => {
     }
 
     // Single summary row per run — always, even when nobody qualifies.
-    await admin.from("ef_error_log").insert({
+    await admin.from("ef_event_log").insert({
       function_name: "draft-ready-email",
       severity: "info",
       error_message: `DRAFT_READY_EMAIL dry_run=${dryRun} only_user=${onlyUserId ?? "none"} only_draft=${onlyDraftId ?? "none"} candidates=${candidates} sent=${sent} skipped_already=${skippedAlready} failed=${failed}`,
