@@ -135,6 +135,82 @@ Deno.serve(async (req) => {
       if (!pass) findings.push({ assertion: "funnel_collapse", detail: summary.funnel_collapse as any });
     }
 
+    // ============ ASSERTION 5: Signal-open instrumentation live ============
+    // Guards the bump_signal_engagement call sites. Passes when at least one
+    // signal_engagements row has last_opened_at inside the trailing 7 days.
+    {
+      const since = new Date(Date.now() - 7 * 86_400_000).toISOString();
+      const { count, error } = await admin
+        .from("signal_engagements")
+        .select("user_id", { count: "exact", head: true })
+        .gte("last_opened_at", since);
+      if (error) throw new Error(`assertion_5: ${error.message}`);
+      const rows_7d = count ?? 0;
+      const pass = rows_7d >= 1;
+      summary.signal_open_instrumentation = { pass, rows_7d, threshold: 1 };
+      if (!pass) findings.push({ assertion: "signal_open_instrumentation", detail: summary.signal_open_instrumentation as any });
+    }
+
+    // ============ ASSERTION 6: Error log stays clean of info severity ============
+    // Guards today's telemetry reroute. Any severity='info' row landing in
+    // ef_error_log within the trailing 24h is a regression.
+    {
+      const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+      const { count, error } = await admin
+        .from("ef_error_log")
+        .select("id", { count: "exact", head: true })
+        .eq("severity", "info")
+        .gte("created_at", since);
+      if (error) throw new Error(`assertion_6_count: ${error.message}`);
+      const info_rows_24h = count ?? 0;
+      let offenders: string[] = [];
+      if (info_rows_24h > 0) {
+        const { data: sample, error: sErr } = await admin
+          .from("ef_error_log")
+          .select("function_name")
+          .eq("severity", "info")
+          .gte("created_at", since)
+          .limit(500);
+        if (sErr) throw new Error(`assertion_6_sample: ${sErr.message}`);
+        offenders = [...new Set((sample ?? []).map((r: any) => r.function_name).filter(Boolean))];
+      }
+      const pass = info_rows_24h === 0;
+      summary.error_log_clean = { pass, info_rows_24h, offending_functions: offenders };
+      if (!pass) findings.push({ assertion: "error_log_clean", detail: summary.error_log_clean as any });
+    }
+
+    // ============ ASSERTION 7: No empty-body draft rows ============
+    // Guards the empty-body publish guard. Passes when zero linkedin_posts
+    // rows have tracking_status='draft' and null/whitespace-only post_text.
+    {
+      // Null-body drafts
+      const { count: nullCount, error: nErr } = await admin
+        .from("linkedin_posts")
+        .select("id", { count: "exact", head: true })
+        .eq("tracking_status", "draft")
+        .is("post_text", null);
+      if (nErr) throw new Error(`assertion_7_null: ${nErr.message}`);
+      // Whitespace-only drafts (regex: nothing but whitespace)
+      const { data: wsRows, error: wErr } = await admin
+        .from("linkedin_posts")
+        .select("id, post_text")
+        .eq("tracking_status", "draft")
+        .not("post_text", "is", null)
+        .limit(1000);
+      if (wErr) throw new Error(`assertion_7_ws: ${wErr.message}`);
+      const wsOffenders = (wsRows ?? []).filter((r: any) => typeof r.post_text === "string" && r.post_text.trim().length === 0);
+      const empty_body_count = (nullCount ?? 0) + wsOffenders.length;
+      const pass = empty_body_count === 0;
+      summary.no_empty_body_drafts = {
+        pass,
+        empty_body_count,
+        null_body_count: nullCount ?? 0,
+        whitespace_only_count: wsOffenders.length,
+        sample_ids: wsOffenders.slice(0, 50).map((r: any) => r.id),
+      };
+      if (!pass) findings.push({ assertion: "no_empty_body_drafts", detail: summary.no_empty_body_drafts as any });
+    }
+
     // ============ Write outcome ============
     if (findings.length > 0) {
       for (const f of findings) {
@@ -149,7 +225,7 @@ Deno.serve(async (req) => {
       await admin.from("ef_event_log").insert({
         function_name: "completion-invariants-check",
         severity: "info",
-        error_message: "COMPLETION_INVARIANTS ok assertions=4",
+        error_message: "COMPLETION_INVARIANTS ok assertions=7",
         context: summary,
       });
     }

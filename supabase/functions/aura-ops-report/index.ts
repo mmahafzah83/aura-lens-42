@@ -50,6 +50,11 @@ type Heartbeat = {
   windowMin: number;
   functionName: string;
   match?: string;
+  // If true, satisfy the heartbeat from a row in EITHER ef_event_log
+  // (clean-run heartbeat) OR ef_error_log (findings written instead of a
+  // heartbeat) for the same function_name in the window. Prevents the
+  // inverted-alarm case where a monitor is reported dead on days it fires.
+  eitherTable?: boolean;
 };
 
 const HEARTBEATS: Heartbeat[] = [
@@ -57,6 +62,9 @@ const HEARTBEATS: Heartbeat[] = [
   { key: "publish-invariants-check", label: "Publish invariants", windowMin: 26 * 60, functionName: "publish-invariants-check" },
   { key: "reconcile-signal-counts", label: "Signal-count reconciler", windowMin: 26 * 60, functionName: "reconcile-signal-counts" },
   { key: "draft-ready-email", label: "Draft-ready email (dry run)", windowMin: 26 * 60, functionName: "draft-ready-email" },
+  // completion-invariants-check writes to ef_event_log on a clean run and to
+  // ef_error_log on a run with findings. Either satisfies the heartbeat.
+  { key: "completion-invariants-check", label: "Completion invariants", windowMin: 26 * 60, functionName: "completion-invariants-check", eitherTable: true },
 ];
 // Deliberately NOT listing "aura-ops-report" here: this run IS its heartbeat.
 // On the first cron fire the row hasn't been inserted yet, so a self-check
@@ -244,14 +252,23 @@ Deno.serve(async (req) => {
   let muteCount = 0;
   for (const hb of HEARTBEATS) {
     const win = heartbeatWindowOverride[hb.key] ?? hb.windowMin;
-    let q = admin.from("ef_event_log")
+    let qEvt = admin.from("ef_event_log")
       .select("created_at, error_message")
       .eq("function_name", hb.functionName)
       .order("created_at", { ascending: false })
       .limit(1);
-    if (hb.match) q = q.like("error_message", `${hb.match}%`);
-    const { data: rows } = await q;
-    const last = rows && rows[0] ? (rows[0] as any).created_at as string : null;
+    if (hb.match) qEvt = qEvt.like("error_message", `${hb.match}%`);
+    const { data: evtRows } = await qEvt;
+    let last: string | null = evtRows && evtRows[0] ? (evtRows[0] as any).created_at as string : null;
+    if (hb.eitherTable) {
+      const { data: errRows } = await admin.from("ef_error_log")
+        .select("created_at")
+        .eq("function_name", hb.functionName)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      const lastErr = errRows && errRows[0] ? (errRows[0] as any).created_at as string : null;
+      if (lastErr && (!last || Date.parse(lastErr) > Date.parse(last))) last = lastErr;
+    }
     if (!last) {
       heartbeats.push({ hb, state: "NEVER", lastSeen: null, ageMin: null, windowMin: win });
       // NEVER-SEEN heartbeat + we don't know the cron ran → AMBER (cron layer will catch a genuinely dead cron).
