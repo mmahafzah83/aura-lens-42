@@ -1167,17 +1167,24 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
         return {
           body,
           cta: "Write the update",
-          onClick: () => onDraftToStudio?.({
-            topic: topSignal.title,
-            context: updateContext,
-            signalId: topSignal.id,
-            signalTitle: topSignal.title,
-            sourceType: "signal_evolution",
-            sourceTitle: topSignal.title,
-            contentFormat: "post",
-            source: "brief",
-            moveState: "evolution",
-          }),
+          onClick: () => {
+            if (user) {
+              try {
+                void (supabase as any).rpc("bump_signal_engagement", { p_signal_id: topSignal.id });
+              } catch { /* fire-and-forget — must not block draft handoff */ }
+            }
+            onDraftToStudio?.({
+              topic: topSignal.title,
+              context: updateContext,
+              signalId: topSignal.id,
+              signalTitle: topSignal.title,
+              sourceType: "signal_evolution",
+              sourceTitle: topSignal.title,
+              contentFormat: "post",
+              source: "brief",
+              moveState: "evolution",
+            });
+          },
           voiceScore: null,
         };
       }
@@ -1191,14 +1198,28 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
           return {
             body: `${title} has been written for ${days} days.`,
             cta: "Publish it",
-            onClick: () => onOpenDraft(state.draft!),
+            onClick: () => {
+              if (user) {
+                try {
+                  void (supabase as any).rpc("bump_signal_engagement", { p_signal_id: topSignal.id });
+                } catch { /* fire-and-forget — must not block draft open */ }
+              }
+              onOpenDraft(state.draft!);
+            },
             voiceScore: null,
           };
         }
         return {
           body: `${title} is written. One decision from published.`,
           cta: "Open the draft",
-          onClick: () => onOpenDraft(state.draft!),
+          onClick: () => {
+            if (user) {
+              try {
+                void (supabase as any).rpc("bump_signal_engagement", { p_signal_id: topSignal.id });
+              } catch { /* fire-and-forget — must not block draft open */ }
+            }
+            onOpenDraft(state.draft!);
+          },
           voiceScore: null,
         };
       }
