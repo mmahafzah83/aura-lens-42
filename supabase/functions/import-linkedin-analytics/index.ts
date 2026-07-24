@@ -171,6 +171,7 @@ Deno.serve(withObserve("import-linkedin-analytics", async (req) => {
               source_type: "linkedin_export",
               source_trust: 2,
               tracking_status: "tracked",
+              authorship: "user_written",
               published_at: snapshot_date,
             })
             .select("id")
