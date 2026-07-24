@@ -209,32 +209,29 @@ Deno.serve(async (req) => {
       if (!pass) findings.push({ assertion: "signal_open_instrumentation", detail: summary.signal_open_instrumentation as any });
     }
 
-    // ============ ASSERTION 6: Error log stays clean of info severity ============
-    // Guards today's telemetry reroute. Any severity='info' row landing in
-    // ef_error_log within the trailing 24h is a regression.
+    // ============ ASSERTION 6: No high-severity errors (excluding own output) ============
+    // ef_error_log is now the single substrate for both heartbeats and errors, so the
+    // old "no info rows" check was unsatisfiable. Real trouble = any severity='high'
+    // row written by ANOTHER function in the trailing 24h. Rows written by this
+    // check itself are always excluded — a monitor that reacts to its own output can
+    // never clear.
     {
       const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
-      const { count, error } = await admin
+      const { data: highRows, error } = await admin
         .from("ef_error_log")
-        .select("id", { count: "exact", head: true })
-        .eq("severity", "info")
-        .gte("created_at", since);
+        .select("function_name")
+        .eq("severity", "high")
+        .neq("function_name", "completion-invariants-check")
+        .gte("created_at", since)
+        .limit(2000);
       if (error) throw new Error(`assertion_6_count: ${error.message}`);
-      const info_rows_24h = count ?? 0;
-      let offenders: string[] = [];
-      if (info_rows_24h > 0) {
-        const { data: sample, error: sErr } = await admin
-          .from("ef_error_log")
-          .select("function_name")
-          .eq("severity", "info")
-          .gte("created_at", since)
-          .limit(500);
-        if (sErr) throw new Error(`assertion_6_sample: ${sErr.message}`);
-        offenders = [...new Set((sample ?? []).map((r: any) => r.function_name).filter(Boolean))];
-      }
-      const pass = info_rows_24h === 0;
-      summary.error_log_clean = { pass, info_rows_24h, offending_functions: offenders };
-      if (!pass) findings.push({ assertion: "error_log_clean", detail: summary.error_log_clean as any });
+      const high_rows_24h = (highRows ?? []).length;
+      const offending_functions = [
+        ...new Set((highRows ?? []).map((r: any) => r.function_name).filter(Boolean)),
+      ];
+      const pass = high_rows_24h === 0;
+      summary.no_high_severity_errors = { pass, high_rows_24h, offending_functions };
+      if (!pass) findings.push({ assertion: "no_high_severity_errors", detail: summary.no_high_severity_errors as any });
     }
 
     // ============ ASSERTION 7: No empty-body draft rows ============
