@@ -1886,6 +1886,48 @@ export type Database = {
         }
         Relationships: []
       }
+      known_issues: {
+        Row: {
+          area: string | null
+          created_at: string
+          detail: string | null
+          detected_at: string
+          id: string
+          resolved_at: string | null
+          severity: string
+          status: string
+          title: string
+          trigger_note: string | null
+          updated_at: string
+        }
+        Insert: {
+          area?: string | null
+          created_at?: string
+          detail?: string | null
+          detected_at?: string
+          id?: string
+          resolved_at?: string | null
+          severity: string
+          status?: string
+          title: string
+          trigger_note?: string | null
+          updated_at?: string
+        }
+        Update: {
+          area?: string | null
+          created_at?: string
+          detail?: string | null
+          detected_at?: string
+          id?: string
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          title?: string
+          trigger_note?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       learned_intelligence: {
         Row: {
           content: string

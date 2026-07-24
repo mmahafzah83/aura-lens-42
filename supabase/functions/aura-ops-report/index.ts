@@ -412,6 +412,30 @@ Deno.serve(async (req) => {
     if ((r as any).user_id === FOUNDER_USER_ID) founderPublished++; else nonFounderPublished++;
   }
 
+  // ---------- SECTION F0: Open issues (known_issues register) ----------
+  type IssueRow = {
+    id: string; title: string; detail: string | null; severity: "low" | "medium" | "high";
+    status: string; area: string | null; trigger_note: string | null; detected_at: string;
+  };
+  const { data: issueRows } = await admin.from("known_issues")
+    .select("id, title, detail, severity, status, area, trigger_note, detected_at")
+    .in("status", ["open", "monitoring"])
+    .limit(500);
+  const sevRank = { high: 0, medium: 1, low: 2 } as const;
+  const openIssues: IssueRow[] = ((issueRows as IssueRow[]) || []).slice().sort((a, b) => {
+    const s = sevRank[a.severity] - sevRank[b.severity];
+    if (s !== 0) return s;
+    return Date.parse(a.detected_at) - Date.parse(b.detected_at);
+  });
+  const openHigh = openIssues.filter((i) => i.severity === "high").length;
+  const openMed  = openIssues.filter((i) => i.severity === "medium").length;
+  const openLow  = openIssues.filter((i) => i.severity === "low").length;
+  if (openHigh > 0) {
+    verdict = worse(verdict, "AMBER");
+    if (verdict === "AMBER") worstReason = `${openHigh} high-severity open issue${openHigh === 1 ? "" : "s"}`;
+  }
+  const daysOpen = (iso: string) => Math.max(0, Math.floor((Date.now() - Date.parse(iso)) / 86400000));
+
   // ---------- Compose subject ----------
   const shortReason = worstReason.split(/[.,\n]/)[0].trim().split(/\s+/).slice(0, 6).join(" ");
   const subject =
@@ -510,6 +534,20 @@ Deno.serve(async (req) => {
        + `<span style="color:${(needsReview ?? 0) > 0 ? RED : INK_BODY};">${needsReview ?? 0} needs review</span>.`
        + `</p>`;
 
+  // Section F0 — Open issues (immediately before the funnel)
+  html += `<h2 style="font-family:${SERIF};font-size:16px;color:${INK};margin:22px 0 8px;">OPEN ISSUES — ${openIssues.length} open (${openHigh} high, ${openMed} medium, ${openLow} low)</h2>`;
+  if (openIssues.length === 0) {
+    html += `<p style="font-family:${BODY};font-size:14px;color:${INK_BODY};margin:0;">No open issues</p>`;
+  } else {
+    html += `<ul style="font-family:${BODY};font-size:14px;color:${INK_BODY};margin:0 0 0 20px;padding:0;">`;
+    for (const i of openIssues) {
+      const sevColor = i.severity === "high" ? RED : i.severity === "medium" ? AMBER : INK_MUTE;
+      const trig = i.trigger_note ? ` — trigger: ${esc(i.trigger_note)}` : "";
+      html += `<li style="margin:2px 0;"><span style="color:${sevColor};font-family:${MONO};font-size:12px;text-transform:uppercase;">[${i.severity}]</span> ${esc(i.title)} — open ${daysOpen(i.detected_at)} days${trig}</li>`;
+    }
+    html += `</ul>`;
+  }
+
   // Section F
   html += `<h2 style="font-family:${SERIF};font-size:16px;color:${INK};margin:22px 0 8px;">F. The funnel</h2>`;
   html += `<p style="font-family:${BODY};font-size:14px;color:${INK_BODY};margin:0;line-height:1.7;">`
@@ -558,6 +596,13 @@ Deno.serve(async (req) => {
   lines.push(`E. Publish integrity`);
   lines.push(`  ${unclassifiedNow} unclassified posts (yesterday ${unclassifiedPrev} — ${trendArrow}). ${stuckPublishing ?? 0} stuck in publishing. ${needsReview ?? 0} needs review.`);
   lines.push("");
+  lines.push(`OPEN ISSUES — ${openIssues.length} open (${openHigh} high, ${openMed} medium, ${openLow} low)`);
+  if (openIssues.length === 0) lines.push(`  No open issues`);
+  else for (const i of openIssues) {
+    const trig = i.trigger_note ? ` — trigger: ${i.trigger_note}` : "";
+    lines.push(`  [${i.severity}] ${i.title} — open ${daysOpen(i.detected_at)} days${trig}`);
+  }
+  lines.push("");
   lines.push(`F. The funnel`);
   lines.push(`  ${activeUsers.size} users captured something in the last 7 days.`);
   lines.push(`  ${captureCount} captures in the last 7 days.`);
@@ -590,7 +635,7 @@ Deno.serve(async (req) => {
   await admin.from("ef_event_log").insert({
     function_name: "aura-ops-report",
     severity: "info",
-    error_message: `OPS_REPORT verdict=${verdict} silent=${notRunCount + failingCount} mute=${muteCount} failures=${failures.length} dead_jobs=${qDead ?? 0} unclassified=${unclassifiedNow}`,
+    error_message: `OPS_REPORT verdict=${verdict} silent=${notRunCount + failingCount} mute=${muteCount} failures=${failures.length} dead_jobs=${qDead ?? 0} unclassified=${unclassifiedNow} open_issues=${openIssues.length}`,
     context: {
       verdict, worst_reason: worstReason, subject,
       silent: notRunCount + failingCount, mute: muteCount,
@@ -598,6 +643,10 @@ Deno.serve(async (req) => {
       failures: failures.length,
       dead_jobs: qDead ?? 0, unclassified: unclassifiedNow,
       open_findings: openFindings,
+      open_issues: openIssues.length,
+      open_issues_high: openHigh,
+      open_issues_medium: openMed,
+      open_issues_low: openLow,
       dry_run: dryRun, resend_status: resendStatus,
       resend_error: resendError || null,
       founder_email_present: !!founderEmail,
