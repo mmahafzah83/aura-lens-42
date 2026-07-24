@@ -436,6 +436,11 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
   }, [openedRowsKey]);
 
   const markRowOpened = useCallback((signalId: string) => {
+    if (user) {
+      try {
+        void (supabase as any).rpc("bump_signal_engagement", { p_signal_id: signalId });
+      } catch { /* fire-and-forget — must not block row interaction */ }
+    }
     setOpenedRows(prev => {
       if (prev.has(signalId)) return prev;
       const next = new Set(prev);
