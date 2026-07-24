@@ -1159,6 +1159,12 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
         if (insErr) throw insErr;
         postId = (ins as any).id;
       }
+      // Stamp publish intent BEFORE invoking so a client-side failure between
+      // stamp and invoke still leaves the marker.
+      await supabase
+        .from("linkedin_posts")
+        .update({ publish_attempted_at: new Date().toISOString() })
+        .eq("id", postId);
       const { data, error } = await supabase.functions.invoke("linkedin-publish", { body: { postId } });
       if (error) throw error;
       if (!(data as any)?.success) {

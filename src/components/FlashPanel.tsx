@@ -391,6 +391,12 @@ export default function FlashPanel() {
         .single();
       if (insErr) throw insErr;
       const postId = (ins as any).id;
+      // Stamp publish intent BEFORE invoking so any failure between here and
+      // the edge function still leaves the marker.
+      await supabase
+        .from("linkedin_posts")
+        .update({ publish_attempted_at: new Date().toISOString() })
+        .eq("id", postId);
       const { data, error } = await supabase.functions.invoke("linkedin-publish", { body: { postId } });
       if (error) throw error;
       if (!(data as any)?.success) {

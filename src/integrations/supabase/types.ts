@@ -1418,6 +1418,30 @@ export type Database = {
           },
         ]
       }
+      funnel_daily_ratio: {
+        Row: {
+          created_at: string
+          day: string
+          opens_users: number
+          ratio: number
+          signals_users: number
+        }
+        Insert: {
+          created_at?: string
+          day: string
+          opens_users?: number
+          ratio?: number
+          signals_users?: number
+        }
+        Update: {
+          created_at?: string
+          day?: string
+          opens_users?: number
+          ratio?: number
+          signals_users?: number
+        }
+        Relationships: []
+      }
       guide_articles: {
         Row: {
           answer_en: string
@@ -2207,6 +2231,7 @@ export type Database = {
           media_type: string | null
           post_text: string | null
           post_url: string | null
+          publish_attempted_at: string | null
           published_at: string | null
           published_confirmed_at: string | null
           quality_score: Json | null
@@ -2249,6 +2274,7 @@ export type Database = {
           media_type?: string | null
           post_text?: string | null
           post_url?: string | null
+          publish_attempted_at?: string | null
           published_at?: string | null
           published_confirmed_at?: string | null
           quality_score?: Json | null
@@ -2291,6 +2317,7 @@ export type Database = {
           media_type?: string | null
           post_text?: string | null
           post_url?: string | null
+          publish_attempted_at?: string | null
           published_at?: string | null
           published_confirmed_at?: string | null
           quality_score?: Json | null
