@@ -393,6 +393,82 @@ Deno.serve(async (req) => {
     if (verdict === "AMBER") worstReason = `Unclassified posts rising: ${unclassifiedPrev} → ${unclassifiedNow}`;
   }
 
+  // ---------- SECTION E2: Completion invariants ----------
+  // Read the newest completion-invariants-check run(s) out of ef_error_log.
+  // A clean run writes ONE row ("COMPLETION_INVARIANTS ok assertions=N"); a run
+  // with findings writes ONE row per failing assertion. Group by a 2-minute
+  // window around the newest row to reconstruct that run.
+  const CI_TOTAL = 7;
+  type CIFail = { assertion: string; context: any };
+  const ciFailing: CIFail[] = [];
+  let ciStale = false;
+  let ciAgeMin: number | null = null;
+  let ciPassing = CI_TOTAL;
+  let ciNoRunsEver = false;
+  {
+    const { data: ciRows } = await admin.from("ef_error_log")
+      .select("created_at, error_message, context")
+      .eq("function_name", "completion-invariants-check")
+      .order("created_at", { ascending: false })
+      .limit(20);
+    if (!ciRows || ciRows.length === 0) {
+      ciNoRunsEver = true;
+      ciStale = true;
+      ciPassing = 0;
+    } else {
+      const newest = ciRows[0] as any;
+      ciAgeMin = ageMinutes(newest.created_at);
+      if (ciAgeMin == null || ciAgeMin > 26 * 60) ciStale = true;
+      const newestT = Date.parse(newest.created_at);
+      const runRows = ciRows.filter((r: any) =>
+        Math.abs(Date.parse(r.created_at) - newestT) < 2 * 60 * 1000
+      );
+      const okRow = runRows.find((r: any) =>
+        String(r.error_message || "").includes("COMPLETION_INVARIANTS ok")
+      );
+      if (okRow) {
+        ciPassing = CI_TOTAL;
+      } else {
+        for (const r of runRows) {
+          const m = String((r as any).error_message || "").match(/assertion=([a-z_0-9]+)/);
+          if (m) ciFailing.push({ assertion: m[1], context: (r as any).context || {} });
+        }
+        ciPassing = Math.max(0, CI_TOTAL - ciFailing.length);
+      }
+    }
+  }
+  if (ciFailing.length > 0 || ciStale) {
+    verdict = worse(verdict, "AMBER");
+    if (verdict === "AMBER") {
+      worstReason = ciStale
+        ? `Completion invariants stale — last run ${fmtAge(ciAgeMin)}`
+        : `${ciFailing.length} completion invariant${ciFailing.length === 1 ? "" : "s"} failing`;
+    }
+  }
+  function ciLine(f: CIFail): string {
+    const c = f.context || {};
+    switch (f.assertion) {
+      case "funnel_trend":
+      case "funnel_collapse":
+        return `${f.assertion} — ${c.signals_users ?? "?"} users have signals, ${c.opens_users ?? "?"} opened (ratio ${c.ratio_today ?? "?"}, drop ${c.drop_pct ?? "?"}% vs 28d median ${c.median_28d ?? "?"}, ${c.status ?? ""})`;
+      case "stuck_publish_attempt":
+      case "stuck_publish_intent":
+        return `${f.assertion} — ${(c.user_ids?.length ?? 0)} user${(c.user_ids?.length ?? 0) === 1 ? "" : "s"}, ${c.count ?? 0} row${(c.count ?? 0) === 1 ? "" : "s"}, oldest ${c.oldest_hours ?? "?"} hours`;
+      case "stuck_ingestion":
+        return `stuck_ingestion — ${c.documents_count ?? 0} document${(c.documents_count ?? 0) === 1 ? "" : "s"}, ${c.entries_count ?? 0} entr${(c.entries_count ?? 0) === 1 ? "y" : "ies"} stuck`;
+      case "stage_liveness":
+        return `stage_liveness — zero-count stages: ${(c.zero_stages || []).join(", ") || "(unknown)"}`;
+      case "signal_open_instrumentation":
+        return `signal_open_instrumentation — ${c.rows_7d ?? 0} opens in 7d (threshold ${c.threshold ?? 1})`;
+      case "no_high_severity_errors":
+        return `no_high_severity_errors — ${c.high_rows_24h ?? 0} high row${(c.high_rows_24h ?? 0) === 1 ? "" : "s"} from ${(c.offending_functions || []).join(", ") || "(unknown)"}`;
+      case "no_empty_body_drafts":
+        return `no_empty_body_drafts — ${c.empty_body_count ?? 0} empty draft${(c.empty_body_count ?? 0) === 1 ? "" : "s"} (${c.null_body_count ?? 0} null, ${c.whitespace_only_count ?? 0} whitespace)`;
+      default:
+        return `${f.assertion} — failing`;
+    }
+  }
+
   // ---------- SECTION F: The funnel ----------
   const since7d = new Date(Date.now() - 7 * 86400 * 1000).toISOString();
   const { data: recentCaptures } = await admin.from("entries")
@@ -534,6 +610,24 @@ Deno.serve(async (req) => {
        + `<span style="color:${(needsReview ?? 0) > 0 ? RED : INK_BODY};">${needsReview ?? 0} needs review</span>.`
        + `</p>`;
 
+  // Section E2 — Completion invariants (after E, before OPEN ISSUES)
+  const ciHeader = ciNoRunsEver
+    ? `COMPLETION INVARIANTS — no runs on record`
+    : ciStale
+      ? `COMPLETION INVARIANTS — STALE — last run ${fmtAge(ciAgeMin)}`
+      : `COMPLETION INVARIANTS — ${ciPassing} of ${CI_TOTAL} passing`;
+  const ciHeaderColor = (ciFailing.length > 0 || ciStale) ? AMBER : GREEN;
+  html += `<h2 style="font-family:${SERIF};font-size:16px;color:${ciHeaderColor};margin:22px 0 8px;">${esc(ciHeader)}</h2>`;
+  if (ciFailing.length === 0 && !ciStale && !ciNoRunsEver) {
+    html += `<p style="font-family:${BODY};font-size:14px;color:${INK_BODY};margin:0;">All invariants passing.</p>`;
+  } else if (ciFailing.length > 0) {
+    html += `<ul style="font-family:${BODY};font-size:14px;color:${INK_BODY};margin:0 0 0 20px;padding:0;">`;
+    for (const f of ciFailing) {
+      html += `<li style="margin:2px 0;color:${AMBER};">${esc(ciLine(f))}</li>`;
+    }
+    html += `</ul>`;
+  }
+
   // Section F0 — Open issues (immediately before the funnel)
   html += `<h2 style="font-family:${SERIF};font-size:16px;color:${INK};margin:22px 0 8px;">OPEN ISSUES — ${openIssues.length} open (${openHigh} high, ${openMed} medium, ${openLow} low)</h2>`;
   if (openIssues.length === 0) {
@@ -596,6 +690,13 @@ Deno.serve(async (req) => {
   lines.push(`E. Publish integrity`);
   lines.push(`  ${unclassifiedNow} unclassified posts (yesterday ${unclassifiedPrev} — ${trendArrow}). ${stuckPublishing ?? 0} stuck in publishing. ${needsReview ?? 0} needs review.`);
   lines.push("");
+  lines.push(ciHeader);
+  if (ciFailing.length === 0 && !ciStale && !ciNoRunsEver) {
+    lines.push(`  All invariants passing.`);
+  } else {
+    for (const f of ciFailing) lines.push(`  ${ciLine(f)}`);
+  }
+  lines.push("");
   lines.push(`OPEN ISSUES — ${openIssues.length} open (${openHigh} high, ${openMed} medium, ${openLow} low)`);
   if (openIssues.length === 0) lines.push(`  No open issues`);
   else for (const i of openIssues) {
@@ -635,7 +736,7 @@ Deno.serve(async (req) => {
   await admin.from("ef_error_log").insert({
     function_name: "aura-ops-report",
     severity: "info",
-    error_message: `OPS_REPORT verdict=${verdict} silent=${notRunCount + failingCount} mute=${muteCount} failures=${failures.length} dead_jobs=${qDead ?? 0} unclassified=${unclassifiedNow} open_issues=${openIssues.length}`,
+    error_message: `OPS_REPORT verdict=${verdict} silent=${notRunCount + failingCount} mute=${muteCount} failures=${failures.length} dead_jobs=${qDead ?? 0} unclassified=${unclassifiedNow} open_issues=${openIssues.length} invariants_failing=${ciFailing.length}`,
     context: {
       verdict, worst_reason: worstReason, subject,
       silent: notRunCount + failingCount, mute: muteCount,
@@ -647,6 +748,11 @@ Deno.serve(async (req) => {
       open_issues_high: openHigh,
       open_issues_medium: openMed,
       open_issues_low: openLow,
+      invariants_failing: ciFailing.length,
+      invariants_passing: ciPassing,
+      invariants_total: CI_TOTAL,
+      invariants_stale: ciStale,
+      invariants_failing_assertions: ciFailing.map((f) => f.assertion),
       dry_run: dryRun, resend_status: resendStatus,
       resend_error: resendError || null,
       founder_email_present: !!founderEmail,
