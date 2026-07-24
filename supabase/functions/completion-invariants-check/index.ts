@@ -70,29 +70,12 @@ Deno.serve(async (req) => {
         const ids = rows.map((r) => r.id);
         const { data: sr, error } = await admin
           .from("source_registry")
-          .select("source_id")
-          .eq("source_type", source_type)
-          .in("source_id", ids);
-        if (error) throw new Error(`sr_${source_type}: ${error.message}`);
-        const srIds = new Set((sr ?? []).map((r) => r.source_id));
-        if (srIds.size === 0) return rows;
-        // For rows that have a source_registry row, check for fragments
-        const { data: fr, error: fErr } = await admin
-          .from("evidence_fragments")
-          .select("source_registry_id, source_registry:source_registry_id(source_id, source_type)")
-          .eq("source_registry.source_type" as any, source_type);
-        // Simpler path: join via a fresh query
-        if (fErr) {
-          // fallback: count fragments per registry
-        }
-        // Robust: fetch registry rows with fragment_count
-        const { data: sr2 } = await admin
-          .from("source_registry")
           .select("source_id, fragment_count")
           .eq("source_type", source_type)
           .in("source_id", ids);
+        if (error) throw new Error(`sr_${source_type}: ${error.message}`);
         const withFrag = new Set(
-          (sr2 ?? []).filter((r) => (r.fragment_count ?? 0) > 0).map((r) => r.source_id),
+          (sr ?? []).filter((r) => (r.fragment_count ?? 0) > 0).map((r) => r.source_id),
         );
         return rows.filter((r) => !withFrag.has(r.id));
       }
