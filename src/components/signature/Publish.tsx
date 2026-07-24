@@ -205,6 +205,13 @@ export default function Publish({
       if (insErr) throw insErr;
       insertedId = (ins as any)?.id ?? null;
 
+      // Stamp publish intent BEFORE invoking so a failure between here and the
+      // edge function still leaves the marker.
+      await supabase
+        .from("linkedin_posts")
+        .update({ publish_attempted_at: new Date().toISOString() })
+        .eq("id", (ins as any).id);
+
       // 3. Invoke linkedin-publish — identical to AuthorityTab.
       const { data, error } = await supabase.functions.invoke("linkedin-publish", {
         body: { postId: (ins as any).id },

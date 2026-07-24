@@ -26,32 +26,44 @@ Deno.serve(async (req) => {
   const summary: Record<string, unknown> = {};
 
   try {
-    // ============ ASSERTION 1: Stuck publish intent ============
+    // ============ ASSERTION 1: Stuck publish attempt ============
+    // A row has publish_attempted_at set (real client attempt) but has not resolved
+    // to a terminal state within an hour. Rows never attempted are ignored by design.
     {
-      const { data, error } = await admin
-        .from("linkedin_posts")
-        .select("id, user_id, created_at")
-        .eq("acquisition", "published_via_aura")
-        .eq("tracking_status", "draft")
-        .is("published_at", null)
-        .lt("created_at", new Date(Date.now() - 60 * 60 * 1000).toISOString());
-      if (error) throw new Error(`assertion_1: ${error.message}`);
-      const rows = data ?? [];
-      const { count } = await admin
+      const cutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      const { count, error: cErr } = await admin
         .from("linkedin_posts")
         .select("id", { count: "exact", head: true })
-        .eq("acquisition", "published_via_aura")
-        .eq("tracking_status", "draft")
+        .not("publish_attempted_at", "is", null)
+        .not("tracking_status", "in", "(published,failed)")
         .is("published_at", null)
-        .lt("created_at", new Date(Date.now() - 60 * 60 * 1000).toISOString());
+        .lt("publish_attempted_at", cutoff);
+      if (cErr) throw new Error(`assertion_1_count: ${cErr.message}`);
+      const { data: rows, error: rErr } = await admin
+        .from("linkedin_posts")
+        .select("id, user_id, publish_attempted_at")
+        .not("publish_attempted_at", "is", null)
+        .not("tracking_status", "in", "(published,failed)")
+        .is("published_at", null)
+        .lt("publish_attempted_at", cutoff)
+        .order("publish_attempted_at", { ascending: true })
+        .limit(50);
+      if (rErr) throw new Error(`assertion_1_rows: ${rErr.message}`);
       const now = Date.now();
-      const oldestHours = rows.length
-        ? Math.max(...rows.map((r) => (now - Date.parse(r.created_at)) / 3_600_000))
+      const oldestHours = (rows ?? []).length
+        ? Math.max(...(rows ?? []).map((r: any) => (now - Date.parse(r.publish_attempted_at)) / 3_600_000))
         : 0;
-      const userIds = [...new Set(rows.map((r) => r.user_id))];
+      const userIds = [...new Set((rows ?? []).map((r: any) => r.user_id).filter(Boolean))];
+      const postIds = (rows ?? []).map((r: any) => r.id);
       const pass = (count ?? 0) === 0;
-      summary.stuck_publish_intent = { pass, count: count ?? 0, oldest_hours: Math.round(oldestHours), user_ids: userIds };
-      if (!pass) findings.push({ assertion: "stuck_publish_intent", detail: summary.stuck_publish_intent as any });
+      summary.stuck_publish_attempt = {
+        pass,
+        count: count ?? 0,
+        oldest_hours: Math.round(oldestHours),
+        user_ids: userIds,
+        post_ids: postIds,
+      };
+      if (!pass) findings.push({ assertion: "stuck_publish_attempt", detail: summary.stuck_publish_attempt as any });
     }
 
     // ============ ASSERTION 2: Stuck ingestion (documents & entries) ============
@@ -121,18 +133,64 @@ Deno.serve(async (req) => {
       if (!pass) findings.push({ assertion: "stage_liveness", detail: summary.stage_liveness as any });
     }
 
-    // ============ ASSERTION 4: Funnel collapse (opens < 25% of signals) ============
+    // ============ ASSERTION 4: Funnel trend (self-calibrating) ============
+    // Compare today's 7-day signal-open rate against the trailing 28-day median of
+    // the same ratio. Fail only when today is >30% below median AND >=14 samples exist.
     {
-      const ratio = signalsUsers > 0 ? opensUsers / signalsUsers : 1;
-      const pass = signalsUsers === 0 || ratio >= 0.25;
-      summary.funnel_collapse = {
+      const today = new Date().toISOString().slice(0, 10);
+      const ratio = signalsUsers > 0 ? Number((opensUsers / signalsUsers).toFixed(4)) : 0;
+
+      // Persist today's ratio (upsert on day). Do this even during baselining so
+      // the history builds up.
+      await admin.from("funnel_daily_ratio").upsert({
+        day: today,
+        opens_users: opensUsers,
+        signals_users: signalsUsers,
+        ratio,
+      }, { onConflict: "day" });
+
+      const since28 = new Date(Date.now() - 28 * 86_400_000).toISOString().slice(0, 10);
+      const { data: hist, error: hErr } = await admin
+        .from("funnel_daily_ratio")
+        .select("day, ratio")
+        .gte("day", since28)
+        .lt("day", today);
+      if (hErr) throw new Error(`assertion_4_hist: ${hErr.message}`);
+      const sample = (hist ?? []).map((r: any) => Number(r.ratio)).filter((n) => Number.isFinite(n));
+      const sampleSize = sample.length;
+
+      let median = 0;
+      if (sampleSize > 0) {
+        const sorted = [...sample].sort((a, b) => a - b);
+        const mid = Math.floor(sorted.length / 2);
+        median = sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+      }
+      const dropPct = median > 0 ? Number((((median - ratio) / median) * 100).toFixed(1)) : 0;
+
+      let status: "baselining" | "ok" | "degraded";
+      let pass: boolean;
+      if (sampleSize < 14) {
+        status = "baselining";
+        pass = true;
+      } else if (dropPct > 30) {
+        status = "degraded";
+        pass = false;
+      } else {
+        status = "ok";
+        pass = true;
+      }
+
+      summary.funnel_trend = {
         pass,
+        status,
+        ratio_today: ratio,
+        median_28d: Number(median.toFixed(4)),
+        drop_pct: dropPct,
+        sample_size: sampleSize,
         signals_users: signalsUsers,
         opens_users: opensUsers,
-        ratio: Number(ratio.toFixed(3)),
-        threshold: 0.25,
       };
-      if (!pass) findings.push({ assertion: "funnel_collapse", detail: summary.funnel_collapse as any });
+      if (!pass) findings.push({ assertion: "funnel_trend", detail: summary.funnel_trend as any });
     }
 
     // ============ ASSERTION 5: Signal-open instrumentation live ============
