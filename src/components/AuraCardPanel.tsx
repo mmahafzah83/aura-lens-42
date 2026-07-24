@@ -183,6 +183,13 @@ export default function AuraCardPanel({
       if (insErr) throw insErr;
       insertedId = (ins as any)?.id ?? null;
 
+      // Stamp publish intent BEFORE invoking so a client-side failure between
+      // stamp and invoke still leaves the marker for completion-invariants-check.
+      await supabase
+        .from("linkedin_posts")
+        .update({ publish_attempted_at: new Date().toISOString() })
+        .eq("id", (ins as any).id);
+
       const { data, error } = await supabase.functions.invoke("linkedin-publish", {
         body: { postId: (ins as any).id },
       });
