@@ -39,7 +39,7 @@ function esc(s: string): string {
   return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-// Heartbeats: only functions that ACTUALLY write to ef_event_log with a heartbeat row.
+// Heartbeats: only functions that ACTUALLY write to ef_error_log with a heartbeat row.
 // "cron ran but wrote no heartbeat" is a rare secondary problem — AMBER, not RED.
 // Do NOT list functions that report through health_findings/notifications instead
 // (e.g. api-health-sentinel, aura-health-audit). Those are covered by Section A on
@@ -50,7 +50,7 @@ type Heartbeat = {
   windowMin: number;
   functionName: string;
   match?: string;
-  // If true, satisfy the heartbeat from a row in EITHER ef_event_log
+  // If true, satisfy the heartbeat from a row in EITHER ef_error_log
   // (clean-run heartbeat) OR ef_error_log (findings written instead of a
   // heartbeat) for the same function_name in the window. Prevents the
   // inverted-alarm case where a monitor is reported dead on days it fires.
@@ -62,7 +62,7 @@ const HEARTBEATS: Heartbeat[] = [
   { key: "publish-invariants-check", label: "Publish invariants", windowMin: 26 * 60, functionName: "publish-invariants-check" },
   { key: "reconcile-signal-counts", label: "Signal-count reconciler", windowMin: 26 * 60, functionName: "reconcile-signal-counts" },
   { key: "draft-ready-email", label: "Draft-ready email (dry run)", windowMin: 26 * 60, functionName: "draft-ready-email" },
-  // completion-invariants-check writes to ef_event_log on a clean run and to
+  // completion-invariants-check writes to ef_error_log on a clean run and to
   // ef_error_log on a run with findings. Either satisfies the heartbeat.
   { key: "completion-invariants-check", label: "Completion invariants", windowMin: 26 * 60, functionName: "completion-invariants-check", eitherTable: true },
 ];
@@ -252,7 +252,7 @@ Deno.serve(async (req) => {
   let muteCount = 0;
   for (const hb of HEARTBEATS) {
     const win = heartbeatWindowOverride[hb.key] ?? hb.windowMin;
-    let qEvt = admin.from("ef_event_log")
+    let qEvt = admin.from("ef_error_log")
       .select("created_at, error_message")
       .eq("function_name", hb.functionName)
       .order("created_at", { ascending: false })
@@ -372,7 +372,7 @@ Deno.serve(async (req) => {
   }
 
   // ---------- SECTION E: Publish integrity ----------
-  const { data: invRows } = await admin.from("ef_event_log")
+  const { data: invRows } = await admin.from("ef_error_log")
     .select("context, created_at")
     .eq("function_name", "publish-invariants-check")
     .order("created_at", { ascending: false })
@@ -632,7 +632,7 @@ Deno.serve(async (req) => {
   }
 
   // Own heartbeat — one row per run, no matter what.
-  await admin.from("ef_event_log").insert({
+  await admin.from("ef_error_log").insert({
     function_name: "aura-ops-report",
     severity: "info",
     error_message: `OPS_REPORT verdict=${verdict} silent=${notRunCount + failingCount} mute=${muteCount} failures=${failures.length} dead_jobs=${qDead ?? 0} unclassified=${unclassifiedNow} open_issues=${openIssues.length}`,
