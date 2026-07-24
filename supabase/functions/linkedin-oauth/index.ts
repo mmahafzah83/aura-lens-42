@@ -104,7 +104,7 @@ Deno.serve(withObserve("linkedin-oauth", async (req) => {
             body: form.toString(),
           });
           try {
-            await adminClient.from("ef_error_log").insert({
+            await adminClient.from("ef_event_log").insert({
               function_name: "linkedin-egress",
               severity: "info",
               user_id: user.id,
