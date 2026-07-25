@@ -6,6 +6,7 @@ import TodaysStatus from "@/components/TodaysStatus";
 import HealthFindingsPanel from "@/components/admin/HealthFindingsPanel";
 import SendTestEmailPanel from "@/components/admin/SendTestEmailPanel";
 import RegenerateReportPanel from "@/components/admin/RegenerateReportPanel";
+import ReportHealthPanel from "@/components/admin/ReportHealthPanel";
 import {
   Activity,
   AlertCircle,
@@ -250,6 +251,7 @@ export default function Admin() {
         <TodaysStatus />
         <HealthFindingsPanel />
         <SendTestEmailPanel />
+        <ReportHealthPanel />
         <RegenerateReportPanel />
         {/* Founder brief */}
         <section style={cardStyle}>
