@@ -95,7 +95,6 @@ export function useQuestProgress(userId: string | null) {
       { id: "p2_first_signal", label: "Reach your first signal", done: signalCount >= 1 },
       { id: "p2_three_signals", label: "Reach 3 active signals", done: signalCount >= 3 },
       { id: "p2_published", label: "Publish a post on LinkedIn", done: publishedCount >= 1 },
-      { id: "p2_analytics", label: "Upload LinkedIn analytics", done: snapsCount >= 1 },
       { id: "p2_strategist", label: "Reach Strategist tier", done: authorityScore >= 35 },
       { id: "p2_rhythm", label: "Maintain 4-week capture rhythm", done: entryCount >= 8 },
     ];

@@ -208,10 +208,6 @@ const Dashboard = () => {
         if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); el.click(); }
       }, 250);
     };
-    const scrollLi = () => {
-      const el = document.querySelector('[data-section="linkedin-upload"]') as HTMLElement | null;
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-    };
     const switchTab = (e: Event) => {
       const detail = (e as CustomEvent).detail as { tab?: string } | undefined;
       const target = detail?.tab;
@@ -222,12 +218,10 @@ const Dashboard = () => {
     };
     window.addEventListener("aura:open-capture", openCap);
     window.addEventListener("aura:open-flash", openFlash);
-    window.addEventListener("aura:scroll-linkedin-upload", scrollLi);
     window.addEventListener("aura:switch-tab", switchTab);
     return () => {
       window.removeEventListener("aura:open-capture", openCap);
       window.removeEventListener("aura:open-flash", openFlash);
-      window.removeEventListener("aura:scroll-linkedin-upload", scrollLi);
       window.removeEventListener("aura:switch-tab", switchTab);
     };
   }, [setSearchParams]);

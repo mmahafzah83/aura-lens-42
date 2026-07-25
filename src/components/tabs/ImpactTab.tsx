@@ -1,7 +1,7 @@
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Upload, Loader2, ExternalLink, Sparkles, Check, BarChart3, ChevronDown, Info, HelpCircle, TrendingUp, Lock, Clock, RefreshCw, AlertTriangle, CheckCircle2, FileSpreadsheet, Linkedin } from "lucide-react";
+import { Loader2, ExternalLink, Check, BarChart3, ChevronDown, Info, HelpCircle, RefreshCw, Linkedin } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { EMPTY_STATE } from "@/constants/language";
@@ -25,7 +25,6 @@ import {
 } from "@/components/ui/tooltip";
 import { AuraButton } from "@/components/ui/AuraButton";
 import { useCountUp } from "@/hooks/useCountUp";
-import { runPostImportPipeline, type PipelineState, PIPELINE_LABELS } from "@/lib/runPostImportPipeline";
 import AuthorityJourney from "@/components/AuthorityJourney";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import MarketMirror from "@/components/MarketMirror";
@@ -130,7 +129,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const [followerRows, setFollowerRows] = useState<FollowerRow[]>([]);
   const [latestFollowers, setLatestFollowers] = useState<number | null>(null);
   const [latestSnapshotDate, setLatestSnapshotDate] = useState<string | null>(null);
-  const [showUpdateUpload, setShowUpdateUpload] = useState(false);
   const [sectorFocus, setSectorFocus] = useState<string | null>(null);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     narrative: true, forces: true, content: true, posts: true, linkedin: true, followers: true, audience: true,
@@ -160,17 +158,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   // Peak score in last 30 days (always — regardless of filter — for narrative)
   const [peakScore30, setPeakScore30] = useState<number | null>(null);
   const [peakDate30, setPeakDate30] = useState<string | null>(null);
-
-  const [uploading, setUploading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [pipeline, setPipeline] = useState<PipelineState | null>(null);
-  const [progressStep, setProgressStep] = useState(0);
-  const [importedCount, setImportedCount] = useState<{ posts: number; days: number } | null>(null);
-  const [showSuccessCard, setShowSuccessCard] = useState(false);
-  const [successData, setSuccessData] = useState<{ posts: number; demographics: number } | null>(null);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [isDragOver, setIsDragOver] = useState(false);
 
   // Sync ribbon + Refresh-now
   const [syncMeta, setSyncMeta] = useState<{ connected: boolean; lastSyncedAt: string | null }>({
@@ -202,8 +189,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const [annualImpressions, setAnnualImpressions] = useState<number | null>(null);
   // Annual members_reached is a window-total, so the correct annual denominator is the MAX over 365d.
   const [annualReach, setAnnualReach] = useState<number | null>(null);
-  // Most recent imported_at across audience_demographics
-  const [importedAt, setImportedAt] = useState<string | null>(null);
 
   // Content performance
   const [contentPerf, setContentPerf] = useState<{
@@ -214,26 +199,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     tones: Array<{ tone: string; count: number }>;
   } | null>(null);
 
-  // Audience
-  type DemoRow = {
-    category: string;
-    value: string;
-    percentage: string;
-    percentage_numeric: number | null;
-    period_start: string | null;
-    period_end: string | null;
-  };
-  type AudienceInsight = {
-    insight_headline: string;
-    insight_body: string;
-    audience_strengths: string[] | null;
-    audience_gaps: string[] | null;
-    next_action: string | null;
-  };
-  const [allDemographics, setAllDemographics] = useState<DemoRow[] | null>(null);
-  const [audienceInsight, setAudienceInsight] = useState<AudienceInsight | null>(null);
-  const [audienceInsightLoading, setAudienceInsightLoading] = useState(false);
-  const [reachSnap, setReachSnap] = useState<{ members_reached: number | null; total_impressions_annual: number | null } | null>(null);
 
   // AI-generated section interpretations (from generate-impact-narrative EF)
   type ImpactNarrative = {
@@ -528,9 +493,8 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     return () => { cancelled = true; };
   }, []);
 
-  // Load audience demographics + cached insight (and trigger generation if missing)
+  // Load annual reach + impressions totals from synced snapshots
   const loadAudience = async () => {
-    let cancelled = false;
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -539,75 +503,21 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       since365.setDate(since365.getDate() - 365);
       const since365Only = since365.toISOString().slice(0, 10);
 
-      const [demoRes, insightRes, reachRes, annualRes] = await Promise.all([
-        supabase
-          .from("audience_demographics")
-          .select("category, value, percentage, percentage_numeric, period_start, period_end, imported_at")
-          .eq("user_id", user.id)
-          .order("percentage_numeric", { ascending: false }),
-        supabase
-          .from("audience_insights")
-          .select("insight_headline, insight_body, audience_strengths, audience_gaps, next_action")
-          .eq("user_id", user.id)
-          .order("generated_at", { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-        supabase
-          .from("influence_snapshots")
-          .select("members_reached, total_impressions_annual")
-          .eq("user_id", user.id)
-          .gt("members_reached", 0)
-          .order("snapshot_date", { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-        supabase
-          .from("influence_snapshots")
-          .select("impressions, members_reached")
-          .eq("user_id", user.id)
-          .eq("source_type", "linkedin_export")
-          .gte("snapshot_date", since365Only),
-      ]);
+      const { data: annualRows } = await supabase
+        .from("influence_snapshots")
+        .select("impressions, members_reached")
+        .eq("user_id", user.id)
+        .gte("snapshot_date", since365Only);
 
-      if (cancelled) return;
-      const demos = (demoRes.data as (DemoRow & { imported_at?: string | null })[] | null) || [];
-      setAllDemographics(demos);
-      setAudienceInsight((insightRes.data as AudienceInsight | null) ?? null);
-      setReachSnap((reachRes.data as any) ?? null);
-
-      const annualRows = (annualRes.data as any[]) || [];
-      const impSum = annualRows.reduce(
-        (s, r) => s + Number(r.impressions || 0), 0
-      );
+      const rows = (annualRows as any[]) || [];
+      const impSum = rows.reduce((sum, r) => sum + Number(r.impressions || 0), 0);
       setAnnualImpressions(impSum > 0 ? impSum : null);
 
-      const reachMax = annualRows.reduce(
-        (m, r) => Math.max(m, Number(r.members_reached || 0)), 0
-      );
+      // members_reached is a window-total, so MAX over 365d is the annual denominator.
+      const reachMax = rows.reduce((m, r) => Math.max(m, Number(r.members_reached || 0)), 0);
       setAnnualReach(reachMax > 0 ? reachMax : null);
-      // Interim: members_reached is a window-total, so MAX over 365d = the annual
-      // reach figure. Durable fix is for the sync to store its window length so a
-      // period-matched pair can be selected. Until then, MAX is the correct denominator.
-
-      const importedTimes = demos
-        .map(d => (d as any).imported_at)
-        .filter(Boolean)
-        .map((t: string) => new Date(t).getTime());
-      setImportedAt(importedTimes.length ? new Date(Math.max(...importedTimes)).toISOString() : null);
-
-      if (demos.length > 0 && !insightRes.data) {
-        setAudienceInsightLoading(true);
-        await supabase.auth.getSession();
-        supabase.functions
-          .invoke("generate-audience-insight", { body: {} })
-          .then(({ data }) => {
-            if (cancelled) return;
-            if (data) setAudienceInsight(data as AudienceInsight);
-          })
-          .catch((e) => console.error("generate-audience-insight failed", e))
-          .finally(() => { if (!cancelled) setAudienceInsightLoading(false); });
-      }
     } catch (e) {
-      console.error("ImpactTab: audience load failed", e);
+      console.error("ImpactTab: annual metrics load failed", e);
     }
   };
 
@@ -1051,9 +961,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     return Array.from(grouped.values());
   }, [followerSeries, publishedPosts]);
 
-  /* ── XLSX Upload ── */
-  const handleUploadClick = () => fileInputRef.current?.click();
-
   // Relative time formatter for sync ribbon
   const relTime = (iso: string): string => {
     const t = new Date(iso).getTime();
@@ -1085,73 +992,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.name.toLowerCase().endsWith(".xlsx")) {
-      toast.error("Please upload a .xlsx file");
-      return;
-    }
-    setSelectedFile(file);
-  };
-
-  const handleUpload = async (fileOverride?: File) => {
-    const fileToUpload = fileOverride || selectedFile;
-    if (!fileToUpload) return;
-    setUploadError(null);
-    setImportedCount(null);
-    setUploading(true);
-    try {
-      const form = new FormData();
-      form.append("file", fileToUpload);
-      const { data, error } = await supabase.functions.invoke("import-linkedin-analytics", {
-        body: form,
-      });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      const imp = (data as any)?.imported || {};
-      const posts = Number(imp.post_rows || 0);
-      const demographics = Number(imp.demographics_rows || 0);
-      const followerAnchor = (data as any)?.follower_anchor ?? null;
-      const importedAnything = posts > 0 || demographics > 0 || followerAnchor != null;
-      if (!importedAnything) {
-        const msg = "Nothing imported from that file. Export from LinkedIn Analytics → Export and try again.";
-        toast.error(msg);
-        setUploadError(msg);
-        setUploading(false);
-        if (fileInputRef.current) fileInputRef.current.value = "";
-        return;
-      }
-      setImportedCount({ posts, days: 0 });
-      toast.success(`Updated — ${demographics} audience segment${demographics === 1 ? "" : "s"}${posts ? `, ${posts} post${posts === 1 ? "" : "s"}` : ""}`);
-      setSelectedFile(null);
-      setPipeline({ voice: "pending", positioning: "pending", score: "pending" });
-      await runPostImportPipeline(setPipeline);
-      await loadAll(selectedDays);
-      await loadAudience();
-      setSuccessData({ posts, demographics });
-      setShowSuccessCard(true);
-      setTimeout(() => setShowSuccessCard(false), 2500);
-    } catch (err: any) {
-      console.error("XLSX upload failed:", err);
-      toast.error(err?.message || "Upload failed. Please try again.");
-      setUploadError(err?.message || "Upload failed. Please try again.");
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
-
-  // Staggered progress steps (cosmetic — reduces perceived wait time)
-  useEffect(() => {
-    if (uploading) {
-      setProgressStep(0);
-      const t1 = setTimeout(() => setProgressStep(1), 800);
-      const t2 = setTimeout(() => setProgressStep(2), 2000);
-      return () => { clearTimeout(t1); clearTimeout(t2); };
-    }
-  }, [uploading]);
-
   /* ── Render ── */
   if (loading) {
     return (
@@ -1179,68 +1019,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   // Empty when no impact data exists at all — no LinkedIn metrics and no influence snapshots
   const isEmpty = postMetricsCount === 0 && latestFollowers === null;
 
-  // Shared hidden file input + drag-drop handlers for the empty state
-  const onDropFile = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    const file = e.dataTransfer.files?.[0];
-    if (!file) return;
-    if (!file.name.toLowerCase().endsWith(".xlsx")) {
-      toast.error("Please upload a .xlsx file");
-      return;
-    }
-    setSelectedFile(file);
-    handleUpload(file);
-  };
-
-  // ─── Success card (briefly shown between processing and analytics) ───
-  if (showSuccessCard && successData) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="statement-page space-y-7 max-w-5xl"
-      >
-        <div style={{ marginBottom: 8 }}>
-          <div className="font-medium tracking-wide text-ink-4" style={{ marginBottom: 6, fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase" }}>
-            Your presence, measured
-          </div>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
-            Analytics
-          </h1>
-        </div>
-        <section
-          className="mx-auto flex flex-col items-center text-center"
-          style={{
-            maxWidth: 580,
-            background: "var(--color-background-primary, var(--surface-ink-raised))",
-            border: "0.5px solid var(--color-border-tertiary, var(--brand-line))",
-            borderRadius: 12,
-            padding: "40px 24px",
-          }}
-        >
-          <div
-            className="flex items-center justify-center mb-4"
-            style={{
-              width: 48, height: 48, borderRadius: "50%",
-              background: "var(--success-pale)",
-              border: "1px solid var(--success)",
-            }}
-          >
-            <CheckCircle2 className="w-6 h-6" style={{ color: "var(--success)" }} />
-          </div>
-          <h2 className="text-base font-medium" style={{ color: "var(--ink)", margin: "0 0 6px" }}>
-            Your presence data is live.
-          </h2>
-          <p className="text-sm" style={{ color: "var(--ink-3)" }}>
-            {successData.demographics} audience segments · {successData.posts} posts refreshed.
-          </p>
-        </section>
-      </motion.div>
-    );
-  }
-
   // ─── New-user empty state ───
   // With no LinkedIn analytics there is nothing meaningful to show in the trajectory,
   // breakdown, follower-growth, or LinkedIn sections.
@@ -1261,75 +1039,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           </h1>
         </div>
 
-        {uploading ? (
-          /* ─── Processing card ─── */
-          <section
-            className="mx-auto flex flex-col items-center text-center"
-            style={{
-              maxWidth: 580,
-              background: "var(--color-background-primary, var(--surface-ink-raised))",
-              border: "0.5px solid var(--color-border-tertiary, var(--brand-line))",
-              borderRadius: 12,
-              padding: "32px 24px",
-            }}
-          >
-            <div className="relative flex items-center justify-center mb-4" style={{ width: 56, height: 56 }}>
-              <div
-                className="absolute inset-0 rounded-full animate-spin"
-                style={{
-                  border: "2px solid transparent",
-                  borderTopColor: "var(--brand)",
-                  borderRightColor: "var(--brand)",
-                }}
-              />
-              <BarChart3 className="w-6 h-6" style={{ color: "var(--brand)" }} />
-            </div>
-            <h2 className="text-base font-medium" style={{ color: "var(--ink)", margin: "0 0 6px" }}>
-              Reading your LinkedIn data...
-            </h2>
-            <p className="text-sm mb-6" style={{ color: "var(--ink-3)" }}>
-              This usually takes a few seconds.
-            </p>
-
-            <ul className="w-full max-w-xs space-y-2.5 text-left" style={{ margin: "0 auto" }}>
-              {/* Step 0: File received */}
-              <li
-                className="flex items-center gap-2 text-sm transition-opacity duration-300"
-                style={{ opacity: progressStep >= 0 ? 1 : 0, color: "var(--ink-2)" }}
-              >
-                <Check className="w-4 h-4 shrink-0" style={{ color: "var(--success)" }} />
-                <span>File received</span>
-              </li>
-              {/* Step 1: Parsing / imported count */}
-              <li
-                className="flex items-center gap-2 text-sm transition-opacity duration-500"
-                style={{ opacity: progressStep >= 1 ? 1 : 0, color: "var(--ink-2)" }}
-              >
-                <Check className="w-4 h-4 shrink-0" style={{ color: "var(--success)" }} />
-                <span>
-                  {importedCount ? `${importedCount.posts} posts imported` : "Parsing post data"}
-                </span>
-              </li>
-              {/* Step 2: Pipeline-driven label */}
-              <li
-                className="flex items-center gap-2 text-sm font-medium transition-opacity duration-500"
-                style={{ opacity: progressStep >= 2 ? 1 : 0, color: "var(--ink)" }}
-              >
-                <Loader2 className="w-4 h-4 shrink-0 animate-spin" style={{ color: "var(--brand)" }} />
-                <span>
-                  {pipeline?.voice === "running" || pipeline?.voice === "pending"
-                    ? PIPELINE_LABELS.voice
-                    : pipeline?.positioning === "running" || pipeline?.positioning === "pending"
-                    ? PIPELINE_LABELS.positioning
-                    : pipeline?.score === "running" || pipeline?.score === "pending"
-                    ? PIPELINE_LABELS.score
-                    : "Building your presence profile..."}
-                </span>
-              </li>
-            </ul>
-          </section>
-        ) : (
-          /* ─── Empty state ─── */
           <div className="mx-auto" style={{ maxWidth: 580 }}>
             {/* Primary action for new users with no data.
                 If LinkedIn isn't connected, lead with "Connect LinkedIn" —
@@ -1363,176 +1072,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               </div>
             )}
 
-            <details className="mb-3" style={{ background: "var(--color-background-primary, var(--surface-ink-raised))", border: "0.5px solid var(--color-border-tertiary, var(--brand-line))", borderRadius: 12 }}>
-              <summary
-                className="cursor-pointer text-sm font-medium select-none"
-                style={{ color: "var(--ink)", padding: "14px 18px", listStyle: "none" }}
-              >
-                Add audience demographics (optional)
-              </summary>
-              <div style={{ padding: "0 18px 18px" }}>
-                <p className="text-xs mb-3" style={{ color: "var(--ink-3)", lineHeight: 1.55 }}>
-                  Followers, impressions, and per-post numbers sync automatically from your LinkedIn connection. Upload a LinkedIn export only if you also want audience demographics — seniority, industry, and geography breakdowns.
-                </p>
-            <section
-              className="flex flex-col items-center text-center"
-              style={{
-                background: "transparent",
-                borderRadius: 12,
-                padding: "8px 4px 4px",
-              }}
-            >
-              {/* Emotional hook */}
-              <div
-                className="flex items-center justify-center mb-4"
-                style={{
-                  width: 48, height: 48, borderRadius: "50%",
-                  background: "var(--gold-pale)",
-                  border: "1px solid var(--gold-light)",
-                }}
-              >
-                <TrendingUp className="w-[22px] h-[22px]" style={{ color: "var(--brand)" }} />
-              </div>
-              <h2 className="text-lg font-medium" style={{ fontFamily: "var(--font-display)", color: "var(--ink)", margin: "0 0 8px", letterSpacing: "-0.01em" }}>
-                You have presence you can't see yet.
-              </h2>
-              <p className="text-sm max-w-md mx-auto" style={{ color: "var(--ink-3)", lineHeight: 1.55 }}>
-                Every LinkedIn post has data behind it — who saw it, who engaged, which topics resonated. Upload your analytics and Aura turns it into a growth map.
-              </p>
-
-              {/* Step-by-step guide */}
-              <div
-                className="w-full mt-6 text-left"
-                style={{
-                  background: "var(--surface-ink-recessed, hsl(var(--muted) / 0.4))",
-                  border: "0.5px solid var(--color-border-tertiary, var(--brand-line))",
-                  borderRadius: 10,
-                  padding: "16px 16px",
-                }}
-              >
-                <div
-                  className="text-xs uppercase font-medium mb-3"
-                  style={{ letterSpacing: "0.08em", color: "var(--brand)" }}
-                >
-                  3 steps — takes 30 seconds
-                </div>
-                <ol className="space-y-2.5">
-                  {[
-                    'LinkedIn → your profile → tap "Analytics" below your headline',
-                    'Open "Post impressions" and click Export',
-                    'Upload that file below — Aura reads it instantly',
-                  ].map((step, i) => (
-                    <li key={i} className="flex items-start gap-3 text-sm" style={{ color: "var(--ink-2)" }}>
-                      <span
-                        className="shrink-0 flex items-center justify-center text-xs font-medium"
-                        style={{
-                          width: 20, height: 20, borderRadius: "50%",
-                          background: "var(--gold-pale)",
-                          border: "0.5px solid var(--gold-light)",
-                          color: "var(--brand)",
-                          marginTop: 1,
-                        }}
-                      >
-                        {i + 1}
-                      </span>
-                      <span style={{ lineHeight: 1.5 }}>{step}</span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-
-              {/* Upload drop zone */}
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={handleUploadClick}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleUploadClick(); }}
-                onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-                onDragLeave={() => setIsDragOver(false)}
-                onDrop={onDropFile}
-                className="w-full mt-4 flex flex-col items-center justify-center cursor-pointer transition-colors"
-                style={{
-                  border: `1.5px dashed ${isDragOver ? "var(--brand)" : "var(--color-border-tertiary, var(--brand-line))"}`,
-                  borderRadius: 8,
-                  padding: 20,
-                  background: isDragOver ? "var(--gold-pale)" : "transparent",
-                }}
-              >
-                <Upload className="w-5 h-5 mb-2" style={{ color: "var(--ink-3)" }} />
-                <div className="text-sm font-medium" style={{ color: "var(--ink)" }}>
-                  Drop your LinkedIn export here
-                </div>
-                <div className="text-xs mt-1" style={{ color: "var(--ink-3)" }}>
-                  Accepts .xlsx
-                </div>
-              </div>
-
-              {/* Trust signals */}
-              <div className="flex items-center justify-center gap-4 mt-4 flex-wrap">
-                {[
-                  { Icon: Lock, label: "Private" },
-                  { Icon: Clock, label: "30 sec" },
-                  { Icon: RefreshCw, label: "Re-upload anytime" },
-                ].map(({ Icon, label }) => (
-                  <div key={label} className="flex items-center gap-1.5 text-xs" style={{ color: "var(--ink-3)" }}>
-                    <Icon className="w-3.5 h-3.5" />
-                    <span>{label}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Inline error state */}
-              {uploadError && (
-                <div
-                  className="w-full mt-4 text-left flex items-start gap-2.5"
-                  style={{
-                    background: "hsl(var(--destructive) / 0.08)",
-                    border: "0.5px solid hsl(var(--destructive) / 0.4)",
-                    borderRadius: 8,
-                    padding: "12px 14px",
-                  }}
-                >
-                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "hsl(var(--destructive))" }} />
-                  <div className="flex-1">
-                    <div className="text-sm font-medium" style={{ color: "hsl(var(--destructive))" }}>
-                      {uploadError}
-                    </div>
-                    <div className="text-xs mt-1" style={{ color: "var(--ink-3)" }}>
-                      Make sure you're exporting from LinkedIn Analytics → Post impressions. The file should be .xlsx format.
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => { setUploadError(null); handleUploadClick(); }}
-                      className="text-xs font-medium mt-2 underline"
-                      style={{ color: "var(--brand)" }}
-                    >
-                      Try again
-                    </button>
-                  </div>
-                </div>
-              )}
-            </section>
-              </div>
-            </details>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".xlsx"
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                if (!file.name.toLowerCase().endsWith(".xlsx")) {
-                  toast.error("Please upload a .xlsx file");
-                  return;
-                }
-                setSelectedFile(file);
-                handleUpload(file);
-              }}
-              className="hidden"
-            />
           </div>
-        )}
       </motion.div>
     );
   }
@@ -1550,14 +1090,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       transition={{ duration: 0.35 }}
       className="statement-page observatory-page space-y-7 max-w-5xl"
     >
-      {/* Global hidden file input — mounted once so any button in the tree can trigger it */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".xlsx"
-        onChange={handleFileSelect}
-        className="hidden"
-      />
       {/* ─────────── 1. PAGE HEADER ─────────── */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24 }}>
         <div>
@@ -1670,7 +1202,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       {/* ─────────── SCORE HERO (compact: ring + tier card + KPIs) ─────────── */}
       <div data-tour="impact-hero">
       <FirstTimeHint hintKey="impact-score">
-        Your growth dashboard. Followers and impressions sync automatically; add your LinkedIn export for post-level and audience detail.
+        Your growth dashboard. Followers, impressions, and per-post performance sync automatically from LinkedIn.
       </FirstTimeHint>
       <div
         style={{
@@ -1805,423 +1337,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         )}
       </section>
 
-      {/* ─────────── YOUR AUDIENCE ─────────── */}
-      {(() => {
-        const SENIOR_LEVELS = new Set(["Senior", "Director", "CXO", "VP", "Partner", "Owner"]);
-        const demos = allDemographics || [];
-        const isLoadingAudience = allDemographics === null;
-        const demoByCategory = demos.reduce((acc, row) => {
-          (acc[row.category] = acc[row.category] || []).push(row);
-          return acc;
-        }, {} as Record<string, DemoRow[]>);
-        const seniorityRows = (demoByCategory["Seniority"] || []).slice().sort(
-          (a, b) => Number(b.percentage_numeric || 0) - Number(a.percentage_numeric || 0)
-        );
-        const industryRows = (demoByCategory["Industry"] || []).slice(0, 5);
-        const companyRows = (demoByCategory["Company"] || []).slice(0, 5);
-        const locationRows = demoByCategory["Location"] || [];
-
-        const seniorPct = seniorityRows
-          .filter(r => SENIOR_LEVELS.has(r.value))
-          .reduce((sum, r) => sum + Number(r.percentage_numeric || 0), 0);
-        const seniorityTotal = seniorityRows.reduce(
-          (sum, r) => sum + Number(r.percentage_numeric || 0), 0
-        );
-        const maxPct = Math.max(...(seniorityRows || []).map(r => Number(r.percentage_numeric || 0)));
-
-        const periodStart = demos[0]?.period_start;
-        const periodEnd = demos[0]?.period_end;
-        const periodLabel = periodStart && periodEnd
-          ? `${new Date(periodStart).toLocaleDateString("en-US", { month: "short", year: "numeric" })} – ${new Date(periodEnd).toLocaleDateString("en-US", { month: "short", year: "numeric" })}`
-          : "Full export period";
-
-        const hasData = demos.length > 0;
-        const importedShort = importedAt ? fmtDateShort(importedAt) : null;
-        const importedAgeDays = importedAt
-          ? Math.floor((Date.now() - new Date(importedAt).getTime()) / 86400000)
-          : null;
-        const isStale = importedAgeDays != null && importedAgeDays > 30;
-        const cardStyle = {
-          background: "var(--aura-card)",
-          border: "1px solid var(--aura-border)",
-          borderRadius: 12,
-          padding: "16px 18px",
-        } as React.CSSProperties;
-        const uppercaseLabel = {
-          fontSize: 11,
-          letterSpacing: "0.12em",
-          textTransform: "uppercase" as const,
-          color: "var(--aura-t3)",
-          fontWeight: 600,
-          fontFamily: "'DM Sans', system-ui, sans-serif",
-        };
-        const cormorant = {
-          fontFamily: "var(--font-serif), Georgia, serif",
-          color: "var(--aura-t1)",
-        };
-
-        return (
-          <section data-tour="audience-section">
-            <SectionToggle
-              title="Your audience"
-              open={openSections.audience}
-              onToggle={() => toggleSection("audience")}
-              right={
-                <div className="flex items-center gap-2">
-                  <span style={{ fontSize: 12, color: "var(--aura-t3)" }}>{periodLabel}</span>
-                  {hasData && importedShort && (
-                    <>
-                      <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>
-                        Imported {importedShort}
-                      </span>
-                      <span
-                        style={{
-                          fontSize: 10,
-                          letterSpacing: "0.08em",
-                          padding: "2px 6px",
-                          borderRadius: 999,
-                          border: "0.5px solid var(--color-border)",
-                          color: "var(--color-text-muted)",
-                        }}
-                      >
-                        OPTIONAL
-                      </span>
-                    </>
-                  )}
-                  <InfoTooltip
-                    label="Your audience"
-                    text="Based on your LinkedIn audience demographics. Updated each time you upload your analytics export."
-                  />
-                </div>
-              }
-            />
-
-            {openSections.audience && (
-              <div style={{ marginTop: 12 }}>
-                {hasData && (
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: 12,
-                      marginBottom: 12,
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <p style={{ fontSize: 12, color: "var(--color-text-muted)", margin: 0, maxWidth: 640 }}>
-                      LinkedIn doesn't share audience demographics through its API — this is the one view that updates from your export, not automatically.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={handleUploadClick}
-                      style={{
-                        display: "inline-flex", alignItems: "center", gap: 6,
-                        padding: "4px 10px", borderRadius: 6,
-                        background: "transparent",
-                        border: "0.5px solid var(--color-border)",
-                        color: "var(--color-text-primary)",
-                        fontSize: 12, cursor: "pointer", flexShrink: 0,
-                      }}
-                    >
-                      <Upload className="w-3 h-3" />
-                      Update audience data (.xlsx)
-                    </button>
-                  </div>
-                )}
-                {hasData && isStale && importedShort && (
-                  <p style={{ fontSize: 12, color: "var(--color-text-muted)", margin: "0 0 12px" }}>
-                    Last imported {importedShort} · data may be stale — re-import to refresh.
-                  </p>
-                )}
-                <div style={hasData && isStale ? { opacity: 0.6 } : undefined}>
-                {isLoadingAudience ? (
-                  <div style={{ ...cardStyle, textAlign: "center", padding: "32px 18px" }}>
-                    <div
-                      style={{
-                        height: 14,
-                        width: "60%",
-                        margin: "0 auto 10px",
-                        background: "var(--aura-border)",
-                        borderRadius: 6,
-                        opacity: 0.6,
-                      }}
-                    />
-                    <div
-                      style={{
-                        height: 12,
-                        width: "40%",
-                        margin: "0 auto",
-                        background: "var(--aura-border)",
-                        borderRadius: 6,
-                        opacity: 0.4,
-                      }}
-                    />
-                  </div>
-                ) : !hasData ? (
-                  <div style={{ ...cardStyle, textAlign: "center", padding: "32px 18px" }}>
-                    <p style={{ fontSize: 14, color: "var(--aura-t2)", margin: 0 }}>
-                      Add your LinkedIn export to see your full audience breakdown
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {/* AI Insight Card */}
-                    {(audienceInsight || audienceInsightLoading) && (
-                      <div style={{ ...cardStyle, borderLeft: "4px solid var(--aura-accent, #B08D3A)" }}>
-                        {audienceInsightLoading && !audienceInsight ? (
-                          <div>
-                            <div style={{ ...uppercaseLabel, marginBottom: 10 }}>
-                              Analyzing your audience...
-                            </div>
-                            {[0, 1, 2].map(i => (
-                              <div key={i}
-                                style={{
-                                  height: 10,
-                                  borderRadius: 4,
-                                  background: "var(--aura-border)",
-                                  marginBottom: 8,
-                                  width: i === 2 ? "60%" : "100%",
-                                  opacity: 0.6,
-                                  animation: "pulse 1.6s ease-in-out infinite",
-                                }}
-                              />
-                            ))}
-                          </div>
-                        ) : audienceInsight ? (
-                          <div>
-                            <h3 style={{ ...cormorant, fontSize: 18, fontWeight: 500, margin: "0 0 8px" }}>
-                              {audienceInsight.insight_headline}
-                            </h3>
-                            <p style={{
-                              fontFamily: "'DM Sans', system-ui, sans-serif",
-                              fontSize: 14,
-                              lineHeight: 1.625,
-                              color: "var(--aura-t2)",
-                              margin: "0 0 14px",
-                            }}>
-                              {audienceInsight.insight_body}
-                            </p>
-                            {((audienceInsight.audience_strengths?.length || 0) > 0 ||
-                              (audienceInsight.audience_gaps?.length || 0) > 0) && (
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ marginBottom: 12 }}>
-                                {(audienceInsight.audience_strengths?.length || 0) > 0 && (
-                                  <div>
-                                    <div style={{ ...uppercaseLabel, marginBottom: 6 }}>Strengths</div>
-                                    <div className="flex flex-wrap gap-1.5">
-                                      {audienceInsight.audience_strengths!.map((s, i) => (
-                                        <span key={i} style={{
-                                          fontSize: 12,
-                                          padding: "3px 8px",
-                                          borderRadius: 999,
-                                          background: "var(--color-background-success, rgba(34,197,94,0.12))",
-                                          color: "var(--color-text-primary, var(--aura-t1))",
-                                          fontFamily: "'DM Sans', system-ui, sans-serif",
-                                        }}>{s}</span>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                                {(audienceInsight.audience_gaps?.length || 0) > 0 && (
-                                  <div>
-                                    <div style={{ ...uppercaseLabel, marginBottom: 6 }}>Gaps</div>
-                                    <div className="flex flex-wrap gap-1.5">
-                                      {audienceInsight.audience_gaps!.map((g, i) => (
-                                        <span key={i} style={{
-                                          fontSize: 12,
-                                          padding: "3px 8px",
-                                          borderRadius: 999,
-                                          background: "var(--color-background-warning, rgba(245,158,11,0.14))",
-                                          color: "var(--color-text-primary, var(--aura-t1))",
-                                          fontFamily: "'DM Sans', system-ui, sans-serif",
-                                        }}>{g}</span>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                            {audienceInsight.next_action && (
-                              <div style={{
-                                fontFamily: "'DM Sans', system-ui, sans-serif",
-                                fontSize: 13,
-                                color: "var(--aura-accent, #B08D3A)",
-                                marginTop: 4,
-                              }}>
-                                → {audienceInsight.next_action}
-                              </div>
-                            )}
-                          </div>
-                        ) : null}
-                      </div>
-                    )}
-
-                    {/* Block 1: Seniority */}
-                    {seniorityRows.length > 0 && (
-                      <div style={cardStyle}>
-                        <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 12 }}>
-                          <span style={{ ...cormorant, fontSize: 36, fontWeight: 500, lineHeight: 1 }}>
-                            {Math.round(seniorPct)}%
-                          </span>
-                          <span style={{
-                            fontFamily: "'DM Sans', system-ui, sans-serif",
-                            fontSize: 13,
-                            color: "var(--aura-t2)",
-                          }}>
-                            of your followers are senior decision-makers
-                          </span>
-                        </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                          {(seniorityRows || []).map((row, i) => {
-                            const pct = Number(row.percentage_numeric || 0);
-                            const isStrategic = SENIOR_LEVELS.has(row.value);
-                            const barWidth = maxPct > 0 ? Math.max((pct / maxPct) * 100, 2) : 2;
-                            return (
-                              <div
-                                key={row.value || i}
-                                style={{
-                                  display: "grid",
-                                  gridTemplateColumns: "72px 1fr 36px",
-                                  alignItems: "center",
-                                  gap: 8,
-                                }}
-                              >
-                                {/* Label */}
-                                <span style={{
-                                  fontSize: 13,
-                                  textAlign: "right",
-                                  color: isStrategic ? "var(--aura-t1)" : "var(--aura-t3)",
-                                  fontWeight: isStrategic ? 500 : 400,
-                                  fontFamily: "'DM Sans', system-ui, sans-serif",
-                                }}>
-                                  {row.value}
-                                </span>
-                                {/* Bar track + fill */}
-                                <div style={{
-                                  height: 20,
-                                  borderRadius: 3,
-                                  backgroundColor: "var(--aura-border)",
-                                  overflow: "hidden",
-                                }}>
-                                  <div style={{
-                                    height: "100%",
-                                    width: `${barWidth}%`,
-                                    borderRadius: 3,
-                                    backgroundColor: isStrategic
-                                      ? "var(--aura-accent, #B08D3A)"
-                                      : "var(--aura-t3)",
-                                    opacity: isStrategic ? 1 : 0.35,
-                                    transition: "width 0.6s ease",
-                                  }} />
-                                </div>
-                                {/* Percentage */}
-                                <span style={{
-                                  fontSize: 12,
-                                  color: "var(--aura-t3)",
-                                  fontVariantNumeric: "tabular-nums",
-                                  fontFamily: "'DM Sans', system-ui, sans-serif",
-                                }}>
-                                  {row.percentage}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Block 2: Industries + Companies */}
-                    {(industryRows.length > 0 || companyRows.length > 0) && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {[
-                          { label: "TOP INDUSTRIES", rows: industryRows, empty: "No industry data" },
-                          { label: "TOP COMPANIES", rows: companyRows, empty: "No company data" },
-                        ].map((col) => (
-                          <div key={col.label} style={cardStyle}>
-                            <div style={{ ...uppercaseLabel, marginBottom: 10 }}>{col.label}</div>
-                            {col.rows.length === 0 ? (
-                              <p style={{ fontSize: 13, color: "var(--aura-t3)", margin: 0 }}>{col.empty}</p>
-                            ) : (
-                              <div>
-                                {col.rows.map((row, i) => (
-                                  <div
-                                    key={i}
-                                    style={{
-                                      display: "flex",
-                                      justifyContent: "space-between",
-                                      alignItems: "center",
-                                      padding: "8px 0",
-                                      borderBottom: i < col.rows.length - 1
-                                        ? "0.5px solid var(--aura-border)"
-                                        : "none",
-                                      fontFamily: "'DM Sans', system-ui, sans-serif",
-                                    }}
-                                  >
-                                    <span style={{ fontSize: 13, color: "var(--aura-t1)" }}>{row.value}</span>
-                                    <span style={{ fontSize: 13, color: "var(--aura-t3)" }}>{row.percentage}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Block 3: Top location + Return viewers */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div style={cardStyle}>
-                        <div style={{ ...uppercaseLabel, marginBottom: 8 }}>TOP LOCATION</div>
-                        {locationRows.length > 0 ? (
-                          <>
-                            <div style={{ ...cormorant, fontSize: 28, fontWeight: 500, lineHeight: 1.1 }}>
-                              {locationRows[0].value}
-                            </div>
-                            <div style={{
-                              fontFamily: "'DM Sans', system-ui, sans-serif",
-                              fontSize: 13, color: "var(--aura-t2)", marginTop: 4,
-                            }}>
-                              {locationRows[0].percentage} of followers
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div style={{ ...cormorant, fontSize: 28, fontWeight: 500 }}>—</div>
-                            <div style={{ fontSize: 13, color: "var(--aura-t3)", marginTop: 4 }}>Upload to see</div>
-                          </>
-                        )}
-                      </div>
-                      <div style={cardStyle}>
-                        <div style={{ ...uppercaseLabel, marginBottom: 8 }}>RETURN VIEWERS</div>
-                        {(annualReach ?? 0) > 0 && (annualImpressions ?? 0) > 0 ? (
-                          <>
-                            <div style={{ ...cormorant, fontSize: 28, fontWeight: 500, lineHeight: 1.1 }}>
-                              {(Number(annualImpressions) / Number(annualReach)).toFixed(1)}×
-                            </div>
-                            <div style={{
-                              fontFamily: "'DM Sans', system-ui, sans-serif",
-                              fontSize: 13, color: "var(--aura-t2)", marginTop: 4,
-                            }}>
-                              Avg views per reached member
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div style={{ ...cormorant, fontSize: 28, fontWeight: 500 }}>—</div>
-                            <div style={{ fontSize: 13, color: "var(--aura-t3)", marginTop: 4 }}>Upload to see</div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-                </div>
-              </div>
-            )}
-          </section>
-        );
-      })()}
-
       {/* ─────────── PROGRESSIVE DISCLOSURE — master toggle for detailed breakdown ─────────── */}
       <button
         type="button"
@@ -2278,7 +1393,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           How your content performs in the market
         </p>
         <div style={{ fontSize:11, color:"var(--aura-t3)", margin:"0 0 12px" }}>
-          Per-post history from your last import{importedAt ? ` (${fmtDateShort(importedAt)})` : ""}; recent posts and engagement synced daily from LinkedIn.
+          Posts and engagement sync automatically from LinkedIn.
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <PillarCard
@@ -2518,16 +1633,13 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           >
             <p className="font-medium" style={{ color: "var(--color-text-primary)" }}>No post data for this period</p>
             <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
-              Try a wider time range or import more LinkedIn analytics.
+              Try a wider time range — new posts appear as LinkedIn syncs.
             </p>
           </div>
         ) : (
           <>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", flexWrap:"wrap", gap:8, marginBottom:8 }}>
             <span style={{ fontSize:11, letterSpacing:"0.06em", textTransform:"uppercase", color:"var(--color-text-muted)" }}>Ranked by engagement rate · high → low</span>
-            {importedAt && (
-              <span style={{ fontSize:11, color:"var(--color-text-muted)" }}>from your last import · {fmtDateShort(importedAt)}</span>
-            )}
           </div>
           <div
             className="rounded-lg overflow-hidden"
@@ -2670,61 +1782,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           const hasData = postMetricsCount > 0 || latestFollowers != null || followerRows.length > 0;
           const lastUpdatedLabel = latestSnapshotDate ? fmtDateShort(latestSnapshotDate) : null;
 
-          const UploadZone = (
-            <div className="mt-4">
-              <div className="text-xs font-semibold tracking-[0.14em] mb-2" style={{ color: "var(--color-text-muted)" }}>
-                How to export your LinkedIn data
-              </div>
-              <ol className="text-[12px] leading-relaxed space-y-1 pl-4 list-decimal" style={{ color: "var(--color-text-secondary)" }}>
-                <li>Go to <span style={{ color: "var(--color-text-primary)" }}>linkedin.com/analytics/creator</span></li>
-                <li>Click <span style={{ color: "var(--color-text-primary)" }}>Export</span> (top right)</li>
-                <li>Select your date range (last 365 days recommended)</li>
-                <li>Download the .xlsx file and upload it below</li>
-              </ol>
-              <div className="mt-4 flex items-center gap-3 flex-wrap">
-                {!selectedFile ? (
-                  <button
-                    onClick={handleUploadClick}
-                    disabled={uploading}
-                    data-testid="impact-linkedin-upload"
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium disabled:opacity-60"
-                    style={{ background: "var(--brand)", color: "var(--paper)" }}
-                  >
-                    <Upload className="w-3.5 h-3.5" />
-                    Upload LinkedIn .xlsx file
-                  </button>
-                ) : (
-                  <>
-                    <span className="text-xs px-3 py-1.5 rounded-md" style={{ background: "var(--color-border)", color: "var(--color-text-primary)" }}>
-                      {selectedFile.name}
-                    </span>
-                    <button
-                      onClick={() => handleUpload()}
-                      disabled={uploading}
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium disabled:opacity-60"
-                      style={{ background: "var(--brand)", color: "var(--paper)" }}
-                    >
-                      {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-                      {uploading ? "Importing..." : "Import"}
-                    </button>
-                    {!uploading && (
-                      <button
-                        onClick={() => { setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
-                        className="text-xs"
-                        style={{ color: "var(--color-text-muted)" }}
-                      >
-                        Cancel
-                      </button>
-                    )}
-                  </>
-                )}
-              </div>
-              <p className="mt-3 text-xs" style={{ color: "var(--color-text-muted)" }}>
-                Takes ~30 seconds. Includes your posts, follower growth, and audience demographics.
-              </p>
-            </div>
-          );
-
           return (
             <div
               className="rounded-lg p-5"
@@ -2737,7 +1794,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     LinkedIn analytics
                     <InfoTooltip
                       label="LinkedIn data"
-                      text="Post-level performance and audience come from your LinkedIn export — followers and impressions already sync automatically. Go to linkedin.com/analytics/creator → Export."
+                      text="Followers, impressions, and per-post performance sync automatically from your LinkedIn connection."
                       side="bottom"
                       triggerSize={13}
                     />
@@ -2745,7 +1802,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 </div>
                 {hasData && lastUpdatedLabel && (
                   <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
-                    Last updated: {lastUpdatedLabel}
+                    Last synced: {lastUpdatedLabel}
                   </span>
                 )}
               </div>
@@ -2756,26 +1813,8 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     <Check className="inline w-3.5 h-3.5 mr-1" style={{ color: "var(--brand)" }} />
                     {latestFollowers != null
                       ? `${latestFollowers.toLocaleString()} followers tracked`
-                      : "Upload your LinkedIn data"}
+                      : "Syncing from LinkedIn"}
                   </p>
-                  <div className="mt-3">
-                    <button
-                      onClick={() => setShowUpdateUpload(v => !v)}
-                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium"
-                      style={{ border: "0.5px solid var(--color-border)", color: "var(--color-text-primary)", background: "transparent" }}
-                    >
-                      <Upload className="w-3.5 h-3.5" />
-                      {showUpdateUpload ? "Hide upload" : "Add audience demographics (optional)"}
-                    </button>
-                  </div>
-                  {showUpdateUpload && (
-                    <div className="mt-3">
-                      <p className="text-xs mb-2" style={{ color: "var(--color-text-muted)", lineHeight: 1.55 }}>
-                        Followers, impressions, and per-post numbers sync automatically from your LinkedIn connection. Upload a LinkedIn export only to add seniority, industry, and geography breakdowns.
-                      </p>
-                      {UploadZone}
-                    </div>
-                  )}
                 </div>
               ) : (
                 <div className="mt-3">
@@ -2789,59 +1828,13 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                           <Linkedin className="w-4 h-4 mr-2 inline" /> Connect LinkedIn
                         </AuraButton>
                       </div>
-                      <details className="mt-3">
-                        <summary className="cursor-pointer text-xs select-none" style={{ color: "var(--color-text-muted)" }}>
-                          Add audience demographics (optional)
-                        </summary>
-                        <p className="text-xs mt-2 mb-2" style={{ color: "var(--color-text-muted)", lineHeight: 1.55 }}>
-                          Upload a LinkedIn export only if you also want seniority, industry, and geography breakdowns.
-                        </p>
-                        {UploadZone}
-                      </details>
                     </>
                   ) : (
-                    <>
-                      <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
-                        Your LinkedIn analytics are syncing. Audience demographics can be added below (optional).
-                      </p>
-                      <details className="mt-3">
-                        <summary className="cursor-pointer text-xs select-none" style={{ color: "var(--color-text-muted)" }}>
-                          Add audience demographics (optional)
-                        </summary>
-                        {UploadZone}
-                      </details>
-                    </>
+                    <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
+                      Your LinkedIn analytics are syncing. Numbers appear here once the first sync completes.
+                    </p>
                   )}
                 </div>
-              )}
-
-              {pipeline && (
-                <ul className="mt-4 space-y-2">
-                  {(["voice", "positioning", "score"] as const).map((k) => {
-                    const status = pipeline[k];
-                    return (
-                      <li key={k} className="flex items-center gap-3 text-[12px]">
-                        {status === "done" ? (
-                          <Check className="w-3.5 h-3.5" style={{ color: "var(--brand)" }} />
-                        ) : status === "running" ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: "var(--brand)" }} />
-                        ) : status === "error" ? (
-                          <span className="w-3.5 h-3.5 inline-block text-center text-destructive">!</span>
-                        ) : (
-                          <span className="w-3.5 h-3.5 inline-block rounded-full border" style={{ borderColor: "var(--color-border)" }} />
-                        )}
-                        <span style={{ color: status === "done" ? "var(--color-text-primary)" : "var(--color-text-secondary)" }}>
-                          {PIPELINE_LABELS[k]}
-                          {status === "error" && (
-                            <span className="ml-2" style={{ color: "var(--color-text-muted)" }}>
-                              — Will retry automatically
-                            </span>
-                          )}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
               )}
             </div>
           );
@@ -2926,7 +1919,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           Follower growth — daily new followers
         </h2>
         <p className="text-[12px] mb-3" style={{ color: "var(--color-text-muted)", marginTop: -8 }}>
-          Your audience trajectory — synced daily; add your LinkedIn export to enrich it with audience breakdown.
+          Your audience trajectory — synced daily from LinkedIn.
         </p>
         {followerRows.length === 0 ? (
           <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
