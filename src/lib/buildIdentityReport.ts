@@ -20,6 +20,12 @@ import {
   filterPublishedRows,
 } from "@/lib/postProvenance";
 
+// Template identity pinned into every issued edition.
+// Bump ONLY when ReportDocument.tsx changes in a way that alters rendered
+// output; never edit casually. KEEP IN SYNC with TEMPLATE_VERSION in
+// supabase/functions/capture-report-snapshot/index.ts.
+export const TEMPLATE_VERSION = "aura-paper-v1";
+
 // ── Canonical capability dimensions (AuditRadarWidget.tsx:7-17) ──
 export const CAPABILITY_DIMENSIONS: readonly string[] = [
   "Strategic Architecture",
@@ -484,6 +490,7 @@ export async function buildIdentityReport(userId: string): Promise<ReportData> {
   return {
     user_id: userId,
     generated_at: new Date().toISOString(),
+    template_version: TEMPLATE_VERSION,
     profile,
     positioning,
     profile_intelligence,
