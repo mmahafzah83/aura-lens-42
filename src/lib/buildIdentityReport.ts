@@ -22,6 +22,7 @@ import {
 
 // ── Canonical capability dimensions (AuditRadarWidget.tsx:7-17) ──
 export const CAPABILITY_DIMENSIONS: readonly string[] = [
+  // (dimension list below)
   "Strategic Architecture",
   "C-Suite Stewardship",
   "Sector Foresight",
@@ -125,6 +126,8 @@ export interface VoiceSection {
 export interface ReportData {
   user_id: string;
   generated_at: string;
+  /** Renderer identity pinned into the artifact (see TEMPLATE_VERSION). */
+  template_version?: string;
   profile: ProfileSection | null;
   positioning: PositioningSection | null;
   profile_intelligence: ProfileIntelligenceSection | null;
