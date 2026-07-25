@@ -730,7 +730,7 @@ Deno.serve(async (req) => {
       const SELF_LOOP = new Set(["api-health-sentinel", "admin-notify", "admin-digest"]);
       const since = new Date(Date.now() - 65 * 60 * 1000).toISOString();
       const { data: efRows, error: efErr } = await admin
-        .from("ef_error_log")
+        .from("ef_faults")
         .select("function_name, severity, error_message, created_at")
         .gte("created_at", since);
       if (efErr) console.error("[sentinel] ef_error_log read error", efErr.message);
