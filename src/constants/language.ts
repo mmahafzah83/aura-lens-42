@@ -200,7 +200,6 @@ export const CTA = {
   showMeWhoIAm: "Show me who I am in this market →",
   seePositioning: "See my positioning →",
   teachVoice: "Teach Aura your voice",
-  uploadNumbers: "Upload my numbers →",
   bringIn: "Bring someone in",
   next: "Next →",
 } as const;

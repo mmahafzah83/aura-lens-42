@@ -1319,7 +1319,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                   const pub = Number((auraData as any)?.published_count ?? (auraData as any)?.aura_published_count ?? 0);
                   return `${pub} on LinkedIn last 30d`;
                 })(),
-                tooltip: "Your publishing activity. Imported LinkedIn history is your foundation (up to 15 points). Publishing new posts is what grows this score (up to 85 points), weighted by how they perform. Resets monthly.",
+                tooltip: "Your publishing activity. Your synced LinkedIn history is your foundation (up to 15 points). Publishing new posts is what grows this score (up to 85 points), weighted by how they perform. Resets monthly.",
                 status: contentScore >= 70 ? "Growing" : contentScore >= 40 ? "Build more" : "Needs action",
                 weightedOverride: (auraData as any)?.content_weighted ?? null },
               { key: "consistency", label: "Consistency", slug: "weekly-rhythm", rawValue: captureScore, weight: 0.20, maxPoints: 20,
@@ -1619,7 +1619,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           >
             <p className="font-medium" style={{ color: "var(--color-text-primary)" }}>No post data yet</p>
             <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
-              Import your LinkedIn analytics below to see post performance.
+              Connect LinkedIn — post performance appears as it syncs.
             </p>
           </div>
         ) : topPosts.length === 0 ? (
