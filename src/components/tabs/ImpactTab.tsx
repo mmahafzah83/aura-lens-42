@@ -1640,9 +1640,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           <>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", flexWrap:"wrap", gap:8, marginBottom:8 }}>
             <span style={{ fontSize:11, letterSpacing:"0.06em", textTransform:"uppercase", color:"var(--color-text-muted)" }}>Ranked by engagement rate · high → low</span>
-            {importedAt && (
-              <span style={{ fontSize:11, color:"var(--color-text-muted)" }}>from your last import · {fmtDateShort(importedAt)}</span>
-            )}
           </div>
           <div
             className="rounded-lg overflow-hidden"
