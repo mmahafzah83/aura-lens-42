@@ -456,6 +456,10 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
         .update(updatePayload)
         .eq("user_id", user.id);
 
+      // Freeze a new report edition. Non-blocking: a failure must never
+      // break the user's flow, but capture-report-snapshot logs it.
+      void captureReportSnapshot("user");
+
       toast({ title: "Done. Aura sees who you are now — and everything it creates will reflect it." });
       onComplete?.();
       onOpenChange(false);
