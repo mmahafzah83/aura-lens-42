@@ -22,7 +22,6 @@ import {
 
 // ── Canonical capability dimensions (AuditRadarWidget.tsx:7-17) ──
 export const CAPABILITY_DIMENSIONS: readonly string[] = [
-  // (dimension list below)
   "Strategic Architecture",
   "C-Suite Stewardship",
   "Sector Foresight",
