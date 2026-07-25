@@ -1003,8 +1003,8 @@ function StepNext({
     {
       tone: "info",
       label: "IMPACT",
-      action: "Upload LinkedIn analytics",
-      helper: "Unlocks your full impact dashboard",
+      action: "Connect LinkedIn",
+      helper: "Syncs analytics into your impact dashboard",
       pts: "+6 pts",
     },
   ] as const;
