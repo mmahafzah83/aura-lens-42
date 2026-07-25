@@ -10,6 +10,7 @@ import AuraLogo from "@/components/brand/AuraLogo";
 import BrandPaperDocument from "@/components/report/BrandPaperDocument";
 import { buildBrandPaper } from "@/lib/buildBrandPaper";
 import { exportReportPdf } from "@/lib/exportReportPdf";
+import { captureReportSnapshot } from "@/lib/reportSnapshot";
 import { toast as sonner } from "sonner";
 
 // New section headers (must match brand-assessment EF SYSTEM_PROMPT)
