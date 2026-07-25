@@ -1,7 +1,7 @@
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Upload, Loader2, ExternalLink, Sparkles, Check, BarChart3, ChevronDown, Info, HelpCircle, TrendingUp, Lock, Clock, RefreshCw, AlertTriangle, CheckCircle2, FileSpreadsheet, Linkedin } from "lucide-react";
+import { Loader2, ExternalLink, Check, BarChart3, ChevronDown, Info, HelpCircle, RefreshCw, Linkedin } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { EMPTY_STATE } from "@/constants/language";
@@ -25,7 +25,6 @@ import {
 } from "@/components/ui/tooltip";
 import { AuraButton } from "@/components/ui/AuraButton";
 import { useCountUp } from "@/hooks/useCountUp";
-import { runPostImportPipeline, type PipelineState, PIPELINE_LABELS } from "@/lib/runPostImportPipeline";
 import AuthorityJourney from "@/components/AuthorityJourney";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import MarketMirror from "@/components/MarketMirror";
@@ -130,7 +129,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const [followerRows, setFollowerRows] = useState<FollowerRow[]>([]);
   const [latestFollowers, setLatestFollowers] = useState<number | null>(null);
   const [latestSnapshotDate, setLatestSnapshotDate] = useState<string | null>(null);
-  const [showUpdateUpload, setShowUpdateUpload] = useState(false);
   const [sectorFocus, setSectorFocus] = useState<string | null>(null);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     narrative: true, forces: true, content: true, posts: true, linkedin: true, followers: true, audience: true,
@@ -160,17 +158,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   // Peak score in last 30 days (always — regardless of filter — for narrative)
   const [peakScore30, setPeakScore30] = useState<number | null>(null);
   const [peakDate30, setPeakDate30] = useState<string | null>(null);
-
-  const [uploading, setUploading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [pipeline, setPipeline] = useState<PipelineState | null>(null);
-  const [progressStep, setProgressStep] = useState(0);
-  const [importedCount, setImportedCount] = useState<{ posts: number; days: number } | null>(null);
-  const [showSuccessCard, setShowSuccessCard] = useState(false);
-  const [successData, setSuccessData] = useState<{ posts: number; demographics: number } | null>(null);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [isDragOver, setIsDragOver] = useState(false);
 
   // Sync ribbon + Refresh-now
   const [syncMeta, setSyncMeta] = useState<{ connected: boolean; lastSyncedAt: string | null }>({
