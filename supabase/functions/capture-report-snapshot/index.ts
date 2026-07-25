@@ -20,6 +20,7 @@ import {
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  // x-cron-secret: trusted server-to-server path (backfills / scheduled freezes)
 };
 
 const json = (body: unknown, status = 200) =>
@@ -329,16 +330,27 @@ serve(withObserve("capture-report-snapshot", async (req) => {
 
   let targetId: string | null = null;
   try {
+    let body: any = {};
+    try { body = await req.json(); } catch (_) { body = {}; }
+    const requested = typeof body?.user_id === "string" ? body.user_id : null;
+
+    // Trusted server-to-server path (no end-user session).
+    const cronSecret = Deno.env.get("CRON_SECRET") || "";
+    const cronHeader = req.headers.get("x-cron-secret") || "";
+    if (cronSecret && cronHeader === cronSecret) {
+      if (!requested) return json({ error: "user_id required" }, 400);
+      targetId = requested;
+      const data = await buildIdentityReport(admin, targetId);
+      const version = await writeSnapshot(admin, targetId, data, "system");
+      return json({ ok: true, version, keys: countSections(data) });
+    }
+
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
     const anon = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!);
     const { data: userData, error: userErr } = await anon.auth.getUser(authHeader.replace("Bearer ", ""));
     if (userErr || !userData?.user) return json({ error: "Unauthorized" }, 401);
     const callerId = userData.user.id;
-
-    let body: any = {};
-    try { body = await req.json(); } catch (_) { body = {}; }
-    const requested = typeof body?.user_id === "string" ? body.user_id : null;
 
     const { data: callerProfile } = await admin
       .from("diagnostic_profiles").select("is_admin").eq("user_id", callerId).maybeSingle();
@@ -352,27 +364,8 @@ serve(withObserve("capture-report-snapshot", async (req) => {
 
     const data = await buildIdentityReport(admin, targetId);
 
-    const { data: latest, error: latestErr } = await admin
-      .from("report_snapshots").select("version")
-      .eq("user_id", targetId).order("version", { ascending: false }).limit(1).maybeSingle();
-    if (latestErr) throw latestErr;
-    const nextVersion = (latest?.version ?? 0) + 1;
-
-    const { error: clearErr } = await admin
-      .from("report_snapshots").update({ is_current: false })
-      .eq("user_id", targetId).eq("is_current", true);
-    if (clearErr) throw clearErr;
-
-    const { error: insErr } = await admin.from("report_snapshots").insert({
-      user_id: targetId, version: nextVersion, data, is_current: true, created_by,
-    });
-    if (insErr) throw insErr;
-
-    const keys = Object.entries(data).filter(
-      ([k, v]) => k !== "user_id" && k !== "generated_at" && v !== null && v !== undefined,
-    ).length;
-
-    return json({ ok: true, version: nextVersion, keys });
+    const nextVersion = await writeSnapshot(admin, targetId, data, created_by);
+    return json({ ok: true, version: nextVersion, keys: countSections(data) });
   } catch (e) {
     await logEfError(admin, {
       function_name: "capture-report-snapshot",
