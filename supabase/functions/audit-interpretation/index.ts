@@ -72,6 +72,12 @@ serve(withObserve("audit-interpretation", async (req) => {
 
     if (!response.ok) {
       const status = response.status;
+      const bodySnippet = await response.clone().text().then((t) => t.slice(0, 800)).catch(() => "");
+      EdgeRuntime.waitUntil(logError("audit-interpretation", `Anthropic HTTP ${status}: ${bodySnippet}`, {
+        user_id: userData.user.id,
+        severity: "high",
+        context: { anthropic_status: status, body: bodySnippet },
+      }));
       if (status === 429) {
         return new Response(JSON.stringify({ error: "Rate limited. Please try again shortly." }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
