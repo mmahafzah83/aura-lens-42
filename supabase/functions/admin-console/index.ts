@@ -694,10 +694,10 @@ serve(async (req) => {
         admin.from("admin_settings").select("value").eq("key", "monthly_ai_budget_usd").maybeSingle(),
         admin.from("linkedin_posts").select("user_id, source_type, tracking_status, created_at").in("user_id", safeIds),
         admin.from("score_snapshots").select("user_id, score, created_at").in("user_id", safeIds).order("created_at", { ascending: false }),
-        admin.from("ef_error_log").select("function_name, error_message, created_at").gte("created_at", errWindow.toISOString()).order("created_at", { ascending: false }).limit(50),
+        admin.from("ef_faults").select("function_name, error_message, created_at").gte("created_at", errWindow.toISOString()).order("created_at", { ascending: false }).limit(50),
         admin.from("entries").select("id", { count: "exact", head: true }).gte("created_at", startOfToday.toISOString()),
         admin.from("strategic_signals").select("id", { count: "exact", head: true }).gte("created_at", startOfToday.toISOString()),
-        admin.from("ef_error_log").select("id", { count: "exact", head: true }).gte("created_at", startOfToday.toISOString()),
+        admin.from("ef_faults").select("id", { count: "exact", head: true }).gte("created_at", startOfToday.toISOString()),
       ]);
 
       const profiles = profilesRes.data ?? [];
