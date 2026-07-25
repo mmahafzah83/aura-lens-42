@@ -13,9 +13,17 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { withObserve, logEfError } from "../_shared/observe.ts";
 import {
   applyPublishedFilter,
-  applyCatalogFilter,
   filterPublishedRows,
+  CATALOG_EXCLUDED_STATUSES,
 } from "../_shared/postProvenance.ts";
+
+// Mirror of src/lib/postProvenance.ts applyCatalogFilter (absent in the
+// edge-side copy of that module).
+function applyCatalogFilter(q: any): any {
+  let out = q.not("tracking_status", "is", null);
+  for (const s of CATALOG_EXCLUDED_STATUSES) out = out.neq("tracking_status", s);
+  return out;
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
