@@ -1367,7 +1367,7 @@ async function auditAskAura(results: QaResult[], doc: Document) {
 /* ---------------- CTA Integrity (dead CTA detection) ---------------- */
 async function auditCTAIntegrity(results: QaResult[], doc: Document) {
   const win = getWin(doc);
-  const ctaTextRe = /(capture now|see your signals|upload linkedin|generate this|train voice|view all|see more|explore|→)/i;
+  const ctaTextRe = /(capture now|see your signals|generate this|train voice|view all|see more|explore|→)/i;
   const destructiveRe = /(delete|remove|clear|reset|disconnect|sign out|log ?out)/i;
   const candidates = (Array.from(doc.querySelectorAll("button, a, [role='button']")) as HTMLElement[])
     .filter((e) => isVisible(e, doc))
@@ -1952,16 +1952,6 @@ async function auditImpactPage(results: QaResult[], doc: Document) {
     chart ? "Chart element rendered" : "No chart element found",
     "Chart or heatmap visible",
     chart ? "ok" : "missing");
-
-  // M5 — LinkedIn data section
-  if (/upload linkedin|post performance/i.test(text)) {
-    const upload = findByText(doc, "button, a", /upload/i);
-    pushPage(results, "impact", "m5", "LinkedIn data section",
-      upload ? "pass" : "warn",
-      upload ? "Upload action present" : "Section without upload CTA",
-      "Upload button or rendered data",
-      upload ? "ok" : "missing");
-  }
 
   // M6 — Market Mirror / Shadow Twin
   if (/market mirror|shadow twin/i.test(text)) {
