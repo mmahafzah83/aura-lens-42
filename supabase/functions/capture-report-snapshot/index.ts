@@ -320,6 +320,36 @@ async function buildIdentityReport(db: any, userId: string): Promise<Record<stri
   };
 }
 
+function countSections(data: Record<string, any>): number {
+  return Object.entries(data).filter(
+    ([k, v]) => k !== "user_id" && k !== "generated_at" && v !== null && v !== undefined,
+  ).length;
+}
+
+async function writeSnapshot(
+  admin: any,
+  userId: string,
+  data: Record<string, any>,
+  createdBy: string,
+): Promise<number> {
+  const { data: latest, error: latestErr } = await admin
+    .from("report_snapshots").select("version")
+    .eq("user_id", userId).order("version", { ascending: false }).limit(1).maybeSingle();
+  if (latestErr) throw latestErr;
+  const nextVersion = (latest?.version ?? 0) + 1;
+
+  const { error: clearErr } = await admin
+    .from("report_snapshots").update({ is_current: false })
+    .eq("user_id", userId).eq("is_current", true);
+  if (clearErr) throw clearErr;
+
+  const { error: insErr } = await admin.from("report_snapshots").insert({
+    user_id: userId, version: nextVersion, data, is_current: true, created_by: createdBy,
+  });
+  if (insErr) throw insErr;
+  return nextVersion;
+}
+
 serve(withObserve("capture-report-snapshot", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
