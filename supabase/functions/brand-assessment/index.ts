@@ -75,22 +75,31 @@ Analyse this professional using all six frameworks and provide the complete bran
 
     let response: Response | null = null;
     let lastErr: unknown = null;
+    let lastStatus = 0;
+    let lastBody = "";
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
         response = await callAnthropic();
         if (response.ok) break;
+        lastStatus = response.status;
+        lastBody = (await response.clone().text()).slice(0, 800);
+        console.error(`AI gateway error attempt ${attempt + 1}:`, response.status, lastBody);
         if (response.status === 429 || response.status === 402) break;
-        const t = await response.text();
-        console.error(`AI gateway error attempt ${attempt + 1}:`, response.status, t);
         response = null;
       } catch (e) {
         lastErr = e;
+        lastBody = String((e as Error)?.message ?? e).slice(0, 800);
         console.error(`AI gateway fetch failed attempt ${attempt + 1}:`, e);
       }
     }
 
     if (!response) {
       console.error("brand-assessment: returning graceful fallback", lastErr);
+      EdgeRuntime.waitUntil(logError("brand-assessment", `Anthropic unreachable after retries (status ${lastStatus}): ${lastBody}`, {
+        user_id: userData.user.id,
+        severity: "high",
+        context: { path: "retries_exhausted", anthropic_status: lastStatus, body: lastBody },
+      }));
       return new Response(
         JSON.stringify({
           interpretation: "",
@@ -102,6 +111,11 @@ Analyse this professional using all six frameworks and provide the complete bran
     }
 
     if (!response.ok) {
+      EdgeRuntime.waitUntil(logError("brand-assessment", `Anthropic HTTP ${response.status}: ${lastBody}`, {
+        user_id: userData.user.id,
+        severity: "high",
+        context: { path: "non_ok_status", anthropic_status: response.status, body: lastBody },
+      }));
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limited — please try again shortly." }), {
           status: 429,
@@ -131,6 +145,11 @@ Analyse this professional using all six frameworks and provide the complete bran
 
     if (!interpretation) {
       console.error("brand-assessment: empty interpretation from model", data?.stop_reason);
+      EdgeRuntime.waitUntil(logError("brand-assessment", `Empty interpretation from model (stop_reason=${data?.stop_reason ?? "unknown"})`, {
+        user_id: userData.user.id,
+        severity: "high",
+        context: { path: "empty_interpretation", anthropic_status: response.status, body: JSON.stringify(data ?? {}).slice(0, 800) },
+      }));
       return new Response(
         JSON.stringify({
           interpretation: "",
