@@ -799,8 +799,18 @@ const handleDeleteAccount = async () => {
                   loading={exportingReport}
                   disabled={exportingReport || reportLoading || !report}
                 >
-                  Download Report (PDF)
+                  Export PDF
                 </AuraButton>
+                {reportVersion && reportSnapshotAt ? (
+                  <p style={{ marginTop: 8, fontSize: 11, color: "var(--ink-4)" }}>
+                    Version {reportVersion} ·{" "}
+                    {new Date(reportSnapshotAt).toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </p>
+                ) : null}
                 {/* §16.1 trust line — quiet, caption, muted; bilingual stack */}
                 <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 2 }}>
                   <p style={{ fontSize: 11, lineHeight: 1.6, color: "var(--ink-4)", margin: 0 }}>
