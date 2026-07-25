@@ -1038,9 +1038,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     return Array.from(grouped.values());
   }, [followerSeries, publishedPosts]);
 
-  /* ── XLSX Upload ── */
-  const handleUploadClick = () => fileInputRef.current?.click();
-
   // Relative time formatter for sync ribbon
   const relTime = (iso: string): string => {
     const t = new Date(iso).getTime();
@@ -1071,73 +1068,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       setRefreshing(false);
     }
   };
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.name.toLowerCase().endsWith(".xlsx")) {
-      toast.error("Please upload a .xlsx file");
-      return;
-    }
-    setSelectedFile(file);
-  };
-
-  const handleUpload = async (fileOverride?: File) => {
-    const fileToUpload = fileOverride || selectedFile;
-    if (!fileToUpload) return;
-    setUploadError(null);
-    setImportedCount(null);
-    setUploading(true);
-    try {
-      const form = new FormData();
-      form.append("file", fileToUpload);
-      const { data, error } = await supabase.functions.invoke("import-linkedin-analytics", {
-        body: form,
-      });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      const imp = (data as any)?.imported || {};
-      const posts = Number(imp.post_rows || 0);
-      const demographics = Number(imp.demographics_rows || 0);
-      const followerAnchor = (data as any)?.follower_anchor ?? null;
-      const importedAnything = posts > 0 || demographics > 0 || followerAnchor != null;
-      if (!importedAnything) {
-        const msg = "Nothing imported from that file. Export from LinkedIn Analytics → Export and try again.";
-        toast.error(msg);
-        setUploadError(msg);
-        setUploading(false);
-        if (fileInputRef.current) fileInputRef.current.value = "";
-        return;
-      }
-      setImportedCount({ posts, days: 0 });
-      toast.success(`Updated — ${demographics} audience segment${demographics === 1 ? "" : "s"}${posts ? `, ${posts} post${posts === 1 ? "" : "s"}` : ""}`);
-      setSelectedFile(null);
-      setPipeline({ voice: "pending", positioning: "pending", score: "pending" });
-      await runPostImportPipeline(setPipeline);
-      await loadAll(selectedDays);
-      await loadAudience();
-      setSuccessData({ posts, demographics });
-      setShowSuccessCard(true);
-      setTimeout(() => setShowSuccessCard(false), 2500);
-    } catch (err: any) {
-      console.error("XLSX upload failed:", err);
-      toast.error(err?.message || "Upload failed. Please try again.");
-      setUploadError(err?.message || "Upload failed. Please try again.");
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
-
-  // Staggered progress steps (cosmetic — reduces perceived wait time)
-  useEffect(() => {
-    if (uploading) {
-      setProgressStep(0);
-      const t1 = setTimeout(() => setProgressStep(1), 800);
-      const t2 = setTimeout(() => setProgressStep(2), 2000);
-      return () => { clearTimeout(t1); clearTimeout(t2); };
-    }
-  }, [uploading]);
 
   /* ── Render ── */
   if (loading) {
