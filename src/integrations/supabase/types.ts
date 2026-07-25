@@ -3352,6 +3352,36 @@ export type Database = {
       }
     }
     Views: {
+      ef_faults: {
+        Row: {
+          context: Json | null
+          created_at: string | null
+          error_message: string | null
+          function_name: string | null
+          id: string | null
+          severity: string | null
+          user_id: string | null
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string | null
+          error_message?: string | null
+          function_name?: string | null
+          id?: string | null
+          severity?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string | null
+          error_message?: string | null
+          function_name?: string | null
+          id?: string | null
+          severity?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       influence_dashboard_view: {
         Row: {
           comment_count: number | null
