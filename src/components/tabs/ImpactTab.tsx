@@ -1862,61 +1862,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           const hasData = postMetricsCount > 0 || latestFollowers != null || followerRows.length > 0;
           const lastUpdatedLabel = latestSnapshotDate ? fmtDateShort(latestSnapshotDate) : null;
 
-          const UploadZone = (
-            <div className="mt-4">
-              <div className="text-xs font-semibold tracking-[0.14em] mb-2" style={{ color: "var(--color-text-muted)" }}>
-                How to export your LinkedIn data
-              </div>
-              <ol className="text-[12px] leading-relaxed space-y-1 pl-4 list-decimal" style={{ color: "var(--color-text-secondary)" }}>
-                <li>Go to <span style={{ color: "var(--color-text-primary)" }}>linkedin.com/analytics/creator</span></li>
-                <li>Click <span style={{ color: "var(--color-text-primary)" }}>Export</span> (top right)</li>
-                <li>Select your date range (last 365 days recommended)</li>
-                <li>Download the .xlsx file and upload it below</li>
-              </ol>
-              <div className="mt-4 flex items-center gap-3 flex-wrap">
-                {!selectedFile ? (
-                  <button
-                    onClick={handleUploadClick}
-                    disabled={uploading}
-                    data-testid="impact-linkedin-upload"
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium disabled:opacity-60"
-                    style={{ background: "var(--brand)", color: "var(--paper)" }}
-                  >
-                    <Upload className="w-3.5 h-3.5" />
-                    Upload LinkedIn .xlsx file
-                  </button>
-                ) : (
-                  <>
-                    <span className="text-xs px-3 py-1.5 rounded-md" style={{ background: "var(--color-border)", color: "var(--color-text-primary)" }}>
-                      {selectedFile.name}
-                    </span>
-                    <button
-                      onClick={() => handleUpload()}
-                      disabled={uploading}
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium disabled:opacity-60"
-                      style={{ background: "var(--brand)", color: "var(--paper)" }}
-                    >
-                      {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-                      {uploading ? "Importing..." : "Import"}
-                    </button>
-                    {!uploading && (
-                      <button
-                        onClick={() => { setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
-                        className="text-xs"
-                        style={{ color: "var(--color-text-muted)" }}
-                      >
-                        Cancel
-                      </button>
-                    )}
-                  </>
-                )}
-              </div>
-              <p className="mt-3 text-xs" style={{ color: "var(--color-text-muted)" }}>
-                Takes ~30 seconds. Includes your posts, follower growth, and audience demographics.
-              </p>
-            </div>
-          );
-
           return (
             <div
               className="rounded-lg p-5"
@@ -1929,7 +1874,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     LinkedIn analytics
                     <InfoTooltip
                       label="LinkedIn data"
-                      text="Post-level performance and audience come from your LinkedIn export — followers and impressions already sync automatically. Go to linkedin.com/analytics/creator → Export."
+                      text="Followers, impressions, and per-post performance sync automatically from your LinkedIn connection."
                       side="bottom"
                       triggerSize={13}
                     />
@@ -1937,7 +1882,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 </div>
                 {hasData && lastUpdatedLabel && (
                   <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
-                    Last updated: {lastUpdatedLabel}
+                    Last synced: {lastUpdatedLabel}
                   </span>
                 )}
               </div>
@@ -1948,26 +1893,8 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     <Check className="inline w-3.5 h-3.5 mr-1" style={{ color: "var(--brand)" }} />
                     {latestFollowers != null
                       ? `${latestFollowers.toLocaleString()} followers tracked`
-                      : "Upload your LinkedIn data"}
+                      : "Syncing from LinkedIn"}
                   </p>
-                  <div className="mt-3">
-                    <button
-                      onClick={() => setShowUpdateUpload(v => !v)}
-                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium"
-                      style={{ border: "0.5px solid var(--color-border)", color: "var(--color-text-primary)", background: "transparent" }}
-                    >
-                      <Upload className="w-3.5 h-3.5" />
-                      {showUpdateUpload ? "Hide upload" : "Add audience demographics (optional)"}
-                    </button>
-                  </div>
-                  {showUpdateUpload && (
-                    <div className="mt-3">
-                      <p className="text-xs mb-2" style={{ color: "var(--color-text-muted)", lineHeight: 1.55 }}>
-                        Followers, impressions, and per-post numbers sync automatically from your LinkedIn connection. Upload a LinkedIn export only to add seniority, industry, and geography breakdowns.
-                      </p>
-                      {UploadZone}
-                    </div>
-                  )}
                 </div>
               ) : (
                 <div className="mt-3">
@@ -1981,59 +1908,13 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                           <Linkedin className="w-4 h-4 mr-2 inline" /> Connect LinkedIn
                         </AuraButton>
                       </div>
-                      <details className="mt-3">
-                        <summary className="cursor-pointer text-xs select-none" style={{ color: "var(--color-text-muted)" }}>
-                          Add audience demographics (optional)
-                        </summary>
-                        <p className="text-xs mt-2 mb-2" style={{ color: "var(--color-text-muted)", lineHeight: 1.55 }}>
-                          Upload a LinkedIn export only if you also want seniority, industry, and geography breakdowns.
-                        </p>
-                        {UploadZone}
-                      </details>
                     </>
                   ) : (
-                    <>
-                      <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
-                        Your LinkedIn analytics are syncing. Audience demographics can be added below (optional).
-                      </p>
-                      <details className="mt-3">
-                        <summary className="cursor-pointer text-xs select-none" style={{ color: "var(--color-text-muted)" }}>
-                          Add audience demographics (optional)
-                        </summary>
-                        {UploadZone}
-                      </details>
-                    </>
+                    <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
+                      Your LinkedIn analytics are syncing. Numbers appear here once the first sync completes.
+                    </p>
                   )}
                 </div>
-              )}
-
-              {pipeline && (
-                <ul className="mt-4 space-y-2">
-                  {(["voice", "positioning", "score"] as const).map((k) => {
-                    const status = pipeline[k];
-                    return (
-                      <li key={k} className="flex items-center gap-3 text-[12px]">
-                        {status === "done" ? (
-                          <Check className="w-3.5 h-3.5" style={{ color: "var(--brand)" }} />
-                        ) : status === "running" ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: "var(--brand)" }} />
-                        ) : status === "error" ? (
-                          <span className="w-3.5 h-3.5 inline-block text-center text-destructive">!</span>
-                        ) : (
-                          <span className="w-3.5 h-3.5 inline-block rounded-full border" style={{ borderColor: "var(--color-border)" }} />
-                        )}
-                        <span style={{ color: status === "done" ? "var(--color-text-primary)" : "var(--color-text-secondary)" }}>
-                          {PIPELINE_LABELS[k]}
-                          {status === "error" && (
-                            <span className="ml-2" style={{ color: "var(--color-text-muted)" }}>
-                              — Will retry automatically
-                            </span>
-                          )}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
               )}
             </div>
           );
