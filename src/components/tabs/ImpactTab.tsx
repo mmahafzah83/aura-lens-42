@@ -189,8 +189,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const [annualImpressions, setAnnualImpressions] = useState<number | null>(null);
   // Annual members_reached is a window-total, so the correct annual denominator is the MAX over 365d.
   const [annualReach, setAnnualReach] = useState<number | null>(null);
-  // Most recent imported_at across audience_demographics
-  const [importedAt, setImportedAt] = useState<string | null>(null);
 
   // Content performance
   const [contentPerf, setContentPerf] = useState<{
@@ -201,26 +199,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     tones: Array<{ tone: string; count: number }>;
   } | null>(null);
 
-  // Audience
-  type DemoRow = {
-    category: string;
-    value: string;
-    percentage: string;
-    percentage_numeric: number | null;
-    period_start: string | null;
-    period_end: string | null;
-  };
-  type AudienceInsight = {
-    insight_headline: string;
-    insight_body: string;
-    audience_strengths: string[] | null;
-    audience_gaps: string[] | null;
-    next_action: string | null;
-  };
-  const [allDemographics, setAllDemographics] = useState<DemoRow[] | null>(null);
-  const [audienceInsight, setAudienceInsight] = useState<AudienceInsight | null>(null);
-  const [audienceInsightLoading, setAudienceInsightLoading] = useState(false);
-  const [reachSnap, setReachSnap] = useState<{ members_reached: number | null; total_impressions_annual: number | null } | null>(null);
 
   // AI-generated section interpretations (from generate-impact-narrative EF)
   type ImpactNarrative = {
@@ -515,9 +493,8 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     return () => { cancelled = true; };
   }, []);
 
-  // Load audience demographics + cached insight (and trigger generation if missing)
+  // Load annual reach + impressions totals from synced snapshots
   const loadAudience = async () => {
-    let cancelled = false;
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -526,75 +503,21 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       since365.setDate(since365.getDate() - 365);
       const since365Only = since365.toISOString().slice(0, 10);
 
-      const [demoRes, insightRes, reachRes, annualRes] = await Promise.all([
-        supabase
-          .from("audience_demographics")
-          .select("category, value, percentage, percentage_numeric, period_start, period_end, imported_at")
-          .eq("user_id", user.id)
-          .order("percentage_numeric", { ascending: false }),
-        supabase
-          .from("audience_insights")
-          .select("insight_headline, insight_body, audience_strengths, audience_gaps, next_action")
-          .eq("user_id", user.id)
-          .order("generated_at", { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-        supabase
-          .from("influence_snapshots")
-          .select("members_reached, total_impressions_annual")
-          .eq("user_id", user.id)
-          .gt("members_reached", 0)
-          .order("snapshot_date", { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-        supabase
-          .from("influence_snapshots")
-          .select("impressions, members_reached")
-          .eq("user_id", user.id)
-          .eq("source_type", "linkedin_export")
-          .gte("snapshot_date", since365Only),
-      ]);
+      const { data: annualRows } = await supabase
+        .from("influence_snapshots")
+        .select("impressions, members_reached")
+        .eq("user_id", user.id)
+        .gte("snapshot_date", since365Only);
 
-      if (cancelled) return;
-      const demos = (demoRes.data as (DemoRow & { imported_at?: string | null })[] | null) || [];
-      setAllDemographics(demos);
-      setAudienceInsight((insightRes.data as AudienceInsight | null) ?? null);
-      setReachSnap((reachRes.data as any) ?? null);
-
-      const annualRows = (annualRes.data as any[]) || [];
-      const impSum = annualRows.reduce(
-        (s, r) => s + Number(r.impressions || 0), 0
-      );
+      const rows = (annualRows as any[]) || [];
+      const impSum = rows.reduce((sum, r) => sum + Number(r.impressions || 0), 0);
       setAnnualImpressions(impSum > 0 ? impSum : null);
 
-      const reachMax = annualRows.reduce(
-        (m, r) => Math.max(m, Number(r.members_reached || 0)), 0
-      );
+      // members_reached is a window-total, so MAX over 365d is the annual denominator.
+      const reachMax = rows.reduce((m, r) => Math.max(m, Number(r.members_reached || 0)), 0);
       setAnnualReach(reachMax > 0 ? reachMax : null);
-      // Interim: members_reached is a window-total, so MAX over 365d = the annual
-      // reach figure. Durable fix is for the sync to store its window length so a
-      // period-matched pair can be selected. Until then, MAX is the correct denominator.
-
-      const importedTimes = demos
-        .map(d => (d as any).imported_at)
-        .filter(Boolean)
-        .map((t: string) => new Date(t).getTime());
-      setImportedAt(importedTimes.length ? new Date(Math.max(...importedTimes)).toISOString() : null);
-
-      if (demos.length > 0 && !insightRes.data) {
-        setAudienceInsightLoading(true);
-        await supabase.auth.getSession();
-        supabase.functions
-          .invoke("generate-audience-insight", { body: {} })
-          .then(({ data }) => {
-            if (cancelled) return;
-            if (data) setAudienceInsight(data as AudienceInsight);
-          })
-          .catch((e) => console.error("generate-audience-insight failed", e))
-          .finally(() => { if (!cancelled) setAudienceInsightLoading(false); });
-      }
     } catch (e) {
-      console.error("ImpactTab: audience load failed", e);
+      console.error("ImpactTab: annual metrics load failed", e);
     }
   };
 
@@ -1279,7 +1202,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       {/* ─────────── SCORE HERO (compact: ring + tier card + KPIs) ─────────── */}
       <div data-tour="impact-hero">
       <FirstTimeHint hintKey="impact-score">
-        Your growth dashboard. Followers and impressions sync automatically; add your LinkedIn export for post-level and audience detail.
+        Your growth dashboard. Followers, impressions, and per-post performance sync automatically from LinkedIn.
       </FirstTimeHint>
       <div
         style={{
@@ -1470,7 +1393,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           How your content performs in the market
         </p>
         <div style={{ fontSize:11, color:"var(--aura-t3)", margin:"0 0 12px" }}>
-          Per-post history from your last import{importedAt ? ` (${fmtDateShort(importedAt)})` : ""}; recent posts and engagement synced daily from LinkedIn.
+          Posts and engagement sync automatically from LinkedIn.
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <PillarCard
@@ -1710,7 +1633,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           >
             <p className="font-medium" style={{ color: "var(--color-text-primary)" }}>No post data for this period</p>
             <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
-              Try a wider time range or import more LinkedIn analytics.
+              Try a wider time range — new posts appear as LinkedIn syncs.
             </p>
           </div>
         ) : (
@@ -1999,7 +1922,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           Follower growth — daily new followers
         </h2>
         <p className="text-[12px] mb-3" style={{ color: "var(--color-text-muted)", marginTop: -8 }}>
-          Your audience trajectory — synced daily; add your LinkedIn export to enrich it with audience breakdown.
+          Your audience trajectory — synced daily from LinkedIn.
         </p>
         {followerRows.length === 0 ? (
           <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
