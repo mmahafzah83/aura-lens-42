@@ -5,6 +5,7 @@ import AdminShell from "@/components/admin/AdminShell";
 import TodaysStatus from "@/components/TodaysStatus";
 import HealthFindingsPanel from "@/components/admin/HealthFindingsPanel";
 import SendTestEmailPanel from "@/components/admin/SendTestEmailPanel";
+import RegenerateReportPanel from "@/components/admin/RegenerateReportPanel";
 import {
   Activity,
   AlertCircle,
@@ -249,6 +250,7 @@ export default function Admin() {
         <TodaysStatus />
         <HealthFindingsPanel />
         <SendTestEmailPanel />
+        <RegenerateReportPanel />
         {/* Founder brief */}
         <section style={cardStyle}>
           <div className="flex items-baseline justify-between flex-wrap gap-2 mb-4">
