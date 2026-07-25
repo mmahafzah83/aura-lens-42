@@ -180,11 +180,45 @@ Analyse this professional using all six frameworks and provide the complete bran
     .eq("user_id", targetId);
   if (writeErr) return json({ error: writeErr.message, anthropic_status }, 500);
 
+  // Freeze a new report edition for the target user (non-blocking).
+  let snapshot_version: number | null = null;
+  try {
+    const res = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/capture-report-snapshot`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: authHeader,
+        apikey: Deno.env.get("SUPABASE_ANON_KEY")!,
+      },
+      body: JSON.stringify({ user_id: targetId, created_by: "admin" }),
+    });
+    const out = await res.json().catch(() => ({}));
+    snapshot_version = out?.version ?? null;
+    if (!res.ok) {
+      await logEfError(admin, {
+        function_name: "admin-regenerate-report",
+        error: `snapshot capture failed (${res.status})`,
+        severity: "high",
+        user_id: targetId,
+        context: { body: out },
+      });
+    }
+  } catch (e) {
+    await logEfError(admin, {
+      function_name: "admin-regenerate-report",
+      error: e,
+      severity: "high",
+      user_id: targetId,
+      context: { stage: "snapshot" },
+    });
+  }
+
   return json({
     ok: true,
     anthropic_status,
     wrote: true,
     result_keys: keyCount,
+    snapshot_version,
     report: resultsObj,
   });
 }));
