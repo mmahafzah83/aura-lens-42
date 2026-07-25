@@ -207,7 +207,7 @@ serve(withObserve("calculate-aura-score", async (req) => {
       .in("source_type", ["aura", "aura_generated"])
       .eq("tracking_status", "published")
       .gte("created_at", thirtyDaysAgo);
-    // Distinct posts confirmed on LinkedIn via xlsx import in last 30 days (for base curve published_count)
+    // Distinct posts confirmed on LinkedIn via sync in last 30 days (for base curve published_count)
     const { data: lpmRows } = await admin
       .from("linkedin_post_metrics")
       .select("post_id, snapshot_date, engagement_rate")

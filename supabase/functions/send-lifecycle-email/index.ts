@@ -444,7 +444,7 @@ serve(withObserve("send-lifecycle-email", async (req) => {
       .order("confidence", { ascending: true })
       .limit(3);
 
-    // Posts confirmed on LinkedIn in last 30 days (via xlsx import)
+    // Posts confirmed on LinkedIn in last 30 days (via LinkedIn sync)
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
     const { count: publishedCount } = await admin
       .from("linkedin_post_metrics")
