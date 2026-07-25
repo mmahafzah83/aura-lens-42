@@ -160,7 +160,7 @@ Deno.serve(async (req) => {
     // ===== ERRORS (24h from ef_error_log) =====
     const SELF_LOOP_ERR = new Set(["api-health-sentinel", "admin-notify", "admin-digest"]);
     const { data: errRows } = await admin
-      .from("ef_error_log")
+      .from("ef_faults")
       .select("function_name, severity")
       .gte("created_at", dayAgo);
     const filteredErrs = (errRows || []).filter(
