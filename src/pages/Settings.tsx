@@ -11,6 +11,10 @@ import { exportReportPdf } from "@/lib/exportReportPdf";
 import usePageMeta from "@/hooks/usePageMeta";
 import ReportDocument from "@/components/ReportDocument";
 import { buildIdentityReport, type ReportData } from "@/lib/buildIdentityReport";
+import {
+  fetchCurrentReportSnapshot,
+  captureReportSnapshot,
+} from "@/lib/reportSnapshot";
 import { getPublication, validate as validatePublication, type PublicationConfig } from "@/lib/publication";
 import { PAPER, INK, SPOT, RULE, SERIF, MONO, ARABIC } from "@/components/broadsheet/pressTokens";
 import CountryPicker from "@/components/CountryPicker";
@@ -61,6 +65,8 @@ export default function Settings() {
   const [error, setError] = useState<string | null>(null);
   const [exportingReport, setExportingReport] = useState(false);
   const [report, setReport] = useState<ReportData | null>(null);
+const [reportVersion, setReportVersion] = useState<number | null>(null);
+const [reportSnapshotAt, setReportSnapshotAt] = useState<string | null>(null);
 const [reportLoading, setReportLoading] = useState(true);
 const [linkedInConnection, setLinkedInConnection] = useState<LinkedInConnection | null>(null);
 const [linkedInBusy, setLinkedInBusy] = useState(true);
@@ -124,10 +130,30 @@ const handleDeleteAccount = async () => {
         }
         if (data?.brand_assessment_completed_at) {
           try {
-            const r = await buildIdentityReport(session.user.id);
-            if (!cancelled) setReport(r);
+            // Frozen edition first — the report must not drift between views.
+            const snap = await fetchCurrentReportSnapshot(session.user.id);
+            if (snap) {
+              if (!cancelled) {
+                setReport(snap.data);
+                setReportVersion(snap.version);
+                setReportSnapshotAt(snap.created_at);
+              }
+            } else {
+              // No snapshot yet — live fallback, then freeze it for next time.
+              const r = await buildIdentityReport(session.user.id);
+              if (!cancelled) setReport(r);
+              const v = await captureReportSnapshot("user");
+              if (!cancelled && v != null) {
+                const fresh = await fetchCurrentReportSnapshot(session.user.id);
+                if (fresh && !cancelled) {
+                  setReport(fresh.data);
+                  setReportVersion(fresh.version);
+                  setReportSnapshotAt(fresh.created_at);
+                }
+              }
+            }
           } catch (re) {
-            console.error("[Settings] buildIdentityReport failed", re);
+            console.error("[Settings] report load failed", re);
           } finally {
             if (!cancelled) setReportLoading(false);
           }
@@ -301,8 +327,13 @@ const handleDeleteAccount = async () => {
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-|-$/g, "") || "profile";
-    const date = new Date().toISOString().slice(0, 10);
-    return `aura-report-${slug}-${date}.pdf`;
+    // Date of the frozen edition, not "today" — the file name is part of the
+    // artifact's identity and must be stable across re-exports.
+    const date = (reportSnapshotAt ? new Date(reportSnapshotAt) : new Date())
+      .toISOString()
+      .slice(0, 10);
+    const v = reportVersion ? `-v${reportVersion}` : "";
+    return `aura-report-${slug}${v}-${date}.pdf`;
   };
 
   const reportMountRef = useRef<HTMLDivElement | null>(null);
@@ -768,8 +799,18 @@ const handleDeleteAccount = async () => {
                   loading={exportingReport}
                   disabled={exportingReport || reportLoading || !report}
                 >
-                  Download Report (PDF)
+                  Export PDF
                 </AuraButton>
+                {reportVersion && reportSnapshotAt ? (
+                  <p style={{ marginTop: 8, fontSize: 11, color: "var(--ink-4)" }}>
+                    Version {reportVersion} ·{" "}
+                    {new Date(reportSnapshotAt).toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </p>
+                ) : null}
                 {/* §16.1 trust line — quiet, caption, muted; bilingual stack */}
                 <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 2 }}>
                   <p style={{ fontSize: 11, lineHeight: 1.6, color: "var(--ink-4)", margin: 0 }}>

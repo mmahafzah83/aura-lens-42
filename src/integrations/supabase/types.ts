@@ -2841,6 +2841,36 @@ export type Database = {
         }
         Relationships: []
       }
+      report_snapshots: {
+        Row: {
+          created_at: string
+          created_by: string
+          data: Json
+          id: string
+          is_current: boolean
+          user_id: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          data: Json
+          id?: string
+          is_current?: boolean
+          user_id: string
+          version: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          data?: Json
+          id?: string
+          is_current?: boolean
+          user_id?: string
+          version?: number
+        }
+        Relationships: []
+      }
       score_snapshots: {
         Row: {
           components: Json

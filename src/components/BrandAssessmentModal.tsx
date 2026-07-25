@@ -10,6 +10,7 @@ import AuraLogo from "@/components/brand/AuraLogo";
 import BrandPaperDocument from "@/components/report/BrandPaperDocument";
 import { buildBrandPaper } from "@/lib/buildBrandPaper";
 import { exportReportPdf } from "@/lib/exportReportPdf";
+import { captureReportSnapshot } from "@/lib/reportSnapshot";
 import { toast as sonner } from "sonner";
 
 // New section headers (must match brand-assessment EF SYSTEM_PROMPT)
@@ -455,6 +456,10 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
       await (supabase.from("diagnostic_profiles" as any) as any)
         .update(updatePayload)
         .eq("user_id", user.id);
+
+      // Freeze a new report edition. Non-blocking: a failure must never
+      // break the user's flow, but capture-report-snapshot logs it.
+      void captureReportSnapshot("user");
 
       toast({ title: "Done. Aura sees who you are now — and everything it creates will reflect it." });
       onComplete?.();
