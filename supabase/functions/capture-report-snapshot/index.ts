@@ -37,6 +37,12 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
+// Template identity pinned into every issued edition.
+// Bump this string ONLY when ReportDocument.tsx changes in a way that alters
+// rendered output; never edit it casually. KEEP IN SYNC with
+// TEMPLATE_VERSION in src/lib/buildIdentityReport.ts.
+const TEMPLATE_VERSION = "aura-paper-v1";
+
 // KEEP IN SYNC with src/lib/marketPersonas.ts
 const PERSONA_LABELS: Record<string, Record<string, string>> = {
   c_suite: {
@@ -323,6 +329,7 @@ async function buildIdentityReport(db: any, userId: string): Promise<Record<stri
   return {
     user_id: userId,
     generated_at: new Date().toISOString(),
+    template_version: TEMPLATE_VERSION,
     profile, positioning, profile_intelligence, score, brand_position,
     capabilities, market_mirror, territories, footprint, content, voice,
   };
@@ -330,7 +337,9 @@ async function buildIdentityReport(db: any, userId: string): Promise<Record<stri
 
 function countSections(data: Record<string, any>): number {
   return Object.entries(data).filter(
-    ([k, v]) => k !== "user_id" && k !== "generated_at" && v !== null && v !== undefined,
+    ([k, v]) =>
+      k !== "user_id" && k !== "generated_at" && k !== "template_version" &&
+      v !== null && v !== undefined,
   ).length;
 }
 
