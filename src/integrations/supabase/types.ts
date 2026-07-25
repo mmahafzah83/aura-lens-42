@@ -3634,6 +3634,7 @@ export type Database = {
         Args: { _slug: string; _surface: string }
         Returns: undefined
       }
+      report_invariants: { Args: never; Returns: Json }
       rollback_design_version: {
         Args: { p_target_version: number }
         Returns: undefined
