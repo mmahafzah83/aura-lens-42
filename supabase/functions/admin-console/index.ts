@@ -376,7 +376,7 @@ serve(async (req) => {
       }
 
       if (task === "send_nudge") {
-        const ALLOWED = ["day1", "day3", "day7", "inactive"] as const;
+        const ALLOWED = ["day1", "day3", "day7", "first_signal", "inactive"] as const;
         const requested = String(body?.email_type ?? "inactive");
         if (!ALLOWED.includes(requested as any)) {
           return json({ error: "invalid email_type" }, 400);
@@ -573,11 +573,11 @@ serve(async (req) => {
         };
       });
 
-      const RECS: Record<StageKey, { text: string; nudge: "day1" | "inactive" | null }> = {
+      const RECS: Record<StageKey, { text: string; nudge: "day1" | "day3" | "day7" | "first_signal" | "inactive" | null }> = {
         signed_up: { text: "Resend onboarding / personal welcome", nudge: "day1" },
         onboarded: { text: "Activation gap — send first-capture nudge; check article-fetch fix", nudge: "inactive" },
         first_capture: { text: "Encourage 1–2 more captures from varied sources so a signal forms", nudge: "inactive" },
-        first_signal: { text: "Signal ready — nudge to draft from their top signal", nudge: "inactive" },
+        first_signal: { text: "Signal ready — nudge to draft from their top signal", nudge: "first_signal" },
         first_draft: { text: "Draft sitting — lifecycle cron auto-nudges at 24h; ping if >3 days", nudge: null },
         first_publish: { text: "Encourage weekly cadence", nudge: "inactive" },
         active_rhythm: { text: "Broaden topics / richer sources to climb tiers", nudge: null },

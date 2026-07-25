@@ -18,7 +18,7 @@ type StuckUser = {
   last_seen: string | null;
   risk: "high" | "med" | "low";
   recommendation: string;
-  suggested_nudge: "day1" | "inactive" | null;
+  suggested_nudge: "day1" | "day3" | "day7" | "first_signal" | "inactive" | null;
 };
 type Payload = {
   stages: Stage[];
@@ -93,7 +93,7 @@ export default function AdminJourney() {
     return Math.max(1, ...data.stages.map((s) => s.count));
   }, [data]);
 
-  const sendNudge = async (uid: string, email_type: "day1" | "inactive") => {
+  const sendNudge = async (uid: string, email_type: "day1" | "day3" | "day7" | "first_signal" | "inactive") => {
     const { data: res, error } = await supabase.functions.invoke("admin-console", {
       body: { action: "run_for_user", task: "send_nudge", user_id: uid, email_type },
     });
@@ -257,7 +257,7 @@ export default function AdminJourney() {
                                   <td style={cellStyle}>
                                     <div style={{ display: "flex", gap: 6 }}>
                                       {u.suggested_nudge && (
-                                        <button style={btn} onClick={() => sendNudge(u.user_id, u.suggested_nudge as "day1" | "inactive")}>
+                                        <button style={btn} onClick={() => sendNudge(u.user_id, u.suggested_nudge as "day1" | "day3" | "day7" | "first_signal" | "inactive")}>
                                           <Send size={12} /> Send nudge
                                         </button>
                                       )}

@@ -14,7 +14,7 @@ const FROM = "Aura <Mohammad.Mahafdhah@aura-intel.org>";
 const FROM_INVITES = "Aura <invites@aura-intel.org>";
 const REPLY_TO = "mohammad.mahafdhah@aura-intel.org";
 
-type EmailType = "welcome" | "day1" | "day3" | "day7" | "inactive" | "silence" | "post_ready" | "aura_card_ready" | "aura_card_nudge" | "aura_card_monthly";
+type EmailType = "welcome" | "day1" | "day3" | "day7" | "first_signal" | "inactive" | "silence" | "post_ready" | "aura_card_ready" | "aura_card_nudge" | "aura_card_monthly";
 
 const HEADING_FONT = "'Cormorant Garamond', Georgia, 'Times New Roman', serif";
 const BODY_FONT = "'DM Sans', -apple-system, BlinkMacSystemFont, Arial, sans-serif";
@@ -107,6 +107,25 @@ function buildEmail(
       <p style="margin:0 0 18px;">One capture. That's the beginning.</p>
       ${ctaButton(BRAND, "Make your first capture →", APP_URL)}
       ${signoff(name, level)}`;
+    return { subject, html: shell(BRAND, FONT, body) };
+  }
+
+  if (type === "first_signal") {
+    const top = topSignals[0];
+    const subject = "Your first signal is live";
+    const body = top
+      ? `
+        ${heading(`${name}, your first signal just formed.`)}
+        <p style="margin:0 0 18px;">Aura connected your captures into a pattern: <strong>${top.signal_title}</strong>. This is the topic where your reading runs deepest.</p>
+        <p style="margin:0 0 18px;">Aura can draft a LinkedIn post from this signal — in your voice, grounded in what you actually read. One click and you have your first post.</p>
+        ${ctaButton(BRAND, "Draft from your signal →", `${APP_URL}/dashboard?tab=publish`)}
+        ${signoff(name, level)}`
+      : `
+        ${heading(`${name}, your signals are forming.`)}
+        <p style="margin:0 0 18px;">The captures you've made are being analyzed — signals emerge when Aura detects recurring themes across multiple sources.</p>
+        <p style="margin:0 0 18px;">Feed it one more article. That's all it takes to start the pattern.</p>
+        ${ctaButton(BRAND, "Capture something →", APP_URL)}
+        ${signoff(name, level)}`;
     return { subject, html: shell(BRAND, FONT, body) };
   }
 
@@ -318,7 +337,7 @@ serve(withObserve("send-lifecycle-email", async (req) => {
         });
       }
     }
-    const types: EmailType[] = ["welcome", "day1", "day3", "day7", "inactive", "silence", "post_ready", "aura_card_ready", "aura_card_nudge", "aura_card_monthly"];
+    const types: EmailType[] = ["welcome", "day1", "day3", "day7", "first_signal", "inactive", "silence", "post_ready", "aura_card_ready", "aura_card_nudge", "aura_card_monthly"];
     if (!types.includes(email_type)) {
       return new Response(JSON.stringify({ error: "invalid email_type" }), {
         status: 400,
