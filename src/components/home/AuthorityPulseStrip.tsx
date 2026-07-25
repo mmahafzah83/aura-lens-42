@@ -163,7 +163,7 @@ export default function AuthorityPulseStrip({ userId, authorityScore, onGoToImpa
         value={animEngagementDisplay != null ? `${animEngagementDisplay}%` : "--"}
         label="Engagement"
         delta={(() => {
-          if (stats.engagementRate == null) return "Import LinkedIn";
+          if (stats.engagementRate == null) return "Connect LinkedIn";
           const b = tierBenchmark(stats.followers);
           return `vs ${b.low}–${b.high}% (${b.label})`;
         })()}
@@ -173,7 +173,7 @@ export default function AuthorityPulseStrip({ userId, authorityScore, onGoToImpa
         index={3}
         value={stats.followers != null ? fmtCompact(animFollowers) : "--"}
         label="Followers"
-        delta={stats.followers != null ? "tracked" : "Import LinkedIn"}
+        delta={stats.followers != null ? "tracked" : "Connect LinkedIn"}
         onClick={stats.followers == null ? onGoToImpact : undefined}
       />
     </div>
