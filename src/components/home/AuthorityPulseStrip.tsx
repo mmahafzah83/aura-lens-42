@@ -155,7 +155,7 @@ export default function AuthorityPulseStrip({ userId, authorityScore, onGoToImpa
         index={1}
         value={stats.postsCount > 0 ? String(animPosts) : (hasLinkedIn ? "0" : "--")}
         label="Posts"
-        delta={hasLinkedIn ? "imported" : "Import LinkedIn"}
+        delta={hasLinkedIn ? "synced" : "Connect LinkedIn"}
         onClick={!hasLinkedIn ? onGoToImpact : undefined}
       />
       <Item

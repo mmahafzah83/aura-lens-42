@@ -151,7 +151,6 @@ Deno.serve(async (req) => {
       fragCountRes,
       voiceRes,
       signalsRes,
-      audienceRes,
       snapshotsRes,
       postsRes,
       critiqueRes,
@@ -180,10 +179,6 @@ Deno.serve(async (req) => {
         .eq("status", "active")
         .not("lifecycle_tier", "is", null),
       admin
-        .from("audience_demographics")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user_id),
-      admin
         .from("influence_snapshots")
         .select("snapshot_date, followers, follower_growth")
         .eq("user_id", user_id)
@@ -210,7 +205,6 @@ Deno.serve(async (req) => {
     const fragmentCount = fragCountRes.count ?? 0;
     const voiceProfiles = (voiceRes.data as any[]) || [];
     const activeSignals = (signalsRes.data as any[]) || [];
-    const demographicsCount = audienceRes.count ?? 0;
     const snapshots = (snapshotsRes.data as any[]) || [];
     const allPublishedPosts = (postsRes.data as any[]) || [];
     const publishedPosts = allPublishedPosts.filter((p) => isPublishedPost(p));
@@ -347,7 +341,6 @@ Deno.serve(async (req) => {
 
     // -------- 5. audience --------
     const audienceFn = (): FacetResult => {
-      const demoExists = demographicsCount > 0 ? 1 : 0;
       // Follower delta over last 30d — use diff of two latest snapshots when both exist
       let growth30d = 0;
       if (snapshots.length >= 2) {
@@ -361,14 +354,13 @@ Deno.serve(async (req) => {
         if (Number.isFinite(g)) growth30d = g;
       }
       const positiveGrowth = Math.max(0, growth30d);
-      const value = clamp01(0.4 * demoExists + 0.6 * clamp01(positiveGrowth / 500));
-      const uncertainty = demoExists ? 0.3 : 0.8;
+      const value = clamp01(clamp01(positiveGrowth / 500));
+      const uncertainty = snapshots.length > 0 ? 0.3 : 0.8;
       const lastTs = snapshots[0]?.snapshot_date ?? null;
       return {
         value,
         uncertainty: clamp01(uncertainty),
         inputs: {
-          demographics_rows: demographicsCount,
           follower_growth_30d: growth30d,
           snapshot_count: snapshots.length,
         },
