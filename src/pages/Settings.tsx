@@ -327,8 +327,13 @@ const handleDeleteAccount = async () => {
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-|-$/g, "") || "profile";
-    const date = new Date().toISOString().slice(0, 10);
-    return `aura-report-${slug}-${date}.pdf`;
+    // Date of the frozen edition, not "today" — the file name is part of the
+    // artifact's identity and must be stable across re-exports.
+    const date = (reportSnapshotAt ? new Date(reportSnapshotAt) : new Date())
+      .toISOString()
+      .slice(0, 10);
+    const v = reportVersion ? `-v${reportVersion}` : "";
+    return `aura-report-${slug}${v}-${date}.pdf`;
   };
 
   const reportMountRef = useRef<HTMLDivElement | null>(null);
