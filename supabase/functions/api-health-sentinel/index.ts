@@ -13,7 +13,7 @@ function json(body: unknown, status = 200) {
   });
 }
 
-type Result = { provider: string; ok: boolean; status: number; detail?: string };
+type Result = { provider: string; ok: boolean; status: number; detail?: string; body?: string };
 
 // Strict rule: ok is TRUE only when HTTP status is 2xx. Any 4xx/5xx is recorded
 // with the code and the first 200 chars of the response body.
@@ -22,12 +22,17 @@ async function probe(provider: string, req: () => Promise<Response>): Promise<Re
     const r = await req();
     const is2xx = r.status >= 200 && r.status < 300;
     let bodySnippet = "";
+    let bodyFull = "";
     if (!is2xx) {
-      try { bodySnippet = (await r.text()).slice(0, 200); } catch { /* ignore */ }
+      try {
+        const t = await r.text();
+        bodyFull = t.slice(0, 800);
+        bodySnippet = t.slice(0, 200);
+      } catch { /* ignore */ }
     }
-    return { provider, ok: is2xx, status: r.status, detail: is2xx ? "" : bodySnippet };
+    return { provider, ok: is2xx, status: r.status, detail: is2xx ? "" : bodySnippet, body: bodyFull };
   } catch (e) {
-    return { provider, ok: false, status: 0, detail: (e as Error).message };
+    return { provider, ok: false, status: 0, detail: (e as Error).message, body: (e as Error).message };
   }
 }
 
@@ -143,6 +148,26 @@ Deno.serve(async (req) => {
       failed: failures.length,
     });
     if (insertErr) console.error("[sentinel] insert failed", insertErr.message);
+
+    // Loud failure: a non-OK provider probe must be visible in ef_error_log,
+    // not only on the admin page. Credit exhaustion gets its own clear message.
+    for (const r of results.filter((x) => !x.ok)) {
+      const body = r.body || r.detail || "";
+      const creditExhausted = /credit balance is too low/i.test(body);
+      const message = creditExhausted
+        ? `ANTHROPIC_CREDIT_EXHAUSTED — API access suspended, add funds (HTTP ${r.status})`
+        : `${r.provider.toUpperCase()}_PROBE_FAILED — HTTP ${r.status}: ${body.slice(0, 400)}`;
+      try {
+        await admin.from("ef_error_log").insert({
+          function_name: "api-health-sentinel",
+          severity: "high",
+          error_message: message.slice(0, 1000),
+          context: { provider: r.provider, status: r.status, body: body.slice(0, 800), credit_exhausted: creditExhausted },
+        });
+      } catch (e) {
+        console.error("[sentinel] probe failure log insert failed", (e as Error).message);
+      }
+    }
 
     if (failures.length > 0) {
       const FEATURE: Record<string, string> = {

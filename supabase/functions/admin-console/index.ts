@@ -220,6 +220,61 @@ serve(async (req) => {
     try { body = await req.json(); } catch { /* no body */ }
     const action = String(body?.action || "");
 
+    if (action === "report_health") {
+      // Users whose brand assessment answers were saved but whose report never
+      // materialised. Count is an exact server-side count, never rows.length.
+      const brokenFilter = (q: any) =>
+        q.not("brand_assessment_answers", "eq", "{}")
+          .not("brand_assessment_answers", "is", null);
+
+      const { data: profs, error: profErr } = await brokenFilter(
+        admin
+          .from("diagnostic_profiles")
+          .select("user_id, first_name, last_name, brand_assessment_answers, brand_assessment_results, brand_assessment_completed_at, created_at"),
+      );
+      if (profErr) return json({ error: profErr.message }, 500);
+
+      const isEmpty = (v: unknown) =>
+        v === null || v === undefined || typeof v !== "object" || Object.keys(v as object).length === 0;
+
+      const broken = (profs ?? []).filter(
+        (p: any) => !isEmpty(p.brand_assessment_answers) && isEmpty(p.brand_assessment_results),
+      );
+
+      // Exact count from the database, independent of the row fetch above.
+      const { data: inv } = await admin.rpc("report_invariants");
+      const exactCount = Number((inv as any)?.answers_without_results?.count ?? broken.length);
+
+      const emailById = new Map<string, string | null>();
+      if (broken.length > 0) {
+        let page = 1;
+        while (page <= 25) {
+          const { data } = await admin.auth.admin.listUsers({ page, perPage: 200 });
+          const batch = data?.users ?? [];
+          for (const u of batch) emailById.set(u.id, u.email ?? null);
+          if (batch.length < 200) break;
+          page += 1;
+        }
+      }
+
+      const rows = broken.map((p: any) => {
+        const since = p.brand_assessment_completed_at || p.created_at;
+        const days = since
+          ? Math.max(0, Math.floor((Date.now() - new Date(since).getTime()) / 86400000))
+          : null;
+        return {
+          user_id: p.user_id,
+          first_name: p.first_name ?? null,
+          last_name: p.last_name ?? null,
+          email: emailById.get(p.user_id) ?? null,
+          answered_at: since ?? null,
+          days_stuck: days,
+        };
+      }).sort((a: any, b: any) => (b.days_stuck ?? 0) - (a.days_stuck ?? 0));
+
+      return json({ count: exactCount, rows });
+    }
+
     if (action === "list_users") {
       // 1. Pull auth users (paged)
       const users: Array<{
