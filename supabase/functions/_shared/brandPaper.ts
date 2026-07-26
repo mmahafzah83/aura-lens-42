@@ -1,9 +1,8 @@
-// buildBrandPaper — normalise a diagnostic_profiles.brand_assessment_results
-// blob into the fixed slots the BrandPaperDocument expects. Prefers the
-// structured JSON keys emitted by the new brand-assessment SYSTEM_PROMPT,
-// falls back to legacy prose parsing (splitInterpretation + section headers)
-// so historic rows still render. All fields are string | null (or arrays);
-// stray markdown residue (*, #) is stripped defensively.
+// KEEP IN SYNC with src/lib/buildBrandPaper.ts (edge mirror for
+// capture-report-snapshot — the browser module resolves through the Vite
+// "@/" alias and cannot be imported inside the Deno runtime).
+// Pure TypeScript, no imports.
+
 
 export interface BrandPaperTopic {
   title: string;
