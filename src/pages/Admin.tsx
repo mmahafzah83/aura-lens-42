@@ -6,6 +6,7 @@ import HealthFindingsPanel from "@/components/admin/HealthFindingsPanel";
 import SendTestEmailPanel from "@/components/admin/SendTestEmailPanel";
 import RegenerateReportPanel from "@/components/admin/RegenerateReportPanel";
 import ReportHealthPanel from "@/components/admin/ReportHealthPanel";
+import IsItWorkingZone, { useIsItWorking } from "@/components/admin/cockpit/IsItWorking";
 import { downloadBlob } from "@/lib/download";
 import {
   Bar,
