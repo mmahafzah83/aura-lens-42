@@ -137,9 +137,17 @@ function TrendChart({
           </g>
         ))}
 
-        {markers
-          .filter((m) => Date.parse(m.shipped_on) >= t0 && Date.parse(m.shipped_on) <= t1)
-          .map((m) => (
+        {(() => {
+          const shown = markers.filter(
+            (m) => Date.parse(m.shipped_on) >= t0 && Date.parse(m.shipped_on) <= t1,
+          );
+          // Two things shipped on one day must not print on top of each other.
+          const seen: Record<string, number> = {};
+          return shown.map((m) => {
+            const rank = seen[m.shipped_on] ?? 0;
+            seen[m.shipped_on] = rank + 1;
+            const lx = x(m.shipped_on) + 4 + rank * 12;
+            return (
             <g key={m.id}>
               <line
                 x1={x(m.shipped_on)}
@@ -151,17 +159,19 @@ function TrendChart({
                 strokeDasharray="2 3"
               />
               <text
-                x={x(m.shipped_on) + 4}
+                x={lx}
                 y={PAD.t + 8}
                 fill={C.ox}
                 fontFamily={MONO}
                 fontSize={9}
-                transform={`rotate(90 ${x(m.shipped_on) + 4} ${PAD.t + 8})`}
+                transform={`rotate(90 ${lx} ${PAD.t + 8})`}
               >
-                {m.title}
+                {m.title.length > 30 ? `${m.title.slice(0, 29)}…` : m.title}
               </text>
             </g>
-          ))}
+            );
+          });
+        })()}
 
         <polyline points={dashed} fill="none" stroke={C.muted} strokeWidth={1.6} strokeDasharray="5 4" />
         {recordedPoints.length > 1 && (
