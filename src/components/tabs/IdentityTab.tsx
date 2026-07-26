@@ -1234,6 +1234,13 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         <MilestonesSection userId={authUser?.id ?? null} />
       </div>
 
+      {/* SLICE 4a — Strategic Identity Report home */}
+      <SectionHeader label="Your Strategic Identity Report" />
+      <ReportViewerSection
+        firstName={profile?.first_name}
+        onCompleteAssessment={() => setBrandOpen(true)}
+      />
+
       {/* Your Aura Card — readiness gate + shareable card */}
       <AuraCardPanel
         onNavigateAssessment={() => setBrandOpen(true)}
