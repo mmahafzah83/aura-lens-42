@@ -1108,6 +1108,57 @@ export type Database = {
         }
         Relationships: []
       }
+      draft_edits: {
+        Row: {
+          created_at: string
+          first_line_changed: boolean | null
+          id: string
+          language: string | null
+          levenshtein_distance: number | null
+          numbers_added: number | null
+          numbers_removed: number | null
+          post_id: string | null
+          published_chars: number | null
+          published_text: string | null
+          served_chars: number | null
+          served_text: string | null
+          similarity_ratio: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          first_line_changed?: boolean | null
+          id?: string
+          language?: string | null
+          levenshtein_distance?: number | null
+          numbers_added?: number | null
+          numbers_removed?: number | null
+          post_id?: string | null
+          published_chars?: number | null
+          published_text?: string | null
+          served_chars?: number | null
+          served_text?: string | null
+          similarity_ratio?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          first_line_changed?: boolean | null
+          id?: string
+          language?: string | null
+          levenshtein_distance?: number | null
+          numbers_added?: number | null
+          numbers_removed?: number | null
+          post_id?: string | null
+          published_chars?: number | null
+          published_text?: string | null
+          served_chars?: number | null
+          served_text?: string | null
+          similarity_ratio?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       ef_error_log: {
         Row: {
           context: Json | null
@@ -2304,6 +2355,7 @@ export type Database = {
           linkedin_post_id: string | null
           linkedin_url: string | null
           media_type: string | null
+          original_generated_text: string | null
           post_text: string | null
           post_url: string | null
           publish_attempted_at: string | null
@@ -2347,6 +2399,7 @@ export type Database = {
           linkedin_post_id?: string | null
           linkedin_url?: string | null
           media_type?: string | null
+          original_generated_text?: string | null
           post_text?: string | null
           post_url?: string | null
           publish_attempted_at?: string | null
@@ -2390,6 +2443,7 @@ export type Database = {
           linkedin_post_id?: string | null
           linkedin_url?: string | null
           media_type?: string | null
+          original_generated_text?: string | null
           post_text?: string | null
           post_url?: string | null
           publish_attempted_at?: string | null

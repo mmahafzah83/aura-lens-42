@@ -286,6 +286,7 @@ async function insertPublishedLinkedInPost(opts: {
   url?: string | null;
   language?: "en" | "ar";
   frameworkType?: string | null;
+  originalGeneratedText?: string | null;
 }): Promise<void> {
   const { userId, postText, formatType, sourceMetadata, sourceSignalId, url, frameworkType } = opts;
   const lang: "en" | "ar" = opts.language === "ar" ? "ar" : "en";
@@ -302,6 +303,7 @@ async function insertPublishedLinkedInPost(opts: {
     .insert({
       user_id: userId,
       post_text: postText || "",
+      original_generated_text: opts.originalGeneratedText || postText || "",
       format_type: formatType || "post",
       tracking_status: "published",
       source_type: "aura_generated",
@@ -410,6 +412,9 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
   const [selectedSignalTitle, setSelectedSignalTitle] = useState<string | null>(null);
   const [selectedSignalInsight, setSelectedSignalInsight] = useState<string | null>(null);
   const [generationTimestamp, setGenerationTimestamp] = useState<string | null>(null);
+  // Data collection only: the exact text Aura served for the current draft,
+  // snapshotted at generation time so we can compare it to what gets published.
+  const servedTextRef = useRef<string | null>(null);
   const [voiceWords, setVoiceWords] = useState<string[]>([]);
   const [preferredStructures, setPreferredStructures] = useState<string[]>([]);
   const [profileName, setProfileName] = useState<string>("");
@@ -791,7 +796,10 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
     }
     const json = await resp.json();
     const accumulated: string = json?.content || "";
-    if (accumulated) setOutput(accumulated);
+    if (accumulated) {
+      setOutput(accumulated);
+      servedTextRef.current = accumulated;
+    }
     if (json?.quality_gate) {
       setQualityGate(json.quality_gate);
     } else {
@@ -998,6 +1006,14 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
             .update({ post_text: body })
             .eq("id", editingDraftId);
           if (error) throw error;
+          // One-time snapshot of the served text — guarded so re-saves can't clobber it.
+          if (servedTextRef.current) {
+            await supabase
+              .from("linkedin_posts")
+              .update({ original_generated_text: servedTextRef.current })
+              .eq("id", editingDraftId)
+              .is("original_generated_text", null);
+          }
           setDraftSaved(true);
           toast.success("Draft updated in Library");
         } else {
@@ -1104,6 +1120,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
   const resetComposerForNext = () => {
     setOutput("");
     setFullVersion("");
+    servedTextRef.current = null;
     setShortVersion("");
     setShowingShort(false);
     setEditingDraftId(null);
@@ -1135,12 +1152,21 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
           .eq("id", editingDraftId);
         if (upErr) throw upErr;
         postId = editingDraftId;
+        // One-time snapshot of the served text — never overwrite an existing value.
+        if (servedTextRef.current) {
+          await supabase
+            .from("linkedin_posts")
+            .update({ original_generated_text: servedTextRef.current })
+            .eq("id", editingDraftId)
+            .is("original_generated_text", null);
+        }
       } else {
         const { data: ins, error: insErr } = await supabase
           .from("linkedin_posts")
           .insert({
             user_id: session.user.id,
             post_text: text,
+            original_generated_text: servedTextRef.current || text,
             format_type: (contentType as string) === "carousel" ? "carousel" : "post",
             tracking_status: "draft",
             source_type: "aura_generated",
@@ -1244,6 +1270,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
           url: urlArg ?? null,
           language: lang,
           frameworkType: framework !== "auto" ? framework : null,
+          originalGeneratedText: servedTextRef.current,
         });
         // If this Create session is editing an existing content_items draft,
         // mark the source row as published so it counts as shipped.
