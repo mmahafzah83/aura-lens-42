@@ -10,7 +10,7 @@ import { Link } from "react-router-dom";
 import { exportReportPdf } from "@/lib/exportReportPdf";
 import usePageMeta from "@/hooks/usePageMeta";
 import ReportDocument from "@/components/ReportDocument";
-import { buildIdentityReport, type ReportData } from "@/lib/buildIdentityReport";
+import { useReportSnapshot } from "@/hooks/useReportSnapshot";
 import {
   fetchCurrentReportSnapshot,
   captureReportSnapshot,
