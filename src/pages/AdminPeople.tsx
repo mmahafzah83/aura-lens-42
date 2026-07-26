@@ -7,6 +7,7 @@ import AdminShell from "@/components/admin/AdminShell";
 import AdminLegend from "@/components/admin/AdminLegend";
 import { downloadBlob } from "@/lib/download";
 import { formatSmartDate } from "@/lib/formatDate";
+import { AdminMetrics, freshnessLine, loadAdminMetrics, published, signedUp } from "@/lib/adminMetrics";
 
 type Row = {
   user_id: string;
@@ -297,6 +298,7 @@ export default function AdminPeople() {
   const [error, setError] = useState<string | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
   const [hideTest, setHideTest] = useState(true);
+  const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [selected, setSelected] = useState<Row | null>(null);
   const [copiedUid, setCopiedUid] = useState<string | null>(null);
 
