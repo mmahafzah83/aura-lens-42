@@ -11,6 +11,7 @@ import AuditRadarWidget from "@/components/AuditRadarWidget";
 import ObjectiveAuditModal from "@/components/ObjectiveAuditModal";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
 import ReportViewerSection from "@/components/identity/ReportViewerSection";
+import BrandReportSection from "@/components/identity/BrandReportSection";
 import SectionError from "@/components/ui/section-error";
 import { withTimeout, showQueryErrorToast } from "@/lib/safeQuery";
 import { useAuthReady } from "@/hooks/useAuthReady";
@@ -1234,12 +1235,32 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         <MilestonesSection userId={authUser?.id ?? null} />
       </div>
 
-      {/* SLICE 4a — Strategic Identity Report home */}
-      <SectionHeader label="Your Strategic Identity Report" />
-      <ReportViewerSection
-        firstName={profile?.first_name}
+      {/* SLICE 4b — one reports home: narrative report first, formal PDF beneath */}
+      <SectionHeader label="Your Reports" />
+      <BrandReportSection
+        results={profile?.brand_assessment_results}
+        hasAssessment={!!profile?.brand_assessment_completed_at}
         onCompleteAssessment={() => setBrandOpen(true)}
       />
+      {profile?.brand_assessment_completed_at ? (
+        <div style={{ marginTop: 16 }}>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: "0.1em",
+              color: "var(--ink-3)",
+              marginBottom: 8,
+            }}
+          >
+            Strategic Identity Report (PDF)
+          </div>
+          <ReportViewerSection
+            firstName={profile?.first_name}
+            onCompleteAssessment={() => setBrandOpen(true)}
+          />
+        </div>
+      ) : null}
 
       {/* Your Aura Card — readiness gate + shareable card */}
       <AuraCardPanel
