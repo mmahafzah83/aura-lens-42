@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { alertPublishFailure } from "../_shared/publishFailureAlert.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,7 +27,7 @@ Deno.serve(async (req) => {
   const cutoff = new Date(Date.now() - 3 * 60 * 1000).toISOString();
   const { data: candidates, error: findErr } = await admin
     .from("linkedin_posts")
-    .select("id, user_id, claimed_at, created_at")
+    .select("id, user_id, claimed_at, created_at, post_text")
     .eq("tracking_status", "publishing")
     .is("published_confirmed_at", null)
     .or(`claimed_at.lt.${cutoff},and(claimed_at.is.null,created_at.lt.${cutoff})`);
@@ -66,6 +67,20 @@ Deno.serve(async (req) => {
       });
     } catch (e) {
       console.error(`[reap-stuck-publishes] log insert failed for ${row.id}:`, (e as Error).message);
+    }
+    // A failure discovered late is still a failure the founder never heard about.
+    // Own try/catch — reaping must complete regardless.
+    try {
+      await alertPublishFailure(admin, {
+        userId: row.user_id,
+        postId: row.id,
+        errorText: "Publish never reached LinkedIn — retired as stuck by the cleanup job",
+        postText: row.post_text,
+        origin: "reap-stuck-publishes",
+        occurredAt: row.claimed_at || row.created_at || new Date().toISOString(),
+      });
+    } catch (e) {
+      console.error(`[reap-stuck-publishes] alert failed for ${row.id}:`, (e as Error).message);
     }
     reaped += 1;
   }
