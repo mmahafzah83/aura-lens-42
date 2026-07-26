@@ -333,16 +333,35 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
         const kickVoiceDistill = async () => {
           try {
             const MIN_CORPUS = 5;
+            const MIN_EVIDENCE_CHARS = 200;
+
+            // Authentic corpus only. Aura's own output is never counted —
+            // publishing a generated draft must not trigger a relearn.
+            const countAuthentic = async (since?: string | null) => {
+              let q = adminClient
+                .from("linkedin_posts")
+                .select("post_text, source_type, tracking_status")
+                .eq("user_id", user.id)
+                .not("post_text", "is", null)
+                .limit(500);
+              if (since) q = q.gt("published_at", since);
+              const { data } = await q;
+              return (data || []).filter((p: any) => {
+                const st = p.source_type;
+                const ts = p.tracking_status;
+                const ok =
+                  (st === "browser_capture" && (ts === "confirmed" || ts === "metrics_imported")) ||
+                  (st === "search_discovery" && ts === "confirmed") ||
+                  (st === "manual_url" && ts === "manual") ||
+                  st === "linkedin_export" ||
+                  st === "linkedin_import";
+                return ok && String(p.post_text ?? "").trim().length >= MIN_EVIDENCE_CHARS;
+              }).length;
+            };
+
             // Total eligible corpus — floor gate. Prevents distilling
             // confident-looking voice models from tiny (e.g. 2-post) samples.
-            const { count: totalCount } = await adminClient
-              .from("linkedin_posts")
-              .select("id", { count: "exact", head: true })
-              .eq("user_id", user.id)
-              .eq("source_type", "aura_generated")
-              .eq("tracking_status", "published")
-              .not("post_text", "is", null);
-            const totalCorpus = typeof totalCount === "number" ? totalCount : 0;
+            const totalCorpus = await countAuthentic();
             if (totalCorpus < MIN_CORPUS) return;
 
             // Count eligible posts newer than the user's most recent
@@ -356,16 +375,9 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
               .limit(1)
               .maybeSingle();
 
-            let q = adminClient
-              .from("linkedin_posts")
-              .select("id", { count: "exact", head: true })
-              .eq("user_id", user.id)
-              .eq("source_type", "aura_generated")
-              .eq("tracking_status", "published")
-              .not("post_text", "is", null);
-            if (lastLog?.created_at) q = q.gt("published_at", lastLog.created_at);
-            const { count } = await q;
-            const newSince = typeof count === "number" ? count : 0;
+            const newSince = lastLog?.created_at
+              ? await countAuthentic(lastLog.created_at)
+              : totalCorpus;
             const daysSinceLastRun = lastLog?.created_at
               ? (Date.now() - Date.parse(lastLog.created_at)) / 86_400_000
               : Number.POSITIVE_INFINITY;
