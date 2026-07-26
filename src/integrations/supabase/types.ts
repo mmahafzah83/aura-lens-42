@@ -3063,6 +3063,30 @@ export type Database = {
         }
         Relationships: []
       }
+      ship_markers: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          shipped_on: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          shipped_on: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          shipped_on?: string
+          title?: string
+        }
+        Relationships: []
+      }
       signal_engagements: {
         Row: {
           created_at: string
@@ -3717,6 +3741,19 @@ export type Database = {
         Args: { p_created_by?: string; p_new_tokens: Json }
         Returns: string
       }
+      admin_cohorts: {
+        Args: never
+        Returns: {
+          captured: number
+          cohort_week: string
+          got_signal: number
+          has_draft: number
+          linkedin_live: number
+          opened_writer: number
+          published: number
+          size: number
+        }[]
+      }
       admin_cron_failures_24h: {
         Args: never
         Returns: {
@@ -3738,6 +3775,20 @@ export type Database = {
         }[]
       }
       admin_run_cron: { Args: { p_jobid: number }; Returns: string }
+      admin_stage_timeline: {
+        Args: { p_days?: number }
+        Returns: {
+          captured: number
+          day: string
+          finished_setup: number
+          got_signal: number
+          has_draft: number
+          linkedin_live: number
+          opened_writer: number
+          published: number
+          signed_up: number
+        }[]
+      }
       brief_history: {
         Args: { days?: number }
         Returns: {
