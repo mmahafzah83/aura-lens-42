@@ -23,7 +23,19 @@ const SHEET_W = 794;
 const SHEET_H = 1123;
 const PAGE_PAD = 56;
 const PAPER_TITLE = "The Aura Paper № 00";
-const TOTAL_PAGES = 4;
+
+// ── Bidi / Arabic (SLICE 4d) ───────────────────────────────────────────
+const AR_RE = /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/;
+const isAr = (v?: string | null) => !!v && AR_RE.test(v.trim().charAt(0));
+/** Per-value RTL + Cairo, mirroring BrandReportSection's detection. */
+function txt(v?: string | null): React.CSSProperties {
+  if (!isAr(v)) return {};
+  return {
+    direction: "rtl",
+    textAlign: "right",
+    fontFamily: "'CairoAR', 'Cairo', 'DM Sans', sans-serif",
+  };
+}
 
 function Sheet({ n, children, bleed }: { n: number; children: React.ReactNode; bleed?: boolean }) {
   return (
@@ -127,7 +139,7 @@ function MetaCell({ label, value, sub }: { label: string; value: string; sub?: s
 }
 
 // ── Sheet 1 — Cover ────────────────────────────────────────────────────
-function CoverSheet({ bp }: { bp: BrandPaper }) {
+function CoverSheet({ bp, total }: { bp: BrandPaper; total: number }) {
   const first = bp.profile.first_name || "";
   const last = bp.profile.last_name || "";
   const fullName = [first, last].filter(Boolean).join(" ").trim();
@@ -148,7 +160,7 @@ function CoverSheet({ bp }: { bp: BrandPaper }) {
         {lede ? (
           <p style={{
             fontFamily: FONT.serif, fontSize: 18, lineHeight: 1.55, color: T.ink2,
-            margin: "22px 0 0", maxWidth: 560,
+            margin: "22px 0 0", maxWidth: 560, ...txt(lede),
           }}>{lede}</p>
         ) : null}
 
@@ -163,6 +175,7 @@ function CoverSheet({ bp }: { bp: BrandPaper }) {
             <span style={{
               fontFamily: FONT.serif, fontStyle: "italic", fontSize: 20,
               color: T.paper, lineHeight: 1.35, flex: 1,
+              ...txt(bp.positioning_statement),
             }}>
               “{bp.positioning_statement}”
             </span>
@@ -202,7 +215,7 @@ function CoverSheet({ bp }: { bp: BrandPaper }) {
           <MetaCell label="Issued" value={todayLabel(bp.generated_at)} sub="Edition 0 · Assessment" />
         </div>
       </div>
-      <PaperFooter n={1} total={TOTAL_PAGES} paperTitle={PAPER_TITLE} />
+      <PaperFooter n={1} total={total} paperTitle={PAPER_TITLE} />
     </Sheet>
   );
 }
@@ -230,13 +243,14 @@ function FindingRow({ f }: { f: Finding }) {
         }}>{f.source}</div>
         <div style={{
           fontFamily: FONT.serif, fontSize: 15, lineHeight: 1.55, color: T.ink,
+          ...txt(f.body),
         }}>{f.body}</div>
       </div>
     </div>
   );
 }
 
-function FindingsSheet({ bp }: { bp: BrandPaper }) {
+function FindingsSheet({ bp, total }: { bp: BrandPaper; total: number }) {
   const raw: (Finding | null)[] = [
     bp.market_read ? {
       code: "F · 1", body: bp.market_read,
@@ -279,7 +293,7 @@ function FindingsSheet({ bp }: { bp: BrandPaper }) {
           {findings.map((f) => <FindingRow key={f.code} f={f} />)}
         </div>
       </div>
-      <PaperFooter n={2} total={TOTAL_PAGES} paperTitle={PAPER_TITLE} />
+      <PaperFooter n={2} total={total} paperTitle={PAPER_TITLE} />
     </Sheet>
   );
 }
@@ -300,10 +314,10 @@ function TopicBlock({ n, title, description }: { n: string; title: string; descr
       <div>
         <div style={{
           fontFamily: FONT.serif, fontSize: 20, color: T.ink,
-          lineHeight: 1.25, marginBottom: 6, letterSpacing: "-0.005em",
+          lineHeight: 1.25, marginBottom: 6, letterSpacing: "-0.005em", ...txt(title),
         }}>{title}</div>
         {description ? (
-          <div style={{ fontFamily: FONT.serif, fontSize: 14, color: T.ink2, lineHeight: 1.55 }}>
+          <div style={{ fontFamily: FONT.serif, fontSize: 14, color: T.ink2, lineHeight: 1.55, ...txt(description) }}>
             {description}
           </div>
         ) : null}
@@ -312,7 +326,7 @@ function TopicBlock({ n, title, description }: { n: string; title: string; descr
   );
 }
 
-function SpaceSheet({ bp }: { bp: BrandPaper }) {
+function SpaceSheet({ bp, total }: { bp: BrandPaper; total: number }) {
   const hasInvest = bp.invest_next.length > 0;
   return (
     <Sheet n={3}>
@@ -327,7 +341,7 @@ function SpaceSheet({ bp }: { bp: BrandPaper }) {
           >
             <p style={{
               fontFamily: FONT.serif, fontSize: 16, lineHeight: 1.6,
-              color: T.ink, margin: 0,
+              color: T.ink, margin: 0, ...txt(bp.uncontested_space),
             }}>{bp.uncontested_space}</p>
           </PaperFigure>
         ) : null}
@@ -383,13 +397,98 @@ function SpaceSheet({ bp }: { bp: BrandPaper }) {
           </div>
         ) : null}
       </div>
-      <PaperFooter n={3} total={TOTAL_PAGES} paperTitle={PAPER_TITLE} />
+      <PaperFooter n={3} total={total} paperTitle={PAPER_TITLE} />
     </Sheet>
   );
 }
 
-// ── Sheet 4 — ClosingPlate ─────────────────────────────────────────────
-function ClosingSheet({ bp }: { bp: BrandPaper }) {
+
+// ── Sheet 4 — Voice, trust, pillars, what to strengthen (SLICE 4d) ──────
+function ProsePair({ label, parts }: { label: string; parts: (string | null)[] }) {
+  const shown = parts.filter((x): x is string => !!x);
+  if (shown.length === 0) return null;
+  return (
+    <div style={{ borderTop: `1px solid ${T.rule}`, padding: "16px 0" }}>
+      <MonoLabel color={T.spot} size={10.5}>{label}</MonoLabel>
+      {shown.map((x, i) => (
+        <p
+          key={i}
+          style={{
+            fontFamily: FONT.serif, fontSize: 15, lineHeight: 1.6, color: T.ink2,
+            margin: i === 0 ? "8px 0 0" : "8px 0 0", ...txt(x),
+          }}
+        >
+          {x}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+function PaperChips({ label, items }: { label: string; items: string[] }) {
+  if (items.length === 0) return null;
+  return (
+    <div style={{ borderTop: `1px solid ${T.rule}`, padding: "16px 0" }}>
+      <MonoLabel color={T.spot} size={10.5}>{label}</MonoLabel>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+        {items.map((t, i) => (
+          <span
+            key={i}
+            style={{
+              fontFamily: FONT.serif, fontSize: 13.5, color: T.ink,
+              padding: "5px 10px", border: `1px solid ${T.rule}`, background: T.paper2,
+              lineHeight: 1.4, ...txt(t),
+            }}
+          >
+            {t}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function voiceSheetHasContent(bp: BrandPaper): boolean {
+  return !!(
+    bp.voice_signature || bp.natural_tone || bp.trust_pattern || bp.authority_style ||
+    bp.zone_of_genius || bp.key_barrier ||
+    bp.content_pillars.length > 0 || bp.growth_areas.length > 0
+  );
+}
+
+function VoiceSheet({ bp, n, total }: { bp: BrandPaper; n: number; total: number }) {
+  return (
+    <Sheet n={n}>
+      <PaperHeader label="Voice & Ground" />
+      <div style={{ marginTop: 34, flex: 1 }}>
+        <MonoLabel color={T.spot} size={11}>Chapter 02</MonoLabel>
+        <h2 style={{
+          fontFamily: FONT.serif, fontSize: 40, fontWeight: 400, lineHeight: 1.1,
+          color: T.ink, margin: "10px 0 6px", letterSpacing: "-0.01em",
+        }}>
+          How you sound, <span style={{ fontStyle: "italic", color: T.spot }}>and stand</span>
+        </h2>
+        <p style={{
+          fontFamily: FONT.serif, fontSize: 15, color: T.ink2, lineHeight: 1.55,
+          margin: "0 0 14px", maxWidth: 560,
+        }}>
+          The voice the market already hears from you, the ground you hold, and
+          the parts worth strengthening next.
+        </p>
+        <ProsePair label="How you sound" parts={[bp.voice_signature, bp.natural_tone]} />
+        <ProsePair label="How you build trust" parts={[bp.trust_pattern, bp.authority_style]} />
+        <ProsePair label="Where you are strongest" parts={[bp.zone_of_genius]} />
+        <PaperChips label="Your content pillars" items={bp.content_pillars} />
+        <PaperChips label="Areas to strengthen" items={bp.growth_areas} />
+        <ProsePair label="What is holding you back" parts={[bp.key_barrier]} />
+      </div>
+      <PaperFooter n={n} total={total} paperTitle={PAPER_TITLE} />
+    </Sheet>
+  );
+}
+
+// ── Final sheet — ClosingPlate ─────────────────────────────────────────────
+function ClosingSheet({ bp, n, total }: { bp: BrandPaper; n: number; total: number }) {
   const archetype = bp.primary_archetype || "Your Position";
   const parts = archetype.trim().split(/\s+/);
   const tail = parts.pop() || "";
@@ -410,7 +509,7 @@ function ClosingSheet({ bp }: { bp: BrandPaper }) {
   } as unknown as ReportData;
 
   return (
-    <Sheet n={4} bleed>
+    <Sheet n={n} bleed>
       <ClosingPlate
         data={closingData}
         headline={
@@ -427,13 +526,23 @@ function ClosingSheet({ bp }: { bp: BrandPaper }) {
 }
 
 // ── Root ───────────────────────────────────────────────────────────────
-export default function BrandPaperDocument({ paper }: { paper: BrandPaper }) {
+export default function BrandPaperDocument({
+  paper,
+  showClosing = true,
+}: {
+  paper: BrandPaper;
+  /** false when this paper is bound into the combined report (SLICE 4d). */
+  showClosing?: boolean;
+}) {
+  const hasVoice = voiceSheetHasContent(paper);
+  const total = 3 + (hasVoice ? 1 : 0) + (showClosing ? 1 : 0);
   return (
     <div style={{ background: T.paper2, padding: "24px 0" }}>
-      <CoverSheet bp={paper} />
-      <FindingsSheet bp={paper} />
-      <SpaceSheet bp={paper} />
-      <ClosingSheet bp={paper} />
+      <CoverSheet bp={paper} total={total} />
+      <FindingsSheet bp={paper} total={total} />
+      <SpaceSheet bp={paper} total={total} />
+      {hasVoice ? <VoiceSheet bp={paper} n={4} total={total} /> : null}
+      {showClosing ? <ClosingSheet bp={paper} n={total} total={total} /> : null}
     </div>
   );
 }
