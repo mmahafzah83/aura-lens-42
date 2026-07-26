@@ -814,6 +814,7 @@ export type Database = {
           shared_learning_consent: boolean
           signature_presets: Json
           skill_ratings: Json
+          target_register: string | null
           theme_preference: string | null
           user_id: string
           years_experience: string | null
@@ -860,6 +861,7 @@ export type Database = {
           shared_learning_consent?: boolean
           signature_presets?: Json
           skill_ratings?: Json
+          target_register?: string | null
           theme_preference?: string | null
           user_id: string
           years_experience?: string | null
@@ -906,6 +908,7 @@ export type Database = {
           shared_learning_consent?: boolean
           signature_presets?: Json
           skill_ratings?: Json
+          target_register?: string | null
           theme_preference?: string | null
           user_id?: string
           years_experience?: string | null
@@ -2910,6 +2913,30 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      register_options: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          language: string | null
+          sort_order: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          language?: string | null
+          sort_order?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          language?: string | null
+          sort_order?: number | null
         }
         Relationships: []
       }
