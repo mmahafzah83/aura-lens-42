@@ -420,6 +420,8 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
   const [profileName, setProfileName] = useState<string>("");
   const [profileRole, setProfileRole] = useState<string>("");
   const [profileLoaded, setProfileLoaded] = useState<boolean>(false);
+  // True only when a distilled voice profile exists for the active language.
+  const [hasVoiceProfile, setHasVoiceProfile] = useState<boolean>(true);
   // Race-fix: hold the most recently requested signal_id so a generate()
   // fired immediately after signalPrefill arrives can't outrun React state.
   const pendingSignalIdRef = useRef<string | null>(null);
@@ -532,6 +534,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
           setProfileName(pRes.data.first_name || "");
           setProfileRole([pRes.data.level, pRes.data.firm].filter(Boolean).join(" · "));
         }
+        setHasVoiceProfile(!!vRes.data);
         if (vRes.data) {
           const words: string[] = [];
           const vp = vRes.data.vocabulary_preferences;
@@ -1758,6 +1761,11 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
             </div>
 
             {/* Generate */}
+            {profileLoaded && !hasVoiceProfile && (
+              <p style={{ fontSize: 12, color: "var(--ink-4)", marginBottom: 8 }}>
+                Aura hasn't read your real writing yet — this draft uses house structure, not your voice.
+              </p>
+            )}
             <button
               id="aura-generate-btn"
               data-testid="pub-generate-btn"
