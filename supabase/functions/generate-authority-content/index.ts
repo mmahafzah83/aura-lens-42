@@ -356,10 +356,14 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
       // Language + voice handling
       let voiceSection: string;
       if (effectiveLanguage === "ar") {
+        const arabicBase = ARABIC_VOICE_PROMPT.replace(
+          /\{\{register\}\}/g,
+          (profile?.target_register || "").trim() || "عربية احترافية معاصرة",
+        );
         // Arabic-native prompt replaces voice section
         voiceSection = voiceProfile
-          ? ARABIC_VOICE_PROMPT + "\n\n" + buildArabicVoiceContext(voiceProfile)
-          : ARABIC_VOICE_PROMPT;
+          ? arabicBase + "\n\n" + buildArabicVoiceContext(voiceProfile)
+          : arabicBase;
         // If a specific framework is selected, use it; otherwise Arabic defaults to PAS/BAB (already in ARABIC_VOICE_PROMPT)
       } else {
         voiceSection = buildVoiceContext(voiceProfile);
