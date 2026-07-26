@@ -473,6 +473,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
     weaknesses?: string[];
     skipped?: boolean;
   } | null>(null);
+  const [gateBlocked, setGateBlocked] = useState(false);
   const [provenanceOpen, setProvenanceOpen] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
     return window.matchMedia?.("(min-width: 768px)").matches ?? true;
@@ -796,6 +797,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
     } else {
       setQualityGate(null);
     }
+    setGateBlocked(json?.blocked === true);
     return accumulated;
   };
 
@@ -828,6 +830,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
     setShortVersion("");
     setShowingShort(false);
     setQualityGate(null);
+    setGateBlocked(false);
     setGenerationTimestamp(new Date().toISOString());
     const slowTimer = setTimeout(() => setShowSlowHint(true), 5000);
     const controller = new AbortController();
@@ -1824,7 +1827,8 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                       data-testid="pub-publish-linkedin-btn"
                       size="sm"
                       onClick={() => { if (publishedFromCreate || publishingLive) return; setConfirmLiveOpen((v) => !v); }}
-                      disabled={publishingLive || publishedFromCreate || !output.trim()}
+                      disabled={publishingLive || publishedFromCreate || !output.trim() || gateBlocked}
+                      title={gateBlocked ? "Held by the quality gate — regenerate before publishing." : undefined}
                       className="h-7 gap-1.5 text-xs"
                     >
                       {publishingLive ? (
@@ -2043,6 +2047,32 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                   </div>
                 )}
                 <div className="relative">
+                  {gateBlocked && output.trim() && !isGeneratingAny && (
+                    <div className="mb-3 rounded-xl border border-[color:var(--warning)]/40 bg-[color-mix(in_srgb,var(--warning)_8%,transparent)] p-4 space-y-2">
+                      <p className="text-xs uppercase tracking-[0.14em] font-semibold text-[color:var(--warning)]">
+                        Held by the quality gate
+                      </p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        This draft did not pass review, so publishing is paused. The full draft is below — read it, then regenerate.
+                      </p>
+                      {(qualityGate?.weaknesses || []).filter(Boolean).length > 0 && (
+                        <ul className="list-disc pl-4 space-y-1 text-xs text-foreground/80">
+                          {(qualityGate!.weaknesses || []).filter(Boolean).map((w, i) => (
+                            <li key={i}>{w}</li>
+                          ))}
+                        </ul>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={isGeneratingAny || !!actionLoading}
+                        className="h-7 text-xs border-[color:var(--warning)]/40 text-[color:var(--warning)]"
+                        onClick={() => generate()}
+                      >
+                        Regenerate
+                      </Button>
+                    </div>
+                  )}
                   {isEditingBody && output.trim() ? (
                     <textarea
                       value={output}

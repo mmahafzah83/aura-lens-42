@@ -635,6 +635,7 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
       // Quality gate — challenge the output before returning
       // Quality gate intentionally uses a different model (GPT-4o) for independent evaluation
       let gateResult: any = null;
+      let gateSkipReason: string | null = null;
       try {
         const gatePromise = supabase.functions.invoke("evaluate-content-quality", {
           body: {
@@ -649,9 +650,9 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         });
         const timeout = new Promise((resolve) => {
           setTimeout(() => {
-            console.warn("[generate-authority-content] quality gate timed out after 15s — skipped");
+            console.warn("[generate-authority-content] quality gate timed out after 40s — skipped");
             resolve({ data: null, error: "timeout" });
-          }, 15000);
+          }, 40000);
         });
         const gateRes: any = await Promise.race([gatePromise, timeout]);
         if (gateRes?.data && !gateRes?.error) {
@@ -660,30 +661,61 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
             const firstLine = content.split("\n")[0];
             if (firstLine) content = content.replace(firstLine, gateResult.improved_hook);
           }
+        } else {
+          gateSkipReason = gateRes?.error === "timeout" ? "gate_timeout" : "gate_invoke_error";
         }
       } catch (e) {
         console.warn("[generate-authority-content] quality gate skipped:", (e as Error).message);
+        gateSkipReason = "gate_invoke_exception";
       }
+
+      const gatePayload = gateResult ? {
+        overall_score: (() => {
+          const o = Number(gateResult.overall ?? 0);
+          // Model returns a weighted average of 0–10 sub-scores; rescale to 0–100.
+          const scaled = o <= 10 ? Math.round(o * 10) : Math.round(o);
+          return Math.min(100, Math.max(0, scaled));
+        })(),
+        pass: (gateResult.pass === true) || (gateResult.pass === undefined && (() => { const o=Number(gateResult.overall??0); const scaled=o<=10?Math.round(o*10):Math.round(o); return scaled>=70; })()),
+        assertions: gateResult.assertions || null,
+        grounded_number: gateResult.assertions?.grounded_number ?? null,
+        scores: gateResult.scores,
+        verdict: gateResult.verdict,
+        weaknesses: Array.isArray(gateResult.weaknesses) ? gateResult.weaknesses : [],
+        skipped: gateResult.skipped || false,
+      } : null;
+
+      // Observability: record every gate outcome, always, without blocking the response.
+      try {
+        const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+        const p = admin.from("content_gate_results").insert({
+          user_id: effectiveUserId ?? null,
+          post_id: null,
+          function_name: "generate-authority-content",
+          language: effectiveLanguage,
+          overall_score: gatePayload?.overall_score ?? 0,
+          pass: gatePayload ? gatePayload.pass : false,
+          assertions: gateResult?.assertions ?? null,
+          weaknesses: Array.isArray(gateResult?.weaknesses) ? gateResult.weaknesses : [],
+          skipped: gateResult ? (gateResult.skipped === true) : true,
+          skip_reason: gateResult?.skip_reason ?? gateSkipReason,
+          judge_model: gateResult?.judge_model ?? null,
+        }).then(() => {}, (err: any) => { console.error("[generate-authority-content] gate log failed:", err?.message); });
+        // @ts-ignore EdgeRuntime is available in Supabase runtime
+        if (typeof EdgeRuntime !== "undefined" && (EdgeRuntime as any).waitUntil) {
+          // @ts-ignore
+          EdgeRuntime.waitUntil(p);
+        }
+      } catch (_) { /* never block */ }
+
+      const gateBlocked = gatePayload ? gatePayload.pass === false : true;
 
       return new Response(JSON.stringify({
         content,
         success: true,
         framework_used: (framework && FRAMEWORK_PROMPTS[framework]) ? framework : null,
-        quality_gate: gateResult ? {
-          overall_score: (() => {
-            const o = Number(gateResult.overall ?? 0);
-            // Model returns a weighted average of 0–10 sub-scores; rescale to 0–100.
-            const scaled = o <= 10 ? Math.round(o * 10) : Math.round(o);
-            return Math.min(100, Math.max(0, scaled));
-          })(),
-          pass: (gateResult.pass === true) || (gateResult.pass === undefined && (() => { const o=Number(gateResult.overall??0); const scaled=o<=10?Math.round(o*10):Math.round(o); return scaled>=70; })()),
-          assertions: gateResult.assertions || null,
-          grounded_number: gateResult.assertions?.grounded_number ?? null,
-          scores: gateResult.scores,
-          verdict: gateResult.verdict,
-          weaknesses: Array.isArray(gateResult.weaknesses) ? gateResult.weaknesses : [],
-          skipped: gateResult.skipped || false,
-        } : null,
+        quality_gate: gatePayload,
+        blocked: gateBlocked,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
