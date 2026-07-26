@@ -40,7 +40,7 @@ export const NUMBER_INTEGRITY = `NUMBER INTEGRITY (absolute — credibility is t
 
 // 3. REGISTER
 
-export const REGISTER_AR = `اللغة: عربية احترافية معاصرة (خليجية) — واضحة ومباشرة، كأنك تحدث مديرًا لا تكتب مقالًا. ليست عامية، وليست فصحى بيروقراطية.
+export const REGISTER_AR = `اللغة: عربية احترافية معاصرة — واضحة ومباشرة، كأنك تحدث مديرًا لا تكتب مقالًا. ليست عامية، وليست فصحى بيروقراطية.
 
 - المصطلحات التقنية تبقى بالإنجليزية: AI, KPI, dashboard, API, roadmap, governance.
 
