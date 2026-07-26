@@ -166,12 +166,21 @@ Deno.serve(async (req) => {
     const bearer = (req.headers.get("Authorization") ?? "").replace("Bearer ", "");
     const apiKeyHeader = req.headers.get("apikey") || "";
     const cronHeader = req.headers.get("x-cron-secret") || "";
-    const authorised =
+    let authorised =
       bearer === serviceKey || apiKeyHeader === serviceKey || (!!CRON_SECRET && cronHeader === CRON_SECRET);
-    if (!authorised) return json({ error: "Unauthorized" }, 401);
 
     const body = await req.json().catch(() => ({}));
     const dryRun = body?.dry_run === true;
+
+    // Admin cockpit: a signed-in admin may compute a dry run (never a send).
+    if (!authorised && dryRun && bearer) {
+      const asUser = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY") ?? "", {
+        global: { headers: { Authorization: `Bearer ${bearer}` } },
+      });
+      const { data: isAdmin } = await asUser.rpc("is_current_user_admin");
+      if (isAdmin === true) authorised = true;
+    }
+    if (!authorised) return json({ error: "Unauthorized" }, 401);
 
     const { headCount, distinctUsers } = makeCounters(admin);
     const audit = new Audit();
