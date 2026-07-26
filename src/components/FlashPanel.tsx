@@ -311,6 +311,7 @@ export default function FlashPanel() {
       const { error } = await supabase.from("linkedin_posts").insert({
         user_id: session.user.id,
         post_text: displayText(r.text),
+        original_generated_text: displayText(r.text),
         content_type: "post",
         format_type: "post",
         source_type: "aura_generated",
@@ -373,6 +374,7 @@ export default function FlashPanel() {
         .insert({
           user_id: session.user.id,
           post_text: text,
+          original_generated_text: r.text,
           content_type: "post",
           format_type: "post",
           source_type: "aura_generated",
