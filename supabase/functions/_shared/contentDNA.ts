@@ -18,7 +18,7 @@ export const ENGINE = `CONTENT ENGINE — every piece follows this arc:
 
 3. VILLAIN — name the misconception the reader secretly believes ("everyone thinks X… it's not X").
 
-4. PAYOFF + NUMBER — release the tension with the core insight, anchored by ONE number (see NUMBER INTEGRITY).
+4. PAYOFF — release the tension with the core insight. If, and only if, the provided evidence contains a real number, anchor the payoff on that number (see NUMBER INTEGRITY). If the evidence contains no number, anchor the payoff on a concrete specific instead — a named mechanism, a sequence, or a consequence. A post with no number is a correct and complete post; never manufacture one to satisfy this step.
 
 5. REFRAME — zoom out; connect the small thing to something larger.
 
