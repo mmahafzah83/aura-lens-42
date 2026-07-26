@@ -35,13 +35,15 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    const JUDGE_MODEL = "claude-sonnet-4-5-20250929";
+    if (!ANTHROPIC_API_KEY) {
       return new Response(JSON.stringify({
-        pass: true,
+        pass: false,
         score: 0,
         skipped: true,
-        reason: "Quality gate not configured",
+        skip_reason: "missing_api_key",
+        judge_model: JUDGE_MODEL,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -72,38 +74,57 @@ Return JSON:
   "verdict": "One sentence: would you advise this executive to publish this as-is?"
 }`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: JUDGE_MODEL,
+        max_tokens: 4096,
+        system: `${systemPrompt}\n\nReturn ONLY the JSON object. No prose, no markdown fences.`,
         messages: [
-          { role: "system", content: systemPrompt },
           { role: "user", content: `Post to evaluate:\n\n${post_text}\n\n${signal_title ? `Signal: "${signal_title}"` : ""}\n${voice_tone ? `Expected voice tone: ${voice_tone}` : ""}\n${user_sector ? `Sector: ${user_sector}` : ""}` },
         ],
-        response_format: { type: "json_object" },
       }),
     });
 
     if (!response.ok) {
-      console.error("[evaluate-content-quality] AI gateway error:", response.status);
-      return new Response(JSON.stringify({ pass: true, score: 0, skipped: true }), {
+      console.error("[evaluate-content-quality] judge API error:", response.status);
+      return new Response(JSON.stringify({
+        pass: false,
+        score: 0,
+        skipped: true,
+        skip_reason: "judge_api_error",
+        judge_model: JUDGE_MODEL,
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const data = await response.json();
-    const result = JSON.parse(data.choices?.[0]?.message?.content || "{}");
+    const rawText = (data.content || []).map((c: any) => (typeof c?.text === "string" ? c.text : "")).join("").trim();
+    const cleaned = rawText.replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+    const firstBrace = cleaned.indexOf("{");
+    const lastBrace = cleaned.lastIndexOf("}");
+    const jsonSlice = firstBrace >= 0 && lastBrace > firstBrace ? cleaned.slice(firstBrace, lastBrace + 1) : cleaned;
+    const result = JSON.parse(jsonSlice || "{}");
+    result.judge_model = JUDGE_MODEL;
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("[evaluate-content-quality] error:", e);
-    return new Response(JSON.stringify({ pass: true, score: 0, skipped: true }), {
+    return new Response(JSON.stringify({
+      pass: false,
+      score: 0,
+      skipped: true,
+      skip_reason: "gate_exception",
+      judge_model: "claude-sonnet-4-5-20250929",
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
