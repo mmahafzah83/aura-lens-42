@@ -546,7 +546,17 @@ export default function AdminPeople() {
             gap: 12,
             marginBottom: 24,
           }}>
-            <div style={card}><div style={kpiLabel}>Total</div><div style={kpiValue}>{totals.total}</div></div>
+            <div style={card}>
+              <div style={kpiLabel}>Signed up</div>
+              <div style={kpiValue}>{metrics ? signedUp(metrics) ?? "?" : "—"}</div>
+              <div style={{ fontSize: 10, color: "var(--glass-2)", marginTop: 4 }}>
+                {metrics ? freshnessLine(metrics) : "brief unavailable"}
+              </div>
+            </div>
+            <div style={card}>
+              <div style={kpiLabel}>Published</div>
+              <div style={kpiValue}>{metrics ? published(metrics) ?? "?" : "—"}</div>
+            </div>
             <div style={card}><div style={kpiLabel}>Activated</div><div style={{ ...kpiValue, color: STATUS_COLOR.activated }}>{totals.activated}</div></div>
             <div style={card}><div style={kpiLabel}>Stalled</div><div style={{ ...kpiValue, color: STATUS_COLOR.stalled }}>{totals.stalled}</div></div>
             <div style={card}><div style={kpiLabel}>At-risk</div><div style={{ ...kpiValue, color: STATUS_COLOR["at-risk"] }}>{totals.atRisk}</div></div>
