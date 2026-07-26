@@ -1,4 +1,4 @@
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
 /** System-A cockpit tokens — bone paper, ink, four signal colours. */
@@ -232,6 +232,197 @@ export function Unknown({ reason }: { reason: string }) {
     <span style={{ fontFamily: MONO, color: C.muted }} title={reason}>
       ? <span style={{ fontSize: 10 }}>({reason})</span>
     </span>
+  );
+}
+
+/** Segmented control — view switcher. */
+export function Seg<T extends string>({
+  value,
+  options,
+  onChange,
+}: {
+  value: T;
+  options: { value: T; label: string }[];
+  onChange: (v: T) => void;
+}) {
+  return (
+    <div
+      style={{
+        display: "inline-flex",
+        border: `1px solid ${C.rule}`,
+        borderRadius: 3,
+        overflow: "hidden",
+        background: C.card,
+        flexWrap: "wrap",
+      }}
+    >
+      {options.map((o) => {
+        const on = o.value === value;
+        return (
+          <button
+            key={o.value}
+            type="button"
+            onClick={() => onChange(o.value)}
+            style={{
+              fontFamily: MONO,
+              fontSize: 11,
+              textTransform: "uppercase",
+              letterSpacing: ".12em",
+              padding: "9px 16px",
+              border: "none",
+              background: on ? C.ink : "transparent",
+              color: on ? C.paper : C.muted,
+              cursor: "pointer",
+            }}
+          >
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Small pill — filter state, liveliness, warnings. */
+export function Chip({
+  tone = C.muted,
+  children,
+  title,
+}: {
+  tone?: string;
+  children: ReactNode;
+  title?: string;
+}) {
+  return (
+    <span
+      title={title}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        fontFamily: MONO,
+        fontSize: 10,
+        textTransform: "uppercase",
+        letterSpacing: ".12em",
+        color: tone,
+        border: `1px solid ${tone}`,
+        borderRadius: 999,
+        padding: "4px 10px",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+/** A collapsible zone: key finding line + status colour, detail opt-in. */
+export function ZoneCard({
+  n,
+  title,
+  tone = C.muted,
+  keyLine,
+  open,
+  onToggle,
+  quiet,
+  children,
+}: {
+  n: number;
+  title: string;
+  tone?: string;
+  keyLine: ReactNode;
+  open: boolean;
+  onToggle: () => void;
+  /** Nothing to say — render one grey line and no more. */
+  quiet?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <section
+      id={`zone-${n}`}
+      style={{
+        background: C.card,
+        border: `1px solid ${C.rule}`,
+        borderLeft: `3px solid ${tone}`,
+        borderRadius: 4,
+        padding: quiet ? "14px 18px" : "20px 18px",
+        marginBottom: 14,
+      }}
+    >
+      <button
+        type="button"
+        onClick={onToggle}
+        style={{
+          all: "unset",
+          cursor: "pointer",
+          display: "flex",
+          gap: 12,
+          alignItems: "baseline",
+          width: "100%",
+          boxSizing: "border-box",
+        }}
+      >
+        <span style={{ fontFamily: MONO, fontSize: 11, color: C.muted, letterSpacing: ".16em" }}>
+          {String(n).padStart(2, "0")}
+        </span>
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span
+            style={{
+              display: "block",
+              fontFamily: MONO,
+              fontSize: 10,
+              textTransform: "uppercase",
+              letterSpacing: ".16em",
+              color: C.muted,
+            }}
+          >
+            {title}
+          </span>
+          <span
+            style={{
+              display: "block",
+              fontFamily: SERIF,
+              fontSize: quiet ? 16 : 20,
+              lineHeight: 1.35,
+              color: quiet ? C.muted : C.ink,
+              marginTop: 4,
+            }}
+          >
+            {keyLine}
+          </span>
+        </span>
+        <span style={{ fontFamily: MONO, fontSize: 10, color: C.muted, letterSpacing: ".1em" }}>
+          {open ? "HIDE" : "OPEN"}
+        </span>
+      </button>
+      {open && <div style={{ marginTop: 20 }}>{children}</div>}
+    </section>
+  );
+}
+
+/** Table that shows at most `limit` rows until asked for all. */
+export function CappedTable({
+  head,
+  rows,
+  limit = 5,
+}: {
+  head: string[];
+  rows: ReactNode[][];
+  limit?: number;
+}) {
+  const [all, setAll] = useState(false);
+  const shown = all ? rows : rows.slice(0, limit);
+  return (
+    <>
+      <Table head={head} rows={shown} />
+      {rows.length > limit && (
+        <div style={{ marginTop: 10 }}>
+          <Btn tone="quiet" onClick={() => setAll((v) => !v)}>
+            {all ? `Show first ${limit}` : `Show all ${rows.length}`}
+          </Btn>
+        </div>
+      )}
+    </>
   );
 }
 

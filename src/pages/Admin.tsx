@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import AdminShell from "@/components/admin/AdminShell";
 import HealthFindingsPanel from "@/components/admin/HealthFindingsPanel";
@@ -7,17 +7,34 @@ import SendTestEmailPanel from "@/components/admin/SendTestEmailPanel";
 import RegenerateReportPanel from "@/components/admin/RegenerateReportPanel";
 import ReportHealthPanel from "@/components/admin/ReportHealthPanel";
 import { downloadBlob } from "@/lib/download";
-import { Bar, Btn, C, Finding, Label, Modal, MONO, SERIF, Stat, Table, Zone, Unknown } from "@/components/admin/cockpit/ui";
+import {
+  Bar,
+  Btn,
+  C,
+  CappedTable,
+  Chip,
+  Finding,
+  Label,
+  Modal,
+  MONO,
+  SERIF,
+  Seg,
+  Stat,
+  Table,
+  Unknown,
+  Zone,
+  ZoneCard,
+} from "@/components/admin/cockpit/ui";
 import { Loader2 } from "lucide-react";
 
 /**
  * /admin — the founder cockpit.
  *
- * ONE BRAIN, TWO RENDERS. This page renders the SAME stored computation the
+ * ONE BRAIN, THREE RENDERS. This page renders the SAME stored computation the
  * daily email renders: today's row in `daily_brief_snapshots`, written by the
  * `founder-daily-brief` edge function. The page never recomputes the headline
- * picture. If today's row does not exist it asks the function for a dry run
- * (which computes and stores, but never sends an email).
+ * picture. Views and filters change what is DISPLAYED — never how a number is
+ * computed, and never the audit.
  */
 
 const DRILLDOWNS = [
@@ -35,6 +52,8 @@ const DRILLDOWNS = [
 ];
 
 type Snapshot = { payload: any; audit: any; brief_date: string; source: "stored" | "live" };
+type ViewMode = "ceo" | "working" | "auditor";
+type Who = "everybody" | "active" | "drifting" | "gone" | "never";
 
 const N = (v: unknown): number | null =>
   v === null || v === undefined || Number.isNaN(Number(v)) ? null : Number(v);
@@ -50,6 +69,35 @@ const FUNNEL_STAGES: { key: string; label: string; stage?: string; from: string 
   { key: "has_draft", label: "Holds a draft", stage: "has_draft", from: "content_items + aura-written linkedin_posts" },
   { key: "published", label: "Published", stage: "published", from: "linkedin_posts.tracking_status = published" },
 ];
+
+const RANGES: { value: string; label: string }[] = [
+  { value: "7", label: "7d" },
+  { value: "14", label: "14d" },
+  { value: "30", label: "30d" },
+  { value: "90", label: "90d" },
+  { value: "all", label: "All" },
+];
+
+const WHO_OPTIONS: { value: Who; label: string }[] = [
+  { value: "everybody", label: "Everybody" },
+  { value: "active", label: "Active" },
+  { value: "drifting", label: "Drifting (7–14 days quiet)" },
+  { value: "gone", label: "Gone (14+ days quiet)" },
+  { value: "never", label: "Never started" },
+];
+
+const VIEW_KEY = "aura.admin.view";
+const ZONES_KEY = "aura.admin.zones";
+
+/** Severity order — anything red floats to the top, always. */
+const RANK: Record<string, number> = { [C.ox]: 0, [C.damber]: 1, [C.amber]: 2, [C.teal]: 3, [C.muted]: 4 };
+
+function daysAgo(value: unknown): number | null {
+  if (!value) return null;
+  const t = new Date(String(value)).getTime();
+  if (Number.isNaN(t)) return null;
+  return Math.floor((Date.now() - t) / 86400000);
+}
 
 function nextMove(p: any): string {
   if (!p?.stages?.finished_setup) return "Has not finished setup — walk them through it personally.";
@@ -74,20 +122,67 @@ function nudgeMessage(p: any): string {
 }
 
 export default function Admin() {
+  const [params, setParams] = useSearchParams();
+
   const [snap, setSnap] = useState<Snapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const [showFounder, setShowFounder] = useState(false);
-  const [showTest, setShowTest] = useState(false);
   const [stageOpen, setStageOpen] = useState<string | null>(null);
   const [sortSilent, setSortSilent] = useState(true);
   const [message, setMessage] = useState<{ title: string; body: string } | null>(null);
   const [verify, setVerify] = useState<any | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [actionNote, setActionNote] = useState<string | null>(null);
+  const [, setTick] = useState(0);
 
+  /* ---------- view + filters: every one of them lives in the URL ---------- */
+  const storedView = (typeof localStorage !== "undefined" && localStorage.getItem(VIEW_KEY)) as ViewMode | null;
+  const view: ViewMode = (params.get("view") as ViewMode) || storedView || "ceo";
+  const range = params.get("range") ?? "14";
+  const who = (params.get("who") as Who) ?? "everybody";
+  const showFounder = params.get("founder") === "1";
+  const showTest = params.get("test") === "1";
+
+  const setParam = useCallback(
+    (key: string, value: string | null, defaultValue: string) => {
+      const next = new URLSearchParams(params);
+      if (value === null || value === defaultValue) next.delete(key);
+      else next.set(key, value);
+      setParams(next, { replace: false });
+    },
+    [params, setParams],
+  );
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(VIEW_KEY, view);
+    } catch {
+      /* private mode — the URL still carries the view */
+    }
+  }, [view]);
+
+  /* ---------- remembered expanded zones ---------- */
+  const [openZones, setOpenZones] = useState<Record<string, boolean>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(ZONES_KEY) ?? "{}");
+    } catch {
+      return {};
+    }
+  });
+  const toggleZone = (k: string) =>
+    setOpenZones((prev) => {
+      const next = { ...prev, [k]: !prev[k] };
+      try {
+        localStorage.setItem(ZONES_KEY, JSON.stringify(next));
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+
+  /* ---------- data: stored first, live dry run as fallback ---------- */
   const loadStored = useCallback(async () => {
     const today = new Date().toISOString().slice(0, 10);
     const { data, error } = await supabase
@@ -134,6 +229,12 @@ export default function Admin() {
     };
   }, [loadStored, computeLive]);
 
+  /** Age the liveliness chip every 60 seconds without refetching anything. */
+  useEffect(() => {
+    const id = window.setInterval(() => setTick((t) => t + 1), 60000);
+    return () => window.clearInterval(id);
+  }, []);
+
   const refresh = async () => {
     try {
       setRefreshing(true);
@@ -176,16 +277,79 @@ export default function Admin() {
     [pairs],
   );
 
-  const people: any[] = useMemo(() => {
+  /* ---------- liveliness ---------- */
+  const countedAt = p?.counted_at_utc ? new Date(String(p.counted_at_utc)) : null;
+  const ageMinutes =
+    countedAt && !Number.isNaN(countedAt.getTime())
+      ? Math.max(0, Math.floor((Date.now() - countedAt.getTime()) / 60000))
+      : null;
+  const liveliness = (() => {
+    if (ageMinutes === null) return { tone: C.muted, text: "AGE UNKNOWN", note: "the count carries no timestamp" };
+    if (ageMinutes < 15) return { tone: C.teal, text: "LIVE", note: `counted ${ageMinutes} min ago` };
+    if (ageMinutes < 18 * 60)
+      return {
+        tone: C.muted,
+        text: "STORED",
+        note: `counted at ${countedAt!.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })} today`,
+      };
+    return {
+      tone: C.amber,
+      text: "STALE",
+      note: `counted ${Math.floor(ageMinutes / 60)} hours ago — press Refresh`,
+    };
+  })();
+
+  /* ---------- filters (display only) ---------- */
+  const rangeDays = range === "all" ? null : Number(range);
+  const inRange = useCallback(
+    (days: number | null | undefined) => {
+      if (rangeDays === null) return true;
+      if (days === null || days === undefined) return false;
+      return Number(days) <= rangeDays;
+    },
+    [rangeDays],
+  );
+
+  const filtersDirty = range !== "14" || who !== "everybody" || showFounder || showTest;
+
+  const allPeople: any[] = useMemo(() => {
     const rows = (p?.people ?? []) as any[];
     const sorted = [...rows];
-    if (sortSilent) {
-      sorted.sort((a, b) => (Number(b.days_since_capture ?? 9999) - Number(a.days_since_capture ?? 9999)));
-    } else {
-      sorted.sort((a, b) => String(a.first_name).localeCompare(String(b.first_name)));
-    }
+    if (sortSilent) sorted.sort((a, b) => Number(b.days_since_capture ?? 9999) - Number(a.days_since_capture ?? 9999));
+    else sorted.sort((a, b) => String(a.first_name).localeCompare(String(b.first_name)));
     return sorted;
   }, [p, sortSilent]);
+
+  const people: any[] = useMemo(() => {
+    if (who === "everybody") return allPeople;
+    return allPeople.filter((r) => {
+      const d = r.days_since_capture;
+      const never = d === null || d === undefined || Number(r.captures ?? 0) === 0;
+      if (who === "never") return never;
+      if (never) return false;
+      const n = Number(d);
+      if (who === "active") return n < 7;
+      if (who === "drifting") return n >= 7 && n < 14;
+      return n >= 14;
+    });
+  }, [allPeople, who]);
+
+  const draftList: any[] = useMemo(
+    () => ((p?.drafts?.list ?? []) as any[]).filter((d) => inRange(N(d.age_days))),
+    [p, inRange],
+  );
+  const failed: any[] = useMemo(
+    () => ((p?.failed_publishes ?? []) as any[]).filter((f) => inRange(daysAgo(f.date))),
+    [p, inRange],
+  );
+  const feedback: any[] = useMemo(
+    () => ((p?.voc?.feedback ?? []) as any[]).filter((f) => inRange(daysAgo(f.date))),
+    [p, inRange],
+  );
+  const milestones: any[] = useMemo(
+    () => ((p?.voc?.milestones ?? []) as any[]).filter((m) => inRange(daysAgo(m.when))),
+    [p, inRange],
+  );
 
   const exportAudit = () => {
     const doc = {
@@ -193,7 +357,7 @@ export default function Admin() {
       brief_date: snap?.brief_date,
       source: snap?.source,
       excluded: p?.excluded,
-      rule: "Every headline number is computed twice by two independent routes inside founder-daily-brief. This page renders that stored computation and does not recompute it.",
+      rule: "Every headline number is computed twice by two independent routes inside founder-daily-brief. This page renders that stored computation and does not recompute it. View mode and filters affect display only.",
       numbers: pairs.map((x) => ({
         key: x.key,
         label: x.label,
@@ -224,107 +388,174 @@ export default function Admin() {
     <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 8, background: c, marginRight: 8 }} />
   );
 
-  const body = (() => {
-    if (loading) {
-      return (
-        <div style={{ display: "flex", alignItems: "center", gap: 10, color: C.muted, fontFamily: MONO, fontSize: 13 }}>
-          <Loader2 className="w-4 h-4 animate-spin" /> Counting…
-        </div>
-      );
-    }
-    if (err || !p) {
-      return (
-        <div style={{ fontFamily: SERIF, fontSize: 17, color: C.ox }}>
-          The cockpit could not read today&apos;s brief: {err ?? "no data"}.{" "}
-          <Btn onClick={refresh}>Try again</Btn>
-        </div>
-      );
-    }
+  /* ---------- shared pieces ---------- */
+  const invited = headline("invited") ?? 0;
 
-    const needs: any[] = p.needs_you ?? [];
-    const decide: any[] = p.decide ?? [];
-    const watch: any[] = p.watch ?? [];
+  const funnelBars = (clickable: boolean) =>
+    FUNNEL_STAGES.map((s, i) => {
+      const v = headline(s.key, N(p?.funnel?.[s.key]));
+      const prev = i === 0 ? null : headline(FUNNEL_STAGES[i - 1].key, N(p?.funnel?.[FUNNEL_STAGES[i - 1].key]));
+      const lost = prev !== null && v !== null ? prev - v : null;
+      return (
+        <Bar
+          key={s.key}
+          label={s.label}
+          value={v}
+          total={invited}
+          colour={s.key === "published" ? C.teal : lost && lost > 0 ? C.amber : C.damber}
+          note={lost === null ? s.from : lost > 0 ? `${lost} lost here${clickable ? " — click to see who" : ""}` : "nobody lost at this step"}
+          onClick={clickable && s.stage ? () => setStageOpen(s.stage!) : undefined}
+        />
+      );
+    });
+
+  const weekLine = (() => {
+    const wow = p?.week_over_week ?? p?.funnel_last_week ?? null;
+    if (!wow)
+      return (
+        <>
+          No week-earlier count is stored yet, so the change since last week is{" "}
+          <Unknown reason="no prior snapshot to compare against" />. From tomorrow this line will read plainly.
+        </>
+      );
+    return <>{String(wow.summary ?? "Change since last week is stored but carries no written summary.")}</>;
+  })();
+
+  const needs: any[] = p?.needs_you ?? [];
+  const decide: any[] = p?.decide ?? [];
+  const watch: any[] = p?.watch ?? [];
+
+  const needsFindings = needs.map((item: any) => (
+    <Finding
+      key={item.fingerprint}
+      colour={C.ox}
+      finding={item.what}
+      example={item.impact}
+      recommendation={item.action}
+      action={
+        item.fingerprint?.startsWith("failed_publish") ? (
+          <>
+            <Btn tone="ox" onClick={() => runWorker("reap-stuck-publishes", "the publish retry worker")}>
+              Run retry worker
+            </Btn>
+            <Link to="/admin/people" style={{ textDecoration: "none" }}>
+              <Btn tone="quiet">Open people</Btn>
+            </Link>
+          </>
+        ) : item.fingerprint?.startsWith("job_failed") ? (
+          <Link to="/admin/crons" style={{ textDecoration: "none" }}>
+            <Btn tone="ox">Open crons</Btn>
+          </Link>
+        ) : (
+          <Link to="/admin/cost" style={{ textDecoration: "none" }}>
+            <Btn tone="quiet">Open cost</Btn>
+          </Link>
+        )
+      }
+    />
+  ));
+
+  /* ================= CEO VIEW ================= */
+  const ceoBody = p && (
+    <>
+      <section style={{ background: C.card, border: `1px solid ${C.rule}`, borderRadius: 4, padding: "22px 18px", marginBottom: 16 }}>
+        <Label>Is the business moving?</Label>
+        <div style={{ height: 16 }} />
+        {funnelBars(false)}
+        <div style={{ fontFamily: SERIF, fontSize: 17, lineHeight: 1.5, color: C.ink, marginTop: 18 }}>{weekLine}</div>
+      </section>
+
+      <section
+        style={{
+          background: C.card,
+          border: `1px solid ${C.rule}`,
+          borderLeft: `3px solid ${needs.length > 0 ? C.ox : C.teal}`,
+          borderRadius: 4,
+          padding: "22px 18px",
+          marginBottom: 16,
+        }}
+      >
+        <Label>Is anything on fire?</Label>
+        <div style={{ height: 14 }} />
+        {needs.length === 0 ? (
+          <div style={{ fontFamily: SERIF, fontSize: 22, color: C.teal }}>Nothing needs you today.</div>
+        ) : (
+          needsFindings
+        )}
+      </section>
+
+      <section style={{ background: C.card, border: `1px solid ${C.rule}`, borderRadius: 4, padding: "22px 18px", marginBottom: 16 }}>
+        <Label>What should I do?</Label>
+        <div style={{ height: 14 }} />
+        {((p.recommendations ?? []) as string[]).slice(0, 3).map((r, i) => (
+          <div key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: 16, flexWrap: "wrap" }}>
+            <span style={{ fontFamily: MONO, fontSize: 22, color: C.muted, lineHeight: 1.2 }}>{i + 1}</span>
+            <span style={{ flex: "1 1 220px", fontFamily: SERIF, fontSize: 19, lineHeight: 1.45, color: C.ink }}>{r}</span>
+            <Btn tone="quiet" onClick={() => setMessage({ title: `Recommendation ${i + 1}`, body: r })}>
+              Take it
+            </Btn>
+          </div>
+        ))}
+        {((p.recommendations ?? []) as string[]).length === 0 && (
+          <div style={{ fontFamily: SERIF, fontSize: 18, color: C.muted }}>No recommendation today.</div>
+        )}
+      </section>
+
+      <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted, letterSpacing: ".04em" }}>
+        {N(p.coverage?.measured_areas) ?? "?"} more areas measured
+        {decide.length + watch.length === 0 ? ", all healthy" : `, ${decide.length + watch.length} worth a look`} —{" "}
+        <button
+          type="button"
+          onClick={() => setParam("view", "working", "ceo")}
+          style={{ all: "unset", cursor: "pointer", color: C.ink, borderBottom: `1px solid ${C.rule}` }}
+        >
+          open the working view
+        </button>
+        .
+      </div>
+    </>
+  );
+
+  /* ================= WORKING VIEW ================= */
+  const zones: { key: string; n: number; title: string; tone: string; keyLine: React.ReactNode; quiet?: boolean; content: React.ReactNode }[] = [];
+
+  if (p) {
     const drafts = headline("drafts_total");
     const publishedUsers = headline("published");
     const capturedUsers = headline("captured");
-    const failed: any[] = p.failed_publishes ?? [];
-    const invited = headline("invited") ?? 0;
 
-    return (
-      <>
-        {/* ---------- 1 TODAY ---------- */}
-        <Zone n={1} title="Today">
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
-              gap: 12,
-              marginBottom: 20,
-            }}
-          >
-            <Stat label="Needs you" value={needs.reduce((n) => n + 1, 0)} colour={C.ox} />
-            <Stat label="Decide" value={decide.reduce((n) => n + 1, 0)} colour={C.damber} />
-            <Stat label="Watch" value={watch.reduce((n) => n + 1, 0)} colour={C.amber} />
+    zones.push({
+      key: "today",
+      n: 1,
+      title: "Today",
+      tone: needs.length > 0 ? C.ox : decide.length > 0 ? C.damber : C.teal,
+      keyLine:
+        needs.length > 0
+          ? `${needs.length} thing${needs.length === 1 ? "" : "s"} need you right now.`
+          : "Nothing is blocking a user right now.",
+      content: (
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12, marginBottom: 18 }}>
+            <Stat label="Needs you" value={needs.length} colour={C.ox} />
+            <Stat label="Decide" value={decide.length} colour={C.damber} />
+            <Stat label="Watch" value={watch.length} colour={C.amber} />
             <Stat label="Handled" value={N(p.handled) ?? 0} colour={C.teal} sub="quietly, by the machine" />
           </div>
           <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted, marginBottom: 18 }}>
             oxblood = a user is blocked right now · dark amber = waiting on your decision · amber = keep an eye, no
             action · teal = healthy
           </div>
-
-          {(p.recommendations ?? []).map((r: string, i: number) => (
-            <div
-              key={i}
-              style={{ display: "flex", gap: 12, marginBottom: 10, fontFamily: SERIF, fontSize: 17, color: C.ink }}
-            >
-              <span style={{ fontFamily: MONO, color: C.muted }}>{i + 1}</span>
-              <span>{r}</span>
-            </div>
-          ))}
-
-          <div style={{ height: 1, background: C.rule, margin: "22px 0" }} />
-
-          {needs.reduce((n: number) => n + 1, 0) === 0 ? (
+          {needs.length === 0 ? (
             <Finding
               colour={C.teal}
               finding="Nothing is blocking a user right now."
               example={`The last capture landed ${p.machine?.hours_since_capture ?? "?"} hours ago and no publish has failed.`}
               recommendation="Spend the day on one user conversation instead of the dashboard."
-              action={<span style={{ fontFamily: MONO, fontSize: 11, color: C.muted }}>Nothing today</span>}
               countedFrom="linkedin_posts (failed), ef_error_log (critical), ops_alerts (open)"
             />
           ) : (
-            needs.map((item: any) => (
-              <Finding
-                key={item.fingerprint}
-                colour={C.ox}
-                finding={item.what}
-                example={item.impact}
-                recommendation={item.action}
-                action={
-                  item.fingerprint?.startsWith("failed_publish") ? (
-                    <>
-                      <Btn tone="ox" onClick={() => runWorker("reap-stuck-publishes", "the publish retry worker")}>
-                        Run retry worker
-                      </Btn>
-                      <Link to="/admin/people" style={{ textDecoration: "none" }}>
-                        <Btn tone="quiet">Open people</Btn>
-                      </Link>
-                    </>
-                  ) : item.fingerprint?.startsWith("job_failed") ? (
-                    <Link to="/admin/crons" style={{ textDecoration: "none" }}>
-                      <Btn tone="ox">Open crons</Btn>
-                    </Link>
-                  ) : (
-                    <Link to="/admin/cost" style={{ textDecoration: "none" }}>
-                      <Btn tone="quiet">Open cost</Btn>
-                    </Link>
-                  )
-                }
-              />
-            ))
+            needsFindings
           )}
-
           {decide.map((item: any) => (
             <Finding
               key={item.fingerprint}
@@ -336,10 +567,7 @@ export default function Admin() {
                 <Btn
                   tone="quiet"
                   onClick={() =>
-                    setMessage({
-                      title: "The decision, written out",
-                      body: `${item.what}\n\n${item.impact}\n\n${item.action}`,
-                    })
+                    setMessage({ title: "The decision, written out", body: `${item.what}\n\n${item.impact}\n\n${item.action}` })
                   }
                 >
                   Read the decision
@@ -347,67 +575,28 @@ export default function Admin() {
               }
             />
           ))}
-
           {watch.map((item: any) => (
-            <Finding
-              key={item.fingerprint}
-              colour={C.amber}
-              finding={item.what}
-              example={item.impact}
-              recommendation={item.action}
-              action={<span style={{ fontFamily: MONO, fontSize: 11, color: C.muted }}>Nothing today</span>}
-            />
+            <Finding key={item.fingerprint} colour={C.amber} finding={item.what} example={item.impact} recommendation={item.action} />
           ))}
-        </Zone>
+        </>
+      ),
+    });
 
-        {/* ---------- 2 THE NUMBER ---------- */}
-        <Zone n={2} title="The number">
-          <div style={{ display: "flex", gap: 18, flexWrap: "wrap", marginBottom: 18 }}>
-            <label style={{ fontFamily: MONO, fontSize: 11, color: C.muted, display: "flex", gap: 8 }}>
-              <input type="checkbox" checked={showFounder} onChange={(e) => setShowFounder(e.target.checked)} />
-              Include the founder account
-            </label>
-            <label style={{ fontFamily: MONO, fontSize: 11, color: C.muted, display: "flex", gap: 8 }}>
-              <input type="checkbox" checked={showTest} onChange={(e) => setShowTest(e.target.checked)} />
-              Include test accounts ({N(p.excluded?.test_users) ?? 0} excluded)
-            </label>
-          </div>
-          {(showFounder || showTest) && (
-            <div style={{ fontFamily: MONO, fontSize: 11, color: C.damber, marginBottom: 14 }}>
-              These accounts are excluded from the stored computation, so they cannot be added back without
-              recomputing. The numbers below still exclude them.
-            </div>
-          )}
-
-          {FUNNEL_STAGES.map((s, i) => {
-            const v = headline(s.key, N(p.funnel?.[s.key]));
-            const prev = i === 0 ? null : headline(FUNNEL_STAGES[i - 1].key, N(p.funnel?.[FUNNEL_STAGES[i - 1].key]));
-            const lost = prev !== null && v !== null ? prev - v : null;
-            return (
-              <Bar
-                key={s.key}
-                label={s.label}
-                value={v}
-                total={invited}
-                colour={s.key === "published" ? C.teal : lost && lost > 0 ? C.amber : C.damber}
-                note={
-                  lost === null
-                    ? s.from
-                    : lost > 0
-                      ? `${lost} lost here — click to see who`
-                      : "nobody lost at this step"
-                }
-                onClick={s.stage ? () => setStageOpen(s.stage!) : undefined}
-              />
-            );
-          })}
-
+    zones.push({
+      key: "number",
+      n: 2,
+      title: "The number",
+      tone: publishedUsers === 0 ? C.amber : C.teal,
+      keyLine: `${capturedUsers ?? "?"} people have captured something; ${publishedUsers ?? "?"} have published.`,
+      content: (
+        <>
+          {funnelBars(true)}
           <div style={{ height: 1, background: C.rule, margin: "20px 0" }} />
           <Finding
             colour={publishedUsers === 0 ? C.amber : C.teal}
             finding={`${capturedUsers ?? "?"} people have captured something; ${publishedUsers ?? "?"} have published.`}
             example={(() => {
-              const stuck = people.find((x) => Number(x.drafts ?? 0) > 0 && Number(x.published ?? 0) === 0);
+              const stuck = allPeople.find((x) => Number(x.drafts ?? 0) > 0 && Number(x.published ?? 0) === 0);
               return stuck
                 ? `${stuck.first_name} has ${stuck.drafts} draft${stuck.drafts === 1 ? "" : "s"} written and nothing published.`
                 : "No single person is stuck between draft and publish right now.";
@@ -415,17 +604,29 @@ export default function Admin() {
             recommendation="Walk one person the whole way from draft to a live post this week. The funnel does not move on its own."
             countedFrom="entries; linkedin_posts.tracking_status = published"
           />
-        </Zone>
+        </>
+      ),
+    });
 
-        {/* ---------- 3 PEOPLE ---------- */}
-        <Zone n={3} title="People">
+    zones.push({
+      key: "people",
+      n: 3,
+      title: "People",
+      tone: people.length === 0 ? C.muted : C.damber,
+      quiet: people.length === 0,
+      keyLine:
+        people.length === 0
+          ? "Nothing to report at this filter."
+          : `${people.length} ${who === "everybody" ? "people" : `people matching “${who}”`} — the longest silent is ${people[0]?.days_since_capture ?? "never"} days.`,
+      content: (
+        <>
           <Finding
             colour={C.damber}
             finding="This is the activation list. Every row is one real person and one thing you could do for them."
             example={
               people[0]
                 ? `${people[0].first_name} — ${people[0].captures} captures, ${people[0].drafts} drafts, LinkedIn ${people[0].linkedin}, ${people[0].days_since_capture ?? "never"} days since last capture.`
-                : "No users yet."
+                : "No users match this filter."
             }
             recommendation="Work top to bottom. The people who have been silent longest are the ones you are about to lose."
             action={
@@ -435,7 +636,7 @@ export default function Admin() {
             }
             countedFrom="entries, content_items, linkedin_posts, linkedin_connections.status"
           />
-          <Table
+          <CappedTable
             head={["Person", "Captures", "Drafts", "LinkedIn", "Days silent", "Stage", "Next move", ""]}
             rows={people.map((r) => [
               r.first_name,
@@ -458,7 +659,9 @@ export default function Admin() {
                     : Number(r.captures ?? 0) > 0
                       ? "captured"
                       : "setup",
-              <span key="nm" style={{ fontFamily: SERIF, fontSize: 14 }}>{nextMove(r)}</span>,
+              <span key="nm" style={{ fontFamily: SERIF, fontSize: 14 }}>
+                {nextMove(r)}
+              </span>,
               <span key="a" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 <Btn tone="quiet" onClick={() => setMessage({ title: `Nudge ${r.first_name}`, body: nudgeMessage(r) })}>
                   Draft nudge
@@ -469,31 +672,33 @@ export default function Admin() {
               </span>,
             ])}
           />
-        </Zone>
+        </>
+      ),
+    });
 
-        {/* ---------- 4 CONTENT AND PUBLISHING ---------- */}
-        <Zone n={4} title="Content and publishing">
-          <Finding
-            colour={drafts && drafts > 0 ? C.damber : C.teal}
-            finding={
-              drafts === null ? (
-                <Unknown reason="the two counting routes disagreed" />
-              ) : (
-                `${drafts} drafts are written and waiting, the oldest for ${p.drafts?.oldest_days ?? "?"} days.`
-              )
-            }
-            example={
-              (p.drafts?.list ?? [])[0]
-                ? `${p.drafts.list[0].first_name}: “${String(p.drafts.list[0].title ?? "").slice(0, 60)}” — ${p.drafts.list[0].age_days} days old.`
-                : "Nothing is sitting in drafts."
-            }
-            recommendation="Work already exists for these people. Nudging beats generating more."
-            countedFrom="content_items status=draft + linkedin_posts source_type in (aura_generated, carousel_studio) — imported history is never counted"
-          />
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 12, margin: "18px 0" }}>
+    const contentQuiet = draftList.length === 0 && failed.length === 0;
+    zones.push({
+      key: "content",
+      n: 4,
+      title: "Content and publishing",
+      tone: failed.length > 0 ? C.ox : drafts && drafts > 0 ? C.damber : contentQuiet ? C.muted : C.teal,
+      quiet: contentQuiet,
+      keyLine:
+        contentQuiet
+          ? "Nothing to report at this filter."
+          : drafts === null
+            ? <Unknown reason="the two counting routes disagreed" />
+            : `${drafts} drafts are written and waiting, the oldest for ${p.drafts?.oldest_days ?? "?"} days.`,
+      content: (
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 12, marginBottom: 18 }}>
             <Stat label="Drafts waiting" value={drafts ?? "?"} colour={C.damber} />
-            <Stat label="Published posts" value={N(p.content?.published_total) ?? 0} colour={C.teal} sub={`${N(p.content?.published_30d) ?? 0} in 30 days`} />
+            <Stat
+              label="Published posts"
+              value={N(p.content?.published_total) ?? 0}
+              colour={C.teal}
+              sub={`${N(p.content?.published_30d) ?? 0} in 30 days`}
+            />
             <Stat
               label="Draft → publish"
               value={
@@ -505,14 +710,13 @@ export default function Admin() {
             />
             <Stat label="Failed publishes" value={headline("failed_publishes") ?? "?"} colour={C.ox} />
           </div>
-
-          {(p.drafts?.list ?? []).reduce((n: number) => n + 1, 0) > 0 && (
+          {draftList.length > 0 && (
             <>
               <Label>Drafts waiting</Label>
               <div style={{ height: 10 }} />
-              <Table
+              <CappedTable
                 head={["Owner", "Draft", "Age (days)", "Where", ""]}
-                rows={(p.drafts.list as any[]).slice(0, 20).map((d) => [
+                rows={draftList.map((d) => [
                   d.first_name,
                   String(d.title ?? "").slice(0, 60),
                   d.age_days,
@@ -533,13 +737,12 @@ export default function Admin() {
               />
             </>
           )}
-
-          {failed.reduce((n: number) => n + 1, 0) > 0 && (
+          {failed.length > 0 && (
             <>
               <div style={{ height: 22 }} />
               <Label>Failed publishes</Label>
               <div style={{ height: 10 }} />
-              <Table
+              <CappedTable
                 head={["Person", "Date", "Error", ""]}
                 rows={failed.map((f: any) => [
                   f.first_name,
@@ -565,10 +768,18 @@ export default function Admin() {
               />
             </>
           )}
-        </Zone>
+        </>
+      ),
+    });
 
-        {/* ---------- 5 INTELLIGENCE ---------- */}
-        <Zone n={5} title="Intelligence">
+    zones.push({
+      key: "intelligence",
+      n: 5,
+      title: "Intelligence",
+      tone: Number(p.agent?.pending ?? 0) > 0 ? C.amber : C.teal,
+      keyLine: `${N(p.signals?.live) ?? "?"} signals are live and the overnight agent covered ${N(p.agent?.users_covered) ?? 0} people this week.`,
+      content: (
+        <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 12, marginBottom: 18 }}>
             <Stat label="Signals live" value={N(p.signals?.live) ?? "?"} colour={C.teal} />
             <Stat label="Made this week" value={N(p.signals?.created_7d) ?? "?"} />
@@ -608,18 +819,30 @@ export default function Admin() {
             recommendation="If pending stays high, the agent is producing work nobody wants. Cut the volume before you tune the prompt."
             countedFrom="agent_findings (last 7 days)"
           />
-        </Zone>
+        </>
+      ),
+    });
 
-        {/* ---------- 6 VOICE OF THE CUSTOMER ---------- */}
-        <Zone n={6} title="Voice of the customer">
-          <Label>Scores given (last 30 days)</Label>
+    const vocQuiet = feedback.length === 0 && milestones.length === 0 && (p.voc?.guide_misses ?? []).length === 0;
+    zones.push({
+      key: "voc",
+      n: 6,
+      title: "Voice of the customer",
+      tone: vocQuiet ? C.muted : C.damber,
+      quiet: vocQuiet,
+      keyLine: vocQuiet
+        ? "Nothing to report at this filter."
+        : `${feedback.length} score${feedback.length === 1 ? "" : "s"} and ${milestones.length} milestone${milestones.length === 1 ? "" : "s"} in this window.`,
+      content: (
+        <>
+          <Label>Scores given</Label>
           <div style={{ height: 10 }} />
-          {(p.voc?.feedback ?? []).reduce((n: number) => n + 1, 0) === 0 ? (
-            <div style={{ fontFamily: SERIF, color: C.muted }}>Nobody has scored Aura in the last 30 days.</div>
+          {feedback.length === 0 ? (
+            <div style={{ fontFamily: SERIF, color: C.muted }}>Nobody has scored Aura in this window.</div>
           ) : (
-            <Table
+            <CappedTable
               head={["Person", "Score", "Date", "What they wrote"]}
-              rows={(p.voc.feedback as any[]).map((f) => [
+              rows={feedback.map((f: any) => [
                 f.first_name ?? "Someone",
                 <span key="r" style={{ color: Number(f.rating) >= 9 ? C.teal : Number(f.rating) >= 7 ? C.amber : C.ox }}>
                   {f.rating}
@@ -633,7 +856,7 @@ export default function Admin() {
           <div style={{ height: 22 }} />
           <Label>Help they asked for and did not get</Label>
           <div style={{ height: 10 }} />
-          <Table
+          <CappedTable
             head={["Topic clicked", "Times", ""]}
             rows={(p.voc?.guide_misses ?? []).map((g: any) => [
               g.slug,
@@ -645,11 +868,11 @@ export default function Admin() {
           />
 
           <div style={{ height: 22 }} />
-          <Label>Milestones earned this week</Label>
+          <Label>Milestones earned</Label>
           <div style={{ height: 10 }} />
-          <Table
+          <CappedTable
             head={["Person", "Milestone", "When", ""]}
-            rows={(p.voc?.milestones ?? []).slice(0, 12).map((m: any, i: number) => [
+            rows={milestones.map((m: any, i: number) => [
               m.first_name ?? "Someone",
               m.name,
               m.when,
@@ -680,10 +903,20 @@ export default function Admin() {
             recommendation="Write the top missing article this week. It is the cheapest retention work available to you."
             countedFrom="guide_slug_misses, beta_feedback, user_milestones"
           />
-        </Zone>
+        </>
+      ),
+    });
 
-        {/* ---------- 7 THE MACHINE ---------- */}
-        <Zone n={7} title="The machine">
+    const jobsFailed = (p.jobs?.failed ?? []).length;
+    zones.push({
+      key: "machine",
+      n: 7,
+      title: "The machine",
+      tone: jobsFailed > 0 ? C.ox : Number(p.machine?.queue_failed ?? 0) > 0 ? C.amber : C.teal,
+      keyLine:
+        jobsFailed > 0 ? "Scheduled work failed in the last 24 hours." : "Every job that was due has run.",
+      content: (
+        <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12, marginBottom: 20 }}>
             <Stat label="Spend this month" value={`$${N(p.machine?.spend_mtd) ?? 0}`} colour={Number(p.machine?.spend_mtd ?? 0) > 200 ? C.ox : C.teal} />
             <Stat
@@ -696,7 +929,12 @@ export default function Admin() {
               })()}`}
               sub="at today's burn rate"
             />
-            <Stat label="Queue" value={`${N(p.machine?.queue_pending) ?? 0} / ${N(p.machine?.queue_failed) ?? 0}`} sub="pending / failed" colour={Number(p.machine?.queue_failed ?? 0) > 0 ? C.amber : C.teal} />
+            <Stat
+              label="Queue"
+              value={`${N(p.machine?.queue_pending) ?? 0} / ${N(p.machine?.queue_failed) ?? 0}`}
+              sub="pending / failed"
+              colour={Number(p.machine?.queue_failed ?? 0) > 0 ? C.amber : C.teal}
+            />
             <Stat label="Invariants failing" value={N(p.machine?.open_findings) ?? 0} colour={Number(p.machine?.open_findings ?? 0) > 0 ? C.amber : C.teal} />
             <Stat
               label="AI providers up"
@@ -708,7 +946,7 @@ export default function Admin() {
 
           <Label>Automated work</Label>
           <div style={{ height: 10 }} />
-          <Table
+          <CappedTable
             head={["Job", "State", "Schedule", "Last run"]}
             rows={[
               ...(p.jobs?.failed ?? []).map((j: any) => [j.name, <span key="s" style={{ color: C.ox }}>{dot(C.ox)}failed in 24h</span>, j.schedule, j.last_run ?? "never"]),
@@ -719,16 +957,12 @@ export default function Admin() {
           />
           <div style={{ height: 18 }} />
           <Finding
-            colour={(p.jobs?.failed ?? []).reduce((n: number) => n + 1, 0) > 0 ? C.ox : C.teal}
-            finding={
-              (p.jobs?.failed ?? []).reduce((n: number) => n + 1, 0) > 0
-                ? "Scheduled work failed in the last 24 hours."
-                : "Every job that was due has run."
-            }
+            colour={jobsFailed > 0 ? C.ox : C.teal}
+            finding={jobsFailed > 0 ? "Scheduled work failed in the last 24 hours." : "Every job that was due has run."}
             example={
               (p.jobs?.failed ?? [])[0]
                 ? `${p.jobs.failed[0].name} last ran ${p.jobs.failed[0].last_run ?? "never"}.`
-                : `${(p.jobs?.not_due ?? []).reduce((n: number) => n + 1, 0)} weekly jobs are simply not due yet — that is not a fault.`
+                : `${(p.jobs?.not_due ?? []).length} weekly jobs are simply not due yet — that is not a fault.`
             }
             recommendation="Only chase a job once its own moment has passed. A Monday job is not broken on a Sunday."
             action={
@@ -738,18 +972,24 @@ export default function Admin() {
             }
             countedFrom="cron.job + cron.job_run_details"
           />
-        </Zone>
+        </>
+      ),
+    });
 
-        {/* ---------- 8 PROOF ---------- */}
-        <Zone n={8} title="Proof">
+    zones.push({
+      key: "proof",
+      n: 8,
+      title: "Proof",
+      tone: Number(audit?.disagreements ?? 0) > 0 ? C.ox : C.teal,
+      keyLine:
+        Number(audit?.disagreements ?? 0) > 0
+          ? `${audit.disagreements} numbers disagreed with their cross-check today.`
+          : "Every headline number was counted twice and both routes agreed.",
+      content: (
+        <>
           <Finding
             colour={Number(audit?.disagreements ?? 0) > 0 ? C.ox : C.teal}
-            finding={
-              Number(audit?.disagreements ?? 0) > 0
-                ? `${audit.disagreements} numbers disagreed with their cross-check today.`
-                : "Every headline number was counted twice and both routes agreed."
-            }
-            example="Each row below was computed once in SQL and once again through independent per-record counts."
+            finding="Each row below was computed once in SQL and once again through independent per-record counts."
             recommendation="Press “Verify against live data” before you quote any of these numbers to an outsider."
             action={
               <>
@@ -759,128 +999,250 @@ export default function Admin() {
                 <Btn tone="quiet" onClick={exportAudit}>
                   Export audit
                 </Btn>
+                <Btn tone="quiet" onClick={() => setParam("view", "auditor", "ceo")}>
+                  Open auditor view
+                </Btn>
               </>
             }
           />
-          <Table
-            head={["Claim", "Counted from", "Cross-check", "A / B", "Agree", "Live now"]}
-            rows={pairs.map((x: any) => {
-              const live = verify ? N(verify[x.key]) : null;
-              return [
-                x.label,
-                x.route_a,
-                x.route_b,
-                `${x.a ?? "?"} / ${x.b ?? "?"}`,
-                <span key="ag" style={{ color: x.agree ? C.teal : C.ox }}>{x.agree ? "✓" : "✗"}</span>,
-                verify === null ? (
-                  <span key="l" style={{ color: C.muted }}>not run</span>
-                ) : live === null ? (
-                  <span key="l" style={{ color: C.muted }}>not covered</span>
-                ) : (
-                  <span key="l" style={{ color: live === N(x.a) ? C.teal : C.ox }}>
-                    {live} {live === N(x.a) ? "pass" : "FAIL"}
-                  </span>
-                ),
-              ];
-            })}
-          />
+          {auditTable(pairs, verify)}
           {x_note(p)}
-        </Zone>
+        </>
+      ),
+    });
 
-        {/* drill-downs */}
-        <Zone n={9} title="Go deeper">
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 10 }}>
-            {DRILLDOWNS.map((d) => (
-              <Link
-                key={d.to}
-                to={d.to}
-                style={{
-                  textDecoration: "none",
-                  border: `1px solid ${C.rule}`,
-                  borderRadius: 3,
-                  padding: "12px 14px",
-                  background: C.paper,
-                }}
-              >
-                <div style={{ fontFamily: SERIF, fontSize: 17, color: C.ink }}>{d.label}</div>
-                <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted, marginTop: 4 }}>{d.d}</div>
-              </Link>
-            ))}
-          </div>
-        </Zone>
-      </>
-    );
-  })();
+    zones.push({
+      key: "deeper",
+      n: 9,
+      title: "Go deeper",
+      tone: C.muted,
+      keyLine: `${DRILLDOWNS.length} detail pages behind this one.`,
+      content: (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 10 }}>
+          {DRILLDOWNS.map((d) => (
+            <Link
+              key={d.to}
+              to={d.to}
+              style={{ textDecoration: "none", border: `1px solid ${C.rule}`, borderRadius: 3, padding: "12px 14px", background: C.paper }}
+            >
+              <div style={{ fontFamily: SERIF, fontSize: 17, color: C.ink }}>{d.label}</div>
+              <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted, marginTop: 4 }}>{d.d}</div>
+            </Link>
+          ))}
+        </div>
+      ),
+    });
+  }
 
-  const stagePeople = stageOpen
-    ? (p?.people ?? []).filter((r: any) => r?.stages && r.stages[stageOpen] !== true)
-    : [];
+  const sortedZones = zones
+    .map((z, i) => ({ z, i }))
+    .sort((a, b) => (RANK[a.z.tone] ?? 9) - (RANK[b.z.tone] ?? 9) || a.i - b.i)
+    .map(({ z }) => z);
+
+  const workingBody = (
+    <>
+      {sortedZones.map((z) => (
+        <ZoneCard
+          key={z.key}
+          n={z.n}
+          title={z.title}
+          tone={z.tone}
+          keyLine={z.keyLine}
+          quiet={z.quiet}
+          open={!!openZones[z.key]}
+          onToggle={() => toggleZone(z.key)}
+        >
+          {z.content}
+        </ZoneCard>
+      ))}
+      <div style={{ background: "var(--ob-bg)", borderRadius: 6, padding: 18, display: "grid", gap: 16, marginTop: 24 }}>
+        <HealthFindingsPanel />
+        <ReportHealthPanel />
+        <RegenerateReportPanel />
+        <SendTestEmailPanel />
+      </div>
+    </>
+  );
+
+  /* ================= AUDITOR VIEW ================= */
+  const auditorBody = p && (
+    <Zone n={0} title="Every headline number, twice">
+      <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted, marginBottom: 16 }}>
+        counted at {String(p.counted_at_utc)} UTC · brief date {snap?.brief_date} · source {snap?.source} ·{" "}
+        {pairs.length} pairs · {Number(audit?.disagreements ?? 0)} disagreements
+      </div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 }}>
+        <Btn onClick={runVerify} disabled={verifying}>
+          {verifying ? "Verifying…" : "Verify against live data"}
+        </Btn>
+        <Btn tone="quiet" onClick={exportAudit}>
+          Export audit
+        </Btn>
+      </div>
+      <Table
+        head={["Metric", "Route A", "A value", "Route B", "B value", "Agree", "Counted at (UTC)", "Live now"]}
+        rows={pairs.map((x: any) => {
+          const live = verify ? N(verify[x.key]) : null;
+          return [
+            x.label,
+            x.route_a,
+            x.a ?? "?",
+            x.route_b,
+            x.b ?? "?",
+            x.agree ? "agree" : "DISAGREE",
+            String(p.counted_at_utc),
+            verify === null ? "not run" : live === null ? "not covered" : `${live} ${live === N(x.a) ? "pass" : "FAIL"}`,
+          ];
+        })}
+      />
+      <div style={{ height: 24 }} />
+      <Label>Funnel, as stored</Label>
+      <div style={{ height: 10 }} />
+      <Table
+        head={["Stage", "Value", "Counted from"]}
+        rows={FUNNEL_STAGES.map((s) => [s.label, headline(s.key, N(p.funnel?.[s.key])) ?? "?", s.from])}
+      />
+      {x_note(p)}
+    </Zone>
+  );
+
+  /* ---------- chrome ---------- */
+  const stagePeople = stageOpen ? (p?.people ?? []).filter((r: any) => r?.stages && r.stages[stageOpen] !== true) : [];
 
   return (
     <AdminShell bleed>
-      <div style={{ background: C.paper, minHeight: "100vh", padding: "36px 18px 80px" }}>
+      <div style={{ background: C.paper, minHeight: "100vh", padding: "28px 14px 80px" }}>
         <div style={{ maxWidth: 1080, margin: "0 auto" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 14, marginBottom: 30 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 14, marginBottom: 22 }}>
             <div>
               <Label>Aura · founder cockpit</Label>
-              <h1 style={{ margin: "8px 0 0", fontFamily: SERIF, fontSize: 40, fontWeight: 500, color: C.ink, lineHeight: 1.1 }}>
+              <h1 style={{ margin: "8px 0 0", fontFamily: SERIF, fontSize: 34, fontWeight: 500, color: C.ink, lineHeight: 1.1 }}>
                 {new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}
               </h1>
               <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted, marginTop: 8 }}>
-                {p ? `counted at ${p.counted_at_utc} UTC` : "counting…"}
-                {snap?.source === "live" && " · computed live — today's brief has not run yet"}
-              </div>
-              <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted, marginTop: 4 }}>
-                Same computation as the daily email. This page never recounts it.
+                Same computation as the daily email. Views and filters change what you see, never what was counted.
               </div>
             </div>
-            <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <Chip tone={liveliness.tone} title={liveliness.note}>
+                {liveliness.text} · {liveliness.note}
+              </Chip>
               <Btn onClick={refresh} disabled={refreshing}>
                 {refreshing ? "Refreshing…" : "Refresh now"}
               </Btn>
             </div>
           </div>
 
+          <div style={{ marginBottom: 14 }}>
+            <Seg<ViewMode>
+              value={view}
+              onChange={(v) => setParam("view", v, "ceo")}
+              options={[
+                { value: "ceo", label: "CEO" },
+                { value: "working", label: "Working" },
+                { value: "auditor", label: "Auditor" },
+              ]}
+            />
+          </div>
+
+          {/* ---------- filter bar ---------- */}
+          <div
+            style={{
+              border: `1px solid ${C.rule}`,
+              borderRadius: 4,
+              background: C.card,
+              padding: "12px 14px",
+              marginBottom: 18,
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 16,
+              alignItems: "center",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <Label>Period</Label>
+              <Seg value={range} onChange={(v) => setParam("range", v, "14")} options={RANGES} />
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <Label>Who</Label>
+              <select
+                value={who}
+                onChange={(e) => setParam("who", e.target.value, "everybody")}
+                style={{
+                  fontFamily: MONO,
+                  fontSize: 11,
+                  padding: "8px 10px",
+                  border: `1px solid ${C.rule}`,
+                  borderRadius: 3,
+                  background: C.paper,
+                  color: C.ink,
+                }}
+              >
+                {WHO_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <label style={{ fontFamily: MONO, fontSize: 11, color: C.muted, display: "flex", gap: 8, alignItems: "center" }}>
+              <input type="checkbox" checked={showFounder} onChange={(e) => setParam("founder", e.target.checked ? "1" : null, "")} />
+              Founder account
+            </label>
+            <label style={{ fontFamily: MONO, fontSize: 11, color: C.muted, display: "flex", gap: 8, alignItems: "center" }}>
+              <input type="checkbox" checked={showTest} onChange={(e) => setParam("test", e.target.checked ? "1" : null, "")} />
+              Test accounts ({N(p?.excluded?.test_users) ?? 0} excluded)
+            </label>
+          </div>
+
+          {filtersDirty && (
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 }}>
+              <Chip tone={C.damber}>Filtered — not the whole picture</Chip>
+              {range !== "14" && <Chip tone={C.damber}>Period: {range === "all" ? "all time" : `${range} days`}</Chip>}
+              {who !== "everybody" && <Chip tone={C.damber}>Who: {who}</Chip>}
+              {(showFounder || showTest) && (
+                <Chip tone={C.damber} title="These accounts are excluded from the stored computation and cannot be added back without recomputing.">
+                  Founder/test requested — still excluded from the stored count
+                </Chip>
+              )}
+              <Btn tone="quiet" onClick={() => setParams(view === "ceo" ? {} : { view })}>
+                Clear filters
+              </Btn>
+            </div>
+          )}
+
           {actionNote && (
-            <div
-              style={{
-                fontFamily: MONO,
-                fontSize: 12,
-                color: C.ink,
-                background: C.card,
-                border: `1px solid ${C.rule}`,
-                padding: "10px 12px",
-                marginBottom: 18,
-              }}
-            >
+            <div style={{ fontFamily: MONO, fontSize: 12, color: C.ink, background: C.card, border: `1px solid ${C.rule}`, padding: "10px 12px", marginBottom: 18 }}>
               {actionNote}
             </div>
           )}
 
-          {body}
-
-          <div style={{ background: "var(--ob-bg)", borderRadius: 6, padding: 18, display: "grid", gap: 16 }}>
-            <HealthFindingsPanel />
-            <ReportHealthPanel />
-            <RegenerateReportPanel />
-            <SendTestEmailPanel />
-          </div>
+          {loading ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, color: C.muted, fontFamily: MONO, fontSize: 13 }}>
+              <Loader2 className="w-4 h-4 animate-spin" /> Counting…
+            </div>
+          ) : err || !p ? (
+            <div style={{ fontFamily: SERIF, fontSize: 17, color: C.ox }}>
+              The cockpit could not read today&apos;s brief: {err ?? "no data"}. <Btn onClick={refresh}>Try again</Btn>
+            </div>
+          ) : view === "ceo" ? (
+            ceoBody
+          ) : view === "auditor" ? (
+            auditorBody
+          ) : (
+            workingBody
+          )}
         </div>
       </div>
 
       {stageOpen && (
         <Modal title={`Who has not reached “${FUNNEL_STAGES.find((s) => s.stage === stageOpen)?.label}”`} onClose={() => setStageOpen(null)}>
-          {stagePeople.reduce((n: number) => n + 1, 0) === 0 ? (
+          {stagePeople.length === 0 ? (
             <div style={{ fontFamily: SERIF, color: C.muted }}>Everybody has reached this stage.</div>
           ) : (
             <Table
               head={["Person", "Captures", "LinkedIn", "Days silent"]}
-              rows={stagePeople.map((r: any) => [
-                r.first_name,
-                r.captures,
-                r.linkedin,
-                r.days_since_capture ?? "never",
-              ])}
+              rows={stagePeople.map((r: any) => [r.first_name, r.captures, r.linkedin, r.days_since_capture ?? "never"])}
             />
           )}
         </Modal>
@@ -919,19 +1281,42 @@ export default function Admin() {
   );
 }
 
+/** The proof table, used by the working view. Unchanged arithmetic. */
+function auditTable(pairs: any[], verify: any) {
+  return (
+    <Table
+      head={["Claim", "Counted from", "Cross-check", "A / B", "Agree", "Live now"]}
+      rows={pairs.map((x: any) => {
+        const live = verify ? N(verify[x.key]) : null;
+        return [
+          x.label,
+          x.route_a,
+          x.route_b,
+          `${x.a ?? "?"} / ${x.b ?? "?"}`,
+          <span key="ag" style={{ color: x.agree ? C.teal : C.ox }}>
+            {x.agree ? "✓" : "✗"}
+          </span>,
+          verify === null ? (
+            <span key="l" style={{ color: C.muted }}>not run</span>
+          ) : live === null ? (
+            <span key="l" style={{ color: C.muted }}>not covered</span>
+          ) : (
+            <span key="l" style={{ color: live === N(x.a) ? C.teal : C.ox }}>
+              {live} {live === N(x.a) ? "pass" : "FAIL"}
+            </span>
+          ),
+        ];
+      })}
+    />
+  );
+}
+
 /** Coverage line — what the page can and cannot see. */
 function x_note(p: any) {
   const cov = p?.coverage;
   if (!cov) return null;
   return (
-    <div
-      style={{
-        marginTop: 20,
-        border: `1px dashed ${C.rule}`,
-        borderRadius: 3,
-        padding: "14px 16px",
-      }}
-    >
+    <div style={{ marginTop: 20, border: `1px dashed ${C.rule}`, borderRadius: 3, padding: "14px 16px" }}>
       <Label>Coverage</Label>
       <div style={{ fontFamily: SERIF, fontSize: 16, color: C.ink, marginTop: 8 }}>
         {cov.measured_areas} of {cov.total_areas} areas of the business are actually measured.
