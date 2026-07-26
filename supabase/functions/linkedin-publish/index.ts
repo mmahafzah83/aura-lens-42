@@ -86,7 +86,7 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
 
     const { data: post, error: postErr } = await adminClient
       .from("linkedin_posts")
-      .select("id, post_text, published_confirmed_at, source_metadata")
+      .select("id, post_text, published_confirmed_at, source_metadata, original_generated_text")
       .eq("id", postId)
       .eq("user_id", user.id)
       .maybeSingle();
