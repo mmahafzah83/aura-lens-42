@@ -43,6 +43,8 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
   const [corePractice, setCorePractice] = useState("");
   const [sectorFocus, setSectorFocus] = useState("");
   const [sectorOther, setSectorOther] = useState("");
+  const [targetRegister, setTargetRegister] = useState("");
+  const [registerOptions, setRegisterOptions] = useState<string[]>([]);
   const [hasSavedBefore, setHasSavedBefore] = useState(false);
   const [northStar, setNorthStar] = useState("");
   const [brandPillars, setBrandPillars] = useState<string[]>([]);
@@ -59,6 +61,9 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
+      const { data: regOpts } = await (supabase.from("register_options" as any) as any)
+        .select("label").order("sort_order", { ascending: true });
+      setRegisterOptions(((regOpts as any[]) || []).map((r) => r.label).filter(Boolean));
       const { data: profile } = await (supabase.from("diagnostic_profiles" as any) as any)
         .select("*").eq("user_id", user.id).maybeSingle();
       if (profile) {
@@ -76,6 +81,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
           setSectorFocus(sf);
         }
         setNorthStar(profile.north_star_goal || "");
+        setTargetRegister(profile.target_register || "");
         setBrandPillars(profile.brand_pillars || []);
         setSkills(profile.generated_skills || []);
         setRatings(profile.skill_ratings || {});
@@ -105,6 +111,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
         level,
         core_practice: corePractice,
         sector_focus: resolvedSector,
+        target_register: targetRegister || null,
         north_star_goal: northStar,
         brand_pillars: brandPillars,
         generated_skills: skills,
@@ -285,6 +292,23 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
                 />
               )}
             </div>
+          </div>
+
+          <div>
+            <label className="text-xs text-muted-foreground tracking-wider uppercase mb-1 block">Target register</label>
+            <Select value={targetRegister || undefined} onValueChange={setTargetRegister}>
+              <SelectTrigger className="h-9 bg-secondary border-border/30 text-sm">
+                <SelectValue placeholder="Select…" />
+              </SelectTrigger>
+              <SelectContent>
+                {registerOptions.map((r) => (
+                  <SelectItem key={r} value={r}>{r}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground/80 mt-1.5 leading-relaxed">
+              The language variety Aura writes in for you.
+            </p>
           </div>
 
           <div>

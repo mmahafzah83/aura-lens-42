@@ -26,7 +26,7 @@ serve(async (req) => {
   }
 
   try {
-    const { post_text, language, signal_title, voice_tone, user_sector, grounding_text, content_kind } = await req.json();
+    const { post_text, language, signal_title, voice_tone, user_sector, target_register, grounding_text, content_kind } = await req.json();
 
     if (!post_text) {
       return new Response(JSON.stringify({ error: "post_text required" }), {
@@ -59,16 +59,16 @@ Score each dimension 0-10:
 3. VOICE: Does this sound like a real senior professional wrote it, or like AI? (0 = obviously AI, 10 = indistinguishable from human)
 4. STRUCTURE: Clear flow from hook to close? Short paragraphs? Mobile-readable? (0 = wall of text, 10 = perfect rhythm)
 5. SIGNAL_DEPTH: If grounded in a signal, does the post actually demonstrate insight from that signal? (0 = generic take, 10 = couldn't have written this without the signal)
-${isArabic ? '6. ARABIC_QUALITY: Is this contemporary Gulf professional Arabic? Not bureaucratic MSA, not dialect? Technical terms in English? (0 = translation artifact, 10 = native Gulf professional)' : '6. ENGLISH_QUALITY: Native-sounding? No awkward constructions? (0 = non-native patterns, 10 = polished native)'}
+${isArabic ? `6. ARABIC_QUALITY: Is this written in the target register stated below${target_register ? ` (${target_register})` : ""}? Not bureaucratic, not off-register? Technical terms in English? (0 = translation artifact, 10 = native in that register)` : '6. ENGLISH_QUALITY: Native-sounding? No awkward constructions? (0 = non-native patterns, 10 = polished native)'}
 
-${"\n═══ DAHEEH STRUCTURAL ASSERTIONS (report each true/false, with a one-line reason) ═══\n- payoff_withheld: the core insight/number is NOT in the first two lines — tension is built before the reveal.\n- villain_named: the post names a specific misconception or wrong belief it corrects.\n- ends_on_question: the final line is an uncomfortable, specific question (not a statement, not 'what do you think?').\n- one_number_max: the post uses AT MOST one primary statistic (extra raw numbers = weaker).\n- grounded_number: EVERY specific statistic in the post can be traced to the GROUNDING below. If any number is NOT supported by the grounding, this is FALSE and you MUST list the unsupported number in weaknesses. If the post has no statistics at all, set grounded_number = true.\n- register_clean (Arabic only): NO Levantine/Gulf dialect words (مش، شو، عم، لسا، هلق، هيك، بلّش، خليني، بدك، إشي، منيح، ولّا، وحدة، هون). If any appear, FALSE and list them.\n- sector_fidelity: the post's domain and examples match the reader's declared Sector (provided in the user message) or the GROUNDING. If the post is anchored in an industry that appears in NEITHER the reader's sector NOR the grounding (e.g. a water-utilities post for a finance reader), this is FALSE and you MUST name the foreign sector in weaknesses.\n\nGROUNDING (the only facts/numbers the post may use):\n" + (grounding_text || "(none provided — treat any specific statistic as ungrounded unless it is clearly illustrative)") + "\n"}
+${"\n═══ DAHEEH STRUCTURAL ASSERTIONS (report each true/false, with a one-line reason) ═══\n- payoff_withheld: the core insight/number is NOT in the first two lines — tension is built before the reveal.\n- villain_named: the post names a specific misconception or wrong belief it corrects.\n- ends_on_question: the final line is an uncomfortable, specific question (not a statement, not 'what do you think?').\n- one_number_max: the post uses AT MOST one primary statistic (extra raw numbers = weaker).\n- grounded_number: EVERY specific statistic in the post can be traced to the GROUNDING below. If any number is NOT supported by the grounding, this is FALSE and you MUST list the unsupported number in weaknesses. If the post has no statistics at all, set grounded_number = true.\n- register_match: The TARGET REGISTER is stated below. Is the text written in that register? If any token belongs to a different variety of the same language, set FALSE and list those exact tokens in weaknesses. If no target register was provided, set TRUE.\n- domain_match: The READER DOMAIN and the GROUNDING are stated below. Is the post anchored in the reader's domain, or in a domain present in the grounding? If it is anchored in a domain present in neither, set FALSE and name that foreign domain in weaknesses. If no reader domain was provided, set TRUE.\n\nTARGET REGISTER: " + (target_register || "(none provided)") + "\nREADER DOMAIN: " + (user_sector || "(none provided)") + "\n\nGROUNDING (the only facts/numbers the post may use):\n" + (grounding_text || "(none provided — treat any specific statistic as ungrounded unless it is clearly illustrative)") + "\n"}
 
 Return JSON:
 {
   "scores": { "hook": N, "specificity": N, "voice": N, "structure": N, "signal_depth": N, "language_quality": N },
   "overall": N (weighted average: hook 25%, voice 25%, specificity 20%, structure 15%, signal_depth 10%, language 5%),
-  "assertions": { "payoff_withheld": bool, "villain_named": bool, "ends_on_question": bool, "one_number_max": bool, "grounded_number": bool, "register_clean": bool, "sector_fidelity": bool },
-  "pass": true/false (true ONLY if overall >= 70 AND grounded_number is true AND register_clean is true (register_clean is auto-true for non-Arabic)),
+  "assertions": { "payoff_withheld": bool, "villain_named": bool, "ends_on_question": bool, "one_number_max": bool, "grounded_number": bool, "register_match": bool, "domain_match": bool },
+  "pass": true/false (true ONLY if overall >= 70 AND grounded_number is true AND register_match is true (register_match is auto-true when no target register was provided)),
   "weaknesses": ["..."],
   "improved_hook": "A stronger version of the first line, if hook < 7",
   "verdict": "One sentence: would you advise this executive to publish this as-is?"

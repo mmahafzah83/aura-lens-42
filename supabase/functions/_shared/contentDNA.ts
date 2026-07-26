@@ -40,7 +40,7 @@ export const NUMBER_INTEGRITY = `NUMBER INTEGRITY (absolute — credibility is t
 
 // 3. REGISTER
 
-export const REGISTER_AR = `اللغة: عربية احترافية معاصرة (خليجية) — واضحة ومباشرة، كأنك تحدث مديرًا لا تكتب مقالًا. ليست عامية، وليست فصحى بيروقراطية.
+export const REGISTER_AR = `اللغة: عربية احترافية معاصرة — واضحة ومباشرة، كأنك تحدث مديرًا لا تكتب مقالًا. ليست عامية، وليست فصحى بيروقراطية.
 
 - المصطلحات التقنية تبقى بالإنجليزية: AI, KPI, dashboard, API, roadmap, governance.
 
@@ -48,7 +48,17 @@ export const REGISTER_AR = `اللغة: عربية احترافية معاصرة
 
 - لا تُفرَض مفردات عامية؛ الإيقاع من قِصَر الأسطر لا من اللهجة.`;
 
-export const REGISTER_EN = `LANGUAGE: contemporary professional English for a senior GCC executive (CIO/CDO). Peer-to-peer, not consultant-speak. Short lines, one idea per line, tension before insight.`;
+export const NEUTRAL_READER = `a senior professional in their field`;
+
+export function buildRegisterEN(readerDescription?: string): string {
+  const reader = (readerDescription || "").trim() || NEUTRAL_READER;
+  return `LANGUAGE: contemporary professional English written for ${reader}. Peer-to-peer, not consultant-speak. Short lines, one idea per line, tension before insight.`;
+}
+
+export function buildRegisterAR(readerDescription?: string): string {
+  const reader = (readerDescription || "").trim() || NEUTRAL_READER;
+  return `${REGISTER_AR}\n\n- الكتابة موجّهة إلى: ${reader}.`;
+}
 
 // 4. FORMATTING
 
@@ -88,11 +98,11 @@ export const VOICE_PRECEDENCE = `VOICE PROFILE PRECEDENCE: the voice profile adj
 
 export const OUTPUT_CONTRACT = `OUTPUT CONTRACT (absolute): Your entire response is the finished post and nothing else. The first character you output is the first character of the hook. Do not write anything before the hook or after the closing question — no setup, no notes, no labels of any kind, in any language.`;
 
-export function buildContentDNA(opts: { lang: DNALang; texture?: DNATexture }): string {
+export function buildContentDNA(opts: { lang: DNALang; texture?: DNATexture; readerDescription?: string }): string {
 
-  const { lang, texture = "clean" } = opts;
+  const { lang, texture = "clean", readerDescription } = opts;
 
-  const register = lang === "ar" ? REGISTER_AR : REGISTER_EN;
+  const register = lang === "ar" ? buildRegisterAR(readerDescription) : buildRegisterEN(readerDescription);
 
   const parts = [ENGINE, NUMBER_INTEGRITY, register, FORMATTING, BANNED, VOICE_PRECEDENCE, OUTPUT_CONTRACT];
 
