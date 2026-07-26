@@ -10,6 +10,7 @@ import {
   daysUntilReview,
   decisionScoreboard,
   dueDecisions,
+  loadAdminMetrics,
   loadDecisions,
   openDecisions,
   pendingDecisions,
@@ -31,6 +32,8 @@ import { Btn, C, Finding, Label, MONO, SERIF } from "./ui";
 
 export type DecisionsState = {
   rows: Decision[];
+  /** Today's brief — the only source of a baseline or an actual value. */
+  metrics: AdminMetrics | null;
   loading: boolean;
   error: string | null;
   reload: () => void;
@@ -38,14 +41,16 @@ export type DecisionsState = {
 
 export function useDecisions(): DecisionsState {
   const [rows, setRows] = useState<Decision[]>([]);
+  const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const reload = useCallback(() => {
     setLoading(true);
-    loadDecisions()
-      .then((r) => {
+    Promise.all([loadDecisions(), loadAdminMetrics().catch(() => null)])
+      .then(([r, m]) => {
         setRows(r);
+        setMetrics(m);
         setError(null);
       })
       .catch((e) => setError(e?.message ?? String(e)))
@@ -53,7 +58,7 @@ export function useDecisions(): DecisionsState {
   }, []);
 
   useEffect(reload, [reload]);
-  return { rows, loading, error, reload };
+  return { rows, metrics, loading, error, reload };
 }
 
 const input: React.CSSProperties = {
@@ -129,13 +134,8 @@ export function ReviewCard({
 }
 
 /** Due decisions, for the DECIDE section of the Today zone. */
-export function DecisionsDue({
-  state,
-  metrics,
-}: {
-  state: DecisionsState;
-  metrics: AdminMetrics | null;
-}) {
+export function DecisionsDue({ state }: { state: DecisionsState }) {
+  const metrics = state.metrics;
   const due = dueDecisions(state.rows);
   if (state.loading || state.error || countWhere(due, () => true) === 0) return null;
   return (
@@ -256,13 +256,8 @@ function Row({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function DecisionsZone({
-  state,
-  metrics,
-}: {
-  state: DecisionsState;
-  metrics: AdminMetrics | null;
-}) {
+export function DecisionsZone({ state }: { state: DecisionsState }) {
+  const metrics = state.metrics;
   if (state.loading) return <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted }}>Reading the decision log…</div>;
   if (state.error) return <div style={{ fontFamily: MONO, fontSize: 11, color: C.ox }}>{state.error}</div>;
 
