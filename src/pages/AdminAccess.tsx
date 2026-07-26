@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Send, Trash2 } from "lucide-react";
 import AdminShell from "@/components/admin/AdminShell";
+import { AdminMetrics, exclusionLine, freshnessLine, loadAdminMetrics, signedUp } from "@/lib/adminMetrics";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -80,6 +81,7 @@ const AdminAccess = () => {
   const [accessToken, setAccessToken] = useState<string | null>(null);
 
   const [rows, setRows] = useState<Row[]>([]);
+  const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [seniorityFilter, setSeniorityFilter] = useState<string>("all");
@@ -183,6 +185,9 @@ const AdminAccess = () => {
         .eq("feedback_type", "nps")
         .order("created_at", { ascending: false });
       setNpsRows((data || []) as any);
+    })();
+    (async () => {
+      try { setMetrics(await loadAdminMetrics()); } catch { setMetrics(null); }
     })();
     (async () => {
       setActiveLoading(true);
