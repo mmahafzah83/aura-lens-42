@@ -534,6 +534,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
           setProfileName(pRes.data.first_name || "");
           setProfileRole([pRes.data.level, pRes.data.firm].filter(Boolean).join(" · "));
         }
+        setHasVoiceProfile(!!vRes.data);
         if (vRes.data) {
           const words: string[] = [];
           const vp = vRes.data.vocabulary_preferences;
