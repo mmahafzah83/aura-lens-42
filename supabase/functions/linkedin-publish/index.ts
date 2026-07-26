@@ -266,6 +266,65 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
         .eq("id", postId)
         .eq("user_id", user.id);
 
+      // Draft-edit telemetry: what Aura served vs what the user actually published.
+      // Fire-and-forget, own try/catch — must never block, delay or fail a publish.
+      try {
+        const served: string = (post as any).original_generated_text ?? "";
+        if (served && served.trim()) {
+          const recordDraftEdit = async () => {
+            try {
+              const publishedText = postText;
+              const sCap = served.slice(0, DIFF_CAP);
+              const pCap = publishedText.slice(0, DIFF_CAP);
+              const distance = levenshtein(sCap, pCap);
+              const maxLen = Math.max(sCap.length, pCap.length) || 1;
+              const similarity = Number((1 - distance / maxLen).toFixed(4));
+              const servedNums = numericTokens(served);
+              const publishedNums = numericTokens(publishedText);
+              let removed = 0;
+              for (const n of servedNums) if (!publishedNums.has(n)) removed++;
+              let added = 0;
+              for (const n of publishedNums) if (!servedNums.has(n)) added++;
+              const language = ((post as any).source_metadata?._language
+                ?? (post as any).source_metadata?.language ?? null) as string | null;
+              await adminClient.from("draft_edits").insert({
+                user_id: user.id,
+                post_id: postId,
+                language,
+                served_text: served,
+                published_text: publishedText,
+                served_chars: served.length,
+                published_chars: publishedText.length,
+                levenshtein_distance: distance,
+                similarity_ratio: similarity,
+                first_line_changed: firstNonEmptyLine(served) !== firstNonEmptyLine(publishedText),
+                numbers_removed: removed,
+                numbers_added: added,
+              });
+            } catch (e) {
+              try {
+                await adminClient.from("ef_error_log").insert({
+                  function_name: "linkedin-publish",
+                  severity: "info",
+                  error_message: `draft_edits capture failed: ${e instanceof Error ? e.message : String(e)}`,
+                  user_id: user.id,
+                  context: { stage: "draft_edits", postId },
+                });
+              } catch (_) { /* ignore */ }
+            }
+          };
+          // @ts-ignore EdgeRuntime is provided by Supabase Deno runtime
+          if (typeof EdgeRuntime !== "undefined" && (EdgeRuntime as any)?.waitUntil) {
+            // @ts-ignore
+            EdgeRuntime.waitUntil(recordDraftEdit());
+          } else {
+            recordDraftEdit();
+          }
+        }
+      } catch (e) {
+        console.error("draft_edits outer failure (non-blocking):", e);
+      }
+
       // Fire-and-forget: enqueue a voice_distill job so the worker re-learns
       // this user's voice from the growing published corpus. The partial
       // unique index (job_type, user_id) WHERE status IN ('pending','claimed')
