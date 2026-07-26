@@ -1005,6 +1005,14 @@ export default function Admin() {
             <Stat label="Hours since a capture" value={N(p.machine?.hours_since_capture) ?? "?"} colour={Number(p.machine?.hours_since_capture ?? 0) > 72 ? C.ox : C.teal} />
           </div>
 
+          {/* Headline money, read from the same definition /admin/cost reads. */}
+          <EconomicsHeadline state={economics} />
+          <div style={{ height: 18 }} />
+          <SpendByFunction state={economics} />
+          <div style={{ height: 18 }} />
+          <CostRatios state={economics} />
+          <div style={{ height: 18 }} />
+
           <Label>Automated work</Label>
           <div style={{ height: 10 }} />
           <CappedTable
