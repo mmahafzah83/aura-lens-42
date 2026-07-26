@@ -2,6 +2,7 @@
 import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { linkedinFetch } from "../_shared/linkedinFetch.ts";
+import { alertPublishFailure } from "../_shared/publishFailureAlert.ts";
 
 const LINKEDIN_VERSION = "202605";
 
@@ -45,6 +46,28 @@ function firstNonEmptyLine(text: string): string {
     if (line.trim()) return line.trim();
   }
   return "";
+}
+
+/**
+ * Raise a critical ops alert for a real user's failed publish.
+ * Fire-and-forget, own try/catch, never awaited on the publish path.
+ * A publish that fails BECAUSE of logging is a catastrophe — so this cannot throw.
+ */
+function fireFailureAlert(
+  adminClient: any,
+  opts: { userId: string; postId?: string | null; errorText: string; postText?: string | null },
+) {
+  try {
+    const p = alertPublishFailure(adminClient, { ...opts, origin: "linkedin-publish" })
+      .catch((e: unknown) => console.error("publish failure alert failed (non-blocking):", e));
+    // @ts-ignore EdgeRuntime is provided by Supabase Deno runtime
+    if (typeof EdgeRuntime !== "undefined" && (EdgeRuntime as any)?.waitUntil) {
+      // @ts-ignore
+      EdgeRuntime.waitUntil(p);
+    }
+  } catch (e) {
+    console.error("publish failure alert outer failure (non-blocking):", e);
+  }
 }
 
 function numericTokens(text: string): Set<string> {
