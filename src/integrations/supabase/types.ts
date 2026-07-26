@@ -2625,6 +2625,51 @@ export type Database = {
           },
         ]
       }
+      metric_targets: {
+        Row: {
+          baseline_on: string | null
+          baseline_value: number | null
+          created_at: string
+          id: string
+          metric_key: string
+          rationale: string
+          review_note: string | null
+          reviewed_on: string | null
+          set_on: string
+          status: string
+          target_by: string
+          target_value: number
+        }
+        Insert: {
+          baseline_on?: string | null
+          baseline_value?: number | null
+          created_at?: string
+          id?: string
+          metric_key: string
+          rationale: string
+          review_note?: string | null
+          reviewed_on?: string | null
+          set_on?: string
+          status?: string
+          target_by: string
+          target_value: number
+        }
+        Update: {
+          baseline_on?: string | null
+          baseline_value?: number | null
+          created_at?: string
+          id?: string
+          metric_key?: string
+          rationale?: string
+          review_note?: string | null
+          reviewed_on?: string | null
+          set_on?: string
+          status?: string
+          target_by?: string
+          target_value?: number
+        }
+        Relationships: []
+      }
       narrative_suggestions: {
         Row: {
           angle: string
