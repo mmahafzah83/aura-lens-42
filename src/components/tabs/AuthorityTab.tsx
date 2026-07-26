@@ -1006,6 +1006,14 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
             .update({ post_text: body })
             .eq("id", editingDraftId);
           if (error) throw error;
+          // One-time snapshot of the served text — guarded so re-saves can't clobber it.
+          if (servedTextRef.current) {
+            await supabase
+              .from("linkedin_posts")
+              .update({ original_generated_text: servedTextRef.current })
+              .eq("id", editingDraftId)
+              .is("original_generated_text", null);
+          }
           setDraftSaved(true);
           toast.success("Draft updated in Library");
         } else {
