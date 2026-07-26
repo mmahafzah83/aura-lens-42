@@ -750,6 +750,60 @@ export type Database = {
         }
         Relationships: []
       }
+      decisions: {
+        Row: {
+          actual_value: number | null
+          baseline_value: number | null
+          created_at: string
+          decided_on: string
+          decision: string
+          expected_outcome: string | null
+          expected_value: number | null
+          id: string
+          metric_key: string | null
+          rationale: string | null
+          review_note: string | null
+          review_on: string | null
+          reviewed_on: string | null
+          status: string
+          title: string
+        }
+        Insert: {
+          actual_value?: number | null
+          baseline_value?: number | null
+          created_at?: string
+          decided_on?: string
+          decision: string
+          expected_outcome?: string | null
+          expected_value?: number | null
+          id?: string
+          metric_key?: string | null
+          rationale?: string | null
+          review_note?: string | null
+          review_on?: string | null
+          reviewed_on?: string | null
+          status?: string
+          title: string
+        }
+        Update: {
+          actual_value?: number | null
+          baseline_value?: number | null
+          created_at?: string
+          decided_on?: string
+          decision?: string
+          expected_outcome?: string | null
+          expected_value?: number | null
+          id?: string
+          metric_key?: string | null
+          rationale?: string | null
+          review_note?: string | null
+          review_on?: string | null
+          reviewed_on?: string | null
+          status?: string
+          title?: string
+        }
+        Relationships: []
+      }
       design_system: {
         Row: {
           created_at: string | null
@@ -3830,6 +3884,21 @@ export type Database = {
       complete_job: {
         Args: { p_error?: string; p_id: string; p_success: boolean }
         Returns: undefined
+      }
+      decisions_due: {
+        Args: { p_on?: string }
+        Returns: {
+          baseline_value: number
+          days_overdue: number
+          decided_on: string
+          decision: string
+          expected_outcome: string
+          expected_value: number
+          id: string
+          metric_key: string
+          review_on: string
+          title: string
+        }[]
       }
       delete_account: { Args: { p_user_id: string }; Returns: undefined }
       email_crons_ran_without_sends: {

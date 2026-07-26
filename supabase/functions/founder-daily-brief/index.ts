@@ -310,6 +310,32 @@ Deno.serve(async (req) => {
       `${draftHolders ?? "?"} users hold a draft right now and would receive it if you switched it on.`,
       "Decide: switch it live, or say out loud that it stays off for another week.");
 
+    // decide[] — decisions that have come due. A decision that comes due and
+    // does not appear in front of him is a decision that will never be
+    // reviewed, so it rides in the same DECIDE section as everything else.
+    const decisions_due: any[] = [];
+    try {
+      const { data: dueRows } = await admin.rpc("decisions_due");
+      for (const d of (dueRows ?? []) as any[]) {
+        const hasMetric = d.metric_key && d.metric_key !== "none";
+        const live = hasMetric ? audit.v(d.metric_key) : null;
+        const label = hasMetric ? String(d.metric_key).replace(/_/g, " ") : null;
+        const line = hasMetric
+          ? `On ${d.decided_on} you decided: ${d.title}. You expected ${label} to reach ${d.expected_value} by today. It is ${live ?? "unknown"}.`
+          : `On ${d.decided_on} you decided: ${d.title}. There is no funnel metric on this one — judge it yes or no.`;
+        decisions_due.push({
+          id: d.id, title: d.title, decided_on: d.decided_on, review_on: d.review_on,
+          metric_key: d.metric_key, baseline_value: d.baseline_value,
+          expected_value: d.expected_value, actual_value: live, line,
+        });
+        push(decide, `decision:${d.id}`, line,
+          d.expected_outcome || d.decision,
+          "Open /admin → Decisions and mark it worked, did not work, or cannot tell yet.");
+      }
+    } catch (_e) {
+      // A decision log that cannot be read must not take the brief down.
+    }
+
     // jobs — suppression rule
     const jobsOk: any[] = [];
     const jobsFailed: any[] = [];
@@ -439,7 +465,7 @@ Deno.serve(async (req) => {
       voc: A.voc,
       agent: A.agent,
       machine: A.machine,
-      needs_you, decide, watch: watchShown, handled: handledN,
+      needs_you, decide, decisions_due, watch: watchShown, handled: handledN,
       coverage: { measured_areas: measuredN, total_areas: totalAreas, unmeasured },
       recommendations: recs,
       findings: findingsShown,

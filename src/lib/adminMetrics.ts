@@ -326,3 +326,190 @@ export function cohortVerdict(cohorts: Cohort[]): { line: string; enough: boolea
     line: `The week of ${newest.cohortWeek} is reaching first capture ${dir} than the week of ${oldest.cohortWeek} (${b}% against ${a}%).`,
   };
 }
+
+/* ============================================================================
+ * DECISIONS — the review loop.
+ *
+ * The point of a decision log is not the writing down; it is that the system
+ * comes back and asks whether the thing you expected actually happened. Every
+ * number here is counted, never measured off an array, and every baseline is
+ * captured by the system from today's brief — never typed by a human.
+ * ========================================================================== */
+
+export type DecisionStatus = "pending" | "open" | "confirmed" | "refuted" | "inconclusive";
+
+export type Decision = {
+  id: string;
+  decided_on: string;
+  title: string;
+  decision: string;
+  rationale: string | null;
+  expected_outcome: string | null;
+  metric_key: string | null;
+  baseline_value: number | null;
+  expected_value: number | null;
+  review_on: string | null;
+  status: DecisionStatus;
+  actual_value: number | null;
+  reviewed_on: string | null;
+  review_note: string | null;
+  created_at: string;
+};
+
+/** "none" is a judgement call with a review date, not an escape hatch. */
+export const DECISION_METRIC_OPTIONS: { key: MetricKey | "none"; label: string }[] = [
+  ...FUNNEL_ORDER.map((f) => ({ key: f.key as MetricKey | "none", label: f.label })),
+  { key: "none", label: "No funnel metric — judged yes/no on the review date" },
+];
+
+export const DECISION_BLOCKED_MESSAGE =
+  "A decision needs something that could prove it wrong. Choose the metric it should move, the value you expect it to reach, and the date you will check.";
+
+export const DECISION_STATUS_LABEL: Record<DecisionStatus, string> = {
+  pending: "Awaiting your call",
+  open: "In flight",
+  confirmed: "Worked",
+  refuted: "Did not work",
+  inconclusive: "Cannot tell yet",
+};
+
+/** Counted, never `.length`. */
+export const countWhere = <T,>(rows: T[], fn: (r: T) => boolean): number =>
+  rows.reduce((n, r) => (fn(r) ? n + 1 : n), 0);
+
+const todayISO = () => new Date().toISOString().slice(0, 10);
+
+export async function loadDecisions(): Promise<Decision[]> {
+  const { data, error } = await supabase
+    .from("decisions" as any)
+    .select("*")
+    .order("decided_on", { ascending: false })
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return ((data ?? []) as any[]) as Decision[];
+}
+
+export const pendingDecisions = (d: Decision[]) => d.filter((x) => x.status === "pending");
+export const openDecisions = (d: Decision[]) => d.filter((x) => x.status === "open");
+export const settledDecisions = (d: Decision[]) =>
+  d.filter((x) => x.status === "confirmed" || x.status === "refuted" || x.status === "inconclusive");
+
+/** Whole days from today until the review date; negative means overdue. */
+export function daysUntilReview(review_on: string | null, on = todayISO()): number | null {
+  if (!review_on) return null;
+  const a = Date.parse(`${review_on}T00:00:00Z`);
+  const b = Date.parse(`${on}T00:00:00Z`);
+  if (Number.isNaN(a) || Number.isNaN(b)) return null;
+  return Math.round((a - b) / 86400000);
+}
+
+/**
+ * Decisions whose review date has arrived and that are still open. Same
+ * definition the brief's `decisions_due` SQL function uses.
+ */
+export function dueDecisions(d: Decision[], on = todayISO()): Decision[] {
+  return openDecisions(d).filter((x) => {
+    const left = daysUntilReview(x.review_on, on);
+    return left !== null && left <= 0;
+  });
+}
+
+/** "4 decisions reviewed, 1 of them confirmed." — kept whether or not it flatters. */
+export function decisionScoreboard(d: Decision[]): { reviewed: number; confirmed: number; line: string } {
+  const settled = settledDecisions(d);
+  const reviewed = countWhere(settled, () => true);
+  const confirmed = countWhere(settled, (x) => x.status === "confirmed");
+  if (reviewed === 0) {
+    return { reviewed, confirmed, line: "No decision has been reviewed yet. Nothing here is keeping score of you so far." };
+  }
+  return {
+    reviewed,
+    confirmed,
+    line: `${reviewed} decision${reviewed === 1 ? "" : "s"} reviewed, ${confirmed} of them confirmed.`,
+  };
+}
+
+export type DecisionDraft = {
+  title: string;
+  decision: string;
+  rationale: string;
+  expected_outcome: string;
+  metric_key: string;
+  expected_value: string;
+  review_on: string;
+  status: "pending" | "open";
+};
+
+/** The falsifiability gate. Returns the message the founder sees, or null. */
+export function validateDecision(d: DecisionDraft): string | null {
+  if (!d.title.trim()) return "A decision needs a title.";
+  if (!d.decision.trim()) return "Write down what was actually decided.";
+  if (d.status === "pending") return null;
+  const hasMetric = !!d.metric_key;
+  const hasValue = d.metric_key === "none" || d.expected_value.trim() !== "";
+  const hasDate = !!d.review_on;
+  if (hasMetric && hasValue && hasDate) return null;
+  return DECISION_BLOCKED_MESSAGE;
+}
+
+/**
+ * Save a decision. The baseline is read from today's brief for the chosen
+ * metric — the founder is never asked to type it, because he would guess, and
+ * a guessed baseline makes the whole comparison worthless.
+ */
+export async function saveDecision(d: DecisionDraft, m: AdminMetrics | null) {
+  const blocked = validateDecision(d);
+  if (blocked) throw new Error(blocked);
+  const key = d.metric_key && d.metric_key !== "none" ? (d.metric_key as MetricKey) : null;
+  const baseline = key && m ? metricValue(m, key) : null;
+  const { error } = await supabase.from("decisions" as any).insert({
+    decided_on: todayISO(),
+    title: d.title.trim(),
+    decision: d.decision.trim(),
+    rationale: d.rationale.trim() || null,
+    expected_outcome: d.expected_outcome.trim() || null,
+    metric_key: d.status === "open" ? d.metric_key : d.metric_key || null,
+    baseline_value: baseline,
+    expected_value: key && d.expected_value.trim() !== "" ? Number(d.expected_value) : null,
+    review_on: d.review_on || null,
+    status: d.status,
+  });
+  if (error) throw error;
+}
+
+/**
+ * Settle a decision: capture the actual value from the live metric, stamp the
+ * review date and keep the note. Nothing is ever deleted — a refuted decision
+ * is the most valuable row in the table.
+ */
+export async function settleDecision(
+  decision: Decision,
+  verdict: "confirmed" | "refuted" | "inconclusive",
+  note: string,
+  m: AdminMetrics | null,
+) {
+  const key =
+    decision.metric_key && decision.metric_key !== "none" ? (decision.metric_key as MetricKey) : null;
+  const actual = key && m ? metricValue(m, key) : null;
+  const { error } = await supabase
+    .from("decisions" as any)
+    .update({
+      status: verdict,
+      actual_value: actual,
+      reviewed_on: todayISO(),
+      review_note: note.trim() || null,
+    })
+    .eq("id", decision.id);
+  if (error) throw error;
+}
+
+/** "You expected Published to reach 3 by today. It is 1." */
+export function reviewSentence(d: Decision, m: AdminMetrics | null): string {
+  const head = `On ${d.decided_on} you decided: ${d.title}.`;
+  if (!d.metric_key || d.metric_key === "none") {
+    return `${head} There is no funnel metric on this one — judge it yes or no: ${d.expected_outcome ?? d.decision}`;
+  }
+  const label = FUNNEL_ORDER.find((f) => f.key === d.metric_key)?.label ?? d.metric_key;
+  const live = m ? metricValue(m, d.metric_key as MetricKey) : null;
+  return `${head} You expected ${label} to reach ${d.expected_value ?? "?"} by today. It is ${live ?? "unknown"}.`;
+}
