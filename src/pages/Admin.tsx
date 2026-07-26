@@ -8,6 +8,9 @@ import RegenerateReportPanel from "@/components/admin/RegenerateReportPanel";
 import ReportHealthPanel from "@/components/admin/ReportHealthPanel";
 import IsItWorkingZone, { useIsItWorking } from "@/components/admin/cockpit/IsItWorking";
 import { DecisionsDue, DecisionsZone, useDecisions } from "@/components/admin/cockpit/Decisions";
+import { TargetLine, TargetPromptLine, TargetsDue, TargetsPanel, useTargets } from "@/components/admin/cockpit/Targets";
+import { CostRatios, EconomicsHeadline, SpendByFunction, useEconomics } from "@/components/admin/cockpit/Economics";
+import { dueTargets } from "@/lib/adminTargets";
 import { countWhere, dueDecisions, decisionScoreboard } from "@/lib/adminMetrics";
 import { downloadBlob } from "@/lib/download";
 import {
@@ -402,15 +405,23 @@ export default function Admin() {
       const prev = i === 0 ? null : headline(FUNNEL_STAGES[i - 1].key, N(p?.funnel?.[FUNNEL_STAGES[i - 1].key]));
       const lost = prev !== null && v !== null ? prev - v : null;
       return (
-        <Bar
-          key={s.key}
-          label={s.label}
-          value={v}
-          total={invited}
-          colour={s.key === "published" ? C.teal : lost && lost > 0 ? C.amber : C.damber}
-          note={lost === null ? s.from : lost > 0 ? `${lost} lost here${clickable ? " — click to see who" : ""}` : "nobody lost at this step"}
-          onClick={clickable && s.stage ? () => setStageOpen(s.stage!) : undefined}
-        />
+        <div key={s.key}>
+          <Bar
+            label={s.label}
+            value={v}
+            total={invited}
+            colour={s.key === "published" ? C.teal : lost && lost > 0 ? C.amber : C.damber}
+            note={lost === null ? s.from : lost > 0 ? `${lost} lost here${clickable ? " — click to see who" : ""}` : "nobody lost at this step"}
+            onClick={clickable && s.stage ? () => setStageOpen(s.stage!) : undefined}
+          />
+          {/* Either the target and the gap, or "no target set". Never blank. */}
+          <TargetLine
+            metricKey={s.key as any}
+            current={v}
+            state={targets}
+            onSet={clickable ? (k) => setPresetTarget(k as any) : undefined}
+          />
+        </div>
       );
     });
 
@@ -468,6 +479,14 @@ export default function Admin() {
   // comes due must appear in DECIDE, not only in its own zone.
   const decisions = useDecisions();
   const decisionsDueN = countWhere(dueDecisions(decisions.rows), () => true);
+
+  // Targets and economics. Both are mechanisms that stay quiet until they
+  // mean something: no target is seeded, and no ratio renders on a thin
+  // denominator.
+  const targets = useTargets();
+  const targetsDueN = countWhere(dueTargets(targets.rows), () => true);
+  const [presetTarget, setPresetTarget] = useState<any>(null);
+  const economics = useEconomics();
 
   /* ================= CEO VIEW ================= */
   const ceoBody = p && (
@@ -563,7 +582,7 @@ export default function Admin() {
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12, marginBottom: 18 }}>
             <Stat label="Needs you" value={needs.length} colour={C.ox} />
-            <Stat label="Decide" value={decide.length + decisionsDueN} colour={C.damber} />
+            <Stat label="Decide" value={decide.length + decisionsDueN + targetsDueN} colour={C.damber} />
             <Stat label="Watch" value={watch.length} colour={C.amber} />
             <Stat label="Handled" value={N(p.handled) ?? 0} colour={C.teal} sub="quietly, by the machine" />
           </div>
@@ -602,6 +621,8 @@ export default function Admin() {
             />
           ))}
           <DecisionsDue state={decisions} />
+          {/* A target whose date has passed is reviewed exactly like a decision. */}
+          <TargetsDue state={targets} />
           {watch.map((item: any) => (
             <Finding key={item.fingerprint} colour={C.amber} finding={item.what} example={item.impact} recommendation={item.action} />
           ))}
@@ -618,6 +639,8 @@ export default function Admin() {
       content: (
         <>
           {funnelBars(true)}
+          {/* Silent until a cohort reaches five. Same floor as the cohort work. */}
+          <TargetPromptLine state={targets} cohorts={working.cohorts ?? []} />
           <div style={{ height: 1, background: C.rule, margin: "20px 0" }} />
           <Finding
             colour={publishedUsers === 0 ? C.amber : C.teal}
@@ -631,6 +654,8 @@ export default function Admin() {
             recommendation="Walk one person the whole way from draft to a live post this week. The funnel does not move on its own."
             countedFrom="entries; linkedin_posts.tracking_status = published"
           />
+          <div style={{ height: 1, background: C.rule, margin: "20px 0" }} />
+          <TargetsPanel state={targets} presetKey={presetTarget} />
         </>
       ),
     });
@@ -979,6 +1004,14 @@ export default function Admin() {
             />
             <Stat label="Hours since a capture" value={N(p.machine?.hours_since_capture) ?? "?"} colour={Number(p.machine?.hours_since_capture ?? 0) > 72 ? C.ox : C.teal} />
           </div>
+
+          {/* Headline money, read from the same definition /admin/cost reads. */}
+          <EconomicsHeadline state={economics} />
+          <div style={{ height: 18 }} />
+          <SpendByFunction state={economics} />
+          <div style={{ height: 18 }} />
+          <CostRatios state={economics} />
+          <div style={{ height: 18 }} />
 
           <Label>Automated work</Label>
           <div style={{ height: 10 }} />

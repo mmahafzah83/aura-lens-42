@@ -2625,6 +2625,51 @@ export type Database = {
           },
         ]
       }
+      metric_targets: {
+        Row: {
+          baseline_on: string | null
+          baseline_value: number | null
+          created_at: string
+          id: string
+          metric_key: string
+          rationale: string
+          review_note: string | null
+          reviewed_on: string | null
+          set_on: string
+          status: string
+          target_by: string
+          target_value: number
+        }
+        Insert: {
+          baseline_on?: string | null
+          baseline_value?: number | null
+          created_at?: string
+          id?: string
+          metric_key: string
+          rationale: string
+          review_note?: string | null
+          reviewed_on?: string | null
+          set_on?: string
+          status?: string
+          target_by: string
+          target_value: number
+        }
+        Update: {
+          baseline_on?: string | null
+          baseline_value?: number | null
+          created_at?: string
+          id?: string
+          metric_key?: string
+          rationale?: string
+          review_note?: string | null
+          reviewed_on?: string | null
+          set_on?: string
+          status?: string
+          target_by?: string
+          target_value?: number
+        }
+        Relationships: []
+      }
       narrative_suggestions: {
         Row: {
           angle: string
@@ -3816,6 +3861,14 @@ export type Database = {
           last_fail: string
         }[]
       }
+      admin_economics_denominators: {
+        Args: never
+        Returns: {
+          active_users: number
+          published_posts: number
+          signals_delivered: number
+        }[]
+      }
       admin_list_crons: {
         Args: never
         Returns: {
@@ -3829,6 +3882,21 @@ export type Database = {
         }[]
       }
       admin_run_cron: { Args: { p_jobid: number }; Returns: string }
+      admin_spend_by_function: {
+        Args: { p_months_back?: number }
+        Returns: {
+          calls: number
+          function_name: string
+          spend: number
+        }[]
+      }
+      admin_spend_daily: {
+        Args: { p_days?: number }
+        Returns: {
+          day: string
+          spend: number
+        }[]
+      }
       admin_stage_timeline: {
         Args: { p_days?: number }
         Returns: {
