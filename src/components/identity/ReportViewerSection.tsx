@@ -9,6 +9,7 @@ import { AuraButton } from "@/components/ui/AuraButton";
 import ReportDocument from "@/components/ReportDocument";
 import { exportReportPdf } from "@/lib/exportReportPdf";
 import { useReportSnapshot } from "@/hooks/useReportSnapshot";
+import BrandPaperDocument from "@/components/report/BrandPaperDocument";
 
 const SHEET_W = 794; // A4 @ 96dpi — fixed, must be scaled to fit on screen.
 
@@ -119,7 +120,7 @@ export default function ReportViewerSection({ firstName, onCompleteAssessment }:
           loading={exporting}
           disabled={exporting || loading || !report}
         >
-          Export PDF
+          Download your report (PDF)
         </AuraButton>
         {version && snapshotAt ? (
           <span style={{ fontSize: 11, color: "var(--ink-4)" }}>
@@ -162,13 +163,20 @@ export default function ReportViewerSection({ firstName, onCompleteAssessment }:
         </div>
       )}
 
-      {/* Separate full-size mount used ONLY for rasterising the export. */}
+      {/* Separate full-size mount used ONLY for rasterising the export.
+          SLICE 4d — the Brand Assessment paper is bound in FIRST, then the
+          Strategic Identity paper, so exportReportPdf (which walks every
+          [data-report-page] in DOM order) produces one continuous document. */}
       {report ? (
         <div
           ref={exportMountRef}
           aria-hidden
           style={{ position: "absolute", left: -9999, top: 0, width: SHEET_W, pointerEvents: "none" }}
         >
+          {report.brand_paper &&
+          (report.brand_paper.primary_archetype || report.brand_paper.market_read) ? (
+            <BrandPaperDocument paper={report.brand_paper} showClosing={false} />
+          ) : null}
           <ReportDocument data={report} />
         </div>
       ) : null}

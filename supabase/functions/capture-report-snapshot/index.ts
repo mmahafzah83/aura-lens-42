@@ -16,6 +16,7 @@ import {
   filterPublishedRows,
   CATALOG_EXCLUDED_STATUSES,
 } from "../_shared/postProvenance.ts";
+import { buildBrandPaper } from "../_shared/brandPaper.ts";
 
 // Mirror of src/lib/postProvenance.ts applyCatalogFilter (absent in the
 // edge-side copy of that module).
@@ -41,7 +42,7 @@ const json = (body: unknown, status = 200) =>
 // Bump this string ONLY when ReportDocument.tsx changes in a way that alters
 // rendered output; never edit it casually. KEEP IN SYNC with
 // TEMPLATE_VERSION in src/lib/buildIdentityReport.ts.
-const TEMPLATE_VERSION = "aura-paper-v1";
+const TEMPLATE_VERSION = "aura-paper-v2";
 
 // KEEP IN SYNC with src/lib/marketPersonas.ts
 const PERSONA_LABELS: Record<string, Record<string, string>> = {
@@ -332,6 +333,14 @@ async function buildIdentityReport(db: any, userId: string): Promise<Record<stri
     template_version: TEMPLATE_VERSION,
     profile, positioning, profile_intelligence, score, brand_position,
     capabilities, market_mirror, territories, footprint, content, voice,
+    brand_paper: p?.brand_assessment_results
+      ? buildBrandPaper(brandResults, {
+          first_name: p.first_name ?? null,
+          last_name: p.last_name ?? null,
+          level: p.level ?? null,
+          sector_focus: p.sector_focus ?? null,
+        })
+      : null,
   };
 }
 

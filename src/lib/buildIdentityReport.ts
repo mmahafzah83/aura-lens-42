@@ -24,7 +24,9 @@ import {
 // Bump ONLY when ReportDocument.tsx changes in a way that alters rendered
 // output; never edit casually. KEEP IN SYNC with TEMPLATE_VERSION in
 // supabase/functions/capture-report-snapshot/index.ts.
-export const TEMPLATE_VERSION = "aura-paper-v1";
+import { buildBrandPaper, type BrandPaper } from "@/lib/buildBrandPaper";
+
+export const TEMPLATE_VERSION = "aura-paper-v2";
 
 // ── Canonical capability dimensions (AuditRadarWidget.tsx:7-17) ──
 export const CAPABILITY_DIMENSIONS: readonly string[] = [
@@ -144,6 +146,11 @@ export interface ReportData {
   footprint: FootprintSection | null;
   content: ContentSection | null;
   voice: VoiceSection | null;
+  /**
+   * SLICE 4d — the Brand Assessment narrative, frozen into the artifact so
+   * the combined PDF is reproducible. Optional: v1 snapshots lack it.
+   */
+  brand_paper?: BrandPaper | null;
 }
 
 // ── Small formatters ──
@@ -502,5 +509,13 @@ export async function buildIdentityReport(userId: string): Promise<ReportData> {
     footprint,
     content,
     voice,
+    brand_paper: p?.brand_assessment_results
+      ? buildBrandPaper(brandResults, {
+          first_name: p.first_name ?? null,
+          last_name: p.last_name ?? null,
+          level: p.level ?? null,
+          sector_focus: p.sector_focus ?? null,
+        })
+      : null,
   };
 }
