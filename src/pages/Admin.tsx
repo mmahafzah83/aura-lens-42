@@ -8,6 +8,9 @@ import RegenerateReportPanel from "@/components/admin/RegenerateReportPanel";
 import ReportHealthPanel from "@/components/admin/ReportHealthPanel";
 import IsItWorkingZone, { useIsItWorking } from "@/components/admin/cockpit/IsItWorking";
 import { DecisionsDue, DecisionsZone, useDecisions } from "@/components/admin/cockpit/Decisions";
+import { TargetLine, TargetPromptLine, TargetsDue, TargetsPanel, useTargets } from "@/components/admin/cockpit/Targets";
+import { CostRatios, EconomicsHeadline, SpendByFunction, useEconomics } from "@/components/admin/cockpit/Economics";
+import { dueTargets } from "@/lib/adminTargets";
 import { countWhere, dueDecisions, decisionScoreboard } from "@/lib/adminMetrics";
 import { downloadBlob } from "@/lib/download";
 import {
@@ -402,15 +405,23 @@ export default function Admin() {
       const prev = i === 0 ? null : headline(FUNNEL_STAGES[i - 1].key, N(p?.funnel?.[FUNNEL_STAGES[i - 1].key]));
       const lost = prev !== null && v !== null ? prev - v : null;
       return (
-        <Bar
-          key={s.key}
-          label={s.label}
-          value={v}
-          total={invited}
-          colour={s.key === "published" ? C.teal : lost && lost > 0 ? C.amber : C.damber}
-          note={lost === null ? s.from : lost > 0 ? `${lost} lost here${clickable ? " — click to see who" : ""}` : "nobody lost at this step"}
-          onClick={clickable && s.stage ? () => setStageOpen(s.stage!) : undefined}
-        />
+        <div key={s.key}>
+          <Bar
+            label={s.label}
+            value={v}
+            total={invited}
+            colour={s.key === "published" ? C.teal : lost && lost > 0 ? C.amber : C.damber}
+            note={lost === null ? s.from : lost > 0 ? `${lost} lost here${clickable ? " — click to see who" : ""}` : "nobody lost at this step"}
+            onClick={clickable && s.stage ? () => setStageOpen(s.stage!) : undefined}
+          />
+          {/* Either the target and the gap, or "no target set". Never blank. */}
+          <TargetLine
+            metricKey={s.key as any}
+            current={v}
+            state={targets}
+            onSet={clickable ? (k) => setPresetTarget(k as any) : undefined}
+          />
+        </div>
       );
     });
 
@@ -468,6 +479,14 @@ export default function Admin() {
   // comes due must appear in DECIDE, not only in its own zone.
   const decisions = useDecisions();
   const decisionsDueN = countWhere(dueDecisions(decisions.rows), () => true);
+
+  // Targets and economics. Both are mechanisms that stay quiet until they
+  // mean something: no target is seeded, and no ratio renders on a thin
+  // denominator.
+  const targets = useTargets();
+  const targetsDueN = countWhere(dueTargets(targets.rows), () => true);
+  const [presetTarget, setPresetTarget] = useState<any>(null);
+  const economics = useEconomics();
 
   /* ================= CEO VIEW ================= */
   const ceoBody = p && (
