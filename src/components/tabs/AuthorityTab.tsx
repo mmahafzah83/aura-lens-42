@@ -412,6 +412,9 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
   const [selectedSignalTitle, setSelectedSignalTitle] = useState<string | null>(null);
   const [selectedSignalInsight, setSelectedSignalInsight] = useState<string | null>(null);
   const [generationTimestamp, setGenerationTimestamp] = useState<string | null>(null);
+  // Data collection only: the exact text Aura served for the current draft,
+  // snapshotted at generation time so we can compare it to what gets published.
+  const servedTextRef = useRef<string | null>(null);
   const [voiceWords, setVoiceWords] = useState<string[]>([]);
   const [preferredStructures, setPreferredStructures] = useState<string[]>([]);
   const [profileName, setProfileName] = useState<string>("");
