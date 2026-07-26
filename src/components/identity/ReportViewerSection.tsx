@@ -173,7 +173,8 @@ export default function ReportViewerSection({ firstName, onCompleteAssessment }:
           aria-hidden
           style={{ position: "absolute", left: -9999, top: 0, width: SHEET_W, pointerEvents: "none" }}
         >
-          {report.brand_paper ? (
+          {report.brand_paper &&
+          (report.brand_paper.primary_archetype || report.brand_paper.market_read) ? (
             <BrandPaperDocument paper={report.brand_paper} showClosing={false} />
           ) : null}
           <ReportDocument data={report} />
