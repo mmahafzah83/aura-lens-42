@@ -6,6 +6,10 @@ import { useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { AuraButton } from "@/components/ui/AuraButton";
 import { isArabicText } from "@/lib/utils";
+import { PAPER, INK, INK2, SPOT, RULE, RULE_SOFT, SERIF, MONO, ARABIC } from "@/components/broadsheet/pressTokens";
+
+/** Muted ink tint — pressTokens has no INK-3 equivalent. */
+const INK3 = "rgba(27,23,18,0.62)";
 
 /** Mirrors BrandAssessmentModal's stripMd so no literal ** leaks on screen. */
 const stripMd = (s: string) =>
@@ -18,7 +22,7 @@ const stripMd = (s: string) =>
 
 const dir = (s: string) => (isArabicText(s) ? "rtl" : "ltr");
 const fontFor = (s: string) =>
-  isArabicText(s) ? "'CairoAR', 'Cairo', sans-serif" : "var(--font-body)";
+  isArabicText(s) ? `'CairoAR', ${ARABIC}` : "var(--font-body)";
 
 const textStyle = (s: string): React.CSSProperties => ({
   direction: dir(s),
@@ -51,12 +55,12 @@ const Chip = ({ text }: { text: string }) => (
     style={{
       display: "inline-block",
       padding: "5px 10px",
-      borderRadius: 999,
-      border: "0.5px solid var(--brand-line, rgba(0,0,0,0.12))",
-      background: "var(--aura-surface, rgba(0,0,0,0.02))",
+      borderRadius: 2,
+      border: `0.5px solid ${RULE}`,
+      background: PAPER,
       fontSize: 12,
       lineHeight: 1.4,
-      color: "var(--ink-2)",
+      color: INK2,
       maxWidth: "100%",
       ...textStyle(text),
     }}
@@ -107,16 +111,17 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
     setOpen((prev) => ({ ...prev, [id]: !(prev[id] ?? idx < 2) }));
 
   const cardStyle: React.CSSProperties = {
-    background: "var(--aura-card)",
-    border: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))",
-    borderRadius: 12,
-    padding: 16,
+    background: PAPER,
+    border: `0.5px solid ${RULE}`,
+    borderRadius: 4,
+    padding: "24px 20px",
+    color: INK,
   };
 
   if (!hasAssessment || !r || (!headline && !standfirst && blocks.length === 0)) {
     return (
       <section style={cardStyle}>
-        <p className="text-sm" style={{ color: "var(--ink-3)", margin: 0 }}>
+        <p className="text-sm" style={{ color: INK3, margin: 0, fontFamily: "var(--font-body)" }}>
           Complete your brand assessment to generate your reports.
         </p>
         <div style={{ marginTop: 12 }}>
@@ -138,15 +143,16 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
   return (
     <section style={{ ...cardStyle, overflow: "hidden" }}>
       {/* Header */}
-      <header style={{ marginBottom: 16 }}>
+      <header style={{ marginBottom: 24 }}>
         {headline ? (
           <h3
             style={{
               margin: 0,
-              fontFamily: "var(--font-display, 'Cormorant Garamond')",
-              fontSize: 24,
-              lineHeight: 1.2,
-              color: "var(--ink)",
+              fontFamily: SERIF,
+              fontSize: 30,
+              fontWeight: 500,
+              lineHeight: 1.15,
+              color: INK,
               ...textStyle(headline),
             }}
           >
@@ -156,11 +162,11 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
         {standfirst ? (
           <p
             style={{
-              marginTop: 8,
+              marginTop: 12,
               marginBottom: 0,
-              fontSize: 14,
-              lineHeight: 1.6,
-              color: "var(--ink-2)",
+              fontSize: 15,
+              lineHeight: 1.75,
+              color: INK2,
               ...textStyle(standfirst),
             }}
           >
@@ -168,7 +174,7 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
           </p>
         ) : null}
         {secondary ? (
-          <p style={{ marginTop: 8, marginBottom: 0, fontSize: 11, color: "var(--ink-4)", ...textStyle(secondary) }}>
+          <p style={{ marginTop: 14, marginBottom: 0, fontFamily: MONO, fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: SPOT, ...textStyle(secondary) }}>
             Second nature: {secondary}
           </p>
         ) : null}
@@ -182,9 +188,9 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
           style={{
             flexWrap: "wrap",
             gap: 6,
-            paddingBottom: 12,
-            marginBottom: 12,
-            borderBottom: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))",
+            paddingBottom: 16,
+            marginBottom: 8,
+            borderBottom: `0.5px solid ${RULE}`,
           }}
         >
           {blocks.map((b) => (
@@ -193,13 +199,25 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
               type="button"
               onClick={() => jump(b.id)}
               style={{
+                fontFamily: MONO,
                 fontSize: 11,
-                padding: "4px 9px",
-                borderRadius: 999,
-                border: "0.5px solid var(--brand-line, rgba(0,0,0,0.12))",
-                background: "transparent",
-                color: "var(--ink-3)",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                padding: "5px 9px",
+                borderRadius: 2,
+                border: `0.5px solid ${RULE}`,
+                background: PAPER,
+                color: INK3,
                 cursor: "pointer",
+                transition: "color 140ms ease, border-color 140ms ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = SPOT;
+                e.currentTarget.style.borderColor = SPOT;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = INK3;
+                e.currentTarget.style.borderColor = RULE;
               }}
             >
               {b.label}
@@ -216,7 +234,7 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
             <div
               key={b.id}
               id={`brand-report-${b.id}`}
-              style={{ borderTop: idx === 0 ? "none" : "0.5px solid var(--brand-line, rgba(0,0,0,0.08))" }}
+              style={{ borderTop: `0.5px solid ${idx === 0 ? RULE : RULE_SOFT}` }}
             >
               <button
                 type="button"
@@ -228,20 +246,20 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
                   alignItems: "center",
                   justifyContent: "space-between",
                   gap: 10,
-                  padding: "12px 0",
+                  padding: "14px 0",
                   background: "transparent",
                   border: "none",
                   cursor: "pointer",
                   textAlign: "left",
                 }}
               >
-                <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.06em", color: "var(--ink)" }}>
+                <span style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: SPOT }}>
                   {b.label}
                 </span>
                 <ChevronDown
                   size={14}
                   style={{
-                    color: "var(--ink-4)",
+                    color: INK3,
                     flexShrink: 0,
                     transform: openNow ? "rotate(180deg)" : "none",
                     transition: "transform 160ms ease",
@@ -250,7 +268,7 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
               </button>
 
               {openNow ? (
-                <div style={{ paddingBottom: 14 }}>
+                <div style={{ paddingBottom: 20 }}>
                   {b.kind === "prose"
                     ? b.parts
                         .filter(Boolean)
@@ -259,9 +277,10 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
                             key={i}
                             style={{
                               margin: i === 0 ? 0 : "8px 0 0",
-                              fontSize: 13,
-                              lineHeight: 1.7,
-                              color: "var(--ink-2)",
+                              fontFamily: "var(--font-body)",
+                              fontSize: 14,
+                              lineHeight: 1.75,
+                              color: INK2,
                               ...textStyle(p),
                             }}
                           >
@@ -285,10 +304,11 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
                           {p.heading ? (
                             <div
                               style={{
-                                fontSize: 13,
+                                fontFamily: SERIF,
+                                fontSize: 16,
                                 fontWeight: 600,
-                                color: "var(--ink)",
-                                lineHeight: 1.5,
+                                color: INK,
+                                lineHeight: 1.4,
                                 ...textStyle(p.heading),
                               }}
                             >
@@ -298,10 +318,10 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
                           {p.body ? (
                             <p
                               style={{
-                                margin: "4px 0 0",
-                                fontSize: 13,
-                                lineHeight: 1.7,
-                                color: "var(--ink-3)",
+                                margin: "5px 0 0",
+                                fontSize: 14,
+                                lineHeight: 1.75,
+                                color: INK2,
                                 ...textStyle(p.body),
                               }}
                             >
