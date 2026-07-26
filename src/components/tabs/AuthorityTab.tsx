@@ -420,6 +420,8 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
   const [profileName, setProfileName] = useState<string>("");
   const [profileRole, setProfileRole] = useState<string>("");
   const [profileLoaded, setProfileLoaded] = useState<boolean>(false);
+  // True only when a distilled voice profile exists for the active language.
+  const [hasVoiceProfile, setHasVoiceProfile] = useState<boolean>(true);
   // Race-fix: hold the most recently requested signal_id so a generate()
   // fired immediately after signalPrefill arrives can't outrun React state.
   const pendingSignalIdRef = useRef<string | null>(null);
