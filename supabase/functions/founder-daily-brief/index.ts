@@ -777,6 +777,23 @@ Deno.serve(async (req) => {
 </div>
 </td></tr>
 
+<!-- 3b what moved -->
+${sectionOpen("What moved")}
+${movement.ready
+  ? (movement.moved.reduce((n: number) => n + 1, 0) === 0
+      ? prose(`<b>Nothing moved yesterday.</b>`) + prose(`<span style="color:${MUTED}">Measured against the first run of ${esc(String(movement.compared_to))}. A metric that did not move says nothing, so nothing is listed.</span>`)
+      : movement.moved.map((m: any) => dotLine(m.direction === "down" ? OX : TEAL, m.line)).join("")
+        + (movement.judging ? "" : `<div style="font-family:${MONO};font-size:10px;color:${MUTED};padding-top:8px">${esc(String(movement.establishing_line))}</div>`))
+  : prose(`<span style="color:${MUTED}">${esc(movement.status_line)}</span>`)}
+${movement.decision_paths.reduce((n: number) => n + 1, 0) > 0
+  ? `<div style="padding-top:12px">` + movement.decision_paths.map((d: any) => dotLine(DAMBER, d.line)).join("") + `</div>`
+  : ""}
+${sectionClose(movement.ready
+  ? (movement.moved.reduce((n: number) => n + 1, 0) === 0
+      ? "Nothing moved. That is the finding — go and cause some movement today rather than reading further."
+      : "Read the losses first. Anything in oxblood went backwards and no threshold hid it.")
+  : "Nothing to compare yet. Come back tomorrow and this becomes the first section worth reading.")}
+
 <!-- 4 findings -->
 ${sectionOpen("What today's numbers say")}
 ${findingsShown.map((f) => `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:12px"><tr>
