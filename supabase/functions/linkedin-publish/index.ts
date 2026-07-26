@@ -2,6 +2,7 @@
 import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { linkedinFetch } from "../_shared/linkedinFetch.ts";
+import { alertPublishFailure } from "../_shared/publishFailureAlert.ts";
 
 const LINKEDIN_VERSION = "202605";
 
@@ -45,6 +46,28 @@ function firstNonEmptyLine(text: string): string {
     if (line.trim()) return line.trim();
   }
   return "";
+}
+
+/**
+ * Raise a critical ops alert for a real user's failed publish.
+ * Fire-and-forget, own try/catch, never awaited on the publish path.
+ * A publish that fails BECAUSE of logging is a catastrophe — so this cannot throw.
+ */
+function fireFailureAlert(
+  adminClient: any,
+  opts: { userId: string; postId?: string | null; errorText: string; postText?: string | null },
+) {
+  try {
+    const p = alertPublishFailure(adminClient, { ...opts, origin: "linkedin-publish" })
+      .catch((e: unknown) => console.error("publish failure alert failed (non-blocking):", e));
+    // @ts-ignore EdgeRuntime is provided by Supabase Deno runtime
+    if (typeof EdgeRuntime !== "undefined" && (EdgeRuntime as any)?.waitUntil) {
+      // @ts-ignore
+      EdgeRuntime.waitUntil(p);
+    }
+  } catch (e) {
+    console.error("publish failure alert outer failure (non-blocking):", e);
+  }
 }
 
 function numericTokens(text: string): Set<string> {
@@ -446,6 +469,11 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
         });
       } catch (e) { console.error("post-publish 401 diagnostics failed:", e); }
       await adminClient.from("linkedin_posts").update({ tracking_status: "draft" }).eq("id", postId).eq("user_id", user.id);
+      fireFailureAlert(adminClient, {
+        userId: user.id, postId,
+        errorText: "LinkedIn connection expired (401) — reconnect required",
+        postText,
+      });
       return json({ success: false, error: "LinkedIn connection expired — reconnect in Settings" });
     }
 
@@ -466,6 +494,11 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
       });
     } catch (e) { console.error("post-publish non-201 diagnostics failed:", e); }
     await adminClient.from("linkedin_posts").update({ tracking_status: "draft" }).eq("id", postId).eq("user_id", user.id);
+    fireFailureAlert(adminClient, {
+      userId: user.id, postId,
+      errorText: `LinkedIn rejected the post (status ${liRes.status}): ${detail.slice(0, 300)}`,
+      postText,
+    });
     return json({ success: false, error: "LinkedIn rejected the post", status: liRes.status, detail });
   } catch (err) {
     console.error("linkedin-publish error:", err);
@@ -473,6 +506,15 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
       try {
         const adminClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
         await adminClient.from("linkedin_posts").update({ tracking_status: "needs_review" }).eq("id", postId);
+        const { data: p } = await adminClient
+          .from("linkedin_posts").select("user_id, post_text").eq("id", postId).maybeSingle();
+        if (p?.user_id) {
+          fireFailureAlert(adminClient, {
+            userId: p.user_id, postId,
+            errorText: err instanceof Error ? err.message : String(err),
+            postText: p.post_text,
+          });
+        }
       } catch {}
     }
     return json({ error: err instanceof Error ? err.message : String(err) }, 500);

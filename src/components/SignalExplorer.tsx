@@ -5,9 +5,9 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
-import { trackSignalOpen } from "@/lib/trackSignalOpen";
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
+import { trackSignalOpen } from "@/lib/trackSignalOpen";
 
 interface SignalExplorerProps {
   signal: {
