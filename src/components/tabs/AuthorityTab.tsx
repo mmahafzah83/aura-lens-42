@@ -1112,6 +1112,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
   const resetComposerForNext = () => {
     setOutput("");
     setFullVersion("");
+    servedTextRef.current = null;
     setShortVersion("");
     setShowingShort(false);
     setEditingDraftId(null);
