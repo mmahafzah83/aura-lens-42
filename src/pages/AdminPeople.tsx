@@ -314,6 +314,11 @@ export default function AdminPeople() {
       return;
     }
     setRows(((data as any)?.rows ?? []) as Row[]);
+    try {
+      setMetrics(await loadAdminMetrics());
+    } catch {
+      setMetrics(null);
+    }
     setLoading(false);
   };
 
@@ -369,7 +374,7 @@ export default function AdminPeople() {
   };
 
   const totals = useMemo(() => {
-    const t = { total: filtered.length, activated: 0, stalled: 0, atRisk: 0, newWeek: 0 };
+    const t = { activated: 0, stalled: 0, atRisk: 0, newWeek: 0 };
     const weekAgo = Date.now() - 7 * 86400_000;
     for (const r of filtered) {
       const st = statusOf(r);
