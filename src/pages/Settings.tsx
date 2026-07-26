@@ -64,10 +64,12 @@ export default function Settings() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [exportingReport, setExportingReport] = useState(false);
-  const [report, setReport] = useState<ReportData | null>(null);
-const [reportVersion, setReportVersion] = useState<number | null>(null);
-const [reportSnapshotAt, setReportSnapshotAt] = useState<string | null>(null);
-const [reportLoading, setReportLoading] = useState(true);
+const {
+  report,
+  version: reportVersion,
+  snapshotAt: reportSnapshotAt,
+  loading: reportLoading,
+} = useReportSnapshot();
 const [linkedInConnection, setLinkedInConnection] = useState<LinkedInConnection | null>(null);
 const [linkedInBusy, setLinkedInBusy] = useState(true);
 const [signatures, setSignatures] = useState<{ id: string; name: string; text_en: string; text_ar: string }[]>([]);
