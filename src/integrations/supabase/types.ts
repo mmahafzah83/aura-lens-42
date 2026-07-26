@@ -720,21 +720,33 @@ export type Database = {
           brief_date: string
           created_at: string
           id: string
+          is_sent: boolean
           payload: Json
+          rendered_html: string | null
+          run_reason: string | null
+          run_seq: number
         }
         Insert: {
           audit?: Json
           brief_date: string
           created_at?: string
           id?: string
+          is_sent?: boolean
           payload?: Json
+          rendered_html?: string | null
+          run_reason?: string | null
+          run_seq: number
         }
         Update: {
           audit?: Json
           brief_date?: string
           created_at?: string
           id?: string
+          is_sent?: boolean
           payload?: Json
+          rendered_html?: string | null
+          run_reason?: string | null
+          run_seq?: number
         }
         Relationships: []
       }
@@ -3535,6 +3547,20 @@ export type Database = {
       }
     }
     Views: {
+      daily_brief_latest: {
+        Row: {
+          audit: Json | null
+          brief_date: string | null
+          created_at: string | null
+          id: string | null
+          is_sent: boolean | null
+          payload: Json | null
+          rendered_html: string | null
+          run_reason: string | null
+          run_seq: number | null
+        }
+        Relationships: []
+      }
       ef_faults: {
         Row: {
           context: Json | null
@@ -3712,6 +3738,15 @@ export type Database = {
         }[]
       }
       admin_run_cron: { Args: { p_jobid: number }; Returns: string }
+      brief_history: {
+        Args: { days?: number }
+        Returns: {
+          brief_date: string
+          funnel: Json
+          runs: number
+          sent: boolean
+        }[]
+      }
       bump_signal_engagement: {
         Args: { p_signal_id: string }
         Returns: undefined
@@ -3822,6 +3857,20 @@ export type Database = {
           dead_ids_pruned: number
           signals_checked: number
           signals_fixed: number
+        }[]
+      }
+      record_brief_run: {
+        Args: {
+          p_audit: Json
+          p_brief_date: string
+          p_is_sent: boolean
+          p_payload: Json
+          p_rendered_html: string
+          p_run_reason: string
+        }
+        Returns: {
+          id: string
+          run_seq: number
         }[]
       }
       record_guide_miss: {
