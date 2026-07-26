@@ -5,6 +5,8 @@ import { Download, Loader2, Trash2, Plus } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import AdminShell from "@/components/admin/AdminShell";
 import { downloadBlob } from "@/lib/download";
+import { CostRatios, SpendByFunction, useEconomics } from "@/components/admin/cockpit/Economics";
+import { perUnit } from "@/lib/adminEconomics";
 
 type UsageRow = {
   id: string;
@@ -110,6 +112,9 @@ function BudgetBar({ spend, budget }: { spend: number; budget: number }) {
 
 export default function AdminCost() {
   const [loading, setLoading] = useState(true);
+  // ONE DEFINITION — the same figures the cockpit renders. This page never
+  // recomputes them, so the two surfaces cannot disagree.
+  const economics = useEconomics();
   const [rows30, setRows30] = useState<UsageRow[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
   const [budget, setBudget] = useState<number>(150);
@@ -652,11 +657,29 @@ export default function AdminCost() {
             </div>
             <div style={card}>
               <div style={kpiLabel}>Cost / active user</div>
-              <div style={kpiValue}>{money(perUser)}</div>
-              <div style={{ marginTop: 8, fontSize: 11, color: "var(--glass-2)" }}>
-                {activeUsers} active users
-              </div>
+              {(() => {
+                // A ratio on a thin denominator is noise wearing a decimal
+                // point. Suppressed below the floor; the denominator is shown
+                // either way.
+                const r = perUnit(spendMonth, activeUsers, "active person", "active people");
+                return (
+                  <>
+                    <div style={{ ...kpiValue, color: r.suppressed ? "var(--glass-2)" : "var(--glass)" }}>{r.display}</div>
+                    <div style={{ marginTop: 8, fontSize: 11, color: "var(--glass-2)" }}>
+                      ÷ {r.denominator} {r.unit} · {r.note}
+                    </div>
+                  </>
+                );
+              })()}
             </div>
+          </div>
+
+          {/* Spend by function and the per-unit costs, read from one shared
+              definition rather than a second cost surface. */}
+          <div style={{ ...card, marginBottom: 28 }}>
+            <SpendByFunction state={economics} />
+            <div style={{ height: 24 }} />
+            <CostRatios state={economics} />
           </div>
 
           {/* Recommendations + Budget + Export */}
