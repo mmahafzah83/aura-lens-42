@@ -639,6 +639,8 @@ export default function Admin() {
       content: (
         <>
           {funnelBars(true)}
+          {/* Silent until a cohort reaches five. Same floor as the cohort work. */}
+          <TargetPromptLine state={targets} cohorts={working.cohorts ?? []} />
           <div style={{ height: 1, background: C.rule, margin: "20px 0" }} />
           <Finding
             colour={publishedUsers === 0 ? C.amber : C.teal}
@@ -652,6 +654,8 @@ export default function Admin() {
             recommendation="Walk one person the whole way from draft to a live post this week. The funnel does not move on its own."
             countedFrom="entries; linkedin_posts.tracking_status = published"
           />
+          <div style={{ height: 1, background: C.rule, margin: "20px 0" }} />
+          <TargetsPanel state={targets} presetKey={presetTarget} />
         </>
       ),
     });
