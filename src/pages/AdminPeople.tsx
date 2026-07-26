@@ -454,7 +454,7 @@ export default function AdminPeople() {
           <button style={btn} onClick={load} disabled={loading}>
             <RefreshCw size={12} /> Refresh
           </button>
-          <button style={btn} onClick={exportCsv} disabled={loading || filtered.length === 0}>
+          <button style={btn} onClick={exportCsv} disabled={loading || !filtered[0]}>
             <Download size={12} /> Export CSV
           </button>
         </div>
@@ -468,7 +468,7 @@ export default function AdminPeople() {
         <div style={{ ...card, textAlign: "center", padding: 32, color: "#fca5a5" }}>
           {error}
         </div>
-      ) : filtered.length === 0 ? (
+      ) : !filtered[0] ? (
         <div style={{ ...card, textAlign: "center", padding: 48, color: "var(--glass-2)" }}>
           No users match this view.
         </div>
