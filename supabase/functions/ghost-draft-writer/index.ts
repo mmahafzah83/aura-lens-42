@@ -169,6 +169,7 @@ Deno.serve(withObserve("ghost-draft-writer", async (req) => {
       const { error: insErr } = await admin.from("linkedin_posts").insert({
         user_id: userId,
         post_text: body,
+        original_generated_text: body,
         format_type: "post",
         tracking_status: "draft",
         source_type: "aura_generated",
