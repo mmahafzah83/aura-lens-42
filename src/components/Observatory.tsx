@@ -40,6 +40,7 @@ import {
 } from "@/components/tabs/IntelligenceTab";
 import { daysUntilDormant } from "@/components/intelligence/VelocityIndicators";
 import type { Database } from "@/integrations/supabase/types";
+import { trackSignalOpen } from "@/lib/trackSignalOpen";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
@@ -847,7 +848,7 @@ const Observatory = ({
       if (found) {
         setSelectedSignalId(sigParam);
         try {
-          void (supabase as any).rpc("bump_signal_engagement", { p_signal_id: sigParam });
+          trackSignalOpen(sigParam, "intelligence_deeplink");
         } catch { /* fire-and-forget — must not block navigation */ }
         setActiveSubTab("signals");
         searchParams.delete("signal");
@@ -922,7 +923,7 @@ const Observatory = ({
     await supabase.from("strategic_signals")
       .update({ priority_score: (s.priority_score || 0) + 0.05 }).eq("id", s.id);
     try {
-      void (supabase as any).rpc("bump_signal_engagement", { p_signal_id: s.id });
+      trackSignalOpen(s.id, "intelligence_draft_handoff");
     } catch { /* fire-and-forget — must not block draft handoff */ }
     onDraftToStudio?.({
       topic: s.signal_title,
@@ -946,7 +947,7 @@ const Observatory = ({
       data-testid="intel-signal-card"
       onClick={() => {
         try {
-          void (supabase as any).rpc("bump_signal_engagement", { p_signal_id: s.id });
+          trackSignalOpen(s.id, "intelligence_list");
         } catch { /* fire-and-forget — must not block selection */ }
         setSelectedSignalId(s.id);
       }}
