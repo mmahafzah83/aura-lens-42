@@ -582,7 +582,7 @@ export default function Admin() {
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12, marginBottom: 18 }}>
             <Stat label="Needs you" value={needs.length} colour={C.ox} />
-            <Stat label="Decide" value={decide.length + decisionsDueN} colour={C.damber} />
+            <Stat label="Decide" value={decide.length + decisionsDueN + targetsDueN} colour={C.damber} />
             <Stat label="Watch" value={watch.length} colour={C.amber} />
             <Stat label="Handled" value={N(p.handled) ?? 0} colour={C.teal} sub="quietly, by the machine" />
           </div>
@@ -621,6 +621,8 @@ export default function Admin() {
             />
           ))}
           <DecisionsDue state={decisions} />
+          {/* A target whose date has passed is reviewed exactly like a decision. */}
+          <TargetsDue state={targets} />
           {watch.map((item: any) => (
             <Finding key={item.fingerprint} colour={C.amber} finding={item.what} example={item.impact} recommendation={item.action} />
           ))}
