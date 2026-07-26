@@ -796,7 +796,10 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
     }
     const json = await resp.json();
     const accumulated: string = json?.content || "";
-    if (accumulated) setOutput(accumulated);
+    if (accumulated) {
+      setOutput(accumulated);
+      servedTextRef.current = accumulated;
+    }
     if (json?.quality_gate) {
       setQualityGate(json.quality_gate);
     } else {
