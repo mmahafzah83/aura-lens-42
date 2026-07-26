@@ -7,6 +7,8 @@ import SendTestEmailPanel from "@/components/admin/SendTestEmailPanel";
 import RegenerateReportPanel from "@/components/admin/RegenerateReportPanel";
 import ReportHealthPanel from "@/components/admin/ReportHealthPanel";
 import IsItWorkingZone, { useIsItWorking } from "@/components/admin/cockpit/IsItWorking";
+import { DecisionsDue, DecisionsZone, useDecisions } from "@/components/admin/cockpit/Decisions";
+import { countWhere, dueDecisions, decisionScoreboard } from "@/lib/adminMetrics";
 import { downloadBlob } from "@/lib/download";
 import {
   Bar,
@@ -462,6 +464,11 @@ export default function Admin() {
   // off a fetched array, and never written back into the stored brief.
   const working = useIsItWorking(90);
 
+  // The decision log and, more importantly, the review loop. A decision that
+  // comes due must appear in DECIDE, not only in its own zone.
+  const decisions = useDecisions();
+  const decisionsDueN = countWhere(dueDecisions(decisions.rows), () => true);
+
   /* ================= CEO VIEW ================= */
   const ceoBody = p && (
     <>
@@ -556,7 +563,7 @@ export default function Admin() {
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12, marginBottom: 18 }}>
             <Stat label="Needs you" value={needs.length} colour={C.ox} />
-            <Stat label="Decide" value={decide.length} colour={C.damber} />
+            <Stat label="Decide" value={decide.length + decisionsDueN} colour={C.damber} />
             <Stat label="Watch" value={watch.length} colour={C.amber} />
             <Stat label="Handled" value={N(p.handled) ?? 0} colour={C.teal} sub="quietly, by the machine" />
           </div>
@@ -594,6 +601,7 @@ export default function Admin() {
               }
             />
           ))}
+          <DecisionsDue state={decisions} />
           {watch.map((item: any) => (
             <Finding key={item.fingerprint} colour={C.amber} finding={item.what} example={item.impact} recommendation={item.action} />
           ))}
@@ -1037,6 +1045,18 @@ export default function Admin() {
           {x_note(p)}
         </>
       ),
+    });
+
+    zones.push({
+      key: "decisions",
+      n: 11,
+      title: "Decisions",
+      tone: decisionsDueN > 0 ? C.damber : C.muted,
+      keyLine:
+        decisionsDueN > 0
+          ? `${decisionsDueN} decision${decisionsDueN === 1 ? " is" : "s are"} due for review today.`
+          : decisionScoreboard(decisions.rows).line,
+      content: <DecisionsZone state={decisions} />,
     });
 
     zones.push({
