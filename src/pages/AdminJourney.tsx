@@ -3,14 +3,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, RefreshCw, Send, ChevronDown, ChevronRight } from "lucide-react";
 import AdminShell from "@/components/admin/AdminShell";
+import {
+  AdminMetrics,
+  FUNNEL_ORDER,
+  METRIC_DEFINITIONS,
+  MetricKey,
+  exclusionLine,
+  freshnessLine,
+  loadAdminMetrics,
+  metricValue,
+} from "@/lib/adminMetrics";
 
-type Stage = {
-  key: string;
-  label: string;
-  count: number;
-  pct_of_total: number;
-  drop_from_prev_pct: number;
-};
 type StuckUser = {
   user_id: string;
   name_or_email: string;
@@ -21,7 +24,7 @@ type StuckUser = {
   suggested_nudge: "day1" | "day3" | "day7" | "first_signal" | "inactive" | null;
 };
 type Payload = {
-  stages: Stage[];
+  stages: { key: string; label: string }[];
   stuck: Record<string, StuckUser[]>;
   flags: {
     churn_risk: Array<{ user_id: string; name_or_email: string; stage: string; days_inactive: number }>;
@@ -29,8 +32,9 @@ type Payload = {
   };
 };
 
-const ACCENT = "#dc2626";
-const RISK_COLOR: Record<string, string> = { high: "#dc2626", med: "#d97706", low: "#16a34a" };
+/** Oxblood — the only accent this page uses. */
+const ACCENT = "#6E2A26";
+const RISK_COLOR: Record<string, string> = { high: "#6E2A26", med: "#d97706", low: "#16a34a" };
 
 const card: React.CSSProperties = {
   background: "var(--ob-panel)",
@@ -60,38 +64,59 @@ const btn: React.CSSProperties = {
 export default function AdminJourney() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [data, setData] = useState<Payload | null>(null);
   const [open, setOpen] = useState<Record<string, boolean>>({});
 
   const load = async () => {
     setLoading(true); setError(null);
-    const { data: res, error } = await supabase.functions.invoke("admin-console", {
-      body: { action: "journey" },
-    });
-    if (error) {
-      setError(error.message || "Failed to load");
+    try {
+      // Funnel numbers: the one brain. Lists and actions: the journey helper.
+      const [m, res] = await Promise.all([
+        loadAdminMetrics(),
+        supabase.functions.invoke("admin-console", { body: { action: "journey" } }),
+      ]);
+      setMetrics(m);
+      if (res.error) throw new Error(res.error.message || "Failed to load journey lists");
+      setData(res.data as Payload);
+    } catch (e: any) {
+      setError(e?.message || "Failed to load");
+    } finally {
       setLoading(false);
-      return;
     }
-    setData(res as Payload);
-    setLoading(false);
   };
   useEffect(() => { load(); }, []);
 
+  /** Funnel rows, derived only from the stored brief. */
+  const stages = useMemo(() => {
+    if (!metrics) return [] as {
+      key: MetricKey; label: string; count: number | null; pct: number | null; drop: number | null;
+    }[];
+    const total = metricValue(metrics, "invited");
+    return FUNNEL_ORDER.map((s, i) => {
+      const count = metricValue(metrics, s.key);
+      const prev = i === 0 ? null : metricValue(metrics, FUNNEL_ORDER[i - 1].key);
+      const pct = total && total > 0 && count !== null ? Math.round((count / total) * 100) : null;
+      const drop =
+        i === 0 || prev === null || prev === 0 || count === null
+          ? null
+          : Math.round(((prev - count) / prev) * 100);
+      return { key: s.key, label: s.label, count, pct, drop };
+    });
+  }, [metrics]);
+
   const maxDropKey = useMemo(() => {
-    if (!data) return null;
     let best: { key: string; drop: number } | null = null;
-    for (let i = 1; i < data.stages.length; i++) {
-      const s = data.stages[i];
-      if (!best || s.drop_from_prev_pct > best.drop) best = { key: s.key, drop: s.drop_from_prev_pct };
+    for (const s of stages) {
+      if (s.drop !== null && (!best || s.drop > best.drop)) best = { key: s.key, drop: s.drop };
     }
     return best && best.drop > 0 ? best.key : null;
-  }, [data]);
+  }, [stages]);
 
-  const maxCount = useMemo(() => {
-    if (!data) return 1;
-    return Math.max(1, ...data.stages.map((s) => s.count));
-  }, [data]);
+  const maxCount = useMemo(
+    () => Math.max(1, ...stages.map((s) => s.count ?? 0)),
+    [stages],
+  );
 
   const sendNudge = async (uid: string, email_type: "day1" | "day3" | "day7" | "first_signal" | "inactive") => {
     const { data: res, error } = await supabase.functions.invoke("admin-console", {
@@ -116,7 +141,16 @@ export default function AdminJourney() {
 
   return (
     <AdminShell title="Journey" subtitle="Full-funnel engine — where users stall, and what to do next">
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 20 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 20 }}>
+        <div style={{ fontSize: 12, color: "var(--glass-2)" }}>
+          {metrics ? (
+            <>
+              {freshnessLine(metrics)} · {exclusionLine(metrics)}
+            </>
+          ) : (
+            "—"
+          )}
+        </div>
         <button style={btn} onClick={load} disabled={loading}>
           <RefreshCw size={12} /> Refresh
         </button>
@@ -127,21 +161,23 @@ export default function AdminJourney() {
           <Loader2 className="w-4 h-4 animate-spin inline mr-2" /> Loading journey…
         </div>
       ) : error ? (
-        <div style={{ ...card, textAlign: "center", padding: 32, color: "#fca5a5" }}>{error}</div>
-      ) : !data ? (
+        <div style={{ ...card, textAlign: "center", padding: 32, color: ACCENT }}>{error}</div>
+      ) : !metrics ? (
         <div style={{ ...card, textAlign: "center", padding: 48, color: "var(--glass-2)" }}>No data.</div>
       ) : (
         <>
-          {/* Funnel */}
+          {/* Funnel — read straight from today's brief */}
           <div style={{ ...card, marginBottom: 24 }}>
             <div style={{ ...kpiLabel, marginBottom: 16 }}>Journey funnel</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {data.stages.map((s, i) => {
-                const width = `${Math.max(4, (s.count / maxCount) * 100)}%`;
+              {stages.map((s, i) => {
+                const width = `${Math.max(4, ((s.count ?? 0) / maxCount) * 100)}%`;
                 const isLeak = s.key === maxDropKey;
                 return (
                   <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 140, fontSize: 13, color: "var(--glass)" }}>{s.label}</div>
+                    <div style={{ width: 140, fontSize: 13, color: "var(--glass)" }} title={METRIC_DEFINITIONS[s.key]}>
+                      {s.label}
+                    </div>
                     <div style={{ flex: 1, height: 32, background: "rgba(255,255,255,0.03)", borderRadius: 4, position: "relative", overflow: "hidden" }}>
                       <div
                         style={{
@@ -158,11 +194,11 @@ export default function AdminJourney() {
                           fontWeight: 600,
                         }}
                       >
-                        {s.count} · {s.pct_of_total}%
+                        {s.count ?? "?"}{s.pct !== null ? ` · ${s.pct}%` : ""}
                       </div>
                     </div>
                     <div style={{ width: 96, fontSize: 12, color: isLeak ? ACCENT : "var(--glass-2)", textAlign: "right", fontWeight: isLeak ? 600 : 400 }}>
-                      {i === 0 ? "—" : `−${s.drop_from_prev_pct}%`}
+                      {i === 0 || s.drop === null ? "—" : `−${s.drop}%`}
                     </div>
                   </div>
                 );
@@ -171,41 +207,45 @@ export default function AdminJourney() {
             {maxDropKey && (
               <div style={{ marginTop: 16, fontSize: 12, color: "var(--glass-2)" }}>
                 <span style={{ color: ACCENT, fontWeight: 600 }}>Priority leak:</span>{" "}
-                {data.stages.find((s) => s.key === maxDropKey)?.label}
+                {stages.find((s) => s.key === maxDropKey)?.label}
               </div>
             )}
           </div>
 
-          {/* Predictive strip */}
+          {/* Predictive strip — lists, deliberately shown without a headline number */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
             <div style={card}>
-              <div style={{ ...kpiLabel, marginBottom: 8 }}>About to go silent ({data.flags.churn_risk.length})</div>
+              <div style={{ ...kpiLabel, marginBottom: 8 }}>About to go silent</div>
               <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, lineHeight: 1.7, color: "var(--glass)" }}>
-                {data.flags.churn_risk.length === 0 && <li style={{ color: "var(--glass-2)", listStyle: "none", marginLeft: -18 }}>None.</li>}
-                {data.flags.churn_risk.map((u) => (
+                {(data?.flags?.churn_risk ?? []).map((u) => (
                   <li key={u.user_id}>
                     {u.name_or_email} <span style={{ color: "var(--glass-2)" }}>· {u.stage} · {u.days_inactive}d inactive</span>
                   </li>
                 ))}
+                {!(data?.flags?.churn_risk ?? [])[0] && (
+                  <li style={{ color: "var(--glass-2)", listStyle: "none", marginLeft: -18 }}>None.</li>
+                )}
               </ul>
             </div>
             <div style={card}>
-              <div style={{ ...kpiLabel, marginBottom: 8 }}>Near a tier jump ({data.flags.near_win.length})</div>
+              <div style={{ ...kpiLabel, marginBottom: 8 }}>Near a tier jump</div>
               <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, lineHeight: 1.7, color: "var(--glass)" }}>
-                {data.flags.near_win.length === 0 && <li style={{ color: "var(--glass-2)", listStyle: "none", marginLeft: -18 }}>None.</li>}
-                {data.flags.near_win.map((u) => (
+                {(data?.flags?.near_win ?? []).map((u) => (
                   <li key={u.user_id}>
                     {u.name_or_email} <span style={{ color: "var(--glass-2)" }}>· {u.score} → {u.target}</span>
                   </li>
                 ))}
+                {!(data?.flags?.near_win ?? [])[0] && (
+                  <li style={{ color: "var(--glass-2)", listStyle: "none", marginLeft: -18 }}>None.</li>
+                )}
               </ul>
             </div>
           </div>
 
-          {/* Accordion */}
+          {/* Accordion — stage counts from the brief, people lists from the helper */}
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {data.stages.map((s) => {
-              const stuck = data.stuck[s.key] ?? [];
+            {stages.map((s) => {
+              const stuck = data?.stuck?.[s.key] ?? [];
               const isOpen = !!open[s.key];
               return (
                 <div key={s.key} style={card}>
@@ -217,15 +257,18 @@ export default function AdminJourney() {
                     }}
                   >
                     {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                    <span style={{ fontSize: 14, fontWeight: 500 }}>{s.label}</span>
+                    <span style={{ fontSize: 13, fontWeight: 600 }}>{s.label}</span>
                     <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--glass-2)" }}>
-                      {stuck.length} stuck
+                      {s.count ?? "?"} reached this step
                     </span>
                   </button>
                   {isOpen && (
-                    <div style={{ marginTop: 14 }}>
-                      {stuck.length === 0 ? (
-                        <div style={{ fontSize: 13, color: "var(--glass-2)" }}>No one stuck at this stage.</div>
+                    <div style={{ marginTop: 12 }}>
+                      <div style={{ fontSize: 11, color: "var(--glass-2)", marginBottom: 8 }}>
+                        {METRIC_DEFINITIONS[s.key]}
+                      </div>
+                      {!stuck[0] ? (
+                        <div style={{ fontSize: 13, color: "var(--glass-2)" }}>Nobody is stuck here.</div>
                       ) : (
                         <div style={{ overflowX: "auto" }}>
                           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 720 }}>

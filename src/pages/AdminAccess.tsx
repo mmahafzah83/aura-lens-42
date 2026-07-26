@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Send, Trash2 } from "lucide-react";
 import AdminShell from "@/components/admin/AdminShell";
+import { AdminMetrics, exclusionLine, freshnessLine, loadAdminMetrics, signedUp } from "@/lib/adminMetrics";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -80,6 +81,7 @@ const AdminAccess = () => {
   const [accessToken, setAccessToken] = useState<string | null>(null);
 
   const [rows, setRows] = useState<Row[]>([]);
+  const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [seniorityFilter, setSeniorityFilter] = useState<string>("all");
@@ -183,6 +185,9 @@ const AdminAccess = () => {
         .eq("feedback_type", "nps")
         .order("created_at", { ascending: false });
       setNpsRows((data || []) as any);
+    })();
+    (async () => {
+      try { setMetrics(await loadAdminMetrics()); } catch { setMetrics(null); }
     })();
     (async () => {
       setActiveLoading(true);
@@ -748,7 +753,9 @@ const AdminAccess = () => {
             User management
           </h2>
           <p className="text-xs mb-4" style={{ color: "var(--ink-5)" }}>
-            Users: {rows.length} total · {rows.filter((r) => r.status === "active").length} active · {rows.filter((r) => r.status === "pending").length} pending. Deleting a user removes their auth account and all associated data permanently.
+            Users signed up: {metrics ? signedUp(metrics) ?? "?" : "—"}
+            {metrics ? ` · ${freshnessLine(metrics)} · ${exclusionLine(metrics)}` : ""} The list below is every auth
+            account, including test accounts. Deleting a user removes their auth account and all associated data permanently.
           </p>
           {rows.length === 0 ? (
             <div className="text-xs" style={{ color: "var(--ink-5)" }}>No users yet.</div>

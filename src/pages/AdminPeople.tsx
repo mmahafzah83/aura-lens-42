@@ -7,6 +7,7 @@ import AdminShell from "@/components/admin/AdminShell";
 import AdminLegend from "@/components/admin/AdminLegend";
 import { downloadBlob } from "@/lib/download";
 import { formatSmartDate } from "@/lib/formatDate";
+import { AdminMetrics, freshnessLine, loadAdminMetrics, published, signedUp } from "@/lib/adminMetrics";
 
 type Row = {
   user_id: string;
@@ -243,32 +244,32 @@ function Drilldown({
           <div style={{ color: "var(--glass-2)" }}><Loader2 className="animate-spin inline w-4 h-4" /> Loading…</div>
         ) : (
           <>
-            <Section title={`Recent captures (${captures.length})`}>
+            <Section title={`Recent captures`}>
               {captures.map((c) => (
                 <li key={c.id}>{c.title || (c.snippet ? c.snippet.slice(0, 60) : "(untitled)")} <span style={{ color: "var(--glass-2)" }}>· {fmtDate(c.created_at)}</span></li>
               ))}
             </Section>
-            <Section title={`Recent signals (${signals.length})`}>
+            <Section title={`Recent signals`}>
               {signals.map((s) => (
                 <li key={s.id}>{s.signal_title || "(untitled)"} <span style={{ color: "var(--glass-2)" }}>· conf {typeof s.confidence === "number" ? s.confidence.toFixed(2) : "—"} · {fmtDate(s.created_at)}</span></li>
               ))}
             </Section>
-            <Section title={`Recent posts (${posts.length})`}>
+            <Section title={`Recent posts`}>
               {posts.map((p) => (
                 <li key={p.id}>{(p.snippet || "").slice(0, 90) || "(empty)"} <span style={{ color: "var(--glass-2)" }}>· {p.source_type} / {p.tracking_status} · {fmtDate(p.created_at)}</span></li>
               ))}
             </Section>
-            <Section title={`Imprint history (${snaps.length})`}>
+            <Section title={`Imprint history`}>
               {snaps.map((s, i) => (
                 <li key={i}>{Math.round(s.score)}{s.tier ? ` · ${s.tier}` : ""} <span style={{ color: "var(--glass-2)" }}>· {fmtDate(s.created_at)}</span></li>
               ))}
             </Section>
-            <Section title={`Nudge history (${nudges.length})`}>
+            <Section title={`Nudge history`}>
               {nudges.map((n, i) => (
                 <li key={i}>{n.email_type} <span style={{ color: "var(--glass-2)" }}>· {fmtDate(n.sent_at)}</span></li>
               ))}
             </Section>
-            <Section title={`Recent actions (${actions.length})`}>
+            <Section title={`Recent actions`}>
               {actions.map((a, i) => (
                 <li key={i}>{a.task || a.action} → {a.result || "—"} <span style={{ color: "var(--glass-2)" }}>· {fmtDate(a.created_at)}</span></li>
               ))}
@@ -297,6 +298,7 @@ export default function AdminPeople() {
   const [error, setError] = useState<string | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
   const [hideTest, setHideTest] = useState(true);
+  const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [selected, setSelected] = useState<Row | null>(null);
   const [copiedUid, setCopiedUid] = useState<string | null>(null);
 
@@ -312,6 +314,11 @@ export default function AdminPeople() {
       return;
     }
     setRows(((data as any)?.rows ?? []) as Row[]);
+    try {
+      setMetrics(await loadAdminMetrics());
+    } catch {
+      setMetrics(null);
+    }
     setLoading(false);
   };
 
@@ -367,7 +374,7 @@ export default function AdminPeople() {
   };
 
   const totals = useMemo(() => {
-    const t = { total: filtered.length, activated: 0, stalled: 0, atRisk: 0, newWeek: 0 };
+    const t = { activated: 0, stalled: 0, atRisk: 0, newWeek: 0 };
     const weekAgo = Date.now() - 7 * 86400_000;
     for (const r of filtered) {
       const st = statusOf(r);
@@ -447,7 +454,7 @@ export default function AdminPeople() {
           <button style={btn} onClick={load} disabled={loading}>
             <RefreshCw size={12} /> Refresh
           </button>
-          <button style={btn} onClick={exportCsv} disabled={loading || filtered.length === 0}>
+          <button style={btn} onClick={exportCsv} disabled={loading || !filtered[0]}>
             <Download size={12} /> Export CSV
           </button>
         </div>
@@ -461,13 +468,13 @@ export default function AdminPeople() {
         <div style={{ ...card, textAlign: "center", padding: 32, color: "#fca5a5" }}>
           {error}
         </div>
-      ) : filtered.length === 0 ? (
+      ) : !filtered[0] ? (
         <div style={{ ...card, textAlign: "center", padding: 48, color: "var(--glass-2)" }}>
           No users match this view.
         </div>
       ) : (
         <>
-          {inactive48.length > 0 && (
+          {inactive48[0] && (
             <div
               style={{
                 ...card,
@@ -478,9 +485,6 @@ export default function AdminPeople() {
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                 <span style={{ fontSize: 13, fontWeight: 600, color: "var(--glass-1)", textTransform: "uppercase", letterSpacing: 0.6 }}>
                   Inactive (48h+)
-                </span>
-                <span style={{ fontSize: 12, padding: "2px 8px", borderRadius: 999, background: "rgba(249,115,22,0.15)", color: "#F97316", border: "1px solid rgba(249,115,22,0.3)" }}>
-                  {inactive48.length}
                 </span>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -539,7 +543,17 @@ export default function AdminPeople() {
             gap: 12,
             marginBottom: 24,
           }}>
-            <div style={card}><div style={kpiLabel}>Total</div><div style={kpiValue}>{totals.total}</div></div>
+            <div style={card}>
+              <div style={kpiLabel}>Signed up</div>
+              <div style={kpiValue}>{metrics ? signedUp(metrics) ?? "?" : "—"}</div>
+              <div style={{ fontSize: 10, color: "var(--glass-2)", marginTop: 4 }}>
+                {metrics ? freshnessLine(metrics) : "brief unavailable"}
+              </div>
+            </div>
+            <div style={card}>
+              <div style={kpiLabel}>Published</div>
+              <div style={kpiValue}>{metrics ? published(metrics) ?? "?" : "—"}</div>
+            </div>
             <div style={card}><div style={kpiLabel}>Activated</div><div style={{ ...kpiValue, color: STATUS_COLOR.activated }}>{totals.activated}</div></div>
             <div style={card}><div style={kpiLabel}>Stalled</div><div style={{ ...kpiValue, color: STATUS_COLOR.stalled }}>{totals.stalled}</div></div>
             <div style={card}><div style={kpiLabel}>At-risk</div><div style={{ ...kpiValue, color: STATUS_COLOR["at-risk"] }}>{totals.atRisk}</div></div>
