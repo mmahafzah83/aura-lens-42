@@ -109,7 +109,7 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
 
     const { data: post, error: postErr } = await adminClient
       .from("linkedin_posts")
-      .select("id, post_text, published_confirmed_at, source_metadata, original_generated_text")
+      .select("id, post_text, published_confirmed_at, source_metadata, original_generated_text, source_signal_id")
       .eq("id", postId)
       .eq("user_id", user.id)
       .maybeSingle();
@@ -121,6 +121,109 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
     if (!postText.trim()) return json({ error: "Empty post_text" }, 400);
     if (postText.length > 3000) {
       return json({ success: false, error: "Post exceeds LinkedIn's 3000-character limit" });
+    }
+
+    // ── QUALITY GATE (control, not telemetry) ─────────────────────────────
+    // Every publish surface converges here. Gate the text actually being sent.
+    {
+      const meta = (post as any)?.source_metadata ?? {};
+      const language: string =
+        meta.language || meta.content_language ||
+        (/[\u0600-\u06FF]/.test(postText) ? "ar" : "en");
+
+      const { data: profile } = await adminClient
+        .from("diagnostic_profiles")
+        .select("sector_focus, target_register")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      let groundingText: string | null = null;
+      let signalTitle: string | null = null;
+      if (post.source_signal_id) {
+        const { data: sig } = await adminClient
+          .from("strategic_signals")
+          .select("signal_title, explanation, strategic_implications")
+          .eq("id", post.source_signal_id)
+          .maybeSingle();
+        if (sig) {
+          signalTitle = sig.signal_title ?? null;
+          const impl = typeof sig.strategic_implications === "string"
+            ? sig.strategic_implications
+            : JSON.stringify(sig.strategic_implications ?? "");
+          groundingText = `GROUNDED EVIDENCE — the only source of facts and numbers:\nSIGNAL: ${sig.signal_title ?? ""} — ${sig.explanation ?? ""} — implications: ${impl}`;
+        }
+      }
+
+      let gate: any = null;
+      let gateError: string | null = null;
+      try {
+        const call = fetch(`${SUPABASE_URL}/functions/v1/evaluate-content-quality`, {
+          method: "POST",
+          headers: { Authorization: authHeader, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            post_text: postText,
+            language,
+            signal_title: signalTitle,
+            user_sector: profile?.sector_focus ?? null,
+            target_register: profile?.target_register ?? null,
+            grounding_text: groundingText,
+            content_kind: "post",
+          }),
+        }).then(async (r) => {
+          if (!r.ok) throw new Error(`gate_http_${r.status}`);
+          return await r.json();
+        });
+        const timeout = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("gate_timeout")), 40000)
+        );
+        gate = await Promise.race([call, timeout]);
+      } catch (e) {
+        gateError = (e as Error).message || "gate_invoke_error";
+      }
+
+      const rawOverall = Number(gate?.overall ?? 0);
+      const overallScore = Math.min(100, Math.max(0, rawOverall <= 10 ? Math.round(rawOverall * 10) : Math.round(rawOverall)));
+      const weaknesses = Array.isArray(gate?.weaknesses) ? gate.weaknesses : [];
+      const passed = !gateError && gate
+        ? (gate.pass === true || (gate.pass === undefined && overallScore >= 70))
+        : false;
+
+      // Awaited on purpose: this row is the record of a control decision.
+      try {
+        await adminClient.from("content_gate_results").insert({
+          user_id: user.id,
+          post_id: postId,
+          function_name: "linkedin-publish",
+          language,
+          overall_score: overallScore,
+          pass: passed,
+          assertions: gate?.assertions ?? null,
+          weaknesses,
+          skipped: gate ? gate.skipped === true : true,
+          skip_reason: gate?.skip_reason ?? gateError,
+          judge_model: gate?.judge_model ?? null,
+        });
+      } catch (e) {
+        console.error("[linkedin-publish] gate log failed:", (e as Error).message);
+      }
+
+      if (gateError || !gate) {
+        return json({
+          success: false,
+          blocked: true,
+          error: "Quality check unavailable — try again",
+          weaknesses: [],
+        });
+      }
+      if (!passed) {
+        return json({
+          success: false,
+          blocked: true,
+          error: "Held by the quality gate",
+          weaknesses,
+          quality_gate: { overall_score: overallScore, verdict: gate?.verdict ?? null, assertions: gate?.assertions ?? null },
+        });
+      }
     }
 
     const { data: claimed, error: claimErr } = await adminClient

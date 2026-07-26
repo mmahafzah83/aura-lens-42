@@ -1201,6 +1201,25 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
         .eq("id", postId);
       const { data, error } = await supabase.functions.invoke("linkedin-publish", { body: { postId } });
       if (error) throw error;
+      if ((data as any)?.blocked === true) {
+        // Publish-time gate held the post. Keep the draft visible, show why.
+        const weak = Array.isArray((data as any)?.weaknesses)
+          ? (data as any).weaknesses.filter(Boolean)
+          : [];
+        const g = (data as any)?.quality_gate;
+        setQualityGate((prev) => ({
+          overall_score: g?.overall_score ?? prev?.overall_score ?? 0,
+          pass: false,
+          scores: prev?.scores ?? {},
+          verdict: g?.verdict ?? prev?.verdict,
+          weaknesses: weak.length ? weak : prev?.weaknesses,
+          skipped: false,
+        }));
+        setGateBlocked(true);
+        setConfirmLiveOpen(false);
+        toast.error((data as any)?.error || "Held by the quality gate");
+        return;
+      }
       if (!(data as any)?.success) {
         const msg = (data as any)?.error || "Publish failed";
         toast.error(/not connected/i.test(msg) ? "Connect LinkedIn in Settings first." : msg);
