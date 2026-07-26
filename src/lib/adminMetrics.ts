@@ -147,3 +147,182 @@ export function exclusionLine(m: AdminMetrics): string {
   const n = m.excludedTestUsers;
   return `Founder account and ${n} test account${n === 1 ? "" : "s"} excluded from every user number.`;
 }
+
+/* ============================================================================
+ * HISTORY — two kinds, never merged.
+ *
+ * RECORDED     what the brief actually said that morning. Comes from
+ *              `brief_history`, which reads the FIRST run of each stored day.
+ *              Begins the day the brief began. Cannot be recomputed.
+ * RECONSTRUCTED derived NOW from raw timestamps in the underlying tables.
+ *              Covers the whole history, but it is today's understanding of
+ *              the past, not what we knew at the time.
+ *
+ * The UI must render them differently and say which is which. Reconstruction
+ * happens at read time only — no derived history is ever written into
+ * `daily_brief_snapshots`.
+ * ========================================================================== */
+
+export type HistoryKind = "recorded" | "reconstructed";
+
+export const HISTORY_LEGEND =
+  "Solid: what the brief reported that morning. Dashed: reconstructed from the underlying records.";
+
+/** Below this, a cohort is people, not a percentage. */
+export const COHORT_MIN_FOR_PCT = 5;
+
+export const COHORT_TOO_SMALL_NOTE = "too few people to express as a percentage";
+
+/** Stages a cohort or trend line can report on, in funnel order. */
+export type StageKey =
+  | "signed_up"
+  | "finished_setup"
+  | "captured"
+  | "got_signal"
+  | "linkedin_live"
+  | "opened_writer"
+  | "has_draft"
+  | "published";
+
+export const COHORT_STAGES: { key: Exclude<StageKey, "signed_up" | "finished_setup">; label: string }[] = [
+  { key: "captured", label: "Captured" },
+  { key: "got_signal", label: "Got a signal" },
+  { key: "linkedin_live", label: "LinkedIn" },
+  { key: "opened_writer", label: "Opened writer" },
+  { key: "has_draft", label: "Holds a draft" },
+  { key: "published", label: "Published" },
+];
+
+export const TREND_STAGES: { key: StageKey; label: string; recordedKey: string | null }[] = [
+  { key: "signed_up", label: "Signed up", recordedKey: "invited" },
+  { key: "finished_setup", label: "Finished setup", recordedKey: "finished_setup" },
+  { key: "captured", label: "Captured", recordedKey: "captured" },
+  { key: "got_signal", label: "Got a signal", recordedKey: "got_signal" },
+  { key: "linkedin_live", label: "LinkedIn live", recordedKey: "linkedin_live" },
+  { key: "opened_writer", label: "Opened writer", recordedKey: "opened_writer" },
+  { key: "has_draft", label: "Holds a draft", recordedKey: "has_draft" },
+  { key: "published", label: "Published", recordedKey: "published" },
+];
+
+export type Cohort = {
+  cohortWeek: string;
+  size: number;
+  captured: number;
+  got_signal: number;
+  linkedin_live: number;
+  opened_writer: number;
+  has_draft: number;
+  published: number;
+};
+
+export type TrendPoint = { day: string } & Record<StageKey, number>;
+
+export type ShipMarker = { id: string; shipped_on: string; title: string; notes: string | null };
+
+/**
+ * Cohorts by ISO sign-up week. Counted in SQL with the same exclusions and the
+ * same stage predicates the brief uses — never by measuring a fetched array.
+ */
+export async function loadCohorts(): Promise<Cohort[]> {
+  const { data, error } = await supabase.rpc("admin_cohorts" as any);
+  if (error) throw error;
+  return ((data ?? []) as any[]).map((r) => ({
+    cohortWeek: String(r.cohort_week),
+    size: Number(r.size),
+    captured: Number(r.captured),
+    got_signal: Number(r.got_signal),
+    linkedin_live: Number(r.linkedin_live),
+    opened_writer: Number(r.opened_writer),
+    has_draft: Number(r.has_draft),
+    published: Number(r.published),
+  }));
+}
+
+/** RECONSTRUCTED: how many people had reached each stage as of each day. */
+export async function loadStageTimeline(days = 90): Promise<TrendPoint[]> {
+  const { data, error } = await supabase.rpc("admin_stage_timeline" as any, { p_days: days });
+  if (error) throw error;
+  return ((data ?? []) as any[]).map((r) => ({
+    day: String(r.day),
+    signed_up: Number(r.signed_up),
+    finished_setup: Number(r.finished_setup),
+    captured: Number(r.captured),
+    got_signal: Number(r.got_signal),
+    linkedin_live: Number(r.linkedin_live),
+    opened_writer: Number(r.opened_writer),
+    has_draft: Number(r.has_draft),
+    published: Number(r.published),
+  }));
+}
+
+/** RECORDED: what the brief reported, one row per stored day. May be empty. */
+export async function loadRecordedHistory(days = 90): Promise<Record<string, Record<string, number>>> {
+  const { data, error } = await supabase.rpc("brief_history" as any, { days });
+  if (error) throw error;
+  const out: Record<string, Record<string, number>> = {};
+  for (const row of (data ?? []) as any[]) {
+    const f = row?.funnel ?? {};
+    const clean: Record<string, number> = {};
+    for (const [k, v] of Object.entries(f)) {
+      const n = N(v);
+      if (n !== null) clean[k] = n;
+    }
+    out[String(row.brief_date)] = clean;
+  }
+  return out;
+}
+
+export async function loadShipMarkers(): Promise<ShipMarker[]> {
+  const { data, error } = await supabase
+    .from("ship_markers")
+    .select("id, shipped_on, title, notes")
+    .order("shipped_on", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as ShipMarker[];
+}
+
+export async function addShipMarker(m: { shipped_on: string; title: string; notes: string }) {
+  const { error } = await supabase.from("ship_markers").insert({
+    shipped_on: m.shipped_on,
+    title: m.title,
+    notes: m.notes || null,
+  });
+  if (error) throw error;
+}
+
+/**
+ * A percentage, or null when the cohort is too small for one to mean anything.
+ * A cohort of 3 where 1 published is one person, not 33% activation.
+ */
+export function cohortPct(reached: number, size: number): number | null {
+  if (size < COHORT_MIN_FOR_PCT || size <= 0) return null;
+  return Math.round((reached / size) * 100);
+}
+
+/** Cohorts large enough to compare honestly, oldest first. */
+export function comparableCohorts(cohorts: Cohort[]): Cohort[] {
+  return cohorts.filter((c) => c.size >= COHORT_MIN_FOR_PCT);
+}
+
+/**
+ * One plain-English line on whether newer cohorts are moving faster. Returns
+ * the honest answer — usually that there is not enough history yet.
+ */
+export function cohortVerdict(cohorts: Cohort[]): { line: string; enough: boolean } {
+  const usable = comparableCohorts(cohorts);
+  const oldest = usable[0];
+  const newest = usable[usable.length - 1];
+  if (!oldest || !newest || oldest === newest) {
+    return {
+      enough: false,
+      line: `Not enough history yet to say whether newer sign-ups are moving faster — only one sign-up week has ${COHORT_MIN_FOR_PCT} or more people in it.`,
+    };
+  }
+  const a = cohortPct(oldest.captured, oldest.size) ?? 0;
+  const b = cohortPct(newest.captured, newest.size) ?? 0;
+  const dir = b > a ? "faster" : b < a ? "slower" : "at the same rate";
+  return {
+    enough: true,
+    line: `The week of ${newest.cohortWeek} is reaching first capture ${dir} than the week of ${oldest.cohortWeek} (${b}% against ${a}%).`,
+  };
+}
