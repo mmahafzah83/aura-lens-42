@@ -458,6 +458,10 @@ export default function Admin() {
     />
   ));
 
+  // Cohorts, trend and ship markers. Read straight from SQL, never measured
+  // off a fetched array, and never written back into the stored brief.
+  const working = useIsItWorking(90);
+
   /* ================= CEO VIEW ================= */
   const ceoBody = p && (
     <>
@@ -466,6 +470,18 @@ export default function Admin() {
         <div style={{ height: 16 }} />
         {funnelBars(false)}
         <div style={{ fontFamily: SERIF, fontSize: 17, lineHeight: 1.5, color: C.ink, marginTop: 18 }}>{weekLine}</div>
+        {!working.loading && !working.error && (
+          <div style={{ fontFamily: SERIF, fontSize: 17, lineHeight: 1.5, color: working.verdict.enough ? C.ink : C.muted, marginTop: 10 }}>
+            {working.verdict.line}{" "}
+            <button
+              type="button"
+              onClick={() => setParam("view", "working", "ceo")}
+              style={{ all: "unset", cursor: "pointer", fontFamily: MONO, fontSize: 11, color: C.muted, borderBottom: `1px solid ${C.rule}` }}
+            >
+              see cohorts
+            </button>
+          </div>
+        )}
       </section>
 
       <section
@@ -609,6 +625,15 @@ export default function Admin() {
           />
         </>
       ),
+    });
+
+    zones.push({
+      key: "working",
+      n: 3,
+      title: "Is it working?",
+      tone: working.verdict.enough ? C.teal : C.muted,
+      keyLine: working.error ? "History could not be read." : working.verdict.line,
+      content: <IsItWorkingZone data={working} />,
     });
 
     zones.push({
