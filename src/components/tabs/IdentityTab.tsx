@@ -1253,7 +1253,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               marginBottom: 8,
             }}
           >
-            Strategic Identity Report (PDF)
+            Your report, as issued paper
           </div>
           <ReportViewerSection
             firstName={profile?.first_name}
