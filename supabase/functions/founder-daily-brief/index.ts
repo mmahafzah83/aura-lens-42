@@ -724,8 +724,8 @@ ${sectionClose("A cross on any row means do not act on that number until it is r
 
     return json({
       ok: true, dry_run: dryRun, subject, sent, resend_status: resendStatus,
-      resend_error: resendError || null, audit: auditObj,
-      ...(dryRun ? { html } : {}),
+      resend_error: resendError || null, audit: auditObj, payload,
+      ...(dryRun && body?.include_html === true ? { html } : {}),
     });
   } catch (e) {
     await safeLog(admin, "critical", `founder-daily-brief failed: ${(e as Error).message}`);
