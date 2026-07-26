@@ -685,14 +685,6 @@ ${sectionClose("A cross on any row means do not act on that number until it is r
 
 </table></td></tr></table></body></html>`;
 
-    // ===== store (never let a write be the last thing that can throw before send) =====
-    try {
-      await admin.from("daily_brief_snapshots")
-        .upsert({ brief_date: briefDate, payload, audit: auditObj }, { onConflict: "brief_date" });
-    } catch (e) {
-      await safeLog(admin, "high", `snapshot write failed: ${(e as Error).message}`);
-    }
-
     // ===== send =====
     let sent = false;
     let resendStatus = 0;
@@ -718,12 +710,38 @@ ${sectionClose("A cross on any row means do not act on that number until it is r
       }
     }
 
+    // ===== store =====
+    // daily_brief_snapshots is append-only: every run is a new row, never an
+    // overwrite. is_sent records whether an email actually left via Resend, and
+    // rendered_html freezes the exact HTML so any past run can be re-read
+    // byte-for-byte rather than re-derived. Written after the send so is_sent
+    // is the truth, not a prediction.
+    const runReason = dryRun
+      ? "dry_run"
+      : (cronHeader && CRON_SECRET && cronHeader === CRON_SECRET) ? "cron" : "manual_refresh";
+    let runSeq: number | null = null;
+    try {
+      const { data: runRow, error: runErr } = await admin.rpc("record_brief_run", {
+        p_brief_date: briefDate,
+        p_payload: payload,
+        p_audit: auditObj,
+        p_is_sent: sent,
+        p_run_reason: runReason,
+        p_rendered_html: html,
+      });
+      if (runErr) throw new Error(runErr.message);
+      runSeq = Array.isArray(runRow) ? (runRow[0]?.run_seq ?? null) : null;
+    } catch (e) {
+      await safeLog(admin, "high", `snapshot write failed: ${(e as Error).message}`);
+    }
+
     await safeLog(admin, "info",
       `FOUNDER_BRIEF needs=${needsN} decide=${decideN} watch=${watchN} handled=${handledN} disagreements=${disagreedN} sent=${sent}`,
-      { brief_date: briefDate, dry_run: dryRun, resend_status: resendStatus });
+      { brief_date: briefDate, dry_run: dryRun, resend_status: resendStatus, run_seq: runSeq, run_reason: runReason });
 
     return json({
-      ok: true, dry_run: dryRun, subject, sent, resend_status: resendStatus,
+      ok: true, dry_run: dryRun, subject, sent, run_seq: runSeq, run_reason: runReason,
+      resend_status: resendStatus,
       resend_error: resendError || null, audit: auditObj, payload,
       ...(dryRun && body?.include_html === true ? { html } : {}),
     });
