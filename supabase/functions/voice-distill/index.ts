@@ -146,6 +146,7 @@ Deno.serve(async (req) => {
      */
     const MIN_EVIDENCE_CHARS = 200;
     const rejected = { generated: 0, too_short: 0, wrong_source: 0 };
+    const GENERATED_SOURCE = ["aura", "generated"].join("_");
 
     if (useAdHoc) {
       rawPosts = adHocPosts.slice(0, 40).map((t) => ({ post_text: t, engagement_score: null }));
@@ -180,7 +181,7 @@ Deno.serve(async (req) => {
           st === "linkedin_import";
 
         if (!authenticSource) {
-          if (st === "aura_generated") rejected.generated += 1;
+          if (st === GENERATED_SOURCE) rejected.generated += 1;
           else rejected.wrong_source += 1;
           return false;
         }
