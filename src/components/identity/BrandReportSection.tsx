@@ -150,7 +150,7 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
               ...textStyle(headline),
             }}
           >
-            {`You are ${headline}`.replace(/^You are You are /, "You are ")}
+            {/^you are\b/i.test(headline) ? headline : `You are ${headline}`}
           </h3>
         ) : null}
         {standfirst ? (
