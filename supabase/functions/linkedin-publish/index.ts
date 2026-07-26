@@ -469,6 +469,11 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
         });
       } catch (e) { console.error("post-publish 401 diagnostics failed:", e); }
       await adminClient.from("linkedin_posts").update({ tracking_status: "draft" }).eq("id", postId).eq("user_id", user.id);
+      fireFailureAlert(adminClient, {
+        userId: user.id, postId,
+        errorText: "LinkedIn connection expired (401) — reconnect required",
+        postText,
+      });
       return json({ success: false, error: "LinkedIn connection expired — reconnect in Settings" });
     }
 
@@ -489,6 +494,11 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
       });
     } catch (e) { console.error("post-publish non-201 diagnostics failed:", e); }
     await adminClient.from("linkedin_posts").update({ tracking_status: "draft" }).eq("id", postId).eq("user_id", user.id);
+    fireFailureAlert(adminClient, {
+      userId: user.id, postId,
+      errorText: `LinkedIn rejected the post (status ${liRes.status}): ${detail.slice(0, 300)}`,
+      postText,
+    });
     return json({ success: false, error: "LinkedIn rejected the post", status: liRes.status, detail });
   } catch (err) {
     console.error("linkedin-publish error:", err);
@@ -496,6 +506,15 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
       try {
         const adminClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
         await adminClient.from("linkedin_posts").update({ tracking_status: "needs_review" }).eq("id", postId);
+        const { data: p } = await adminClient
+          .from("linkedin_posts").select("user_id, post_text").eq("id", postId).maybeSingle();
+        if (p?.user_id) {
+          fireFailureAlert(adminClient, {
+            userId: p.user_id, postId,
+            errorText: err instanceof Error ? err.message : String(err),
+            postText: p.post_text,
+          });
+        }
       } catch {}
     }
     return json({ error: err instanceof Error ? err.message : String(err) }, 500);
