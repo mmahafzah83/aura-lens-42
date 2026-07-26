@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
+import { trackSignalOpen } from "@/lib/trackSignalOpen";
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
 
@@ -69,6 +70,7 @@ const SignalExplorer = ({ signal, open, onClose }: SignalExplorerProps) => {
 
   useEffect(() => {
     if (signal && open) {
+      trackSignalOpen(signal.id, "signal_explorer");
       loadSignalData(signal);
     }
   }, [signal, open]);

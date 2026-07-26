@@ -8,6 +8,7 @@ import InfoTooltip from "@/components/ui/InfoTooltip";
 import { FORCES, HEADERS } from "@/constants/language";
 import { track } from "@/lib/track";
 import AgentFindingCard from "@/components/AgentFindingCard";
+import { trackSignalOpen } from "@/lib/trackSignalOpen";
 
 /**
  * Brief — Editorial Broadsheet (System-A tokens).
@@ -438,7 +439,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
   const markRowOpened = useCallback((signalId: string) => {
     if (user) {
       try {
-        void (supabase as any).rpc("bump_signal_engagement", { p_signal_id: signalId });
+        trackSignalOpen(signalId, "home_brief_row");
       } catch { /* fire-and-forget — must not block row interaction */ }
     }
     setOpenedRows(prev => {
@@ -1120,7 +1121,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
       const openFromSignal = async () => {
         if (user) {
           try {
-            await (supabase as any).rpc("bump_signal_engagement", { p_signal_id: topSignal.id });
+            trackSignalOpen(topSignal.id, "home_brief_next_move");
           } catch { /* fire-and-forget — must not block navigation */ }
         }
         // Move-state at open-time: has a draft (fresh vs stale), has been opened, or untouched.
@@ -1170,7 +1171,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
           onClick: () => {
             if (user) {
               try {
-                void (supabase as any).rpc("bump_signal_engagement", { p_signal_id: topSignal.id });
+                trackSignalOpen(topSignal.id, "home_brief_next_move");
               } catch { /* fire-and-forget — must not block draft handoff */ }
             }
             onDraftToStudio?.({
@@ -1201,7 +1202,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
             onClick: () => {
               if (user) {
                 try {
-                  void (supabase as any).rpc("bump_signal_engagement", { p_signal_id: topSignal.id });
+                  trackSignalOpen(topSignal.id, "home_brief_next_move");
                 } catch { /* fire-and-forget — must not block draft open */ }
               }
               onOpenDraft(state.draft!);
@@ -1215,7 +1216,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
           onClick: () => {
             if (user) {
               try {
-                void (supabase as any).rpc("bump_signal_engagement", { p_signal_id: topSignal.id });
+                trackSignalOpen(topSignal.id, "home_brief_next_move");
               } catch { /* fire-and-forget — must not block draft open */ }
             }
             onOpenDraft(state.draft!);
@@ -1627,7 +1628,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
                                   e.stopPropagation();
                                   if (user) {
                                     try {
-                                      void (supabase as any).rpc("bump_signal_engagement", { p_signal_id: s.id });
+                                      trackSignalOpen(s.id, "home_brief_signal_list");
                                     } catch { /* fire-and-forget — must not block navigation */ }
                                   }
                                   if (onOpenSignal) onOpenSignal(s.id);
@@ -1691,7 +1692,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
                           onClick={onOpenSignal ? () => {
                             if (user) {
                               try {
-                                void (supabase as any).rpc("bump_signal_engagement", { p_signal_id: m.id });
+                                trackSignalOpen(m.id, "home_brief_map");
                               } catch { /* fire-and-forget — must not block navigation */ }
                             }
                             onOpenSignal(m.id);
@@ -1701,7 +1702,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
                               e.preventDefault();
                               if (user) {
                                 try {
-                                  void (supabase as any).rpc("bump_signal_engagement", { p_signal_id: m.id });
+                                  trackSignalOpen(m.id, "home_brief_map");
                                 } catch { /* fire-and-forget — must not block navigation */ }
                               }
                               onOpenSignal(m.id);

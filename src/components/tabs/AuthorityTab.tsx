@@ -38,6 +38,7 @@ import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/component
 import { CollapsibleList } from "@/components/ui/CollapsibleList";
 import { ChevronRight } from "lucide-react";
 import LinkedInFeedPreview from "@/components/LinkedInFeedPreview";
+import { trackSignalOpen } from "@/lib/trackSignalOpen";
 
 /* ── Shared Types ── */
 type ContentType = "post" | "carousel" | "essay" | "framework_summary" | "flash";
@@ -628,6 +629,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
         setContentType("post");
         setFramework("hook_insight_question");
       }
+      trackSignalOpen(signalPrefill.signalId, "composer_prefill");
       setSelectedSignalId(signalPrefill.signalId || null);
       pendingSignalIdRef.current = signalPrefill.signalId || null;
       setSelectedSignalTitle(signalPrefill.signalTitle || null);

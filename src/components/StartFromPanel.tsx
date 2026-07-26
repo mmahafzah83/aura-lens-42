@@ -6,6 +6,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
+import { trackSignalOpen } from "@/lib/trackSignalOpen";
 
 type ContentType = "post" | "carousel" | "essay" | "framework_summary";
 
@@ -268,6 +269,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
   }, [curated]);
 
   const handleItemClick = (item: CuratedItem) => {
+    if (item.sourceType === "signal") trackSignalOpen(item.id, "composer_start_from");
     if (hasDraft) {
       if (confirmId === item.id) {
         onSelect(item.title, item.context, item.contentType, item.signalTitle, item.signalInsight, item.id, item.confidence);
