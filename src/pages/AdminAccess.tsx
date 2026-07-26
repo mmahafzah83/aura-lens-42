@@ -748,7 +748,9 @@ const AdminAccess = () => {
             User management
           </h2>
           <p className="text-xs mb-4" style={{ color: "var(--ink-5)" }}>
-            Users: {rows.length} total · {rows.filter((r) => r.status === "active").length} active · {rows.filter((r) => r.status === "pending").length} pending. Deleting a user removes their auth account and all associated data permanently.
+            Users signed up: {metrics ? signedUp(metrics) ?? "?" : "—"}
+            {metrics ? ` · ${freshnessLine(metrics)} · ${exclusionLine(metrics)}` : ""} The list below is every auth
+            account, including test accounts. Deleting a user removes their auth account and all associated data permanently.
           </p>
           {rows.length === 0 ? (
             <div className="text-xs" style={{ color: "var(--ink-5)" }}>No users yet.</div>
