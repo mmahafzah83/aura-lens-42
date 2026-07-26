@@ -1144,12 +1144,21 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
           .eq("id", editingDraftId);
         if (upErr) throw upErr;
         postId = editingDraftId;
+        // One-time snapshot of the served text — never overwrite an existing value.
+        if (servedTextRef.current) {
+          await supabase
+            .from("linkedin_posts")
+            .update({ original_generated_text: servedTextRef.current })
+            .eq("id", editingDraftId)
+            .is("original_generated_text", null);
+        }
       } else {
         const { data: ins, error: insErr } = await supabase
           .from("linkedin_posts")
           .insert({
             user_id: session.user.id,
             post_text: text,
+            original_generated_text: servedTextRef.current || text,
             format_type: (contentType as string) === "carousel" ? "carousel" : "post",
             tracking_status: "draft",
             source_type: "aura_generated",
