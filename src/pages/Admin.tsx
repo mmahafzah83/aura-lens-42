@@ -6,6 +6,7 @@ import HealthFindingsPanel from "@/components/admin/HealthFindingsPanel";
 import SendTestEmailPanel from "@/components/admin/SendTestEmailPanel";
 import RegenerateReportPanel from "@/components/admin/RegenerateReportPanel";
 import ReportHealthPanel from "@/components/admin/ReportHealthPanel";
+import IsItWorkingZone, { useIsItWorking } from "@/components/admin/cockpit/IsItWorking";
 import { downloadBlob } from "@/lib/download";
 import {
   Bar,
@@ -457,6 +458,10 @@ export default function Admin() {
     />
   ));
 
+  // Cohorts, trend and ship markers. Read straight from SQL, never measured
+  // off a fetched array, and never written back into the stored brief.
+  const working = useIsItWorking(90);
+
   /* ================= CEO VIEW ================= */
   const ceoBody = p && (
     <>
@@ -465,6 +470,18 @@ export default function Admin() {
         <div style={{ height: 16 }} />
         {funnelBars(false)}
         <div style={{ fontFamily: SERIF, fontSize: 17, lineHeight: 1.5, color: C.ink, marginTop: 18 }}>{weekLine}</div>
+        {!working.loading && !working.error && (
+          <div style={{ fontFamily: SERIF, fontSize: 17, lineHeight: 1.5, color: working.verdict.enough ? C.ink : C.muted, marginTop: 10 }}>
+            {working.verdict.line}{" "}
+            <button
+              type="button"
+              onClick={() => setParam("view", "working", "ceo")}
+              style={{ all: "unset", cursor: "pointer", fontFamily: MONO, fontSize: 11, color: C.muted, borderBottom: `1px solid ${C.rule}` }}
+            >
+              see cohorts
+            </button>
+          </div>
+        )}
       </section>
 
       <section
@@ -611,8 +628,17 @@ export default function Admin() {
     });
 
     zones.push({
-      key: "people",
+      key: "working",
       n: 3,
+      title: "Is it working?",
+      tone: working.verdict.enough ? C.teal : C.muted,
+      keyLine: working.error ? "History could not be read." : working.verdict.line,
+      content: <IsItWorkingZone data={working} />,
+    });
+
+    zones.push({
+      key: "people",
+      n: 4,
       title: "People",
       tone: people.length === 0 ? C.muted : C.damber,
       quiet: people.length === 0,
@@ -681,7 +707,7 @@ export default function Admin() {
     const contentQuiet = draftList.length === 0 && failed.length === 0;
     zones.push({
       key: "content",
-      n: 4,
+      n: 5,
       title: "Content and publishing",
       tone: failed.length > 0 ? C.ox : drafts && drafts > 0 ? C.damber : contentQuiet ? C.muted : C.teal,
       quiet: contentQuiet,
@@ -776,7 +802,7 @@ export default function Admin() {
 
     zones.push({
       key: "intelligence",
-      n: 5,
+      n: 6,
       title: "Intelligence",
       tone: Number(p.agent?.pending ?? 0) > 0 ? C.amber : C.teal,
       keyLine: `${N(p.signals?.live) ?? "?"} signals are live and the overnight agent covered ${N(p.agent?.users_covered) ?? 0} people this week.`,
@@ -828,7 +854,7 @@ export default function Admin() {
     const vocQuiet = feedback.length === 0 && milestones.length === 0 && (p.voc?.guide_misses ?? []).length === 0;
     zones.push({
       key: "voc",
-      n: 6,
+      n: 7,
       title: "Voice of the customer",
       tone: vocQuiet ? C.muted : C.damber,
       quiet: vocQuiet,
@@ -912,7 +938,7 @@ export default function Admin() {
     const jobsFailed = (p.jobs?.failed ?? []).length;
     zones.push({
       key: "machine",
-      n: 7,
+      n: 8,
       title: "The machine",
       tone: jobsFailed > 0 ? C.ox : Number(p.machine?.queue_failed ?? 0) > 0 ? C.amber : C.teal,
       keyLine:
@@ -980,7 +1006,7 @@ export default function Admin() {
 
     zones.push({
       key: "proof",
-      n: 8,
+      n: 9,
       title: "Proof",
       tone: Number(audit?.disagreements ?? 0) > 0 ? C.ox : C.teal,
       keyLine:
@@ -1015,7 +1041,7 @@ export default function Admin() {
 
     zones.push({
       key: "deeper",
-      n: 9,
+      n: 10,
       title: "Go deeper",
       tone: C.muted,
       keyLine: `${DRILLDOWNS.length} detail pages behind this one.`,
