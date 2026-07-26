@@ -403,9 +403,14 @@ Deno.serve(async (req) => {
 </div>`.trim();
 
     // ===== SEND via admin-notify =====
+    // RETIRED BY DISABLING, NOT DELETING. The founder-daily-brief is now the one
+    // daily email. Everything above still computes and is still available.
+    // Set ADMIN_DIGEST_EMAIL_ENABLED=true to bring this sender back.
+    const emailEnabled = (Deno.env.get("ADMIN_DIGEST_EMAIL_ENABLED") || "").toLowerCase() === "true";
     const dedupe_key = `admin-digest:${todayStr}`;
     const subject = `Aura Daily Digest — ${todayStr}`;
-    const notifyRes = await fetch(`${supabaseUrl}/functions/v1/admin-notify`, {
+    const notifyRes = emailEnabled
+      ? await fetch(`${supabaseUrl}/functions/v1/admin-notify`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${serviceKey}`,
@@ -420,7 +425,8 @@ Deno.serve(async (req) => {
         html: true,
         force_email: true,
       }),
-    });
+    })
+      : new Response(JSON.stringify({ skipped: "email disabled" }), { status: 200 });
     const notifyBody = await notifyRes.json().catch(() => ({}));
 
     const HEARTBEAT_URL = Deno.env.get("HEARTBEAT_URL");

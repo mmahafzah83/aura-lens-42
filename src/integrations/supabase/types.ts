@@ -666,6 +666,30 @@ export type Database = {
           },
         ]
       }
+      daily_brief_snapshots: {
+        Row: {
+          audit: Json
+          brief_date: string
+          created_at: string
+          id: string
+          payload: Json
+        }
+        Insert: {
+          audit?: Json
+          brief_date: string
+          created_at?: string
+          id?: string
+          payload?: Json
+        }
+        Update: {
+          audit?: Json
+          brief_date?: string
+          created_at?: string
+          id?: string
+          payload?: Json
+        }
+        Relationships: []
+      }
       design_system: {
         Row: {
           created_at: string | null
@@ -3602,6 +3626,16 @@ export type Database = {
         }[]
       }
       enqueue_voice_distill_jobs: { Args: never; Returns: number }
+      founder_brief_data: { Args: never; Returns: Json }
+      founder_brief_user_ids: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          last_sign_in_at: string
+          user_id: string
+        }[]
+      }
       founding_seats: {
         Args: never
         Returns: {
