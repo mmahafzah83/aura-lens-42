@@ -153,6 +153,119 @@ function gridCell(n: number, max: number): string {
   return `<td bgcolor="${bg}" align="center" style="border:1px solid ${RULE};font-family:${MONO};font-size:10px;color:${INK};padding:4px 0">${n}</td>`;
 }
 
+
+/* ============================================================================
+ * MOVEMENT — what changed since yesterday, and whether it means anything.
+ *
+ * Three rules keep this honest:
+ *   1. FIRST RUN of each day on both sides. A refresh can never rewrite a
+ *      movement, because the later runs of a day are ignored entirely.
+ *   2. ABSOLUTE first. With eleven users, "+100%" is one person. A percentage
+ *      is only ever shown on a baseline of 20 or more.
+ *   3. NO JUDGEMENT until 7 days of RECORDED history exist. A normal range
+ *      built from reconstructed history is not a baseline, it is a guess.
+ * ========================================================================== */
+
+const MOVEMENT_PCT_FLOOR = 20;   // below this a percentage is meaningless
+const MOVEMENT_MIN_PCT = 0.05;   // 5% for counts of 20 or more
+const NORMAL_RANGE_DAYS = 7;     // recorded days needed before we judge
+
+type MoveMetric = { key: string; label: string; unit: "people" | "items" };
+
+const MOVE_METRICS: MoveMetric[] = [
+  { key: "invited", label: "Invited", unit: "people" },
+  { key: "signed_in", label: "Signed in", unit: "people" },
+  { key: "finished_setup", label: "Finished setup", unit: "people" },
+  { key: "captured", label: "Captured something", unit: "people" },
+  { key: "got_signal", label: "Got a signal", unit: "people" },
+  { key: "linkedin_live", label: "LinkedIn live", unit: "people" },
+  { key: "opened_writer", label: "Opened the writer", unit: "people" },
+  { key: "has_draft", label: "Holds a draft", unit: "people" },
+  { key: "published", label: "Published", unit: "people" },
+  { key: "drafts_waiting", label: "Drafts waiting", unit: "items" },
+  { key: "signals_live", label: "Signals live", unit: "items" },
+  { key: "captures", label: "Captures", unit: "items" },
+];
+
+/** Reads one day's numbers out of a brief payload. Never an array length. */
+function movementValues(payload: any): Record<string, number | null> {
+  const f = payload?.funnel ?? {};
+  const people: any[] = payload?.people ?? [];
+  const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
+  const sum = (pick: (p: any) => unknown) =>
+    people.reduce((n: number, p: any) => n + (Number(pick(p)) || 0), 0);
+  const drafts = payload?.drafts ?? {};
+  const draftsTotal =
+    num(drafts.content_items) !== null || num(drafts.linkedin_posts) !== null
+      ? (Number(drafts.content_items) || 0) + (Number(drafts.linkedin_posts) || 0)
+      : null;
+  const peopleN = people.reduce((n: number) => n + 1, 0);
+  return {
+    invited: num(f.invited), signed_in: num(f.signed_in), finished_setup: num(f.finished_setup),
+    captured: num(f.captured), got_signal: num(f.got_signal), linkedin_live: num(f.linkedin_live),
+    opened_writer: num(f.opened_writer), has_draft: num(f.has_draft), published: num(f.published),
+    drafts_waiting: draftsTotal,
+    signals_live: peopleN === 0 ? null : sum((p) => p.signals),
+    captures: peopleN === 0 ? null : sum((p) => p.captures),
+  };
+}
+
+/**
+ * Does a change deserve to be reported?
+ * A LOSS ALWAYS DOES — no threshold may ever suppress downward movement.
+ */
+function clearsFloor(from: number, to: number): boolean {
+  const delta = to - from;
+  if (delta === 0) return false;
+  if (delta < 0) return true;                       // losses are never suppressed
+  if (from < MOVEMENT_PCT_FLOOR) return delta >= 1; // small numbers: any real move
+  return delta / from >= MOVEMENT_MIN_PCT;          // large numbers: 5% or more
+}
+
+/** A percentage may exist only on a baseline of 20 or more. Otherwise null. */
+function movementPct(from: number, to: number): number | null {
+  if (from < MOVEMENT_PCT_FLOOR || from === 0) return null;
+  return Math.round(((to - from) / from) * 100);
+}
+
+/** Who moved. A number changing is not information; a person changing is. */
+function moversFor(key: string, prev: any[], now: any[]): string[] {
+  const byId = new Map<string, any>();
+  for (const p of prev ?? []) byId.set(String(p.user_id), p);
+  const names: string[] = [];
+  const stageKeys = new Set([
+    "invited", "signed_in", "finished_setup", "captured", "got_signal",
+    "linkedin_live", "opened_writer", "has_draft", "published",
+  ]);
+  for (const p of now ?? []) {
+    const was = byId.get(String(p.user_id));
+    const name = p.first_name ? String(p.first_name) : null;
+    if (key === "invited") {
+      if (!was && name) names.push(name);
+      continue;
+    }
+    if (stageKeys.has(key)) {
+      const a = was ? !!was?.stages?.[key] : false;
+      const b = !!p?.stages?.[key];
+      if (a !== b && name) names.push(b ? name : `${name} (lost)`);
+    } else {
+      const pick = key === "captures" ? "captures" : key === "signals_live" ? "signals" : "drafts";
+      const a = Number(was?.[pick] ?? 0);
+      const b = Number(p?.[pick] ?? 0);
+      if (a !== b && name) names.push(b > a ? name : `${name} (down)`);
+    }
+  }
+  // Someone who was here yesterday and is gone today is a loss, and losses
+  // are never dropped.
+  const nowIds = new Set((now ?? []).map((p: any) => String(p.user_id)));
+  for (const p of prev ?? []) {
+    if (nowIds.has(String(p.user_id))) continue;
+    const had = key === "invited" ? true : stageKeys.has(key) ? !!p?.stages?.[key] : Number(p?.[key === "captures" ? "captures" : key === "signals_live" ? "signals" : "drafts"] ?? 0) > 0;
+    if (had && p.first_name) names.push(`${String(p.first_name)} (gone)`);
+  }
+  return names;
+}
+
 // ---------- main ----------
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -336,6 +449,125 @@ Deno.serve(async (req) => {
       // A decision log that cannot be read must not take the brief down.
     }
 
+
+    /* ===== WHAT MOVED =====
+     * First run of today against first run of yesterday. Always first runs:
+     * `.order("run_seq", { ascending: true }).limit(1)` on both sides, so a
+     * refresh later in the day can never rewrite a movement.
+     */
+    const todayISO = new Date().toISOString().slice(0, 10);
+    const yesterdayISO = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+
+    const firstRunOf = async (day: string) => {
+      const { data } = await admin
+        .from("daily_brief_snapshots")
+        .select("payload, run_seq, brief_date")
+        .eq("brief_date", day)
+        .order("run_seq", { ascending: true })   // FIRST run of the day, never latest
+        .limit(1);
+      return (data ?? [])[0] ?? null;
+    };
+
+    // How many distinct days have actually been RECORDED. Reconstructed
+    // history is deliberately not counted — a normal range must be built from
+    // what was recorded, or it is a guess.
+    let recordedDays = 0;
+    try {
+      const { data: dayRows } = await admin
+        .from("daily_brief_snapshots")
+        .select("brief_date")
+        .order("brief_date", { ascending: true });
+      const seenDays = new Set<string>();
+      for (const r of (dayRows ?? []) as any[]) seenDays.add(String(r.brief_date));
+      seenDays.add(todayISO);
+      recordedDays = [...seenDays].reduce((n) => n + 1, 0);
+    } catch (_e) { /* history unreadable — movement simply stays unready */ }
+
+    const yesterdayRow = await firstRunOf(yesterdayISO);
+    const todayStored = await firstRunOf(todayISO);
+
+    // Today's side: the stored first run if one exists, otherwise this run,
+    // which is itself about to become the first run of the day.
+    const todayPayloadForMove: any = todayStored?.payload ?? {
+      funnel: fa,
+      drafts: A.drafts,
+      people: A.people,
+    };
+
+    const judging = recordedDays >= NORMAL_RANGE_DAYS;
+    const establishingLine = `Establishing what normal looks like — day ${recordedDays} of ${NORMAL_RANGE_DAYS}. Movement is shown, but not yet judged.`;
+
+    const moveItems: any[] = [];
+    let movementStatus: string;
+    let movementReady = false;
+
+    if (!yesterdayRow) {
+      movementStatus =
+        "There is no earlier day to compare against yet — the first brief was stored today. Movement is reported from tomorrow.";
+    } else {
+      movementReady = true;
+      const prevVals = movementValues(yesterdayRow.payload);
+      const nowVals = movementValues(todayPayloadForMove);
+      const prevPeople: any[] = yesterdayRow.payload?.people ?? [];
+      const nowPeople: any[] = todayPayloadForMove?.people ?? [];
+
+      for (const m of MOVE_METRICS) {
+        const from = prevVals[m.key];
+        const to = nowVals[m.key];
+        if (from === null || to === null) continue;
+        if (!clearsFloor(from, to)) continue;
+        const delta = to - from;
+        const pct = movementPct(from, to);      // null under a baseline of 20
+        const movers = moversFor(m.key, prevPeople, nowPeople);
+        const named = movers.reduce((n) => n + 1, 0);
+        const absDelta = Math.abs(delta);
+        const who =
+          named > 0
+            ? movers.join(", ")
+            : `${absDelta} ${absDelta === 1 ? "person" : "people"} not identified`;
+        const line =
+          `${m.label}: ${from} → ${to} (${delta > 0 ? "+" : ""}${delta}` +
+          (pct === null ? "" : `, ${pct > 0 ? "+" : ""}${pct}%`) +
+          `, ${who})`;
+        moveItems.push({
+          key: m.key, label: m.label, from, to, delta, pct,
+          direction: delta > 0 ? "up" : "down",
+          movers, line, judged: judging,
+        });
+      }
+      // Losses first — they are the ones he must not scroll past.
+      moveItems.sort((a, b) => (a.direction === b.direction ? 0 : a.direction === "down" ? -1 : 1));
+      if (moveItems.reduce((n) => n + 1, 0) === 0) movementStatus = "Nothing moved yesterday.";
+      else movementStatus = judging ? "" : establishingLine;
+    }
+
+    // A decision under review is answered by the metric's path from its own
+    // captured baseline to today, not by memory.
+    const decisionPaths = decisions_due
+      .filter((d: any) => d.metric_key && d.metric_key !== "none")
+      .map((d: any) => ({
+        title: d.title,
+        metric_key: d.metric_key,
+        baseline_value: d.baseline_value,
+        expected_value: d.expected_value,
+        actual_value: d.actual_value,
+        line: `${d.title}: ${String(d.metric_key).replace(/_/g, " ")} went ${d.baseline_value ?? "?"} → ${d.actual_value ?? "?"} against an expectation of ${d.expected_value ?? "?"}.`,
+      }));
+
+    const movement = {
+      ready: movementReady,
+      compared_to: yesterdayRow ? yesterdayISO : null,
+      compared_run: "first run of each day",
+      recorded_days: recordedDays,
+      normal_range_after_days: NORMAL_RANGE_DAYS,
+      judging,
+      establishing_line: judging ? null : establishingLine,
+      status_line: movementStatus,
+      moved: moveItems,
+      decision_paths: decisionPaths,
+      rules: "absolute change first; percentage only on a baseline of 20 or more; downward movement never suppressed",
+    };
+
     // jobs — suppression rule
     const jobsOk: any[] = [];
     const jobsFailed: any[] = [];
@@ -465,6 +697,7 @@ Deno.serve(async (req) => {
       voc: A.voc,
       agent: A.agent,
       machine: A.machine,
+      movement,
       needs_you, decide, decisions_due, watch: watchShown, handled: handledN,
       coverage: { measured_areas: measuredN, total_areas: totalAreas, unmeasured },
       recommendations: recs,
@@ -544,6 +777,23 @@ Deno.serve(async (req) => {
   <span style="color:${TEAL}">&#9679;</span> healthy
 </div>
 </td></tr>
+
+<!-- 3b what moved -->
+${sectionOpen("What moved")}
+${movement.ready
+  ? (movement.moved.reduce((n: number) => n + 1, 0) === 0
+      ? prose(`<b>Nothing moved yesterday.</b>`) + prose(`<span style="color:${MUTED}">Measured against the first run of ${esc(String(movement.compared_to))}. A metric that did not move says nothing, so nothing is listed.</span>`)
+      : movement.moved.map((m: any) => dotLine(m.direction === "down" ? OX : TEAL, m.line)).join("")
+        + (movement.judging ? "" : `<div style="font-family:${MONO};font-size:10px;color:${MUTED};padding-top:8px">${esc(String(movement.establishing_line))}</div>`))
+  : prose(`<span style="color:${MUTED}">${esc(movement.status_line)}</span>`)}
+${movement.decision_paths.reduce((n: number) => n + 1, 0) > 0
+  ? `<div style="padding-top:12px">` + movement.decision_paths.map((d: any) => dotLine(DAMBER, d.line)).join("") + `</div>`
+  : ""}
+${sectionClose(movement.ready
+  ? (movement.moved.reduce((n: number) => n + 1, 0) === 0
+      ? "Nothing moved. That is the finding — go and cause some movement today rather than reading further."
+      : "Read the losses first. Anything in oxblood went backwards and no threshold hid it.")
+  : "Nothing to compare yet. Come back tomorrow and this becomes the first section worth reading.")}
 
 <!-- 4 findings -->
 ${sectionOpen("What today's numbers say")}
