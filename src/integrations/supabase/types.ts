@@ -3861,6 +3861,14 @@ export type Database = {
           last_fail: string
         }[]
       }
+      admin_economics_denominators: {
+        Args: never
+        Returns: {
+          active_users: number
+          published_posts: number
+          signals_delivered: number
+        }[]
+      }
       admin_list_crons: {
         Args: never
         Returns: {
@@ -3874,6 +3882,21 @@ export type Database = {
         }[]
       }
       admin_run_cron: { Args: { p_jobid: number }; Returns: string }
+      admin_spend_by_function: {
+        Args: { p_months_back?: number }
+        Returns: {
+          calls: number
+          function_name: string
+          spend: number
+        }[]
+      }
+      admin_spend_daily: {
+        Args: { p_days?: number }
+        Returns: {
+          day: string
+          spend: number
+        }[]
+      }
       admin_stage_timeline: {
         Args: { p_days?: number }
         Returns: {
