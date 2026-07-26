@@ -612,7 +612,7 @@ export default function Admin() {
 
     zones.push({
       key: "people",
-      n: 3,
+      n: 4,
       title: "People",
       tone: people.length === 0 ? C.muted : C.damber,
       quiet: people.length === 0,
@@ -681,7 +681,7 @@ export default function Admin() {
     const contentQuiet = draftList.length === 0 && failed.length === 0;
     zones.push({
       key: "content",
-      n: 4,
+      n: 5,
       title: "Content and publishing",
       tone: failed.length > 0 ? C.ox : drafts && drafts > 0 ? C.damber : contentQuiet ? C.muted : C.teal,
       quiet: contentQuiet,
@@ -776,7 +776,7 @@ export default function Admin() {
 
     zones.push({
       key: "intelligence",
-      n: 5,
+      n: 6,
       title: "Intelligence",
       tone: Number(p.agent?.pending ?? 0) > 0 ? C.amber : C.teal,
       keyLine: `${N(p.signals?.live) ?? "?"} signals are live and the overnight agent covered ${N(p.agent?.users_covered) ?? 0} people this week.`,
@@ -828,7 +828,7 @@ export default function Admin() {
     const vocQuiet = feedback.length === 0 && milestones.length === 0 && (p.voc?.guide_misses ?? []).length === 0;
     zones.push({
       key: "voc",
-      n: 6,
+      n: 7,
       title: "Voice of the customer",
       tone: vocQuiet ? C.muted : C.damber,
       quiet: vocQuiet,
@@ -912,7 +912,7 @@ export default function Admin() {
     const jobsFailed = (p.jobs?.failed ?? []).length;
     zones.push({
       key: "machine",
-      n: 7,
+      n: 8,
       title: "The machine",
       tone: jobsFailed > 0 ? C.ox : Number(p.machine?.queue_failed ?? 0) > 0 ? C.amber : C.teal,
       keyLine:
@@ -980,7 +980,7 @@ export default function Admin() {
 
     zones.push({
       key: "proof",
-      n: 8,
+      n: 9,
       title: "Proof",
       tone: Number(audit?.disagreements ?? 0) > 0 ? C.ox : C.teal,
       keyLine:
@@ -1015,7 +1015,7 @@ export default function Admin() {
 
     zones.push({
       key: "deeper",
-      n: 9,
+      n: 10,
       title: "Go deeper",
       tone: C.muted,
       keyLine: `${DRILLDOWNS.length} detail pages behind this one.`,
