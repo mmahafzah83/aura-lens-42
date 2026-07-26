@@ -328,6 +328,11 @@ function TopicBlock({ n, title, description }: { n: string; title: string; descr
 
 function SpaceSheet({ bp, total }: { bp: BrandPaper; total: number }) {
   const hasInvest = bp.invest_next.length > 0;
+  // Older rows carry pillars but no structured topics — fall back so the
+  // topics block is never silently empty.
+  const topics = bp.topics.length > 0
+    ? bp.topics
+    : bp.content_pillars.slice(0, 3).map((t) => ({ title: t, description: "" }));
   return (
     <Sheet n={3}>
       <PaperHeader label="Ground & Topics" />
@@ -346,11 +351,11 @@ function SpaceSheet({ bp, total }: { bp: BrandPaper; total: number }) {
           </PaperFigure>
         ) : null}
 
-        {bp.topics.length > 0 ? (
+        {topics.length > 0 ? (
           <div style={{ marginTop: 28 }}>
             <MonoLabel color={T.spot} size={11}>Your three topics</MonoLabel>
             <div style={{ marginTop: 10, borderBottom: `1px solid ${T.rule}` }}>
-              {bp.topics.slice(0, 3).map((t, i) => (
+              {topics.slice(0, 3).map((t, i) => (
                 <TopicBlock
                   key={i}
                   n={String(i + 1).padStart(2, "0")}
