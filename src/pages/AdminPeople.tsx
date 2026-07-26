@@ -244,32 +244,32 @@ function Drilldown({
           <div style={{ color: "var(--glass-2)" }}><Loader2 className="animate-spin inline w-4 h-4" /> Loading…</div>
         ) : (
           <>
-            <Section title={`Recent captures (${captures.length})`}>
+            <Section title={`Recent captures`}>
               {captures.map((c) => (
                 <li key={c.id}>{c.title || (c.snippet ? c.snippet.slice(0, 60) : "(untitled)")} <span style={{ color: "var(--glass-2)" }}>· {fmtDate(c.created_at)}</span></li>
               ))}
             </Section>
-            <Section title={`Recent signals (${signals.length})`}>
+            <Section title={`Recent signals`}>
               {signals.map((s) => (
                 <li key={s.id}>{s.signal_title || "(untitled)"} <span style={{ color: "var(--glass-2)" }}>· conf {typeof s.confidence === "number" ? s.confidence.toFixed(2) : "—"} · {fmtDate(s.created_at)}</span></li>
               ))}
             </Section>
-            <Section title={`Recent posts (${posts.length})`}>
+            <Section title={`Recent posts`}>
               {posts.map((p) => (
                 <li key={p.id}>{(p.snippet || "").slice(0, 90) || "(empty)"} <span style={{ color: "var(--glass-2)" }}>· {p.source_type} / {p.tracking_status} · {fmtDate(p.created_at)}</span></li>
               ))}
             </Section>
-            <Section title={`Imprint history (${snaps.length})`}>
+            <Section title={`Imprint history`}>
               {snaps.map((s, i) => (
                 <li key={i}>{Math.round(s.score)}{s.tier ? ` · ${s.tier}` : ""} <span style={{ color: "var(--glass-2)" }}>· {fmtDate(s.created_at)}</span></li>
               ))}
             </Section>
-            <Section title={`Nudge history (${nudges.length})`}>
+            <Section title={`Nudge history`}>
               {nudges.map((n, i) => (
                 <li key={i}>{n.email_type} <span style={{ color: "var(--glass-2)" }}>· {fmtDate(n.sent_at)}</span></li>
               ))}
             </Section>
-            <Section title={`Recent actions (${actions.length})`}>
+            <Section title={`Recent actions`}>
               {actions.map((a, i) => (
                 <li key={i}>{a.task || a.action} → {a.result || "—"} <span style={{ color: "var(--glass-2)" }}>· {fmtDate(a.created_at)}</span></li>
               ))}
