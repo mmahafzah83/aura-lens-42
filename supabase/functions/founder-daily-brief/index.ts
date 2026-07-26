@@ -153,6 +153,106 @@ function gridCell(n: number, max: number): string {
   return `<td bgcolor="${bg}" align="center" style="border:1px solid ${RULE};font-family:${MONO};font-size:10px;color:${INK};padding:4px 0">${n}</td>`;
 }
 
+
+/* ============================================================================
+ * MOVEMENT — what changed since yesterday, and whether it means anything.
+ *
+ * Three rules keep this honest:
+ *   1. FIRST RUN of each day on both sides. A refresh can never rewrite a
+ *      movement, because the later runs of a day are ignored entirely.
+ *   2. ABSOLUTE first. With eleven users, "+100%" is one person. A percentage
+ *      is only ever shown on a baseline of 20 or more.
+ *   3. NO JUDGEMENT until 7 days of RECORDED history exist. A normal range
+ *      built from reconstructed history is not a baseline, it is a guess.
+ * ========================================================================== */
+
+const MOVEMENT_PCT_FLOOR = 20;   // below this a percentage is meaningless
+const MOVEMENT_MIN_PCT = 0.05;   // 5% for counts of 20 or more
+const NORMAL_RANGE_DAYS = 7;     // recorded days needed before we judge
+
+type MoveMetric = { key: string; label: string; unit: "people" | "items" };
+
+const MOVE_METRICS: MoveMetric[] = [
+  { key: "invited", label: "Invited", unit: "people" },
+  { key: "signed_in", label: "Signed in", unit: "people" },
+  { key: "finished_setup", label: "Finished setup", unit: "people" },
+  { key: "captured", label: "Captured something", unit: "people" },
+  { key: "got_signal", label: "Got a signal", unit: "people" },
+  { key: "linkedin_live", label: "LinkedIn live", unit: "people" },
+  { key: "opened_writer", label: "Opened the writer", unit: "people" },
+  { key: "has_draft", label: "Holds a draft", unit: "people" },
+  { key: "published", label: "Published", unit: "people" },
+  { key: "drafts_waiting", label: "Drafts waiting", unit: "items" },
+  { key: "signals_live", label: "Signals live", unit: "items" },
+  { key: "captures", label: "Captures", unit: "items" },
+];
+
+/** Reads one day's numbers out of a brief payload. Never an array length. */
+function movementValues(payload: any): Record<string, number | null> {
+  const f = payload?.funnel ?? {};
+  const people: any[] = payload?.people ?? [];
+  const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
+  const sum = (pick: (p: any) => unknown) =>
+    people.reduce((n: number, p: any) => n + (Number(pick(p)) || 0), 0);
+  const drafts = payload?.drafts ?? {};
+  const draftsTotal =
+    num(drafts.content_items) !== null || num(drafts.linkedin_posts) !== null
+      ? (Number(drafts.content_items) || 0) + (Number(drafts.linkedin_posts) || 0)
+      : null;
+  return {
+    invited: num(f.invited), signed_in: num(f.signed_in), finished_setup: num(f.finished_setup),
+    captured: num(f.captured), got_signal: num(f.got_signal), linkedin_live: num(f.linkedin_live),
+    opened_writer: num(f.opened_writer), has_draft: num(f.has_draft), published: num(f.published),
+    drafts_waiting: draftsTotal,
+    signals_live: people.length === 0 ? null : sum((p) => p.signals),
+    captures: people.length === 0 ? null : sum((p) => p.captures),
+  };
+}
+
+/**
+ * Does a change deserve to be reported?
+ * A LOSS ALWAYS DOES — no threshold may ever suppress downward movement.
+ */
+function clearsFloor(from: number, to: number): boolean {
+  const delta = to - from;
+  if (delta === 0) return false;
+  if (delta < 0) return true;                       // losses are never suppressed
+  if (from < MOVEMENT_PCT_FLOOR) return delta >= 1; // small numbers: any real move
+  return delta / from >= MOVEMENT_MIN_PCT;          // large numbers: 5% or more
+}
+
+/** A percentage may exist only on a baseline of 20 or more. Otherwise null. */
+function movementPct(from: number, to: number): number | null {
+  if (from < MOVEMENT_PCT_FLOOR || from === 0) return null;
+  return Math.round(((to - from) / from) * 100);
+}
+
+/** Who moved. A number changing is not information; a person changing is. */
+function moversFor(key: string, prev: any[], now: any[]): string[] {
+  const byId = new Map<string, any>();
+  for (const p of prev ?? []) byId.set(String(p.user_id), p);
+  const names: string[] = [];
+  const stageKeys = new Set([
+    "invited", "signed_in", "finished_setup", "captured", "got_signal",
+    "linkedin_live", "opened_writer", "has_draft", "published",
+  ]);
+  for (const p of now ?? []) {
+    const was = byId.get(String(p.user_id));
+    const name = p.first_name ? String(p.first_name) : null;
+    if (stageKeys.has(key)) {
+      const a = was ? !!was?.stages?.[key] : false;
+      const b = !!p?.stages?.[key];
+      if (a !== b && name) names.push(b ? name : `${name} (lost)`);
+    } else {
+      const pick = key === "captures" ? "captures" : key === "signals_live" ? "signals" : "drafts";
+      const a = Number(was?.[pick] ?? 0);
+      const b = Number(p?.[pick] ?? 0);
+      if (a !== b && name) names.push(b > a ? name : `${name} (down)`);
+    }
+  }
+  return names;
+}
+
 // ---------- main ----------
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
