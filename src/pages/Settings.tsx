@@ -10,11 +10,7 @@ import { Link } from "react-router-dom";
 import { exportReportPdf } from "@/lib/exportReportPdf";
 import usePageMeta from "@/hooks/usePageMeta";
 import ReportDocument from "@/components/ReportDocument";
-import { buildIdentityReport, type ReportData } from "@/lib/buildIdentityReport";
-import {
-  fetchCurrentReportSnapshot,
-  captureReportSnapshot,
-} from "@/lib/reportSnapshot";
+import { useReportSnapshot } from "@/hooks/useReportSnapshot";
 import { getPublication, validate as validatePublication, type PublicationConfig } from "@/lib/publication";
 import { PAPER, INK, SPOT, RULE, SERIF, MONO, ARABIC } from "@/components/broadsheet/pressTokens";
 import CountryPicker from "@/components/CountryPicker";
@@ -64,10 +60,12 @@ export default function Settings() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [exportingReport, setExportingReport] = useState(false);
-  const [report, setReport] = useState<ReportData | null>(null);
-const [reportVersion, setReportVersion] = useState<number | null>(null);
-const [reportSnapshotAt, setReportSnapshotAt] = useState<string | null>(null);
-const [reportLoading, setReportLoading] = useState(true);
+const {
+  report,
+  version: reportVersion,
+  snapshotAt: reportSnapshotAt,
+  loading: reportLoading,
+} = useReportSnapshot();
 const [linkedInConnection, setLinkedInConnection] = useState<LinkedInConnection | null>(null);
 const [linkedInBusy, setLinkedInBusy] = useState(true);
 const [signatures, setSignatures] = useState<{ id: string; name: string; text_en: string; text_ar: string }[]>([]);
@@ -104,7 +102,6 @@ const handleDeleteAccount = async () => {
           if (!cancelled) {
             setLoading(false);
             setError("Not signed in.");
-            setReportLoading(false);
           }
           return;
         }
@@ -128,41 +125,8 @@ const handleDeleteAccount = async () => {
           );
           setPublicationState(initialPub);
         }
-        if (data?.brand_assessment_completed_at) {
-          try {
-            // Frozen edition first — the report must not drift between views.
-            const snap = await fetchCurrentReportSnapshot(session.user.id);
-            if (snap) {
-              if (!cancelled) {
-                setReport(snap.data);
-                setReportVersion(snap.version);
-                setReportSnapshotAt(snap.created_at);
-              }
-            } else {
-              // No snapshot yet — live fallback, then freeze it for next time.
-              const r = await buildIdentityReport(session.user.id);
-              if (!cancelled) setReport(r);
-              const v = await captureReportSnapshot("user");
-              if (!cancelled && v != null) {
-                const fresh = await fetchCurrentReportSnapshot(session.user.id);
-                if (fresh && !cancelled) {
-                  setReport(fresh.data);
-                  setReportVersion(fresh.version);
-                  setReportSnapshotAt(fresh.created_at);
-                }
-              }
-            }
-          } catch (re) {
-            console.error("[Settings] report load failed", re);
-          } finally {
-            if (!cancelled) setReportLoading(false);
-          }
-        } else {
-          if (!cancelled) setReportLoading(false);
-        }
       } catch (e: any) {
         if (!cancelled) setError(e?.message || "Failed to load profile.");
-        if (!cancelled) setReportLoading(false);
       } finally {
         if (!cancelled) setLoading(false);
       }

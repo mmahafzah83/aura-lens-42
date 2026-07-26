@@ -10,6 +10,7 @@ import MilestonesSection from "@/components/MilestonesSection";
 import AuditRadarWidget from "@/components/AuditRadarWidget";
 import ObjectiveAuditModal from "@/components/ObjectiveAuditModal";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
+import ReportViewerSection from "@/components/identity/ReportViewerSection";
 import SectionError from "@/components/ui/section-error";
 import { withTimeout, showQueryErrorToast } from "@/lib/safeQuery";
 import { useAuthReady } from "@/hooks/useAuthReady";
@@ -1232,6 +1233,13 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       <div className="hidden">
         <MilestonesSection userId={authUser?.id ?? null} />
       </div>
+
+      {/* SLICE 4a — Strategic Identity Report home */}
+      <SectionHeader label="Your Strategic Identity Report" />
+      <ReportViewerSection
+        firstName={profile?.first_name}
+        onCompleteAssessment={() => setBrandOpen(true)}
+      />
 
       {/* Your Aura Card — readiness gate + shareable card */}
       <AuraCardPanel
