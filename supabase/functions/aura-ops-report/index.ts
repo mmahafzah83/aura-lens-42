@@ -711,10 +711,15 @@ Deno.serve(async (req) => {
   lines.push(`  ${founderPublished + nonFounderPublished} posts published in the last 7 days (${founderPublished} by founder, ${nonFounderPublished} by others).`);
   const plainText = lines.join("\n");
 
-  // ALWAYS-SEND. Not wrapped in a conditional that could skip on green.
+  // RETIRED BY DISABLING, NOT DELETING. founder-daily-brief is now the single
+  // daily email. This function still computes and still writes its row.
+  // Set AURA_OPS_REPORT_EMAIL_ENABLED=true to bring this sender back.
+  const opsEmailEnabled = (Deno.env.get("AURA_OPS_REPORT_EMAIL_ENABLED") || "").toLowerCase() === "true";
   let resendStatus = 0;
   let resendError = "";
-  if (!dryRun) {
+  if (!dryRun && !opsEmailEnabled) {
+    resendError = "email disabled (AURA_OPS_REPORT_EMAIL_ENABLED not set)";
+  } else if (!dryRun) {
     if (!RESEND || !founderEmail) {
       resendError = !RESEND ? "RESEND_API_KEY missing" : "founder email unresolved";
     } else {

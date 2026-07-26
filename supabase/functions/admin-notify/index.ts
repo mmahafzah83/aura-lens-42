@@ -128,9 +128,13 @@ Deno.serve(async (req) => {
       openRow = data && data[0] ? data[0] : null;
     }
 
+    // Email is now reserved for 'critical' only. Everything at 'high' and below is
+    // recorded in ops_alerts and rendered by founder-daily-brief the next morning.
+    // Dedupe and resolve behaviour are unchanged.
     const twentyH = 20 * 60 * 60 * 1000;
     const recentlyEmailed = !!(openRow?.last_emailed && Date.now() - new Date(openRow.last_emailed).getTime() < twentyH);
-    const doEmail = shouldEmail && !!RESEND && !!ADMIN_ALERT_EMAIL && !(openRow && recentlyEmailed);
+    const doEmail =
+      severity === "critical" && shouldEmail && !!RESEND && !!ADMIN_ALERT_EMAIL && !(openRow && recentlyEmailed);
 
     let emailed = false;
     if (doEmail) {

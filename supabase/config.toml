@@ -159,3 +159,6 @@ verify_jwt = false
 
 [functions.aura-ops-report]
 verify_jwt = false
+
+[functions.founder-daily-brief]
+verify_jwt = false
