@@ -3636,6 +3636,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      founder_brief_verify: { Args: never; Returns: Json }
       founding_seats: {
         Args: never
         Returns: {

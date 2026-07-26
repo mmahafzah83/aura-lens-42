@@ -1,679 +1,944 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import AdminShell from "@/components/admin/AdminShell";
-import TodaysStatus from "@/components/TodaysStatus";
 import HealthFindingsPanel from "@/components/admin/HealthFindingsPanel";
 import SendTestEmailPanel from "@/components/admin/SendTestEmailPanel";
 import RegenerateReportPanel from "@/components/admin/RegenerateReportPanel";
 import ReportHealthPanel from "@/components/admin/ReportHealthPanel";
-import {
-  Activity,
-  AlertCircle,
-  ArrowRight,
-  CheckCircle2,
-  Loader2,
-  XCircle,
-  TrendingDown,
-  Bug,
-} from "lucide-react";
+import { downloadBlob } from "@/lib/download";
+import { Bar, Btn, C, Finding, Label, Modal, MONO, SERIF, Stat, Table, Zone, Unknown } from "@/components/admin/cockpit/ui";
+import { Loader2 } from "lucide-react";
 
-type ProviderResult = {
-  provider: string;
-  ok: boolean;
-  status: number;
-  detail?: string;
-};
+/**
+ * /admin — the founder cockpit.
+ *
+ * ONE BRAIN, TWO RENDERS. This page renders the SAME stored computation the
+ * daily email renders: today's row in `daily_brief_snapshots`, written by the
+ * `founder-daily-brief` edge function. The page never recomputes the headline
+ * picture. If today's row does not exist it asks the function for a dry run
+ * (which computes and stores, but never sends an email).
+ */
 
-type HealthCheck = {
-  id: string;
-  run_at: string;
-  results: ProviderResult[];
-  checked: number;
-  failed: number;
-};
-
-const ADMIN_PAGES = [
-  {
-    to: "/admin/people",
-    label: "People",
-    description: "User journeys and lifecycle cockpit",
-  },
-  {
-    to: "/admin/journey",
-    label: "Journey",
-    description: "Funnel stages and where users are stuck",
-  },
-  {
-    to: "/admin/cost",
-    label: "Cost",
-    description: "AI spend and budget tracking",
-  },
-  {
-    to: "/admin/crons",
-    label: "Crons",
-    description: "Scheduled jobs — status and manual runs",
-  },
-  {
-    to: "/admin/access",
-    label: "Access",
-    description: "Manage beta allowlist and invitations",
-  },
-  {
-    to: "/admin/qa",
-    label: "QA",
-    description: "Review audit reports and checks",
-  },
-  {
-    to: "/admin/guide-health",
-    label: "Guide health",
-    description: "Inspect guide page status",
-  },
-  {
-    to: "/admin/appearance",
-    label: "Appearance",
-    description: "Legacy design tokens and atmosphere panels",
-  },
-  {
-    to: "/admin/standard",
-    label: "Standard",
-    description: "View the Aura standard",
-  },
+const DRILLDOWNS = [
+  { to: "/admin/people", label: "People", d: "Per-user lifecycle detail" },
+  { to: "/admin/journey", label: "Journey", d: "Funnel stages in depth" },
+  { to: "/admin/cost", label: "Cost", d: "AI spend and budget" },
+  { to: "/admin/crons", label: "Crons", d: "Scheduled jobs and manual runs" },
+  { to: "/admin/access", label: "Access", d: "Allowlist and invitations" },
+  { to: "/admin/qa", label: "QA", d: "Audit reports and checks" },
+  { to: "/admin/guide-health", label: "Guide health", d: "Guide article coverage" },
+  { to: "/admin/standard", label: "Standard", d: "The Aura standard" },
+  { to: "/admin/experience", label: "Experience", d: "Experience configuration" },
+  { to: "/admin/design-system", label: "Design system", d: "Tokens and versions" },
+  { to: "/admin/appearance", label: "Appearance", d: "Atmosphere and backgrounds" },
 ];
 
-const providerName = (provider: string) => {
-  const map: Record<string, string> = {
-    openai: "OpenAI",
-    anthropic: "Anthropic",
-    perplexity: "Perplexity",
-    resend: "Resend",
-  };
-  return map[provider] || provider;
-};
+type Snapshot = { payload: any; audit: any; brief_date: string; source: "stored" | "live" };
 
-const formatRunAt = (iso: string | null) => {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  return d.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
+const N = (v: unknown): number | null =>
+  v === null || v === undefined || Number.isNaN(Number(v)) ? null : Number(v);
 
-const fmt = (n: number) => {
-  if (!Number.isFinite(n)) return "0";
-  if (n >= 1_000_000) return (n / 1e6).toFixed(1) + "M";
-  if (n >= 1000) return (n / 1000).toFixed(n >= 10000 ? 0 : 1) + "K";
-  return String(n);
-};
+const FUNNEL_STAGES: { key: string; label: string; stage?: string; from: string }[] = [
+  { key: "invited", label: "Invited", from: "auth.users, founder and test accounts removed" },
+  { key: "signed_in", label: "Signed in", stage: "signed_in", from: "auth.users.last_sign_in_at" },
+  { key: "finished_setup", label: "Finished setup", stage: "finished_setup", from: "diagnostic_profiles" },
+  { key: "captured", label: "Captured something", stage: "captured", from: "entries" },
+  { key: "got_signal", label: "Got a signal", stage: "got_signal", from: "strategic_signals" },
+  { key: "linkedin_live", label: "LinkedIn live", stage: "linkedin_live", from: "linkedin_connections.status = active" },
+  { key: "opened_writer", label: "Opened the writer", stage: "opened_writer", from: "product_events composer_opened" },
+  { key: "has_draft", label: "Holds a draft", stage: "has_draft", from: "content_items + aura-written linkedin_posts" },
+  { key: "published", label: "Published", stage: "published", from: "linkedin_posts.tracking_status = published" },
+];
 
-const cardStyle = {
-  backgroundColor: "var(--ob-panel)",
-  border: "1px solid var(--hair)",
-  borderRadius: 12,
-  padding: "24px",
-};
+function nextMove(p: any): string {
+  if (!p?.stages?.finished_setup) return "Has not finished setup — walk them through it personally.";
+  if (Number(p.captures ?? 0) === 0) return "Nothing captured yet — ask them for one thing they read this week.";
+  if (Number(p.signals ?? 0) === 0) return "Captures but no signal — check their signal run before messaging them.";
+  if (Number(p.drafts ?? 0) > 0 && Number(p.published ?? 0) === 0) return "A draft is waiting — nudge them to send it.";
+  if (p.linkedin !== "live") return "LinkedIn is not connected — offer to do it on a call.";
+  if (Number(p.days_since_capture ?? 999) > 7) return "Quiet for over a week — ask what stopped them.";
+  if (Number(p.published ?? 0) > 0) return "Publishing already — ask for a testimonial.";
+  return "On track — leave them alone.";
+}
 
-const mutedStyle = {
-  color: "var(--glass-2)",
-  fontSize: 13,
-};
-
-function Sparkline({ values, color }: { values: number[]; color: string }) {
-  const w = 120;
-  const h = 32;
-  const pad = 2;
-  if (!values || values.length === 0) {
-    return <svg width={w} height={h} />;
-  }
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
-  const n = values.length;
-  const xAt = (i: number) => n === 1 ? w / 2 : pad + (i * (w - pad * 2)) / (n - 1);
-  const yAt = (v: number) => max === min ? h / 2 : pad + (h - pad * 2) - ((v - min) / range) * (h - pad * 2);
-  const points = values.map((v, i) => `${xAt(i)},${yAt(v)}`).join(" ");
-  const lastX = xAt(n - 1);
-  const lastY = yAt(values[n - 1]);
-  return (
-    <svg width={w} height={h} style={{ display: "block" }}>
-      <polyline
-        fill="none"
-        stroke={color}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        points={points}
-      />
-      <circle cx={lastX} cy={lastY} r={2.5} fill={color} />
-    </svg>
-  );
+function nudgeMessage(p: any): string {
+  const name = p?.first_name ?? "there";
+  if (Number(p?.drafts ?? 0) > 0)
+    return `Hi ${name} — you have ${p.drafts} post${p.drafts === 1 ? "" : "s"} written and waiting in Aura. Want me to look over the top one with you today and get it out?`;
+  if (Number(p?.captures ?? 0) === 0)
+    return `Hi ${name} — Aura needs one thing from you to start: paste in something you read this week. Takes ten seconds and everything else follows from it.`;
+  if (p?.linkedin !== "live")
+    return `Hi ${name} — your LinkedIn isn't connected yet, so Aura can't publish for you or see how your posts land. Two minutes on a call and it's done. When suits?`;
+  return `Hi ${name} — it's been ${p?.days_since_capture ?? "a while"} days since you added anything to Aura. What got in the way? I'd like to fix it.`;
 }
 
 export default function Admin() {
-  const [latest, setLatest] = useState<HealthCheck | null>(null);
+  const [snap, setSnap] = useState<Snapshot | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [brief, setBrief] = useState<any | null>(null);
-  const [briefLoading, setBriefLoading] = useState(true);
-  const [briefError, setBriefError] = useState<string | null>(null);
-  const [output, setOutput] = useState<any | null>(null);
-  const [outputLoading, setOutputLoading] = useState(true);
-  const [outputError, setOutputError] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const [showFounder, setShowFounder] = useState(false);
+  const [showTest, setShowTest] = useState(false);
+  const [stageOpen, setStageOpen] = useState<string | null>(null);
+  const [sortSilent, setSortSilent] = useState(true);
+  const [message, setMessage] = useState<{ title: string; body: string } | null>(null);
+  const [verify, setVerify] = useState<any | null>(null);
+  const [verifying, setVerifying] = useState(false);
+  const [actionNote, setActionNote] = useState<string | null>(null);
+
+  const loadStored = useCallback(async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const { data, error } = await supabase
+      .from("daily_brief_snapshots")
+      .select("payload, audit, brief_date")
+      .eq("brief_date", today)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  }, []);
+
+  const computeLive = useCallback(async () => {
+    const { data, error } = await supabase.functions.invoke("founder-daily-brief", {
+      body: { dry_run: true },
+    });
+    if (error) throw error;
+    if (!data?.payload) throw new Error("The brief returned no payload.");
+    return data;
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
-    async function fetchLatest() {
+    (async () => {
       try {
         setLoading(true);
-        setError(null);
-        const { data, error } = await supabase.functions.invoke(
-          "api-health-sentinel",
-          { body: { latest: true } }
-        );
+        setErr(null);
+        const stored = await loadStored();
         if (cancelled) return;
-        if (error) throw error;
-        setLatest(data?.latest || null);
+        if (stored?.payload) {
+          setSnap({ payload: stored.payload, audit: stored.audit, brief_date: stored.brief_date, source: "stored" });
+        } else {
+          const live = await computeLive();
+          if (cancelled) return;
+          setSnap({ payload: live.payload, audit: live.audit, brief_date: live.payload.brief_date, source: "live" });
+        }
       } catch (e: any) {
-        if (cancelled) return;
-        console.warn("API health latest fetch failed", e);
-        setError(e?.message || "Could not load API health");
-        setLatest(null);
+        if (!cancelled) setErr(e?.message || "Could not load today's brief.");
       } finally {
         if (!cancelled) setLoading(false);
       }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [loadStored, computeLive]);
+
+  const refresh = async () => {
+    try {
+      setRefreshing(true);
+      setErr(null);
+      const live = await computeLive();
+      setSnap({ payload: live.payload, audit: live.audit, brief_date: live.payload.brief_date, source: "live" });
+      setVerify(null);
+    } catch (e: any) {
+      setErr(e?.message || "Refresh failed.");
+    } finally {
+      setRefreshing(false);
     }
-    fetchLatest();
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        setBriefLoading(true);
-        setBriefError(null);
-        const { data, error } = await supabase.functions.invoke("admin-console", {
-          body: { action: "overview_brief" },
-        });
-        if (cancelled) return;
-        if (error) throw error;
-        setBrief(data);
-      } catch (e: any) {
-        if (cancelled) return;
-        setBriefError(e?.message || "Could not load brief");
-      } finally {
-        if (!cancelled) setBriefLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        setOutputLoading(true);
-        setOutputError(null);
-        const { data, error } = await supabase.functions.invoke("admin-console", {
-          body: { action: "output_rollup" },
-        });
-        if (cancelled) return;
-        if (error) throw error;
-        setOutput(data);
-      } catch (e: any) {
-        if (cancelled) return;
-        setOutputError(e?.message || "Could not load output");
-      } finally {
-        if (!cancelled) setOutputLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
-  const pct = (n: number, d: number) => (d > 0 ? Math.round((n / d) * 100) : 0);
-  const drop = (prev: number, curr: number) => (prev > 0 ? Math.round(((prev - curr) / prev) * 100) : 0);
-  const sevColor = (s: string) => (s === "high" ? "#dc2626" : s === "med" ? "#d97706" : "#16a34a");
-
-  const relTime = (iso: string) => {
-    const diff = (Date.now() - new Date(iso).getTime()) / 1000;
-    if (diff < 60) return `${Math.floor(diff)}s ago`;
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-    return `${Math.floor(diff / 86400)}d ago`;
   };
-  const trim = (s: string, n = 140) => (s && s.length > n ? s.slice(0, n) + "…" : s || "");
 
-  return (
-    <AdminShell title="Overview" subtitle="Admin at-a-glance">
-      <div className="grid gap-6">
-        <TodaysStatus />
-        <HealthFindingsPanel />
-        <SendTestEmailPanel />
-        <ReportHealthPanel />
-        <RegenerateReportPanel />
-        {/* Founder brief */}
-        <section style={cardStyle}>
-          <div className="flex items-baseline justify-between flex-wrap gap-2 mb-4">
-            <h2 style={{ fontSize: 18, fontWeight: 600, margin: 0, color: "var(--glass)" }}>
-              Brief — {new Date().toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
-            </h2>
-            {brief && (
-              <span style={mutedStyle}>
-                {brief.today.new_users} new users · {brief.today.new_captures} captures · {brief.today.new_signals} signals today
-              </span>
-            )}
+  const runVerify = async () => {
+    try {
+      setVerifying(true);
+      const { data, error } = await supabase.rpc("founder_brief_verify" as any);
+      if (error) throw error;
+      setVerify(data);
+    } catch (e: any) {
+      setActionNote(e?.message || "Verification failed.");
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const p = snap?.payload;
+  const audit = snap?.audit;
+  const pairs: any[] = audit?.pairs ?? [];
+  const pairOf = (k: string) => pairs.find((x) => x.key === k);
+
+  /** The one place a headline number is read. Disagreement renders "?". */
+  const headline = useCallback(
+    (key: string, fallback?: number | null): number | null => {
+      const pr = pairOf(key);
+      if (pr) return pr.agree ? N(pr.a) : null;
+      return fallback ?? null;
+    },
+    [pairs],
+  );
+
+  const people: any[] = useMemo(() => {
+    const rows = (p?.people ?? []) as any[];
+    const sorted = [...rows];
+    if (sortSilent) {
+      sorted.sort((a, b) => (Number(b.days_since_capture ?? 9999) - Number(a.days_since_capture ?? 9999)));
+    } else {
+      sorted.sort((a, b) => String(a.first_name).localeCompare(String(b.first_name)));
+    }
+    return sorted;
+  }, [p, sortSilent]);
+
+  const exportAudit = () => {
+    const doc = {
+      exported_at: new Date().toISOString(),
+      brief_date: snap?.brief_date,
+      source: snap?.source,
+      excluded: p?.excluded,
+      rule: "Every headline number is computed twice by two independent routes inside founder-daily-brief. This page renders that stored computation and does not recompute it.",
+      numbers: pairs.map((x) => ({
+        key: x.key,
+        label: x.label,
+        route_a_description: x.route_a,
+        route_b_description: x.route_b,
+        route_a_value: x.a,
+        route_b_value: x.b,
+        agree: x.agree,
+        note: x.note ?? null,
+      })),
+      live_verification: verify ?? "not run at export time",
+      coverage: p?.coverage,
+      counted_at_utc: p?.counted_at_utc,
+    };
+    downloadBlob(
+      new Blob([JSON.stringify(doc, null, 2)], { type: "application/json" }),
+      `aura-admin-audit-${snap?.brief_date ?? "today"}.json`,
+    );
+  };
+
+  const runWorker = async (fn: string, label: string) => {
+    setActionNote(`Running ${label}…`);
+    const { error } = await supabase.functions.invoke(fn, { body: {} });
+    setActionNote(error ? `${label} failed: ${error.message}` : `${label} finished. Refresh to see the effect.`);
+  };
+
+  const dot = (c: string) => (
+    <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 8, background: c, marginRight: 8 }} />
+  );
+
+  const body = (() => {
+    if (loading) {
+      return (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, color: C.muted, fontFamily: MONO, fontSize: 13 }}>
+          <Loader2 className="w-4 h-4 animate-spin" /> Counting…
+        </div>
+      );
+    }
+    if (err || !p) {
+      return (
+        <div style={{ fontFamily: SERIF, fontSize: 17, color: C.ox }}>
+          The cockpit could not read today&apos;s brief: {err ?? "no data"}.{" "}
+          <Btn onClick={refresh}>Try again</Btn>
+        </div>
+      );
+    }
+
+    const needs: any[] = p.needs_you ?? [];
+    const decide: any[] = p.decide ?? [];
+    const watch: any[] = p.watch ?? [];
+    const drafts = headline("drafts_total");
+    const publishedUsers = headline("published");
+    const capturedUsers = headline("captured");
+    const failed: any[] = p.failed_publishes ?? [];
+    const invited = headline("invited") ?? 0;
+
+    return (
+      <>
+        {/* ---------- 1 TODAY ---------- */}
+        <Zone n={1} title="Today">
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+              gap: 12,
+              marginBottom: 20,
+            }}
+          >
+            <Stat label="Needs you" value={needs.reduce((n) => n + 1, 0)} colour={C.ox} />
+            <Stat label="Decide" value={decide.reduce((n) => n + 1, 0)} colour={C.damber} />
+            <Stat label="Watch" value={watch.reduce((n) => n + 1, 0)} colour={C.amber} />
+            <Stat label="Handled" value={N(p.handled) ?? 0} colour={C.teal} sub="quietly, by the machine" />
+          </div>
+          <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted, marginBottom: 18 }}>
+            oxblood = a user is blocked right now · dark amber = waiting on your decision · amber = keep an eye, no
+            action · teal = healthy
           </div>
 
-          {briefLoading && (
-            <div className="flex items-center gap-2" style={mutedStyle}>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Loading brief…</span>
+          {(p.recommendations ?? []).map((r: string, i: number) => (
+            <div
+              key={i}
+              style={{ display: "flex", gap: 12, marginBottom: 10, fontFamily: SERIF, fontSize: 17, color: C.ink }}
+            >
+              <span style={{ fontFamily: MONO, color: C.muted }}>{i + 1}</span>
+              <span>{r}</span>
             </div>
-          )}
-          {!briefLoading && briefError && (
-            <div className="flex items-start gap-2" style={{ ...mutedStyle, color: "#F87171" }}>
-              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-              <span>{briefError}</span>
-            </div>
-          )}
-          {!briefLoading && !briefError && brief && (
-            <div className="grid gap-5">
-              {/* KPI cards */}
-              <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))" }}>
-                {(brief.kpis && Array.isArray(brief.kpis) ? brief.kpis : [
-                  { label: "Users", value: String(brief.totals.users) },
-                  { label: "Activated", value: `${pct(brief.totals.activated, brief.totals.users)}%`, sub: `${brief.totals.activated}/${brief.totals.users}` },
-                  { label: "With signal", value: `${pct(brief.totals.with_signal, brief.totals.users)}%`, sub: `${brief.totals.with_signal}/${brief.totals.users}` },
-                  { label: "New this week", value: String(brief.totals.new_this_week) },
-                  { label: "Spend this month", value: `$${brief.month.spend_usd.toFixed(2)}`, sub: `${brief.month.pct_budget}% of $${brief.month.budget_usd}` },
-                ]).map((k: any) => {
-                  const sentimentColor = k.sentiment === "good" ? "#36C5B0" : k.sentiment === "bad" ? "#F87171" : "var(--glass-2)";
-                  return (
-                    <div key={k.key || k.label} style={{ padding: "12px 14px", borderRadius: 8, backgroundColor: "var(--ob-raised)", border: "1px solid var(--hair)" }}>
-                      <div style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--glass-2)", marginBottom: 6 }}>{k.label}</div>
-                      <div style={{ fontSize: 22, color: "var(--glass)", fontWeight: 500, lineHeight: 1 }}>{k.value}</div>
-                      {k.delta && (
-                        <div style={{ display: "inline-block", marginTop: 8, fontSize: 11, color: sentimentColor, backgroundColor: "var(--ob-panel)", border: "1px solid var(--hair)", borderRadius: 999, padding: "2px 8px" }}>
-                          {k.delta}
-                        </div>
-                      )}
-                      {k.sub && <div style={{ ...mutedStyle, marginTop: 6 }}>{k.sub}</div>}
-                      {k.target && <div style={{ ...mutedStyle, marginTop: 4, fontSize: 11 }}>{k.target}</div>}
-                      {k.note && (
-                        k.link ? (
-                          <Link to={k.link} style={{ display: "block", marginTop: 6, fontSize: 12, color: "var(--brand)", textDecoration: "none" }}>
-                            {k.note} →
-                          </Link>
-                        ) : (
-                          <div style={{ ...mutedStyle, marginTop: 6, fontSize: 12 }}>{k.note}</div>
-                        )
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+          ))}
 
-              {/* Last 14 days trends */}
-              {brief.trends && Array.isArray(brief.trends.series) && (
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--glass)", marginBottom: 8 }}>Last 14 days</div>
-                  <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
-                    {brief.trends.series.map((s: any) => {
-                      const total = (s.values || []).reduce((a: number, b: number) => a + Number(b || 0), 0);
-                      return (
-                        <div key={s.key} style={{ padding: "12px 14px", borderRadius: 8, backgroundColor: "var(--ob-raised)", border: "1px solid var(--hair)" }}>
-                          <div style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--glass-2)" }}>{s.label}</div>
-                          <div style={{ fontSize: 20, color: "var(--glass)", fontWeight: 500, marginTop: 4 }}>{total}</div>
-                          <div style={{ marginTop: 8 }}>
-                            <Sparkline values={s.values || []} color={s.color} />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+          <div style={{ height: 1, background: C.rule, margin: "22px 0" }} />
 
-              {/* Attention */}
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--glass)", marginBottom: 8 }}>Needs your attention</div>
-                <div className="grid gap-2">
-                  {brief.attention.map((a: any, i: number) => (
-                    <Link
-                      key={i}
-                      to={a.link}
-                      className="flex items-center justify-between"
-                      style={{
-                        padding: "10px 12px",
-                        borderRadius: 8,
-                        backgroundColor: "var(--ob-raised)",
-                        border: "1px solid var(--hair)",
-                        borderLeft: `3px solid ${sevColor(a.severity)}`,
-                        textDecoration: "none",
-                      }}
-                    >
-                      <span style={{ color: "var(--glass)", fontSize: 14 }}>{a.text}</span>
-                      <ArrowRight className="w-4 h-4 shrink-0" style={{ color: "var(--glass-2)" }} />
+          {needs.reduce((n: number) => n + 1, 0) === 0 ? (
+            <Finding
+              colour={C.teal}
+              finding="Nothing is blocking a user right now."
+              example={`The last capture landed ${p.machine?.hours_since_capture ?? "?"} hours ago and no publish has failed.`}
+              recommendation="Spend the day on one user conversation instead of the dashboard."
+              action={<span style={{ fontFamily: MONO, fontSize: 11, color: C.muted }}>Nothing today</span>}
+              countedFrom="linkedin_posts (failed), ef_error_log (critical), ops_alerts (open)"
+            />
+          ) : (
+            needs.map((item: any) => (
+              <Finding
+                key={item.fingerprint}
+                colour={C.ox}
+                finding={item.what}
+                example={item.impact}
+                recommendation={item.action}
+                action={
+                  item.fingerprint?.startsWith("failed_publish") ? (
+                    <>
+                      <Btn tone="ox" onClick={() => runWorker("reap-stuck-publishes", "the publish retry worker")}>
+                        Run retry worker
+                      </Btn>
+                      <Link to="/admin/people" style={{ textDecoration: "none" }}>
+                        <Btn tone="quiet">Open people</Btn>
+                      </Link>
+                    </>
+                  ) : item.fingerprint?.startsWith("job_failed") ? (
+                    <Link to="/admin/crons" style={{ textDecoration: "none" }}>
+                      <Btn tone="ox">Open crons</Btn>
                     </Link>
-                  ))}
-                </div>
-              </div>
-
-              {/* Funnel */}
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--glass)", marginBottom: 8 }}>Funnel</div>
-                <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))" }}>
-                  {[
-                    { label: "Signed up", value: brief.funnel.signed_up, prev: null as number | null },
-                    { label: "Onboarded", value: brief.funnel.onboarded, prev: brief.funnel.signed_up },
-                    { label: "First capture", value: brief.funnel.first_capture, prev: brief.funnel.onboarded },
-                    { label: "First signal", value: brief.funnel.first_signal, prev: brief.funnel.first_capture },
-                  ].map((f) => (
-                    <div key={f.label} style={{ padding: "10px 12px", borderRadius: 8, backgroundColor: "var(--ob-raised)", border: "1px solid var(--hair)" }}>
-                      <div style={{ ...mutedStyle }}>{f.label}</div>
-                      <div style={{ fontSize: 18, color: "var(--glass)", fontWeight: 500, marginTop: 4 }}>{f.value}</div>
-                      {f.prev !== null && (
-                        <div style={{ ...mutedStyle, marginTop: 2 }}>
-                          {drop(f.prev, f.value)}% drop
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </section>
-
-        {/* Content output roll-up */}
-        <section style={cardStyle}>
-          <div className="flex items-baseline justify-between flex-wrap gap-2 mb-4">
-            <h2 style={{ fontSize: 18, fontWeight: 600, margin: 0, color: "var(--glass)" }}>
-              Content output
-            </h2>
-            <span style={mutedStyle}>Across all accounts</span>
-          </div>
-          {outputLoading && (
-            <div className="flex items-center gap-2" style={mutedStyle}>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Loading…</span>
-            </div>
-          )}
-          {!outputLoading && outputError && (
-            <div className="flex items-start gap-2" style={{ ...mutedStyle, color: "#F87171" }}>
-              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-              <span>{outputError}</span>
-            </div>
-          )}
-          {!outputLoading && !outputError && output && (
-            <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
-              {[
-                { label: "Published", value: String(output.published_total ?? 0), sub: `${output.published_30d ?? 0} in last 30d` },
-                { label: "From signal", value: `${output.from_signal_pct ?? 0}%`, sub: `${output.from_signal_count ?? 0}/${output.published_total ?? 0} publishes · ${output.signals_converted ?? 0} signals` },
-                { label: "Aura-generated", value: String(output.aura_generated ?? 0), sub: "drafts + published" },
-                { label: "Impressions", value: fmt(Number(output.impressions ?? 0)), sub: "tracked content" },
-                { label: "Reach", value: fmt(Number(output.members_reached ?? 0)), sub: output.metrics_as_of ? `as of ${new Date(output.metrics_as_of).toLocaleDateString(undefined, { month: "short", day: "numeric" })}` : "—" },
-              ].map((k) => (
-                <div key={k.label} style={{ padding: "12px 14px", borderRadius: 8, backgroundColor: "var(--ob-raised)", border: "1px solid var(--hair)" }}>
-                  <div style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--glass-2)", marginBottom: 6 }}>{k.label}</div>
-                  <div style={{ fontSize: 22, color: "var(--glass)", fontWeight: 500, lineHeight: 1 }}>{k.value}</div>
-                  <div style={{ ...mutedStyle, marginTop: 6 }}>{k.sub}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* Biggest leak banner */}
-        {brief?.biggest_leak && brief.biggest_leak.stuck_count > 0 && (
-          <Link
-            to="/admin/journey"
-            className="flex items-center gap-3"
-            style={{
-              padding: "12px 16px",
-              borderRadius: 10,
-              backgroundColor: "var(--ob-panel)",
-              border: "1px solid var(--hair)",
-              borderLeft: "3px solid var(--brand)",
-              textDecoration: "none",
-            }}
-          >
-            <TrendingDown className="w-4 h-4 shrink-0" style={{ color: "var(--brand)" }} />
-            <span style={{ color: "var(--glass)", fontSize: 14 }}>
-              Biggest leak: <strong style={{ color: "var(--brand)" }}>{brief.biggest_leak.from_label} → {brief.biggest_leak.to_label}</strong> — {brief.biggest_leak.stuck_count} stuck
-            </span>
-            <ArrowRight className="w-4 h-4 shrink-0 ml-auto" style={{ color: "var(--glass-2)" }} />
-          </Link>
-        )}
-
-        {/* Issues today */}
-        {brief?.issues && (
-          <section style={cardStyle}>
-            <div className="flex items-center gap-3 mb-4">
-              <div
-                className="flex items-center justify-center"
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 10,
-                  backgroundColor: "var(--ob-raised)",
-                  border: "1px solid var(--hair)",
-                  color: brief.issues.count > 0 ? "#F87171" : "var(--brand)",
-                }}
-              >
-                <Bug className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 style={{ fontSize: 18, fontWeight: 600, margin: 0, color: "var(--glass)" }}>Issues today</h2>
-                <p style={{ margin: 0, ...mutedStyle }}>
-                  {brief.issues.count > 0 ? (
-                    <span style={{ color: "#F87171" }}>{brief.issues.count} error{brief.issues.count === 1 ? "" : "s"} in the last 24h</span>
-                  ) : (() => {
-                    const hb = brief.heartbeat ?? { captures_today: 0, signals_today: 0, ef_errors_today: 0 };
-                    const activity = (hb.captures_today ?? 0) + (hb.signals_today ?? 0);
-                    if (activity > 0) {
-                      return (
-                        <span style={{ color: "#36C5B0" }}>
-                          No errors — and the platform is alive: {hb.captures_today} capture{hb.captures_today === 1 ? "" : "s"}, {hb.signals_today} signal{hb.signals_today === 1 ? "" : "s"} today.
-                        </span>
-                      );
-                    }
-                    return (
-                      <span style={{ color: "#D6A748" }}>
-                        No errors logged — but no activity either. Silence can mean breakage:{" "}
-                        <Link to="/admin/crons" style={{ color: "#D6A748", textDecoration: "underline" }}>open Crons</Link> and check the schedules.
-                      </span>
-                    );
-                  })()}
-                </p>
-              </div>
-            </div>
-            {brief.issues.count > 0 && (
-              <div className="grid gap-2">
-                {brief.issues.recent.map((it: any, i: number) => (
-                  <div
-                    key={i}
-                    style={{
-                      padding: "10px 12px",
-                      borderRadius: 8,
-                      backgroundColor: "var(--ob-raised)",
-                      border: "1px solid var(--hair)",
-                      borderLeft: "3px solid #dc2626",
-                    }}
-                  >
-                    <div style={{ color: "var(--glass)", fontSize: 13, lineHeight: 1.45 }}>
-                      {it.plain?.impact ?? "One background task did not complete."}
-                    </div>
-                    <div style={{ color: "var(--glass-2)", fontSize: 13, lineHeight: 1.45, marginTop: 4 }}>
-                      → {it.plain?.action ?? "Flag to Mohammad with the error text below."}
-                    </div>
-                    <details style={{ marginTop: 8 }}>
-                      <summary style={{ color: "var(--glass-2)", fontSize: 11, fontFamily: "monospace", cursor: "pointer" }}>
-                        {it.function_name} · {relTime(it.created_at)}
-                      </summary>
-                      <div style={{ color: "var(--glass-2)", fontSize: 11, fontFamily: "monospace", marginTop: 6, whiteSpace: "pre-wrap" }}>
-                        {trim(it.error_message)}
-                      </div>
-                    </details>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-        )}
-
-        {/* API Health board */}
-        <section style={cardStyle}>
-          <div className="flex items-center gap-3 mb-5">
-            <div
-              className="flex items-center justify-center"
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 10,
-                backgroundColor: "var(--ob-raised)",
-                border: "1px solid var(--hair)",
-                color: "var(--brand)",
-              }}
-            >
-              <Activity className="w-5 h-5" />
-            </div>
-            <div>
-              <h2
-                style={{
-                  fontSize: 18,
-                  fontWeight: 600,
-                  margin: 0,
-                  color: "var(--glass)",
-                }}
-              >
-                API health
-              </h2>
-              <p style={{ margin: 0, ...mutedStyle }}>Latest sentinel result</p>
-            </div>
-          </div>
-
-          {loading && (
-            <div className="flex items-center gap-2" style={mutedStyle}>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Loading health status…</span>
-            </div>
-          )}
-
-          {!loading && error && (
-            <div
-              className="flex items-start gap-2"
-              style={{
-                ...mutedStyle,
-                color: "#F87171",
-              }}
-            >
-              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {!loading && !error && !latest && (
-            <p style={mutedStyle}>No sentinel result yet.</p>
-          )}
-
-          {!loading && latest && (
-            <div>
-              <div className="flex items-center gap-2 mb-4" style={mutedStyle}>
-                <span>Run at {formatRunAt(latest.run_at)}</span>
-                <span>·</span>
-                <span>
-                  {latest.failed === 0 ? (
-                    <span style={{ color: "#36C5B0" }}>All systems healthy</span>
                   ) : (
-                    <span style={{ color: "#F87171" }}>
-                      {latest.failed} of {latest.checked} providers failing
-                    </span>
-                  )}
-                </span>
-              </div>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {latest.results.map((r) => (
-                  <div
-                    key={r.provider}
-                    className="flex items-center justify-between"
-                    style={{
-                      padding: "12px 14px",
-                      borderRadius: 8,
-                      backgroundColor: "var(--ob-raised)",
-                      border: "1px solid var(--hair)",
-                    }}
-                  >
-                    <div className="flex items-center gap-2">
-                      {r.ok ? (
-                        <CheckCircle2 className="w-4 h-4" style={{ color: "#36C5B0" }} />
-                      ) : (
-                        <XCircle className="w-4 h-4" style={{ color: "#F87171" }} />
-                      )}
-                      <span style={{ color: "var(--glass)", fontSize: 14 }}>
-                        {providerName(r.provider)}
-                      </span>
-                    </div>
-                    <span style={{ color: "var(--glass-2)", fontSize: 13 }}>
-                      HTTP {r.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
+                    <Link to="/admin/cost" style={{ textDecoration: "none" }}>
+                      <Btn tone="quiet">Open cost</Btn>
+                    </Link>
+                  )
+                }
+              />
+            ))
+          )}
+
+          {decide.map((item: any) => (
+            <Finding
+              key={item.fingerprint}
+              colour={C.damber}
+              finding={item.what}
+              example={item.impact}
+              recommendation={item.action}
+              action={
+                <Btn
+                  tone="quiet"
+                  onClick={() =>
+                    setMessage({
+                      title: "The decision, written out",
+                      body: `${item.what}\n\n${item.impact}\n\n${item.action}`,
+                    })
+                  }
+                >
+                  Read the decision
+                </Btn>
+              }
+            />
+          ))}
+
+          {watch.map((item: any) => (
+            <Finding
+              key={item.fingerprint}
+              colour={C.amber}
+              finding={item.what}
+              example={item.impact}
+              recommendation={item.action}
+              action={<span style={{ fontFamily: MONO, fontSize: 11, color: C.muted }}>Nothing today</span>}
+            />
+          ))}
+        </Zone>
+
+        {/* ---------- 2 THE NUMBER ---------- */}
+        <Zone n={2} title="The number">
+          <div style={{ display: "flex", gap: 18, flexWrap: "wrap", marginBottom: 18 }}>
+            <label style={{ fontFamily: MONO, fontSize: 11, color: C.muted, display: "flex", gap: 8 }}>
+              <input type="checkbox" checked={showFounder} onChange={(e) => setShowFounder(e.target.checked)} />
+              Include the founder account
+            </label>
+            <label style={{ fontFamily: MONO, fontSize: 11, color: C.muted, display: "flex", gap: 8 }}>
+              <input type="checkbox" checked={showTest} onChange={(e) => setShowTest(e.target.checked)} />
+              Include test accounts ({N(p.excluded?.test_users) ?? 0} excluded)
+            </label>
+          </div>
+          {(showFounder || showTest) && (
+            <div style={{ fontFamily: MONO, fontSize: 11, color: C.damber, marginBottom: 14 }}>
+              These accounts are excluded from the stored computation, so they cannot be added back without
+              recomputing. The numbers below still exclude them.
             </div>
           )}
-        </section>
 
-        {/* Link list to the other admin pages */}
-        <section style={cardStyle}>
-          <h2
-            style={{
-              fontSize: 18,
-              fontWeight: 600,
-              margin: "0 0 16px",
-              color: "var(--glass)",
-            }}
-          >
-            Admin pages
-          </h2>
-          <div className="grid gap-2">
-            {ADMIN_PAGES.map((page) => (
+          {FUNNEL_STAGES.map((s, i) => {
+            const v = headline(s.key, N(p.funnel?.[s.key]));
+            const prev = i === 0 ? null : headline(FUNNEL_STAGES[i - 1].key, N(p.funnel?.[FUNNEL_STAGES[i - 1].key]));
+            const lost = prev !== null && v !== null ? prev - v : null;
+            return (
+              <Bar
+                key={s.key}
+                label={s.label}
+                value={v}
+                total={invited}
+                colour={s.key === "published" ? C.teal : lost && lost > 0 ? C.amber : C.damber}
+                note={
+                  lost === null
+                    ? s.from
+                    : lost > 0
+                      ? `${lost} lost here — click to see who`
+                      : "nobody lost at this step"
+                }
+                onClick={s.stage ? () => setStageOpen(s.stage!) : undefined}
+              />
+            );
+          })}
+
+          <div style={{ height: 1, background: C.rule, margin: "20px 0" }} />
+          <Finding
+            colour={publishedUsers === 0 ? C.amber : C.teal}
+            finding={`${capturedUsers ?? "?"} people have captured something; ${publishedUsers ?? "?"} have published.`}
+            example={(() => {
+              const stuck = people.find((x) => Number(x.drafts ?? 0) > 0 && Number(x.published ?? 0) === 0);
+              return stuck
+                ? `${stuck.first_name} has ${stuck.drafts} draft${stuck.drafts === 1 ? "" : "s"} written and nothing published.`
+                : "No single person is stuck between draft and publish right now.";
+            })()}
+            recommendation="Walk one person the whole way from draft to a live post this week. The funnel does not move on its own."
+            countedFrom="entries; linkedin_posts.tracking_status = published"
+          />
+        </Zone>
+
+        {/* ---------- 3 PEOPLE ---------- */}
+        <Zone n={3} title="People">
+          <Finding
+            colour={C.damber}
+            finding="This is the activation list. Every row is one real person and one thing you could do for them."
+            example={
+              people[0]
+                ? `${people[0].first_name} — ${people[0].captures} captures, ${people[0].drafts} drafts, LinkedIn ${people[0].linkedin}, ${people[0].days_since_capture ?? "never"} days since last capture.`
+                : "No users yet."
+            }
+            recommendation="Work top to bottom. The people who have been silent longest are the ones you are about to lose."
+            action={
+              <Btn tone="quiet" onClick={() => setSortSilent((s) => !s)}>
+                Sort by {sortSilent ? "name" : "days silent"}
+              </Btn>
+            }
+            countedFrom="entries, content_items, linkedin_posts, linkedin_connections.status"
+          />
+          <Table
+            head={["Person", "Captures", "Drafts", "LinkedIn", "Days silent", "Stage", "Next move", ""]}
+            rows={people.map((r) => [
+              r.first_name,
+              r.captures,
+              r.drafts,
+              <span key="li" style={{ color: r.linkedin === "live" ? C.teal : r.linkedin === "dropped" ? C.ox : C.muted }}>
+                {r.linkedin}
+              </span>,
+              r.days_since_capture === null || r.days_since_capture === undefined ? (
+                <Unknown key="d" reason="never captured" />
+              ) : (
+                r.days_since_capture
+              ),
+              Number(r.published ?? 0) > 0
+                ? "published"
+                : Number(r.drafts ?? 0) > 0
+                  ? "has draft"
+                  : Number(r.signals ?? 0) > 0
+                    ? "got signal"
+                    : Number(r.captures ?? 0) > 0
+                      ? "captured"
+                      : "setup",
+              <span key="nm" style={{ fontFamily: SERIF, fontSize: 14 }}>{nextMove(r)}</span>,
+              <span key="a" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                <Btn tone="quiet" onClick={() => setMessage({ title: `Nudge ${r.first_name}`, body: nudgeMessage(r) })}>
+                  Draft nudge
+                </Btn>
+                <Link to={`/admin/people?user=${r.user_id ?? ""}`} style={{ textDecoration: "none" }}>
+                  <Btn tone="quiet">Open profile</Btn>
+                </Link>
+              </span>,
+            ])}
+          />
+        </Zone>
+
+        {/* ---------- 4 CONTENT AND PUBLISHING ---------- */}
+        <Zone n={4} title="Content and publishing">
+          <Finding
+            colour={drafts && drafts > 0 ? C.damber : C.teal}
+            finding={
+              drafts === null ? (
+                <Unknown reason="the two counting routes disagreed" />
+              ) : (
+                `${drafts} drafts are written and waiting, the oldest for ${p.drafts?.oldest_days ?? "?"} days.`
+              )
+            }
+            example={
+              (p.drafts?.list ?? [])[0]
+                ? `${p.drafts.list[0].first_name}: “${String(p.drafts.list[0].title ?? "").slice(0, 60)}” — ${p.drafts.list[0].age_days} days old.`
+                : "Nothing is sitting in drafts."
+            }
+            recommendation="Work already exists for these people. Nudging beats generating more."
+            countedFrom="content_items status=draft + linkedin_posts source_type in (aura_generated, carousel_studio) — imported history is never counted"
+          />
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 12, margin: "18px 0" }}>
+            <Stat label="Drafts waiting" value={drafts ?? "?"} colour={C.damber} />
+            <Stat label="Published posts" value={N(p.content?.published_total) ?? 0} colour={C.teal} sub={`${N(p.content?.published_30d) ?? 0} in 30 days`} />
+            <Stat
+              label="Draft → publish"
+              value={
+                drafts !== null && drafts + (N(p.content?.published_total) ?? 0) > 0
+                  ? `${Math.round(((N(p.content?.published_total) ?? 0) / (drafts + (N(p.content?.published_total) ?? 0))) * 100)}%`
+                  : "?"
+              }
+              sub="published as a share of all written work"
+            />
+            <Stat label="Failed publishes" value={headline("failed_publishes") ?? "?"} colour={C.ox} />
+          </div>
+
+          {(p.drafts?.list ?? []).reduce((n: number) => n + 1, 0) > 0 && (
+            <>
+              <Label>Drafts waiting</Label>
+              <div style={{ height: 10 }} />
+              <Table
+                head={["Owner", "Draft", "Age (days)", "Where", ""]}
+                rows={(p.drafts.list as any[]).slice(0, 20).map((d) => [
+                  d.first_name,
+                  String(d.title ?? "").slice(0, 60),
+                  d.age_days,
+                  d.source === "content_items" ? "studio" : "linkedin draft",
+                  <Btn
+                    key="n"
+                    tone="quiet"
+                    onClick={() =>
+                      setMessage({
+                        title: `Nudge ${d.first_name}`,
+                        body: `Hi ${d.first_name} — the draft “${String(d.title ?? "").slice(0, 60)}” has been sitting in Aura for ${d.age_days} days. Shall I give it a final read and we get it out today?`,
+                      })
+                    }
+                  >
+                    Draft nudge
+                  </Btn>,
+                ])}
+              />
+            </>
+          )}
+
+          {failed.reduce((n: number) => n + 1, 0) > 0 && (
+            <>
+              <div style={{ height: 22 }} />
+              <Label>Failed publishes</Label>
+              <div style={{ height: 10 }} />
+              <Table
+                head={["Person", "Date", "Error", ""]}
+                rows={failed.map((f: any) => [
+                  f.first_name,
+                  f.date,
+                  String(f.error).slice(0, 90),
+                  <span key="a" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    <Btn tone="ox" onClick={() => runWorker("reap-stuck-publishes", "the publish retry worker")}>
+                      Retry publish
+                    </Btn>
+                    <Btn
+                      tone="quiet"
+                      onClick={() =>
+                        setMessage({
+                          title: `Message ${f.first_name}`,
+                          body: `Hi ${f.first_name} — your post on ${f.date} did not go out. That was on us, not you. I'm fixing it now and will confirm the moment it is live.`,
+                        })
+                      }
+                    >
+                      Message the user
+                    </Btn>
+                  </span>,
+                ])}
+              />
+            </>
+          )}
+        </Zone>
+
+        {/* ---------- 5 INTELLIGENCE ---------- */}
+        <Zone n={5} title="Intelligence">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 12, marginBottom: 18 }}>
+            <Stat label="Signals live" value={N(p.signals?.live) ?? "?"} colour={C.teal} />
+            <Stat label="Made this week" value={N(p.signals?.created_7d) ?? "?"} />
+            <Stat label="Gone stale" value={N(p.signals?.stale_30d) ?? "?"} colour={C.amber} sub="live but over 30 days old" />
+            <Stat
+              label="Signals read"
+              value={p.signal_reads?.product_event_exists ? (N(p.signal_reads?.product_event_rows) ?? "?") : "?"}
+              colour={C.muted}
+              sub={p.signal_reads?.product_event_exists ? "product events" : "not measured"}
+            />
+          </div>
+          <Finding
+            colour={p.signal_reads?.product_event_exists ? C.teal : C.muted}
+            finding={
+              p.signal_reads?.product_event_exists
+                ? "We can see whether the intelligence is being read."
+                : "We still cannot say whether users read their signals."
+            }
+            example={`${N(p.signal_reads?.engagements) ?? 0} engagement rows exist, but there is no signal-open event in the product event log at all.`}
+            recommendation="Add a signal-open event. Until then this is a gap in our instrumentation, not a fact about users."
+            countedFrom="signal_engagements; product_events (no matching event name exists)"
+          />
+          <div style={{ height: 1, background: C.rule, margin: "18px 0" }} />
+          <Label>The overnight agent</Label>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 12, marginTop: 12 }}>
+            <Stat label="Found last night" value={N(p.agent?.last_night) ?? 0} />
+            <Stat label="Found in 7 days" value={N(p.agent?.findings_7d) ?? 0} />
+            <Stat label="Users covered" value={N(p.agent?.users_covered) ?? 0} />
+            <Stat label="Still pending" value={N(p.agent?.pending) ?? 0} colour={C.amber} />
+            <Stat label="Became captures" value={N(p.agent?.became_entries) ?? 0} colour={C.teal} />
+          </div>
+          <div style={{ height: 16 }} />
+          <Finding
+            colour={Number(p.agent?.pending ?? 0) > 0 ? C.amber : C.teal}
+            finding={`The agent covered ${N(p.agent?.users_covered) ?? 0} people this week and ${N(p.agent?.pending) ?? 0} of its findings are still untouched.`}
+            example={`${N(p.agent?.became_entries) ?? 0} of ${N(p.agent?.findings_7d) ?? 0} findings turned into something a user actually holds.`}
+            recommendation="If pending stays high, the agent is producing work nobody wants. Cut the volume before you tune the prompt."
+            countedFrom="agent_findings (last 7 days)"
+          />
+        </Zone>
+
+        {/* ---------- 6 VOICE OF THE CUSTOMER ---------- */}
+        <Zone n={6} title="Voice of the customer">
+          <Label>Scores given (last 30 days)</Label>
+          <div style={{ height: 10 }} />
+          {(p.voc?.feedback ?? []).reduce((n: number) => n + 1, 0) === 0 ? (
+            <div style={{ fontFamily: SERIF, color: C.muted }}>Nobody has scored Aura in the last 30 days.</div>
+          ) : (
+            <Table
+              head={["Person", "Score", "Date", "What they wrote"]}
+              rows={(p.voc.feedback as any[]).map((f) => [
+                f.first_name ?? "Someone",
+                <span key="r" style={{ color: Number(f.rating) >= 9 ? C.teal : Number(f.rating) >= 7 ? C.amber : C.ox }}>
+                  {f.rating}
+                </span>,
+                f.date,
+                f.message ? String(f.message) : <span key="m" style={{ color: C.muted }}>score only, no written comment</span>,
+              ])}
+            />
+          )}
+
+          <div style={{ height: 22 }} />
+          <Label>Help they asked for and did not get</Label>
+          <div style={{ height: 10 }} />
+          <Table
+            head={["Topic clicked", "Times", ""]}
+            rows={(p.voc?.guide_misses ?? []).map((g: any) => [
+              g.slug,
+              g.count,
+              <Link key="l" to="/admin/guide-health" style={{ textDecoration: "none" }}>
+                <Btn tone="quiet">Write the article</Btn>
+              </Link>,
+            ])}
+          />
+
+          <div style={{ height: 22 }} />
+          <Label>Milestones earned this week</Label>
+          <div style={{ height: 10 }} />
+          <Table
+            head={["Person", "Milestone", "When", ""]}
+            rows={(p.voc?.milestones ?? []).slice(0, 12).map((m: any, i: number) => [
+              m.first_name ?? "Someone",
+              m.name,
+              m.when,
+              <Btn
+                key={i}
+                tone="quiet"
+                onClick={() =>
+                  setMessage({
+                    title: `Congratulate ${m.first_name ?? "them"}`,
+                    body: `${m.first_name ?? "Hi"} — saw you hit "${m.name}" on ${m.when}. Genuinely well done. What's the next thing you want Aura to help you say?`,
+                  })
+                }
+              >
+                Congratulate
+              </Btn>,
+            ])}
+          />
+
+          <div style={{ height: 20 }} />
+          <Finding
+            colour={C.damber}
+            finding="People are asking for help on topics that have nothing written behind them."
+            example={
+              (p.voc?.guide_misses ?? [])[0]
+                ? `“${p.voc.guide_misses[0].slug}” was clicked ${p.voc.guide_misses[0].count} times and returns nothing.`
+                : "No missing help topics recorded."
+            }
+            recommendation="Write the top missing article this week. It is the cheapest retention work available to you."
+            countedFrom="guide_slug_misses, beta_feedback, user_milestones"
+          />
+        </Zone>
+
+        {/* ---------- 7 THE MACHINE ---------- */}
+        <Zone n={7} title="The machine">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12, marginBottom: 20 }}>
+            <Stat label="Spend this month" value={`$${N(p.machine?.spend_mtd) ?? 0}`} colour={Number(p.machine?.spend_mtd ?? 0) > 200 ? C.ox : C.teal} />
+            <Stat
+              label="Projected month"
+              value={`$${(() => {
+                const d = new Date();
+                const day = d.getUTCDate();
+                const days = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
+                return ((Number(p.machine?.spend_mtd ?? 0) / day) * days).toFixed(0);
+              })()}`}
+              sub="at today's burn rate"
+            />
+            <Stat label="Queue" value={`${N(p.machine?.queue_pending) ?? 0} / ${N(p.machine?.queue_failed) ?? 0}`} sub="pending / failed" colour={Number(p.machine?.queue_failed ?? 0) > 0 ? C.amber : C.teal} />
+            <Stat label="Invariants failing" value={N(p.machine?.open_findings) ?? 0} colour={Number(p.machine?.open_findings ?? 0) > 0 ? C.amber : C.teal} />
+            <Stat
+              label="AI providers up"
+              value={`${(N(p.machine?.api_health?.checked) ?? 0) - (N(p.machine?.api_health?.failed) ?? 0)} / ${N(p.machine?.api_health?.checked) ?? 0}`}
+              colour={Number(p.machine?.api_health?.failed ?? 0) > 0 ? C.ox : C.teal}
+            />
+            <Stat label="Hours since a capture" value={N(p.machine?.hours_since_capture) ?? "?"} colour={Number(p.machine?.hours_since_capture ?? 0) > 72 ? C.ox : C.teal} />
+          </div>
+
+          <Label>Automated work</Label>
+          <div style={{ height: 10 }} />
+          <Table
+            head={["Job", "State", "Schedule", "Last run"]}
+            rows={[
+              ...(p.jobs?.failed ?? []).map((j: any) => [j.name, <span key="s" style={{ color: C.ox }}>{dot(C.ox)}failed in 24h</span>, j.schedule, j.last_run ?? "never"]),
+              ...(p.jobs?.dead ?? []).map((j: any) => [j.name, <span key="s" style={{ color: C.ox }}>{dot(C.ox)}missed its window</span>, j.schedule, j.last_run ?? "never"]),
+              ...(p.jobs?.ok ?? []).map((j: any) => [j.name, <span key="s" style={{ color: C.teal }}>{dot(C.teal)}ran clean</span>, j.schedule, j.last_run ?? "never"]),
+              ...(p.jobs?.not_due ?? []).map((j: any) => [j.name, <span key="s" style={{ color: C.muted }}>{dot(C.muted)}not due yet</span>, j.schedule, j.last_run ?? "never"]),
+            ]}
+          />
+          <div style={{ height: 18 }} />
+          <Finding
+            colour={(p.jobs?.failed ?? []).reduce((n: number) => n + 1, 0) > 0 ? C.ox : C.teal}
+            finding={
+              (p.jobs?.failed ?? []).reduce((n: number) => n + 1, 0) > 0
+                ? "Scheduled work failed in the last 24 hours."
+                : "Every job that was due has run."
+            }
+            example={
+              (p.jobs?.failed ?? [])[0]
+                ? `${p.jobs.failed[0].name} last ran ${p.jobs.failed[0].last_run ?? "never"}.`
+                : `${(p.jobs?.not_due ?? []).reduce((n: number) => n + 1, 0)} weekly jobs are simply not due yet — that is not a fault.`
+            }
+            recommendation="Only chase a job once its own moment has passed. A Monday job is not broken on a Sunday."
+            action={
+              <Link to="/admin/crons" style={{ textDecoration: "none" }}>
+                <Btn>Open crons</Btn>
+              </Link>
+            }
+            countedFrom="cron.job + cron.job_run_details"
+          />
+        </Zone>
+
+        {/* ---------- 8 PROOF ---------- */}
+        <Zone n={8} title="Proof">
+          <Finding
+            colour={Number(audit?.disagreements ?? 0) > 0 ? C.ox : C.teal}
+            finding={
+              Number(audit?.disagreements ?? 0) > 0
+                ? `${audit.disagreements} numbers disagreed with their cross-check today.`
+                : "Every headline number was counted twice and both routes agreed."
+            }
+            example="Each row below was computed once in SQL and once again through independent per-record counts."
+            recommendation="Press “Verify against live data” before you quote any of these numbers to an outsider."
+            action={
+              <>
+                <Btn onClick={runVerify} disabled={verifying}>
+                  {verifying ? "Verifying…" : "Verify against live data"}
+                </Btn>
+                <Btn tone="quiet" onClick={exportAudit}>
+                  Export audit
+                </Btn>
+              </>
+            }
+          />
+          <Table
+            head={["Claim", "Counted from", "Cross-check", "A / B", "Agree", "Live now"]}
+            rows={pairs.map((x: any) => {
+              const live = verify ? N(verify[x.key]) : null;
+              return [
+                x.label,
+                x.route_a,
+                x.route_b,
+                `${x.a ?? "?"} / ${x.b ?? "?"}`,
+                <span key="ag" style={{ color: x.agree ? C.teal : C.ox }}>{x.agree ? "✓" : "✗"}</span>,
+                verify === null ? (
+                  <span key="l" style={{ color: C.muted }}>not run</span>
+                ) : live === null ? (
+                  <span key="l" style={{ color: C.muted }}>not covered</span>
+                ) : (
+                  <span key="l" style={{ color: live === N(x.a) ? C.teal : C.ox }}>
+                    {live} {live === N(x.a) ? "pass" : "FAIL"}
+                  </span>
+                ),
+              ];
+            })}
+          />
+          {x_note(p)}
+        </Zone>
+
+        {/* drill-downs */}
+        <Zone n={9} title="Go deeper">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 10 }}>
+            {DRILLDOWNS.map((d) => (
               <Link
-                key={page.to}
-                to={page.to}
-                className="group flex items-center justify-between"
+                key={d.to}
+                to={d.to}
                 style={{
-                  padding: "14px 16px",
-                  borderRadius: 8,
-                  backgroundColor: "var(--ob-raised)",
-                  border: "1px solid var(--hair)",
                   textDecoration: "none",
-                  transition: "background-color .2s ease",
+                  border: `1px solid ${C.rule}`,
+                  borderRadius: 3,
+                  padding: "12px 14px",
+                  background: C.paper,
                 }}
               >
-                <div className="flex flex-col">
-                  <span
-                    style={{
-                      color: "var(--glass)",
-                      fontSize: 14,
-                      fontWeight: 500,
-                    }}
-                  >
-                    {page.label}
-                  </span>
-                  <span style={mutedStyle}>{page.description}</span>
-                </div>
-                <ArrowRight
-                  className="w-4 h-4 shrink-0"
-                  style={{ color: "var(--glass-2)", transition: "color .2s ease" }}
-                />
+                <div style={{ fontFamily: SERIF, fontSize: 17, color: C.ink }}>{d.label}</div>
+                <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted, marginTop: 4 }}>{d.d}</div>
               </Link>
             ))}
           </div>
-        </section>
+        </Zone>
+      </>
+    );
+  })();
+
+  const stagePeople = stageOpen
+    ? (p?.people ?? []).filter((r: any) => r?.stages && r.stages[stageOpen] !== true)
+    : [];
+
+  return (
+    <AdminShell bleed>
+      <div style={{ background: C.paper, minHeight: "100vh", padding: "36px 18px 80px" }}>
+        <div style={{ maxWidth: 1080, margin: "0 auto" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 14, marginBottom: 30 }}>
+            <div>
+              <Label>Aura · founder cockpit</Label>
+              <h1 style={{ margin: "8px 0 0", fontFamily: SERIF, fontSize: 40, fontWeight: 500, color: C.ink, lineHeight: 1.1 }}>
+                {new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}
+              </h1>
+              <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted, marginTop: 8 }}>
+                {p ? `counted at ${p.counted_at_utc} UTC` : "counting…"}
+                {snap?.source === "live" && " · computed live — today's brief has not run yet"}
+              </div>
+              <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted, marginTop: 4 }}>
+                Same computation as the daily email. This page never recounts it.
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+              <Btn onClick={refresh} disabled={refreshing}>
+                {refreshing ? "Refreshing…" : "Refresh now"}
+              </Btn>
+            </div>
+          </div>
+
+          {actionNote && (
+            <div
+              style={{
+                fontFamily: MONO,
+                fontSize: 12,
+                color: C.ink,
+                background: C.card,
+                border: `1px solid ${C.rule}`,
+                padding: "10px 12px",
+                marginBottom: 18,
+              }}
+            >
+              {actionNote}
+            </div>
+          )}
+
+          {body}
+
+          <div style={{ background: "var(--ob-bg)", borderRadius: 6, padding: 18, display: "grid", gap: 16 }}>
+            <HealthFindingsPanel />
+            <ReportHealthPanel />
+            <RegenerateReportPanel />
+            <SendTestEmailPanel />
+          </div>
+        </div>
       </div>
+
+      {stageOpen && (
+        <Modal title={`Who has not reached “${FUNNEL_STAGES.find((s) => s.stage === stageOpen)?.label}”`} onClose={() => setStageOpen(null)}>
+          {stagePeople.reduce((n: number) => n + 1, 0) === 0 ? (
+            <div style={{ fontFamily: SERIF, color: C.muted }}>Everybody has reached this stage.</div>
+          ) : (
+            <Table
+              head={["Person", "Captures", "LinkedIn", "Days silent"]}
+              rows={stagePeople.map((r: any) => [
+                r.first_name,
+                r.captures,
+                r.linkedin,
+                r.days_since_capture ?? "never",
+              ])}
+            />
+          )}
+        </Modal>
+      )}
+
+      {message && (
+        <Modal title={message.title} onClose={() => setMessage(null)}>
+          <div
+            style={{
+              fontFamily: SERIF,
+              fontSize: 16,
+              lineHeight: 1.6,
+              color: C.ink,
+              whiteSpace: "pre-wrap",
+              border: `1px solid ${C.rule}`,
+              padding: 14,
+              background: C.paper,
+            }}
+          >
+            {message.body}
+          </div>
+          <div style={{ marginTop: 14 }}>
+            <Btn
+              onClick={() => {
+                navigator.clipboard?.writeText(message.body);
+                setActionNote("Message copied.");
+                setMessage(null);
+              }}
+            >
+              Copy message
+            </Btn>
+          </div>
+        </Modal>
+      )}
     </AdminShell>
+  );
+}
+
+/** Coverage line — what the page can and cannot see. */
+function x_note(p: any) {
+  const cov = p?.coverage;
+  if (!cov) return null;
+  return (
+    <div
+      style={{
+        marginTop: 20,
+        border: `1px dashed ${C.rule}`,
+        borderRadius: 3,
+        padding: "14px 16px",
+      }}
+    >
+      <Label>Coverage</Label>
+      <div style={{ fontFamily: SERIF, fontSize: 16, color: C.ink, marginTop: 8 }}>
+        {cov.measured_areas} of {cov.total_areas} areas of the business are actually measured.
+      </div>
+      <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted, marginTop: 8 }}>
+        Not measured: {(cov.unmeasured ?? []).join(" · ")}
+      </div>
+    </div>
   );
 }

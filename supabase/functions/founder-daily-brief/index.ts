@@ -166,12 +166,21 @@ Deno.serve(async (req) => {
     const bearer = (req.headers.get("Authorization") ?? "").replace("Bearer ", "");
     const apiKeyHeader = req.headers.get("apikey") || "";
     const cronHeader = req.headers.get("x-cron-secret") || "";
-    const authorised =
+    let authorised =
       bearer === serviceKey || apiKeyHeader === serviceKey || (!!CRON_SECRET && cronHeader === CRON_SECRET);
-    if (!authorised) return json({ error: "Unauthorized" }, 401);
 
     const body = await req.json().catch(() => ({}));
     const dryRun = body?.dry_run === true;
+
+    // Admin cockpit: a signed-in admin may compute a dry run (never a send).
+    if (!authorised && dryRun && bearer) {
+      const asUser = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY") ?? "", {
+        global: { headers: { Authorization: `Bearer ${bearer}` } },
+      });
+      const { data: isAdmin } = await asUser.rpc("is_current_user_admin");
+      if (isAdmin === true) authorised = true;
+    }
+    if (!authorised) return json({ error: "Unauthorized" }, 401);
 
     const { headCount, distinctUsers } = makeCounters(admin);
     const audit = new Audit();
@@ -715,8 +724,8 @@ ${sectionClose("A cross on any row means do not act on that number until it is r
 
     return json({
       ok: true, dry_run: dryRun, subject, sent, resend_status: resendStatus,
-      resend_error: resendError || null, audit: auditObj,
-      ...(dryRun ? { html } : {}),
+      resend_error: resendError || null, audit: auditObj, payload,
+      ...(dryRun && body?.include_html === true ? { html } : {}),
     });
   } catch (e) {
     await safeLog(admin, "critical", `founder-daily-brief failed: ${(e as Error).message}`);
