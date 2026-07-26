@@ -389,7 +389,7 @@ export default function Admin() {
                 label={s.label}
                 value={v}
                 total={invited}
-                colour={i === FUNNEL_STAGES.length - 1 ? C.teal : lost && lost > 0 ? C.amber : C.damber}
+                colour={s.key === "published" ? C.teal : lost && lost > 0 ? C.amber : C.damber}
                 note={
                   lost === null
                     ? s.from
