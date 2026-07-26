@@ -1270,6 +1270,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
           url: urlArg ?? null,
           language: lang,
           frameworkType: framework !== "auto" ? framework : null,
+          originalGeneratedText: servedTextRef.current,
         });
         // If this Create session is editing an existing content_items draft,
         // mark the source row as published so it counts as shipped.
