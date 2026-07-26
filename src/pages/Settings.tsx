@@ -106,7 +106,6 @@ const handleDeleteAccount = async () => {
           if (!cancelled) {
             setLoading(false);
             setError("Not signed in.");
-            setReportLoading(false);
           }
           return;
         }
@@ -130,41 +129,8 @@ const handleDeleteAccount = async () => {
           );
           setPublicationState(initialPub);
         }
-        if (data?.brand_assessment_completed_at) {
-          try {
-            // Frozen edition first — the report must not drift between views.
-            const snap = await fetchCurrentReportSnapshot(session.user.id);
-            if (snap) {
-              if (!cancelled) {
-                setReport(snap.data);
-                setReportVersion(snap.version);
-                setReportSnapshotAt(snap.created_at);
-              }
-            } else {
-              // No snapshot yet — live fallback, then freeze it for next time.
-              const r = await buildIdentityReport(session.user.id);
-              if (!cancelled) setReport(r);
-              const v = await captureReportSnapshot("user");
-              if (!cancelled && v != null) {
-                const fresh = await fetchCurrentReportSnapshot(session.user.id);
-                if (fresh && !cancelled) {
-                  setReport(fresh.data);
-                  setReportVersion(fresh.version);
-                  setReportSnapshotAt(fresh.created_at);
-                }
-              }
-            }
-          } catch (re) {
-            console.error("[Settings] report load failed", re);
-          } finally {
-            if (!cancelled) setReportLoading(false);
-          }
-        } else {
-          if (!cancelled) setReportLoading(false);
-        }
       } catch (e: any) {
         if (!cancelled) setError(e?.message || "Failed to load profile.");
-        if (!cancelled) setReportLoading(false);
       } finally {
         if (!cancelled) setLoading(false);
       }
