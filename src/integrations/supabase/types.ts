@@ -616,6 +616,54 @@ export type Database = {
           },
         ]
       }
+      content_gate_results: {
+        Row: {
+          assertions: Json | null
+          created_at: string
+          function_name: string | null
+          id: string
+          judge_model: string | null
+          language: string | null
+          overall_score: number | null
+          pass: boolean | null
+          post_id: string | null
+          skip_reason: string | null
+          skipped: boolean
+          user_id: string | null
+          weaknesses: Json | null
+        }
+        Insert: {
+          assertions?: Json | null
+          created_at?: string
+          function_name?: string | null
+          id?: string
+          judge_model?: string | null
+          language?: string | null
+          overall_score?: number | null
+          pass?: boolean | null
+          post_id?: string | null
+          skip_reason?: string | null
+          skipped?: boolean
+          user_id?: string | null
+          weaknesses?: Json | null
+        }
+        Update: {
+          assertions?: Json | null
+          created_at?: string
+          function_name?: string | null
+          id?: string
+          judge_model?: string | null
+          language?: string | null
+          overall_score?: number | null
+          pass?: boolean | null
+          post_id?: string | null
+          skip_reason?: string | null
+          skipped?: boolean
+          user_id?: string | null
+          weaknesses?: Json | null
+        }
+        Relationships: []
+      }
       content_items: {
         Row: {
           body: string
