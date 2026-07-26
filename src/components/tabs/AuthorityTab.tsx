@@ -1761,6 +1761,11 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
             </div>
 
             {/* Generate */}
+            {profileLoaded && !hasVoiceProfile && (
+              <p style={{ fontSize: 12, color: "var(--ink-4)", marginBottom: 8 }}>
+                Aura hasn't read your real writing yet — this draft uses house structure, not your voice.
+              </p>
+            )}
             <button
               id="aura-generate-btn"
               data-testid="pub-generate-btn"
