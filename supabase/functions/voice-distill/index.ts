@@ -138,6 +138,15 @@ Deno.serve(async (req) => {
 
     let rawPosts: Array<{ post_text: string; engagement_score?: number | null }> = [];
 
+    /**
+     * Voice evidence must be the user's OWN writing. A generator may never be
+     * its own teacher: rows Aura wrote are never admitted, at any status.
+     * Every admitted row must also carry real prose — 200 characters minimum —
+     * which excludes search-result fragments masquerading as posts.
+     */
+    const MIN_EVIDENCE_CHARS = 200;
+    const rejected = { generated: 0, too_short: 0, wrong_source: 0 };
+
     if (useAdHoc) {
       rawPosts = adHocPosts.slice(0, 40).map((t) => ({ post_text: t, engagement_score: null }));
     } else {
@@ -159,23 +168,51 @@ Deno.serve(async (req) => {
       }
 
       rawPosts = (posts || []).filter((p: any) => {
-        if (!p.post_text || String(p.post_text).trim().length === 0) return false;
+        const text = String(p.post_text ?? "").trim();
         const st = p.source_type;
         const ts = p.tracking_status;
-        if (st === "aura_generated" && ts === "published") return true;
-        if (st === "browser_capture" && (ts === "confirmed" || ts === "metrics_imported")) return true;
-        if (st === "search_discovery" && ts === "confirmed") return true;
-        if (st === "manual_url" && ts === "manual") return true;
-        return false;
+
+        const authenticSource =
+          (st === "browser_capture" && (ts === "confirmed" || ts === "metrics_imported")) ||
+          (st === "search_discovery" && ts === "confirmed") ||
+          (st === "manual_url" && ts === "manual") ||
+          st === "linkedin_export" ||
+          st === "linkedin_import";
+
+        if (!authenticSource) {
+          if (st === "aura_generated") rejected.generated += 1;
+          else rejected.wrong_source += 1;
+          return false;
+        }
+        if (text.length < MIN_EVIDENCE_CHARS) {
+          rejected.too_short += 1;
+          return false;
+        }
+        return true;
       }).slice(0, 40);
     }
 
+    /** Loud, not silent: an empty corpus is recorded so it cannot go unnoticed. */
+    const logNoCorpus = async (language: string) => {
+      try {
+        await supabase.from("ef_error_log").insert({
+          function_name: "voice-distill",
+          severity: "info",
+          error_message: "no_authentic_corpus",
+          context: { user_id, language, rejected },
+        });
+      } catch (logErr) {
+        console.error("voice-distill: log no_authentic_corpus failed", logErr);
+      }
+    };
+
     if (rawPosts.length === 0) {
-      // Imported analytics rows can lack post_text. Treat as a graceful skip
-      // (not an error) so the post-import pipeline doesn't show red ❗.
-      console.warn("voice-distill: no posts with text — skipping distillation for", user_id);
+      // No admissible evidence — the profile goes quiet rather than relearning
+      // Aura's own output. Recorded as info so the absence is visible.
+      console.warn("voice-distill: no authentic corpus — skipping distillation for", user_id, rejected);
+      await logNoCorpus("any");
       return new Response(
-        JSON.stringify({ success: true, skipped: true, reason: "no_posts_with_text", posts_analyzed: 0 }),
+        JSON.stringify({ success: true, skipped: true, reason: "no_authentic_corpus", rejected, posts_analyzed: 0 }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -188,9 +225,10 @@ Deno.serve(async (req) => {
     }
 
     if (grouped.en.length === 0 && grouped.ar.length === 0) {
-      console.warn("voice-distill: no posts with text — skipping distillation for", user_id);
+      console.warn("voice-distill: no authentic corpus after grouping —", user_id, rejected);
+      await logNoCorpus("any");
       return new Response(
-        JSON.stringify({ success: true, skipped: true, reason: "no_posts_with_text", posts_analyzed: 0 }),
+        JSON.stringify({ success: true, skipped: true, reason: "no_authentic_corpus", rejected, posts_analyzed: 0 }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
