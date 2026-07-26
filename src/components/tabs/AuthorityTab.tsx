@@ -286,6 +286,7 @@ async function insertPublishedLinkedInPost(opts: {
   url?: string | null;
   language?: "en" | "ar";
   frameworkType?: string | null;
+  originalGeneratedText?: string | null;
 }): Promise<void> {
   const { userId, postText, formatType, sourceMetadata, sourceSignalId, url, frameworkType } = opts;
   const lang: "en" | "ar" = opts.language === "ar" ? "ar" : "en";
@@ -302,6 +303,7 @@ async function insertPublishedLinkedInPost(opts: {
     .insert({
       user_id: userId,
       post_text: postText || "",
+      original_generated_text: opts.originalGeneratedText || postText || "",
       format_type: formatType || "post",
       tracking_status: "published",
       source_type: "aura_generated",
