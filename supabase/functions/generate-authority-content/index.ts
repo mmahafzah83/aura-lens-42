@@ -244,7 +244,7 @@ serve(withObserve("generate-authority-content", async (req) => {
     const [voiceRes, profileRes] = await Promise.all([
       supabase.from("authority_voice_profiles").select("*").eq("user_id", effectiveUserId).eq("language", effectiveLanguage).maybeSingle(),
       supabase.from("diagnostic_profiles")
-        .select("identity_intelligence, brand_pillars, core_practice, sector_focus, north_star_goal, level, audit_interpretation, brand_assessment_results")
+        .select("identity_intelligence, brand_pillars, core_practice, sector_focus, north_star_goal, level, target_register, audit_interpretation, brand_assessment_results")
         .eq("user_id", effectiveUserId).maybeSingle(),
     ]);
 
@@ -253,6 +253,17 @@ serve(withObserve("generate-authority-content", async (req) => {
     const texture = (voiceProfile?.vocabulary_preferences as any)?.texture;
     const effTexture = texture === "qawarish" || texture === "daheeh" ? texture : "clean";
     const identityContext = buildIdentityContext(profile);
+
+    // Reader description is built from THIS user's own profile — never hardcoded.
+    const readerDescription = (() => {
+      const lvl = (profile?.level || "").trim();
+      const sec = (profile?.sector_focus || "").trim();
+      const reg = (profile?.target_register || "").trim();
+      if (!lvl && !sec && !reg) return "a senior professional in their field";
+      const who = lvl && sec ? `${lvl} in ${sec}` : (lvl || sec);
+      const base = who ? `a ${who}` : "a senior professional in their field";
+      return reg ? `${base}, writing in ${reg}` : base;
+    })();
 
     if (action === "generate_content") {
       const { content_type, topic, context, language, framework, extra_instruction, flash, stream, variation, lang, sector, post_type, theme, signal_id } = params;
@@ -354,8 +365,8 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
         voiceSection = buildVoiceContext(voiceProfile);
       }
 
-      const sectorContextLabel = `${(typeof sector === "string" && sector.trim()) || profile?.sector_focus || "GCC transformation"} context`;
-      const hookFramework = `You are writing for a senior GCC transformation leader. Always open with one of these two hook types:
+      const sectorContextLabel = `${(typeof sector === "string" && sector.trim()) || profile?.sector_focus || "their own"} context`;
+      const hookFramework = `You are writing for ${readerDescription}. Always open with one of these two hook types:
 
 1. Contrarian truth: Challenge what the industry believes in one sentence under 20 words.
 2. Specific tension: Name a contradiction the reader lives with daily. Be specific to ${sectorContextLabel}.
@@ -426,7 +437,7 @@ FORMATTING RULES (mandatory):
 
       const systemPrompt = `You are a world-class thought leadership ghostwriter for senior strategy consultants.
 
-${buildContentDNA({ lang: effectiveLanguage === "ar" ? "ar" : "en", texture: effTexture })}
+${buildContentDNA({ lang: effectiveLanguage === "ar" ? "ar" : "en", texture: effTexture, readerDescription })}
 
 ${groundingContext}
 
@@ -644,6 +655,7 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
             signal_title: groundingSignal?.signal_title || topic || null,
             voice_tone: voiceProfile?.tone || null,
             user_sector: profile?.sector_focus || null,
+            target_register: profile?.target_register || null,
             grounding_text: groundingContext || null,
             content_kind: "post",
           },
