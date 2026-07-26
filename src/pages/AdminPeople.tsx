@@ -474,7 +474,7 @@ export default function AdminPeople() {
         </div>
       ) : (
         <>
-          {inactive48.length > 0 && (
+          {inactive48[0] && (
             <div
               style={{
                 ...card,
@@ -485,9 +485,6 @@ export default function AdminPeople() {
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                 <span style={{ fontSize: 13, fontWeight: 600, color: "var(--glass-1)", textTransform: "uppercase", letterSpacing: 0.6 }}>
                   Inactive (48h+)
-                </span>
-                <span style={{ fontSize: 12, padding: "2px 8px", borderRadius: 999, background: "rgba(249,115,22,0.15)", color: "#F97316", border: "1px solid rgba(249,115,22,0.3)" }}>
-                  {inactive48.length}
                 </span>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
