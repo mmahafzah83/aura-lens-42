@@ -199,13 +199,14 @@ function movementValues(payload: any): Record<string, number | null> {
     num(drafts.content_items) !== null || num(drafts.linkedin_posts) !== null
       ? (Number(drafts.content_items) || 0) + (Number(drafts.linkedin_posts) || 0)
       : null;
+  const peopleN = people.reduce((n: number) => n + 1, 0);
   return {
     invited: num(f.invited), signed_in: num(f.signed_in), finished_setup: num(f.finished_setup),
     captured: num(f.captured), got_signal: num(f.got_signal), linkedin_live: num(f.linkedin_live),
     opened_writer: num(f.opened_writer), has_draft: num(f.has_draft), published: num(f.published),
     drafts_waiting: draftsTotal,
-    signals_live: people.length === 0 ? null : sum((p) => p.signals),
-    captures: people.length === 0 ? null : sum((p) => p.captures),
+    signals_live: peopleN === 0 ? null : sum((p) => p.signals),
+    captures: peopleN === 0 ? null : sum((p) => p.captures),
   };
 }
 
