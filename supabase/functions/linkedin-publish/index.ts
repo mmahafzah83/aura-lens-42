@@ -17,6 +17,41 @@ function json(body: unknown, status = 200) {
   });
 }
 
+// --- Draft-edit telemetry helpers (data collection only; never blocks publish) ---
+const DIFF_CAP = 4000;
+
+function levenshtein(a: string, b: string): number {
+  const s = a.slice(0, DIFF_CAP);
+  const t = b.slice(0, DIFF_CAP);
+  if (s === t) return 0;
+  if (!s.length) return t.length;
+  if (!t.length) return s.length;
+  let prev = new Array(t.length + 1);
+  let curr = new Array(t.length + 1);
+  for (let j = 0; j <= t.length; j++) prev[j] = j;
+  for (let i = 1; i <= s.length; i++) {
+    curr[0] = i;
+    for (let j = 1; j <= t.length; j++) {
+      const cost = s[i - 1] === t[j - 1] ? 0 : 1;
+      curr[j] = Math.min(curr[j - 1] + 1, prev[j] + 1, prev[j - 1] + cost);
+    }
+    const tmp = prev; prev = curr; curr = tmp;
+  }
+  return prev[t.length];
+}
+
+function firstNonEmptyLine(text: string): string {
+  for (const line of text.split("\n")) {
+    if (line.trim()) return line.trim();
+  }
+  return "";
+}
+
+function numericTokens(text: string): Set<string> {
+  const matches = text.match(/[0-9\u0660-\u0669]+([.,][0-9\u0660-\u0669]+)*/g) || [];
+  return new Set(matches);
+}
+
 Deno.serve(withObserve("linkedin-publish", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
