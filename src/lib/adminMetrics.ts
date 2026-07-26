@@ -97,8 +97,12 @@ function shape(payload: any, source: "stored" | "live"): AdminMetrics {
 export async function loadAdminMetrics(opts?: { forceLive?: boolean }): Promise<AdminMetrics> {
   const today = new Date().toISOString().slice(0, 10);
   if (!opts?.forceLive) {
+    // Read the view, not the base table: the base table is append-only and
+    // holds one row per run. `daily_brief_latest` collapses that to the
+    // highest run_seq per date, so exactly one row can match. maybeSingle()
+    // stays on purpose — if it ever throws, the view itself is at fault.
     const { data, error } = await supabase
-      .from("daily_brief_snapshots")
+      .from("daily_brief_latest")
       .select("payload, brief_date")
       .eq("brief_date", today)
       .maybeSingle();

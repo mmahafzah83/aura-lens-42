@@ -185,8 +185,10 @@ export default function Admin() {
   /* ---------- data: stored first, live dry run as fallback ---------- */
   const loadStored = useCallback(async () => {
     const today = new Date().toISOString().slice(0, 10);
+    // `daily_brief_latest` = highest run_seq per brief_date. The base table is
+    // append-only and would return every run for today, breaking maybeSingle().
     const { data, error } = await supabase
-      .from("daily_brief_snapshots")
+      .from("daily_brief_latest")
       .select("payload, audit, brief_date")
       .eq("brief_date", today)
       .maybeSingle();
