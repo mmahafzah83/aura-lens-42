@@ -154,9 +154,12 @@ html *:not(canvas):not(video):not(iframe) {
   --action:var(--deadline); --action-ink:var(--deadline-text);
   --spot:var(--act); --spot-2:var(--act-hover);
   --pos:var(--success); --neg:var(--error);
-  --ob-page:#080C11; --ob-bg:var(--n-900); --ob-panel:#161D23; --ob-raised:#1B242C; --ob-field:#10171D;
-  --hair:rgba(255,255,255,.10); --grid:rgba(255,255,255,.06);
-  --glass:#FFFFFF; --glass-2:#A6B0BB; --glass-3:#78848F;
+  /* Instrument surfaces are LIGHT by default. Night is earned: only the
+     nav rail and the machine/Overnight surfaces re-declare these dark. */
+  --ob-page:var(--surface-page); --ob-bg:var(--surface-page); --ob-panel:var(--surface-card);
+  --ob-raised:var(--surface-card); --ob-field:var(--surface-subtle);
+  --hair:var(--border-default); --grid:var(--n-100);
+  --glass:var(--text-primary); --glass-2:var(--text-secondary); --glass-3:var(--text-muted);
   /* Motion */
   --ease: cubic-bezier(0.32, 0.72, 0.35, 1);
   --t-fast: 120ms; --t: 240ms; --t-slow: 480ms;
@@ -1048,7 +1051,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   --aura-t1: var(--glass);
   --aura-t2: color-mix(in srgb, var(--glass) 78%, transparent);
   --aura-t3: var(--glass-2);
-  --aura-accent: var(--action);
+  --aura-accent: var(--spot);
   --aura-accent2: var(--live);
   --aura-accent3: var(--pos);
   --aura-positive: var(--pos);
@@ -1066,12 +1069,12 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   --color-background-success: color-mix(in srgb, var(--pos) 14%, transparent);
   --color-background-warning: color-mix(in srgb, var(--action) 14%, transparent);
   /* Brand / bronze / parchment legacy → Instrument */
-  --brand: var(--action);
-  --brand-muted: color-mix(in srgb, var(--action) 20%, transparent);
+  --brand: var(--spot);
+  --brand-muted: color-mix(in srgb, var(--spot) 20%, transparent);
   --brand-line: var(--hair);
-  --bronze: var(--action);
+  --bronze: var(--spot);
   --bronze-line: var(--hair);
-  --bronze-soft: color-mix(in srgb, var(--action) 18%, transparent);
+  --bronze-soft: color-mix(in srgb, var(--spot) 18%, transparent);
   --surface-ink-raised: var(--ob-raised);
   --line-1: var(--hair);
   /* Ink scale (parchment) → glass scale (dark) */
@@ -1124,20 +1127,20 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   --surface-ink-subtle: var(--ob-panel);
 
   /* Brand / bronze legacy → Instrument accents */
-  --brand: var(--action);
-  --brand-hover: var(--action);
-  --brand-muted: color-mix(in srgb, var(--action) 20%, transparent);
-  --brand-pale: color-mix(in srgb, var(--action) 10%, transparent);
+  --brand: var(--spot);
+  --brand-hover: var(--spot-2);
+  --brand-muted: color-mix(in srgb, var(--spot) 20%, transparent);
+  --brand-pale: color-mix(in srgb, var(--spot) 10%, transparent);
   --brand-line: var(--hair);
-  --brand-glow: color-mix(in srgb, var(--action) 30%, transparent);
-  --brand-ghost: color-mix(in srgb, var(--action) 8%, transparent);
-  --bronze: var(--action);
-  --bronze-deep: var(--action);
-  --bronze-pale: color-mix(in srgb, var(--action) 10%, transparent);
+  --brand-glow: color-mix(in srgb, var(--spot) 30%, transparent);
+  --brand-ghost: color-mix(in srgb, var(--spot) 8%, transparent);
+  --bronze: var(--spot);
+  --bronze-deep: var(--spot-2);
+  --bronze-pale: color-mix(in srgb, var(--spot) 10%, transparent);
   --bronze-line: var(--hair);
-  --bronze-mist: color-mix(in srgb, var(--action) 6%, transparent);
-  --bronze-soft: color-mix(in srgb, var(--action) 18%, transparent);
-  --bronze-glow: color-mix(in srgb, var(--action) 30%, transparent);
+  --bronze-mist: color-mix(in srgb, var(--spot) 6%, transparent);
+  --bronze-soft: color-mix(in srgb, var(--spot) 18%, transparent);
+  --bronze-glow: color-mix(in srgb, var(--spot) 30%, transparent);
 
   /* Aura legacy → Instrument (safety net for any nested usage) */
   --aura-bg: var(--ob-bg);
@@ -1146,7 +1149,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   --aura-t1: var(--glass);
   --aura-t2: color-mix(in srgb, var(--glass) 78%, transparent);
   --aura-t3: var(--glass-2);
-  --aura-accent: var(--action);
+  --aura-accent: var(--spot);
   --aura-accent2: var(--live);
 
   /* Paper / parchment surfaces → opaque dark panels */
@@ -1166,8 +1169,8 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
 .observatory-page {
   background-color: var(--ob-bg);
   background-image:
-    linear-gradient(to right,  rgba(255,255,255,0.045) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255,255,255,0.045) 1px, transparent 1px);
+    linear-gradient(to right,  var(--grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
   background-size: 26px 26px;
   background-position: 0 0, 0 0;
 }
@@ -1664,6 +1667,11 @@ html.dark .text-gray-500,
 
 /* Dark surface — rebind bone tokens to the instrument palette, mirror .statement-page --aura-* */
 .aura-sidebar-shell[data-surface="dark"] {
+  /* EARNED DARK — the navigation rail. Re-declare the instrument
+     primitives locally because the global family is now light. */
+  --ob-bg:#0F1519; --ob-page:#080C11; --ob-panel:#161D23; --ob-raised:#1B242C; --ob-field:#10171D;
+  --hair:rgba(255,255,255,.10); --grid:rgba(255,255,255,.06);
+  --glass:#FFFFFF; --glass-2:#A6B0BB; --glass-3:#78848F;
   /* parchment → instrument */
   --paper: var(--ob-bg);
   --paper-2: var(--ob-panel);
