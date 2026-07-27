@@ -113,7 +113,7 @@ html *:not(canvas):not(video):not(iframe) {
   --b-50:#E6F2FD; --b-100:#BBDDF7; --b-300:#4FA6EC;
   --b-500:#0984E3; --b-600:#0670C4; --b-800:#04477C;
   --c-50:#DFF7F6; --c-500:#00CEC9; --c-700:#00807B;
-  --a-50:#FCF2DC; --a-500:#E0A82E; --a-700:#8F6711;
+  --a-50:#FCF2DC; --a-300:#EDB231; --a-500:#E0A82E; --a-700:#83621B;
   --g-50:#E4F6EC; --g-600:#12805C;
   --r-50:#FCEAE6; --r-600:#C0392B;
 
@@ -128,6 +128,8 @@ html *:not(canvas):not(video):not(iframe) {
   --act-fill:var(--b-500); --act-tint:var(--b-50);
   --machine:var(--c-500); --machine-text:var(--c-700); --machine-tint:var(--c-50);
   --deadline:var(--a-500); --deadline-text:var(--a-700); --deadline-tint:var(--a-50);
+  --deadline-text-on-dark:var(--a-300);
+  --on-dark-2:#C3CBD4;
   --success:var(--g-600); --success-tint:var(--g-50);
   --error:var(--r-600); --error-tint:var(--r-50);
 
@@ -219,7 +221,8 @@ html *:not(canvas):not(video):not(iframe) {
   --error:   var(--neg);
   --error-pale: rgba(217,138,130,0.12);
   --danger-pale: var(--error-pale);
-  --warning: var(--a-500);
+  --warning: var(--a-500);        /* fills, dots, bars ONLY */
+  --warning-text: var(--a-700);   /* text */
   --info:    var(--glass-3);
   --info-pale: rgba(138,151,166,0.12);
   --color-info-text: var(--info);
