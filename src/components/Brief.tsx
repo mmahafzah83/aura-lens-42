@@ -1534,7 +1534,8 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
             {unread > 0 && <Mono size={10}>{unread} unread</Mono>}
           </div>
           <button type="button" onClick={() => onSwitchTab?.("intelligence")}
-            style={{ background: "transparent", border: 0, cursor: "pointer", padding: 0, XX →</Mono>
+            style={{ background: "transparent", border: 0, cursor: "pointer", padding: 0, color: "var(--spot)" }}>
+            <Mono color="var(--spot)" size={11}>All signals →</Mono>
           </button>
         </div>
         <p style={{ margin: "0 0 16px 0", fontFamily: "var(--font-serif)", fontStyle: "italic",
