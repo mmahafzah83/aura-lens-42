@@ -2283,9 +2283,9 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
             <button key={k} onClick={() => setStyleKey(k)}
                     className="px-3 py-1.5 rounded-full text-xs font-medium border focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--action)]"
                     style={{
-                      background: styleKey === k ? STYLES[k].accent : "transparent",
-                      color: styleKey === k ? "var(--ink-on-brand)" : "var(--glass)",
-                      borderColor: styleKey === k ? STYLES[k].accent : "var(--hair)",
+                      background: styleKey === k ? "var(--surface-inverse)" : "transparent",
+                      color: styleKey === k ? "var(--text-inverse)" : "var(--glass)",
+                      borderColor: styleKey === k ? "var(--surface-inverse)" : "var(--hair)",
                     }}>
               {STYLES[k].name}
             </button>
