@@ -354,7 +354,7 @@ export default function BriefV2({
             </p>
           )}
         </div>
-        <PrimaryButton onClick={onOpenCapture}>Capture</PrimaryButton>
+        <ButtonPrimary onClick={() => onOpenCapture()}>Capture</ButtonPrimary>
       </header>
 
       {/* 2 · FIRST FLIGHT */}
@@ -421,8 +421,8 @@ export default function BriefV2({
                   }}
                 >
                   <span style={{ flex: 1, minWidth: 0, fontSize: 14, color: "var(--text-primary)" }}>{m.title}</span>
-                  <Chip tone="neutral">{m.action_type}</Chip>
-                  {fading && <Chip tone="clock">Fading</Chip>}
+                  <Chip variant="cooling">{m.action_type}</Chip>
+                  {fading && <Chip variant="clock">Fading</Chip>}
                   <ChevronRight size={15} style={{ color: "var(--text-muted)" }} />
                 </button>
               );
