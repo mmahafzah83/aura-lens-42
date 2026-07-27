@@ -183,7 +183,7 @@ const ErrorLine: React.FC<{ what: string; onRetry: () => void }> = ({ what, onRe
   <div style={{ fontSize: 15, color: "var(--ink-2)", lineHeight: 1.55 }}>
     The {what} didn't load. Your data is safe.{" "}
     <button type="button" onClick={onRetry} style={{
-      background: "transparent", border: 0, padding: 0, color: "var(--action)",
+      background: "transparent", border: 0, padding: 0, color: "var(--spot)",
       textDecoration: "underline", textUnderlineOffset: 3, cursor: "pointer", fontSize: "inherit",
     }}>Retry</button>
   </div>
@@ -1340,7 +1340,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
                 rel="noopener noreferrer"
                 style={{ textDecoration: "none" }}
               >
-                <Mono color="var(--action)" size={11}>Open the post on LinkedIn →</Mono>
+                <Mono color="var(--spot)" size={11}>Open the post on LinkedIn →</Mono>
               </a>
             </div>
           )}
@@ -1634,7 +1634,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
                                   else onSwitchTab?.("intelligence");
                                 }}
                                 style={{ background: "transparent", border: 0, cursor: "pointer", padding: 0, color: "var(--spot)" }}>
-                                <Mono color="var(--action)" size={11}>View in Signals →</Mono>
+                                <Mono color="var(--spot)" size={11}>View in Signals →</Mono>
                               </button>
                             </div>
                           </div>
@@ -1815,7 +1815,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12, flexWrap: "wrap", gap: 8 }}>
                     <Mono size={10}>Capture anything you read — 30 seconds</Mono>
                     {rhythm.data.streak >= 2 && (
-                      <Mono color="var(--action)" size={10}>{rhythm.data.streak}-day streak</Mono>
+                      <Mono color="var(--spot)" size={10}>{rhythm.data.streak}-day streak</Mono>
                     )}
                   </div>
                 </div>

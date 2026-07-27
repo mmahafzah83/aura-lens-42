@@ -1055,11 +1055,11 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             <div style={{ position: "relative", paddingBottom: 18 }}>
               <span style={{
                 position: "absolute", left: -30, top: 0, width: 14, height: 14, borderRadius: "50%",
-                background: "var(--warning, var(--brand))", display: "flex", alignItems: "center", justifyContent: "center",
+                background: "var(--spot)", display: "flex", alignItems: "center", justifyContent: "center",
               }}>
                 <Star className="w-2 h-2" style={{ color: "var(--paper)" }} fill="currentColor" />
               </span>
-              <div style={{ fontFamily: "var(--font-mono, ui-monospace, monospace)", fontSize: 11, fontWeight: 500, color: "var(--action)", letterSpacing: "0.08em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+              <div style={{ fontFamily: "var(--font-mono, ui-monospace, monospace)", fontSize: 11, fontWeight: 500, color: "var(--spot)", letterSpacing: "0.08em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                 <span>
                   NOW{imprintTier?.name ? ` — ${imprintTier.name.toUpperCase()}` : ""}{imprintScore != null ? ` · SCORE ${imprintScore}` : ""}
                 </span>
@@ -1212,7 +1212,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 const barColor = (() => {
                   if (!next) return "transparent";
                   if (isDone && next.state === "done") return "var(--success, #2e7d32)";
-                  if (isDone && next.state === "current") return "var(--warning, var(--brand))";
+                  if (isDone && next.state === "current") return "var(--spot)";
                   return "var(--brand-line, rgba(0,0,0,0.12))";
                 })();
                 return (
