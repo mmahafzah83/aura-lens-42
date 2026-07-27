@@ -1,6 +1,6 @@
 import { User, LogOut, Settings2, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import UserAvatar from "@/components/ui/UserAvatar";
+import Avatar from "@/components/systemb/Avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -56,11 +56,7 @@ export default function ProfileMenu({
           title={fn || email || "Account"}
           aria-label={fn || "Account menu"}
         >
-          {firstNameParsed ? (
-            <UserAvatar firstName={firstNameParsed} lastName={lastNameParsed} size="sm" />
-          ) : (
-            <span className="aura-initials-avatar"><User className="w-4 h-4" /></span>
-          )}
+          <Avatar src={avatarUrl} name={fn || email || null} size="md" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
