@@ -141,20 +141,21 @@ const NotificationBell = () => {
         align="end"
         sideOffset={8}
         style={{
-          background: "var(--paper-2)",
-          border: "0.5px solid var(--rule)",
+          background: "var(--surface-card)",
+          border: "1px solid var(--rule-outer)",
           borderRadius: 12,
-          boxShadow: "var(--shadow-lift)",
-          color: "var(--ink)",
+          boxShadow: "var(--v23-card-hover)",
+          color: "var(--text-primary)",
+          fontFamily: "var(--ff-ui)",
         }}
       >
-        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--rule)" }}>
-          <h4 className="text-sm font-semibold" style={{ color: "var(--ink)" }}>Strategic Alerts</h4>
+        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--rule-outer)" }}>
+          <h4 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Strategic alerts</h4>
           {notifications.length > 0 && (
             <button
               onClick={clearAll}
-              className="text-xs transition-colors"
-              style={{ color: "var(--ink-3)" }}
+              className="text-xs transition-colors cursor-pointer"
+              style={{ color: "var(--text-muted)" }}
             >
               Clear all
             </button>
