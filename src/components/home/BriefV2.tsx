@@ -5,6 +5,7 @@ import { useAuthReady } from "@/hooks/useAuthReady";
 import useTierFromImprint from "@/hooks/useTierFromImprint";
 import useJourneyState from "@/hooks/useJourneyState";
 import { trackSignalOpen } from "@/lib/trackSignalOpen";
+import InsightCards from "@/components/home/InsightCards";
 import type { BriefDraft } from "@/components/Brief";
 
 /**
@@ -447,6 +448,9 @@ export default function BriefV2({
           </div>
         </Card>
       )}
+
+      {/* 3b · INSIGHT CARDS — real data only, empty cards omit themselves */}
+      <InsightCards userId={user?.id ?? null} onSwitchTab={onSwitchTab} />
 
       {/* 4 · STAT STRIP */}
       <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fit, minmax(150px, 1fr))`, gap: 12 }}>
