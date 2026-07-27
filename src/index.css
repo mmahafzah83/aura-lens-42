@@ -980,19 +980,19 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
      --action  #D6A748 → 40 63% 56% */
 .publish-page,
 .story-page {
-  --card:      41 33% 87%;
-  --popover:   41 33% 87%;
-  --muted:     41 33% 87%;
-  --secondary: 41 33% 87%;
-  --input:     41 26% 78%;
-  --border:    41 26% 78%;
-  --ring:      40 63% 56%;
-  --background:            41 33% 91%;
-  --foreground:            20 14% 9%;
-  --card-foreground:       20 14% 9%;
-  --popover-foreground:    20 14% 9%;
-  --secondary-foreground:  20 14% 9%;
-  --muted-foreground:      25 8% 50%;
+  --card:      0 0% 100%;
+  --popover:   0 0% 100%;
+  --muted:     214 33% 95%;
+  --secondary: 214 33% 95%;
+  --input:     213 26% 91%;
+  --border:    213 26% 91%;
+  --ring:      207 94% 40%;
+  --background:            210 33% 96%;
+  --foreground:            203 24% 8%;
+  --card-foreground:       203 24% 8%;
+  --popover-foreground:    203 24% 8%;
+  --secondary-foreground:  203 24% 8%;
+  --muted-foreground:      213 10% 40%;
 }
 
 
@@ -1345,7 +1345,6 @@ aside .aura-theme-toggle {
   --brand-glow:       var(--action);
   --brand-line:       var(--bronze-line);
   --brand-ghost:      var(--bronze-mist);
-  --surface-page:     var(--paper);
   --surface:          #FFFFFF;
   --surface-subtle:   #F3F0EB;
   --surface-ink:      #0E0D0C;
