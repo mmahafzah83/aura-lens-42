@@ -169,20 +169,21 @@ html *:not(canvas):not(video):not(iframe) {
   --vellum: var(--paper-2); --vellum-2: var(--paper-3);
   --ink-4: var(--ink-3); --ink-5: var(--ink-3);
 
-  /* bronze/brand/gold → action (amber, the user's lever) */
-  --bronze: var(--action);
+  /* bronze/brand/gold → spot (blue, the action colour).
+     Amber (--action) is DEADLINE-only and must never be brand/primary. */
+  --bronze: var(--spot);
   --bronze-deep: var(--spot);
-  --bronze-glow: var(--action);
+  --bronze-glow: var(--spot);
   --bronze-pale: var(--paper-2);
   --bronze-mist: var(--paper-3);
   --bronze-line: var(--rule);
   --bronze-text: var(--spot);
-  --brand: var(--action);
+  --brand: var(--spot);
   --brand-surface: var(--paper-2);
   --brand-line: var(--rule);
-  --gold-light: var(--action);
+  --gold-light: var(--spot);
   --gold-dark:  var(--spot);
-  --gold-glow:  var(--action);
+  --gold-glow:  var(--spot);
   --gold-pale:  var(--paper-2);
 
   /* signal/orange → live (teal, real-time only) */
@@ -209,18 +210,18 @@ html *:not(canvas):not(video):not(iframe) {
   --error:   var(--neg);
   --error-pale: rgba(217,138,130,0.12);
   --danger-pale: var(--error-pale);
-  --warning: var(--action);
+  --warning: var(--a-500);
   --info:    var(--glass-3);
   --info-pale: rgba(138,151,166,0.12);
   --color-info-text: var(--info);
-  --color-text-warning: var(--action);
+  --color-text-warning: var(--a-700);
   --color-border-tertiary: var(--rule);
 
   --semantic-success: var(--pos);
   --semantic-success-light: rgba(111,191,142,0.12);
   --semantic-danger: var(--neg);
   --semantic-danger-light: rgba(217,138,130,0.12);
-  --semantic-warning: var(--action);
+  --semantic-warning: var(--a-500);
   --semantic-warning-light: rgba(214,167,72,0.12);
   --semantic-info: var(--glass-3);
   --semantic-info-light: rgba(138,151,166,0.12);
@@ -238,7 +239,7 @@ html *:not(canvas):not(video):not(iframe) {
   --color-text-primary: var(--ink);
   --color-text-secondary: var(--ink-2);
   --color-text-muted: var(--ink-3);
-  --color-accent: var(--action);
+  --color-accent: var(--spot);
   --color-accent-hover: var(--spot);
   --color-accent-muted: var(--rule);
   --color-accent-border: var(--rule);
@@ -1279,14 +1280,14 @@ aside .aura-theme-toggle {
   line-height: 1.2;
   white-space: nowrap;
 }
-.aura-badge-high       { background: #FDECEA; color: #B83025; }
-.aura-badge-medium     { background: #FEF3C7; color: #92400E; }
-.aura-badge-good       { background: #FEF0E6; color: #C05A10; }
-.aura-badge-perfect    { background: #EAF4EB; color: #2E7D38; }
-.aura-badge-trusted    { background: #EAF4EB; color: #2E7D38; }
-.aura-badge-act-now    { background: #0E0D0C; color: #ffffff; }
-.aura-badge-emerging   { background: #EEF2FF; color: #3730A3; }
-.aura-badge-recommended{ background: #FEF0E6; color: #C05A10; }
+.aura-badge-high       { background: var(--r-50);  color: var(--r-600); }
+.aura-badge-medium     { background: var(--a-50);  color: var(--a-700); }
+.aura-badge-good       { background: var(--a-50);  color: var(--a-700); }
+.aura-badge-perfect    { background: var(--g-50);  color: var(--g-600); }
+.aura-badge-trusted    { background: var(--g-50);  color: var(--g-600); }
+.aura-badge-act-now    { background: var(--n-900); color: var(--n-0); }
+.aura-badge-emerging   { background: var(--b-50);  color: var(--b-800); }
+.aura-badge-recommended{ background: var(--a-50);  color: var(--a-700); }
 
 /* ─ Card border-radius normalization ─
    Bumps any tiny radii (≤4px) on .glass-card / inline #fff cards up
@@ -1494,15 +1495,15 @@ html.dark .text-gray-500,
   border-radius: 4px;
   font-family: var(--font-body);
 }
-.badge-high      { background: #FDECEA; color: #B83025; }
-.badge-medium    { background: #FEF3C7; color: #92400E; }
-.badge-good      { background: #FEF0E6; color: #C05A10; }
-.badge-perfect   { background: #EAF4EB; color: #2E7D38; }
-.badge-trusted   { background: #EAF4EB; color: #2E7D38; }
-.badge-act-now   { background: #0E0D0C; color: #FFFFFF; }
-.badge-emerging  { background: #EEF2FF; color: #3730A3; }
-.badge-capture   { background: #EEF2FF; color: #3730A3; }
-.badge-publish   { background: #FEF0E6; color: #C05A10; }
+.badge-high      { background: var(--r-50);  color: var(--r-600); }
+.badge-medium    { background: var(--a-50);  color: var(--a-700); }
+.badge-good      { background: var(--a-50);  color: var(--a-700); }
+.badge-perfect   { background: var(--g-50);  color: var(--g-600); }
+.badge-trusted   { background: var(--g-50);  color: var(--g-600); }
+.badge-act-now   { background: var(--n-900); color: var(--n-0); }
+.badge-emerging  { background: var(--b-50);  color: var(--b-800); }
+.badge-capture   { background: var(--b-50);  color: var(--b-800); }
+.badge-publish   { background: var(--a-50);  color: var(--a-700); }
 
 /* Card primitives — opt-in. Note: `.card` is intentionally generic; only
    elements that explicitly add this class will be affected. */
