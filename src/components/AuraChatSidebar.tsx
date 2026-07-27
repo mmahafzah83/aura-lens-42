@@ -496,7 +496,7 @@ const QUICK_ACTIONS = [
 ];
 
 const LINKED_TYPE_COLORS: Record<string, string> = {
-  signal: "text-[color:var(--warning)] bg-[color-mix(in_srgb,var(--warning)_10%,transparent)] border-[color-mix(in_srgb,var(--warning)_20%,transparent)]",
+  signal: "text-[color:var(--warning-text)] bg-[color-mix(in_srgb,var(--warning)_10%,transparent)] border-[color-mix(in_srgb,var(--warning)_20%,transparent)]",
   insight: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20",
   framework: "text-[color:var(--info)] bg-[color-mix(in_srgb,var(--info)_10%,transparent)] border-[color-mix(in_srgb,var(--info)_20%,transparent)]",
   content: "text-purple-400 bg-purple-400/10 border-purple-400/20",

@@ -52,7 +52,7 @@ const FILTER_LABELS: { key: FilterKey; label: string; typeMatch?: string }[] = [
 const TYPE_BADGES: Record<string, { label: string; color: string }> = {
   link: { label: "URL", color: "#5b8def" },
   image: { label: "IMAGE", color: "var(--success)" },
-  text: { label: "NOTE", color: "var(--warning)" },
+  text: { label: "NOTE", color: "var(--warning-text)" },
   voice: { label: "VOICE", color: "var(--brand)" },
   document: { label: "DOC", color: "#7F77DD" },
 };
@@ -951,8 +951,8 @@ const SourcesSubTab = ({
                       {isProcessing ? (
                         <div style={{ margin: "0 0 6px" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: "var(--warning)" }} />
-                            <p style={{ color: "var(--warning)", fontSize: 12, lineHeight: 1.5, margin: 0, fontWeight: 500 }}>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: "var(--warning-text)" }} />
+                            <p style={{ color: "var(--warning-text)", fontSize: 12, lineHeight: 1.5, margin: 0, fontWeight: 500 }}>
                               {retryingIds.has(entry.id)
                                 ? "Retrying…"
                                 : docStatus === "pending"

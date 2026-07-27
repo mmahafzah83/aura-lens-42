@@ -693,7 +693,7 @@ const Dashboard = () => {
     return () => { cancelled = true; };
   }, [userId]);
 
-  const darkSurface = activeTab === "intelligence" || activeTab === "influence";
+  const darkSurface = true; // System-B: the navigation rail is always night
 
   return (
     <div
@@ -708,12 +708,12 @@ const Dashboard = () => {
       {/* ── Desktop Sidebar ── */}
       {activeTab !== "home" && (
         <aside
-          data-surface={(activeTab === "intelligence" || activeTab === "influence") ? "dark" : "bone"}
+          data-surface="dark"
           className={`aura-sidebar-shell hidden md:flex flex-col fixed top-0 left-0 h-full z-30 backdrop-blur-xl transition-all duration-300 ${
             sidebarCollapsed ? "w-[68px]" : "w-[220px]"
           }`}
           style={{
-            background: (activeTab === "intelligence" || activeTab === "influence") ? "var(--aura-card)" : "var(--paper)",
+            background: "var(--aura-card)",
             transition: "background-color .25s ease, color .25s ease",
           }}
         >
@@ -831,7 +831,7 @@ const Dashboard = () => {
               onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
             >
               <Paperclip className="w-4.5 h-4.5 shrink-0 group-hover:scale-110 transition-transform" />
-              {!sidebarCollapsed && <span className="text-sm font-medium" style={{ color: "var(--action-ink)" }}>Capture</span>}
+              {!sidebarCollapsed && <span className="text-sm font-medium" style={{ color: "var(--deadline-text-on-dark)" }}>Capture</span>}
             </button>
 
             <button
@@ -869,7 +869,7 @@ const Dashboard = () => {
             onClick={() => setMobileSidebarOpen(false)}
           />
           <aside
-            data-surface={(activeTab === "intelligence" || activeTab === "influence") ? "dark" : "bone"}
+            data-surface="dark"
             className="aura-sidebar-shell absolute left-0 top-0 h-full w-[260px] flex flex-col animate-slide-in-right"
             style={{
               animationName: 'slideInLeft',

@@ -89,7 +89,7 @@ const Card = ({ item, onCapture, onDraft, captured }: {
           fontSize: 12, lineHeight: 1.5,
         }}>
           {parsed.signal && (<>
-            <div style={{ fontWeight: 500, color: "var(--warning)" }}>SIGNAL</div>
+            <div style={{ fontWeight: 500, color: "var(--warning-text)" }}>SIGNAL</div>
             <div style={{ color: "hsl(var(--muted-foreground))" }}>{parsed.signal}</div>
           </>)}
           {parsed.action && (<>

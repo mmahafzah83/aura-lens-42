@@ -2105,7 +2105,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                 <div className="relative">
                   {gateBlocked && output.trim() && !isGeneratingAny && (
                     <div className="mb-3 rounded-xl border border-[color:var(--warning)]/40 bg-[color-mix(in_srgb,var(--warning)_8%,transparent)] p-4 space-y-2">
-                      <p className="text-xs uppercase tracking-[0.14em] font-semibold text-[color:var(--warning)]">
+                      <p className="text-xs uppercase tracking-[0.14em] font-semibold text-[color:var(--warning-text)]">
                         Held by the quality gate
                       </p>
                       <p className="text-xs text-muted-foreground leading-relaxed">
@@ -2122,7 +2122,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                         size="sm"
                         variant="outline"
                         disabled={isGeneratingAny || !!actionLoading}
-                        className="h-7 text-xs border-[color:var(--warning)]/40 text-[color:var(--warning)]"
+                        className="h-7 text-xs border-[color:var(--warning)]/40 text-[color:var(--warning-text)]"
                         onClick={() => generate()}
                       >
                         Regenerate
@@ -2252,7 +2252,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                               Publish confidence
                               <InfoTooltip slug="publish-confidence" label="Publish confidence" side="top" triggerSize={13} className="ml-1.5 align-middle" />
                             </span>
-                            <span className={`text-xs font-semibold tabular-nums ${gate!.overall_score >= 70 ? "text-[color:var(--warning)]" : "text-muted-foreground"}`}>
+                            <span className={`text-xs font-semibold tabular-nums ${gate!.overall_score >= 70 ? "text-[color:var(--warning-text)]" : "text-muted-foreground"}`}>
                               {gate!.overall_score}%
                             </span>
                           </div>
@@ -2276,7 +2276,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                                       style={{ width: `${pct}%` }}
                                     />
                                   </div>
-                                  <span className={`text-xs tabular-nums w-8 text-right ${d.raw >= 7 ? "text-[color:var(--warning)]" : "text-muted-foreground/60"}`}>{pct}%</span>
+                                  <span className={`text-xs tabular-nums w-8 text-right ${d.raw >= 7 ? "text-[color:var(--warning-text)]" : "text-muted-foreground/60"}`}>{pct}%</span>
                                 </div>
                               );
                             })}
@@ -2286,7 +2286,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                               size="sm"
                               variant="outline"
                               disabled={isGeneratingAny || !!actionLoading}
-                              className="h-8 w-full text-xs gap-1.5 border-[color:var(--warning)]/40 text-[color:var(--warning)] hover:bg-[color-mix(in_srgb,var(--warning)_10%,transparent)]"
+                              className="h-8 w-full text-xs gap-1.5 border-[color:var(--warning)]/40 text-[color:var(--warning-text)] hover:bg-[color-mix(in_srgb,var(--warning)_10%,transparent)]"
                               onClick={async () => {
                                 const weak = (gate!.weaknesses || []).filter(Boolean);
                                 const instruction = weak.length
@@ -2310,7 +2310,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                             </Button>
                             <InfoTooltip slug="strengthen-post" label="Strengthen" side="top" triggerSize={13} className="ml-1.5 align-middle" /></>
                           ) : (
-                            <div className="text-xs text-[color:var(--warning)]">
+                            <div className="text-xs text-[color:var(--warning-text)]">
                               Ready to publish — quality threshold met.
                             </div>
                           )}
@@ -2847,8 +2847,8 @@ interface SavedPost {
 }
 
 const FORMAT_BADGE: Record<string, { label: string; cls: string }> = {
-  post: { label: "Post", cls: "bg-[color-mix(in_srgb,var(--warning)_15%,transparent)] text-[color:var(--warning)] border-[color-mix(in_srgb,var(--warning)_20%,transparent)]" },
-  linkedin_post: { label: "Post", cls: "bg-[color-mix(in_srgb,var(--warning)_15%,transparent)] text-[color:var(--warning)] border-[color-mix(in_srgb,var(--warning)_20%,transparent)]" },
+  post: { label: "Post", cls: "bg-[color-mix(in_srgb,var(--warning)_15%,transparent)] text-[color:var(--warning-text)] border-[color-mix(in_srgb,var(--warning)_20%,transparent)]" },
+  linkedin_post: { label: "Post", cls: "bg-[color-mix(in_srgb,var(--warning)_15%,transparent)] text-[color:var(--warning-text)] border-[color-mix(in_srgb,var(--warning)_20%,transparent)]" },
   post_short: { label: "Short", cls: "bg-[color:var(--bronze-pale)] text-[color:var(--bronze-text)] border-[color:var(--bronze-line)]" },
   carousel: { label: "Carousel", cls: "bg-[color-mix(in_srgb,var(--info)_15%,transparent)] text-[color:var(--info)] border-[color-mix(in_srgb,var(--info)_20%,transparent)]" },
   framework: { label: "Framework", cls: "bg-[color:var(--bronze-pale)] text-[color:var(--bronze-text)] border-[color:var(--bronze-line)]" },
@@ -2956,7 +2956,7 @@ const LibraryCard = ({
           </span>
           <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${
             isDraft
-              ? "bg-[color-mix(in_srgb,var(--warning)_15%,transparent)] text-[color:var(--warning)] border-[color-mix(in_srgb,var(--warning)_20%,transparent)]"
+              ? "bg-[color-mix(in_srgb,var(--warning)_15%,transparent)] text-[color:var(--warning-text)] border-[color-mix(in_srgb,var(--warning)_20%,transparent)]"
               : "bg-emerald-500/15 text-emerald-400 border-emerald-500/20"
           }`}>
             {isDraft ? "Draft" : "Published"}
@@ -4231,7 +4231,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
                       <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 6px", borderRadius: 999, backgroundColor: "var(--paper-2)", color: "var(--ink-3)", textTransform: "uppercase" }}>
                         {lang === "ar" ? "AR" : "EN"}
                       </span>
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 6px", borderRadius: 999, backgroundColor: "var(--paper-2)", color: "var(--warning)" }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 6px", borderRadius: 999, backgroundColor: "var(--paper-2)", color: "var(--warning-text)" }}>
                         Draft
                       </span>
                       <span style={{ fontSize: 11, color: "var(--ink-3)" }}>
@@ -4378,7 +4378,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
                         >Not yet</button>
                       </div>
                       {confirmPubUrlError ? (
-                        <span style={{ fontSize: 12, color: "var(--warning)" }}>{confirmPubUrlError}</span>
+                        <span style={{ fontSize: 12, color: "var(--warning-text)" }}>{confirmPubUrlError}</span>
                       ) : (
                         <span style={{ fontSize: 12, color: "var(--ink-3)" }}>
                           Optional — paste the post's link so Aura can track how it performs and learn from it.

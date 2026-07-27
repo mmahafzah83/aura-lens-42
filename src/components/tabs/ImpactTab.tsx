@@ -846,7 +846,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const daysColor = daysSinceLastAll === null
     ? "var(--color-text-muted)"
     : daysSinceLastAll === 0 ? "var(--success)"
-      : daysSinceLastAll <= 3 ? "var(--warning)"
+      : daysSinceLastAll <= 3 ? "var(--warning-text)"
         : "var(--error)";
 
   /* (score chart removed — only sub-score cards remain) */
@@ -2423,7 +2423,7 @@ const PeriodComparison = ({ change, selectedDays, growthContext = false }: { cha
       {isFlat ? (
         <span style={{ color: "var(--color-text-secondary)" }}>● 0%</span>
       ) : (
-        <span style={{ color: isUp ? "var(--success)" : (slowerPace ? "var(--warning)" : "var(--error)"), fontWeight: 600 }}>
+        <span style={{ color: isUp ? "var(--success)" : (slowerPace ? "var(--warning-text)" : "var(--error)"), fontWeight: 600 }}>
           {(() => {
             const abs = Math.abs(change);
             if (abs > 200) {

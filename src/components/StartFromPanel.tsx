@@ -378,7 +378,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                   onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderLeftColor = "transparent"; }}
                 >
                   {isConfirm ? (
-                    <p style={{ fontSize: 12, color: "var(--warning)", fontWeight: 600 }}>
+                    <p style={{ fontSize: 12, color: "var(--warning-text)", fontWeight: 600 }}>
                       Replace current draft? Click again to confirm.
                     </p>
                   ) : (
@@ -420,7 +420,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                           </span>
                         )}
                         {item.velocityStatus === "fading" && (
-                          <span style={{ fontSize: 12, color: "var(--warning)", fontWeight: 600 }}>↓ Fading</span>
+                          <span style={{ fontSize: 12, color: "var(--warning-text)", fontWeight: 600 }}>↓ Fading</span>
                         )}
                         {item.velocityStatus === "accelerating" && (
                           <span style={{ fontSize: 12, color: "hsl(140 60% 40%)", fontWeight: 600 }}>↑ Gaining</span>

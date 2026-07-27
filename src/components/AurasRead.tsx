@@ -25,7 +25,7 @@ const urgencyStyle = (u: AuraItem["urgency"]): { bg: string; color: string } => 
   switch (u) {
     case "HIGH":   return { bg: "var(--error-pale)", color: "var(--error)" };
     case "MEDIUM":
-    default:       return { bg: "var(--warning-pale)", color: "var(--warning)" };
+    default:       return { bg: "var(--warning-pale)", color: "var(--warning-text)" };
   }
 };
 

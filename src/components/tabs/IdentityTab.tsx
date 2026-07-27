@@ -931,7 +931,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   padding: "2px 8px",
                   borderRadius: 10,
                   background: radarInputs.voiceTrained ? "rgba(46, 125, 50, 0.12)" : "var(--brand-pale, rgba(176,141,58,0.12))",
-                  color: radarInputs.voiceTrained ? "var(--success, #2e7d32)" : "var(--warning, var(--brand))",
+                  color: radarInputs.voiceTrained ? "var(--success)" : "var(--text-muted)",
                 }}
               >
                 {radarInputs.voiceTrained ? "Trained" : "Not yet"}
@@ -987,7 +987,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   borderRadius: 8,
                   fontWeight: isStrong ? 500 : 400,
                   background: isStrong ? "var(--brand-pale, rgba(176,141,58,0.12))" : "var(--vellum, var(--paper-2))",
-                  color: isStrong ? "var(--warning, var(--brand))" : "var(--ink)",
+                  color: isStrong ? "var(--ink)" : "var(--ink)",
                   border: isStrong ? "0.5px solid transparent" : "0.5px solid var(--brand-line, rgba(0,0,0,0.1))",
                 }}>
                   {t.theme}
@@ -1055,11 +1055,11 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             <div style={{ position: "relative", paddingBottom: 18 }}>
               <span style={{
                 position: "absolute", left: -30, top: 0, width: 14, height: 14, borderRadius: "50%",
-                background: "var(--warning, var(--brand))", display: "flex", alignItems: "center", justifyContent: "center",
+                background: "var(--spot)", display: "flex", alignItems: "center", justifyContent: "center",
               }}>
                 <Star className="w-2 h-2" style={{ color: "var(--paper)" }} fill="currentColor" />
               </span>
-              <div style={{ fontFamily: "var(--font-mono, ui-monospace, monospace)", fontSize: 11, fontWeight: 500, color: "var(--action)", letterSpacing: "0.08em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+              <div style={{ fontFamily: "var(--font-mono, ui-monospace, monospace)", fontSize: 11, fontWeight: 500, color: "var(--spot)", letterSpacing: "0.08em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                 <span>
                   NOW{imprintTier?.name ? ` — ${imprintTier.name.toUpperCase()}` : ""}{imprintScore != null ? ` · SCORE ${imprintScore}` : ""}
                 </span>
@@ -1100,9 +1100,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               <div style={{ position: "relative", paddingBottom: 16 }}>
                 <span style={{
                   position: "absolute", left: -30, top: 0, width: 14, height: 14, borderRadius: "50%",
-                  background: "var(--aura-card)", border: "2px dashed var(--warning, var(--brand))",
+                  background: "var(--aura-card)", border: "2px dashed var(--spot)",
                 }} />
-                <div style={{ fontSize: 12, fontWeight: 500, color: "var(--warning, var(--brand))" }}>
+                <div style={{ fontSize: 12, fontWeight: 500, color: "var(--spot)" }}>
                   Next: {derived.next.label}
                 </div>
                 {derived.next.detail && (
@@ -1115,7 +1115,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                     onClick={() => handleDerivedAction(derived.next)}
                     style={{
                       marginTop: 8, padding: "6px 12px", borderRadius: 8,
-                      background: "var(--warning, var(--brand))", color: "var(--ink-on-brand, #fff)",
+                      background: "var(--spot)", color: "var(--text-inverse)",
                       border: 0, fontSize: 12, fontWeight: 500, cursor: "pointer",
                     }}
                   >
@@ -1193,7 +1193,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                     <span style={{
                       width: 16, height: 16, borderRadius: "50%",
-                      background: isDone ? "var(--success, #2e7d32)" : isCurrent ? "var(--warning, var(--brand))" : "transparent",
+                      background: isDone ? "var(--success)" : isCurrent ? "var(--spot)" : "transparent",
                       border: !isDone && !isCurrent ? "1.5px solid var(--ink-5)" : "none",
                       display: "flex", alignItems: "center", justifyContent: "center",
                     }}>
@@ -1201,7 +1201,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                     </span>
                     <span style={{
                       fontSize: 9, marginTop: 6,
-                      color: isCurrent ? "var(--warning, var(--brand))" : "var(--ink-5)",
+                      color: isCurrent ? "var(--spot)" : "var(--ink-5)",
                       fontWeight: isCurrent ? 600 : 400, textTransform: "uppercase", letterSpacing: "0.04em",
                     }}>
                       {n.label}
@@ -1212,7 +1212,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 const barColor = (() => {
                   if (!next) return "transparent";
                   if (isDone && next.state === "done") return "var(--success, #2e7d32)";
-                  if (isDone && next.state === "current") return "var(--warning, var(--brand))";
+                  if (isDone && next.state === "current") return "var(--spot)";
                   return "var(--brand-line, rgba(0,0,0,0.12))";
                 })();
                 return (

@@ -26,7 +26,7 @@ const TYPE_ICONS: Record<string, typeof Bell> = {
 };
 
 const TYPE_COLORS: Record<string, string> = {
-  opportunity: "text-[color:var(--warning)]",
+  opportunity: "text-[color:var(--warning-text)]",
   insight_ready: "text-[color:var(--info)]",
   pattern: "text-emerald-400",
   momentum: "text-[#B08D3A]",
