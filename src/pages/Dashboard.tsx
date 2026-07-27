@@ -831,7 +831,7 @@ const Dashboard = () => {
               onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
             >
               <Paperclip className="w-4.5 h-4.5 shrink-0 group-hover:scale-110 transition-transform" />
-              {!sidebarCollapsed && <span className="text-sm font-medium" style={{ color: "var(--action-ink)" }}>Capture</span>}
+              {!sidebarCollapsed && <span className="text-sm font-medium" style={{ color: "var(--deadline-text-on-dark)" }}>Capture</span>}
             </button>
 
             <button
