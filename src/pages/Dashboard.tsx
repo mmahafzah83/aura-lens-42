@@ -965,101 +965,10 @@ const Dashboard = () => {
                 />
                 <FirstVisitHint page="home" />
                 <IdentityDriftBanner />
-                {/* Brief masthead — logo + wordmark + kicker on the left,
-                    nav + divider + Capture / Ask Aura actions on the right. */}
-                <div className="flex justify-between items-center overflow-x-auto" style={{ marginBottom: 10 }}>
-                  <div className="flex items-center" style={{ gap: 12 }}>
-                    <AuraLogo size={30} variant="light" />
-                    <span style={{
-                      fontFamily: "var(--font-serif)", fontSize: 24, fontWeight: 500,
-                      color: "var(--ink)", lineHeight: 1,
-                    }}>Aura</span>
-                    <span
-                      className="hidden sm:inline"
-                      style={{
-                        fontFamily: "var(--font-mono)", fontSize: 10,
-                        letterSpacing: "0.18em", textTransform: "uppercase",
-                        color: "var(--ink-3)",
-                      }}
-                    >
-                      Personal Strategic Intelligence
-                    </span>
-                  </div>
-                  <div className="hidden md:flex items-center" style={{ gap: 16 }}>
-                    <div className="flex items-center" style={{ gap: 16, borderBottom: "1px solid var(--rule)" }}>
-                    {NAV_ITEMS.map((item) => {
-                      const isActive = activeTab === item.value;
-                      return (
-                        <button
-                          key={item.value}
-                          type="button"
-                          onClick={() => switchTab(item.value)}
-                          className={`brief-nav-tab whitespace-nowrap${isActive ? " is-active" : ""}`}
-                          style={{
-                            fontFamily: "var(--font-mono)",
-                            fontSize: 11,
-                            letterSpacing: "0.14em",
-                            textTransform: "uppercase",
-                            background: "transparent",
-                            border: 0,
-                            cursor: "pointer",
-                            paddingBottom: 6,
-                            position: "relative",
-                            opacity: isFfDimmed(item.value, isActive) ? 0.45 : 1,
-                          }}
-                          title={isFfDimmed(item.value, isActive) ? "Your first post comes first" : undefined}
-                        >
-                          {item.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <span aria-hidden style={{ width: 1, height: 14, background: "var(--rule)" }} />
-                    <button
-                      type="button"
-                      onClick={() => handleOpenCapture()}
-                      className="brief-masthead-capture whitespace-nowrap"
-                      style={{
-                        fontFamily: "var(--font-mono)", fontSize: 10,
-                        letterSpacing: "0.14em", textTransform: "uppercase",
-                        color: "var(--spot)", border: "1px solid var(--spot)",
-                        padding: "4px 10px", background: "transparent", cursor: "pointer",
-                        transition: "background-color .2s ease, color .2s ease",
-                      }}
-                    >
-                      Capture
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openChat()}
-                      className="brief-masthead-ask whitespace-nowrap"
-                      style={{
-                        fontFamily: "var(--font-mono)", fontSize: 10,
-                        letterSpacing: "0.14em", textTransform: "uppercase",
-                        color: "var(--ink-2)", background: "transparent",
-                        border: 0, padding: "4px 2px", cursor: "pointer",
-                        transition: "color .2s ease",
-                      }}
-                    >
-                      Ask Aura
-                    </button>
-                  </div>
-                </div>
-                <style>{`
-                  .brief-masthead-capture:hover { background: var(--spot); color: var(--paper) !important; }
-                  .brief-masthead-ask:hover { color: var(--ink) !important; }
-                  .brief-nav-tab { color: var(--ink-3); position: relative; padding-bottom: 6px; transition: color .18s ease; }
-                  .brief-nav-tab::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--spot); transform: scaleX(0); transform-origin: center; transition: transform .18s ease; }
-                  .brief-nav-tab:hover { color: var(--ink); }
-                  .brief-nav-tab:hover::after { transform: scaleX(1); }
-                  .brief-nav-tab.is-active { color: var(--ink); }
-                  .brief-nav-tab.is-active::after { transform: scaleX(1); }
-                `}</style>
                 <ErrorBoundary>
-                  <Brief
+                  <BriefV2
                     onOpenCapture={() => handleOpenCapture()}
                     onSwitchTab={(t) => switchTab(t as TabValue)}
-                    onInvite={() => setInviteOpen(true)}
                     onOpenBrandAssessment={() => setBrandAssessmentOpen(true)}
                     onOpenSignal={navigateToSignal}
                     onOpenDraft={(d) => { setDraftPrefill(d); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
