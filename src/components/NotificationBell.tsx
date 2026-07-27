@@ -168,7 +168,22 @@ const NotificationBell = () => {
               <p className="text-xs mt-1" style={{ color: "var(--ink-4)" }}>Aura will notify you when meaningful patterns emerge</p>
             </div>
           ) : (
-            notifications.map((n) => {
+            ([
+              { key: "needs", title: "Needs you", rows: needsYou },
+              { key: "slept", title: "While you slept", rows: whileYouSlept },
+            ] as const).filter((g) => g.rows.length > 0).map((group) => (
+            <div key={group.key}>
+              <div
+                className="px-4 py-2 sticky top-0 z-10"
+                style={{
+                  background: "var(--surface-subtle)",
+                  borderBottom: "1px solid var(--rule-divider)",
+                  fontFamily: "var(--ff-mono)", fontSize: 10, letterSpacing: ".14em",
+                  textTransform: "uppercase",
+                  color: group.key === "needs" ? "var(--deadline-text)" : "var(--machine-text)",
+                }}
+              >{group.title}</div>
+              {group.rows.map((n) => {
               const Icon = TYPE_ICONS[n.type] || Bell;
               const iconColor = TYPE_COLORS[n.type] || "text-[color:var(--ink-3)]";
               const cta = typeof n.metadata?.cta === "string" ? n.metadata.cta : null;
@@ -179,10 +194,10 @@ const NotificationBell = () => {
                   tabIndex={cta ? 0 : undefined}
                   onClick={cta ? () => { setOpen(false); navigate(cta); } : undefined}
                   onKeyDown={cta ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen(false); navigate(cta); } } : undefined}
-                  className={`px-4 py-3 transition-colors ${n.read ? "opacity-60" : ""} ${cta ? "cursor-pointer hover:bg-[color:var(--paper-3)]" : ""}`}
+                  className={`px-4 py-3 transition-colors ${n.read ? "opacity-60" : ""} ${cta ? "cursor-pointer hover:bg-[color:var(--surface-subtle)]" : ""}`}
                   style={{
-                    borderBottom: "1px solid var(--rule)",
-                    background: n.read ? "transparent" : "color-mix(in srgb, var(--action) 8%, transparent)",
+                    borderBottom: "1px solid var(--rule-divider)",
+                    background: n.read ? "transparent" : "color-mix(in srgb, var(--act) 6%, transparent)",
                   }}
                 >
                   <div className="flex items-start gap-3">
@@ -250,7 +265,9 @@ const NotificationBell = () => {
                   </div>
                 </div>
               );
-            })
+              })}
+            </div>
+            ))
           )}
         </div>
       </PopoverContent>
