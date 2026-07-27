@@ -480,7 +480,7 @@ export default function TrendDetail() {
               </div>
             </div>
             <div
-              className="prose prose-sm max-w-none dark:prose-invert"
+              className="prose prose-sm max-w-none"
               style={{
                 fontSize: 14,
                 lineHeight: 1.7,
