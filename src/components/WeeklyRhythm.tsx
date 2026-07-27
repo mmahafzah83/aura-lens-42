@@ -170,7 +170,7 @@ const WeeklyRhythm = ({ userId, data: provided }: Props) => {
             const inRun = prevFilled || nextFilled;
             cls = [
               base,
-              "bg-brand dark:bg-brand/80",
+              "bg-brand",
               inRun
                 ? "shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_2px_10px_rgba(176,141,58,0.45)]"
                 : "shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_1px_6px_rgba(176,141,58,0.30)]",
@@ -179,7 +179,7 @@ const WeeklyRhythm = ({ userId, data: provided }: Props) => {
           } else {
             cls = [
               base,
-              "border border-dashed border-ink-3/30 bg-ink-2/20 dark:bg-transparent dark:border-ink-4/30",
+              "border border-dashed border-ink-3/30 bg-ink-2/20",
               isToday ? "animate-pulse border-brand/40" : "",
             ].join(" ");
           }
