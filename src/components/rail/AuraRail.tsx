@@ -69,7 +69,7 @@ const Tooltip: React.FC<{ title: string; body: string; top: number }> = ({ title
 );
 
 export default function AuraRail({
-  activeTab, onSelect, onOpenAsk, onOpenCapture, onOpenSettings, newSignalCount = 0,
+  activeTab, onSelect, onOpenCapture, onOpenSettings, newSignalCount = 0,
 }: AuraRailProps) {
   const [lastRun, setLastRun] = useState<string | null>(null);
   const [flyout, setFlyout] = useState<RailTab | null>(null);
