@@ -35,12 +35,24 @@ const TYPE_COLORS: Record<string, string> = {
   strategic: "text-primary",
 };
 
+/** Machine-authored types — everything Aura produced without you.
+ *  Anything else, or anything flagged urgent, lands in "Needs you".
+ *  Both buckets come from fields that already exist (type, metadata.urgency). */
+const MACHINE_TYPES = new Set(["insight_ready", "pattern", "momentum", "weekly_summary", "strategic"]);
+
 const NotificationBell = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
 
   const unreadCount = notifications.filter((n) => !n.read).length;
+
+  const needsYou = notifications.filter(
+    (n) => n.metadata?.urgency === "high" || !MACHINE_TYPES.has(n.type),
+  );
+  const whileYouSlept = notifications.filter(
+    (n) => !(n.metadata?.urgency === "high" || !MACHINE_TYPES.has(n.type)),
+  );
 
   const fetchNotifications = async () => {
     const { data } = await (supabase.from("notifications" as any) as any)
