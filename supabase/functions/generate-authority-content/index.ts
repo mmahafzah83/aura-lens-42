@@ -836,76 +836,81 @@ Return ONLY a JSON object matching this exact schema:
         const aiData = await aiResp.json();
         const raw = aiData.choices?.[0]?.message?.content || "{}";
         let parsed: any = {};
-        try {
-          parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-        } catch (err) {
-          // Tolerate code-fence wrapping and truncated JSON
+        // Escape raw control chars that appear inside JSON strings — a common
+        // LLM output defect.
+        const repair = (input: string): string => {
+          let out = "";
+          let inS = false, es = false;
+          for (let i = 0; i < input.length; i++) {
+            const ch = input[i];
+            if (es) { out += ch; es = false; continue; }
+            if (ch === "\\") { out += ch; es = true; continue; }
+            if (ch === '"') { inS = !inS; out += ch; continue; }
+            if (inS) {
+              if (ch === "\n") { out += "\\n"; continue; }
+              if (ch === "\r") { out += "\\r"; continue; }
+              if (ch === "\t") { out += "\\t"; continue; }
+              const code = ch.charCodeAt(0);
+              if (code < 0x20) { out += "\\u" + code.toString(16).padStart(4, "0"); continue; }
+            }
+            out += ch;
+          }
+          return out;
+        };
+        // Scan a candidate prefix and return it closed off (open string/array/
+        // object terminated) so a truncated or malformed tail still parses.
+        const closeOff = (input: string): string => {
+          let inS = false, es = false, dObj = 0, dArr = 0;
+          for (let i = 0; i < input.length; i++) {
+            const c = input[i];
+            if (es) { es = false; continue; }
+            if (c === "\\") { es = true; continue; }
+            if (c === '"') { inS = !inS; continue; }
+            if (inS) continue;
+            if (c === "{") dObj++;
+            else if (c === "}") dObj--;
+            else if (c === "[") dArr++;
+            else if (c === "]") dArr--;
+          }
+          let s = input;
+          if (inS) s += '"';
+          while (dArr-- > 0) s += "]";
+          while (dObj-- > 0) s += "}";
+          return s;
+        };
+        const tryParse = (s: string): any => {
+          try { return JSON.parse(s); } catch { /* ignore */ }
+          try { return JSON.parse(repair(s)); } catch { /* ignore */ }
+          return null;
+        };
+
+        if (raw && typeof raw !== "string") {
+          parsed = raw;
+        } else {
           let cleaned = String(raw).replace(/^```(?:json)?\s*|\s*```$/g, "").trim();
-          try {
-            parsed = JSON.parse(cleaned);
-          } catch {
-            // Extract the largest balanced JSON object prefix; close any open
-            // strings/braces/brackets so a truncated response still parses.
-            const start = cleaned.indexOf("{");
-            if (start >= 0) cleaned = cleaned.slice(start);
-            let inStr = false, esc = false, depthObj = 0, depthArr = 0, lastGood = -1;
-            for (let i = 0; i < cleaned.length; i++) {
-              const c = cleaned[i];
-              if (esc) { esc = false; continue; }
-              if (c === "\\") { esc = true; continue; }
-              if (c === '"') { inStr = !inStr; continue; }
-              if (inStr) continue;
-              if (c === "{") depthObj++;
-              else if (c === "}") { depthObj--; if (depthObj === 0 && depthArr === 0) lastGood = i; }
-              else if (c === "[") depthArr++;
-              else if (c === "]") depthArr--;
+          const start = cleaned.indexOf("{");
+          if (start > 0) cleaned = cleaned.slice(start);
+
+          let result = tryParse(cleaned) ?? tryParse(closeOff(cleaned));
+
+          // Progressive salvage: walk back through property boundaries, drop the
+          // malformed tail, and close the remaining structure. Never throws.
+          if (!result || typeof result !== "object") {
+            let cut = cleaned.length;
+            for (let attempt = 0; attempt < 80 && cut > 1; attempt++) {
+              const comma = cleaned.lastIndexOf(",", cut - 1);
+              if (comma <= 0) break;
+              cut = comma;
+              const candidate = tryParse(closeOff(cleaned.slice(0, cut)));
+              if (candidate && typeof candidate === "object") { result = candidate; break; }
             }
-            // Repair helper: escape raw control chars (newlines/tabs) that
-            // appear inside JSON strings — a common LLM output defect.
-            const repair = (input: string): string => {
-              let out = "";
-              let inS = false, es = false;
-              for (let i = 0; i < input.length; i++) {
-                const ch = input[i];
-                if (es) { out += ch; es = false; continue; }
-                if (ch === "\\") { out += ch; es = true; continue; }
-                if (ch === '"') { inS = !inS; out += ch; continue; }
-                if (inS) {
-                  if (ch === "\n") { out += "\\n"; continue; }
-                  if (ch === "\r") { out += "\\r"; continue; }
-                  if (ch === "\t") { out += "\\t"; continue; }
-                  const code = ch.charCodeAt(0);
-                  if (code < 0x20) { out += "\\u" + code.toString(16).padStart(4, "0"); continue; }
-                }
-                out += ch;
-              }
-              return out;
-            };
-            const tryParse = (s: string) => {
-              try { return JSON.parse(s); } catch { return JSON.parse(repair(s)); }
-            };
-            if (lastGood > 0) {
-              try {
-                parsed = tryParse(cleaned.slice(0, lastGood + 1));
-              } catch {
-                let s = cleaned;
-                if (inStr) s += '"';
-                const lastComma = s.lastIndexOf(",");
-                if (lastComma > 0) s = s.slice(0, lastComma);
-                while (depthArr-- > 0) s += "]";
-                while (depthObj-- > 0) s += "}";
-                parsed = tryParse(s);
-              }
-            } else {
-              // Best-effort: trim to last comma, close open structures
-              let s = cleaned;
-              if (inStr) s += '"';
-              const lastComma = s.lastIndexOf(",");
-              if (lastComma > 0) s = s.slice(0, lastComma);
-              while (depthArr-- > 0) s += "]";
-              while (depthObj-- > 0) s += "}";
-              parsed = tryParse(s);
-            }
+          }
+
+          if (!result || typeof result !== "object") {
+            console.error("extract_card_content: unsalvageable JSON", cleaned.slice(0, 400));
+            parsed = {};
+          } else {
+            parsed = result;
           }
         }
 
