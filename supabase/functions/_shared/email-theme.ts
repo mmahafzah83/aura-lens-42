@@ -9,7 +9,7 @@ export const INK_MUTE = "#8A8073";
 export const RULE = "#D6CDB9";
 export const AMBER = "#D6A748";
 export const OXBLOOD = "#6E2A26";
-export const TEAL = "#36C5B0";
+export const TEAL = "#00CEC9";
 
 export const SERIF = "Georgia, 'Times New Roman', serif";
 export const BODY = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif";
@@ -67,7 +67,7 @@ export function emailFooter(): string {
   return `<tr><td style="border-top:1px solid ${RULE};padding-top:18px;">
     <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
       <td valign="middle" style="padding-right:8px;">${auraMark(16, INK_MUTE)}</td>
-      <td valign="middle" style="font-family:${MONO};font-size:11px;color:${INK_MUTE};">Aura · Turns your expertise into presence · aura-intel.org</td>
+      <td valign="middle" style="font-family:${MONO};font-size:11px;color:${INK_MUTE};">Aura · aura-intel.org</td>
     </tr></table>
   </td></tr>`;
 }
