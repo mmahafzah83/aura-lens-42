@@ -1051,7 +1051,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   --aura-t1: var(--glass);
   --aura-t2: color-mix(in srgb, var(--glass) 78%, transparent);
   --aura-t3: var(--glass-2);
-  --aura-accent: var(--action);
+  --aura-accent: var(--spot);
   --aura-accent2: var(--live);
   --aura-accent3: var(--pos);
   --aura-positive: var(--pos);
@@ -1069,12 +1069,12 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   --color-background-success: color-mix(in srgb, var(--pos) 14%, transparent);
   --color-background-warning: color-mix(in srgb, var(--action) 14%, transparent);
   /* Brand / bronze / parchment legacy → Instrument */
-  --brand: var(--action);
-  --brand-muted: color-mix(in srgb, var(--action) 20%, transparent);
+  --brand: var(--spot);
+  --brand-muted: color-mix(in srgb, var(--spot) 20%, transparent);
   --brand-line: var(--hair);
-  --bronze: var(--action);
+  --bronze: var(--spot);
   --bronze-line: var(--hair);
-  --bronze-soft: color-mix(in srgb, var(--action) 18%, transparent);
+  --bronze-soft: color-mix(in srgb, var(--spot) 18%, transparent);
   --surface-ink-raised: var(--ob-raised);
   --line-1: var(--hair);
   /* Ink scale (parchment) → glass scale (dark) */
