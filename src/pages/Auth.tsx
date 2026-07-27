@@ -591,7 +591,7 @@ const Auth = () => {
                 }}
               >
                 Use the email and password from your invitation. First time?
-                Use <span style={{ color: "var(--action)", fontWeight: 600 }}>Set Password</span> below to create your password.
+                Use <span style={{ color: "var(--deadline-text)", fontWeight: 600 }}>Set Password</span> below to create your password.
               </div>
             )}
             <div>
@@ -660,7 +660,7 @@ const Auth = () => {
                 disabled={resetting}
                 className="hover:underline disabled:opacity-50"
                 style={{
-                  color: "var(--action)",
+                  color: "var(--deadline-text)",
                   fontFamily: "var(--font-body)",
                   fontSize: 14,
                   fontWeight: 600,
@@ -726,19 +726,19 @@ const Auth = () => {
           <div className="space-y-6 text-left">
             <FeatureRow
               delay={300}
-              icon={<Radio className="w-4 h-4" style={{ color: "var(--action)" }} />}
+              icon={<Radio className="w-4 h-4" style={{ color: "var(--deadline-text)" }} />}
               title="Signal intelligence"
               desc="Converts what you read into ranked market signals"
             />
             <FeatureRow
               delay={360}
-              icon={<PenLine className="w-4 h-4" style={{ color: "var(--action)" }} />}
+              icon={<PenLine className="w-4 h-4" style={{ color: "var(--deadline-text)" }} />}
               title="Flash content"
               desc="LinkedIn posts in your voice, English or Arabic, in minutes"
             />
             <FeatureRow
               delay={420}
-              icon={<TrendingUp className="w-4 h-4" style={{ color: "var(--action)" }} />}
+              icon={<TrendingUp className="w-4 h-4" style={{ color: "var(--deadline-text)" }} />}
               title="Imprint"
               desc="Tracks how your visibility compounds over time"
             />
