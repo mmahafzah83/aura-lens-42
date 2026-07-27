@@ -154,9 +154,12 @@ html *:not(canvas):not(video):not(iframe) {
   --action:var(--deadline); --action-ink:var(--deadline-text);
   --spot:var(--act); --spot-2:var(--act-hover);
   --pos:var(--success); --neg:var(--error);
-  --ob-page:#080C11; --ob-bg:var(--n-900); --ob-panel:#161D23; --ob-raised:#1B242C; --ob-field:#10171D;
-  --hair:rgba(255,255,255,.10); --grid:rgba(255,255,255,.06);
-  --glass:#FFFFFF; --glass-2:#A6B0BB; --glass-3:#78848F;
+  /* Instrument surfaces are LIGHT by default. Night is earned: only the
+     nav rail and the machine/Overnight surfaces re-declare these dark. */
+  --ob-page:var(--surface-page); --ob-bg:var(--surface-page); --ob-panel:var(--surface-card);
+  --ob-raised:var(--surface-card); --ob-field:var(--surface-subtle);
+  --hair:var(--border-default); --grid:var(--n-100);
+  --glass:var(--text-primary); --glass-2:var(--text-secondary); --glass-3:var(--text-muted);
   /* Motion */
   --ease: cubic-bezier(0.32, 0.72, 0.35, 1);
   --t-fast: 120ms; --t: 240ms; --t-slow: 480ms;
