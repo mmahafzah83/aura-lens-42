@@ -94,7 +94,7 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
         brand: {
-          DEFAULT: 'var(--action)',
+          DEFAULT: 'var(--brand)',
           hover:   'var(--spot)',
           pale:    'var(--paper-2)',
           muted:   'var(--rule)',

@@ -329,16 +329,16 @@ const OurStory = () => {
             to="/request-access"
             className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full text-sm font-medium"
             style={{
-              background: "var(--action)",
+              background: "var(--act)",
               color: "var(--paper)",
               transition: "all 150ms ease",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = "var(--live)";
-              e.currentTarget.style.color = "var(--ob-bg)";
+              e.currentTarget.style.background = "var(--spot)";
+              e.currentTarget.style.color = "var(--paper)";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = "var(--action)";
+              e.currentTarget.style.background = "var(--act)";
               e.currentTarget.style.color = "var(--paper)";
             }}
           >
