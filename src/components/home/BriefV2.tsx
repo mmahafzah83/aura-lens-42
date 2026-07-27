@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowRight, ChevronRight } from "lucide-react";
+import { ArrowRight, ChevronRight, Link as LinkIcon, Mic, Type as TypeIcon, FileUp, ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import useTierFromImprint from "@/hooks/useTierFromImprint";
 import useJourneyState from "@/hooks/useJourneyState";
 import { trackSignalOpen } from "@/lib/trackSignalOpen";
 import InsightCards from "@/components/home/InsightCards";
+import { ButtonPrimary, ButtonDark, Chip, IconTile, StatCard, Avatar } from "@/components/systemb";
 import type { BriefDraft } from "@/components/Brief";
 
 /**
@@ -18,7 +19,7 @@ import type { BriefDraft } from "@/components/Brief";
  */
 
 interface BriefV2Props {
-  onOpenCapture: () => void;
+  onOpenCapture: (mode?: string) => void;
   onSwitchTab: (tab: string) => void;
   onOpenSignal: (signalId: string) => void;
   onOpenDraft: (draft: BriefDraft) => void;
@@ -56,6 +57,7 @@ interface MoveRow {
 interface OvernightState {
   lastRunAt: string | null;
   headline: string | null;
+  why: string | null;
   source: string | null;
   draft: DraftRow | null;
 }

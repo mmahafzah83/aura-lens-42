@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Compass, Radar, PenLine, BarChart3, User, Settings, Paperclip, X,
+  Compass, Radar, PenLine, BarChart3, Settings, Paperclip, X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import AuraLogo from "@/components/brand/AuraLogo";
