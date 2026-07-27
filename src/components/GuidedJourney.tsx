@@ -47,7 +47,7 @@ const StepCard = ({
   return (
     <div
       style={{
-        border: status === "active" ? "1px solid var(--action)" : "1px solid var(--rule, hsl(var(--border) / 0.6))",
+        border: status === "active" ? "1px solid var(--spot)" : "1px solid var(--rule, hsl(var(--border) / 0.6))",
         background: "hsl(var(--card))",
         borderRadius: 12,
         padding: "20px 22px",
@@ -62,9 +62,9 @@ const StepCard = ({
           style={{
             width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
             display: "flex", alignItems: "center", justifyContent: "center",
-            background: isDone ? "var(--action)" : isLocked ? "transparent" : "var(--glass-2)",
-            border: `1px solid ${isDone ? "var(--action)" : "var(--rule)"}`,
-            color: isDone ? "var(--ink, #1a160f)" : "var(--spot)",
+            background: isDone ? "var(--success)" : isLocked ? "transparent" : "var(--surface-raised)",
+            border: `1px solid `,
+            color: isDone ? "var(--text-inverse)" : "var(--spot)",
             fontWeight: 600, fontSize: 14,
           }}
         >
@@ -111,7 +111,7 @@ const StepCard = ({
               type="button"
               onClick={onUnlock}
               style={{
-                background: "var(--action)", color: "var(--ink, #1a160f)", border: 0,
+                background: "var(--spot)", color: "var(--text-inverse)", border: 0,
                 borderRadius: 8, padding: "10px 18px", fontSize: 14, fontWeight: 600, cursor: "pointer",
                 display: "inline-flex", alignItems: "center", gap: 6,
               }}
@@ -159,7 +159,7 @@ export default function GuidedJourney({ journey, onResetDiagnostic }: Props) {
           You've spent years building expertise. This is where Aura learns what makes you different — so everything it does reflects your knowledge, your voice, your sector.
         </p>
         <div style={{ marginTop: 12, height: 4, background: "var(--rule, rgba(197,165,90,0.15))", borderRadius: 999, overflow: "hidden", maxWidth: 320 }}>
-          <div style={{ width: `${pct}%`, height: "100%", background: "var(--action)", transition: "width 300ms ease" }} />
+          <div style={{ width: `${pct}%`, height: "100%", background: "var(--spot)", transition: "width 300ms ease" }} />
         </div>
         <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 6 }}>
           {completedCount} of 3 complete

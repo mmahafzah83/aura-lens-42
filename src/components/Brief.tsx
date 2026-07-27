@@ -1534,8 +1534,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
             {unread > 0 && <Mono size={10}>{unread} unread</Mono>}
           </div>
           <button type="button" onClick={() => onSwitchTab?.("intelligence")}
-            style={{ background: "transparent", border: 0, cursor: "pointer", padding: 0, color: "var(--action)" }}>
-            <Mono color="var(--action)" size={11}>All signals →</Mono>
+            style={{ background: "transparent", border: 0, cursor: "pointer", padding: 0, XX →</Mono>
           </button>
         </div>
         <p style={{ margin: "0 0 16px 0", fontFamily: "var(--font-serif)", fontStyle: "italic",
@@ -1634,7 +1633,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
                                   if (onOpenSignal) onOpenSignal(s.id);
                                   else onSwitchTab?.("intelligence");
                                 }}
-                                style={{ background: "transparent", border: 0, cursor: "pointer", padding: 0, color: "var(--action)" }}>
+                                style={{ background: "transparent", border: 0, cursor: "pointer", padding: 0, color: "var(--spot)" }}>
                                 <Mono color="var(--action)" size={11}>View in Signals →</Mono>
                               </button>
                             </div>
@@ -1854,7 +1853,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
           )}
           <button type="button" onClick={() => onSwitchTab?.("influence")}
             style={{ background: "transparent", border: 0, padding: 0, cursor: "pointer" }}>
-            <Mono color="var(--action)" size={11}>Open your Analytics →</Mono>
+            <Mono color="var(--spot)" size={11}>Open your Analytics →</Mono>
           </button>
         </aside>
       </section>
