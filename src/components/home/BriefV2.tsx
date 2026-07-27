@@ -146,34 +146,12 @@ const SectionLabel: React.FC<React.PropsWithChildren> = ({ children }) => (
   }}>{children}</div>
 );
 
-const Chip: React.FC<React.PropsWithChildren<{ tone: "machine" | "clock" | "neutral" }>> = ({ tone, children }) => {
-  const map = {
-    machine: { background: "var(--machine-tint)", color: "var(--machine-text)" },
-    clock:   { background: "var(--deadline-tint)", color: "var(--deadline-text)" },
-    neutral: { background: "var(--surface-subtle)", color: "var(--text-secondary)" },
-  } as const;
-  return (
-    <span style={{
-      ...map[tone], borderRadius: 6, padding: "2px 7px", fontSize: 10.5,
-      fontWeight: 600, letterSpacing: ".02em", whiteSpace: "nowrap",
-    }}>{children}</span>
-  );
-};
-
-const PrimaryButton: React.FC<React.PropsWithChildren<{ onClick: () => void }>> = ({ onClick, children }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    style={{
-      background: "var(--v23-btn-bg)", color: "var(--text-inverse)",
-      border: 0, borderRadius: 8, padding: "10px 15px",
-      fontWeight: 600, fontSize: 12.5, fontFamily: "var(--ff-ui)", cursor: "pointer",
-      boxShadow: "var(--v23-btn-inset), var(--v23-btn-shadow)",
-    }}
-    onMouseDown={(e) => { e.currentTarget.style.transform = "translateY(1px)"; }}
-    onMouseUp={(e) => { e.currentTarget.style.transform = "none"; }}
-    onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; }}
-  >{children}</button>
+/** Leading status dot for signal rows — colour law, no text. */
+const StatusDot: React.FC<{ tone: "live" | "clock" | "cooling" }> = ({ tone }) => (
+  <span aria-hidden style={{
+    width: 7, height: 7, borderRadius: 999, flexShrink: 0,
+    background: tone === "live" ? "var(--machine)" : tone === "clock" ? "var(--deadline)" : "var(--border-strong)",
+  }} />
 );
 
 const LinkAction: React.FC<React.PropsWithChildren<{ onClick: () => void }>> = ({ onClick, children }) => (
