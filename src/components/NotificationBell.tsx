@@ -129,7 +129,7 @@ const NotificationBell = () => {
           {unreadCount > 0 && (
             <span
               className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-xs font-bold flex items-center justify-center animate-ring-pulse"
-              style={{ background: "var(--signal)", color: "#fff" }}
+              style={{ background: "var(--act)", color: "var(--text-inverse)" }}
             >
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
