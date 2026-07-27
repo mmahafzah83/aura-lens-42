@@ -713,8 +713,8 @@ const Dashboard = () => {
         onSelect={(t) => switchTab(t as TabValue)}
         onOpenAsk={() => openChat()}
         onOpenCapture={() => handleOpenCapture()}
-        onOpenSettings={() => setPrefsOpen(true)}
-        newSignalCount={newSignalCount}
+        onOpenSettings={() => setPreferencesOpen(true)}
+        newSignalCount={newIntelSignalCount}
       />
 
       {/* ── Mobile Sidebar Overlay ── */}
