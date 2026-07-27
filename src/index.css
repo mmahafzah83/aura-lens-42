@@ -1127,20 +1127,20 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   --surface-ink-subtle: var(--ob-panel);
 
   /* Brand / bronze legacy → Instrument accents */
-  --brand: var(--action);
-  --brand-hover: var(--action);
-  --brand-muted: color-mix(in srgb, var(--action) 20%, transparent);
-  --brand-pale: color-mix(in srgb, var(--action) 10%, transparent);
+  --brand: var(--spot);
+  --brand-hover: var(--spot-2);
+  --brand-muted: color-mix(in srgb, var(--spot) 20%, transparent);
+  --brand-pale: color-mix(in srgb, var(--spot) 10%, transparent);
   --brand-line: var(--hair);
-  --brand-glow: color-mix(in srgb, var(--action) 30%, transparent);
-  --brand-ghost: color-mix(in srgb, var(--action) 8%, transparent);
-  --bronze: var(--action);
-  --bronze-deep: var(--action);
-  --bronze-pale: color-mix(in srgb, var(--action) 10%, transparent);
+  --brand-glow: color-mix(in srgb, var(--spot) 30%, transparent);
+  --brand-ghost: color-mix(in srgb, var(--spot) 8%, transparent);
+  --bronze: var(--spot);
+  --bronze-deep: var(--spot-2);
+  --bronze-pale: color-mix(in srgb, var(--spot) 10%, transparent);
   --bronze-line: var(--hair);
-  --bronze-mist: color-mix(in srgb, var(--action) 6%, transparent);
-  --bronze-soft: color-mix(in srgb, var(--action) 18%, transparent);
-  --bronze-glow: color-mix(in srgb, var(--action) 30%, transparent);
+  --bronze-mist: color-mix(in srgb, var(--spot) 6%, transparent);
+  --bronze-soft: color-mix(in srgb, var(--spot) 18%, transparent);
+  --bronze-glow: color-mix(in srgb, var(--spot) 30%, transparent);
 
   /* Aura legacy → Instrument (safety net for any nested usage) */
   --aura-bg: var(--ob-bg);
@@ -1149,7 +1149,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   --aura-t1: var(--glass);
   --aura-t2: color-mix(in srgb, var(--glass) 78%, transparent);
   --aura-t3: var(--glass-2);
-  --aura-accent: var(--action);
+  --aura-accent: var(--spot);
   --aura-accent2: var(--live);
 
   /* Paper / parchment surfaces → opaque dark panels */
