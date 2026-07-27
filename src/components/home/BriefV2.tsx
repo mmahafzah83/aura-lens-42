@@ -400,7 +400,7 @@ export default function BriefV2({
                 <span style={{
                   width: 16, height: 16, borderRadius: 999, flexShrink: 0,
                   border: s.done ? "none" : "1.5px solid var(--border-strong)",
-                  background: s.done ? "var(--success)" : "transparent",
+                  background: s.done ? "var(--g-600)" : "transparent",
                 }} />
                 <span style={{ flex: 1, fontSize: 14, color: s.done ? "var(--text-secondary)" : "var(--text-primary)" }}>
                   {s.label}
@@ -543,7 +543,7 @@ export default function BriefV2({
                     }}
                   >{s.title}</div>
                   <div style={{ ...MONO, fontSize: 11, color: "var(--text-muted)", marginTop: 3 }}>
-                    {s.captures} captures · {ageLabel(s.createdAt)}{s.strength != null ? ` · ${s.strength}` : ""}
+                    {s.captures} captures · {ageLabel(s.createdAt)}
                   </div>
                 </div>
                 {isFading(s.velocity)
