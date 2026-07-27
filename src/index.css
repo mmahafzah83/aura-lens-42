@@ -1052,7 +1052,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   --aura-card: var(--ob-panel);
   --aura-border: var(--hair);
   --aura-t1: var(--glass);
-  --aura-t2: color-mix(in srgb, var(--glass) 78%, transparent);
+  --aura-t2: var(--on-dark-2);
   --aura-t3: var(--glass-2);
   --aura-accent: var(--spot);
   --aura-accent2: var(--live);
@@ -1150,7 +1150,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   --aura-card: var(--ob-panel);
   --aura-border: var(--hair);
   --aura-t1: var(--glass);
-  --aura-t2: color-mix(in srgb, var(--glass) 78%, transparent);
+  --aura-t2: var(--on-dark-2);
   --aura-t3: var(--glass-2);
   --aura-accent: var(--spot);
   --aura-accent2: var(--live);
@@ -1692,7 +1692,7 @@ html.dark .text-gray-500,
   --aura-card-glass: var(--ob-raised);
   --aura-border: var(--hair);
   --aura-t1: var(--glass);
-  --aura-t2: color-mix(in srgb, var(--glass) 78%, transparent);
+  --aura-t2: var(--on-dark-2);
   --aura-t3: var(--glass-2);
   --aura-accent: var(--action);
   background: var(--ob-bg);
