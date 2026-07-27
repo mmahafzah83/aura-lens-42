@@ -169,20 +169,21 @@ html *:not(canvas):not(video):not(iframe) {
   --vellum: var(--paper-2); --vellum-2: var(--paper-3);
   --ink-4: var(--ink-3); --ink-5: var(--ink-3);
 
-  /* bronze/brand/gold → action (amber, the user's lever) */
-  --bronze: var(--action);
+  /* bronze/brand/gold → spot (blue, the action colour).
+     Amber (--action) is DEADLINE-only and must never be brand/primary. */
+  --bronze: var(--spot);
   --bronze-deep: var(--spot);
-  --bronze-glow: var(--action);
+  --bronze-glow: var(--spot);
   --bronze-pale: var(--paper-2);
   --bronze-mist: var(--paper-3);
   --bronze-line: var(--rule);
   --bronze-text: var(--spot);
-  --brand: var(--action);
+  --brand: var(--spot);
   --brand-surface: var(--paper-2);
   --brand-line: var(--rule);
-  --gold-light: var(--action);
+  --gold-light: var(--spot);
   --gold-dark:  var(--spot);
-  --gold-glow:  var(--action);
+  --gold-glow:  var(--spot);
   --gold-pale:  var(--paper-2);
 
   /* signal/orange → live (teal, real-time only) */
@@ -209,18 +210,18 @@ html *:not(canvas):not(video):not(iframe) {
   --error:   var(--neg);
   --error-pale: rgba(217,138,130,0.12);
   --danger-pale: var(--error-pale);
-  --warning: var(--action);
+  --warning: var(--a-500);
   --info:    var(--glass-3);
   --info-pale: rgba(138,151,166,0.12);
   --color-info-text: var(--info);
-  --color-text-warning: var(--action);
+  --color-text-warning: var(--a-700);
   --color-border-tertiary: var(--rule);
 
   --semantic-success: var(--pos);
   --semantic-success-light: rgba(111,191,142,0.12);
   --semantic-danger: var(--neg);
   --semantic-danger-light: rgba(217,138,130,0.12);
-  --semantic-warning: var(--action);
+  --semantic-warning: var(--a-500);
   --semantic-warning-light: rgba(214,167,72,0.12);
   --semantic-info: var(--glass-3);
   --semantic-info-light: rgba(138,151,166,0.12);
@@ -238,7 +239,7 @@ html *:not(canvas):not(video):not(iframe) {
   --color-text-primary: var(--ink);
   --color-text-secondary: var(--ink-2);
   --color-text-muted: var(--ink-3);
-  --color-accent: var(--action);
+  --color-accent: var(--spot);
   --color-accent-hover: var(--spot);
   --color-accent-muted: var(--rule);
   --color-accent-border: var(--rule);
@@ -956,15 +957,15 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   --vellum-2: var(--paper-3);
   --bg-subtle: var(--paper-2);
   --surface-subtle: var(--paper-2);
-  --bronze: var(--action);
-  --bronze-hover: color-mix(in srgb, var(--action) 88%, black);
-  --bronze-mist: color-mix(in srgb, var(--action) 18%, var(--paper));
-  --bronze-pale: color-mix(in srgb, var(--action) 10%, var(--paper));
+  --bronze: var(--spot);
+  --bronze-hover: color-mix(in srgb, var(--spot) 88%, black);
+  --bronze-mist: color-mix(in srgb, var(--spot) 18%, var(--paper));
+  --bronze-pale: color-mix(in srgb, var(--spot) 10%, var(--paper));
   --bronze-text: var(--ink);
-  --bronze-line: color-mix(in srgb, var(--action) 36%, transparent);
-  --brand: var(--action);
-  --brand-muted: color-mix(in srgb, var(--action) 22%, transparent);
-  --brand-pale: color-mix(in srgb, var(--action) 10%, var(--paper));
+  --bronze-line: color-mix(in srgb, var(--spot) 36%, transparent);
+  --brand: var(--spot);
+  --brand-muted: color-mix(in srgb, var(--spot) 22%, transparent);
+  --brand-pale: color-mix(in srgb, var(--spot) 10%, var(--paper));
 }
 
 /* ── Bone Page shadcn token remap ──
@@ -1279,14 +1280,14 @@ aside .aura-theme-toggle {
   line-height: 1.2;
   white-space: nowrap;
 }
-.aura-badge-high       { background: #FDECEA; color: #B83025; }
-.aura-badge-medium     { background: #FEF3C7; color: #92400E; }
-.aura-badge-good       { background: #FEF0E6; color: #C05A10; }
-.aura-badge-perfect    { background: #EAF4EB; color: #2E7D38; }
-.aura-badge-trusted    { background: #EAF4EB; color: #2E7D38; }
-.aura-badge-act-now    { background: #0E0D0C; color: #ffffff; }
-.aura-badge-emerging   { background: #EEF2FF; color: #3730A3; }
-.aura-badge-recommended{ background: #FEF0E6; color: #C05A10; }
+.aura-badge-high       { background: var(--r-50);  color: var(--r-600); }
+.aura-badge-medium     { background: var(--a-50);  color: var(--a-700); }
+.aura-badge-good       { background: var(--a-50);  color: var(--a-700); }
+.aura-badge-perfect    { background: var(--g-50);  color: var(--g-600); }
+.aura-badge-trusted    { background: var(--g-50);  color: var(--g-600); }
+.aura-badge-act-now    { background: var(--n-900); color: var(--n-0); }
+.aura-badge-emerging   { background: var(--b-50);  color: var(--b-800); }
+.aura-badge-recommended{ background: var(--a-50);  color: var(--a-700); }
 
 /* ─ Card border-radius normalization ─
    Bumps any tiny radii (≤4px) on .glass-card / inline #fff cards up
@@ -1338,32 +1339,32 @@ aside .aura-theme-toggle {
 
 /* ── Aura Design System: Foundation Tokens (ds-0) ── */
 :root {
-  --brand:            var(--action);
+  --brand:            var(--spot);
   --brand-hover:      var(--spot);
   --brand-pale:       var(--bronze-pale);
   --brand-muted:      var(--bronze-line);
-  --brand-glow:       var(--action);
+  --brand-glow:       var(--spot);
   --brand-line:       var(--bronze-line);
   --brand-ghost:      var(--bronze-mist);
-  --surface:          #FFFFFF;
-  --surface-subtle:   #F3F0EB;
-  --surface-ink:      #0E0D0C;
-  --surface-ink-raised: #FFFFFF;
-  --surface-ink-subtle: #F0EAD6;
+  --surface:          var(--surface-card);
+  --surface-subtle:   var(--n-100);
+  --surface-ink:      var(--n-900);
+  --surface-ink-raised: var(--surface-card);
+  --surface-ink-subtle: var(--surface-subtle);
   /* Extended ink scale (ink-6/ink-7) — neutral, theme-agnostic shades.
      NOTE: --ink-2..--ink-5 are intentionally NOT redefined here because
      they are theme-aware tokens defined in :root above.
      Overriding them here breaks dark mode
      contrast (caused invisible nav labels — rgb(28,28,28) on dark bg). */
-  --ink-6:            #9A9690;
-  --ink-7:            #B4B0AA;
-  --border-subtle:    rgba(0,0,0,0.07);
-  --border-strong:    rgba(0,0,0,0.2);
-  --success-pale:     #EAF4EB;
+  --ink-6:            var(--n-400);
+  --ink-7:            var(--n-300);
+  --border-subtle:    var(--n-200);
+  --border-strong:    var(--n-300);
+  --success-pale:     var(--g-50);
   /* --danger removed (Wave-A cleanup #7) — consumers migrated to --error */
-  --error-pale:       #FDECEA;                   /* canonical (A6 GRAMMAR-1 flip) */
+  --error-pale:       var(--r-50);               /* canonical (A6 GRAMMAR-1 flip) */
   --danger-pale:      var(--error-pale);         /* legacy alias — migrate consumers */
-  --warning-pale:     #FEF3C7;
+  --warning-pale:     var(--a-50);
   --shadow-card:      0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
   --shadow-card-hover:0 2px 8px rgba(0,0,0,0.08), 0 12px 32px rgba(0,0,0,0.07);
   --shadow-brand:     var(--shadow-lift);
@@ -1379,20 +1380,24 @@ aside .aura-theme-toggle {
 
   /* DS-2 additions */
   --border:           rgba(0,0,0,0.12);
+  /* OFF-SYSTEM — no Tier-1 equivalent yet */
   --color-indigo:     #4F46E5;
   --color-info-text:  #185FA5;
+  /* OFF-SYSTEM — no Tier-1 equivalent yet */
   --success-dark:     #2a4a2a;
+  /* OFF-SYSTEM — no Tier-1 equivalent yet */
   --success-darkest:  #0a1a0a;
+  /* OFF-SYSTEM — no Tier-1 equivalent yet */
   --success-mid:      #4a8a4a;
   --gold-pale:        color-mix(in srgb, var(--action) 10%, var(--paper));
-  --gold-light:       var(--action);
-  --gold-mid:         var(--action);
+  --gold-light:       var(--spot);
+  --gold-mid:         var(--spot);
   --gold-text:        var(--spot);
-  --gold-dark:        var(--spot);
+  /* --gold-dark declared once at the root alias block (~line 184) → var(--spot) */
   --gold-pale-2:      color-mix(in srgb, var(--action) 8%, var(--paper));
-  --gold-mid-2:       var(--action);
+  --gold-mid-2:       var(--spot);
   --gold-pale-3:      color-mix(in srgb, var(--action) 12%, var(--paper));
-  --gold-mid-3:       var(--action);
+  --gold-mid-3:       var(--spot);
 }
 
 /* Theme-aware surface tokens — dark mode overrides */
@@ -1494,15 +1499,15 @@ html.dark .text-gray-500,
   border-radius: 4px;
   font-family: var(--font-body);
 }
-.badge-high      { background: #FDECEA; color: #B83025; }
-.badge-medium    { background: #FEF3C7; color: #92400E; }
-.badge-good      { background: #FEF0E6; color: #C05A10; }
-.badge-perfect   { background: #EAF4EB; color: #2E7D38; }
-.badge-trusted   { background: #EAF4EB; color: #2E7D38; }
-.badge-act-now   { background: #0E0D0C; color: #FFFFFF; }
-.badge-emerging  { background: #EEF2FF; color: #3730A3; }
-.badge-capture   { background: #EEF2FF; color: #3730A3; }
-.badge-publish   { background: #FEF0E6; color: #C05A10; }
+.badge-high      { background: var(--r-50);  color: var(--r-600); }
+.badge-medium    { background: var(--a-50);  color: var(--a-700); }
+.badge-good      { background: var(--a-50);  color: var(--a-700); }
+.badge-perfect   { background: var(--g-50);  color: var(--g-600); }
+.badge-trusted   { background: var(--g-50);  color: var(--g-600); }
+.badge-act-now   { background: var(--n-900); color: var(--n-0); }
+.badge-emerging  { background: var(--b-50);  color: var(--b-800); }
+.badge-capture   { background: var(--b-50);  color: var(--b-800); }
+.badge-publish   { background: var(--a-50);  color: var(--a-700); }
 
 /* Card primitives — opt-in. Note: `.card` is intentionally generic; only
    elements that explicitly add this class will be affected. */
@@ -2053,4 +2058,15 @@ button[aria-label="Notifications"]:focus-visible {
   --sidebar-primary:207 94% 40%; --sidebar-primary-foreground:0 0% 100%;
   --sidebar-accent:203 20% 14%; --sidebar-accent-foreground:0 0% 100%;
   --sidebar-border:203 18% 18%; --sidebar-ring:207 94% 40%;
+  /* Previously unbridged — were resolving to the retired warm-dark palette */
+  --card-hover:214 33% 95%;
+  --surface-glass:0 0% 100% / 0.7;
+  --influence-bg:210 33% 96%;
+  --influence-surface:0 0% 100%;
+  --influence-accent-gold:41 76% 53%;
+  --influence-accent-blue:207 94% 40%;
 }
+
+/* Hex-valued (not an HSL triple) — kept out of the bridge block above.
+   Declared last so it beats the warm hsl(30 12% 11%) at the top of the file. */
+:root { --aura-card: var(--surface-card); }
