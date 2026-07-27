@@ -1667,6 +1667,11 @@ html.dark .text-gray-500,
 
 /* Dark surface — rebind bone tokens to the instrument palette, mirror .statement-page --aura-* */
 .aura-sidebar-shell[data-surface="dark"] {
+  /* EARNED DARK — the navigation rail. Re-declare the instrument
+     primitives locally because the global family is now light. */
+  --ob-bg:#0F1519; --ob-page:#080C11; --ob-panel:#161D23; --ob-raised:#1B242C; --ob-field:#10171D;
+  --hair:rgba(255,255,255,.10); --grid:rgba(255,255,255,.06);
+  --glass:#FFFFFF; --glass-2:#A6B0BB; --glass-3:#78848F;
   /* parchment → instrument */
   --paper: var(--ob-bg);
   --paper-2: var(--ob-panel);
