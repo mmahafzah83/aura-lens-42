@@ -108,7 +108,7 @@ html *:not(canvas):not(video):not(iframe) {
 :root {
   /* ── TIER 1: primitives (only place a hex may appear) ── */
   --n-0:#FFFFFF; --n-25:#FAFBFC; --n-50:#F2F5F9; --n-100:#EEF2F7;
-  --n-200:#E2E7EE; --n-300:#D6DCE4; --n-350:#98A2AE; --n-400:#697078; --n-500:#5B6673;
+  --n-200:#E2E7EE; --n-300:#D6DCE4; --n-350:#98A2AE; --n-400:#666D75; --n-500:#5B6673;
   --n-700:#3A434E; --n-900:#0F1519;
   --b-50:#E6F2FD; --b-100:#BBDDF7; --b-300:#4FA6EC;
   --b-500:#0984E3; --b-600:#0670C4; --b-800:#04477C;
