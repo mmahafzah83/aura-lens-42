@@ -131,6 +131,21 @@ html *:not(canvas):not(video):not(iframe) {
   --success:var(--g-600); --success-tint:var(--g-50);
   --error:var(--r-600); --error-tint:var(--r-50);
 
+  /* ── TIER 2: TYPOGRAPHY ──
+     'CairoAR' is a restricted-range family (Arabic Unicode ranges only).
+     It MUST stay FIRST so Arabic glyphs resolve to Cairo automatically,
+     while Latin characters fall through untouched to the next family. */
+  --ff-ui:   'CairoAR', Inter, ui-sans-serif, system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --ff-mono: 'CairoAR', 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  --ff-ar:   'CairoAR', 'Cairo', sans-serif;
+  --ff-serif:'CairoAR', 'Newsreader', Georgia, 'Times New Roman', serif;
+
+  --font-body:    var(--ff-ui);
+  --font-display: var(--ff-ui);      /* was Newsreader — now Inter */
+  --font-serif:   var(--ff-serif);   /* reports only */
+  --font-mono:    var(--ff-mono);
+  --font-arabic:  var(--ff-ar);
+
   /* ── TIER 3: System-A back-compat names → semantics ── */
   --paper:var(--surface-page); --paper-2:var(--surface-subtle); --paper-3:var(--n-200);
   --ink:var(--text-primary); --ink-2:var(--text-secondary); --ink-3:var(--text-muted);
@@ -142,15 +157,6 @@ html *:not(canvas):not(video):not(iframe) {
   --ob-page:#080C11; --ob-bg:var(--n-900); --ob-panel:#161D23; --ob-raised:#1B242C; --ob-field:#10171D;
   --hair:rgba(255,255,255,.10); --grid:rgba(255,255,255,.06);
   --glass:#FFFFFF; --glass-2:#A6B0BB; --glass-3:#78848F;
-  /* type */
-  /* 'CairoAR' is a restricted-range family (Arabic Unicode ranges only).
-     It is listed FIRST so Arabic glyphs resolve to Cairo automatically,
-     while Latin characters fall through untouched to Newsreader /
-     ui-sans-serif / IBM Plex Mono. */
-  --font-serif:   'CairoAR', 'Newsreader', Georgia, 'Times New Roman', serif;
-  --font-arabic:  'CairoAR', 'Cairo', sans-serif;
-  --font-mono:    'CairoAR', 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-
   /* Motion */
   --ease: cubic-bezier(0.32, 0.72, 0.35, 1);
   --t-fast: 120ms; --t: 240ms; --t-slow: 480ms;
@@ -353,9 +359,9 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
     letter-spacing: -0.025em;
   }
 
-  h1 { font-size: clamp(24px, 5vw, 34px); font-weight: 600; line-height: 1.2; }
-  h2 { font-size: clamp(20px, 4vw, 24px); font-weight: 600; line-height: 1.3; }
-  h3 { font-size: clamp(16px, 3.5vw, 18px); font-weight: 500; line-height: 1.4; }
+  h1 { font-size: clamp(24px, 5vw, 34px); font-weight: 700; line-height: 1.2; letter-spacing: -0.025em; }
+  h2 { font-size: clamp(20px, 4vw, 24px); font-weight: 600; line-height: 1.3; letter-spacing: -0.02em; }
+  h3 { font-size: clamp(16px, 3.5vw, 18px); font-weight: 600; line-height: 1.4; letter-spacing: -0.015em; }
 
   h4, h5, h6 {
     font-family: var(--font-body);
@@ -1006,7 +1012,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
 .publish-page h2,
 .publish-page h3 { font-family: var(--font-serif), Georgia, serif; }
 .publish-page .pub-micro {
-  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1078,7 +1084,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
 /* Eyebrow / micro labels in IBM Plex Mono on the muted glass tier */
 .statement-page .text-section-header,
 .statement-page .text-ink-4 {
-  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-mono);
   color: var(--glass-2);
 }
 
@@ -1373,11 +1379,6 @@ aside .aura-theme-toggle {
   --radius-lg:  14px;
   --radius-xl:  20px;
   --radius-2xl: 24px;
-  --font-body:    'CairoAR', ui-sans-serif, system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
-  --font-display: 'CairoAR', 'Newsreader', Georgia, serif;
-  --font-arabic:  'CairoAR', 'Cairo', sans-serif;
-  --font-mono:    'CairoAR', 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-
   /* DS-2 additions */
   --border:           rgba(0,0,0,0.12);
   /* OFF-SYSTEM — no Tier-1 equivalent yet */
