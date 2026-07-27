@@ -1,5 +1,4 @@
-html.light { background-color: var(--paper, #F5F0E6); }
-html.dark  { background-color: var(--paper, #14110C); }
+html { background-color: var(--surface-page, #F2F5F9); }
 
 @tailwind base;
 @tailwind components;
@@ -72,7 +71,7 @@ html *:not(canvas):not(video):not(iframe) {
 /* ── Design v2 tokens (warm parchment) ── */
 :root {
   --aura-bg: var(--paper);
-  /* Warm dark card surface — flips to paper under [data-theme="light"] below. */
+  /* Warm dark card surface */
   --aura-card: hsl(30 12% 11%);
   --aura-card-foreground: var(--ink);
   --aura-ink: var(--ink);
@@ -103,29 +102,52 @@ html *:not(canvas):not(video):not(iframe) {
 }
 
 /* ── System-A Aura tokens — single canonical theme ─────────────────────
-   One :root, no [data-theme="light"] override (intentional). Old token
+   One :root, single canonical theme. Old token
    names are kept as aliases that resolve to System-A values, so the 100+
    downstream consumers don't need to change. RTL flips the serif to Cairo. */
 :root {
-  /* page (bone) */
-  --paper: #F1ECE1; --paper-2: #E9E2D3; --paper-3: #E0D8C6;
-  --ink: #1B1712; --ink-2: #5A5147; --ink-3: #8A8073;
-  --rule: #D6CDB9;
-  --spot: #6E2A26; --spot-2: #8B3A33;       /* oxblood */
-  /* instrument (dark) */
-  --ob-page: #080C11; --ob-bg: #0E141B; --ob-panel: #141D27; --ob-raised: #18222E; --ob-field: #0C131B;
-  --hair: #243140; --grid: #1B2531;
-  --glass: #E8EDF3; --glass-2: #8A97A6; --glass-3: #515E6D;
-  /* signals */
-  --live: #36C5B0; --live-ink: #15776A; --action: #D6A748; --action-ink: #8A6A1E; --spot: #6E2A26; --pos: #6FBF8E; --neg: #D98A82;
+  /* ── TIER 1: primitives (only place a hex may appear) ── */
+  --n-0:#FFFFFF; --n-25:#FAFBFC; --n-50:#F2F5F9; --n-100:#EEF2F7;
+  --n-200:#E2E7EE; --n-300:#D6DCE4; --n-400:#98A2AE; --n-500:#5B6673;
+  --n-700:#3A434E; --n-900:#0F1519;
+  --b-50:#E6F2FD; --b-100:#BBDDF7; --b-300:#4FA6EC;
+  --b-500:#0984E3; --b-600:#0670C4; --b-800:#04477C;
+  --c-50:#DFF7F6; --c-500:#00CEC9; --c-700:#00807B;
+  --a-50:#FCF2DC; --a-500:#E0A82E; --a-700:#9A6F12;
+  --g-50:#E4F6EC; --g-600:#12805C;
+  --r-50:#FCEAE6; --r-600:#C0392B;
+
+  /* ── TIER 2: semantic ── */
+  --surface-page:var(--n-50); --surface-card:var(--n-0);
+  --surface-subtle:var(--n-100); --surface-inverse:var(--n-900);
+  --text-primary:var(--n-900); --text-secondary:var(--n-500);
+  --text-muted:var(--n-400); --text-inverse:var(--n-0);
+  --border-default:var(--n-200); --border-strong:var(--n-300);
+  --border-focus:var(--b-600);
+  --primary:var(--b-600); --primary-hover:var(--b-800);
+  --primary-fill:var(--b-500); --primary-tint:var(--b-50);
+  --machine:var(--c-500); --machine-text:var(--c-700); --machine-tint:var(--c-50);
+  --deadline:var(--a-500); --deadline-text:var(--a-700); --deadline-tint:var(--a-50);
+  --success:var(--g-600); --success-tint:var(--g-50);
+  --error:var(--r-600); --error-tint:var(--r-50);
+
+  /* ── TIER 3: System-A back-compat names → semantics ── */
+  --paper:var(--surface-page); --paper-2:var(--surface-subtle); --paper-3:var(--n-200);
+  --ink:var(--text-primary); --ink-2:var(--text-secondary); --ink-3:var(--text-muted);
+  --rule:var(--border-default);
+  --live:var(--machine); --live-ink:var(--machine-text);
+  --action:var(--deadline); --action-ink:var(--deadline-text);
+  --spot:var(--primary); --spot-2:var(--primary-hover);
+  --pos:var(--success); --neg:var(--error);
+  --ob-page:#080C11; --ob-bg:var(--n-900); --ob-panel:#161D23; --ob-raised:#1B242C; --ob-field:#10171D;
+  --hair:rgba(255,255,255,.10); --grid:rgba(255,255,255,.06);
+  --glass:#FFFFFF; --glass-2:#A6B0BB; --glass-3:#78848F;
   /* type */
   /* 'CairoAR' is a restricted-range family (Arabic Unicode ranges only).
      It is listed FIRST so Arabic glyphs resolve to Cairo automatically,
      while Latin characters fall through untouched to Newsreader /
      ui-sans-serif / IBM Plex Mono. */
-  --font-display: 'CairoAR', 'Newsreader', Georgia, 'Times New Roman', serif;
   --font-serif:   'CairoAR', 'Newsreader', Georgia, 'Times New Roman', serif;
-  --font-body:    'CairoAR', ui-sans-serif, system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
   --font-arabic:  'CairoAR', 'Cairo', sans-serif;
   --font-mono:    'CairoAR', 'IBM Plex Mono', ui-monospace, Menlo, monospace;
 
@@ -135,7 +157,7 @@ html *:not(canvas):not(video):not(iframe) {
 
   /* Structure */
   --r-xs: 2px; --r-sm: 4px; --r-md: 8px; --r-lg: 12px; --r-xl: 16px;
-  --line-thin: 0.5px; --line: 1px;
+  --line-thin: 1px; --line: 1px;
   --shadow-flat:   0 1px 0 rgba(8,12,17,0.10);
   --shadow-rest:   0 1px 2px rgba(8,12,17,0.06);
   --shadow-lift:   0 8px 24px -8px rgba(8,12,17,0.18);
@@ -254,11 +276,6 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   border-radius: 4px;
 }
 
-[data-theme="light"] .aura-skeleton {
-  background: linear-gradient(90deg, var(--paper-2) 25%, var(--vellum) 50%, var(--paper-2) 75%);
-  background-size: 200% 100%;
-}
-
 @layer base {
   :root {
     /* Warm dark — maps to --paper #14110C / --ink #FBF8F1 */
@@ -312,54 +329,6 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
     --influence-accent-blue: 207 100% 62%;
   }
 
-  [data-theme="light"] {
-    /* Warm parchment — maps to --paper #FBF8F1 */
-    --background: 42 64% 96%;
-    --foreground: 36 28% 6%;
-
-    --card: 40 50% 99%;
-    --card-foreground: 36 28% 6%;
-
-    --popover: 40 50% 99%;
-    --popover-foreground: 36 28% 6%;
-
-    /* Bronze primary (light mode) */
-    --primary: 40 63% 56%;
-    --primary-foreground: 40 30% 96%;
-
-    --secondary: 42 40% 92%;
-    --secondary-foreground: 36 28% 14%;
-
-    --muted: 42 40% 92%;
-    --muted-foreground: 36 14% 32%;
-
-    --accent: 40 63% 56%;
-    --accent-foreground: 40 30% 96%;
-
-    --destructive: 6 56% 42%;
-    --destructive-foreground: 40 30% 96%;
-
-    --border: 40 28% 84%;
-    --input: 40 28% 84%;
-    --ring: 40 63% 56%;
-
-    --sidebar-background: 40 50% 99%;
-    --sidebar-foreground: 36 14% 32%;
-    --sidebar-primary: 40 63% 56%;
-    --sidebar-primary-foreground: 40 30% 96%;
-    --sidebar-accent: 42 40% 92%;
-    --sidebar-accent-foreground: 36 28% 6%;
-    --sidebar-border: 40 28% 84%;
-    --sidebar-ring: 40 63% 56%;
-
-    --card-hover: 42 40% 92%;
-    --surface-glass: 40 50% 99% / 0.7;
-
-    --influence-bg: 42 64% 96%;
-    --influence-surface: 40 50% 99%;
-    --influence-accent-gold: 40 63% 56%;
-    --influence-accent-blue: 207 100% 50%;
-  }
 }
 
 @layer base {
@@ -407,7 +376,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   input:focus-visible,
   select:focus-visible,
   textarea:focus-visible {
-    outline: 2px solid var(--brand, #D6A748);
+    outline: 2px solid var(--border-focus);
     outline-offset: 2px;
     border-radius: 4px;
   }
@@ -495,7 +464,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
     );
     backdrop-filter: blur(16px) saturate(1.2);
     -webkit-backdrop-filter: blur(16px) saturate(1.2);
-    border: 0.5px solid var(--brand-line);
+    border: 1px solid var(--brand-line);
     border-radius: 16px;
     box-shadow: var(--shadow-rest);
     transition: box-shadow 240ms var(--ease, ease), border-color 240ms var(--ease, ease);
@@ -510,7 +479,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
     background: hsl(0 0% 100% / 0.85);
     backdrop-filter: blur(16px) saturate(1.2);
     -webkit-backdrop-filter: blur(16px) saturate(1.2);
-    border: 0.5px solid var(--brand-line);
+    border: 1px solid var(--brand-line);
     box-shadow: var(--shadow-rest);
   }
 
@@ -527,13 +496,6 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
     box-shadow: 0 2px 4px hsl(0 0% 0% / 0.06),
                 0 12px 40px hsl(0 0% 0% / 0.09),
                 inset 0 1px 0 hsl(0 0% 100% / 0.9);
-  }
-
-  :root {
-    --bg-card: hsl(0 0% 8%);
-    --bg-subtle: hsl(0 0% 15%);
-    --color-muted: hsl(0 0% 60%);
-    --color-border: hsl(0 0% 100% / 0.06);
   }
 
   .light {
@@ -560,8 +522,8 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   }
 
   .gold-glow {
-    box-shadow: 0 0 48px -12px hsl(40 63% 45% / 0.2),
-                0 0 96px -24px hsl(40 63% 45% / 0.08);
+    box-shadow: 0 0 48px -12px color-mix(in srgb, var(--deadline) 20%, transparent),
+                0 0 96px -24px color-mix(in srgb, var(--deadline) 8%, transparent);
   }
 
   .text-gradient-gold {
@@ -572,18 +534,18 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   }
 
   .radar-glow {
-    box-shadow: 0 0 64px -16px hsl(40 63% 45% / 0.12),
+    box-shadow: 0 0 64px -16px color-mix(in srgb, var(--deadline) 12%, transparent),
                 inset 0 1px 0 0 hsl(0 0% 100% / 0.02);
   }
 
   @keyframes aura-pulse {
     0%, 100% {
-      box-shadow: 0 0 24px -4px hsl(40 63% 50% / 0.35),
-                  0 0 64px -8px hsl(40 63% 45% / 0.12);
+      box-shadow: 0 0 24px -4px color-mix(in srgb, var(--deadline) 35%, transparent),
+                  0 0 64px -8px color-mix(in srgb, var(--deadline) 12%, transparent);
     }
     50% {
-      box-shadow: 0 0 36px -2px hsl(40 63% 55% / 0.5),
-                  0 0 96px -6px hsl(40 63% 45% / 0.2);
+      box-shadow: 0 0 36px -2px color-mix(in srgb, var(--deadline) 50%, transparent),
+                  0 0 96px -6px color-mix(in srgb, var(--deadline) 20%, transparent);
     }
   }
 
@@ -593,12 +555,12 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
 
   @keyframes aura-search-pulse {
     0%, 100% {
-      box-shadow: 0 0 16px -4px hsl(40 63% 50% / 0.15),
-                  0 0 40px -8px hsl(40 63% 45% / 0.06);
+      box-shadow: 0 0 16px -4px color-mix(in srgb, var(--deadline) 15%, transparent),
+                  0 0 40px -8px color-mix(in srgb, var(--deadline) 6%, transparent);
     }
     50% {
-      box-shadow: 0 0 24px -2px hsl(40 63% 55% / 0.28),
-                  0 0 56px -4px hsl(40 63% 45% / 0.12);
+      box-shadow: 0 0 24px -2px color-mix(in srgb, var(--deadline) 28%, transparent),
+                  0 0 56px -4px color-mix(in srgb, var(--deadline) 12%, transparent);
     }
   }
 
@@ -620,7 +582,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   }
   .hover-lift:hover {
     transform: translateY(-2px);
-    box-shadow: 0 0 20px hsl(40 63% 45% / 0.15),
+    box-shadow: 0 0 20px color-mix(in srgb, var(--deadline) 15%, transparent),
                 0 8px 32px hsl(0 0% 0% / 0.3);
   }
 
@@ -676,8 +638,8 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
 
   .gradient-mesh {
     background:
-      radial-gradient(ellipse 600px 400px at 15% 20%, hsl(40 63% 20% / 0.08) 0%, transparent 70%),
-      radial-gradient(ellipse 500px 500px at 80% 70%, hsl(40 63% 15% / 0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 600px 400px at 15% 20%, color-mix(in srgb, var(--deadline) 8%, transparent) 0%, transparent 70%),
+      radial-gradient(ellipse 500px 500px at 80% 70%, color-mix(in srgb, var(--deadline) 6%, transparent) 0%, transparent 70%),
       radial-gradient(ellipse 400px 300px at 50% 50%, hsl(0 0% 8% / 0.15) 0%, transparent 60%);
     animation: mesh-drift 25s ease-in-out infinite;
   }
@@ -694,8 +656,8 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   }
 
   @keyframes onboard-logo-pulse {
-    0%, 100% { transform: scale(1); box-shadow: 0 0 40px -8px hsl(40 63% 50% / 0.3); }
-    50% { transform: scale(1.06); box-shadow: 0 0 80px -4px hsl(40 63% 55% / 0.5); }
+    0%, 100% { transform: scale(1); box-shadow: 0 0 40px -8px color-mix(in srgb, var(--deadline) 30%, transparent); }
+    50% { transform: scale(1.06); box-shadow: 0 0 80px -4px color-mix(in srgb, var(--deadline) 50%, transparent); }
   }
 
   @keyframes radar-line-draw {
@@ -744,8 +706,8 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
 
   .onboarding-mesh {
     background:
-      radial-gradient(ellipse 500px 400px at 30% 30%, hsl(40 63% 25% / 0.12) 0%, transparent 70%),
-      radial-gradient(ellipse 400px 400px at 70% 60%, hsl(40 63% 18% / 0.08) 0%, transparent 70%);
+      radial-gradient(ellipse 500px 400px at 30% 30%, color-mix(in srgb, var(--deadline) 12%, transparent) 0%, transparent 70%),
+      radial-gradient(ellipse 400px 400px at 70% 60%, color-mix(in srgb, var(--deadline) 8%, transparent) 0%, transparent 70%);
     animation: mesh-drift 20s ease-in-out infinite;
   }
 
@@ -770,9 +732,9 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   }
 
   @keyframes ring-pulse {
-    0% { box-shadow: 0 0 0 0 hsl(40 63% 52% / 0.4); }
-    70% { box-shadow: 0 0 0 12px hsl(40 63% 52% / 0); }
-    100% { box-shadow: 0 0 0 0 hsl(40 63% 52% / 0); }
+    0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--deadline) 40%, transparent); }
+    70% { box-shadow: 0 0 0 12px color-mix(in srgb, var(--deadline) 0%, transparent); }
+    100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--deadline) 0%, transparent); }
   }
 
   .animate-data-pulse {
@@ -860,11 +822,6 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
 .aura-sidebar-dark .nav-secondary { color: #5F5E5A; }
 
 /* ── Design v3: page entry + alert pulse + initials avatar ── */
-@keyframes aura-fade-up {
-  from { opacity: 0; transform: translateY(14px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
 .aura-page {
   animation: aura-fade-up 0.4s ease both;
   will-change: transform, opacity;
@@ -964,7 +921,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
 /* ── Publish (Create tab) inputs + generate button ── */
 .aura-create-input {
   background: var(--paper-2) !important;
-  border: 0.5px solid var(--rule) !important;
+  border: 1px solid var(--rule) !important;
   border-radius: 10px !important;
   padding: 11px 14px !important;
   font-family: var(--font-serif), sans-serif !important;
@@ -1254,7 +1211,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   right: -40px;
   width: 180px;
   height: 180px;
-  background: radial-gradient(circle, hsl(40 63% 55% / 0.18) 0%, transparent 70%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--deadline) 18%, transparent) 0%, transparent 70%);
   pointer-events: none;
   z-index: 0;
 }
@@ -1290,7 +1247,7 @@ aside .aura-theme-toggle {
   background: rgba(255,255,255,0.04) !important;
   border-radius: 10px !important;
   padding: 8px 12px !important;
-  border: 0.5px solid rgba(255,255,255,0.06) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
   color: #5F5E5A !important;
   font-size: 11px !important;
 }
@@ -1400,8 +1357,8 @@ aside .aura-theme-toggle {
   --surface-ink-subtle: #F0EAD6;
   /* Extended ink scale (ink-6/ink-7) — neutral, theme-agnostic shades.
      NOTE: --ink-2..--ink-5 are intentionally NOT redefined here because
-     they are theme-aware tokens defined in :root (dark) and
-     [data-theme="light"] above. Overriding them here breaks dark mode
+     they are theme-aware tokens defined in :root above.
+     Overriding them here breaks dark mode
      contrast (caused invisible nav labels — rgb(28,28,28) on dark bg). */
   --ink-6:            #9A9690;
   --ink-7:            #B4B0AA;
@@ -1556,13 +1513,13 @@ html.dark .text-gray-500,
    elements that explicitly add this class will be affected. */
 .card {
   background: var(--surface);
-  border: 0.5px solid var(--border-subtle);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
 }
 .card-ink {
   background: var(--surface-ink);
-  border: 0.5px solid rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.06);
   border-radius: var(--radius-lg);
 }
 
@@ -1583,7 +1540,7 @@ html.dark .text-gray-500,
 
 .input-base {
   background: var(--surface-subtle);
-  border: 0.5px solid rgba(0,0,0,0.12);
+  border: 1px solid rgba(0,0,0,0.12);
   border-radius: var(--radius-md);
   padding: 12px 14px;
   font-family: var(--font-body);
@@ -1641,7 +1598,7 @@ html.dark .text-gray-500,
 }
 @keyframes nav-glow {
   0% { filter: drop-shadow(0 0 0 transparent); }
-  50% { filter: drop-shadow(0 0 6px rgba(214, 167, 72, 0.6)); }
+  50% { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--deadline) 60%, transparent)); }
   100% { filter: drop-shadow(0 0 0 transparent); }
 }
 .nav-intelligence-pulse {
@@ -1666,7 +1623,7 @@ html.dark .text-gray-500,
 [data-theme="dark"] [data-aura-sidebar="dark"],
 [data-theme="dark"] .aura-sidebar-dark {
   background: var(--paper-2);
-  border-right: 0.5px solid var(--brand-line);
+  border-right: 1px solid var(--brand-line);
 }
 
 /* Active nav row in dark sidebar */
@@ -1683,12 +1640,12 @@ html.dark .text-gray-500,
 /* Sidebar gradient background (applied via .aura-sidebar-shell) */
 .aura-sidebar-shell {
   background: linear-gradient(180deg, var(--paper) 0%, var(--paper-2) 100%);
-  border-right: 0.5px solid var(--brand-line);
+  border-right: 1px solid var(--brand-line);
   transition: background-color .25s ease, color .25s ease;
 }
 [data-theme="dark"] .aura-sidebar-shell {
   background: linear-gradient(180deg, var(--vellum) 0%, var(--paper-2) 100%);
-  border-right: 0.5px solid var(--brand-line);
+  border-right: 1px solid var(--brand-line);
 }
 
 /* ── Per-page sidebar surface (set via data-surface on the <aside>) ── */
@@ -1727,12 +1684,12 @@ html.dark .text-gray-500,
   --aura-t3: var(--glass-2);
   --aura-accent: var(--action);
   background: var(--ob-bg);
-  border-right: 0.5px solid var(--hair);
+  border-right: 1px solid var(--hair);
 }
 .aura-sidebar-shell[data-surface="dark"] .aura-nav-item { color: var(--glass-2); }
 .aura-sidebar-shell[data-surface="dark"] .aura-nav-item:hover:not(.is-active) { color: var(--glass); background: color-mix(in srgb, var(--glass) 8%, transparent); }
 .aura-sidebar-shell[data-surface="dark"] .aura-nav-item.is-active { color: var(--action); }
-.aura-sidebar-shell[data-surface="bone"] { background: var(--paper); border-right: 0.5px solid var(--brand-line); }
+.aura-sidebar-shell[data-surface="bone"] { background: var(--paper); border-right: 1px solid var(--brand-line); }
 
 /* Ask Aura pill — surface-aware via CSS vars set on the sidebar shell */
 .aura-sidebar-shell[data-surface="bone"] {
@@ -1765,14 +1722,14 @@ html.dark .text-gray-500,
 /* A11y: visible keyboard focus for sidebar nav + bottom action buttons */
 .aura-sidebar-shell button:focus-visible,
 .aura-nav-item:focus-visible {
-  outline: 2px solid var(--brand, #D6A748);
+  outline: 2px solid var(--border-focus);
   outline-offset: -2px;
   border-radius: 8px;
 }
 
 /* A11y: focus indicator for notification bell trigger */
 button[aria-label="Notifications"]:focus-visible {
-  outline: 2px solid var(--brand, #D6A748);
+  outline: 2px solid var(--border-focus);
   outline-offset: 2px;
   border-radius: 8px;
 }
@@ -1785,7 +1742,7 @@ button[aria-label="Notifications"]:focus-visible {
     var(--sidebar-active-bg, var(--brand-surface)) 0%,
     transparent 100%
   );
-  box-shadow: inset 0 0 24px rgba(var(--brand-rgb, 214, 167, 72), 0.03);
+  box-shadow: inset 0 0 24px color-mix(in srgb, var(--deadline) 3%, transparent);
   transition: all 0.25s ease;
 }
 .aura-nav-item.is-active::before {
@@ -1857,7 +1814,7 @@ button[aria-label="Notifications"]:focus-visible {
   [data-fx-card-hover="true"] .rounded-2xl:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-lift);
-    border-color: rgba(var(--brand-rgb, 214, 167, 72), 0.2);
+    border-color: color-mix(in srgb, var(--deadline) 20%, transparent);
   }
 }
 
@@ -1890,8 +1847,8 @@ button[aria-label="Notifications"]:focus-visible {
   50%      { opacity: 0.4; transform: scale(1.4); }
 }
 @keyframes aura-pulse-glow {
-  0%, 100% { text-shadow: 0 0 0 rgba(var(--brand-rgb, 214, 167, 72), 0); }
-  50%      { text-shadow: 0 0 8px rgba(var(--brand-rgb, 214, 167, 72), 0.55); }
+  0%, 100% { text-shadow: 0 0 0 color-mix(in srgb, var(--deadline) 0%, transparent); }
+  50%      { text-shadow: 0 0 8px color-mix(in srgb, var(--deadline) 55%, transparent); }
 }
 @media (prefers-reduced-motion: no-preference) {
   [data-fx-pulse="true"] .aura-pulse-dot {
@@ -2081,8 +2038,24 @@ button[aria-label="Notifications"]:focus-visible {
 
 /* Warm gold focus ring — keyboard navigation matches the brand,
    not the browser's default blue. */
-*:focus-visible {
-  outline: 2px solid rgba(214, 167, 72, 0.5);
-  outline-offset: 2px;
-  border-radius: 4px;
+*:focus-visible { outline:2px solid var(--border-focus); outline-offset:2px; border-radius:4px; }
+
+/* ── shadcn bridge (HSL triples, no hsl() wrapper).
+   Declared LAST so hsl(var(--primary)) in shadcn primitives resolves to this
+   triple rather than the tier-2 hex of the same name. ── */
+:root {
+  --background:210 33% 96%; --foreground:203 24% 8%;
+  --card:0 0% 100%; --card-foreground:203 24% 8%;
+  --popover:0 0% 100%; --popover-foreground:203 24% 8%;
+  --primary:207 94% 40%; --primary-foreground:0 0% 100%;
+  --secondary:214 33% 95%; --secondary-foreground:203 24% 8%;
+  --muted:214 33% 95%; --muted-foreground:213 10% 40%;
+  --accent:207 94% 40%; --accent-foreground:0 0% 100%;
+  --destructive:6 63% 46%; --destructive-foreground:0 0% 100%;
+  --border:213 26% 91%; --input:213 26% 91%; --ring:207 94% 40%;
+  --radius:1.25rem;
+  --sidebar-background:203 24% 8%; --sidebar-foreground:210 12% 69%;
+  --sidebar-primary:207 94% 40%; --sidebar-primary-foreground:0 0% 100%;
+  --sidebar-accent:203 20% 14%; --sidebar-accent-foreground:0 0% 100%;
+  --sidebar-border:203 18% 18%; --sidebar-ring:207 94% 40%;
 }
