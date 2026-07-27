@@ -957,15 +957,15 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   --vellum-2: var(--paper-3);
   --bg-subtle: var(--paper-2);
   --surface-subtle: var(--paper-2);
-  --bronze: var(--action);
-  --bronze-hover: color-mix(in srgb, var(--action) 88%, black);
-  --bronze-mist: color-mix(in srgb, var(--action) 18%, var(--paper));
-  --bronze-pale: color-mix(in srgb, var(--action) 10%, var(--paper));
+  --bronze: var(--spot);
+  --bronze-hover: color-mix(in srgb, var(--spot) 88%, black);
+  --bronze-mist: color-mix(in srgb, var(--spot) 18%, var(--paper));
+  --bronze-pale: color-mix(in srgb, var(--spot) 10%, var(--paper));
   --bronze-text: var(--ink);
-  --bronze-line: color-mix(in srgb, var(--action) 36%, transparent);
-  --brand: var(--action);
-  --brand-muted: color-mix(in srgb, var(--action) 22%, transparent);
-  --brand-pale: color-mix(in srgb, var(--action) 10%, var(--paper));
+  --bronze-line: color-mix(in srgb, var(--spot) 36%, transparent);
+  --brand: var(--spot);
+  --brand-muted: color-mix(in srgb, var(--spot) 22%, transparent);
+  --brand-pale: color-mix(in srgb, var(--spot) 10%, var(--paper));
 }
 
 /* ── Bone Page shadcn token remap ──
