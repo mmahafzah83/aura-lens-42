@@ -64,7 +64,7 @@ const StepCard = ({
             display: "flex", alignItems: "center", justifyContent: "center",
             background: isDone ? "var(--action)" : isLocked ? "transparent" : "var(--glass-2)",
             border: `1px solid ${isDone ? "var(--action)" : "var(--rule)"}`,
-            color: isDone ? "var(--ink, #1a160f)" : "var(--action)",
+            color: isDone ? "var(--ink, #1a160f)" : "var(--spot)",
             fontWeight: 600, fontSize: 14,
           }}
         >
@@ -76,7 +76,7 @@ const StepCard = ({
               Step {index} of 3
             </div>
             {isDone && (
-              <span style={{ fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--action)", fontWeight: 700 }}>
+              <span style={{ fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--success)", fontWeight: 700 }}>
                 ✓ Completed
               </span>
             )}
@@ -98,7 +98,7 @@ const StepCard = ({
             <button
               type="button"
               onClick={() => setReopened(true)}
-              style={{ background: "transparent", border: "none", color: "var(--action)", fontSize: 12, cursor: "pointer", padding: 0 }}
+              style={{ background: "transparent", border: "none", color: "var(--spot)", fontSize: 12, cursor: "pointer", padding: 0 }}
             >
               Edit →
             </button>
@@ -149,7 +149,7 @@ export default function GuidedJourney({ journey, onResetDiagnostic }: Props) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div>
-        <div style={{ fontSize: 12, letterSpacing: 2, color: "var(--action)", marginBottom: 6, textTransform: "uppercase", fontWeight: 600 }}>
+        <div style={{ fontSize: 12, letterSpacing: 2, color: "var(--ink)", marginBottom: 6, textTransform: "uppercase", fontWeight: 600 }}>
           Your professional identity
         </div>
         <h1 style={{ fontFamily: "var(--serif)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
