@@ -332,7 +332,7 @@ export default function AuraRail({
             style={railBtn(activeTab === "identity")}
           >
             {activeTab === "identity" && <ActiveBar />}
-            <User size={18} strokeWidth={1.75} />
+            <Avatar src={avatarUrl} name={profileName} size="sm" ring="var(--v23-night-line)" />
             <span style={labelStyle(activeTab === "identity")}>Profile</span>
           </button>
           <button
@@ -353,7 +353,16 @@ export default function AuraRail({
         </div>
       </aside>
 
-      {tip && <Tooltip title={tip.title} body={tip.body} top={tip.top} />}
+      {tip && (
+        <div className="hidden md:block">
+          <TooltipPanel
+            title={tip.title}
+            body={tip.body}
+            left={parseInt(getComputedStyle(document.documentElement).getPropertyValue("--v23-rail-w")) + 8}
+            top={tip.top}
+          />
+        </div>
+      )}
 
       {/* Contextual flyout — flush to the rail, full height, light surface. */}
       {flyout === "intelligence" && (
