@@ -181,7 +181,8 @@ export default function BriefV2({
   const [capturesWeek, setCapturesWeek] = useState<number | null>(null);
   const [publishedMonth, setPublishedMonth] = useState<number | null>(null);
   const [drafts, setDrafts] = useState<DraftRow[]>([]);
-  const [overnight, setOvernight] = useState<OvernightState>({ lastRunAt: null, headline: null, source: null, draft: null });
+  const [overnight, setOvernight] = useState<OvernightState>({ lastRunAt: null, headline: null, why: null, source: null, draft: null });
+  const [showWhy, setShowWhy] = useState(false);
   const [moves, setMoves] = useState<MoveRow[]>([]);
   const [movedOvernight, setMovedOvernight] = useState<number | null>(null);
 
@@ -275,7 +276,8 @@ export default function BriefV2({
     const ghost = (((ghostRes?.data as any[]) || []))[0];
     setOvernight({
       lastRunAt: finding?.created_at ?? null,
-      headline: (finding?.implication || finding?.title || null),
+      headline: (finding?.title || finding?.implication || null),
+      why: (finding?.title && finding?.implication) ? finding.implication : null,
       source: finding?.source ?? null,
       draft: ghost ? {
         id: ghost.id, body: ghost.post_text || "",
