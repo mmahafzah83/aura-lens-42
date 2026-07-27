@@ -36,8 +36,6 @@ export default function ProfileMenu({
 }: ProfileMenuProps) {
   const fn = (fullName || "").trim();
   const parts = fn.split(/\s+/).filter(Boolean);
-  const firstNameParsed = parts[0] || "";
-  const lastNameParsed = parts.length >= 2 ? parts[parts.length - 1] : "";
   const initials =
     parts.length >= 2
       ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
