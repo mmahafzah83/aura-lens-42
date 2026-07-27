@@ -208,7 +208,7 @@ const PRESETS = (accent: string) => ({
 
 const CharHint = ({ value, ideal }: { value: string; ideal: number }) => {
   const len = value.length;
-  const color = len <= ideal ? "var(--success)" : len <= ideal * 1.4 ? "var(--warning)" : "var(--error)";
+  const color = len <= ideal ? "var(--success)" : len <= ideal * 1.4 ? "var(--warning-text)" : "var(--error)";
   return (
     <div
       style={{
