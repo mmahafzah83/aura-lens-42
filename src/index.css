@@ -725,7 +725,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
 
   .typewriter-cursor {
     animation: cursor-blink 0.8s step-end infinite;
-    color: var(--action);
+    color: var(--deadline-text);
     font-weight: 300;
     margin-left: 1px;
   }
