@@ -108,7 +108,7 @@ html *:not(canvas):not(video):not(iframe) {
 :root {
   /* ── TIER 1: primitives (only place a hex may appear) ── */
   --n-0:#FFFFFF; --n-25:#FAFBFC; --n-50:#F2F5F9; --n-100:#EEF2F7;
-  --n-200:#E2E7EE; --n-300:#D6DCE4; --n-400:#98A2AE; --n-500:#5B6673;
+  --n-200:#E2E7EE; --n-300:#D6DCE4; --n-350:#98A2AE; --n-400:#666D75; --n-500:#5B6673;
   --n-700:#3A434E; --n-900:#0F1519;
   --b-50:#E6F2FD; --b-100:#BBDDF7; --b-300:#4FA6EC;
   --b-500:#0984E3; --b-600:#0670C4; --b-800:#04477C;
@@ -121,7 +121,7 @@ html *:not(canvas):not(video):not(iframe) {
   --surface-page:var(--n-50); --surface-card:var(--n-0);
   --surface-subtle:var(--n-100); --surface-inverse:var(--n-900);
   --text-primary:var(--n-900); --text-secondary:var(--n-500);
-  --text-muted:var(--n-400); --text-inverse:var(--n-0);
+  --text-muted:var(--n-400); --text-disabled:var(--n-350); --text-inverse:var(--n-0);
   --border-default:var(--n-200); --border-strong:var(--n-300);
   --border-focus:var(--b-600);
   --act:var(--b-600); --act-hover:var(--b-800);
@@ -725,7 +725,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
 
   .typewriter-cursor {
     animation: cursor-blink 0.8s step-end infinite;
-    color: var(--action);
+    color: var(--deadline-text);
     font-weight: 300;
     margin-left: 1px;
   }
