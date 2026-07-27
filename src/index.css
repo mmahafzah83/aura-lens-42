@@ -124,8 +124,8 @@ html *:not(canvas):not(video):not(iframe) {
   --text-muted:var(--n-400); --text-inverse:var(--n-0);
   --border-default:var(--n-200); --border-strong:var(--n-300);
   --border-focus:var(--b-600);
-  --primary:var(--b-600); --primary-hover:var(--b-800);
-  --primary-fill:var(--b-500); --primary-tint:var(--b-50);
+  --act:var(--b-600); --act-hover:var(--b-800);
+  --act-fill:var(--b-500); --act-tint:var(--b-50);
   --machine:var(--c-500); --machine-text:var(--c-700); --machine-tint:var(--c-50);
   --deadline:var(--a-500); --deadline-text:var(--a-700); --deadline-tint:var(--a-50);
   --success:var(--g-600); --success-tint:var(--g-50);
@@ -137,7 +137,7 @@ html *:not(canvas):not(video):not(iframe) {
   --rule:var(--border-default);
   --live:var(--machine); --live-ink:var(--machine-text);
   --action:var(--deadline); --action-ink:var(--deadline-text);
-  --spot:var(--primary); --spot-2:var(--primary-hover);
+  --spot:var(--act); --spot-2:var(--act-hover);
   --pos:var(--success); --neg:var(--error);
   --ob-page:#080C11; --ob-bg:var(--n-900); --ob-panel:#161D23; --ob-raised:#1B242C; --ob-field:#10171D;
   --hair:rgba(255,255,255,.10); --grid:rgba(255,255,255,.06);
@@ -287,10 +287,6 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
 
     --popover: 36 22% 9%;
     --popover-foreground: 42 64% 96%;
-
-    /* Bronze primary (dark mode) */
-    --primary: 40 63% 56%;
-    --primary-foreground: 39 40% 10%;
 
     --secondary: 36 18% 12%;
     --secondary-foreground: 40 28% 80%;
@@ -2040,9 +2036,9 @@ button[aria-label="Notifications"]:focus-visible {
    not the browser's default blue. */
 *:focus-visible { outline:2px solid var(--border-focus); outline-offset:2px; border-radius:4px; }
 
-/* ── shadcn bridge (HSL triples, no hsl() wrapper).
-   Declared LAST so hsl(var(--primary)) in shadcn primitives resolves to this
-   triple rather than the tier-2 hex of the same name. ── */
+/* shadcn owns the name --primary (HSL triple). Semantic blue is --act.
+   Never reintroduce a hex --primary. */
+/* ── shadcn bridge (HSL triples, no hsl() wrapper). ── */
 :root {
   --background:210 33% 96%; --foreground:203 24% 8%;
   --card:0 0% 100%; --card-foreground:203 24% 8%;
