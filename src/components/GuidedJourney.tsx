@@ -62,7 +62,7 @@ const StepCard = ({
           style={{
             width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
             display: "flex", alignItems: "center", justifyContent: "center",
-            background: isDone ? "var(--success)" : isLocked ? "transparent" : "var(--surface-raised)",
+            background: isDone ? "var(--success)" : isLocked ? "transparent" : "var(--surface-subtle)",
             border: `1px solid `,
             color: isDone ? "var(--text-inverse)" : "var(--spot)",
             fontWeight: 600, fontSize: 14,
