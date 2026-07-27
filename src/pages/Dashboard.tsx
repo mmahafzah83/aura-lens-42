@@ -938,13 +938,6 @@ const Dashboard = () => {
           <div className="tab-content-spring aura-page-fade relative" key={activeTab} style={{ minHeight: "60vh" }}>
             {activeTab !== "home" && activeTab !== "identity" && (
               <div className={activeTab === "intelligence" ? "max-w-[1400px] mx-auto px-5 sm:px-10 lg:px-14" : ""}>
-                <FirstFlightCard
-                  state={firstFlight}
-                  onConnectLinkedIn={connectLinkedInFirstFlight}
-                  onOpenCapture={() => handleOpenCapture()}
-                  onOpenSignal={(sig) => navigateToSignal(sig.id)}
-                  onWriteFromSignal={writeFromFirstFlightSignal}
-                />
               </div>
             )}
             {activeTab === "home" && (
