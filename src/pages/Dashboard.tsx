@@ -26,6 +26,8 @@ import InviteColleagueModal from "@/components/InviteColleagueModal";
 import NpsSurveyModal from "@/components/NpsSurveyModal";
 import FirstLoginWelcome from "@/components/FirstLoginWelcome";
 import Brief from "@/components/Brief";
+import BriefV2 from "@/components/home/BriefV2";
+import AuraRail from "@/components/rail/AuraRail";
 import IdentityDriftBanner from "@/components/IdentityDriftBanner";
 import FirstFlightCard from "@/components/FirstFlightCard";
 import useFirstFlight from "@/hooks/useFirstFlight";
@@ -705,160 +707,15 @@ const Dashboard = () => {
       {showDiagnostic && <ExecutiveDiagnostic onComplete={() => setShowDiagnostic(false)} />}
       <WhatsAppOptInModal />
 
-      {/* ── Desktop Sidebar ── */}
-      {activeTab !== "home" && (
-        <aside
-          data-surface="dark"
-          className={`aura-sidebar-shell hidden md:flex flex-col fixed top-0 left-0 h-full z-30 backdrop-blur-xl transition-all duration-300 ${
-            sidebarCollapsed ? "w-[68px]" : "w-[220px]"
-          }`}
-          style={{
-            background: "var(--aura-card)",
-            transition: "background-color .25s ease, color .25s ease",
-          }}
-        >
-          {/* Logo */}
-          <div
-            className="flex items-center gap-3 px-4 py-5"
-            style={{ borderBottom: "0.5px solid var(--paper-3)" }}
-          >
-            <AuraLogo size={sidebarCollapsed ? 24 : 32} variant={darkSurface ? "dark" : "light"} />
-            {!sidebarCollapsed && (
-              <div className="overflow-hidden min-w-0">
-                <h1
-                  className="text-lg tracking-tight font-semibold"
-                  style={{ color: darkSurface ? "var(--glass)" : "var(--ink)" }}
-                >
-                  Aura
-                </h1>
-                <p
-                  style={{
-                    fontSize: 12,
-                    letterSpacing: "0.08em",
-                    color: darkSurface ? "var(--glass-2)" : "var(--ink-4)",
-                    lineHeight: 1.4,
-                  }}
-                >
-                  Turns your expertise into presence
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Nav Items */}
-          <nav className="flex-1 py-2 px-0 space-y-1">
-            {!sidebarCollapsed && (
-              <div
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 12,
-                  letterSpacing: "0.18em",
-                  color: "var(--aura-t2)",
-                  padding: "12px 24px 8px",
-                  textTransform: "uppercase",
-                }}
-              >
-                Your space
-              </div>
-            )}
-            {NAV_ITEMS.map((item) => {
-              const isActive = activeTab === item.value;
-              const navTestId = ({
-                home: "nav-home",
-                identity: "nav-mystory",
-                intelligence: "nav-intelligence",
-                authority: "nav-publish",
-                influence: "nav-impact",
-              } as Record<string, string>)[item.value] || `nav-${item.value}`;
-              return (
-                <button
-                  key={item.value}
-                  onClick={() => switchTab(item.value)}
-                  data-testid={navTestId}
-                  data-active={isActive ? "true" : "false"}
-                  className={`w-full flex items-center gap-3 tactile-press group aura-nav-item ${isActive ? "is-active" : ""}`}
-                  style={{
-                    padding: "10px 24px",
-                    fontWeight: isActive ? 500 : 400,
-                    opacity: isFfDimmed(item.value, isActive) ? 0.45 : 1,
-                  }}
-                  title={isFfDimmed(item.value, isActive) ? "Your first post comes first" : undefined}
-                >
-                  <item.icon
-                    key={item.value === "intelligence" ? `intel-icon-${intelPulseToken}` : undefined}
-                    className={`w-4.5 h-4.5 shrink-0${item.value === "intelligence" && intelPulseToken > 0 ? " nav-intelligence-pulse" : ""}`}
-                    style={{
-                      color: isActive ? "var(--aura-accent)" : "var(--aura-t3)",
-                      transition: "color var(--t-fast) var(--ease)",
-                    }}
-                  />
-                  {!sidebarCollapsed && (
-                    <span className="text-sm font-medium tracking-wide">{item.label}</span>
-                  )}
-                  {item.value === "intelligence" && newIntelSignalCount > 0 && !isActive && (
-                    <span
-                      aria-label={`${newIntelSignalCount} new signals`}
-                      className="w-2 h-2 rounded-full ml-auto mr-1 shrink-0"
-                      style={{ background: "var(--gold-dark)" }}
-                    />
-                  )}
-                </button>
-              );
-            })}
-          </nav>
-
-          {/* Bottom actions */}
-          <div
-            className="px-3 py-4 flex flex-col gap-2"
-            style={{ borderTop: "0.5px solid var(--paper-3)" }}
-          >
-            <div data-tour="nav-ask-aura">
-              <AskAuraPresence collapsed={sidebarCollapsed} onOpen={() => openChat()} />
-            </div>
-            <button
-              onClick={() => setCaptureOpen(true)}
-              data-testid="nav-capture"
-              data-tour="nav-capture"
-              className="w-full flex items-center gap-3 px-3 py-3 tactile-press group"
-              style={{
-                background: "transparent",
-                color: "var(--aura-accent)",
-                border: "1px solid var(--aura-border)",
-                borderRadius: "var(--r-md)",
-                transition: "all var(--t-fast) var(--ease)",
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "var(--aura-card-glass)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-            >
-              <Paperclip className="w-4.5 h-4.5 shrink-0 group-hover:scale-110 transition-transform" />
-              {!sidebarCollapsed && <span className="text-sm font-medium" style={{ color: "var(--deadline-text-on-dark)" }}>Capture</span>}
-            </button>
-
-            <button
-              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              className="w-full flex items-center gap-3 px-3 py-2 transition-all min-h-[44px]"
-              style={{ color: "var(--aura-t3)", borderRadius: "var(--r-md)" }}
-            >
-              <Menu className="w-4 h-4 shrink-0" />
-              {!sidebarCollapsed && <span className="text-xs">Collapse</span>}
-            </button>
-
-            <button
-              onClick={() => setInviteOpen(true)}
-              aria-label="Bring someone in"
-              className="w-full flex items-center gap-3 px-3 py-2 transition-all min-h-[44px]"
-              style={{ color: "var(--aura-t3)", borderRadius: "var(--r-md)" }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = "var(--aura-accent)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = "var(--aura-t3)"; }}
-              title="Bring someone in"
-            >
-              <UserPlus className="w-4 h-4 shrink-0" />
-              {!sidebarCollapsed && <span className="text-xs">Bring someone in</span>}
-            </button>
-          </div>
-        </aside>
-      )}
+      {/* ── V23 Rail (night surface, every tab) ── */}
+      <AuraRail
+        activeTab={activeTab}
+        onSelect={(t) => switchTab(t as TabValue)}
+        onOpenAsk={() => openChat()}
+        onOpenCapture={() => handleOpenCapture()}
+        onOpenSettings={() => setPreferencesOpen(true)}
+        newSignalCount={newIntelSignalCount}
+      />
 
       {/* ── Mobile Sidebar Overlay ── */}
       {mobileSidebarOpen && (
@@ -976,7 +833,7 @@ const Dashboard = () => {
       {/* ── Main Content ── */}
       <main
         className={`grain-overlay flex-1 min-w-0 relative z-10 transition-all duration-300 overflow-x-hidden ${
-          activeTab === "home" ? "" : (sidebarCollapsed ? "md:ml-[68px]" : "md:ml-[220px]")
+          "md:ml-[72px]"
         }`}
         style={{
           paddingTop: 'env(safe-area-inset-top)',
@@ -1081,13 +938,6 @@ const Dashboard = () => {
           <div className="tab-content-spring aura-page-fade relative" key={activeTab} style={{ minHeight: "60vh" }}>
             {activeTab !== "home" && activeTab !== "identity" && (
               <div className={activeTab === "intelligence" ? "max-w-[1400px] mx-auto px-5 sm:px-10 lg:px-14" : ""}>
-                <FirstFlightCard
-                  state={firstFlight}
-                  onConnectLinkedIn={connectLinkedInFirstFlight}
-                  onOpenCapture={() => handleOpenCapture()}
-                  onOpenSignal={(sig) => navigateToSignal(sig.id)}
-                  onWriteFromSignal={writeFromFirstFlightSignal}
-                />
               </div>
             )}
             {activeTab === "home" && (
@@ -1108,101 +958,10 @@ const Dashboard = () => {
                 />
                 <FirstVisitHint page="home" />
                 <IdentityDriftBanner />
-                {/* Brief masthead — logo + wordmark + kicker on the left,
-                    nav + divider + Capture / Ask Aura actions on the right. */}
-                <div className="flex justify-between items-center overflow-x-auto" style={{ marginBottom: 10 }}>
-                  <div className="flex items-center" style={{ gap: 12 }}>
-                    <AuraLogo size={30} variant="light" />
-                    <span style={{
-                      fontFamily: "var(--font-serif)", fontSize: 24, fontWeight: 500,
-                      color: "var(--ink)", lineHeight: 1,
-                    }}>Aura</span>
-                    <span
-                      className="hidden sm:inline"
-                      style={{
-                        fontFamily: "var(--font-mono)", fontSize: 10,
-                        letterSpacing: "0.18em", textTransform: "uppercase",
-                        color: "var(--ink-3)",
-                      }}
-                    >
-                      Personal Strategic Intelligence
-                    </span>
-                  </div>
-                  <div className="hidden md:flex items-center" style={{ gap: 16 }}>
-                    <div className="flex items-center" style={{ gap: 16, borderBottom: "1px solid var(--rule)" }}>
-                    {NAV_ITEMS.map((item) => {
-                      const isActive = activeTab === item.value;
-                      return (
-                        <button
-                          key={item.value}
-                          type="button"
-                          onClick={() => switchTab(item.value)}
-                          className={`brief-nav-tab whitespace-nowrap${isActive ? " is-active" : ""}`}
-                          style={{
-                            fontFamily: "var(--font-mono)",
-                            fontSize: 11,
-                            letterSpacing: "0.14em",
-                            textTransform: "uppercase",
-                            background: "transparent",
-                            border: 0,
-                            cursor: "pointer",
-                            paddingBottom: 6,
-                            position: "relative",
-                            opacity: isFfDimmed(item.value, isActive) ? 0.45 : 1,
-                          }}
-                          title={isFfDimmed(item.value, isActive) ? "Your first post comes first" : undefined}
-                        >
-                          {item.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <span aria-hidden style={{ width: 1, height: 14, background: "var(--rule)" }} />
-                    <button
-                      type="button"
-                      onClick={() => handleOpenCapture()}
-                      className="brief-masthead-capture whitespace-nowrap"
-                      style={{
-                        fontFamily: "var(--font-mono)", fontSize: 10,
-                        letterSpacing: "0.14em", textTransform: "uppercase",
-                        color: "var(--spot)", border: "1px solid var(--spot)",
-                        padding: "4px 10px", background: "transparent", cursor: "pointer",
-                        transition: "background-color .2s ease, color .2s ease",
-                      }}
-                    >
-                      Capture
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openChat()}
-                      className="brief-masthead-ask whitespace-nowrap"
-                      style={{
-                        fontFamily: "var(--font-mono)", fontSize: 10,
-                        letterSpacing: "0.14em", textTransform: "uppercase",
-                        color: "var(--ink-2)", background: "transparent",
-                        border: 0, padding: "4px 2px", cursor: "pointer",
-                        transition: "color .2s ease",
-                      }}
-                    >
-                      Ask Aura
-                    </button>
-                  </div>
-                </div>
-                <style>{`
-                  .brief-masthead-capture:hover { background: var(--spot); color: var(--paper) !important; }
-                  .brief-masthead-ask:hover { color: var(--ink) !important; }
-                  .brief-nav-tab { color: var(--ink-3); position: relative; padding-bottom: 6px; transition: color .18s ease; }
-                  .brief-nav-tab::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--spot); transform: scaleX(0); transform-origin: center; transition: transform .18s ease; }
-                  .brief-nav-tab:hover { color: var(--ink); }
-                  .brief-nav-tab:hover::after { transform: scaleX(1); }
-                  .brief-nav-tab.is-active { color: var(--ink); }
-                  .brief-nav-tab.is-active::after { transform: scaleX(1); }
-                `}</style>
                 <ErrorBoundary>
-                  <Brief
+                  <BriefV2
                     onOpenCapture={() => handleOpenCapture()}
                     onSwitchTab={(t) => switchTab(t as TabValue)}
-                    onInvite={() => setInviteOpen(true)}
                     onOpenBrandAssessment={() => setBrandAssessmentOpen(true)}
                     onOpenSignal={navigateToSignal}
                     onOpenDraft={(d) => { setDraftPrefill(d); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}

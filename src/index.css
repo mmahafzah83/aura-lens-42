@@ -111,7 +111,9 @@ html *:not(canvas):not(video):not(iframe) {
   --n-200:#E2E7EE; --n-300:#D6DCE4; --n-350:#98A2AE; --n-400:#666D75; --n-500:#5B6673;
   --n-700:#3A434E; --n-900:#0F1519;
   --b-50:#E6F2FD; --b-100:#BBDDF7; --b-300:#4FA6EC;
-  --b-500:#0984E3; --b-600:#0670C4; --b-800:#04477C;
+  --b-450:#1E96F0; --b-500:#0984E3; --b-600:#0670C4; --b-800:#04477C;
+  /* V23 hairlines: outer card border / inner divider */
+  --e-100:#EFF1F6; --e-200:#E4E7EE;
   --c-50:#DFF7F6; --c-500:#00CEC9; --c-700:#00736E;
   --a-50:#FCF2DC; --a-300:#EDB231; --a-500:#E0A82E; --a-700:#83621B;
   --g-50:#E4F6EC; --g-600:#12805C;
@@ -132,6 +134,20 @@ html *:not(canvas):not(video):not(iframe) {
   --on-dark-2:#C3CBD4;
   --success:var(--g-600); --success-tint:var(--g-50);
   --error:var(--r-600); --error-tint:var(--r-50);
+
+  /* ── TIER 2: V23 component values (rail + home rebuild) ── */
+  --rule-outer:var(--e-200); --rule-divider:var(--e-100);
+  --v23-btn-bg: linear-gradient(180deg, var(--b-450), var(--b-600));
+  --v23-btn-inset: inset 0 1px 0 rgba(255,255,255,.22);
+  --v23-btn-shadow: 0 4px 12px rgba(6,112,196,.18);
+  --v23-ask-bg: linear-gradient(135deg, var(--c-500), var(--b-600));
+  --v23-ask-glow: 0 6px 18px rgba(0,206,201,.22);
+  --v23-card-rest: 0 1px 2px rgba(30,39,46,.05);
+  --v23-card-hover: 0 6px 22px rgba(30,39,46,.09);
+  --v23-night: var(--n-900);
+  --v23-on-night: var(--on-dark-2);
+  --v23-night-line: rgba(255,255,255,.10);
+  --v23-night-lift: rgba(255,255,255,.06);
 
   /* ── TIER 2: TYPOGRAPHY ──
      'CairoAR' is a restricted-range family (Arabic Unicode ranges only).
