@@ -352,7 +352,7 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
             <button
               type="button"
               onClick={() => processUpload(pendingFile, ACCEPTED_TYPES[pendingFile.type])}
-              style={{ fontSize: 12, color: "var(--warning)", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}
+              style={{ fontSize: 12, color: "var(--warning-text)", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}
             >
               Upload again
             </button>

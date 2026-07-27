@@ -102,7 +102,7 @@ const KnowledgeGraph = ({ open, onClose }: KnowledgeGraphProps) => {
             graphEdges.push({
               id: `e-${nodeId}-pillar-${p}`, source: nodeId, target: `pillar-${p}`,
               style: { stroke: "var(--warning)", strokeWidth: 1.5, opacity: 0.5 },
-              markerEnd: { type: MarkerType.ArrowClosed, color: "var(--warning)" },
+              markerEnd: { type: MarkerType.ArrowClosed, color: "var(--warning-text)" },
             });
           }
         });
