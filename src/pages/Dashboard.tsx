@@ -15,6 +15,7 @@ import ExecutiveDiagnostic from "@/components/ExecutiveDiagnostic";
 import WhatsAppOptInModal from "@/components/WhatsAppOptInModal";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import NotificationBell from "@/components/NotificationBell";
+import AskAuraButton from "@/components/AskAuraButton";
 import { HelpPanel, HelpButton } from "@/components/HelpPanel";
 import ProfileMenu from "@/components/ProfileMenu";
 import PreferencesPanel from "@/components/PreferencesPanel";
@@ -832,8 +833,9 @@ const Dashboard = () => {
 
       {/* ── Main Content ── */}
       <main
+        id="aura-main"
         className={`grain-overlay flex-1 min-w-0 relative z-10 transition-all duration-300 overflow-x-hidden ${
-          "md:ml-[72px]"
+          "md:ml-[var(--v23-rail-w)]"
         }`}
         style={{
           paddingTop: 'env(safe-area-inset-top)',
@@ -847,6 +849,7 @@ const Dashboard = () => {
               {/* Global section label removed — each tab owns its own branded header */}
             </div>
             <div className="flex items-center gap-3">
+              <AskAuraButton onClick={() => openChat()} />
               <HelpButton onClick={() => setHelpOpen(true)} />
               <NotificationBell />
               <ProfileMenu

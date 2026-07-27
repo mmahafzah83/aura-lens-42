@@ -35,12 +35,24 @@ const TYPE_COLORS: Record<string, string> = {
   strategic: "text-primary",
 };
 
+/** Machine-authored types — everything Aura produced without you.
+ *  Anything else, or anything flagged urgent, lands in "Needs you".
+ *  Both buckets come from fields that already exist (type, metadata.urgency). */
+const MACHINE_TYPES = new Set(["insight_ready", "pattern", "momentum", "weekly_summary", "strategic"]);
+
 const NotificationBell = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
 
   const unreadCount = notifications.filter((n) => !n.read).length;
+
+  const needsYou = notifications.filter(
+    (n) => n.metadata?.urgency === "high" || !MACHINE_TYPES.has(n.type),
+  );
+  const whileYouSlept = notifications.filter(
+    (n) => !(n.metadata?.urgency === "high" || !MACHINE_TYPES.has(n.type)),
+  );
 
   const fetchNotifications = async () => {
     const { data } = await (supabase.from("notifications" as any) as any)
@@ -117,7 +129,7 @@ const NotificationBell = () => {
           {unreadCount > 0 && (
             <span
               className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-xs font-bold flex items-center justify-center animate-ring-pulse"
-              style={{ background: "var(--signal)", color: "#fff" }}
+              style={{ background: "var(--act)", color: "var(--text-inverse)" }}
             >
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
@@ -129,20 +141,21 @@ const NotificationBell = () => {
         align="end"
         sideOffset={8}
         style={{
-          background: "var(--paper-2)",
-          border: "0.5px solid var(--rule)",
+          background: "var(--surface-card)",
+          border: "1px solid var(--rule-outer)",
           borderRadius: 12,
-          boxShadow: "var(--shadow-lift)",
-          color: "var(--ink)",
+          boxShadow: "var(--v23-card-hover)",
+          color: "var(--text-primary)",
+          fontFamily: "var(--ff-ui)",
         }}
       >
-        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--rule)" }}>
-          <h4 className="text-sm font-semibold" style={{ color: "var(--ink)" }}>Strategic Alerts</h4>
+        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--rule-outer)" }}>
+          <h4 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Strategic alerts</h4>
           {notifications.length > 0 && (
             <button
               onClick={clearAll}
-              className="text-xs transition-colors"
-              style={{ color: "var(--ink-3)" }}
+              className="text-xs transition-colors cursor-pointer"
+              style={{ color: "var(--text-muted)" }}
             >
               Clear all
             </button>
@@ -156,7 +169,22 @@ const NotificationBell = () => {
               <p className="text-xs mt-1" style={{ color: "var(--ink-4)" }}>Aura will notify you when meaningful patterns emerge</p>
             </div>
           ) : (
-            notifications.map((n) => {
+            ([
+              { key: "needs", title: "Needs you", rows: needsYou },
+              { key: "slept", title: "While you slept", rows: whileYouSlept },
+            ] as const).filter((g) => g.rows.length > 0).map((group) => (
+            <div key={group.key}>
+              <div
+                className="px-4 py-2 sticky top-0 z-10"
+                style={{
+                  background: "var(--surface-subtle)",
+                  borderBottom: "1px solid var(--rule-divider)",
+                  fontFamily: "var(--ff-mono)", fontSize: 10, letterSpacing: ".14em",
+                  textTransform: "uppercase",
+                  color: group.key === "needs" ? "var(--deadline-text)" : "var(--machine-text)",
+                }}
+              >{group.title}</div>
+              {group.rows.map((n) => {
               const Icon = TYPE_ICONS[n.type] || Bell;
               const iconColor = TYPE_COLORS[n.type] || "text-[color:var(--ink-3)]";
               const cta = typeof n.metadata?.cta === "string" ? n.metadata.cta : null;
@@ -167,10 +195,10 @@ const NotificationBell = () => {
                   tabIndex={cta ? 0 : undefined}
                   onClick={cta ? () => { setOpen(false); navigate(cta); } : undefined}
                   onKeyDown={cta ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen(false); navigate(cta); } } : undefined}
-                  className={`px-4 py-3 transition-colors ${n.read ? "opacity-60" : ""} ${cta ? "cursor-pointer hover:bg-[color:var(--paper-3)]" : ""}`}
+                  className={`px-4 py-3 transition-colors ${n.read ? "opacity-60" : ""} ${cta ? "cursor-pointer hover:bg-[color:var(--surface-subtle)]" : ""}`}
                   style={{
-                    borderBottom: "1px solid var(--rule)",
-                    background: n.read ? "transparent" : "color-mix(in srgb, var(--action) 8%, transparent)",
+                    borderBottom: "1px solid var(--rule-divider)",
+                    background: n.read ? "transparent" : "color-mix(in srgb, var(--act) 6%, transparent)",
                   }}
                 >
                   <div className="flex items-start gap-3">
@@ -238,7 +266,9 @@ const NotificationBell = () => {
                   </div>
                 </div>
               );
-            })
+              })}
+            </div>
+            ))
           )}
         </div>
       </PopoverContent>
