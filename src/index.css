@@ -141,6 +141,7 @@ html *:not(canvas):not(video):not(iframe) {
   --v23-btn-bg: linear-gradient(180deg, var(--b-600), var(--b-800));
   --v23-btn-inset: inset 0 1px 0 rgba(255,255,255,.22);
   --v23-btn-shadow: 0 4px 12px rgba(6,112,196,.18);
+  --v23-btn-pressed: inset 0 2px 4px rgba(4,71,124,.34);
   --v23-ask-bg: linear-gradient(135deg, var(--c-700), var(--b-600));
   --v23-ask-glow: 0 6px 18px rgba(0,206,201,.22);
   --v23-card-rest: 0 1px 2px rgba(30,39,46,.05);
@@ -169,6 +170,10 @@ html *:not(canvas):not(video):not(iframe) {
 @keyframes v23FlyoutIn {
   from { opacity: 0; transform: translateX(-8px); }
   to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes v23TooltipIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 :root {
 

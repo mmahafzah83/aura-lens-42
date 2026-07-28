@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowRight, ChevronRight } from "lucide-react";
+import { ArrowRight, ChevronRight, Link as LinkIcon, Mic, Type as TypeIcon, FileUp, ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import useTierFromImprint from "@/hooks/useTierFromImprint";
 import useJourneyState from "@/hooks/useJourneyState";
 import { trackSignalOpen } from "@/lib/trackSignalOpen";
 import InsightCards from "@/components/home/InsightCards";
+import { ButtonPrimary, ButtonDark, Chip, IconTile, StatCard, Avatar } from "@/components/systemb";
 import type { BriefDraft } from "@/components/Brief";
 
 /**
@@ -18,7 +19,7 @@ import type { BriefDraft } from "@/components/Brief";
  */
 
 interface BriefV2Props {
-  onOpenCapture: () => void;
+  onOpenCapture: (mode?: string) => void;
   onSwitchTab: (tab: string) => void;
   onOpenSignal: (signalId: string) => void;
   onOpenDraft: (draft: BriefDraft) => void;
@@ -56,6 +57,7 @@ interface MoveRow {
 interface OvernightState {
   lastRunAt: string | null;
   headline: string | null;
+  why: string | null;
   source: string | null;
   draft: DraftRow | null;
 }
@@ -144,34 +146,12 @@ const SectionLabel: React.FC<React.PropsWithChildren> = ({ children }) => (
   }}>{children}</div>
 );
 
-const Chip: React.FC<React.PropsWithChildren<{ tone: "machine" | "clock" | "neutral" }>> = ({ tone, children }) => {
-  const map = {
-    machine: { background: "var(--machine-tint)", color: "var(--machine-text)" },
-    clock:   { background: "var(--deadline-tint)", color: "var(--deadline-text)" },
-    neutral: { background: "var(--surface-subtle)", color: "var(--text-secondary)" },
-  } as const;
-  return (
-    <span style={{
-      ...map[tone], borderRadius: 6, padding: "2px 7px", fontSize: 10.5,
-      fontWeight: 600, letterSpacing: ".02em", whiteSpace: "nowrap",
-    }}>{children}</span>
-  );
-};
-
-const PrimaryButton: React.FC<React.PropsWithChildren<{ onClick: () => void }>> = ({ onClick, children }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    style={{
-      background: "var(--v23-btn-bg)", color: "var(--text-inverse)",
-      border: 0, borderRadius: 8, padding: "10px 15px",
-      fontWeight: 600, fontSize: 12.5, fontFamily: "var(--ff-ui)", cursor: "pointer",
-      boxShadow: "var(--v23-btn-inset), var(--v23-btn-shadow)",
-    }}
-    onMouseDown={(e) => { e.currentTarget.style.transform = "translateY(1px)"; }}
-    onMouseUp={(e) => { e.currentTarget.style.transform = "none"; }}
-    onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; }}
-  >{children}</button>
+/** Leading status dot for signal rows — colour law, no text. */
+const StatusDot: React.FC<{ tone: "live" | "clock" | "cooling" }> = ({ tone }) => (
+  <span aria-hidden style={{
+    width: 7, height: 7, borderRadius: 999, flexShrink: 0,
+    background: tone === "live" ? "var(--machine)" : tone === "clock" ? "var(--deadline)" : "var(--border-strong)",
+  }} />
 );
 
 const LinkAction: React.FC<React.PropsWithChildren<{ onClick: () => void }>> = ({ onClick, children }) => (
@@ -201,7 +181,8 @@ export default function BriefV2({
   const [capturesWeek, setCapturesWeek] = useState<number | null>(null);
   const [publishedMonth, setPublishedMonth] = useState<number | null>(null);
   const [drafts, setDrafts] = useState<DraftRow[]>([]);
-  const [overnight, setOvernight] = useState<OvernightState>({ lastRunAt: null, headline: null, source: null, draft: null });
+  const [overnight, setOvernight] = useState<OvernightState>({ lastRunAt: null, headline: null, why: null, source: null, draft: null });
+  const [showWhy, setShowWhy] = useState(false);
   const [moves, setMoves] = useState<MoveRow[]>([]);
   const [movedOvernight, setMovedOvernight] = useState<number | null>(null);
 
@@ -295,7 +276,8 @@ export default function BriefV2({
     const ghost = (((ghostRes?.data as any[]) || []))[0];
     setOvernight({
       lastRunAt: finding?.created_at ?? null,
-      headline: (finding?.implication || finding?.title || null),
+      headline: (finding?.title || finding?.implication || null),
+      why: (finding?.title && finding?.implication) ? finding.implication : null,
       source: finding?.source ?? null,
       draft: ghost ? {
         id: ghost.id, body: ghost.post_text || "",
@@ -340,7 +322,7 @@ export default function BriefV2({
   const firstFlightSteps = useMemo(() => ([
     { label: "Complete your profile", done: journey.profileComplete, go: () => onSwitchTab("identity") },
     { label: "Take the brand assessment", done: journey.assessmentComplete, go: () => (onOpenBrandAssessment ? onOpenBrandAssessment() : onSwitchTab("identity")) },
-    { label: "Capture three sources", done: journey.capturesReady, go: onOpenCapture },
+    { label: "Capture three sources", done: journey.capturesReady, go: () => onOpenCapture() },
     { label: "Publish your first post", done: journey.hasPublished, go: () => onSwitchTab("authority") },
   ]), [journey, onOpenCapture, onSwitchTab, onOpenBrandAssessment]);
   const ffDone = firstFlightSteps.filter(s => s.done).length;
@@ -372,7 +354,7 @@ export default function BriefV2({
             </p>
           )}
         </div>
-        <PrimaryButton onClick={onOpenCapture}>Capture</PrimaryButton>
+        <ButtonPrimary onClick={() => onOpenCapture()}>Capture</ButtonPrimary>
       </header>
 
       {/* 2 · FIRST FLIGHT */}
@@ -439,8 +421,8 @@ export default function BriefV2({
                   }}
                 >
                   <span style={{ flex: 1, minWidth: 0, fontSize: 14, color: "var(--text-primary)" }}>{m.title}</span>
-                  <Chip tone="neutral">{m.action_type}</Chip>
-                  {fading && <Chip tone="clock">Fading</Chip>}
+                  <Chip variant="cooling">{m.action_type}</Chip>
+                  {fading && <Chip variant="clock">Fading</Chip>}
                   <ChevronRight size={15} style={{ color: "var(--text-muted)" }} />
                 </button>
               );
@@ -504,11 +486,11 @@ export default function BriefV2({
               >
                 {overnight.draft.body.slice(0, 220)}
               </p>
-              <PrimaryButton onClick={() => onOpenDraft({
+              <ButtonPrimary onClick={() => onOpenDraft({
                 id: overnight.draft!.id, body: overnight.draft!.body,
                 language: overnight.draft!.language, type: "linkedin_post",
                 topic: overnight.draft!.topic, _source: "linkedin_posts",
-              })}>Read the draft</PrimaryButton>
+              })}>Read the draft</ButtonPrimary>
             </div>
           )}
         </section>
@@ -551,10 +533,10 @@ export default function BriefV2({
                   </div>
                 </div>
                 {isFading(s.velocity)
-                  ? <Chip tone="clock">Act now</Chip>
+                  ? <Chip variant="clock">Act now</Chip>
                   : isCooling(s.velocity)
-                    ? <Chip tone="neutral">Cooling</Chip>
-                    : <Chip tone="machine">Live</Chip>}
+                    ? <Chip variant="cooling">Cooling</Chip>
+                    : <Chip variant="live">Live</Chip>}
               </button>
             ))}
           </div>

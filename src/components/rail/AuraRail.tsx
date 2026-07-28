@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Compass, Radar, PenLine, BarChart3, User, Settings, Paperclip, X,
+  Compass, Radar, PenLine, BarChart3, Settings, Paperclip, X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import AuraLogo from "@/components/brand/AuraLogo";
+import { TooltipPanel } from "@/components/systemb/Tooltip";
+import Avatar from "@/components/systemb/Avatar";
 
 /**
  * AuraRail — System-B V23 rail (hybrid icon rail + contextual flyout).
@@ -50,28 +52,12 @@ function hhmm(iso: string): string {
 
 interface SignalCounts { live: number; actNow: number; cooling: number }
 
-/** Tooltip shown on hover/focus — full name plus a one-line description. */
-const Tooltip: React.FC<{ title: string; body: string; top: number }> = ({ title, body, top }) => (
-  <div
-    role="tooltip"
-    className="v23-tooltip pointer-events-none fixed z-50 hidden md:block"
-    style={{
-      left: "calc(var(--v23-rail-w) + 8px)", top,
-      width: 214, padding: "9px 11px", borderRadius: 9,
-      background: "var(--v23-tooltip-bg)", color: "var(--v23-tooltip-text)",
-      boxShadow: "var(--v23-tooltip-shadow)",
-      fontFamily: "var(--ff-ui)", fontSize: 11.5, lineHeight: 1.6,
-    }}
-  >
-    <div style={{ fontWeight: 600 }}>{title}</div>
-    <div style={{ color: "var(--v23-tooltip-muted)" }}>{body}</div>
-  </div>
-);
-
 export default function AuraRail({
   activeTab, onSelect, onOpenCapture, onOpenSettings, newSignalCount = 0,
 }: AuraRailProps) {
   const [lastRun, setLastRun] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [profileName, setProfileName] = useState<string | null>(null);
   const [flyout, setFlyout] = useState<RailTab | null>(null);
   const [tip, setTip] = useState<{ title: string; body: string; top: number } | null>(null);
   const [counts, setCounts] = useState<SignalCounts | null>(null);
@@ -86,6 +72,16 @@ export default function AuraRail({
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user || cancelled) return;
+        void (async () => {
+          const { data: prof } = await supabase
+            .from("diagnostic_profiles")
+            .select("first_name, last_name, avatar_url")
+            .eq("user_id", user.id)
+            .maybeSingle();
+          if (cancelled || !prof) return;
+          setAvatarUrl(((prof as any).avatar_url as string) || null);
+          setProfileName([(prof as any).first_name, (prof as any).last_name].filter(Boolean).join(" ") || null);
+        })();
         const { data } = await (supabase.from("agent_findings" as any) as any)
           .select("created_at")
           .eq("user_id", user.id)
@@ -336,7 +332,7 @@ export default function AuraRail({
             style={railBtn(activeTab === "identity")}
           >
             {activeTab === "identity" && <ActiveBar />}
-            <User size={18} strokeWidth={1.75} />
+            <Avatar src={avatarUrl} name={profileName} size="sm" ring="var(--v23-night-line)" />
             <span style={labelStyle(activeTab === "identity")}>Profile</span>
           </button>
           <button
@@ -357,7 +353,16 @@ export default function AuraRail({
         </div>
       </aside>
 
-      {tip && <Tooltip title={tip.title} body={tip.body} top={tip.top} />}
+      {tip && (
+        <div className="hidden md:block">
+          <TooltipPanel
+            title={tip.title}
+            body={tip.body}
+            left={parseInt(getComputedStyle(document.documentElement).getPropertyValue("--v23-rail-w")) + 8}
+            top={tip.top}
+          />
+        </div>
+      )}
 
       {/* Contextual flyout — flush to the rail, full height, light surface. */}
       {flyout === "intelligence" && (
