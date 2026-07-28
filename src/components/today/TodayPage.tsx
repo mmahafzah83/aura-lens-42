@@ -173,8 +173,8 @@ export default function TodayPage({
 
     const wk = startOfWeek(new Date()).getTime();
     setWeekCaptures(entries.filter((e) => startOfWeek(new Date(e.created_at)).getTime() === wk).length);
-    setWeekPosts(((postRes.data as any[]) || [])
-      .filter((p) => startOfWeek(new Date(p.published_at || p.created_at)).getTime() === wk).length);
+    setWeekPosts(filterPublishedRows(((postRes.data as any[]) || []))
+      .filter((p) => startOfWeek(new Date(postEffectiveDate(p) || p.created_at)).getTime() === wk).length);
 
     // Median weekly captures across the 12 completed weeks — the user's own rhythm.
     const buckets = new Map<number, number>();
