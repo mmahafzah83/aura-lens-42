@@ -654,7 +654,7 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
         </text>
         <text x={urlX} y={h - 48} textAnchor={urlAnchor}
               fontFamily={bodyFont} fontSize={12} fill={style.muted}>
-          {isRTL ? "حوّل خبرتك إلى حضور" : "Turns your expertise into presence"}
+          {isRTL ? "نظام ذكاء شخصي" : "Personal Intelligence System"}
         </text>
       </g>
 

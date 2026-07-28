@@ -13,8 +13,8 @@ export const EXPORT_GOLD = "#D4B056";
 export const EXPORT_URL = "aura-intel.org";
 
 /** Tagline copy — bilingual. */
-export const EXPORT_TAGLINE_EN = "Turns your expertise into presence";
-export const EXPORT_TAGLINE_AR = "حوّل خبرتك إلى حضور";
+export const EXPORT_TAGLINE_EN = "Personal Intelligence System";
+export const EXPORT_TAGLINE_AR = "نظام ذكاء شخصي";
 
 /**
  * Arabic font stack used by the working visual-card / carousel export

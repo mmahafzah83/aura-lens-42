@@ -125,7 +125,7 @@ export default function PressFooter({
           fontWeight={600}
           fill={INK2}
         >
-          حوّل خبرتك إلى حضور
+          نظام ذكاء شخصي
         </text>
       ) : (
         <text
@@ -137,7 +137,7 @@ export default function PressFooter({
           letterSpacing={1.5}
           fill={INK2}
         >
-          Turns your expertise into presence
+          Personal Intelligence System
         </text>
       )}
     </g>

@@ -1,7 +1,7 @@
 {
-  "name": "Aura — Turns your expertise into presence",
+  "name": "Aura — Personal Intelligence System",
   "short_name": "Aura",
-  "description": "Turns your expertise into presence",
+  "description": "Personal Intelligence System",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#F2F5F9",

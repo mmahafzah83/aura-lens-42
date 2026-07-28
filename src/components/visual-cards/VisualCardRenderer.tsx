@@ -227,7 +227,7 @@ export default function VisualCardRenderer(props: VisualCardProps) {
                     fontFamily: isAr ? "'Cairo','DM Sans',sans-serif" : style.bodyFont,
                     fontSize: 11, color: style.footerColor,
                   }}>
-                    {isAr ? "حوّل خبرتك إلى حضور" : "Turns your expertise into presence"}
+                    {isAr ? "نظام ذكاء شخصي" : "Personal Intelligence System"}
                   </div>
                 </div>
               </div>
