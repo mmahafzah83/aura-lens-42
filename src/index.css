@@ -2126,3 +2126,28 @@ button[aria-label="Notifications"]:focus-visible {
 /* Hex-valued (not an HSL triple) — kept out of the bridge block above.
    Declared last so it beats the warm hsl(30 12% 11%) at the top of the file. */
 :root { --aura-card: var(--surface-card); }
+
+/* ── System-B V23: Signals board micro-interactions ───────────────── */
+.v23-focus:focus-visible {
+  outline: 2px solid var(--act);
+  outline-offset: 2px;
+}
+.v23-lift {
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+.v23-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lift);
+}
+.v23-row:hover {
+  background: var(--surface-subtle);
+}
+@media (prefers-reduced-motion: reduce) {
+  .v23-lift,
+  .v23-row {
+    transition: none;
+  }
+  .v23-lift:hover {
+    transform: none;
+  }
+}

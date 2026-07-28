@@ -34,7 +34,6 @@ import FirstFlightCard from "@/components/FirstFlightCard";
 import useFirstFlight from "@/hooks/useFirstFlight";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import IdentityTab from "@/components/tabs/IdentityTab";
-import Observatory from "@/components/Observatory";
 import SignalsBoardV2 from "@/components/signals/SignalsBoardV2";
 import TierCeremonyModal from "@/components/TierCeremonyModal";
 import MilestoneNotification from "@/components/MilestoneNotification";
@@ -1002,14 +1001,9 @@ const Dashboard = () => {
             {activeTab === "intelligence" && (
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
-                  <SignalsBoardV2 onOpenCapture={() => handleOpenCapture()} />
-                </ErrorBoundary>
-                <ErrorBoundary>
-                  <Observatory
-                    entries={entries}
-                    onOpenChat={openChat}
-                    onRefresh={fetchEntries}
+                  <SignalsBoardV2
                     onOpenCapture={handleOpenCapture}
+                    onOpenChat={openChat}
                     onDraftToStudio={(prefill) => {
                       setSignalDraftPrefill(prefill);
                       setActiveTab("authority");
