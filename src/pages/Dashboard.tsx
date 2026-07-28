@@ -47,6 +47,7 @@ import ComposerV2 from "@/components/composer/ComposerV2";
 import AnalyticsV2 from "@/components/analytics/AnalyticsV2";
 import LibraryPage from "@/components/library/LibraryPage";
 import OvernightPage from "@/components/overnight/OvernightPage";
+import MomentumPage from "@/components/momentum/MomentumPage";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
@@ -58,6 +59,7 @@ const NAV_ITEMS = [
   { value: "overnight", label: "The Overnight", pageHeader: "The Overnight", icon: Moon, docTitle: "Aura — The Overnight" },
   { value: "authority", label: "Composer", pageHeader: "Composer", icon: Crown, docTitle: "Aura — Composer" },
   { value: "influence", label: "Analytics", pageHeader: "Analytics", icon: TrendingUp, docTitle: "Aura — Analytics" },
+  { value: "momentum", label: "Momentum", pageHeader: "Momentum", icon: Flame, docTitle: "Aura — Momentum" },
   { value: "identity", label: "Profile", pageHeader: "Profile", icon: User, docTitle: "Aura — Profile" },
 ] as const;
 
@@ -1049,6 +1051,14 @@ const Dashboard = () => {
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
                   <AnalyticsV2 onOpenChat={openChat} />
+                </ErrorBoundary>
+              </div>
+            )}
+
+            {activeTab === "momentum" && (
+              <div className="animate-tab-spring aura-page">
+                <ErrorBoundary>
+                  <MomentumPage />
                 </ErrorBoundary>
               </div>
             )}
