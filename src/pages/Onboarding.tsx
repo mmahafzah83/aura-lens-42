@@ -857,7 +857,7 @@ const Onboarding = () => {
     <h1
       className="font-semibold mb-3"
       style={{
-        fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
+        fontFamily: "var(--font-display)",
         fontSize: 28,
         lineHeight: 1.2,
         color: "var(--ink)",
@@ -1131,6 +1131,86 @@ const Onboarding = () => {
 
   // ───── STEP 0 ─────
   if (step === 0 && !welcomeAcknowledged) {
+    // Capture-first screens sit IN FRONT of this screen. Nothing below changes.
+    if (showCaptureFirst && cfPhase === "input") {
+      return cardShell(
+        <>
+          {eyebrow("1 of 5")}
+          {heading("Paste one thing you read this week.")}
+          <p className="mb-3" style={{ fontSize: 15, lineHeight: 1.7, color: "var(--ink)" }}>
+            Anything — an article, a report, a LinkedIn post you disagreed with. Aura reads it now and shows you something about it before you answer a single question.
+          </p>
+          <p className="mb-5" style={{ fontSize: 13, lineHeight: 1.6, color: "var(--ink-2)" }}>
+            We ask for this first because every other question is easier once there's something on the table.
+          </p>
+          <input
+            value={cfValue}
+            onChange={(e) => setCfValue(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") void cfSubmit(); }}
+            placeholder="Paste a link, or type a thought"
+            className={inputCls}
+            style={{ ...inputStyle, marginBottom: 16 }}
+          />
+          {primaryBtn("Add it", () => void cfSubmit(), { loading: cfBusy, disabled: !cfValue.trim() })}
+          {ghostLink("I'll paste one later", cfSkip)}
+          <p style={{ fontSize: 12, lineHeight: 1.6, color: "var(--ink-2)", marginTop: 8 }}>
+            Eight seconds. Nothing is published, now or ever, without you pressing publish.
+          </p>
+        </>,
+      );
+    }
+    if (showCaptureFirst && cfPhase === "reading") {
+      return cardShell(
+        <>
+          {eyebrow("1 of 5")}
+          {heading("Aura is reading it.")}
+          <div className="flex items-center gap-2" style={{ color: "var(--ink-2)", fontSize: 14 }}>
+            <Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--brand)" }} />
+            Pulling out the claims worth keeping.
+          </div>
+        </>,
+      );
+    }
+    if (showCaptureFirst && cfPhase === "result") {
+      return cardShell(
+        <>
+          {eyebrow("2 of 5")}
+          {cfTimedOut || cfFragments.length === 0 ? (
+            <>
+              {heading("Aura is still reading it.")}
+              <p className="mb-6" style={{ fontSize: 15, lineHeight: 1.7, color: "var(--ink-2)" }}>
+                This one is taking longer than eight seconds. Nothing is lost — what Aura finds will be waiting for you on your Home.
+              </p>
+            </>
+          ) : (
+            <>
+              {heading(`Aura pulled ${cfCount} claim${cfCount === 1 ? "" : "s"} out of that.`)}
+              <ul className="mb-6" style={{ listStyle: "none", padding: 0, margin: "0 0 24px" }}>
+                {cfFragments.map((f, i) => (
+                  <li
+                    key={i}
+                    style={{
+                      fontSize: 14,
+                      lineHeight: 1.6,
+                      color: "var(--ink)",
+                      borderLeft: "2px solid var(--brand)",
+                      paddingLeft: 12,
+                      marginBottom: 10,
+                    }}
+                  >
+                    {f.title}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          {primaryBtn(
+            <>Continue <ArrowRight className="w-4 h-4" /></>,
+            () => setShowCaptureFirst(false),
+          )}
+        </>,
+      );
+    }
     const displayName = firstName || prefillFirstName;
     return cardShell(
       <>
