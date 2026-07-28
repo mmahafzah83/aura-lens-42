@@ -372,7 +372,7 @@ const AnalyticsV2: React.FC<{ onOpenChat?: (msg?: string) => void }> = ({ onOpen
 
       {/* THEME MIX */}
       <Card index={card++} reduced={reduced}>
-        <CardHead kicker="What am I known for" title="Share of published output by theme" />
+        <CardHead kicker="What am I known for" title="Share of posts live on LinkedIn, by theme" />
         {mix.total === 0 ? (
           <Reading>Nothing published in this range yet, so there is no pattern to read.</Reading>
         ) : (
@@ -401,8 +401,11 @@ const AnalyticsV2: React.FC<{ onOpenChat?: (msg?: string) => void }> = ({ onOpen
             </div>
             <Reading>
               {mix.total < 3
-                ? `Too early to read a pattern — ${mix.total} post${mix.total === 1 ? "" : "s"} published.`
-                : `${Math.min(3, mix.segs.length)} theme${Math.min(3, mix.segs.length) === 1 ? "" : "s"} carry ${mix.topShare}% of your ${mix.total} published posts. "${mix.segs[0].label}" leads at ${mix.segs[0].pct}%.`}
+                ? `Too early to read a pattern — ${mix.total} post${mix.total === 1 ? "" : "s"} live on LinkedIn.`
+                : `${Math.min(3, mix.segs.length)} theme${Math.min(3, mix.segs.length) === 1 ? "" : "s"} carry ${mix.topShare}% of the ${mix.total} posts you have live on LinkedIn. "${mix.segs[0].label}" leads at ${mix.segs[0].pct}%.`}
+            </Reading>
+            <Reading>
+              {`Of those ${postCounts.live}, ${postCounts.throughAura} were written through Aura and ${postCounts.imported} are your own imported history. Posts by other people that Aura found while searching are not counted.`}
             </Reading>
           </>
         )}
