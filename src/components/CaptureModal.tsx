@@ -24,6 +24,8 @@ interface CaptureModalProps {
   onOpenChat?: (prefill: string) => void;
   prefillUrl?: string;
   prefillText?: string;
+  /** Opens the modal on a specific mode. Defaults to the existing behaviour. */
+  initialType?: CaptureType;
 }
 
 const isValidUrl = (s: string) => {
@@ -35,7 +37,7 @@ const isValidUrl = (s: string) => {
   }
 };
 
-const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat, prefillUrl, prefillText }: CaptureModalProps) => {
+const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat, prefillUrl, prefillText, initialType }: CaptureModalProps) => {
   const queryClient = useQueryClient();
   const { enabled: celebrationsEnabled } = useCelebrationsEnabled();
   const [captureType, setCaptureType] = useState<CaptureType>("link");
@@ -193,8 +195,10 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
           ta.style.height = ta.scrollHeight + "px";
         }
       });
+    } else if (initialType) {
+      setCaptureType(initialType);
     }
-  }, [open, prefillUrl, prefillText]);
+  }, [open, prefillUrl, prefillText, initialType]);
 
   const handleImageSelect = async (file: File) => {
     if (!file.type.startsWith("image/")) {
