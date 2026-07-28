@@ -43,7 +43,7 @@ import usePageMeta from "@/hooks/usePageMeta";
 import { track, getTrackSessionId } from "@/lib/track";
 import { isProfileComplete } from "@/lib/onboarding";
 
-import AuthorityTab from "@/components/tabs/AuthorityTab";
+import ComposerV2 from "@/components/composer/ComposerV2";
 import AnalyticsV2 from "@/components/analytics/AnalyticsV2";
 import LibraryPage from "@/components/library/LibraryPage";
 import OvernightPage from "@/components/overnight/OvernightPage";
@@ -1035,14 +1035,11 @@ const Dashboard = () => {
             {activeTab === "authority" && (
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
-                  <AuthorityTab
-                    entries={entries}
-                    onRefresh={fetchEntries}
+                  <ComposerV2
                     signalPrefill={signalDraftPrefill}
                     onSignalPrefillConsumed={() => setSignalDraftPrefill(null)}
                     draftPrefill={draftPrefill}
                     onDraftPrefillConsumed={() => setDraftPrefill(null)}
-                    onOpenDraft={(d) => setDraftPrefill(d)}
                   />
                 </ErrorBoundary>
               </div>

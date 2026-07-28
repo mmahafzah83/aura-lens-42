@@ -367,7 +367,7 @@ async function insertPublishedLinkedInPost(opts: {
     .catch((e) => console.error("calculate-aura-score failed:", e));
 }
 
-const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftPrefill, onDraftPrefillConsumed, onGoToLibrary }: { planPrefill?: PlanPrefill | null; signalPrefill?: SignalPrefill | null; onSignalPrefillConsumed?: () => void; draftPrefill?: DraftPrefill | null; onDraftPrefillConsumed?: () => void; onGoToLibrary?: () => void }) => {
+export const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftPrefill, onDraftPrefillConsumed, onGoToLibrary }: { planPrefill?: PlanPrefill | null; signalPrefill?: SignalPrefill | null; onSignalPrefillConsumed?: () => void; draftPrefill?: DraftPrefill | null; onDraftPrefillConsumed?: () => void; onGoToLibrary?: () => void }) => {
   const navigate = useNavigate();
   const [topic, setTopic] = useState("");
   const [context, setContext] = useState("");
@@ -2104,8 +2104,8 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                 )}
                 <div className="relative">
                   {gateBlocked && output.trim() && !isGeneratingAny && (
-                    <div className="mb-3 rounded-xl border border-[color:var(--warning)]/40 bg-[color-mix(in_srgb,var(--warning)_8%,transparent)] p-4 space-y-2">
-                      <p className="text-xs uppercase tracking-[0.14em] font-semibold text-[color:var(--warning-text)]">
+                    <div className="mb-3 rounded-xl border border-[color:var(--act-fill)]/40 bg-[color-mix(in_srgb,var(--act-fill)_8%,transparent)] p-4 space-y-2">
+                      <p className="text-xs uppercase tracking-[0.14em] font-semibold text-[color:var(--act)]">
                         Held by the quality gate
                       </p>
                       <p className="text-xs text-muted-foreground leading-relaxed">
@@ -2122,7 +2122,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                         size="sm"
                         variant="outline"
                         disabled={isGeneratingAny || !!actionLoading}
-                        className="h-7 text-xs border-[color:var(--warning)]/40 text-[color:var(--warning-text)]"
+                        className="h-7 text-xs border-[color:var(--act-fill)]/40 text-[color:var(--act)]"
                         onClick={() => generate()}
                       >
                         Regenerate
@@ -2252,7 +2252,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                               Publish confidence
                               <InfoTooltip slug="publish-confidence" label="Publish confidence" side="top" triggerSize={13} className="ml-1.5 align-middle" />
                             </span>
-                            <span className={`text-xs font-semibold tabular-nums ${gate!.overall_score >= 70 ? "text-[color:var(--warning-text)]" : "text-muted-foreground"}`}>
+                            <span className={`text-xs font-semibold tabular-nums ${gate!.overall_score >= 70 ? "text-[color:var(--act)]" : "text-muted-foreground"}`}>
                               {gate!.overall_score}%
                             </span>
                           </div>
@@ -2261,7 +2261,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                               initial={{ width: 0 }}
                               animate={{ width: `${Math.max(0, Math.min(100, gate!.overall_score))}%` }}
                               transition={{ duration: 0.6 }}
-                              className={`h-full rounded-full ${gate!.overall_score >= 70 ? "bg-[color:var(--warning)]" : "bg-muted-foreground/40"}`}
+                              className={`h-full rounded-full ${gate!.overall_score >= 70 ? "bg-[color:var(--act-fill)]" : "bg-muted-foreground/40"}`}
                             />
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 pt-1">
@@ -2272,11 +2272,11 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                                   <span className="text-xs text-muted-foreground w-20 shrink-0">{d.label}</span>
                                   <div className="flex-1 bg-secondary/30 rounded-full h-1 overflow-hidden">
                                     <div
-                                      className={`h-full rounded-full ${d.raw >= 7 ? "bg-[color:var(--warning)]" : "bg-muted-foreground/30"}`}
+                                      className={`h-full rounded-full ${d.raw >= 7 ? "bg-[color:var(--act-fill)]" : "bg-muted-foreground/30"}`}
                                       style={{ width: `${pct}%` }}
                                     />
                                   </div>
-                                  <span className={`text-xs tabular-nums w-8 text-right ${d.raw >= 7 ? "text-[color:var(--warning-text)]" : "text-muted-foreground/60"}`}>{pct}%</span>
+                                  <span className={`text-xs tabular-nums w-8 text-right ${d.raw >= 7 ? "text-[color:var(--act)]" : "text-muted-foreground/60"}`}>{pct}%</span>
                                 </div>
                               );
                             })}
@@ -2286,7 +2286,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                               size="sm"
                               variant="outline"
                               disabled={isGeneratingAny || !!actionLoading}
-                              className="h-8 w-full text-xs gap-1.5 border-[color:var(--warning)]/40 text-[color:var(--warning-text)] hover:bg-[color-mix(in_srgb,var(--warning)_10%,transparent)]"
+                              className="h-8 w-full text-xs gap-1.5 border-[color:var(--act-fill)]/40 text-[color:var(--act)] hover:bg-[color-mix(in_srgb,var(--act-fill)_10%,transparent)]"
                               onClick={async () => {
                                 const weak = (gate!.weaknesses || []).filter(Boolean);
                                 const instruction = weak.length
@@ -2310,7 +2310,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed, draftP
                             </Button>
                             <InfoTooltip slug="strengthen-post" label="Strengthen" side="top" triggerSize={13} className="ml-1.5 align-middle" /></>
                           ) : (
-                            <div className="text-xs text-[color:var(--warning-text)]">
+                            <div className="text-xs text-[color:var(--act)]">
                               Ready to publish — quality threshold met.
                             </div>
                           )}
