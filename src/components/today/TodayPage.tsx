@@ -118,7 +118,8 @@ export default function TodayPage({
   const [medianWeekCaptures, setMedianWeekCaptures] = useState<number | null>(null);
   const [score, setScore] = useState<number | null>(null);
   const [tierKey, setTierKey] = useState<string | null>(null);
-  const [liveThemes, setLiveThemes] = useState<number | null>(null);
+  const [liveSignals, setLiveSignals] = useState<number | null>(null);
+  const [totalCaptures13w, setTotalCaptures13w] = useState(0);
   const [justDismissed, setJustDismissed] = useState(false);
 
   const load = useCallback(async () => {
@@ -143,7 +144,7 @@ export default function TodayPage({
         .gte("created_at", since13.toISOString()),
       supabase.from("score_snapshots").select("score, tier, created_at")
         .eq("user_id", uid).order("created_at", { ascending: false }).limit(1),
-      supabase.from("strategic_signals").select("theme_tags")
+      supabase.from("strategic_signals").select("id", { count: "exact", head: true })
         .eq("user_id", uid).eq("status", "active"),
       loadStartCards(uid).catch(() => ({ cards: [] as StartCard[], totalSignals: 0 })),
     ]);
@@ -193,9 +194,8 @@ export default function TodayPage({
     setScore(snap?.score ?? null);
     setTierKey(snap?.tier ?? null);
 
-    const themes = new Set<string>();
-    ((themeRes.data as any[]) || []).forEach((s) => (s.theme_tags || []).forEach((t: string) => t && themes.add(t)));
-    setLiveThemes(themes.size || null);
+    setLiveSignals((themeRes as any).count || null);
+    setTotalCaptures13w(entries.length);
 
     setLoaded(true);
   }, [uid]);
@@ -341,7 +341,7 @@ export default function TodayPage({
     return <div style={{ ...MONO, fontSize: 12, color: "var(--text-muted)", padding: "40px 0" }}>Reading your state…</div>;
   }
 
-  const rhythmQualifies = medianWeekCaptures != null;
+  const rhythmQualifies = medianWeekCaptures != null && totalCaptures13w > 0;
 
   return (
     <div style={{ display: "grid", gap: 26, paddingTop: 4 }}>
@@ -454,7 +454,7 @@ export default function TodayPage({
             <Moon size={15} style={{ color: "var(--machine)" }} aria-hidden />
             <span style={{ fontSize: 13.5, color: "var(--text-secondary)" }}>
               Tonight <strong style={{ ...MONO, color: "var(--text-primary)" }}>{HUNT_UTC} UTC</strong> — The Overnight reads for you
-              {liveThemes ? <> across your <strong style={{ ...MONO, color: "var(--text-primary)" }}>{liveThemes}</strong> live themes</> : null}.
+              {liveSignals ? <> across your <strong style={{ ...MONO, color: "var(--text-primary)" }}>{liveSignals}</strong> live signals</> : null}.
             </span>
           </div>
         </Card>
