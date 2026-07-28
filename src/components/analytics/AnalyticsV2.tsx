@@ -33,6 +33,8 @@ interface PostRow {
   source_metadata: any;
   published_at: string | null;
   created_at: string;
+  post_url: string | null;
+  linkedin_url: string | null;
 }
 
 interface SignalRow {
@@ -163,7 +165,7 @@ const AnalyticsV2: React.FC<{ onOpenChat?: (msg?: string) => void }> = ({ onOpen
         supabase.from("imprint_snapshots").select("imprint, tier, components").eq("user_id", user.id)
           .order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("linkedin_posts")
-          .select("id, post_text, title, hook, theme, topic_label, tracking_status, source_type, source_signal_id, source_metadata, published_at, created_at")
+          .select("id, post_text, title, hook, theme, topic_label, tracking_status, source_type, source_signal_id, source_metadata, published_at, created_at, post_url, linkedin_url")
           .eq("user_id", user.id).order("created_at", { ascending: false }).limit(1000),
         supabase.from("linkedin_post_metrics").select("post_id, impressions, snapshot_date")
           .eq("user_id", user.id).limit(5000),
@@ -243,7 +245,10 @@ const AnalyticsV2: React.FC<{ onOpenChat?: (msg?: string) => void }> = ({ onOpen
   const tableRows = useMemo(() => {
     const rows = rangedPosts.map(p => ({
       id: p.id,
-      text: (p.hook || p.title || p.post_text || "").replace(/\s+/g, " ").trim().slice(0, 110) || "Untitled",
+      text:
+        (p.hook || p.title || p.post_text || "").replace(/\s+/g, " ").trim().slice(0, 110) ||
+        (p.post_url || p.linkedin_url || "").replace(/^https?:\/\/(www\.)?/, "").slice(0, 70) ||
+        "No text stored",
       language: postLanguage(p),
       source: postSource(p),
       status: p.tracking_status ?? "—",
