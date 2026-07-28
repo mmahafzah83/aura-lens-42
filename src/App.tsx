@@ -26,7 +26,8 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import PageViewTracker from "./components/PageViewTracker";
 
 // Lazy-loaded heavy / rarely-visited routes
-const Landing = lazy(() => import("./pages/Landing"));
+// Old landing (src/pages/Landing.tsx) is unmounted but kept in the tree.
+const Landing = lazy(() => import("./pages/LandingV23"));
 const TrendDetail = lazy(() => import("./pages/TrendDetail"));
 const CarouselStudio = lazy(() => import("./pages/CarouselStudio"));
 const EditionStudio = lazy(() => import("./pages/EditionStudio"));
