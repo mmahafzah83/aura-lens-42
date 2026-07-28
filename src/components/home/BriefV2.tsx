@@ -464,6 +464,14 @@ export default function BriefV2({
             <span style={{ ...MONO, fontSize: 10.5, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--machine)" }}>
               The Overnight{overnight.lastRunAt ? ` · ${hhmm(overnight.lastRunAt)}` : ""}
             </span>
+            <button
+              type="button"
+              onClick={() => onSwitchTab("overnight")}
+              style={{
+                ...MONO, marginLeft: "auto", background: "transparent", border: 0, padding: 0,
+                cursor: "pointer", fontSize: 11, color: "var(--machine)",
+              }}
+            >See the full night →</button>
           </div>
           {overnight.headline && (
             <p style={{ margin: 0, fontSize: 16, lineHeight: 1.55, color: "var(--text-inverse)" }}>

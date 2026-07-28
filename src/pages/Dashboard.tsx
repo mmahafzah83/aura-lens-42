@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
-import { Plus, LogOut, MessageCircle, Compass, User, Shield, Crown, TrendingUp, Menu, X, Paperclip, Sparkles, UserPlus } from "lucide-react";
+import { Plus, LogOut, MessageCircle, Compass, Moon, User, Shield, Crown, TrendingUp, Menu, X, Paperclip, Sparkles, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -45,6 +45,7 @@ import { isProfileComplete } from "@/lib/onboarding";
 
 import AuthorityTab from "@/components/tabs/AuthorityTab";
 import ImpactTab from "@/components/tabs/ImpactTab";
+import OvernightPage from "@/components/overnight/OvernightPage";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
@@ -52,6 +53,7 @@ type Entry = Database["public"]["Tables"]["entries"]["Row"];
 const NAV_ITEMS = [
   { value: "home", label: "Home", pageHeader: "Home", icon: Compass, docTitle: "Aura — Home" },
   { value: "intelligence", label: "Signals", pageHeader: "Signals", icon: Shield, docTitle: "Aura — Signals" },
+  { value: "overnight", label: "The Overnight", pageHeader: "The Overnight", icon: Moon, docTitle: "Aura — The Overnight" },
   { value: "authority", label: "Composer", pageHeader: "Composer", icon: Crown, docTitle: "Aura — Composer" },
   { value: "influence", label: "Analytics", pageHeader: "Analytics", icon: TrendingUp, docTitle: "Aura — Analytics" },
   { value: "identity", label: "Profile", pageHeader: "Profile", icon: User, docTitle: "Aura — Profile" },
@@ -1009,6 +1011,17 @@ const Dashboard = () => {
                       setActiveTab("authority");
                       window.scrollTo({ top: 0, behavior: "smooth" });
                     }}
+                  />
+                </ErrorBoundary>
+              </div>
+            )}
+
+            {activeTab === "overnight" && (
+              <div className="animate-tab-spring aura-page">
+                <ErrorBoundary>
+                  <OvernightPage
+                    onOpenDraft={(d) => { setDraftPrefill(d); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                    onOpenSettings={() => setPreferencesOpen(true)}
                   />
                 </ErrorBoundary>
               </div>
