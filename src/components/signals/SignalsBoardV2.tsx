@@ -353,8 +353,9 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
                 aria-pressed={active}
                 style={{
                   display: "flex", width: "100%", alignItems: "center", justifyContent: "space-between",
-                  padding: "7px 10px", borderRadius: 8, border: 0, cursor: "pointer",
-                  background: active ? "var(--act-tint)" : "transparent",
+                  padding: "7px 10px", borderRadius: 8, cursor: "pointer",
+                  border: `1px solid ${active ? "var(--act)" : "var(--rule-outer)"}`,
+                  background: active ? "var(--act-tint)" : "var(--surface-card)",
                   color: active ? "var(--act-hover)" : "var(--text-secondary)",
                   fontSize: 13, fontWeight: active ? 600 : 500, fontFamily: "var(--ff-ui)",
                   transition: "background 160ms ease, color 160ms ease",
@@ -383,8 +384,9 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
                     aria-pressed={active}
                     style={{
                       display: "flex", width: "100%", alignItems: "center", justifyContent: "space-between",
-                      gap: 8, padding: "6px 10px", borderRadius: 8, border: 0, cursor: "pointer",
-                      background: active ? "var(--act-tint)" : "transparent",
+                      gap: 8, padding: "6px 10px", borderRadius: 8, cursor: "pointer",
+                      border: `1px solid ${active ? "var(--act)" : "var(--rule-outer)"}`,
+                      background: active ? "var(--act-tint)" : "var(--surface-card)",
                       color: active ? "var(--act-hover)" : "var(--text-secondary)",
                       fontSize: 12.5, fontFamily: "var(--ff-ui)", textAlign: "start",
                       transition: "background 160ms ease, color 160ms ease",
