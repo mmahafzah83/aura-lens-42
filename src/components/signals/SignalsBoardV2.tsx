@@ -415,11 +415,12 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
                   <div key={col.key} style={{
                     background: "var(--surface-subtle)", borderRadius: 14, padding: 10,
                   }}>
-                    <button
-                      type="button"
-                      onClick={collapsible ? () => setDormantOpen(o => !o) : undefined}
-                      className={collapsible ? "cursor-pointer v23-focus" : "v23-focus"}
-                      style={{
+                    {React.createElement(collapsible ? "button" : "div", {
+                      type: collapsible ? "button" : undefined,
+                      onClick: collapsible ? () => setDormantOpen((o: boolean) => !o) : undefined,
+                      className: collapsible ? "cursor-pointer v23-focus v23-tap" : undefined,
+                      "aria-expanded": collapsible ? open : undefined,
+                      style: {
                         display: "flex", width: "100%", alignItems: "center", gap: 7,
                         padding: "2px 2px 10px", border: 0, background: "transparent",
                         cursor: collapsible ? "pointer" : "default", textAlign: "start",
