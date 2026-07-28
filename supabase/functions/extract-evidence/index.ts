@@ -8,13 +8,26 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// The gateway intermittently ignores response_format:json_object and returns a
+// top-level ARRAY wrapping the object. Normalise the shape once, here.
+function unwrapObject(v: any): any | null {
+  if (Array.isArray(v)) {
+    for (const el of v) {
+      if (el && typeof el === "object" && !Array.isArray(el)) return el;
+    }
+    return null;
+  }
+  if (v && typeof v === "object") return v;
+  return null;
+}
+
 function parseAiJson(raw: string): any {
   try {
-    return JSON.parse(raw);
+    return unwrapObject(JSON.parse(raw));
   } catch {
     const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
     const cleaned = (match ? match[1] : raw).replace(/[\u0000-\u001F\u007F]/g, " ");
-    return JSON.parse(cleaned);
+    return unwrapObject(JSON.parse(cleaned));
   }
 }
 
@@ -367,7 +380,7 @@ Extract 3-8 fragments. Focus on ACTIONABLE, STRATEGIC content.`;
 
     const aiData = await aiRes.json();
     const parsed = parseAiJson(aiData.choices?.[0]?.message?.content || "{}");
-    const fragments = parsed.fragments || [];
+    const fragments = parsed?.fragments || [];
 
     // Capture OLD fragment ids BEFORE deletion so we can prune signals that
     // reference them (uuid[] has no FK, so stale ids would otherwise linger).
