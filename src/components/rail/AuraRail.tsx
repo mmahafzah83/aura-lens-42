@@ -57,6 +57,7 @@ export default function AuraRail({
   activeTab, onSelect, onOpenCapture, onOpenSettings, newSignalCount = 0,
 }: AuraRailProps) {
   const [lastRun, setLastRun] = useState<string | null>(null);
+  const [, setSearchParams] = useSearchParams();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [profileName, setProfileName] = useState<string | null>(null);
   const [flyout, setFlyout] = useState<RailTab | null>(null);
