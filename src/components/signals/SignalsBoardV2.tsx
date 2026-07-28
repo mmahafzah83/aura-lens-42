@@ -415,40 +415,49 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
                   <div key={col.key} style={{
                     background: "var(--surface-subtle)", borderRadius: 14, padding: 10,
                   }}>
-                    {React.createElement(collapsible ? "button" : "div", {
-                      type: collapsible ? "button" : undefined,
-                      onClick: collapsible ? () => setDormantOpen((o: boolean) => !o) : undefined,
-                      className: collapsible ? "cursor-pointer v23-focus v23-tap" : undefined,
-                      "aria-expanded": collapsible ? open : undefined,
-                      style: {
+                    {(() => {
+                      const Head = (
+                        <>
+                          <StatusDot tone={col.tone} />
+                          <span style={{ ...MONO, fontSize: 10, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--text-secondary)" }}>
+                            {col.label}
+                          </span>
+                          <span style={{
+                            ...MONO, fontSize: 10.5, fontWeight: 600, lineHeight: 1,
+                            padding: "3px 7px", borderRadius: 999,
+                            background: col.key === "accelerating" ? "var(--machine-tint)" : "var(--surface-card)",
+                            color: col.key === "accelerating" ? "var(--machine-text)" : "var(--text-secondary)",
+                            border: "1px solid var(--rule-divider)",
+                          }}>{counts ? col.count : "—"}</span>
+                          {collapsible && (
+                            <ChevronRight
+                              size={13}
+                              style={{
+                                marginInlineStart: "auto", color: "var(--text-muted)",
+                                transform: open ? "rotate(90deg)" : "none",
+                                transition: "transform 160ms ease",
+                              }}
+                            />
+                          )}
+                        </>
+                      );
+                      const base: React.CSSProperties = {
                         display: "flex", width: "100%", alignItems: "center", gap: 7,
                         padding: "2px 2px 10px", border: 0, background: "transparent",
-                        cursor: collapsible ? "pointer" : "default", textAlign: "start",
-                      }}
-                      aria-expanded={collapsible ? open : undefined}
-                    >
-                      <StatusDot tone={col.tone} />
-                      <span style={{ ...MONO, fontSize: 10, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--text-secondary)" }}>
-                        {col.label}
-                      </span>
-                      <span style={{
-                        ...MONO, fontSize: 10.5, fontWeight: 600, lineHeight: 1,
-                        padding: "3px 7px", borderRadius: 999,
-                        background: col.key === "accelerating" ? "var(--machine-tint)" : "var(--surface-card)",
-                        color: col.key === "accelerating" ? "var(--machine-text)" : "var(--text-secondary)",
-                        border: "1px solid var(--rule-divider)",
-                      }}>{counts ? col.count : "—"}</span>
-                      {collapsible && (
-                        <ChevronRight
-                          size={13}
-                          style={{
-                            marginInlineStart: "auto", color: "var(--text-muted)",
-                            transform: open ? "rotate(90deg)" : "none",
-                            transition: "transform 160ms ease",
-                          }}
-                        />
-                      )}
-                    </button>
+                        textAlign: "start",
+                      };
+                      return collapsible ? (
+                        <button
+                          type="button"
+                          onClick={() => setDormantOpen(o => !o)}
+                          className="cursor-pointer v23-focus v23-tap"
+                          aria-expanded={open}
+                          style={{ ...base, cursor: "pointer" }}
+                        >{Head}</button>
+                      ) : (
+                        <div style={base}>{Head}</div>
+                      );
+                    })()}
                     {open && (
                       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                         {cards.length === 0
