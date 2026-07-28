@@ -322,7 +322,7 @@ export default function BriefV2({
   const firstFlightSteps = useMemo(() => ([
     { label: "Complete your profile", done: journey.profileComplete, go: () => onSwitchTab("identity") },
     { label: "Take the brand assessment", done: journey.assessmentComplete, go: () => (onOpenBrandAssessment ? onOpenBrandAssessment() : onSwitchTab("identity")) },
-    { label: "Capture three sources", done: journey.capturesReady, go: onOpenCapture },
+    { label: "Capture three sources", done: journey.capturesReady, go: () => onOpenCapture() },
     { label: "Publish your first post", done: journey.hasPublished, go: () => onSwitchTab("authority") },
   ]), [journey, onOpenCapture, onSwitchTab, onOpenBrandAssessment]);
   const ffDone = firstFlightSteps.filter(s => s.done).length;
@@ -486,11 +486,11 @@ export default function BriefV2({
               >
                 {overnight.draft.body.slice(0, 220)}
               </p>
-              <PrimaryButton onClick={() => onOpenDraft({
+              <ButtonPrimary onClick={() => onOpenDraft({
                 id: overnight.draft!.id, body: overnight.draft!.body,
                 language: overnight.draft!.language, type: "linkedin_post",
                 topic: overnight.draft!.topic, _source: "linkedin_posts",
-              })}>Read the draft</PrimaryButton>
+              })}>Read the draft</ButtonPrimary>
             </div>
           )}
         </section>
@@ -533,10 +533,10 @@ export default function BriefV2({
                   </div>
                 </div>
                 {isFading(s.velocity)
-                  ? <Chip tone="clock">Act now</Chip>
+                  ? <Chip variant="clock">Act now</Chip>
                   : isCooling(s.velocity)
-                    ? <Chip tone="neutral">Cooling</Chip>
-                    : <Chip tone="machine">Live</Chip>}
+                    ? <Chip variant="cooling">Cooling</Chip>
+                    : <Chip variant="live">Live</Chip>}
               </button>
             ))}
           </div>
