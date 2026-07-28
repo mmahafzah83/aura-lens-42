@@ -862,6 +862,7 @@ const Dashboard = () => {
                 fullName={user?.fullName ?? null}
                 email={user?.email}
                 avatarUrl={user?.avatarUrl ?? null}
+                userId={userId}
                 onSignOut={handleLogout}
                 onOpenPreferences={() => setPreferencesOpen(true)}
                 onEditProfile={() => {

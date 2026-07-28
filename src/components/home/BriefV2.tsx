@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowRight, ChevronRight, Link as LinkIcon, Mic, Type as TypeIcon, FileUp } from "lucide-react";
+import { ArrowRight, ChevronRight, Link as LinkIcon, Mic, Type as TypeIcon, FileUp, Paperclip } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import useTierFromImprint from "@/hooks/useTierFromImprint";
@@ -120,6 +120,69 @@ const CAPTURE_TILES = [
 
 // ── Atoms ───────────────────────────────────────────────────────────
 
+function reducedMotion(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+}
+
+/** 60ms per card, capped at six. Reduced motion → nothing moves. */
+function stagger(i: number): React.CSSProperties {
+  if (reducedMotion()) return {};
+  return { animation: "v23CardIn 320ms ease both", animationDelay: `${Math.min(i, 5) * 60}ms` };
+}
+
+/** "TUESDAY · 28 JULY 2026" */
+function editionLine(d: Date): string {
+  const day = d.toLocaleDateString("en-GB", { weekday: "long" });
+  const rest = d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+  return `${day} · ${rest}`.toUpperCase();
+}
+
+/** The Imprint as a conic arc, with its three components beneath. */
+const ImprintGauge: React.FC<{ value: number; tier?: string; parts: Array<{ label: string; value: number }> }> = ({ value, tier, parts }) => {
+  const pct = Math.max(0, Math.min(100, value));
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
+      <div
+        aria-label={`Imprint ${pct} of 100`}
+        style={{
+          width: 104, height: 104, borderRadius: 999, flexShrink: 0,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: `conic-gradient(var(--act) 0 ${pct}%, var(--rule-outer) ${pct}% 100%)`,
+        }}
+      >
+        <div style={{
+          width: 92, height: 92, borderRadius: 999, background: "var(--surface-card)",
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+        }}>
+          <span style={{ ...MONO, fontSize: 30, fontWeight: 700, lineHeight: 1, color: "var(--text-primary)" }}>{pct}</span>
+          <span style={{ ...MONO, fontSize: 9, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--text-muted)", marginTop: 4 }}>
+            Imprint
+          </span>
+        </div>
+      </div>
+      <div style={{ flex: 1, minWidth: 200, display: "flex", flexDirection: "column", gap: 9 }}>
+        {tier && (
+          <div style={{ ...MONO, fontSize: 10.5, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--text-secondary)" }}>
+            {tier}
+          </div>
+        )}
+        {parts.map(p => (
+          <div key={p.label}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+              <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>{p.label}</span>
+              <span style={{ ...MONO, fontSize: 11.5, color: "var(--text-primary)", fontWeight: 600 }}>{p.value}</span>
+            </div>
+            <div style={{ height: 3, borderRadius: 999, background: "var(--surface-subtle)", overflow: "hidden" }}>
+              <div style={{ width: `${p.value}%`, height: "100%", borderRadius: 999, background: "var(--act)" }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const Card: React.FC<React.PropsWithChildren<{ interactive?: boolean; style?: React.CSSProperties; onClick?: () => void }>> = ({ children, interactive, style, onClick }) => (
   <div
     onClick={onClick}
@@ -191,6 +254,7 @@ export default function BriefV2({
   const [showWhy, setShowWhy] = useState(false);
   const [moves, setMoves] = useState<MoveRow[]>([]);
   const [movedOvernight, setMovedOvernight] = useState<number | null>(null);
+  const [scoreParts, setScoreParts] = useState<Array<{ label: string; value: number }>>([]);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -200,10 +264,11 @@ export default function BriefV2({
     const dayAgo = new Date(Date.now() - 24 * 3600_000).toISOString();
 
     const [
-      profRes, impRes, sigRes, sigCountRes, entRes, docRes, pubRes, ciRes, lpRes, findRes, ghostRes, movedRes,
+      profRes, impRes, scoreRes, sigRes, sigCountRes, entRes, docRes, pubRes, ciRes, lpRes, findRes, ghostRes, movedRes,
     ] = await Promise.all([
       supabase.from("diagnostic_profiles").select("first_name").eq("user_id", uid).maybeSingle(),
       supabase.from("imprint_snapshots").select("imprint").eq("user_id", uid).order("created_at", { ascending: false }).limit(1),
+      supabase.from("score_snapshots").select("components").eq("user_id", uid).order("created_at", { ascending: false }).limit(1),
       (supabase.from("strategic_signals" as any) as any)
         .select("id, signal_title, velocity_status, strength_score, created_at, supporting_evidence_ids")
         .eq("user_id", uid).eq("status", "active").limit(60),
@@ -237,6 +302,17 @@ export default function BriefV2({
     setFirstName(((profRes.data as any)?.first_name || "").toString().trim());
     const imp = ((impRes.data as any) || [])[0]?.imprint;
     setImprint(typeof imp === "number" ? Math.round(imp) : null);
+
+    // Strength micro-bars — a component with no value is omitted, never zeroed.
+    const comp = ((scoreRes?.data as any[]) || [])[0]?.components || {};
+    const parts: Array<{ label: string; value: number }> = [];
+    const push = (label: string, v: unknown) => {
+      if (typeof v === "number" && Number.isFinite(v)) parts.push({ label, value: Math.max(0, Math.min(100, Math.round(v))) });
+    };
+    push("Signal", comp.signal_score);
+    push("Content", comp.content_score);
+    push("Rhythm", comp.capture_score);
+    setScoreParts(parts);
 
     const sigRows = ((sigRes?.data as any[]) || []).map((r: any): SignalRow => ({
       id: r.id,
@@ -334,7 +410,6 @@ export default function BriefV2({
   const showFirstFlight = !journey.loading && ffDone < firstFlightSteps.length;
 
   const stats: Array<{ label: string; value: string; sub?: string }> = [];
-  if (imprint != null) stats.push({ label: "Imprint", value: String(imprint), sub: tierInfo.currentTier?.name ?? undefined });
   stats.push({ label: "Live signals", value: activeSignalCount != null ? String(activeSignalCount) : "—" });
   if (capturesWeek != null) stats.push({ label: "Captures this week", value: String(capturesWeek) });
   if (publishedMonth != null) stats.push({ label: "Published this month", value: String(publishedMonth) });
@@ -350,6 +425,10 @@ export default function BriefV2({
       {/* 1 · GREETING */}
       <header style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
         <div>
+          <div style={{
+            ...MONO, fontSize: 10.5, letterSpacing: ".18em", textTransform: "uppercase",
+            color: "var(--text-muted)", marginBottom: 8,
+          }}>{editionLine(new Date())}</div>
           <h1 style={{ fontSize: 26, fontWeight: 650, color: "var(--text-primary)", lineHeight: 1.2, margin: 0 }}>
             {greetingWord(new Date())}{firstName ? `, ${firstName}` : ""}
           </h1>
@@ -362,9 +441,40 @@ export default function BriefV2({
         <ButtonPrimary onClick={() => onOpenCapture()}>Capture</ButtonPrimary>
       </header>
 
+      {/* 1b · COMMAND BAR — the persistent capture entry, always first. */}
+      <button
+        type="button"
+        data-testid="home-capture-command-bar"
+        onClick={() => onOpenCapture()}
+        style={{
+          ...stagger(0),
+          display: "flex", alignItems: "center", gap: 10, width: "100%",
+          background: "var(--surface-card)", border: "1px solid var(--rule-outer)",
+          borderRadius: 14, boxShadow: "var(--v23-card-rest)",
+          padding: "14px 16px", cursor: "pointer", textAlign: "left",
+          fontFamily: "var(--ff-ui)",
+        }}
+      >
+        <Paperclip size={16} style={{ color: "var(--act)", flexShrink: 0 }} />
+        <span style={{ flex: 1, minWidth: 0, fontSize: 14.5, color: "var(--text-secondary)" }}>
+          Capture a link, a voice note, a document or a thought…
+        </span>
+        <span style={{
+          ...MONO, fontSize: 10, letterSpacing: ".12em", textTransform: "uppercase",
+          color: "var(--text-muted)", whiteSpace: "nowrap",
+        }}>Capture</span>
+      </button>
+
+      {/* 1c · IMPRINT GAUGE */}
+      {imprint != null && (
+        <Card style={stagger(1)}>
+          <ImprintGauge value={imprint} tier={tierInfo.currentTier?.name ?? undefined} parts={scoreParts} />
+        </Card>
+      )}
+
       {/* 2 · FIRST FLIGHT */}
       {showFirstFlight && (
-        <Card>
+        <Card style={stagger(2)}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
             <SectionLabel>First flight</SectionLabel>
             <span style={{ ...MONO, fontSize: 11.5, color: "var(--text-secondary)" }}>
@@ -402,7 +512,7 @@ export default function BriefV2({
 
       {/* 3 · THIS WEEK */}
       {moves.length > 0 && (
-        <Card>
+        <Card style={stagger(3)}>
           <SectionLabel>This week</SectionLabel>
           <div style={{ display: "flex", flexDirection: "column" }}>
             {moves.map((m, i) => {
@@ -528,7 +638,7 @@ export default function BriefV2({
 
       {/* 6 · SIGNALS */}
       {signals.length > 0 && (
-        <Card>
+        <Card style={stagger(4)}>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
             <SectionLabel>Signals</SectionLabel>
             <LinkAction onClick={() => onSwitchTab("intelligence")}>All signals</LinkAction>
@@ -572,7 +682,7 @@ export default function BriefV2({
 
       {/* 7 · READY TO PUBLISH */}
       {drafts.length > 0 && (
-        <Card>
+        <Card style={stagger(5)}>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
             <SectionLabel>Ready to publish</SectionLabel>
             <LinkAction onClick={() => onSwitchTab("authority")}>Open Composer</LinkAction>

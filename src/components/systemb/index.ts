@@ -5,3 +5,4 @@ export { default as Tooltip, TooltipPanel } from "./Tooltip";
 export { default as IconTile } from "./IconTile";
 export { default as StatCard } from "./StatCard";
 export { default as Avatar } from "./Avatar";
+export { default as AuraRing } from "./AuraRing";

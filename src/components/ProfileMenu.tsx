@@ -1,6 +1,7 @@
 import { User, LogOut, Settings2, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Avatar from "@/components/systemb/Avatar";
+import AuraRing from "@/components/systemb/AuraRing";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +26,7 @@ export default function ProfileMenu({
   fullName,
   email,
   avatarUrl,
+  userId,
   onSignOut,
   onOpenPreferences,
   // onQuestAction and onViewFullJourney are accepted for backwards
@@ -54,7 +56,9 @@ export default function ProfileMenu({
           title={fn || email || "Account"}
           aria-label={fn || "Account menu"}
         >
-          <Avatar src={avatarUrl} name={fn || email || null} size="md" />
+          <AuraRing userId={userId} size={36} gap="var(--paper)">
+            <Avatar src={avatarUrl} name={fn || email || null} size="md" />
+          </AuraRing>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
