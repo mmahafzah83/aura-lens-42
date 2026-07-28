@@ -44,7 +44,7 @@ import { track, getTrackSessionId } from "@/lib/track";
 import { isProfileComplete } from "@/lib/onboarding";
 
 import AuthorityTab from "@/components/tabs/AuthorityTab";
-import ImpactTab from "@/components/tabs/ImpactTab";
+import AnalyticsV2 from "@/components/analytics/AnalyticsV2";
 import OvernightPage from "@/components/overnight/OvernightPage";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -1046,7 +1046,7 @@ const Dashboard = () => {
             {activeTab === "influence" && (
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
-                  <ImpactTab onOpenCapture={handleOpenCapture} />
+                  <AnalyticsV2 onOpenChat={openChat} />
                 </ErrorBoundary>
               </div>
             )}
