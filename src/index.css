@@ -267,9 +267,7 @@ html *:not(canvas):not(video):not(iframe) {
   --tier-emerging-line: rgba(138,151,166,0.32);
 
   /* Functional semantics */
-  --success: var(--pos);
   --success-pale: rgba(111,191,142,0.12);
-  --error:   var(--neg);
   --error-pale: rgba(217,138,130,0.12);
   --danger-pale: var(--error-pale);
   --warning: var(--a-500);        /* fills, dots, bars ONLY */
