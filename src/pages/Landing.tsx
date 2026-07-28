@@ -759,9 +759,9 @@ const LANDING_HTML = `
 <section class="dark hero">
   <div class="wrap">
     <p class="eyebrow">PERSONAL INTELLIGENCE SYSTEM</p>
-    <h1><span class="sr-only">Aura — a personal intelligence system that turns your expertise into presence. </span><span aria-hidden="true">You have<br>the <span class="hw hw1">experience</span>,<br>the <span class="hw hw2">identity</span>,<br>the <span class="hw hw3">presence</span>.</span></h1>
+    <h1><span class="sr-only">Aura — a personal intelligence system. Your expertise is invisible. Aura fixes that. </span><span aria-hidden="true">You have<br>the <span class="hw hw1">experience</span>,<br>the <span class="hw hw2">identity</span>,<br>the <span class="hw hw3">presence</span>.</span></h1>
     <p class="lede heroline2">Now you have the <em>intelligence system</em> that works for you.</p>
-    <p class="lede sub">Aura learns who you are, reads what you read, and turns your expertise into presence — in your own voice, without adding a thing to your week.</p>
+    <p class="lede sub">Aura learns who you are, reads what you read, and makes your expertise visible — in your own voice, without adding a thing to your week.</p>
   </div>
   <div class="scrollhint">SCROLL</div>
 </section>
@@ -1236,7 +1236,7 @@ const LANDING_HTML = `
   <div class="foot-wrap">
     <div class="foot-brand">
       <div class="brand"><svg id="footmark" viewBox="0 0 64 64"></svg><b>AURA</b></div>
-      <p class="foot-line">A personal strategic intelligence that turns your expertise into presence.</p>
+      <p class="foot-line">A personal intelligence system. Your expertise is invisible. Aura fixes that.</p>
       <span class="invite">Currently invitation-only</span>
       <p class="foot-author">Mohammad Mahafdhah · Aura builder<br><span>Built in Riyadh, for the world.</span></p>
     </div>
