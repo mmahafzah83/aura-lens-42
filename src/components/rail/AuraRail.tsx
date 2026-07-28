@@ -50,7 +50,7 @@ function hhmm(iso: string): string {
   return `${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
-interface SignalCounts { live: number; actNow: number; cooling: number }
+interface SignalCounts { all: number; accelerating: number; stable: number }
 
 export default function AuraRail({
   activeTab, onSelect, onOpenCapture, onOpenSettings, newSignalCount = 0,
@@ -102,15 +102,21 @@ export default function AuraRail({
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { data } = await (supabase.from("strategic_signals" as any) as any)
-        .select("id, velocity_status")
+      // Exact head counts — a limited fetch can never back a displayed number.
+      const base = () => (supabase.from("strategic_signals" as any) as any)
+        .select("id", { count: "exact", head: true })
         .eq("user_id", user.id)
-        .eq("status", "active")
-        .limit(500);
-      const rows = (data || []) as Array<{ velocity_status: string | null }>;
-      const fading = rows.filter(r => (r.velocity_status || "").toLowerCase().includes("fad")).length;
-      const cooling = rows.filter(r => (r.velocity_status || "").toLowerCase().includes("cool")).length;
-      setCounts({ live: rows.length, actNow: fading, cooling });
+        .eq("status", "active");
+      const [allRes, accRes, stableRes] = await Promise.all([
+        base(),
+        base().eq("velocity_status", "accelerating"),
+        base().eq("velocity_status", "stable"),
+      ]);
+      setCounts({
+        all: allRes?.count ?? 0,
+        accelerating: accRes?.count ?? 0,
+        stable: stableRes?.count ?? 0,
+      });
     } catch { /* no sub-items → no flyout content */ }
   }, []);
 
@@ -416,15 +422,14 @@ export default function AuraRail({
             <span style={{
               fontFamily: "var(--ff-mono)", fontVariantNumeric: "tabular-nums",
               fontSize: 12, color: "var(--text-secondary)",
-            }}>{counts ? counts.live : "—"}</span>
+            }}>{counts ? counts.all : "—"}</span>
           </button>
 
           <div style={{ height: 1, background: "var(--rule-divider)", margin: "8px 0" }} />
 
           {[
-            { label: "Live", value: counts?.live },
-            { label: "Act now", value: counts?.actNow },
-            { label: "Cooling", value: counts?.cooling },
+            { label: "Accelerating", value: counts?.accelerating },
+            { label: "Stable", value: counts?.stable },
           ].map((row) => (
             <div
               key={row.label}
