@@ -940,7 +940,7 @@ const Dashboard = () => {
         <div
           className={
             activeTab === "intelligence"
-              ? "pb-[88px] md:pb-12"
+              ? "max-w-[1400px] mx-auto px-5 sm:px-10 lg:px-14 pb-[88px] md:pb-12"
               : activeTab === "home"
               ? "max-w-[1400px] mx-auto px-5 sm:px-10 lg:px-14 pb-[88px] md:pb-12 overflow-hidden"
               : "max-w-5xl mx-auto px-4 sm:px-8 pb-[88px] md:pb-12 overflow-hidden"
