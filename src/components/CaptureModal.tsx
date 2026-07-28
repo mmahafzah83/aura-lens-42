@@ -188,13 +188,17 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
       setCaptureType("text");
       setContent(prefillText);
       // Auto-resize textarea to fit pre-filled content
-      requestAnimationFrame(() => {
+      let tries = 0;
+      const fit = () => {
         const ta = textNoteRef.current;
         if (ta) {
           ta.style.height = "auto";
           ta.style.height = ta.scrollHeight + "px";
+          return;
         }
-      });
+        if (tries++ < 40) requestAnimationFrame(fit);
+      };
+      requestAnimationFrame(fit);
     } else if (initialType) {
       setCaptureType(initialType);
     }
