@@ -490,7 +490,6 @@ export default function BriefV2({
                 key={s.label}
                 type="button"
                 className={s.done ? "v23-tap" : "v23-tap v23-focus v23-row"}
-                disabled={s.done}
                 aria-disabled={s.done || undefined}
                 onClick={s.done ? undefined : s.go}
                 style={{
