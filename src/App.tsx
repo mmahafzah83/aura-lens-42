@@ -1,4 +1,3 @@
-import CreateTabProbe from "@/pages/CreateTabProbe";
 import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import AuraLogo from "@/components/brand/AuraLogo";
@@ -103,7 +102,6 @@ const App = () => (
             <Route path="/" element={<Landing />} />
             <Route path="/home" element={<PasswordGate><Dashboard /></PasswordGate>} />
             <Route path="/dashboard" element={<PasswordGate><Dashboard /></PasswordGate>} />
-            <Route path="/__createtab" element={<CreateTabProbe />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/login" element={<Auth />} />
             <Route path="/request-access" element={<RequestAccess />} />

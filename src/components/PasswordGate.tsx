@@ -26,8 +26,8 @@ export default function PasswordGate({ children }: { children: React.ReactNode }
       setEmail(session.user.email ?? null);
       const meta = (session.user.user_metadata || {}) as any;
       const isSet = meta.password_set === true;
-      const bypass = new URLSearchParams(window.location.search).has("__nogate");
-      setNeedsPassword(!isSet && !bypass);
+      
+      setNeedsPassword(!isSet);
       setChecking(false);
     })();
     return () => { cancelled = true; };
