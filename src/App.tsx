@@ -24,7 +24,6 @@ import { ThemeProvider } from "./components/ThemeProvider";
 import CookieConsent from "./components/CookieConsent";
 import ErrorBoundary from "./components/ErrorBoundary";
 import PageViewTracker from "./components/PageViewTracker";
-import CaptureModal from "./components/CaptureModal"; // TEMP-VERIFY
 
 // Lazy-loaded heavy / rarely-visited routes
 // Old landing (src/pages/Landing.tsx) is unmounted but kept in the tree.
