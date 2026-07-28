@@ -48,22 +48,26 @@ const Toggle: React.FC<{ on: boolean; label: string; onChange: () => void }> = (
     aria-checked={on}
     aria-label={label}
     onClick={onChange}
-    className="v23-focus"
+    className="v23-focus v23-tap"
     style={{
-      width: 44, height: 24, minHeight: 24, borderRadius: 999, flexShrink: 0, cursor: "pointer",
-      marginBlock: 8,
+      display: "inline-flex", alignItems: "center", justifyContent: "center",
+      background: "transparent", border: 0, padding: "0 2px", flexShrink: 0, cursor: "pointer",
+    }}
+  >
+    <span style={{
+      width: 44, height: 24, borderRadius: 999,
       border: on ? "1px solid var(--act)" : "1px solid var(--border-strong)",
       background: on ? "var(--act)" : "var(--surface-page)",
       display: "flex", alignItems: "center", padding: 2,
       justifyContent: on ? "flex-end" : "flex-start",
       transition: "background 140ms ease",
-    }}
-  >
-    <span style={{
-      width: 16, height: 16, borderRadius: 999,
-      background: on ? "var(--text-inverse)" : "var(--text-muted)",
-      display: "block",
-    }} />
+    }}>
+      <span style={{
+        width: 16, height: 16, borderRadius: 999,
+        background: on ? "var(--text-inverse)" : "var(--text-muted)",
+        display: "block",
+      }} />
+    </span>
   </button>
 );
 
