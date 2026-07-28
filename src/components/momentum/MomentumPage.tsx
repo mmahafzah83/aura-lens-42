@@ -386,14 +386,14 @@ export default function MomentumPage() {
                 width={Math.min(100, pct(funnel.signals, Math.max(funnel.captures, funnel.signals)))}
               />
               <FunnelRow
-                label="Posts published"
-                value={funnel.published}
-                note={`${pct(funnel.published, funnel.signals)}% of signals`}
-                width={pct(funnel.published, Math.max(funnel.signals, 1))}
+                label="Published through Aura"
+                value={funnel.publishedThroughAura}
+                note={`${pct(funnel.publishedThroughAura, funnel.signals)}% of signals`}
+                width={pct(funnel.publishedThroughAura, Math.max(funnel.signals, 1))}
               />
             </div>
             <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: "14px 0 0" }}>
-              Every capture you've ever made is still working.
+              This funnel counts only posts Aura wrote with you. Separately, you have {funnel.publishedLive} post{funnel.publishedLive === 1 ? "" : "s"} live on LinkedIn in total, which includes the history you imported.
             </p>
           </Card>
         </section>
