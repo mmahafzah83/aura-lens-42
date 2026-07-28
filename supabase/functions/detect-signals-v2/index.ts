@@ -365,11 +365,15 @@ theme_tags are subject themes only — never signal types like market_trend or c
 
 ${identityCtx}`;
 
-    async function classifyCluster(clusterFragIds: string[]): Promise<any | null> {
+    let lastRawSample = "";
+    async function classifyCluster(clusterFragIds: string[], repair = false): Promise<any | null> {
       const clusterFrags = fragmentIndex.filter((f: any) => clusterFragIds.includes(f.id)).slice(0, 12);
       const text = clusterFrags.map((f: any) =>
         `[${f.fragment_type}] "${f.title}": ${(f.content || "").slice(0, 400)} | Tags: ${(f.tags || []).join(",")}`
       ).join("\n\n");
+      const repairInstruction = repair
+        ? `\n\nIMPORTANT REPAIR INSTRUCTION: your previous response was missing a usable "title" or "summary". Return BOTH fields populated. "title" must be a specific, meaningful headline of at least 10 characters (never "Untitled Signal"), and "summary" must be a non-empty explanation.`
+        : "";
       const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
@@ -377,7 +381,7 @@ ${identityCtx}`;
           model: "google/gemini-3-flash-preview",
           messages: [
             { role: "system", content: systemPrompt },
-            { role: "user", content: `Analyze these evidence fragments:\n\n${text}` },
+            { role: "user", content: `Analyze these evidence fragments:\n\n${text}${repairInstruction}` },
           ],
           response_format: { type: "json_object" },
         }),
@@ -392,6 +396,7 @@ ${identityCtx}`;
       }
       const data = await res.json();
       const raw = data.choices?.[0]?.message?.content || "{}";
+      lastRawSample = String(raw).slice(0, 300);
       const parsed = parseAiJson(raw);
       if (!parsed) {
         EdgeRuntime.waitUntil(
