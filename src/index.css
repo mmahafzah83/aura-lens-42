@@ -2158,3 +2158,7 @@ button[aria-label="Notifications"]:focus-visible {
     transform: none;
   }
 }
+
+/* Signals board — the "Read →" affordance appears on card hover/focus only. */
+.v23-lift:hover .v23-read-affordance,
+.v23-lift:focus-visible .v23-read-affordance { opacity: 1 !important; }

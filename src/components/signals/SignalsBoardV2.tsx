@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Chip, Tooltip, ButtonPrimary } from "@/components/systemb";
@@ -114,6 +115,22 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
     ["accelerating", "stable", "dormant"].includes(paramFilter) ? paramFilter : (initialFilter || "all"),
   );
   const [theme, setTheme] = useState<string | null>(null);
+  const [stuck, setStuck] = useState(false);
+  const stuckRef = useRef(false);
+
+  // The board lives inside overflow ancestors, so position:sticky dies here.
+  // The control bar is portalled to the body and driven by scroll instead.
+  useEffect(() => {
+    const onScroll = () => {
+      const next = window.scrollY > 200;
+      if (next === stuckRef.current) return;
+      stuckRef.current = next;
+      setStuck(next);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   // A filter arriving by URL wins, then clears itself so it is not sticky.
   useEffect(() => {
@@ -201,6 +218,7 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openSignal(r.id, "signals_board_card"); } }}
         style={{
           background: "var(--surface-card)", border: "1px solid var(--rule-outer)",
+          borderInlineStart: bucket === "accelerating" ? "2px solid var(--machine)" : "1px solid var(--rule-outer)",
           borderRadius: 12, padding: 13, cursor: "pointer",
           boxShadow: "var(--v23-card-rest)", opacity: bucket === "dormant" ? 0.6 : 1,
           minHeight: 132, display: "flex", flexDirection: "column",
@@ -228,6 +246,14 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
             {captures} captures · {ageDays(r.created_at)}d ·{" "}
             <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{strengthOf(r)}</span>
           </span>
+          <span
+            aria-hidden
+            className="v23-read-affordance"
+            style={{
+              ...MONO, fontSize: 10.5, letterSpacing: ".08em", textTransform: "uppercase",
+              color: "var(--act)", opacity: 0, transition: "opacity 160ms ease", whiteSpace: "nowrap",
+            }}
+          >Read →</span>
         </div>
       </div>
     );
@@ -375,7 +401,13 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
                       <span style={{ ...MONO, fontSize: 10, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--text-secondary)" }}>
                         {col.label}
                       </span>
-                      <span style={{ ...MONO, fontSize: 11, color: "var(--text-muted)" }}>{counts ? col.count : "—"}</span>
+                      <span style={{
+                        ...MONO, fontSize: 10.5, fontWeight: 600, lineHeight: 1,
+                        padding: "3px 7px", borderRadius: 999,
+                        background: col.key === "accelerating" ? "var(--machine-tint)" : "var(--surface-card)",
+                        color: col.key === "accelerating" ? "var(--machine-text)" : "var(--text-secondary)",
+                        border: "1px solid var(--rule-divider)",
+                      }}>{counts ? col.count : "—"}</span>
                       {collapsible && (
                         <ChevronRight
                           size={13}
@@ -453,6 +485,29 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
       </div>
 
       {/* SECONDARY — re-homed from Observatory, unchanged in behaviour */}
+      {stuck && typeof document !== "undefined" && createPortal(
+        <div
+          data-testid="signals-sticky-bar"
+          style={{
+            position: "fixed", top: 12, left: "50%", transform: "translateX(-50%)",
+            zIndex: 45, display: "flex", alignItems: "center", gap: 10,
+            padding: 6, borderRadius: 12,
+            background: "var(--v23-glass, var(--surface-card))",
+            border: "1px solid var(--rule-outer)",
+            boxShadow: "var(--shadow-lift)",
+            backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)",
+            fontFamily: "var(--ff-ui)",
+          }}
+        >
+          <div style={{ display: "inline-flex", gap: 2, padding: 3, borderRadius: 9, background: "var(--surface-subtle)" }}>
+            <SegBtn active={view === "list"} onClick={() => setView("list")}><ListIcon size={13} />List</SegBtn>
+            <SegBtn active={view === "board"} onClick={() => setView("board")}><LayoutGrid size={13} />Board</SegBtn>
+          </div>
+          <ButtonPrimary onClick={() => onOpenCapture?.()}><Plus size={13} />Capture</ButtonPrimary>
+        </div>,
+        document.body,
+      )}
+
       <div data-legacy style={{ marginTop: 40, borderTop: "1px solid var(--rule-divider)", paddingTop: 26 }}>
         <SectionLabel>Recommended reading</SectionLabel>
         <EditorialReadingList signals={rows as unknown as Signal[]} onOpenCapture={onOpenCapture} />

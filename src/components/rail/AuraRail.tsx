@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import AuraLogo from "@/components/brand/AuraLogo";
 import { TooltipPanel } from "@/components/systemb/Tooltip";
 import Avatar from "@/components/systemb/Avatar";
+import AuraRing from "@/components/systemb/AuraRing";
 
 /**
  * AuraRail — System-B V23 rail (hybrid icon rail + contextual flyout).
@@ -61,6 +62,7 @@ export default function AuraRail({
   const [lastRun, setLastRun] = useState<string | null>(null);
   const [, setSearchParams] = useSearchParams();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uid, setUid] = useState<string | null>(null);
   const [profileName, setProfileName] = useState<string | null>(null);
   const [flyout, setFlyout] = useState<RailTab | null>(null);
   const [tip, setTip] = useState<{ title: string; body: string; top: number } | null>(null);
@@ -76,6 +78,7 @@ export default function AuraRail({
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user || cancelled) return;
+        setUid(user.id);
         void (async () => {
           const { data: prof } = await supabase
             .from("diagnostic_profiles")
@@ -160,7 +163,7 @@ export default function AuraRail({
     alignItems: "center", justifyContent: "center", gap: 5,
     padding: "6px 2px",
     borderRadius: 8, border: 0, cursor: "pointer",
-    background: active ? "var(--v23-night-lift)" : "transparent",
+    background: active ? "var(--v23-wash-act), var(--v23-night-lift)" : "transparent",
     color: active ? "var(--b-300)" : "var(--v23-on-night)",
     opacity: active ? 1 : 0.9,
     transition: "background 180ms ease, color 180ms ease, opacity 180ms ease",
@@ -232,6 +235,7 @@ export default function AuraRail({
         >
           <AuraLogo size={26} variant="dark" />
         </button>
+        <div aria-hidden style={{ height: 20 }} />
 
         {/* THE LIVE STRIP — cyan means the machine is awake. */}
         <div
@@ -342,7 +346,9 @@ export default function AuraRail({
             style={railBtn(activeTab === "identity")}
           >
             {activeTab === "identity" && <ActiveBar />}
-            <Avatar src={avatarUrl} name={profileName} size="sm" ring="var(--v23-night-line)" />
+            <AuraRing userId={uid} size={28} gap="var(--v23-night)">
+              <Avatar src={avatarUrl} name={profileName} size="sm" ring="var(--v23-night-line)" />
+            </AuraRing>
             <span style={labelStyle(activeTab === "identity")}>Profile</span>
           </button>
           <button
