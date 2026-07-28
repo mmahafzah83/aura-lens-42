@@ -40,8 +40,7 @@ export default function PasswordGate({ children }: { children: React.ReactNode }
     );
   }
 
-  // TEMP-VERIFY
-  if (needsPassword && !window.location.search.includes("__nogate")) {
+  if (needsPassword) {
     return <SetPasswordScreen email={email} onComplete={() => setNeedsPassword(false)} />;
   }
 
