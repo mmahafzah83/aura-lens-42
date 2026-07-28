@@ -4,6 +4,7 @@ import { ButtonGhost, ButtonPrimary, Chip, Tooltip } from "@/components/systemb"
 import { Download, Sparkles } from "lucide-react";
 import { TIER_BANDS, bandFromScore } from "@/hooks/useTierFromImprint";
 import { downloadBlob } from "@/lib/download";
+import { isPublishedPost, isAuraPublishedPost, countPosts } from "@/lib/postProvenance";
 
 /**
  * AnalyticsV2 — V23 "three questions, not thirty charts".
@@ -204,10 +205,9 @@ const AnalyticsV2: React.FC<{ onOpenChat?: (msg?: string) => void }> = ({ onOpen
   }, [cutoff]);
 
   const rangedPosts = useMemo(() => posts.filter(p => inRange(postDate(p))), [posts, inRange]);
-  const publishedPosts = useMemo(
-    () => rangedPosts.filter(p => PUBLISHED_STATUSES.includes(p.tracking_status ?? "")),
-    [rangedPosts]
-  );
+  // Live on LinkedIn — the canonical definition, imported history included.
+  const publishedPosts = useMemo(() => rangedPosts.filter(isPublishedPost), [rangedPosts]);
+  const postCounts = useMemo(() => countPosts(rangedPosts), [rangedPosts]);
   const rangedSignals = useMemo(() => signals.filter(s => inRange(s.created_at)), [signals, inRange]);
   const hasReach = useMemo(() => Object.keys(reach).length > 0, [reach]);
 
@@ -252,6 +252,7 @@ const AnalyticsV2: React.FC<{ onOpenChat?: (msg?: string) => void }> = ({ onOpen
       language: postLanguage(p),
       source: postSource(p),
       status: p.tracking_status ?? "—",
+      live: isPublishedPost(p),
       reach: reach[p.id] ?? null,
       date: postDate(p),
     }));
@@ -491,7 +492,7 @@ const AnalyticsV2: React.FC<{ onOpenChat?: (msg?: string) => void }> = ({ onOpen
                     <td style={{ ...MONO, padding: "9px 10px", fontSize: 11.5, color: "var(--text-secondary)", borderBottom: "1px solid var(--rule-divider)" }}>{r.language}</td>
                     <td style={{ ...MONO, padding: "9px 10px", fontSize: 11.5, color: "var(--text-secondary)", borderBottom: "1px solid var(--rule-divider)" }}>{r.source}</td>
                     <td style={{ padding: "9px 10px", borderBottom: "1px solid var(--rule-divider)" }}>
-                      <Chip variant={PUBLISHED_STATUSES.includes(r.status) ? "published" : r.status === "failed" || r.status === "rejected" ? "failed" : "cooling"}>
+                      <Chip variant={r.live ? "published" : r.status === "failed" || r.status === "rejected" ? "failed" : "cooling"}>
                         {r.status}
                       </Chip>
                     </td>
