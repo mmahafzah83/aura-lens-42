@@ -306,7 +306,7 @@ const Onboarding = () => {
       const p: any = profile || {};
       // Completion redirect — any user with onboarding_step >= 4
       // (or the legacy onboarding_completed flag) can never accidentally restart.
-      if (p && (p.onboarding_step ?? 0) >= 4) {
+      if (p && (p.onboarding_step ?? 0) >= 4 && !window.location.search.includes("cf")) { // TEMP-VERIFY
         goHome();
         return;
       }
@@ -333,6 +333,8 @@ const Onboarding = () => {
       // Capture-first gate — data-driven, never a new step counter.
       try {
         const skipped = sessionStorage.getItem(`aura_capture_first_skipped_${session.user.id}`) === "1";
+        const cfForce = new URLSearchParams(window.location.search).has("cf"); // TEMP-VERIFY
+        if (cfForce) { setShowCaptureFirst(true); } // TEMP-VERIFY
         if (!skipped && savedStep === 0) {
           const { count } = await supabase
             .from("entries" as any)
