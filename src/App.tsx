@@ -134,8 +134,6 @@ const App = () => (
             <Route path="/card-preview" element={<PasswordGate><CardPreview /></PasswordGate>} />
             <Route path="/signature" element={<PasswordGate><SignatureStudio /></PasswordGate>} />
             <Route path="/signature-harness" element={<SignatureHarness />} />
-            {/* TEMP-VERIFY */}
-            <Route path="/__capcolour" element={<CaptureModal open onOpenChange={() => {}} onCaptured={() => {}} />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>
