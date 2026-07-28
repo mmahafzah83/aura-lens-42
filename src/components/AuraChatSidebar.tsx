@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import ReactMarkdown from "react-markdown";
 import { ERROR, EMPTY_STATE } from "@/constants/language";
+import { filterPublishedRows } from "@/lib/postProvenance";
 
 /* ── Dimension display labels (mirrors CalibrationSliders P16 labels) ── */
 const DIM_LABELS: Record<string, string> = {
