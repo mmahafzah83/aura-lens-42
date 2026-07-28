@@ -365,7 +365,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
       }}
     >
       <div>
-        <div style={{ ...MONO, fontSize: 10, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--machine)" }}>
+        <div style={{ ...MONO, fontSize: 10, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--machine-text)" }}>
           Chief of Staff
         </div>
         <div style={{ fontSize: 12.5, color: "var(--text-secondary)", marginTop: 4 }}>
