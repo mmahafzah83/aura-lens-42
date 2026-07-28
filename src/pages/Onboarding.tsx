@@ -1676,7 +1676,7 @@ const Onboarding = () => {
           </span>
           <h2
             style={{
-              fontFamily: "var(--font-display, 'Cormorant Garamond', Georgia, serif)",
+              fontFamily: "var(--font-display)",
               fontSize: 20, lineHeight: 1.35, margin: "0 0 28px",
               color: "var(--ink)", letterSpacing: "-0.005em",
               textAlign: "center", maxWidth: 420, padding: "0 16px",
@@ -1698,7 +1698,7 @@ const Onboarding = () => {
               width: "100%",
               maxWidth: 320,
               cursor: "pointer",
-              fontFamily: "'DM Sans', system-ui, sans-serif",
+              fontFamily: "var(--font-body)",
               letterSpacing: "0.01em",
             }}
           >
@@ -1763,7 +1763,7 @@ const BreathingOverlay = ({ leaving, message }: { leaving: boolean; message?: st
   >
     <p
       style={{
-        fontFamily: "'DM Sans', system-ui, sans-serif",
+        fontFamily: "var(--font-body)",
         fontSize: 15, lineHeight: 1.6,
         color: "var(--ink-2)",
         textAlign: "center", maxWidth: 420, padding: "0 24px",
