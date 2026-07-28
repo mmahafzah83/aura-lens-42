@@ -528,19 +528,100 @@ ${identityCtx}`;
       }
       if (!signal) { droppedCount++; dropReasons.push("ai_json_parse_failed"); continue; }
 
+      const passesGate = (s: any) => {
+        const t = (s?.title || "").trim();
+        const su = (s?.summary || "").trim();
+        return !!t && t !== "Untitled Signal" && t.length >= 10 && !!su;
+      };
+
+      // Quality gate per cluster — NEVER discard the user's capture.
+      // Retry once with a repair instruction, then fall back to a dormant signal.
+      if (!passesGate(signal)) {
+        const firstRaw = lastRawSample;
+        let retried: any = null;
+        try {
+          retried = await classifyCluster(clusterFragIds, true);
+        } catch (e: any) {
+          if (e?.status === 429 || e?.status === 402) {
+            return new Response(JSON.stringify({ error: e.status === 429 ? "Aura is busy — try again in a moment." : "Aura is temporarily unavailable. Try again later." }), { status: e.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+          }
+          console.error("[detect-signals-v2] repair retry threw:", e?.message);
+        }
+
+        await logError("detect-signals-v2", new Error("low_quality_signal"), {
+          user_id,
+          severity: "high",
+          context: {
+            stage: passesGate(retried) ? "retry_recovered" : "retry_failed_dormant_fallback",
+            source_registry_id: source_registry_id ?? null,
+            fragment_ids: clusterFragIds,
+            raw_sample: (passesGate(retried) ? firstRaw : lastRawSample) || firstRaw,
+          },
+        });
+
+        if (passesGate(retried)) {
+          signal = retried;
+        } else {
+          // Deterministic dormant signal built from the cluster's most frequent tags.
+          const tagCounts = new Map<string, number>();
+          for (const f of fragmentIndex) {
+            if (!clusterFragIds.includes(f.id)) continue;
+            for (const t of (f.tags || [])) {
+              const k = String(t).trim();
+              if (k) tagCounts.set(k, (tagCounts.get(k) || 0) + 1);
+            }
+          }
+          const topTags = [...tagCounts.entries()].sort((a, b) => b[1] - a[1]).map(([t]) => t);
+          const fallbackTags = canonicalizeTags(topTags.slice(0, 5));
+          const themeLabel = topTags.slice(0, 2).join(" · ") || "Emerging theme";
+          const fallbackTitle = `Emerging theme: ${themeLabel}`;
+          const nowIso = new Date().toISOString();
+          const uOrgs = await countUniqueOrgs(admin, clusterFragIds);
+          const uSources = await countUniqueSources(admin, clusterFragIds);
+          const { confidence: fbConf, confidence_explanation: fbExpl } =
+            calcConfidence(0.3, uSources, uOrgs, nowIso);
+
+          const { data: dormantRow, error: dormErr } = await admin.from("strategic_signals").insert({
+            user_id,
+            signal_title: fallbackTitle,
+            explanation: `This theme was detected in your capture but is not yet strong enough to stand on its own. Aura is holding it until more evidence arrives.`,
+            strategic_implications: "",
+            theme_tags: fallbackTags,
+            confidence: fbConf,
+            confidence_explanation: fbExpl,
+            what_it_means_for_you: "",
+            priority_score: 0,
+            status: "dormant",
+            lifecycle_tier: "emerging",
+            supporting_evidence_ids: clusterFragIds,
+            fragment_count: clusterFragIds.length,
+            unique_orgs: uOrgs,
+            strength_score: computeStrength(uOrgs, clusterFragIds.length),
+          }).select("id").single();
+
+          if (dormErr) throw new Error(`Dormant insert: ${dormErr.message}`);
+
+          resultSignals.push({ signal_id: dormantRow.id, is_new: true, fragments_attached: clusterFragIds.length });
+          newCount++;
+          dormantCount++;
+          runtimeSignals.push({
+            id: dormantRow.id,
+            signal_title: fallbackTitle,
+            theme_tags: fallbackTags,
+            supporting_evidence_ids: clusterFragIds,
+            fragment_count: clusterFragIds.length,
+            status: "dormant",
+          });
+          continue;
+        }
+      }
+
       const newTitle = (signal.title || "").trim();
       const newSummary = (signal.summary || "").trim();
       const rawTags: string[] = Array.isArray(signal.theme_tags) ? signal.theme_tags.slice(0, 5) : [];
       const newTags: string[] = canonicalizeTags(rawTags);
       const aiBaseConfidence = Math.min(1, Math.max(0, signal.ai_base_confidence ?? 0.5));
       const whatItMeans = signal.what_it_means_for_you || "";
-
-      // Quality gate per cluster
-      if (!newTitle || newTitle === "Untitled Signal" || newTitle.length < 10 || !newSummary) {
-        droppedCount++;
-        dropReasons.push("low_quality_signal");
-        continue;
-      }
 
       const contentGap = await computeContentGap(newTags, newTitle);
       const matches = findMatches(newTags, newTitle);
