@@ -484,11 +484,32 @@ export default function BriefV2({
               >
                 {overnight.draft.body.slice(0, 220)}
               </p>
-              <ButtonPrimary onClick={() => onOpenDraft({
-                id: overnight.draft!.id, body: overnight.draft!.body,
-                language: overnight.draft!.language, type: "linkedin_post",
-                topic: overnight.draft!.topic, _source: "linkedin_posts",
-              })}>Read the draft</ButtonPrimary>
+              {showWhy && overnight.why && (
+                <p style={{
+                  margin: "0 0 12px", fontSize: 14, lineHeight: 1.6,
+                  color: "var(--v23-on-night)",
+                }}>{overnight.why}</p>
+              )}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <ButtonPrimary onClick={() => onOpenDraft({
+                  id: overnight.draft!.id, body: overnight.draft!.body,
+                  language: overnight.draft!.language, type: "linkedin_post",
+                  topic: overnight.draft!.topic, _source: "linkedin_posts",
+                })}>Read the draft</ButtonPrimary>
+                {overnight.why && (
+                  <ButtonDark onClick={() => setShowWhy(v => !v)}>Why this matters</ButtonDark>
+                )}
+              </div>
+            </div>
+          )}
+          {!overnight.draft && overnight.why && (
+            <div style={{ marginTop: 14 }}>
+              {showWhy && (
+                <p style={{ margin: "0 0 12px", fontSize: 14, lineHeight: 1.6, color: "var(--v23-on-night)" }}>
+                  {overnight.why}
+                </p>
+              )}
+              <ButtonDark onClick={() => setShowWhy(v => !v)}>Why this matters</ButtonDark>
             </div>
           )}
         </section>
@@ -517,6 +538,7 @@ export default function BriefV2({
                   padding: "11px 0", fontFamily: "var(--ff-ui)",
                 }}
               >
+                <StatusDot tone={isFading(s.velocity) ? "clock" : isCooling(s.velocity) ? "cooling" : "live"} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div
                     dir={isArabic(s.title) ? "rtl" : "ltr"}
@@ -561,6 +583,9 @@ export default function BriefV2({
                   background: "var(--surface-card)", cursor: "pointer",
                 }}
               >
+                <div style={{ marginBottom: 8 }}>
+                  <Chip variant="cooling">Draft · {d.language === "ar" ? "Arabic" : "English"}</Chip>
+                </div>
                 <div
                   dir={d.language === "ar" ? "rtl" : "ltr"}
                   style={{
