@@ -119,9 +119,8 @@ export default function MomentumPage() {
       supabase.from("entries").select("created_at").eq("user_id", uid).gte("created_at", since.toISOString()),
       supabase
         .from("linkedin_posts")
-        .select("created_at, published_at")
+        .select("created_at, published_at, source_type, tracking_status")
         .eq("user_id", uid)
-        .eq("tracking_status", "published")
         .gte("created_at", new Date(since.getTime() - 1000 * 60 * 60 * 24 * 120).toISOString()),
       supabase
         .from("score_snapshots")
@@ -164,8 +163,8 @@ export default function MomentumPage() {
       const c = bucket(r.created_at);
       if (c) c.captures += 1;
     });
-    (postsRes.data || []).forEach((r: any) => {
-      const c = bucket(r.published_at || r.created_at);
+    filterPublishedRows((postsRes.data || []) as any[]).forEach((r: any) => {
+      const c = bucket(postEffectiveDate(r) || r.created_at);
       if (c) c.posts += 1;
     });
     setWeeks(cells);
