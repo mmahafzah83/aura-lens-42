@@ -159,14 +159,14 @@ export function PaperFooter({
       >
         <span>aura-intel.org</span>
         <span>
-          Turns your expertise into presence
+          Personal Intelligence System
           <span style={{ margin: "0 8px", color: T.spot }}>·</span>
           <span
             style={{ fontFamily: FONT.arabic, textTransform: "none", letterSpacing: "normal" }}
             dir="rtl"
             lang="ar"
           >
-            حوّل خبرتك إلى حضور
+            نظام ذكاء شخصي
           </span>
         </span>
       </div>

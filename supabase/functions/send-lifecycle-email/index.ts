@@ -43,7 +43,7 @@ function shell(BRAND: string, _FONT: string, body: string) {
     <div style="padding:20px 36px;border-top:1px solid #efeae0;">
       <table role="presentation" cellpadding="0" cellspacing="0"><tr>
         <td style="vertical-align:middle;padding-right:10px;">${horizonEye(20, BRAND)}</td>
-        <td style="vertical-align:middle;font-size:12px;color:#6b665c;">Aura · Turns your expertise into presence · <a href="${APP_URL}" style="color:#6b665c;text-decoration:none;">aura-intel.org</a></td>
+        <td style="vertical-align:middle;font-size:12px;color:#6b665c;">Aura · Personal Intelligence System · <a href="${APP_URL}" style="color:#6b665c;text-decoration:none;">aura-intel.org</a></td>
       </tr></table>
     </div>
   </div>
@@ -61,8 +61,8 @@ function heading(text: string) {
 function signoff(firstName: string, level: string | null) {
   const role = level ? `${level}` : "Founder, Aura";
   return firstName
-    ? `<p style="margin-top:28px;color:#3a3530;">— ${firstName}, ${role}<br/><span style="color:#8a8478;font-size:13px;">Aura · Turns your expertise into presence</span></p>`
-    : `<p style="margin-top:28px;color:#3a3530;">— The Aura Team<br/><span style="color:#8a8478;font-size:13px;">Aura · Turns your expertise into presence</span></p>`;
+    ? `<p style="margin-top:28px;color:#3a3530;">— ${firstName}, ${role}<br/><span style="color:#8a8478;font-size:13px;">Aura · Personal Intelligence System</span></p>`
+    : `<p style="margin-top:28px;color:#3a3530;">— The Aura Team<br/><span style="color:#8a8478;font-size:13px;">Aura · Personal Intelligence System</span></p>`;
 }
 
 function buildEmail(
