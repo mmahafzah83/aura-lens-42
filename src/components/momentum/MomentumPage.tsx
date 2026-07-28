@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Moon, CalendarDays, CalendarRange } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthReady } from "@/hooks/useAuthReady";
-import { ButtonPrimary } from "@/components/systemb";
 import { TIER_BANDS, bandFromKey, bandFromScore } from "@/hooks/useTierFromImprint";
 
 /**
