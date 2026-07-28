@@ -133,15 +133,28 @@ async function calcPriorityScore(
 
 // Robust JSON parser for LLM output. Never throws.
 // Returns the parsed object, or null if the response cannot be salvaged.
+// The gateway intermittently ignores response_format:json_object and returns a
+// top-level ARRAY wrapping the object. Normalise the shape once, here.
+function unwrapObject(v: any): any | null {
+  if (Array.isArray(v)) {
+    for (const el of v) {
+      if (el && typeof el === "object" && !Array.isArray(el)) return el;
+    }
+    return null;
+  }
+  if (v && typeof v === "object") return v;
+  return null;
+}
+
 function parseAiJson(raw: string): any | null {
   if (!raw) return null;
   // 1) direct parse
-  try { return JSON.parse(raw); } catch { /* fall through */ }
+  try { return unwrapObject(JSON.parse(raw)); } catch { /* fall through */ }
   // 2) strip ``` fences + control chars, retry
   try {
     const m = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
     const cleaned = (m ? m[1] : raw).replace(/[\u0000-\u001F\u007F]/g, " ");
-    return JSON.parse(cleaned);
+    return unwrapObject(JSON.parse(cleaned));
   } catch { /* fall through */ }
   // 3) extract first balanced {...} block and try that (handles trailing prose)
   try {
@@ -155,7 +168,7 @@ function parseAiJson(raw: string): any | null {
         else if (c === "}") {
           depth--;
           if (depth === 0) {
-            return JSON.parse(cleaned.slice(start, i + 1));
+            return unwrapObject(JSON.parse(cleaned.slice(start, i + 1)));
           }
         }
       }
