@@ -387,7 +387,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                         <span
                           style={{
                             background: "var(--brand-ghost, var(--brand-pale))",
-                            color: "var(--brand)",
+                            color: "var(--spot-2)",
                             fontSize: 12,
                             fontWeight: 600,
                             padding: "2px 7px",
@@ -423,7 +423,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                           <span style={{ fontSize: 12, color: "var(--warning-text)", fontWeight: 600 }}>↓ Fading</span>
                         )}
                         {item.velocityStatus === "accelerating" && (
-                          <span style={{ fontSize: 12, color: "hsl(140 60% 40%)", fontWeight: 600 }}>↑ Gaining</span>
+                          <span style={{ fontSize: 12, color: "var(--pos-text)", fontWeight: 600 }}>↑ Gaining</span>
                         )}
                         {item.velocityStatus === "stable" && (
                           <span style={{ fontSize: 12, color: "var(--ink-4)", fontWeight: 600 }}>→ Stable</span>
