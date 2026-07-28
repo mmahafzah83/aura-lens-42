@@ -2156,6 +2156,18 @@ button[aria-label="Notifications"]:focus-visible {
 @media (pointer: coarse) {
   .v23-tap-sm { min-height: 44px; }
 }
+/* Inline icon triggers: keep the small visual, expand the real hit box. */
+.v23-hit { position: relative; }
+.v23-hit::after {
+  content: "";
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 40px; height: 40px;
+  transform: translate(-50%, -50%);
+}
+@media (pointer: coarse) {
+  .v23-hit::after { width: 44px; height: 44px; }
+}
 .v23-textlink {
   color: var(--act);
   text-decoration: underline;

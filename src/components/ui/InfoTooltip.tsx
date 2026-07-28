@@ -169,6 +169,7 @@ export function InfoTooltip({
     setPos({ top, left, effectiveSide: eff, arrowLeft, maxHeight });
   }, [visible, isMobile, side, width, align, children, text, article]);
 
+  const triggerClass = "v23-hit v23-focus";
   const triggerStyle: CSSProperties = {
     width: triggerSize,
     height: triggerSize,
@@ -304,7 +305,7 @@ export function InfoTooltip({
         type="button"
         ref={triggerRef}
         aria-label={label ? `Info: ${label}` : "More info"}
-        style={triggerStyle}
+        className={triggerClass} style={triggerStyle}
         onMouseEnter={() => setTriggerHover(true)}
         onMouseLeave={() => setTriggerHover(false)}
         onClick={(e) => {
