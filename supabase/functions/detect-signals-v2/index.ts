@@ -683,11 +683,20 @@ ${identityCtx}`;
       });
     }
 
-    // Info-level summary log
-    EdgeRuntime.waitUntil(
-      logError("detect-signals-v2", new Error("cluster_summary"), {
+    // Mark the source as signalled so the outcome is a fact, not an inference.
+    if (source_registry_id) {
+      const { error: statusErr } = await admin
+        .from("source_registry")
+        .update({ signal_status: "done" })
+        .eq("id", source_registry_id);
+      if (statusErr) console.error("[detect-signals-v2] signal_status update failed:", statusErr.message);
+    }
+
+    // Summary log. Silence on a user's capture is not an info event.
+    const summarySeverity = (newCount === 0 && reinforcedCount === 0) ? "high" : "info";
+    await logError("detect-signals-v2", new Error("cluster_summary"), {
         user_id,
-        severity: "info",
+        severity: summarySeverity,
         context: {
           clusters_found: clusters.length,
           new_count: newCount,
@@ -698,8 +707,7 @@ ${identityCtx}`;
           dormant_count: dormantCount,
           relevance_hint: profileRelevanceHint,
         },
-      }),
-    );
+      });
 
     // Trigger score recalc in background (non-blocking)
     try {
