@@ -431,16 +431,12 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                       </div>
                       <button
                         onClick={(e) => { e.stopPropagation(); handleItemClick(item); }}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        type="button"
+                        className="transition-opacity v23-textlink v23-tap"
                         style={{
                           marginTop: 8,
                           fontSize: 12,
                           fontWeight: 600,
-                          color: "var(--brand)",
-                          background: "transparent",
-                          border: "none",
-                          padding: 0,
-                          cursor: "pointer",
                         }}
                       >
                         Write on this →
@@ -455,8 +451,8 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
           {totalSignals > 4 && (
             <a
               href="/dashboard?tab=intelligence"
-              style={{ display: "inline-block", marginTop: 4, fontSize: 12, color: "var(--brand)", fontWeight: 600 }}
-              className="hover:opacity-80"
+              style={{ marginTop: 4, fontSize: 12, fontWeight: 600 }}
+              className="v23-textlink v23-tap"
             >
               See all {totalSignals} signals →
             </a>
@@ -541,14 +537,8 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
             )}
             <a
               href="/dashboard?tab=identity&focus=voice"
-              style={{
-                display: "inline-block",
-                marginTop: 8,
-                fontSize: 12,
-                color: "var(--brand)",
-                fontWeight: 600,
-              }}
-              className="hover:opacity-80"
+              style={{ marginTop: 8, fontSize: 12, fontWeight: 600 }}
+              className="v23-textlink v23-tap"
             >
               Train voice on My Story →
             </a>

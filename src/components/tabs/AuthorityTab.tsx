@@ -1442,12 +1442,13 @@ export const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed,
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); navigate("/signature"); }}
-          className="self-start sm:self-auto"
+          className="self-start sm:self-auto v23-tap v23-focus"
           style={{
             background: "transparent",
-            border: "0.5px solid var(--rule)",
+            border: "1px solid var(--rule)",
             borderRadius: 999,
-            padding: "6px 14px",
+            padding: "6px 16px",
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
             fontSize: 12.5,
             color: "var(--ink)",
             cursor: "pointer",
@@ -1541,6 +1542,9 @@ export const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed,
                     color: lang === "en" ? "var(--ink)" : "var(--ink-2)",
                     border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 500, cursor: "pointer",
                   }}
+                  type="button"
+                  aria-pressed={lang === "en"}
+                  className="v23-tap v23-focus"
                 >EN</button>
                 <button
                   onClick={() => setLang("ar")}
@@ -1550,6 +1554,9 @@ export const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed,
                     border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 500, cursor: "pointer",
                     fontFamily: "var(--font-arabic, 'Cairo', sans-serif)",
                   }}
+                  type="button"
+                  aria-pressed={lang === "ar"}
+                  className="v23-tap v23-focus"
                 >العربية</button>
               </div>
             </div>
@@ -1562,17 +1569,10 @@ export const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed,
           <CollapsibleTrigger asChild>
             <button
               type="button"
+              className="v23-textlink v23-tap"
               style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
                 fontSize: 12,
                 fontWeight: 500,
-                color: "var(--ink-2)",
-                background: "transparent",
-                border: "none",
-                cursor: "pointer",
-                padding: "4px 0",
               }}
             >
               Customize format & framework
@@ -1659,7 +1659,7 @@ export const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed,
               })}
               style={{
                 display: "inline-flex", alignItems: "center", gap: 6,
-                padding: "8px 14px", borderRadius: 10,
+                padding: "8px 14px", borderRadius: 10, minHeight: 40,
                 background: "var(--paper-3)",
                 color: "var(--action-ink)", fontSize: 12, fontWeight: 600,
                 border: "1px solid var(--bronze)", cursor: "pointer",
@@ -1672,7 +1672,7 @@ export const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed,
               onClick={() => navigate("/edition")}
               style={{
                 display: "inline-flex", alignItems: "center", gap: 6,
-                padding: "8px 14px", borderRadius: 10, marginLeft: 8,
+                padding: "8px 14px", borderRadius: 10, marginLeft: 8, minHeight: 40,
                 background: "var(--paper-3)",
                 color: "var(--action-ink)", fontSize: 12, fontWeight: 600,
                 border: "1px solid var(--bronze)", cursor: "pointer",
@@ -1714,14 +1714,18 @@ export const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed,
                   return (
                     <button
                       key={fw.key}
+                      type="button"
+                      aria-pressed={active}
+                      className="v23-tap v23-focus"
                       onClick={() => setFramework(fw.key)}
                       style={{
+                        display: "inline-flex", alignItems: "center",
                         fontSize: 12,
                         fontWeight: 500,
-                        padding: "5px 12px",
+                        padding: "6px 14px",
                         borderRadius: 20,
                         background: active ? "var(--ink)" : "var(--aura-card)",
-                        border: `0.5px solid ${active ? "var(--ink)" : "hsl(var(--border))"}`,
+                        border: `1px solid ${active ? "var(--ink)" : "hsl(var(--border))"}`,
                         color: active ? "var(--paper)" : "var(--ink-2)",
                         cursor: "pointer",
                         transition: "background 0.15s, color 0.15s, border-color 0.15s",
@@ -1778,8 +1782,8 @@ export const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed,
                 Language
               </p>
               <div data-testid="pub-lang-toggle" className="flex gap-1 bg-secondary/30 rounded-lg p-0.5 border border-border/10">
-                <button onClick={() => setLang("en")} className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${lang === "en" ? "bg-primary text-primary-foreground" : "text-foreground"}`}>English</button>
-                <button onClick={() => setLang("ar")} style={{ fontFamily: "var(--font-arabic, 'Cairo', sans-serif)" }} className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${lang === "ar" ? "bg-primary text-primary-foreground" : "text-foreground"}`}>العربية</button>
+                <button type="button" aria-pressed={lang === "en"} onClick={() => setLang("en")} className={`v23-tap v23-focus px-3 py-1 rounded-md text-xs font-medium transition-all ${lang === "en" ? "bg-primary text-primary-foreground" : "text-foreground"}`}>English</button>
+                <button type="button" aria-pressed={lang === "ar"} onClick={() => setLang("ar")} style={{ fontFamily: "var(--font-arabic, 'Cairo', sans-serif)" }} className={`v23-tap v23-focus px-3 py-1 rounded-md text-xs font-medium transition-all ${lang === "ar" ? "bg-primary text-primary-foreground" : "text-foreground"}`}>العربية</button>
               </div>
             </div>
 
@@ -1794,8 +1798,11 @@ export const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed,
               data-testid="pub-generate-btn"
               onClick={() => generate()}
               disabled={isGeneratingAny || !topic.trim()}
-              className="aura-generate-btn w-full"
+              className="aura-generate-btn w-full v23-tap v23-focus"
+              title={isGeneratingAny ? "Writing your draft now" : !topic.trim() ? "Add a topic first" : undefined}
+              aria-disabled={isGeneratingAny || !topic.trim() || undefined}
               style={{
+                opacity: isGeneratingAny || !topic.trim() ? 0.55 : 1,
                 background: isGeneratingAny || !topic.trim() ? "var(--brand-pale)" : "var(--brand)",
                 color: "var(--surface-ink)",
                 border: "none",

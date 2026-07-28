@@ -123,15 +123,11 @@ export function FirstLoginWelcome({ firstName: firstNameProp, onOpenGuide, onDis
             </AuraButton>
             <button
               type="button"
+              className="v23-textlink v23-tap"
               onClick={handleDismiss}
               style={{
-                background: "none",
-                border: "none",
-                color: "var(--ink-3)",
                 fontSize: 13,
                 fontWeight: 500,
-                cursor: "pointer",
-                padding: 0,
               }}
             >
               Got it

@@ -48,12 +48,7 @@ const CookieConsent = () => {
           style={{ color: "var(--ink)", fontFamily: "var(--font-body)" }}
         >
           Aura uses essential cookies for authentication and preferences.{" "}
-          <Link
-            to="/privacy"
-            style={{ color: "var(--bronze)", textDecoration: "none" }}
-            onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
-            onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
-          >
+          <Link to="/privacy" className="v23-textlink">
             Read our Privacy Policy
           </Link>
           .
@@ -61,7 +56,7 @@ const CookieConsent = () => {
         <button
           type="button"
           onClick={accept}
-          className="px-5 py-2 rounded-md text-sm font-medium transition-opacity hover:opacity-90 shrink-0"
+          className="px-5 py-2 rounded-md text-sm font-medium transition-opacity hover:opacity-90 shrink-0 v23-tap v23-focus"
           style={{ background: "var(--brand)", color: "var(--paper)" }}
         >
           Accept

@@ -490,13 +490,14 @@ export default function BriefV2({
               <button
                 key={s.label}
                 type="button"
+                className={s.done ? "v23-tap" : "v23-tap v23-focus v23-row"}
                 onClick={s.done ? undefined : s.go}
                 style={{
                   display: "flex", alignItems: "center", gap: 10, width: "100%",
                   background: "transparent", border: 0, textAlign: "left",
                   borderTop: i === 0 ? "none" : "1px solid var(--rule-divider)",
-                  padding: "10px 0", cursor: s.done ? "default" : "pointer",
-                  fontFamily: "var(--ff-ui)",
+                  padding: "10px 8px", cursor: s.done ? "default" : "pointer",
+                  fontFamily: "var(--ff-ui)", borderRadius: 6,
                 }}
               >
                 <span style={{
@@ -583,10 +584,13 @@ export default function BriefV2({
             </span>
             <button
               type="button"
+              className="v23-tap v23-focus"
               onClick={() => onSwitchTab("overnight")}
               style={{
-                ...MONO, marginLeft: "auto", background: "transparent", border: 0, padding: 0,
-                cursor: "pointer", fontSize: 11, color: "var(--machine)",
+                ...MONO, marginLeft: "auto", background: "transparent", border: 0, padding: "0 2px",
+                cursor: "pointer", fontSize: 11, color: "var(--v23-on-night)",
+                textDecoration: "underline", textUnderlineOffset: 3,
+                display: "inline-flex", alignItems: "center",
               }}
             >See the full night →</button>
           </div>

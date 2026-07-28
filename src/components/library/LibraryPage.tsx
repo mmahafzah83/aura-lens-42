@@ -38,10 +38,11 @@ const SegBtn: React.FC<React.PropsWithChildren<{ active: boolean; onClick: () =>
   <button
     type="button"
     onClick={onClick}
-    className="cursor-pointer v23-focus"
+    className="cursor-pointer v23-focus v23-tap"
+    aria-pressed={active}
     style={{
-      display: "inline-flex", alignItems: "center", gap: 6,
-      padding: "6px 12px", borderRadius: 7, border: 0, cursor: "pointer",
+      display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+      padding: "6px 14px", borderRadius: 7, border: 0, cursor: "pointer",
       fontFamily: "var(--ff-ui)", fontSize: 12.5, fontWeight: 600,
       background: active ? "var(--surface-card)" : "transparent",
       color: active ? "var(--text-primary)" : "var(--text-secondary)",
@@ -263,7 +264,9 @@ const LibraryPage: React.FC<Props> = ({ onOpenCapture }) => {
             className="cursor-pointer v23-focus"
             style={{
               marginInlineStart: "auto", background: "transparent", border: 0,
-              padding: 2, borderRadius: 6, display: "inline-flex", cursor: "pointer",
+              width: 40, height: 40, minHeight: 40, marginBlock: -8,
+              alignItems: "center", justifyContent: "center",
+              borderRadius: 999, display: "inline-flex", cursor: "pointer",
               color: isStarred ? "var(--act)" : "var(--text-muted)",
             }}
           >
@@ -346,10 +349,11 @@ const LibraryPage: React.FC<Props> = ({ onOpenCapture }) => {
               type="button"
               data-testid={`library-chip-${c.key}`}
               onClick={() => setFilter(c.key)}
-              className="cursor-pointer v23-focus"
+              className="cursor-pointer v23-focus v23-tap"
+              aria-pressed={active}
               style={{
-                display: "inline-flex", alignItems: "center", gap: 7,
-                padding: "6px 12px", borderRadius: 999, cursor: "pointer",
+                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7,
+                padding: "6px 14px", borderRadius: 999, cursor: "pointer",
                 border: `1px solid ${active ? "var(--act)" : "var(--rule-outer)"}`,
                 background: active ? "var(--act-tint)" : "var(--surface-card)",
                 color: active ? "var(--act-hover)" : "var(--text-secondary)",

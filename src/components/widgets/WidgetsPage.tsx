@@ -48,8 +48,10 @@ const Toggle: React.FC<{ on: boolean; label: string; onChange: () => void }> = (
     aria-checked={on}
     aria-label={label}
     onClick={onChange}
+    className="v23-focus"
     style={{
-      width: 40, height: 22, borderRadius: 999, flexShrink: 0, cursor: "pointer",
+      width: 44, height: 24, minHeight: 24, borderRadius: 999, flexShrink: 0, cursor: "pointer",
+      marginBlock: 8,
       border: on ? "1px solid var(--act)" : "1px solid var(--border-strong)",
       background: on ? "var(--act)" : "var(--surface-page)",
       display: "flex", alignItems: "center", padding: 2,
@@ -248,7 +250,7 @@ export default function WidgetsPage() {
                   <span style={{ marginLeft: "auto" }}>
                     {voted
                       ? <ButtonGhost onClick={() => toggleVote(s.key)}>Voted · undo</ButtonGhost>
-                      : <ButtonPrimary onClick={() => toggleVote(s.key)}>Vote</ButtonPrimary>}
+                      : <ButtonGhost onClick={() => toggleVote(s.key)}>Vote</ButtonGhost>}
                   </span>
                 </div>
               </div>

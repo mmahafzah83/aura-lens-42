@@ -2140,6 +2140,72 @@ button[aria-label="Notifications"]:focus-visible {
   outline: 2px solid var(--act);
   outline-offset: 2px;
 }
+
+/* ── System-B V23: affordance law ─────────────────────────────────────
+   Every pressable thing clears 40px on desktop and 44px on touch, every
+   tertiary action reads as a link, and every disabled control looks it. */
+.v23-tap {
+  min-height: 40px;
+}
+@media (pointer: coarse) {
+  .v23-tap { min-height: 44px; }
+}
+.v23-tap-sm {
+  min-height: 40px;
+}
+@media (pointer: coarse) {
+  .v23-tap-sm { min-height: 44px; }
+}
+.v23-textlink {
+  color: var(--act);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 140ms ease, text-decoration-thickness 140ms ease;
+}
+.v23-textlink:hover {
+  color: var(--act-hover);
+  text-decoration-thickness: 2px;
+}
+.v23-textlink:focus-visible {
+  outline: 2px solid var(--act);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+.v23-textlink[disabled],
+.v23-textlink:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+/* A bordered, obviously-pressable control that is not a kit button. */
+.v23-pressable {
+  cursor: pointer;
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  background: var(--surface-card);
+  transition: background 140ms ease, border-color 140ms ease;
+}
+.v23-pressable:hover {
+  background: var(--surface-subtle);
+  border-color: var(--border-strong, var(--act));
+}
+.v23-pressable:focus-visible {
+  outline: 2px solid var(--act);
+  outline-offset: 2px;
+}
+button:disabled,
+button[aria-disabled="true"],
+.v23-pressable:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
 .v23-lift {
   transition: transform 160ms ease, box-shadow 160ms ease;
 }

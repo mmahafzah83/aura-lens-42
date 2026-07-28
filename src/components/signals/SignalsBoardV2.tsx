@@ -80,10 +80,11 @@ const SegBtn: React.FC<React.PropsWithChildren<{ active: boolean; onClick: () =>
   <button
     type="button"
     onClick={onClick}
-    className="cursor-pointer v23-focus"
+    className="cursor-pointer v23-focus v23-tap"
+    aria-pressed={active}
     style={{
-      display: "inline-flex", alignItems: "center", gap: 6,
-      padding: "6px 12px", borderRadius: 7, border: 0, cursor: "pointer",
+      display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+      padding: "6px 14px", borderRadius: 7, border: 0, cursor: "pointer",
       fontFamily: "var(--ff-ui)", fontSize: 12.5, fontWeight: 600,
       background: active ? "var(--surface-card)" : "transparent",
       color: active ? "var(--text-primary)" : "var(--text-secondary)",
@@ -348,10 +349,11 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
                 key={f.key}
                 type="button"
                 onClick={() => setFilter(f.key)}
-                className="cursor-pointer v23-focus"
+                className="cursor-pointer v23-focus v23-tap v23-row"
+                aria-pressed={active}
                 style={{
                   display: "flex", width: "100%", alignItems: "center", justifyContent: "space-between",
-                  padding: "7px 8px", borderRadius: 8, border: 0, cursor: "pointer",
+                  padding: "7px 10px", borderRadius: 8, border: 0, cursor: "pointer",
                   background: active ? "var(--act-tint)" : "transparent",
                   color: active ? "var(--act-hover)" : "var(--text-secondary)",
                   fontSize: 13, fontWeight: active ? 600 : 500, fontFamily: "var(--ff-ui)",
@@ -377,10 +379,11 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
                     key={t}
                     type="button"
                     onClick={() => setTheme(active ? null : t)}
-                    className="cursor-pointer v23-focus"
+                    className="cursor-pointer v23-focus v23-tap v23-row"
+                    aria-pressed={active}
                     style={{
                       display: "flex", width: "100%", alignItems: "center", justifyContent: "space-between",
-                      gap: 8, padding: "6px 8px", borderRadius: 8, border: 0, cursor: "pointer",
+                      gap: 8, padding: "6px 10px", borderRadius: 8, border: 0, cursor: "pointer",
                       background: active ? "var(--act-tint)" : "transparent",
                       color: active ? "var(--act-hover)" : "var(--text-secondary)",
                       fontSize: 12.5, fontFamily: "var(--ff-ui)", textAlign: "start",

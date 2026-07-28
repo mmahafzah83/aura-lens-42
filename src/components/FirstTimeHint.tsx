@@ -65,15 +65,13 @@ export function FirstTimeHint({ hintKey, children }: FirstTimeHintProps) {
       <button
         type="button"
         onClick={dismiss}
+        className="v23-tap v23-focus v23-pressable"
         style={{
           background: "var(--paper-2)",
-          border: "none",
           color: "var(--ink)",
           fontSize: 12,
           fontWeight: 500,
-          cursor: "pointer",
-          padding: "4px 10px",
-          borderRadius: 6,
+          padding: "6px 14px",
           flexShrink: 0,
           whiteSpace: "nowrap",
         }}

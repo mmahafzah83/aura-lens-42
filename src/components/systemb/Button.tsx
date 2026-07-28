@@ -23,6 +23,7 @@ const SHELL: React.CSSProperties = {
   justifyContent: "center",
   gap: 7,
   borderRadius: 8,
+  minHeight: 40,
   padding: "10px 15px",
   cursor: "pointer",
   transition: "background 150ms ease, box-shadow 150ms ease, transform 120ms ease, opacity 150ms ease",
@@ -39,7 +40,7 @@ export const ButtonPrimary: React.FC<Base> = ({ style, disabled, onMouseDown, on
     type="button"
     aria-disabled={disabled || undefined}
     disabled={disabled}
-    className="cursor-pointer"
+    className="cursor-pointer v23-tap v23-focus"
     style={{
       ...SHELL,
       background: "var(--v23-btn-bg)",
@@ -76,7 +77,7 @@ export const ButtonGhost: React.FC<Base> = ({ style, disabled, onMouseEnter, onM
     type="button"
     aria-disabled={disabled || undefined}
     disabled={disabled}
-    className="cursor-pointer"
+    className="cursor-pointer v23-tap v23-focus"
     style={{
       ...SHELL,
       background: "transparent",
@@ -103,7 +104,7 @@ export const ButtonDangerGhost: React.FC<Base> = ({ style, disabled, onMouseEnte
     type="button"
     aria-disabled={disabled || undefined}
     disabled={disabled}
-    className="cursor-pointer"
+    className="cursor-pointer v23-tap v23-focus"
     style={{
       ...SHELL,
       background: "transparent",
@@ -130,7 +131,7 @@ export const ButtonDark: React.FC<Base> = ({ style, disabled, onMouseEnter, onMo
     type="button"
     aria-disabled={disabled || undefined}
     disabled={disabled}
-    className="cursor-pointer"
+    className="cursor-pointer v23-tap v23-focus"
     style={{
       ...SHELL,
       background: "var(--v23-night-lift)",
@@ -155,10 +156,10 @@ export const ButtonDark: React.FC<Base> = ({ style, disabled, onMouseEnter, onMo
 export const ButtonAI: React.FC<Base> = ({ style, onMouseEnter, onMouseLeave, ...rest }) => (
   <button
     type="button"
-    className="cursor-pointer"
+    className="cursor-pointer v23-tap v23-focus"
     style={{
       ...SHELL,
-      height: 38,
+      minHeight: 40,
       padding: "0 14px",
       gap: 7,
       background: "var(--v23-ask-bg)",

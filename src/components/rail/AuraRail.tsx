@@ -212,7 +212,7 @@ export default function AuraRail({
           transform: "translateY(-160%)",
           background: "var(--surface-card)", color: "var(--text-primary)",
           border: "1px solid var(--border-strong)", borderRadius: 8,
-          padding: "8px 12px", fontSize: 13, fontFamily: "var(--ff-ui)",
+          padding: "10px 14px", minHeight: 40, fontSize: 13, fontFamily: "var(--ff-ui)",
           transition: "transform 160ms ease",
         }}
         onFocus={(e) => { e.currentTarget.style.transform = "translateY(0)"; }}
@@ -238,8 +238,8 @@ export default function AuraRail({
           type="button"
           onClick={() => onSelect("home")}
           aria-label="Aura home"
-          className="cursor-pointer"
-          style={{ background: "transparent", border: 0, cursor: "pointer", padding: 0 }}
+          className="cursor-pointer v23-tap v23-focus"
+          style={{ background: "transparent", border: 0, cursor: "pointer", padding: 0, display: "inline-flex", alignItems: "center", justifyContent: "center" }}
         >
           <AuraLogo size={26} variant="dark" />
         </button>
