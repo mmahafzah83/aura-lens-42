@@ -133,6 +133,8 @@ html *:not(canvas):not(video):not(iframe) {
   --deadline-text-on-dark:var(--a-300);
   --on-dark-2:#C3CBD4;
   --success:var(--g-600); --success-tint:var(--g-50);
+  /* Text-weight green: --success itself is only 4.38:1 on the page surface. */
+  --success-text:color-mix(in srgb, var(--g-600) 74%, var(--n-900));
   --error:var(--r-600); --error-tint:var(--r-50);
 
   /* ── TIER 2: V23 component values (rail + home rebuild) ── */
@@ -207,6 +209,7 @@ html *:not(canvas):not(video):not(iframe) {
   --action:var(--deadline); --action-ink:var(--deadline-text);
   --spot:var(--act); --spot-2:var(--act-hover);
   --pos:var(--success); --neg:var(--error);
+  --pos-text:var(--success-text);
   /* Instrument surfaces are LIGHT by default. Night is earned: only the
      nav rail and the machine/Overnight surfaces re-declare these dark. */
   --ob-page:var(--surface-page); --ob-bg:var(--surface-page); --ob-panel:var(--surface-card);

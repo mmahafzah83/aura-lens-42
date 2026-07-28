@@ -53,13 +53,13 @@ export function FirstTimeHint({ hintKey, children }: FirstTimeHintProps) {
         padding: "10px 14px",
         marginBottom: 14,
         borderRadius: 8,
-        background: "rgba(176,141,58,0.06)",
-        border: "0.5px solid rgba(176,141,58,0.25)",
+        background: "color-mix(in srgb, var(--spot) 6%, transparent)",
+        border: "0.5px solid color-mix(in srgb, var(--spot) 25%, transparent)",
         animation: "hintFadeIn 240ms ease-out",
       }}
     >
       <div style={{ display: "flex", alignItems: "flex-start", gap: 8, flex: 1, minWidth: 0 }}>
-        <span style={{ color: "var(--spot)", fontSize: 13, lineHeight: "20px", flexShrink: 0 }}>✦</span>
+        <span aria-hidden style={{ color: "var(--spot-2)", fontSize: 13, lineHeight: "20px", flexShrink: 0 }}>✦</span>
         <span style={{ fontSize: 13, lineHeight: 1.55, color: "hsl(var(--foreground))" }}>{displayText}</span>
       </div>
       <button

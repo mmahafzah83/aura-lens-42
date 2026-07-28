@@ -1044,6 +1044,7 @@ const Dashboard = () => {
                     onSignalPrefillConsumed={() => setSignalDraftPrefill(null)}
                     draftPrefill={draftPrefill}
                     onDraftPrefillConsumed={() => setDraftPrefill(null)}
+                    onOpenCapture={() => handleOpenCapture()}
                   />
                 </ErrorBoundary>
               </div>

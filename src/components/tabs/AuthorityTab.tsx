@@ -1538,7 +1538,7 @@ export const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed,
                   onClick={() => setLang("en")}
                   style={{
                     background: lang === "en" ? "var(--paper)" : "transparent",
-                    color: lang === "en" ? "var(--ink)" : "var(--ink-3)",
+                    color: lang === "en" ? "var(--ink)" : "var(--ink-2)",
                     border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 500, cursor: "pointer",
                   }}
                 >EN</button>
@@ -1546,7 +1546,7 @@ export const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed,
                   onClick={() => setLang("ar")}
                   style={{
                     background: lang === "ar" ? "var(--paper)" : "transparent",
-                    color: lang === "ar" ? "var(--ink)" : "var(--ink-3)",
+                    color: lang === "ar" ? "var(--ink)" : "var(--ink-2)",
                     border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 500, cursor: "pointer",
                     fontFamily: "var(--font-arabic, 'Cairo', sans-serif)",
                   }}
@@ -2146,8 +2146,10 @@ export const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed,
                   ) : (
                     <div
                       dir={lang === "ar" || isArabicText(displayedOutput) ? "rtl" : "ltr"}
-                      className={`p-5 rounded-xl bg-secondary/20 border border-border/10 text-sm text-foreground/90 leading-relaxed max-h-[500px] overflow-y-auto ${
-                        lang === "ar" || isArabicText(displayedOutput) ? "arabic-text" : ""
+                      className={`p-5 rounded-xl bg-secondary/20 border border-border/10 text-sm text-foreground/90 max-h-[500px] overflow-y-auto ${
+                        lang === "ar" || isArabicText(displayedOutput)
+                          ? "arabic-text leading-[1.9] pt-9"
+                          : "leading-relaxed"
                       }`}
                     >
                       {renderMarkdown(fixArabicDirectionalSymbols(displayedOutput))}
