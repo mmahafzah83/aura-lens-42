@@ -294,13 +294,13 @@ const LibraryPage: React.FC<Props> = ({ onOpenCapture }) => {
             <button
               type="button"
               onClick={() => openSignal(sig.id)}
-              className="cursor-pointer v23-focus"
+              className="cursor-pointer v23-focus v23-tap"
               title={sig.title}
               style={{
                 display: "inline-flex", alignItems: "center", gap: 6, maxWidth: "100%",
-                padding: "4px 9px", borderRadius: 7, cursor: "pointer",
+                padding: "6px 12px", borderRadius: 8, cursor: "pointer",
                 background: "var(--act-tint)", color: "var(--act-hover)",
-                border: 0, fontFamily: "var(--ff-ui)", fontSize: 11.5, fontWeight: 600,
+                border: "1px solid var(--act)", fontFamily: "var(--ff-ui)", fontSize: 11.5, fontWeight: 600,
               }}
             >
               <span dir="auto" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sig.title}</span>
