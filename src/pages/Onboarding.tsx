@@ -306,7 +306,7 @@ const Onboarding = () => {
       const p: any = profile || {};
       // Completion redirect — any user with onboarding_step >= 4
       // (or the legacy onboarding_completed flag) can never accidentally restart.
-      if (p && (p.onboarding_step ?? 0) >= 4 && !window.location.search.includes("cf")) { // TEMP-VERIFY
+      if (p && (p.onboarding_step ?? 0) >= 4) {
         goHome();
         return;
       }
@@ -333,8 +333,6 @@ const Onboarding = () => {
       // Capture-first gate — data-driven, never a new step counter.
       try {
         const skipped = sessionStorage.getItem(`aura_capture_first_skipped_${session.user.id}`) === "1";
-        const cfForce = new URLSearchParams(window.location.search).has("cf"); // TEMP-VERIFY
-        if (cfForce) { setShowCaptureFirst(true); } // TEMP-VERIFY
         if (!skipped && savedStep === 0) {
           const { count } = await supabase
             .from("entries" as any)
@@ -945,7 +943,7 @@ const Onboarding = () => {
   }
 
   // ───── Identity confirmation gate (Fix 5) ─────
-  if (needsIdentityConfirm && !window.location.search.includes("cf")) { // TEMP-VERIFY
+  if (needsIdentityConfirm) {
     return cardShell(
       <>
         <div style={{ textAlign: "center", fontSize: 24, color: "var(--brand)", marginBottom: 12 }}>✦</div>
@@ -1042,7 +1040,7 @@ const Onboarding = () => {
     }
   };
 
-  if (needsPassword && !window.location.search.includes("cf")) { // TEMP-VERIFY
+  if (needsPassword) {
     const pwdInputStyle: React.CSSProperties = {
       width: "100%",
       padding: "12px 40px 12px 14px",
