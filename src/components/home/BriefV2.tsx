@@ -606,11 +606,24 @@ export default function BriefV2({
       )}
 
       {/* 8 · CAPTURE STRIP */}
-      <Card interactive onClick={onOpenCapture} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+      <Card style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <span style={{ fontSize: 14, color: "var(--text-secondary)" }}>
-          Capture something — a link or a note.
+          Capture something — a link, a voice note, or a thought.
         </span>
-        <LinkAction onClick={onOpenCapture}>Capture</LinkAction>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {CAPTURE_TILES.map((t) => (
+            <button
+              key={t.mode}
+              type="button"
+              aria-label={t.label}
+              title={t.label}
+              onClick={() => onOpenCapture(t.mode)}
+              style={{ background: "transparent", border: 0, padding: 0, cursor: "pointer", lineHeight: 0 }}
+            >
+              <IconTile icon={t.icon} tone="act" size={32} />
+            </button>
+          ))}
+        </div>
       </Card>
     </div>
   );
