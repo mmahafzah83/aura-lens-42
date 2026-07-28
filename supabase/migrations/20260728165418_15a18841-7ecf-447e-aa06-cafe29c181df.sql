@@ -1,0 +1,1 @@
+DELETE FROM public.product_events WHERE event = 'today_move_dismissed' AND occurred_at::date = current_date;
