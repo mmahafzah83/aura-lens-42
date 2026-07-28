@@ -88,12 +88,9 @@ function ageLabel(iso: string | null): string {
   return `${days}d`;
 }
 
-function isFading(v: string | null): boolean {
-  const s = (v || "").toLowerCase();
-  return s.includes("fad") || s.includes("expir") || s.includes("decay");
-}
-function isCooling(v: string | null): boolean {
-  return (v || "").toLowerCase().includes("cool");
+/** The only velocity value that earns a chip today. */
+function isAccelerating(v: string | null): boolean {
+  return (v || "").toLowerCase() === "accelerating";
 }
 
 function startOfWeekIso(): string {
@@ -155,10 +152,10 @@ const SectionLabel: React.FC<React.PropsWithChildren> = ({ children }) => (
 );
 
 /** Leading status dot for signal rows — colour law, no text. */
-const StatusDot: React.FC<{ tone: "live" | "clock" | "cooling" }> = ({ tone }) => (
+const StatusDot: React.FC<{ tone: "live" | "cooling" }> = ({ tone }) => (
   <span aria-hidden style={{
     width: 7, height: 7, borderRadius: 999, flexShrink: 0,
-    background: tone === "live" ? "var(--machine)" : tone === "clock" ? "var(--deadline)" : "var(--border-strong)",
+    background: tone === "live" ? "var(--machine)" : "var(--border-strong)",
   }} />
 );
 
@@ -186,6 +183,7 @@ export default function BriefV2({
   const [firstName, setFirstName] = useState("");
   const [imprint, setImprint] = useState<number | null>(null);
   const [signals, setSignals] = useState<SignalRow[]>([]);
+  const [activeSignalCount, setActiveSignalCount] = useState<number | null>(null);
   const [capturesWeek, setCapturesWeek] = useState<number | null>(null);
   const [publishedMonth, setPublishedMonth] = useState<number | null>(null);
   const [drafts, setDrafts] = useState<DraftRow[]>([]);
@@ -202,13 +200,17 @@ export default function BriefV2({
     const dayAgo = new Date(Date.now() - 24 * 3600_000).toISOString();
 
     const [
-      profRes, impRes, sigRes, entRes, docRes, pubRes, ciRes, lpRes, findRes, ghostRes, movedRes,
+      profRes, impRes, sigRes, sigCountRes, entRes, docRes, pubRes, ciRes, lpRes, findRes, ghostRes, movedRes,
     ] = await Promise.all([
       supabase.from("diagnostic_profiles").select("first_name").eq("user_id", uid).maybeSingle(),
       supabase.from("imprint_snapshots").select("imprint").eq("user_id", uid).order("created_at", { ascending: false }).limit(1),
       (supabase.from("strategic_signals" as any) as any)
         .select("id, signal_title, velocity_status, strength_score, created_at, supporting_evidence_ids")
         .eq("user_id", uid).eq("status", "active").limit(60),
+      // Exact truth for the stat — never a number derived from a limited fetch.
+      (supabase.from("strategic_signals" as any) as any)
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", uid).eq("status", "active"),
       supabase.from("entries").select("id", { count: "exact", head: true }).eq("user_id", uid).gte("created_at", weekIso),
       supabase.from("documents").select("id", { count: "exact", head: true }).eq("user_id", uid).gte("created_at", weekIso),
       (supabase.from("linkedin_posts" as any) as any)
@@ -244,14 +246,15 @@ export default function BriefV2({
       createdAt: r.created_at ?? null,
       captures: Array.isArray(r.supporting_evidence_ids) ? r.supporting_evidence_ids.length : 0,
     }));
-    // Ranked by how soon they stop being useful: fading first, then strength.
+    // Accelerating first, then strength.
     sigRows.sort((a, b) => {
-      const fa = isFading(a.velocity) ? 0 : isCooling(a.velocity) ? 2 : 1;
-      const fb = isFading(b.velocity) ? 0 : isCooling(b.velocity) ? 2 : 1;
+      const fa = isAccelerating(a.velocity) ? 0 : 1;
+      const fb = isAccelerating(b.velocity) ? 0 : 1;
       if (fa !== fb) return fa - fb;
       return (b.strength ?? 0) - (a.strength ?? 0);
     });
     setSignals(sigRows);
+    setActiveSignalCount(typeof sigCountRes?.count === "number" ? sigCountRes.count : null);
 
     setCapturesWeek((entRes?.count ?? 0) + (docRes?.count ?? 0));
     setPublishedMonth(pubRes?.count ?? 0);
@@ -321,12 +324,6 @@ export default function BriefV2({
     return () => { cancelled = true; };
   }, [user]);
 
-  const velocityById = useMemo(() => {
-    const m = new Map<string, string | null>();
-    for (const s of signals) m.set(s.id, s.velocity);
-    return m;
-  }, [signals]);
-
   const firstFlightSteps = useMemo(() => ([
     { label: "Complete your profile", done: journey.profileComplete, go: () => onSwitchTab("identity") },
     { label: "Take the brand assessment", done: journey.assessmentComplete, go: () => (onOpenBrandAssessment ? onOpenBrandAssessment() : onSwitchTab("identity")) },
@@ -338,7 +335,7 @@ export default function BriefV2({
 
   const stats: Array<{ label: string; value: string; sub?: string }> = [];
   if (imprint != null) stats.push({ label: "Imprint", value: String(imprint), sub: tierInfo.currentTier?.name ?? undefined });
-  stats.push({ label: "Live signals", value: String(signals.length) });
+  stats.push({ label: "Live signals", value: activeSignalCount != null ? String(activeSignalCount) : "—" });
   if (capturesWeek != null) stats.push({ label: "Captures this week", value: String(capturesWeek) });
   if (publishedMonth != null) stats.push({ label: "Published this month", value: String(publishedMonth) });
 
@@ -409,7 +406,6 @@ export default function BriefV2({
           <SectionLabel>This week</SectionLabel>
           <div style={{ display: "flex", flexDirection: "column" }}>
             {moves.map((m, i) => {
-              const fading = !!m.signal_id && isFading(velocityById.get(m.signal_id) ?? null);
               return (
                 <button
                   key={i}
@@ -430,7 +426,6 @@ export default function BriefV2({
                 >
                   <span style={{ flex: 1, minWidth: 0, fontSize: 14, color: "var(--text-primary)" }}>{m.title}</span>
                   <Chip variant="cooling">{m.action_type}</Chip>
-                  {fading && <Chip variant="clock">Fading</Chip>}
                   <ChevronRight size={15} style={{ color: "var(--text-muted)" }} />
                 </button>
               );
@@ -531,7 +526,7 @@ export default function BriefV2({
             <LinkAction onClick={() => onSwitchTab("intelligence")}>All signals</LinkAction>
           </div>
           <p style={{ margin: "0 0 10px", fontSize: 12.5, color: "var(--text-secondary)" }}>
-            Ranked by how soon they stop being useful.
+            Ranked by momentum and strength.
           </p>
           <div style={{ display: "flex", flexDirection: "column" }}>
             {signals.slice(0, 5).map((s, i) => (
@@ -546,7 +541,7 @@ export default function BriefV2({
                   padding: "11px 0", fontFamily: "var(--ff-ui)",
                 }}
               >
-                <StatusDot tone={isFading(s.velocity) ? "clock" : isCooling(s.velocity) ? "cooling" : "live"} />
+                <StatusDot tone={isAccelerating(s.velocity) ? "live" : "cooling"} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div
                     dir={isArabic(s.title) ? "rtl" : "ltr"}
@@ -560,11 +555,7 @@ export default function BriefV2({
                     {s.captures} captures · {ageLabel(s.createdAt)}
                   </div>
                 </div>
-                {isFading(s.velocity)
-                  ? <Chip variant="clock">Act now</Chip>
-                  : isCooling(s.velocity)
-                    ? <Chip variant="cooling">Cooling</Chip>
-                    : <Chip variant="live">Live</Chip>}
+                {isAccelerating(s.velocity) && <Chip variant="live">Accelerating</Chip>}
               </button>
             ))}
           </div>
