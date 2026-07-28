@@ -390,7 +390,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
                 }}
               >
                 <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
-                  <span style={{ ...MONO, fontSize: 10.5, color: "var(--machine)" }}>{c.ref}</span>
+                  <span style={{ ...MONO, fontSize: 10.5, color: "var(--machine-text)" }}>{c.ref}</span>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{c.title}</span>
                 </div>
                 <div style={{ ...MONO, fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
@@ -508,7 +508,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
               })}
 
               {loading && (
-                <div data-testid="ask-thinking" style={{ ...MONO, fontSize: 12, color: "var(--machine)", margin: "10px 0" }}>
+                <div data-testid="ask-thinking" style={{ ...MONO, fontSize: 12, color: "var(--machine-text)", margin: "10px 0" }}>
                   Reading your graph…
                 </div>
               )}
