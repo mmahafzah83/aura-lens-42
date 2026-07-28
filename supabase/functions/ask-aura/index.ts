@@ -86,7 +86,7 @@ serve(withObserve("ask-aura", async (req) => {
       safe(
         admin
           .from("strategic_signals")
-          .select("signal_title, explanation, strategic_implications, confidence, theme_tags, status, priority_score, source_count, velocity_status")
+          .select("id, created_at, signal_title, explanation, strategic_implications, confidence, theme_tags, status, priority_score, fragment_count, velocity_status, supporting_evidence_ids")
           .eq("user_id", user_id)
           .order("priority_score", { ascending: false })
           .limit(5) as any,
@@ -136,7 +136,7 @@ serve(withObserve("ask-aura", async (req) => {
       safe(
         admin
           .from("entries")
-          .select("title, entry_type, created_at")
+          .select("title, type, created_at")
           .eq("user_id", user_id)
           .order("created_at", { ascending: false })
           .limit(10) as any,
@@ -159,7 +159,7 @@ serve(withObserve("ask-aura", async (req) => {
         admin
           .from("industry_trends")
           .select("headline, impact_level")
-          .order("created_at", { ascending: false })
+          .order("fetched_at", { ascending: false })
           .limit(3) as any,
       ),
     ]);
@@ -185,7 +185,7 @@ serve(withObserve("ask-aura", async (req) => {
     const entriesBlock =
       ents.length === 0
         ? "—"
-        : ents.map((e) => `- ${(e.title || "(untitled)").slice(0, 80)} [${e.entry_type || "entry"}]`).join("\n");
+        : ents.map((e) => `- ${(e.title || "(untitled)").slice(0, 80)} [${e.type || "entry"}]`).join("\n");
 
     const metricsBlock =
       mets.length === 0
@@ -241,12 +241,27 @@ serve(withObserve("ask-aura", async (req) => {
         ? "—"
         : sigs
             .map(
-              (s) =>
-                `- ${s.signal_title || "(untitled)"} — ${
+              (s, i) =>
+                `- [S-${101 + i}] ${s.signal_title || "(untitled)"} — ${
                   s.strategic_implications || s.explanation || "no implications recorded"
                 } (Confidence: ${Math.round(Number(s.confidence || 0) * 100)}%)`,
             )
             .join("\n");
+
+    // Citation registry — stable within this response. The client renders a pill
+    // only for refs that appear here, and each ref resolves to a real signal row
+    // belonging to this user (the query above is already scoped by user_id).
+    const citations = sigs.map((s, i) => ({
+      ref: `S-${101 + i}`,
+      id: s.id,
+      title: s.signal_title || "(untitled)",
+      evidence_count: Array.isArray(s.supporting_evidence_ids) ? s.supporting_evidence_ids.length : 0,
+      days_live: s.created_at
+        ? Math.max(0, Math.floor((Date.now() - new Date(s.created_at).getTime()) / 86400000))
+        : null,
+      velocity_status: s.velocity_status || null,
+      confidence: Number(s.confidence || 0),
+    }));
 
     const postsBlock =
       pst.length === 0
@@ -384,9 +399,16 @@ ${
 
 GROUNDING CONTRACT — NON-NEGOTIABLE RULES FOR EVERY RESPONSE:
 
-1. SIGNAL CITATION: Every response must reference at least one signal_title from the user's strategic_signals data by its exact name, formatted in bold. If no signals were loaded, say "I don't have your signals loaded — please capture something first."
+0. CLOSED-WORLD RULE (ABSOLUTE — overrides every other rule below):
+   You can see ONLY the data in this prompt: the user's own captures, signals, posts, metrics and profile. You have NO access to the open web, no competitor data, no network data, no audience data, no calendar of external events.
+   You must NEVER state, imply or speculate about what any external party has published, said, launched, hosted or announced. That includes named firms (McKinsey, PwC, Deloitte, BCG, EY, KPMG and any other), competitors, peers, "your network", "nobody has covered this", "the market is talking about", or any dated external event ("last Tuesday", "this week's webinar").
+   You must NEVER recommend a posting time, a day of week, or an audience hour — no audience-timing data exists.
+   You must NEVER give a countdown or expiry for a signal ("six days from being old news") — signals have no expiry field.
+   If the user asks about competitors, the open web, their network, timing, or anything outside their own graph, say plainly: "I can only see your own graph — your captures, signals and posts. I can't see the open web or what anyone else has published." Then answer from what you DO have.
 
-2. TEMPORAL HOOK: Every strategic recommendation must include a "why now" — one sentence explaining what makes this week specifically the right moment. Reference a competitor move, a signal momentum change, or a market event. Never omit this.
+1. SIGNAL CITATION: Every response must reference at least one signal from ACTIVE SIGNALS by its exact title in bold, immediately followed by its bracketed reference exactly as listed, e.g. **Integration Trap** [S-101]. Use ONLY the refs listed in ACTIVE SIGNALS — never invent a ref, never cite a signal that is not listed. If no signals were loaded, say "I don't have your signals loaded — please capture something first."
+
+2. TEMPORAL HOOK: Every strategic recommendation must include a "why now" — one sentence grounded ONLY in the user's own graph: a signal's momentum or velocity, how many captures now support it, their publishing gap, or their own recent metrics. Never reference a competitor move or an external market event.
 
 3. NEXT STEP: Every response must end with exactly this format:
 
@@ -396,7 +418,7 @@ Example: "NEXT STEP: Draft the 2-page Integration Trap white paper — you — b
 
 Never end a response without this line.
 
-4. CONTRARIAN OBLIGATION (for users with 3+ published posts): If the user's plan sounds conventional or safe, name the specific risk they are not seeing. Be direct. Name competitors by name (McKinsey, PwC, Deloitte, BCG) when relevant.
+4. CONTRARIAN OBLIGATION (for users with 3+ published posts): If the user's plan sounds conventional or safe, name the specific risk they are not seeing, using their own signals and posts as the evidence. Be direct. Never name external firms or claim what anyone else has published.
    FOR NEW USERS (0-2 published posts): Skip the contrarian voice. Focus on building confidence and momentum. The user needs to feel that publishing is SAFE before they can handle "your approach is too conventional."
 
 5. IDENTITY: You are not ChatGPT. You are the user's Chief of Staff with access to their intelligence layer. Every response must feel like it could only come from someone who knows their specific signals, sector, and career target — not from a generic AI.`;
@@ -413,13 +435,13 @@ RESPONSE RULES (v2 DEFINITIVE — ALWAYS APPLY):
 7. If you don't have data: "I don't have intelligence on that yet. Capture an article about it."
 8. Respond in the same language as the user's most recent message. If that message is in English, respond in English. If it is in Arabic, respond in professional Gulf Arabic. If the language is ambiguous, very short, or mixed, default to English. Never switch languages unless the user switches first.
 9. Never say: "As an AI", "Great question!", "Here are some suggestions", "You might want to consider", "That's a wonderful insight."
-10. Think like a McKinsey Senior Partner giving private counsel to a peer — direct, evidence-based, no fluff.
+10. Think like a senior partner giving private counsel to a peer — direct, evidence-based, no fluff. Never name external firms.
 11. When reviewing posts: be HONEST. Weak hook? Say so. Suggest a specific rewrite.
 12. Reference account age and progress when relevant: ${topSignalTitle
       ? `"You've been on Aura for ${accountDays ?? "—"} days — your top signal '${topSignalTitle}' at ${Math.round(Number(topSignal?.confidence || 0) * 100)}% confidence formed from that work."`
       : `"You don't have strong signals yet — that's normal for the first week. Focus on capturing 3-5 articles in your sector to give Aura enough data to detect patterns."`}
     ${(publishedCount || 0) === 0 ? `When discussing publishing cadence, do NOT say "your content score is 0". Say: "you haven't published yet, which means the publishing window is wide open."` : ""}
-13. When recommending content topics, frame as competitive: "No one in your network has covered this angle."
+13. When recommending content topics, frame the opportunity from the user's own evidence — how many captures support the angle, how long the signal has been live, what they have not written yet. Never claim what the network, competitors or the market has or has not covered; you cannot see them.
 14. Use ONE key insight line per response when appropriate, formatted as a Markdown blockquote: > Your key insight here. Optionally one italic provocation: *Your provocation here*. Use ONLY Markdown — never HTML tags (no <span>, <blockquote>, <em>, <strong>). Use **bold** and *italic* in Markdown.`;
 
     const finalSystemPrompt = systemPrompt + responseRules;
@@ -505,6 +527,7 @@ RESPONSE RULES (v2 DEFINITIVE — ALWAYS APPLY):
               memory_sessions: mem.length,
               identity_loaded: !!profile,
             },
+            citations,
           };
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(contextEvent)}\n\n`));
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));

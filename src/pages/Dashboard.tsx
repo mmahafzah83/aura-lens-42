@@ -8,7 +8,8 @@ import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { useCardEntryAnimation } from "@/hooks/useCardEntryAnimation";
 import CaptureModal from "@/components/CaptureModal";
 import { useCapturedSources } from "@/hooks/useCapturedSources";
-import AuraChatSidebar, { type ChatContext } from "@/components/AuraChatSidebar";
+import { type ChatContext } from "@/components/AuraChatSidebar";
+import AskAuraV2 from "@/components/ask/AskAuraV2";
 import AskAuraPresence from "@/components/AskAuraPresence";
 import AuraLogo from "@/components/brand/AuraLogo";
 import ExecutiveDiagnostic from "@/components/ExecutiveDiagnostic";
@@ -1204,7 +1205,7 @@ const Dashboard = () => {
         prefillText={capturePrefillText || undefined}
         initialType={captureInitialType}
       />
-      <AuraChatSidebar
+      <AskAuraV2
         open={chatOpen}
         onClose={() => { setChatOpen(false); setChatInitialMessage(undefined); setChatContext(undefined); }}
         initialMessage={chatInitialMessage}
