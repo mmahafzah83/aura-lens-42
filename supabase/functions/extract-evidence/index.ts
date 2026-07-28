@@ -1,6 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { withObserve } from "../_shared/observe.ts";
+import { withObserve, logEfError } from "../_shared/observe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -466,7 +466,8 @@ Extract 3-8 fragments. Focus on ACTIONABLE, STRATEGIC content.`;
       console.error("[embed] failed", (embErr as Error).message);
     }
 
-    // Update registry
+    // Update registry. signal_status='pending' is set in the SAME update that
+    // marks processed, so the outcome of the chain is assertable in SQL.
     await adminClient
       .from("source_registry")
       .update({
@@ -475,30 +476,43 @@ Extract 3-8 fragments. Focus on ACTIONABLE, STRATEGIC content.`;
         fragment_count: inserted.length,
         title,
         content_preview: content.slice(0, 500),
+        ...(inserted.length > 0 ? { signal_status: "pending" } : {}),
       })
       .eq("id", registryId);
 
-    // Chain: trigger signal detection on the newly created fragments
+    // Chain: trigger signal detection on the newly created fragments.
+    // AWAITED (never EdgeRuntime.waitUntil — a dropped isolate silently ate
+    // this chain and users got zero signals with no error recorded anywhere).
     if (inserted.length > 0) {
       const fragmentIds = inserted.map((f: any) => f.id);
-      // @ts-ignore EdgeRuntime.waitUntil is available in Supabase Edge Functions
-      EdgeRuntime.waitUntil((async () => {
-        try {
-          const { error: sigError } = await adminClient.functions.invoke("detect-signals-v2", {
-            body: {
-              fragment_ids: fragmentIds,
-              source_registry_id: registryId,
-              user_id: registry.user_id,
-            },
-          });
-          if (sigError) {
-            console.warn("[extract-evidence] detect-signals-v2 chain failed:", sigError);
-          }
-        } catch (e: any) {
-          console.warn("[extract-evidence] detect-signals-v2 chain threw:", e?.message);
-        }
-      })());
-      console.log("[extract-evidence] chained detect-signals-v2 with", fragmentIds.length, "fragments");
+      try {
+        const chain = adminClient.functions.invoke("detect-signals-v2", {
+          body: {
+            fragment_ids: fragmentIds,
+            source_registry_id: registryId,
+            user_id: registry.user_id,
+          },
+        });
+        const timeout = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("detect_signals_chain_timeout_25s")), 25_000)
+        );
+        const { error: sigError } = (await Promise.race([chain, timeout])) as any;
+        if (sigError) throw new Error(sigError.message || String(sigError));
+        console.log("[extract-evidence] chained detect-signals-v2 with", fragmentIds.length, "fragments");
+      } catch (e: any) {
+        // Record the failure — reap-unsignalled-sources will retry the outcome.
+        await logEfError(adminClient, {
+          function_name: "extract-evidence",
+          error: e,
+          severity: "high",
+          user_id: registry.user_id,
+          context: {
+            stage: "detect_signals_chain",
+            source_registry_id: registryId,
+            fragment_count: fragmentIds.length,
+          },
+        });
+      }
     }
 
     return new Response(JSON.stringify({

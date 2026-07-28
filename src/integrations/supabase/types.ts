@@ -3335,6 +3335,7 @@ export type Database = {
           id: string
           processed: boolean
           processed_at: string | null
+          signal_status: string | null
           source_id: string
           source_metadata: Json | null
           source_type: string
@@ -3349,6 +3350,7 @@ export type Database = {
           id?: string
           processed?: boolean
           processed_at?: string | null
+          signal_status?: string | null
           source_id: string
           source_metadata?: Json | null
           source_type: string
@@ -3363,6 +3365,7 @@ export type Database = {
           id?: string
           processed?: boolean
           processed_at?: string | null
+          signal_status?: string | null
           source_id?: string
           source_metadata?: Json | null
           source_type?: string
