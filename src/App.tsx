@@ -16,6 +16,7 @@ import NotFound from "./pages/NotFound";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Trust from "./pages/Trust";
+import CapTest from "./pages/CapTest";
 import Guide from "./pages/Guide";
 import Settings from "./pages/Settings";
 import PasswordGate from "./components/PasswordGate";
