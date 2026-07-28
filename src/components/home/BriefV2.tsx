@@ -437,15 +437,13 @@ export default function BriefV2({
       {/* 4 · STAT STRIP */}
       <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fit, minmax(150px, 1fr))`, gap: 12 }}>
         {stats.map((s) => (
-          <Card key={s.label} style={{ padding: 14 }}>
-            <div style={{ ...MONO, fontSize: 10, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-              {s.label}
-            </div>
-            <div style={{ ...MONO, fontSize: 26, fontWeight: 600, color: "var(--text-primary)", marginTop: 6, lineHeight: 1.1 }}>
-              {s.value}
-            </div>
-            {s.sub && <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 2 }}>{s.sub}</div>}
-          </Card>
+          <StatCard
+            key={s.label}
+            label={s.label}
+            value={s.value}
+            sub={s.sub}
+            explain={s.label === "Imprint" ? "Signal 40% + Content 40% + Capture consistency 20%" : undefined}
+          />
         ))}
       </div>
 
