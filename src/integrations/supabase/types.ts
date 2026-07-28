@@ -4005,6 +4005,8 @@ export type Database = {
         Returns: {
           captures: number
           published: number
+          published_live: number
+          published_through_aura: number
           signals: number
           used_in_signal: number
         }[]
