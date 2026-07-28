@@ -5,6 +5,7 @@ import { Chip, ButtonPrimary } from "@/components/systemb";
 import { isArabicText } from "@/lib/utils";
 import { formatSmartDate } from "@/lib/formatDate";
 import { LayoutGrid, List as ListIcon, Plus, Star } from "lucide-react";
+import { isAuraPublishedPost } from "@/lib/postProvenance";
 
 /**
  * LibraryPage — everything the user captured, and what Aura made of it.
@@ -113,7 +114,7 @@ const LibraryPage: React.FC<Props> = ({ onOpenCapture }) => {
           .select("id, signal_title, supporting_evidence_ids")
           .eq("user_id", user.id),
         (supabase.from("linkedin_posts" as any) as any)
-          .select("source_metadata")
+          .select("source_metadata, source_type, tracking_status")
           .eq("user_id", user.id),
       ]);
 
@@ -148,8 +149,10 @@ const LibraryPage: React.FC<Props> = ({ onOpenCapture }) => {
       }
 
       // signals published from — signal id inside source_metadata->signal_ids
+      // Only posts Aura produced AND the user published count here — a draft
+      // that quotes a signal is not "published from".
       const publishedSignalIds = new Set<string>();
-      for (const p of (postRes?.data || []) as any[]) {
+      for (const p of ((postRes?.data || []) as any[]).filter(isAuraPublishedPost)) {
         const ids = p?.source_metadata?.signal_ids;
         if (Array.isArray(ids)) for (const id of ids) if (typeof id === "string") publishedSignalIds.add(id);
       }
