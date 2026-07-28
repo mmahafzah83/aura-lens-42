@@ -330,9 +330,94 @@ const Onboarding = () => {
       if (p.north_star_goal) setNorthStar(p.north_star_goal);
       if (p.country) setCountry(p.country);
       if (p.country_code) setCountryCode(p.country_code);
+      // Capture-first gate — data-driven, never a new step counter.
+      try {
+        const skipped = sessionStorage.getItem(`aura_capture_first_skipped_${session.user.id}`) === "1";
+        if (!skipped && savedStep === 0) {
+          const { count } = await supabase
+            .from("entries" as any)
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", session.user.id);
+          if ((count ?? 0) === 0) setShowCaptureFirst(true);
+        }
+      } catch { /* never block onboarding */ }
       setChecking(false);
     })();
   }, [navigate]);
+
+  // ─── Capture-first: submit through the SAME ingest-capture path the app uses.
+  const cfSkip = () => {
+    try { if (userId) sessionStorage.setItem(`aura_capture_first_skipped_${userId}`, "1"); } catch {}
+    setShowCaptureFirst(false);
+  };
+
+  const cfPoll = async (startIso: string) => {
+    const deadline = Date.now() + 20000;
+    while (Date.now() < deadline) {
+      try {
+        const { data: reg } = await (supabase.from("source_registry" as any) as any)
+          .select("id")
+          .eq("user_id", userId)
+          .gte("created_at", startIso)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        const rid = reg?.[0]?.id;
+        if (rid) {
+          const { data: frags, count } = await (supabase.from("evidence_fragments" as any) as any)
+            .select("title", { count: "exact" })
+            .eq("source_registry_id", rid)
+            .order("confidence", { ascending: false })
+            .limit(3);
+          if (frags && frags.length > 0) {
+            setCfFragments(frags as { title: string }[]);
+            setCfCount(count ?? frags.length);
+            setCfPhase("result");
+            return;
+          }
+        }
+      } catch { /* keep polling */ }
+      await new Promise((r) => window.setTimeout(r, 2000));
+    }
+    setCfTimedOut(true);
+    setCfPhase("result");
+  };
+
+  const cfSubmit = async () => {
+    const v = cfValue.trim();
+    if (!v) return;
+    let isUrl = false;
+    try { isUrl = /^https?:$/.test(new URL(v).protocol); } catch { /* free text */ }
+    const startIso = new Date(Date.now() - 10000).toISOString();
+    setCfBusy(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const controller = new AbortController();
+        const timeoutId = window.setTimeout(() => controller.abort(), 25000);
+        try {
+          await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-capture`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({
+              type: isUrl ? "link" : "text",
+              content: v,
+              source_url: isUrl ? v : null,
+              metadata: { source: "onboarding_capture_first" },
+            }),
+            signal: controller.signal,
+          });
+        } finally {
+          window.clearTimeout(timeoutId);
+        }
+      }
+    } catch { /* a slow or failed capture must never block */ }
+    setCfBusy(false);
+    setCfPhase("reading");
+    void cfPoll(startIso);
+  };
 
   // Helper — persist onboarding progress so users can resume after closing the tab.
   const saveProgress = async (stepCompleted: number) => {
