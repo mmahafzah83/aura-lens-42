@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
-  Compass, Radar, Moon, PenLine, BarChart3, Settings, Paperclip, X, Library, Flame,
+  Compass, Radar, Moon, PenLine, BarChart3, Settings, Paperclip, X, Library, Flame, Sun,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import AuraLogo from "@/components/brand/AuraLogo";
@@ -20,7 +20,7 @@ import AuraRing from "@/components/systemb/AuraRing";
  * (live strip only, never a button except the Ask Aura gradient).
  */
 
-export type RailTab = "home" | "intelligence" | "library" | "overnight" | "authority" | "influence" | "momentum" | "identity";
+export type RailTab = "today" | "home" | "intelligence" | "library" | "overnight" | "authority" | "influence" | "momentum" | "identity";
 
 interface AuraRailProps {
   activeTab: string;
@@ -36,6 +36,8 @@ const ITEMS: Array<{
   value: RailTab; label: string; icon: typeof Compass; testId: string;
   name: string; blurb: string; hasFlyout?: boolean;
 }> = [
+  { value: "today",        label: "Today",    icon: Sun,       testId: "nav-today",
+    name: "Today", blurb: "One move, chosen from what you already have." },
   { value: "home",         label: "Home",     icon: Compass,   testId: "nav-home",
     name: "Home", blurb: "Your brief: what moved and what to do next." },
   { value: "intelligence", label: "Signals",  icon: Radar,     testId: "nav-intelligence",

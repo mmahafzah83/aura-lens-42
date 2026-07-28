@@ -48,11 +48,13 @@ import AnalyticsV2 from "@/components/analytics/AnalyticsV2";
 import LibraryPage from "@/components/library/LibraryPage";
 import OvernightPage from "@/components/overnight/OvernightPage";
 import MomentumPage from "@/components/momentum/MomentumPage";
+import TodayPage from "@/components/today/TodayPage";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
 const NAV_ITEMS = [
+  { value: "today", label: "Today", pageHeader: "Today", icon: Compass, docTitle: "Aura — Today" },
   { value: "home", label: "Home", pageHeader: "Home", icon: Compass, docTitle: "Aura — Home" },
   { value: "intelligence", label: "Signals", pageHeader: "Signals", icon: Shield, docTitle: "Aura — Signals" },
   { value: "library", label: "Library", pageHeader: "Library", icon: LibraryIcon, docTitle: "Aura — Library" },
@@ -1059,6 +1061,20 @@ const Dashboard = () => {
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
                   <MomentumPage />
+                </ErrorBoundary>
+              </div>
+            )}
+
+            {activeTab === "today" && (
+              <div className="animate-tab-spring aura-page">
+                <ErrorBoundary>
+                  <TodayPage
+                    onOpenDraft={(d) => { setDraftPrefill(d); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                    onOpenSignalDraft={(p) => { setSignalDraftPrefill(p); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                    onOpenOvernight={() => { setActiveTab("overnight"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                    onOpenCapture={() => handleOpenCapture()}
+                    onOpenSignals={() => { setActiveTab("intelligence"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                  />
                 </ErrorBoundary>
               </div>
             )}
