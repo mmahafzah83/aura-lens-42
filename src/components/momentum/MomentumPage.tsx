@@ -312,6 +312,7 @@ export default function MomentumPage() {
       </section>
 
       {/* ── 2 · Showing up ───────────────────────────────────── */}
+      {quietWeeks.length < weeks.length && (
       <section style={{ display: "grid", gap: 12 }}>
         <SectionLabel>Showing up · last {WEEKS} weeks</SectionLabel>
         <Card>
@@ -359,9 +360,10 @@ export default function MomentumPage() {
           </p>
         </Card>
       </section>
+      )}
 
       {/* ── 3 · What you've built ────────────────────────────── */}
-      {funnel && (
+      {funnel && funnel.captures > 0 && (
         <section style={{ display: "grid", gap: 12 }}>
           <SectionLabel>What you've built</SectionLabel>
           <Card>
