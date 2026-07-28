@@ -70,11 +70,15 @@ const Dashboard = () => {
   const [captureOpen, setCaptureOpen] = useState(false);
   const [capturePrefillUrl, setCapturePrefillUrl] = useState<string | null>(null);
   const [capturePrefillText, setCapturePrefillText] = useState<string | null>(null);
+  const [captureInitialType, setCaptureInitialType] = useState<"link" | "voice" | "text" | "image" | "document" | undefined>(undefined);
   const pendingCaptureKeyRef = useRef<string | null>(null);
   const { markCaptured } = useCapturedSources();
-  const handleOpenCapture = (url?: string, text?: string, sourceKey?: string) => {
+  const handleOpenCapture = (url?: string, text?: string, sourceKey?: string, mode?: string) => {
     setCapturePrefillUrl(url ?? null);
     setCapturePrefillText(text ?? null);
+    setCaptureInitialType(
+      mode === "link" || mode === "voice" || mode === "text" || mode === "image" || mode === "document" ? mode : undefined
+    );
     pendingCaptureKeyRef.current = sourceKey ?? null;
     setCaptureOpen(true);
   };
@@ -963,7 +967,7 @@ const Dashboard = () => {
                 <IdentityDriftBanner />
                 <ErrorBoundary>
                   <BriefV2
-                    onOpenCapture={() => handleOpenCapture()}
+                    onOpenCapture={(mode) => handleOpenCapture(undefined, undefined, undefined, mode)}
                     onSwitchTab={(t) => switchTab(t as TabValue)}
                     onOpenBrandAssessment={() => setBrandAssessmentOpen(true)}
                     onOpenSignal={navigateToSignal}
@@ -1151,13 +1155,14 @@ const Dashboard = () => {
         open={captureOpen}
         onOpenChange={(o) => {
           setCaptureOpen(o);
-          if (!o) { setCapturePrefillUrl(null); setCapturePrefillText(null); pendingCaptureKeyRef.current = null; }
+          if (!o) { setCapturePrefillUrl(null); setCapturePrefillText(null); setCaptureInitialType(undefined); pendingCaptureKeyRef.current = null; }
         }}
         onCaptured={handleCaptureOutcome}
         onDuplicate={handleCaptureOutcome}
         onOpenChat={openChat}
         prefillUrl={capturePrefillUrl || undefined}
         prefillText={capturePrefillText || undefined}
+        initialType={captureInitialType}
       />
       <AuraChatSidebar
         open={chatOpen}

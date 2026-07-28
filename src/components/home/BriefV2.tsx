@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowRight, ChevronRight, Link as LinkIcon, Mic, Type as TypeIcon, FileUp, ImageIcon } from "lucide-react";
+import { ArrowRight, ChevronRight, Link as LinkIcon, Mic, Type as TypeIcon, FileUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import useTierFromImprint from "@/hooks/useTierFromImprint";
 import useJourneyState from "@/hooks/useJourneyState";
 import { trackSignalOpen } from "@/lib/trackSignalOpen";
 import InsightCards from "@/components/home/InsightCards";
-import { ButtonPrimary, ButtonDark, Chip, IconTile, StatCard, Avatar } from "@/components/systemb";
+import { ButtonPrimary, ButtonDark, Chip, IconTile, StatCard } from "@/components/systemb";
 import type { BriefDraft } from "@/components/Brief";
 
 /**
@@ -112,6 +112,14 @@ function wordCount(s: string): number {
 function isArabic(s: string): boolean {
   return /[\u0600-\u06FF]/.test(s || "");
 }
+
+/** Capture modes that CaptureModal actually supports, in V23 order. */
+const CAPTURE_TILES = [
+  { mode: "link", label: "Capture a link", icon: LinkIcon },
+  { mode: "voice", label: "Record a voice note", icon: Mic },
+  { mode: "text", label: "Write a note", icon: TypeIcon },
+  { mode: "document", label: "Upload a document", icon: FileUp },
+] as const;
 
 // ── Atoms ───────────────────────────────────────────────────────────
 
@@ -437,15 +445,13 @@ export default function BriefV2({
       {/* 4 · STAT STRIP */}
       <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fit, minmax(150px, 1fr))`, gap: 12 }}>
         {stats.map((s) => (
-          <Card key={s.label} style={{ padding: 14 }}>
-            <div style={{ ...MONO, fontSize: 10, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-              {s.label}
-            </div>
-            <div style={{ ...MONO, fontSize: 26, fontWeight: 600, color: "var(--text-primary)", marginTop: 6, lineHeight: 1.1 }}>
-              {s.value}
-            </div>
-            {s.sub && <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 2 }}>{s.sub}</div>}
-          </Card>
+          <StatCard
+            key={s.label}
+            label={s.label}
+            value={s.value}
+            sub={s.sub}
+            explain={s.label === "Imprint" ? "Signal 40% + Content 40% + Capture consistency 20%" : undefined}
+          />
         ))}
       </div>
 
@@ -486,11 +492,32 @@ export default function BriefV2({
               >
                 {overnight.draft.body.slice(0, 220)}
               </p>
-              <ButtonPrimary onClick={() => onOpenDraft({
-                id: overnight.draft!.id, body: overnight.draft!.body,
-                language: overnight.draft!.language, type: "linkedin_post",
-                topic: overnight.draft!.topic, _source: "linkedin_posts",
-              })}>Read the draft</ButtonPrimary>
+              {showWhy && overnight.why && (
+                <p style={{
+                  margin: "0 0 12px", fontSize: 14, lineHeight: 1.6,
+                  color: "var(--v23-on-night)",
+                }}>{overnight.why}</p>
+              )}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <ButtonPrimary onClick={() => onOpenDraft({
+                  id: overnight.draft!.id, body: overnight.draft!.body,
+                  language: overnight.draft!.language, type: "linkedin_post",
+                  topic: overnight.draft!.topic, _source: "linkedin_posts",
+                })}>Read the draft</ButtonPrimary>
+                {overnight.why && (
+                  <ButtonDark onClick={() => setShowWhy(v => !v)}>Why this matters</ButtonDark>
+                )}
+              </div>
+            </div>
+          )}
+          {!overnight.draft && overnight.why && (
+            <div style={{ marginTop: 14 }}>
+              {showWhy && (
+                <p style={{ margin: "0 0 12px", fontSize: 14, lineHeight: 1.6, color: "var(--v23-on-night)" }}>
+                  {overnight.why}
+                </p>
+              )}
+              <ButtonDark onClick={() => setShowWhy(v => !v)}>Why this matters</ButtonDark>
             </div>
           )}
         </section>
@@ -519,6 +546,7 @@ export default function BriefV2({
                   padding: "11px 0", fontFamily: "var(--ff-ui)",
                 }}
               >
+                <StatusDot tone={isFading(s.velocity) ? "clock" : isCooling(s.velocity) ? "cooling" : "live"} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div
                     dir={isArabic(s.title) ? "rtl" : "ltr"}
@@ -563,6 +591,9 @@ export default function BriefV2({
                   background: "var(--surface-card)", cursor: "pointer",
                 }}
               >
+                <div style={{ marginBottom: 8 }}>
+                  <Chip variant="cooling">Draft · {d.language === "ar" ? "Arabic" : "English"}</Chip>
+                </div>
                 <div
                   dir={d.language === "ar" ? "rtl" : "ltr"}
                   style={{
@@ -583,11 +614,24 @@ export default function BriefV2({
       )}
 
       {/* 8 · CAPTURE STRIP */}
-      <Card interactive onClick={onOpenCapture} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+      <Card style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <span style={{ fontSize: 14, color: "var(--text-secondary)" }}>
-          Capture something — a link or a note.
+          Capture something — a link, a voice note, or a thought.
         </span>
-        <LinkAction onClick={onOpenCapture}>Capture</LinkAction>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {CAPTURE_TILES.map((t) => (
+            <button
+              key={t.mode}
+              type="button"
+              aria-label={t.label}
+              title={t.label}
+              onClick={() => onOpenCapture(t.mode)}
+              style={{ background: "transparent", border: 0, padding: 0, cursor: "pointer", lineHeight: 0 }}
+            >
+              <IconTile icon={t.icon} tone="act" size={32} />
+            </button>
+          ))}
+        </div>
       </Card>
     </div>
   );
