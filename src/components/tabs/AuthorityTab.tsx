@@ -2434,8 +2434,6 @@ export const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed,
             
           </>
         )}
-          </CollapsibleContent>
-        </Collapsible>
       </div>
 
       <StartFromPanel
