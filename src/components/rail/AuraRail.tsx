@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Compass, Radar, PenLine, BarChart3, Settings, Paperclip, X,
 } from "lucide-react";
@@ -56,6 +57,7 @@ export default function AuraRail({
   activeTab, onSelect, onOpenCapture, onOpenSettings, newSignalCount = 0,
 }: AuraRailProps) {
   const [lastRun, setLastRun] = useState<string | null>(null);
+  const [, setSearchParams] = useSearchParams();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [profileName, setProfileName] = useState<string | null>(null);
   const [flyout, setFlyout] = useState<RailTab | null>(null);
@@ -403,8 +405,8 @@ export default function AuraRail({
             </button>
           </div>
 
-          {/* "All" navigates. The velocity splits are read-only counts: the
-              Signals surface has no filter query param to hand them to. */}
+          {/* Every row navigates. The velocity splits hand ?sfilter to the
+              Signals board, which applies it and clears the param. */}
           <button
             type="button"
             className="cursor-pointer"
@@ -428,22 +430,36 @@ export default function AuraRail({
           <div style={{ height: 1, background: "var(--rule-divider)", margin: "8px 0" }} />
 
           {[
-            { label: "Accelerating", value: counts?.accelerating },
-            { label: "Stable", value: counts?.stable },
+            { label: "Accelerating", key: "accelerating", value: counts?.accelerating },
+            { label: "Stable", key: "stable", value: counts?.stable },
           ].map((row) => (
-            <div
+            <button
               key={row.label}
+              type="button"
+              className="cursor-pointer"
+              onClick={() => {
+                setFlyout(null);
+                onSelect("intelligence");
+                const next = new URLSearchParams(window.location.search);
+                next.set("tab", "intelligence");
+                next.set("sfilter", row.key);
+                setSearchParams(next);
+              }}
               style={{
                 display: "flex", width: "100%", alignItems: "center", justifyContent: "space-between",
                 padding: "8px 8px", color: "var(--text-secondary)", fontSize: 13,
+                background: "transparent", border: 0, cursor: "pointer", borderRadius: 8,
+                fontFamily: "var(--ff-ui)",
               }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-subtle)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
             >
               <span>{row.label}</span>
               <span style={{
                 fontFamily: "var(--ff-mono)", fontVariantNumeric: "tabular-nums",
                 fontSize: 12, color: "var(--text-secondary)",
               }}>{row.value ?? "—"}</span>
-            </div>
+            </button>
           ))}
         </div>
       )}
