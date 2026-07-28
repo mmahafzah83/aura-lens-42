@@ -35,6 +35,7 @@ import useFirstFlight from "@/hooks/useFirstFlight";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import IdentityTab from "@/components/tabs/IdentityTab";
 import Observatory from "@/components/Observatory";
+import SignalsBoardV2 from "@/components/signals/SignalsBoardV2";
 import TierCeremonyModal from "@/components/TierCeremonyModal";
 import MilestoneNotification from "@/components/MilestoneNotification";
 import useTierFromImprint from "@/hooks/useTierFromImprint";
