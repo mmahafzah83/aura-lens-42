@@ -55,3 +55,21 @@ export function filterPublishedRows<T extends PostLike>(
 ): T[] {
   return (rows ?? []).filter(isPublishedPost);
 }
+// --- The two numbers (mirror of src/lib/postProvenance.ts) ---
+export const AURA_PUBLISHED_PAIRS: ReadonlyArray<readonly [string, string]> = [
+  ["aura_generated", "published"],
+  ["carousel_studio", "published"],
+];
+const AURA_SET = new Set(AURA_PUBLISHED_PAIRS.map(([s, t]) => `${s}::${t}`));
+
+/** Aura produced the draft and the user published it. */
+export function isAuraPublishedPost(p: { source_type?: string | null; tracking_status?: string | null } | null | undefined): boolean {
+  if (!p) return false;
+  return AURA_SET.has(`${p.source_type ?? ""}::${p.tracking_status ?? ""}`);
+}
+
+// published_at is not a trustworthy filter: it is absent on browser/search
+// confirmed rows and present on some non-user references. Filter on the pair.
+export function postEffectiveDate(p: { published_at?: string | null; created_at?: string | null } | null | undefined): string | null {
+  return p?.published_at ?? p?.created_at ?? null;
+}
