@@ -226,7 +226,7 @@ const LibraryPage: React.FC<Props> = ({ onOpenCapture }) => {
   const chips: Array<{ key: LibFilter; label: string; count: number }> = [
     { key: "all", label: "All", count: counts.all },
     { key: "signal", label: "Used in a signal", count: counts.signal },
-    { key: "published", label: "Published from", count: counts.published },
+    { key: "published", label: "Published through Aura", count: counts.published },
     { key: "starred", label: "Starred", count: counts.starred },
   ];
 
