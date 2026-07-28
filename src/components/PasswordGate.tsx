@@ -26,6 +26,7 @@ export default function PasswordGate({ children }: { children: React.ReactNode }
       setEmail(session.user.email ?? null);
       const meta = (session.user.user_metadata || {}) as any;
       const isSet = meta.password_set === true;
+      
       setNeedsPassword(!isSet);
       setChecking(false);
     })();
