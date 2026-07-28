@@ -85,6 +85,8 @@ export default function IdentityDriftBanner() {
             Review My Story →
           </button>
           <button
+            type="button"
+            className="v23-tap v23-focus"
             onClick={dismiss}
             style={{
               fontSize: 14,
@@ -102,8 +104,11 @@ export default function IdentityDriftBanner() {
       </div>
       <button
         aria-label="Dismiss"
+        className="v23-tap v23-focus"
         onClick={dismiss}
         style={{
+          minWidth: 40,
+          display: "inline-flex", alignItems: "center", justifyContent: "center",
           background: "transparent",
           border: "none",
           color: "hsl(var(--muted-foreground))",

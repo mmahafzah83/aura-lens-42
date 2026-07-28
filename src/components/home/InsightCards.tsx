@@ -172,12 +172,11 @@ export default function InsightCards({ userId, onSwitchTab }: Props) {
               <p style={{ margin: 0, fontSize: 11.5, color: "var(--text-muted)" }}>{it.denominator}</p>
               <button
                 type="button"
-                className="cursor-pointer"
+                className="v23-textlink v23-tap"
                 onClick={it.onGo}
                 style={{
-                  marginTop: 11, background: "transparent", border: 0, padding: 0,
-                  cursor: "pointer", color: "var(--act)", fontSize: 13, fontWeight: 600,
-                  fontFamily: "var(--ff-ui)", display: "inline-flex", alignItems: "center", gap: 4,
+                  marginTop: 11, fontSize: 13, fontWeight: 600,
+                  fontFamily: "var(--ff-ui)",
                 }}
               >{it.cta}<ArrowRight size={13} /></button>
             </div>

@@ -318,8 +318,10 @@ const AnalyticsV2: React.FC<{ onOpenChat?: (msg?: string) => void }> = ({ onOpen
               key={r.key}
               type="button"
               onClick={() => setRange(r.key)}
+              className="v23-tap v23-focus"
               style={{
-                ...MONO, fontSize: 11, padding: "6px 11px", borderRadius: 8, cursor: "pointer",
+                ...MONO, fontSize: 11, padding: "6px 13px", borderRadius: 8, cursor: "pointer",
+                display: "inline-flex", alignItems: "center", justifyContent: "center",
                 border: "1px solid " + (range === r.key ? "var(--act)" : "var(--rule-outer)"),
                 background: range === r.key ? "var(--act-tint)" : "var(--surface-card)",
                 color: range === r.key ? "var(--act)" : "var(--text-secondary)",

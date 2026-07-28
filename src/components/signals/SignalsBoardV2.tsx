@@ -80,10 +80,11 @@ const SegBtn: React.FC<React.PropsWithChildren<{ active: boolean; onClick: () =>
   <button
     type="button"
     onClick={onClick}
-    className="cursor-pointer v23-focus"
+    className="cursor-pointer v23-focus v23-tap"
+    aria-pressed={active}
     style={{
-      display: "inline-flex", alignItems: "center", gap: 6,
-      padding: "6px 12px", borderRadius: 7, border: 0, cursor: "pointer",
+      display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+      padding: "6px 14px", borderRadius: 7, border: 0, cursor: "pointer",
       fontFamily: "var(--ff-ui)", fontSize: 12.5, fontWeight: 600,
       background: active ? "var(--surface-card)" : "transparent",
       color: active ? "var(--text-primary)" : "var(--text-secondary)",
@@ -348,11 +349,13 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
                 key={f.key}
                 type="button"
                 onClick={() => setFilter(f.key)}
-                className="cursor-pointer v23-focus"
+                className="cursor-pointer v23-focus v23-tap v23-row"
+                aria-pressed={active}
                 style={{
                   display: "flex", width: "100%", alignItems: "center", justifyContent: "space-between",
-                  padding: "7px 8px", borderRadius: 8, border: 0, cursor: "pointer",
-                  background: active ? "var(--act-tint)" : "transparent",
+                  padding: "7px 10px", borderRadius: 8, cursor: "pointer",
+                  border: `1px solid ${active ? "var(--act)" : "var(--rule-outer)"}`,
+                  background: active ? "var(--act-tint)" : "var(--surface-card)",
                   color: active ? "var(--act-hover)" : "var(--text-secondary)",
                   fontSize: 13, fontWeight: active ? 600 : 500, fontFamily: "var(--ff-ui)",
                   transition: "background 160ms ease, color 160ms ease",
@@ -377,11 +380,13 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
                     key={t}
                     type="button"
                     onClick={() => setTheme(active ? null : t)}
-                    className="cursor-pointer v23-focus"
+                    className="cursor-pointer v23-focus v23-tap v23-row"
+                    aria-pressed={active}
                     style={{
                       display: "flex", width: "100%", alignItems: "center", justifyContent: "space-between",
-                      gap: 8, padding: "6px 8px", borderRadius: 8, border: 0, cursor: "pointer",
-                      background: active ? "var(--act-tint)" : "transparent",
+                      gap: 8, padding: "6px 10px", borderRadius: 8, cursor: "pointer",
+                      border: `1px solid ${active ? "var(--act)" : "var(--rule-outer)"}`,
+                      background: active ? "var(--act-tint)" : "var(--surface-card)",
                       color: active ? "var(--act-hover)" : "var(--text-secondary)",
                       fontSize: 12.5, fontFamily: "var(--ff-ui)", textAlign: "start",
                       transition: "background 160ms ease, color 160ms ease",
@@ -410,39 +415,49 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
                   <div key={col.key} style={{
                     background: "var(--surface-subtle)", borderRadius: 14, padding: 10,
                   }}>
-                    <button
-                      type="button"
-                      onClick={collapsible ? () => setDormantOpen(o => !o) : undefined}
-                      className={collapsible ? "cursor-pointer v23-focus" : "v23-focus"}
-                      style={{
+                    {(() => {
+                      const Head = (
+                        <>
+                          <StatusDot tone={col.tone} />
+                          <span style={{ ...MONO, fontSize: 10, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--text-secondary)" }}>
+                            {col.label}
+                          </span>
+                          <span style={{
+                            ...MONO, fontSize: 10.5, fontWeight: 600, lineHeight: 1,
+                            padding: "3px 7px", borderRadius: 999,
+                            background: col.key === "accelerating" ? "var(--machine-tint)" : "var(--surface-card)",
+                            color: col.key === "accelerating" ? "var(--machine-text)" : "var(--text-secondary)",
+                            border: "1px solid var(--rule-divider)",
+                          }}>{counts ? col.count : "—"}</span>
+                          {collapsible && (
+                            <ChevronRight
+                              size={13}
+                              style={{
+                                marginInlineStart: "auto", color: "var(--text-muted)",
+                                transform: open ? "rotate(90deg)" : "none",
+                                transition: "transform 160ms ease",
+                              }}
+                            />
+                          )}
+                        </>
+                      );
+                      const base: React.CSSProperties = {
                         display: "flex", width: "100%", alignItems: "center", gap: 7,
                         padding: "2px 2px 10px", border: 0, background: "transparent",
-                        cursor: collapsible ? "pointer" : "default", textAlign: "start",
-                      }}
-                      aria-expanded={collapsible ? open : undefined}
-                    >
-                      <StatusDot tone={col.tone} />
-                      <span style={{ ...MONO, fontSize: 10, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--text-secondary)" }}>
-                        {col.label}
-                      </span>
-                      <span style={{
-                        ...MONO, fontSize: 10.5, fontWeight: 600, lineHeight: 1,
-                        padding: "3px 7px", borderRadius: 999,
-                        background: col.key === "accelerating" ? "var(--machine-tint)" : "var(--surface-card)",
-                        color: col.key === "accelerating" ? "var(--machine-text)" : "var(--text-secondary)",
-                        border: "1px solid var(--rule-divider)",
-                      }}>{counts ? col.count : "—"}</span>
-                      {collapsible && (
-                        <ChevronRight
-                          size={13}
-                          style={{
-                            marginInlineStart: "auto", color: "var(--text-muted)",
-                            transform: open ? "rotate(90deg)" : "none",
-                            transition: "transform 160ms ease",
-                          }}
-                        />
-                      )}
-                    </button>
+                        textAlign: "start",
+                      };
+                      return collapsible ? (
+                        <button
+                          type="button"
+                          onClick={() => setDormantOpen(o => !o)}
+                          className="cursor-pointer v23-focus v23-tap"
+                          aria-expanded={open}
+                          style={{ ...base, cursor: "pointer" }}
+                        >{Head}</button>
+                      ) : (
+                        <div style={base}>{Head}</div>
+                      );
+                    })()}
                     {open && (
                       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                         {cards.length === 0

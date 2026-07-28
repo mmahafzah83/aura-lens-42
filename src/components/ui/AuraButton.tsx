@@ -16,8 +16,8 @@ export type AuraButtonProps = {
 };
 
 const SIZE_STYLES: Record<AuraButtonSize, CSSProperties> = {
-  sm: { padding: "6px 14px", fontSize: 12, borderRadius: 6 },
-  md: { padding: "10px 20px", fontSize: 14, borderRadius: 8 },
+  sm: { padding: "8px 16px", fontSize: 12, borderRadius: 6, minHeight: 40 },
+  md: { padding: "10px 20px", fontSize: 14, borderRadius: 8, minHeight: 40 },
   lg: { padding: "14px 28px", fontSize: 16, borderRadius: 10 },
 };
 

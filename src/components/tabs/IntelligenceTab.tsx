@@ -1013,13 +1013,16 @@ export const EditorialReadingList = ({
             Aura scans publications from McKinsey, BCG, Gartner, Deloitte, and 50+ sector-specific sources. Articles are ranked by how much they would strengthen your existing signals or close your blind spots. This is not a generic feed — every article was selected because of your specific intelligence profile. Links are AI-curated and checked when suggested; if one has moved, use the "Search the title" fallback on the card.
           </ExpandablePanel>
           <button
+            type="button"
+            className="v23-focus v23-tap"
             onClick={() => load(true)} disabled={loading || cooldownLeft > 0}
+            title={loading ? "Refreshing now" : cooldownLeft > 0 ? `Available again in ${cooldownLeft}s` : undefined}
             style={{
-              display: "inline-flex", alignItems: "center", gap: 4,
-              background: "none", border: "0.5px solid var(--surface-ink-subtle)",
-              borderRadius: 6, padding: "4px 10px", fontSize: 12, color: "var(--glass-2)",
-              cursor: (loading || cooldownLeft > 0) ? "default" : "pointer",
-              opacity: cooldownLeft > 0 ? 0.6 : 1,
+              display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+              background: "none", border: "1px solid var(--surface-ink-subtle)",
+              borderRadius: 8, padding: "6px 12px", fontSize: 12, color: "var(--glass-2)",
+              cursor: (loading || cooldownLeft > 0) ? "not-allowed" : "pointer",
+              opacity: (loading || cooldownLeft > 0) ? 0.45 : 1,
             }}
           >
             {loading ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}

@@ -127,15 +127,14 @@ export default function FirstVisitHint({
         {h.action && (
           <button
             type="button"
+            className="v23-textlink v23-tap"
             onClick={() => {
               window.dispatchEvent(new CustomEvent(h.action!.eventName));
               dismiss();
             }}
             style={{
               marginTop: 8,
-              background: "transparent", border: 0, padding: 0,
-              fontSize: 12, color: "var(--bronze-glow, var(--brand))", fontWeight: 600,
-              cursor: "pointer",
+              fontSize: 12, fontWeight: 600,
             }}
           >
             {h.action.label}
@@ -146,8 +145,9 @@ export default function FirstVisitHint({
         type="button"
         onClick={dismiss}
         aria-label="Dismiss hint"
+        className="v23-focus"
         style={{
-          background: "transparent", border: 0, padding: 4,
+          background: "transparent", border: 0, padding: 4, minWidth: 40, minHeight: 40,
           color: "var(--ink-3)", cursor: "pointer", flexShrink: 0,
           display: "inline-flex", alignItems: "center", justifyContent: "center",
         }}
