@@ -117,6 +117,30 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
   const [theme, setTheme] = useState<string | null>(null);
   const [stuck, setStuck] = useState(false);
   const stuckRef = useRef(false);
+  const boardRef = useRef<HTMLElement | null>(null);
+  // The portalled bar is fixed to the viewport, so it has to be told where the
+  // centred content column actually is, or it drifts away from the content.
+  const [column, setColumn] = useState<{ left: number; width: number } | null>(null);
+
+  useEffect(() => {
+    const measure = () => {
+      const el = boardRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      setColumn(prev =>
+        prev && Math.abs(prev.left - r.left) < 1 && Math.abs(prev.width - r.width) < 1
+          ? prev
+          : { left: r.left, width: r.width },
+      );
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    window.addEventListener("scroll", measure, { passive: true });
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("scroll", measure);
+    };
+  }, []);
 
   // The board lives inside overflow ancestors, so position:sticky dies here.
   // The control bar is portalled to the body and driven by scroll instead.
@@ -284,7 +308,7 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
   }
 
   return (
-    <section data-testid="signals-board-v2" style={{ fontFamily: "var(--ff-ui)", marginBottom: 26 }}>
+    <section ref={boardRef} data-testid="signals-board-v2" style={{ fontFamily: "var(--ff-ui)", marginBottom: 26 }}>
       {/* HEADER */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-end", justifyContent: "space-between", marginBottom: 30 }}>
         <div>
@@ -489,8 +513,16 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
         <div
           data-testid="signals-sticky-bar"
           style={{
-            position: "fixed", top: 12, left: "50%", transform: "translateX(-50%)",
-            zIndex: 45, display: "flex", alignItems: "center", gap: 10,
+            position: "fixed", top: 12,
+            left: column ? column.left : 0,
+            width: column ? column.width : "100%",
+            zIndex: 45, display: "flex", alignItems: "center", justifyContent: "center",
+            pointerEvents: "none",
+          }}
+        >
+        <div
+          style={{
+            display: "flex", alignItems: "center", gap: 10, pointerEvents: "auto",
             padding: 6, borderRadius: 12,
             background: "var(--v23-glass, var(--surface-card))",
             border: "1px solid var(--rule-outer)",
@@ -504,6 +536,7 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
             <SegBtn active={view === "board"} onClick={() => setView("board")}><LayoutGrid size={13} />Board</SegBtn>
           </div>
           <ButtonPrimary onClick={() => onOpenCapture?.()}><Plus size={13} />Capture</ButtonPrimary>
+        </div>
         </div>,
         document.body,
       )}
