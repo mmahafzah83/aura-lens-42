@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
-  Compass, Radar, Moon, PenLine, BarChart3, Settings, Paperclip, X, Library,
+  Compass, Radar, Moon, PenLine, BarChart3, Settings, Paperclip, X, Library, Flame,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import AuraLogo from "@/components/brand/AuraLogo";
@@ -20,7 +20,7 @@ import AuraRing from "@/components/systemb/AuraRing";
  * (live strip only, never a button except the Ask Aura gradient).
  */
 
-export type RailTab = "home" | "intelligence" | "library" | "overnight" | "authority" | "influence" | "identity";
+export type RailTab = "home" | "intelligence" | "library" | "overnight" | "authority" | "influence" | "momentum" | "identity";
 
 interface AuraRailProps {
   activeTab: string;
@@ -48,6 +48,8 @@ const ITEMS: Array<{
     name: "Composer", blurb: "Draft, refine and publish in your own voice." },
   { value: "influence",    label: "Data",     icon: BarChart3, testId: "nav-impact",
     name: "Analytics", blurb: "What your published work actually did." },
+  { value: "momentum",     label: "Momentum", icon: Flame,     testId: "nav-momentum",
+    name: "Momentum", blurb: "What you've built, how often you show up, and what's next." },
 ];
 
 function hhmm(iso: string): string {
