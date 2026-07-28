@@ -80,6 +80,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
 
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textNoteRef = useRef<HTMLTextAreaElement>(null);
+  const transcriptRef = useRef<HTMLTextAreaElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
@@ -187,9 +189,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
       setContent(prefillText);
       // Auto-resize textarea to fit pre-filled content
       requestAnimationFrame(() => {
-        const ta = document.querySelector<HTMLTextAreaElement>(
-          'textarea[placeholder="Write your thoughts..."]'
-        );
+        const ta = textNoteRef.current;
         if (ta) {
           ta.style.height = "auto";
           ta.style.height = ta.scrollHeight + "px";
@@ -344,8 +344,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
               : "Transcription failed — type your note instead";
             sonnerToast.error(msg);
             setTimeout(() => {
-              const ta = document.querySelector<HTMLTextAreaElement>('textarea[placeholder="Transcript will appear here…"]');
-              ta?.focus();
+              transcriptRef.current?.focus();
             }, 50);
           } else {
             setContent(fnData.transcript);
@@ -908,7 +907,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                   fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
                 }}
               >
-                Intelligence capture
+                Something you read, saw or heard
               </p>
             </div>
           </div>
@@ -986,6 +985,11 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
               );
             })}
           </div>
+
+          {/* Caption: what Aura wants — a source, not a brief */}
+          <p style={{ fontSize: 12, color: "var(--glass-2)", lineHeight: 1.5, margin: "-8px 0 0" }}>
+            Give Aura the source — the article, the report, the thing someone said in a meeting. Aura writes from your sources later.
+          </p>
 
           {/* ── LINK ── */}
           {captureType === "link" && (
@@ -1175,7 +1179,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                 })}
               </div>
               <textarea
-                placeholder="Write your thoughts..."
+                ref={textNoteRef}
+                placeholder="Paste the text, or write down what you read or heard — and where it came from."
                 value={content}
                 maxLength={15000}
                 onChange={(e) => {
@@ -1240,6 +1245,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                   {content.length.toLocaleString()} / 15,000
                 </div>
               )}
+              <p style={{ fontSize: 12, color: "var(--glass-2)", lineHeight: 1.5, margin: "8px 0 0" }}>
+                Not sure what to capture? The last useful thing you read this week.
+              </p>
               {/* §16.1 trust line — quiet, caption, muted; bilingual stack */}
               <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 2 }}>
                 <p style={{ fontSize: 11, lineHeight: 1.6, color: "var(--glass-2)", margin: 0 }}>
@@ -1518,6 +1526,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                     onChange={(e) => setContent(e.target.value)}
                     dir="auto"
                     rows={3}
+                    ref={transcriptRef}
                     placeholder="Transcript will appear here…"
                     style={{
                       width: "100%",
