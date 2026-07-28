@@ -7,6 +7,7 @@ import useJourneyState from "@/hooks/useJourneyState";
 import { trackSignalOpen } from "@/lib/trackSignalOpen";
 import { countPosts } from "@/lib/postProvenance";
 import InsightCards from "@/components/home/InsightCards";
+import HomeWidgetRegion from "@/components/widgets/HomeWidgetRegion";
 import { ButtonPrimary, ButtonDark, Chip, IconTile, StatCard } from "@/components/systemb";
 import type { BriefDraft } from "@/components/Brief";
 
@@ -549,6 +550,9 @@ export default function BriefV2({
 
       {/* 3b · INSIGHT CARDS — real data only, empty cards omit themselves */}
       <InsightCards userId={user?.id ?? null} onSwitchTab={onSwitchTab} />
+
+      {/* 3c · WIDGET REGION — user-chosen widgets, empty when all are off */}
+      <HomeWidgetRegion userId={user?.id ?? null} />
 
       {/* 4 · STAT STRIP */}
       <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fit, minmax(150px, 1fr))`, gap: 12 }}>
