@@ -850,7 +850,7 @@ const Dashboard = () => {
           background: (activeTab === "intelligence" || activeTab === "influence") ? 'var(--ob-bg)' : 'var(--paper)',
         }}
       >
-        <div className={activeTab === "home" ? "max-w-[1400px] mx-auto px-5 sm:px-10 lg:px-14 pt-4 sm:pt-8" : "max-w-5xl mx-auto px-4 sm:px-8 pt-4 sm:pt-8"}>
+        <div className="max-w-[1400px] mx-auto px-5 sm:px-10 lg:px-14 pt-4 sm:pt-8">
           {/* Top Bar */}
           <div className="flex items-center justify-between mb-6 pt-2 md:pt-0">
             <div className="flex items-center gap-3">
@@ -941,17 +941,11 @@ const Dashboard = () => {
           className={
             activeTab === "intelligence"
               ? "max-w-[1400px] mx-auto px-5 sm:px-10 lg:px-14 pb-[88px] md:pb-12"
-              : activeTab === "home"
-              ? "max-w-[1400px] mx-auto px-5 sm:px-10 lg:px-14 pb-[88px] md:pb-12 overflow-hidden"
-              : "max-w-5xl mx-auto px-4 sm:px-8 pb-[88px] md:pb-12 overflow-hidden"
+              : "max-w-[1400px] mx-auto px-5 sm:px-10 lg:px-14 pb-[88px] md:pb-12 overflow-hidden"
           }
         >
           {/* Tab Content */}
           <div className="tab-content-spring aura-page-fade relative" key={activeTab} style={{ minHeight: "60vh" }}>
-            {activeTab !== "home" && activeTab !== "identity" && (
-              <div className={activeTab === "intelligence" ? "max-w-[1400px] mx-auto px-5 sm:px-10 lg:px-14" : ""}>
-              </div>
-            )}
             {activeTab === "home" && (
               <div className="animate-tab-spring aura-page">
                 <FirstLoginWelcome
