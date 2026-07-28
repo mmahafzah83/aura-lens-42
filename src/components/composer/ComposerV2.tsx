@@ -35,6 +35,7 @@ interface ComposerV2Props {
   draftPrefill?: any;
   onDraftPrefillConsumed?: () => void;
   onGoToLibrary?: () => void;
+  onOpenCapture?: () => void;
 }
 
 const KIND_META: Record<StartCard["kind"], { label: string; Icon: typeof Sparkles }> = {
@@ -176,6 +177,7 @@ export default function ComposerV2({
   draftPrefill,
   onDraftPrefillConsumed,
   onGoToLibrary,
+  onOpenCapture,
 }: ComposerV2Props) {
   const [cards, setCards] = useState<StartCard[]>([]);
   const [totalSignals, setTotalSignals] = useState<number | null>(null);
@@ -256,6 +258,27 @@ export default function ComposerV2({
             {totalSignals === 0
               ? "You have no signals yet — capture something and Aura will have a reason to suggest."
               : "Nothing stands out to start from right now. Write from a topic below."}
+            {totalSignals === 0 && onOpenCapture && (
+              <div style={{ marginTop: 12 }}>
+                <button
+                  type="button"
+                  onClick={onOpenCapture}
+                  style={{
+                    fontFamily: "var(--ff-ui)",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: "var(--text-inverse)",
+                    background: "var(--act)",
+                    border: "none",
+                    borderRadius: 8,
+                    padding: "9px 16px",
+                    cursor: "pointer",
+                  }}
+                >
+                  Capture something
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div
