@@ -3629,6 +3629,24 @@ export type Database = {
         }
         Relationships: []
       }
+      user_widget_layout: {
+        Row: {
+          layout: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          layout?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          layout?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       weekly_missions: {
         Row: {
           completed_at: string | null
@@ -3667,6 +3685,27 @@ export type Database = {
           points?: number | null
           status?: string | null
           title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      widget_slot_votes: {
+        Row: {
+          created_at: string
+          id: string
+          slot_key: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          slot_key: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          slot_key?: string
           user_id?: string
         }
         Relationships: []
@@ -4097,6 +4136,14 @@ export type Database = {
           summary: string
           title: string
           type: string
+        }[]
+      }
+      widget_slot_tally: {
+        Args: never
+        Returns: {
+          eligible_members: number
+          slot_key: string
+          vote_count: number
         }[]
       }
     }
