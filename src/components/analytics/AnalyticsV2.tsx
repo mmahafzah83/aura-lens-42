@@ -47,7 +47,7 @@ interface SignalRow {
   status: string;
 }
 
-const PUBLISHED_STATUSES = ["published", "confirmed", "tracked", "external_reference"];
+// Counting comes from one place only — see src/lib/postProvenance.ts.
 
 function postDate(p: PostRow) { return p.published_at || p.created_at; }
 function postTheme(p: PostRow) {
