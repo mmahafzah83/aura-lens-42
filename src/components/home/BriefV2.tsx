@@ -5,6 +5,7 @@ import { useAuthReady } from "@/hooks/useAuthReady";
 import useTierFromImprint from "@/hooks/useTierFromImprint";
 import useJourneyState from "@/hooks/useJourneyState";
 import { trackSignalOpen } from "@/lib/trackSignalOpen";
+import { countPosts } from "@/lib/postProvenance";
 import InsightCards from "@/components/home/InsightCards";
 import { ButtonPrimary, ButtonDark, Chip, IconTile, StatCard } from "@/components/systemb";
 import type { BriefDraft } from "@/components/Brief";
@@ -279,7 +280,9 @@ export default function BriefV2({
       supabase.from("entries").select("id", { count: "exact", head: true }).eq("user_id", uid).gte("created_at", weekIso),
       supabase.from("documents").select("id", { count: "exact", head: true }).eq("user_id", uid).gte("created_at", weekIso),
       (supabase.from("linkedin_posts" as any) as any)
-        .select("id", { count: "exact", head: true }).eq("user_id", uid).gte("published_at", monthIso),
+        .select("source_type, tracking_status, published_at, created_at")
+        .eq("user_id", uid)
+        .or(`published_at.gte.${monthIso},created_at.gte.${monthIso}`),
       supabase.from("content_items")
         .select("id, type, body, language, generation_params, created_at")
         .eq("user_id", uid).eq("status", "draft").order("created_at", { ascending: false }).limit(6),
@@ -333,7 +336,7 @@ export default function BriefV2({
     setActiveSignalCount(typeof sigCountRes?.count === "number" ? sigCountRes.count : null);
 
     setCapturesWeek((entRes?.count ?? 0) + (docRes?.count ?? 0));
-    setPublishedMonth(pubRes?.count ?? 0);
+    setPublishedMonth(countPosts((pubRes?.data as any[]) || [], monthIso).live);
     setMovedOvernight(movedRes?.count ?? null);
 
     const draftRows: DraftRow[] = [];
@@ -412,7 +415,7 @@ export default function BriefV2({
   const stats: Array<{ label: string; value: string; sub?: string }> = [];
   stats.push({ label: "Live signals", value: activeSignalCount != null ? String(activeSignalCount) : "—" });
   if (capturesWeek != null) stats.push({ label: "Captures this week", value: String(capturesWeek) });
-  if (publishedMonth != null) stats.push({ label: "Published this month", value: String(publishedMonth) });
+  if (publishedMonth != null) stats.push({ label: "Live on LinkedIn this month", value: String(publishedMonth) });
 
   const openSignal = (id: string) => {
     try { trackSignalOpen(id, "home_briefv2_row"); } catch { /* never blocks */ }
