@@ -182,6 +182,17 @@ const Onboarding = () => {
   // Sub-state: within step 0, show welcome first, then LinkedIn paste + form.
   const [welcomeAcknowledged, setWelcomeAcknowledged] = useState(false);
 
+  // ─── Capture-first pilot: two screens shown IN FRONT of the existing flow.
+  // Shown from data only (step 0/absent + zero entries + not skipped this session);
+  // onboarding_step numbering is untouched.
+  const [showCaptureFirst, setShowCaptureFirst] = useState(false);
+  const [cfPhase, setCfPhase] = useState<"input" | "reading" | "result">("input");
+  const [cfValue, setCfValue] = useState("");
+  const [cfBusy, setCfBusy] = useState(false);
+  const [cfFragments, setCfFragments] = useState<{ title: string }[]>([]);
+  const [cfCount, setCfCount] = useState(0);
+  const [cfTimedOut, setCfTimedOut] = useState(false);
+
   // Step 1
   const [linkedinUrl, setLinkedinUrl] = useState("");
   const [linkedinText, setLinkedinText] = useState("");
@@ -319,9 +330,94 @@ const Onboarding = () => {
       if (p.north_star_goal) setNorthStar(p.north_star_goal);
       if (p.country) setCountry(p.country);
       if (p.country_code) setCountryCode(p.country_code);
+      // Capture-first gate — data-driven, never a new step counter.
+      try {
+        const skipped = sessionStorage.getItem(`aura_capture_first_skipped_${session.user.id}`) === "1";
+        if (!skipped && savedStep === 0) {
+          const { count } = await supabase
+            .from("entries" as any)
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", session.user.id);
+          if ((count ?? 0) === 0) setShowCaptureFirst(true);
+        }
+      } catch { /* never block onboarding */ }
       setChecking(false);
     })();
   }, [navigate]);
+
+  // ─── Capture-first: submit through the SAME ingest-capture path the app uses.
+  const cfSkip = () => {
+    try { if (userId) sessionStorage.setItem(`aura_capture_first_skipped_${userId}`, "1"); } catch {}
+    setShowCaptureFirst(false);
+  };
+
+  const cfPoll = async (startIso: string) => {
+    const deadline = Date.now() + 20000;
+    while (Date.now() < deadline) {
+      try {
+        const { data: reg } = await (supabase.from("source_registry" as any) as any)
+          .select("id")
+          .eq("user_id", userId)
+          .gte("created_at", startIso)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        const rid = reg?.[0]?.id;
+        if (rid) {
+          const { data: frags, count } = await (supabase.from("evidence_fragments" as any) as any)
+            .select("title", { count: "exact" })
+            .eq("source_registry_id", rid)
+            .order("confidence", { ascending: false })
+            .limit(3);
+          if (frags && frags.length > 0) {
+            setCfFragments(frags as { title: string }[]);
+            setCfCount(count ?? frags.length);
+            setCfPhase("result");
+            return;
+          }
+        }
+      } catch { /* keep polling */ }
+      await new Promise((r) => window.setTimeout(r, 2000));
+    }
+    setCfTimedOut(true);
+    setCfPhase("result");
+  };
+
+  const cfSubmit = async () => {
+    const v = cfValue.trim();
+    if (!v) return;
+    let isUrl = false;
+    try { isUrl = /^https?:$/.test(new URL(v).protocol); } catch { /* free text */ }
+    const startIso = new Date(Date.now() - 10000).toISOString();
+    setCfBusy(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const controller = new AbortController();
+        const timeoutId = window.setTimeout(() => controller.abort(), 25000);
+        try {
+          await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-capture`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({
+              type: isUrl ? "link" : "text",
+              content: v,
+              source_url: isUrl ? v : null,
+              metadata: { source: "onboarding_capture_first" },
+            }),
+            signal: controller.signal,
+          });
+        } finally {
+          window.clearTimeout(timeoutId);
+        }
+      }
+    } catch { /* a slow or failed capture must never block */ }
+    setCfBusy(false);
+    setCfPhase("reading");
+    void cfPoll(startIso);
+  };
 
   // Helper — persist onboarding progress so users can resume after closing the tab.
   const saveProgress = async (stepCompleted: number) => {
@@ -761,7 +857,7 @@ const Onboarding = () => {
     <h1
       className="font-semibold mb-3"
       style={{
-        fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
+        fontFamily: "var(--font-display)",
         fontSize: 28,
         lineHeight: 1.2,
         color: "var(--ink)",
@@ -1035,6 +1131,86 @@ const Onboarding = () => {
 
   // ───── STEP 0 ─────
   if (step === 0 && !welcomeAcknowledged) {
+    // Capture-first screens sit IN FRONT of this screen. Nothing below changes.
+    if (showCaptureFirst && cfPhase === "input") {
+      return cardShell(
+        <>
+          {eyebrow("1 of 5")}
+          {heading("Paste one thing you read this week.")}
+          <p className="mb-3" style={{ fontSize: 15, lineHeight: 1.7, color: "var(--ink)" }}>
+            Anything — an article, a report, a LinkedIn post you disagreed with. Aura reads it now and shows you something about it before you answer a single question.
+          </p>
+          <p className="mb-5" style={{ fontSize: 13, lineHeight: 1.6, color: "var(--ink-2)" }}>
+            We ask for this first because every other question is easier once there's something on the table.
+          </p>
+          <input
+            value={cfValue}
+            onChange={(e) => setCfValue(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") void cfSubmit(); }}
+            placeholder="Paste a link, or type a thought"
+            className={inputCls}
+            style={{ ...inputStyle, marginBottom: 16 }}
+          />
+          {primaryBtn("Add it", () => void cfSubmit(), { loading: cfBusy, disabled: !cfValue.trim() })}
+          {ghostLink("I'll paste one later", cfSkip)}
+          <p style={{ fontSize: 12, lineHeight: 1.6, color: "var(--ink-2)", marginTop: 8 }}>
+            Eight seconds. Nothing is published, now or ever, without you pressing publish.
+          </p>
+        </>,
+      );
+    }
+    if (showCaptureFirst && cfPhase === "reading") {
+      return cardShell(
+        <>
+          {eyebrow("1 of 5")}
+          {heading("Aura is reading it.")}
+          <div className="flex items-center gap-2" style={{ color: "var(--ink-2)", fontSize: 14 }}>
+            <Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--brand)" }} />
+            Pulling out the claims worth keeping.
+          </div>
+        </>,
+      );
+    }
+    if (showCaptureFirst && cfPhase === "result") {
+      return cardShell(
+        <>
+          {eyebrow("2 of 5")}
+          {cfTimedOut || cfFragments.length === 0 ? (
+            <>
+              {heading("Aura is still reading it.")}
+              <p className="mb-6" style={{ fontSize: 15, lineHeight: 1.7, color: "var(--ink-2)" }}>
+                This one is taking longer than eight seconds. Nothing is lost — what Aura finds will be waiting for you on your Home.
+              </p>
+            </>
+          ) : (
+            <>
+              {heading(`Aura pulled ${cfCount} claim${cfCount === 1 ? "" : "s"} out of that.`)}
+              <ul className="mb-6" style={{ listStyle: "none", padding: 0, margin: "0 0 24px" }}>
+                {cfFragments.map((f, i) => (
+                  <li
+                    key={i}
+                    style={{
+                      fontSize: 14,
+                      lineHeight: 1.6,
+                      color: "var(--ink)",
+                      borderLeft: "2px solid var(--brand)",
+                      paddingLeft: 12,
+                      marginBottom: 10,
+                    }}
+                  >
+                    {f.title}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          {primaryBtn(
+            <>Continue <ArrowRight className="w-4 h-4" /></>,
+            () => setShowCaptureFirst(false),
+          )}
+        </>,
+      );
+    }
     const displayName = firstName || prefillFirstName;
     return cardShell(
       <>
@@ -1500,7 +1676,7 @@ const Onboarding = () => {
           </span>
           <h2
             style={{
-              fontFamily: "var(--font-display, 'Cormorant Garamond', Georgia, serif)",
+              fontFamily: "var(--font-display)",
               fontSize: 20, lineHeight: 1.35, margin: "0 0 28px",
               color: "var(--ink)", letterSpacing: "-0.005em",
               textAlign: "center", maxWidth: 420, padding: "0 16px",
@@ -1522,7 +1698,7 @@ const Onboarding = () => {
               width: "100%",
               maxWidth: 320,
               cursor: "pointer",
-              fontFamily: "'DM Sans', system-ui, sans-serif",
+              fontFamily: "var(--font-body)",
               letterSpacing: "0.01em",
             }}
           >
@@ -1587,7 +1763,7 @@ const BreathingOverlay = ({ leaving, message }: { leaving: boolean; message?: st
   >
     <p
       style={{
-        fontFamily: "'DM Sans', system-ui, sans-serif",
+        fontFamily: "var(--font-body)",
         fontSize: 15, lineHeight: 1.6,
         color: "var(--ink-2)",
         textAlign: "center", maxWidth: 420, padding: "0 24px",
