@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
-import { Plus, LogOut, MessageCircle, Compass, Moon, User, Shield, Crown, TrendingUp, Menu, X, Paperclip, Sparkles, UserPlus, Flame, Library as LibraryIcon } from "lucide-react";
+import { Plus, LogOut, MessageCircle, Compass, Moon, User, Shield, Crown, TrendingUp, Menu, X, Paperclip, Sparkles, UserPlus, Flame, Library as LibraryIcon, LayoutGrid } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
