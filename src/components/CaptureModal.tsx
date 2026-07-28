@@ -749,7 +749,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
             style={{
               position: "absolute", top: 14, left: "50%",
               width: 220, height: 220, transform: "translateX(-50%)",
-              background: "radial-gradient(circle, color-mix(in srgb, var(--action) 22%, transparent) 0%, transparent 65%)",
+              background: "radial-gradient(circle, color-mix(in srgb, var(--live) 22%, transparent) 0%, transparent 65%)",
               pointerEvents: "none",
             }}
           />
@@ -757,7 +757,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
             className="aura-gold-pulse"
             style={{
               position: "relative", fontSize: 42, lineHeight: 1,
-              color: "var(--action)",
+              color: "var(--live-ink)",
               marginBottom: 18,
             }}
           >✦</div>
@@ -790,8 +790,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                 window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "intelligence" } }));
               }}
               style={{
-                background: "var(--action)",
-                color: "var(--ink-on-brand)",
+                background: "var(--act)",
+                color: "var(--text-inverse)",
                 border: 0, borderRadius: 8,
                 padding: "10px 22px",
                 fontSize: 14, fontWeight: 600,
@@ -884,9 +884,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
           <div className="flex items-center" style={{ gap: 12 }}>
             <div
               className="flex items-center justify-center shrink-0"
-              style={{ width: 36, height: 36, background: "var(--action)", borderRadius: 11 }}
+              style={{ width: 36, height: 36, background: "var(--act)", borderRadius: 11 }}
             >
-              <Plus className="w-5 h-5" style={{ color: "var(--ink-on-brand)" }} strokeWidth={2.5} />
+              <Plus className="w-5 h-5" style={{ color: "var(--text-inverse)" }} strokeWidth={2.5} />
             </div>
             <div>
               <h2
@@ -961,9 +961,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                     borderRadius: 10,
                     fontSize: 12,
                     fontWeight: 500,
-                    border: active ? "0.5px solid var(--action)" : "0.5px solid var(--glass-3)",
+                    border: active ? "0.5px solid var(--act)" : "0.5px solid var(--glass-3)",
                     background: active
-                      ? "color-mix(in srgb, var(--action) 18%, var(--ob-raised))"
+                      ? "color-mix(in srgb, var(--act) 18%, var(--ob-raised))"
                       : "var(--ob-raised)",
                     color: active ? "var(--glass)" : "var(--glass-2)",
                     opacity: disabled ? 0.5 : 1,
@@ -979,7 +979,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                       width: 22,
                       height: 22,
                       borderRadius: 6,
-                      background: active ? "color-mix(in srgb, var(--action) 25%, transparent)" : "var(--ob-field)",
+                      background: active ? "color-mix(in srgb, var(--act) 25%, transparent)" : "var(--ob-field)",
                     }}
                   >
                     <Icon className="w-3.5 h-3.5" />
@@ -1012,9 +1012,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                     }
                   }}
                    onFocus={(e) => {
-                    e.currentTarget.style.borderColor = "var(--action)";
+                    e.currentTarget.style.borderColor = "var(--act)";
                     e.currentTarget.style.background = "var(--ob-field)";
-                    e.currentTarget.style.boxShadow = "0 0 0 3px color-mix(in srgb, var(--action) 30%, transparent)";
+                    e.currentTarget.style.boxShadow = "0 0 0 3px color-mix(in srgb, var(--act) 30%, transparent)";
                   }}
                   onBlur={async (e) => {
                     e.currentTarget.style.borderColor = urlError ? "var(--neg)" : "var(--glass-3)";
@@ -1131,8 +1131,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
               {duplicateInfo && (
                 <div
                   style={{
-                    background: "color-mix(in srgb, var(--action) 10%, var(--ob-raised))",
-                    border: "0.5px solid color-mix(in srgb, var(--action) 28%, transparent)",
+                    background: "var(--ob-raised)",
+                    border: "0.5px solid var(--hair)",
                     borderRadius: 10,
                     padding: "10px 14px",
                   }}
@@ -1141,7 +1141,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                     You already captured this source on {duplicateInfo.date}.
                   </p>
                   <div style={{ marginTop: 6 }}>
-                    <button type="button" onClick={() => { setDuplicateInfo(null); handleSave(); }} style={{ fontSize: 12, color: "var(--action)", background: "transparent", border: "none", cursor: "pointer", padding: 0, fontWeight: 600 }}>
+                    <button type="button" onClick={() => { setDuplicateInfo(null); handleSave(); }} style={{ fontSize: 12, color: "var(--act)", background: "transparent", border: "none", cursor: "pointer", padding: 0, fontWeight: 600 }}>
                       Capture anyway
                     </button>
                     <button type="button" onClick={() => { setContent(""); setDuplicateInfo(null); }} style={{ fontSize: 12, color: "var(--glass-2)", background: "transparent", border: "none", marginInlineStart: 12, cursor: "pointer", padding: 0 }}>
@@ -1169,9 +1169,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                         padding: "5px 12px",
                         borderRadius: 20,
                         background: active
-                          ? "color-mix(in srgb, var(--action) 20%, var(--ob-raised))"
+                          ? "color-mix(in srgb, var(--act) 20%, var(--ob-raised))"
                           : "var(--ob-raised)",
-                        border: active ? "0.5px solid var(--action)" : "0.5px solid var(--glass-3)",
+                        border: active ? "0.5px solid var(--act)" : "0.5px solid var(--glass-3)",
                         color: active ? "var(--glass)" : "var(--glass-2)",
                         cursor: "pointer",
                         transition: "all 150ms ease",
@@ -1211,9 +1211,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                 }}
                 dir="auto"
                 onFocus={(e) => {
-                  e.currentTarget.style.borderColor = "var(--action)";
+                  e.currentTarget.style.borderColor = "var(--act)";
                   e.currentTarget.style.background = "var(--ob-field)";
-                  e.currentTarget.style.boxShadow = "0 0 0 3px color-mix(in srgb, var(--action) 30%, transparent)";
+                  e.currentTarget.style.boxShadow = "0 0 0 3px color-mix(in srgb, var(--act) 30%, transparent)";
                 }}
                 onBlur={(e) => {
                   e.currentTarget.style.borderColor = "var(--glass-3)";
@@ -1240,7 +1240,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                   style={{
                     marginTop: 6,
                     fontSize: 11,
-                    color: content.length >= 15000 ? "var(--action)" : "var(--glass-2)",
+                    color: content.length >= 15000 ? "var(--neg)" : "var(--glass-2)",
                     textAlign: "right",
                     fontVariantNumeric: "tabular-nums",
                     fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
@@ -1277,8 +1277,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                   <div
                     onClick={() => fileInputRef.current?.click()}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = "var(--action)";
-                      e.currentTarget.style.background = "color-mix(in srgb, var(--action) 10%, var(--ob-field))";
+                      e.currentTarget.style.borderColor = "var(--act)";
+                      e.currentTarget.style.background = "color-mix(in srgb, var(--act) 10%, var(--ob-field))";
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.borderColor = "var(--glass-3)";
@@ -1368,7 +1368,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                     {recentDocs.map((d) => {
                       const ext = (d.filename || "").split(".").pop()?.toLowerCase() || "";
                       const isPdf = ext === "pdf";
-                      const iconBg = isPdf ? "var(--neg)" : "var(--action)";
+                      const iconBg = isPdf ? "var(--neg)" : "var(--live)";
                       const isProcessed = d.status === "processed";
                       return (
                         <div
@@ -1415,8 +1415,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                               borderRadius: 6,
                               background: isProcessed
                                 ? "color-mix(in srgb, var(--pos) 18%, var(--ob-raised))"
-                                : "color-mix(in srgb, var(--action) 16%, var(--ob-raised))",
-                              color: isProcessed ? "var(--pos)" : "var(--action)",
+                                : "color-mix(in srgb, var(--live) 16%, var(--ob-raised))",
+                              color: isProcessed ? "var(--pos)" : "var(--live-ink)",
                               fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
                             }}
                           >
@@ -1484,10 +1484,10 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      background: isRecording ? "var(--neg)" : "var(--action)",
+                      background: isRecording ? "var(--neg)" : "var(--act)",
                       boxShadow: isRecording
                         ? "0 4px 20px color-mix(in srgb, var(--neg) 40%, transparent)"
-                        : "0 4px 20px color-mix(in srgb, var(--action) 35%, transparent)",
+                        : "0 4px 20px color-mix(in srgb, var(--act) 35%, transparent)",
                       transition: "background 200ms ease",
                     }}
                     aria-label={isRecording ? "Stop recording" : "Start recording"}
@@ -1495,7 +1495,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                     {isRecording ? (
                       <Square className="w-6 h-6" style={{ color: "var(--ink-on-brand)" }} fill="currentColor" />
                     ) : (
-                      <Mic className="w-7 h-7" style={{ color: "var(--ink-on-brand)" }} />
+                      <Mic className="w-7 h-7" style={{ color: "var(--text-inverse)" }} />
                     )}
                   </button>
                   <div
@@ -1557,15 +1557,15 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
               onClick={handleSave}
               disabled={saving || isRecording || isTranscribing || analyzing || (captureType === "image" ? !imageFile : !content.trim())}
               onMouseEnter={(e) => {
-                if (!e.currentTarget.disabled) e.currentTarget.style.background = "color-mix(in srgb, var(--action) 88%, black)";
+                if (!e.currentTarget.disabled) e.currentTarget.style.background = "var(--act-hover)";
               }}
               onMouseLeave={(e) => {
-                if (!e.currentTarget.disabled) e.currentTarget.style.background = "var(--action)";
+                if (!e.currentTarget.disabled) e.currentTarget.style.background = "var(--act)";
               }}
               style={{
                 width: "100%",
-                background: "var(--action)",
-                color: "var(--ink-on-brand)",
+                background: "var(--act)",
+                color: "var(--text-inverse)",
                 border: "none",
                 borderRadius: 12,
                 padding: 14,
