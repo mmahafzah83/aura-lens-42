@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowRight, ChevronRight, Link as LinkIcon, Mic, Type as TypeIcon, FileUp, ImageIcon } from "lucide-react";
+import { ArrowRight, ChevronRight, Link as LinkIcon, Mic, Type as TypeIcon, FileUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import useTierFromImprint from "@/hooks/useTierFromImprint";
@@ -112,6 +112,14 @@ function wordCount(s: string): number {
 function isArabic(s: string): boolean {
   return /[\u0600-\u06FF]/.test(s || "");
 }
+
+/** Capture modes that CaptureModal actually supports, in V23 order. */
+const CAPTURE_TILES = [
+  { mode: "link", label: "Capture a link", icon: LinkIcon },
+  { mode: "voice", label: "Record a voice note", icon: Mic },
+  { mode: "text", label: "Write a note", icon: TypeIcon },
+  { mode: "document", label: "Upload a document", icon: FileUp },
+] as const;
 
 // ── Atoms ───────────────────────────────────────────────────────────
 
