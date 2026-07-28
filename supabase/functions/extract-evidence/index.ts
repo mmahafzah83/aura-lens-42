@@ -380,7 +380,7 @@ Extract 3-8 fragments. Focus on ACTIONABLE, STRATEGIC content.`;
 
     const aiData = await aiRes.json();
     const parsed = parseAiJson(aiData.choices?.[0]?.message?.content || "{}");
-    const fragments = parsed.fragments || [];
+    const fragments = parsed?.fragments || [];
 
     // Capture OLD fragment ids BEFORE deletion so we can prune signals that
     // reference them (uuid[] has no FK, so stale ids would otherwise linger).
