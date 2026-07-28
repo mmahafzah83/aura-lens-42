@@ -182,6 +182,17 @@ const Onboarding = () => {
   // Sub-state: within step 0, show welcome first, then LinkedIn paste + form.
   const [welcomeAcknowledged, setWelcomeAcknowledged] = useState(false);
 
+  // ─── Capture-first pilot: two screens shown IN FRONT of the existing flow.
+  // Shown from data only (step 0/absent + zero entries + not skipped this session);
+  // onboarding_step numbering is untouched.
+  const [showCaptureFirst, setShowCaptureFirst] = useState(false);
+  const [cfPhase, setCfPhase] = useState<"input" | "reading" | "result">("input");
+  const [cfValue, setCfValue] = useState("");
+  const [cfBusy, setCfBusy] = useState(false);
+  const [cfFragments, setCfFragments] = useState<{ title: string }[]>([]);
+  const [cfCount, setCfCount] = useState(0);
+  const [cfTimedOut, setCfTimedOut] = useState(false);
+
   // Step 1
   const [linkedinUrl, setLinkedinUrl] = useState("");
   const [linkedinText, setLinkedinText] = useState("");
