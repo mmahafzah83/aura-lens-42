@@ -405,7 +405,7 @@ function ContentEngineCard({ c }: { c: NonNullable<ReportData["content"]> }) {
   return (
     <div style={{ border: `1.5px solid ${T.ink}`, background: T.paper2, padding: "14px 16px" }}>
       <SectionLabel>Content Engine</SectionLabel>
-      <Row label="Posts published" value={String(c.publishedCount)} />
+      <Row label="Posts live on LinkedIn" value={String(c.publishedCount)} />
       {c.frameworks[0] ? <Row label="Lead framework" value={c.frameworks[0].framework_type} /> : null}
       {c.frameworks.length > 1 ? (
         <Row label="Also using" value={c.frameworks.slice(1, 4).map((f) => f.framework_type).join(" · ")} />

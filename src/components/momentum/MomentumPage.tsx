@@ -3,6 +3,7 @@ import { Moon, CalendarDays, CalendarRange } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import { TIER_BANDS, bandFromKey, bandFromScore } from "@/hooks/useTierFromImprint";
+import { filterPublishedRows, postEffectiveDate } from "@/lib/postProvenance";
 
 /**
  * MOMENTUM — V23 `s-mo`.
@@ -79,7 +80,10 @@ interface Funnel {
   captures: number;
   used_in_signal: number;
   signals: number;
-  published: number;
+  /** Aura produced the draft and you published it. */
+  publishedThroughAura: number;
+  /** Live on LinkedIn, including your imported history. */
+  publishedLive: number;
 }
 
 interface WeekCell {
@@ -116,9 +120,8 @@ export default function MomentumPage() {
       supabase.from("entries").select("created_at").eq("user_id", uid).gte("created_at", since.toISOString()),
       supabase
         .from("linkedin_posts")
-        .select("created_at, published_at")
+        .select("created_at, published_at, source_type, tracking_status")
         .eq("user_id", uid)
-        .eq("tracking_status", "published")
         .gte("created_at", new Date(since.getTime() - 1000 * 60 * 60 * 24 * 120).toISOString()),
       supabase
         .from("score_snapshots")
@@ -141,7 +144,8 @@ export default function MomentumPage() {
             captures: Number(f.captures) || 0,
             used_in_signal: Number(f.used_in_signal) || 0,
             signals: Number(f.signals) || 0,
-            published: Number(f.published) || 0,
+            publishedThroughAura: Number(f.published_through_aura) || 0,
+            publishedLive: Number(f.published_live) || 0,
           }
         : null,
     );
@@ -160,8 +164,8 @@ export default function MomentumPage() {
       const c = bucket(r.created_at);
       if (c) c.captures += 1;
     });
-    (postsRes.data || []).forEach((r: any) => {
-      const c = bucket(r.published_at || r.created_at);
+    filterPublishedRows((postsRes.data || []) as any[]).forEach((r: any) => {
+      const c = bucket(postEffectiveDate(r) || r.created_at);
       if (c) c.posts += 1;
     });
     setWeeks(cells);
@@ -382,14 +386,14 @@ export default function MomentumPage() {
                 width={Math.min(100, pct(funnel.signals, Math.max(funnel.captures, funnel.signals)))}
               />
               <FunnelRow
-                label="Posts published"
-                value={funnel.published}
-                note={`${pct(funnel.published, funnel.signals)}% of signals`}
-                width={pct(funnel.published, Math.max(funnel.signals, 1))}
+                label="Published through Aura"
+                value={funnel.publishedThroughAura}
+                note={`${pct(funnel.publishedThroughAura, funnel.signals)}% of signals`}
+                width={pct(funnel.publishedThroughAura, Math.max(funnel.signals, 1))}
               />
             </div>
             <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: "14px 0 0" }}>
-              Every capture you've ever made is still working.
+              This funnel counts only posts Aura wrote with you. Separately, you have {funnel.publishedLive} post{funnel.publishedLive === 1 ? "" : "s"} live on LinkedIn in total, which includes the history you imported.
             </p>
           </Card>
         </section>
