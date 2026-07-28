@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Compass, Radar, PenLine, BarChart3, Settings, Paperclip, X,
 } from "lucide-react";
