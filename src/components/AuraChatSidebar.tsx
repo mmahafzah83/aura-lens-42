@@ -1140,10 +1140,11 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
 
         // Maturity-aware brief prompt
         const uid = session.user.id;
-        const [{ count: publishedCount }, { data: authUser }] = await Promise.all([
-          supabase.from("linkedin_posts" as any).select("id", { count: "exact", head: true }).eq("user_id", uid).not("published_at", "is", null),
+        const [{ data: postRows }, { data: authUser }] = await Promise.all([
+          supabase.from("linkedin_posts" as any).select("source_type, tracking_status").eq("user_id", uid),
           supabase.auth.getUser(),
         ]);
+        const publishedCount = filterPublishedRows((postRows as any[]) || []).length;
         const createdAt = authUser?.user?.created_at ? new Date(authUser.user.created_at).getTime() : Date.now();
         const accountDays = Math.max(1, Math.floor((Date.now() - createdAt) / 86400000));
         const isNewUser = accountDays < 14 || (publishedCount || 0) === 0;
