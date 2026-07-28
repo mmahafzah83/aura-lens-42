@@ -118,13 +118,15 @@ async function pagedSelect(table: string, cols: string, userId: string, extra?: 
 }
 
 export async function loadWidgetMetrics(userId: string): Promise<WidgetMetrics> {
-  const [snap, signalCount, findingLast, findingRecent, postRows, entryRows] = await Promise.all([
+  const [snap, signalCount, findingLast, findingFirst, findingRecent, postRows, entryRows] = await Promise.all([
     supabase.from("imprint_snapshots").select("imprint, tier")
       .eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("strategic_signals").select("id", { count: "exact", head: true })
       .eq("user_id", userId).eq("status", "active"),
     supabase.from("agent_findings").select("created_at")
       .eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("agent_findings").select("created_at")
+      .eq("user_id", userId).order("created_at", { ascending: true }).limit(1).maybeSingle(),
     supabase.from("agent_findings").select("created_at")
       .eq("user_id", userId)
       .gte("created_at", new Date(Date.now() - 7 * 86400000).toISOString()),
@@ -155,9 +157,9 @@ export async function loadWidgetMetrics(userId: string): Promise<WidgetMetrics> 
       ((findingRecent.data || []) as Array<{ created_at: string }>)
         .map(r => r.created_at.slice(0, 10)),
     ).size;
-    const firstSeen = new Date(lastRunAt).getTime();
-    const daysKnown = Math.min(7, Math.max(1, Math.ceil((Date.now() - firstSeen) / 86400000) || 1));
-    overnight = { lastRunAt, nights, window: Math.max(nights, daysKnown) };
+    const firstAt = (findingFirst.data as any)?.created_at ?? lastRunAt;
+    const daysKnown = Math.ceil((Date.now() - new Date(firstAt).getTime()) / 86400000);
+    overnight = { lastRunAt, nights, window: Math.max(nights, Math.min(7, Math.max(1, daysKnown))) };
   }
 
   // Language balance — over published posts that actually carry text
