@@ -49,6 +49,7 @@ import AnalyticsV2 from "@/components/analytics/AnalyticsV2";
 import LibraryPage from "@/components/library/LibraryPage";
 import OvernightPage from "@/components/overnight/OvernightPage";
 import MomentumPage from "@/components/momentum/MomentumPage";
+import WidgetsPage from "@/components/widgets/WidgetsPage";
 import TodayPage from "@/components/today/TodayPage";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -63,6 +64,7 @@ const NAV_ITEMS = [
   { value: "authority", label: "Composer", pageHeader: "Composer", icon: Crown, docTitle: "Aura — Composer" },
   { value: "influence", label: "Analytics", pageHeader: "Analytics", icon: TrendingUp, docTitle: "Aura — Analytics" },
   { value: "momentum", label: "Momentum", pageHeader: "Momentum", icon: Flame, docTitle: "Aura — Momentum" },
+  { value: "widgets", label: "Widgets", pageHeader: "Widgets", icon: LayoutGrid, docTitle: "Aura — Widgets" },
   { value: "identity", label: "Profile", pageHeader: "Profile", icon: User, docTitle: "Aura — Profile" },
 ] as const;
 
@@ -1063,6 +1065,14 @@ const Dashboard = () => {
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
                   <MomentumPage />
+                </ErrorBoundary>
+              </div>
+            )}
+
+            {activeTab === "widgets" && (
+              <div className="animate-tab-spring aura-page">
+                <ErrorBoundary>
+                  <WidgetsPage />
                 </ErrorBoundary>
               </div>
             )}

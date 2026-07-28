@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
-  Compass, Radar, Moon, PenLine, BarChart3, Settings, Paperclip, X, Library, Flame, Sun,
+  Compass, Radar, Moon, PenLine, BarChart3, Settings, Paperclip, X, Library, Flame, Sun, LayoutGrid,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import AuraLogo from "@/components/brand/AuraLogo";
@@ -20,7 +20,7 @@ import AuraRing from "@/components/systemb/AuraRing";
  * (live strip only, never a button except the Ask Aura gradient).
  */
 
-export type RailTab = "today" | "home" | "intelligence" | "library" | "overnight" | "authority" | "influence" | "momentum" | "identity";
+export type RailTab = "today" | "home" | "intelligence" | "library" | "overnight" | "authority" | "influence" | "momentum" | "widgets" | "identity";
 
 interface AuraRailProps {
   activeTab: string;
@@ -52,6 +52,8 @@ const ITEMS: Array<{
     name: "Analytics", blurb: "What your published work actually did." },
   { value: "momentum",     label: "Momentum", icon: Flame,     testId: "nav-momentum",
     name: "Momentum", blurb: "What you've built, how often you show up, and what's next." },
+  { value: "widgets",      label: "Widgets",  icon: LayoutGrid, testId: "nav-widgets",
+    name: "Widgets", blurb: "Choose what shows on Home, and vote for what comes next." },
 ];
 
 function hhmm(iso: string): string {
