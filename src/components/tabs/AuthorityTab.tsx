@@ -1683,6 +1683,8 @@ export const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed,
             </button>
           </div>
         </div>
+          </CollapsibleContent>
+        </Collapsible>
 
         {/* Framework Builder Mode */}
         {contentType === "flash" ? (
@@ -2432,8 +2434,6 @@ export const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed,
             
           </>
         )}
-          </CollapsibleContent>
-        </Collapsible>
       </div>
 
       <StartFromPanel
