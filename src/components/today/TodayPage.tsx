@@ -5,6 +5,7 @@ import { useAuthReady } from "@/hooks/useAuthReady";
 import { track } from "@/lib/track";
 import { loadStartCards, type StartCard } from "@/components/composer/startCards";
 import { TIER_BANDS, bandFromKey, bandFromScore } from "@/hooks/useTierFromImprint";
+import { filterPublishedRows, postEffectiveDate } from "@/lib/postProvenance";
 
 /**
  * TODAY — V23 `s-today`.
@@ -139,8 +140,8 @@ export default function TodayPage({
         .eq("user_id", uid).gte("created_at", dayAgo).order("created_at", { ascending: false }).limit(10),
       supabase.from("entries").select("created_at").eq("user_id", uid)
         .gte("created_at", since13.toISOString()).order("created_at", { ascending: false }),
-      supabase.from("linkedin_posts").select("created_at, published_at")
-        .eq("user_id", uid).eq("tracking_status", "published")
+      supabase.from("linkedin_posts").select("created_at, published_at, source_type, tracking_status")
+        .eq("user_id", uid)
         .gte("created_at", since13.toISOString()),
       supabase.from("score_snapshots").select("score, tier, created_at")
         .eq("user_id", uid).order("created_at", { ascending: false }).limit(1),
