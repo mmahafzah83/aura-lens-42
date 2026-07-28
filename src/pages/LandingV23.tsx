@@ -469,10 +469,14 @@ const OnlyYou: React.FC = () => (
 /* ── 6 · MEASURED NOT ASSERTED ── */
 
 const STATS = [
-  { value: "54%", label: "of LinkedIn long-form posts are AI-generated", source: "Originality.ai, 2024" },
-  { value: "41%", label: "of professional posts flagged as machine-written", source: "Pangram Labs, 2025" },
-  { value: "−45%", label: "engagement penalty on detected AI text", source: "Originality.ai, 2024" },
-  { value: "708 vs 143", label: "median reach: human-written versus AI-written", source: "Pangram Labs, 2025" },
+  { value: "54%", label: "of long-form LinkedIn posts were likely AI-generated", source: "Originality.ai · Oct 2024" },
+  { value: "41%", label: "of LinkedIn posts over 250 words are fully AI-written", source: "Pangram Labs · Jul 2026" },
+  { value: "53.7%", label: "still likely AI a year later — the flood did not recede", source: "Originality.ai · Jan 2026" },
+  {
+    value: "708 vs 143",
+    label: "average likes + comments per post, human vs AI, in innovation & strategy",
+    source: "Originality.ai · Jan 2026",
+  },
 ];
 
 const Measured: React.FC = () => (
@@ -526,6 +530,19 @@ const Measured: React.FC = () => (
     <Reveal delay={100}>
       <p
         style={{
+          marginTop: 26,
+          fontSize: 14,
+          lineHeight: 1.65,
+          color: NIGHT_TEXT,
+          maxWidth: "60ch",
+        }}
+      >
+        The same study found the opposite in motivational content, where AI posts outperformed
+        humans by 75%. The penalty is not universal — it lands hardest in the sectors that trade on
+        credibility.
+      </p>
+      <p
+        style={{
           marginTop: 34,
           fontSize: "clamp(16px, 2vw, 22px)",
           lineHeight: 1.5,
@@ -535,31 +552,6 @@ const Measured: React.FC = () => (
       >
         Read the last number again.
       </p>
-      <blockquote
-        style={{
-          marginTop: 20,
-          borderLeft: "2px solid var(--machine)",
-          paddingLeft: 18,
-          fontSize: 15,
-          lineHeight: 1.65,
-          color: NIGHT_TEXT,
-          maxWidth: "60ch",
-        }}
-      >
-        “The rise of AI-generated content is making the internet harder to trust.”
-        <footer
-          style={{
-            marginTop: 10,
-            fontFamily: "var(--font-mono)",
-            fontSize: 10.5,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            color: "var(--machine)",
-          }}
-        >
-          The Independent
-        </footer>
-      </blockquote>
     </Reveal>
   </Section>
 );
