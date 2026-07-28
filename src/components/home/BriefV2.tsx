@@ -228,10 +228,9 @@ const LinkAction: React.FC<React.PropsWithChildren<{ onClick: () => void }>> = (
   <button
     type="button"
     onClick={onClick}
+    className="v23-textlink v23-tap"
     style={{
-      background: "transparent", border: 0, padding: 0, cursor: "pointer",
-      color: "var(--act)", fontSize: 13, fontWeight: 600, fontFamily: "var(--ff-ui)",
-      display: "inline-flex", alignItems: "center", gap: 4,
+      fontSize: 13, fontWeight: 600, fontFamily: "var(--ff-ui)",
     }}
   >{children}<ArrowRight size={13} /></button>
 );
@@ -491,6 +490,8 @@ export default function BriefV2({
                 key={s.label}
                 type="button"
                 className={s.done ? "v23-tap" : "v23-tap v23-focus v23-row"}
+                disabled={s.done}
+                aria-disabled={s.done || undefined}
                 onClick={s.done ? undefined : s.go}
                 style={{
                   display: "flex", alignItems: "center", gap: 10, width: "100%",
@@ -746,7 +747,8 @@ export default function BriefV2({
               aria-label={t.label}
               title={t.label}
               onClick={() => onOpenCapture(t.mode)}
-              style={{ background: "transparent", border: 0, padding: 0, cursor: "pointer", lineHeight: 0 }}
+              className="v23-tap v23-focus"
+              style={{ background: "transparent", border: 0, padding: "0 4px", cursor: "pointer", lineHeight: 0, display: "inline-flex", alignItems: "center", justifyContent: "center" }}
             >
               <IconTile icon={t.icon} tone="act" size={32} />
             </button>
