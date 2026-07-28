@@ -79,7 +79,10 @@ interface Funnel {
   captures: number;
   used_in_signal: number;
   signals: number;
-  published: number;
+  /** Aura produced the draft and you published it. */
+  publishedThroughAura: number;
+  /** Live on LinkedIn, including your imported history. */
+  publishedLive: number;
 }
 
 interface WeekCell {
