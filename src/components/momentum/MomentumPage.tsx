@@ -522,7 +522,7 @@ const FunnelRow: React.FC<{ label: string; value: number; note: string; width: n
       <span style={{ ...MONO, fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{value}</span>
       <span style={{ fontSize: 12, color: "var(--text-muted)", marginInlineStart: "auto" }}>{note}</span>
     </div>
-    <div style={{ height: 8, borderRadius: 999, background: "var(--surface-subtle)", overflow: "hidden" }}>
+    <div style={{ height: 8, borderRadius: 999, background: "var(--surface-subtle)", overflow: "hidden", display: "flex" }}>
       <div
         style={{
           height: "100%",
