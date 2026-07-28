@@ -453,12 +453,12 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
       </div>
 
       {/* SECONDARY — re-homed from Observatory, unchanged in behaviour */}
-      <div style={{ marginTop: 40, borderTop: "1px solid var(--rule-divider)", paddingTop: 26 }}>
+      <div data-legacy style={{ marginTop: 40, borderTop: "1px solid var(--rule-divider)", paddingTop: 26 }}>
         <SectionLabel>Recommended reading</SectionLabel>
         <EditorialReadingList signals={rows as unknown as Signal[]} onOpenCapture={onOpenCapture} />
       </div>
 
-      <div style={{ marginTop: 34, borderTop: "1px solid var(--rule-divider)", paddingTop: 26 }}>
+      <div data-legacy style={{ marginTop: 34, borderTop: "1px solid var(--rule-divider)", paddingTop: 26 }}>
         <SectionLabel>Sources</SectionLabel>
         <SourcesSubTab
           onOpenCapture={onOpenCapture}
