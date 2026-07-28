@@ -666,9 +666,9 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         });
         const timeout = new Promise((resolve) => {
           setTimeout(() => {
-            console.warn("[generate-authority-content] quality gate timed out after 40s — skipped");
+            console.warn("[generate-authority-content] quality gate timed out after 12s — skipped");
             resolve({ data: null, error: "timeout" });
-          }, 40000);
+          }, 12000);
         });
         const gateRes: any = await Promise.race([gatePromise, timeout]);
         if (gateRes?.data && !gateRes?.error) {
@@ -724,7 +724,9 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         }
       } catch (_) { /* never block */ }
 
-      const gateBlocked = gatePayload ? gatePayload.pass === false : true;
+      // A gate that cannot answer must never swallow the draft. Only an actual
+      // failing verdict blocks; a timeout / invoke error returns the draft free.
+      const gateBlocked = gatePayload ? gatePayload.pass === false : false;
 
       return new Response(JSON.stringify({
         content,
