@@ -4000,6 +4000,15 @@ export type Database = {
         }[]
       }
       is_current_user_admin: { Args: never; Returns: boolean }
+      momentum_funnel: {
+        Args: never
+        Returns: {
+          captures: number
+          published: number
+          signals: number
+          used_in_signal: number
+        }[]
+      }
       ops_cron_status: {
         Args: { p_hours?: number }
         Returns: {
