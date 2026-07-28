@@ -6,7 +6,7 @@ import useTierFromImprint from "@/hooks/useTierFromImprint";
 import useJourneyState from "@/hooks/useJourneyState";
 import { trackSignalOpen } from "@/lib/trackSignalOpen";
 import InsightCards from "@/components/home/InsightCards";
-import { ButtonPrimary, ButtonDark, Chip, IconTile, StatCard, Avatar } from "@/components/systemb";
+import { ButtonPrimary, ButtonDark, Chip, IconTile, StatCard } from "@/components/systemb";
 import type { BriefDraft } from "@/components/Brief";
 
 /**
