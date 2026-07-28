@@ -1001,6 +1001,9 @@ const Dashboard = () => {
             {activeTab === "intelligence" && (
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
+                  <SignalsBoardV2 onOpenCapture={() => handleOpenCapture()} />
+                </ErrorBoundary>
+                <ErrorBoundary>
                   <Observatory
                     entries={entries}
                     onOpenChat={openChat}
