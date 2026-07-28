@@ -175,6 +175,13 @@ html *:not(canvas):not(video):not(iframe) {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+@keyframes v23CardIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  @keyframes v23CardIn { from { opacity: 1; transform: none; } to { opacity: 1; transform: none; } }
+}
 :root {
 
   /* ── TIER 2: TYPOGRAPHY ──
