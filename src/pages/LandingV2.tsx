@@ -28,8 +28,8 @@ const LANDING_V2_CSS = `
 .aura-v2 :focus-visible{outline:2px solid var(--teal);outline-offset:3px;border-radius:6px;}
 
 /* ── surfaces ── */
-.aura-v2 .dark{background:var(--bg);color:var(--bone);position:relative;}
-.aura-v2 .bone{
+.aura-v2 .v2dark{background:var(--bg);color:var(--bone);position:relative;}
+.aura-v2 .v2bone{
   background:var(--paper);color:var(--ink);position:relative;
   background-image:radial-gradient(rgba(27,23,18,.02) 1px,transparent 1px);
   background-size:4px 4px;
@@ -42,19 +42,22 @@ const LANDING_V2_CSS = `
   font-family:var(--mono);font-size:11px;letter-spacing:3px;text-transform:uppercase;
   color:var(--teal);margin-bottom:18px;display:block;
 }
-.aura-v2 .bone .eyebrow{color:var(--ox);}
-.aura-v2 h1{font-family:var(--serif);font-weight:500;font-size:clamp(36px,6vw,72px);line-height:1.06;letter-spacing:-.02em;}
-.aura-v2 h2{font-family:var(--serif);font-weight:500;font-size:clamp(27px,4vw,44px);line-height:1.14;letter-spacing:-.015em;}
+.aura-v2 .v2bone .eyebrow{color:var(--ox);}
+.aura-v2 h1{font-family:var(--serif);color:#EDE7D9;font-weight:500;font-size:clamp(36px,6vw,72px);line-height:1.06;letter-spacing:-.02em;}
+.aura-v2 h2{font-family:var(--serif);color:#EDE7D9;font-weight:500;font-size:clamp(27px,4vw,44px);line-height:1.14;letter-spacing:-.015em;}
 .aura-v2 h1 em,.aura-v2 h2 em{font-style:italic;color:var(--teal);}
-.aura-v2 .bone h1 em,.aura-v2 .bone h2 em{color:var(--ox);}
-.aura-v2 h3{font-family:var(--serif);font-weight:500;font-size:19px;line-height:1.3;}
+.aura-v2 .v2bone h1 em,.aura-v2 .v2bone h2 em{color:var(--ox);}
+.aura-v2 h3{font-family:var(--serif);font-weight:500;font-size:19px;line-height:1.3;letter-spacing:-.01em;color:#EDE7D9;}
+.aura-v2 .v2bone h1,.aura-v2 .v2bone h2,.aura-v2 .v2bone h3{color:#1B1712;}
+.aura-v2 .v2dark h1,.aura-v2 .v2dark h2,.aura-v2 .v2dark h3{color:#EDE7D9;}
+.aura-v2 footer h4{color:#7E8C87;}
 .aura-v2 .mono{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;}
 .aura-v2 .lede{font-size:clamp(16px,1.9vw,20px);line-height:1.62;color:#B9C4BF;max-width:660px;}
-.aura-v2 .bone .lede{color:#4A423A;}
+.aura-v2 .v2bone .lede{color:#4A423A;}
 .aura-v2 .lede strong,.aura-v2 .body strong{font-weight:600;color:var(--bone);}
-.aura-v2 .bone .lede strong,.aura-v2 .bone .body strong{color:var(--ink);}
+.aura-v2 .v2bone .lede strong,.aura-v2 .v2bone .body strong{color:var(--ink);}
 .aura-v2 .body{font-size:15px;line-height:1.68;color:#A9B4AF;}
-.aura-v2 .bone .body{color:#544B41;}
+.aura-v2 .v2bone .body{color:#544B41;}
 .aura-v2 .ar{font-family:var(--ar);line-height:1.9;direction:rtl;}
 
 /* ── cards ── */
@@ -64,15 +67,15 @@ const LANDING_V2_CSS = `
   box-shadow:0 18px 40px -28px rgba(0,0,0,.9);
   padding:22px;
 }
-.aura-v2 .bone .card{
+.aura-v2 .v2bone .card{
   border-color:var(--line-l);
   background:linear-gradient(180deg,#FFFDF7,#EDE7D9);
   box-shadow:0 18px 40px -30px rgba(27,23,18,.35);
 }
 .aura-v2 .card.teal{border-color:rgba(54,197,176,.4);background:linear-gradient(180deg,rgba(54,197,176,.10),rgba(54,197,176,.02));}
 .aura-v2 .card.oxc{border-color:rgba(110,42,38,.45);background:linear-gradient(180deg,rgba(110,42,38,.10),rgba(110,42,38,.02));}
-.aura-v2 .bone .card.oxc{border-color:rgba(110,42,38,.32);background:linear-gradient(180deg,#FBF1EC,#F2E5DE);}
-.aura-v2 .bone .card.teal{border-color:rgba(20,84,76,.32);background:linear-gradient(180deg,#EEF8F5,#E4F0EC);}
+.aura-v2 .v2bone .card.oxc{border-color:rgba(110,42,38,.32);background:linear-gradient(180deg,#FBF1EC,#F2E5DE);}
+.aura-v2 .v2bone .card.teal{border-color:rgba(20,84,76,.32);background:linear-gradient(180deg,#EEF8F5,#E4F0EC);}
 
 /* ── buttons ── */
 .aura-v2 .btn{
@@ -84,7 +87,7 @@ const LANDING_V2_CSS = `
 .aura-v2 .btn:hover{transform:translateY(-1px);}
 .aura-v2 .btn-primary{background:var(--amber);color:#2A1E0B;border-color:var(--amber);font-weight:600;}
 .aura-v2 .btn-ghost{background:transparent;color:var(--bone);border-color:rgba(237,231,217,.28);}
-.aura-v2 .bone .btn-ghost{color:var(--ink);border-color:rgba(27,23,18,.24);}
+.aura-v2 .v2bone .btn-ghost{color:var(--ink);border-color:rgba(27,23,18,.24);}
 
 /* ── nav ── */
 .aura-v2 .nav{
@@ -286,7 +289,7 @@ const LANDING_V2_CSS = `
   font-family:var(--mono);font-size:9px;letter-spacing:1.6px;text-transform:uppercase;
   padding:5px 9px;border-radius:999px;border:1px solid rgba(214,167,72,.6);color:#8A6A16;background:rgba(214,167,72,.14);white-space:nowrap;
 }
-.aura-v2 .dark .cs{color:var(--amber);}
+.aura-v2 .v2dark .cs{color:var(--amber);}
 .aura-v2 details.q .panel{padding:0 18px 18px;}
 .aura-v2 details.q .panel p{font-size:15px;line-height:1.68;color:#544B41;}
 .aura-v2 .ev{
@@ -356,7 +359,7 @@ const LANDING_V2_HTML = `
 </nav>
 
 <!-- 1 · HERO -->
-<section class="dark hero">
+<section class="v2dark hero">
   <div class="stars"></div><div class="halftone"></div><div class="arc"></div>
   <div class="wrap">
     <span class="pill"><i class="dot"></i> The overnight · your personal intelligence team · worked while you slept</span>
@@ -406,7 +409,7 @@ const LANDING_V2_HTML = `
 </section>
 
 <!-- 2 · THE MATH -->
-<section class="bone">
+<section class="v2bone">
   <div class="wrap">
     <span class="eyebrow">The math</span>
     <h2>You are already doing the work. <em>None of it survives.</em></h2>
@@ -462,7 +465,7 @@ const LANDING_V2_HTML = `
 </section>
 
 <!-- 3 · WHAT'S IN IT FOR YOU -->
-<section class="dark">
+<section class="v2dark">
   <div class="wrap">
     <span class="eyebrow">What's in it for you</span>
     <h2>What actually changes <em>about your week.</em></h2>
@@ -509,7 +512,7 @@ const LANDING_V2_HTML = `
 </section>
 
 <!-- 4 · THE OVERNIGHT -->
-<section class="dark" id="overnight">
+<section class="v2dark" id="overnight">
   <div class="wrap">
     <span class="eyebrow">The overnight</span>
     <h2>You sleep. <em>The team works.</em></h2>
@@ -531,7 +534,7 @@ const LANDING_V2_HTML = `
 </section>
 
 <!-- 5 · WHAT AURA WORKS OUT ABOUT YOU -->
-<section class="bone" id="questions">
+<section class="v2bone" id="questions">
   <div class="wrap">
     <span class="eyebrow">What Aura works out about you</span>
     <h2>Eight questions, <em>answered from your own material.</em></h2>
@@ -565,7 +568,7 @@ const LANDING_V2_HTML = `
 </section>
 
 <!-- 6 · WHERE THIS GOES NEXT + CLOSE -->
-<section class="dark" id="request">
+<section class="v2dark" id="request">
   <div class="wrap">
     <span class="eyebrow">Where this goes next</span>
     <h2>Today it makes you visible. <em>Next, it makes you sharper.</em></h2>
