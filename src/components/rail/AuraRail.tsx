@@ -5,6 +5,7 @@ import {
   ChevronLeft, ChevronRight, Sparkles,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import OvernightPulse, { useOvernightLastRun } from "@/components/systemb/OvernightPulse";
 import AuraLogo from "@/components/brand/AuraLogo";
 import { TooltipPanel } from "@/components/systemb/Tooltip";
 import Avatar from "@/components/systemb/Avatar";
@@ -82,7 +83,7 @@ const GROUPS: Array<{ header: string; items: Array<RailTab | "settings"> }> = [
 export default function AuraRail({
   activeTab, onSelect, onOpenAsk, onOpenCapture, onOpenSettings, newSignalCount = 0,
 }: AuraRailProps) {
-  const [lastRun, setLastRun] = useState<string | null>(null);
+  const lastRun = useOvernightLastRun();
   const [, setSearchParams] = useSearchParams();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uid, setUid] = useState<string | null>(null);
@@ -161,14 +162,6 @@ export default function AuraRail({
           setAvatarUrl(((prof as any).avatar_url as string) || null);
           setProfileName([(prof as any).first_name, (prof as any).last_name].filter(Boolean).join(" ") || null);
         })();
-        const { data } = await (supabase.from("agent_findings" as any) as any)
-          .select("created_at")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(1);
-        if (cancelled) return;
-        const at = (data || [])[0]?.created_at;
-        setLastRun(typeof at === "string" ? at : null);
       } catch { /* live strip falls back to "waiting" */ }
     })();
     return () => { cancelled = true; };
