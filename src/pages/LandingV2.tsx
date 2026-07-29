@@ -96,7 +96,7 @@ const LANDING_V2_CSS = `
   padding:12px 20px;background:rgba(4,7,6,.78);backdrop-filter:blur(12px);
   border-bottom:1px solid var(--line-d);
 }
-.aura-v2 .nav .brand{display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:13px;letter-spacing:4px;}
+.aura-v2 .nav .brand{display:flex;align-items:center;min-height:44px;gap:9px;font-family:var(--mono);font-size:13px;letter-spacing:4px;}
 .aura-v2 .nav .navlinks{display:flex;align-items:center;gap:10px;}
 .aura-v2 .nav a.login{
   font-family:var(--mono);font-size:12px;letter-spacing:1.5px;text-transform:uppercase;
