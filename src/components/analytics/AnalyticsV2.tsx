@@ -101,7 +101,7 @@ const Card: React.FC<React.PropsWithChildren<{ index: number; reduced: boolean; 
 
 const CardHead: React.FC<{ kicker: string; title: string }> = ({ kicker, title }) => (
   <div style={{ marginBottom: 14 }}>
-    <div style={{ ...MONO, fontSize: 10, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--machine-text)" }}>{kicker}</div>
+    <div style={{ fontFamily: "var(--ff-ui)", fontSize: 12, fontWeight: 500, color: "var(--text-muted)" }}>{kicker}</div>
     <h2 style={{ fontSize: 15.5, fontWeight: 600, color: "var(--text-primary)", marginTop: 4 }}>{title}</h2>
   </div>
 );
@@ -296,7 +296,7 @@ const AnalyticsV2: React.FC<{ onOpenChat?: (msg?: string) => void }> = ({ onOpen
     : (nextBand && imprint ? Math.max(0, nextBand.min - Math.round(imprint.score)) : null);
 
   if (loading) {
-    return <div style={{ ...MONO, fontSize: 12, color: "var(--text-muted)", padding: 24 }}>Loading your numbers…</div>;
+    return <div style={{ ...MONO, fontSize: 12, color: "var(--text-muted)", padding: 24 }}>Reading your numbers…</div>;
   }
 
   let card = 0;
@@ -417,7 +417,7 @@ const AnalyticsV2: React.FC<{ onOpenChat?: (msg?: string) => void }> = ({ onOpen
       <Card index={card++} reduced={reduced}>
         <CardHead kicker="Where the work sits" title="Where your signals sit" />
         {scatter.pts.length === 0 ? (
-          <Reading>No active signals in this range.</Reading>
+          <Reading>Your live signals show up here as they gather captures. None are active in this range — widen the range, or capture something new.</Reading>
         ) : (
           <>
             <div style={{ position: "relative", width: "100%", overflowX: "auto" }}>
@@ -473,7 +473,7 @@ const AnalyticsV2: React.FC<{ onOpenChat?: (msg?: string) => void }> = ({ onOpen
           </ButtonGhost>
         </div>
         {tableRows.length === 0 ? (
-          <Reading>No posts in this range.</Reading>
+          <Reading>Every post you have live on LinkedIn is listed here. None fall in this range — try a wider range.</Reading>
         ) : (
           <div style={{ maxHeight: 420, overflow: "auto", border: "1px solid var(--rule-outer)", borderRadius: 12 }}>
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 620 }}>
