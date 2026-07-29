@@ -162,3 +162,6 @@ verify_jwt = false
 
 [functions.founder-daily-brief]
 verify_jwt = false
+
+[functions.send-morning-signal]
+verify_jwt = false
