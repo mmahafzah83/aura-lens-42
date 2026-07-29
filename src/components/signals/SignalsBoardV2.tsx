@@ -53,7 +53,7 @@ const StatusDot: React.FC<{ tone: "live" | "cooling" | "muted" }> = ({ tone }) =
 );
 
 const SectionLabel: React.FC<React.PropsWithChildren> = ({ children }) => (
-  <div style={{ ...MONO, fontSize: 10, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 10 }}>
+  <div style={{ fontFamily: "var(--ff-ui)", fontSize: 12, fontWeight: 500, color: "var(--text-muted)", marginBottom: 10 }}>
     {children}
   </div>
 );
@@ -285,9 +285,9 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
   };
 
   const columns: Array<{ key: SignalFilter; label: string; tone: "live" | "cooling" | "muted"; count: number; empty: string }> = [
-    { key: "accelerating", label: "Accelerating", tone: "live", count: counts?.accelerating ?? 0, empty: "Nothing accelerating right now." },
-    { key: "stable", label: "Stable", tone: "cooling", count: counts?.stable ?? 0, empty: "Nothing stable right now." },
-    { key: "dormant", label: "Dormant", tone: "muted", count: counts?.dormant ?? 0, empty: "Nothing dormant right now." },
+    { key: "accelerating", label: "Accelerating", tone: "live", count: counts?.accelerating ?? 0, empty: "Signals picking up speed land here. None are, right now." },
+    { key: "stable", label: "Stable", tone: "cooling", count: counts?.stable ?? 0, empty: "Signals holding steady land here. None are, right now." },
+    { key: "dormant", label: "Dormant", tone: "muted", count: counts?.dormant ?? 0, empty: "Signals that have gone quiet rest here. None have yet." },
   ];
 
   const filterRows: Array<{ key: SignalFilter; label: string; count: number }> = [
@@ -331,7 +331,7 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
             <SegBtn active={view === "list"} onClick={() => setView("list")}><ListIcon size={13} />List</SegBtn>
             <SegBtn active={view === "board"} onClick={() => setView("board")}><LayoutGrid size={13} />Board</SegBtn>
           </div>
-          <ButtonPrimary onClick={() => onOpenCapture?.()}><Plus size={13} />Capture</ButtonPrimary>
+          <ButtonPrimary onClick={() => onOpenCapture?.()}><Plus size={13} />Capture something</ButtonPrimary>
         </div>
       </div>
 
@@ -370,7 +370,7 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
           {themes.length > 0 && (
             <>
               <div style={{ height: 1, background: "var(--rule-divider)", margin: "10px 0" }} />
-              <div style={{ ...MONO, fontSize: 9.5, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--text-muted)", padding: "0 8px 6px" }}>
+              <div style={{ fontFamily: "var(--ff-ui)", fontSize: 12, fontWeight: 500, color: "var(--text-muted)", padding: "0 8px 6px" }}>
                 Themes
               </div>
               {themes.map(([t, n]) => {
@@ -404,7 +404,7 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
         {/* CONTENT */}
         <div style={{ flex: 1, minWidth: 0, width: "100%" }}>
           {loading ? (
-            <div style={{ ...MONO, fontSize: 11, color: "var(--text-muted)", padding: 20 }}>Loading signals…</div>
+            <div style={{ ...MONO, fontSize: 11, color: "var(--text-muted)", padding: 20 }}>Reading your signals…</div>
           ) : view === "board" ? (
             <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 14, alignItems: "start" }}>
               {columns.map(col => {
@@ -475,7 +475,7 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
               borderRadius: 14, overflow: "hidden",
             }}>
               {visible.length === 0 && (
-                <div style={{ fontSize: 12.5, color: "var(--text-muted)", padding: 16 }}>No signals match this filter.</div>
+                <div style={{ fontSize: 12.5, color: "var(--text-muted)", padding: 16 }}>Nothing under this filter yet. Switch to All, or capture something and a signal starts here.</div>
               )}
               {visible.map((r, i) => {
                 const bucket = bucketOf(r);
@@ -550,7 +550,7 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
             <SegBtn active={view === "list"} onClick={() => setView("list")}><ListIcon size={13} />List</SegBtn>
             <SegBtn active={view === "board"} onClick={() => setView("board")}><LayoutGrid size={13} />Board</SegBtn>
           </div>
-          <ButtonPrimary onClick={() => onOpenCapture?.()}><Plus size={13} />Capture</ButtonPrimary>
+          <ButtonPrimary onClick={() => onOpenCapture?.()}><Plus size={13} />Capture something</ButtonPrimary>
         </div>
         </div>,
         document.body,
