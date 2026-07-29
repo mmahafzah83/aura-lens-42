@@ -440,7 +440,7 @@ const LANDING_V2_HTML = `
           <div class="fig tl"><span class="k">◆ What it becomes</span><p class="v">Top 3</p><p class="s">A named position on the subjects you own.</p></div>
         </div>
 
-        <p class="kicker" id="v2-kicker"><strong>Six working weeks</strong> of thinking, written off every year. <strong>Eight seconds a link.</strong></p>
+        <p class="kicker" id="v2-kicker"><strong>Six working weeks</strong> of thinking, written off every year. <strong>One tap to keep it.</strong></p>
         <p class="working">Showing the working — hours you own = hours per week × 52. It already costs = those hours × your hourly worth. Working weeks = annual hours ÷ 40. What survived is zero because nothing you read is written down anywhere you can use it. We do not promise reach, ranking or followers.</p>
       </div>
 
@@ -601,7 +601,7 @@ const LANDING_V2_HTML = `
           <div>
             <details class="d"><summary style="font-size:16px">How is this different from ChatGPT?</summary><div class="panel"><p class="body">ChatGPT starts from nothing every time. Aura starts from your material, your published history and your voice — and shows you the source behind every line.</p></div></details>
             <details class="d"><summary style="font-size:16px">How is it different from a ghostwriter?</summary><div class="panel"><p class="body">A ghostwriter interviews you once a month. Aura works from what you read this week, every night, and never publishes without your approval.</p></div></details>
-            <details class="d"><summary style="font-size:16px">How much time does it take?</summary><div class="panel"><p class="body">Eight seconds to save a link. A few minutes a week to read a draft and approve it.</p></div></details>
+            <details class="d"><summary style="font-size:16px">How much time does it take?</summary><div class="panel"><p class="body">One tap to save a link. A few minutes a week to read a draft and approve it.</p></div></details>
           </div>
           <div>
             <details class="d"><summary style="font-size:16px">Will it actually sound like me?</summary><div class="panel"><p class="body">It learns from your approvals and edits. The first drafts are close; after a few weeks people who know you can't tell.</p></div></details>
@@ -612,7 +612,9 @@ const LANDING_V2_HTML = `
 
       <details class="d"><summary>Why I built this</summary>
         <div class="panel">
-          <p class="body">I kept meeting people whose judgement was extraordinary and whose name meant nothing outside their own floor. They were reading, thinking and solving hard problems every week — and none of it survived the week. Aura is the system I wanted for them: it works from what you already do, it shows its sources, and it never speaks for you without asking.</p>
+          <p class="body">Because I'm one of you. I read 30+ articles a week. I see patterns in digital transformation that most reports miss. I hold views that could shape how organizations think about their future.</p>
+          <p class="body">But for years it never left my own notebooks. No one outside the room knew any of it existed.</p>
+          <p class="body">So I built the system I wished existed — one that takes what I already read, finds the strategic patterns, understands my voice and my expertise, and turns it into a presence that compounds over time. I called it Aura.</p>
           <p class="foot">Mohammad Mahafzah · Aura builder · Built in Riyadh, for the world</p>
         </div></details>
     </div>
@@ -704,7 +706,7 @@ const LandingV2 = () => {
           months >= 1.6
             ? `${spell(Math.round(months))} working month${Math.round(months) === 1 ? "" : "s"}`
             : `${spell(Math.floor(weeks))} working week${Math.floor(weeks) === 1 ? "" : "s"}`;
-        kicker.innerHTML = `<strong>${unit}</strong> of thinking, written off every year. <strong>Eight seconds a link.</strong>`;
+        kicker.innerHTML = `<strong>${unit}</strong> of thinking, written off every year. <strong>One tap to keep it.</strong>`;
       }
     };
 
