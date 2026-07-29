@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   Compass, Radar, Moon, PenLine, BarChart3, Settings, Paperclip, X, Library, Flame, Sun, LayoutGrid,
+  ChevronLeft, ChevronRight, Sparkles, User,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import AuraLogo from "@/components/brand/AuraLogo";
@@ -64,8 +65,22 @@ function hhmm(iso: string): string {
 
 interface SignalCounts { all: number; accelerating: number; stable: number }
 
+const RAIL_W_COLLAPSED = "78px";
+const RAIL_W_EXPANDED = "236px";
+const NAV_KEY = "aura_nav_expanded";
+
+/** Grouped order for the expanded sidebar. Values map 1:1 to ITEMS + the
+ *  bottom-block destinations; no new destinations are introduced. */
+const GROUPS: Array<{ header: string; items: Array<RailTab | "settings"> }> = [
+  { header: "Every day", items: ["today", "home"] },
+  { header: "Your intelligence", items: ["intelligence", "library", "overnight"] },
+  { header: "Your voice", items: ["authority"] },
+  { header: "Your proof", items: ["momentum", "influence"] },
+  { header: "Yours", items: ["identity", "widgets", "settings"] },
+];
+
 export default function AuraRail({
-  activeTab, onSelect, onOpenCapture, onOpenSettings, newSignalCount = 0,
+  activeTab, onSelect, onOpenAsk, onOpenCapture, onOpenSettings, newSignalCount = 0,
 }: AuraRailProps) {
   const [lastRun, setLastRun] = useState<string | null>(null);
   const [, setSearchParams] = useSearchParams();
@@ -78,6 +93,55 @@ export default function AuraRail({
   const countsLoadedRef = useRef(false);
   const flyoutRef = useRef<HTMLDivElement | null>(null);
   const railRef = useRef<HTMLElement | null>(null);
+  const [expanded, setExpanded] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    const stored = window.localStorage.getItem(NAV_KEY);
+    if (stored === "1") return true;
+    if (stored === "0") return false;
+    return window.innerWidth >= 1280;
+  });
+  const [libraryCount, setLibraryCount] = useState<number | null>(null);
+  const [draftCount, setDraftCount] = useState<number | null>(null);
+
+  // The sidebar owns its own width variable so main content shifts with it.
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      "--v23-rail-w", expanded ? RAIL_W_EXPANDED : RAIL_W_COLLAPSED,
+    );
+    return () => { document.documentElement.style.removeProperty("--v23-rail-w"); };
+  }, [expanded]);
+
+  const toggleExpanded = () => {
+    setExpanded((prev) => {
+      const next = !prev;
+      try { window.localStorage.setItem(NAV_KEY, next ? "1" : "0"); } catch { /* ignore */ }
+      if (next) setFlyout(null);
+      return next;
+    });
+    setTip(null);
+  };
+
+  // Row counts — exact head counts only. A failed query renders nothing.
+  useEffect(() => {
+    if (!expanded) return;
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || cancelled) return;
+      const [entriesRes, draftsRes] = await Promise.all([
+        (supabase.from("entries" as any) as any)
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id),
+        (supabase.from("content_items" as any) as any)
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id).eq("status", "draft"),
+      ]);
+      if (cancelled) return;
+      if (!entriesRes?.error && typeof entriesRes?.count === "number") setLibraryCount(entriesRes.count);
+      if (!draftsRes?.error && typeof draftsRes?.count === "number") setDraftCount(draftsRes.count);
+    })().catch(() => { /* counts stay hidden */ });
+    return () => { cancelled = true; };
+  }, [expanded]);
 
   // The Overnight last-run time — same source the Overnight card reads.
   useEffect(() => {
@@ -202,6 +266,144 @@ export default function AuraRail({
     e.currentTarget.style.background = "transparent";
   };
 
+  const collapseToggle = (
+    <button
+      type="button"
+      aria-label={expanded ? "Collapse navigation" : "Expand navigation"}
+      aria-expanded={expanded}
+      data-testid="nav-collapse-toggle"
+      className="cursor-pointer v23-focus"
+      onClick={toggleExpanded}
+      style={{
+        background: "transparent", border: 0, cursor: "pointer",
+        color: "var(--v23-rail-label)", padding: 6, borderRadius: 8,
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+      }}
+    >
+      {expanded ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+    </button>
+  );
+
+  const itemByValue = (v: RailTab) => ITEMS.find((i) => i.value === v);
+
+  const groupHeader = (text: string) => (
+    <div key={`h-${text}`} aria-hidden style={{
+      fontFamily: "var(--ff-mono)", fontSize: 8, letterSpacing: ".22em",
+      textTransform: "uppercase", color: "#77828C",
+      padding: "14px 18px 6px",
+    }}>{text}</div>
+  );
+
+  const rowStyle = (active: boolean): React.CSSProperties => ({
+    display: "flex", alignItems: "center", gap: 10, width: "100%",
+    minHeight: 40, padding: "8px 18px", borderRadius: 0, border: 0,
+    cursor: "pointer", position: "relative", textAlign: "left",
+    background: active ? "var(--v23-wash-act), var(--v23-night-lift)" : "transparent",
+    color: active ? "var(--b-300)" : "var(--v23-on-night)",
+    fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 500,
+    transition: "background 180ms ease, color 180ms ease",
+  });
+
+  const ActiveBarWide = () => (
+    <span aria-hidden style={{
+      position: "absolute", left: 0, top: 0, bottom: 0, width: 2.5,
+      background: "var(--act)",
+    }} />
+  );
+
+  const countPill = (text: string) => (
+    <span style={{
+      marginLeft: "auto", fontFamily: "var(--ff-mono)", fontSize: 10,
+      fontVariantNumeric: "tabular-nums", color: "var(--v23-rail-label)",
+    }}>{text}</span>
+  );
+
+  const expandedRow = (key: RailTab | "settings") => {
+    if (key === "settings") {
+      return (
+        <button
+          key="settings"
+          type="button"
+          aria-label="Settings"
+          data-active="false"
+          className="cursor-pointer v23-focus"
+          onClick={() => { setFlyout(null); onOpenSettings(); }}
+          onMouseEnter={hoverOn}
+          onMouseLeave={hoverOff}
+          style={rowStyle(false)}
+        >
+          <Settings size={15} strokeWidth={1.75} />
+          <span>Settings</span>
+        </button>
+      );
+    }
+    if (key === "identity") {
+      const active = activeTab === "identity";
+      return (
+        <button
+          key="identity"
+          type="button"
+          aria-label="Profile"
+          aria-current={active ? "page" : undefined}
+          data-testid="nav-mystory"
+          data-active={active ? "true" : "false"}
+          className="cursor-pointer v23-focus"
+          onClick={() => { setFlyout(null); onSelect("identity"); }}
+          onMouseEnter={hoverOn}
+          onMouseLeave={hoverOff}
+          style={rowStyle(active)}
+        >
+          {active && <ActiveBarWide />}
+          <AuraRing userId={uid} size={28} gap="var(--v23-night)">
+            <Avatar src={avatarUrl} name={profileName} size="sm" ring="var(--v23-night-line)" />
+          </AuraRing>
+          <span>Profile</span>
+        </button>
+      );
+    }
+    const item = itemByValue(key);
+    if (!item) return null;
+    const active = activeTab === item.value;
+    return (
+      <button
+        key={item.value}
+        type="button"
+        aria-label={item.name}
+        aria-current={active ? "page" : undefined}
+        aria-haspopup={item.hasFlyout ? "true" : undefined}
+        aria-expanded={item.hasFlyout ? (flyout === item.value) : undefined}
+        data-testid={item.testId}
+        data-active={active ? "true" : "false"}
+        className="cursor-pointer v23-focus"
+        onClick={() => {
+          if (item.hasFlyout && active) {
+            setFlyout(flyout === item.value ? null : item.value);
+            if (flyout !== item.value) void loadCounts();
+            return;
+          }
+          setFlyout(null);
+          onSelect(item.value);
+        }}
+        onMouseEnter={hoverOn}
+        onMouseLeave={hoverOff}
+        style={rowStyle(active)}
+      >
+        {active && <ActiveBarWide />}
+        <item.icon size={15} strokeWidth={1.75} />
+        <span>{item.name}</span>
+        {item.value === "intelligence" && newSignalCount > 0 && !active && (
+          <span aria-label={`${newSignalCount} new signals`} style={{
+            marginLeft: "auto", width: 6, height: 6, borderRadius: 999,
+            background: "var(--machine)",
+          }} />
+        )}
+        {item.value === "library" && libraryCount !== null && countPill(String(libraryCount))}
+        {item.value === "authority" && draftCount !== null && draftCount > 0
+          && countPill(`${draftCount} draft${draftCount === 1 ? "" : "s"}`)}
+      </button>
+    );
+  };
+
   return (
     <>
       <a
@@ -219,10 +421,125 @@ export default function AuraRail({
         onBlur={(e) => { e.currentTarget.style.transform = "translateY(-160%)"; }}
       >Skip to content</a>
 
+      {expanded ? (
+        <aside
+          ref={railRef}
+          data-surface="dark"
+          data-testid="aura-rail"
+          data-expanded="true"
+          aria-label="Primary"
+          className="hidden md:flex flex-col fixed top-0 left-0 h-full z-30"
+          style={{
+            width: "var(--v23-rail-w)",
+            background: "var(--v23-night)",
+            borderRight: "1px solid var(--v23-night-line)",
+            fontFamily: "var(--ff-ui)",
+            paddingTop: 14, paddingBottom: 14,
+            overflowY: "auto",
+          }}
+        >
+          <div className="flex items-center justify-between" style={{ padding: "0 14px 0 18px" }}>
+            <button
+              type="button"
+              onClick={() => onSelect("home")}
+              aria-label="Aura home"
+              className="cursor-pointer v23-tap v23-focus"
+              style={{
+                background: "transparent", border: 0, cursor: "pointer", padding: 0,
+                display: "inline-flex", alignItems: "center", gap: 10,
+                color: "var(--text-inverse)",
+              }}
+            >
+              <AuraLogo size={26} variant="dark" />
+              <span style={{ fontFamily: "var(--ff-ui)", fontSize: 15, fontWeight: 600, letterSpacing: ".01em" }}>Aura</span>
+            </button>
+            {collapseToggle}
+          </div>
+
+          {/* THE OVERNIGHT CARD — same lastRun the collapsed live strip shows. */}
+          <button
+            type="button"
+            data-testid="rail-overnight-card"
+            title={lastRun
+              ? `Aura's night run finished at ${hhmm(lastRun)}. Findings appear on Home.`
+              : "Aura's night run has not produced findings yet."}
+            aria-label={lastRun ? `The Overnight ran at ${hhmm(lastRun)}` : "The Overnight has not run yet"}
+            onClick={() => { setFlyout(null); onSelect("overnight"); }}
+            className="cursor-pointer v23-focus"
+            style={{
+              margin: "14px 14px 2px", padding: "10px 12px", borderRadius: 10,
+              background: "rgba(0,206,201,.08)", border: "1px solid rgba(0,206,201,.2)",
+              cursor: "pointer", textAlign: "left", display: "flex",
+              flexDirection: "column", gap: 4, minHeight: 44,
+            }}
+          >
+            <span style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text-inverse)", fontSize: 12.5, fontWeight: 500 }}>
+              <span aria-hidden style={{
+                width: 6, height: 6, borderRadius: 999, background: "var(--machine)",
+                boxShadow: "var(--v23-ask-glow)", flexShrink: 0,
+              }} />
+              {lastRun ? `The Overnight ran ${hhmm(lastRun)}` : "The Overnight"}
+            </span>
+            <span style={{
+              fontFamily: "var(--ff-mono)", fontSize: 9, letterSpacing: ".06em",
+              color: "var(--v23-rail-label)",
+            }}>
+              {lastRun ? "Findings appear on Home" : "Hasn't run yet"}
+            </span>
+          </button>
+
+          <nav className="flex flex-col" style={{ flex: 1, paddingBottom: 8 }}>
+            {GROUPS.map((g) => (
+              <div key={g.header}>
+                {groupHeader(g.header)}
+                {g.items.map((v) => expandedRow(v))}
+              </div>
+            ))}
+          </nav>
+
+          <div style={{ borderTop: "1px solid var(--v23-night-line)", paddingTop: 10, display: "flex", flexDirection: "column", gap: 8, padding: "10px 14px 0" }}>
+            <button
+              type="button"
+              aria-label="Ask Aura"
+              data-testid="header-ask-aura"
+              data-tour="nav-ask-aura"
+              className="cursor-pointer v23-focus"
+              onClick={() => { setFlyout(null); onOpenAsk(); }}
+              style={{
+                display: "flex", alignItems: "center", gap: 10, minHeight: 44,
+                padding: "10px 12px", borderRadius: 10, cursor: "pointer",
+                background: "rgba(0,206,201,.08)", border: "1px solid rgba(0,206,201,.2)",
+                color: "var(--text-inverse)", fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 500,
+              }}
+            >
+              <Sparkles size={15} strokeWidth={1.75} />
+              <span>Ask Aura</span>
+            </button>
+            <button
+              type="button"
+              aria-label="Capture"
+              data-testid="nav-capture"
+              data-tour="nav-capture"
+              className="cursor-pointer v23-focus"
+              onClick={() => { setFlyout(null); onOpenCapture(); }}
+              style={{
+                display: "flex", alignItems: "center", gap: 10, minHeight: 44,
+                padding: "10px 12px", borderRadius: 10, cursor: "pointer",
+                background: "transparent", border: "1px dashed rgba(255,255,255,.22)",
+                color: "var(--v23-on-night)", fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 500,
+              }}
+            >
+              <Paperclip size={15} strokeWidth={1.75} />
+              <span>Capture something</span>
+            </button>
+          </div>
+        </aside>
+      ) : (
       <aside
         ref={railRef}
         data-surface="dark"
         data-testid="aura-rail"
+        data-expanded="false"
         aria-label="Primary"
         className="hidden md:flex flex-col items-center fixed top-0 left-0 h-full z-30"
         style={{
@@ -234,6 +551,7 @@ export default function AuraRail({
         }}
         onMouseLeave={hideTip}
       >
+        <div style={{ marginBottom: 4 }}>{collapseToggle}</div>
         <button
           type="button"
           onClick={() => onSelect("home")}
@@ -376,8 +694,9 @@ export default function AuraRail({
           </button>
         </div>
       </aside>
+      )}
 
-      {tip && (
+      {tip && !expanded && (
         <div className="hidden md:block">
           <TooltipPanel
             title={tip.title}
