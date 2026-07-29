@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   Compass, Radar, Moon, PenLine, BarChart3, Settings, Paperclip, X, Library, Flame, Sun, LayoutGrid,
-  ChevronLeft, ChevronRight, Sparkles, User,
+  ChevronLeft, ChevronRight, Sparkles,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import AuraLogo from "@/components/brand/AuraLogo";
