@@ -1154,7 +1154,7 @@ const Onboarding = () => {
           {primaryBtn("Add it", () => void cfSubmit(), { loading: cfBusy, disabled: !cfValue.trim() })}
           {ghostLink("I'll paste one later", cfSkip)}
           <p style={{ fontSize: 12, lineHeight: 1.6, color: "var(--ink-2)", marginTop: 8 }}>
-            Eight seconds. Nothing is published, now or ever, without you pressing publish.
+            One tap. Nothing is published, now or ever, without you pressing publish.
           </p>
         </>,
       );
@@ -1179,7 +1179,7 @@ const Onboarding = () => {
             <>
               {heading("Aura is still reading it.")}
               <p className="mb-6" style={{ fontSize: 15, lineHeight: 1.7, color: "var(--ink-2)" }}>
-                This one is taking longer than eight seconds. Nothing is lost — what Aura finds will be waiting for you on your Home.
+                This one is taking a little longer. Nothing is lost — what Aura finds will be waiting for you on your Home.
               </p>
             </>
           ) : (
