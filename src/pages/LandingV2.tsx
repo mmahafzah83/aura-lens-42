@@ -700,7 +700,7 @@ const LandingV2 = () => {
         const unit =
           months >= 1.6
             ? `${spell(Math.round(months))} working month${Math.round(months) === 1 ? "" : "s"}`
-            : `${spell(Math.round(weeks))} working week${Math.round(weeks) === 1 ? "" : "s"}`;
+            : `${spell(Math.floor(weeks))} working week${Math.floor(weeks) === 1 ? "" : "s"}`;
         kicker.innerHTML = `<strong>${unit}</strong> of thinking, written off every year. <strong>Eight seconds a link.</strong>`;
       }
     };
