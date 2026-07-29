@@ -238,7 +238,7 @@ Deno.serve(withObserve("night-agent-hunt", async (req) => {
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
   // Discover eligible users.
-  // Eligibility: diagnostic_profiles row, ≥3 active strategic_signals, sign-in within 21 days,
+  // Eligibility: diagnostic_profiles row, ≥1 active strategic_signal, sign-in within 21 days,
   //              fewer than 3 pending agent_findings.
   let candidateUserIds: string[] = [];
 
@@ -326,7 +326,10 @@ Deno.serve(withObserve("night-agent-hunt", async (req) => {
         .eq("status", "active")
         .gte("updated_at", since)
         .limit(200);
-      if ((activeCount ?? 0) < 3) { summary.skipped++; continue; }
+      // Threshold is 1 deliberately: a single-signal user is exactly the user the
+      // Overnight needs to reach. Quality is guarded downstream by the 0.7
+      // relevance gate, not by this count.
+      if ((activeCount ?? 0) < 1) { summary.skipped++; continue; }
 
       const tagCounts = new Map<string, number>();
       for (const s of (signals || [])) {
