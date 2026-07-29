@@ -5,6 +5,7 @@ import {
   ChevronLeft, ChevronRight, Sparkles,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import OvernightPulse, { useOvernightLastRun } from "@/components/systemb/OvernightPulse";
 import AuraLogo from "@/components/brand/AuraLogo";
 import { TooltipPanel } from "@/components/systemb/Tooltip";
 import Avatar from "@/components/systemb/Avatar";
@@ -82,7 +83,7 @@ const GROUPS: Array<{ header: string; items: Array<RailTab | "settings"> }> = [
 export default function AuraRail({
   activeTab, onSelect, onOpenAsk, onOpenCapture, onOpenSettings, newSignalCount = 0,
 }: AuraRailProps) {
-  const [lastRun, setLastRun] = useState<string | null>(null);
+  const lastRun = useOvernightLastRun();
   const [, setSearchParams] = useSearchParams();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uid, setUid] = useState<string | null>(null);
@@ -161,14 +162,6 @@ export default function AuraRail({
           setAvatarUrl(((prof as any).avatar_url as string) || null);
           setProfileName([(prof as any).first_name, (prof as any).last_name].filter(Boolean).join(" ") || null);
         })();
-        const { data } = await (supabase.from("agent_findings" as any) as any)
-          .select("created_at")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(1);
-        if (cancelled) return;
-        const at = (data || [])[0]?.created_at;
-        setLastRun(typeof at === "string" ? at : null);
       } catch { /* live strip falls back to "waiting" */ }
     })();
     return () => { cancelled = true; };
@@ -456,37 +449,12 @@ export default function AuraRail({
             {collapseToggle}
           </div>
 
-          {/* THE OVERNIGHT CARD — same lastRun the collapsed live strip shows. */}
-          <button
-            type="button"
-            data-testid="rail-overnight-card"
-            title={lastRun
-              ? `Aura's night run finished at ${hhmm(lastRun)}. Findings appear on Home.`
-              : "Aura's night run has not produced findings yet."}
-            aria-label={lastRun ? `The Overnight ran at ${hhmm(lastRun)}` : "The Overnight has not run yet"}
-            onClick={() => { setFlyout(null); onSelect("overnight"); }}
-            className="cursor-pointer v23-focus"
-            style={{
-              margin: "14px 14px 2px", padding: "10px 12px", borderRadius: 10,
-              background: "rgba(0,206,201,.08)", border: "1px solid rgba(0,206,201,.2)",
-              cursor: "pointer", textAlign: "left", display: "flex",
-              flexDirection: "column", gap: 4, minHeight: 44,
-            }}
-          >
-            <span style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text-inverse)", fontSize: 12.5, fontWeight: 500 }}>
-              <span aria-hidden style={{
-                width: 6, height: 6, borderRadius: 999, background: "var(--machine)",
-                boxShadow: "var(--v23-ask-glow)", flexShrink: 0,
-              }} />
-              {lastRun ? `The Overnight ran ${hhmm(lastRun)}` : "The Overnight"}
-            </span>
-            <span style={{
-              fontFamily: "var(--ff-mono)", fontSize: 9, letterSpacing: ".06em",
-              color: "var(--v23-rail-label)",
-            }}>
-              {lastRun ? "Findings appear on Home" : "Hasn't run yet"}
-            </span>
-          </button>
+          {/* THE OVERNIGHT CARD — one shared heartbeat component and query. */}
+          <OvernightPulse
+            variant="card"
+            onOpen={() => { setFlyout(null); onSelect("overnight"); }}
+            style={{ margin: "14px 14px 2px" }}
+          />
 
           <nav className="flex flex-col" style={{ flex: 1, paddingBottom: 8 }}>
             {GROUPS.map((g) => (
