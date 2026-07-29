@@ -211,7 +211,7 @@ const Card: React.FC<React.PropsWithChildren<{ interactive?: boolean; style?: Re
 
 const SectionLabel: React.FC<React.PropsWithChildren> = ({ children }) => (
   <div style={{
-    ...MONO, fontSize: 10.5, letterSpacing: ".14em", textTransform: "uppercase",
+    fontFamily: "var(--ff-ui)", fontSize: 12, fontWeight: 500,
     color: "var(--text-muted)", marginBottom: 10,
   }}>{children}</div>
 );
@@ -441,7 +441,7 @@ export default function BriefV2({
             </p>
           )}
         </div>
-        <ButtonPrimary onClick={() => onOpenCapture()}>Capture</ButtonPrimary>
+        <ButtonPrimary onClick={() => onOpenCapture()}>Capture something</ButtonPrimary>
       </header>
 
       {/* 1b · COMMAND BAR — the persistent capture entry, always first. */}
