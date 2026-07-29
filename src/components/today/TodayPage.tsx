@@ -37,7 +37,7 @@ const Card: React.FC<React.PropsWithChildren<{ style?: React.CSSProperties }>> =
 );
 
 const SectionLabel: React.FC<React.PropsWithChildren> = ({ children }) => (
-  <div style={{ ...MONO, fontSize: 10.5, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 10 }}>
+  <div style={{ fontFamily: "var(--ff-ui)", fontSize: 12, fontWeight: 500, color: "var(--text-muted)", marginBottom: 10 }}>
     {children}
   </div>
 );
@@ -347,7 +347,7 @@ export default function TodayPage({
   return (
     <div style={{ display: "grid", gap: 26, paddingTop: 4 }}>
       <header style={{ display: "grid", gap: 6 }}>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--text-primary)", margin: 0 }}>
+        <h1 style={{ fontFamily: "var(--ff-ui)", fontSize: 26, fontWeight: 600, letterSpacing: "-0.02em", color: "var(--text-primary)", margin: 0 }}>
           Today
         </h1>
         <p style={{ fontSize: 13.5, color: "var(--text-secondary)", margin: 0, maxWidth: 620 }}>

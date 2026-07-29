@@ -87,7 +87,7 @@ const Card: React.FC<React.PropsWithChildren<{ style?: React.CSSProperties }>> =
 
 const SectionLabel: React.FC<React.PropsWithChildren> = ({ children }) => (
   <div style={{
-    ...MONO, fontSize: 10.5, letterSpacing: ".14em", textTransform: "uppercase",
+    fontFamily: "var(--ff-ui)", fontSize: 12, fontWeight: 500,
     color: "var(--text-muted)", marginBottom: 10,
   }}>{children}</div>
 );
@@ -205,7 +205,7 @@ export default function OvernightPage({ onOpenDraft, onOpenSettings }: Overnight
   };
 
   if (!isReady || !loaded) {
-    return <div style={{ ...MONO, fontSize: 12, color: "var(--text-muted)", padding: 24 }}>Loading the night…</div>;
+    return <div style={{ ...MONO, fontSize: 12, color: "var(--text-muted)", padding: 24 }}>Reading last night…</div>;
   }
 
   return (
@@ -241,7 +241,7 @@ export default function OvernightPage({ onOpenDraft, onOpenSettings }: Overnight
           borderRadius: 16, padding: 18, ...enter(1),
         }}
       >
-        <div style={{ ...MONO, fontSize: 10.5, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--machine)", marginBottom: 10 }}>
+        <div style={{ fontFamily: "var(--ff-ui)", fontSize: 12, fontWeight: 500, color: "var(--machine)", marginBottom: 10 }}>
           Last night's draft
         </div>
         {draft ? (

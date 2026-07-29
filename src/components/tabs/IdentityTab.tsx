@@ -764,7 +764,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               animation: "aura-spin 0.9s linear infinite",
             }}
           />
-          <div style={{ fontFamily: "var(--font-serif)", fontSize: 20, color: "var(--ink)" }}>
+          <div style={{ fontFamily: "var(--ff-ui)", fontWeight: 600, fontSize: 20, color: "var(--ink)" }}>
             Building your professional identity
           </div>
           <div style={{ fontSize: 13, color: "var(--ink-3)" }}>
@@ -776,10 +776,10 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       {!assessmentCompleted && !autoAssessing && (
         <div style={{ background: "var(--paper-2)", borderRadius: 16, padding: "28px 28px 24px", position: "relative", overflow: "hidden", border: "0.5px solid var(--rule)", borderLeft: "3px solid var(--spot)" }}>
           <div className="relative">
-            <div style={{ fontFamily: "var(--font-mono, ui-monospace, monospace)", fontSize: 11, letterSpacing: "0.12em", color: "var(--spot)", marginBottom: 8, fontWeight: 600, textTransform: "uppercase" }}>
+          <div style={{ fontSize: 12, color: "var(--ink-5)", marginBottom: 8, fontWeight: 500 }}>
               Your professional identity
             </div>
-            <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 22, color: "var(--ink)", margin: "0 0 12px", lineHeight: 1.375 }}>
+            <h2 style={{ fontFamily: "var(--ff-ui)", fontWeight: 600, fontSize: 22, color: "var(--ink)", margin: "0 0 12px", lineHeight: 1.375 }}>
               Tell Aura who you are in 5 minutes, and it'll show you how the market should see you.
             </h2>
             <button
@@ -794,7 +794,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
 
       {/* SECTION 2 — PROFILE HERO CARD */}
       {assessmentCompleted && (
-        <SectionHeader label="Your Market Position" />
+        <SectionHeader label="Your market position" />
       )}
       {assessmentCompleted && (
         <div>
@@ -853,7 +853,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
 
             {/* Center */}
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: "var(--font-serif)", fontSize: 17, fontWeight: 500, color: "var(--ink)", lineHeight: 1.2 }}>
+              <div style={{ fontFamily: "var(--ff-ui)", fontSize: 17, fontWeight: 600, color: "var(--ink)", lineHeight: 1.2 }}>
                 {userName}
               </div>
               {subtitle && (
@@ -894,7 +894,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }} data-testid="story-market-mirror">
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
             <Eye className="w-3.5 h-3.5" style={{ color: "var(--error, #c0392b)" }} />
-            <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.06em", color: "var(--error, #c0392b)", textTransform: "uppercase", display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 12, fontWeight: 500, color: "var(--ink-5)", display: "inline-flex", alignItems: "center", gap: 6 }}>
               How the market sees you
               <InfoTooltip
                 label="Market Mirror"
@@ -921,7 +921,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           >
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <Mic className="w-3.5 h-3.5" style={{ color: "var(--ink-5)" }} />
-              <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.06em", color: "var(--ink-5)", textTransform: "uppercase" }}>
+              <span style={{ fontSize: 12, fontWeight: 500, color: "var(--ink-5)" }}>
                 Your voice
               </span>
               <span
@@ -960,7 +960,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <MapIcon className="w-3.5 h-3.5" style={{ color: "var(--ink-5)" }} />
-              <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.06em", color: "var(--ink-5)", textTransform: "uppercase", display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 12, fontWeight: 500, color: "var(--ink-5)", display: "inline-flex", alignItems: "center", gap: 6 }}>
                 Your territory
                 <InfoTooltip
                   label="Your territories"
@@ -1001,7 +1001,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       {/* SECTION 6 — CAPABILITY RADAR */}
       {assessmentCompleted && (
         <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-          <SectionHeader label="Your Capability Radar" />
+          <SectionHeader label="Your capability radar" />
           <InfoTooltip slug="capability-radar" label="Capability Radar" side="top" triggerSize={13} />
         </div>
       )}
@@ -1024,7 +1024,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
 
       {/* SECTION 6b — PROFILE INTELLIGENCE */}
       {assessmentCompleted && (
-        <SectionHeader label="Profile Intelligence" />
+        <SectionHeader label="Profile intelligence" />
       )}
       {assessmentCompleted && (
         <div data-testid="story-strategic-identity">
@@ -1038,7 +1038,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <Trophy className="w-3.5 h-3.5" style={{ color: "var(--success, #2e7d32)" }} />
-              <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.06em", color: "var(--success, #2e7d32)", textTransform: "uppercase" }}>
+              <span style={{ fontSize: 12, fontWeight: 500, color: "var(--ink-5)" }}>
                 Your journey
               </span>
             </div>
@@ -1145,7 +1145,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
           <TargetIcon className="w-3.5 h-3.5" style={{ color: "var(--ink-5)" }} />
-          <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.06em", color: "var(--ink-5)", textTransform: "uppercase" }}>
+          <span style={{ fontSize: 12, fontWeight: 500, color: "var(--ink-5)" }}>
             3-year target
           </span>
         </div>
@@ -1236,7 +1236,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       </div>
 
       {/* SLICE 4b — one reports home: narrative report first, formal PDF beneath */}
-      <SectionHeader label="Your Reports" />
+      <SectionHeader label="Your reports" />
       <BrandReportSection
         results={profile?.brand_assessment_results}
         hasAssessment={!!profile?.brand_assessment_completed_at}
@@ -1246,10 +1246,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         <div style={{ marginTop: 16 }}>
           <div
             style={{
-              fontSize: 11,
-              fontWeight: 600,
-              letterSpacing: "0.1em",
-              color: "var(--ink-3)",
+              fontSize: 12,
+              fontWeight: 500,
+              color: "var(--ink-5)",
               marginBottom: 8,
             }}
           >

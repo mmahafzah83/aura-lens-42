@@ -1354,12 +1354,11 @@ aside .aura-theme-toggle {
 .aura-badge-recommended{ background: var(--a-50);  color: var(--a-700); }
 
 /* ─ Card border-radius normalization ─
-   Bumps any tiny radii (≤4px) on .glass-card / inline #fff cards up
-   to 14px so nothing looks unfinished. Scoped to avoid affecting
-   chips/inputs that legitimately want small radii. */
+   Page-level cards are unified at 16px. Scoped to avoid affecting
+   chips/buttons/inputs, which keep their own smaller radii. */
 .glass-card,
 .aura-card {
-  border-radius: 14px;
+  border-radius: 16px;
 }
 
 /* ─ Global warm card elevation ─
@@ -1376,12 +1375,30 @@ aside .aura-theme-toggle {
 [class*="rounded-2xl"]:hover {
   box-shadow: var(--shadow-lift);
 }
+/* ─ Interactive card hover — one consistent lift across the product ─ */
+.glass-card,
+.aura-card,
+.v23-pressable {
+  transition: transform 180ms ease, box-shadow 180ms ease,
+              background 180ms ease, border-color 180ms ease;
+}
+.glass-card:hover,
+.aura-card:hover,
+.v23-pressable:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--v23-card-hover, var(--shadow-lift));
+}
+@media (prefers-reduced-motion: reduce) {
+  .glass-card:hover,
+  .aura-card:hover,
+  .v23-pressable:hover { transform: none; }
+}
 /* Left-bordered alert cards: square the left corners */
 .aura-left-accent-card {
   border-top-left-radius: 0 !important;
   border-bottom-left-radius: 0 !important;
-  border-top-right-radius: 14px !important;
-  border-bottom-right-radius: 14px !important;
+  border-top-right-radius: 16px !important;
+  border-bottom-right-radius: 16px !important;
 }
 
 /* ─ Standard control radii ─ */

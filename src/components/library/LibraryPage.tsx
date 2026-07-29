@@ -325,7 +325,7 @@ const LibraryPage: React.FC<Props> = ({ onOpenCapture }) => {
             Library
           </div>
           <h1 style={{ margin: "8px 0 0", fontSize: 26, lineHeight: 1.15, fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-.01em" }}>
-            Library
+            Everything you've kept
           </h1>
           <p style={{ margin: "8px 0 0", fontSize: 14, color: "var(--text-secondary)", maxWidth: 620 }}>
             Everything you've captured, and what Aura made of it.
@@ -336,7 +336,7 @@ const LibraryPage: React.FC<Props> = ({ onOpenCapture }) => {
             <SegBtn active={view === "list"} onClick={() => setView("list")}><ListIcon size={13} />List</SegBtn>
             <SegBtn active={view === "grid"} onClick={() => setView("grid")}><LayoutGrid size={13} />Grid</SegBtn>
           </div>
-          <ButtonPrimary onClick={() => onOpenCapture?.()}><Plus size={13} />Capture</ButtonPrimary>
+          <ButtonPrimary onClick={() => onOpenCapture?.()}><Plus size={13} />Capture something</ButtonPrimary>
         </div>
       </div>
 
@@ -368,7 +368,7 @@ const LibraryPage: React.FC<Props> = ({ onOpenCapture }) => {
       </div>
 
       {loading ? (
-        <div style={{ ...MONO, fontSize: 11, color: "var(--text-muted)", padding: 20 }}>Loading library…</div>
+        <div style={{ ...MONO, fontSize: 11, color: "var(--text-muted)", padding: 20 }}>Opening your library…</div>
       ) : counts.all === 0 ? (
         <div
           data-testid="library-empty"
@@ -390,7 +390,7 @@ const LibraryPage: React.FC<Props> = ({ onOpenCapture }) => {
         </div>
       ) : filtered.length === 0 ? (
         <div style={{ ...MONO, fontSize: 11.5, color: "var(--text-muted)", padding: "22px 4px" }}>
-          Nothing here under “{chips.find(c => c.key === filter)?.label}” yet.
+          Nothing under “{chips.find(c => c.key === filter)?.label}” yet. Try another filter, or capture something and it lands here.
         </div>
       ) : (
         <>
