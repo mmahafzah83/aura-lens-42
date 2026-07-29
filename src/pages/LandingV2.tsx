@@ -154,7 +154,7 @@ const LANDING_V2_CSS = `
 }
 .aura-v2 .chip.t{border-color:rgba(54,197,176,.45);color:#8FE0D2;background:rgba(54,197,176,.08);}
 .aura-v2 .chip.o{border-color:rgba(196,92,86,.5);color:#E29C96;background:rgba(110,42,38,.14);}
-.aura-v2 .chip.a{border-color:rgba(214,167,72,.5);color:#EBC madeup;}
+.aura-v2 .chip.a{border-color:rgba(214,167,72,.5);color:#E7C67A;background:rgba(214,167,72,.12);}
 .aura-v2 .tl{display:grid;gap:14px;margin-bottom:16px;}
 .aura-v2 .tl li{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;}
 .aura-v2 .tl .tdot{width:8px;height:8px;border-radius:50%;background:var(--teal);margin-top:6px;}
@@ -366,7 +366,7 @@ const LANDING_V2_HTML = `
       <a class="btn btn-primary" href="/request-access">Request your access →</a>
       <a class="btn btn-ghost" href="#overnight">See last night's work</a>
     </div>
-    <p class="micro">30 seconds to ask · Decision within 24 hours <span data-seat-prefix=" · "><span class="seatline"></span></span></p>
+    <p class="micro">30 seconds to ask · Decision within 24 hours <span class="seatline seatsep"></span></p>
 
     <p class="exlabel">Example profile</p>
     <div class="herocards">
@@ -621,7 +621,7 @@ const LANDING_V2_HTML = `
       <div class="ctas"><a class="btn btn-primary" style="min-height:54px;font-size:14px" href="/request-access">Request your access →</a></div>
       <p class="micro">Takes 30 seconds · Decision within 24 hours</p>
       <p class="ar" dir="rtl" style="margin-top:22px;font-size:20px;color:#9FD9CF">حتى السوق يعرفك قبل ما يشوفك ✦</p>
-      <p class="micro">Private beta · By invitation only <span data-seat-prefix=" · "><span class="seatline"></span></span></p>
+      <p class="micro">Private beta · By invitation only <span class="seatline seatsep"></span></p>
     </div>
   </div>
 </section>
@@ -764,7 +764,8 @@ const LandingV2 = () => {
         const cap = Number(row?.cap);
         if (!Number.isFinite(claimed) || !Number.isFinite(cap) || cap <= 0) return;
         rootRef.current?.querySelectorAll(".seatline").forEach((el) => {
-          el.textContent = `${claimed} of ${cap} founding seats taken`;
+          const sep = el.classList.contains("seatsep") ? " · " : "";
+          el.textContent = `${sep}${claimed} of ${cap} founding seats taken`;
         });
       } catch {
         /* silent — the seat line simply stays empty */

@@ -28,6 +28,7 @@ import PageViewTracker from "./components/PageViewTracker";
 // Lazy-loaded heavy / rarely-visited routes
 // Old landing (src/pages/Landing.tsx) is unmounted but kept in the tree.
 const Landing = lazy(() => import("./pages/LandingV23"));
+const LandingV2 = lazy(() => import("./pages/LandingV2"));
 const TrendDetail = lazy(() => import("./pages/TrendDetail"));
 const CarouselStudio = lazy(() => import("./pages/CarouselStudio"));
 const EditionStudio = lazy(() => import("./pages/EditionStudio"));
@@ -100,6 +101,7 @@ const App = () => (
           >
           <Routes>
             <Route path="/" element={<Landing />} />
+            <Route path="/v2" element={<LandingV2 />} />
             <Route path="/home" element={<PasswordGate><Dashboard /></PasswordGate>} />
             <Route path="/dashboard" element={<PasswordGate><Dashboard /></PasswordGate>} />
             <Route path="/auth" element={<Auth />} />
