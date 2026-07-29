@@ -36,7 +36,7 @@ const SLOTS: Array<{ key: string; name: string; blurb: string; target: string }>
 
 const SectionLabel: React.FC<React.PropsWithChildren> = ({ children }) => (
   <div style={{
-    ...MONO, fontSize: 10.5, letterSpacing: ".14em", textTransform: "uppercase",
+    fontFamily: "var(--ff-ui)", fontSize: 12, fontWeight: 500,
     color: "var(--text-secondary)", marginBottom: 10,
   }}>{children}</div>
 );
@@ -203,7 +203,7 @@ export default function WidgetsPage() {
                 </div>
                 {body ?? (
                   <div style={{ ...MONO, fontSize: 11.5, color: "var(--text-muted)" }}>
-                    {metrics ? "No data for this yet." : "Measuring…"}
+                    {metrics ? "Nothing to measure here yet." : "Measuring…"}
                   </div>
                 )}
               </div>
@@ -213,7 +213,7 @@ export default function WidgetsPage() {
 
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
           <ButtonPrimary onClick={handleSave} disabled={saving || !dirty}>
-            {saving ? "Saving…" : "Save Home"}
+            {saving ? "Saving…" : "Save your Home"}
           </ButtonPrimary>
           <ButtonGhost onClick={() => setLayout({ ...DEFAULT_LAYOUT })}>Reset layout</ButtonGhost>
           {savedNote && (
