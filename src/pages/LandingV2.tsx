@@ -265,14 +265,14 @@ const LANDING_V2_CSS = `
   clip-path:polygon(38% 0,62% 0,100% 100%,0 100%);animation:v2beam 2.6s ease-in-out infinite;
 }
 @keyframes v2beam{0%,100%{opacity:.3;}50%{opacity:.85;}}
-.aura-v2 .bot .nm{margin-top:8px;font-family:var(--mono);font-size:8.5px;letter-spacing:1.6px;color:#7FCFC1;}
+.aura-v2 .bot .nm{margin-top:8px;text-transform:uppercase;font-family:var(--mono);font-size:8.5px;letter-spacing:1.6px;color:#7FCFC1;}
 .aura-v2 .lab .ready{
   position:absolute;right:18px;top:22px;border-radius:12px;border:1px solid rgba(54,197,176,.45);
   background:rgba(4,7,6,.86);padding:10px 13px;font-family:var(--mono);font-size:10px;letter-spacing:1.8px;
   color:#9FD9CF;opacity:0;animation:v2pop 9s ease-in-out infinite;
 }
 @keyframes v2pop{0%,72%{opacity:0;transform:translateY(6px) scale(.96);}80%,96%{opacity:1;transform:translateY(0) scale(1);}100%{opacity:0;transform:translateY(0) scale(1);}}
-.aura-v2 .lab .cap{position:absolute;left:18px;bottom:14px;font-family:var(--mono);font-size:10px;line-height:1.8;letter-spacing:1.2px;color:#7E8C87;}
+.aura-v2 .lab .cap{position:absolute;left:18px;bottom:10px;font-family:var(--mono);font-size:10px;line-height:1.8;letter-spacing:1.2px;color:#7E8C87;}
 .aura-v2 .lab .cap b{color:#9FD9CF;font-weight:500;}
 .aura-v2 .three{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px;}
 
