@@ -101,7 +101,7 @@ const OvernightPulse: React.FC<Props> = ({ variant, onOpen, interactive = true, 
         data-testid="overnight-chip"
         title={tooltip}
         aria-label={label}
-        disabled={!interactive}
+        tabIndex={interactive ? undefined : -1}
         onClick={interactive ? onOpen : undefined}
         onMouseEnter={interactive ? hover(true) : undefined}
         onMouseLeave={interactive ? hover(false) : undefined}
