@@ -358,7 +358,7 @@ const LANDING_V3_CSS = `
 }
 `;
 
-const MARK = `<svg class="mark" viewBox="0 0 64 64" aria-hidden="true" fill="none"><g stroke="currentColor" fill="currentColor" stroke-linecap="round"><circle cx="32" cy="32" r="6.85" stroke="none"/><line x1="32" y1="18.89" x2="32" y2="8.77" stroke-width="1.2"/><line x1="39.09" y1="20.97" x2="44.56" y2="12.45" stroke-width="1.2"/><line x1="43.92" y1="26.56" x2="53.13" y2="22.35" stroke-width="1.2"/><line x1="44.97" y1="33.87" x2="55" y2="35.31" stroke-width="1.2"/><line x1="41.91" y1="40.58" x2="49.56" y2="47.22" stroke-width="1.2"/><line x1="35.69" y1="44.58" x2="38.55" y2="54.29" stroke-width="1.2"/><line x1="28.31" y1="44.58" x2="25.45" y2="54.29" stroke-width="1.2"/><line x1="22.09" y1="40.58" x2="14.44" y2="47.22" stroke-width="1.2"/><line x1="19.03" y1="33.87" x2="9" y2="35.31" stroke-width="1.2"/><line x1="20.08" y1="26.56" x2="10.87" y2="22.35" stroke-width="1.2"/><line x1="24.91" y1="20.97" x2="19.44" y2="12.45" stroke-width="1.2"/></g><g stroke="#36C5B0" fill="#36C5B0" stroke-linecap="round"><line x1="40.07" y1="21.67" x2="49.24" y2="9.94" stroke-width="1.55"/><circle cx="49.24" cy="9.94" r="1.61"/></g></svg>`;
+const MARK = `<svg class="mark" viewBox="0 0 64 64" aria-hidden="true" fill="none"><g stroke="currentColor" fill="currentColor" stroke-linecap="round"><circle cx="32" cy="32" r="6.85" stroke="none"/><line x1="32" y1="18.89" x2="32" y2="8.77" stroke-width="1.2"/><line x1="39.09" y1="20.97" x2="44.56" y2="12.45" stroke-width="1.2"/><line x1="43.92" y1="26.56" x2="53.13" y2="22.35" stroke-width="1.2"/><line x1="44.97" y1="33.87" x2="55" y2="35.31" stroke-width="1.2"/><line x1="41.91" y1="40.58" x2="49.56" y2="47.22" stroke-width="1.2"/><line x1="35.69" y1="44.58" x2="38.55" y2="54.29" stroke-width="1.2"/><line x1="28.31" y1="44.58" x2="25.45" y2="54.29" stroke-width="1.2"/><line x1="22.09" y1="40.58" x2="14.44" y2="47.22" stroke-width="1.2"/><line x1="19.03" y1="33.87" x2="9" y2="35.31" stroke-width="1.2"/><line x1="20.08" y1="26.56" x2="10.87" y2="22.35" stroke-width="1.2"/><line x1="24.91" y1="20.97" x2="19.44" y2="12.45" stroke-width="1.2"/></g><g stroke="#00CEC9" fill="#00CEC9" stroke-linecap="round"><line x1="40.07" y1="21.67" x2="49.24" y2="9.94" stroke-width="1.55"/><circle cx="49.24" cy="9.94" r="1.61"/></g></svg>`;
 
 const LANDING_V3_HTML = `
 <nav class="nav">
@@ -456,7 +456,7 @@ const LANDING_V3_HTML = `
       </div>
 
       <div class="card">
-        <p class="ctitle" style="color:#797063">What people pay instead · per month</p>
+        <p class="ctitle" style="color:#5B6673">What people pay instead · per month</p>
         <div class="costrow"><span>Ghostwriter</span><span>$50 – $400</span></div>
         <div class="costrow"><span>Positioning consultant</span><span>$30 – $300</span></div>
         <div class="costrow"><span>Scheduling tool</span><span>$20 – $100</span></div>
@@ -465,10 +465,10 @@ const LANDING_V3_HTML = `
         <div class="costrow total"><span>Total</span><span>~$150 – ~$1,000</span></div>
         <div class="freeblock">
           <p class="f">Free</p>
-          <p class="ctitle" style="margin-top:8px;color:#797063">During founding beta</p>
-          <p class="ctitle" style="margin-top:6px;color:#797063"><span class="seatline"></span></p>
+          <p class="ctitle" style="margin-top:8px;color:#5B6673">During founding beta</p>
+          <p class="ctitle" style="margin-top:6px;color:#5B6673"><span class="seatline"></span></p>
           <a class="btn btn-primary" style="margin-top:16px" href="/request-access">Request your access</a>
-          <p class="ctitle" style="margin-top:12px;color:#797063">No card · No commitment</p>
+          <p class="ctitle" style="margin-top:12px;color:#5B6673">No card · No commitment</p>
         </div>
       </div>
     </div>
@@ -476,7 +476,7 @@ const LANDING_V3_HTML = `
 </section>
 
 <!-- 3 · WHAT'S IN IT FOR YOU -->
-<section class="v3night">
+<section class="v3page">
   <div class="wrap">
     <span class="eyebrow">What's in it for you</span>
     <h2>What actually changes <em>about your week.</em></h2>
@@ -523,7 +523,7 @@ const LANDING_V3_HTML = `
 </section>
 
 <!-- 4 · THE OVERNIGHT -->
-<section class="v3night" id="overnight">
+<section class="v3page" id="overnight">
   <div class="wrap">
     <span class="eyebrow">The overnight</span>
     <h2>You sleep. <em>The team works.</em></h2>
@@ -579,7 +579,7 @@ const LANDING_V3_HTML = `
 </section>
 
 <!-- 6 · WHERE THIS GOES NEXT + CLOSE -->
-<section class="v3night" id="request">
+<section class="v3page" id="request">
   <div class="wrap">
     <span class="eyebrow">Where this goes next</span>
     <h2>Today it makes you visible. <em>Next, it makes you sharper.</em></h2>
@@ -589,7 +589,7 @@ const LANDING_V3_HTML = `
       <div class="card"><span class="cs">Coming soon</span><h3 style="margin-top:12px">Gap to the role above</h3><p class="body">The capability evidence still missing for the next seat.</p></div>
       <div class="card"><span class="cs">Coming soon</span><h3 style="margin-top:12px">CV from evidence</h3><p class="body">A record assembled from what you proved, not what you claimed.</p></div>
     </div>
-    <p class="working" style="border-color:rgba(237,231,217,.18);color:#7E8C87">This is a roadmap, not a promise. We'd rather show you the direction than pretend everything already works.</p>
+    <p class="working" style="border-color:#D6DCE4;color:#5B6673">This is a roadmap, not a promise. We'd rather show you the direction than pretend everything already works.</p>
 
     <div style="margin-top:34px">
       <details class="d"><summary>Your material stays yours</summary>
@@ -634,7 +634,7 @@ const LANDING_V3_HTML = `
       <p class="lede" style="margin:16px auto 0;text-align:center">A personal intelligence team that learns who you are, works every night, and waits for your approval.</p>
       <div class="ctas"><a class="btn btn-primary" style="min-height:54px;font-size:14px" href="/request-access">Request your access →</a></div>
       <p class="micro">Takes 30 seconds · Decision within 24 hours</p>
-      <p class="ar" dir="rtl" style="margin-top:22px;font-size:20px;color:#9FD9CF">حتى السوق يعرفك قبل ما يشوفك ✦</p>
+      <p class="ar" dir="rtl" style="margin-top:22px;font-size:20px;color:#5EE3DC">حتى السوق يعرفك قبل ما يشوفك ✦</p>
       <p class="micro">Private beta · By invitation only <span class="seatline seatsep"></span></p>
     </div>
   </div>
