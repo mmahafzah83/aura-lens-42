@@ -62,10 +62,8 @@ function ZoneLabel({ n, title, note }: { n: string; title: string; note?: string
         style={{
           fontFamily: "var(--ff-ui)",
           fontSize: 12,
-          fontWeight: 700,
-          letterSpacing: ".14em",
-          textTransform: "uppercase",
-          color: "var(--text-primary)",
+          fontWeight: 500,
+          color: "var(--text-muted)",
         }}
       >
         {title}
@@ -226,7 +224,7 @@ export default function ComposerV2({
     <div style={{ display: "flex", flexDirection: "column", gap: 34 }}>
       {/* ── ZONE 1 — START ───────────────────────────────────────────── */}
       <section aria-label="Start">
-        <ZoneLabel n="01" title="Start" note="Ranked from what your signals actually did." />
+        <ZoneLabel n="01" title="Start from a signal" note="Ranked from what your signals actually did." />
 
         {loading ? (
           <div
@@ -256,7 +254,7 @@ export default function ComposerV2({
             }}
           >
             {totalSignals === 0
-              ? "You have no signals yet — capture something and Aura will have a reason to suggest."
+              ? "Your strongest starting points will sit here, drawn from your own signals. There are none yet — one capture is enough to begin."
               : "Nothing stands out to start from right now. Write from a topic below."}
             {totalSignals === 0 && onOpenCapture && (
               <div style={{ marginTop: 12 }}>
@@ -315,7 +313,7 @@ export default function ComposerV2({
 
       {/* ── ZONE 2 + 3 — WRITE, then PUBLISH ─────────────────────────── */}
       <section aria-label="Write" id="composer-zone-write" style={{ minWidth: 0 }}>
-        <ZoneLabel n="02" title="Write" note="Aura drafts it. You own the last edit." />
+        <ZoneLabel n="02" title="Write in your voice" note="Aura drafts it. You own the last edit." />
         <div style={{ minWidth: 0 }}>
           <CreateTab
             signalPrefill={effectivePrefill as any}
