@@ -53,10 +53,9 @@ const Card: React.FC<React.PropsWithChildren<{ style?: React.CSSProperties }>> =
 const SectionLabel: React.FC<React.PropsWithChildren> = ({ children }) => (
   <div
     style={{
-      ...MONO,
-      fontSize: 10.5,
-      letterSpacing: ".14em",
-      textTransform: "uppercase",
+      fontFamily: "var(--ff-ui)",
+      fontSize: 12,
+      fontWeight: 500,
       color: "var(--text-muted)",
       marginBottom: 10,
     }}
@@ -212,7 +211,7 @@ export default function MomentumPage() {
   if (!isReady || !loaded) {
     return (
       <div style={{ ...MONO, fontSize: 12, color: "var(--text-muted)", padding: "40px 0" }}>
-        Loading momentum…
+        Reading your momentum…
       </div>
     );
   }
@@ -223,9 +222,9 @@ export default function MomentumPage() {
       <header style={{ display: "grid", gap: 6 }}>
         <h1
           style={{
-            fontFamily: "var(--font-display)",
+            fontFamily: "var(--ff-ui)",
             fontSize: 26,
-            fontWeight: 700,
+            fontWeight: 600,
             letterSpacing: "-0.02em",
             color: "var(--text-primary)",
             margin: 0,
