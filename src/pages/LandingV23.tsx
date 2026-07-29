@@ -360,7 +360,7 @@ const ValueMath: React.FC = () => (
           maxWidth: "52ch",
         }}
       >
-        A working month of thinking, written off every year… eight seconds a link.
+        A working month of thinking, written off every year… one tap a link.
       </p>
     </Reveal>
   </Section>
@@ -559,7 +559,7 @@ const Measured: React.FC = () => (
 /* ── 7 · HOW IT WORKS ── */
 
 const STEPS = [
-  { n: "01", t: "You capture", b: "A link, a document, a voice note. Eight seconds, on the way out of the meeting." },
+  { n: "01", t: "You capture", b: "A link, a document, a voice note. One tap, on the way out of the meeting." },
   { n: "02", t: "Aura finds the signal", b: "It reads across everything you have captured and works out what is actually repeating." },
   { n: "03", t: "The Overnight writes", b: "While you sleep, a draft is built from your own material, in your own register." },
   { n: "04", t: "You publish or bin it", b: "One read. Ship it, edit it, or throw it away — the system learns either way." },

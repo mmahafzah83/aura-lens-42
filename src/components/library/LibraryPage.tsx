@@ -382,7 +382,7 @@ const LibraryPage: React.FC<Props> = ({ onOpenCapture }) => {
             Nothing in here yet — and that's the whole job
           </h2>
           <p style={{ margin: "10px auto 0", fontSize: 14, lineHeight: 1.6, color: "var(--text-secondary)", maxWidth: 520 }}>
-            Aura can't find a signal until it has something to read. Paste one link you found interesting this week. Eight seconds, and the machine starts working tonight.
+            Aura can't find a signal until it has something to read. Paste one link you found interesting this week. One tap, and the machine starts working tonight.
           </p>
           <div style={{ marginTop: 18, display: "flex", justifyContent: "center" }}>
             <ButtonPrimary onClick={() => onOpenCapture?.("", undefined)}><Plus size={13} />Paste your first link</ButtonPrimary>
