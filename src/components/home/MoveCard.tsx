@@ -202,6 +202,40 @@ export default function MoveCard({ userId, onOpenDraft, onStartSignalPost }: Mov
     );
   }
 
+  // STATE B — everything on offer today was passed on.
+  if (dismissedCount > 0) {
+    return (
+      <Shell accent="var(--rule-outer)">
+        <Kicker>Your one move</Kicker>
+        <Headline>
+          You passed on today’s <span style={MONO}>{dismissedCount}</span> move{dismissedCount === 1 ? "" : "s"}.
+        </Headline>
+        <Support>They return tomorrow morning. Changed your mind?</Support>
+        <div style={{ display: "grid", gap: 8, marginTop: 16 }}>
+          <div>
+            <TextLink onClick={() => { clearDismissals([draft?.id, signal?.id]); setTick((t) => t + 1); }}>
+              Bring them back →
+            </TextLink>
+          </div>
+          <Consequence>
+            Or{" "}
+            <button
+              type="button"
+              onClick={() => { try { window.dispatchEvent(new CustomEvent("aura:open-capture")); } catch { /* noop */ } }}
+              style={{
+                background: "none", border: 0, padding: 0, cursor: "pointer", font: "inherit",
+                color: "var(--text-secondary)", textDecoration: "underline", textUnderlineOffset: 3,
+              }}
+            >
+              capture something new
+            </button>
+            .
+          </Consequence>
+        </div>
+      </Shell>
+    );
+  }
+
   // STATE C — honest empty.
   return (
     <Shell accent="var(--rule-outer)">
