@@ -17,8 +17,8 @@ import { widgetContent, goTab } from "./WidgetCards";
  * not exist yet — only things we can genuinely build — each with a real vote
  * count from a SECURITY DEFINER tally that returns aggregates only.
  *
- * Colour law: blue = your turn (Save Home, Vote, Send); amber only on the
- * fading-signals widget, which is a real expiry clock.
+ * Colour law: blue = your turn (Save Home, Vote, Send); no amber here — no
+ * widget on this page has a real clock behind it.
  */
 
 const FF = { fontFamily: "var(--ff-ui)" } as const;

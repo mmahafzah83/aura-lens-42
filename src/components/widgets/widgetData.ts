@@ -7,7 +7,7 @@ import { loadPostCounts, isPublishedPost } from "@/lib/postProvenance";
  * fully paged fetch. Never `array.length` of a limited fetch.
  */
 
-export type WidgetKey = "language" | "rhythm" | "fading" | "drafts";
+export type WidgetKey = "language" | "rhythm" | "quiet" | "drafts";
 
 export interface WidgetDef {
   key: WidgetKey;
@@ -20,14 +20,14 @@ export interface WidgetDef {
 export const WIDGET_DEFS: WidgetDef[] = [
   { key: "language",     name: "Language balance", blurb: "Arabic and English across your published posts." },
   { key: "rhythm",       name: "Capture rhythm",   blurb: "Consecutive weeks with at least one capture." },
-  { key: "fading",       name: "Fading signals",   blurb: "Live signals about to fade with nothing published against them." },
+  { key: "quiet",        name: "Quiet signals",    blurb: "Active signals with no new evidence for 45+ days and nothing published against them." },
   { key: "drafts",       name: "Drafts waiting",   blurb: "Drafts you started and have not published yet." },
 ];
 
 export type WidgetLayout = Record<string, boolean>;
 
 export const DEFAULT_LAYOUT: WidgetLayout = {
-  language: false, rhythm: true, fading: true, drafts: true,
+  language: false, rhythm: true, quiet: true, drafts: true,
 };
 
 export function normaliseLayout(raw: unknown): WidgetLayout {
@@ -62,7 +62,7 @@ export async function saveLayout(userId: string, layout: WidgetLayout) {
 export interface WidgetMetrics {
   language: { arabic: number; english: number; total: number } | null;
   rhythm: { weeks: number } | null;
-  fading: { count: number; nearestDays: number | null } | null;
+  quiet: { count: number; quietestDays: number | null } | null;
   drafts: { count: number; oldestDays: number | null } | null;
 }
 
@@ -123,9 +123,9 @@ async function pagedSelect(table: string, cols: string, userId: string, extra?: 
   return rows;
 }
 
-/** A signal fades 30 days after its newest evidence (signal-decay-engine:
- *  half-life 30 days, fresh threshold 0.5 → momentum drops below fresh at +30d). */
-const FADE_DAYS = 30;
+/** "Quiet" = no new evidence for 45+ days. There is no fade/expiry column on
+ *  strategic_signals, so this is a measured age, never a countdown. */
+const QUIET_DAYS = 45;
 
 export async function loadWidgetMetrics(userId: string): Promise<WidgetMetrics> {
   const [postRows, entryRows, signalRows, draftRows] = await Promise.all([
@@ -145,7 +145,7 @@ export async function loadWidgetMetrics(userId: string): Promise<WidgetMetrics> 
 
   const weeks = new Set(entryRows.map(r => weekKey(r.created_at)));
 
-  // Fading signals — expiry clock, and only signals nothing was written against.
+  // Quiet signals — measured silence, and only signals nothing was written against.
   // A post links to a signal through source_metadata.signal_ids, never source_type.
   const linked = new Set<string>();
   for (const p of postRows) {
@@ -153,15 +153,13 @@ export async function loadWidgetMetrics(userId: string): Promise<WidgetMetrics> 
     if (Array.isArray(ids)) for (const id of ids) linked.add(String(id));
   }
   const now = Date.now();
-  const fadeInDays: number[] = [];
+  const quietAges: number[] = [];
   for (const s of signalRows) {
     if (!s.last_evidence_at || linked.has(String(s.id))) continue;
-    const d = Math.ceil(
-      (new Date(s.last_evidence_at).getTime() + FADE_DAYS * 86400000 - now) / 86400000,
-    );
-    if (d >= 0 && d <= 30) fadeInDays.push(d);
+    const age = Math.floor((now - new Date(s.last_evidence_at).getTime()) / 86400000);
+    if (age >= QUIET_DAYS) quietAges.push(age);
   }
-  const fading = { count: fadeInDays.length, nearestDays: fadeInDays.length ? Math.min(...fadeInDays) : null };
+  const quiet = { count: quietAges.length, quietestDays: quietAges.length ? Math.max(...quietAges) : null };
 
   // Drafts waiting
   const oldest = draftRows.reduce<number | null>((acc, r) => {
@@ -173,7 +171,7 @@ export async function loadWidgetMetrics(userId: string): Promise<WidgetMetrics> 
   return {
     language,
     rhythm: { weeks: streakFromWeeks(weeks) },
-    fading,
+    quiet,
     drafts,
   };
 }
