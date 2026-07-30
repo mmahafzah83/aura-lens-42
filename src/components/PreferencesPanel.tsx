@@ -265,6 +265,76 @@ export default function PreferencesPanel({
 
   if (!open) return null;
 
+  const sections = (
+    <>
+      {/* YOUR PROFILE */}
+      <SectionHeader>Your profile</SectionHeader>
+      <Row label="Name" value={displayName} onClick={onEditField ? () => onEditField("first_name") : undefined} />
+      <Row label="Firm" value={profile?.firm?.trim() || "Not set"} onClick={onEditField ? () => onEditField("firm") : undefined} />
+      <Row label="Sector" value={profile?.sector_focus?.trim() || "Not set"} onClick={onEditField ? () => onEditField("sector_focus") : undefined} />
+
+      {/* INTELLIGENCE */}
+      <SectionHeader>Intelligence</SectionHeader>
+      <ToggleRow
+        label="Monday intelligence brief"
+        description="Signals, rhythm, and one recommended move. Every Monday."
+        on={weeklyBriefOn}
+        onChange={(v) => updatePref("weekly_brief", v)}
+      />
+      <ToggleRow
+        label="Daily nudges"
+        description="In-app reminders when signals need attention or content is due."
+        on={dailyNudgesOn}
+        onChange={(v) => updatePref("daily_nudges", v)}
+      />
+      <ToggleRow
+        label="Aura reads for you overnight"
+        description="One relevant finding, only when it clears the bar. Turn off any time."
+        on={overnightReadingOn}
+        onChange={(v) => updatePref("overnight_reading_enabled", v)}
+      />
+
+      {/* PRIVACY */}
+      <SectionHeader>Privacy</SectionHeader>
+      <ToggleRow
+        label="Contribute to shared learning"
+        description="Let Aura learn anonymous, aggregated patterns from how members across your field use it — never your content, identity, or drafts. Turn off anytime."
+        on={sharedLearningOn}
+        onChange={updateSharedLearning}
+      />
+
+      {/* ACCOUNT */}
+      {(onChangePassword || onRetakeBrandAssessment || variant === "panel") && (
+        <SectionHeader>Account</SectionHeader>
+      )}
+      {onChangePassword && <Row label="Change password" onClick={onChangePassword} />}
+      {onRetakeBrandAssessment && <Row label="Retake brand assessment" onClick={onRetakeBrandAssessment} />}
+      {variant === "panel" && <Row label="Sign out" onClick={onSignOut} chevron={false} danger />}
+
+      {email && (
+        <div style={{ padding: "20px 24px 28px", fontSize: 11, color: "var(--ink-2)", textAlign: "center", fontFamily: "var(--font-body)" }}>
+          Signed in as {email}
+        </div>
+      )}
+    </>
+  );
+
+  if (variant === "inline") {
+    return (
+      <div
+        style={{
+          background: "var(--paper)",
+          color: "var(--ink)",
+          border: "0.5px solid var(--rule)",
+          borderRadius: 12,
+          overflow: "hidden",
+        }}
+      >
+        {sections}
+      </div>
+    );
+  }
+
   const node = (
     <div
       role="dialog"
