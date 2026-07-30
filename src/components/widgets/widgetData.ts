@@ -1,6 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { bandFromScore, TIER_BANDS } from "@/hooks/useTierFromImprint";
-import { countPosts, loadPostCounts, isPublishedPost } from "@/lib/postProvenance";
+import { loadPostCounts, isPublishedPost } from "@/lib/postProvenance";
 
 /**
  * widgetData — every number on the Widgets page and in the Home widget region
@@ -8,8 +7,7 @@ import { countPosts, loadPostCounts, isPublishedPost } from "@/lib/postProvenanc
  * fully paged fetch. Never `array.length` of a limited fetch.
  */
 
-export type WidgetKey =
-  | "imprint" | "live_signals" | "overnight" | "language" | "rhythm" | "published";
+export type WidgetKey = "language" | "rhythm" | "fading" | "drafts";
 
 export interface WidgetDef {
   key: WidgetKey;
@@ -20,22 +18,22 @@ export interface WidgetDef {
 }
 
 export const WIDGET_DEFS: WidgetDef[] = [
-  { key: "imprint",      name: "Imprint",          blurb: "Your score and tier, and the points to the next band." },
-  { key: "live_signals", name: "Live signals",     blurb: "Active signals across everything you've captured." },
-  { key: "overnight",    name: "The Overnight",    blurb: "When Aura last ran, and how many recent nights produced something.", machine: true },
   { key: "language",     name: "Language balance", blurb: "Arabic and English across your published posts." },
   { key: "rhythm",       name: "Capture rhythm",   blurb: "Consecutive weeks with at least one capture." },
-  { key: "published",    name: "Published",        blurb: "Live on LinkedIn, and published through Aura." },
+  { key: "fading",       name: "Fading signals",   blurb: "Live signals about to fade with nothing published against them." },
+  { key: "drafts",       name: "Drafts waiting",   blurb: "Drafts you started and have not published yet." },
 ];
 
 export type WidgetLayout = Record<string, boolean>;
 
 export const DEFAULT_LAYOUT: WidgetLayout = {
-  imprint: true, live_signals: true, overnight: true,
-  language: false, rhythm: false, published: true,
+  language: false, rhythm: true, fading: true, drafts: true,
 };
 
 export function normaliseLayout(raw: unknown): WidgetLayout {
+  // Retired widgets (imprint, live_signals, overnight, published) are simply
+  // not in WIDGET_DEFS any more, so a saved layout containing them drops them
+  // silently here — no error, no empty tile.
   const out: WidgetLayout = { ...DEFAULT_LAYOUT };
   if (raw && typeof raw === "object") {
     for (const d of WIDGET_DEFS) {
@@ -62,21 +60,29 @@ export async function saveLayout(userId: string, layout: WidgetLayout) {
 // ── metrics ────────────────────────────────────────────────────────────────
 
 export interface WidgetMetrics {
-  imprint: { score: number; tier: string; toNext: number | null; nextTier: string | null } | null;
-  liveSignals: number | null;
-  overnight: { lastRunAt: string | null; nights: number; window: number } | null;
   language: { arabic: number; english: number; total: number } | null;
   rhythm: { weeks: number } | null;
-  published: { live: number; throughAura: number } | null;
+  fading: { count: number; nearestDays: number | null } | null;
+  drafts: { count: number; oldestDays: number | null } | null;
 }
 
 const ARABIC = /[\u0600-\u06FF]/;
 
+/**
+ * Week key = the local Monday that starts the calendar week containing `d`
+ * (weeks run Monday→Sunday). Formatted from local Y-M-D parts: using
+ * toISOString() here shifted every key back a day in positive-offset zones,
+ * which is what made the streak read 0.
+ */
+function localDayKey(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
 function weekKey(iso: string): string {
   const d = new Date(iso);
-  const off = (d.getDay() + 6) % 7;
-  const monday = new Date(d.getFullYear(), d.getMonth(), d.getDate() - off);
-  return monday.toISOString().slice(0, 10);
+  const off = (d.getDay() + 6) % 7; // 0 = Monday
+  return localDayKey(new Date(d.getFullYear(), d.getMonth(), d.getDate() - off));
 }
 
 function currentWeekKey(): string { return weekKey(new Date().toISOString()); }
@@ -84,9 +90,9 @@ function currentWeekKey(): string { return weekKey(new Date().toISOString()); }
 /** Consecutive weeks with >= 1 capture, counted back from this week (or last week). */
 export function streakFromWeeks(keys: Set<string>): number {
   const step = (k: string, back: number) => {
-    const d = new Date(`${k}T00:00:00`);
-    d.setDate(d.getDate() - 7 * back);
-    return d.toISOString().slice(0, 10);
+    const [y, m, day] = k.split("-").map(Number);
+    const d = new Date(y, m - 1, day - 7 * back);
+    return localDayKey(d);
   };
   const now = currentWeekKey();
   let start = now;
@@ -117,50 +123,17 @@ async function pagedSelect(table: string, cols: string, userId: string, extra?: 
   return rows;
 }
 
+/** A signal fades 30 days after its newest evidence (signal-decay-engine:
+ *  half-life 30 days, fresh threshold 0.5 → momentum drops below fresh at +30d). */
+const FADE_DAYS = 30;
+
 export async function loadWidgetMetrics(userId: string): Promise<WidgetMetrics> {
-  const [snap, signalCount, findingLast, findingFirst, findingRecent, postRows, entryRows] = await Promise.all([
-    supabase.from("imprint_snapshots").select("imprint, tier")
-      .eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
-    supabase.from("strategic_signals").select("id", { count: "exact", head: true })
-      .eq("user_id", userId).eq("status", "active"),
-    supabase.from("agent_findings").select("created_at")
-      .eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
-    supabase.from("agent_findings").select("created_at")
-      .eq("user_id", userId).order("created_at", { ascending: true }).limit(1).maybeSingle(),
-    supabase.from("agent_findings").select("created_at")
-      .eq("user_id", userId)
-      .gte("created_at", new Date(Date.now() - 7 * 86400000).toISOString()),
-    pagedSelect("linkedin_posts", "source_type, tracking_status, post_text, published_at, created_at", userId),
+  const [postRows, entryRows, signalRows, draftRows] = await Promise.all([
+    pagedSelect("linkedin_posts", "source_type, tracking_status, post_text, published_at, created_at, source_metadata", userId),
     pagedSelect("entries", "created_at", userId),
+    pagedSelect("strategic_signals", "id, last_evidence_at", userId, (q: any) => q.eq("status", "active")),
+    pagedSelect("linkedin_posts", "created_at", userId, (q: any) => q.eq("tracking_status", "draft")),
   ]);
-
-  // Imprint
-  let imprint: WidgetMetrics["imprint"] = null;
-  const score = (snap.data as any)?.imprint as number | null | undefined;
-  if (score != null) {
-    const band = bandFromScore(score);
-    const idx = band ? TIER_BANDS.findIndex(b => b.key === band.key) : -1;
-    const next = idx >= 0 && idx < TIER_BANDS.length - 1 ? TIER_BANDS[idx + 1] : null;
-    imprint = {
-      score: Math.round(score),
-      tier: band?.name ?? ((snap.data as any)?.tier ?? "—"),
-      toNext: next ? Math.max(0, next.min - Math.round(score)) : null,
-      nextTier: next?.name ?? null,
-    };
-  }
-
-  // Overnight — real window, never padded to seven
-  const lastRunAt = (findingLast.data as any)?.created_at ?? null;
-  let overnight: WidgetMetrics["overnight"] = null;
-  if (lastRunAt) {
-    const nights = new Set(
-      ((findingRecent.data || []) as Array<{ created_at: string }>)
-        .map(r => r.created_at.slice(0, 10)),
-    ).size;
-    const firstAt = (findingFirst.data as any)?.created_at ?? lastRunAt;
-    const daysKnown = Math.ceil((Date.now() - new Date(firstAt).getTime()) / 86400000);
-    overnight = { lastRunAt, nights, window: Math.max(nights, Math.min(7, Math.max(1, daysKnown))) };
-  }
 
   // Language balance — over published posts that actually carry text
   const published = postRows.filter(isPublishedPost);
@@ -170,16 +143,38 @@ export async function loadWidgetMetrics(userId: string): Promise<WidgetMetrics> 
     ? { arabic, english: withText.length - arabic, total: withText.length }
     : null;
 
-  const counts = countPosts(postRows);
   const weeks = new Set(entryRows.map(r => weekKey(r.created_at)));
 
+  // Fading signals — expiry clock, and only signals nothing was written against.
+  // A post links to a signal through source_metadata.signal_ids, never source_type.
+  const linked = new Set<string>();
+  for (const p of postRows) {
+    const ids = (p.source_metadata as any)?.signal_ids;
+    if (Array.isArray(ids)) for (const id of ids) linked.add(String(id));
+  }
+  const now = Date.now();
+  const fadeInDays: number[] = [];
+  for (const s of signalRows) {
+    if (!s.last_evidence_at || linked.has(String(s.id))) continue;
+    const d = Math.ceil(
+      (new Date(s.last_evidence_at).getTime() + FADE_DAYS * 86400000 - now) / 86400000,
+    );
+    if (d >= 0 && d <= 30) fadeInDays.push(d);
+  }
+  const fading = { count: fadeInDays.length, nearestDays: fadeInDays.length ? Math.min(...fadeInDays) : null };
+
+  // Drafts waiting
+  const oldest = draftRows.reduce<number | null>((acc, r) => {
+    const age = Math.floor((now - new Date(r.created_at).getTime()) / 86400000);
+    return acc == null || age > acc ? age : acc;
+  }, null);
+  const drafts = { count: draftRows.length, oldestDays: oldest };
+
   return {
-    imprint,
-    liveSignals: signalCount.count ?? null,
-    overnight,
     language,
     rhythm: { weeks: streakFromWeeks(weeks) },
-    published: { live: counts.live, throughAura: counts.throughAura },
+    fading,
+    drafts,
   };
 }
 
