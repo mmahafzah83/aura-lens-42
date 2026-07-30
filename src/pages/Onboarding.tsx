@@ -953,7 +953,7 @@ const Onboarding = () => {
           className="mb-6"
           style={{
             fontSize: 18,
-            fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+            fontFamily: "var(--font-mono)",
             color: "var(--ink)",
             wordBreak: "break-all",
           }}
