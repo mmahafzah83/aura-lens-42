@@ -8,8 +8,7 @@ import { countPosts, loadPostCounts, isPublishedPost } from "@/lib/postProvenanc
  * fully paged fetch. Never `array.length` of a limited fetch.
  */
 
-export type WidgetKey =
-  | "imprint" | "live_signals" | "overnight" | "language" | "rhythm" | "published";
+export type WidgetKey = "language" | "rhythm" | "fading" | "drafts";
 
 export interface WidgetDef {
   key: WidgetKey;
@@ -20,22 +19,22 @@ export interface WidgetDef {
 }
 
 export const WIDGET_DEFS: WidgetDef[] = [
-  { key: "imprint",      name: "Imprint",          blurb: "Your score and tier, and the points to the next band." },
-  { key: "live_signals", name: "Live signals",     blurb: "Active signals across everything you've captured." },
-  { key: "overnight",    name: "The Overnight",    blurb: "When Aura last ran, and how many recent nights produced something.", machine: true },
   { key: "language",     name: "Language balance", blurb: "Arabic and English across your published posts." },
   { key: "rhythm",       name: "Capture rhythm",   blurb: "Consecutive weeks with at least one capture." },
-  { key: "published",    name: "Published",        blurb: "Live on LinkedIn, and published through Aura." },
+  { key: "fading",       name: "Fading signals",   blurb: "Live signals about to fade with nothing published against them." },
+  { key: "drafts",       name: "Drafts waiting",   blurb: "Drafts you started and have not published yet." },
 ];
 
 export type WidgetLayout = Record<string, boolean>;
 
 export const DEFAULT_LAYOUT: WidgetLayout = {
-  imprint: true, live_signals: true, overnight: true,
-  language: false, rhythm: false, published: true,
+  language: false, rhythm: true, fading: true, drafts: true,
 };
 
 export function normaliseLayout(raw: unknown): WidgetLayout {
+  // Retired widgets (imprint, live_signals, overnight, published) are simply
+  // not in WIDGET_DEFS any more, so a saved layout containing them drops them
+  // silently here — no error, no empty tile.
   const out: WidgetLayout = { ...DEFAULT_LAYOUT };
   if (raw && typeof raw === "object") {
     for (const d of WIDGET_DEFS) {
