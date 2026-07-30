@@ -104,7 +104,7 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
     }
     ctx.closePath();
     const cs = getComputedStyle(document.documentElement);
-    const brand = cs.getPropertyValue("--brand").trim() || "#B08D3A";
+    const brand = cs.getPropertyValue("--act").trim();
     const ink3 = cs.getPropertyValue("--ink-3").trim() || "#B8AE99";
     ctx.fillStyle = "rgba(197, 165, 90, 0.12)";
     ctx.fill();
