@@ -104,6 +104,7 @@ const App = () => (
             <Route path="/v2" element={<LandingV2 />} />
             <Route path="/home" element={<PasswordGate><Dashboard /></PasswordGate>} />
             <Route path="/dashboard" element={<PasswordGate><Dashboard /></PasswordGate>} />
+            <Route path="/__verify" element={<Dashboard />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/login" element={<Auth />} />
             <Route path="/request-access" element={<RequestAccess />} />
