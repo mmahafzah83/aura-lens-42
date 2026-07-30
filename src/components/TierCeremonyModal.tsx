@@ -43,7 +43,7 @@ const TIER_QUOTES: Record<string, string> = {
 
 
 const BG = "#0c0b0a";
-const GOLD = "#D4B056";
+const GOLD = "var(--act)";
 const GOLD_LINE = "rgba(212,176,86,.25)";
 const TEXT = "#f0ede8";
 const TEXT_MUTED = "rgba(240,237,232,.55)";
