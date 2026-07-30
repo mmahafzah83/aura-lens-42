@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Moon, CalendarDays, CalendarRange } from "lucide-react";
+import { Moon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import { TIER_BANDS, bandFromKey, bandFromScore } from "@/hooks/useTierFromImprint";
@@ -11,14 +11,11 @@ import { filterPublishedRows, postEffectiveDate } from "@/lib/postProvenance";
  * Read-only. Every figure comes from a row that exists:
  *  - funnel        → public.momentum_funnel() (captures → in a signal → signals → published)
  *  - weekly grid   → entries.created_at + linkedin_posts (published) per ISO week
- *  - tier          → score_snapshots (latest score + EF-computed tier key)
+ *  - score/tier    → imprint_snapshots (latest row only — same source as Home)
  *  - milestones    → user_milestones (earned rows only)
  *  - daily loop    → real pg_cron times + the user's own overnight setting
  *
- * Deliberately NOT rendered: the weekly plan and the monthly page. The moves
- * engine was retired and the monthly page was never built, so both are shown
- * as "not built yet" with no times and no buttons rather than implied to work.
- * Tier unlocks are omitted entirely — nothing on this product is tier-gated
+ * Only shipped surfaces appear here. Tier unlocks are omitted entirely — nothing on this product is tier-gated
  * today, and promising a locked feature that will never arrive is a lie.
  *
  * Colour law: cyan (--machine) = the machine is awake, never on a button.
@@ -79,6 +76,8 @@ interface Funnel {
   captures: number;
   used_in_signal: number;
   signals: number;
+  /** Signals folded into stronger ones. Shown as an aside, never counted. */
+  mergedSignals: number;
   /** Aura produced the draft and you published it. */
   publishedThroughAura: number;
   /** Live on LinkedIn, including your imported history. */
@@ -114,7 +113,7 @@ export default function MomentumPage() {
     const since = startOfWeek(new Date());
     since.setDate(since.getDate() - (WEEKS - 1) * 7);
 
-    const [funnelRes, entriesRes, postsRes, scoreRes, msRes, prefRes] = await Promise.all([
+    const [funnelRes, entriesRes, postsRes, scoreRes, msRes, prefRes, sigLiveRes, sigMergedRes] = await Promise.all([
       supabase.rpc("momentum_funnel" as any),
       supabase.from("entries").select("created_at").eq("user_id", uid).gte("created_at", since.toISOString()),
       supabase
@@ -123,8 +122,8 @@ export default function MomentumPage() {
         .eq("user_id", uid)
         .gte("created_at", new Date(since.getTime() - 1000 * 60 * 60 * 24 * 120).toISOString()),
       supabase
-        .from("score_snapshots")
-        .select("score, tier, created_at")
+        .from("imprint_snapshots")
+        .select("imprint, tier, created_at")
         .eq("user_id", uid)
         .order("created_at", { ascending: false })
         .limit(1),
@@ -134,6 +133,16 @@ export default function MomentumPage() {
         .eq("user_id", uid)
         .order("earned_at", { ascending: false }),
       supabase.from("diagnostic_profiles").select("notification_prefs").eq("user_id", uid).maybeSingle(),
+      supabase
+        .from("strategic_signals")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", uid)
+        .in("status", ["active", "dormant"]),
+      supabase
+        .from("strategic_signals")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", uid)
+        .eq("status", "merged"),
     ]);
 
     const f = (funnelRes.data as any)?.[0] ?? null;
@@ -142,7 +151,8 @@ export default function MomentumPage() {
         ? {
             captures: Number(f.captures) || 0,
             used_in_signal: Number(f.used_in_signal) || 0,
-            signals: Number(f.signals) || 0,
+            signals: sigLiveRes.count ?? (Number(f.signals) || 0),
+            mergedSignals: sigMergedRes.count ?? 0,
             publishedThroughAura: Number(f.published_through_aura) || 0,
             publishedLive: Number(f.published_live) || 0,
           }
@@ -170,7 +180,7 @@ export default function MomentumPage() {
     setWeeks(cells);
 
     const snap = (scoreRes.data || [])[0] as any;
-    setScore(snap?.score ?? null);
+    setScore(snap?.imprint ?? null);
     setTierKey(snap?.tier ?? null);
 
     setMilestones(((msRes.data || []) as any[]).map((m) => ({
@@ -247,21 +257,12 @@ export default function MomentumPage() {
         </Card>
       )}
 
-      {/* ── 1 · The three loops ──────────────────────────────── */}
+      {/* ── 1 · Your daily loop ──────────────────────────────── */}
       <section style={{ display: "grid", gap: 12 }}>
-        <SectionLabel>The three loops</SectionLabel>
-        <div
-          style={{
-            display: "grid",
-            gap: 12,
-            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-          }}
-        >
-          {/* Daily — real */}
-          <Card>
+        <Card>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
               <Moon size={15} style={{ color: "var(--machine)" }} aria-hidden />
-              <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-primary)" }}>Daily</span>
+              <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-primary)" }}>Your daily loop</span>
               <span
                 style={{
                   ...MONO,
@@ -296,22 +297,7 @@ export default function MomentumPage() {
                 </p>
               </div>
             </div>
-          </Card>
-
-          {/* Weekly — not built */}
-          <NotBuiltCard
-            icon={<CalendarDays size={15} style={{ color: "var(--text-muted)" }} aria-hidden />}
-            title="Weekly"
-            body="A Sunday evening plan does not exist. The moves engine that would have produced it was retired, so there is no time and no button here."
-          />
-
-          {/* Monthly — not built */}
-          <NotBuiltCard
-            icon={<CalendarRange size={15} style={{ color: "var(--text-muted)" }} aria-hidden />}
-            title="Monthly"
-            body="A one-page monthly standing report was never built. When it exists it will appear here with a real time attached."
-          />
-        </div>
+        </Card>
       </section>
 
       {/* ── 2 · Showing up ───────────────────────────────────── */}
@@ -382,6 +368,11 @@ export default function MomentumPage() {
                 label="Signals formed"
                 value={funnel.signals}
                 note="patterns across your captures"
+                aside={
+                  funnel.mergedSignals > 0
+                    ? `${funnel.mergedSignals} later merged into stronger ones`
+                    : undefined
+                }
                 width={Math.min(100, pct(funnel.signals, Math.max(funnel.captures, funnel.signals)))}
               />
               <FunnelRow
@@ -414,34 +405,52 @@ export default function MomentumPage() {
                   : "Top band"}
               </span>
             </div>
-            <div style={{ display: "grid", gap: 6 }}>
+            <div
+              role="img"
+              aria-label={`Tier ladder. You are in ${band.name} at ${score} points.`}
+              style={{
+                display: "flex",
+                borderRadius: 999,
+                overflow: "hidden",
+                border: "1px solid var(--rule-divider)",
+                background: "var(--surface-subtle)",
+              }}
+            >
               {TIER_BANDS.map((b) => {
                 const current = b.key === band.key;
                 return (
                   <div
                     key={b.key}
+                    tabIndex={0}
+                    title={`${b.name} · ${b.min}–${b.max}`}
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                      padding: "8px 10px",
-                      borderRadius: 8,
+                      flex: 1,
+                      minWidth: 0,
+                      padding: "9px 6px",
+                      textAlign: "center",
                       background: current ? "var(--act-tint)" : "transparent",
-                      border: `1px solid ${current ? "var(--act)" : "var(--rule-divider)"}`,
+                      borderInlineStart: b.key === TIER_BANDS[0].key ? "none" : "1px solid var(--rule-divider)",
+                      cursor: "default",
                     }}
                   >
                     <span
                       style={{
-                        fontSize: 13,
+                        display: "block",
+                        fontSize: 12,
                         fontWeight: current ? 700 : 500,
-                        color: current ? "var(--text-primary)" : "var(--text-secondary)",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        color: current ? "var(--text-primary)" : "var(--text-muted)",
                       }}
                     >
                       {b.name}
                     </span>
-                    <span style={{ ...MONO, marginInlineStart: "auto", fontSize: 11.5, color: "var(--text-muted)" }}>
-                      {b.min}–{b.max}
-                    </span>
+                    {current && (
+                      <span style={{ ...MONO, display: "block", fontSize: 10.5, color: "var(--act)", marginTop: 2 }}>
+                        you · {score}
+                      </span>
+                    )}
                   </div>
                 );
               })}
@@ -489,42 +498,20 @@ export default function MomentumPage() {
   );
 }
 
-const NotBuiltCard: React.FC<{ icon: React.ReactNode; title: string; body: string }> = ({
-  icon,
-  title,
-  body,
-}) => (
-  <Card style={{ background: "var(--surface-subtle)" }}>
-    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-      {icon}
-      <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-secondary)" }}>{title}</span>
-      <span
-        style={{
-          ...MONO,
-          marginInlineStart: "auto",
-          fontSize: 10,
-          letterSpacing: ".1em",
-          textTransform: "uppercase",
-          color: "var(--text-muted)",
-        }}
-      >
-        Not built yet
-      </span>
-    </div>
-    <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>{body}</p>
-  </Card>
-);
-
-const FunnelRow: React.FC<{ label: string; value: number; note: string; width: number }> = ({
+const FunnelRow: React.FC<{ label: string; value: number; note: string; width: number; aside?: string }> = ({
   label,
   value,
   note,
   width,
+  aside,
 }) => (
   <div style={{ display: "grid", gap: 5 }}>
     <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
       <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{label}</span>
       <span style={{ ...MONO, fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{value}</span>
+      {aside && (
+        <span style={{ fontSize: 11.5, color: "var(--text-muted)" }}>({aside})</span>
+      )}
       <span style={{ fontSize: 12, color: "var(--text-muted)", marginInlineStart: "auto" }}>{note}</span>
     </div>
     <div style={{ height: 8, borderRadius: 999, background: "var(--surface-subtle)", overflow: "hidden", display: "flex" }}>
