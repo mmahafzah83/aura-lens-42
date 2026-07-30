@@ -134,18 +134,16 @@ export default function ProfileMenu({
           }}
         />
 
-        {/* PROFILE */}
-        {onEditProfile && (
-          <button
-            type="button"
-            onClick={onEditProfile}
-            style={itemStyle}
-            className="hover:bg-[var(--paper-3)] transition-colors"
-          >
-            <User className="w-4 h-4" />
-            Profile
-          </button>
-        )}
+        {/* ACCOUNT */}
+        <button
+          type="button"
+          onClick={() => (onOpenAccount ? onOpenAccount() : navigate("/settings?tab=account"))}
+          style={itemStyle}
+          className="hover:bg-[var(--paper-3)] transition-colors"
+        >
+          <UserCog className="w-4 h-4" />
+          Account
+        </button>
 
         {/* SETTINGS */}
         <button
