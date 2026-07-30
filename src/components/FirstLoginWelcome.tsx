@@ -8,13 +8,16 @@ interface FirstLoginWelcomeProps {
   firstName?: string | null;
   onOpenGuide: () => void;
   onDismiss: () => void;
+  /** When provided, visibility is fully controlled by the parent (DB-backed gate). */
+  open?: boolean;
 }
 
-export function FirstLoginWelcome({ firstName: firstNameProp, onOpenGuide, onDismiss }: FirstLoginWelcomeProps) {
+export function FirstLoginWelcome({ firstName: firstNameProp, onOpenGuide, onDismiss, open }: FirstLoginWelcomeProps) {
   const [visible, setVisible] = useState(false);
   const [fetchedName, setFetchedName] = useState<string | null>(null);
 
   useEffect(() => {
+    if (open !== undefined) return;
     try {
       if (!localStorage.getItem("aura_welcome_briefing_done")) {
         setVisible(true);
@@ -22,7 +25,7 @@ export function FirstLoginWelcome({ firstName: firstNameProp, onOpenGuide, onDis
     } catch {
       // localStorage blocked — skip
     }
-  }, []);
+  }, [open]);
 
   useEffect(() => {
     async function loadName() {
@@ -52,7 +55,7 @@ export function FirstLoginWelcome({ firstName: firstNameProp, onOpenGuide, onDis
     }
   }, [firstNameProp]);
 
-  if (!visible) return null;
+  if (open !== undefined ? !open : !visible) return null;
 
   const firstName = firstNameProp || fetchedName;
 
