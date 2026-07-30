@@ -8,7 +8,7 @@ import {
 import { PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import SourcesSubTab from "@/components/tabs/SourcesSubTab";
+// Sources now live in the Library tab.
 import SectionError from "@/components/ui/section-error";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import { FirstTimeHint } from "@/components/FirstTimeHint";
@@ -1617,15 +1617,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
           </>
         )}
 
-        {activeSubTab === "sources" && (
-          <SourcesSubTab
-            onOpenCapture={onOpenCapture}
-            onSwitchToSignal={(signalId) => {
-              setActiveSubTab("signals");
-              setSelectedSignalId(signalId);
-            }}
-          />
-        )}
+        {/* Sources moved to Library. */}
       </div>
     </div>
   );

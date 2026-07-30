@@ -7,8 +7,7 @@ import { trackSignalOpen } from "@/lib/trackSignalOpen";
 import { isArabicText } from "@/lib/utils";
 import { LayoutGrid, List as ListIcon, Plus, ChevronRight } from "lucide-react";
 import SignalDetail from "@/components/signals/SignalDetail";
-import SourcesSubTab from "@/components/tabs/SourcesSubTab";
-import { EditorialReadingList, type Signal } from "@/components/tabs/IntelligenceTab";
+import ReadingStrip from "@/components/signals/ReadingStrip";
 
 /**
  * SignalsBoardV2 — THE Signals page.
@@ -33,6 +32,7 @@ interface Row {
   velocity_status: string | null;
   status: string | null;
   created_at: string | null;
+  last_evidence_at: string | null;
 }
 
 type Counts = { all: number; accelerating: number; stable: number; dormant: number };
@@ -44,6 +44,19 @@ const ageDays = (iso: string | null) =>
   iso ? Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 86_400_000)) : 0;
 
 const strengthOf = (r: Row) => Math.round((r.strength_score ?? r.confidence ?? 0) * 100) / 100;
+
+/** Board columns show the top few per lane; the rest lives behind a door. */
+const BOARD_CAP = 5;
+const VIEW_KEY = "aura.signals.view";
+
+/** Theme chips are one line: cut on a word boundary, full text in the title. */
+const CHIP_MAX = 22;
+const clipTheme = (t: string) => {
+  if (t.length <= CHIP_MAX) return t;
+  const cut = t.slice(0, CHIP_MAX);
+  const space = cut.lastIndexOf(" ");
+  return `${(space > 8 ? cut.slice(0, space) : cut).trimEnd()}…`;
+};
 
 const StatusDot: React.FC<{ tone: "live" | "cooling" | "muted" }> = ({ tone }) => (
   <span aria-hidden style={{
@@ -110,7 +123,14 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
   const [rows, setRows] = useState<Row[]>([]);
   const [counts, setCounts] = useState<Counts | null>(null);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<"list" | "board">("board");
+  const [view, setView] = useState<"list" | "board">(() => {
+    if (typeof window === "undefined") return "list";
+    const stored = window.localStorage.getItem(VIEW_KEY);
+    return stored === "board" ? "board" : "list";
+  });
+  useEffect(() => {
+    try { window.localStorage.setItem(VIEW_KEY, view); } catch { /* preference is optional */ }
+  }, [view]);
   const [dormantOpen, setDormantOpen] = useState(false);
   const [filter, setFilter] = useState<SignalFilter>(
     ["accelerating", "stable", "dormant"].includes(paramFilter) ? paramFilter : (initialFilter || "all"),
@@ -148,7 +168,7 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
   // The control bar is portalled to the body and driven by scroll instead.
   useEffect(() => {
     const onScroll = () => {
-      const next = window.scrollY > 200;
+      const next = window.scrollY > 400;
       if (next === stuckRef.current) return;
       stuckRef.current = next;
       setStuck(next);
@@ -298,8 +318,7 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
         }}>
           <CaptureMeter filled={Math.min(captures, 5)} bucket={bucket} />
           <span style={{ ...MONO, fontSize: 10.5, letterSpacing: ".06em", color: "var(--text-muted)" }}>
-            {captures} captures · {ageDays(r.created_at)}d ·{" "}
-            <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{strengthOf(r)}</span>
+            {captures} captures · quiet {ageDays(r.last_evidence_at)}d
           </span>
           <span
             aria-hidden
@@ -434,7 +453,7 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
                       transition: "background 160ms ease, color 160ms ease",
                     }}
                   >
-                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t}</span>
+                    <span title={t} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{clipTheme(t)}</span>
                     <span style={{ ...MONO, fontSize: 11 }}>{n}</span>
                   </button>
                 );
@@ -512,7 +531,19 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
                               {col.count === 0 ? col.empty : `Nothing here under “${theme}”.`}
                             </div>
                           )
-                          : cards.map(r => <Card key={r.id} r={r} />)}
+                          : cards.slice(0, BOARD_CAP).map(r => <Card key={r.id} r={r} />)}
+                        {cards.length > BOARD_CAP && (
+                          <button
+                            type="button"
+                            onClick={() => { setFilter(col.key); setView("list"); }}
+                            className="cursor-pointer v23-focus v23-tap"
+                            style={{
+                              alignSelf: "flex-start", background: "transparent", border: 0, cursor: "pointer",
+                              padding: "4px 2px", fontFamily: "var(--ff-ui)", fontSize: 12.5, fontWeight: 600,
+                              color: "var(--act)", textAlign: "start",
+                            }}
+                          >Show all {cards.length} →</button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -561,10 +592,18 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
                       {tag && <Chip variant="cooling" className="hidden sm:inline-flex">{tag}</Chip>}
                     </div>
                     {bucket === "accelerating" && <Chip variant="live">Accelerating</Chip>}
+                    <CaptureMeter filled={Math.min((r.supporting_evidence_ids || []).length, 5)} bucket={bucket} />
                     <span style={{ ...MONO, fontSize: 10.5, letterSpacing: ".06em", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-                      {(r.supporting_evidence_ids || []).length} captures ·{" "}
-                      <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{strengthOf(r)}</span>
+                      {(r.supporting_evidence_ids || []).length} captures · quiet {ageDays(r.last_evidence_at)}d
                     </span>
+                    <span
+                      aria-hidden
+                      className="v23-read-affordance"
+                      style={{
+                        ...MONO, fontSize: 10.5, letterSpacing: ".08em", textTransform: "uppercase",
+                        color: "var(--act)", opacity: 0, transition: "opacity 160ms ease", whiteSpace: "nowrap",
+                      }}
+                    >Read →</span>
                   </div>
                 );
               })}
@@ -606,17 +645,9 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
         document.body,
       )}
 
-      <div data-legacy style={{ marginTop: 40, borderTop: "1px solid var(--rule-divider)", paddingTop: 26 }}>
+      <div style={{ marginTop: 34, borderTop: "1px solid var(--rule-divider)", paddingTop: 22 }}>
         <SectionLabel>Recommended reading</SectionLabel>
-        <EditorialReadingList signals={rows as unknown as Signal[]} onOpenCapture={onOpenCapture} />
-      </div>
-
-      <div data-legacy style={{ marginTop: 34, borderTop: "1px solid var(--rule-divider)", paddingTop: 26 }}>
-        <SectionLabel>Sources</SectionLabel>
-        <SourcesSubTab
-          onOpenCapture={onOpenCapture}
-          onSwitchToSignal={(signalId: string) => openSignal(signalId, "signals_sources_section")}
-        />
+        <ReadingStrip onOpenCapture={onOpenCapture} />
       </div>
     </section>
   );

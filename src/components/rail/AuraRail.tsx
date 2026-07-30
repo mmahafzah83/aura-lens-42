@@ -128,16 +128,26 @@ export default function AuraRail({
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || cancelled) return;
-      const [entriesRes, draftsRes] = await Promise.all([
+      // Library shows entries + one row per deduped document, so the pill
+      // counts exactly what the list it opens renders.
+      const [entriesRes, docsRes, draftsRes] = await Promise.all([
         (supabase.from("entries" as any) as any)
           .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id),
+        (supabase.from("documents" as any) as any)
+          .select("filename")
           .eq("user_id", user.id),
         (supabase.from("content_items" as any) as any)
           .select("id", { count: "exact", head: true })
           .eq("user_id", user.id).eq("status", "draft"),
       ]);
       if (cancelled) return;
-      if (!entriesRes?.error && typeof entriesRes?.count === "number") setLibraryCount(entriesRes.count);
+      if (!entriesRes?.error && typeof entriesRes?.count === "number") {
+        const docNames = new Set<string>(
+          ((docsRes?.data || []) as any[]).map(d => String(d?.filename ?? "")).filter(Boolean),
+        );
+        setLibraryCount(entriesRes.count + docNames.size);
+      }
       if (!draftsRes?.error && typeof draftsRes?.count === "number") setDraftCount(draftsRes.count);
     })().catch(() => { /* counts stay hidden */ });
     return () => { cancelled = true; };

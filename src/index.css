@@ -2257,4 +2257,6 @@ button[aria-disabled="true"],
 
 /* Signals board — the "Read →" affordance appears on card hover/focus only. */
 .v23-lift:hover .v23-read-affordance,
-.v23-lift:focus-visible .v23-read-affordance { opacity: 1 !important; }
+.v23-lift:focus-visible .v23-read-affordance,
+.v23-row:hover .v23-read-affordance,
+.v23-row:focus-visible .v23-read-affordance { opacity: 1 !important; }
