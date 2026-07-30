@@ -33,6 +33,7 @@ import BriefV2 from "@/components/home/BriefV2";
 import AuraRail from "@/components/rail/AuraRail";
 import IdentityDriftBanner from "@/components/IdentityDriftBanner";
 import FirstFlightCard from "@/components/FirstFlightCard";
+import MoveCard from "@/components/home/MoveCard";
 import useFirstFlight from "@/hooks/useFirstFlight";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import IdentityTab from "@/components/tabs/IdentityTab";
@@ -961,6 +962,17 @@ const Dashboard = () => {
           <div className="tab-content-spring aura-page-fade relative" key={activeTab} style={{ minHeight: "60vh" }}>
             {activeTab === "home" && (
               <div className="animate-tab-spring aura-page">
+                {!firstFlight.active && (
+                  <MoveCard
+                    userId={userId}
+                    onOpenDraft={(d) => { setDraftPrefill(d as any); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                    onStartSignalPost={(p) => {
+                      setSignalDraftPrefill({ ...p, sourceType: "signal", contentFormat: "post" } as any);
+                      setActiveTab("authority");
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                  />
+                )}
                 <FirstLoginWelcome
                   firstName={user?.firstName ?? null}
                   onOpenGuide={() => setHelpOpen(true)}
