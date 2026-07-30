@@ -719,6 +719,7 @@ async function runComplete(
   await admin.from("documents").update({
     status: "completed",
     summary: docSummary || excerpt.slice(0, 300),
+    display_title: humanDocTitle(doc.filename, docSummary || excerpt),
     error_message: null,
     page_count: pagesTotal,
     pages_total: pagesTotal,
