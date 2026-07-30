@@ -4228,8 +4228,8 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
                             letterSpacing: "0.18em",
                             textTransform: "uppercase",
                             color: "var(--machine)",
-                            background: "#131009",
-                            border: "1px solid rgba(54,197,176,0.4)",
+                            background: "var(--v23-night)",
+                            border: "1px solid color-mix(in srgb, var(--machine) 40%, transparent)",
                             padding: "2px 6px",
                             borderRadius: 999,
                           }}
