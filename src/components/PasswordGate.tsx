@@ -145,7 +145,7 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
           <div className="text-xs tracking-[0.2em] uppercase mb-3" style={{ color: "var(--spot)", fontFamily: "var(--font-mono)" }}>
             Aura · Strategic Intelligence
           </div>
-          <h1 className="mb-2" style={{ fontFamily: "var(--font-serif)", fontSize: 30, fontWeight: 500, lineHeight: 1.15, color: "var(--ink)" }}>
+          <h1 className="mb-2" style={{ fontFamily: "var(--font-display)", fontSize: 30, fontWeight: 500, lineHeight: 1.15, color: "var(--ink)" }}>
             Welcome to the inner circle.
           </h1>
           <p style={{ fontSize: 14, color: "var(--ink-2)" }}>

@@ -25,7 +25,7 @@ export function SectionHeader({ label, subtitle, className }: SectionHeaderProps
       {subtitle && (
         <div
           style={{
-            fontFamily: "var(--font-display, 'Cormorant Garamond')",
+            fontFamily: "var(--font-display)",
             fontSize: 14,
             fontStyle: "italic",
             color: "var(--ink-3)",

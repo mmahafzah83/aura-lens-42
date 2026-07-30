@@ -435,7 +435,7 @@ export default function FlashPanel() {
           letterSpacing: "0.12em",
           textTransform: "uppercase",
           color: "hsl(var(--muted-foreground))",
-          fontFamily: "'DM Sans', sans-serif",
+          fontFamily: "var(--font-body)",
           display: "inline-flex",
           alignItems: "center",
         }}

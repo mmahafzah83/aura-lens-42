@@ -166,7 +166,7 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
         <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.12em", color: "var(--ink)", marginBottom: 3, textTransform: "uppercase" }}>
           ACHIEVEMENTS
         </div>
-        <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", marginBottom: 6, lineHeight: 1.5 }}>
+        <div style={{ fontFamily: "var(--font-display)", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", marginBottom: 6, lineHeight: 1.5 }}>
           Professional credentials earned through consistent intelligence work
         </div>
         <h2 style={{
@@ -186,7 +186,7 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
           />
         </h2>
         <p style={{
-          fontFamily: "'DM Sans', sans-serif",
+          fontFamily: "var(--font-body)",
           fontSize: 14,
           color: "hsl(var(--muted-foreground))",
           marginTop: 4,
@@ -220,16 +220,16 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
               >
                 <Check size={16} strokeWidth={2.25} style={{ color: "hsl(var(--primary))", marginTop: 2, flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 500, color: "hsl(var(--foreground))" }}>
+                  <div style={{ fontFamily: "var(--font-body)", fontSize: 14, fontWeight: 500, color: "hsl(var(--foreground))" }}>
                     {m.name}
                   </div>
                   {m.earned_at && (
-                    <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
+                    <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
                       Earned {formatDate(m.earned_at)}
                     </div>
                   )}
                   {summary && (
-                    <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
+                    <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
                       {summary}
                     </div>
                   )}
@@ -295,11 +295,11 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
                     transition: "all 200ms ease",
                   }}
                 >
-                  <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: isNext ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))", fontWeight: isNext ? 500 : 400 }}>
+                  <div style={{ fontFamily: "var(--font-body)", fontSize: 14, color: isNext ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))", fontWeight: isNext ? 500 : 400 }}>
                     {isNext && <span style={{ color: "hsl(var(--primary))", marginRight: 6 }}>›</span>}
                     {m.name}
                   </div>
-                  <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
+                  <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
                     {NEXT_DESCRIPTIONS[m.id] || "Keep going to unlock this milestone."}
                   </div>
                 </li>

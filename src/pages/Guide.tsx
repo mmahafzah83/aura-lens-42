@@ -82,7 +82,7 @@ function CollapsibleItem({
                 background: "var(--paper-2)",
                 border: "1px solid var(--rule)",
                 borderLeft: "2px solid var(--live)",
-                fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
+                fontFamily: "var(--font-mono)",
                 fontSize: 13,
                 color: "var(--ink-2)",
                 lineHeight: 1.6,

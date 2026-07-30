@@ -111,7 +111,7 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <Eye size={16} style={{ color: "var(--bronze)" }} />
-          <h3 style={{ fontFamily: "var(--font-serif)", fontSize: 20, margin: 0 }}>
+          <h3 style={{ fontFamily: "var(--font-display)", fontSize: 20, margin: 0 }}>
             Market Mirror
           </h3>
         </div>
@@ -229,7 +229,7 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
             })}
           </div>
 
-          <p style={{ fontSize: 15, lineHeight: 1.65, color: "var(--ink)", whiteSpace: "pre-wrap", margin: "0 0 14px", fontFamily: "var(--font-serif)", fontStyle: text && /[\u0600-\u06FF]/.test(text) ? "normal" : "italic" }}>
+          <p style={{ fontSize: 15, lineHeight: 1.65, color: "var(--ink)", whiteSpace: "pre-wrap", margin: "0 0 14px", fontFamily: "var(--font-display)", fontStyle: text && /[\u0600-\u06FF]/.test(text) ? "normal" : "italic" }}>
             {text || "No perspective generated."}
           </p>
 
