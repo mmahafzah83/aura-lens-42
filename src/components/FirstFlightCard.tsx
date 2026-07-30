@@ -52,7 +52,7 @@ const skipStyle: React.CSSProperties = {
 };
 
 const proseStyle: React.CSSProperties = {
-  fontFamily: "var(--font-serif)",
+  fontFamily: "var(--font-display)",
   fontSize: 19,
   lineHeight: 1.35,
   color: "var(--ink)",
@@ -214,7 +214,7 @@ export function FirstFlightCard(props: FirstFlightCardProps) {
                   display: "inline-block",
                 }}
               />
-              <span style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 15, color: "var(--ink-2)" }}>
+              <span style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 15, color: "var(--ink-2)" }}>
                 Reading what you saved… your first signal usually appears within a few minutes.
               </span>
             </div>
