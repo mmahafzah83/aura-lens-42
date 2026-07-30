@@ -111,7 +111,7 @@ export default function TodaysIntelligence() {
         <span className="flex items-center" style={{ gap: 8 }}>
           <Sparkles size={14} style={{ color: "var(--brand)" }} />
           <span
-            className="font-serif"
+            className="font-[family-name:var(--font-display)]"
             style={{
               fontSize: 14,
               fontWeight: 500,
