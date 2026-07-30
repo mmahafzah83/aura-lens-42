@@ -34,6 +34,7 @@ interface SourceEntry {
   pages_read?: number | null;
   pages_total?: number | null;
   failure_code?: string | null;
+  display_title?: string | null;
 }
 
 type FilterKey = "all" | "link" | "image" | "text" | "voice" | "document";
@@ -120,6 +121,53 @@ function extractDomain(url: string | null | undefined): string | null {
   if (!url) return null;
   const m = url.match(/https?:\/\/([^\/\s]+)/);
   return m ? m[1].replace(/^www\./, "") : null;
+}
+
+/** Middle-truncate a long URL so it stays on one muted line. */
+function middleTruncate(s: string, max = 58): string {
+  if (s.length <= max) return s;
+  const half = Math.floor((max - 1) / 2);
+  return `${s.slice(0, half)}…${s.slice(s.length - half)}`;
+}
+
+function cleanFilename(name: string): string {
+  return name
+    .replace(/\.[A-Za-z0-9]+$/, "")
+    .replace(/^file[_-]/i, "")
+    .replace(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/g, "")
+    .replace(/[_-]+/g, " ")
+    .trim();
+}
+
+function firstLine(s: string, max = 60): string {
+  const line = (s || "").replace(/[*#`]/g, "").split("\n").map(l => l.trim()).find(Boolean) || "";
+  return line.length > max ? `${line.slice(0, max).trimEnd()}…` : line;
+}
+
+/** The one place a card's human title is decided. Never a hash or a naked URL. */
+function displayTitleFor(entry: SourceEntry): string {
+  const raw = (entry.title || "").trim();
+  if (entry.type === "document") {
+    const stored = (entry.display_title || "").trim();
+    if (stored) return stored;
+    const cleaned = cleanFilename(raw);
+    if (cleaned) return cleaned;
+    return firstLine(entry.summary || entry.content) || "Document";
+  }
+  if (entry.type === "link") {
+    if (raw && !/^https?:/i.test(raw)) return raw;
+    return firstLine(entry.summary || "") || extractDomain(entry.image_url || entry.content) || "Saved link";
+  }
+  if (raw && !/^https?:/i.test(raw)) return raw;
+  return firstLine(entry.content) || firstLine(entry.summary || "") || "Untitled note";
+}
+
+/** The raw origin of a capture — filename or URL — for the muted meta line. */
+function rawMetaFor(entry: SourceEntry): string | null {
+  if (entry.type === "document") return entry.title || null;
+  const url = entry.image_url || (entry.content.match(/^https?:\/\/\S+/)?.[0] ?? null);
+  if (entry.type === "link" && url) return middleTruncate(url);
+  return null;
 }
 
 function formatBytes(bytes: number | null | undefined): string | null {
