@@ -797,6 +797,97 @@ const LandingV2 = () => {
     };
   }, [mounted, navigate]);
 
+  // Motion pass: overnight log, count-ups, scroll reveals, sticky seat bar.
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const reduced = window.matchMedia("(prefers-reduced-motion:reduce)").matches;
+    const cleanups: Array<() => void> = [];
+    // One shared reveal utility.
+    const observe = (
+      els: Element[],
+      threshold: number,
+      onEnter: (el: Element) => void,
+    ) => {
+      if (!els.length) return;
+      const io = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((e) => {
+            if (!e.isIntersecting) return;
+            io.unobserve(e.target);
+            onEnter(e.target);
+          });
+        },
+        { threshold },
+      );
+      els.forEach((el) => io.observe(el));
+      cleanups.push(() => io.disconnect());
+    };
+    if (!reduced) {
+      // 1 · Overnight card as a live log.
+      const items = Array.from(root.querySelectorAll<HTMLElement>(".card.mid .tl li"));
+      const midCard = root.querySelector(".card.mid");
+      if (midCard && items.length) {
+        items.forEach((li) => {
+          li.style.opacity = "0";
+          li.style.transform = "translateY(6px)";
+        });
+        observe([midCard], 0.3, () => {
+          items.forEach((li, i) => {
+            const t = window.setTimeout(() => {
+              li.style.transition = "opacity .5s ease, transform .5s ease";
+              li.style.opacity = "1";
+              li.style.transform = "translateY(0)";
+            }, i * 1100);
+            cleanups.push(() => window.clearTimeout(t));
+          });
+        });
+      }
+      // 2 · Imprint count-up (+ meter fill).
+      const counters = Array.from(root.querySelectorAll<HTMLElement>("[data-countup]"));
+      counters.forEach((el) => {
+        const target = Number(el.dataset.countup || "0");
+        el.textContent = "0";
+        const meter = el.parentElement?.querySelector<HTMLElement>(".meter i");
+        if (meter) {
+          meter.style.width = "0%";
+          meter.style.transition = "width 1.4s cubic-bezier(.22,1,.36,1)";
+        }
+        observe([el], 0.4, () => {
+          const start = performance.now();
+          const tick = (now: number) => {
+            const p = Math.min(1, (now - start) / 1400);
+            const eased = 1 - Math.pow(1 - p, 3);
+            el.textContent = String(Math.round(target * eased));
+            if (p < 1) requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+          if (meter) requestAnimationFrame(() => { meter.style.width = `${target}%`; });
+        });
+      });
+      // 4 · Section scroll-reveal (hero excluded).
+      const sections = Array.from(
+        root.querySelectorAll<HTMLElement>(":scope > section"),
+      ).filter((s) => !s.classList.contains("hero"));
+      sections.forEach((s) => s.classList.add("v2reveal"));
+      observe(sections, 0.15, (el) => el.classList.add("v2in"));
+      // 3 · Sticky seat bar with hysteresis.
+      const bar = root.querySelector<HTMLElement>(".v2seatbar");
+      if (bar) {
+        const onScroll = () => {
+          const max = document.documentElement.scrollHeight - window.innerHeight;
+          const p = max > 0 ? window.scrollY / max : 0;
+          if (p > 0.5) bar.classList.add("up");
+          else if (p < 0.4) bar.classList.remove("up");
+        };
+        window.addEventListener("scroll", onScroll, { passive: true });
+        cleanups.push(() => window.removeEventListener("scroll", onScroll));
+        onScroll();
+      }
+    }
+    return () => cleanups.forEach((fn) => fn());
+  }, [mounted]);
+
   // Founding seats — live from the public RPC. Never a hardcoded fallback.
   useEffect(() => {
     let cancelled = false;
