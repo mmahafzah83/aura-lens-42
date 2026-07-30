@@ -1,4 +1,4 @@
-import { UserCog, LogOut, Settings } from "lucide-react";
+import { UserCog, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Avatar from "@/components/systemb/Avatar";
 import AuraRing from "@/components/systemb/AuraRing";
