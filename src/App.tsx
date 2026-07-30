@@ -63,6 +63,8 @@ const queryClient = new QueryClient({
   },
 });
 
+import MoveCheck from "./pages/__MoveCheck";
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <LanguageProvider>
@@ -102,6 +104,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/v2" element={<LandingV2 />} />
+            <Route path="/__movecheck" element={<MoveCheck />} />
             <Route path="/home" element={<PasswordGate><Dashboard /></PasswordGate>} />
             <Route path="/dashboard" element={<PasswordGate><Dashboard /></PasswordGate>} />
             <Route path="/auth" element={<Auth />} />
