@@ -74,7 +74,7 @@ export default function AcceptInvitation() {
           <h1
             className="ai-headline"
             style={{
-              fontFamily: "var(--font-serif)",
+              fontFamily: "var(--font-display)",
               fontWeight: 400,
               lineHeight: 1.2,
               color: "var(--glass)",
@@ -227,7 +227,7 @@ function Panel({ num, title, body }: { num: string; title: string; body: string 
       <div style={{ fontSize: 12, letterSpacing: "2px", color: "var(--live)", marginBottom: 12, fontWeight: 600, fontFamily: "var(--font-mono)" }}>
         {num}
       </div>
-      <h2 style={{ fontSize: 18, color: "var(--glass)", fontWeight: 700, margin: "0 0 12px", lineHeight: 1.35, fontFamily: "var(--font-serif)" }}>
+      <h2 style={{ fontSize: 18, color: "var(--glass)", fontWeight: 700, margin: "0 0 12px", lineHeight: 1.35, fontFamily: "var(--font-display)" }}>
         {title}
       </h2>
       <p style={{ fontSize: 14, color: "var(--glass-2)", lineHeight: 1.65, margin: 0, maxWidth: 400, fontFamily: "var(--font-body)" }}>
