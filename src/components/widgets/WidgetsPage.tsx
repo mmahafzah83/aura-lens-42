@@ -1,12 +1,13 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import { ButtonPrimary, ButtonGhost, Chip } from "@/components/systemb";
 import {
   WIDGET_DEFS, DEFAULT_LAYOUT, loadLayout, saveLayout, loadWidgetMetrics,
 } from "./widgetData";
 import type { WidgetLayout, WidgetMetrics } from "./widgetData";
-import { WidgetBody } from "./WidgetCards";
+import { widgetContent, goTab } from "./WidgetCards";
 
 /**
  * WidgetsPage — two honest halves.
@@ -77,10 +78,7 @@ export default function WidgetsPage() {
   const uid = user?.id ?? null;
 
   const [layout, setLayout] = useState<WidgetLayout>(DEFAULT_LAYOUT);
-  const [savedLayout, setSavedLayout] = useState<WidgetLayout>(DEFAULT_LAYOUT);
   const [metrics, setMetrics] = useState<WidgetMetrics | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [savedNote, setSavedNote] = useState<string | null>(null);
 
   const [tallies, setTallies] = useState<Record<string, Tally>>({});
   const [myVotes, setMyVotes] = useState<Set<string>>(new Set());
@@ -112,46 +110,39 @@ export default function WidgetsPage() {
     (async () => {
       const [l, m] = await Promise.all([loadLayout(uid), loadWidgetMetrics(uid)]);
       if (!alive) return;
-      setLayout(l); setSavedLayout(l); setMetrics(m);
+      setLayout(l); setMetrics(m);
     })();
     loadVotes();
     return () => { alive = false; };
   }, [uid, loadVotes]);
 
-  const dirty = useMemo(
-    () => WIDGET_DEFS.some(d => !!layout[d.key] !== !!savedLayout[d.key]),
-    [layout, savedLayout],
-  );
-
-  async function handleSave() {
+  /** Optimistic write-through: the switch is the save. */
+  const persist = useCallback(async (next: WidgetLayout) => {
+    setLayout(next);
     if (!uid) return;
-    setSaving(true);
-    const { error } = await saveLayout(uid, layout);
-    setSaving(false);
-    if (error) { setSavedNote("Could not save. Try again."); return; }
-    setSavedLayout(layout);
-    setSavedNote("Saved to your Home.");
-    setTimeout(() => setSavedNote(null), 3000);
+    const { error } = await saveLayout(uid, next);
+    if (error) toast.error("Could not save that. Try again.");
+  }, [uid]);
+
+  function toggleWidget(key: string, name: string) {
+    const before = layout;
+    const on = !layout[key];
+    persist({ ...layout, [key]: on });
+    toast(on ? "Added to Home" : "Removed from Home", {
+      description: name,
+      duration: 5000,
+      action: { label: "Undo", onClick: () => persist(before) },
+    });
   }
 
   async function toggleVote(slotKey: string) {
-    if (!uid) return;
-    const had = myVotes.has(slotKey);
-    // optimistic
-    setMyVotes(prev => {
-      const next = new Set(prev);
-      had ? next.delete(slotKey) : next.add(slotKey);
-      return next;
-    });
+    if (!uid || myVotes.has(slotKey)) return;  // one vote per slot, and it stands
+    setMyVotes(prev => new Set(prev).add(slotKey));
     setTallies(prev => {
       const cur = prev[slotKey]?.votes ?? 0;
-      return { ...prev, [slotKey]: { votes: Math.max(0, cur + (had ? -1 : 1)), eligible } };
+      return { ...prev, [slotKey]: { votes: cur + 1, eligible } };
     });
-    if (had) {
-      await supabase.from("widget_slot_votes").delete().eq("user_id", uid).eq("slot_key", slotKey);
-    } else {
-      await supabase.from("widget_slot_votes").insert({ user_id: uid, slot_key: slotKey });
-    }
+    await supabase.from("widget_slot_votes").insert({ user_id: uid, slot_key: slotKey });
     loadVotes();
   }
 
@@ -183,42 +174,61 @@ export default function WidgetsPage() {
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
           {WIDGET_DEFS.map(d => {
-            const body = metrics ? <WidgetBody k={d.key} m={metrics} /> : null;
+            const on = !!layout[d.key];
+            const c = metrics ? widgetContent(d.key, metrics) : null;
             return (
               <div key={d.key} style={{
-                border: "1px solid var(--rule-outer)", borderRadius: 14, padding: 14,
-                background: "var(--surface-card)", display: "flex", flexDirection: "column", gap: 10,
+                border: on ? "1.5px solid var(--act)" : "0.5px solid var(--rule-outer)",
+                borderRadius: 14, padding: 14, background: "var(--surface-card)",
+                display: "flex", flexDirection: "column", gap: 8,
               }}>
-                <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14.5, color: "var(--text-primary)" }}>{d.name}</div>
-                    <div style={{ fontSize: 12.5, color: "var(--text-secondary)", marginTop: 3 }}>{d.blurb}</div>
-                  </div>
-                  <Toggle
-                    on={!!layout[d.key]}
-                    label={`Show ${d.name} on Home`}
-                    onChange={() => setLayout(p => ({ ...p, [d.key]: !p[d.key] }))}
-                  />
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{
+                    ...MONO, fontSize: 10.5, letterSpacing: ".14em", textTransform: "uppercase",
+                    color: "var(--text-secondary)", flex: 1, minWidth: 0,
+                  }}>{d.name}</span>
+                  <span style={{ marginInlineStart: "auto" }}>
+                    <Toggle
+                      on={on}
+                      label={`Show ${d.name} on Home`}
+                      onChange={() => toggleWidget(d.key, d.name)}
+                    />
+                  </span>
                 </div>
-                {body ?? (
-                  <div style={{ ...MONO, fontSize: 11.5, color: "var(--text-muted)" }}>
-                    {metrics ? "Nothing to measure here yet." : "Measuring…"}
-                  </div>
-                )}
+
+                <div style={{
+                  ...MONO, fontSize: 24, lineHeight: 1.1, marginBlockStart: 2,
+                  color: c?.accent && on ? "var(--time)"
+                       : on ? "var(--text-primary)" : "var(--text-muted)",
+                }}>
+                  {c ? c.hero : "—"}
+                </div>
+                <div style={{ ...MONO, fontSize: 11, color: "var(--text-secondary)" }}>
+                  {c ? c.sub : (metrics ? "nothing to measure here yet" : "measuring…")}
+                </div>
+
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBlockStart: 6 }}>{d.blurb}</div>
+
+                <div style={{ marginBlockStart: 2, textAlign: "start" }}>
+                  {on ? (
+                    <button
+                      type="button"
+                      onClick={() => goTab("home")}
+                      className="v23-focus"
+                      style={{
+                        ...FF, background: "transparent", border: 0, padding: 0, cursor: "pointer",
+                        fontSize: 12, color: "var(--act)",
+                      }}
+                    >On your Home · view →</button>
+                  ) : (
+                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Off · switch on to add to Home</span>
+                  )}
+                </div>
               </div>
             );
           })}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
-          <ButtonPrimary onClick={handleSave} disabled={saving || !dirty}>
-            {saving ? "Saving…" : "Save your Home"}
-          </ButtonPrimary>
-          <ButtonGhost onClick={() => setLayout({ ...DEFAULT_LAYOUT })}>Reset layout</ButtonGhost>
-          {savedNote && (
-            <span style={{ ...MONO, fontSize: 11.5, color: "var(--text-secondary)" }}>{savedNote}</span>
-          )}
-        </div>
       </section>
 
       {/* SECTION 2 — SLOTS */}
@@ -233,6 +243,10 @@ export default function WidgetsPage() {
             const t = tallies[s.key];
             const votes = t?.votes ?? 0;
             const voted = myVotes.has(s.key);
+            const rank = SLOTS
+              .map(x => tallies[x.key]?.votes ?? 0)
+              .sort((a, b) => b - a)
+              .indexOf(votes) + 1;
             return (
               <div key={s.key} style={{
                 border: "1px dashed var(--border-strong)", borderRadius: 14, padding: 14,
@@ -244,16 +258,22 @@ export default function WidgetsPage() {
                   <span style={{ marginLeft: "auto" }}><Chip variant="cooling">{s.target}</Chip></span>
                 </div>
                 <div style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>{s.blurb}</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: "auto" }}>
-                  <span style={{ ...MONO, fontSize: 11, color: "var(--text-secondary)" }}>
-                    {votes === 0
-                      ? "No votes yet"
-                      : `${votes} of ${eligible ?? "—"} invited members`}
-                  </span>
-                  <span style={{ marginLeft: "auto" }}>
-                    {voted
-                      ? <ButtonGhost onClick={() => toggleVote(s.key)}>Voted · undo</ButtonGhost>
-                      : <ButtonGhost onClick={() => toggleVote(s.key)}>Vote</ButtonGhost>}
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBlockStart: "auto" }}>
+                  {votes > 0 && (
+                    <span style={{ ...MONO, fontSize: 11, color: "var(--text-secondary)" }}>
+                      {votes} {votes === 1 ? "vote" : "votes"} · #{rank} in queue
+                    </span>
+                  )}
+                  <span style={{ marginInlineStart: "auto" }}>
+                    {voted ? (
+                      <span style={{
+                        ...MONO, fontSize: 11, color: "var(--live)",
+                        border: "1px solid var(--live)", borderRadius: 999, padding: "5px 10px",
+                        display: "inline-block", opacity: 0.9,
+                      }}>Voted — we'll tell you when it ships</span>
+                    ) : (
+                      <ButtonGhost onClick={() => toggleVote(s.key)}>Vote</ButtonGhost>
+                    )}
                   </span>
                 </div>
               </div>
@@ -292,6 +312,18 @@ export default function WidgetsPage() {
           </div>
         </div>
       </section>
+
+      <div style={{ textAlign: "start" }}>
+        <button
+          type="button"
+          onClick={() => persist({ ...DEFAULT_LAYOUT })}
+          className="v23-focus"
+          style={{
+            ...FF, background: "transparent", border: 0, padding: 0, cursor: "pointer",
+            fontSize: 12, color: "var(--text-muted)", textDecoration: "underline",
+          }}
+        >Reset to default</button>
+      </div>
     </div>
   );
 }
