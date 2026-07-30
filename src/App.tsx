@@ -19,6 +19,7 @@ import Trust from "./pages/Trust";
 import Guide from "./pages/Guide";
 import Settings from "./pages/Settings";
 import PasswordGate from "./components/PasswordGate";
+import WidgetsPage from "./components/widgets/WidgetsPage";
 import AdminGate from "./components/AdminGate";
 import { ThemeProvider } from "./components/ThemeProvider";
 import CookieConsent from "./components/CookieConsent";
@@ -129,6 +130,7 @@ const App = () => (
             <Route path="/our-story" element={<OurStory />} />
             <Route path="/guide" element={<Guide />} />
             <Route path="/guide/thought-leadership-strategy" element={<GuideThoughtLeadershipStrategy />} />
+            <Route path="/__tmp-widgets" element={<WidgetsPage />} />
             <Route path="/settings" element={<PasswordGate><Settings /></PasswordGate>} />
             {/* Legacy alias — Preferences is now the first tab inside Settings. */}
             <Route path="/preferences" element={<Navigate to="/settings?tab=preferences" replace />} />
