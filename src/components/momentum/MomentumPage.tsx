@@ -151,7 +151,7 @@ export default function MomentumPage() {
         ? {
             captures: Number(f.captures) || 0,
             used_in_signal: Number(f.used_in_signal) || 0,
-            signals: sigLiveRes.count ?? Number(f.signals) || 0,
+            signals: sigLiveRes.count ?? (Number(f.signals) || 0),
             mergedSignals: sigMergedRes.count ?? 0,
             publishedThroughAura: Number(f.published_through_aura) || 0,
             publishedLive: Number(f.published_live) || 0,
