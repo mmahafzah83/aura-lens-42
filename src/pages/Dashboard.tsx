@@ -33,6 +33,7 @@ import BriefV2 from "@/components/home/BriefV2";
 import AuraRail from "@/components/rail/AuraRail";
 import IdentityDriftBanner from "@/components/IdentityDriftBanner";
 import FirstFlightCard from "@/components/FirstFlightCard";
+import MoveCard from "@/components/home/MoveCard";
 import useFirstFlight from "@/hooks/useFirstFlight";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import IdentityTab from "@/components/tabs/IdentityTab";
