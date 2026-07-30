@@ -8,7 +8,7 @@ import {
 import { PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-// Sources now live in the Library tab (SourcesSubTab is mounted there only).
+// Sources now live in the Library tab.
 import SectionError from "@/components/ui/section-error";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import { FirstTimeHint } from "@/components/FirstTimeHint";
