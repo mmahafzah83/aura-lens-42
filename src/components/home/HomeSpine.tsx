@@ -297,7 +297,11 @@ export default function HomeSpine({ userId, onSwitchTab, onStartSignalPost }: Ho
     return out;
   }, [data]);
 
-  const onWidgets = WIDGET_DEFS.filter((d) => layout[d.key]);
+  // Instruments already carry imprint, live signals and the two published
+  // counts. A widget repeating any of them would put the same number on the
+  // page twice, so those keys are suppressed here (they stay on Widgets).
+  const DUPLICATE_KEYS = new Set(["imprint", "live_signals", "published"]);
+  const onWidgets = WIDGET_DEFS.filter((d) => layout[d.key] && !DUPLICATE_KEYS.has(d.key));
   const showWidgetRegion = (metrics && onWidgets.length > 0) || !addTileHidden;
 
   return (
