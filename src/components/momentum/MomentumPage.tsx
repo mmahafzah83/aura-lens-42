@@ -368,6 +368,11 @@ export default function MomentumPage() {
                 label="Signals formed"
                 value={funnel.signals}
                 note="patterns across your captures"
+                aside={
+                  funnel.mergedSignals > 0
+                    ? `${funnel.mergedSignals} later merged into stronger ones`
+                    : undefined
+                }
                 width={Math.min(100, pct(funnel.signals, Math.max(funnel.captures, funnel.signals)))}
               />
               <FunnelRow
@@ -475,42 +480,20 @@ export default function MomentumPage() {
   );
 }
 
-const NotBuiltCard: React.FC<{ icon: React.ReactNode; title: string; body: string }> = ({
-  icon,
-  title,
-  body,
-}) => (
-  <Card style={{ background: "var(--surface-subtle)" }}>
-    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-      {icon}
-      <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-secondary)" }}>{title}</span>
-      <span
-        style={{
-          ...MONO,
-          marginInlineStart: "auto",
-          fontSize: 10,
-          letterSpacing: ".1em",
-          textTransform: "uppercase",
-          color: "var(--text-muted)",
-        }}
-      >
-        Not built yet
-      </span>
-    </div>
-    <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>{body}</p>
-  </Card>
-);
-
-const FunnelRow: React.FC<{ label: string; value: number; note: string; width: number }> = ({
+const FunnelRow: React.FC<{ label: string; value: number; note: string; width: number; aside?: string }> = ({
   label,
   value,
   note,
   width,
+  aside,
 }) => (
   <div style={{ display: "grid", gap: 5 }}>
     <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
       <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{label}</span>
       <span style={{ ...MONO, fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{value}</span>
+      {aside && (
+        <span style={{ fontSize: 11.5, color: "var(--text-muted)" }}>({aside})</span>
+      )}
       <span style={{ fontSize: 12, color: "var(--text-muted)", marginInlineStart: "auto" }}>{note}</span>
     </div>
     <div style={{ height: 8, borderRadius: 999, background: "var(--surface-subtle)", overflow: "hidden", display: "flex" }}>
