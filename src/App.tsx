@@ -100,7 +100,7 @@ const App = () => (
             }
           >
           <Routes>
-            <Route path="/" element={<Landing />} />
+            <Route path="/" element={<LandingV2 />} />
             <Route path="/v2" element={<LandingV2 />} />
             <Route path="/home" element={<PasswordGate><Dashboard /></PasswordGate>} />
             <Route path="/dashboard" element={<PasswordGate><Dashboard /></PasswordGate>} />
