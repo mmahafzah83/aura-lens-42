@@ -139,8 +139,8 @@ export default function CountryPicker({
   const ink = "var(--ink, #1B1B1B)";
   const ink3 = "var(--ink-3, rgba(27,27,27,0.55))";
   const rule = "var(--rule, rgba(27,27,27,0.14))";
-  const serif = "'Newsreader', Georgia, serif";
-  const mono = "'IBM Plex Mono', ui-monospace, monospace";
+  const serif = "var(--font-display)";
+  const mono = "var(--font-mono)";
 
   return (
     <div ref={wrapRef} dir={dir} style={{ position: "relative", width: "100%" }}>

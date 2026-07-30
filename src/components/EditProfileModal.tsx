@@ -118,7 +118,7 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
     fontWeight: 600,
     marginBottom: 6,
     display: "block",
-    fontFamily: "'DM Sans', system-ui, sans-serif",
+    fontFamily: "var(--font-body)",
   };
   const input: React.CSSProperties = {
     width: "100%",
@@ -129,7 +129,7 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
     borderRadius: 8,
     color: "var(--ink)",
     outline: "none",
-    fontFamily: "'DM Sans', system-ui, sans-serif",
+    fontFamily: "var(--font-body)",
   };
 
   return createPortal(
@@ -164,14 +164,14 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
         ><X size={18} /></button>
 
         <h2 style={{
-          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontFamily: "var(--font-display)",
           fontSize: 22, fontWeight: 500, color: "var(--ink)",
           margin: 0, lineHeight: 1.2,
         }}>Edit profile</h2>
         <p style={{
           fontSize: 13, color: "var(--ink-3)",
           margin: "4px 0 18px",
-          fontFamily: "'DM Sans', system-ui, sans-serif",
+          fontFamily: "var(--font-body)",
         }}>Update how you appear across Aura.</p>
 
         {loading ? (
@@ -227,7 +227,7 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
                   background: "transparent",
                   border: "0.5px solid var(--color-border-secondary, var(--brand-line, rgba(0,0,0,0.12)))",
                   borderRadius: 8, cursor: "pointer", color: "var(--ink)",
-                  fontFamily: "'DM Sans', system-ui, sans-serif",
+                  fontFamily: "var(--font-body)",
                 }}
               >Cancel</button>
               <button
@@ -238,7 +238,7 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
                   border: "none", borderRadius: 8,
                   cursor: saving ? "default" : "pointer",
                   opacity: saving ? 0.7 : 1,
-                  fontFamily: "'DM Sans', system-ui, sans-serif",
+                  fontFamily: "var(--font-body)",
                 }}
               >{saving ? "Saving…" : "Save changes"}</button>
             </div>
