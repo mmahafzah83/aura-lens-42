@@ -78,8 +78,14 @@ export function useSinceLastVisit(userId: string | null | undefined): SinceLastV
     const baseline: string | null = (profile as any)?.last_visit_at ?? null;
 
     if (baseline && Date.now() - new Date(baseline).getTime() > SESSION_GUARD_MS) {
-      void supabase.from("diagnostic_profiles")
-        .update({ last_visit_at: new Date().toISOString() }).eq("user_id", userId);
+      // Must be awaited: a PostgrestBuilder is a lazy thenable and never
+      // dispatches its request unless something subscribes to it. `void` did
+      // not, so the baseline never advanced.
+      const { error } = await supabase
+        .from("diagnostic_profiles")
+        .update({ last_visit_at: new Date().toISOString() })
+        .eq("user_id", userId);
+      if (error) console.warn("[since-last-visit] failed to advance last_visit_at:", error.message);
     }
 
     // First visit — nothing to compare against.
