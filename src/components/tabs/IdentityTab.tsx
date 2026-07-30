@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Pencil, Check, Eye, Map as MapIcon, Trophy, Target as TargetIcon, Star, Camera, ChevronDown, Mic } from "lucide-react";
 import { toast } from "sonner";
@@ -168,6 +169,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     })();
     return () => { cancelled = true; };
   }, [authReady, authUser]);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     const openAssessment = () => setBrandOpen(true);
@@ -813,8 +816,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             <div style={{ position: "relative", flexShrink: 0 }}>
               <button
                 type="button"
-                onClick={() => fileInputRef.current?.click()}
-                title="Change photo"
+                onClick={() => navigate("/settings?tab=account")}
+                title="Manage your photo in Account"
                 style={{
                   width: 60, height: 60, borderRadius: "50%",
                   border: "2px solid var(--brand, var(--warning))",
@@ -822,7 +825,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   display: "flex", alignItems: "center", justifyContent: "center",
                   overflow: "hidden", padding: 0, cursor: "pointer",
                 }}
-                aria-label="Change profile photo"
+                aria-label="Manage your photo in Account"
               >
                 {profile?.avatar_url ? (
                   <img src={profile.avatar_url} alt={userName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -1265,7 +1268,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       <AuraCardPanel
         onNavigateAssessment={() => setBrandOpen(true)}
         onNavigateAudit={() => setAuditOpen(true)}
-        onNavigatePhoto={() => fileInputRef.current?.click()}
+        onNavigatePhoto={() => navigate("/settings?tab=account")}
         onNavigateSettings={() => { window.location.href = "/settings#location"; }}
       />
 

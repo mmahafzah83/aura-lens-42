@@ -15,6 +15,7 @@ import { getPublication, validate as validatePublication, type PublicationConfig
 import { PAPER, INK, SPOT, RULE, SERIF, MONO, ARABIC } from "@/components/broadsheet/pressTokens";
 import CountryPicker from "@/components/CountryPicker";
 import PreferencesPanel from "@/components/PreferencesPanel";
+import AccountPanel from "@/components/settings/AccountPanel";
 
 interface ProfileData {
   first_name: string | null;
@@ -59,7 +60,7 @@ export default function Settings() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
-  const tab = searchParams.get("tab") === "account" ? "account" : "preferences";
+  const tab = searchParams.get("tab") === "preferences" ? "preferences" : "account";
   const [authUser, setAuthUser] = useState<{ id: string; email?: string } | null>(null);
 
   useEffect(() => {
@@ -408,13 +409,13 @@ const handleDeleteAccount = async () => {
           </h1>
         </div>
 
-        {/* Tabs — Preferences first, then account settings */}
+        {/* Tabs — Account first, then preferences */}
         <div style={{ display: "flex", gap: 4, marginBottom: 24, borderBottom: "0.5px solid var(--rule)" }}>
-          {([["preferences", "Preferences"], ["account", "Account"]] as const).map(([key, label]) => (
+          {([["account", "Account"], ["preferences", "Preferences"]] as const).map(([key, label]) => (
             <button
               key={key}
               type="button"
-              onClick={() => setSearchParams(key === "preferences" ? {} : { tab: key }, { replace: true })}
+              onClick={() => setSearchParams(key === "account" ? {} : { tab: key }, { replace: true })}
               style={{
                 background: "transparent",
                 border: 0,
@@ -443,6 +444,8 @@ const handleDeleteAccount = async () => {
           />
         ) : (
         <>
+
+        <AccountPanel userId={authUser?.id ?? null} email={authUser?.email} />
 
         {/* Your data — trust statement */}
         <SectionHeader
