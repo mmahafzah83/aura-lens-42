@@ -5,16 +5,16 @@ import { Download, Linkedin, Loader2, CheckCircle2, Circle } from "lucide-react"
 import AuraCard, { type AuraCardVariant } from "@/components/AuraCard";
 import { downloadBlob } from "@/lib/download";
 
-// Colors read from CSS variables where possible; safe fallbacks preserve calm bone look
-// even before the page's tokens hydrate. No hardcoded names/scores anywhere.
-const RULE = "var(--rule, rgba(27,23,18,0.14))";
+// Colours and type read System-B semantic tokens directly. No hardcoded
+// names/scores anywhere.
+const RULE = "var(--border-default)";
 const INK = "var(--text-primary)";
-const INK_2 = "var(--ink-2, rgba(27,23,18,0.68))";
-const INK_3 = "var(--ink-3, rgba(27,23,18,0.48))";
+const INK_2 = "var(--text-secondary)";
+const INK_3 = "var(--text-muted)";
 const PAPER = "var(--surface-page)";
-const SPOT = "var(--spot, #7A1F2B)";
-const SERIF = "var(--font-display, 'Newsreader', Georgia, serif)";
-const MONO = "'IBM Plex Mono', ui-monospace, monospace";
+const SPOT = "var(--act)";
+const SERIF = "var(--font-body)";
+const MONO = "var(--font-mono)";
 
 // Skills variant is parked while we rework it. Flip to true to bring back
 // the VOICE / SKILLS toggle and render both variants.
@@ -335,7 +335,7 @@ export default function AuraCardPanel({
               role="status"
               style={{
                 border: `1px solid ${RULE}`,
-                background: "rgba(122,31,43,0.06)",
+                background: "var(--surface-subtle)",
                 padding: "12px 14px",
                 marginBottom: 14,
                 display: "flex",
@@ -365,7 +365,7 @@ export default function AuraCardPanel({
               role="alert"
               style={{
                 border: `1px solid ${SPOT}`,
-                background: "rgba(122,31,43,0.06)",
+                background: "var(--surface-subtle)",
                 padding: "12px 14px",
                 marginBottom: 14,
                 display: "flex",
