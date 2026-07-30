@@ -123,7 +123,14 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
   const [rows, setRows] = useState<Row[]>([]);
   const [counts, setCounts] = useState<Counts | null>(null);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<"list" | "board">("board");
+  const [view, setView] = useState<"list" | "board">(() => {
+    if (typeof window === "undefined") return "list";
+    const stored = window.localStorage.getItem(VIEW_KEY);
+    return stored === "board" ? "board" : "list";
+  });
+  useEffect(() => {
+    try { window.localStorage.setItem(VIEW_KEY, view); } catch { /* preference is optional */ }
+  }, [view]);
   const [dormantOpen, setDormantOpen] = useState(false);
   const [filter, setFilter] = useState<SignalFilter>(
     ["accelerating", "stable", "dormant"].includes(paramFilter) ? paramFilter : (initialFilter || "all"),
@@ -161,7 +168,7 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
   // The control bar is portalled to the body and driven by scroll instead.
   useEffect(() => {
     const onScroll = () => {
-      const next = window.scrollY > 200;
+      const next = window.scrollY > 400;
       if (next === stuckRef.current) return;
       stuckRef.current = next;
       setStuck(next);
