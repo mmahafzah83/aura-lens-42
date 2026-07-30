@@ -111,7 +111,7 @@ const Pill: React.FC<{ c: Citation; onOpen: (id: string) => void }> = ({ c, onOp
       margin: "0 2px", padding: "1px 7px", borderRadius: 999, fontSize: 11, cursor: "pointer",
       background: "var(--act-tint)",
       border: "1px solid color-mix(in srgb, var(--act) 45%, transparent)",
-      color: "var(--act)",
+      color: "var(--act-hover)",
     }}
   >
     {c.ref}
