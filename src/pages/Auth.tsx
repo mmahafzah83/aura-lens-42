@@ -591,7 +591,7 @@ const Auth = () => {
                 }}
               >
                 Use the email and password from your invitation. First time?
-                Use <span style={{ color: "var(--deadline-text)", fontWeight: 600 }}>Set Password</span> below to create your password.
+                Use <span style={{ color: "var(--act)", fontWeight: 600 }}>Set Password</span> below to create your password.
               </div>
             )}
             <div>
