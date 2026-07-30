@@ -989,14 +989,11 @@ const Dashboard = () => {
                 <FirstVisitHint page="home" />
                 <IdentityDriftBanner />
                 <ErrorBoundary>
-                  <BriefV2
-                    onOpenCapture={(mode) => handleOpenCapture(undefined, undefined, undefined, mode)}
+                  <HomeSpine
+                    userId={userId}
                     onSwitchTab={(t) => switchTab(t as TabValue)}
-                    onOpenBrandAssessment={() => setBrandAssessmentOpen(true)}
-                    onOpenSignal={navigateToSignal}
-                    onOpenDraft={(d) => { setDraftPrefill(d); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                    onDraftToStudio={(prefill) => {
-                      setSignalDraftPrefill(prefill);
+                    onStartSignalPost={(p) => {
+                      setSignalDraftPrefill({ ...p, sourceType: "signal", contentFormat: "post" } as any);
                       setActiveTab("authority");
                       window.scrollTo({ top: 0, behavior: "smooth" });
                     }}
