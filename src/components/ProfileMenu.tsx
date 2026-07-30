@@ -134,41 +134,15 @@ export default function ProfileMenu({
           }}
         />
 
-        {/* ACCOUNT */}
+        {/* ACCOUNT & SETTINGS */}
         <button
           type="button"
-          onClick={() => (onOpenAccount ? onOpenAccount() : navigate("/settings?tab=account"))}
+          onClick={() => (onOpenAccount ? onOpenAccount() : navigate("/settings"))}
           style={itemStyle}
           className="hover:bg-[var(--paper-3)] transition-colors"
         >
           <UserCog className="w-4 h-4" />
-          Account
-        </button>
-
-        {/* SETTINGS */}
-        <button
-          type="button"
-          onClick={() => navigate("/settings")}
-          style={{
-            width: "100%",
-            minHeight: 44,
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "10px 12px",
-            marginTop: 4,
-            background: "transparent",
-            border: "none",
-            borderRadius: 8,
-            cursor: "pointer",
-            color: "var(--ink)",
-            fontSize: 14,
-            fontWeight: 500,
-          }}
-          className="hover:bg-[var(--paper-3)] transition-colors"
-        >
-          <Settings className="w-4 h-4" />
-          Settings
+          Account & settings
         </button>
 
         <div style={{ height: 0, borderTop: "0.5px solid var(--rule)", margin: "8px 4px" }} />
