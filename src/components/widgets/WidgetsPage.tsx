@@ -1,12 +1,13 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import { ButtonPrimary, ButtonGhost, Chip } from "@/components/systemb";
 import {
   WIDGET_DEFS, DEFAULT_LAYOUT, loadLayout, saveLayout, loadWidgetMetrics,
 } from "./widgetData";
 import type { WidgetLayout, WidgetMetrics } from "./widgetData";
-import { WidgetBody } from "./WidgetCards";
+import { widgetContent, goTab } from "./WidgetCards";
 
 /**
  * WidgetsPage — two honest halves.
@@ -77,10 +78,7 @@ export default function WidgetsPage() {
   const uid = user?.id ?? null;
 
   const [layout, setLayout] = useState<WidgetLayout>(DEFAULT_LAYOUT);
-  const [savedLayout, setSavedLayout] = useState<WidgetLayout>(DEFAULT_LAYOUT);
   const [metrics, setMetrics] = useState<WidgetMetrics | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [savedNote, setSavedNote] = useState<string | null>(null);
 
   const [tallies, setTallies] = useState<Record<string, Tally>>({});
   const [myVotes, setMyVotes] = useState<Set<string>>(new Set());
@@ -112,46 +110,39 @@ export default function WidgetsPage() {
     (async () => {
       const [l, m] = await Promise.all([loadLayout(uid), loadWidgetMetrics(uid)]);
       if (!alive) return;
-      setLayout(l); setSavedLayout(l); setMetrics(m);
+      setLayout(l); setMetrics(m);
     })();
     loadVotes();
     return () => { alive = false; };
   }, [uid, loadVotes]);
 
-  const dirty = useMemo(
-    () => WIDGET_DEFS.some(d => !!layout[d.key] !== !!savedLayout[d.key]),
-    [layout, savedLayout],
-  );
-
-  async function handleSave() {
+  /** Optimistic write-through: the switch is the save. */
+  const persist = useCallback(async (next: WidgetLayout) => {
+    setLayout(next);
     if (!uid) return;
-    setSaving(true);
-    const { error } = await saveLayout(uid, layout);
-    setSaving(false);
-    if (error) { setSavedNote("Could not save. Try again."); return; }
-    setSavedLayout(layout);
-    setSavedNote("Saved to your Home.");
-    setTimeout(() => setSavedNote(null), 3000);
+    const { error } = await saveLayout(uid, next);
+    if (error) toast.error("Could not save that. Try again.");
+  }, [uid]);
+
+  function toggleWidget(key: string, name: string) {
+    const before = layout;
+    const on = !layout[key];
+    persist({ ...layout, [key]: on });
+    toast(on ? "Added to Home" : "Removed from Home", {
+      description: name,
+      duration: 5000,
+      action: { label: "Undo", onClick: () => persist(before) },
+    });
   }
 
   async function toggleVote(slotKey: string) {
-    if (!uid) return;
-    const had = myVotes.has(slotKey);
-    // optimistic
-    setMyVotes(prev => {
-      const next = new Set(prev);
-      had ? next.delete(slotKey) : next.add(slotKey);
-      return next;
-    });
+    if (!uid || myVotes.has(slotKey)) return;  // one vote per slot, and it stands
+    setMyVotes(prev => new Set(prev).add(slotKey));
     setTallies(prev => {
       const cur = prev[slotKey]?.votes ?? 0;
-      return { ...prev, [slotKey]: { votes: Math.max(0, cur + (had ? -1 : 1)), eligible } };
+      return { ...prev, [slotKey]: { votes: cur + 1, eligible } };
     });
-    if (had) {
-      await supabase.from("widget_slot_votes").delete().eq("user_id", uid).eq("slot_key", slotKey);
-    } else {
-      await supabase.from("widget_slot_votes").insert({ user_id: uid, slot_key: slotKey });
-    }
+    await supabase.from("widget_slot_votes").insert({ user_id: uid, slot_key: slotKey });
     loadVotes();
   }
 
