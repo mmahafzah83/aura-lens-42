@@ -7,6 +7,7 @@ import { loadLayout, loadWidgetMetrics, WIDGET_DEFS, DEFAULT_LAYOUT } from "@/co
 import type { WidgetLayout, WidgetMetrics } from "@/components/widgets/widgetData";
 import { WidgetBody } from "@/components/widgets/WidgetCards";
 import { useSinceLastVisit } from "@/hooks/useSinceLastVisit";
+import { draftNightKeys, loadGhostDrafts, nightsLine } from "@/lib/overnightNights";
 
 /**
  * HomeSpine — everything on Home below the one move.
