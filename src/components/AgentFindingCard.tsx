@@ -307,7 +307,7 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
   const STRIP_BG = "rgba(241,236,225,0.08)";
   const STRIP_BORDER = "rgba(241,236,225,0.1)";
   const TEAL = "var(--machine)";
-  const AMBER = "var(--deadline)";
+  const AMBER = "var(--text-secondary)";
 
   return (
     <section

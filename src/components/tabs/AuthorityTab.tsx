@@ -4076,17 +4076,17 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
         <div>
           <div
             className="flex items-center gap-2.5 w-full text-left"
-            style={{ borderLeft: "2px solid var(--deadline)", paddingLeft: 12, marginBottom: 12 }}
+            style={{ borderLeft: "2px solid var(--border-default)", paddingLeft: 12, marginBottom: 12 }}
           >
             <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <h3 style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--deadline)", margin: 0 }}>
+              <h3 style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-secondary)", margin: 0 }}>
                 Needs review
               </h3>
               <span style={{ fontFamily: "var(--font-display)", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", lineHeight: 1.4 }}>
                 We couldn't confirm these reached LinkedIn. Check your feed before reposting — don't blind-retry.
               </span>
             </div>
-            <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--paper-2)", color: "var(--deadline)" }}>
+            <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--surface-subtle)", color: "var(--text-secondary)" }}>
               {needsReview.length}
             </span>
           </div>
@@ -4099,7 +4099,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
                   key={row.id}
                   style={{
                     border: "1px solid var(--paper-2)",
-                    borderLeft: "2px solid var(--deadline)",
+                    borderLeft: "2px solid var(--border-default)",
                     padding: 14,
                     background: "var(--paper)",
                     display: "flex",
