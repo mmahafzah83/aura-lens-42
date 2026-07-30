@@ -919,14 +919,21 @@ const SourcesSubTab = ({
       {/* Filters + sort */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
         <div style={{ display: "flex", gap: 6, overflowX: "auto", flex: 1, paddingBottom: 2 }} className="scrollbar-hide">
-          {FILTER_LABELS.map(f => {
-            const isActive = filter === f.key;
-            const count =
-              f.key === "all"
+          {[...FILTER_LABELS]
+            .map(f => ({
+              f,
+              count: f.key === "all"
                 ? totalCount
                 : f.key === "document"
                   ? documentsChipCount
-                  : (typeCounts[f.typeMatch || ""] || 0);
+                  : (typeCounts[f.typeMatch || ""] || 0),
+            }))
+            // Empty types stay visible — they teach what can be captured —
+            // but sit muted at the end of the row.
+            .sort((a, b) => (a.count === 0 ? 1 : 0) - (b.count === 0 ? 1 : 0))
+            .map(({ f, count }) => {
+            const isActive = filter === f.key;
+            const isEmpty = count === 0;
             return (
               <button
                 key={f.key}
@@ -936,7 +943,8 @@ const SourcesSubTab = ({
                   cursor: "pointer", whiteSpace: "nowrap",
                   background: isActive ? "rgba(197,165,90,0.15)" : "var(--surface-ink-raised)",
                   color: isActive ? "var(--brand)" : "var(--glass-2)",
-                  border: `1px solid ${isActive ? "var(--brand)" : "var(--glass-2)"}`,
+                  border: `1px solid ${isActive ? "var(--brand)" : "var(--hair)"}`,
+                  opacity: isEmpty && !isActive ? 0.5 : 1,
                 }}
               >
                 {f.label} ({count})
