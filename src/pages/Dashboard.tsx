@@ -27,6 +27,7 @@ import FeedbackButton from "@/components/FeedbackButton";
 import InviteColleagueModal from "@/components/InviteColleagueModal";
 import NpsSurveyModal from "@/components/NpsSurveyModal";
 import FirstLoginWelcome from "@/components/FirstLoginWelcome";
+import { useOnboardingGate } from "@/hooks/useOnboardingGate";
 import Brief from "@/components/Brief";
 import HomeSpine from "@/components/home/HomeSpine";
 import AuraRail from "@/components/rail/AuraRail";
@@ -105,6 +106,7 @@ const Dashboard = () => {
   const [user, setUser] = useState<{ email?: string; fullName?: string | null; firstName?: string | null; avatarUrl?: string | null } | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const firstFlight = useFirstFlight(userId);
+  const onboardingGate = useOnboardingGate(userId);
   const isFfDimmed = (val: string, isActive: boolean) => firstFlight.dimmedTabs.has(val) && !isActive;
   const [newIntelSignalCount, setNewIntelSignalCount] = useState(0);
   const showOnboarding = false;
@@ -976,10 +978,9 @@ const Dashboard = () => {
                 )}
                 <FirstLoginWelcome
                   firstName={user?.firstName ?? null}
+                  open={onboardingGate.showWelcome}
                   onOpenGuide={() => setHelpOpen(true)}
-                  onDismiss={() => {
-                    try { localStorage.setItem("aura_welcome_briefing_done", "1"); } catch {}
-                  }}
+                  onDismiss={() => { void onboardingGate.dismiss("welcome"); }}
                 />
                 <FirstFlightCard
                   state={firstFlight}
@@ -988,7 +989,11 @@ const Dashboard = () => {
                   onOpenSignal={(sig) => navigateToSignal(sig.id)}
                   onWriteFromSignal={writeFromFirstFlightSignal}
                 />
-                <FirstVisitHint page="home" />
+                <FirstVisitHint
+                  page="home"
+                  open={onboardingGate.showHomeHint}
+                  onDismiss={() => { void onboardingGate.dismiss("home_hint"); }}
+                />
                 <IdentityDriftBanner />
                 <ErrorBoundary>
                   <HomeSpine

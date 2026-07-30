@@ -882,6 +882,7 @@ export type Database = {
           skill_ratings: Json
           target_register: string | null
           theme_preference: string | null
+          ui_dismissals: Json
           user_id: string
           years_experience: string | null
         }
@@ -929,6 +930,7 @@ export type Database = {
           skill_ratings?: Json
           target_register?: string | null
           theme_preference?: string | null
+          ui_dismissals?: Json
           user_id: string
           years_experience?: string | null
         }
@@ -976,6 +978,7 @@ export type Database = {
           skill_ratings?: Json
           target_register?: string | null
           theme_preference?: string | null
+          ui_dismissals?: Json
           user_id?: string
           years_experience?: string | null
         }

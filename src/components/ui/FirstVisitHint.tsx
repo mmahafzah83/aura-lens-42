@@ -63,20 +63,29 @@ function markVisited(page: string) {
 export default function FirstVisitHint({
   page,
   suppress = false,
+  open,
+  onDismiss,
 }: {
   page: PageKey;
   suppress?: boolean;
+  /** When provided, visibility is fully controlled by the parent (DB-backed gate). */
+  open?: boolean;
+  onDismiss?: () => void;
 }) {
   const [show, setShow] = useState(false);
   const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
+    if (open !== undefined) {
+      setShow(open);
+      return;
+    }
     if (suppress) {
       setShow(false);
       return;
     }
     if (!getVisited().includes(page)) setShow(true);
-  }, [page, suppress]);
+  }, [page, suppress, open]);
 
   // Regression guard (dev only): if a sibling welcome card is mounted while
   // this hint is also visible, log a loud warning so we catch any future
@@ -97,7 +106,8 @@ export default function FirstVisitHint({
 
   const dismiss = () => {
     setLeaving(true);
-    markVisited(page);
+    if (open !== undefined) onDismiss?.();
+    else markVisited(page);
     window.setTimeout(() => setShow(false), 300);
   };
 
