@@ -27,6 +27,7 @@ import FeedbackButton from "@/components/FeedbackButton";
 import InviteColleagueModal from "@/components/InviteColleagueModal";
 import NpsSurveyModal from "@/components/NpsSurveyModal";
 import FirstLoginWelcome from "@/components/FirstLoginWelcome";
+import { useOnboardingGate } from "@/hooks/useOnboardingGate";
 import Brief from "@/components/Brief";
 import HomeSpine from "@/components/home/HomeSpine";
 import AuraRail from "@/components/rail/AuraRail";
@@ -105,6 +106,7 @@ const Dashboard = () => {
   const [user, setUser] = useState<{ email?: string; fullName?: string | null; firstName?: string | null; avatarUrl?: string | null } | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const firstFlight = useFirstFlight(userId);
+  const onboardingGate = useOnboardingGate(userId);
   const isFfDimmed = (val: string, isActive: boolean) => firstFlight.dimmedTabs.has(val) && !isActive;
   const [newIntelSignalCount, setNewIntelSignalCount] = useState(0);
   const showOnboarding = false;
