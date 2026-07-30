@@ -976,10 +976,9 @@ const Dashboard = () => {
                 )}
                 <FirstLoginWelcome
                   firstName={user?.firstName ?? null}
+                  open={onboardingGate.showWelcome}
                   onOpenGuide={() => setHelpOpen(true)}
-                  onDismiss={() => {
-                    try { localStorage.setItem("aura_welcome_briefing_done", "1"); } catch {}
-                  }}
+                  onDismiss={() => { void onboardingGate.dismiss("welcome"); }}
                 />
                 <FirstFlightCard
                   state={firstFlight}
@@ -988,7 +987,11 @@ const Dashboard = () => {
                   onOpenSignal={(sig) => navigateToSignal(sig.id)}
                   onWriteFromSignal={writeFromFirstFlightSignal}
                 />
-                <FirstVisitHint page="home" />
+                <FirstVisitHint
+                  page="home"
+                  open={onboardingGate.showHomeHint}
+                  onDismiss={() => { void onboardingGate.dismiss("home_hint"); }}
+                />
                 <IdentityDriftBanner />
                 <ErrorBoundary>
                   <HomeSpine
