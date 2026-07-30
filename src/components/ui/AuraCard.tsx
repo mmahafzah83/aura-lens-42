@@ -37,7 +37,7 @@ export function AuraCard({
     position: "relative",
     background: selected ? "var(--brand-ghost, #F8F2E2)" : bgByVariant[variant],
     border: `1px solid ${
-      selected ? "var(--brand, #B08D3A)" : "var(--brand-line, rgba(176,141,58,0.22))"
+      selected ? "var(--act)" : "var(--brand-line, rgba(176,141,58,0.22))"
     }`,
     borderRadius: 12,
     padding: "16px 18px",
