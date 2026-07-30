@@ -11,13 +11,13 @@ import { WidgetBody } from "./WidgetCards";
 /**
  * WidgetsPage — two honest halves.
  *
- * Above: the six widgets that exist, every one showing a measured number and
- * its denominator. Below: the slots that do not exist yet, drawn so that no
- * one could mistake them for shipped work, each with a real vote count from a
- * SECURITY DEFINER tally that returns aggregates only.
+ * Above: the widgets that exist and are not already on the Home spine, every
+ * one showing a measured number and its denominator. Below: the slots that do
+ * not exist yet — only things we can genuinely build — each with a real vote
+ * count from a SECURITY DEFINER tally that returns aggregates only.
  *
- * Colour law: blue = your turn (Save Home, Vote, Send), cyan = the machine
- * (the Overnight widget only). No clock exists on this page, so no amber.
+ * Colour law: blue = your turn (Save Home, Vote, Send); amber only on the
+ * fading-signals widget, which is a real expiry clock.
  */
 
 const FF = { fontFamily: "var(--ff-ui)" } as const;
@@ -27,12 +27,11 @@ const MONO: React.CSSProperties = {
 };
 
 const SLOTS: Array<{ key: string; name: string; blurb: string; target: string }> = [
-  { key: "competitor_watch", name: "Competitor watch", blurb: "What the three people you benchmark against published this week.", target: "Next" },
   { key: "comment_queue",    name: "Comment queue",    blurb: "Posts worth a reply, ranked by who is reading them.", target: "Next" },
-  { key: "idea_bank",        name: "Idea bank",        blurb: "Half-formed thoughts held until a signal makes them usable.", target: "Later" },
   { key: "practice_board",   name: "Practice board",   blurb: "One rewrite drill a day against your own published work.", target: "Later" },
-  { key: "reading_streak",   name: "Reading streak",   blurb: "What you read, not just what you wrote.", target: "Later" },
 ];
+// Retired slots (competitor_watch, idea_bank, reading_streak) simply stop
+// rendering; their vote rows stay in the database untouched.
 
 const SectionLabel: React.FC<React.PropsWithChildren> = ({ children }) => (
   <div style={{
@@ -224,7 +223,7 @@ export default function WidgetsPage() {
 
       {/* SECTION 2 — SLOTS */}
       <section>
-        <SectionLabel>Slots · coming soon</SectionLabel>
+        <SectionLabel>Coming next — you decide</SectionLabel>
         <p style={{ margin: "0 0 14px", fontSize: 13.5, color: "var(--text-secondary)", maxWidth: 620 }}>
           None of these exist yet. Vote for the one you'd use, and it moves up the queue.
         </p>
