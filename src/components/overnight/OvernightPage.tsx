@@ -381,7 +381,7 @@ export default function OvernightPage({ onOpenDraft, onOpenSettings }: Overnight
         <SectionLabel>Last 7 nights</SectionLabel>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8, alignItems: "end", height: 84 }}>
           {nights.map((n) => {
-            const produced = n.rows.some((r) => r.status === "kept");
+            const produced = draftNights.has(n.key);
             const ran = n.rows.length > 0;
             return (
               <div key={n.key} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, height: "100%", justifyContent: "flex-end" }}>
