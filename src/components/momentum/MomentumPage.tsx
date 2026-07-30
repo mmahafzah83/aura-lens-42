@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Moon, CalendarDays, CalendarRange } from "lucide-react";
+import { Moon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import { TIER_BANDS, bandFromKey, bandFromScore } from "@/hooks/useTierFromImprint";
@@ -11,14 +11,11 @@ import { filterPublishedRows, postEffectiveDate } from "@/lib/postProvenance";
  * Read-only. Every figure comes from a row that exists:
  *  - funnel        → public.momentum_funnel() (captures → in a signal → signals → published)
  *  - weekly grid   → entries.created_at + linkedin_posts (published) per ISO week
- *  - tier          → score_snapshots (latest score + EF-computed tier key)
+ *  - score/tier    → imprint_snapshots (latest row only — same source as Home)
  *  - milestones    → user_milestones (earned rows only)
  *  - daily loop    → real pg_cron times + the user's own overnight setting
  *
- * Deliberately NOT rendered: the weekly plan and the monthly page. The moves
- * engine was retired and the monthly page was never built, so both are shown
- * as "not built yet" with no times and no buttons rather than implied to work.
- * Tier unlocks are omitted entirely — nothing on this product is tier-gated
+ * Only shipped surfaces appear here. Tier unlocks are omitted entirely — nothing on this product is tier-gated
  * today, and promising a locked feature that will never arrive is a lie.
  *
  * Colour law: cyan (--machine) = the machine is awake, never on a button.
@@ -79,6 +76,8 @@ interface Funnel {
   captures: number;
   used_in_signal: number;
   signals: number;
+  /** Signals folded into stronger ones. Shown as an aside, never counted. */
+  mergedSignals: number;
   /** Aura produced the draft and you published it. */
   publishedThroughAura: number;
   /** Live on LinkedIn, including your imported history. */
@@ -114,7 +113,7 @@ export default function MomentumPage() {
     const since = startOfWeek(new Date());
     since.setDate(since.getDate() - (WEEKS - 1) * 7);
 
-    const [funnelRes, entriesRes, postsRes, scoreRes, msRes, prefRes] = await Promise.all([
+    const [funnelRes, entriesRes, postsRes, scoreRes, msRes, prefRes, sigLiveRes, sigMergedRes] = await Promise.all([
       supabase.rpc("momentum_funnel" as any),
       supabase.from("entries").select("created_at").eq("user_id", uid).gte("created_at", since.toISOString()),
       supabase
@@ -123,8 +122,8 @@ export default function MomentumPage() {
         .eq("user_id", uid)
         .gte("created_at", new Date(since.getTime() - 1000 * 60 * 60 * 24 * 120).toISOString()),
       supabase
-        .from("score_snapshots")
-        .select("score, tier, created_at")
+        .from("imprint_snapshots")
+        .select("imprint, tier, created_at")
         .eq("user_id", uid)
         .order("created_at", { ascending: false })
         .limit(1),
@@ -134,6 +133,16 @@ export default function MomentumPage() {
         .eq("user_id", uid)
         .order("earned_at", { ascending: false }),
       supabase.from("diagnostic_profiles").select("notification_prefs").eq("user_id", uid).maybeSingle(),
+      supabase
+        .from("strategic_signals")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", uid)
+        .in("status", ["active", "dormant"]),
+      supabase
+        .from("strategic_signals")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", uid)
+        .eq("status", "merged"),
     ]);
 
     const f = (funnelRes.data as any)?.[0] ?? null;
@@ -142,7 +151,8 @@ export default function MomentumPage() {
         ? {
             captures: Number(f.captures) || 0,
             used_in_signal: Number(f.used_in_signal) || 0,
-            signals: Number(f.signals) || 0,
+            signals: sigLiveRes.count ?? Number(f.signals) || 0,
+            mergedSignals: sigMergedRes.count ?? 0,
             publishedThroughAura: Number(f.published_through_aura) || 0,
             publishedLive: Number(f.published_live) || 0,
           }
@@ -170,7 +180,7 @@ export default function MomentumPage() {
     setWeeks(cells);
 
     const snap = (scoreRes.data || [])[0] as any;
-    setScore(snap?.score ?? null);
+    setScore(snap?.imprint ?? null);
     setTierKey(snap?.tier ?? null);
 
     setMilestones(((msRes.data || []) as any[]).map((m) => ({
