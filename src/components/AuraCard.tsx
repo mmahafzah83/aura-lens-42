@@ -3,17 +3,17 @@ import { supabase } from "@/integrations/supabase/client";
 import AuraLogo from "@/components/brand/AuraLogo";
 import { flagFor } from "@/components/CountryPicker";
 
-// System-A bone palette (fixed for the card surface — reads well in any parent theme).
+// System-B semantic tokens (the card reads tokens directly so it renders correctly in any parent).
 const PAPER = "var(--surface-page)";
 const INK = "var(--text-primary)";
-const INK_2 = "rgba(27,23,18,0.68)";
-const INK_3 = "rgba(27,23,18,0.48)";
-const RULE = "rgba(27,23,18,0.14)";
-const SPOT = "#7A1F2B"; // oxblood
+const INK_2 = "var(--text-secondary)";
+const INK_3 = "var(--text-muted)";
+const RULE = "var(--border-default)";
+const SPOT = "var(--act)"; // single accent
 const TEAL = "var(--machine)";
 
-const SERIF = "'Newsreader', Georgia, serif";
-const MONO = "'IBM Plex Mono', ui-monospace, monospace";
+const SERIF = "var(--font-body)";
+const MONO = "var(--font-mono)";
 
 export type AuraCardVariant = "voice" | "skills";
 
@@ -101,7 +101,7 @@ function AvatarRing({ src, alt }: { src?: string | null; alt: string }) {
       </svg>
       <div style={{
         position: "absolute", inset: 8, borderRadius: "50%",
-        overflow: "hidden", background: "#E7E1D3",
+        overflow: "hidden", background: "var(--surface-subtle)",
         display: "flex", alignItems: "center", justifyContent: "center",
       }}>
         {src ? (
@@ -124,7 +124,7 @@ function Chips({ items }: { items: string[] }) {
           display: "inline-flex", alignItems: "center",
           fontFamily: SERIF, fontSize: 14, lineHeight: 1.35, color: INK,
           padding: "12px 14px", border: `1px solid ${RULE}`, borderRadius: 999,
-          background: "rgba(27,23,18,0.02)",
+          background: "var(--surface-subtle)",
           whiteSpace: "normal", wordBreak: "break-word",
         }}>{t}</span>
       ))}
@@ -214,7 +214,7 @@ export default function AuraCard({ variant }: AuraCardProps) {
     boxSizing: "border-box",
     fontFamily: SERIF,
     position: "relative",
-    boxShadow: "0 30px 60px -30px rgba(27,23,18,0.28)",
+    boxShadow: "0 30px 60px -30px rgba(15,21,25,0.22)",
   };
 
   return (
