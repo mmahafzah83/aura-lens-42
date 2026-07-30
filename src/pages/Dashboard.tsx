@@ -20,7 +20,6 @@ import AskAuraButton from "@/components/AskAuraButton";
 import OvernightPulse from "@/components/systemb/OvernightPulse";
 import { HelpPanel, HelpButton } from "@/components/HelpPanel";
 import ProfileMenu from "@/components/ProfileMenu";
-import PreferencesPanel from "@/components/PreferencesPanel";
 import EditProfileModal, { type EditProfileField } from "@/components/EditProfileModal";
 import SetPasswordModal from "@/components/SetPasswordModal";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
@@ -136,7 +135,6 @@ const Dashboard = () => {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { t } = useLanguage();
-  const [preferencesOpen, setPreferencesOpen] = useState(false);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [brandAssessmentOpen, setBrandAssessmentOpen] = useState(false);
@@ -1224,27 +1222,6 @@ const Dashboard = () => {
       <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} activeTab={activeTab} />
       <InviteColleagueModal open={inviteOpen} onClose={() => setInviteOpen(false)} />
       <NpsSurveyModal />
-      <PreferencesPanel
-        open={preferencesOpen}
-        onClose={() => setPreferencesOpen(false)}
-        userId={userId}
-        fullName={user?.fullName ?? null}
-        email={user?.email}
-        onSignOut={() => { setPreferencesOpen(false); handleLogout(); }}
-        onEditField={(field) => {
-          setPreferencesOpen(false);
-          setEditProfileField(field);
-          setTimeout(() => setEditProfileOpen(true), 180);
-        }}
-        onChangePassword={() => {
-          setPreferencesOpen(false);
-          setTimeout(() => setPasswordModalOpen(true), 180);
-        }}
-        onRetakeBrandAssessment={() => {
-          setPreferencesOpen(false);
-          setTimeout(() => setBrandAssessmentOpen(true), 180);
-        }}
-      />
       <EditProfileModal
         open={editProfileOpen}
         onClose={() => setEditProfileOpen(false)}
