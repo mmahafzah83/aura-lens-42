@@ -405,34 +405,52 @@ export default function MomentumPage() {
                   : "Top band"}
               </span>
             </div>
-            <div style={{ display: "grid", gap: 6 }}>
+            <div
+              role="img"
+              aria-label={`Tier ladder. You are in ${band.name} at ${score} points.`}
+              style={{
+                display: "flex",
+                borderRadius: 999,
+                overflow: "hidden",
+                border: "1px solid var(--rule-divider)",
+                background: "var(--surface-subtle)",
+              }}
+            >
               {TIER_BANDS.map((b) => {
                 const current = b.key === band.key;
                 return (
                   <div
                     key={b.key}
+                    tabIndex={0}
+                    title={`${b.name} · ${b.min}–${b.max}`}
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                      padding: "8px 10px",
-                      borderRadius: 8,
+                      flex: 1,
+                      minWidth: 0,
+                      padding: "9px 6px",
+                      textAlign: "center",
                       background: current ? "var(--act-tint)" : "transparent",
-                      border: `1px solid ${current ? "var(--act)" : "var(--rule-divider)"}`,
+                      borderInlineStart: b.key === TIER_BANDS[0].key ? "none" : "1px solid var(--rule-divider)",
+                      cursor: "default",
                     }}
                   >
                     <span
                       style={{
-                        fontSize: 13,
+                        display: "block",
+                        fontSize: 12,
                         fontWeight: current ? 700 : 500,
-                        color: current ? "var(--text-primary)" : "var(--text-secondary)",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        color: current ? "var(--text-primary)" : "var(--text-muted)",
                       }}
                     >
                       {b.name}
                     </span>
-                    <span style={{ ...MONO, marginInlineStart: "auto", fontSize: 11.5, color: "var(--text-muted)" }}>
-                      {b.min}–{b.max}
-                    </span>
+                    {current && (
+                      <span style={{ ...MONO, display: "block", fontSize: 10.5, color: "var(--act)", marginTop: 2 }}>
+                        you · {score}
+                      </span>
+                    )}
                   </div>
                 );
               })}
