@@ -81,15 +81,14 @@ export function widgetContent(k: WidgetKey, m: WidgetMetrics): WidgetContent | n
       sub: w === 1 ? "consecutive week with a capture" : "consecutive weeks with a capture",
     };
   }
-  if (k === "fading") {
-    if (!m.fading) return null;
-    const { count, nearestDays } = m.fading;
-    if (count === 0) return { hero: "0", sub: "nothing fades this month" };
+  if (k === "quiet") {
+    if (!m.quiet) return null;
+    const { count, quietestDays } = m.quiet;
+    if (count === 0) return { hero: "0", sub: "No signals going quiet. Your reading is keeping them alive." };
     return {
       hero: String(count),
-      accent: true,
-      sub: `${count === 1 ? "signal fades" : "signals fade"} this month without a post${nearestDays != null ? ` · nearest: ${nearestDays}d` : ""}`,
-      action: { label: "Rescue one →", tab: "intelligence" },
+      sub: `${count === 1 ? "signal quiet" : "signals quiet"} 45+ days without a post${quietestDays != null ? ` · quietest: ${quietestDays}d` : ""}`,
+      action: { label: "See them →", tab: "intelligence" },
     };
   }
   if (k === "drafts") {
@@ -129,25 +128,25 @@ export const WidgetBody: React.FC<{ k: WidgetKey; m: WidgetMetrics }> = ({ k, m 
       </WidgetShell>
     );
   }
-  if (k === "fading") {
-    if (!m.fading) return null;
-    const { count, nearestDays } = m.fading;
+  if (k === "quiet") {
+    if (!m.quiet) return null;
+    const { count, quietestDays } = m.quiet;
     if (count === 0) {
       return (
-        <WidgetShell label="Fading signals">
+        <WidgetShell label="Quiet signals">
           <Big>0</Big>
-          <Sub>nothing fades this month</Sub>
+          <Sub>No signals going quiet. Your reading is keeping them alive.</Sub>
         </WidgetShell>
       );
     }
     return (
-      <WidgetShell label="Fading signals">
-        <Big><span style={{ color: "var(--time)" }}>{count}</span></Big>
+      <WidgetShell label="Quiet signals">
+        <Big>{count}</Big>
         <Sub>
-          {count === 1 ? "signal fades" : "signals fade"} this month without a post
-          {nearestDays != null ? ` · nearest: ${nearestDays}d` : ""}
+          {count === 1 ? "signal quiet" : "signals quiet"} 45+ days without a post
+          {quietestDays != null ? ` · quietest: ${quietestDays}d` : ""}
         </Sub>
-        <ActionLink onClick={() => goTab("intelligence")}>Rescue one →</ActionLink>
+        <ActionLink onClick={() => goTab("intelligence")}>See them →</ActionLink>
       </WidgetShell>
     );
   }
