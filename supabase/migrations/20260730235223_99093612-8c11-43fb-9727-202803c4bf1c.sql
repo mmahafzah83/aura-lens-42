@@ -1,0 +1,1 @@
+ALTER TABLE public.diagnostic_profiles ADD COLUMN IF NOT EXISTS ui_dismissals jsonb NOT NULL DEFAULT '{}'::jsonb;
