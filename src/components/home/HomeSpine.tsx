@@ -101,6 +101,7 @@ export interface HomeSpineProps {
 
 interface SpineData {
   overnightAt: string | null;
+  draftNights: number;
   imprint: number | null;
   band: TierBand | null;
   bandWeeks: number | null;
@@ -123,7 +124,7 @@ export default function HomeSpine({ userId, onSwitchTab, onStartSignalPost }: Ho
     if (!userId) return;
     const monthIso = startOfMonthIso();
 
-    const [snapRes, sigRes, findRes, posts] = await Promise.all([
+    const [snapRes, sigRes, findRes, posts, ghostRows] = await Promise.all([
       supabase.from("imprint_snapshots").select("imprint, tier, created_at")
         .eq("user_id", userId).order("created_at", { ascending: false }).limit(120),
       (supabase.from("strategic_signals" as any) as any)
@@ -132,6 +133,7 @@ export default function HomeSpine({ userId, onSwitchTab, onStartSignalPost }: Ho
       (supabase.from("agent_findings" as any) as any)
         .select("created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(1),
       loadPostCounts(supabase, userId),
+      loadGhostDrafts(supabase as any, userId),
     ]);
 
     // Imprint + how long this band has been held.
@@ -157,6 +159,7 @@ export default function HomeSpine({ userId, onSwitchTab, onStartSignalPost }: Ho
 
     setData({
       overnightAt: ((findRes.data as any[]) || [])[0]?.created_at ?? null,
+      draftNights: draftNightKeys(ghostRows).size,
       imprint: score,
       band,
       bandWeeks,
@@ -205,6 +208,11 @@ export default function HomeSpine({ userId, onSwitchTab, onStartSignalPost }: Ho
       value: String(data.publishedMonth),
       line: "Posts live on LinkedIn this month",
       sub: `${data.publishedThroughAura} all-time made with Aura`,
+    });
+    out.push({
+      value: String(data.draftNights), unit: "/7",
+      line: "Nights that produced a draft",
+      sub: nightsLine(data.draftNights),
     });
     return out;
   }, [data]);
