@@ -47,7 +47,7 @@ export default function UserAvatar({
       aria-label={fullName ? `${fullName} avatar` : "User avatar"}
       title={title ?? fullName ?? undefined}
       className={cn(
-        "inline-flex items-center justify-center rounded-full font-serif font-medium select-none shrink-0",
+        "inline-flex items-center justify-center rounded-full font-[family-name:var(--font-display)] font-medium select-none shrink-0",
         "bg-[var(--gold-pale)] border border-[var(--gold-dark)]/20 text-[var(--gold-dark)]",
         SIZE_CLASSES[size],
         className,
