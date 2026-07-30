@@ -531,7 +531,19 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
                               {col.count === 0 ? col.empty : `Nothing here under “${theme}”.`}
                             </div>
                           )
-                          : cards.map(r => <Card key={r.id} r={r} />)}
+                          : cards.slice(0, BOARD_CAP).map(r => <Card key={r.id} r={r} />)}
+                        {cards.length > BOARD_CAP && (
+                          <button
+                            type="button"
+                            onClick={() => { setFilter(col.key); setView("list"); }}
+                            className="cursor-pointer v23-focus v23-tap"
+                            style={{
+                              alignSelf: "flex-start", background: "transparent", border: 0, cursor: "pointer",
+                              padding: "4px 2px", fontFamily: "var(--ff-ui)", fontSize: 12.5, fontWeight: 600,
+                              color: "var(--act)", textAlign: "start",
+                            }}
+                          >Show all {cards.length} →</button>
+                        )}
                       </div>
                     )}
                   </div>
