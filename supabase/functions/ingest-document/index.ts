@@ -868,7 +868,7 @@ async function runNextStage(
 // HTTP handler
 // ============================================================================
 
-Deno./**
+/**
  * Human display title for a document. Hash-style upload names ("file_UUID.pdf")
  * never reach the user: those fall back to the first sentence of the summary.
  */
@@ -884,7 +884,8 @@ function humanDocTitle(filename: string | null, summary: string): string | null 
   return name || null;
 }
 
-serve(withObserve("ingest-document", async (req) => {
+
+Deno.serve(withObserve("ingest-document", async (req) => {
   console.log(`[ingest-document] handler start method=${req.method}`);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
