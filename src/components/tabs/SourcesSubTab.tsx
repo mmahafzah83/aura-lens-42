@@ -515,18 +515,14 @@ const SourcesSubTab = ({
     return counts;
   }, [entries]);
 
-  // Documents chip: unique filenames whose status is a success state. Stuck,
-  // failed, or duplicate rows must NOT inflate this number.
-  const processedDocsCount = useMemo(() => {
-    const names = new Set<string>();
-    for (const e of entries) {
-      if (e.type !== "document") continue;
-      const status = (e.status || "").toLowerCase();
-      if (!DOC_SUCCESS_STATUSES.has(status)) continue;
-      names.add(e.title || e.id);
-    }
-    return names.size;
-  }, [entries]);
+  // Chip counts must reconcile with the header total. The header counts every
+  // row the list can show (entries of every type + one row per deduped
+  // document, whatever its status), so the Documents chip counts the same
+  // rows the Documents filter actually renders.
+  const documentsChipCount = useMemo(
+    () => entries.filter(e => e.type === "document").length,
+    [entries],
+  );
 
   const loadEntries = useCallback(async () => {
     setLoading(true);
@@ -802,7 +798,10 @@ const SourcesSubTab = ({
           <FileUp className="w-4 h-4" style={{ color: "var(--brand)" }} />
         </div>
         <h2 style={{ color: "var(--glass-2)", fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>Sources</h2>
-        <span style={{ color: "var(--glass-2)", fontSize: 12, marginLeft: "auto" }}>{totalCount} captured</span>
+        <span style={{ color: "var(--glass-2)", fontSize: 12, marginInlineStart: "auto" }}>
+          <span style={{ fontFamily: "var(--ff-mono)", fontVariantNumeric: "tabular-nums" }}>{totalCount}</span>
+          {" items · links, images, notes, voice, documents"}
+        </span>
       </div>
 
       {/* Search */}
@@ -827,7 +826,7 @@ const SourcesSubTab = ({
               f.key === "all"
                 ? totalCount
                 : f.key === "document"
-                  ? processedDocsCount
+                  ? documentsChipCount
                   : (typeCounts[f.typeMatch || ""] || 0);
             return (
               <button
