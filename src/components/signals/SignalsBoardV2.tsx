@@ -7,8 +7,7 @@ import { trackSignalOpen } from "@/lib/trackSignalOpen";
 import { isArabicText } from "@/lib/utils";
 import { LayoutGrid, List as ListIcon, Plus, ChevronRight } from "lucide-react";
 import SignalDetail from "@/components/signals/SignalDetail";
-import SourcesSubTab from "@/components/tabs/SourcesSubTab";
-import { EditorialReadingList, type Signal } from "@/components/tabs/IntelligenceTab";
+import ReadingStrip from "@/components/signals/ReadingStrip";
 
 /**
  * SignalsBoardV2 — THE Signals page.
@@ -33,6 +32,7 @@ interface Row {
   velocity_status: string | null;
   status: string | null;
   created_at: string | null;
+  last_evidence_at: string | null;
 }
 
 type Counts = { all: number; accelerating: number; stable: number; dormant: number };
@@ -44,6 +44,19 @@ const ageDays = (iso: string | null) =>
   iso ? Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 86_400_000)) : 0;
 
 const strengthOf = (r: Row) => Math.round((r.strength_score ?? r.confidence ?? 0) * 100) / 100;
+
+/** Board columns show the top few per lane; the rest lives behind a door. */
+const BOARD_CAP = 5;
+const VIEW_KEY = "aura.signals.view";
+
+/** Theme chips are one line: cut on a word boundary, full text in the title. */
+const CHIP_MAX = 22;
+const clipTheme = (t: string) => {
+  if (t.length <= CHIP_MAX) return t;
+  const cut = t.slice(0, CHIP_MAX);
+  const space = cut.lastIndexOf(" ");
+  return `${(space > 8 ? cut.slice(0, space) : cut).trimEnd()}…`;
+};
 
 const StatusDot: React.FC<{ tone: "live" | "cooling" | "muted" }> = ({ tone }) => (
   <span aria-hidden style={{
