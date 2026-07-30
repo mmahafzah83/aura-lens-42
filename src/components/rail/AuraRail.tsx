@@ -327,7 +327,7 @@ export default function AuraRail({
         <button
           key="identity"
           type="button"
-          aria-label="Profile"
+          aria-label="My Story"
           aria-current={active ? "page" : undefined}
           data-testid="nav-mystory"
           data-active={active ? "true" : "false"}
@@ -341,7 +341,7 @@ export default function AuraRail({
           <AuraRing userId={uid} size={28} gap="var(--v23-night)">
             <Avatar src={avatarUrl} name={profileName} size="sm" ring="var(--v23-night-line)" />
           </AuraRing>
-          <span>Profile</span>
+          <span>My Story</span>
         </button>
       );
     }
@@ -619,14 +619,14 @@ export default function AuraRail({
         <div className="flex flex-col items-center" style={{ gap: 6, paddingTop: 10, borderTop: "1px solid var(--v23-night-line)", width: 62 }}>
           <button
             type="button"
-            aria-label="Profile"
+            aria-label="My Story"
             data-testid="nav-mystory"
             data-active={activeTab === "identity" ? "true" : "false"}
             className="cursor-pointer"
             onClick={() => { onSelect("identity"); setFlyout(null); }}
-            onMouseEnter={(e) => { hoverOn(e); showTip("Profile", "Your story, positioning and reports.")(e); }}
+            onMouseEnter={(e) => { hoverOn(e); showTip("My Story", "Your story, positioning and reports.")(e); }}
             onMouseLeave={(e) => { hoverOff(e); hideTip(); }}
-            onFocus={showTip("Profile", "Your story, positioning and reports.")}
+            onFocus={showTip("My Story", "Your story, positioning and reports.")}
             onBlur={hideTip}
             style={railBtn(activeTab === "identity")}
           >
@@ -634,7 +634,7 @@ export default function AuraRail({
             <AuraRing userId={uid} size={28} gap="var(--v23-night)">
               <Avatar src={avatarUrl} name={profileName} size="sm" ring="var(--v23-night-line)" />
             </AuraRing>
-            <span style={labelStyle(activeTab === "identity")}>Profile</span>
+            <span style={labelStyle(activeTab === "identity")}>My Story</span>
           </button>
         </div>
       </aside>

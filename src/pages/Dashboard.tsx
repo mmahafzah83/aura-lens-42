@@ -64,7 +64,7 @@ const NAV_ITEMS = [
   { value: "influence", label: "Analytics", pageHeader: "Analytics", icon: TrendingUp, docTitle: "Aura — Analytics" },
   { value: "momentum", label: "Momentum", pageHeader: "Momentum", icon: Flame, docTitle: "Aura — Momentum" },
   { value: "widgets", label: "Widgets", pageHeader: "Widgets", icon: LayoutGrid, docTitle: "Aura — Widgets" },
-  { value: "identity", label: "Profile", pageHeader: "Profile", icon: User, docTitle: "Aura — Profile" },
+  { value: "identity", label: "My Story", pageHeader: "My Story", icon: User, docTitle: "Aura — My Story" },
 ] as const;
 
 type TabValue = typeof NAV_ITEMS[number]["value"];
@@ -885,10 +885,7 @@ const Dashboard = () => {
                 avatarUrl={user?.avatarUrl ?? null}
                 userId={userId}
                 onSignOut={handleLogout}
-                onEditProfile={() => {
-                  setActiveTab("identity");
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
+                onOpenAccount={() => navigate("/settings?tab=account")}
                 onViewFullJourney={() => {
                   setActiveTab("identity");
                   window.scrollTo({ top: 0, behavior: "smooth" });
