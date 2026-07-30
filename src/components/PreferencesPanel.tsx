@@ -188,6 +188,7 @@ const ToggleRow = ({
 export default function PreferencesPanel({
   open,
   onClose,
+  variant = "panel",
   userId,
   fullName,
   email,
@@ -202,7 +203,7 @@ export default function PreferencesPanel({
 
   // Body scroll lock + Esc to close.
   useEffect(() => {
-    if (!open) return;
+    if (!open || variant === "inline") return;
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const onKey = (e: KeyboardEvent) => {
@@ -213,7 +214,7 @@ export default function PreferencesPanel({
       document.body.style.overflow = prevOverflow;
       window.removeEventListener("keydown", onKey);
     };
-  }, [open, onClose]);
+  }, [open, onClose, variant]);
 
   // Load profile when opening.
   useEffect(() => {
