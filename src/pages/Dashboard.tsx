@@ -730,7 +730,6 @@ const Dashboard = () => {
         onSelect={(t) => switchTab(t as TabValue)}
         onOpenAsk={() => openChat()}
         onOpenCapture={() => handleOpenCapture()}
-        onOpenSettings={() => setPreferencesOpen(true)}
         newSignalCount={newIntelSignalCount}
       />
 
@@ -879,7 +878,6 @@ const Dashboard = () => {
                 avatarUrl={user?.avatarUrl ?? null}
                 userId={userId}
                 onSignOut={handleLogout}
-                onOpenPreferences={() => setPreferencesOpen(true)}
                 onEditProfile={() => {
                   setActiveTab("identity");
                   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1039,7 +1037,7 @@ const Dashboard = () => {
                 <ErrorBoundary>
                   <OvernightPage
                     onOpenDraft={(d) => { setDraftPrefill(d); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                    onOpenSettings={() => setPreferencesOpen(true)}
+                    onOpenSettings={() => navigate("/settings?tab=preferences")}
                   />
                 </ErrorBoundary>
               </div>
