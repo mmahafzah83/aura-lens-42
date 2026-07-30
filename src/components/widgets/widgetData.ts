@@ -61,21 +61,29 @@ export async function saveLayout(userId: string, layout: WidgetLayout) {
 // ── metrics ────────────────────────────────────────────────────────────────
 
 export interface WidgetMetrics {
-  imprint: { score: number; tier: string; toNext: number | null; nextTier: string | null } | null;
-  liveSignals: number | null;
-  overnight: { lastRunAt: string | null; nights: number; window: number } | null;
   language: { arabic: number; english: number; total: number } | null;
   rhythm: { weeks: number } | null;
-  published: { live: number; throughAura: number } | null;
+  fading: { count: number; nearestDays: number | null } | null;
+  drafts: { count: number; oldestDays: number | null } | null;
 }
 
 const ARABIC = /[\u0600-\u06FF]/;
 
+/**
+ * Week key = the local Monday that starts the calendar week containing `d`
+ * (weeks run Monday→Sunday). Formatted from local Y-M-D parts: using
+ * toISOString() here shifted every key back a day in positive-offset zones,
+ * which is what made the streak read 0.
+ */
+function localDayKey(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
 function weekKey(iso: string): string {
   const d = new Date(iso);
-  const off = (d.getDay() + 6) % 7;
-  const monday = new Date(d.getFullYear(), d.getMonth(), d.getDate() - off);
-  return monday.toISOString().slice(0, 10);
+  const off = (d.getDay() + 6) % 7; // 0 = Monday
+  return localDayKey(new Date(d.getFullYear(), d.getMonth(), d.getDate() - off));
 }
 
 function currentWeekKey(): string { return weekKey(new Date().toISOString()); }
@@ -83,9 +91,9 @@ function currentWeekKey(): string { return weekKey(new Date().toISOString()); }
 /** Consecutive weeks with >= 1 capture, counted back from this week (or last week). */
 export function streakFromWeeks(keys: Set<string>): number {
   const step = (k: string, back: number) => {
-    const d = new Date(`${k}T00:00:00`);
-    d.setDate(d.getDate() - 7 * back);
-    return d.toISOString().slice(0, 10);
+    const [y, m, day] = k.split("-").map(Number);
+    const d = new Date(y, m - 1, day - 7 * back);
+    return localDayKey(d);
   };
   const now = currentWeekKey();
   let start = now;
