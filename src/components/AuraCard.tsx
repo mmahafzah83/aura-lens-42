@@ -4,13 +4,13 @@ import AuraLogo from "@/components/brand/AuraLogo";
 import { flagFor } from "@/components/CountryPicker";
 
 // System-A bone palette (fixed for the card surface — reads well in any parent theme).
-const PAPER = "#F1ECE1";
-const INK = "#1B1712";
+const PAPER = "var(--surface-page)";
+const INK = "var(--text-primary)";
 const INK_2 = "rgba(27,23,18,0.68)";
 const INK_3 = "rgba(27,23,18,0.48)";
 const RULE = "rgba(27,23,18,0.14)";
 const SPOT = "#7A1F2B"; // oxblood
-const TEAL = "#36C5B0";
+const TEAL = "var(--machine)";
 
 const SERIF = "'Newsreader', Georgia, serif";
 const MONO = "'IBM Plex Mono', ui-monospace, monospace";
