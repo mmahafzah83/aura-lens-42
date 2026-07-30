@@ -579,7 +579,7 @@ const SourcesSubTab = ({
 
     const [entriesRes, docsRes] = await Promise.all([
       supabase.from("entries").select("id, type, title, content, summary, image_url, skill_pillar, framework_tag, pinned, created_at"),
-      supabase.from("documents").select("id, filename, file_url, file_type, status, summary, page_count, file_size, created_at, error_message, pages_read, pages_total"),
+      supabase.from("documents").select("id, filename, display_title, file_url, file_type, status, summary, page_count, file_size, created_at, error_message, pages_read, pages_total"),
     ]);
 
     if (entriesRes.error) { toast.error("Couldn't load sources"); setLoading(false); return; }
@@ -618,6 +618,7 @@ const SourcesSubTab = ({
       id: d.id,
       type: "document",
       title: d.filename,
+      display_title: d.display_title ?? null,
       content: d.summary || d.filename,
       summary: d.summary,
       image_url: d.file_url,
