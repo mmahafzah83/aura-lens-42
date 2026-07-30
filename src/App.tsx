@@ -1,7 +1,7 @@
 import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import AuraLogo from "@/components/brand/AuraLogo";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -130,6 +130,8 @@ const App = () => (
             <Route path="/guide" element={<Guide />} />
             <Route path="/guide/thought-leadership-strategy" element={<GuideThoughtLeadershipStrategy />} />
             <Route path="/settings" element={<PasswordGate><Settings /></PasswordGate>} />
+            {/* Legacy alias — Preferences is now the first tab inside Settings. */}
+            <Route path="/preferences" element={<Navigate to="/settings?tab=preferences" replace />} />
             <Route path="/carousel-studio" element={<PasswordGate><CarouselStudio /></PasswordGate>} />
             <Route path="/edition" element={<PasswordGate><EditionStudio /></PasswordGate>} />
             <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />

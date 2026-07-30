@@ -20,7 +20,6 @@ import AskAuraButton from "@/components/AskAuraButton";
 import OvernightPulse from "@/components/systemb/OvernightPulse";
 import { HelpPanel, HelpButton } from "@/components/HelpPanel";
 import ProfileMenu from "@/components/ProfileMenu";
-import PreferencesPanel from "@/components/PreferencesPanel";
 import EditProfileModal, { type EditProfileField } from "@/components/EditProfileModal";
 import SetPasswordModal from "@/components/SetPasswordModal";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
@@ -136,7 +135,6 @@ const Dashboard = () => {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { t } = useLanguage();
-  const [preferencesOpen, setPreferencesOpen] = useState(false);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [brandAssessmentOpen, setBrandAssessmentOpen] = useState(false);
@@ -229,6 +227,11 @@ const Dashboard = () => {
     const switchTab = (e: Event) => {
       const detail = (e as CustomEvent).detail as { tab?: string } | undefined;
       const target = detail?.tab;
+      // Settings lives on its own route now (avatar menu), not in the rail.
+      if (target === "settings" || target === "preferences") {
+        navigate(target === "preferences" ? "/settings?tab=preferences" : "/settings");
+        return;
+      }
       if (target && NAV_ITEMS.some(n => n.value === target)) {
         setActiveTab(target as TabValue);
         setSearchParams({ tab: target });
@@ -563,6 +566,10 @@ const Dashboard = () => {
 
 
   const switchTab = (tab: TabValue) => {
+    if ((tab as string) === "settings" || (tab as string) === "preferences") {
+      navigate((tab as string) === "preferences" ? "/settings?tab=preferences" : "/settings");
+      return;
+    }
     setActiveTab(tab);
     setMobileSidebarOpen(false);
     setSearchParams({ tab });
@@ -730,7 +737,6 @@ const Dashboard = () => {
         onSelect={(t) => switchTab(t as TabValue)}
         onOpenAsk={() => openChat()}
         onOpenCapture={() => handleOpenCapture()}
-        onOpenSettings={() => setPreferencesOpen(true)}
         newSignalCount={newIntelSignalCount}
       />
 
@@ -879,7 +885,6 @@ const Dashboard = () => {
                 avatarUrl={user?.avatarUrl ?? null}
                 userId={userId}
                 onSignOut={handleLogout}
-                onOpenPreferences={() => setPreferencesOpen(true)}
                 onEditProfile={() => {
                   setActiveTab("identity");
                   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1039,7 +1044,7 @@ const Dashboard = () => {
                 <ErrorBoundary>
                   <OvernightPage
                     onOpenDraft={(d) => { setDraftPrefill(d); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                    onOpenSettings={() => setPreferencesOpen(true)}
+                    onOpenSettings={() => navigate("/settings?tab=preferences")}
                   />
                 </ErrorBoundary>
               </div>
@@ -1226,27 +1231,6 @@ const Dashboard = () => {
       <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} activeTab={activeTab} />
       <InviteColleagueModal open={inviteOpen} onClose={() => setInviteOpen(false)} />
       <NpsSurveyModal />
-      <PreferencesPanel
-        open={preferencesOpen}
-        onClose={() => setPreferencesOpen(false)}
-        userId={userId}
-        fullName={user?.fullName ?? null}
-        email={user?.email}
-        onSignOut={() => { setPreferencesOpen(false); handleLogout(); }}
-        onEditField={(field) => {
-          setPreferencesOpen(false);
-          setEditProfileField(field);
-          setTimeout(() => setEditProfileOpen(true), 180);
-        }}
-        onChangePassword={() => {
-          setPreferencesOpen(false);
-          setTimeout(() => setPasswordModalOpen(true), 180);
-        }}
-        onRetakeBrandAssessment={() => {
-          setPreferencesOpen(false);
-          setTimeout(() => setBrandAssessmentOpen(true), 180);
-        }}
-      />
       <EditProfileModal
         open={editProfileOpen}
         onClose={() => setEditProfileOpen(false)}

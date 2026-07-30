@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Loader2, Settings as SettingsIcon } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +14,7 @@ import { useReportSnapshot } from "@/hooks/useReportSnapshot";
 import { getPublication, validate as validatePublication, type PublicationConfig } from "@/lib/publication";
 import { PAPER, INK, SPOT, RULE, SERIF, MONO, ARABIC } from "@/components/broadsheet/pressTokens";
 import CountryPicker from "@/components/CountryPicker";
+import PreferencesPanel from "@/components/PreferencesPanel";
 
 interface ProfileData {
   first_name: string | null;
@@ -57,6 +58,18 @@ export default function Settings() {
 
   const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get("tab") === "account" ? "account" : "preferences";
+  const [authUser, setAuthUser] = useState<{ id: string; email?: string } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    supabase.auth.getSession().then(({ data }) => {
+      const u = data.session?.user;
+      if (!cancelled && u) setAuthUser({ id: u.id, email: u.email ?? undefined });
+    });
+    return () => { cancelled = true; };
+  }, []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [exportingReport, setExportingReport] = useState(false);
@@ -394,6 +407,42 @@ const handleDeleteAccount = async () => {
             Settings
           </h1>
         </div>
+
+        {/* Tabs — Preferences first, then account settings */}
+        <div style={{ display: "flex", gap: 4, marginBottom: 24, borderBottom: "0.5px solid var(--rule)" }}>
+          {([["preferences", "Preferences"], ["account", "Account"]] as const).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setSearchParams(key === "preferences" ? {} : { tab: key }, { replace: true })}
+              style={{
+                background: "transparent",
+                border: 0,
+                borderBottom: `2px solid ${tab === key ? "var(--action)" : "transparent"}`,
+                color: tab === key ? "var(--ink)" : "var(--ink-3)",
+                padding: "8px 12px",
+                fontSize: 14,
+                fontWeight: 500,
+                cursor: "pointer",
+                fontFamily: "var(--font-body)",
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {tab === "preferences" ? (
+          <PreferencesPanel
+            open
+            variant="inline"
+            onClose={() => {}}
+            userId={authUser?.id ?? null}
+            email={authUser?.email}
+            onSignOut={() => {}}
+          />
+        ) : (
+        <>
 
         {/* Your data — trust statement */}
         <SectionHeader
@@ -896,6 +945,8 @@ const handleDeleteAccount = async () => {
           </AuraCard>
         </div>
 
+        </>
+        )}
       </div>
 
       {/* Off-screen report mount for PDF export (W2-G-2b).

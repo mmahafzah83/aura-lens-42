@@ -1,4 +1,4 @@
-import { User, LogOut, Settings2, Settings } from "lucide-react";
+import { User, LogOut, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Avatar from "@/components/systemb/Avatar";
 import AuraRing from "@/components/systemb/AuraRing";
@@ -28,7 +28,9 @@ export default function ProfileMenu({
   avatarUrl,
   userId,
   onSignOut,
-  onOpenPreferences,
+  onEditProfile,
+  // Preferences now lives as the first tab inside Settings.
+  onOpenPreferences: _onOpenPreferences,
   // onQuestAction and onViewFullJourney are accepted for backwards
   // compatibility but no longer rendered — the dropdown no longer
   // hosts its own progress tracker. Home checklist + My Story
@@ -37,15 +39,26 @@ export default function ProfileMenu({
   onViewFullJourney: _onViewFullJourney,
 }: ProfileMenuProps) {
   const fn = (fullName || "").trim();
-  const parts = fn.split(/\s+/).filter(Boolean);
-  const initials =
-    parts.length >= 2
-      ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
-      : parts.length === 1
-        ? parts[0][0]?.toUpperCase()
-        : "";
+  const firstName = fn.split(/\s+/).filter(Boolean)[0] || "";
 
   const navigate = useNavigate();
+
+  const itemStyle: React.CSSProperties = {
+    width: "100%",
+    minHeight: 44,
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    padding: "10px 12px",
+    marginTop: 4,
+    background: "transparent",
+    border: "none",
+    borderRadius: 8,
+    cursor: "pointer",
+    color: "var(--ink)",
+    fontSize: 14,
+    fontWeight: 500,
+  };
 
   return (
     <DropdownMenu>
@@ -78,38 +91,9 @@ export default function ProfileMenu({
       >
         {/* HEADER */}
         <div style={{ padding: 12, display: "flex", alignItems: "center", gap: 12 }}>
-          <div
-            aria-hidden
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: "50%",
-              background: "var(--paper-3)",
-              color: "var(--action)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontWeight: 600,
-              fontSize: 14,
-              flexShrink: 0,
-              overflow: "hidden",
-              border: "0.5px solid var(--rule)",
-            }}
-          >
-            {avatarUrl ? (
-              <img
-                src={avatarUrl}
-                alt={fn || "Avatar"}
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              />
-            ) : initials ? (
-              initials
-            ) : (
-              <User className="w-4 h-4" />
-            )}
-          </div>
+          <Avatar src={avatarUrl} name={fn || email || null} size="lg" />
           <div style={{ minWidth: 0, flex: 1 }}>
-            {fn && (
+            {(firstName || fn) && (
               <div
                 style={{
                   fontSize: 14,
@@ -121,7 +105,7 @@ export default function ProfileMenu({
                   whiteSpace: "nowrap",
                 }}
               >
-                {fn}
+                {firstName || fn}
               </div>
             )}
             {email && (
@@ -150,31 +134,16 @@ export default function ProfileMenu({
           }}
         />
 
-        {/* PREFERENCES */}
-        {onOpenPreferences && (
+        {/* PROFILE */}
+        {onEditProfile && (
           <button
             type="button"
-            onClick={onOpenPreferences}
-            style={{
-              width: "100%",
-              minHeight: 44,
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              padding: "10px 12px",
-              marginTop: 4,
-              background: "transparent",
-              border: "none",
-              borderRadius: 8,
-              cursor: "pointer",
-              color: "var(--ink)",
-              fontSize: 14,
-              fontWeight: 500,
-            }}
+            onClick={onEditProfile}
+            style={itemStyle}
             className="hover:bg-[var(--paper-3)] transition-colors"
           >
-            <Settings2 className="w-4 h-4" />
-            Preferences
+            <User className="w-4 h-4" />
+            Profile
           </button>
         )}
 
@@ -203,6 +172,8 @@ export default function ProfileMenu({
           <Settings className="w-4 h-4" />
           Settings
         </button>
+
+        <div style={{ height: 0, borderTop: "0.5px solid var(--rule)", margin: "8px 4px" }} />
 
         {/* SIGN OUT */}
         <button

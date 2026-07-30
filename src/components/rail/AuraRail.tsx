@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
-  Compass, Radar, Moon, PenLine, BarChart3, Settings, Paperclip, X, Library, Flame, LayoutGrid,
+  Compass, Radar, Moon, PenLine, BarChart3, Paperclip, X, Library, Flame, LayoutGrid,
   ChevronLeft, ChevronRight, Sparkles,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,7 +29,8 @@ interface AuraRailProps {
   onSelect: (tab: RailTab) => void;
   onOpenAsk: () => void;
   onOpenCapture: () => void;
-  onOpenSettings: () => void;
+  /** @deprecated Settings now lives in the avatar menu. Kept for call-site compatibility. */
+  onOpenSettings?: () => void;
   /** Already-loaded count from Dashboard — no fresh fetch for a badge. */
   newSignalCount?: number;
 }
@@ -70,16 +71,16 @@ const NAV_KEY = "aura_nav_expanded";
 
 /** Grouped order for the expanded sidebar. Values map 1:1 to ITEMS + the
  *  bottom-block destinations; no new destinations are introduced. */
-const GROUPS: Array<{ header: string; items: Array<RailTab | "settings"> }> = [
+const GROUPS: Array<{ header: string; items: RailTab[] }> = [
   { header: "Every day", items: ["home"] },
   { header: "Your intelligence", items: ["intelligence", "library", "overnight"] },
   { header: "Your voice", items: ["authority"] },
   { header: "Your proof", items: ["momentum", "influence"] },
-  { header: "Yours", items: ["identity", "widgets", "settings"] },
+  { header: "Yours", items: ["identity", "widgets"] },
 ];
 
 export default function AuraRail({
-  activeTab, onSelect, onOpenAsk, onOpenCapture, onOpenSettings, newSignalCount = 0,
+  activeTab, onSelect, onOpenAsk, onOpenCapture, newSignalCount = 0,
 }: AuraRailProps) {
   const lastRun = useOvernightLastRun();
   const [, setSearchParams] = useSearchParams();
@@ -309,25 +310,7 @@ export default function AuraRail({
     }}>{text}</span>
   );
 
-  const expandedRow = (key: RailTab | "settings") => {
-    if (key === "settings") {
-      return (
-        <button
-          key="settings"
-          type="button"
-          aria-label="Settings"
-          data-active="false"
-          className="cursor-pointer v23-focus"
-          onClick={() => { setFlyout(null); onOpenSettings(); }}
-          onMouseEnter={hoverOn}
-          onMouseLeave={hoverOff}
-          style={rowStyle(false)}
-        >
-          <Settings size={15} strokeWidth={1.75} />
-          <span>Settings</span>
-        </button>
-      );
-    }
+  const expandedRow = (key: RailTab) => {
     if (key === "identity") {
       const active = activeTab === "identity";
       return (
@@ -642,21 +625,6 @@ export default function AuraRail({
               <Avatar src={avatarUrl} name={profileName} size="sm" ring="var(--v23-night-line)" />
             </AuraRing>
             <span style={labelStyle(activeTab === "identity")}>Profile</span>
-          </button>
-          <button
-            type="button"
-            aria-label="Settings"
-            data-active="false"
-            className="cursor-pointer"
-            onClick={() => { setFlyout(null); onOpenSettings(); }}
-            onMouseEnter={(e) => { hoverOn(e); showTip("Settings", "Preferences, language and account controls.")(e); }}
-            onMouseLeave={(e) => { hoverOff(e); hideTip(); }}
-            onFocus={showTip("Settings", "Preferences, language and account controls.")}
-            onBlur={hideTip}
-            style={railBtn(false)}
-          >
-            <Settings size={18} strokeWidth={1.75} />
-            <span style={labelStyle(false)}>Settings</span>
           </button>
         </div>
       </aside>

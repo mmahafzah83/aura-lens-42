@@ -7,6 +7,8 @@ import type { EditProfileField } from "@/components/EditProfileModal";
 interface PreferencesPanelProps {
   open: boolean;
   onClose: () => void;
+  /** "panel" (default) = slide-over dialog. "inline" = embedded as a Settings tab. */
+  variant?: "panel" | "inline";
   userId?: string | null;
   fullName?: string | null;
   email?: string;
@@ -186,6 +188,7 @@ const ToggleRow = ({
 export default function PreferencesPanel({
   open,
   onClose,
+  variant = "panel",
   userId,
   fullName,
   email,
@@ -200,7 +203,7 @@ export default function PreferencesPanel({
 
   // Body scroll lock + Esc to close.
   useEffect(() => {
-    if (!open) return;
+    if (!open || variant === "inline") return;
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const onKey = (e: KeyboardEvent) => {
@@ -211,7 +214,7 @@ export default function PreferencesPanel({
       document.body.style.overflow = prevOverflow;
       window.removeEventListener("keydown", onKey);
     };
-  }, [open, onClose]);
+  }, [open, onClose, variant]);
 
   // Load profile when opening.
   useEffect(() => {
@@ -261,6 +264,76 @@ export default function PreferencesPanel({
   }, [profile, fullName]);
 
   if (!open) return null;
+
+  const sections = (
+    <>
+      {/* YOUR PROFILE */}
+      <SectionHeader>Your profile</SectionHeader>
+      <Row label="Name" value={displayName} onClick={onEditField ? () => onEditField("first_name") : undefined} />
+      <Row label="Firm" value={profile?.firm?.trim() || "Not set"} onClick={onEditField ? () => onEditField("firm") : undefined} />
+      <Row label="Sector" value={profile?.sector_focus?.trim() || "Not set"} onClick={onEditField ? () => onEditField("sector_focus") : undefined} />
+
+      {/* INTELLIGENCE */}
+      <SectionHeader>Intelligence</SectionHeader>
+      <ToggleRow
+        label="Monday intelligence brief"
+        description="Signals, rhythm, and one recommended move. Every Monday."
+        on={weeklyBriefOn}
+        onChange={(v) => updatePref("weekly_brief", v)}
+      />
+      <ToggleRow
+        label="Daily nudges"
+        description="In-app reminders when signals need attention or content is due."
+        on={dailyNudgesOn}
+        onChange={(v) => updatePref("daily_nudges", v)}
+      />
+      <ToggleRow
+        label="Aura reads for you overnight"
+        description="One relevant finding, only when it clears the bar. Turn off any time."
+        on={overnightReadingOn}
+        onChange={(v) => updatePref("overnight_reading_enabled", v)}
+      />
+
+      {/* PRIVACY */}
+      <SectionHeader>Privacy</SectionHeader>
+      <ToggleRow
+        label="Contribute to shared learning"
+        description="Let Aura learn anonymous, aggregated patterns from how members across your field use it — never your content, identity, or drafts. Turn off anytime."
+        on={sharedLearningOn}
+        onChange={updateSharedLearning}
+      />
+
+      {/* ACCOUNT */}
+      {(onChangePassword || onRetakeBrandAssessment || variant === "panel") && (
+        <SectionHeader>Account</SectionHeader>
+      )}
+      {onChangePassword && <Row label="Change password" onClick={onChangePassword} />}
+      {onRetakeBrandAssessment && <Row label="Retake brand assessment" onClick={onRetakeBrandAssessment} />}
+      {variant === "panel" && <Row label="Sign out" onClick={onSignOut} chevron={false} danger />}
+
+      {email && (
+        <div style={{ padding: "20px 24px 28px", fontSize: 11, color: "var(--ink-2)", textAlign: "center", fontFamily: "var(--font-body)" }}>
+          Signed in as {email}
+        </div>
+      )}
+    </>
+  );
+
+  if (variant === "inline") {
+    return (
+      <div
+        style={{
+          background: "var(--paper)",
+          color: "var(--ink)",
+          border: "0.5px solid var(--rule)",
+          borderRadius: 12,
+          overflow: "hidden",
+        }}
+      >
+        {sections}
+      </div>
+    );
+  }
 
   const node = (
     <div
@@ -380,73 +453,7 @@ export default function PreferencesPanel({
             overscrollBehavior: "contain",
           }}
         >
-          {/* YOUR PROFILE */}
-          <SectionHeader>Your profile</SectionHeader>
-          <Row label="Name" value={displayName} onClick={onEditField ? () => onEditField("first_name") : undefined} />
-          <Row
-            label="Firm"
-            value={profile?.firm?.trim() || "Not set"}
-            onClick={onEditField ? () => onEditField("firm") : undefined}
-          />
-          <Row
-            label="Sector"
-            value={profile?.sector_focus?.trim() || "Not set"}
-            onClick={onEditField ? () => onEditField("sector_focus") : undefined}
-          />
-
-          {/* INTELLIGENCE */}
-          <SectionHeader>Intelligence</SectionHeader>
-          <ToggleRow
-            label="Monday intelligence brief"
-            description="Signals, rhythm, and one recommended move. Every Monday."
-            on={weeklyBriefOn}
-            onChange={(v) => updatePref("weekly_brief", v)}
-          />
-          <ToggleRow
-            label="Daily nudges"
-            description="In-app reminders when signals need attention or content is due."
-            on={dailyNudgesOn}
-            onChange={(v) => updatePref("daily_nudges", v)}
-          />
-          <ToggleRow
-            label="Aura reads for you overnight"
-            description="One relevant finding, only when it clears the bar. Turn off any time."
-            on={overnightReadingOn}
-            onChange={(v) => updatePref("overnight_reading_enabled", v)}
-          />
-
-          {/* PRIVACY */}
-          <SectionHeader>Privacy</SectionHeader>
-          <ToggleRow
-            label="Contribute to shared learning"
-            description="Let Aura learn anonymous, aggregated patterns from how members across your field use it — never your content, identity, or drafts. Turn off anytime."
-            on={sharedLearningOn}
-            onChange={updateSharedLearning}
-          />
-
-          {/* ACCOUNT */}
-          <SectionHeader>Account</SectionHeader>
-          {onChangePassword && (
-            <Row label="Change password" onClick={onChangePassword} />
-          )}
-          {onRetakeBrandAssessment && (
-            <Row label="Retake brand assessment" onClick={onRetakeBrandAssessment} />
-          )}
-          <Row label="Sign out" onClick={onSignOut} chevron={false} danger />
-
-          {email && (
-            <div
-              style={{
-                padding: "20px 24px 28px",
-                fontSize: 11,
-                color: "var(--ink-2)",
-                textAlign: "center",
-                fontFamily: "var(--font-body)",
-              }}
-            >
-              Signed in as {email}
-            </div>
-          )}
+          {sections}
         </div>
       </div>
     </div>
