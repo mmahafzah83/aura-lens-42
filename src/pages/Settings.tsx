@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Loader2, Settings as SettingsIcon } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +14,7 @@ import { useReportSnapshot } from "@/hooks/useReportSnapshot";
 import { getPublication, validate as validatePublication, type PublicationConfig } from "@/lib/publication";
 import { PAPER, INK, SPOT, RULE, SERIF, MONO, ARABIC } from "@/components/broadsheet/pressTokens";
 import CountryPicker from "@/components/CountryPicker";
+import PreferencesPanel from "@/components/PreferencesPanel";
 
 interface ProfileData {
   first_name: string | null;
