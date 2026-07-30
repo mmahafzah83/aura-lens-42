@@ -34,6 +34,7 @@ interface SourceEntry {
   pages_read?: number | null;
   pages_total?: number | null;
   failure_code?: string | null;
+  display_title?: string | null;
 }
 
 type FilterKey = "all" | "link" | "image" | "text" | "voice" | "document";
@@ -120,6 +121,53 @@ function extractDomain(url: string | null | undefined): string | null {
   if (!url) return null;
   const m = url.match(/https?:\/\/([^\/\s]+)/);
   return m ? m[1].replace(/^www\./, "") : null;
+}
+
+/** Middle-truncate a long URL so it stays on one muted line. */
+function middleTruncate(s: string, max = 58): string {
+  if (s.length <= max) return s;
+  const half = Math.floor((max - 1) / 2);
+  return `${s.slice(0, half)}…${s.slice(s.length - half)}`;
+}
+
+function cleanFilename(name: string): string {
+  return name
+    .replace(/\.[A-Za-z0-9]+$/, "")
+    .replace(/^file[_-]/i, "")
+    .replace(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/g, "")
+    .replace(/[_-]+/g, " ")
+    .trim();
+}
+
+function firstLine(s: string, max = 60): string {
+  const line = (s || "").replace(/[*#`]/g, "").split("\n").map(l => l.trim()).find(Boolean) || "";
+  return line.length > max ? `${line.slice(0, max).trimEnd()}…` : line;
+}
+
+/** The one place a card's human title is decided. Never a hash or a naked URL. */
+function displayTitleFor(entry: SourceEntry): string {
+  const raw = (entry.title || "").trim();
+  if (entry.type === "document") {
+    const stored = (entry.display_title || "").trim();
+    if (stored) return stored;
+    const cleaned = cleanFilename(raw);
+    if (cleaned) return cleaned;
+    return firstLine(entry.summary || entry.content) || "Document";
+  }
+  if (entry.type === "link") {
+    if (raw && !/^https?:/i.test(raw)) return raw;
+    return firstLine(entry.summary || "") || extractDomain(entry.image_url || entry.content) || "Saved link";
+  }
+  if (raw && !/^https?:/i.test(raw)) return raw;
+  return firstLine(entry.content) || firstLine(entry.summary || "") || "Untitled note";
+}
+
+/** The raw origin of a capture — filename or URL — for the muted meta line. */
+function rawMetaFor(entry: SourceEntry): string | null {
+  if (entry.type === "document") return entry.title || null;
+  const url = entry.image_url || (entry.content.match(/^https?:\/\/\S+/)?.[0] ?? null);
+  if (entry.type === "link" && url) return middleTruncate(url);
+  return null;
 }
 
 function formatBytes(bytes: number | null | undefined): string | null {
@@ -507,6 +555,8 @@ const SourcesSubTab = ({
   // Optimistic "Retrying…" flag per document id — cleared once the row's status
   // flips out of "processing" on the next loadEntries.
   const [retryingIds, setRetryingIds] = useState<Set<string>>(new Set());
+  // capture id → signals it strengthened, strongest (most sources) first.
+  const [strengthened, setStrengthened] = useState<Map<string, { id: string; title: string; sources: number }[]>>(new Map());
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const typeCounts = useMemo(() => {
@@ -529,7 +579,7 @@ const SourcesSubTab = ({
 
     const [entriesRes, docsRes] = await Promise.all([
       supabase.from("entries").select("id, type, title, content, summary, image_url, skill_pillar, framework_tag, pinned, created_at"),
-      supabase.from("documents").select("id, filename, file_url, file_type, status, summary, page_count, file_size, created_at, error_message, pages_read, pages_total"),
+      supabase.from("documents").select("id, filename, display_title, file_url, file_type, status, summary, page_count, file_size, created_at, error_message, pages_read, pages_total"),
     ]);
 
     if (entriesRes.error) { toast.error("Couldn't load sources"); setLoading(false); return; }
@@ -568,6 +618,7 @@ const SourcesSubTab = ({
       id: d.id,
       type: "document",
       title: d.filename,
+      display_title: d.display_title ?? null,
       content: d.summary || d.filename,
       summary: d.summary,
       image_url: d.file_url,
@@ -649,6 +700,54 @@ const SourcesSubTab = ({
   }, []);
 
   useEffect(() => { loadEntries(); }, [loadEntries]);
+
+  // ── "What Aura made of it" ────────────────────────────────────────────
+  // Truth chain: capture → source_registry → evidence_fragments →
+  // strategic_signals.supporting_evidence_ids. Loaded once per mount and
+  // held as a map so each card can render its own accent line.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || cancelled) return;
+
+      const [regRes, fragRes, sigRes] = await Promise.all([
+        supabase.from("source_registry" as any).select("id, source_id").eq("user_id", user.id).range(0, 4999),
+        supabase.from("evidence_fragments").select("id, source_registry_id").eq("user_id", user.id).range(0, 9999),
+        supabase.from("strategic_signals").select("id, signal_title, supporting_evidence_ids")
+          .eq("user_id", user.id).eq("status", "active").range(0, 999),
+      ]);
+      if (cancelled) return;
+
+      const sourceByReg = new Map<string, string>();
+      for (const r of ((regRes.data || []) as any[])) sourceByReg.set(r.id, r.source_id);
+      const sourceByFrag = new Map<string, string>();
+      for (const f of ((fragRes.data || []) as any[])) {
+        const src = sourceByReg.get(f.source_registry_id);
+        if (src) sourceByFrag.set(f.id, src);
+      }
+
+      const map = new Map<string, { id: string; title: string; sources: number }[]>();
+      for (const s of ((sigRes.data || []) as any[])) {
+        const fragIds: string[] = s.supporting_evidence_ids || [];
+        const sources = new Set<string>();
+        for (const fid of fragIds) {
+          const src = sourceByFrag.get(fid);
+          if (src) sources.add(src);
+        }
+        if (sources.size === 0) continue;
+        const item = { id: s.id, title: s.signal_title as string, sources: sources.size };
+        for (const src of sources) {
+          const list = map.get(src) || [];
+          list.push(item);
+          map.set(src, list);
+        }
+      }
+      for (const list of map.values()) list.sort((a, b) => b.sources - a.sources);
+      setStrengthened(map);
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     const handleDocumentStatusChange = () => {
@@ -820,14 +919,21 @@ const SourcesSubTab = ({
       {/* Filters + sort */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
         <div style={{ display: "flex", gap: 6, overflowX: "auto", flex: 1, paddingBottom: 2 }} className="scrollbar-hide">
-          {FILTER_LABELS.map(f => {
-            const isActive = filter === f.key;
-            const count =
-              f.key === "all"
+          {[...FILTER_LABELS]
+            .map(f => ({
+              f,
+              count: f.key === "all"
                 ? totalCount
                 : f.key === "document"
                   ? documentsChipCount
-                  : (typeCounts[f.typeMatch || ""] || 0);
+                  : (typeCounts[f.typeMatch || ""] || 0),
+            }))
+            // Empty types stay visible — they teach what can be captured —
+            // but sit muted at the end of the row.
+            .sort((a, b) => (a.count === 0 ? 1 : 0) - (b.count === 0 ? 1 : 0))
+            .map(({ f, count }) => {
+            const isActive = filter === f.key;
+            const isEmpty = count === 0;
             return (
               <button
                 key={f.key}
@@ -837,7 +943,8 @@ const SourcesSubTab = ({
                   cursor: "pointer", whiteSpace: "nowrap",
                   background: isActive ? "rgba(197,165,90,0.15)" : "var(--surface-ink-raised)",
                   color: isActive ? "var(--brand)" : "var(--glass-2)",
-                  border: `1px solid ${isActive ? "var(--brand)" : "var(--glass-2)"}`,
+                  border: `1px solid ${isActive ? "var(--brand)" : "var(--hair)"}`,
+                  opacity: isEmpty && !isActive ? 0.5 : 1,
                 }}
               >
                 {f.label} ({count})
@@ -873,7 +980,9 @@ const SourcesSubTab = ({
             const isExpanded = expandedId === entry.id;
             const EntryIcon = Icon(entry.type);
             const isDoc = entry.type === "document";
-            const displayTitle = entry.title || entry.content.slice(0, 60);
+            const displayTitle = displayTitleFor(entry);
+            const rawMeta = rawMetaFor(entry);
+            const madeOf = strengthened.get(entry.id) || [];
             const docStatus = isDoc ? (entry.status || "processing") : null;
             const isStuckProcessing = isDoc && docStatus === "processing" && isDocProcessingStuck(docStatus, entry.created_at);
             const isProcessing = isDoc && !isStuckProcessing && (docStatus === "processing" || docStatus === "pending");
@@ -1011,6 +1120,20 @@ const SourcesSubTab = ({
                           </span>
                         )}
                       </div>
+                      {rawMeta && (
+                        <p style={{ fontSize: 11, color: "var(--glass-2)", opacity: 0.75, margin: "4px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {rawMeta}
+                        </p>
+                      )}
+                      {madeOf.length > 0 && (
+                        <button
+                          onClick={(ev) => { ev.stopPropagation(); onSwitchToSignal(madeOf[0].id); }}
+                          style={{ background: "none", border: "none", padding: 0, marginTop: 6, cursor: "pointer", color: "var(--brand)", fontSize: 12, fontWeight: 500, textAlign: "left", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                        >
+                          → strengthened: {madeOf[0].title} ({madeOf[0].sources} {madeOf[0].sources === 1 ? "source" : "sources"})
+                          {madeOf.length > 1 ? ` and ${madeOf.length - 1} more` : ""}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

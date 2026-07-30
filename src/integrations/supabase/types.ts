@@ -1121,6 +1121,7 @@ export type Database = {
         Row: {
           attempt_count: number
           created_at: string
+          display_title: string | null
           error_message: string | null
           extraction_method: string | null
           file_size: number | null
@@ -1139,6 +1140,7 @@ export type Database = {
         Insert: {
           attempt_count?: number
           created_at?: string
+          display_title?: string | null
           error_message?: string | null
           extraction_method?: string | null
           file_size?: number | null
@@ -1157,6 +1159,7 @@ export type Database = {
         Update: {
           attempt_count?: number
           created_at?: string
+          display_title?: string | null
           error_message?: string | null
           extraction_method?: string | null
           file_size?: number | null

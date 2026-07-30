@@ -719,6 +719,7 @@ async function runComplete(
   await admin.from("documents").update({
     status: "completed",
     summary: docSummary || excerpt.slice(0, 300),
+    display_title: humanDocTitle(doc.filename, docSummary || excerpt),
     error_message: null,
     page_count: pagesTotal,
     pages_total: pagesTotal,
@@ -866,6 +867,23 @@ async function runNextStage(
 // ============================================================================
 // HTTP handler
 // ============================================================================
+
+/**
+ * Human display title for a document. Hash-style upload names ("file_UUID.pdf")
+ * never reach the user: those fall back to the first sentence of the summary.
+ */
+function humanDocTitle(filename: string | null, summary: string): string | null {
+  const name = (filename || "").trim();
+  const hashy = /^file_[0-9a-fA-F-]{8,}/.test(name) || !name;
+  if (!hashy) {
+    const cleaned = name.replace(/\.[A-Za-z0-9]+$/, "").replace(/[_-]+/g, " ").trim();
+    if (cleaned) return cleaned.slice(0, 80);
+  }
+  const first = (summary || "").replace(/[*#`]/g, "").split(/(?<=\.)\s|\n/)[0]?.trim();
+  if (first) return first.slice(0, 60);
+  return name || null;
+}
+
 
 Deno.serve(withObserve("ingest-document", async (req) => {
   console.log(`[ingest-document] handler start method=${req.method}`);
