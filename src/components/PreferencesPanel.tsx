@@ -7,6 +7,8 @@ import type { EditProfileField } from "@/components/EditProfileModal";
 interface PreferencesPanelProps {
   open: boolean;
   onClose: () => void;
+  /** "panel" (default) = slide-over dialog. "inline" = embedded as a Settings tab. */
+  variant?: "panel" | "inline";
   userId?: string | null;
   fullName?: string | null;
   email?: string;
