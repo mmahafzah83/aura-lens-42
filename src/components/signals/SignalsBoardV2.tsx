@@ -580,10 +580,18 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
                       {tag && <Chip variant="cooling" className="hidden sm:inline-flex">{tag}</Chip>}
                     </div>
                     {bucket === "accelerating" && <Chip variant="live">Accelerating</Chip>}
+                    <CaptureMeter filled={Math.min((r.supporting_evidence_ids || []).length, 5)} bucket={bucket} />
                     <span style={{ ...MONO, fontSize: 10.5, letterSpacing: ".06em", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-                      {(r.supporting_evidence_ids || []).length} captures ·{" "}
-                      <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{strengthOf(r)}</span>
+                      {(r.supporting_evidence_ids || []).length} captures · quiet {ageDays(r.last_evidence_at)}d
                     </span>
+                    <span
+                      aria-hidden
+                      className="v23-read-affordance"
+                      style={{
+                        ...MONO, fontSize: 10.5, letterSpacing: ".08em", textTransform: "uppercase",
+                        color: "var(--act)", opacity: 0, transition: "opacity 160ms ease", whiteSpace: "nowrap",
+                      }}
+                    >Read →</span>
                   </div>
                 );
               })}
