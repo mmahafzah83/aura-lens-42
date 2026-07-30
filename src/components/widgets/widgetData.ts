@@ -124,50 +124,17 @@ async function pagedSelect(table: string, cols: string, userId: string, extra?: 
   return rows;
 }
 
+/** A signal fades 30 days after its newest evidence (signal-decay-engine:
+ *  half-life 30 days, fresh threshold 0.5 → momentum drops below fresh at +30d). */
+const FADE_DAYS = 30;
+
 export async function loadWidgetMetrics(userId: string): Promise<WidgetMetrics> {
-  const [snap, signalCount, findingLast, findingFirst, findingRecent, postRows, entryRows] = await Promise.all([
-    supabase.from("imprint_snapshots").select("imprint, tier")
-      .eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
-    supabase.from("strategic_signals").select("id", { count: "exact", head: true })
-      .eq("user_id", userId).eq("status", "active"),
-    supabase.from("agent_findings").select("created_at")
-      .eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
-    supabase.from("agent_findings").select("created_at")
-      .eq("user_id", userId).order("created_at", { ascending: true }).limit(1).maybeSingle(),
-    supabase.from("agent_findings").select("created_at")
-      .eq("user_id", userId)
-      .gte("created_at", new Date(Date.now() - 7 * 86400000).toISOString()),
-    pagedSelect("linkedin_posts", "source_type, tracking_status, post_text, published_at, created_at", userId),
+  const [postRows, entryRows, signalRows, draftRows] = await Promise.all([
+    pagedSelect("linkedin_posts", "source_type, tracking_status, post_text, published_at, created_at, source_metadata", userId),
     pagedSelect("entries", "created_at", userId),
+    pagedSelect("strategic_signals", "id, last_evidence_at", userId, (q: any) => q.eq("status", "active")),
+    pagedSelect("linkedin_posts", "created_at", userId, (q: any) => q.eq("tracking_status", "draft")),
   ]);
-
-  // Imprint
-  let imprint: WidgetMetrics["imprint"] = null;
-  const score = (snap.data as any)?.imprint as number | null | undefined;
-  if (score != null) {
-    const band = bandFromScore(score);
-    const idx = band ? TIER_BANDS.findIndex(b => b.key === band.key) : -1;
-    const next = idx >= 0 && idx < TIER_BANDS.length - 1 ? TIER_BANDS[idx + 1] : null;
-    imprint = {
-      score: Math.round(score),
-      tier: band?.name ?? ((snap.data as any)?.tier ?? "—"),
-      toNext: next ? Math.max(0, next.min - Math.round(score)) : null,
-      nextTier: next?.name ?? null,
-    };
-  }
-
-  // Overnight — real window, never padded to seven
-  const lastRunAt = (findingLast.data as any)?.created_at ?? null;
-  let overnight: WidgetMetrics["overnight"] = null;
-  if (lastRunAt) {
-    const nights = new Set(
-      ((findingRecent.data || []) as Array<{ created_at: string }>)
-        .map(r => r.created_at.slice(0, 10)),
-    ).size;
-    const firstAt = (findingFirst.data as any)?.created_at ?? lastRunAt;
-    const daysKnown = Math.ceil((Date.now() - new Date(firstAt).getTime()) / 86400000);
-    overnight = { lastRunAt, nights, window: Math.max(nights, Math.min(7, Math.max(1, daysKnown))) };
-  }
 
   // Language balance — over published posts that actually carry text
   const published = postRows.filter(isPublishedPost);
@@ -177,16 +144,38 @@ export async function loadWidgetMetrics(userId: string): Promise<WidgetMetrics> 
     ? { arabic, english: withText.length - arabic, total: withText.length }
     : null;
 
-  const counts = countPosts(postRows);
   const weeks = new Set(entryRows.map(r => weekKey(r.created_at)));
 
+  // Fading signals — expiry clock, and only signals nothing was written against.
+  // A post links to a signal through source_metadata.signal_ids, never source_type.
+  const linked = new Set<string>();
+  for (const p of postRows) {
+    const ids = (p.source_metadata as any)?.signal_ids;
+    if (Array.isArray(ids)) for (const id of ids) linked.add(String(id));
+  }
+  const now = Date.now();
+  const fadeInDays: number[] = [];
+  for (const s of signalRows) {
+    if (!s.last_evidence_at || linked.has(String(s.id))) continue;
+    const d = Math.ceil(
+      (new Date(s.last_evidence_at).getTime() + FADE_DAYS * 86400000 - now) / 86400000,
+    );
+    if (d >= 0 && d <= 30) fadeInDays.push(d);
+  }
+  const fading = { count: fadeInDays.length, nearestDays: fadeInDays.length ? Math.min(...fadeInDays) : null };
+
+  // Drafts waiting
+  const oldest = draftRows.reduce<number | null>((acc, r) => {
+    const age = Math.floor((now - new Date(r.created_at).getTime()) / 86400000);
+    return acc == null || age > acc ? age : acc;
+  }, null);
+  const drafts = { count: draftRows.length, oldestDays: oldest };
+
   return {
-    imprint,
-    liveSignals: signalCount.count ?? null,
-    overnight,
     language,
     rhythm: { weeks: streakFromWeeks(weeks) },
-    published: { live: counts.live, throughAura: counts.throughAura },
+    fading,
+    drafts,
   };
 }
 
