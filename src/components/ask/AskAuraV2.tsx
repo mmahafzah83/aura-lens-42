@@ -109,9 +109,9 @@ const Pill: React.FC<{ c: Citation; onOpen: (id: string) => void }> = ({ c, onOp
     style={{
       ...MONO, display: "inline-flex", alignItems: "center", gap: 4, verticalAlign: "baseline",
       margin: "0 2px", padding: "1px 7px", borderRadius: 999, fontSize: 11, cursor: "pointer",
-      background: "color-mix(in srgb, var(--machine) 12%, transparent)",
-      border: "1px solid color-mix(in srgb, var(--machine) 45%, transparent)",
-      color: "var(--machine-text, var(--machine))",
+      background: "var(--act-tint)",
+      border: "1px solid color-mix(in srgb, var(--act) 45%, transparent)",
+      color: "var(--act)",
     }}
   >
     {c.ref}
