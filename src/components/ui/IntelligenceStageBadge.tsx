@@ -41,7 +41,7 @@ interface Props {
 export const IntelligenceStageBadge: React.FC<Props> = ({ stage, className, style }) => {
   if (!stage) return null;
   const base: React.CSSProperties = {
-    fontFamily: "'DM Sans', sans-serif",
+    fontFamily: "var(--font-body)",
     fontSize: 12,
     fontWeight: 500,
     borderRadius: 16,

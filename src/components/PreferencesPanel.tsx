@@ -325,7 +325,7 @@ export default function PreferencesPanel({
           <div style={{ minWidth: 0 }}>
             <h2
               style={{
-                fontFamily: "var(--font-serif)",
+                fontFamily: "var(--font-display)",
                 fontSize: 20,
                 fontWeight: 500,
                 color: "var(--ink)",

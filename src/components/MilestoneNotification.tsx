@@ -58,7 +58,7 @@ const MilestoneNotification = ({ userId, auraData }: Props) => {
         display: "flex",
         alignItems: "center",
         gap: 10,
-        fontFamily: "'DM Sans', sans-serif",
+        fontFamily: "var(--font-body)",
         fontSize: 14,
         color: "hsl(var(--foreground))",
       }}

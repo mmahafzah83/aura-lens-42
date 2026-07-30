@@ -126,7 +126,7 @@ const WeeklyRhythm = ({ userId, data: provided }: Props) => {
           letterSpacing: "0.12em",
           textTransform: "uppercase",
           color: "hsl(var(--muted-foreground))",
-          fontFamily: "var(--font-sans, 'DM Sans', sans-serif)",
+          fontFamily: "var(--font-body)",
           display: "inline-flex",
           alignItems: "center",
         }}
@@ -140,7 +140,7 @@ const WeeklyRhythm = ({ userId, data: provided }: Props) => {
       </div>
       <div
         style={{
-          fontFamily: "var(--font-display, 'Cormorant Garamond')",
+          fontFamily: "var(--font-display)",
           fontSize: 14,
           fontStyle: "italic",
           color: "var(--ink-3)",
@@ -195,7 +195,7 @@ const WeeklyRhythm = ({ userId, data: provided }: Props) => {
         })}
       </div>
 
-      <div className="mt-2.5 flex items-center gap-3 text-xs text-muted-foreground" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      <div className="mt-2.5 flex items-center gap-3 text-xs text-muted-foreground" style={{ fontFamily: "var(--font-body)" }}>
         <span className="tabular-nums">{Math.min(active, visibleCount)}/{visibleCount}w</span>
         {streak >= 2 && (
           <span className="text-brand font-medium">{streak}-week streak</span>
@@ -213,7 +213,7 @@ const WeeklyRhythm = ({ userId, data: provided }: Props) => {
             padding: 0,
             cursor: "pointer",
             color: "hsl(var(--primary))",
-            fontFamily: "'DM Sans', sans-serif",
+            fontFamily: "var(--font-body)",
             fontSize: 12,
             fontWeight: 500,
           }}

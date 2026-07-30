@@ -273,7 +273,7 @@ export function InfoTooltip({
               borderRadius: 6,
               background: "hsl(var(--brand) / 0.08)",
               border: "1px solid var(--brand-line)",
-              fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+              fontFamily: "var(--font-mono)",
               fontSize: 11,
               color: "var(--ink)",
               lineHeight: 1.55,

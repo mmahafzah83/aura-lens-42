@@ -199,7 +199,7 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
           <p
             style={{
               margin: "12px 0 16px 0",
-              fontFamily: "var(--font-serif)",
+              fontFamily: "var(--font-display)",
               fontSize: 15, fontWeight: 400, lineHeight: 1.5,
               color: INK_HI,
             }}
@@ -377,7 +377,7 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
                 <span style={{ ...MONO, fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", color: INK_HI }}>
                   In your radar now
                 </span>
-                <span style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 13, color: INK_MUTE }}>
+                <span style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 13, color: INK_MUTE }}>
                   The signal is live in your Observatory.
                 </span>
               </div>
@@ -461,7 +461,7 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
             <p
               style={{
                 margin: "10px 0 12px 0",
-                fontFamily: "var(--font-serif)", fontStyle: "italic",
+                fontFamily: "var(--font-display)", fontStyle: "italic",
                 fontSize: 13.5, color: INK_MUTE, lineHeight: 1.5,
               }}
             >
@@ -473,7 +473,7 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
               dir="auto"
               style={{
                 margin: "0 0 14px 0",
-                fontFamily: "var(--font-serif)",
+                fontFamily: "var(--font-display)",
                 fontSize: 22, fontWeight: 400, lineHeight: 1.36,
                 color: INK_HI,
                 wordBreak: "break-word", overflowWrap: "anywhere",
@@ -621,7 +621,7 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
                     key={i}
                     style={{
                       margin: 0,
-                      fontFamily: "var(--font-serif)", fontStyle: "italic",
+                      fontFamily: "var(--font-display)", fontStyle: "italic",
                       fontSize: 13, color: INK_MUTE, lineHeight: 1.5,
                     }}
                   >

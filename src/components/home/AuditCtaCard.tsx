@@ -97,7 +97,7 @@ const AuditCtaCard = ({ onNavigateToMyStory }: AuditCtaCardProps) => {
       >
         <h3
           style={{
-            fontFamily: "'Cormorant Garamond', Georgia, serif",
+            fontFamily: "var(--font-display)",
             fontSize: 20,
             fontWeight: 600,
             lineHeight: 1.25,
@@ -109,7 +109,7 @@ const AuditCtaCard = ({ onNavigateToMyStory }: AuditCtaCardProps) => {
         </h3>
         <p
           style={{
-            fontFamily: "'DM Sans', system-ui, sans-serif",
+            fontFamily: "var(--font-body)",
             fontSize: 14,
             lineHeight: 1.6,
             color: "hsl(var(--muted-foreground))",
@@ -131,7 +131,7 @@ const AuditCtaCard = ({ onNavigateToMyStory }: AuditCtaCardProps) => {
               fontSize: 13,
               fontWeight: 600,
               cursor: "pointer",
-              fontFamily: "'DM Sans', system-ui, sans-serif",
+              fontFamily: "var(--font-body)",
             }}
           >
             Verify now →
@@ -146,7 +146,7 @@ const AuditCtaCard = ({ onNavigateToMyStory }: AuditCtaCardProps) => {
               fontSize: 13,
               cursor: "pointer",
               padding: "8px 4px",
-              fontFamily: "'DM Sans', system-ui, sans-serif",
+              fontFamily: "var(--font-body)",
             }}
           >
             Later

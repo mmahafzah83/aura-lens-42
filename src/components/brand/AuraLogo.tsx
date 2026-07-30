@@ -137,7 +137,7 @@ export function AuraLogo({
       {withWordmark && (
         <span
           style={{
-            fontFamily: "'Newsreader', Georgia, serif",
+            fontFamily: "var(--font-display)",
             fontWeight: 500,
             letterSpacing: "0.04em",
             fontSize: wordmarkSize,

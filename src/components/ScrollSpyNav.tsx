@@ -97,7 +97,7 @@ const SPY_CSS = `
     min-height: 28px;
   }
   .scroll-spy-label {
-    font-family: 'DM Sans', sans-serif;
+    font-family: var(--font-body);
     font-size: 11px;
     letter-spacing: 0.08em;
     text-transform: uppercase;

@@ -286,7 +286,7 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
               animate={{ scale: reduceMotion ? 1 : [1, 1.05, 1] }}
               transition={{ duration: 0.2 }}
               style={{
-                fontFamily: "'JetBrains Mono', monospace",
+                fontFamily: "var(--font-mono)",
                 fontSize: 36, color: BRONZE, fontWeight: 600,
                 textAlign: "center", margin: "8px 0 18px",
               }}
@@ -431,7 +431,7 @@ const SummaryCard = ({ summary, scores, submitting, reduceMotion, onFinish, onBa
             <span style={{ color: BRONZE }}>◆</span>
             <span>{d.name}</span>
             <span style={{
-              marginLeft: "auto", color: BRONZE, fontFamily: "'JetBrains Mono', monospace",
+              marginLeft: "auto", color: BRONZE, fontFamily: "var(--font-mono)",
               boxShadow: numbersDone >= totalNumbers ? "0 0 8px rgba(176,141,58,0.3)" : "none",
               borderRadius: 4, padding: "0 4px", transition: "box-shadow 400ms ease",
             }}>
@@ -447,7 +447,7 @@ const SummaryCard = ({ summary, scores, submitting, reduceMotion, onFinish, onBa
           <span>◇</span>
           <span>{summary.lowest.name}</span>
           <span style={{
-            marginLeft: "auto", fontFamily: "'JetBrains Mono', monospace",
+            marginLeft: "auto", fontFamily: "var(--font-mono)",
             color: "var(--ink-3)",
           }}>
             <CountUp value={scores[summary.lowest.id]} reduceMotion={reduceMotion} onDone={onNumDone} />

@@ -1110,7 +1110,7 @@ const VoiceEngineSection = () => {
                       {primarySubtitle}
                       <div style={cardStyle}>
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><div style={eyebrowStyle}>Your voice signature</div><InfoTooltip slug="voice-signature" triggerSize={13} side="top" /></span>
-                        <p style={{ fontFamily: "var(--font-serif)", fontSize: 22, marginTop: 10, marginBottom: 6, color: "var(--ink)", lineHeight: 1.35 }}>
+                        <p style={{ fontFamily: "var(--font-display)", fontSize: 22, marginTop: 10, marginBottom: 6, color: "var(--ink)", lineHeight: 1.35 }}>
                           Your voice signature isn't formed yet.
                         </p>
                         <p style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "var(--ink-4)", margin: 0 }}>
@@ -1173,7 +1173,7 @@ const VoiceEngineSection = () => {
                         <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                           <p
                             style={{
-                              fontFamily: "var(--font-serif)",
+                              fontFamily: "var(--font-display)",
                               fontSize: 24,
                               lineHeight: 1.35,
                               color: "var(--ink)",
@@ -1215,7 +1215,7 @@ const VoiceEngineSection = () => {
                             <li
                               key={i}
                               style={{
-                                fontFamily: "var(--font-serif)",
+                                fontFamily: "var(--font-display)",
                                 fontStyle: "italic",
                                 fontSize: 18,
                                 lineHeight: 1.5,
