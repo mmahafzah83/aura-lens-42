@@ -13,9 +13,9 @@ export interface AuraLogoProps {
 // Radiant Dial mark — single source of truth for the Aura wordmark + mark across the app.
 // The mark uses currentColor so it inherits the surface text colour
 // (ink on bone surfaces, light on dark). The live-tick stays teal.
-const COLOR_LIGHT = "#1B1712"; // ink on bone surfaces
+const COLOR_LIGHT = "var(--text-primary)"; // ink on light surfaces
 const COLOR_DARK  = "#E8EDF3"; // light on dark surfaces
-const TICK_COLOR  = "#36C5B0";
+const TICK_COLOR  = "var(--machine)";
 
 function useResolvedColor(variant: AuraLogoVariant): string {
   const [color, setColor] = useState<string>(
