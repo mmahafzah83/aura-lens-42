@@ -22,6 +22,24 @@ const dismissKey = (id: string) => `move_dismissed_${id}_${todayKey()}`;
 const isDismissed = (id: string) => { try { return localStorage.getItem(dismissKey(id)) === "1"; } catch { return false; } };
 const setDismissed = (id: string) => { try { localStorage.setItem(dismissKey(id), "1"); } catch { /* noop */ } };
 
+/** Purge dismissal keys from previous days — "Not today" never survives the night. */
+function purgeStaleDismissals() {
+  try {
+    const today = todayKey();
+    const doomed: string[] = [];
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith("move_dismissed_") && !k.endsWith(`_${today}`)) doomed.push(k);
+    }
+    doomed.forEach((k) => localStorage.removeItem(k));
+  } catch { /* noop */ }
+}
+
+/** Clear today's dismissals for the given ids. */
+function clearDismissals(ids: Array<string | null | undefined>) {
+  try { ids.forEach((id) => { if (id) localStorage.removeItem(dismissKey(id)); }); } catch { /* noop */ }
+}
+
 function relativeTime(iso: string): string {
   const mins = Math.max(1, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
   if (mins < 60) return `${mins} ${mins === 1 ? "minute" : "minutes"} ago`;
@@ -104,6 +122,8 @@ export default function MoveCard({ userId, onOpenDraft, onStartSignalPost }: Mov
   const { loading, draft, signal } = useOneMove(userId);
   const [tick, setTick] = useState(0);
 
+  useEffect(() => { purgeStaleDismissals(); }, []);
+
   const activeDraft: OneMoveDraft | null = useMemo(
     () => (draft && !isDismissed(draft.id) ? draft : null),
     [draft, tick],
@@ -112,6 +132,14 @@ export default function MoveCard({ userId, onOpenDraft, onStartSignalPost }: Mov
     () => (signal && !isDismissed(signal.id) ? signal : null),
     [signal, tick],
   );
+
+  // How many of today's real moves the user has passed on.
+  const dismissedCount = useMemo(() => {
+    let n = 0;
+    if (draft && isDismissed(draft.id)) n += 1;
+    if (signal && isDismissed(signal.id)) n += 1;
+    return n;
+  }, [draft, signal, tick]);
 
   if (loading) return null;
 
