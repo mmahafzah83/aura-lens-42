@@ -985,7 +985,7 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   border: 1px solid var(--rule) !important;
   border-radius: 10px !important;
   padding: 11px 14px !important;
-  font-family: var(--font-serif), sans-serif !important;
+  font-family: var(--font-body), sans-serif !important;
   font-size: 13px !important;
   color: var(--ink) !important;
   box-shadow: none !important;
