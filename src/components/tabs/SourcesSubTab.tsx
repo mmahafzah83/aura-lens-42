@@ -980,7 +980,9 @@ const SourcesSubTab = ({
             const isExpanded = expandedId === entry.id;
             const EntryIcon = Icon(entry.type);
             const isDoc = entry.type === "document";
-            const displayTitle = entry.title || entry.content.slice(0, 60);
+            const displayTitle = displayTitleFor(entry);
+            const rawMeta = rawMetaFor(entry);
+            const madeOf = strengthened.get(entry.id) || [];
             const docStatus = isDoc ? (entry.status || "processing") : null;
             const isStuckProcessing = isDoc && docStatus === "processing" && isDocProcessingStuck(docStatus, entry.created_at);
             const isProcessing = isDoc && !isStuckProcessing && (docStatus === "processing" || docStatus === "pending");
@@ -1118,6 +1120,20 @@ const SourcesSubTab = ({
                           </span>
                         )}
                       </div>
+                      {rawMeta && (
+                        <p style={{ fontSize: 11, color: "var(--glass-2)", opacity: 0.75, margin: "4px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {rawMeta}
+                        </p>
+                      )}
+                      {madeOf.length > 0 && (
+                        <button
+                          onClick={(ev) => { ev.stopPropagation(); onSwitchToSignal(madeOf[0].id); }}
+                          style={{ background: "none", border: "none", padding: 0, marginTop: 6, cursor: "pointer", color: "var(--brand)", fontSize: 12, fontWeight: 500, textAlign: "left", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                        >
+                          → strengthened: {madeOf[0].title} ({madeOf[0].sources} {madeOf[0].sources === 1 ? "source" : "sources"})
+                          {madeOf.length > 1 ? ` and ${madeOf.length - 1} more` : ""}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
