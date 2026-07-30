@@ -22,7 +22,7 @@ const NotFound = () => {
         <h1
           className="mb-3"
           style={{
-            fontFamily: "'Cormorant Garamond', Georgia, serif",
+            fontFamily: "var(--font-display)",
             fontSize: 32,
             fontWeight: 500,
             color: "var(--ink)",
