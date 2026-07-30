@@ -454,7 +454,6 @@ export default function PreferencesPanel({
           }}
         >
           {sections}
-          )}
         </div>
       </div>
     </div>
