@@ -127,7 +127,7 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
     const PANEL_BORDER = "rgba(241,236,225,0.12)";
     const INK_HI = "#F6F2E8";
     const INK_LOW = "rgba(241,236,225,0.55)";
-    const TEAL = "#36C5B0";
+    const TEAL = "var(--machine)";
 
     const handleOpenGhost = async () => {
       if (ghostBusy) return;
