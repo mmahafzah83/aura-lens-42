@@ -56,6 +56,57 @@ const ActionLink: React.FC<{ onClick: () => void; children: React.ReactNode }> =
   >{children}</button>
 );
 
+/**
+ * widgetContent — the measured guts of a widget, with no chrome and no name.
+ * The gallery card supplies the kicker, so nothing ever says its own name twice.
+ */
+export interface WidgetContent {
+  hero: React.ReactNode;
+  sub: React.ReactNode;
+  accent?: boolean;
+  action?: { label: string; tab: string };
+}
+
+export function widgetContent(k: WidgetKey, m: WidgetMetrics): WidgetContent | null {
+  if (k === "language") {
+    if (!m.language) return null;
+    const { arabic, english, total } = m.language;
+    return { hero: `${arabic} : ${english}`, sub: `Arabic : English, of ${total} posts with text` };
+  }
+  if (k === "rhythm") {
+    if (!m.rhythm) return null;
+    const w = m.rhythm.weeks;
+    return {
+      hero: String(w),
+      sub: w === 1 ? "consecutive week with a capture" : "consecutive weeks with a capture",
+    };
+  }
+  if (k === "fading") {
+    if (!m.fading) return null;
+    const { count, nearestDays } = m.fading;
+    if (count === 0) return { hero: "0", sub: "nothing fades this month" };
+    return {
+      hero: String(count),
+      accent: true,
+      sub: `${count === 1 ? "signal fades" : "signals fade"} this month without a post${nearestDays != null ? ` · nearest: ${nearestDays}d` : ""}`,
+      action: { label: "Rescue one →", tab: "intelligence" },
+    };
+  }
+  if (k === "drafts") {
+    if (!m.drafts) return null;
+    const { count, oldestDays } = m.drafts;
+    if (count === 0) return { hero: "—", sub: "No drafts waiting" };
+    return {
+      hero: String(count),
+      sub: `${count === 1 ? "draft" : "drafts"}${oldestDays != null ? ` · oldest ${oldestDays} ${oldestDays === 1 ? "day" : "days"}` : ""}`,
+      action: { label: "Open Composer →", tab: "authority" },
+    };
+  }
+  return null;
+}
+
+export { goTab };
+
 /** Renders one widget from measured data. Returns null when the data doesn't exist. */
 export const WidgetBody: React.FC<{ k: WidgetKey; m: WidgetMetrics }> = ({ k, m }) => {
   if (k === "language") {
