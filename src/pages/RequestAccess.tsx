@@ -134,7 +134,7 @@ export default function RequestAccess() {
               </div>
             </div>
             <h1 className="ra-anim ra-d2" style={{
-              fontFamily: "var(--font-serif)",
+              fontFamily: "var(--font-display)",
               fontWeight: 400, fontSize: 28, color: "var(--ink)",
               margin: "0 0 16px", lineHeight: 1.25,
             }}>
@@ -204,7 +204,7 @@ export default function RequestAccess() {
                   ← Back to Aura
                 </Link>
                 <h2 style={{
-                  fontFamily: "var(--font-serif)",
+                  fontFamily: "var(--font-display)",
                   fontWeight: 400, fontSize: 24, color: "var(--ink)",
                   margin: "0 0 8px",
                 }}>
@@ -427,7 +427,7 @@ function SuccessCeremony({
     <div style={{ textAlign: "center", padding: "16px 0" }}>
       <div aria-hidden="true" className="ra-star" style={{ fontSize: 32, color: BRONZE, lineHeight: 1 }}>✦</div>
       <h2 className="ra-anim-in ra-in-1" style={{
-        fontFamily: "var(--font-serif)",
+        fontFamily: "var(--font-display)",
         fontWeight: 400, fontSize: 24, color: "var(--ink)",
         margin: "24px 0 14px", lineHeight: 1.3,
       }}>
