@@ -1268,7 +1268,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       <AuraCardPanel
         onNavigateAssessment={() => setBrandOpen(true)}
         onNavigateAudit={() => setAuditOpen(true)}
-        onNavigatePhoto={() => fileInputRef.current?.click()}
+        onNavigatePhoto={() => navigate("/settings?tab=account")}
         onNavigateSettings={() => { window.location.href = "/settings#location"; }}
       />
 
