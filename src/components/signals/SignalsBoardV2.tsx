@@ -453,7 +453,7 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
                       transition: "background 160ms ease, color 160ms ease",
                     }}
                   >
-                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t}</span>
+                    <span title={t} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{clipTheme(t)}</span>
                     <span style={{ ...MONO, fontSize: 11 }}>{n}</span>
                   </button>
                 );
