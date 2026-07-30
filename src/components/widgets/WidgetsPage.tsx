@@ -174,42 +174,61 @@ export default function WidgetsPage() {
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
           {WIDGET_DEFS.map(d => {
-            const body = metrics ? <WidgetBody k={d.key} m={metrics} /> : null;
+            const on = !!layout[d.key];
+            const c = metrics ? widgetContent(d.key, metrics) : null;
             return (
               <div key={d.key} style={{
-                border: "1px solid var(--rule-outer)", borderRadius: 14, padding: 14,
-                background: "var(--surface-card)", display: "flex", flexDirection: "column", gap: 10,
+                border: on ? "1.5px solid var(--act)" : "0.5px solid var(--rule-outer)",
+                borderRadius: 14, padding: 14, background: "var(--surface-card)",
+                display: "flex", flexDirection: "column", gap: 8,
               }}>
-                <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14.5, color: "var(--text-primary)" }}>{d.name}</div>
-                    <div style={{ fontSize: 12.5, color: "var(--text-secondary)", marginTop: 3 }}>{d.blurb}</div>
-                  </div>
-                  <Toggle
-                    on={!!layout[d.key]}
-                    label={`Show ${d.name} on Home`}
-                    onChange={() => setLayout(p => ({ ...p, [d.key]: !p[d.key] }))}
-                  />
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{
+                    ...MONO, fontSize: 10.5, letterSpacing: ".14em", textTransform: "uppercase",
+                    color: "var(--text-secondary)", flex: 1, minWidth: 0,
+                  }}>{d.name}</span>
+                  <span style={{ marginInlineStart: "auto" }}>
+                    <Toggle
+                      on={on}
+                      label={`Show ${d.name} on Home`}
+                      onChange={() => toggleWidget(d.key, d.name)}
+                    />
+                  </span>
                 </div>
-                {body ?? (
-                  <div style={{ ...MONO, fontSize: 11.5, color: "var(--text-muted)" }}>
-                    {metrics ? "Nothing to measure here yet." : "Measuring…"}
-                  </div>
-                )}
+
+                <div style={{
+                  ...MONO, fontSize: 24, lineHeight: 1.1, marginBlockStart: 2,
+                  color: c?.accent && on ? "var(--time)"
+                       : on ? "var(--text-primary)" : "var(--text-muted)",
+                }}>
+                  {c ? c.hero : "—"}
+                </div>
+                <div style={{ ...MONO, fontSize: 11, color: "var(--text-secondary)" }}>
+                  {c ? c.sub : (metrics ? "nothing to measure here yet" : "measuring…")}
+                </div>
+
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBlockStart: 6 }}>{d.blurb}</div>
+
+                <div style={{ marginBlockStart: 2, textAlign: "start" }}>
+                  {on ? (
+                    <button
+                      type="button"
+                      onClick={() => goTab("home")}
+                      className="v23-focus"
+                      style={{
+                        ...FF, background: "transparent", border: 0, padding: 0, cursor: "pointer",
+                        fontSize: 12, color: "var(--act)",
+                      }}
+                    >On your Home · view →</button>
+                  ) : (
+                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Off · switch on to add to Home</span>
+                  )}
+                </div>
               </div>
             );
           })}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
-          <ButtonPrimary onClick={handleSave} disabled={saving || !dirty}>
-            {saving ? "Saving…" : "Save your Home"}
-          </ButtonPrimary>
-          <ButtonGhost onClick={() => setLayout({ ...DEFAULT_LAYOUT })}>Reset layout</ButtonGhost>
-          {savedNote && (
-            <span style={{ ...MONO, fontSize: 11.5, color: "var(--text-secondary)" }}>{savedNote}</span>
-          )}
-        </div>
       </section>
 
       {/* SECTION 2 — SLOTS */}
@@ -235,16 +254,22 @@ export default function WidgetsPage() {
                   <span style={{ marginLeft: "auto" }}><Chip variant="cooling">{s.target}</Chip></span>
                 </div>
                 <div style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>{s.blurb}</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: "auto" }}>
-                  <span style={{ ...MONO, fontSize: 11, color: "var(--text-secondary)" }}>
-                    {votes === 0
-                      ? "No votes yet"
-                      : `${votes} of ${eligible ?? "—"} invited members`}
-                  </span>
-                  <span style={{ marginLeft: "auto" }}>
-                    {voted
-                      ? <ButtonGhost onClick={() => toggleVote(s.key)}>Voted · undo</ButtonGhost>
-                      : <ButtonGhost onClick={() => toggleVote(s.key)}>Vote</ButtonGhost>}
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBlockStart: "auto" }}>
+                  {votes > 0 && (
+                    <span style={{ ...MONO, fontSize: 11, color: "var(--text-secondary)" }}>
+                      {votes} {votes === 1 ? "vote" : "votes"} · #{rank} in queue
+                    </span>
+                  )}
+                  <span style={{ marginInlineStart: "auto" }}>
+                    {voted ? (
+                      <span style={{
+                        ...MONO, fontSize: 11, color: "var(--live)",
+                        border: "1px solid var(--live)", borderRadius: 999, padding: "5px 10px",
+                        display: "inline-block", opacity: 0.9,
+                      }}>Voted — we'll tell you when it ships</span>
+                    ) : (
+                      <ButtonGhost onClick={() => toggleVote(s.key)}>Vote</ButtonGhost>
+                    )}
                   </span>
                 </div>
               </div>
