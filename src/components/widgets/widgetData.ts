@@ -1,6 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { bandFromScore, TIER_BANDS } from "@/hooks/useTierFromImprint";
-import { countPosts, loadPostCounts, isPublishedPost } from "@/lib/postProvenance";
+import { loadPostCounts, isPublishedPost } from "@/lib/postProvenance";
 
 /**
  * widgetData — every number on the Widgets page and in the Home widget region
