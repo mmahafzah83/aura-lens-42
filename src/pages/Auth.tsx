@@ -660,7 +660,7 @@ const Auth = () => {
                 disabled={resetting}
                 className="hover:underline disabled:opacity-50"
                 style={{
-                  color: "var(--deadline-text)",
+                  color: "var(--act)",
                   fontFamily: "var(--font-body)",
                   fontSize: 14,
                   fontWeight: 600,
