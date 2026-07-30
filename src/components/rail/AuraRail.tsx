@@ -29,7 +29,8 @@ interface AuraRailProps {
   onSelect: (tab: RailTab) => void;
   onOpenAsk: () => void;
   onOpenCapture: () => void;
-  onOpenSettings: () => void;
+  /** @deprecated Settings now lives in the avatar menu. Kept for call-site compatibility. */
+  onOpenSettings?: () => void;
   /** Already-loaded count from Dashboard — no fresh fetch for a badge. */
   newSignalCount?: number;
 }
@@ -79,7 +80,7 @@ const GROUPS: Array<{ header: string; items: Array<RailTab | "settings"> }> = [
 ];
 
 export default function AuraRail({
-  activeTab, onSelect, onOpenAsk, onOpenCapture, onOpenSettings, newSignalCount = 0,
+  activeTab, onSelect, onOpenAsk, onOpenCapture, newSignalCount = 0,
 }: AuraRailProps) {
   const lastRun = useOvernightLastRun();
   const [, setSearchParams] = useSearchParams();
