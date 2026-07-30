@@ -701,6 +701,54 @@ const SourcesSubTab = ({
 
   useEffect(() => { loadEntries(); }, [loadEntries]);
 
+  // ── "What Aura made of it" ────────────────────────────────────────────
+  // Truth chain: capture → source_registry → evidence_fragments →
+  // strategic_signals.supporting_evidence_ids. Loaded once per mount and
+  // held as a map so each card can render its own accent line.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || cancelled) return;
+
+      const [regRes, fragRes, sigRes] = await Promise.all([
+        supabase.from("source_registry" as any).select("id, source_id").eq("user_id", user.id).range(0, 4999),
+        supabase.from("evidence_fragments").select("id, source_registry_id").eq("user_id", user.id).range(0, 9999),
+        supabase.from("strategic_signals").select("id, signal_title, supporting_evidence_ids")
+          .eq("user_id", user.id).eq("status", "active").range(0, 999),
+      ]);
+      if (cancelled) return;
+
+      const sourceByReg = new Map<string, string>();
+      for (const r of ((regRes.data || []) as any[])) sourceByReg.set(r.id, r.source_id);
+      const sourceByFrag = new Map<string, string>();
+      for (const f of ((fragRes.data || []) as any[])) {
+        const src = sourceByReg.get(f.source_registry_id);
+        if (src) sourceByFrag.set(f.id, src);
+      }
+
+      const map = new Map<string, { id: string; title: string; sources: number }[]>();
+      for (const s of ((sigRes.data || []) as any[])) {
+        const fragIds: string[] = s.supporting_evidence_ids || [];
+        const sources = new Set<string>();
+        for (const fid of fragIds) {
+          const src = sourceByFrag.get(fid);
+          if (src) sources.add(src);
+        }
+        if (sources.size === 0) continue;
+        const item = { id: s.id, title: s.signal_title as string, sources: sources.size };
+        for (const src of sources) {
+          const list = map.get(src) || [];
+          list.push(item);
+          map.set(src, list);
+        }
+      }
+      for (const list of map.values()) list.sort((a, b) => b.sources - a.sources);
+      setStrengthened(map);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   useEffect(() => {
     const handleDocumentStatusChange = () => {
       void loadEntries();
