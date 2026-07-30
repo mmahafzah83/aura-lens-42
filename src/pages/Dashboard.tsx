@@ -1091,19 +1091,6 @@ const Dashboard = () => {
               </div>
             )}
 
-            {activeTab === "today" && (
-              <div className="animate-tab-spring aura-page">
-                <ErrorBoundary>
-                  <TodayPage
-                    onOpenDraft={(d) => { setDraftPrefill(d); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                    onOpenSignalDraft={(p) => { setSignalDraftPrefill(p); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                    onOpenOvernight={() => { setActiveTab("overnight"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                    onOpenCapture={() => handleOpenCapture()}
-                    onOpenSignals={() => { setActiveTab("intelligence"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                  />
-                </ErrorBoundary>
-              </div>
-            )}
           </div>
         </div>
       </main>
