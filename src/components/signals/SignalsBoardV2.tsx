@@ -122,6 +122,7 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
   // The portalled bar is fixed to the viewport, so it has to be told where the
   // centred content column actually is, or it drifts away from the content.
   const [column, setColumn] = useState<{ left: number; width: number } | null>(null);
+  const loadTokenRef = useRef(0);
 
   useEffect(() => {
     const measure = () => {
@@ -168,22 +169,43 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
 
   const load = useCallback(async () => {
     setLoading(true);
+    const token = ++loadTokenRef.current;
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
       const head = () => (supabase.from("strategic_signals" as any) as any)
         .select("id", { count: "exact", head: true }).eq("user_id", user.id);
+      // Strength-ordered pagination: page 1 renders immediately, the rest
+      // streams in behind it. No silent truncation, no spinner wall.
+      const PAGE = 150;
+      const page = (from: number) => (supabase.from("strategic_signals" as any) as any)
+        .select("*").eq("user_id", user.id).in("status", ["active", "dormant"])
+        .order("strength_score", { ascending: false })
+        .order("id", { ascending: true })
+        .range(from, from + PAGE - 1);
       const [listRes, accRes, stbRes, dorRes] = await Promise.all([
-        (supabase.from("strategic_signals" as any) as any)
-          .select("*").eq("user_id", user.id).in("status", ["active", "dormant"])
-          .order("strength_score", { ascending: false }).limit(300),
+        page(0),
         head().eq("status", "active").eq("velocity_status", "accelerating"),
         head().eq("status", "active").neq("velocity_status", "accelerating"),
         head().eq("status", "dormant"),
       ]);
       const acc = accRes?.count ?? 0, stb = stbRes?.count ?? 0, dor = dorRes?.count ?? 0;
       setCounts({ all: acc + stb + dor, accelerating: acc, stable: stb, dormant: dor });
-      setRows((listRes?.data || []) as Row[]);
+      const first = (listRes?.data || []) as Row[];
+      setRows(first);
+      setLoading(false);
+      // Background pages — the board and list read the same accumulated rows.
+      let from = first.length;
+      let got = first.length;
+      while (got === PAGE && loadTokenRef.current === token) {
+        const { data } = await page(from);
+        const chunk = (data || []) as Row[];
+        if (loadTokenRef.current !== token) return;
+        if (chunk.length === 0) break;
+        setRows(prev => [...prev, ...chunk]);
+        got = chunk.length;
+        from += chunk.length;
+      }
     } catch { /* board renders empty rather than breaking the tab */ }
     setLoading(false);
   }, []);
@@ -210,6 +232,14 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
       return strengthOf(b) - strengthOf(a);
     });
   }, [rows, filter, theme]);
+
+  /** Board rows: theme filter only. Lane selection dims, it never empties. */
+  const boardRows = useMemo(() => {
+    const out = theme
+      ? rows.filter(r => (r.theme_tags || []).some(t => (t || "").trim() === theme))
+      : rows;
+    return [...out].sort((a, b) => strengthOf(b) - strengthOf(a));
+  }, [rows, theme]);
 
   /** The existing detail flow: hand the id to the detail state via ?signal=. */
   const openSignal = (id: string, surface: string) => {
@@ -290,8 +320,12 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
     { key: "dormant", label: "Dormant", tone: "muted", count: counts?.dormant ?? 0, empty: "Signals that have gone quiet rest here. None have yet." },
   ];
 
-  const filterRows: Array<{ key: SignalFilter; label: string; count: number }> = [
-    { key: "all", label: "All", count: counts?.all ?? 0 },
+  const liveCount = (counts?.accelerating ?? 0) + (counts?.stable ?? 0);
+  const filterRows: Array<{ key: SignalFilter; label: string; count: number; sub?: string }> = [
+    {
+      key: "all", label: "All", count: counts?.all ?? 0,
+      sub: counts ? `${liveCount} live · ${counts.dormant} dormant` : undefined,
+    },
     { key: "accelerating", label: "Accelerating", count: counts?.accelerating ?? 0 },
     { key: "stable", label: "Stable", count: counts?.stable ?? 0 },
     { key: "dormant", label: "Dormant", count: counts?.dormant ?? 0 },
@@ -353,6 +387,7 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
                 aria-pressed={active}
                 style={{
                   display: "flex", width: "100%", alignItems: "center", justifyContent: "space-between",
+                  gap: 8,
                   padding: "7px 10px", borderRadius: 8, cursor: "pointer",
                   border: `1px solid ${active ? "var(--act)" : "var(--rule-outer)"}`,
                   background: active ? "var(--act-tint)" : "var(--surface-card)",
@@ -361,7 +396,14 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
                   transition: "background 160ms ease, color 160ms ease",
                 }}
               >
-                <span>{f.label}</span>
+                <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2, minWidth: 0, textAlign: "start" }}>
+                  <span>{f.label}</span>
+                  {f.sub && (
+                    <span style={{ ...MONO, fontSize: 10, letterSpacing: ".04em", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
+                      {f.sub}
+                    </span>
+                  )}
+                </span>
                 <span style={{ ...MONO, fontSize: 11.5 }}>{counts ? f.count : "—"}</span>
               </button>
             );
@@ -408,12 +450,16 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
           ) : view === "board" ? (
             <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 14, alignItems: "start" }}>
               {columns.map(col => {
-                const cards = visible.filter(r => bucketOf(r) === col.key);
+                // Columns always render their own lane, unfiltered by the rail.
+                const cards = boardRows.filter(r => bucketOf(r) === col.key);
+                const dimmed = filter !== "all" && filter !== col.key;
                 const collapsible = col.key === "dormant";
                 const open = !collapsible || dormantOpen;
                 return (
                   <div key={col.key} style={{
                     background: "var(--surface-subtle)", borderRadius: 14, padding: 10,
+                    opacity: dimmed ? 0.45 : 1,
+                    transition: "opacity 160ms ease",
                   }}>
                     {(() => {
                       const Head = (
@@ -461,7 +507,11 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
                     {open && (
                       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                         {cards.length === 0
-                          ? <div style={{ fontSize: 12, color: "var(--text-muted)", padding: "6px 2px" }}>{col.empty}</div>
+                          ? (
+                            <div style={{ fontSize: 12, color: "var(--text-muted)", padding: "6px 2px" }}>
+                              {col.count === 0 ? col.empty : `Nothing here under “${theme}”.`}
+                            </div>
+                          )
                           : cards.map(r => <Card key={r.id} r={r} />)}
                       </div>
                     )}
