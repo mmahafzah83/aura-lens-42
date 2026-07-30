@@ -1,4 +1,4 @@
-import { User, LogOut, Settings } from "lucide-react";
+import { UserCog, LogOut, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Avatar from "@/components/systemb/Avatar";
 import AuraRing from "@/components/systemb/AuraRing";
@@ -16,7 +16,7 @@ interface ProfileMenuProps {
   theme?: "light" | "dark";
   onToggleTheme?: () => void;
   onSignOut: () => void;
-  onEditProfile?: () => void;
+  onOpenAccount?: () => void;
   onOpenPreferences?: () => void;
   onQuestAction?: (questId: string) => void;
   onViewFullJourney?: () => void;
@@ -28,7 +28,7 @@ export default function ProfileMenu({
   avatarUrl,
   userId,
   onSignOut,
-  onEditProfile,
+  onOpenAccount,
   // Preferences now lives as the first tab inside Settings.
   onOpenPreferences: _onOpenPreferences,
   // onQuestAction and onViewFullJourney are accepted for backwards
