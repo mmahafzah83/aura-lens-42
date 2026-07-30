@@ -3,10 +3,10 @@ import { ArrowRight, HelpCircle, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { countPosts, loadPostCounts } from "@/lib/postProvenance";
 import { bandFromScore, bandFromKey, type TierBand } from "@/hooks/useTierFromImprint";
-import { getTrackSessionId } from "@/lib/track";
 import { loadLayout, loadWidgetMetrics, WIDGET_DEFS, DEFAULT_LAYOUT } from "@/components/widgets/widgetData";
 import type { WidgetLayout, WidgetMetrics } from "@/components/widgets/widgetData";
 import { WidgetBody } from "@/components/widgets/WidgetCards";
+import { useSinceLastVisit } from "@/hooks/useSinceLastVisit";
 
 /**
  * HomeSpine — everything on Home below the one move.
@@ -34,16 +34,6 @@ const startOfMonthIso = () => {
   const n = new Date();
   return new Date(n.getFullYear(), n.getMonth(), 1).toISOString();
 };
-
-function visitLabel(iso: string | null): string {
-  if (!iso) return "in the last few days";
-  const d = new Date(iso);
-  const days = Math.floor((Date.now() - d.getTime()) / 86_400_000);
-  const time = clockLabel(iso);
-  if (days <= 0) return `earlier today, ${time}`;
-  if (days === 1) return `yesterday, ${time}`;
-  return `${d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}, ${time}`;
-}
 
 // ── Atoms ──────────────────────────────────────────────────────────
 
@@ -103,13 +93,6 @@ const InstrumentTile: React.FC<{ i: Instrument }> = ({ i }) => (
 
 // ── Types ──────────────────────────────────────────────────────────
 
-interface ChangeRow {
-  key: string;
-  text: string;
-  actionLabel: string;
-  onAction: () => void;
-}
-
 export interface HomeSpineProps {
   userId: string | null | undefined;
   onSwitchTab: (tab: string) => void;
@@ -125,14 +108,13 @@ interface SpineData {
   growingSignals: number;
   publishedMonth: number;
   publishedThroughAura: number;
-  lastVisitAt: string | null;
-  changes: ChangeRow[];
 }
 
 export default function HomeSpine({ userId, onSwitchTab, onStartSignalPost }: HomeSpineProps) {
   const [data, setData] = useState<SpineData | null>(null);
   const [layout, setLayout] = useState<WidgetLayout>(DEFAULT_LAYOUT);
   const [metrics, setMetrics] = useState<WidgetMetrics | null>(null);
+  const since = useSinceLastVisit(userId);
   const [addTileHidden, setAddTileHidden] = useState<boolean>(() => {
     try { return localStorage.getItem(ADD_TILE_DISMISS) === "1"; } catch { return false; }
   });
@@ -140,9 +122,8 @@ export default function HomeSpine({ userId, onSwitchTab, onStartSignalPost }: Ho
   const load = useCallback(async () => {
     if (!userId) return;
     const monthIso = startOfMonthIso();
-    const sid = getTrackSessionId();
 
-    const [snapRes, sigRes, findRes, sessRes, posts] = await Promise.all([
+    const [snapRes, sigRes, findRes, posts] = await Promise.all([
       supabase.from("imprint_snapshots").select("imprint, tier, created_at")
         .eq("user_id", userId).order("created_at", { ascending: false }).limit(120),
       (supabase.from("strategic_signals" as any) as any)
@@ -150,9 +131,6 @@ export default function HomeSpine({ userId, onSwitchTab, onStartSignalPost }: Ho
         .eq("user_id", userId).eq("status", "active").limit(500),
       (supabase.from("agent_findings" as any) as any)
         .select("created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(1),
-      (supabase.from("product_events" as any) as any)
-        .select("created_at, session_id").eq("user_id", userId).eq("event", "session_start")
-        .order("created_at", { ascending: false }).limit(20),
       loadPostCounts(supabase, userId),
     ]);
 
@@ -177,70 +155,6 @@ export default function HomeSpine({ userId, onSwitchTab, onStartSignalPost }: Ho
 
     const counts = countPosts(posts.rows, monthIso);
 
-    // Previous session — the newest session_start that is not this session.
-    const sessions = ((sessRes.data as any[]) || []);
-    const prev = sessions.find((r) => !sid || r.session_id !== sid) ?? null;
-    const lastVisitAt: string | null = prev?.created_at ?? null;
-    const sinceIso = lastVisitAt ?? new Date(Date.now() - 7 * 86_400_000).toISOString();
-
-    const [entRes, newSigRes, pubRes] = await Promise.all([
-      supabase.from("entries").select("id", { count: "exact", head: true })
-        .eq("user_id", userId).gte("created_at", sinceIso),
-      (supabase.from("strategic_signals" as any) as any)
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", userId).eq("status", "active").gte("created_at", sinceIso),
-      (supabase.from("linkedin_posts" as any) as any)
-        .select("source_type, tracking_status, published_at, created_at")
-        .eq("user_id", userId).gte("created_at", sinceIso),
-    ]);
-
-    const changes: ChangeRow[] = [];
-    const newCaptures = entRes.count ?? 0;
-    const topSignal = [...sigs].sort((a, b) =>
-      new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime())[0];
-
-    if (newCaptures > 0 && topSignal) {
-      const total = topSignal.fragment_count ?? 0;
-      changes.push({
-        key: "captures",
-        text: `You captured ${newCaptures} more ${newCaptures === 1 ? "source" : "sources"} about ${topSignal.signal_title} — ${total} ${total === 1 ? "source" : "sources"} now back this theme.`,
-        actionLabel: "Worth a post — start one",
-        onAction: () => onStartSignalPost({
-          topic: topSignal.signal_title,
-          context: topSignal.strategic_implications || topSignal.explanation || "",
-          signalId: topSignal.id,
-          signalTitle: topSignal.signal_title,
-        }),
-      });
-    } else if (newCaptures > 0) {
-      changes.push({
-        key: "captures",
-        text: `You captured ${newCaptures} more ${newCaptures === 1 ? "source" : "sources"}. Aura is still reading them for a theme.`,
-        actionLabel: "See what you saved",
-        onAction: () => onSwitchTab("library"),
-      });
-    }
-
-    const newThemes = newSigRes.count ?? 0;
-    if (newThemes > 0) {
-      changes.push({
-        key: "themes",
-        text: `Your reading opened ${newThemes} new ${newThemes === 1 ? "theme" : "themes"} Aura now tracks for you.`,
-        actionLabel: `See the ${newThemes} ${newThemes === 1 ? "theme" : "themes"}`,
-        onAction: () => onSwitchTab("intelligence"),
-      });
-    }
-
-    const publishedSince = countPosts(((pubRes.data as any[]) || []), sinceIso).live;
-    if (publishedSince > 0 && changes.length < 3) {
-      changes.push({
-        key: "published",
-        text: `You published ${publishedSince} ${publishedSince === 1 ? "post" : "posts"} on LinkedIn since then.`,
-        actionLabel: "See how they are doing",
-        onAction: () => onSwitchTab("influence"),
-      });
-    }
-
     setData({
       overnightAt: ((findRes.data as any[]) || [])[0]?.created_at ?? null,
       imprint: score,
@@ -250,8 +164,6 @@ export default function HomeSpine({ userId, onSwitchTab, onStartSignalPost }: Ho
       growingSignals: growing,
       publishedMonth: counts.live,
       publishedThroughAura: countPosts(posts.rows).throughAura,
-      lastVisitAt,
-      changes: changes.slice(0, 3),
     });
   }, [userId, onSwitchTab, onStartSignalPost]);
 
@@ -332,24 +244,27 @@ export default function HomeSpine({ userId, onSwitchTab, onStartSignalPost }: Ho
       )}
 
       {/* 4 — since your last visit */}
-      {data && data.changes.length > 0 && (
+      {since.baseline && since.timestampLabel && since.rows.length > 0 && (
         <section>
           <SectionLabel right={
             <span style={{ ...MONO, fontSize: 10.5, letterSpacing: ".08em", color: "var(--text-muted)" }}>
-              {visitLabel(data.lastVisitAt)}
+              {since.timestampLabel}
             </span>
           }>
             SINCE YOUR LAST VISIT
           </SectionLabel>
           <Card style={{ padding: 0 }}>
-            {data.changes.map((c, idx) => (
+            {since.rows.map((c, idx) => (
               <div key={c.key} style={{
                 padding: 16,
                 borderBlockStart: idx === 0 ? undefined : "1px solid var(--rule-outer)",
                 display: "grid", gap: 8,
               }}>
                 <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: "var(--text-primary)" }}>{c.text}</p>
-                <LinkAction onClick={c.onAction}>{c.actionLabel}</LinkAction>
+                <LinkAction onClick={() => {
+                  if (c.action.kind === "start_post" && c.action.post) onStartSignalPost(c.action.post);
+                  else if (c.action.tab) onSwitchTab(c.action.tab);
+                }}>{c.actionLabel}</LinkAction>
               </div>
             ))}
           </Card>
