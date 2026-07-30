@@ -28,7 +28,9 @@ export default function ProfileMenu({
   avatarUrl,
   userId,
   onSignOut,
-  onOpenPreferences,
+  onEditProfile,
+  // Preferences now lives as the first tab inside Settings.
+  onOpenPreferences: _onOpenPreferences,
   // onQuestAction and onViewFullJourney are accepted for backwards
   // compatibility but no longer rendered — the dropdown no longer
   // hosts its own progress tracker. Home checklist + My Story
@@ -37,13 +39,7 @@ export default function ProfileMenu({
   onViewFullJourney: _onViewFullJourney,
 }: ProfileMenuProps) {
   const fn = (fullName || "").trim();
-  const parts = fn.split(/\s+/).filter(Boolean);
-  const initials =
-    parts.length >= 2
-      ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
-      : parts.length === 1
-        ? parts[0][0]?.toUpperCase()
-        : "";
+  const firstName = fn.split(/\s+/).filter(Boolean)[0] || "";
 
   const navigate = useNavigate();
 
@@ -97,7 +93,7 @@ export default function ProfileMenu({
         <div style={{ padding: 12, display: "flex", alignItems: "center", gap: 12 }}>
           <Avatar src={avatarUrl} name={fn || email || null} size="lg" />
           <div style={{ minWidth: 0, flex: 1 }}>
-            {fn && (
+            {(firstName || fn) && (
               <div
                 style={{
                   fontSize: 14,
@@ -109,7 +105,7 @@ export default function ProfileMenu({
                   whiteSpace: "nowrap",
                 }}
               >
-                {fn}
+                {firstName || fn}
               </div>
             )}
             {email && (
