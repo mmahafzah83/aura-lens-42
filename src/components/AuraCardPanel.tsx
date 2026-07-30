@@ -8,10 +8,10 @@ import { downloadBlob } from "@/lib/download";
 // Colors read from CSS variables where possible; safe fallbacks preserve calm bone look
 // even before the page's tokens hydrate. No hardcoded names/scores anywhere.
 const RULE = "var(--rule, rgba(27,23,18,0.14))";
-const INK = "var(--ink, #1B1712)";
+const INK = "var(--text-primary)";
 const INK_2 = "var(--ink-2, rgba(27,23,18,0.68))";
 const INK_3 = "var(--ink-3, rgba(27,23,18,0.48))";
-const PAPER = "var(--paper, #F1ECE1)";
+const PAPER = "var(--surface-page)";
 const SPOT = "var(--spot, #7A1F2B)";
 const SERIF = "var(--font-display, 'Newsreader', Georgia, serif)";
 const MONO = "'IBM Plex Mono', ui-monospace, monospace";
