@@ -257,21 +257,12 @@ export default function MomentumPage() {
         </Card>
       )}
 
-      {/* ── 1 · The three loops ──────────────────────────────── */}
+      {/* ── 1 · Your daily loop ──────────────────────────────── */}
       <section style={{ display: "grid", gap: 12 }}>
-        <SectionLabel>The three loops</SectionLabel>
-        <div
-          style={{
-            display: "grid",
-            gap: 12,
-            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-          }}
-        >
-          {/* Daily — real */}
-          <Card>
+        <Card>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
               <Moon size={15} style={{ color: "var(--machine)" }} aria-hidden />
-              <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-primary)" }}>Daily</span>
+              <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-primary)" }}>Your daily loop</span>
               <span
                 style={{
                   ...MONO,
@@ -306,22 +297,7 @@ export default function MomentumPage() {
                 </p>
               </div>
             </div>
-          </Card>
-
-          {/* Weekly — not built */}
-          <NotBuiltCard
-            icon={<CalendarDays size={15} style={{ color: "var(--text-muted)" }} aria-hidden />}
-            title="Weekly"
-            body="A Sunday evening plan does not exist. The moves engine that would have produced it was retired, so there is no time and no button here."
-          />
-
-          {/* Monthly — not built */}
-          <NotBuiltCard
-            icon={<CalendarRange size={15} style={{ color: "var(--text-muted)" }} aria-hidden />}
-            title="Monthly"
-            body="A one-page monthly standing report was never built. When it exists it will appear here with a real time attached."
-          />
-        </div>
+        </Card>
       </section>
 
       {/* ── 2 · Showing up ───────────────────────────────────── */}
