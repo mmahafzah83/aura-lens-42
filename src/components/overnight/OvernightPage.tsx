@@ -185,19 +185,24 @@ export default function OvernightPage({ onOpenDraft, onOpenSettings }: Overnight
       rows: nightMap.get(k) || [],
     });
   }
-  const producedNights = nights.filter((n) => n.rows.some((r) => r.status === "kept")).length;
+  const producedNights = nights.filter((n) => draftNights.has(n.key)).length;
   const ranNights = nights.filter((n) => n.rows.length > 0).length;
 
   const lastNight = [...nightMap.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1))[0];
   const lastRows = lastNight?.[1] || [];
   const lastStart = lastRows.length ? lastRows[lastRows.length - 1].created_at : null;
-  const lastEnd = lastRows.length ? lastRows[0].created_at : null;
   const latest = findings[0] || null;
 
   const counts = lastRows.reduce<Record<string, number>>((acc, r) => {
     acc[r.status] = (acc[r.status] || 0) + 1;
     return acc;
   }, {});
+
+  // One honest sequence for the last night: read → kept → wrote.
+  const nNew = counts.kept || 0;
+  const nDupe = counts.duplicate || 0;
+  const nDrafts = lastNight && draftNights.has(lastNight[0]) ? 1 : 0;
+  const plural = (n: number, s: string) => `${s}${n === 1 ? "" : "s"}`;
 
   const enter = (i: number): React.CSSProperties => reduced ? {} : {
     animation: "v23CardIn 320ms ease both", animationDelay: `${i * 50}ms`,
@@ -222,9 +227,9 @@ export default function OvernightPage({ onOpenDraft, onOpenSettings }: Overnight
             <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
               What Aura did while you slept
             </h1>
-            {lastStart && lastEnd && (
+            {lastStart && (
               <p style={{ ...MONO, margin: "6px 0 0", fontSize: 11.5, color: "var(--text-secondary)" }}>
-                Last run between {hhmm(lastStart)} and {hhmm(lastEnd)}
+                Last run at {hhmm(lastStart)}
               </p>
             )}
           </div>
