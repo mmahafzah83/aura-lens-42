@@ -58,6 +58,18 @@ export default function Settings() {
 
   const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get("tab") === "account" ? "account" : "preferences";
+  const [authUser, setAuthUser] = useState<{ id: string; email?: string } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    supabase.auth.getSession().then(({ data }) => {
+      const u = data.session?.user;
+      if (!cancelled && u) setAuthUser({ id: u.id, email: u.email ?? undefined });
+    });
+    return () => { cancelled = true; };
+  }, []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [exportingReport, setExportingReport] = useState(false);
