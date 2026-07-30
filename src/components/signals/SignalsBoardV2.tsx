@@ -619,17 +619,9 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
         document.body,
       )}
 
-      <div data-legacy style={{ marginTop: 40, borderTop: "1px solid var(--rule-divider)", paddingTop: 26 }}>
+      <div style={{ marginTop: 34, borderTop: "1px solid var(--rule-divider)", paddingTop: 22 }}>
         <SectionLabel>Recommended reading</SectionLabel>
-        <EditorialReadingList signals={rows as unknown as Signal[]} onOpenCapture={onOpenCapture} />
-      </div>
-
-      <div data-legacy style={{ marginTop: 34, borderTop: "1px solid var(--rule-divider)", paddingTop: 26 }}>
-        <SectionLabel>Sources</SectionLabel>
-        <SourcesSubTab
-          onOpenCapture={onOpenCapture}
-          onSwitchToSignal={(signalId: string) => openSignal(signalId, "signals_sources_section")}
-        />
+        <ReadingStrip onOpenCapture={onOpenCapture} />
       </div>
     </section>
   );
