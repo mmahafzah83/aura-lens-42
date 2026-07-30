@@ -312,6 +312,18 @@ export default function WidgetsPage() {
           </div>
         </div>
       </section>
+
+      <div style={{ textAlign: "start" }}>
+        <button
+          type="button"
+          onClick={() => persist({ ...DEFAULT_LAYOUT })}
+          className="v23-focus"
+          style={{
+            ...FF, background: "transparent", border: 0, padding: 0, cursor: "pointer",
+            fontSize: 12, color: "var(--text-muted)", textDecoration: "underline",
+          }}
+        >Reset to default</button>
+      </div>
     </div>
   );
 }
