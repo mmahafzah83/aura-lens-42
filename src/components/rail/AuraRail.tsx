@@ -22,7 +22,7 @@ import AuraRing from "@/components/systemb/AuraRing";
  * (live strip only, never a button except the Ask Aura gradient).
  */
 
-export type RailTab = "today" | "home" | "intelligence" | "library" | "overnight" | "authority" | "influence" | "momentum" | "widgets" | "identity";
+export type RailTab = "home" | "intelligence" | "library" | "overnight" | "authority" | "influence" | "momentum" | "widgets" | "identity";
 
 interface AuraRailProps {
   activeTab: string;
@@ -38,8 +38,6 @@ const ITEMS: Array<{
   value: RailTab; label: string; icon: typeof Compass; testId: string;
   name: string; blurb: string; hasFlyout?: boolean;
 }> = [
-  { value: "today",        label: "Today",    icon: Sun,       testId: "nav-today",
-    name: "Today", blurb: "One move, chosen from what you already have." },
   { value: "home",         label: "Home",     icon: Compass,   testId: "nav-home",
     name: "Home", blurb: "Your brief: what moved and what to do next." },
   { value: "intelligence", label: "Signals",  icon: Radar,     testId: "nav-intelligence",
@@ -73,7 +71,7 @@ const NAV_KEY = "aura_nav_expanded";
 /** Grouped order for the expanded sidebar. Values map 1:1 to ITEMS + the
  *  bottom-block destinations; no new destinations are introduced. */
 const GROUPS: Array<{ header: string; items: Array<RailTab | "settings"> }> = [
-  { header: "Every day", items: ["today", "home"] },
+  { header: "Every day", items: ["home"] },
   { header: "Your intelligence", items: ["intelligence", "library", "overnight"] },
   { header: "Your voice", items: ["authority"] },
   { header: "Your proof", items: ["momentum", "influence"] },
