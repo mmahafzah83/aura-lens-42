@@ -227,6 +227,11 @@ const Dashboard = () => {
     const switchTab = (e: Event) => {
       const detail = (e as CustomEvent).detail as { tab?: string } | undefined;
       const target = detail?.tab;
+      // Settings lives on its own route now (avatar menu), not in the rail.
+      if (target === "settings" || target === "preferences") {
+        navigate(target === "preferences" ? "/settings?tab=preferences" : "/settings");
+        return;
+      }
       if (target && NAV_ITEMS.some(n => n.value === target)) {
         setActiveTab(target as TabValue);
         setSearchParams({ tab: target });
@@ -561,6 +566,10 @@ const Dashboard = () => {
 
 
   const switchTab = (tab: TabValue) => {
+    if ((tab as string) === "settings" || (tab as string) === "preferences") {
+      navigate((tab as string) === "preferences" ? "/settings?tab=preferences" : "/settings");
+      return;
+    }
     setActiveTab(tab);
     setMobileSidebarOpen(false);
     setSearchParams({ tab });
