@@ -310,9 +310,10 @@ export default function OvernightPage({ onOpenDraft, onOpenSettings }: Overnight
         ) : (
           <>
             <p style={{ margin: "0 0 12px", fontSize: 13.5, lineHeight: 1.6, color: "var(--text-secondary)" }}>
-              {counts.kept
-                ? `On the night of ${lastNight[0]}, Aura kept ${counts.kept} ${counts.kept === 1 ? "finding" : "findings"}.`
-                : `On the night of ${lastNight[0]}, Aura read your territory and kept nothing. Nothing cleared the bar — that is the honest result.`}
+              {nNew === 0 && nDrafts === 0
+                ? `Read your territory · nothing cleared the bar — that is the honest result.`
+                : `Read your territory · kept ${nNew} new ${plural(nNew, "article")}` +
+                  ` (${nDupe} already in your library) · wrote ${nDrafts} ${plural(nDrafts, "draft")} from what you'd saved.`}
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {[
@@ -331,9 +332,9 @@ export default function OvernightPage({ onOpenDraft, onOpenSettings }: Overnight
                 </div>
               ))}
             </div>
-            {lastStart && lastEnd && (
+            {lastStart && (
               <p style={{ ...MONO, margin: "12px 0 0", fontSize: 11, color: "var(--text-muted)" }}>
-                {hhmm(lastStart)} → {hhmm(lastEnd)}
+                ran at {hhmm(lastStart)}
               </p>
             )}
           </>
@@ -353,7 +354,7 @@ export default function OvernightPage({ onOpenDraft, onOpenSettings }: Overnight
             contentLanguage
               ? { label: "Draft language", value: contentLanguage === "ar" ? "Arabic" : "English", note: "your setting" }
               : null,
-            { label: "Relevance bar", value: RELEVANCE_BAR, note: "system rule" },
+            { label: RELEVANCE_BAR_LABEL, value: "", note: "system rule" },
             latest?.themes?.length
               ? { label: "Themes watched", value: latest.themes.slice(0, 4).join(", "), note: "learned" }
               : null,
@@ -400,7 +401,10 @@ export default function OvernightPage({ onOpenDraft, onOpenSettings }: Overnight
           })}
         </div>
         <p style={{ ...MONO, margin: "12px 0 0", fontSize: 11, color: "var(--text-secondary)" }}>
-          {producedNights} of 7 nights produced a draft · {ranNights} of 7 recorded a run.
+          {nightsLine(producedNights)}.
+        </p>
+        <p style={{ ...MONO, margin: "4px 0 0", fontSize: 10.5, color: "var(--text-muted)" }}>
+          {ranNights} of 7 recorded a run.
         </p>
       </Card>
     </div>
