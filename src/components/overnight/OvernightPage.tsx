@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import { ButtonPrimary, ButtonGhost } from "@/components/systemb";
+import { draftNightKeys, loadGhostDrafts, nightsLine } from "@/lib/overnightNights";
 
 /**
  * THE OVERNIGHT — V23 pilot slice #3.
@@ -22,8 +23,8 @@ import { ButtonPrimary, ButtonGhost } from "@/components/systemb";
 /** Real pg_cron schedules (UTC) for the two overnight jobs. */
 const HUNT_UTC = "00:00";
 const DRAFT_UTC = "00:20";
-/** Relevance gate in night-agent-hunt: findings below this never become entries. */
-const RELEVANCE_BAR = "0.70";
+/** Plain-English name for the relevance gate. The number lives in Settings. */
+const RELEVANCE_BAR_LABEL = "Keeps only strong matches";
 
 const MONO: React.CSSProperties = {
   fontFamily: "var(--ff-mono)", fontVariantNumeric: "tabular-nums",
@@ -112,6 +113,7 @@ export default function OvernightPage({ onOpenDraft, onOpenSettings }: Overnight
 
   const [findings, setFindings] = useState<FindingRow[]>([]);
   const [draft, setDraft] = useState<GhostDraft | null>(null);
+  const [draftNights, setDraftNights] = useState<Set<string>>(new Set());
   const [overnightOn, setOvernightOn] = useState<boolean | null>(null);
   const [contentLanguage, setContentLanguage] = useState<string | null>(null);
   const [dismissed, setDismissed] = useState(false);
@@ -122,18 +124,14 @@ export default function OvernightPage({ onOpenDraft, onOpenSettings }: Overnight
     const uid = user.id;
     const since = new Date(Date.now() - 7 * 86400_000).toISOString();
 
-    const [profRes, findRes, ghostRes] = await Promise.all([
+    const [profRes, findRes, ghostRows] = await Promise.all([
       supabase.from("diagnostic_profiles")
         .select("notification_prefs, content_language").eq("user_id", uid).maybeSingle(),
       (supabase.from("agent_findings" as any) as any)
         .select("id, status, title, source, url, implication, created_at, themes, dropped_themes")
         .eq("user_id", uid).gte("created_at", since)
         .order("created_at", { ascending: false }).limit(200),
-      (supabase.from("linkedin_posts" as any) as any)
-        .select("id, post_text, created_at, source_metadata")
-        .eq("user_id", uid).eq("tracking_status", "draft")
-        .eq("source_metadata->>ghost_draft", "true")
-        .order("created_at", { ascending: false }).limit(1),
+      loadGhostDrafts(supabase as any, uid),
     ]);
 
     const prefs = ((profRes.data as any)?.notification_prefs ?? {}) as Record<string, unknown>;
@@ -141,7 +139,8 @@ export default function OvernightPage({ onOpenDraft, onOpenSettings }: Overnight
     setContentLanguage(((profRes.data as any)?.content_language as string) || null);
     setFindings(((findRes?.data as any[]) || []) as FindingRow[]);
 
-    const g = (((ghostRes?.data as any[]) || []))[0];
+    setDraftNights(draftNightKeys(ghostRows));
+    const g = ghostRows[0];
     if (g) {
       const body = g.post_text || "";
       const meta = (g.source_metadata || {}) as Record<string, any>;
