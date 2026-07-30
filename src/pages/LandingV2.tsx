@@ -387,10 +387,10 @@ const LANDING_V2_HTML = `
   <div class="wrap">
     <span class="pill"><i class="dot"></i> The overnight · your personal intelligence team · worked while you slept</span>
     <h1>Your name should arrive<br/><em>before you do.</em></h1>
-    <p class="lede">First it works out <strong>who you actually are</strong> — the subjects you own, the capability you can prove, the gaps you cannot see. Then a team of agents builds the evidence, night after night, out of work you are already doing.</p>
+    <p class="lede"><strong>Aura turns what you already read into a weekly LinkedIn presence</strong> — drafted overnight, published only with your approval. First it works out who you actually are: the subjects you own, the capability you can prove, the gaps you cannot see. Then a team of agents builds the evidence, night after night, out of work you are already doing.</p>
     <div class="ctas">
       <a class="btn btn-primary" href="/request-access">Request your access →</a>
-      <a class="btn btn-ghost" href="#overnight">See last night's work</a>
+      <a class="btn btn-ghost" href="#overnight">See how the night works</a>
     </div>
     <p class="micro">30 seconds to ask · Decision within 24 hours <span class="seatline seatsep"></span></p>
 
