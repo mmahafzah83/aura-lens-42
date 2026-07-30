@@ -962,6 +962,17 @@ const Dashboard = () => {
           <div className="tab-content-spring aura-page-fade relative" key={activeTab} style={{ minHeight: "60vh" }}>
             {activeTab === "home" && (
               <div className="animate-tab-spring aura-page">
+                {!firstFlight.active && (
+                  <MoveCard
+                    userId={userId}
+                    onOpenDraft={(d) => { setDraftPrefill(d as any); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                    onStartSignalPost={(p) => {
+                      setSignalDraftPrefill({ ...p, sourceType: "signal", contentFormat: "post" } as any);
+                      setActiveTab("authority");
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                  />
+                )}
                 <FirstLoginWelcome
                   firstName={user?.firstName ?? null}
                   onOpenGuide={() => setHelpOpen(true)}
