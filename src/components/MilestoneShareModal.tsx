@@ -299,7 +299,7 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
               }}
             >
               {/* Top brand */}
-              <div style={{ fontSize: 10, letterSpacing: "0.2em", color: "#B08D3A", fontWeight: 600 }}>
+              <div style={{ fontSize: 10, letterSpacing: "0.2em", color: "var(--act)", fontWeight: 600 }}>
                 AURA INTELLIGENCE
               </div>
 
@@ -367,7 +367,7 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
                   borderRadius: 20,
                   fontSize: 12,
                   cursor: "pointer",
-                  background: lang === l ? "var(--brand, #B08D3A)" : "transparent",
+                  background: lang === l ? "var(--act)" : "transparent",
                   color: lang === l ? "white" : "hsl(var(--muted-foreground))",
                   border: "0.5px solid hsl(var(--border))",
                   fontWeight: 500,
