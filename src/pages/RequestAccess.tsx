@@ -20,8 +20,8 @@ const FIELD_BORDER = "var(--rule)";          // bone hairline
 // Raw hex retained only inside the CSS `<style>` autofill block where
 // `-webkit-text-fill-color` and `-webkit-box-shadow` don't reliably resolve
 // var() values across browsers. Mirrors --paper / --ink (bone).
-const FIELD_BG_RAW = "#F1ECE1";              /* mirrors --paper */
-const INK_RAW = "#1B1712";                   /* mirrors --ink */
+const FIELD_BG_RAW = "var(--surface-page)";              /* mirrors --paper */
+const INK_RAW = "var(--text-primary)";                   /* mirrors --ink */
 
 const SENIORITY: string[] = [...SENIORITY_LEVELS];
 const SECTOR: string[] = [...SECTORS];

@@ -2053,7 +2053,7 @@ export const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed,
                         fontSize: 9.5,
                         letterSpacing: "0.22em",
                         textTransform: "uppercase",
-                        color: "#36C5B0",
+                        color: "var(--machine)",
                       }}
                     >
                       THE OVERNIGHT · WRITTEN FOR YOU
@@ -4076,17 +4076,17 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
         <div>
           <div
             className="flex items-center gap-2.5 w-full text-left"
-            style={{ borderLeft: "2px solid var(--action, #D6A748)", paddingLeft: 12, marginBottom: 12 }}
+            style={{ borderLeft: "2px solid var(--deadline)", paddingLeft: 12, marginBottom: 12 }}
           >
             <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <h3 style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--action, #D6A748)", margin: 0 }}>
+              <h3 style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--deadline)", margin: 0 }}>
                 Needs review
               </h3>
               <span style={{ fontFamily: "var(--font-display, var(--font-serif))", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", lineHeight: 1.4 }}>
                 We couldn't confirm these reached LinkedIn. Check your feed before reposting — don't blind-retry.
               </span>
             </div>
-            <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--paper-2)", color: "var(--action, #D6A748)" }}>
+            <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--paper-2)", color: "var(--deadline)" }}>
               {needsReview.length}
             </span>
           </div>
@@ -4099,7 +4099,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
                   key={row.id}
                   style={{
                     border: "1px solid var(--paper-2)",
-                    borderLeft: "2px solid var(--action, #D6A748)",
+                    borderLeft: "2px solid var(--deadline)",
                     padding: 14,
                     background: "var(--paper)",
                     display: "flex",
@@ -4227,7 +4227,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
                             fontSize: 9,
                             letterSpacing: "0.18em",
                             textTransform: "uppercase",
-                            color: "#36C5B0",
+                            color: "var(--machine)",
                             background: "#131009",
                             border: "1px solid rgba(54,197,176,0.4)",
                             padding: "2px 6px",

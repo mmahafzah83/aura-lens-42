@@ -1539,7 +1539,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                         </div>
                       </div>
                       <div style={{ textAlign: "end" }}>
-                        <span style={{ fontSize: 14, fontWeight: 500, color: "var(--brand, #B08D3A)", fontVariantNumeric: "tabular-nums" }}>
+                        <span style={{ fontSize: 14, fontWeight: 500, color: "var(--act)", fontVariantNumeric: "tabular-nums" }}>
                           {Math.round(s.confidence * 100)}%
                         </span>
                       </div>

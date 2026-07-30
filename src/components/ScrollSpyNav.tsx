@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-const BRONZE = "#B08D3A";
+const BRONZE = "var(--act)";
 
 const sections = [
   { id: "hero", label: "The Question" },

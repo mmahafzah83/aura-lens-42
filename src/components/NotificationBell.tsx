@@ -29,7 +29,7 @@ const TYPE_COLORS: Record<string, string> = {
   opportunity: "text-[color:var(--warning-text)]",
   insight_ready: "text-[color:var(--info)]",
   pattern: "text-emerald-400",
-  momentum: "text-[#B08D3A]",
+  momentum: "text-[color:var(--act)]",
   drift: "text-[color:var(--error)]",
   nudge: "text-primary",
   strategic: "text-primary",

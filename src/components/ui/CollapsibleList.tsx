@@ -47,7 +47,7 @@ export function CollapsibleList<T>({
             cursor: "pointer",
             fontSize: 12,
             fontWeight: 500,
-            color: "var(--brand, #B08D3A)",
+            color: "var(--act)",
             display: "flex",
             alignItems: "center",
             gap: 4,

@@ -256,8 +256,8 @@ const Auth = () => {
         .auth-input:-webkit-autofill:focus,
         .auth-input:-webkit-autofill:active {
           -webkit-box-shadow: 0 0 0 1000px #E9E2D3 inset !important; /* mirrors --paper-2 */
-          -webkit-text-fill-color: #1B1712 !important;                /* mirrors --ink */
-          caret-color: #1B1712 !important;                            /* mirrors --ink */
+          -webkit-text-fill-color: var(--text-primary) !important;                /* mirrors --ink */
+          caret-color: var(--text-primary) !important;                            /* mirrors --ink */
           transition: background-color 9999s ease-in-out 0s;
         }
         .auth-headline {
