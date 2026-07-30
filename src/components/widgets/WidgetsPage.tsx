@@ -243,6 +243,10 @@ export default function WidgetsPage() {
             const t = tallies[s.key];
             const votes = t?.votes ?? 0;
             const voted = myVotes.has(s.key);
+            const rank = SLOTS
+              .map(x => tallies[x.key]?.votes ?? 0)
+              .sort((a, b) => b - a)
+              .indexOf(votes) + 1;
             return (
               <div key={s.key} style={{
                 border: "1px dashed var(--border-strong)", borderRadius: 14, padding: 14,
