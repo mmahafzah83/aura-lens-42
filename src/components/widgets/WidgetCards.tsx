@@ -91,7 +91,7 @@ export const WidgetBody: React.FC<{ k: WidgetKey; m: WidgetMetrics }> = ({ k, m 
     }
     return (
       <WidgetShell label="Fading signals">
-        <Big style={undefined}><span style={{ color: "var(--time)" }}>{count}</span></Big>
+        <Big><span style={{ color: "var(--time)" }}>{count}</span></Big>
         <Sub>
           {count === 1 ? "signal fades" : "signals fade"} this month without a post
           {nearestDays != null ? ` · nearest: ${nearestDays}d` : ""}
