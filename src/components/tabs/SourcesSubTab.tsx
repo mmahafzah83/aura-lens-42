@@ -555,6 +555,8 @@ const SourcesSubTab = ({
   // Optimistic "Retrying…" flag per document id — cleared once the row's status
   // flips out of "processing" on the next loadEntries.
   const [retryingIds, setRetryingIds] = useState<Set<string>>(new Set());
+  // capture id → signals it strengthened, strongest (most sources) first.
+  const [strengthened, setStrengthened] = useState<Map<string, { id: string; title: string; sources: number }[]>>(new Map());
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const typeCounts = useMemo(() => {
