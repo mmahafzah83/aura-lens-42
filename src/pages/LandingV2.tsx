@@ -426,7 +426,7 @@ const LANDING_V2_HTML = `
       </div>
       <div class="card">
         <p class="ctitle">The imprint</p>
-        <p class="big">72</p>
+        <p class="big" data-countup="72">72</p>
         <p class="ctitle" style="margin:10px 0 0">Strategist · Climbing</p>
         <div class="bars"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div>
         <p class="foot">Moves only for real presence. Never for noise.</p>
@@ -530,7 +530,7 @@ const LANDING_V2_HTML = `
       <div class="card">
         <p class="ctitle">You see it moving</p>
         <h3>One number, not a vanity meter</h3>
-        <p class="big" style="font-size:40px">72</p>
+        <p class="big" style="font-size:40px" data-countup="72">72</p>
         <div class="meter"><i></i></div>
         <p class="foot">The imprint · Real presence only</p>
       </div>
@@ -678,6 +678,13 @@ const LANDING_V2_HTML = `
   </div>
   <p class="fbottom">© 2026 Aura</p>
 </footer>
+
+<div class="v2seatbar" aria-hidden="false">
+  <i class="sb-dot"></i>
+  <span class="sb-text seatline"></span>
+  <span class="sb-space"></span>
+  <a class="btn btn-primary" href="/request-access">Request access →</a>
+</div>
 `;
 
 const CURRENCIES: Record<string, { min: number; max: number; step: number; def: number }> = {
