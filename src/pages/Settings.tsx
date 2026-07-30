@@ -408,6 +408,42 @@ const handleDeleteAccount = async () => {
           </h1>
         </div>
 
+        {/* Tabs — Preferences first, then account settings */}
+        <div style={{ display: "flex", gap: 4, marginBottom: 24, borderBottom: "0.5px solid var(--rule)" }}>
+          {([["preferences", "Preferences"], ["account", "Account"]] as const).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setSearchParams(key === "preferences" ? {} : { tab: key }, { replace: true })}
+              style={{
+                background: "transparent",
+                border: 0,
+                borderBottom: `2px solid ${tab === key ? "var(--action)" : "transparent"}`,
+                color: tab === key ? "var(--ink)" : "var(--ink-3)",
+                padding: "8px 12px",
+                fontSize: 14,
+                fontWeight: 500,
+                cursor: "pointer",
+                fontFamily: "var(--font-body)",
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {tab === "preferences" ? (
+          <PreferencesPanel
+            open
+            variant="inline"
+            onClose={() => {}}
+            userId={authUser?.id ?? null}
+            email={authUser?.email}
+            onSignOut={() => {}}
+          />
+        ) : (
+        <>
+
         {/* Your data — trust statement */}
         <SectionHeader
           label="Your data"
@@ -909,6 +945,8 @@ const handleDeleteAccount = async () => {
           </AuraCard>
         </div>
 
+        </>
+        )}
       </div>
 
       {/* Off-screen report mount for PDF export (W2-G-2b).
