@@ -4099,7 +4099,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
                   key={row.id}
                   style={{
                     border: "1px solid var(--paper-2)",
-                    borderLeft: "2px solid var(--deadline)",
+                    borderLeft: "2px solid var(--border-default)",
                     padding: 14,
                     background: "var(--paper)",
                     display: "flex",
