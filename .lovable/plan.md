@@ -1,90 +1,102 @@
+AUDIT REGISTER — read-only. No files changed.
 
-# SLICE 4d — One combined report PDF (plan only)
+## 1 · RETIRED PALETTE in `src/` (excl. `src/index.css`)
 
-## Diagnosis
+Live / user-facing (logged-in product):
+- `src/components/tabs/ImpactTab.tsx` — 1284, 1870, 1871, 1905, 1999, 2526, 2542, 2551 → `#B08D3A` (file is orphaned, see §5)
+- `src/components/tabs/AuthorityTab.tsx` — 2056 `#36C5B0`; 4079, 4082, 4089, 4102 `var(--action, #D6A748)`; 4230 `#36C5B0` (its `CreateTab` export IS mounted in Composer)
+- `src/components/tabs/IntelligenceTab.tsx` — 1542 `var(--brand, #B08D3A)` (its `SignalHero` / `EditorialReadingList` exports ARE mounted in Signals)
+- `src/components/home/WeekReadyCard.tsx` — 75, 140, 247 `var(--brand, #B08D3A)` (orphaned, §5)
+- `src/components/AuraCard.tsx` — 7 `#F1ECE1`, 8 `#1B1712`, 13 `#36C5B0`
+- `src/components/AuraCardPanel.tsx` — 11 `#1B1712`, 14 `#F1ECE1` (mounted via IdentityTab → Profile)
+- `src/components/AgentFindingCard.tsx` — 130 `#36C5B0`, 309 `#36C5B0`, 310 `#D6A748`
+- `src/components/brand/AuraLogo.tsx` — 16 `#1B1712`, 18 `#36C5B0` (in nav shell + splash)
+- `src/components/NotificationBell.tsx` — 32 `text-[#B08D3A]`
+- `src/components/ui/AuraCard.tsx` — 40 `var(--brand, #B08D3A)`
+- `src/components/ui/CollapsibleList.tsx` — 50 `var(--brand, #B08D3A)`
+- `src/components/TierCeremonyModal.tsx` — 46 `#D4B056` (mounted from Dashboard)
+- `src/components/LinkedInPostSteps.tsx` — 23 `#D4B056`
+- `src/components/MilestoneShareModal.tsx` — 302, 370 `#B08D3A`
+- `src/components/AuditRadarWidget.tsx` — 108 `#D4B056`; `src/components/AuditResultsView.tsx` — 107 `#B08D3A`
+- `src/components/TodaysStatus.tsx` — 12 `#6E2A26` (orphaned); `src/components/SilenceAlarm.tsx` — 32 `#F97316` (orphaned); `src/components/StrategicCompanion.tsx` — 52 `#B08D3A` (orphaned); `src/components/ScrollSpyNav.tsx` — 3 `#B08D3A`; `src/components/intelligence/MarketCoverageSection.tsx` — 11 `#B08D3A` (orphaned)
+- `src/pages/Auth.tsx` — 259, 260 `#1B1712` (autofill override)
+- `src/pages/RequestAccess.tsx` — 23 `#F1ECE1`, 24 `#1B1712`
+- `src/components/landing/HeroHead.tsx` — 193 `#d4b056`
 
-**1. `src/lib/exportReportPdf.ts` (61 lines)**
-- Preloads Cairo (400/600), awaits `document.fonts.ready`, waits 150ms for Arabic glyph runs.
-- Then: `mountEl.querySelectorAll("[data-report-page]")` → array in **DOM order**, throws if empty.
-- Per node: `html2canvas(node, {scale:2, backgroundColor:"#ffffff", useCORS:true})` → JPEG 0.82 → one jsPDF A4 portrait page each (`addPage()` between).
-- Assumptions: each `[data-report-page]` node is *itself* a full sheet already laid out (not `display:none`); width is whatever the node measures (identity sheets are fixed 794×1123); if the raster aspect is taller than A4 it is **scaled down and centred horizontally**, i.e. no clipping but a shrunk page. It is fully renderer-agnostic — it does not know about `ReportDocument`.
-- **Consequence: the export needs no changes at all.** Any mount that contains Brand sheets followed by Identity sheets exports as one continuous PDF.
+Non-product / export-canvas, admin, or legacy (not part of the 14 surfaces):
+- `src/pages/Landing.tsx` — 59 occurrences (legacy `/` landing, unmounted; `/` now = LandingV23)
+- `src/components/visual-cards/styles/cardStyles.ts` — 15; `src/components/visual-cards/schematics/blackboard.ts` — 2; `src/components/broadsheet/pressTokens.ts` — 5; `src/components/signature/renderers/*` — 17 across shared/Statement/Line/Frame/Signature; `src/components/signature/Editor.tsx` — 3; `src/pages/SignatureStudio.tsx` — 173; `src/pages/CarouselStudio.tsx` — 10; `src/lib/exportBrand.ts` — 10; `src/components/ImageCardGenerator.tsx` — 42
+- Admin only: `AdminDesignSystem.tsx` (5), `AdminQA.tsx` (3), `AdminJourney.tsx` (36, 37), `AdminPeople.tsx` (482), `AdminExperience.tsx` (521), `src/components/admin/cockpit/ui.tsx` (5), `src/utils/qaInteractionAudit.ts` (424, 617)
+- `src/tailwind.config.lov.json` — 16 × `#f97316` (generated Tailwind ramp)
 
-**2. `ReportDocument.tsx` paginator**
-- `buildBlocks(data)` → `Block[] { key, section, spacing, node }`; a `Paginated` component measures every block offscreen at `CONTENT_W` (with an 80ms retry when heights come back 0), then `packSheets(blocks, heights)` greedily fills `CONTENT_H`, breaking to a new sheet on overflow; finally renders cover sheet + packed sheets + full-bleed closing plate, each as a `Sheet` with `data-report-page`.
-- Coupling: `packSheets` itself is pure and trivially extractable. The measure pass (`Paginated`) is coupled to `SECTION_LABEL`, `PaperHeader/PaperFooter`, cover/closing plate and `useImprintDelta` — extractable but not free.
+## 2 · RETIRED FONTS
 
-**3. Reproducibility — and an important existing asset**
-- `useReportSnapshot` renders from frozen `report_snapshots.data` (`template_version: "aura-paper-v1"`, mirrored in `capture-report-snapshot/index.ts`).
-- The Brand narrative today comes from live `diagnostic_profiles.brand_assessment_results`, so it is **not** frozen. The snapshot function already *selects* that column (it derives pillars from it) but does not store the narrative.
-- **There is already a paper renderer for the Brand narrative**: `src/lib/buildBrandPaper.ts` (normalises the blob into fixed slots, with legacy-prose fallback) and `src/components/report/BrandPaperDocument.tsx` — a fixed 4-sheet layout, same 794×1123 `Sheet`, same `data-report-page`, same `AuraPaper` primitives, explicitly written so `exportReportPdf` can rasterise it. It is currently only used by `BrandAssessmentModal`. So the Brand paper does not need to be built, only wired and frozen.
+On product surfaces a logged-in user sees:
+- `src/components/CaptureModal.tsx` — 766, 894, 1503 `var(--font-serif)` — YES, capture sheet
+- `src/components/tabs/IdentityTab.tsx` — 744 `var(--font-serif)` — YES, Profile H1
+- `src/components/FirstFlightCard.tsx` — 55, 217 `var(--font-serif)` (217 also italic) — YES, first-flight card on Home
+- `src/pages/Onboarding.tsx` — 956 `'JetBrains Mono'` — YES, onboarding
+- `src/pages/Auth.tsx` — 265, 294, 368 `var(--font-serif)` — YES, auth
+- `src/pages/NotFound.tsx` — 25 `'Cormorant Garamond'` — YES (404)
+- `src/pages/AcceptInvitation.tsx` — 77, 230 `var(--font-serif)` — YES (invite flow)
+- `src/pages/RequestAccess.tsx` — 137, 207, 430 `var(--font-serif)` — public, pre-login
 
-## Recommendation: **Approach B** (two renderers, one export) — with a twist
+Not on the 14 surfaces:
+- `src/pages/PublicWelcome.tsx` — 18, 83, 123, 133, 202, 529, 578, 603, 639, 657, 672, 693, 719, 764, 1055 `var(--font-serif)` (orphan page, §5)
+- `src/pages/SignatureStudio.tsx` — 174, 175, 191, 198, 604, 613 `Newsreader`; `src/pages/CarouselStudio.tsx` — 96–98, 110–112, 123–125, 136–138, 149–151, 163, 164, 455, 674, 2113, 2115, 2260, 2588, 2685, 2686 (`DM Sans`, `Cormorant`, `JetBrains Mono`, `Newsreader`) — export canvases
+- Admin: `AdminCrons.tsx` 137/141/145, `AdminCost.tsx` 47/61, `AdminPeople.tsx` 72/184, `AdminQA.tsx` 981/1007/1012/1017/1030, `AdminGuideHealth.tsx` 82/146/165/234, `AdminExperience.tsx` 60/236, `AdminDesignSystem.tsx` 223/229 — `Cormorant` / `DM Sans` / `JetBrains Mono`
+- `src/index.css` 196/199/200 keeps `--font-serif` mapped to Newsreader for reports (excluded by scope); `src/utils/qaInteractionAudit.ts` 357–405 still whitelists Newsreader as the System-A font
 
-Reuse the existing `BrandPaperDocument` rather than folding brand content into `ReportData`'s block stream, and freeze the normalised `BrandPaper` object into the snapshot.
+## 3 · SURFACE REGISTER (verified against `src/App.tsx` + `src/pages/Dashboard.tsx` NAV_ITEMS/render)
 
-Why B over A:
-- **Pagination-cutoff safety** — no hand-rolled pagination either way: `BrandPaperDocument` is fixed-slot ("fits by construction") and already ships; `ReportDocument` keeps its proven measure-then-pack paginator untouched. Approach A would inject ~11 new block types into the identity paginator, i.e. new overflow risk on *every* existing page for *every* user.
-- **Blast radius** — B changes only the download path plus one added snapshot field. A changes the on-screen identity preview for everyone and forces a full re-snapshot.
-- **Reproducibility** — solved the same way in both: store the Brand narrative in the snapshot (below).
-- **Snapshot machinery** — B needs an *additive* field, so `template_version` stays semantically valid; I would still bump to `aura-paper-v2` for the combined artifact so the version string honestly identifies the document shape.
+| Surface | Mounted file (verified) | Status |
+|---|---|---|
+| auth | `src/pages/Auth.tsx` (`/auth`, `/login`) | PARTIAL — `#1B1712` 259/260, `--font-serif` 265/294/368, amber misuse (§4) |
+| landing `/` | `src/pages/LandingV23.tsx` (lazy) | MIGRATED — 0 retired hex/fonts, 56 semantic-token reads |
+| nav shell / sidebar | `src/components/rail/AuraRail.tsx` | PARTIAL — file clean, but renders `AuraLogo` (`#1B1712`, `#36C5B0`) |
+| mobile bottom nav | none — no bottom-nav component; mobile nav is the inline drawer in `src/pages/Dashboard.tsx` (Menu/X, ~line 728 rail + fixed elements) | NOT MIGRATED (does not exist as a discrete surface) |
+| Home (Brief) | `src/components/home/BriefV2.tsx` | PARTIAL — file clean (35 token reads), but Home also mounts `FirstFlightCard` (`--font-serif`) and `NotificationBell` (`#B08D3A`) |
+| Signals board | `src/components/signals/SignalsBoardV2.tsx` | PARTIAL — file clean, imports `EditorialReadingList`/`SignalHero` from `tabs/IntelligenceTab.tsx` (`#B08D3A` 1542) |
+| Observatory / Intelligence | no route — `src/components/Observatory.tsx` not imported anywhere | NOT MIGRATED / dead (§5) |
+| Composer / Authority | `src/components/composer/ComposerV2.tsx` | PARTIAL — file clean, imports `CreateTab` from `tabs/AuthorityTab.tsx` (`#36C5B0` 2056/4230, `#D6A748` 4079–4102) |
+| Impact / Influence (Statement) | `src/components/analytics/AnalyticsV2.tsx` (tab `influence`, labelled "Analytics") | MIGRATED — 0 retired hex/fonts, 51 token reads. `tabs/ImpactTab.tsx` is NOT mounted |
+| Identity / My Story | `src/components/tabs/IdentityTab.tsx` | NOT MIGRATED — `--font-serif` 744, only 5 semantic token reads, pulls `AuraCardPanel` (`#1B1712`/`#F1ECE1`), `AuditRadarWidget` (`#D4B056`), `MilestoneShareModal` (`#B08D3A`) |
+| Library | `src/components/library/LibraryPage.tsx` | MIGRATED — clean, 29 token reads |
+| Capture sheet | `src/components/CaptureModal.tsx` | PARTIAL — no retired hex, but `--font-serif` at 766, 894, 1503 |
+| Ask Aura | `src/components/ask/AskAuraV2.tsx` | PARTIAL — no retired hex/fonts, but cyan on a pressable control (§4) |
+| Onboarding / First Flight | `src/pages/Onboarding.tsx` + `src/components/FirstFlightCard.tsx` | NOT MIGRATED — `JetBrains Mono` 956; FirstFlightCard `--font-serif` 55/217 and only 1 token read |
 
-Trade-off accepted: two renderers to maintain, and the `BrandPaper` shape must be produced identically client-side and in the edge mirror (same class of drift the report already manages).
+Also mounted and clean: `overnight/OvernightPage.tsx`, `today/TodayPage.tsx`, `momentum/MomentumPage.tsx`, `widgets/WidgetsPage.tsx`.
 
-## Proposed build (for approval)
+## 4 · COLOUR LAW BREACHES
 
-### Freezing the Brand narrative
-- Add `brand_paper: BrandPaper | null` to `ReportData` in `src/lib/buildIdentityReport.ts`, populated by calling the existing `buildBrandPaper` normaliser on the already-fetched `brand_assessment_results`.
-- Mirror the same normalisation in `supabase/functions/capture-report-snapshot/index.ts` (it already selects the column) so client and edge snapshots are byte-comparable.
-- Bump `TEMPLATE_VERSION` to `"aura-paper-v2"` in both places.
-- No table migration required (`report_snapshots.data` is jsonb).
-- **Backfill:** existing `is_current` snapshots are v1 with no `brand_paper`. Two options — (i) a jsonb migration that injects `brand_paper` computed from each user's live `brand_assessment_results` and rewrites `template_version` in place (no new version rows, keeps "Version 1 · date" stable), or (ii) re-snapshot each affected user to v2 via the existing capture path. I recommend (i) for Mohammad / Elsayed / MEELAD and the rest, since it avoids bumping everyone's visible version number for a rendering change. Renderers stay tolerant of a missing `brand_paper` regardless.
+Cyan on a pressable control:
+- `src/components/ask/AskAuraV2.tsx` 112–114 — citation pill is a `<button onClick>` with `--machine` background, border and text
+- `src/components/systemb/Tooltip.tsx` 29 — `--machine` title text inside an interactive tooltip surface
 
-### Combined download
-- `ReportViewerSection.tsx` (the hidden 794px export mount) renders `<BrandPaperDocument …/>` **then** `<ReportDocument data={report}/>` in the same mount; `exportReportPdf(mount, fileName)` is called unchanged and picks both sets of sheets up in DOM order.
-- Gate the Brand sheets on `report.brand_paper` being present so a pre-backfill snapshot still exports the identity paper alone.
-- Page numbering: `BrandPaperDocument` numbers 1–4 of its own paper (№ 00), `ReportDocument` numbers its own (№ 01). Cleanest low-risk option is to keep them as two numbered papers inside one issue (an editorially normal convention) rather than plumbing an offset through both footers; if you prefer continuous 1..N I will thread a `pageOffset`/`totalOverride` prop through both `PaperFooter` call sites.
-- Filename: `aura-report-{slug}-v{version}-{date}.pdf` (unchanged shape).
+Amber with no deadline/expiry:
+- `src/pages/Auth.tsx` 663 — "Forgot password" button in `--deadline-text`
+- `src/pages/Auth.tsx` 594 — "Set Password" inline emphasis in `--deadline-text`
+- `src/pages/Auth.tsx` 729, 735, 741 — three static feature icons in `--deadline-text`
+- `src/components/tabs/AuthorityTab.tsx` 4079–4102 — `var(--action, #D6A748)` on a section header, count chip and list border (no expiry)
 
-### Download UX
-- One primary button: **"Download your report (PDF)"** at the top of "Your Reports" in `IdentityTab.tsx`.
-- Remove the "Export PDF" button from `ReportViewerSection`'s toolbar (the section keeps the on-screen scaled preview and the "Version N · date" line), and remove/retire the separate brand-paper export entry point on this surface. `BrandAssessmentModal`'s own export is out of scope for this slice and left alone.
-- The interactive `BrandReportSection` accordion from 4b/4c stays exactly as-is for reading; only the download renders paper.
+Blue (`--act`) on a passive status chip: none found.
 
-### Brand paper content order (mirrors the on-screen labels)
-Cover: archetype + positioning statement + "Second nature". Then, in `BrandPaperDocument`'s existing slots, mapped from `brand_assessment_results`:
-1. How the market sees you (`market_read`)
-2. The honest truth (`honest_truth`)
-3. What only you can do (`unique_capability`, `zone_of_genius`)
-4. The space nobody else owns (`uncontested_space`)
-5. Your topics (`topics[]`)
-6. How you sound (`voice_signature`, `natural_tone`)
-7. How you build trust (`trust_pattern`, `authority_style`)
-8. Your content pillars (`content_pillars[]`)
-9. Where to invest next (`invest_next[]`)
-10. Areas to strengthen (`growth_areas[]`)
-11. What is holding you back (`key_barrier`)
-Empty-value guards drop any missing slot; on-brand vocabulary only (no "thought leader", "leverage", "utilize"). Fields `buildBrandPaper` does not yet carry (`zone_of_genius`, `voice_signature`, `authority_style`, `content_pillars`, `growth_areas`, `key_barrier`) get added to its `BrandPaper` interface.
+## 5 · DEAD / ORPHAN FILES among these surfaces
 
-### Arabic
-Per-field detection (as in `BrandReportSection`) sets `direction: rtl`, right alignment and the Cairo stack on paper text; `exportReportPdf` already preloads Cairo. Long RTL headlines go through the existing `fitText` shrink-to-fit path; SVG figures inside `AuraPaper` need their text anchors flipped (`text-anchor: end`) for RTL rather than relying on CSS direction.
+- `src/components/Observatory.tsx` — no import anywhere
+- `src/components/Brief.tsx` — imported by `Dashboard.tsx:31` and `BriefV2.tsx:12` (type only); never rendered
+- `src/components/tabs/ImpactTab.tsx` — only referenced from the unrendered `Brief.tsx`
+- `src/components/tabs/InfluenceTab.tsx` — zero references
+- `src/components/tabs/MarketTab.tsx` — zero references
+- `src/components/home/WeekReadyCard.tsx` — zero imports
+- `src/components/TodaysStatus.tsx` — zero imports
+- `src/components/SilenceAlarm.tsx` — zero imports
+- `src/components/StrategicCompanion.tsx` — zero imports
+- `src/components/intelligence/MarketCoverageSection.tsx` — zero imports
+- `src/components/ImageCardGenerator.tsx` — zero imports
+- `src/pages/PublicWelcome.tsx` — no route in `src/App.tsx`
+- `src/pages/Landing.tsx` — no route (`/` is `LandingV23`)
+- `src/pages/Index.tsx`, `src/pages/AdminRedirect.tsx` — no route in `src/App.tsx`
 
-### Files touched
-- `src/lib/buildIdentityReport.ts` (add `brand_paper`, bump `TEMPLATE_VERSION`)
-- `src/lib/buildBrandPaper.ts` (extend slots for the 6 extra fields)
-- `src/components/report/BrandPaperDocument.tsx` (render the extra sections; RTL/fitText hardening)
-- `src/components/identity/ReportViewerSection.tsx` (combined export mount; drop its own button)
-- `src/components/tabs/IdentityTab.tsx` (single primary download button)
-- `supabase/functions/capture-report-snapshot/index.ts` (mirror `brand_paper`, bump version)
-- One SQL migration: jsonb backfill of `brand_paper` + `template_version` on current snapshots
-- Unchanged: `exportReportPdf.ts`, `ReportDocument.tsx`, `useReportSnapshot.ts`, scoring engine, admin.
-
-### Risks
-- **Pagination overflow** — brand sections are fixed-slot; unusually long AI prose could overflow a sheet. Mitigation: `fitText`/clamp per slot, and a QA pass across the longest existing profiles.
-- **RTL** — SVG anchoring and mixed EN-in-AR runs; mitigate with the `renderBidi`/`<bdi>` approach already in `ReportDocument`.
-- **`blob:`/remote avatar URLs** — html2canvas needs them inlined or `useCORS`-fetchable before export; a revoked `blob:` renders blank. Mitigation: inline to data-URL at snapshot time or skip the image if it fails to load.
-- **Snapshot drift** — client vs edge `brand_paper` normalisation must stay identical; mitigate by keeping `buildBrandPaper`'s logic literally duplicated with a "KEEP IN SYNC" header (the existing convention) and adding it to `report_invariants()` checks.
-- **Version confusion** — bumping `template_version` while keeping version numbers stable needs the backfill to be in-place, or users see "Version 2" for a document they never regenerated.
-- **Users with no brand assessment** — download must remain disabled/absent rather than exporting a half document.
-
-Nothing built yet — approve and I will implement in this order: extend `buildBrandPaper` → `ReportData` + edge mirror + migration → `BrandPaperDocument` sections/RTL → combined mount + single button → QA (375px, Arabic profile, longest profile).
+Partially live, not orphans: `tabs/AuthorityTab.tsx` (`CreateTab`) and `tabs/IntelligenceTab.tsx` (`SignalHero`, `EditorialReadingList`) are imported by the V2 surfaces — their retired values do reach users.
