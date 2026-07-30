@@ -262,7 +262,7 @@ const Auth = () => {
         }
         .auth-headline {
           color: var(--ink) !important;
-          font-family: var(--font-serif) !important;
+          font-family: var(--font-display) !important;
           font-weight: 400 !important;
           font-size: 34px !important;
           letter-spacing: -0.02em !important;
@@ -291,7 +291,7 @@ const Auth = () => {
           font-size: 24px !important;
           font-weight: 400 !important;
           text-align: center !important;
-          font-family: var(--font-serif) !important;
+          font-family: var(--font-display) !important;
           line-height: 1.35 !important;
           letter-spacing: -0.01em !important;
           background: none !important;
@@ -365,7 +365,7 @@ const Auth = () => {
         .auth-divider-line { height: 0.5px; background: var(--rule); flex: 1; }
         .auth-divider-text { font-size: 11px; color: var(--ink-3); font-family: var(--font-mono); letter-spacing: 0.08em; }
         .auth-wordmark {
-          font-family: var(--font-serif);
+          font-family: var(--font-display);
           font-weight: 500;
           font-size: 22px;
           color: var(--ink);

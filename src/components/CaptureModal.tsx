@@ -763,7 +763,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
           >✦</div>
           <h2
             style={{
-              fontFamily: "var(--font-serif)",
+              fontFamily: "var(--font-display)",
               fontSize: 26, fontWeight: 500,
               color: "var(--glass)",
               letterSpacing: "-0.01em",
@@ -891,7 +891,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
             <div>
               <h2
                 style={{
-                  fontFamily: "var(--font-serif)",
+                  fontFamily: "var(--font-display)",
                   fontSize: 18,
                   color: "var(--glass)",
                   margin: 0,
@@ -1500,7 +1500,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                   </button>
                   <div
                     style={{
-                      fontFamily: "var(--font-serif)",
+                      fontFamily: "var(--font-mono)",
                       fontSize: 22,
                       color: isRecording ? "var(--live)" : "var(--glass)",
                       letterSpacing: "-0.02em",
