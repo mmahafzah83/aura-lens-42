@@ -318,8 +318,7 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
         }}>
           <CaptureMeter filled={Math.min(captures, 5)} bucket={bucket} />
           <span style={{ ...MONO, fontSize: 10.5, letterSpacing: ".06em", color: "var(--text-muted)" }}>
-            {captures} captures · {ageDays(r.created_at)}d ·{" "}
-            <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{strengthOf(r)}</span>
+            {captures} captures · quiet {ageDays(r.last_evidence_at)}d
           </span>
           <span
             aria-hidden
