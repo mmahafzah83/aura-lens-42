@@ -217,6 +217,8 @@ serve(async (req) => {
     let q = admin
       .from("agent_findings")
       .select("id,user_id,url,title,source,relevance_score,implication,created_at,themes")
+      // pending = found, not yet acted on. kept = user accepted it. Both are emailable. duplicate, below_bar and error are not, and must never be.
+      .in("status", ["pending", "kept"])
       .gte("created_at", cutoff)
       .order("created_at", { ascending: false });
     if (onlyUserId) q = q.eq("user_id", onlyUserId);
