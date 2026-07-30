@@ -71,7 +71,7 @@ const NAV_KEY = "aura_nav_expanded";
 
 /** Grouped order for the expanded sidebar. Values map 1:1 to ITEMS + the
  *  bottom-block destinations; no new destinations are introduced. */
-const GROUPS: Array<{ header: string; items: Array<RailTab | "settings"> }> = [
+const GROUPS: Array<{ header: string; items: RailTab[] }> = [
   { header: "Every day", items: ["home"] },
   { header: "Your intelligence", items: ["intelligence", "library", "overnight"] },
   { header: "Your voice", items: ["authority"] },
@@ -310,7 +310,7 @@ export default function AuraRail({
     }}>{text}</span>
   );
 
-  const expandedRow = (key: RailTab | "settings") => {
+  const expandedRow = (key: RailTab) => {
     if (key === "identity") {
       const active = activeTab === "identity";
       return (
