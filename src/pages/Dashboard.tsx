@@ -29,7 +29,7 @@ import InviteColleagueModal from "@/components/InviteColleagueModal";
 import NpsSurveyModal from "@/components/NpsSurveyModal";
 import FirstLoginWelcome from "@/components/FirstLoginWelcome";
 import Brief from "@/components/Brief";
-import BriefV2 from "@/components/home/BriefV2";
+import HomeSpine from "@/components/home/HomeSpine";
 import AuraRail from "@/components/rail/AuraRail";
 import IdentityDriftBanner from "@/components/IdentityDriftBanner";
 import FirstFlightCard from "@/components/FirstFlightCard";
@@ -52,13 +52,11 @@ import LibraryPage from "@/components/library/LibraryPage";
 import OvernightPage from "@/components/overnight/OvernightPage";
 import MomentumPage from "@/components/momentum/MomentumPage";
 import WidgetsPage from "@/components/widgets/WidgetsPage";
-import TodayPage from "@/components/today/TodayPage";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
 const NAV_ITEMS = [
-  { value: "today", label: "Today", pageHeader: "Today", icon: Compass, docTitle: "Aura — Today" },
   { value: "home", label: "Home", pageHeader: "Home", icon: Compass, docTitle: "Aura — Home" },
   { value: "intelligence", label: "Signals", pageHeader: "Signals", icon: Shield, docTitle: "Aura — Signals" },
   { value: "library", label: "Library", pageHeader: "Library", icon: LibraryIcon, docTitle: "Aura — Library" },
@@ -253,6 +251,7 @@ const Dashboard = () => {
     // Email deep links use friendly names (publish, impact, strategy).
     const tabAlias: Record<string, string> = {
       strategy: "intelligence",
+      today: "home",
       publish: "authority",
       impact: "influence",
       "my-story": "identity",
