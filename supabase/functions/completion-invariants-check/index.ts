@@ -27,17 +27,20 @@ Deno.serve(async (req) => {
 
   try {
     // ============ ASSERTION 1: Stuck publish attempt ============
-    // A row has publish_attempted_at set (real client attempt) but has not resolved
-    // to a terminal state within an hour. Rows never attempted are ignored by design.
+    // A real client publish attempt should resolve to published or failed within 1 h.
+    // We flag only attempts between 1 h and 48 h old: "stuck" window = 1 h–48 h.
+    // Beyond 48 h an unconfirmed attempt is treated as user-abandoned and self-clears.
     {
-      const cutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      const cutoff1h = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      const cutoff48h = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
       const { count, error: cErr } = await admin
         .from("linkedin_posts")
         .select("id", { count: "exact", head: true })
         .not("publish_attempted_at", "is", null)
         .not("tracking_status", "in", "(published,failed)")
         .is("published_at", null)
-        .lt("publish_attempted_at", cutoff);
+        .lt("publish_attempted_at", cutoff1h)
+        .gt("publish_attempted_at", cutoff48h);
       if (cErr) throw new Error(`assertion_1_count: ${cErr.message}`);
       const { data: rows, error: rErr } = await admin
         .from("linkedin_posts")
@@ -45,7 +48,8 @@ Deno.serve(async (req) => {
         .not("publish_attempted_at", "is", null)
         .not("tracking_status", "in", "(published,failed)")
         .is("published_at", null)
-        .lt("publish_attempted_at", cutoff)
+        .lt("publish_attempted_at", cutoff1h)
+        .gt("publish_attempted_at", cutoff48h)
         .order("publish_attempted_at", { ascending: true })
         .limit(50);
       if (rErr) throw new Error(`assertion_1_rows: ${rErr.message}`);
