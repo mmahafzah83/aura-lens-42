@@ -60,6 +60,24 @@ const FRIENDLY: Record<string, string> = {
 
 const friendly = (t: string) => FRIENDLY[t] ?? t;
 
+// Machine-generated index structures. Never exported: unreadable and not content.
+const EXCLUDED_COLUMNS = new Set([
+  "embedding",
+  "tsv",
+  "search_vector",
+  "fts",
+  "content_embedding",
+]);
+
+function stripRow(row: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const k of Object.keys(row ?? {})) {
+    if (EXCLUDED_COLUMNS.has(k)) continue;
+    out[k] = row[k];
+  }
+  return out;
+}
+
 const BOM = "\uFEFF";
 
 function csvCell(value: unknown): string {
@@ -174,6 +192,8 @@ ${rows || '<tr><td colspan="4" class="muted">No records were found for this acco
   original files themselves are not included in this version of the export. Operational records
   such as error logs, job queues and usage metering are not included, because they are system
   records rather than your content.</p>
+  <p class="muted">Internal search index data used to power similarity matching is not included;
+  it is machine-generated and not readable.</p>
   <p class="muted">This page contains no tracking and makes no internet requests.</p>
 </div>
 </body>
@@ -219,11 +239,11 @@ Deno.serve(async (req) => {
 
   const PAGE = 1000;
 
-  // Sequential on purpose: keeps memory flat and avoids timeouts.
+  // Sequential on purpose: one table's rows are resident at a time, then released.
   for (const table of TABLES) {
     try {
       // Paginate: PostgREST caps a single response, so page until short read.
-      const rows: unknown[] = [];
+      let rows: Record<string, unknown>[] = [];
       let from = 0;
       let failed: string | null = null;
       for (;;) {
@@ -233,12 +253,13 @@ Deno.serve(async (req) => {
           .eq("user_id", userId)
           .range(from, from + PAGE - 1);
         if (error) { failed = error.message; break; }
-        const batch = data ?? [];
-        rows.push(...batch);
+        const batch = (data ?? []) as Record<string, unknown>[];
+        for (const r of batch) rows.push(stripRow(r));
         if (batch.length < PAGE) break;
         from += PAGE;
       }
       if (failed) {
+        rows = [];
         errored.push({ table, error: failed });
         continue;
       }
@@ -247,8 +268,13 @@ Deno.serve(async (req) => {
         empty.push(table);
         continue;
       }
-      dataFolder.file(`${table}.json`, JSON.stringify(rows, null, 2));
-      readableFolder.file(`${table}.csv`, toCsv(rows as Record<string, unknown>[]));
+      // Large tables: no indent. Small tables stay pretty for human reading.
+      dataFolder.file(
+        `${table}.json`,
+        rows.length > 500 ? JSON.stringify(rows) : JSON.stringify(rows, null, 2),
+      );
+      readableFolder.file(`${table}.csv`, toCsv(rows));
+      rows = []; // release before the next table
     } catch (e) {
       errored.push({ table, error: e instanceof Error ? e.message : String(e) });
     }
@@ -299,18 +325,35 @@ Deno.serve(async (req) => {
       "Operational and telemetry records (error logs, job queues, usage metering) are not",
       "part of this export because they are system records rather than your content.",
       "",
+      "Internal search index data used to power similarity matching is not included; it is",
+      "machine-generated and not readable.",
+      "",
     ].join("\n"),
   );
 
-  const bytes = await zip.generateAsync({ type: "uint8array" });
-  const stamp = now.toISOString().slice(0, 10);
+  try {
+    const bytes = await zip.generateAsync({
+      type: "uint8array",
+      compression: "DEFLATE",
+      compressionOptions: { level: 6 },
+    });
+    const stamp = now.toISOString().slice(0, 10);
 
-  return new Response(bytes, {
-    status: 200,
-    headers: {
-      ...corsHeaders,
-      "Content-Type": "application/zip",
-      "Content-Disposition": `attachment; filename="aura-data-export-${stamp}.zip"`,
-    },
-  });
+    return new Response(bytes, {
+      status: 200,
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "application/zip",
+        "Content-Disposition": `attachment; filename="aura-data-export-${stamp}.zip"`,
+      },
+    });
+  } catch (e) {
+    return new Response(
+      JSON.stringify({
+        error: "We could not build your export file. Please try again in a few minutes.",
+        detail: e instanceof Error ? e.message : String(e),
+      }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
 });
