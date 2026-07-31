@@ -60,6 +60,24 @@ const FRIENDLY: Record<string, string> = {
 
 const friendly = (t: string) => FRIENDLY[t] ?? t;
 
+// Machine-generated index structures. Never exported: unreadable and not content.
+const EXCLUDED_COLUMNS = new Set([
+  "embedding",
+  "tsv",
+  "search_vector",
+  "fts",
+  "content_embedding",
+]);
+
+function stripRow(row: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const k of Object.keys(row ?? {})) {
+    if (EXCLUDED_COLUMNS.has(k)) continue;
+    out[k] = row[k];
+  }
+  return out;
+}
+
 const BOM = "\uFEFF";
 
 function csvCell(value: unknown): string {
@@ -174,6 +192,8 @@ ${rows || '<tr><td colspan="4" class="muted">No records were found for this acco
   original files themselves are not included in this version of the export. Operational records
   such as error logs, job queues and usage metering are not included, because they are system
   records rather than your content.</p>
+  <p class="muted">Internal search index data used to power similarity matching is not included;
+  it is machine-generated and not readable.</p>
   <p class="muted">This page contains no tracking and makes no internet requests.</p>
 </div>
 </body>
