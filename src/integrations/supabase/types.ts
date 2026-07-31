@@ -3045,6 +3045,33 @@ export type Database = {
         }
         Relationships: []
       }
+      qa_runs: {
+        Row: {
+          check_key: string
+          detail: string | null
+          id: string
+          run_at: string
+          status: string
+          value_json: Json
+        }
+        Insert: {
+          check_key: string
+          detail?: string | null
+          id?: string
+          run_at?: string
+          status: string
+          value_json?: Json
+        }
+        Update: {
+          check_key?: string
+          detail?: string | null
+          id?: string
+          run_at?: string
+          status?: string
+          value_json?: Json
+        }
+        Relationships: []
+      }
       recommended_moves_retired_20260718: {
         Row: {
           created_at: string
@@ -4090,6 +4117,14 @@ export type Database = {
         }[]
       }
       publish_invariants: { Args: never; Returns: Json }
+      qa_cron_success_jobs: {
+        Args: { p_hours: number }
+        Returns: {
+          jobname: string
+          last_end: string
+          runs: number
+        }[]
+      }
       recent_cron_http_failures: {
         Args: { p_minutes?: number }
         Returns: {
