@@ -4,7 +4,7 @@
 
 import { useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { AuraButton } from "@/components/ui/AuraButton";
+import { Button } from "@/components/ui/button";
 import { isArabicText } from "@/lib/utils";
 import { PAPER, INK, INK2, SPOT, RULE, RULE_SOFT, SERIF, MONO, ARABIC } from "@/components/broadsheet/pressTokens";
 
@@ -125,9 +125,9 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
           Complete your brand assessment to generate your reports.
         </p>
         <div style={{ marginTop: 12 }}>
-          <AuraButton variant="primary" size="sm" onClick={onCompleteAssessment}>
+          <Button variant="default" size="sm" onClick={onCompleteAssessment}>
             Complete brand assessment
-          </AuraButton>
+          </Button>
         </div>
       </section>
     );
