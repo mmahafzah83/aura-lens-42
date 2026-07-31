@@ -1,0 +1,102 @@
+#!/usr/bin/env python3
+"""
+Aura QA smoke suite (scenarios 1-4 + 8). Re-run before every publish.
+
+Usage:
+    python3 scripts/qa-smoke.py                     # against http://localhost:8080
+    QA_BASE_URL=https://aura-intel.org python3 scripts/qa-smoke.py
+
+Auth: restores the managed Supabase session from LOVABLE_BROWSER_SUPABASE_*
+env vars when present (needed for the Home / avatar-menu scenarios).
+Screenshots land in /tmp/browser/qa/screenshots.
+"""
+import asyncio, json, os
+from pathlib import Path
+from playwright.async_api import async_playwright
+
+BASE = os.environ.get("QA_BASE_URL", "http://localhost:8080")
+SHOTS = Path("/tmp/browser/qa/screenshots"); SHOTS.mkdir(parents=True, exist_ok=True)
+results = []
+def rec(name, ok, ev): results.append((name, "PASS" if ok else "FAIL", ev)); print(f"[{'PASS' if ok else 'FAIL'}] {name} :: {ev}")
+
+async def restore_session(context, page):
+    key = os.environ.get("LOVABLE_BROWSER_SUPABASE_STORAGE_KEY")
+    sess = os.environ.get("LOVABLE_BROWSER_SUPABASE_SESSION_JSON")
+    cookies = os.environ.get("LOVABLE_BROWSER_SUPABASE_COOKIES_JSON")
+    if cookies:
+        cs = json.loads(cookies)
+        for c in cs: c["url"] = BASE
+        await context.add_cookies(cs)
+    await page.goto(BASE, wait_until="domcontentloaded")
+    if key and sess:
+        await page.evaluate(f"window.localStorage.setItem({json.dumps(key)}, {json.dumps(sess)})")
+
+async def main():
+    async with async_playwright() as pw:
+        browser = await pw.chromium.launch(headless=True)
+        context = await browser.new_context(viewport={"width":1280,"height":1800})
+        page = await context.new_page()
+        await restore_session(context, page)
+
+        # 1 — landing
+        await page.goto(BASE, wait_until="networkidle")
+        await page.wait_for_timeout(1500)
+        seat = (await page.locator(".seatline").first.inner_text()).strip()
+        rec("1a seat line from founding_seats", bool(seat) and "10 of 50" not in seat, f"seatline='{seat}'")
+        before = await page.locator("#v2-hours").evaluate("el=>el.closest('.slider').parentElement.innerText")
+        await page.locator("#v2-hours").fill("12"); await page.locator("#v2-hours").dispatch_event("input")
+        await page.locator("#v2-rate").fill("800"); await page.locator("#v2-rate").dispatch_event("input")
+        await page.wait_for_timeout(500)
+        after = await page.locator("#v2-hours").evaluate("el=>el.closest('.slider').parentElement.innerText")
+        rec("1b calculator recalculates", before != after, "figures changed on slider input")
+        await page.evaluate("window.scrollTo(0, document.body.scrollHeight*0.6)")
+        await page.wait_for_timeout(900)
+        up = await page.locator(".v2seatbar").evaluate("el=>el.classList.contains('up')")
+        rec("1c sticky seat bar past 50%", up, f"v2seatbar.up={up}")
+        await page.screenshot(path=str(SHOTS/"1_landing.png"))
+
+        # 2 — founder home
+        await page.goto(f"{BASE}/home", wait_until="networkidle"); await page.wait_for_timeout(3500)
+        body = await page.locator("body").inner_text()
+        onboarding = ("Welcome, " in body) or ("intelligence command center" in body)
+        rec("2a zero onboarding cards", not onboarding, "no welcome/capture-callout text on Home")
+        rec("2b since-last-visit present", "last visit" in body.lower() or "Since your" in body, "section rendered")
+        await page.screenshot(path=str(SHOTS/"2_home.png"))
+
+        # 3 — avatar menu
+        try:
+            await page.get_by_role("button", name="Account menu").click()
+        except Exception:
+            await page.locator("header button, [aria-haspopup]").last.click()
+        await page.wait_for_timeout(600)
+        menu = await page.locator("body").inner_text()
+        one = menu.count("Account & settings") == 1 and "Sign out" in menu
+        rec("3a single Account & settings item", one, "menu has one combined item + Sign out")
+        await page.screenshot(path=str(SHOTS/"3_menu.png"))
+        await page.get_by_text("Account & settings").first.click(); await page.wait_for_timeout(2000)
+        rec("3b navigates to /settings", "/settings" in page.url, page.url)
+
+        # 4 — button hover tint
+        for label, url in [("dark", BASE), ("light", f"{BASE}/settings")]:
+            await page.goto(url, wait_until="networkidle"); await page.wait_for_timeout(1500)
+            btn = page.locator("button").first
+            await btn.hover(); await page.wait_for_timeout(300)
+            bg = await btn.evaluate("el=>getComputedStyle(el).backgroundColor")
+            rec(f"4 hover tint not white ({label})", "255, 255, 255" not in bg or "0)" in bg, f"bg={bg}")
+            await page.screenshot(path=str(SHOTS/f"4_{label}.png"))
+
+        # 8 — reduced motion
+        await context.close()
+        context = await browser.new_context(viewport={"width":1280,"height":1800}, reduced_motion="reduce")
+        page = await context.new_page()
+        await page.goto(BASE, wait_until="networkidle"); await page.wait_for_timeout(1500)
+        hidden = await page.evaluate("""() => Array.from(document.querySelectorAll('.aura-v2 section > *'))
+            .filter(el => getComputedStyle(el).opacity === '0').length""")
+        rec("8 reduced-motion content visible", hidden == 0, f"{hidden} elements stuck at opacity 0")
+        await page.screenshot(path=str(SHOTS/"8_reduced.png"))
+        await browser.close()
+
+    print("\n--- SUMMARY ---")
+    for n,r,e in results: print(f"{r:4} | {n} | {e}")
+
+asyncio.run(main())
