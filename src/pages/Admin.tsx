@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import AdminShell from "@/components/admin/AdminShell";
 import HealthFindingsPanel from "@/components/admin/HealthFindingsPanel";
+import SystemHealthPanel from "@/components/admin/SystemHealthPanel";
 import SendTestEmailPanel from "@/components/admin/SendTestEmailPanel";
 import RegenerateReportPanel from "@/components/admin/RegenerateReportPanel";
 import ReportHealthPanel from "@/components/admin/ReportHealthPanel";
@@ -1213,6 +1214,8 @@ export default function Admin() {
               </Btn>
             </div>
           </div>
+
+          <SystemHealthPanel />
 
           <div style={{ marginBottom: 14 }}>
             <Seg<ViewMode>
