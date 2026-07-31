@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AuraCard } from "@/components/ui/AuraCard";
-import { AuraButton } from "@/components/ui/AuraButton";
+import { Button } from "@/components/ui/button";
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
 
@@ -102,9 +102,9 @@ const SilenceAlarm = ({ daysSinceCapture, onOpenCapture, onSwitchTab }: Props) =
           You haven't captured in <strong>{daysSinceCapture} days</strong>. Keep your signal base fresh.
         </p>
         <div style={{ marginTop: 10 }}>
-          <AuraButton variant="primary" size="sm" onClick={() => onOpenCapture?.()} style={{ borderRadius: 4, padding: "7px 18px" }}>
+          <Button variant="default" size="sm" onClick={() => onOpenCapture?.()}>
             Capture now →
-          </AuraButton>
+          </Button>
         </div>
       </AuraCard>
     );
@@ -187,12 +187,12 @@ const SilenceAlarm = ({ daysSinceCapture, onOpenCapture, onSwitchTab }: Props) =
           )}
 
           <div style={{ display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap" }}>
-            <AuraButton variant="primary" size="sm" onClick={() => onOpenCapture?.()} style={{ borderRadius: 4, padding: "7px 18px" }}>
+            <Button variant="default" size="sm" onClick={() => onOpenCapture?.()}>
               Capture now →
-            </AuraButton>
-            <AuraButton variant="ghost" size="sm" onClick={() => onSwitchTab?.("intelligence")} style={{ borderRadius: 4, padding: "7px 18px" }}>
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => onSwitchTab?.("intelligence")}>
               Review fading signals →
-            </AuraButton>
+            </Button>
           </div>
         </AuraCard>
       </div>

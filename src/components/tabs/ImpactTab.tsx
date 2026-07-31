@@ -23,7 +23,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { AuraButton } from "@/components/ui/AuraButton";
+import { Button } from "@/components/ui/button";
 import { useCountUp } from "@/hooks/useCountUp";
 import AuthorityJourney from "@/components/AuthorityJourney";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
@@ -1046,29 +1046,27 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 Otherwise, invite them to create their first post. */}
             {!syncMeta.connected ? (
               <div className="flex flex-col items-center mb-5 text-center">
-                <AuraButton
-                  variant="primary"
-                  size="md"
+                <Button
+                  variant="default"
+                  size="default"
                   onClick={handleConnectLinkedIn}
                   loading={connectingLI}
-                  style={{ borderRadius: 6, padding: "12px 26px" }}
                 >
-                  <Linkedin className="w-4 h-4 mr-2 inline" /> Connect LinkedIn
-                </AuraButton>
+                  <Linkedin className="w-4 h-4" /> Connect LinkedIn
+                </Button>
                 <p className="text-xs mt-3 max-w-sm" style={{ color: "var(--ink-3)", lineHeight: 1.55 }}>
                   Connection syncs your followers, impressions, and per-post performance automatically. Read-only — Aura never posts on your behalf.
                 </p>
               </div>
             ) : (
               <div className="flex justify-center mb-5">
-                <AuraButton
-                  variant="primary"
-                  size="md"
+                <Button
+                  variant="default"
+                  size="default"
                   onClick={() => window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "authority" } }))}
-                  style={{ borderRadius: 6, padding: "12px 26px" }}
                 >
                   Create your first post →
-                </AuraButton>
+                </Button>
               </div>
             )}
 
@@ -1288,9 +1286,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
             {captureScore < 80 && (
               <div className="mt-4">
-                <AuraButton variant="signal" size="sm" onClick={() => onOpenCapture?.()}>
+                <Button variant="signal" size="sm" onClick={() => onOpenCapture?.()}>
                   Capture now →
-                </AuraButton>
+                </Button>
               </div>
             )}
           </div>
@@ -1824,9 +1822,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                         Connect LinkedIn to sync followers, impressions, and per-post performance automatically.
                       </p>
                       <div className="mt-3">
-                        <AuraButton variant="primary" size="sm" onClick={handleConnectLinkedIn} loading={connectingLI}>
+                        <Button variant="default" size="sm" onClick={handleConnectLinkedIn} loading={connectingLI}>
                           <Linkedin className="w-4 h-4 mr-2 inline" /> Connect LinkedIn
-                        </AuraButton>
+                        </Button>
                       </div>
                     </>
                   ) : (

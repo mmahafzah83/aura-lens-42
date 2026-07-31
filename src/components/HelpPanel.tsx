@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { HelpCircle, X, ChevronDown } from "lucide-react";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import AuraButton from "@/components/ui/AuraButton";
+import { Button } from "@/components/ui/button";
 import { useGuideArticles, type GuideArticle } from "@/hooks/useGuideArticles";
 import { toast } from "sonner";
 
@@ -219,13 +219,13 @@ export function HelpPanel({ open, onClose, activeTab }: { open: boolean; onClose
 
         {/* Fixed footer */}
         <footer style={{ padding: "14px 18px", borderTop: "1px solid var(--rule)", flexShrink: 0 }}>
-          <AuraButton
-            variant="secondary"
-            style={{ width: "100%" }}
+          <Button
+            variant="outline"
+            className="w-full"
             onClick={() => { onClose(); navigate("/guide"); }}
           >
             Read the full guide →
-          </AuraButton>
+          </Button>
           <div style={{ marginTop: 10, textAlign: "center", fontSize: 12, color: "var(--ink-3)", lineHeight: 1.5 }}>
             Aura Private Beta · Questions? Email us at{" "}
             <a

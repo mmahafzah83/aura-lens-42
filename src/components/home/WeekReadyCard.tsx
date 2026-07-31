@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AuraCard } from "@/components/ui/AuraCard";
-import { AuraButton } from "@/components/ui/AuraButton";
-import { Check, Loader2, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Check, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 /**
@@ -158,19 +158,15 @@ export default function WeekReadyCard({ onOpenDraft }: WeekReadyCardProps) {
           <p style={{ fontSize: 14, color: "var(--ink, #1a1612)", margin: "0 0 12px 0", lineHeight: 1.5 }}>
             Your drafts for this week aren't prepared yet.
           </p>
-          <AuraButton
+          <Button
             variant="signal"
             size="sm"
             onClick={prepare}
+            loading={preparing}
             disabled={preparing}
           >
-            {preparing ? (
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Preparing your week…
-              </span>
-            ) : "Prepare my week"}
-          </AuraButton>
+            {preparing ? "Preparing your week…" : "Prepare my week"}
+          </Button>
         </div>
       ) : (
         <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 0 }}>
@@ -251,8 +247,8 @@ export default function WeekReadyCard({ onOpenDraft }: WeekReadyCardProps) {
                         Shipped
                       </span>
                     ) : (
-                      <AuraButton
-                        variant="ghost"
+                      <Button
+                        variant="outline"
                         size="sm"
                         onClick={() =>
                           onOpenDraft({
@@ -266,7 +262,7 @@ export default function WeekReadyCard({ onOpenDraft }: WeekReadyCardProps) {
                         }
                       >
                         Review
-                      </AuraButton>
+                      </Button>
                     )}
                   </div>
                 </div>

@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { AuraCard } from "@/components/ui/AuraCard";
-import { AuraButton } from "@/components/ui/AuraButton";
+import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { exportReportPdf } from "@/lib/exportReportPdf";
 import usePageMeta from "@/hooks/usePageMeta";
@@ -498,15 +498,15 @@ const handleDeleteAccount = async () => {
                   </>
                 )}
               </div>
-              <AuraButton
-                variant={linkedInConnection ? "ghost" : "primary"}
+              <Button
+                variant={linkedInConnection ? "outline" : "default"}
                 size="sm"
                 loading={linkedInBusy}
                 disabled={linkedInBusy}
                 onClick={linkedInConnection ? handleDisconnectLinkedIn : handleConnectLinkedIn}
               >
                 {linkedInConnection ? "Disconnect" : "Connect LinkedIn"}
-              </AuraButton>
+              </Button>
             </div>
           </AuraCard>
         </div>
@@ -567,15 +567,15 @@ const handleDeleteAccount = async () => {
             </AuraCard>
           ))}
           <div className="flex gap-2">
-            <AuraButton
-              variant="ghost"
+            <Button
+              variant="outline"
               size="sm"
               onClick={addSignature}
               disabled={savingSig || signatures.some((s) => !s.text_en.trim() && !s.text_ar.trim())}
             >
               Add signature
-            </AuraButton>
-            <AuraButton variant="primary" size="sm" onClick={() => persistSignatures(signatures)} loading={savingSig} disabled={savingSig}>Save signatures</AuraButton>
+            </Button>
+            <Button variant="default" size="sm" onClick={() => persistSignatures(signatures)} loading={savingSig} disabled={savingSig}>Save signatures</Button>
           </div>
         </div>
 
@@ -676,9 +676,9 @@ const handleDeleteAccount = async () => {
               </div>
 
               <div className="flex justify-end">
-                <AuraButton variant="primary" size="sm" onClick={persistPublication} loading={savingPub} disabled={savingPub}>
+                <Button variant="default" size="sm" onClick={persistPublication} loading={savingPub} disabled={savingPub}>
                   Save publication
-                </AuraButton>
+                </Button>
               </div>
             </div>
           </AuraCard>
@@ -808,15 +808,15 @@ const handleDeleteAccount = async () => {
                 <p className="text-sm mb-4" style={{ color: "var(--ink-3)" }}>
                   Download your Strategic Identity Report as a PDF.
                 </p>
-                <AuraButton
-                  variant="primary"
+                <Button
+                  variant="default"
                   size="sm"
                   onClick={handleDownloadReport}
                   loading={exportingReport}
                   disabled={exportingReport || reportLoading || !report}
                 >
                   Export PDF
-                </AuraButton>
+                </Button>
                 {reportVersion && reportSnapshotAt ? (
                   <p style={{ marginTop: 8, fontSize: 11, color: "var(--ink-4)" }}>
                     Version {reportVersion} ·{" "}
@@ -846,13 +846,13 @@ const handleDeleteAccount = async () => {
                 <p className="text-sm mb-4" style={{ color: "var(--ink-4)" }}>
                   Complete your brand assessment to generate your identity report.
                 </p>
-                <AuraButton
-                  variant="primary"
+                <Button
+                  variant="default"
                   size="sm"
                   onClick={() => navigate("/onboarding")}
                 >
                   Complete brand assessment
-                </AuraButton>
+                </Button>
               </>
             )}
           </AuraCard>
@@ -883,14 +883,14 @@ const handleDeleteAccount = async () => {
 
             {!dangerOpen ? (
               <div className="mt-5">
-                <AuraButton
-                  variant="ghost"
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => setDangerOpen(true)}
-                  style={{ color: "var(--error)", borderColor: "color-mix(in srgb, var(--error) 40%, var(--rule))" }}
+                  className="text-[var(--error)] border-[color-mix(in_srgb,var(--error)_40%,var(--rule))] hover:bg-[color-mix(in_srgb,var(--error)_8%,transparent)]"
                 >
                   Delete my account
-                </AuraButton>
+                </Button>
               </div>
             ) : (
               <div className="mt-5" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -911,8 +911,8 @@ const handleDeleteAccount = async () => {
                   }}
                 />
                 <div style={{ display: "flex", gap: 8 }}>
-                  <AuraButton
-                    variant="ghost"
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => {
                       setDangerOpen(false);
@@ -921,17 +921,12 @@ const handleDeleteAccount = async () => {
                     disabled={deleting}
                   >
                     Cancel
-                  </AuraButton>
-                  <AuraButton
-                    variant="primary"
+                  </Button>
+                  <Button
+                    variant="destructive"
                     size="sm"
                     onClick={handleDeleteAccount}
                     disabled={deleteConfirmText !== "DELETE" || deleting}
-                    style={{
-                      background: "var(--error)",
-                      borderColor: "var(--error)",
-                      color: "var(--paper)",
-                    }}
                   >
                     {deleting ? (
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
@@ -941,7 +936,7 @@ const handleDeleteAccount = async () => {
                     ) : (
                       "Permanently delete"
                     )}
-                  </AuraButton>
+                  </Button>
                 </div>
               </div>
             )}
