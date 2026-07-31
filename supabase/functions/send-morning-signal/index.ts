@@ -157,15 +157,33 @@ function buildEmail(lead: Finding, others: Finding[]) {
   return { subject, html, text: textLines.join("\n") };
 }
 
-async function sendResend(apiKey: string, to: string, subject: string, html: string, text: string) {
+async function sendResend(
+  apiKey: string,
+  to: string,
+  subject: string,
+  html: string,
+  text: string,
+  userId: string,
+  messageKey: string,
+) {
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from: FROM, to: [to], reply_to: REPLY_TO, subject, html, text }),
+    body: JSON.stringify({
+      from: FROM, to: [to], reply_to: REPLY_TO, subject, html, text,
+      // Resend tag values allow only ASCII letters, numbers, underscore and dash.
+      tags: [
+        { name: "email_type", value: "morning_signal" },
+        { name: "user_id", value: userId },
+        { name: "message_key", value: messageKey.replace(/[^a-zA-Z0-9_-]/g, "_") },
+      ],
+    }),
   });
   const bodyText = await res.text();
   if (!res.ok) throw new Error(`resend ${res.status}: ${bodyText.slice(0, 400)}`);
-  return res.status;
+  let resendId: string | null = null;
+  try { resendId = (JSON.parse(bodyText) as { id?: string })?.id ?? null; } catch { /* non-JSON body */ }
+  return { status: res.status, resendId };
 }
 
 serve(async (req) => {
@@ -286,7 +304,7 @@ serve(async (req) => {
           continue;
         }
 
-        const status = await sendResend(RESEND_KEY, to, subject, html, text);
+        const { status, resendId } = await sendResend(RESEND_KEY, to, subject, html, text, uid, messageKey);
         // Only AFTER a successful send do we burn the idempotency key.
         await admin.from("lifecycle_email_log").insert({ user_id: uid, message_key: messageKey });
         await admin.from("lifecycle_emails").insert({
@@ -297,6 +315,7 @@ serve(async (req) => {
             finding_ids: [lead.id, ...others.slice(0, 3).map((o) => o.id)],
             lead_finding_id: lead.id,
             subject,
+            resend_id: resendId,
           },
         });
         sent++;
