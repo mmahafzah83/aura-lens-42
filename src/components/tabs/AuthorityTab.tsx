@@ -2,7 +2,6 @@ import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { track } from "@/lib/track";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { AuraButton } from "@/components/ui/AuraButton";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { EMPTY_STATE } from "@/constants/language";
@@ -1516,8 +1515,8 @@ export const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed,
               {Math.round((activeSignal.confidence ?? 0) * 100)}% · {activeSignal.fragment_count ?? 0} findings · {activeSignal.unique_orgs ?? 0} organizations
             </div>
             <div className="flex flex-col sm:flex-row gap-2 mt-4">
-              <AuraButton
-                variant="primary"
+              <Button
+                variant="default"
                 size="lg"
                 loading={isGeneratingAny}
                 onClick={() => {
@@ -1533,7 +1532,7 @@ export const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed,
                 style={{ flex: 1, gap: 6 }}
               >
                 Generate post <ArrowRight className="w-4 h-4" />
-              </AuraButton>
+              </Button>
               <div className="flex gap-1 rounded-[10px] p-0.5" style={{ background: "var(--paper-3)" }}>
                 <button
                   onClick={() => setLang("en")}
