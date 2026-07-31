@@ -16,6 +16,8 @@ import { PAPER, INK, SPOT, RULE, SERIF, MONO, ARABIC } from "@/components/broads
 import CountryPicker from "@/components/CountryPicker";
 import PreferencesPanel from "@/components/PreferencesPanel";
 import AccountPanel from "@/components/settings/AccountPanel";
+import WhatsAppPairingCard from "@/components/settings/WhatsAppPairingCard";
+import { WHATSAPP_PAIRING_ALLOWLIST } from "@/config/whatsapp";
 
 interface ProfileData {
   first_name: string | null;
@@ -510,6 +512,21 @@ const handleDeleteAccount = async () => {
             </div>
           </AuraCard>
         </div>
+
+        {/* Signatures */}
+        {authUser?.id && WHATSAPP_PAIRING_ALLOWLIST.includes(authUser.id) && (
+          <>
+            <SectionHeader
+              label="Capture by WhatsApp"
+              subtitle="Forward anything you read straight to Aura. It becomes a capture, in your account, automatically."
+            />
+            <div className="mb-8">
+              <AuraCard variant="default" hover="none">
+                <WhatsAppPairingCard userId={authUser.id} />
+              </AuraCard>
+            </div>
+          </>
+        )}
 
         {/* Signatures */}
         <SectionHeader
