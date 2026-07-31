@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, ChevronDown, ArrowLeft } from "lucide-react";
+import { Search, ChevronDown, ArrowLeft, Link2 } from "lucide-react";
+import { toast } from "sonner";
 import usePageMeta from "@/hooks/usePageMeta";
 import AuraLogo from "@/components/brand/AuraLogo";
 import { useGuideArticles } from "@/hooks/useGuideArticles";
@@ -50,7 +51,7 @@ function CollapsibleItem({
   onToggle: () => void;
 }) {
   return (
-    <div style={{ borderBottom: "1px solid var(--rule)" }}>
+    <div id={`a-${item.slug}`} style={{ borderBottom: "1px solid var(--rule)", scrollMarginTop: 80 }}>
       <button
         type="button"
         onClick={onToggle}
@@ -91,19 +92,66 @@ function CollapsibleItem({
               {item.formula_note_en}
             </div>
           )}
+          <button
+            type="button"
+            onClick={() => {
+              const url = `${window.location.origin}${window.location.pathname}#${item.slug}`;
+              navigator.clipboard?.writeText(url);
+              toast("Link copied");
+            }}
+            className="inline-flex items-center gap-1.5 mt-3"
+            style={{
+              background: "transparent",
+              border: 0,
+              cursor: "pointer",
+              padding: 0,
+              color: "var(--ink-3)",
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+            }}
+          >
+            <Link2 size={12} /> Copy link
+          </button>
         </div>
       )}
     </div>
   );
 }
 
+const LOOP_STEPS: { n: string; text: string }[] = [
+  { n: "01", text: "You read what you already read. Paste a link, forward a PDF, drop a note. That is the only work Aura asks of you." },
+  { n: "02", text: "Aura reads it with you. Overnight it pulls the evidence out of what you saved and files it by theme." },
+  { n: "03", text: "Patterns become signals. When several independent sources point the same way, that becomes a signal, with its sources attached." },
+  { n: "04", text: "Drafts arrive in your voice. Aura writes from your own signals, in your register, English or Arabic. Nothing publishes itself." },
+  { n: "05", text: "Your Imprint compounds. You approve, you publish, and the record builds week over week." },
+];
+
 const Guide = () => {
   const navigate = useNavigate();
   const [authed, setAuthed] = useState(false);
   const [search, setSearch] = useState("");
-  const [openSlug, setOpenSlug] = useState<string | null>(null);
+  const [openSlugs, setOpenSlugs] = useState<Set<string>>(new Set());
+  const hashHandled = useRef(false);
 
   const { articles, loading, error } = useGuideArticles({ surface: "guide", forceFresh: true });
+
+  const toggleSlug = useCallback((slug: string) => {
+    setOpenSlugs((prev) => {
+      const next = new Set(prev);
+      if (next.has(slug)) {
+        next.delete(slug);
+        if (window.location.hash === `#${slug}`) {
+          window.history.replaceState(null, "", window.location.pathname);
+        }
+      } else {
+        next.add(slug);
+        window.history.replaceState(null, "", `${window.location.pathname}#${slug}`);
+      }
+      return next;
+    });
+  }, []);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -140,6 +188,22 @@ const Guide = () => {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setAuthed(!!session));
   }, []);
+
+  useEffect(() => {
+    if (hashHandled.current || !articles.length) return;
+    const slug = window.location.hash.replace(/^#/, "");
+    if (!slug) return;
+    if (!articles.some((a) => a.slug === slug)) return;
+    hashHandled.current = true;
+    setOpenSlugs(new Set([slug]));
+    requestAnimationFrame(() => {
+      document.getElementById(`a-${slug}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [articles]);
+
+  const jumpTo = (cat: string) => {
+    document.getElementById(`s-${cat}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const hasSearch = search.trim().length > 0;
 
@@ -237,6 +301,42 @@ const Guide = () => {
         </p>
       </section>
 
+      {/* The loop */}
+      <section className="px-5 sm:px-10 pb-10">
+        <div
+          className="max-w-3xl mx-auto"
+          style={{ background: "var(--paper-2)", border: "1px solid var(--rule)", borderRadius: 16, padding: "24px 22px" }}
+        >
+          <p
+            className="uppercase tracking-[0.2em] mb-5"
+            style={{ color: "var(--live)", fontFamily: "var(--font-mono)", fontSize: 11 }}
+          >
+            The loop
+          </p>
+          <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 14 }}>
+            {LOOP_STEPS.map((s) => (
+              <li key={s.n} style={{ display: "flex", gap: 14, alignItems: "baseline" }}>
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 12,
+                    color: "var(--live)",
+                    letterSpacing: "0.1em",
+                    flexShrink: 0,
+                  }}
+                >
+                  {s.n}
+                </span>
+                <span style={{ fontSize: 15, lineHeight: 1.65, color: "var(--ink-2)" }}>{s.text}</span>
+              </li>
+            ))}
+          </ol>
+          <p style={{ marginTop: 18, fontSize: 13, color: "var(--ink-3)", lineHeight: 1.6 }}>
+            Everything below is detail. This is the whole system.
+          </p>
+        </div>
+      </section>
+
       {/* Search */}
       <section className="px-5 sm:px-10 pb-6">
         <div className="max-w-3xl mx-auto relative">
@@ -265,6 +365,28 @@ const Guide = () => {
             }}
           />
         </div>
+        {!hasSearch && (
+          <div className="max-w-3xl mx-auto mt-4 flex flex-wrap gap-2">
+            {SECTION_ORDER.map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => jumpTo(cat)}
+                className="rounded-full"
+                style={{
+                  padding: "5px 12px",
+                  fontSize: 12,
+                  background: "transparent",
+                  border: "1px solid var(--rule)",
+                  color: "var(--ink-2)",
+                  cursor: "pointer",
+                }}
+              >
+                {SECTION_LABELS[cat] || cat}
+              </button>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Content */}
@@ -293,16 +415,21 @@ const Guide = () => {
                   No results for "{search.trim()}"
                 </p>
               ) : (
+                <>
+                <p style={{ fontSize: 13, color: "var(--ink-3)", marginBottom: 10 }}>
+                  {filtered.length} {filtered.length === 1 ? "result" : "results"} for "{search.trim()}"
+                </p>
                 <div style={{ borderTop: "1px solid var(--rule)" }}>
                   {filtered.map((item) => (
                     <CollapsibleItem
                       key={item.slug}
                       item={item}
-                      open={openSlug === item.slug}
-                      onToggle={() => setOpenSlug(openSlug === item.slug ? null : item.slug)}
+                      open={openSlugs.has(item.slug)}
+                      onToggle={() => toggleSlug(item.slug)}
                     />
                   ))}
                 </div>
+                </>
               )}
             </>
           )}
@@ -315,8 +442,9 @@ const Guide = () => {
                 return (
                   <div key={cat} className="mb-12">
                     <p
+                      id={`s-${cat}`}
                       className="text-xs tracking-[0.2em] uppercase mb-4"
-                      style={{ color: "var(--live)", fontFamily: "var(--font-mono)" }}
+                      style={{ color: "var(--live)", fontFamily: "var(--font-mono)", scrollMarginTop: 80 }}
                     >
                       {SECTION_LABELS[cat] || cat}
                     </p>
@@ -325,8 +453,8 @@ const Guide = () => {
                         <CollapsibleItem
                           key={item.slug}
                           item={item}
-                          open={openSlug === item.slug}
-                          onToggle={() => setOpenSlug(openSlug === item.slug ? null : item.slug)}
+                          open={openSlugs.has(item.slug)}
+                          onToggle={() => toggleSlug(item.slug)}
                         />
                       ))}
                     </div>
@@ -341,17 +469,17 @@ const Guide = () => {
       {/* CTA */}
       <section className="px-5 sm:px-10 py-20 text-center" style={{ borderTop: "1px solid var(--rule)" }}>
         <h2 className="mb-5" style={{ fontFamily: "var(--font-display)", fontSize: "clamp(28px, 4vw, 40px)", color: "var(--ink)", fontWeight: 500 }}>
-          Ready to start?
+          {authed ? "Ready to keep going?" : "Ready to start?"}
         </h2>
         <p className="mb-8 max-w-md mx-auto" style={{ fontSize: 15, color: "var(--ink-2)", lineHeight: 1.625 }}>
           {authed ? "Jump back into your dashboard and keep building." : "Join the private beta. We review applications weekly."}
         </p>
         <button
-          onClick={() => navigate("/request-access")}
+          onClick={() => navigate(authed ? "/dashboard" : "/request-access")}
           className="px-7 py-3 rounded-xl text-sm font-medium transition-all hover:brightness-110"
           style={{ background: "var(--action)", color: "var(--paper)", fontWeight: 500 }}
         >
-          Request access
+          {authed ? "Back to dashboard" : "Request access"}
         </button>
       </section>
 
