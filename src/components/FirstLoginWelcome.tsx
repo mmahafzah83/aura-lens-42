@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AuraCard } from "@/components/ui/AuraCard";
-import { AuraButton } from "@/components/ui/AuraButton";
+import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -121,9 +121,9 @@ export function FirstLoginWelcome({ firstName: firstNameProp, onOpenGuide, onDis
           </p>
 
           <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-            <AuraButton variant="primary" size="sm" onClick={handleExplore}>
+            <Button variant="default" size="sm" onClick={handleExplore}>
               Explore the Guide
-            </AuraButton>
+            </Button>
             <button
               type="button"
               className="v23-textlink v23-tap"
