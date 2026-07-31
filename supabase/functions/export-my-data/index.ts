@@ -63,15 +63,31 @@ Deno.serve(async (req) => {
   const empty: string[] = [];
   const errored: { table: string; error: string }[] = [];
 
+  const PAGE = 1000;
+
   // Sequential on purpose: keeps memory flat and avoids timeouts.
   for (const table of TABLES) {
     try {
-      const { data, error } = await supabase.from(table).select("*").eq("user_id", userId);
-      if (error) {
-        errored.push({ table, error: error.message });
+      // Paginate: PostgREST caps a single response, so page until short read.
+      const rows: unknown[] = [];
+      let from = 0;
+      let failed: string | null = null;
+      for (;;) {
+        const { data, error } = await supabase
+          .from(table)
+          .select("*")
+          .eq("user_id", userId)
+          .range(from, from + PAGE - 1);
+        if (error) { failed = error.message; break; }
+        const batch = data ?? [];
+        rows.push(...batch);
+        if (batch.length < PAGE) break;
+        from += PAGE;
+      }
+      if (failed) {
+        errored.push({ table, error: failed });
         continue;
       }
-      const rows = data ?? [];
       counts[table] = rows.length;
       if (rows.length === 0) {
         empty.push(table);
