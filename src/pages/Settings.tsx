@@ -514,6 +514,21 @@ const handleDeleteAccount = async () => {
         </div>
 
         {/* Signatures */}
+        {authUser?.id && WHATSAPP_PAIRING_ALLOWLIST.includes(authUser.id) && (
+          <>
+            <SectionHeader
+              label="Capture by WhatsApp"
+              subtitle="Forward anything you read straight to Aura. It becomes a capture, in your account, automatically."
+            />
+            <div className="mb-8">
+              <AuraCard variant="default" hover="none">
+                <WhatsAppPairingCard userId={authUser.id} />
+              </AuraCard>
+            </div>
+          </>
+        )}
+
+        {/* Signatures */}
         <SectionHeader
           label="Signatures"
           subtitle="Reusable closers you can drop into any post — each with an English and an Arabic version. You'll pick one in the Composer when you publish."
