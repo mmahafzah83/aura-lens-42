@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { AuraCard } from "@/components/ui/AuraCard";
-import { AuraButton } from "@/components/ui/AuraButton";
+import { Button } from "@/components/ui/button";
 import SetPasswordModal from "@/components/SetPasswordModal";
 
 interface Props {
@@ -214,14 +214,14 @@ export default function AccountPanel({ userId, email }: Props) {
               </div>
 
               <div>
-                <AuraButton
-                  variant="primary"
+                <Button
+                  variant="default"
                   size="sm"
                   onClick={handleSaveName}
                   disabled={saving || firstName.trim() === initialName}
                 >
                   {saving ? "Saving…" : "Save changes"}
-                </AuraButton>
+                </Button>
               </div>
 
               {/* Export */}
