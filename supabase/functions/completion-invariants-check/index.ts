@@ -71,11 +71,14 @@ Deno.serve(async (req) => {
     }
 
     // ============ ASSERTION 2: Stuck ingestion (documents & entries) ============
+    // Documents/entries older than 1h with no evidence fragments are stuck.
+    // Terminal 'error' documents are excluded: they have exhausted retries and the
+    // user was already notified in-app, so they have no remaining path to clear.
     {
       const cutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString();
       // Fetch old rows, then filter to those without any evidence_fragments via source_registry.
       const [docsRes, entRes] = await Promise.all([
-        admin.from("documents").select("id, user_id, created_at").lt("created_at", cutoff),
+        admin.from("documents").select("id, user_id, created_at").lt("created_at", cutoff).neq("status", "error"),
         admin.from("entries").select("id, user_id, created_at").lt("created_at", cutoff),
       ]);
       if (docsRes.error) throw new Error(`assertion_2_docs: ${docsRes.error.message}`);
