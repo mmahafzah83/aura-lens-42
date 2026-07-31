@@ -3722,6 +3722,81 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_links: {
+        Row: {
+          bound_at: string | null
+          created_at: string
+          id: string
+          last_message_at: string | null
+          pair_token: string | null
+          phone_e164: string | null
+          status: string
+          token_expires_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bound_at?: string | null
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          pair_token?: string | null
+          phone_e164?: string | null
+          status?: string
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bound_at?: string | null
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          pair_token?: string | null
+          phone_e164?: string | null
+          status?: string
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      whatsapp_messages: {
+        Row: {
+          body: string | null
+          created_at: string
+          entry_id: string | null
+          from_phone: string | null
+          id: string
+          kind: string | null
+          result: string | null
+          user_id: string | null
+          wa_message_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          entry_id?: string | null
+          from_phone?: string | null
+          id?: string
+          kind?: string | null
+          result?: string | null
+          user_id?: string | null
+          wa_message_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          entry_id?: string | null
+          from_phone?: string | null
+          id?: string
+          kind?: string | null
+          result?: string | null
+          user_id?: string | null
+          wa_message_id?: string
+        }
+        Relationships: []
+      }
       widget_slot_votes: {
         Row: {
           created_at: string
@@ -4178,6 +4253,14 @@ export type Database = {
           summary: string
           title: string
           type: string
+        }[]
+      }
+      whatsapp_mint_pair_token: {
+        Args: never
+        Returns: {
+          pair_token: string
+          status: string
+          token_expires_at: string
         }[]
       }
       widget_slot_tally: {
