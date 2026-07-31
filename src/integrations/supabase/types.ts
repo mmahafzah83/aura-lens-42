@@ -3999,6 +3999,7 @@ export type Database = {
         Args: { p_signal_id: string }
         Returns: undefined
       }
+      check_invite_token: { Args: { p_token: string }; Returns: Json }
       claim_job: {
         Args: { p_job_type: string; p_worker: string }
         Returns: {

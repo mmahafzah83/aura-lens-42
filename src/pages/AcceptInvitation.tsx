@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import AuraLogo from "@/components/brand/AuraLogo";
 import usePageMeta from "@/hooks/usePageMeta";
+import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Acceptance page — the ceremonial intermediate screen between the invite
@@ -20,7 +21,50 @@ export default function AcceptInvitation() {
   const type = params.get("type") || "invite";
   const next = params.get("next"); // pre-built verify URL (preferred)
   const errorParam = params.get("error") || params.get("error_description");
-  const isExpired = Boolean(errorParam);
+
+  // Page-load pre-check: resolve the token's real status before rendering.
+  const [precheck, setPrecheck] = useState<"checking" | "ok" | "dead">("checking");
+
+  const resolvedToken = useMemo(() => {
+    if (token) return token;
+    if (next) {
+      try {
+        const url = new URL(next, window.location.origin);
+        return url.searchParams.get("token");
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }, [token, next]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (errorParam) { setPrecheck("dead"); return; }
+    if (!resolvedToken) { setPrecheck("dead"); return; }
+
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("check-invite-token", {
+          body: { token: resolvedToken },
+        });
+        if (cancelled) return;
+        if (error) {
+          // FAIL-OPEN: checker hiccup must never block a real invitee.
+          setPrecheck("ok");
+          return;
+        }
+        const status = (data as { status?: string } | null)?.status;
+        setPrecheck(status === "expired" || status === "not_found" ? "dead" : "ok");
+      } catch {
+        if (!cancelled) setPrecheck("ok"); // FAIL-OPEN
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [resolvedToken, errorParam]);
+
+  const isExpired = Boolean(errorParam) || precheck === "dead";
 
   // Build the URL the CTA forwards to.
   const ctaHref = useMemo(() => {
@@ -56,6 +100,22 @@ export default function AcceptInvitation() {
     >
       <style>{ACCEPT_CSS}</style>
 
+      {precheck === "checking" ? (
+        <section
+          style={{
+            minHeight: "100vh",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "32px 20px",
+          }}
+        >
+          <div className="ai-eye" style={{ display: "inline-flex" }}>
+            <AuraLogo size={60} variant="dark" />
+          </div>
+        </section>
+      ) : (
+      <>
       {/* HERO — above the fold */}
       <section
         style={{
@@ -177,6 +237,8 @@ export default function AcceptInvitation() {
             </div>
           </div>
         </section>
+      )}
+      </>
       )}
     </div>
   );

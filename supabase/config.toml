@@ -167,3 +167,6 @@ verify_jwt = false
 verify_jwt = false
 [functions.export-my-data]
 verify_jwt = true
+
+[functions.check-invite-token]
+verify_jwt = false
