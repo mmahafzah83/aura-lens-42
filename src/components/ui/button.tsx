@@ -13,12 +13,14 @@ const buttonVariants = cva(
         default:
           "[background:var(--v23-btn-bg)] text-white [box-shadow:var(--v23-btn-inset),var(--v23-btn-shadow)] hover:brightness-[0.96] active:[box-shadow:var(--v23-btn-pressed)]",
         destructive: "bg-[var(--error)] text-white hover:brightness-[0.94]",
+        signal: "bg-[var(--signal)] text-white hover:brightness-110",
         outline:
           "border border-[var(--border-default)] bg-transparent text-[var(--text-primary)] hover:bg-[color-mix(in_srgb,currentColor_8%,transparent)] hover:border-[var(--border-strong)]",
         secondary:
           "bg-[var(--surface-subtle)] text-[var(--text-primary)] border border-[var(--border-default)] hover:brightness-95",
         ghost: "bg-transparent hover:bg-[color-mix(in_srgb,currentColor_8%,transparent)]",
         link: "text-[var(--act)] underline-offset-4 hover:underline",
+
       },
       size: {
         default: "h-11 px-5 py-2.5",
