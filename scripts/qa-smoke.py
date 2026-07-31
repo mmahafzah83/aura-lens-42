@@ -29,7 +29,16 @@ async def restore_session(context, page):
         await context.add_cookies(cs)
     await page.goto(BASE, wait_until="domcontentloaded")
     if key and sess:
-        await page.evaluate(f"window.localStorage.setItem({json.dumps(key)}, {json.dumps(sess)})")
+        # PasswordGate requires user_metadata.password_set; the founder account
+        # already has it, but we assert it so the gate never blocks QA runs.
+        s = json.loads(sess)
+        try:
+            s["user"].setdefault("user_metadata", {})["password_set"] = True
+        except Exception:
+            pass
+        await page.evaluate(
+            f"window.localStorage.setItem({json.dumps(key)}, {json.dumps(json.dumps(s))})"
+        )
 
 async def main():
     async with async_playwright() as pw:
@@ -60,14 +69,13 @@ async def main():
         body = await page.locator("body").inner_text()
         onboarding = ("Welcome, " in body) or ("intelligence command center" in body)
         rec("2a zero onboarding cards", not onboarding, "no welcome/capture-callout text on Home")
-        rec("2b since-last-visit present", "last visit" in body.lower() or "Since your" in body, "section rendered")
+        sincevis = "SINCE YOUR LAST VISIT" in body.upper()
+        rec("2b since-last-visit section", sincevis, "section rendered" if sincevis else "section absent (no qualifying rows)")
+        rec("2c MoveCard single primary CTA", body.count("Dismiss") <= 1, "one move surface")
         await page.screenshot(path=str(SHOTS/"2_home.png"))
 
         # 3 — avatar menu
-        try:
-            await page.get_by_role("button", name="Account menu").click()
-        except Exception:
-            await page.locator("header button, [aria-haspopup]").last.click()
+        await page.locator('[aria-haspopup="menu"]').last.click()
         await page.wait_for_timeout(600)
         menu = await page.locator("body").inner_text()
         one = menu.count("Account & settings") == 1 and "Sign out" in menu
