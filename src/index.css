@@ -1404,7 +1404,17 @@ aside .aura-theme-toggle {
 /* ─ Standard control radii ─ */
 .aura-input { border-radius: 10px; }
 .aura-btn { border-radius: 10px; }
-.aura-btn-primary { border-radius: 12px; }
+/* Rebound to the canonical Button primary tokens (src/components/ui/button.tsx)
+   so legacy markup matches the one button system without restructuring it. */
+.aura-btn-primary {
+  border-radius: 12px;
+  background: var(--v23-btn-bg);
+  color: #fff;
+  border: none;
+  box-shadow: var(--v23-btn-inset), var(--v23-btn-shadow);
+}
+.aura-btn-primary:hover { filter: brightness(0.96); }
+.aura-btn-primary:active { box-shadow: var(--v23-btn-pressed); }
 
 /* ── Mobile-only layout adjustments (≤767px) ── */
 @media (max-width: 767px) {
@@ -1634,7 +1644,7 @@ html.dark .text-gray-500,
 .input-base::placeholder { color: var(--ink-7); }
 
 .btn-primary {
-  background: var(--brand);
+  background: var(--v23-btn-bg);
   color: #ffffff;
   border: none;
   border-radius: var(--radius-md);
@@ -1643,10 +1653,12 @@ html.dark .text-gray-500,
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s;
+  box-shadow: var(--v23-btn-inset), var(--v23-btn-shadow);
+  transition: filter 0.15s, box-shadow 0.15s;
   letter-spacing: -0.01em;
 }
-.btn-primary:hover { background: var(--brand-hover); }
+.btn-primary:hover { filter: brightness(0.96); }
+.btn-primary:active { box-shadow: var(--v23-btn-pressed); }
 
 @keyframes aura-fade-up {
   from { opacity: 0; transform: translateY(12px); }

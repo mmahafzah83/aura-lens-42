@@ -4,7 +4,7 @@ import { useLocation } from "react-router-dom";
 import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import AuraButton from "@/components/ui/AuraButton";
+import { Button } from "@/components/ui/button";
 
 const RATINGS: { label: string; rating: number; color: string }[] = [
   { label: "Exceptional", rating: 5, color: "var(--gold-dark, var(--brand))" },
@@ -179,15 +179,15 @@ const FeedbackButton = () => {
                 }}
               />
 
-              <AuraButton
-                variant="primary"
+              <Button
                 size="sm"
                 onClick={handleSubmit}
-                disabled={submitting || (!rating && !message.trim())}
+                loading={submitting}
+                disabled={!rating && !message.trim()}
                 style={{ width: "100%" }}
               >
                 {submitting ? "Sending..." : "Send feedback"}
-              </AuraButton>
+              </Button>
 
               <p style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 12, textAlign: "center" }}>
                 Your feedback helps us improve Aura

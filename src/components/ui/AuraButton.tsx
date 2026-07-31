@@ -25,9 +25,11 @@ function variantBase(variant: AuraButtonVariant): CSSProperties {
   switch (variant) {
     case "primary":
       return {
-        background: "var(--brand)",
-        color: "var(--paper)",
+        // Canonical Button primary tokens — see src/components/ui/button.tsx.
+        background: "var(--v23-btn-bg)",
+        color: "#fff",
         border: "none",
+        boxShadow: "var(--v23-btn-inset), var(--v23-btn-shadow)",
       };
     case "secondary":
       return {
@@ -44,8 +46,8 @@ function variantBase(variant: AuraButtonVariant): CSSProperties {
     case "ghost":
       return {
         background: "transparent",
-        color: "var(--ink-3)",
-        border: "1px solid var(--brand-line)",
+        color: "var(--text-primary)",
+        border: "1px solid var(--border-default)",
       };
     case "danger":
       return {
@@ -60,15 +62,17 @@ function variantHover(variant: AuraButtonVariant): CSSProperties {
   switch (variant) {
     case "primary":
       return {
-        background: "var(--brand-deep)",
-        boxShadow: "var(--shadow-brand)",
+        background: "var(--v23-btn-bg)",
+        filter: "brightness(0.96)",
+        boxShadow: "var(--v23-btn-inset), var(--v23-btn-shadow)",
       };
     case "secondary":
       return { background: "color-mix(in srgb, var(--brand) 15%, transparent)" };
     case "signal":
       return { filter: "brightness(1.1)" };
     case "ghost":
-      return { background: "var(--brand-ghost)", color: "var(--ink)" };
+      // State layer relative to local text colour — never a fixed white.
+      return { background: "color-mix(in srgb, currentColor 8%, transparent)" };
     case "danger":
       return { filter: "brightness(1.1)" };
   }
