@@ -376,7 +376,7 @@ const LANDING_V2_CSS = `
   .aura-v2 .lab .ready{opacity:1;}
   .aura-v2 .btn:hover{transform:none;}
   .aura-v2 .v2reveal,.aura-v2 .card.mid .tl li{opacity:1 !important;transform:none !important;}
-  .aura-v2 .v2seatbar{display:none;}
+  
 }
 `;
 
