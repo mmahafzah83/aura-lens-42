@@ -376,7 +376,7 @@ const LANDING_V2_CSS = `
   .aura-v2 .lab .ready{opacity:1;}
   .aura-v2 .btn:hover{transform:none;}
   .aura-v2 .v2reveal,.aura-v2 .card.mid .tl li{opacity:1 !important;transform:none !important;}
-  .aura-v2 .v2seatbar{display:none;}
+  
 }
 `;
 
@@ -871,19 +871,19 @@ const LandingV2 = () => {
       ).filter((s) => !s.classList.contains("hero"));
       sections.forEach((s) => s.classList.add("v2reveal"));
       observe(sections, 0.15, (el) => el.classList.add("v2in"));
-      // 3 · Sticky seat bar with hysteresis.
-      const bar = root.querySelector<HTMLElement>(".v2seatbar");
-      if (bar) {
-        const onScroll = () => {
-          const max = document.documentElement.scrollHeight - window.innerHeight;
-          const p = max > 0 ? window.scrollY / max : 0;
-          if (p > 0.5) bar.classList.add("up");
-          else if (p < 0.4) bar.classList.remove("up");
-        };
-        window.addEventListener("scroll", onScroll, { passive: true });
-        cleanups.push(() => window.removeEventListener("scroll", onScroll));
-        onScroll();
-      }
+    }
+    // 3 · Sticky seat bar with hysteresis (active in all motion modes).
+    const bar = root.querySelector<HTMLElement>(".v2seatbar");
+    if (bar) {
+      const onScroll = () => {
+        const max = document.documentElement.scrollHeight - window.innerHeight;
+        const p = max > 0 ? window.scrollY / max : 0;
+        if (p > 0.5) bar.classList.add("up");
+        else if (p < 0.4) bar.classList.remove("up");
+      };
+      window.addEventListener("scroll", onScroll, { passive: true });
+      cleanups.push(() => window.removeEventListener("scroll", onScroll));
+      onScroll();
     }
     return () => cleanups.forEach((fn) => fn());
   }, [mounted]);
