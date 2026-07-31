@@ -457,23 +457,9 @@ export default function AuraRail({
           </nav>
 
           <div style={{ borderTop: "1px solid var(--v23-night-line)", paddingTop: 10, display: "flex", flexDirection: "column", gap: 8, padding: "10px 14px 0" }}>
-            <button
-              type="button"
-              aria-label="Ask Aura"
-              data-testid="header-ask-aura"
-              data-tour="nav-ask-aura"
-              className="cursor-pointer v23-focus"
-              onClick={() => { setFlyout(null); onOpenAsk(); }}
-              style={{
-                display: "flex", alignItems: "center", gap: 10, minHeight: 44,
-                padding: "10px 12px", borderRadius: 10, cursor: "pointer",
-                background: "rgba(0,206,201,.08)", border: "1px solid rgba(0,206,201,.2)",
-                color: "var(--text-inverse)", fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 500,
-              }}
-            >
-              <Sparkles size={15} strokeWidth={1.75} />
-              <span>Ask Aura</span>
-            </button>
+            {/* Ask Aura lives in the top bar only — it stays reachable when the
+                rail is collapsed. The onOpenAsk handler is still accepted here
+                so callers and any future rail entry point keep working. */}
             <button
               type="button"
               aria-label="Capture"
