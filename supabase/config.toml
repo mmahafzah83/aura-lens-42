@@ -165,3 +165,5 @@ verify_jwt = false
 
 [functions.send-morning-signal]
 verify_jwt = false
+[functions.export-my-data]
+verify_jwt = true

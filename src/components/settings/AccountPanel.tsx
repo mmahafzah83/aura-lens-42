@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Camera, Loader2 } from "lucide-react";
+import { downloadBlob } from "@/lib/download";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -43,6 +44,8 @@ export default function AccountPanel({ userId, email }: Props) {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -96,6 +99,30 @@ export default function AccountPanel({ userId, email }: Props) {
     if (error) { toast.error("Could not save your name"); return; }
     setInitialName(firstName.trim());
     toast.success("Name updated");
+  };
+
+  const handleExport = async () => {
+    if (exporting) return;
+    setExporting(true);
+    setExportError(null);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (!token) throw new Error("You need to be signed in to export your data.");
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/export-my-data`,
+        { method: "POST", headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (!res.ok) throw new Error(`Export failed (${res.status}). Please try again.`);
+      const blob = await res.blob();
+      const stamp = new Date().toISOString().slice(0, 10);
+      downloadBlob(blob, `aura-data-export-${stamp}.zip`);
+      toast.success("Export downloaded");
+    } catch (e) {
+      setExportError(e instanceof Error ? e.message : "Export failed. Please try again.");
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
@@ -195,6 +222,34 @@ export default function AccountPanel({ userId, email }: Props) {
                 >
                   {saving ? "Saving…" : "Save changes"}
                 </AuraButton>
+              </div>
+
+              {/* Export */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                <div>
+                  <div style={{ fontSize: 14, color: "var(--ink)" }}>Export my data</div>
+                  <div style={{ fontSize: 12, color: "var(--ink-4)", marginBlockStart: 2 }}>
+                    Download everything Aura holds about you as a ZIP of JSON files.
+                  </div>
+                  {exportError && (
+                    <div style={{ fontSize: 12, color: "var(--error)", marginBlockStart: 6 }}>
+                      {exportError}
+                    </div>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleExport}
+                  disabled={exporting}
+                  style={{
+                    background: "transparent", border: "0.5px solid var(--rule)", borderRadius: 8,
+                    paddingBlock: 8, paddingInline: 14, fontSize: 13, fontWeight: 500,
+                    color: "var(--ink)", cursor: exporting ? "default" : "pointer",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {exporting ? "Preparing…" : "Export my data"}
+                </button>
               </div>
             </div>
           )}
