@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AuraCard } from "@/components/ui/AuraCard";
 import { Button } from "@/components/ui/button";
-import { Check, Loader2, Sparkles } from "lucide-react";
+import { Check, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 /**
