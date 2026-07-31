@@ -102,16 +102,24 @@ async def main():
             b.remove();
             return { bg, fg };
         }"""
-        for label, url, sel in [("dark", BASE, "footer, .aura-v2 section:last-of-type"),
+        def _rgb(v):
+            n = [float(x) for x in __import__("re").findall(r"[\d.]+", v)]
+            if v.startswith("color("):  # color(srgb r g b / a) — 0..1 channels
+                return [round(c * 255) for c in n[:3]]
+            return [round(c) for c in n[:3]]
+
+        for label, url, sel in [("dark", BASE, ".v2seatbar"),
                                 ("light", f"{BASE}/settings", "main")]:
             await page.goto(url, wait_until="networkidle"); await page.wait_for_timeout(2500)
+            if label == "dark":
+                await page.evaluate("window.scrollTo(0, document.body.scrollHeight*0.6)")
+                await page.wait_for_timeout(900)
             r = await page.evaluate(probe, sel)
-            nums = [int(n) for n in __import__("re").findall(r"\d+", r["bg"])[:3]]
-            is_white = nums[:3] == [255, 255, 255]
-            fgn = [int(n) for n in __import__("re").findall(r"\d+", r["fg"])[:3]]
-            tint_matches_text = all(abs(a - b) <= 2 for a, b in zip(nums[:3], fgn[:3]))
+            nums, fgn = _rgb(r["bg"]), _rgb(r["fg"])
+            tint_matches_text = all(abs(a - b) <= 2 for a, b in zip(nums, fgn))
+            not_white = not (nums == [255, 255, 255] and fgn != [255, 255, 255])
             rec(f"4 ghost/outline hover tints local text ({label})",
-                tint_matches_text and not (is_white and fgn[:3] != [255,255,255]),
+                tint_matches_text and not_white,
                 f"hover bg={r['bg']} vs text={r['fg']}")
             await page.screenshot(path=str(SHOTS/f"4_{label}.png"))
 
