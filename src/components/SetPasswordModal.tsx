@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { X, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { AuraButton } from "@/components/ui/AuraButton";
+import { Button } from "@/components/ui/button";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { toast } from "sonner";
 
@@ -132,13 +132,13 @@ export default function SetPasswordModal({ open, onClose, isFirstTime = false }:
           />
 
           <div style={{ marginTop: 4 }}>
-            <AuraButton
-              variant="primary" size="md"
+            <Button
               onClick={handleSubmit}
-              disabled={!valid || submitting}
+              loading={submitting}
+              disabled={!valid}
             >
               {submitting ? "Saving..." : (isFirstTime ? "Set password" : "Update password")}
-            </AuraButton>
+            </Button>
           </div>
         </div>
       </div>

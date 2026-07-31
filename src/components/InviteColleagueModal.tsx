@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { AuraButton } from "@/components/ui/AuraButton";
+import { Button } from "@/components/ui/button";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { toast } from "sonner";
 import { track } from "@/lib/track";
@@ -154,14 +154,13 @@ export function InviteColleagueModal({ open, onClose }: Props) {
           />
 
           <div style={{ marginTop: 4 }}>
-            <AuraButton
-              variant="primary"
-              size="md"
+            <Button
               onClick={handleSubmit}
-              disabled={submitting || exhausted || !email.trim()}
+              loading={submitting}
+              disabled={exhausted || !email.trim()}
             >
               {exhausted ? "You've used all 3 invitations" : (submitting ? "Sending..." : "Send invitation")}
-            </AuraButton>
+            </Button>
           </div>
 
           <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 4 }}>
