@@ -46,6 +46,7 @@ export default function AccountPanel({ userId, email }: Props) {
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [exportStatus, setExportStatus] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -105,6 +106,7 @@ export default function AccountPanel({ userId, email }: Props) {
     if (exporting) return;
     setExporting(true);
     setExportError(null);
+    setExportStatus(null);
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
@@ -113,7 +115,10 @@ export default function AccountPanel({ userId, email }: Props) {
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/export-my-data`,
         { method: "POST", headers: { Authorization: `Bearer ${token}` } },
       );
-      if (!res.ok) throw new Error(`Export failed (${res.status}). Please try again.`);
+      if (!res.ok) {
+        setExportStatus(res.status);
+        throw new Error("Export failed. Please try again, or contact support if it keeps happening.");
+      }
       const blob = await res.blob();
       const stamp = new Date().toISOString().slice(0, 10);
       downloadBlob(blob, `aura-data-export-${stamp}.zip`);
@@ -229,11 +234,16 @@ export default function AccountPanel({ userId, email }: Props) {
                 <div>
                   <div style={{ fontSize: 14, color: "var(--ink)" }}>Export my data</div>
                   <div style={{ fontSize: 12, color: "var(--ink-4)", marginBlockStart: 2 }}>
-                    Download everything Aura holds about you as a ZIP of JSON files.
+                    Download everything Aura holds about you — open it in your browser or Excel.
                   </div>
                   {exportError && (
                     <div style={{ fontSize: 12, color: "var(--error)", marginBlockStart: 6 }}>
                       {exportError}
+                      {exportStatus !== null && (
+                        <span style={{ display: "block", fontSize: 11, opacity: 0.7, marginBlockStart: 2 }}>
+                          Error code {exportStatus}
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>
