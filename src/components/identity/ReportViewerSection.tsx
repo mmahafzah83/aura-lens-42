@@ -5,7 +5,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { AuraButton } from "@/components/ui/AuraButton";
+import { Button } from "@/components/ui/button";
 import ReportDocument from "@/components/ReportDocument";
 import { exportReportPdf } from "@/lib/exportReportPdf";
 import { useReportSnapshot } from "@/hooks/useReportSnapshot";
@@ -95,9 +95,9 @@ export default function ReportViewerSection({ firstName, onCompleteAssessment }:
           Complete your brand assessment to generate your identity report.
         </p>
         <div style={{ marginTop: 12 }}>
-          <AuraButton variant="primary" size="sm" onClick={onCompleteAssessment}>
+          <Button variant="default" size="sm" onClick={onCompleteAssessment}>
             Complete brand assessment
-          </AuraButton>
+          </Button>
         </div>
       </section>
     );
@@ -113,15 +113,15 @@ export default function ReportViewerSection({ firstName, onCompleteAssessment }:
       }}
     >
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10, marginBottom: 12 }}>
-        <AuraButton
-          variant="primary"
+        <Button
+          variant="default"
           size="sm"
           onClick={handleExport}
           loading={exporting}
           disabled={exporting || loading || !report}
         >
           Download your report (PDF)
-        </AuraButton>
+        </Button>
         {version && snapshotAt ? (
           <span style={{ fontSize: 11, color: "var(--ink-4)" }}>
             Version {version} ·{" "}
