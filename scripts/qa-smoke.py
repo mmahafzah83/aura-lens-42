@@ -33,7 +33,7 @@ async def restore_session(context, page):
         # already has it, but we assert it so the gate never blocks QA runs.
         s = json.loads(sess)
         try:
-            s["user"].setdefault("user_metadata", {})["password_set"] = True
+            s["user"]["user_metadata"] = dict(s["user"].get("user_metadata") or {}, password_set=True)
         except Exception:
             pass
         await page.evaluate(
