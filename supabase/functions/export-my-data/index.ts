@@ -60,8 +60,11 @@ Deno.serve(async (req) => {
     });
   }
   const userId = claimsData.claims.sub as string;
+  const userEmail = (claimsData.claims as Record<string, unknown>).email as string | undefined;
 
   const zip = new JSZip();
+  const dataFolder = zip.folder("data")!;
+  const readableFolder = zip.folder("readable")!;
   const counts: Record<string, number> = {};
   const empty: string[] = [];
   const errored: { table: string; error: string }[] = [];
@@ -96,7 +99,8 @@ Deno.serve(async (req) => {
         empty.push(table);
         continue;
       }
-      zip.file(`${table}.json`, JSON.stringify(rows, null, 2));
+      dataFolder.file(`${table}.json`, JSON.stringify(rows, null, 2));
+      readableFolder.file(`${table}.csv`, toCsv(rows as Record<string, unknown>[]));
     } catch (e) {
       errored.push({ table, error: e instanceof Error ? e.message : String(e) });
     }
@@ -113,6 +117,8 @@ Deno.serve(async (req) => {
   };
   zip.file("manifest.json", JSON.stringify(manifest, null, 2));
 
+  zip.file("index.html", buildIndexHtml({ now, userId, userEmail, counts, empty, errored }));
+
   zip.file(
     "README.txt",
     [
@@ -123,11 +129,15 @@ Deno.serve(async (req) => {
       "",
       "What is in this archive",
       "-----------------------",
-      "Each JSON file contains the rows stored for your account in the table named by the file.",
-      "Files are pretty-printed JSON arrays and can be opened in any text editor.",
-      "Tables that held no rows for your account are not written as files; they are listed in",
-      "manifest.json under skipped_empty_tables. Any table that could not be read is listed",
-      "under errored_tables with the reason.",
+      "index.html   Start here. Open it in any web browser. It lists everything in this",
+      "             archive in plain English, with row counts and links to each file.",
+      "readable/    One CSV file per section, ready to open in Excel, Numbers or Sheets.",
+      "             Saved with a UTF-8 byte order mark so Arabic text displays correctly.",
+      "data/        The same information as JSON, for moving it into another system.",
+      "",
+      "Sections that held no rows for your account are not written as files; they are listed in",
+      "manifest.json under skipped_empty_tables, and on index.html under 'Nothing stored here",
+      "yet'. Any section that could not be read is listed under errored_tables with the reason.",
       "",
       "manifest.json lists the export timestamp, your account identifier, the row count for",
       "each table, and the skipped or errored tables.",
@@ -135,8 +145,8 @@ Deno.serve(async (req) => {
       "Uploaded source files",
       "---------------------",
       "Documents you uploaded (for example PDFs) are listed as metadata records in",
-      "documents.json, including their file names. The raw file contents are not included",
-      "in this version of the export.",
+      "data/documents.json (and readable/documents.csv), including their file names. The raw",
+      "file contents are not included in this version of the export.",
       "",
       "Operational and telemetry records (error logs, job queues, usage metering) are not",
       "part of this export because they are system records rather than your content.",
