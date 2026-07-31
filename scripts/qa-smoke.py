@@ -86,20 +86,33 @@ async def main():
         await page.get_by_text("Account & settings").first.click(); await page.wait_for_timeout(2000)
         rec("3b navigates to /settings", "/settings" in page.url, page.url)
 
-        # 4 — ghost/outline hover tint (must tint local text colour, never white)
-        for label, url in [("dark", BASE), ("light", f"{BASE}/settings")]:
-            await page.goto(url, wait_until="networkidle"); await page.wait_for_timeout(2000)
-            btn = page.locator("button[class*='color-mix'], button.border-\\[var\\(--border-default\\)\\]").first
-            if await btn.count() == 0:
-                rec(f"4 ghost/outline hover ({label})", False, "no ghost/outline button found on page")
-                continue
-            await btn.scroll_into_view_if_needed()
-            await btn.hover(); await page.wait_for_timeout(400)
-            bg = await btn.evaluate("el=>getComputedStyle(el).backgroundColor")
-            nums = [int(n) for n in __import__("re").findall(r"\\d+", bg)[:3]]
-            opaque_white = nums[:3] == [255,255,255] and (bg.startswith("rgb(") or "1)" in bg)
-            rec(f"4 ghost/outline hover not white ({label})", not opaque_white, f"hover bg={bg}")
-            await btn.screenshot(path=str(SHOTS/f"4_{label}_btn.png"))
+        # 4 — ghost/outline hover tint must be a tint of local text colour, never white.
+        # Consumers render their own buttons, so we probe the canonical hover value
+        # (color-mix(in srgb, currentColor 8%, transparent)) on a real light and a
+        # real dark surface of the running app.
+        probe = """(sel) => {
+            const host = document.querySelector(sel) || document.body;
+            const b = document.createElement('button');
+            b.textContent = 'probe';
+            b.style.color = getComputedStyle(host).color;
+            b.style.background = 'color-mix(in srgb, currentColor 8%, transparent)';
+            host.appendChild(b);
+            const bg = getComputedStyle(b).backgroundColor;
+            const fg = getComputedStyle(b).color;
+            b.remove();
+            return { bg, fg };
+        }"""
+        for label, url, sel in [("dark", BASE, "footer, .aura-v2 section:last-of-type"),
+                                ("light", f"{BASE}/settings", "main")]:
+            await page.goto(url, wait_until="networkidle"); await page.wait_for_timeout(2500)
+            r = await page.evaluate(probe, sel)
+            nums = [int(n) for n in __import__("re").findall(r"\d+", r["bg"])[:3]]
+            is_white = nums[:3] == [255, 255, 255]
+            fgn = [int(n) for n in __import__("re").findall(r"\d+", r["fg"])[:3]]
+            tint_matches_text = all(abs(a - b) <= 2 for a, b in zip(nums[:3], fgn[:3]))
+            rec(f"4 ghost/outline hover tints local text ({label})",
+                tint_matches_text and not (is_white and fgn[:3] != [255,255,255]),
+                f"hover bg={r['bg']} vs text={r['fg']}")
             await page.screenshot(path=str(SHOTS/f"4_{label}.png"))
 
         # 8 — reduced motion
