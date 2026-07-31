@@ -1,102 +1,38 @@
-AUDIT REGISTER — read-only. No files changed.
+## AuraButton audit (read-only — no code changed)
 
-## 1 · RETIRED PALETTE in `src/` (excl. `src/index.css`)
+Component: `src/components/ui/AuraButton.tsx` (inline-style button, variants `primary | secondary | signal | ghost | danger`, sizes `sm | md | lg`, props `onClick, disabled, loading, className, type, style`).
+Canonical: `src/components/ui/button.tsx` (cva/Tailwind, variants `default | destructive | outline | secondary | ghost | link`, sizes `default | sm | lg | icon`, props `asChild, loading`, full native button props).
 
-Live / user-facing (logged-in product):
-- `src/components/tabs/ImpactTab.tsx` — 1284, 1870, 1871, 1905, 1999, 2526, 2542, 2551 → `#B08D3A` (file is orphaned, see §5)
-- `src/components/tabs/AuthorityTab.tsx` — 2056 `#36C5B0`; 4079, 4082, 4089, 4102 `var(--action, #D6A748)`; 4230 `#36C5B0` (its `CreateTab` export IS mounted in Composer)
-- `src/components/tabs/IntelligenceTab.tsx` — 1542 `var(--brand, #B08D3A)` (its `SignalHero` / `EditorialReadingList` exports ARE mounted in Signals)
-- `src/components/home/WeekReadyCard.tsx` — 75, 140, 247 `var(--brand, #B08D3A)` (orphaned, §5)
-- `src/components/AuraCard.tsx` — 7 `#F1ECE1`, 8 `#1B1712`, 13 `#36C5B0`
-- `src/components/AuraCardPanel.tsx` — 11 `#1B1712`, 14 `#F1ECE1` (mounted via IdentityTab → Profile)
-- `src/components/AgentFindingCard.tsx` — 130 `#36C5B0`, 309 `#36C5B0`, 310 `#D6A748`
-- `src/components/brand/AuraLogo.tsx` — 16 `#1B1712`, 18 `#36C5B0` (in nav shell + splash)
-- `src/components/NotificationBell.tsx` — 32 `text-[#B08D3A]`
-- `src/components/ui/AuraCard.tsx` — 40 `var(--brand, #B08D3A)`
-- `src/components/ui/CollapsibleList.tsx` — 50 `var(--brand, #B08D3A)`
-- `src/components/TierCeremonyModal.tsx` — 46 `#D4B056` (mounted from Dashboard)
-- `src/components/LinkedInPostSteps.tsx` — 23 `#D4B056`
-- `src/components/MilestoneShareModal.tsx` — 302, 370 `#B08D3A`
-- `src/components/AuditRadarWidget.tsx` — 108 `#D4B056`; `src/components/AuditResultsView.tsx` — 107 `#B08D3A`
-- `src/components/TodaysStatus.tsx` — 12 `#6E2A26` (orphaned); `src/components/SilenceAlarm.tsx` — 32 `#F97316` (orphaned); `src/components/StrategicCompanion.tsx` — 52 `#B08D3A` (orphaned); `src/components/ScrollSpyNav.tsx` — 3 `#B08D3A`; `src/components/intelligence/MarketCoverageSection.tsx` — 11 `#B08D3A` (orphaned)
-- `src/pages/Auth.tsx` — 259, 260 `#1B1712` (autofill override)
-- `src/pages/RequestAccess.tsx` — 23 `#F1ECE1`, 24 `#1B1712`
-- `src/components/landing/HeroHead.tsx` — 193 `#d4b056`
+**11 consumer files, 26 usages** (plus the component file itself). Note: `AskAuraButton` in `Dashboard.tsx` is a different component and is out of scope.
 
-Non-product / export-canvas, admin, or legacy (not part of the 14 surfaces):
-- `src/pages/Landing.tsx` — 59 occurrences (legacy `/` landing, unmounted; `/` now = LandingV23)
-- `src/components/visual-cards/styles/cardStyles.ts` — 15; `src/components/visual-cards/schematics/blackboard.ts` — 2; `src/components/broadsheet/pressTokens.ts` — 5; `src/components/signature/renderers/*` — 17 across shared/Statement/Line/Frame/Signature; `src/components/signature/Editor.tsx` — 3; `src/pages/SignatureStudio.tsx` — 173; `src/pages/CarouselStudio.tsx` — 10; `src/lib/exportBrand.ts` — 10; `src/components/ImageCardGenerator.tsx` — 42
-- Admin only: `AdminDesignSystem.tsx` (5), `AdminQA.tsx` (3), `AdminJourney.tsx` (36, 37), `AdminPeople.tsx` (482), `AdminExperience.tsx` (521), `src/components/admin/cockpit/ui.tsx` (5), `src/utils/qaInteractionAudit.ts` (424, 617)
-- `src/tailwind.config.lov.json` — 16 × `#f97316` (generated Tailwind ramp)
+### Mechanical (drop-in)
 
-## 2 · RETIRED FONTS
-
-On product surfaces a logged-in user sees:
-- `src/components/CaptureModal.tsx` — 766, 894, 1503 `var(--font-serif)` — YES, capture sheet
-- `src/components/tabs/IdentityTab.tsx` — 744 `var(--font-serif)` — YES, Profile H1
-- `src/components/FirstFlightCard.tsx` — 55, 217 `var(--font-serif)` (217 also italic) — YES, first-flight card on Home
-- `src/pages/Onboarding.tsx` — 956 `'JetBrains Mono'` — YES, onboarding
-- `src/pages/Auth.tsx` — 265, 294, 368 `var(--font-serif)` — YES, auth
-- `src/pages/NotFound.tsx` — 25 `'Cormorant Garamond'` — YES (404)
-- `src/pages/AcceptInvitation.tsx` — 77, 230 `var(--font-serif)` — YES (invite flow)
-- `src/pages/RequestAccess.tsx` — 137, 207, 430 `var(--font-serif)` — public, pre-login
-
-Not on the 14 surfaces:
-- `src/pages/PublicWelcome.tsx` — 18, 83, 123, 133, 202, 529, 578, 603, 639, 657, 672, 693, 719, 764, 1055 `var(--font-serif)` (orphan page, §5)
-- `src/pages/SignatureStudio.tsx` — 174, 175, 191, 198, 604, 613 `Newsreader`; `src/pages/CarouselStudio.tsx` — 96–98, 110–112, 123–125, 136–138, 149–151, 163, 164, 455, 674, 2113, 2115, 2260, 2588, 2685, 2686 (`DM Sans`, `Cormorant`, `JetBrains Mono`, `Newsreader`) — export canvases
-- Admin: `AdminCrons.tsx` 137/141/145, `AdminCost.tsx` 47/61, `AdminPeople.tsx` 72/184, `AdminQA.tsx` 981/1007/1012/1017/1030, `AdminGuideHealth.tsx` 82/146/165/234, `AdminExperience.tsx` 60/236, `AdminDesignSystem.tsx` 223/229 — `Cormorant` / `DM Sans` / `JetBrains Mono`
-- `src/index.css` 196/199/200 keeps `--font-serif` mapped to Newsreader for reports (excluded by scope); `src/utils/qaInteractionAudit.ts` 357–405 still whitelists Newsreader as the System-A font
-
-## 3 · SURFACE REGISTER (verified against `src/App.tsx` + `src/pages/Dashboard.tsx` NAV_ITEMS/render)
-
-| Surface | Mounted file (verified) | Status |
+| File | Uses | Props |
 |---|---|---|
-| auth | `src/pages/Auth.tsx` (`/auth`, `/login`) | PARTIAL — `#1B1712` 259/260, `--font-serif` 265/294/368, amber misuse (§4) |
-| landing `/` | `src/pages/LandingV23.tsx` (lazy) | MIGRATED — 0 retired hex/fonts, 56 semantic-token reads |
-| nav shell / sidebar | `src/components/rail/AuraRail.tsx` | PARTIAL — file clean, but renders `AuraLogo` (`#1B1712`, `#36C5B0`) |
-| mobile bottom nav | none — no bottom-nav component; mobile nav is the inline drawer in `src/pages/Dashboard.tsx` (Menu/X, ~line 728 rail + fixed elements) | NOT MIGRATED (does not exist as a discrete surface) |
-| Home (Brief) | `src/components/home/BriefV2.tsx` | PARTIAL — file clean (35 token reads), but Home also mounts `FirstFlightCard` (`--font-serif`) and `NotificationBell` (`#B08D3A`) |
-| Signals board | `src/components/signals/SignalsBoardV2.tsx` | PARTIAL — file clean, imports `EditorialReadingList`/`SignalHero` from `tabs/IntelligenceTab.tsx` (`#B08D3A` 1542) |
-| Observatory / Intelligence | no route — `src/components/Observatory.tsx` not imported anywhere | NOT MIGRATED / dead (§5) |
-| Composer / Authority | `src/components/composer/ComposerV2.tsx` | PARTIAL — file clean, imports `CreateTab` from `tabs/AuthorityTab.tsx` (`#36C5B0` 2056/4230, `#D6A748` 4079–4102) |
-| Impact / Influence (Statement) | `src/components/analytics/AnalyticsV2.tsx` (tab `influence`, labelled "Analytics") | MIGRATED — 0 retired hex/fonts, 51 token reads. `tabs/ImpactTab.tsx` is NOT mounted |
-| Identity / My Story | `src/components/tabs/IdentityTab.tsx` | NOT MIGRATED — `--font-serif` 744, only 5 semantic token reads, pulls `AuraCardPanel` (`#1B1712`/`#F1ECE1`), `AuditRadarWidget` (`#D4B056`), `MilestoneShareModal` (`#B08D3A`) |
-| Library | `src/components/library/LibraryPage.tsx` | MIGRATED — clean, 29 token reads |
-| Capture sheet | `src/components/CaptureModal.tsx` | PARTIAL — no retired hex, but `--font-serif` at 766, 894, 1503 |
-| Ask Aura | `src/components/ask/AskAuraV2.tsx` | PARTIAL — no retired hex/fonts, but cyan on a pressable control (§4) |
-| Onboarding / First Flight | `src/pages/Onboarding.tsx` + `src/components/FirstFlightCard.tsx` | NOT MIGRATED — `JetBrains Mono` 956; FirstFlightCard `--font-serif` 55/217 and only 1 token read |
+| src/components/FirstLoginWelcome.tsx | 1 | variant primary, size sm, onClick |
+| src/components/identity/BrandReportSection.tsx | 1 | variant primary, size sm, onClick |
+| src/components/identity/ReportViewerSection.tsx | 2 | primary/sm, onClick, loading, disabled |
+| src/components/settings/AccountPanel.tsx | 1 | primary/sm, onClick, disabled |
+| src/components/NpsSurveyModal.tsx | 1 | defaults (primary/md), onClick, disabled |
 
-Also mounted and clean: `overnight/OvernightPage.tsx`, `today/TodayPage.tsx`, `momentum/MomentumPage.tsx`, `widgets/WidgetsPage.tsx`.
+All map as: `primary → variant="default"`, `md → size="default"`, `loading`/`disabled` pass through unchanged.
 
-## 4 · COLOUR LAW BREACHES
+### Needs judgement
 
-Cyan on a pressable control:
-- `src/components/ask/AskAuraV2.tsx` 112–114 — citation pill is a `<button onClick>` with `--machine` background, border and text
-- `src/components/systemb/Tooltip.tsx` 29 — `--machine` title text inside an interactive tooltip surface
+| File | Uses | Props | Why it doesn't map cleanly |
+|---|---|---|---|
+| src/pages/Settings.tsx | 9 | primary, ghost (incl. a computed `variant={cond ? "ghost" : "primary"}`), sm, loading, disabled, 2 inline `style` overrides | Two danger buttons are styled by inline `style` (`color: var(--error)`, `background: var(--error)`, `borderColor`) rather than a variant — should become `variant="destructive"` / `outline` + error classes, a semantic decision. `ghost` here renders **with a border** (AuraButton ghost = bordered) so it maps to `outline`, not `ghost`. |
+| src/components/tabs/ImpactTab.tsx | 4 | primary md, `signal` variant, sm, loading, inline `style={{borderRadius:6, padding:"12px 26px"}}`, inline `<Linkedin>` icon in children | `signal` variant (`var(--signal)` background) has **no canonical equivalent**; radius/padding overrides fight the cva size classes; icon child relies on manual `mr-2 inline` instead of Button's `gap-2` + `[&_svg]:size-4`. |
+| src/components/SilenceAlarm.tsx | 3 | primary/ghost, sm, inline `style={{borderRadius:4, padding:"7px 18px"}}` | Deliberate squared-off geometry (radius 4) that no canonical size provides; needs a decision to normalise or keep via `className`. |
+| src/components/home/WeekReadyCard.tsx | 2 | `signal` variant, ghost, sm, disabled | `signal` variant has no canonical equivalent; the busy state is hand-rolled (`<Loader2 className="animate-spin"/>` + text inside children with `disabled={preparing}`) instead of the `loading` prop — needs conversion, not substitution. |
+| src/components/HelpPanel.tsx | 1 | `secondary`, `style={{width:"100%"}}` | AuraButton `secondary` = brand-tinted (`--brand-ghost` / `--brand` / `--brand-line`); canonical `secondary` = neutral `--surface-subtle`. Visually different — likely wants `variant="outline"` or a brand treatment. Full-width needs `className="w-full"`. |
+| src/components/tabs/AuthorityTab.tsx | 1 | primary, **size lg**, loading, long onClick | Only `lg` consumer; AuraButton `lg` (14/28px, radius 10, no min-height) vs canonical `lg` (h-12, px-8, text-base). Hero CTA — worth an eyeball check after swap. |
 
-Amber with no deadline/expiry:
-- `src/pages/Auth.tsx` 663 — "Forgot password" button in `--deadline-text`
-- `src/pages/Auth.tsx` 594 — "Set Password" inline emphasis in `--deadline-text`
-- `src/pages/Auth.tsx` 729, 735, 741 — three static feature icons in `--deadline-text`
-- `src/components/tabs/AuthorityTab.tsx` 4079–4102 — `var(--action, #D6A748)` on a section header, count chip and list border (no expiry)
+### Other cross-cutting notes
+- No usage anywhere uses `asChild`, `type="submit"`, `className`, or link-wrapping — so no Slot/anchor complications.
+- Canonical Button disabled opacity is `0.60` vs AuraButton's `0.4`; every disabled state changes appearance slightly across all 26 usages.
+- AuraButton has no focus ring; canonical adds `focus-visible:ring-2` — an accessibility improvement, not a regression.
+- AuraButton's loading spinner **replaces** the label; canonical's spinner sits **beside** it. Labels will appear during loading after migration (10 usages pass `loading`).
 
-Blue (`--act`) on a passive status chip: none found.
-
-## 5 · DEAD / ORPHAN FILES among these surfaces
-
-- `src/components/Observatory.tsx` — no import anywhere
-- `src/components/Brief.tsx` — imported by `Dashboard.tsx:31` and `BriefV2.tsx:12` (type only); never rendered
-- `src/components/tabs/ImpactTab.tsx` — only referenced from the unrendered `Brief.tsx`
-- `src/components/tabs/InfluenceTab.tsx` — zero references
-- `src/components/tabs/MarketTab.tsx` — zero references
-- `src/components/home/WeekReadyCard.tsx` — zero imports
-- `src/components/TodaysStatus.tsx` — zero imports
-- `src/components/SilenceAlarm.tsx` — zero imports
-- `src/components/StrategicCompanion.tsx` — zero imports
-- `src/components/intelligence/MarketCoverageSection.tsx` — zero imports
-- `src/components/ImageCardGenerator.tsx` — zero imports
-- `src/pages/PublicWelcome.tsx` — no route in `src/App.tsx`
-- `src/pages/Landing.tsx` — no route (`/` is `LandingV23`)
-- `src/pages/Index.tsx`, `src/pages/AdminRedirect.tsx` — no route in `src/App.tsx`
-
-Partially live, not orphans: `tabs/AuthorityTab.tsx` (`CreateTab`) and `tabs/IntelligenceTab.tsx` (`SignalHero`, `EditorialReadingList`) are imported by the V2 surfaces — their retired values do reach users.
+### Decision this feeds
+The batch **must be split**. Run one uniform mechanical batch over the 5 files above (5 usages), then a second pass for the 6 judgement files (21 usages) — gated on two prior decisions: (a) what `signal` becomes canonically (new cva variant vs `default`), and (b) whether the squared radius-4/6 overrides in SilenceAlarm/ImpactTab survive or normalise to canonical radii.
