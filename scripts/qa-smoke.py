@@ -89,7 +89,7 @@ async def main():
         # 4 — ghost/outline hover tint (must tint local text colour, never white)
         for label, url in [("dark", BASE), ("light", f"{BASE}/settings")]:
             await page.goto(url, wait_until="networkidle"); await page.wait_for_timeout(2000)
-            btn = page.locator("button.bg-transparent, button[class*='hover:bg-[color-mix']").first
+            btn = page.locator("button[class*='color-mix'], button.border-\\[var\\(--border-default\\)\\]").first
             if await btn.count() == 0:
                 rec(f"4 ghost/outline hover ({label})", False, "no ghost/outline button found on page")
                 continue
