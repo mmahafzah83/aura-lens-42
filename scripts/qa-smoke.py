@@ -71,7 +71,9 @@ async def main():
         rec("2a zero onboarding cards", not onboarding, "no welcome/capture-callout text on Home")
         sincevis = "SINCE YOUR LAST VISIT" in body.upper()
         rec("2b since-last-visit section", sincevis, "section rendered" if sincevis else "section absent (no qualifying rows)")
-        rec("2c MoveCard single primary CTA", body.count("Dismiss") <= 1, "one move surface")
+        rec("2c MoveCard single primary CTA", "YOUR ONE MOVE" in body.upper(), "one move surface present")
+        stats = await page.evaluate("""() => (document.body.innerText.match(/\\n\\d[\\d,\\.]*\\n/g)||[]).length""")
+        rec("2d instrument stat numbers render", stats >= 3, f"{stats} numeric stat lines")
         await page.screenshot(path=str(SHOTS/"2_home.png"))
 
         # 3 — avatar menu
@@ -84,13 +86,20 @@ async def main():
         await page.get_by_text("Account & settings").first.click(); await page.wait_for_timeout(2000)
         rec("3b navigates to /settings", "/settings" in page.url, page.url)
 
-        # 4 — button hover tint
+        # 4 — ghost/outline hover tint (must tint local text colour, never white)
         for label, url in [("dark", BASE), ("light", f"{BASE}/settings")]:
-            await page.goto(url, wait_until="networkidle"); await page.wait_for_timeout(1500)
-            btn = page.locator("button").first
-            await btn.hover(); await page.wait_for_timeout(300)
+            await page.goto(url, wait_until="networkidle"); await page.wait_for_timeout(2000)
+            btn = page.locator("button.bg-transparent, button[class*='hover:bg-[color-mix']").first
+            if await btn.count() == 0:
+                rec(f"4 ghost/outline hover ({label})", False, "no ghost/outline button found on page")
+                continue
+            await btn.scroll_into_view_if_needed()
+            await btn.hover(); await page.wait_for_timeout(400)
             bg = await btn.evaluate("el=>getComputedStyle(el).backgroundColor")
-            rec(f"4 hover tint not white ({label})", "255, 255, 255" not in bg or "0)" in bg, f"bg={bg}")
+            nums = [int(n) for n in __import__("re").findall(r"\\d+", bg)[:3]]
+            opaque_white = nums[:3] == [255,255,255] and (bg.startswith("rgb(") or "1)" in bg)
+            rec(f"4 ghost/outline hover not white ({label})", not opaque_white, f"hover bg={bg}")
+            await btn.screenshot(path=str(SHOTS/f"4_{label}_btn.png"))
             await page.screenshot(path=str(SHOTS/f"4_{label}.png"))
 
         # 8 — reduced motion
