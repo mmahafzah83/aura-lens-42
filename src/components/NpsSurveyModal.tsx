@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
 import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import AuraButton from "@/components/ui/AuraButton";
+import { Button } from "@/components/ui/button";
 
 const DISMISS_KEY = "aura_nps_dismissed";
 const DISMISS_DAYS = 7;
@@ -196,9 +196,9 @@ const NpsSurveyModal = () => {
                 Maybe later
               </button>
               {score !== null && (
-                <AuraButton onClick={handleSubmit} disabled={submitting}>
+                <Button variant="default" size="default" onClick={handleSubmit} disabled={submitting}>
                   {submitting ? "Submitting…" : "Submit"}
-                </AuraButton>
+                </Button>
               )}
             </div>
           </>
