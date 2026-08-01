@@ -9,6 +9,7 @@ import { FORCES, HEADERS } from "@/constants/language";
 import { track } from "@/lib/track";
 import AgentFindingCard from "@/components/AgentFindingCard";
 import { trackSignalOpen } from "@/lib/trackSignalOpen";
+import { Link } from "react-router-dom";
 
 /**
  * Brief — Editorial Broadsheet (System-A tokens).
