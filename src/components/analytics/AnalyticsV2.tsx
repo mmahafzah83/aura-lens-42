@@ -4,7 +4,8 @@ import { ButtonGhost, ButtonPrimary, Chip, Tooltip } from "@/components/systemb"
 import { Download, Sparkles } from "lucide-react";
 import { TIER_BANDS, bandFromScore } from "@/hooks/useTierFromImprint";
 import { downloadBlob } from "@/lib/download";
-import { isPublishedPost, isAuraPublishedPost, countPosts } from "@/lib/postProvenance";
+import { countProvenance, provenanceOf, type Provenance } from "@/lib/postProvenance";
+import { ProvenanceMark } from "@/components/systemb";
 
 /**
  * AnalyticsV2 — V23 "three questions, not thirty charts".
@@ -33,6 +34,7 @@ interface PostRow {
   source_signal_id: string | null;
   source_metadata: any;
   published_at: string | null;
+  publish_attempted_at: string | null;
   created_at: string;
   post_url: string | null;
   linkedin_url: string | null;
@@ -206,8 +208,8 @@ const AnalyticsV2: React.FC<{ onOpenChat?: (msg?: string) => void }> = ({ onOpen
 
   const rangedPosts = useMemo(() => posts.filter(p => inRange(postDate(p))), [posts, inRange]);
   // Live on LinkedIn — the canonical definition, imported history included.
-  const publishedPosts = useMemo(() => rangedPosts.filter(isPublishedPost), [rangedPosts]);
-  const postCounts = useMemo(() => countPosts(rangedPosts), [rangedPosts]);
+  const publishedPosts = useMemo(() => rangedPosts.filter(p => provenanceOf(p) !== null), [rangedPosts]);
+  const postCounts = useMemo(() => countProvenance(rangedPosts), [rangedPosts]);
   const rangedSignals = useMemo(() => signals.filter(s => inRange(s.created_at)), [signals, inRange]);
   const hasReach = useMemo(() => Object.keys(reach).length > 0, [reach]);
 
@@ -252,7 +254,8 @@ const AnalyticsV2: React.FC<{ onOpenChat?: (msg?: string) => void }> = ({ onOpen
       language: postLanguage(p),
       source: postSource(p),
       status: p.tracking_status ?? "—",
-      live: isPublishedPost(p),
+      live: provenanceOf(p) !== null,
+      provenance: provenanceOf(p) as Provenance | null,
       reach: reach[p.id] ?? null,
       date: postDate(p),
     }));
