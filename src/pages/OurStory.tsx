@@ -66,99 +66,45 @@ const OurStory = () => {
     <div
       className="our-story-page"
       style={{
-        ["--lk" as string]: "var(--live)",
+        ["--lk" as string]: "#0670C4",
         minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
-        background: "var(--paper)",
-        color: "var(--ink)",
-        fontFamily: "var(--font-body)",
+        background: "#F2F5F9",
+        color: "#0F1519",
+        fontFamily: "'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif",
       }}
     >
-      {/* Dark instrument top bar */}
-      <header
-        className="flex items-center justify-between px-6 sm:px-10 py-4 sticky top-0 z-40"
-        style={{
-          background: "var(--ob-bg)",
-          borderBottom: "1px solid var(--hair)",
-        }}
-      >
-        <Link
-          to="/"
-          className="flex items-center gap-2"
-          aria-label="Aura home"
-        >
-          <AuraLogo size={26} variant="dark" />
-          <span
-            className="text-sm font-bold tracking-[0.2em]"
-            style={{ color: "var(--glass)", fontFamily: "var(--font-display)" }}
-          >
-            AURA
-          </span>
-        </Link>
-
-        <nav className="flex items-center gap-4 sm:gap-6 text-xs">
-          <Link
-            to="/auth"
-            style={{ color: "var(--glass-2)", fontWeight: 500, transition: "color 150ms ease" }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--live)")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--glass-2)")}
-          >
-            Log in
-          </Link>
-          <Link
-            to="/request-access"
-            className="px-3 py-1.5 rounded-full text-xs font-medium"
-            style={{
-              background: "var(--paper-2)",
-              color: "var(--ink)",
-              border: "1px solid var(--hair)",
-              transition: "all 150ms ease",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "var(--paper-3)";
-              e.currentTarget.style.borderColor = "var(--live)";
-              e.currentTarget.style.color = "var(--ink-2)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "var(--paper-2)";
-              e.currentTarget.style.borderColor = "var(--hair)";
-              e.currentTarget.style.color = "var(--ink)";
-            }}
-          >
-            Request access
-          </Link>
-        </nav>
-      </header>
+      <PublicMasthead />
 
       <main
         className="mx-auto px-5 sm:px-10 flex-1 w-full"
-        style={{ maxWidth: 720, paddingTop: 64, paddingBottom: 60 }}
+        style={{ maxWidth: 760, paddingTop: 64, paddingBottom: 60 }}
       >
         <Link
           to="/"
           className="inline-flex items-center gap-1.5 mb-8"
           style={{
             fontSize: 12,
-            color: "var(--ink-3)",
+            color: "#98A2AE",
             transition: "color 150ms ease",
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--lk)")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--ink-3)")}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "#0670C4")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "#98A2AE")}
         >
           <ArrowLeft size={13} /> Back to home
         </Link>
 
         <div
           className="mb-2 uppercase tracking-[0.12em]"
-          style={{ color: "var(--ink-3)", fontFamily: "var(--font-mono)", fontSize: 12 }}
+          style={{ color: "#5B6673", fontFamily: "'IBM Plex Mono', ui-monospace, Menlo, monospace", fontSize: 12 }}
         >
           OUR STORY
         </div>
 
         <h1
           className="text-3xl sm:text-4xl mb-2"
-          style={{ fontFamily: "var(--font-display)", color: "var(--ink)" }}
+          style={{ fontFamily: "'Instrument Serif', Georgia, serif", color: "#0F1519", letterSpacing: "-0.028em", lineHeight: 1.02 }}
         >
           Why Aura exists.
         </h1>
