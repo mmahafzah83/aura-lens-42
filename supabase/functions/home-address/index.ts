@@ -727,6 +727,7 @@ async function writeAddress(
   }[lens] ?? "";
 
   const tension = computeTension(facts, move);
+  const phrases = buildFactPhrases(facts, move);
 
   const base = `Lens: ${lens}. ${lensBrief}
 Reason for the lens (already shown to them, do not repeat it verbatim): ${lensReason}
@@ -740,8 +741,8 @@ Tension (use this, do not look for another):
 THE MOVE — your closing sentence must point at this and nothing else:
 ${move ? `${move.title} — ${move.what}` : "No move is available; close on capturing one thing they read today."}
 
-Facts:
-${JSON.stringify(facts, null, 2)}`;
+EVIDENCE PHRASES — pick two or three. These are the only facts and the only figures you have:
+${phrases.map((s) => `- ${s}`).join("\n") || "- (no evidence yet)"}`;
 
   const attempts: Array<{ attempt: number; reasons: string[] }> = [];
 
@@ -759,12 +760,15 @@ Your previous attempt was rejected for: ${attempts[0].reasons.join("; ")}. Write
       attempts.push({ attempt: i + 1, reasons: ["empty response"] });
       continue;
     }
-    const g = gateAddress(text, facts, move, memberName);
+    const g = gateAddress(text, phrases, move, memberName);
     if (g.pass) {
       return {
         text,
         model: MODEL,
-        quality: { passed: true, attempt: i + 1, failed_attempts: attempts, checked_at: new Date().toISOString() },
+        quality: {
+          passed: true, attempt: i + 1, failed_attempts: attempts,
+          phrases, checked_at: new Date().toISOString(),
+        },
       };
     }
     attempts.push({ attempt: i + 1, reasons: g.reasons });
@@ -773,7 +777,7 @@ Your previous attempt was rejected for: ${attempts[0].reasons.join("; ")}. Write
   return {
     text: fallbackAddress(facts, move),
     model: null,
-    quality: { passed: false, fallback: true, failed_attempts: attempts, checked_at: new Date().toISOString() },
+    quality: { passed: false, fallback: true, failed_attempts: attempts, phrases, checked_at: new Date().toISOString() },
   };
 }
 
