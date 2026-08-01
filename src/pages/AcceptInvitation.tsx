@@ -236,16 +236,16 @@ const ACCEPT_CSS = `
   line-height:1.12;letter-spacing:-.02em;color:var(--n900);margin:0 0 16px;
 }
 .ai-subline{font-size:16px;line-height:1.65;color:var(--n500);margin:0 auto 30px;max-width:400px;}
-.ai-cta{
+.ai .ai-cta{
   display:inline-flex;align-items:center;justify-content:center;
   width:100%;max-width:400px;min-height:48px;padding:12px 22px;
   background:var(--n900);color:var(--n0);border-radius:999px;border:0;
   font-family:var(--ui);font-size:15px;font-weight:600;letter-spacing:.01em;cursor:pointer;
   transition:background .18s ease, transform .18s ease;
 }
-.ai-cta:hover{background:#000000;transform:translateY(-2px);}
-.ai-quiet{font-size:14px;color:var(--n500);}
-.ai-quiet:hover{color:var(--act);}
+.ai .ai-cta:hover{background:#000000;transform:translateY(-2px);}
+.ai .ai-quiet{font-size:14px;color:var(--n500);}
+.ai .ai-quiet:hover{color:var(--act);}
 .ai-secondary{margin-top:18px;}
 
 .ai-more{background:var(--n100);padding:88px 20px 110px;}
