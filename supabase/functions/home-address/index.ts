@@ -538,9 +538,9 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization") || "";
     if (!authHeader.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
     const anon = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!);
-    const { data: claims, error: authErr } = await anon.auth.getClaims(authHeader.replace("Bearer ", ""));
-    if (authErr || !claims?.claims?.sub) return json({ error: "Unauthorized" }, 401);
-    const userId = String(claims.claims.sub);
+    const { data: authData, error: authErr } = await anon.auth.getUser(authHeader.replace("Bearer ", ""));
+    if (authErr || !authData?.user?.id) return json({ error: "Unauthorized" }, 401);
+    const userId = authData.user.id;
 
     const { row, cached, rejected } = await generateFor(admin, apiKey, userId, force);
     await logEfError(admin, {
