@@ -386,6 +386,9 @@ const BANNED = [
   "leveraging", "massive", "disconnect", "trapped", "crucial", "vital", "stark",
   "glaring", "significant", "robust", "journey", "unlock", "elevate", "empower",
   "seamless", "authority", "trajectory", "personal brand", "thought leader",
+  // register: a colleague speaking, not a campaign
+  "mountain", "wealth of", "treasure", "goldmine", "release it", "your network",
+  "put it out there", "get it out there", "share it with the world",
 ];
 
 const OPENINGS = [
@@ -410,8 +413,12 @@ Second person, plain verbs, sentence case.
 Never open with "You have". Never open with their name alone. Follow the opening instruction you are given.
 No praise, no reassurance, no description of Aura's features, no exclamation marks, no emoji.
 
-NUMBERS
-Use only integers that appear in the facts object. Never compute, round differently, or invent one.
+EVIDENCE AND NUMBERS
+You are given a short list of EVIDENCE PHRASES. They are written for you in code and they are correct.
+Choose two or three of them and write the connective tissue around them. You may reorder a phrase or change its punctuation and capitalisation, and you may fold it into a longer sentence.
+You may not change any number inside a phrase, combine numbers from different phrases, or state any figure that is not inside a phrase you were given.
+You do not have the underlying data. Do not guess at it. If something is not in a phrase, do not say it.
+The phrases are your evidence, not your skeleton — the address must still read as one continuous thought, not a list of clauses.
 
 BANNED OUTRIGHT — these are analyst tells and must never appear:
 ${BANNED.join(" · ")}
@@ -436,22 +443,140 @@ One link. That's the whole ask today."
 
 Return plain markdown. No headings, no bullet lists, no preamble.`;
 
-function collectIntegers(obj: unknown, out: Set<number>) {
-  if (obj == null) return;
-  if (typeof obj === "number") {
-    if (Number.isFinite(obj)) out.add(Math.round(obj));
-    return;
-  }
-  if (typeof obj === "string") {
-    for (const m of obj.matchAll(/\d+/g)) out.add(parseInt(m[0], 10));
-    return;
-  }
-  if (Array.isArray(obj)) return obj.forEach((v) => collectIntegers(v, out));
-  if (typeof obj === "object") return Object.values(obj as any).forEach((v) => collectIntegers(v, out));
+// ── number-word normalisation ──────────────────────────────────────────────
+// A spelled-out number is a number. Everything downstream — the three-number
+// limit and the traceability check — runs on the normalised string.
+
+const UNITS: Record<string, number> = {
+  one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9,
+  ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15,
+  sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20,
+};
+const TENS: Record<string, number> = {
+  twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90,
+};
+const UNIT_RE = Object.keys(UNITS).join("|");
+const TENS_RE = Object.keys(TENS).join("|");
+
+// "one link", "one thing" — a determiner, not a quantity. Dropped before counting.
+const GENERIC_ONE =
+  /\bone\b(?=\s+(thing|link|line|note|post|idea|move|decision|question|sentence|paragraph|choice|answer|reason|place|side)\b)/gi;
+
+/** Maps number words (incl. "forty-two", "two hundred") to digits. */
+function normaliseNumbers(input: string): string {
+  let t = input.replace(GENERIC_ONE, "a");
+
+  // tens + unit, hyphenated or spaced: "forty-two" → 42
+  t = t.replace(new RegExp(`\\b(${TENS_RE})[-\\s](one|two|three|four|five|six|seven|eight|nine)\\b`, "gi"),
+    (_m, a: string, b: string) => String(TENS[a.toLowerCase()] + UNITS[b.toLowerCase()]));
+
+  // scaled: "two hundred", "three thousand"
+  t = t.replace(new RegExp(`\\b(${UNIT_RE})\\s+(hundred|thousand)\\b`, "gi"),
+    (_m, a: string, s: string) => String(UNITS[a.toLowerCase()] * (s.toLowerCase() === "hundred" ? 100 : 1000)));
+  t = t.replace(/\b(\d+)\s+(hundred|thousand)\b/gi,
+    (_m, a: string, s: string) => String(parseInt(a, 10) * (s.toLowerCase() === "hundred" ? 100 : 1000)));
+  t = t.replace(/\b(hundred|thousand)\b/gi, (_m, s: string) => (s.toLowerCase() === "hundred" ? "100" : "1000"));
+
+  // bare tens and units
+  t = t.replace(new RegExp(`\\b(${TENS_RE})\\b`, "gi"), (_m, a: string) => String(TENS[a.toLowerCase()]));
+  t = t.replace(new RegExp(`\\b(${UNIT_RE})\\b`, "gi"), (_m, a: string) => String(UNITS[a.toLowerCase()]));
+
+  return t;
 }
 
 function integersIn(text: string): number[] {
-  return [...text.matchAll(/\d+/g)].map((m) => parseInt(m[0], 10));
+  return [...normaliseNumbers(text).matchAll(/\d+/g)].map((m) => parseInt(m[0], 10));
+}
+
+// ── fact phrases: correct by construction ──────────────────────────────────
+// Each phrase is written in code from one fact, with its meaning attached.
+// The model sees these and nothing else. It can never reach a bare number.
+
+const MONTHS = ["January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"];
+
+function monthOf(isoDay: string | null): string | null {
+  if (!isoDay) return null;
+  const m = Number(isoDay.slice(5, 7));
+  return m >= 1 && m <= 12 ? MONTHS[m - 1] : null;
+}
+const daysAgoFrom = (iso: string | null | undefined): number | null =>
+  iso ? Math.max(0, daysBetween(new Date(), new Date(iso))) : null;
+
+const WORD = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+const small = (n: number) => (n <= 10 ? WORD[n] : String(n));
+
+function buildFactPhrases(f: Facts, move: Move | null): string[] {
+  const p: string[] = [];
+  const ts = f.top_signal;
+  // A long theme title read twice makes the address sound stitched.
+  const shortTitle = (t: string) => {
+    const words = String(t).split(/\s+/);
+    return words.length > 7 ? `${words.slice(0, 7).join(" ")}…` : String(t);
+  };
+
+  if (ts?.title) {
+    const title = shortTitle(ts.title);
+    const month = monthOf(ts.first_fragment_date);
+    const n = ts.fragment_count ?? 0;
+    if (n > 0 && month) p.push(`${n} fragments behind "${title}" since ${month}`);
+    else if (n > 0) p.push(`${n} fragments behind "${title}"`);
+    else p.push(`a theme called "${title}"`);
+    if (ts.gained_last_7d) p.push(`new evidence for "${title}" arrived this week`);
+    if (ts.velocity === "accelerating") p.push(`"${title}" is picking up speed`);
+  }
+
+  if ((f.signals_never_published_from ?? 0) > 0 && ts?.title) {
+    p.push(`nothing published yet from "${shortTitle(ts.title)}"`);
+  } else if ((f.signals_never_published_from ?? 0) > 0) {
+    p.push(`${small(f.signals_never_published_from)} live themes you have never published from`);
+  }
+
+  const nsd = f.last_night?.newest_signal_draft;
+  if (nsd?.title) p.push(`a draft already written on "${String(nsd.title).slice(0, 70)}"`);
+  else if ((f.drafts_total ?? 0) > 0) p.push(`${small(f.drafts_total)} drafts waiting, unpublished`);
+
+  const lastPub = daysAgoFrom(f.last_publish_attempt);
+  if (lastPub != null) {
+    p.push(lastPub === 0 ? `you published today` : `${small(lastPub)} days since you last pressed publish`);
+  } else if ((f.published_total ?? 0) === 0 && (f.captures_total ?? 0) > 0) {
+    p.push(`nothing of yours has gone out through Aura yet`);
+  }
+
+  const w = f.weeks_with_a_capture_last_4;
+  if (typeof w === "number" && w < 4) {
+    p.push(`${small(4 - w)} of your last four weeks had no capture`);
+  } else if (w === 4) {
+    p.push(`you captured something in each of the last four weeks`);
+  }
+
+  if (!f.captured_today && (f.captures_total ?? 0) > 0) p.push(`nothing new has come in today`);
+  if ((f.captures_total ?? 0) === 0) p.push(`nothing captured yet, so nothing here sounds like you`);
+  else if ((f.captures_this_week ?? 0) > 0) p.push(`${small(f.captures_this_week)} things captured this week`);
+
+  if ((f.facets_dormant?.length ?? 0) > 0) {
+    p.push(`your ${String(f.facets_dormant[0]).replace(/_/g, " ")} has never registered`);
+  }
+
+  const sr = f.last_night?.sources_read ?? 0;
+  if (sr > 0) p.push(`Aura read ${small(sr)} ${sr === 1 ? "source" : "sources"} overnight`);
+
+  if (f.tier && f.next_band_name && f.points_to_next_band != null) {
+    p.push(`${f.points_to_next_band} points between ${f.tier} and ${f.next_band_name}`);
+  }
+
+  if (f.linkedin_connected === false) p.push(`LinkedIn is not connected, so nothing comes back from your posts`);
+
+  if (move?.key === "capture" && (f.captures_total ?? 0) > 0) p.push(`one link would be enough for tonight`);
+
+  return p.slice(0, 10);
+}
+
+/** Every integer a phrase makes available to the writer. */
+function integersInPhrases(phrases: string[]): Set<number> {
+  const out = new Set<number>();
+  phrases.forEach((s) => integersIn(s).forEach((n) => out.add(n)));
+  return out;
 }
 
 function sentencesOf(text: string): string[] {
@@ -526,7 +651,7 @@ function moveAnchors(move: Move): string[] {
 
 type Gate = { pass: boolean; reasons: string[] };
 
-function gateAddress(text: string, facts: Facts, move: Move | null, memberName: string | null): Gate {
+function gateAddress(text: string, phrases: string[], move: Move | null, memberName: string | null): Gate {
   const reasons: string[] = [];
   const lower = text.toLowerCase();
   const sents = sentencesOf(text);
@@ -534,10 +659,13 @@ function gateAddress(text: string, facts: Facts, move: Move | null, memberName: 
   const ints = integersIn(text);
   if (ints.length > 3) reasons.push(`too many numbers (${ints.length})`);
 
-  const allowed = new Set<number>();
-  collectIntegers(facts, allowed);
+  // Strict: a number must come from a phrase we handed the model. Existing
+  // somewhere in `facts` is not enough — a true number in a false sentence is
+  // still a lie.
+  const allowed = integersInPhrases(phrases);
+  if (move) integersIn(`${move.title} ${move.what}`).forEach((n) => allowed.add(n));
   const unknown = ints.filter((n) => !allowed.has(n));
-  if (unknown.length) reasons.push(`number not in facts: ${unknown.join(", ")}`);
+  if (unknown.length) reasons.push(`number not in any supplied phrase: ${unknown.join(", ")}`);
 
   if (!sents.some((s) => wordsIn(s) < 8)) reasons.push("no sentence under 8 words");
   const longest = sents.find((s) => wordsIn(s) > 32);
@@ -573,7 +701,13 @@ function fallbackAddress(f: Facts, move: Move | null): string {
   const close = move
     ? `${move.title}. That is the decision today.`
     : `Capture one thing you read today.`;
-  return `${t.strength} ${t.gap} Nothing else on this page matters more this morning. ${close}`;
+  // computeTension is written in the third person for the model; the fallback
+  // is read by the member, so it is spoken directly.
+  const second = (s: string) =>
+    s.replace(/\bThey have\b/g, "You have").replace(/\bThey\b/g, "You")
+     .replace(/\btheir\b/g, "your").replace(/\bTheir\b/g, "Your")
+     .replace(/\bthem\b/g, "you");
+  return `${second(t.strength)} ${second(t.gap)} Nothing else this morning matters more. ${close}`;
 }
 
 async function callModel(apiKey: string, userMsg: string): Promise<string> {
@@ -604,6 +738,7 @@ async function writeAddress(
   }[lens] ?? "";
 
   const tension = computeTension(facts, move);
+  const phrases = buildFactPhrases(facts, move);
 
   const base = `Lens: ${lens}. ${lensBrief}
 Reason for the lens (already shown to them, do not repeat it verbatim): ${lensReason}
@@ -617,8 +752,8 @@ Tension (use this, do not look for another):
 THE MOVE — your closing sentence must point at this and nothing else:
 ${move ? `${move.title} — ${move.what}` : "No move is available; close on capturing one thing they read today."}
 
-Facts:
-${JSON.stringify(facts, null, 2)}`;
+EVIDENCE PHRASES — pick two or three. These are the only facts and the only figures you have:
+${phrases.map((s) => `- ${s}`).join("\n") || "- (no evidence yet)"}`;
 
   const attempts: Array<{ attempt: number; reasons: string[] }> = [];
 
@@ -636,12 +771,15 @@ Your previous attempt was rejected for: ${attempts[0].reasons.join("; ")}. Write
       attempts.push({ attempt: i + 1, reasons: ["empty response"] });
       continue;
     }
-    const g = gateAddress(text, facts, move, memberName);
+    const g = gateAddress(text, phrases, move, memberName);
     if (g.pass) {
       return {
         text,
         model: MODEL,
-        quality: { passed: true, attempt: i + 1, failed_attempts: attempts, checked_at: new Date().toISOString() },
+        quality: {
+          passed: true, attempt: i + 1, failed_attempts: attempts,
+          phrases, checked_at: new Date().toISOString(),
+        },
       };
     }
     attempts.push({ attempt: i + 1, reasons: g.reasons });
@@ -650,7 +788,7 @@ Your previous attempt was rejected for: ${attempts[0].reasons.join("; ")}. Write
   return {
     text: fallbackAddress(facts, move),
     model: null,
-    quality: { passed: false, fallback: true, failed_attempts: attempts, checked_at: new Date().toISOString() },
+    quality: { passed: false, fallback: true, failed_attempts: attempts, phrases, checked_at: new Date().toISOString() },
   };
 }
 
