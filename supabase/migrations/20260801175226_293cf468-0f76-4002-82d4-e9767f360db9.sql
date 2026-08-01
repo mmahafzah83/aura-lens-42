@@ -1,0 +1,1 @@
+ALTER TABLE public.home_address ADD COLUMN IF NOT EXISTS quality jsonb NOT NULL DEFAULT '{}'::jsonb;

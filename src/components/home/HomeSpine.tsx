@@ -94,6 +94,8 @@ export default function HomeSpine({ userId, onSwitchTab, onStartSignalPost, onOp
   });
   const [onStage, setOnStage] = useState<ShelfKey | null>(null);
   const [draftDismissed, setDraftDismissed] = useState(false);
+  // Which move the address footer is offering. "Not today" promotes the next.
+  const [moveIdx, setMoveIdx] = useState(0);
 
   // ── supporting reads ─────────────────────────────────────────────
   useEffect(() => {
@@ -197,6 +199,7 @@ export default function HomeSpine({ userId, onSwitchTab, onStartSignalPost, onOp
   }, [facts?.last_night?.newest_signal_draft?.id]);
 
   const moves: HomeMove[] = address.row?.moves ?? [];
+  const activeMove: HomeMove | null = moves[moveIdx] ?? moves[0] ?? null;
   const shelf = useMemo(
     () => buildShelf(facts, moves, facts?.signals_active ?? themes.length),
     [facts, moves, themes.length],
@@ -304,19 +307,42 @@ export default function HomeSpine({ userId, onSwitchTab, onStartSignalPost, onOp
         )}
 
         {!collapsed && (
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBlockStart: 18 }}>
-            {moves[0] && (
-              <button type="button" onClick={() => goRoute(moves[0].cta_route)} style={{
-                border: 0, borderRadius: 999, padding: "11px 20px", fontSize: 13, fontWeight: 700,
-                cursor: "pointer", background: "var(--text-inverse)", color: "var(--text-primary)",
-                fontFamily: "var(--font-body)",
-              }}>{moves[0].what}</button>
+          <div style={{ display: "grid", gap: 10, marginBlockStart: 18 }}>
+            {activeMove && (
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+                <button type="button" onClick={() => goRoute(activeMove.cta_route)} style={{
+                  border: 0, borderRadius: 999, padding: "11px 20px", fontSize: 13, fontWeight: 700,
+                  cursor: "pointer", background: "var(--text-inverse)", color: "var(--text-primary)",
+                  fontFamily: "var(--font-body)",
+                }}>{activeMove.title ?? activeMove.what}</button>
+                <button type="button" onClick={openAsk} style={{
+                  borderRadius: 999, padding: "11px 20px", fontSize: 13, fontWeight: 600, cursor: "pointer",
+                  background: "transparent", color: "var(--text-inverse)",
+                  border: "1px solid var(--v23-night-line)", fontFamily: "var(--font-body)",
+                }}>Talk to me about this</button>
+                {moves.length > moveIdx + 1 && (
+                  <button type="button" onClick={() => setMoveIdx((i) => i + 1)} style={{
+                    background: "none", border: 0, padding: 0, cursor: "pointer",
+                    fontFamily: "var(--font-body)", fontSize: 12.5, fontWeight: 600,
+                    color: "var(--v23-on-night)",
+                  }}>Not today</button>
+                )}
+              </div>
             )}
-            <button type="button" onClick={openAsk} style={{
-              borderRadius: 999, padding: "11px 20px", fontSize: 13, fontWeight: 600, cursor: "pointer",
-              background: "transparent", color: "var(--text-inverse)",
-              border: "1px solid var(--v23-night-line)", fontFamily: "var(--font-body)",
-            }}>Talk to me about this</button>
+            {activeMove && (
+              <Muted style={{ fontSize: 12.5, color: "var(--v23-on-night)" }}>
+                {activeMove.outcome} · about {activeMove.est_minutes} minutes
+              </Muted>
+            )}
+            {!activeMove && (
+              <div>
+                <button type="button" onClick={openAsk} style={{
+                  borderRadius: 999, padding: "11px 20px", fontSize: 13, fontWeight: 600, cursor: "pointer",
+                  background: "transparent", color: "var(--text-inverse)",
+                  border: "1px solid var(--v23-night-line)", fontFamily: "var(--font-body)",
+                }}>Talk to me about this</button>
+              </div>
+            )}
           </div>
         )}
       </section>

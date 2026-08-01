@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface HomeMove {
   key?: string;
+  title?: string;
   what: string;
   why: string;
   how: string;
