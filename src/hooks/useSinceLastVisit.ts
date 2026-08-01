@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { countPosts } from "@/lib/postProvenance";
+import { countProvenance } from "@/lib/postProvenance";
 
 /**
  * Since-your-last-visit — one baseline, one moment in time.
@@ -102,7 +102,7 @@ export function useSinceLastVisit(userId: string | null | undefined): SinceLastV
         .select("id, velocity_status")
         .eq("user_id", userId).eq("status", "active").gte("created_at", baseline),
       (supabase.from("linkedin_posts" as any) as any)
-        .select("source_type, tracking_status, published_at, created_at")
+        .select("source_type, tracking_status, published_at, publish_attempted_at, created_at, source_metadata")
         .eq("user_id", userId).gte("created_at", baseline),
     ]);
 
@@ -181,7 +181,9 @@ export function useSinceLastVisit(userId: string | null | undefined): SinceLastV
     }
 
     // c) the user's own actions
-    const publishedSince = countPosts(((pubRes.data as any[]) || []), baseline).live;
+    const publishedSince = countProvenance(
+      (((pubRes.data as any[]) || []) as any[]).filter((r) => !!r.published_at && r.published_at >= baseline),
+    ).live;
     if (publishedSince > 0 && rows.length < 3) {
       rows.push({
         key: "published",
