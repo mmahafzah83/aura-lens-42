@@ -160,7 +160,7 @@ const Auth = () => {
 
   const sendReset = async (target: string) => {
     const { data, error } = await supabase.functions.invoke("send-password-reset", {
-      body: { email: target.trim().toLowerCase() },
+      body: { email: target.trim().toLowerCase(), origin: window.location.origin },
     });
     if (error) throw error;
     if ((data as any)?.error) throw new Error((data as any).error);
