@@ -250,6 +250,7 @@ export default function BriefV2({
   const [activeSignalCount, setActiveSignalCount] = useState<number | null>(null);
   const [capturesWeek, setCapturesWeek] = useState<number | null>(null);
   const [publishedMonth, setPublishedMonth] = useState<number | null>(null);
+  const [madeWithAuraMonth, setMadeWithAuraMonth] = useState<number | null>(null);
   const [drafts, setDrafts] = useState<DraftRow[]>([]);
   const [overnight, setOvernight] = useState<OvernightState>({ lastRunAt: null, headline: null, why: null, source: null, draft: null });
   const [showWhy, setShowWhy] = useState(false);
@@ -280,7 +281,7 @@ export default function BriefV2({
       supabase.from("entries").select("id", { count: "exact", head: true }).eq("user_id", uid).gte("created_at", weekIso),
       supabase.from("documents").select("id", { count: "exact", head: true }).eq("user_id", uid).gte("created_at", weekIso),
       (supabase.from("linkedin_posts" as any) as any)
-        .select("source_type, tracking_status, published_at, created_at")
+        .select("source_type, tracking_status, published_at, publish_attempted_at, created_at, source_metadata")
         .eq("user_id", uid)
         .or(`published_at.gte.${monthIso},created_at.gte.${monthIso}`),
       supabase.from("content_items")
@@ -336,7 +337,14 @@ export default function BriefV2({
     setActiveSignalCount(typeof sigCountRes?.count === "number" ? sigCountRes.count : null);
 
     setCapturesWeek((entRes?.count ?? 0) + (docRes?.count ?? 0));
-    setPublishedMonth(countPosts((pubRes?.data as any[]) || [], monthIso).live);
+    {
+      const monthRows = (((pubRes?.data as any[]) || []) as any[]).filter(
+        (r) => !!r.published_at && r.published_at >= monthIso,
+      );
+      const pc = countProvenance(monthRows);
+      setPublishedMonth(pc.live);
+      setMadeWithAuraMonth(pc.madeWithAura);
+    }
     setMovedOvernight(movedRes?.count ?? null);
 
     const draftRows: DraftRow[] = [];
@@ -416,6 +424,7 @@ export default function BriefV2({
   stats.push({ label: "Live signals", value: activeSignalCount != null ? String(activeSignalCount) : "—" });
   if (capturesWeek != null) stats.push({ label: "Captures this week", value: String(capturesWeek) });
   if (publishedMonth != null) stats.push({ label: "Live on LinkedIn this month", value: String(publishedMonth) });
+  if (madeWithAuraMonth != null) stats.push({ label: "Made with Aura this month", value: String(madeWithAuraMonth) });
 
   const openSignal = (id: string) => {
     try { trackSignalOpen(id, "home_briefv2_row"); } catch { /* never blocks */ }
