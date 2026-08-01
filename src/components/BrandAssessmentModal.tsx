@@ -14,6 +14,36 @@ import { captureReportSnapshot } from "@/lib/reportSnapshot";
 import { toast as sonner } from "sonner";
 
 // New section headers (must match brand-assessment EF SYSTEM_PROMPT)
+/* ── System-B "Studio Plate" palette — hard-coded on purpose.
+   This modal portals into document.body, outside every app scope,
+   so it must be fully self-contained. ── */
+const SCRIM = "rgba(15,21,25,0.55)";
+const SURFACE = "#FFFFFF";
+const FIELD = "#F2F5F9";
+const RULE = "#E2E7EE";
+const INK = "#0F1519";
+const INK_SOFT = "#5B6673";
+const INK_FAINT = "#98A2AE";
+const ACT = "#0670C4";
+const ACT_TINT = "#E6F2FD";
+const TEAL = "#00807B";
+const SERIF = "'Instrument Serif', Georgia, serif";
+const BODY = "'Inter', -apple-system, 'Segoe UI', sans-serif";
+const MONO = "'IBM Plex Mono', ui-monospace, Menlo, monospace";
+
+const labelCaps: React.CSSProperties = {
+  fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em",
+  textTransform: "uppercase", color: INK_FAINT,
+};
+const pillBtn: React.CSSProperties = {
+  background: INK, color: "#FFFFFF", borderRadius: 999,
+  minHeight: 48, fontWeight: 600, border: 0, cursor: "pointer",
+};
+const quietPill: React.CSSProperties = {
+  background: SURFACE, border: `1px solid ${RULE}`, color: INK,
+  borderRadius: 999, fontSize: 13, cursor: "pointer",
+};
+
 const SECTION_DEFS: { key: string; label: string; hint: string }[] = [
   { key: "HOW THE MARKET SEES YOU", label: "How the market sees you", hint: "The way a CIO in your sector would describe you to a colleague" },
   { key: "HOW YOU BUILD TRUST", label: "How you build trust", hint: "Your natural way of earning credibility" },
