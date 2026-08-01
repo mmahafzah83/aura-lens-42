@@ -1789,6 +1789,7 @@ export type Database = {
           lens_reason: string
           model: string | null
           moves: Json
+          quality: Json
           user_id: string
         }
         Insert: {
@@ -1801,6 +1802,7 @@ export type Database = {
           lens_reason: string
           model?: string | null
           moves?: Json
+          quality?: Json
           user_id: string
         }
         Update: {
@@ -1813,6 +1815,7 @@ export type Database = {
           lens_reason?: string
           model?: string | null
           moves?: Json
+          quality?: Json
           user_id?: string
         }
         Relationships: []
