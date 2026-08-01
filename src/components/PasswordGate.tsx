@@ -61,7 +61,7 @@ const FF_UI = "'Inter',ui-sans-serif,system-ui,-apple-system,sans-serif";
 const FF_SER = "'Instrument Serif',Georgia,serif";
 const FF_MONO = "'IBM Plex Mono',ui-monospace,Menlo,monospace";
 
-function SetPasswordScreen({ email, onComplete }: { email: string | null; onComplete: () => void }) {
+export function SetPasswordScreen({ email, onComplete }: { email: string | null; onComplete: () => void }) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
