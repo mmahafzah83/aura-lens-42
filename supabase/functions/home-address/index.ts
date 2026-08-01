@@ -701,7 +701,13 @@ function fallbackAddress(f: Facts, move: Move | null): string {
   const close = move
     ? `${move.title}. That is the decision today.`
     : `Capture one thing you read today.`;
-  return `${t.strength} ${t.gap} Nothing else on this page matters more this morning. ${close}`;
+  // computeTension is written in the third person for the model; the fallback
+  // is read by the member, so it is spoken directly.
+  const second = (s: string) =>
+    s.replace(/\bThey have\b/g, "You have").replace(/\bThey\b/g, "You")
+     .replace(/\btheir\b/g, "your").replace(/\bTheir\b/g, "Your")
+     .replace(/\bthem\b/g, "you");
+  return `${second(t.strength)} ${second(t.gap)} Nothing else this morning matters more. ${close}`;
 }
 
 async function callModel(apiKey: string, userMsg: string): Promise<string> {
