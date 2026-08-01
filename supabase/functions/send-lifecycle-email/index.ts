@@ -452,11 +452,10 @@ serve(withObserve("send-lifecycle-email", async (req) => {
       .maybeSingle();
     const tier = (snap?.components as any)?.tier_name || (snap?.components as any)?.tier || null;
 
-    // Brand tokens
-    const { data: dsRow } = await admin.from("design_system").select("tokens").eq("is_active", true).maybeSingle();
-    const ds = (dsRow?.tokens as any) || {};
-    const BRAND = ds?.colors?.brand?.light || "#B08D3A";
-    const FONT = ds?.typography?.body || "DM Sans";
+    // Visual language is fixed by the shared email template; these are legacy
+    // pass-throughs kept only so buildEmail's signature stays unchanged.
+    const BRAND = INK;
+    const FONT = BODY_FONT_STACK;
 
     const { subject, html } = buildEmail(email_type, {
       BRAND,
