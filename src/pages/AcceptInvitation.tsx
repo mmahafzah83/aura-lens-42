@@ -90,105 +90,53 @@ export default function AcceptInvitation() {
   };
 
   return (
-    <div
-      style={{
-        background: "var(--ob-bg)",
-        color: "var(--glass)",
-        minHeight: "100vh",
-        fontFamily: "var(--font-body)",
-      }}
-    >
+    <div className="ai">
       <style>{ACCEPT_CSS}</style>
 
       {precheck === "checking" ? (
-        <section
-          style={{
-            minHeight: "100vh",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "32px 20px",
-          }}
-        >
-          <div className="ai-eye" style={{ display: "inline-flex" }}>
-            <AuraLogo size={60} variant="dark" />
+        <section className="ai-stage">
+          <div className="ai-card">
+            <div className="ai-eye ai-mark">
+              <AuraLogo size={60} variant="light" />
+            </div>
           </div>
         </section>
       ) : (
       <>
       {/* HERO — above the fold */}
-      <section
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "32px 20px",
-        }}
-      >
-        <div style={{ maxWidth: 480, width: "100%", textAlign: "center" }}>
-          <div className="ai-eye" style={{ display: "inline-flex", marginBottom: 28 }}>
-            <AuraLogo size={60} variant="dark" />
+      <section className="ai-stage">
+        <div className="ai-card">
+          <div className="ai-eye ai-mark">
+            <AuraLogo size={60} variant="light" />
           </div>
 
-          <h1
-            className="ai-headline"
-            style={{
-              fontFamily: "var(--font-display)",
-              fontWeight: 400,
-              lineHeight: 1.2,
-              color: "var(--glass)",
-              margin: "0 0 18px",
-            }}
-          >
+          <div className="ai-eyebrow">
+            <span>{isExpired ? "Invitation" : "Your invitation"}</span>
+          </div>
+
+          <h1 className="ai-headline">
             {isExpired
               ? "This invitation has expired."
               : "Your expertise deserves to be seen."}
           </h1>
 
-          <p
-            className="ai-subline"
-            style={{
-              fontSize: 16,
-              lineHeight: 1.6,
-              color: "var(--glass-2)",
-              margin: "0 auto 32px",
-              maxWidth: 380,
-            }}
-          >
+          <p className="ai-subline">
             {isExpired
               ? "Invite links last 24 hours. You can request a fresh one — it only takes a moment."
               : "Aura is a personal intelligence system that converts what you already know into the digital presence your career demands."}
           </p>
 
           {isExpired ? (
-            <Link
-              to="/request-access"
-              className="ai-cta"
-              style={primaryButtonStyle}
-            >
+            <Link to="/request-access" className="ai-cta">
               Request a new one →
             </Link>
           ) : (
             <>
-              <a
-                href={ctaHref}
-                onClick={handleCtaClick}
-                className="ai-cta"
-                style={primaryButtonStyle}
-              >
+              <a href={ctaHref} onClick={handleCtaClick} className="ai-cta">
                 Let the world see what I know →
               </a>
-              <div className="ai-secondary" style={{ marginTop: 18 }}>
-                <a
-                  href="#tell-me-more"
-                  onClick={scrollToPanels}
-                  style={{
-                    fontSize: 14,
-                    color: "var(--glass-3)",
-                    textDecoration: "none",
-                  }}
-                >
+              <div className="ai-secondary">
+                <a href="#tell-me-more" onClick={scrollToPanels} className="ai-quiet">
                   Tell me more first ↓
                 </a>
               </div>
@@ -199,39 +147,26 @@ export default function AcceptInvitation() {
 
       {/* TELL ME MORE — three panels */}
       {!isExpired && (
-        <section
-          id="tell-me-more"
-          style={{
-            background: "var(--ob-panel)",
-            padding: "100px 20px 120px",
-          }}
-        >
-          <div style={{ maxWidth: 480, margin: "0 auto" }}>
+        <section id="tell-me-more" className="ai-more">
+          <div className="ai-more-inner">
             <Panel
               num="01"
               title="You read 50 articles a week."
               body="But none of that knowledge reaches the people who should see it. Your insights stay in your head. Your competitors publish theirs."
             />
-            <div style={{ height: 80 }} />
             <Panel
               num="02"
               title="Aura reads what you already read."
               body="Paste a link. Aura extracts the strategic signal, matches it to your expertise, and writes content in your voice — not generic AI."
             />
-            <div style={{ height: 80 }} />
             <Panel
               num="03"
               title="10 minutes to set up. A career of visibility."
               body="No ghostwriter. No social media agency. Just your expertise, made visible — finally."
             />
 
-            <div style={{ height: 64 }} />
-            <div style={{ textAlign: "center" }}>
-              <a
-                href={ctaHref}
-                onClick={handleCtaClick}
-                style={primaryButtonStyle}
-              >
+            <div className="ai-more-cta">
+              <a href={ctaHref} onClick={handleCtaClick} className="ai-cta ai-cta-static">
                 Let the world see what I know →
               </a>
             </div>
@@ -243,24 +178,6 @@ export default function AcceptInvitation() {
     </div>
   );
 }
-
-const primaryButtonStyle: React.CSSProperties = {
-  display: "inline-block",
-  width: "100%",
-  maxWidth: 400,
-  background: "var(--action)",
-  color: "var(--ink)",
-  height: 48,
-  lineHeight: "48px",
-  borderRadius: 8,
-  fontSize: 15,
-  fontWeight: 600,
-  textDecoration: "none",
-  textAlign: "center",
-  border: 0,
-  cursor: "pointer",
-  letterSpacing: "0.01em",
-};
 
 function Panel({ num, title, body }: { num: string; title: string; body: string }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -278,66 +195,91 @@ function Panel({ num, title, body }: { num: string; title: string; body: string 
     return () => obs.disconnect();
   }, []);
   return (
-    <div
-      ref={ref}
-      style={{
-        opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0)" : "translateY(20px)",
-        transition: "opacity 600ms ease-out, transform 600ms ease-out",
-      }}
-    >
-      <div style={{ fontSize: 12, letterSpacing: "2px", color: "var(--live)", marginBottom: 12, fontWeight: 600, fontFamily: "var(--font-mono)" }}>
-        {num}
-      </div>
-      <h2 style={{ fontSize: 18, color: "var(--glass)", fontWeight: 700, margin: "0 0 12px", lineHeight: 1.35, fontFamily: "var(--font-display)" }}>
-        {title}
-      </h2>
-      <p style={{ fontSize: 14, color: "var(--glass-2)", lineHeight: 1.65, margin: 0, maxWidth: 400, fontFamily: "var(--font-body)" }}>
-        {body}
-      </p>
+    <div ref={ref} className={`ai-panel${visible ? " is-in" : ""}`}>
+      <div className="ai-num">{num}</div>
+      <h2 className="ai-ptitle">{title}</h2>
+      <p className="ai-pbody">{body}</p>
     </div>
   );
 }
 
 const ACCEPT_CSS = `
+.ai{
+  --page:#F2F5F9; --n0:#FFFFFF; --n100:#EEF2F7; --n200:#E2E7EE;
+  --n400:#98A2AE; --n500:#5B6673; --n900:#0F1519;
+  --act:#0670C4; --cy-t:#00807B;
+  --ui:'Inter',ui-sans-serif,system-ui,-apple-system,sans-serif;
+  --ser:'Instrument Serif',Georgia,serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+  min-height:100vh; background:var(--page); color:var(--n900);
+  font-family:var(--ui); font-size:16px; line-height:1.6;
+  -webkit-font-smoothing:antialiased; overflow-x:hidden;
+}
+.ai *,.ai *::before,.ai *::after{box-sizing:border-box;}
+.ai p,.ai h1,.ai h2{margin:0;padding:0;}
+.ai a{color:inherit;text-decoration:none;}
+.ai :focus-visible{outline:2px solid var(--act);outline-offset:3px;border-radius:8px;}
+
+.ai-stage{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px 20px;}
+.ai-card{
+  width:100%;max-width:560px;background:var(--n0);border:1px solid var(--n200);
+  border-radius:26px;padding:clamp(28px,6vw,52px);text-align:center;
+}
+.ai-mark{display:inline-flex;margin-bottom:22px;}
+.ai-mark span{color:#0F1519 !important;}
+.ai-eyebrow{
+  font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--n400);margin-bottom:14px;
+}
+.ai-headline{
+  font-family:var(--ser);font-weight:400;font-size:clamp(28px,5.2vw,40px);
+  line-height:1.12;letter-spacing:-.02em;color:var(--n900);margin:0 0 16px;
+}
+.ai-subline{font-size:16px;line-height:1.65;color:var(--n500);margin:0 auto 30px;max-width:400px;}
+.ai .ai-cta{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:100%;max-width:400px;min-height:48px;padding:12px 22px;
+  background:var(--n900);color:var(--n0);border-radius:999px;border:0;
+  font-family:var(--ui);font-size:15px;font-weight:600;letter-spacing:.01em;cursor:pointer;
+  transition:background .18s ease, transform .18s ease;
+}
+.ai .ai-cta:hover{background:#000000;transform:translateY(-2px);}
+.ai .ai-quiet{font-size:14px;color:var(--n500);}
+.ai .ai-quiet:hover{color:var(--act);}
+.ai-secondary{margin-top:18px;}
+
+.ai-more{background:var(--n100);padding:88px 20px 110px;}
+.ai-more-inner{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:20px;}
+.ai-panel{
+  background:var(--n0);border:1px solid var(--n200);border-radius:18px;
+  padding:clamp(20px,4vw,28px);
+  opacity:0;transform:translateY(20px);
+  transition:opacity 600ms ease-out, transform 600ms ease-out;
+}
+.ai-panel.is-in{opacity:1;transform:translateY(0);}
+.ai-num{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--n400);margin-bottom:10px;}
+.ai-ptitle{font-family:var(--ser);font-weight:400;font-size:21px;line-height:1.25;color:var(--n900);margin:0 0 10px;letter-spacing:-.01em;}
+.ai-pbody{font-size:15px;line-height:1.65;color:var(--n500);margin:0;}
+.ai-more-cta{margin-top:24px;text-align:center;}
+
 @keyframes ai-eye-in { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
 @keyframes ai-eye-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.8; } }
 @keyframes ai-fade-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes ai-fade-up-scale { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
-.ai-eye {
-  opacity: 0;
-  animation: ai-eye-in 600ms ease-out 800ms forwards, ai-eye-pulse 3s ease-in-out 1400ms infinite;
-}
-.ai-headline {
-  font-size: 32px;
-  opacity: 0;
-  animation: ai-fade-up 500ms ease-out 1600ms forwards;
-}
-@media (max-width: 600px) {
-  .ai-headline { font-size: 26px; }
-}
-.ai-subline {
-  opacity: 0;
-  animation: ai-fade-up 400ms ease-out 2400ms forwards;
-}
-.ai-cta {
-  opacity: 0;
-  animation: ai-fade-up-scale 400ms ease-out 3200ms forwards;
-  transition: background 0.2s ease;
-}
-.ai-cta:hover {
-  background: color-mix(in srgb, var(--action) 88%, black) !important;
-}
-.ai-secondary {
-  opacity: 0;
-  animation: ai-fade-up 300ms ease-out 3600ms forwards;
-}
+.ai .ai-eye{opacity:0;animation: ai-eye-in 600ms ease-out 800ms forwards, ai-eye-pulse 3s ease-in-out 1400ms infinite;}
+.ai .ai-eyebrow{opacity:0;animation: ai-fade-up 400ms ease-out 1400ms forwards;}
+.ai .ai-headline{opacity:0;animation: ai-fade-up 500ms ease-out 1600ms forwards;}
+.ai .ai-subline{opacity:0;animation: ai-fade-up 400ms ease-out 2400ms forwards;}
+.ai .ai-card .ai-cta{opacity:0;animation: ai-fade-up-scale 400ms ease-out 3200ms forwards;}
+.ai .ai-secondary{opacity:0;animation: ai-fade-up 300ms ease-out 3600ms forwards;}
+.ai .ai-cta-static{opacity:1;animation:none;}
 
 @media (prefers-reduced-motion: reduce) {
-  .ai-eye, .ai-headline, .ai-subline, .ai-cta, .ai-secondary {
+  .ai .ai-eye, .ai .ai-eyebrow, .ai .ai-headline, .ai .ai-subline, .ai .ai-card .ai-cta, .ai .ai-secondary {
     animation: none;
     opacity: 1;
   }
+  .ai-panel{transition:none;}
 }
 `;
