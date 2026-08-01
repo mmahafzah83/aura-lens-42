@@ -77,7 +77,7 @@ export const MovesCard: React.FC<{ moves: HomeMove[]; onGo: (route: string) => v
     {moves.length === 0 && (
       <div style={{ padding: "18px 20px", display: "grid", gap: 6 }}>
         <Body>Nothing worth your time today.</Body>
-        <Muted>Keep one thing you read and Aura writes tomorrow\u2019s list from it.</Muted>
+        <Muted>Keep one thing you read and Aura writes tomorrow's list from it.</Muted>
       </div>
     )}
     {moves.map((m, i) => (
@@ -112,7 +112,7 @@ export const StandCard: React.FC<{ facts: HomeFacts | null }> = ({ facts }) => {
         <Kicker>Where you stand</Kicker>
         <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
           <span style={{ ...MONO, fontSize: 34, fontWeight: 700, color: "var(--text-primary)" }}>
-            {facts?.imprint ?? "\u2014"}
+            {facts?.imprint ?? "—"}
           </span>
           <span style={{ ...MONO, fontSize: 13, color: "var(--text-muted)" }}>/100</span>
         </div>
