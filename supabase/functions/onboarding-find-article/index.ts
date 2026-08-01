@@ -79,7 +79,7 @@ const BLOCKED_HOSTS = [
   "wixsite.com",
 ];
 
-let domainRejected = false;
+type ReqCtx = { domainRejected: boolean };
 
 function hostOf(url: string): string | null {
   try {
@@ -91,21 +91,21 @@ function hostOf(url: string): string | null {
   }
 }
 
-function isAllowed(url: string): boolean {
+function isAllowed(url: string, ctx: ReqCtx): boolean {
   const host = hostOf(url);
-  if (!host) { domainRejected = true; return false; }
+  if (!host) { ctx.domainRejected = true; return false; }
   const blocked = BLOCKED_HOSTS.some((b) => host === b || host.endsWith(`.${b}`));
-  if (blocked) domainRejected = true;
+  if (blocked) ctx.domainRejected = true;
   return !blocked;
 }
 
-function parseArticle(content: string, citations: string[]) {
+function parseArticle(content: string, citations: string[], ctx: ReqCtx) {
   try {
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
       const url = parsed.url || citations[0] || "";
-      if (url && isAllowed(url)) {
+      if (url && isAllowed(url, ctx)) {
         return {
           url,
           title: parsed.title || `From ${hostOf(url)}`,
@@ -115,7 +115,7 @@ function parseArticle(content: string, citations: string[]) {
       }
     }
   } catch { /* fall through */ }
-  const citation = citations.find((c) => isAllowed(c));
+  const citation = citations.find((c) => isAllowed(c, ctx));
   if (citation) {
     const host = hostOf(citation) || "Market Intelligence";
     return {
@@ -135,7 +135,7 @@ serve(withObserve("onboarding-find-article", async (req) => {
 
   // Observability log — best-effort, must never block the response.
   let outcome: "perplexity" | "perplexity_retry" | "curated_fallback" | "domain_rejected" | "error" = "error";
-  domainRejected = false;
+  const ctx: ReqCtx = { domainRejected: false };
   let outcomeUrl: string | null = null;
   let logUserId: string | null = null;
   let logSector: string | null = null;
@@ -191,7 +191,7 @@ serve(withObserve("onboarding-find-article", async (req) => {
         const prompt = `Find ONE recent high-quality article about ${sector_focus || core_practice} from a trusted source (McKinsey, HBR, BCG, Deloitte, EY, Gartner, industry publications). Return a JSON object: {"title": "article title", "url": "direct article URL", "summary": "2-sentence strategic summary", "source": "publisher name"}. Only 2025-2026 content.`;
         const r = await callPerplexity(PERPLEXITY_KEY, prompt, searchQuery, logUserId);
         if (r) {
-          const article = parseArticle(r.content, r.citations);
+          const article = parseArticle(r.content, r.citations, ctx);
           if (article) {
             outcome = "perplexity";
             outcomeUrl = article.url;
@@ -210,7 +210,7 @@ serve(withObserve("onboarding-find-article", async (req) => {
         const prompt = `Find ONE strategic executive-level article about "${anchor}". Trusted publishers only (McKinsey, HBR, BCG, Deloitte, EY, Gartner, Bain, WEF). Return a JSON object: {"title": "article title", "url": "direct article URL", "summary": "2-sentence strategic summary", "source": "publisher name"}. If unsure, still return the closest match.`;
         const r = await callPerplexity(PERPLEXITY_KEY, prompt, broadQuery, logUserId);
         if (r) {
-          const article = parseArticle(r.content, r.citations);
+          const article = parseArticle(r.content, r.citations, ctx);
           if (article) {
             outcome = "perplexity_retry";
             outcomeUrl = article.url;
@@ -225,7 +225,7 @@ serve(withObserve("onboarding-find-article", async (req) => {
 
     // Curated evergreen fallback — success path never returns found:false.
     const pick = CURATED_FALLBACKS[Math.floor(Math.random() * CURATED_FALLBACKS.length)];
-    outcome = domainRejected ? "domain_rejected" : "curated_fallback";
+    outcome = ctx.domainRejected ? "domain_rejected" : "curated_fallback";
     outcomeUrl = pick.url;
     logRow();
     return json({ found: true, article: pick });

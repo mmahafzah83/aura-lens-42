@@ -260,7 +260,7 @@ const OurStory = () => {
               className="text-xl mb-1"
               style={{ fontFamily: "'Instrument Serif', Georgia, serif", color: "#0F1519" }}
             >
-              — Mohammad Mahafzah
+              — Mohammad Mahafdhah
             </p>
             <p
               className="text-sm"

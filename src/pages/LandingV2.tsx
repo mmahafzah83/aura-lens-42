@@ -610,7 +610,7 @@ const LANDING_V2_HTML = `
       <div style="display:flex;align-items:center;gap:9px"><svg class="mark"><use href="#m"/></svg><span class="bn" style="font-size:25px">Aura</span></div>
       <p class="body" style="margin-top:12px;max-width:30ch">A personal professional intelligence. Your expertise is invisible. Aura fixes that.</p>
       <div class="socials"><a href="#">in</a><a href="#">@</a><a href="#">✉</a></div>
-      <p class="foot" style="color:rgba(255,255,255,.4)">Mohammad Mahafzah · Aura builder</p>
+      <p class="foot" style="color:rgba(255,255,255,.4)">Mohammad Mahafdhah · Aura builder</p>
     </div>
     <div><h4>Product</h4><ul><li><a href="#order">The order</a></li><li><a href="#runs">What runs</a></li><li><a href="#questions">Eight questions</a></li><li><a href="/auth">Log in</a></li></ul></div>
     <div><h4>Company</h4><ul><li><a href="/our-story">Our story</a></li><li><a href="/guide">The guide</a></li><li><a href="/trust">Security &amp; trust</a></li><li><a href="mailto:support@aura-intel.org">Contact</a></li></ul></div>

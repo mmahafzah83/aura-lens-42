@@ -80,7 +80,7 @@ const OB_CSS = `
 const Onboarding = () => {
   usePageMeta({
     title: "Aura — Get Started",
-    description: "Complete your Aura onboarding to unlock strategic intelligence.",
+    description: "Complete your Aura onboarding so it can start reading for you.",
     path: "/onboarding",
   });
   const navigate = useNavigate();
@@ -991,23 +991,26 @@ const Onboarding = () => {
     return cardShell(
       <>
         {eyebrow("Before your assessment")}
-        {heading("Connect LinkedIn — so Aura reads your real presence before it assesses you.")}
+        {heading("Connect LinkedIn so Aura writes from your real numbers.")}
         <p className="mb-4" style={{ fontSize: 15, lineHeight: 1.7, color: "#5B6673" }}>
-          Aura will read your post analytics automatically — impressions, engagement, follower trends. Read-only, never posts without you.
+          Aura reads your posts and how they performed — impressions, engagement, who responded. That's how it learns which of your ideas actually land, instead of guessing.
         </p>
         <div
           className="flex items-center gap-2 mb-6 text-xs"
           style={{ color: "#98A2AE", padding: "10px 12px", border: "1px solid #E2E7EE", borderRadius: 8, background: "#F2F5F9" }}
         >
           <Linkedin className="w-3.5 h-3.5 shrink-0" style={{ color: "#0670C4" }} />
-          <span>Read-only access · Aura will never post on your behalf.</span>
+          <span>Aura can publish for you later, but only after you've read the draft and pressed publish. Nothing leaves your account without you.</span>
         </div>
+        <p className="mb-6" style={{ fontSize: 13, lineHeight: 1.6, color: "#98A2AE" }}>
+          Skip it and Aura still works — it just writes from your captures alone, without knowing what your audience already rewards.
+        </p>
         {primaryBtn(
           <><Linkedin className="w-4 h-4" /> {connectingLI ? "Redirecting to LinkedIn…" : "Connect LinkedIn"}</>,
           handleConnectLinkedIn,
           { loading: connectingLI },
         )}
-        <div className="mt-3">{ghostLink("Skip for now", handleSkipConnect)}</div>
+        <div className="mt-3">{ghostLink("Skip — I'll connect later", handleSkipConnect)}</div>
       </>,
     );
   }
@@ -1225,25 +1228,28 @@ const Onboarding = () => {
       return cardShell(
         <>
           {eyebrow("First — one thing you read")}
-          {heading("Paste one thing you read this week.")}
+          {heading("Paste a link to something you read this week.")}
           <p className="mb-3" style={{ fontSize: 15, lineHeight: 1.7, color: "#0F1519" }}>
-            Anything — an article, a report, a LinkedIn post you disagreed with. Aura reads it now and shows you something about it before you answer a single question.
+            An article, a report, a post you disagreed with. Aura reads it now and shows you what it found — before you answer a single question.
           </p>
-          <p className="mb-5" style={{ fontSize: 13, lineHeight: 1.6, color: "#5B6673" }}>
-            We ask for this first because every other question is easier once there's something on the table.
+          <p className="mb-2" style={{ fontSize: 13, lineHeight: 1.6, color: "#5B6673" }}>
+            Every question after this is easier once there's something on the table.
+          </p>
+          <p className="mb-5" style={{ fontSize: 13, lineHeight: 1.6, color: "#98A2AE" }}>
+            This is the only input Aura needs. Everything it writes later starts here.
           </p>
           <input
             value={cfValue}
             onChange={(e) => setCfValue(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") void cfSubmit(); }}
-            placeholder="Paste a link, or type a thought"
+            placeholder="https://…"
             className={inputCls}
             style={{ ...inputStyle, marginBottom: 16 }}
           />
           {primaryBtn("Add it", () => void cfSubmit(), { loading: cfBusy, disabled: !cfValue.trim() })}
           {ghostLink("I'll paste one later", cfSkip)}
           <p style={{ fontSize: 12, lineHeight: 1.6, color: "#5B6673", marginTop: 8 }}>
-            One tap. Nothing is published, now or ever, without you pressing publish.
+            Nothing is published, now or ever, without you pressing publish.
           </p>
         </>,
       );
@@ -1403,6 +1409,9 @@ const Onboarding = () => {
         ) : (
           <>
             {heading("Confirm your profile")}
+            <p className="mb-4" style={{ fontSize: 13, lineHeight: 1.6, color: "#98A2AE" }}>
+              Wrong title or sector, and every draft is aimed at the wrong room.
+            </p>
             {usedLinkedIn && (
               <p className="mb-5 flex items-center gap-2 text-sm" style={{ color: "#12805C" }}>
                 <Check className="w-4 h-4" /> Profile read successfully — edit anything that's not quite right.
@@ -1437,8 +1446,11 @@ const Onboarding = () => {
               <CountryPicker
                 value={countryCode}
                 onChange={(name, code) => { setCountry(name); setCountryCode(code); }}
-                label="Country (optional)"
+                label="Where you're based (optional)"
               />
+              <p style={{ fontSize: 12, lineHeight: 1.6, color: "#98A2AE", marginTop: 6 }}>
+                Used for one thing — the flag on your Aura card. Not your nationality; the country you work from. Leave it blank and nothing changes.
+              </p>
             </div>
             <div className="mb-3">
               <label className="text-xs font-medium block mb-1" style={{ color: "#5B6673" }}>Core practice</label>
@@ -1464,7 +1476,10 @@ const Onboarding = () => {
                 style={{ marginTop: 3, width: 16, height: 16, accentColor: "#0670C4" }}
               />
               <span style={{ fontSize: 13, lineHeight: 1.55, color: "#0F1519" }}>
-                Help shape Aura for leaders in your field. With your permission, Aura learns anonymous, aggregated patterns from how members like you use it — never your content, drafts, or identity. You can change this anytime in Settings.
+                <strong>Make Aura sharper for people in your field.</strong><br />
+                On: Aura studies anonymous patterns across members like you and uses them to improve the system — including for you.<br />
+                Off: nothing changes. You keep every feature and every improvement. You just don't shape them.<br />
+                Never your content, your drafts, or your name. Change it anytime in Settings.
               </span>
             </label>
             {consentTouched && !sharedLearningConsent && (
@@ -1472,9 +1487,7 @@ const Onboarding = () => {
                 border: "1px solid #E2E7EE", borderRadius: 10, background: "#F2F5F9" }}>
                 <p style={{ fontSize: 13, lineHeight: 1.6, color: "#0F1519", margin: 0 }}>
                   <strong>No problem — you keep every feature.</strong><br />
-                  This never touches your content, drafts, or identity. Only anonymous patterns across your field.<br />
-                  With it on, you help sharpen how Aura serves leaders in your field — the same room you're
-                  building presence in. Off, you still benefit from everyone else; you just don't shape it.
+                  This never touches your content, drafts, or identity — only anonymous patterns across your field. Off, you still benefit from everyone else's; you just don't shape them.
                 </p>
                 <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
                   <button type="button" onClick={() => setSharedLearningConsent(true)}
