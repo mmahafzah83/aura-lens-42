@@ -7,3 +7,4 @@ export { default as StatCard } from "./StatCard";
 export { default as Avatar } from "./Avatar";
 export { default as AuraRing } from "./AuraRing";
 export { default as OvernightPulse, useOvernightLastRun } from "./OvernightPulse";
+export { default as ProvenanceMark } from "./ProvenanceMark";
