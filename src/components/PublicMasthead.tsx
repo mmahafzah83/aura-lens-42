@@ -6,7 +6,7 @@ import AuraLogo from "@/components/brand/AuraLogo";
  * System-B: light surface, dark ink, blue for the one action.
  * Scoped under .pm so nothing leaks into the app shell.
  */
-const PublicMasthead = () => (
+const PublicMasthead = ({ authed = false }: { authed?: boolean }) => (
   <>
     <style>{PM_CSS}</style>
     <header className="pm">
@@ -15,10 +15,18 @@ const PublicMasthead = () => (
         <span className="pm-bn">Aura</span>
       </Link>
       <nav className="pm-nav">
-        <Link className="pm-link" to="/auth">Sign in</Link>
-        <Link className="pm-cta" to="/request-access">
-          Request a founder seat <span className="pm-a">↗</span>
-        </Link>
+        {authed ? (
+          <Link className="pm-cta" to="/dashboard">
+            Back to your dashboard <span className="pm-a">↗</span>
+          </Link>
+        ) : (
+          <>
+            <Link className="pm-link" to="/auth">Sign in</Link>
+            <Link className="pm-cta" to="/request-access">
+              Request a founder seat <span className="pm-a">↗</span>
+            </Link>
+          </>
+        )}
       </nav>
     </header>
   </>
