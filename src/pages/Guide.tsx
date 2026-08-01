@@ -4,10 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Search, ChevronDown, ArrowLeft, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import usePageMeta from "@/hooks/usePageMeta";
-import AuraLogo from "@/components/brand/AuraLogo";
 import { useGuideArticles } from "@/hooks/useGuideArticles";
 import type { GuideArticle } from "@/hooks/useGuideArticles";
 import PublicFooter from "@/components/PublicFooter";
+import PublicMasthead from "@/components/PublicMasthead";
 
 const SECTION_ORDER = [
   "getting-started",
@@ -51,19 +51,19 @@ function CollapsibleItem({
   onToggle: () => void;
 }) {
   return (
-    <div id={`a-${item.slug}`} style={{ borderBottom: "1px solid var(--rule)", scrollMarginTop: 80 }}>
+    <div id={`a-${item.slug}`} style={{ borderBottom: "1px solid #E2E7EE", scrollMarginTop: 80 }}>
       <button
         type="button"
         onClick={onToggle}
         aria-expanded={open}
         className="w-full flex items-center justify-between text-left py-5"
-        style={{ background: "transparent", border: 0, cursor: "pointer", color: "var(--ink)" }}
+        style={{ background: "transparent", border: 0, cursor: "pointer", color: "#0F1519" }}
       >
         <span style={{ fontSize: 15, fontWeight: 500 }}>{item.question_en}</span>
         <ChevronDown
           size={18}
           style={{
-            color: "var(--ink-3)",
+            color: "#98A2AE",
             transform: open ? "rotate(180deg)" : "none",
             transition: "transform 200ms ease",
             flexShrink: 0,
@@ -72,7 +72,7 @@ function CollapsibleItem({
         />
       </button>
       {open && (
-        <div style={{ fontSize: 14, lineHeight: 1.7, color: "var(--ink-2)", paddingBottom: 20, paddingRight: 34, whiteSpace: "pre-line" }}>
+        <div style={{ fontSize: 14, lineHeight: 1.7, color: "#3A434E", paddingBottom: 20, paddingRight: 34, whiteSpace: "pre-line" }}>
           {item.answer_en}
           {item.formula_note_en && (
             <div
@@ -80,12 +80,12 @@ function CollapsibleItem({
                 marginTop: 12,
                 padding: "10px 14px",
                 borderRadius: 6,
-                background: "var(--paper-2)",
-                border: "1px solid var(--rule)",
-                borderLeft: "2px solid var(--live)",
-                fontFamily: "var(--font-mono)",
+                background: "#FFFFFF",
+                border: "1px solid #E2E7EE",
+                borderLeft: "2px solid #00CEC9",
+                fontFamily: "'IBM Plex Mono', ui-monospace, Menlo, monospace",
                 fontSize: 13,
-                color: "var(--ink-2)",
+                color: "#3A434E",
                 lineHeight: 1.6,
               }}
             >
@@ -105,8 +105,8 @@ function CollapsibleItem({
               border: 0,
               cursor: "pointer",
               padding: 0,
-              color: "var(--ink-3)",
-              fontFamily: "var(--font-mono)",
+              color: "#98A2AE",
+              fontFamily: "'IBM Plex Mono', ui-monospace, Menlo, monospace",
               fontSize: 11,
               letterSpacing: "0.08em",
               textTransform: "uppercase",
@@ -213,90 +213,42 @@ const Guide = () => {
         minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
-        background: "var(--paper)",
-        color: "var(--ink)",
-        fontFamily: "var(--font-body)",
+        background: "#F2F5F9",
+        color: "#0F1519",
+        fontFamily: "'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif",
       }}
     >
-      {/* Dark instrument top bar */}
-      <header
-        className="flex items-center justify-between px-6 sm:px-10 py-4 sticky top-0 z-40"
-        style={{ background: "var(--ob-bg)", borderBottom: "1px solid var(--hair)" }}
-      >
-        <Link to="/" className="flex items-center gap-2" aria-label="Aura home">
-          <AuraLogo size={26} variant="dark" />
-          <span
-            className="text-sm font-bold tracking-[0.2em]"
-            style={{ color: "var(--glass)", fontFamily: "var(--font-display)" }}
-          >
-            AURA
-          </span>
-        </Link>
-        <nav className="flex items-center gap-4 sm:gap-6 text-xs">
-          {authed ? (
-            <Link
-              to="/dashboard"
-              style={{ color: "var(--glass-2)", fontWeight: 500, transition: "color 150ms ease" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--live)")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--glass-2)")}
-            >
-              Back to dashboard
-            </Link>
-          ) : (
-            <>
-              <Link
-                to="/auth"
-                style={{ color: "var(--glass-2)", fontWeight: 500, transition: "color 150ms ease" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--live)")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "var(--glass-2)")}
-              >
-                Log in
-              </Link>
-              <Link
-                to="/request-access"
-                className="px-3 py-1.5 rounded-full text-xs font-medium"
-                style={{
-                  background: "var(--paper-2)",
-                  color: "var(--ink)",
-                  border: "1px solid var(--hair)",
-                }}
-              >
-                Request access
-              </Link>
-            </>
-          )}
-        </nav>
-      </header>
+      <PublicMasthead authed={authed} />
 
       {/* Hero */}
       <section className="px-5 sm:px-10 pt-16 pb-10 text-center max-w-3xl mx-auto w-full">
         <Link
           to="/"
           className="inline-flex items-center gap-1.5 mb-8"
-          style={{ fontSize: 12, color: "var(--ink-3)" }}
+          style={{ fontSize: 12, color: "#98A2AE" }}
         >
           <ArrowLeft size={13} /> Back to home
         </Link>
         <p
           className="uppercase tracking-[0.12em] mb-4"
-          style={{ color: "var(--live)", fontFamily: "var(--font-mono)", fontSize: 12 }}
+          style={{ color: "#00807B", fontFamily: "'IBM Plex Mono', ui-monospace, Menlo, monospace", fontSize: 12 }}
         >
           The Aura Guide
         </p>
         <h1
           className="mb-5"
           style={{
-            fontFamily: "var(--font-display)",
+            fontFamily: "'Instrument Serif', Georgia, serif",
             fontSize: "clamp(32px, 5vw, 48px)",
             lineHeight: 1.375,
             letterSpacing: "-0.02em",
-            color: "var(--ink)",
+            color: "#0F1519",
             fontWeight: 500,
           }}
         >
           How Aura works
         </h1>
-        <p style={{ fontSize: 16, color: "var(--ink-2)", lineHeight: 1.625 }}>
+        <p style={{ fontSize: 16, color: "#3A434E", lineHeight: 1.625 }}>
           From what you already know to what the market sees.
         </p>
       </section>
@@ -305,11 +257,11 @@ const Guide = () => {
       <section className="px-5 sm:px-10 pb-10">
         <div
           className="max-w-3xl mx-auto"
-          style={{ background: "var(--paper-2)", border: "1px solid var(--rule)", borderRadius: 16, padding: "24px 22px" }}
+          style={{ background: "#FFFFFF", border: "1px solid #E2E7EE", borderRadius: 16, padding: "24px 22px" }}
         >
           <p
             className="uppercase tracking-[0.2em] mb-5"
-            style={{ color: "var(--live)", fontFamily: "var(--font-mono)", fontSize: 11 }}
+            style={{ color: "#00807B", fontFamily: "'IBM Plex Mono', ui-monospace, Menlo, monospace", fontSize: 11 }}
           >
             The loop
           </p>
@@ -318,20 +270,20 @@ const Guide = () => {
               <li key={s.n} style={{ display: "flex", gap: 14, alignItems: "baseline" }}>
                 <span
                   style={{
-                    fontFamily: "var(--font-mono)",
+                    fontFamily: "'IBM Plex Mono', ui-monospace, Menlo, monospace",
                     fontSize: 12,
-                    color: "var(--live)",
+                    color: "#00807B",
                     letterSpacing: "0.1em",
                     flexShrink: 0,
                   }}
                 >
                   {s.n}
                 </span>
-                <span style={{ fontSize: 15, lineHeight: 1.65, color: "var(--ink-2)" }}>{s.text}</span>
+                <span style={{ fontSize: 15, lineHeight: 1.65, color: "#3A434E" }}>{s.text}</span>
               </li>
             ))}
           </ol>
-          <p style={{ marginTop: 18, fontSize: 13, color: "var(--ink-3)", lineHeight: 1.6 }}>
+          <p style={{ marginTop: 18, fontSize: 13, color: "#98A2AE", lineHeight: 1.6 }}>
             Everything below is detail. This is the whole system.
           </p>
         </div>
@@ -347,7 +299,7 @@ const Guide = () => {
               left: 14,
               top: "50%",
               transform: "translateY(-50%)",
-              color: "var(--ink-3)",
+              color: "#98A2AE",
               pointerEvents: "none",
             }}
           />
@@ -359,9 +311,9 @@ const Guide = () => {
             className="w-full rounded-xl text-sm outline-none"
             style={{
               padding: "12px 16px 12px 42px",
-              background: "var(--paper-2)",
-              border: "1px solid var(--rule)",
-              color: "var(--ink)",
+              background: "#FFFFFF",
+              border: "1px solid #E2E7EE",
+              color: "#0F1519",
             }}
           />
         </div>
@@ -377,8 +329,8 @@ const Guide = () => {
                   padding: "5px 12px",
                   fontSize: 12,
                   background: "transparent",
-                  border: "1px solid var(--rule)",
-                  color: "var(--ink-2)",
+                  border: "1px solid #E2E7EE",
+                  color: "#3A434E",
                   cursor: "pointer",
                 }}
               >
@@ -393,17 +345,17 @@ const Guide = () => {
       <section className="px-5 sm:px-10 pb-20 flex-1">
         <div className="max-w-3xl mx-auto">
           {loading && (
-            <p style={{ fontSize: 14, color: "var(--ink-3)", textAlign: "center", padding: "40px 0" }}>Loading…</p>
+            <p style={{ fontSize: 14, color: "#98A2AE", textAlign: "center", padding: "40px 0" }}>Loading…</p>
           )}
 
           {error && (
-            <p style={{ fontSize: 14, color: "var(--ink-3)", textAlign: "center", padding: "40px 0" }}>
+            <p style={{ fontSize: 14, color: "#98A2AE", textAlign: "center", padding: "40px 0" }}>
               The guide is loading — try again in a moment.
             </p>
           )}
 
           {!loading && !error && articles.length === 0 && (
-            <p style={{ fontSize: 14, color: "var(--ink-3)", textAlign: "center", padding: "40px 0" }}>
+            <p style={{ fontSize: 14, color: "#98A2AE", textAlign: "center", padding: "40px 0" }}>
               The guide is loading — try again in a moment.
             </p>
           )}
@@ -411,15 +363,15 @@ const Guide = () => {
           {!loading && !error && hasSearch && (
             <>
               {filtered.length === 0 ? (
-                <p style={{ fontSize: 14, color: "var(--ink-3)", textAlign: "center", padding: "40px 0" }}>
+                <p style={{ fontSize: 14, color: "#98A2AE", textAlign: "center", padding: "40px 0" }}>
                   No results for "{search.trim()}"
                 </p>
               ) : (
                 <>
-                <p style={{ fontSize: 13, color: "var(--ink-3)", marginBottom: 10 }}>
+                <p style={{ fontSize: 13, color: "#98A2AE", marginBottom: 10 }}>
                   {filtered.length} {filtered.length === 1 ? "result" : "results"} for "{search.trim()}"
                 </p>
-                <div style={{ borderTop: "1px solid var(--rule)" }}>
+                <div style={{ borderTop: "1px solid #E2E7EE" }}>
                   {filtered.map((item) => (
                     <CollapsibleItem
                       key={item.slug}
@@ -444,11 +396,11 @@ const Guide = () => {
                     <p
                       id={`s-${cat}`}
                       className="text-xs tracking-[0.2em] uppercase mb-4"
-                      style={{ color: "var(--live)", fontFamily: "var(--font-mono)", scrollMarginTop: 80 }}
+                      style={{ color: "#00807B", fontFamily: "'IBM Plex Mono', ui-monospace, Menlo, monospace", scrollMarginTop: 80 }}
                     >
                       {SECTION_LABELS[cat] || cat}
                     </p>
-                    <div style={{ borderTop: "1px solid var(--rule)" }}>
+                    <div style={{ borderTop: "1px solid #E2E7EE" }}>
                       {items.map((item) => (
                         <CollapsibleItem
                           key={item.slug}
@@ -467,19 +419,19 @@ const Guide = () => {
       </section>
 
       {/* CTA */}
-      <section className="px-5 sm:px-10 py-20 text-center" style={{ borderTop: "1px solid var(--rule)" }}>
-        <h2 className="mb-5" style={{ fontFamily: "var(--font-display)", fontSize: "clamp(28px, 4vw, 40px)", color: "var(--ink)", fontWeight: 500 }}>
+      <section className="px-5 sm:px-10 py-20 text-center" style={{ borderTop: "1px solid #E2E7EE" }}>
+        <h2 className="mb-5" style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: "clamp(28px, 4vw, 40px)", color: "#0F1519", fontWeight: 500 }}>
           {authed ? "Ready to keep going?" : "Ready to start?"}
         </h2>
-        <p className="mb-8 max-w-md mx-auto" style={{ fontSize: 15, color: "var(--ink-2)", lineHeight: 1.625 }}>
-          {authed ? "Jump back into your dashboard and keep building." : "Join the private beta. We review applications weekly."}
+        <p className="mb-8 max-w-md mx-auto" style={{ fontSize: 15, color: "#3A434E", lineHeight: 1.625 }}>
+          {authed ? "Jump back into your dashboard and keep building." : "Join the founding fifty. Every application is read personally and answered within twenty-four hours."}
         </p>
         <button
           onClick={() => navigate(authed ? "/dashboard" : "/request-access")}
-          className="px-7 py-3 rounded-xl text-sm font-medium transition-all hover:brightness-110"
-          style={{ background: "var(--action)", color: "var(--paper)", fontWeight: 500 }}
+          className="px-7 py-3 rounded-full text-sm font-medium transition-all hover:brightness-110"
+          style={{ background: "#0F1519", color: "#FFFFFF", fontWeight: 500 }}
         >
-          {authed ? "Back to dashboard" : "Request access"}
+          {authed ? "Back to your dashboard" : "Request a founder seat"}
         </button>
       </section>
 
