@@ -991,23 +991,26 @@ const Onboarding = () => {
     return cardShell(
       <>
         {eyebrow("Before your assessment")}
-        {heading("Connect LinkedIn — so Aura reads your real presence before it assesses you.")}
+        {heading("Connect LinkedIn so Aura writes from your real numbers.")}
         <p className="mb-4" style={{ fontSize: 15, lineHeight: 1.7, color: "#5B6673" }}>
-          Aura will read your post analytics automatically — impressions, engagement, follower trends. Read-only, never posts without you.
+          Aura reads your posts and how they performed — impressions, engagement, who responded. That's how it learns which of your ideas actually land, instead of guessing.
         </p>
         <div
           className="flex items-center gap-2 mb-6 text-xs"
           style={{ color: "#98A2AE", padding: "10px 12px", border: "1px solid #E2E7EE", borderRadius: 8, background: "#F2F5F9" }}
         >
           <Linkedin className="w-3.5 h-3.5 shrink-0" style={{ color: "#0670C4" }} />
-          <span>Read-only access · Aura will never post on your behalf.</span>
+          <span>Aura can publish for you later, but only after you've read the draft and pressed publish. Nothing leaves your account without you.</span>
         </div>
+        <p className="mb-6" style={{ fontSize: 13, lineHeight: 1.6, color: "#98A2AE" }}>
+          Skip it and Aura still works — it just writes from your captures alone, without knowing what your audience already rewards.
+        </p>
         {primaryBtn(
           <><Linkedin className="w-4 h-4" /> {connectingLI ? "Redirecting to LinkedIn…" : "Connect LinkedIn"}</>,
           handleConnectLinkedIn,
           { loading: connectingLI },
         )}
-        <div className="mt-3">{ghostLink("Skip for now", handleSkipConnect)}</div>
+        <div className="mt-3">{ghostLink("Skip — I'll connect later", handleSkipConnect)}</div>
       </>,
     );
   }
