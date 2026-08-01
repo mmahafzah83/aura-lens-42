@@ -1477,8 +1477,8 @@ const Onboarding = () => {
               />
               <span style={{ fontSize: 13, lineHeight: 1.55, color: "#0F1519" }}>
                 <strong>Make Aura sharper for people in your field.</strong><br />
-                On: Aura studies anonymous patterns across members like you and uses them to improve the system — including for you.<br />
-                Off: nothing changes. You keep every feature and every improvement. You just don't shape them.<br />
+                This isn't running yet. When it starts, Aura will study anonymous patterns across members like you and feed what it learns back into the system — including for you. Ticking this is your permission for that day, not something happening today.<br />
+                Leave it off and nothing changes, now or later. You keep every feature.<br />
                 Never your content, your drafts, or your name. Change it anytime in Settings.
               </span>
             </label>
@@ -1487,7 +1487,7 @@ const Onboarding = () => {
                 border: "1px solid #E2E7EE", borderRadius: 10, background: "#F2F5F9" }}>
                 <p style={{ fontSize: 13, lineHeight: 1.6, color: "#0F1519", margin: 0 }}>
                   <strong>No problem — you keep every feature.</strong><br />
-                  This never touches your content, drafts, or identity — only anonymous patterns across your field. Off, you still benefit from everyone else's; you just don't shape them.
+                  Nothing is lost. This never touches your content, drafts, or identity — only anonymous patterns across your field, and only once that work actually ships. Off, you still get every improvement; you just don't shape them.
                 </p>
                 <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
                   <button type="button" onClick={() => setSharedLearningConsent(true)}
