@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import usePageMeta from "@/hooks/usePageMeta";
+import { signOutAndLand } from "@/lib/signOut";
 
 /* ────────────────────────────────────────────────────────────────
    LandingV2 — "Studio Plate".
@@ -50,6 +51,16 @@ const LANDING_V2_CSS = `
 .aura-v2 .links a:hover{color:#fff;background:rgba(255,255,255,.08)}
 .aura-v2 .links a.on{color:#fff;background:rgba(255,255,255,.12)}
 .aura-v2 .navcta{margin-left:12px;display:flex;align-items:center;gap:9px;background:#fff;color:var(--n900);border-radius:999px; padding:11px 16px;font-size:14px;font-weight:600;white-space:nowrap;transition:.2s}
+.aura-v2 .navalt{margin-left:8px;display:inline-flex;align-items:center;background:rgba(255,255,255,.12);color:#fff;border:0;cursor:pointer;font-family:var(--ui);border-radius:999px;padding:11px 14px;font-size:13.5px;font-weight:600;white-space:nowrap;transition:.2s}
+.aura-v2 .navalt:hover{background:rgba(255,255,255,.2)}
+.aura-v2 .nav{max-width:calc(100vw - (var(--gut) * 2))}
+@media(max-width:620px){
+.aura-v2 .nav{padding:5px 5px 5px 10px}
+.aura-v2 .brand{margin-right:6px;font-size:15px;letter-spacing:0}
+.aura-v2 .navalt{margin-left:5px;padding:9px 10px;font-size:12px}
+.aura-v2 .navcta{margin-left:5px;padding:9px 11px;font-size:12px;gap:6px}
+.aura-v2 .navcta .a{display:none}
+}
 .aura-v2 .navcta:hover{transform:translateY(-1px);box-shadow:0 10px 22px -10px rgba(0,0,0,.45)}
 .aura-v2 .navcta .a{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--n100);font-size:10px}
 @media(max-width:1140px){
@@ -324,7 +335,8 @@ const LANDING_V2_HTML = `
       <a href="#questions" data-l="questions">Eight questions</a>
       <a href="#seats" data-l="seats">The seats</a>
     </div>
-    <a class="navcta" href="#seat">Request a founder seat <span class="a">↗</span></a>
+    <a class="navalt" id="navalt" href="/auth">Sign in</a>
+    <a class="navcta" id="navcta" href="#seat">Request a founder seat <span class="a">↗</span></a>
     <span class="prog" id="prog"></span>
   </nav>
 </div>
@@ -353,7 +365,7 @@ const LANDING_V2_HTML = `
     </div>
 
     <div class="ctas rv">
-      <a class="btn btn-p" href="#seat">Request a founder seat <span class="a">↗</span></a>
+      <a class="btn btn-p" id="heropri" href="#seat">Request a founder seat <span class="a">↗</span></a>
       <a class="btn btn-g" href="#order">See the order it works in</a>
     </div>
     <p class="micro rv">Aura writes nothing until your profile exists <span class="seatline seatsep"></span></p>
@@ -650,6 +662,47 @@ const LandingV2 = () => {
 
   useEffect(() => setMounted(true), []);
 
+  /* ── the page knows who is looking at it ──
+     No redirects: a signed-in member may read the landing page. The actions
+     change instead — one click back into Aura, and a way out. */
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  useEffect(() => {
+    let alive = true;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (alive) setSignedIn(!!session?.user);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+      setSignedIn(!!session?.user);
+    });
+    return () => { alive = false; subscription.unsubscribe(); };
+  }, []);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root || signedIn === null) return;
+    const alt = root.querySelector<HTMLAnchorElement>("#navalt");
+    const cta = root.querySelector<HTMLAnchorElement>("#navcta");
+    const hero = root.querySelector<HTMLAnchorElement>("#heropri");
+    if (alt) {
+      alt.textContent = signedIn ? "Sign out" : "Sign in";
+      alt.setAttribute("href", signedIn ? "#" : "/auth");
+      if (signedIn) alt.dataset.signout = "1";
+      else delete alt.dataset.signout;
+    }
+    if (cta) {
+      cta.innerHTML = signedIn
+        ? 'Open Aura <span class="a">↗</span>'
+        : 'Request a founder seat <span class="a">↗</span>';
+      cta.setAttribute("href", signedIn ? "/home" : "#seat");
+    }
+    if (hero) {
+      hero.innerHTML = signedIn
+        ? 'Open Aura <span class="a">↗</span>'
+        : 'Request a founder seat <span class="a">↗</span>';
+      hero.setAttribute("href", signedIn ? "/home" : "#seat");
+    }
+  }, [signedIn, mounted]);
+
   /* ── calculator + in-app link interception ── */
   useEffect(() => {
     const root = rootRef.current;
@@ -710,6 +763,11 @@ const LandingV2 = () => {
       if (!a) return;
       const href = a.getAttribute("href");
       if (!href) return;
+      if (a.dataset.signout === "1") {
+        e.preventDefault();
+        void signOutAndLand(navigate);
+        return;
+      }
       if (href.startsWith("/") && !href.startsWith("//")) {
         e.preventDefault();
         navigate(href);

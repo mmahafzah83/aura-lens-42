@@ -20,6 +20,7 @@ import AskAuraButton from "@/components/AskAuraButton";
 import OvernightPulse from "@/components/systemb/OvernightPulse";
 import { HelpPanel, HelpButton } from "@/components/HelpPanel";
 import ProfileMenu from "@/components/ProfileMenu";
+import { signOutAndLand } from "@/lib/signOut";
 import EditProfileModal, { type EditProfileField } from "@/components/EditProfileModal";
 import SetPasswordModal from "@/components/SetPasswordModal";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
@@ -535,8 +536,7 @@ const Dashboard = () => {
   }, []);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/auth");
+    await signOutAndLand(navigate);
   };
 
   const openChat = (msg?: string, ctx?: ChatContext) => {

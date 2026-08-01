@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Navigate, useLocation } from "react-router-dom";
 import { Loader2, Eye, EyeOff, Check, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -13,6 +14,8 @@ export default function PasswordGate({ children }: { children: React.ReactNode }
   const [checking, setChecking] = useState(true);
   const [needsPassword, setNeedsPassword] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
+  const [signedOut, setSignedOut] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     let cancelled = false;
@@ -20,6 +23,7 @@ export default function PasswordGate({ children }: { children: React.ReactNode }
       const { data: { session } } = await supabase.auth.getSession();
       if (cancelled) return;
       if (!session?.user) {
+        setSignedOut(true);
         setChecking(false);
         return;
       }
@@ -39,6 +43,11 @@ export default function PasswordGate({ children }: { children: React.ReactNode }
         <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--action)" }} />
       </div>
     );
+  }
+
+  if (signedOut) {
+    const next = `${location.pathname}${location.search}`;
+    return <Navigate to={`/auth?next=${encodeURIComponent(next)}`} replace />;
   }
 
   if (needsPassword) {

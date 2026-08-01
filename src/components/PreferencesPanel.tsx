@@ -304,12 +304,12 @@ export default function PreferencesPanel({
       />
 
       {/* ACCOUNT */}
-      {(onChangePassword || onRetakeBrandAssessment || variant === "panel") && (
+      {(onChangePassword || onRetakeBrandAssessment || onSignOut) && (
         <SectionHeader>Account</SectionHeader>
       )}
       {onChangePassword && <Row label="Change password" onClick={onChangePassword} />}
       {onRetakeBrandAssessment && <Row label="Retake brand assessment" onClick={onRetakeBrandAssessment} />}
-      {variant === "panel" && <Row label="Sign out" onClick={onSignOut} chevron={false} danger />}
+      {onSignOut && <Row label="Sign out" onClick={onSignOut} chevron={false} danger />}
 
       {email && (
         <div style={{ padding: "20px 24px 28px", fontSize: 11, color: "var(--ink-2)", textAlign: "center", fontFamily: "var(--font-body)" }}>

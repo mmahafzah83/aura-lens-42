@@ -75,12 +75,17 @@ const Auth = () => {
   }, [view, hasEmailParam]);
 
   const checkOnboardingAndRedirect = async (session: any) => {
-    // Honour ?returnTo=... so deep links from the weekly brief land at the
-    // exact destination after login. Only relative paths are accepted.
+    // Honour ?next=... (and legacy ?returnTo=...) so a member who was sent to
+    // sign in lands back on the page they wanted. Internal paths only —
+    // absolute URLs and protocol-relative paths are rejected outright, or this
+    // becomes an open redirect.
     let returnTo: string | null = null;
     try {
-      const rt = new URLSearchParams(window.location.search).get("returnTo");
-      if (rt && rt.startsWith("/") && !rt.startsWith("//")) returnTo = rt;
+      const p = new URLSearchParams(window.location.search);
+      const rt = p.get("next") || p.get("returnTo");
+      if (rt && rt.startsWith("/") && !rt.startsWith("//") && !/^\/?\w+:/.test(rt)) {
+        returnTo = rt;
+      }
     } catch { /* ignore */ }
 
     const { data: profile } = await supabase
@@ -92,10 +97,10 @@ const Auth = () => {
     // Field-based gate — a row alone is not "onboarded". Anyone missing
     // first_name / firm / level / sector_focus goes to /onboarding.
     if (!isProfileComplete(profile)) {
-      navigate("/onboarding");
+      navigate("/onboarding", { replace: true });
       return;
     }
-    navigate(returnTo || "/home");
+    navigate(returnTo || "/home", { replace: true });
   };
 
   useEffect(() => {
