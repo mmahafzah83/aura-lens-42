@@ -817,7 +817,8 @@ ${phrases.map((s) => `- ${s}`).join("\n") || "- (no evidence yet)"}`;
     try {
       text = await callModel(apiKey, i === 0 ? base : `${base}
 
-Your previous attempt was rejected for: ${attempts[0].reasons.join("; ")}. Write it again and fix every one of those.`);
+Your previous attempt was rejected for: ${attempts[0].reasons.join("; ")}. Write it again and fix every one of those.
+Hard requirements on this second attempt: copy at least two of the evidence phrases above letter for letter, and include one sentence of five words or fewer.`);
     } catch (e) {
       attempts.push({ attempt: i + 1, reasons: [`gateway error: ${(e as Error)?.message}`] });
       break;
