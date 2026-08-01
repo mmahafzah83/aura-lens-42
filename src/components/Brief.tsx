@@ -9,6 +9,7 @@ import { FORCES, HEADERS } from "@/constants/language";
 import { track } from "@/lib/track";
 import AgentFindingCard from "@/components/AgentFindingCard";
 import { trackSignalOpen } from "@/lib/trackSignalOpen";
+import { Link } from "react-router-dom";
 
 /**
  * Brief — Editorial Broadsheet (System-A tokens).
@@ -1884,9 +1885,9 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
           </div>
         </div>
         <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
-          <a href="/guide"   style={{ textDecoration: "none" }}><Mono>Guide</Mono></a>
-          <a href="/privacy" style={{ textDecoration: "none" }}><Mono>Privacy</Mono></a>
-          <a href="/terms"   style={{ textDecoration: "none" }}><Mono>Terms</Mono></a>
+          <Link to="/guide"   style={{ textDecoration: "none" }}><Mono>Guide</Mono></Link>
+          <Link to="/privacy" style={{ textDecoration: "none" }}><Mono>Privacy</Mono></Link>
+          <Link to="/terms"   style={{ textDecoration: "none" }}><Mono>Terms</Mono></Link>
           <a href="mailto:support@aura-intel.org" style={{ textDecoration: "none" }}><Mono>Contact</Mono></a>
           <button
             type="button"
