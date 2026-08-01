@@ -3561,24 +3561,23 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
         .limit(100),
       uid
         ? supabase
-            .from("linkedin_posts")
+            .from("post_provenance" as any)
             .select("id", { count: "exact", head: true })
             .eq("user_id", uid)
-            .not("published_at", "is", null)
         : Promise.resolve({ count: 0 } as any),
       uid
         ? supabase
-            .from("linkedin_posts")
+            .from("post_provenance" as any)
             .select("id", { count: "exact", head: true })
             .eq("user_id", uid)
-            .in("authorship", ["aura_drafted", "aura_assisted"])
+            .in("provenance", ["aura_published", "aura_drafted"])
         : Promise.resolve({ count: 0 } as any),
       uid
         ? supabase
-            .from("linkedin_posts")
+            .from("post_provenance" as any)
             .select("id", { count: "exact", head: true })
             .eq("user_id", uid)
-            .in("authorship", ["user_written", "unknown"])
+            .eq("provenance", "linkedin_only")
         : Promise.resolve({ count: 0 } as any),
     ]);
     setPublishedTotal(publishedCountRes?.count ?? 0);
