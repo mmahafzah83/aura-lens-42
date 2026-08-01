@@ -242,7 +242,7 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
           >
             <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
-              <span style={{ fontSize: 12, color: "var(--ink-3)" }}>
+              <span style={{ fontSize: 12, color: INK_SOFT }}>
                 {index + 1} of {CALIBRATION_DIMENSIONS.length}
               </span>
             </div>
@@ -251,8 +251,8 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
               animate={{ x: 0 }}
               transition={{ duration: 0.5, ease: "easeOut" }}
               style={{
-                fontFamily: "var(--serif)",
-                fontSize: 22, color: BRONZE, marginBottom: 10, lineHeight: 1.3,
+                fontFamily: SERIF,
+                fontSize: 22, color: INK, marginBottom: 10, lineHeight: 1.3,
                 display: "inline-flex", alignItems: "center", gap: 8,
               }}
             >
@@ -265,7 +265,7 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
               />
             </motion.h2>
             <p style={{
-              fontSize: 15, lineHeight: 1.5, color: "var(--ink-3)",
+              fontSize: 15, lineHeight: 1.5, color: INK_SOFT,
               maxWidth: 360, marginBottom: 24,
             }}>
               {current.description}
@@ -282,8 +282,8 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
               animate={{ scale: reduceMotion ? 1 : [1, 1.05, 1] }}
               transition={{ duration: 0.2 }}
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 36, color: BRONZE, fontWeight: 600,
+                fontFamily: MONO,
+                fontSize: 36, color: INK, fontWeight: 600,
                 textAlign: "center", margin: "8px 0 18px",
               }}
             >
@@ -295,7 +295,7 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
                 animate={{ opacity: insightVisible ? 1 : 0 }}
                 transition={{ duration: insightVisible ? 0.4 : 0.2 }}
                 style={{
-                  fontSize: 14, lineHeight: 1.55, color: "var(--ink-3)",
+                  fontSize: 14, lineHeight: 1.55, color: INK_SOFT,
                   textAlign: "center",
                 }}
               >
@@ -308,19 +308,15 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
                 <button
                   onClick={back}
                   className="flex items-center gap-1.5 text-sm"
-                  style={{ color: "var(--ink-3)", background: "transparent", padding: "10px 8px" }}
+                  style={{ color: INK_SOFT, background: "transparent", padding: "10px 8px" }}
                 >
                   <ArrowLeft className="w-4 h-4" /> Back
                 </button>
               ) : <span />}
               <button
                 onClick={next}
-                className="font-semibold transition-all flex items-center justify-center gap-2"
-                style={{
-                  height: 44, padding: "0 22px", minWidth: 140,
-                  background: BRONZE, color: "var(--ink)",
-                  borderRadius: 10, fontSize: 14,
-                }}
+                className="font-semibold transition-all flex items-center justify-center gap-2 hover:-translate-y-0.5"
+                style={pillBtn}
               >
                 Next <ArrowRight className="w-4 h-4" />
               </button>
@@ -354,7 +350,7 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
-              style={{ fontSize: 13, color: "var(--ink-3)" }}
+              style={{ fontSize: 13, color: INK_SOFT }}
             >
               {companionLine}
             </motion.p>
