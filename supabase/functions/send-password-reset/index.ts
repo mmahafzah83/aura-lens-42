@@ -18,7 +18,7 @@ serve(async (req) => {
     const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     if (!RESEND_API_KEY) throw new Error("RESEND_API_KEY not configured");
 
-    const { email } = await req.json();
+    const { email, origin } = await req.json();
     if (!email || typeof email !== "string") {
       return new Response(JSON.stringify({ error: "email is required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -34,10 +34,31 @@ serve(async (req) => {
     }
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
+    // Recovery links carry a working token, so the redirect target can never be
+    // taken from the caller unchecked — that would be an open redirect. Only
+    // production and this project's own preview hosts are honoured; anything
+    // else silently falls back to production (never an error, so the allowlist
+    // itself isn't discoverable).
+    const ALLOWED_ORIGINS = new Set([
+      "https://aura-intel.org",
+      "https://www.aura-intel.org",
+    ]);
+    const PREVIEW_ORIGIN =
+      /^https:\/\/[a-z0-9-]+--ebcdc7ac-e312-488b-8661-90ceb9c5c745\.lovable\.app$/;
+    const requested = typeof origin === "string" ? origin.trim().replace(/\/+$/, "") : "";
+    const safeOrigin =
+      ALLOWED_ORIGINS.has(requested) || PREVIEW_ORIGIN.test(requested)
+        ? requested
+        : "https://aura-intel.org";
+    if (requested && safeOrigin !== requested) {
+      console.warn("send-password-reset: rejected origin, using production:", requested);
+    }
+
+
     const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
       type: "recovery",
       email: cleanEmail,
-      options: { redirectTo: "https://aura-intel.org/auth" },
+      options: { redirectTo: `${safeOrigin}/auth` },
     });
 
     if (linkError || !linkData?.properties?.action_link) {
