@@ -616,6 +616,39 @@ export type Database = {
           },
         ]
       }
+      contact_messages: {
+        Row: {
+          created_at: string
+          delivered: boolean
+          email: string
+          id: string
+          ip_hash: string | null
+          message: string
+          name: string
+          topic: string
+        }
+        Insert: {
+          created_at?: string
+          delivered?: boolean
+          email: string
+          id?: string
+          ip_hash?: string | null
+          message: string
+          name: string
+          topic: string
+        }
+        Update: {
+          created_at?: string
+          delivered?: boolean
+          email?: string
+          id?: string
+          ip_hash?: string | null
+          message?: string
+          name?: string
+          topic?: string
+        }
+        Relationships: []
+      }
       content_gate_results: {
         Row: {
           assertions: Json | null
