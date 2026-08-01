@@ -80,7 +80,7 @@ const OB_CSS = `
 const Onboarding = () => {
   usePageMeta({
     title: "Aura — Get Started",
-    description: "Complete your Aura onboarding to unlock strategic intelligence.",
+    description: "Complete your Aura onboarding so it can start reading for you.",
     path: "/onboarding",
   });
   const navigate = useNavigate();
