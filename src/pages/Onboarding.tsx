@@ -1744,15 +1744,8 @@ const ArticleManualPaste = ({
     <button
       onClick={onSave}
       disabled={loading || !url.trim()}
-      className="w-full font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-      style={{
-        height: 44,
-        background: "transparent",
-        color: "var(--brand)",
-        border: "1px solid var(--brand)",
-        borderRadius: 10,
-        fontSize: 14,
-      }}
+      className="ob-btn ob-line"
+      style={{ minHeight: 46, fontSize: 14.5 }}
     >
       {loading && <Loader2 className="w-4 h-4 animate-spin" />}
       Save capture
@@ -1766,22 +1759,32 @@ const BreathingOverlay = ({ leaving, message }: { leaving: boolean; message?: st
   <div
     style={{
       position: "fixed", inset: 0, zIndex: 100,
-      background: "var(--paper-2)",
+      background: "#0F1519",
       display: "flex", alignItems: "center", justifyContent: "center",
       opacity: leaving ? 0 : 1,
       transition: "opacity 300ms ease-out",
+      overflow: "hidden",
     }}
   >
+    <div
+      aria-hidden
+      style={{
+        position: "absolute", inset: 0,
+        background:
+          "radial-gradient(560px 320px at 74% 14%, rgba(0,206,201,0.16), transparent 62%)," +
+          "radial-gradient(460px 300px at 14% 90%, rgba(6,112,196,0.20), transparent 64%)",
+      }}
+    />
     <p
       style={{
-        fontFamily: "var(--font-body)",
-        fontSize: 15, lineHeight: 1.6,
-        color: "var(--ink-2)",
-        textAlign: "center", maxWidth: 420, padding: "0 24px",
+        position: "relative",
+        fontFamily: "'Instrument Serif', Georgia, serif",
+        fontSize: "clamp(22px, 3.4vw, 30px)", lineHeight: 1.2,
+        letterSpacing: "-0.02em", color: "#FFFFFF",
+        textAlign: "center", maxWidth: 460, padding: "0 24px",
       }}
     >
-      {message || "Now let's map what makes you different."}{" "}
-      <span style={{ color: "var(--action)" }}>◆</span>
+      {message || "Now let's map what makes you different."}
     </p>
   </div>
 );
