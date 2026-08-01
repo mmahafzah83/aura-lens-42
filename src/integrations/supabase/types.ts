@@ -1778,6 +1778,45 @@ export type Database = {
         }
         Relationships: []
       }
+      home_address: {
+        Row: {
+          address_date: string
+          address_md: string
+          facts: Json
+          generated_at: string
+          id: string
+          lens: string
+          lens_reason: string
+          model: string | null
+          moves: Json
+          user_id: string
+        }
+        Insert: {
+          address_date: string
+          address_md: string
+          facts?: Json
+          generated_at?: string
+          id?: string
+          lens: string
+          lens_reason: string
+          model?: string | null
+          moves?: Json
+          user_id: string
+        }
+        Update: {
+          address_date?: string
+          address_md?: string
+          facts?: Json
+          generated_at?: string
+          id?: string
+          lens?: string
+          lens_reason?: string
+          model?: string | null
+          moves?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       impact_narratives: {
         Row: {
           content_insight: string
