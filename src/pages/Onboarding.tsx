@@ -510,11 +510,45 @@ const Onboarding = () => {
         },
       })
       .then(({ data }) => {
-        if (data?.found && data?.article) setFoundArticle(data.article);
+        if (data?.found && data?.article) {
+          setFoundArticle(data.article);
+          // Cache it: the LinkedIn OAuth round trip is a full page navigation
+          // that destroys all React state. sessionStorage survives it.
+          try {
+            if (userId) {
+              sessionStorage.setItem(
+                `aura_ob_article_${userId}`,
+                JSON.stringify({ article: data.article, ts: Date.now() }),
+              );
+            }
+          } catch { /* Safari private mode — never block onboarding */ }
+        }
       })
       .catch(() => {})
       .finally(() => setArticleSearchDone(true));
   };
+
+  // Rehydrate a cached article after a full page reload (LinkedIn OAuth).
+  // Setting articleSearchStartRef keeps the "already fired" guard holding, so
+  // the Edge Function is called at most once per user.
+  useEffect(() => {
+    if (!userId) return;
+    if (articleSearchStartRef.current) return;
+    try {
+      const raw = sessionStorage.getItem(`aura_ob_article_${userId}`);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      const art = parsed?.article;
+      const ts = Number(parsed?.ts || 0);
+      if (!art?.url || !ts || Date.now() - ts > 24 * 60 * 60 * 1000) {
+        try { sessionStorage.removeItem(`aura_ob_article_${userId}`); } catch { /* ignore */ }
+        return;
+      }
+      articleSearchStartRef.current = ts;
+      setFoundArticle(art);
+      setArticleSearchDone(true);
+    } catch { /* ignore */ }
+  }, [userId]);
 
   const confirmIdentityYes = () => {
     if (!userId) return;
@@ -1479,7 +1513,50 @@ const Onboarding = () => {
           <p className="mb-6" style={{ fontSize: 14, lineHeight: 1.7, color: "#5B6673" }}>
             From here it works in the background — reading, connecting, and bringing you what matters.
           </p>
-          {primaryBtn(<>Enter Aura ✦</>, () => startBreathingToCeremony())}
+          {foundArticle ? (
+            <>
+              <p className="mb-3" style={{ fontSize: 14, lineHeight: 1.7, color: "#0F1519" }}>
+                While you were answering, Aura found this in {sectorFocus || corePractice || "your sector"}.
+              </p>
+              <div
+                className="rounded-xl p-4 mb-5 mt-2"
+                style={{ border: "1px solid #E2E7EE", background: "#F2F5F9" }}
+              >
+                <div className="flex items-start gap-3 mb-2">
+                  <FileText className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#0670C4" }} />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-sm mb-1" style={{ color: "#0F1519" }}>{foundArticle.title}</p>
+                    <p className="text-xs" style={{ color: "#5B6673" }}>{foundArticle.source || (() => { try { return new URL(foundArticle.url).hostname; } catch { return ""; } })()}</p>
+                  </div>
+                </div>
+                {foundArticle.summary && (
+                  <p className="text-sm italic mb-3" style={{ color: "#5B6673", lineHeight: 1.5 }}>
+                    "{foundArticle.summary}"
+                  </p>
+                )}
+                {primaryBtn(
+                  <>Add it to my library <ArrowRight className="w-4 h-4" /></>,
+                  () => captureArticle(foundArticle.url, {
+                    title: foundArticle.title,
+                    summary: foundArticle.summary,
+                    source: "onboarding_exa",
+                  }),
+                  { loading: capturing }
+                )}
+              </div>
+              <div className="text-center">
+                <button
+                  onClick={() => startBreathingToCeremony()}
+                  className="underline-offset-2 hover:underline"
+                  style={{ background: "transparent", color: "#98A2AE", fontSize: 12 }}
+                >
+                  Not this one
+                </button>
+              </div>
+            </>
+          ) : (
+            primaryBtn(<>Enter Aura ✦</>, () => startBreathingToCeremony())
+          )}
         </>,
       );
     }

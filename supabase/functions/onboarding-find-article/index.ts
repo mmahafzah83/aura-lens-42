@@ -71,28 +71,56 @@ async function callPerplexity(apiKey: string, prompt: string, userQuery: string,
   return { content, citations };
 }
 
+// Domains that are never a defensible "trusted source" for a first capture.
+const BLOCKED_HOSTS = [
+  "facebook.com", "instagram.com", "twitter.com", "x.com", "linkedin.com",
+  "reddit.com", "quora.com", "pinterest.com", "tiktok.com", "youtube.com",
+  "youtu.be", "medium.com", "odoo.com", "wordpress.com", "blogspot.com",
+  "wixsite.com",
+];
+
+let domainRejected = false;
+
+function hostOf(url: string): string | null {
+  try {
+    const u = new URL(url);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+    return u.hostname.replace(/^www\./, "").toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+function isAllowed(url: string): boolean {
+  const host = hostOf(url);
+  if (!host) { domainRejected = true; return false; }
+  const blocked = BLOCKED_HOSTS.some((b) => host === b || host.endsWith(`.${b}`));
+  if (blocked) domainRejected = true;
+  return !blocked;
+}
+
 function parseArticle(content: string, citations: string[]) {
   try {
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
       const url = parsed.url || citations[0] || "";
-      if (url) {
+      if (url && isAllowed(url)) {
         return {
           url,
-          title: parsed.title || "",
+          title: parsed.title || `From ${hostOf(url)}`,
           summary: parsed.summary || "",
           source: parsed.source || "Market Intelligence",
         };
       }
     }
   } catch { /* fall through */ }
-  if (citations.length > 0) {
-    let host = "Market Intelligence";
-    try { host = new URL(citations[0]).hostname.replace(/^www\./, ""); } catch {}
+  const citation = citations.find((c) => isAllowed(c));
+  if (citation) {
+    const host = hostOf(citation) || "Market Intelligence";
     return {
-      url: citations[0],
-      title: content.slice(0, 100),
+      url: citation,
+      title: `From ${host}`,
       summary: content.slice(0, 200),
       source: host,
     };
@@ -106,7 +134,8 @@ serve(withObserve("onboarding-find-article", async (req) => {
   }
 
   // Observability log — best-effort, must never block the response.
-  let outcome: "perplexity" | "perplexity_retry" | "curated_fallback" | "error" = "error";
+  let outcome: "perplexity" | "perplexity_retry" | "curated_fallback" | "domain_rejected" | "error" = "error";
+  domainRejected = false;
   let outcomeUrl: string | null = null;
   let logUserId: string | null = null;
   let logSector: string | null = null;
@@ -196,7 +225,7 @@ serve(withObserve("onboarding-find-article", async (req) => {
 
     // Curated evergreen fallback — success path never returns found:false.
     const pick = CURATED_FALLBACKS[Math.floor(Math.random() * CURATED_FALLBACKS.length)];
-    outcome = "curated_fallback";
+    outcome = domainRejected ? "domain_rejected" : "curated_fallback";
     outcomeUrl = pick.url;
     logRow();
     return json({ found: true, article: pick });
