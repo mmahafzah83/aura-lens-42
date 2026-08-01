@@ -1,4 +1,3 @@
-import { SetPasswordScreen } from "@/components/PasswordGate";
 import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import AuraLogo from "@/components/brand/AuraLogo";
@@ -124,7 +123,6 @@ const App = () => (
             <Route path="/our-story" element={<OurStory />} />
             <Route path="/guide" element={<Guide />} />
             <Route path="/contact" element={<Contact />} />
-            <Route path="/__pwpreview" element={<SetPasswordScreen email="a@b.com" onComplete={() => {}} />} />
             <Route path="/guide/thought-leadership-strategy" element={<GuideThoughtLeadershipStrategy />} />
             <Route path="/settings" element={<PasswordGate><Settings /></PasswordGate>} />
             {/* Legacy alias — Preferences is now the first tab inside Settings. */}
