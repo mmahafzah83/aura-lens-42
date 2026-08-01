@@ -2976,6 +2976,7 @@ const LibraryCard = ({
 
       <div className="flex items-center gap-2 mt-3">
         <span className="text-xs text-muted-foreground/40">{formatSmartDate(p.created_at)}</span>
+        {isPublished && p._source === "linkedin_posts" && <ProvenanceMark post={p as any} />}
         <div className="flex-1" />
         <Button
           size="sm"
