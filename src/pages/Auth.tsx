@@ -1,79 +1,95 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, Link } from "react-router-dom";
-import { Loader2, Radio, PenLine, TrendingUp, Eye, EyeOff } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 import AuraLogo from "@/components/brand/AuraLogo";
 import { useToast } from "@/hooks/use-toast";
 import usePageMeta from "@/hooks/usePageMeta";
-import PublicFooter from "@/components/PublicFooter";
 import { isProfileComplete } from "@/lib/onboarding";
+
+/* ────────────────────────────────────────────────────────────────
+   /auth — "The Return".
+   Left: the form. Fast, nothing to read, one job.
+   Right: the dark instrument — the night that ran while they were
+   away. Labelled illustrative, because before sign-in we know
+   nothing about this person and must not imply that we do.
+
+   Every rule is scoped under .au. Palette is System-B verbatim.
+
+   All recovery logic is carried over unchanged: PASSWORD_RECOVERY
+   events, expired-hash detection, returnTo, the isProfileComplete
+   gate, forced sign-out after a password change.
+   ──────────────────────────────────────────────────────────────── */
+
+type View = "signin" | "sent" | "newPassword";
 
 const Auth = () => {
   usePageMeta({
     title: "Aura — Sign in",
-    description: "Sign in to Aura to access your strategic intelligence dashboard, signals, and content tools.",
+    description: "Sign in to Aura — your signals, your drafts, and the work that ran overnight.",
     path: "/auth",
   });
-  const [email, setEmail] = useState(() => {
+
+  const readParam = (key: string) => {
     if (typeof window === "undefined") return "";
-    try {
-      const p = new URLSearchParams(window.location.search);
-      return p.get("email") ?? "";
-    } catch { return ""; }
-  });
-  const [hasEmailParam] = useState(() => {
-    if (typeof window === "undefined") return false;
-    try { return !!new URLSearchParams(window.location.search).get("email"); }
-    catch { return false; }
-  });
+    try { return new URLSearchParams(window.location.search).get(key) ?? ""; }
+    catch { return ""; }
+  };
+
+  const [email, setEmail] = useState(() => readParam("email"));
+  const [hasEmailParam] = useState(() => !!readParam("email"));
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [resetting, setResetting] = useState(false);
-  const [emailError, setEmailError] = useState<string | null>(null);
-  const [showLoginPwd, setShowLoginPwd] = useState(false);
-  const [loginFailed, setLoginFailed] = useState(false);
-  const [resetSent, setResetSent] = useState(false);
-  const [resetSentEmail, setResetSentEmail] = useState<string>("");
   const [resending, setResending] = useState(false);
-  const navigate = useNavigate();
-  const { toast } = useToast();
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [signInError, setSignInError] = useState<string | null>(null);
+  const [showLoginPwd, setShowLoginPwd] = useState(false);
+  const [resetSentEmail, setResetSentEmail] = useState("");
+  const [linkExpired, setLinkExpired] = useState(false);
 
-  // Password recovery state
-  const [showNewPasswordForm, setShowNewPasswordForm] = useState(false);
+  // password recovery
+  const [view, setView] = useState<View>("signin");
   const [newPassword, setNewPassword] = useState("");
   const [newPasswordConfirm, setNewPasswordConfirm] = useState("");
   const [showPwd, setShowPwd] = useState(false);
   const [updatingPwd, setUpdatingPwd] = useState(false);
   const inRecoveryRef = useRef(false);
-  const [linkExpired, setLinkExpired] = useState(false);
 
-  // Daily rotating insight shown beneath "Welcome back" — gives returning
-  // users a sense of continuity without an API call.
-  const dailyInsights = [
-    "Your signals are watching the market for you.",
-    "New intelligence may be waiting inside.",
-    "Your presence compounds while you're away.",
-    "The market moved today. Let's see what Aura found.",
-    "Your next post could be one signal away.",
-  ];
-  const dailyInsight =
-    dailyInsights[new Date().getDay() % dailyInsights.length];
+  const emailRef = useRef<HTMLInputElement>(null);
+  const pwdRef = useRef<HTMLInputElement>(null);
+
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const longEnough = newPassword.length >= 8;
+  const matches = newPassword.length > 0 && newPassword === newPasswordConfirm;
+
+  /* ── land the cursor where the work is ── */
+  useEffect(() => {
+    if (view !== "signin") return;
+    const t = window.setTimeout(() => {
+      (hasEmailParam ? pwdRef.current : emailRef.current)?.focus();
+    }, 60);
+    return () => window.clearTimeout(t);
+  }, [view, hasEmailParam]);
 
   const checkOnboardingAndRedirect = async (session: any) => {
-    // Honor ?returnTo=... so deep links from the weekly brief land at the
+    // Honour ?returnTo=... so deep links from the weekly brief land at the
     // exact destination after login. Only relative paths are accepted.
     let returnTo: string | null = null;
     try {
-      const p = new URLSearchParams(window.location.search);
-      const rt = p.get("returnTo");
+      const rt = new URLSearchParams(window.location.search).get("returnTo");
       if (rt && rt.startsWith("/") && !rt.startsWith("//")) returnTo = rt;
-    } catch {}
+    } catch { /* ignore */ }
+
     const { data: profile } = await supabase
       .from("diagnostic_profiles")
       .select("first_name, firm, level, sector_focus")
       .eq("user_id", session.user.id)
       .maybeSingle();
-    // Field-based gate — a row alone is not "onboarded". Any user missing
+
+    // Field-based gate — a row alone is not "onboarded". Anyone missing
     // first_name / firm / level / sector_focus goes to /onboarding.
     if (!isProfileComplete(profile)) {
       navigate("/onboarding");
@@ -83,35 +99,34 @@ const Auth = () => {
   };
 
   useEffect(() => {
-    // Show post-password-update toast after hard redirect from password reset.
+    // Toast after the hard redirect that follows a password change.
     try {
       const params = new URLSearchParams(window.location.search);
       if (params.get("msg") === "password_updated") {
-        toast({ title: "Password updated", description: "Please sign in with your new password." });
+        toast({ title: "Password updated", description: "Sign in with your new password." });
         window.history.replaceState({}, "", "/auth");
       }
-    } catch {}
+    } catch { /* ignore */ }
 
-    // Detect expired/invalid recovery links arriving in the URL hash
-    // (e.g. #error=access_denied&error_code=otp_expired&error_description=...)
+    // Expired or invalid recovery links arrive in the URL hash, e.g.
+    // #error=access_denied&error_code=otp_expired&error_description=...
     if (typeof window !== "undefined" && window.location.hash) {
-      const hash = window.location.hash.startsWith("#")
-        ? window.location.hash.slice(1)
-        : window.location.hash;
+      const hash = window.location.hash.replace(/^#/, "");
       const params = new URLSearchParams(hash);
       const err = params.get("error");
       const errCode = params.get("error_code");
       if (err === "access_denied" || errCode === "otp_expired" || params.get("error_description")) {
         setLinkExpired(true);
-        // Clear the hash so refreshing doesn't keep showing the error
-        try { window.history.replaceState(null, "", window.location.pathname + window.location.search); } catch {}
+        try {
+          window.history.replaceState(null, "", window.location.pathname + window.location.search);
+        } catch { /* ignore */ }
       }
     }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY") {
         inRecoveryRef.current = true;
-        setShowNewPasswordForm(true);
+        setView("newPassword");
         setLinkExpired(false);
         return;
       }
@@ -127,23 +142,21 @@ const Auth = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSignInError(null);
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      setLoginFailed(true);
-      toast({
-        title: "Sign in failed",
-        description:
-          "Email or password incorrect. If this is your first time, try Forgot Password to set up your account.",
-        variant: "destructive",
-      });
+      // Inline and persistent. A toast disappears before a person has
+      // finished reading it, and this is the message they most need.
+      setSignInError(
+        "That email and password don't match. If you've never set a password, use \u201cSet or reset your password\u201d below.",
+      );
+      setLoading(false);
+      pwdRef.current?.focus();
+      return;
     }
-    setLoading(false);
+    // Leave the button in its loading state — onAuthStateChange navigates.
   };
-
-  // Google SSO temporarily disabled during closed beta — re-enable after closed beta.
-  // (Allowlist enforcement happens server-side; hiding the button avoids creating
-  // accounts for non-allowlisted users via OAuth before that check runs.)
 
   const sendReset = async (target: string) => {
     const { data, error } = await supabase.functions.invoke("send-password-reset", {
@@ -155,8 +168,10 @@ const Auth = () => {
 
   const handleForgotPassword = async () => {
     setEmailError(null);
+    setSignInError(null);
     if (!email || !email.includes("@")) {
       setEmailError("Enter your email first");
+      emailRef.current?.focus();
       return;
     }
     setResetting(true);
@@ -164,9 +179,9 @@ const Auth = () => {
       const target = email.trim().toLowerCase();
       await sendReset(target);
       setResetSentEmail(target);
-      setResetSent(true);
-    } catch (e: any) {
-      toast({ title: "Couldn't send reset", description: "Please try again.", variant: "destructive" });
+      setView("sent");
+    } catch {
+      toast({ title: "Couldn't send the link", description: "Please try again.", variant: "destructive" });
     } finally {
       setResetting(false);
     }
@@ -177,7 +192,7 @@ const Auth = () => {
     setResending(true);
     try {
       await sendReset(resetSentEmail);
-      toast({ title: "Reset link resent", description: `Sent again to ${resetSentEmail}` });
+      toast({ title: "Sent again", description: `Another link is on its way to ${resetSentEmail}.` });
     } catch {
       toast({ title: "Couldn't resend", description: "Please try again.", variant: "destructive" });
     } finally {
@@ -186,14 +201,7 @@ const Auth = () => {
   };
 
   const handleResetPassword = async () => {
-    if (newPassword.length < 8) {
-      toast({ title: "Password too short", description: "Must be at least 8 characters", variant: "destructive" });
-      return;
-    }
-    if (newPassword !== newPasswordConfirm) {
-      toast({ title: "Passwords don't match", variant: "destructive" });
-      return;
-    }
+    if (!longEnough || !matches) return;
     setUpdatingPwd(true);
     try {
       const { data: pwData, error } = await supabase.functions.invoke("update-user-password", {
@@ -212,572 +220,404 @@ const Auth = () => {
         console.warn("password_changed notification failed:", e);
       }
       inRecoveryRef.current = false;
-      setShowNewPasswordForm(false);
-      // Force sign-out so the user must log in with the new password.
-      try { await supabase.auth.signOut(); } catch {}
-      // Hard redirect clears React state + any cached session tokens.
+      setView("signin");
+      // Force sign-out so the new password is actually used.
+      try { await supabase.auth.signOut(); } catch { /* ignore */ }
+      // Hard redirect clears React state and any cached session tokens.
       window.location.href = "/auth?msg=password_updated";
     } catch (e: any) {
-      toast({ title: "Couldn't update password", description: e?.message || "Please try again.", variant: "destructive" });
+      toast({
+        title: "Couldn't update the password",
+        description: e?.message || "Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setUpdatingPwd(false);
     }
   };
 
+  const headline =
+    view === "newPassword" ? <>Set your <em>password.</em></>
+    : view === "sent" ? <>Check your <em>email.</em></>
+    : linkExpired ? <>That link <em>has expired.</em></>
+    : <>Welcome <em>back.</em></>;
+
+  const sub =
+    view === "newPassword" ? "Eight characters or more. You'll sign in with it straight after."
+    : view === "sent" ? <>A link is on its way to <b>{resetSentEmail}</b>. It opens once and expires in twenty-four hours.</>
+    : linkExpired ? "They last twenty-four hours. Enter your email and a fresh one is on its way."
+    : hasEmailParam ? "Sign in to pick up where the night left off."
+    : "The night shift ran while you were gone. Everything it found is inside.";
+
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--paper)", fontFamily: "var(--font-body)" }}>
-      <div className="flex-1 flex">
-      {/* Scoped style overrides to defeat global input styles + autofill */}
-      <style>{`
-        .auth-input {
-          background-color: var(--paper-2) !important;
-          border: 0.5px solid var(--rule) !important;
-          color: var(--ink) !important;
-          border-radius: 10px !important;
-          padding: 12px 14px !important;
-          width: 100%;
-          font-size: 13px;
-          line-height: 1.4;
-          outline: none;
-          font-family: var(--font-body);
-          transition: border-color 0.15s ease, box-shadow 0.15s ease;
-        }
-        .auth-input::placeholder {
-          color: var(--ink-3) !important;
-          opacity: 1;
-        }
-        .auth-input:focus {
-          border-color: var(--action) !important;
-          box-shadow: 0 0 0 3px color-mix(in srgb, var(--action) 22%, transparent) !important;
-        }
-        /* Defeat browser autofill white background */
-        .auth-input:-webkit-autofill,
-        .auth-input:-webkit-autofill:hover,
-        .auth-input:-webkit-autofill:focus,
-        .auth-input:-webkit-autofill:active {
-          -webkit-box-shadow: 0 0 0 1000px #E9E2D3 inset !important; /* mirrors --paper-2 */
-          -webkit-text-fill-color: var(--text-primary) !important;                /* mirrors --ink */
-          caret-color: var(--text-primary) !important;                            /* mirrors --ink */
-          transition: background-color 9999s ease-in-out 0s;
-        }
-        .auth-headline {
-          color: var(--ink) !important;
-          font-family: var(--font-display) !important;
-          font-weight: 400 !important;
-          font-size: 34px !important;
-          letter-spacing: -0.02em !important;
-          line-height: 1.15 !important;
-          opacity: 1 !important;
-          text-shadow: none !important;
-          background: none !important;
-          -webkit-text-fill-color: var(--ink) !important;
-        }
-        .auth-headline em {
-          font-style: italic;
-          color: var(--spot);
-          -webkit-text-fill-color: var(--spot);
-        }
-        .auth-sublabel {
-          font-family: var(--font-body);
-          font-size: 13px;
-          color: var(--ink-2);
-          font-weight: 300;
-          line-height: 1.6;
-          margin-bottom: 28px;
-        }
-        .auth-tagline {
-          color: var(--glass) !important;
-          opacity: 1 !important;
-          font-size: 24px !important;
-          font-weight: 400 !important;
-          text-align: center !important;
-          font-family: var(--font-display) !important;
-          line-height: 1.35 !important;
-          letter-spacing: -0.01em !important;
-          background: none !important;
-          -webkit-text-fill-color: var(--glass) !important;
-        }
-        .auth-feature-title {
-          color: var(--glass) !important;
-          font-weight: 600 !important;
-          font-size: 13px !important;
-          font-family: var(--font-body) !important;
-          margin-bottom: 2px !important;
-          opacity: 1 !important;
-        }
-        .auth-feature-desc {
-          color: var(--glass-2) !important;
-          font-size: 12px !important;
-          font-weight: 300 !important;
-          line-height: 1.5 !important;
-          font-family: var(--font-body) !important;
-          opacity: 1 !important;
-        }
-        .auth-label {
-          color: var(--ink-3) !important;
-          font-size: 11px !important;
-          font-weight: 600 !important;
-          letter-spacing: 0.08em !important;
-          text-transform: uppercase !important;
-          font-family: var(--font-mono) !important;
-          display: block;
-          margin-bottom: 6px;
-          opacity: 1 !important;
-        }
-        .auth-submit {
-          background: var(--action);
-          color: var(--ink);
-          border: none;
-          border-radius: 10px;
-          padding: 13px;
-          font-family: var(--font-body);
-          font-size: 14px;
-          font-weight: 600;
-          width: 100%;
-          cursor: pointer;
-          letter-spacing: -0.01em;
-          transition: background-color 0.15s ease;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-        }
-        .auth-submit:hover:not(:disabled) { background: color-mix(in srgb, var(--action) 88%, black); }
-        .auth-submit:disabled { opacity: 0.6; cursor: not-allowed; }
-        .auth-google {
-          background: var(--paper);
-          color: var(--ink);
-          border: none;
-          border-radius: 10px;
-          padding: 12px;
-          font-family: var(--font-body);
-          font-size: 13px;
-          font-weight: 500;
-          width: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          cursor: pointer;
-          transition: opacity 0.15s ease;
-        }
-        .auth-google:hover { opacity: 0.92; }
-        .auth-divider-line { height: 0.5px; background: var(--rule); flex: 1; }
-        .auth-divider-text { font-size: 11px; color: var(--ink-3); font-family: var(--font-mono); letter-spacing: 0.08em; }
-        .auth-wordmark {
-          font-family: var(--font-display);
-          font-weight: 500;
-          font-size: 22px;
-          color: var(--ink);
-          letter-spacing: 0.04em;
-          line-height: 1;
-        }
-        .auth-wordmark-sub {
-          font-size: 10px;
-          font-weight: 600;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          color: var(--ink-3);
-          font-family: var(--font-mono);
-          margin-top: 4px;
-        }
-        .auth-beta-pill {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-          background: color-mix(in srgb, var(--action) 14%, transparent);
-          border: 0.5px solid color-mix(in srgb, var(--action) 40%, transparent);
-          border-radius: 20px;
-          padding: 4px 12px;
-          font-size: 10px;
-          font-weight: 600;
-          color: var(--spot);
-          letter-spacing: 0.12em;
-          font-family: var(--font-mono);
-        }
-        .auth-beta-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--action); }
-        .auth-link { font-size: 12px; color: var(--ink-3); font-family: var(--font-body); }
-        .auth-link-orange { color: var(--spot); font-weight: 600; }
-        .auth-brand-large {
-          display: flex;
-          justify-content: center;
-        }
-        .auth-feature-icon {
-          width: 36px;
-          height: 36px;
-          border-radius: 10px;
-          background: var(--ob-panel);
-          border: 0.5px solid var(--hair);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-        }
-        .auth-footer-note {
-          font-size: 10px;
-          color: var(--glass-3);
-          text-align: center;
-          font-family: var(--font-mono);
-          letter-spacing: 0.08em;
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .auth-glow { animation: none !important; }
-        }
-      `}</style>
+    <div className="au">
+      <style>{AU_CSS}</style>
 
-      {/* LEFT — auth form */}
-      <div
-        className="w-full md:w-[40%] min-h-screen flex items-center justify-center px-6 py-10"
-        style={{ backgroundColor: "var(--paper)" }}
-      >
-        <div className="w-full max-w-sm">
-          {/* Logo */}
-          <div className="flex items-center gap-3 mb-2">
-            <AuraLogo size={40} variant="auto" withWordmark />
-            <div className="auth-wordmark-sub" style={{ marginTop: 0 }}>Personal Intelligence System</div>
-          </div>
+      <div className="au-shell">
+        {/* ── LEFT · the form ── */}
+        <div className="au-pane">
+          <div className="au-form">
+            <Link className="au-brandrow" to="/">
+              <AuraLogo size={30} variant="auto" />
+              <span className="au-bn">Aura</span>
+              <span className="au-bsub">Personal professional intelligence</span>
+            </Link>
 
-          {/* Beta pill */}
-          <div className="auth-beta-pill mt-5 mb-6">
-            <span className="auth-beta-dot" />
-            CLOSED BETA
-          </div>
+            {view === "signin" && (
+              <span className="au-pill"><i className="au-dot" /> Closed beta</span>
+            )}
 
-          {/* Headline */}
-          <h1 className="auth-headline mb-2">
-            {showNewPasswordForm
-              ? <>Reset your <em>password</em></>
-              : resetSent
-                ? <>Check your <em>email</em></>
-                : <>Welcome <em>back</em></>}
-          </h1>
-          <p className="auth-sublabel">
-            {showNewPasswordForm
-              ? "Enter your new password below."
-              : resetSent
-                ? <>We sent a password reset link to <span style={{ color: "var(--ink)", fontWeight: 600 }}>{resetSentEmail}</span>.</>
-                : hasEmailParam
-                  ? "Welcome back — sign in to see your intelligence brief."
-                  : dailyInsight}
-          </p>
+            <h1 className="au-h1">{headline}</h1>
+            <p className="au-sub">{sub}</p>
 
-          {resetSent ? (
-            <div className="space-y-4">
-              <div
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: 12.5,
-                  lineHeight: 1.625,
-                  color: "var(--ink-2)",
-                  background: "var(--paper-2)",
-                  border: "0.5px solid var(--rule)",
-                  borderRadius: 10,
-                  padding: "12px 14px",
-                }}
-              >
-                The link expires in 24 hours. Click it to set a new password and sign in.
-              </div>
-              <button
-                type="button"
-                onClick={handleResend}
-                disabled={resending}
-                className="auth-submit"
-              >
-                {resending && <Loader2 className="w-4 h-4 animate-spin" />}
-                {resending ? "Resending…" : "Resend link →"}
-              </button>
-              <p className="auth-link" style={{ textAlign: "center" }}>
-                Didn't receive it? Check your spam folder or{" "}
-                <button
-                  type="button"
-                  onClick={() => { setResetSent(false); setResetSentEmail(""); }}
-                  className="auth-link auth-link-orange hover:underline"
-                  style={{ background: "none", border: 0, cursor: "pointer", padding: 0, fontWeight: 600 }}
-                >try a different email →</button>
-              </p>
-              <div className="pt-2 text-center">
-                <button
-                  type="button"
-                  onClick={() => { setResetSent(false); }}
-                  style={{
-                    color: "var(--ink-3)",
-                    fontFamily: "var(--font-body)",
-                    fontSize: 14,
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    padding: "4px 8px",
-                  }}
-                  className="hover:underline"
-                >← Back to sign in</button>
-              </div>
-            </div>
-          ) : showNewPasswordForm ? (
-            <div className="space-y-4">
-              <div>
-                <label className="auth-label">New password</label>
-                <div style={{ position: "relative" }}>
+            {/* ── sign in ── */}
+            {view === "signin" && (
+              <form onSubmit={handleSubmit} className="au-fields" noValidate>
+                {linkExpired ? (
+                  <div className="au-note warn" role="status">
+                    This reset link is no longer valid. Nothing is wrong with your seat.
+                  </div>
+                ) : (
+                  <div className="au-note">
+                    First time here? Use <b>Set or reset your password</b> below — enter the
+                    email your invitation was sent to.
+                  </div>
+                )}
+
+                <div>
+                  <label htmlFor="au-email">Email</label>
                   <input
-                    type={showPwd ? "text" : "password"}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="auth-input"
-                    style={{ paddingRight: 38 }}
-                    autoComplete="new-password"
+                    id="au-email" ref={emailRef} type="email" value={email} required
+                    autoComplete="username" placeholder="you@company.com" className="au-field"
+                    aria-invalid={!!emailError}
+                    onChange={(e) => { setEmail(e.target.value); setEmailError(null); setSignInError(null); }}
                   />
+                  {emailError && <p className="au-err" role="alert">{emailError}</p>}
+                </div>
+
+                <div>
+                  <label htmlFor="au-password">Password</label>
+                  <div className="au-pwwrap">
+                    <input
+                      id="au-password" ref={pwdRef} type={showLoginPwd ? "text" : "password"}
+                      value={password} required minLength={6} autoComplete="current-password"
+                      placeholder="••••••••" className="au-field au-haspeek"
+                      aria-invalid={!!signInError}
+                      onChange={(e) => { setPassword(e.target.value); setSignInError(null); }}
+                    />
+                    <button
+                      type="button" className="au-peek"
+                      aria-label={showLoginPwd ? "Hide password" : "Show password"}
+                      onClick={() => setShowLoginPwd((s) => !s)}
+                    >
+                      {showLoginPwd ? <EyeOff size={15} /> : <Eye size={15} />}
+                    </button>
+                  </div>
+                </div>
+
+                {signInError && <div className="au-note warn" role="alert">{signInError}</div>}
+
+                <button type="submit" disabled={loading} className="au-btn">
+                  {loading ? (
+                    <><Loader2 className="au-spin" size={16} /> Signing you in…</>
+                  ) : (
+                    <>Sign in <span className="au-a">↗</span></>
+                  )}
+                </button>
+
+                <div className="au-center">
+                  <button type="button" onClick={handleForgotPassword} disabled={resetting} className="au-linkbtn">
+                    {resetting
+                      ? "Sending…"
+                      : linkExpired
+                        ? "Send a new link →"
+                        : "Set or reset your password →"}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* ── link sent ── */}
+            {view === "sent" && (
+              <div className="au-fields">
+                <div className="au-note">
+                  Nothing after a minute or two? Check spam. Look for the subject{" "}
+                  <b>Reset your Aura password</b>, from <b>Aura</b>.
+                </div>
+                <button type="button" onClick={handleResend} disabled={resending} className="au-btn">
+                  {resending ? (<><Loader2 className="au-spin" size={16} /> Sending…</>) : (<>Send it again <span className="au-a">↗</span></>)}
+                </button>
+                <div className="au-center">
                   <button
-                    type="button" onClick={() => setShowPwd((s) => !s)}
-                    aria-label={showPwd ? "Hide password" : "Show password"}
-                    style={{
-                      position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
-                      background: "transparent", border: 0, cursor: "pointer",
-                      color: "var(--ink-3)", padding: 4,
-                    }}
-                  >{showPwd ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+                    type="button" className="au-linkbtn"
+                    onClick={() => { setView("signin"); setResetSentEmail(""); }}
+                  >
+                    Use a different email →
+                  </button>
+                </div>
+                <div className="au-center">
+                  <button type="button" className="au-linkbtn quiet" onClick={() => setView("signin")}>
+                    ← Back to sign in
+                  </button>
                 </div>
               </div>
-              <div>
-                <label className="auth-label">Confirm password</label>
-                <input
-                  type={showPwd ? "text" : "password"}
-                  value={newPasswordConfirm}
-                  onChange={(e) => setNewPasswordConfirm(e.target.value)}
-                  placeholder="••••••••"
-                  className="auth-input"
-                  autoComplete="new-password"
-                  onKeyDown={(e) => { if (e.key === "Enter") handleResetPassword(); }}
-                />
-              </div>
-              <p className="text-xs" style={{ color: "var(--ink-3)" }}>Must be at least 8 characters.</p>
-              <button
-                type="button"
-                onClick={handleResetPassword}
-                disabled={updatingPwd || newPassword.length < 8 || newPassword !== newPasswordConfirm}
-                className="auth-submit"
-              >
-                {updatingPwd && <Loader2 className="w-4 h-4 animate-spin" />}
-                Update password →
-              </button>
-            </div>
-          ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {linkExpired ? (
-              <div
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: 12.5,
-                  lineHeight: 1.625,
-                  color: "var(--ink-2)",
-                  background: "rgba(220, 80, 60, 0.08)",
-                  border: "0.5px solid rgba(220, 80, 60, 0.35)",
-                  borderRadius: 10,
-                  padding: "10px 12px",
-                }}
-              >
-                This reset link has expired. Enter your email below and request a new one.
-              </div>
-            ) : (
-              <div
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: 12.5,
-                  lineHeight: 1.625,
-                  color: "var(--ink-2)",
-                  background: "var(--paper-2)",
-                  border: "0.5px solid var(--rule)",
-                  borderRadius: 10,
-                  padding: "10px 12px",
-                }}
-              >
-                Use the email and password from your invitation. First time?
-                Use <span style={{ color: "var(--act)", fontWeight: 600 }}>Set Password</span> below to create your password.
+            )}
+
+            {/* ── set a new password ── */}
+            {view === "newPassword" && (
+              <div className="au-fields">
+                <div>
+                  <label htmlFor="au-new">New password</label>
+                  <div className="au-pwwrap">
+                    <input
+                      id="au-new" type={showPwd ? "text" : "password"} value={newPassword}
+                      autoComplete="new-password" placeholder="••••••••" className="au-field au-haspeek"
+                      onChange={(e) => setNewPassword(e.target.value)}
+                    />
+                    <button
+                      type="button" className="au-peek"
+                      aria-label={showPwd ? "Hide password" : "Show password"}
+                      onClick={() => setShowPwd((s) => !s)}
+                    >
+                      {showPwd ? <EyeOff size={15} /> : <Eye size={15} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="au-confirm">Confirm password</label>
+                  <input
+                    id="au-confirm" type={showPwd ? "text" : "password"} value={newPasswordConfirm}
+                    autoComplete="new-password" placeholder="••••••••" className="au-field"
+                    onChange={(e) => setNewPasswordConfirm(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") handleResetPassword(); }}
+                  />
+                </div>
+
+                {/* stated as facts, checked live — never a scolding */}
+                <ul className="au-reqs" aria-live="polite">
+                  <li className={longEnough ? "met" : ""}>
+                    <i />At least 8 characters
+                  </li>
+                  <li className={matches ? "met" : ""}>
+                    <i />Both entries match
+                  </li>
+                </ul>
+
+                <button
+                  type="button" onClick={handleResetPassword}
+                  disabled={updatingPwd || !longEnough || !matches} className="au-btn"
+                >
+                  {updatingPwd ? (<><Loader2 className="au-spin" size={16} /> Updating…</>) : (<>Update password <span className="au-a">↗</span></>)}
+                </button>
               </div>
             )}
-            <div>
-              <label htmlFor="email" className="auth-label">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => { setEmail(e.target.value); setEmailError(null); }}
-                required
-                placeholder="your@email.com"
-                className="auth-input"
-              />
-              {emailError && (
-                <p className="mt-1.5 text-xs" style={{ color: "var(--error)" }}>{emailError}</p>
-              )}
-            </div>
 
-            <div>
-              <label htmlFor="password" className="auth-label">
-                Password
-              </label>
-              <div style={{ position: "relative" }}>
-                <input
-                  id="password"
-                  type={showLoginPwd ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={6}
-                  placeholder="••••••••"
-                  className="auth-input"
-                  style={{ paddingRight: 38 }}
-                  autoComplete="current-password"
-                />
-                <button
-                  type="button" onClick={() => setShowLoginPwd((s) => !s)}
-                  aria-label={showLoginPwd ? "Hide password" : "Show password"}
-                  style={{
-                    position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
-                    background: "transparent", border: 0, cursor: "pointer",
-                    color: "var(--ink-3)", padding: 4,
-                  }}
-                >{showLoginPwd ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+            <p className="au-foot">
+              No seat yet? <Link to="/request-access">Request a founder seat →</Link>
+            </p>
+            <p className="au-legal">
+              <Link to="/privacy">Privacy</Link> · <Link to="/terms">Terms</Link> ·{" "}
+              <Link to="/trust">Security</Link> ·{" "}
+              <a href="mailto:support@aura-intel.org">Support</a>
+            </p>
+          </div>
+        </div>
+
+        {/* ── RIGHT · the instrument ── */}
+        <div className="au-night" aria-hidden="true">
+          <div className="au-stars" />
+          <div className="au-nwrap">
+            <p className="au-neyebrow">While you were away</p>
+            <h2 className="au-nh">The night shift <em>doesn't take nights off.</em></h2>
+
+            <div className="au-card">
+              <div className="au-ctop"><span>A night inside Aura</span><span>02:00 → 03:12</span></div>
+              <ul className="au-tl">
+                <li><i className="au-tdot" /><div><span className="au-tt">02:04</span><span className="au-tx">Read every capture from the week.</span></div></li>
+                <li><i className="au-tdot" /><div><span className="au-tt">02:31</span><span className="au-tx">Found a pattern — three sources agree.</span></div></li>
+                <li><i className="au-tdot" /><div><span className="au-tt">03:12</span><span className="au-tx">Built the evidence, in your voice.</span></div></li>
+              </ul>
+              <div className="au-agents">
+                <span className="au-ag">Reader</span><span className="au-ag">Signal</span>
+                <span className="au-ag">Voice</span><span className="au-ag">Editor</span>
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="auth-submit"
-            >
-              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              Sign in →
-            </button>
-
-            {/* Divider */}
-            {/* Google SSO hidden during closed beta — re-enable after closed beta. */}
-
-            <div className="pt-1 text-center">
-              <button
-                type="button"
-                onClick={handleForgotPassword}
-                disabled={resetting}
-                className="hover:underline disabled:opacity-50"
-                style={{
-                  color: "var(--act)",
-                  fontFamily: "var(--font-body)",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  padding: "4px 8px",
-                }}
-              >
-                {resetting
-                  ? "Sending…"
-                  : linkExpired
-                    ? "Request a new reset link →"
-                    : loginFailed
-                      ? "Forgot your password? →"
-                      : "Set or reset your password →"}
-              </button>
-            </div>
-          </form>
-          )}
-
-          {/* Bottom link */}
-          <p className="mt-8 auth-link">
-            Don't have access?{" "}
-            <Link to="/request-access" className="auth-link auth-link-orange hover:underline">
-              Request early access →
-            </Link>
-          </p>
-        </div>
-      </div>
-
-      {/* RIGHT — brand panel (hidden on mobile) */}
-      <div
-        className="hidden md:flex md:w-[60%] min-h-screen relative items-center justify-center px-12"
-        style={{ backgroundColor: "var(--ob-bg)" }}
-      >
-        {/* Centered radial glow */}
-        <div
-          className="pointer-events-none auth-glow"
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: 400,
-            height: 400,
-            background:
-              "radial-gradient(circle, color-mix(in srgb, var(--action) 12%, transparent) 0%, transparent 65%)",
-            zIndex: 0,
-          }}
-        />
-
-        <div className="max-w-md text-center" style={{ position: "relative", zIndex: 1 }}>
-          <div className="auth-brand-large">
-            <AuraLogo size={60} variant="dark" />
+            <p className="au-illus">Illustrative — your own log is waiting inside</p>
+            <p className="au-ar" dir="rtl">حتى السوق يعرفك قبل ما يشوفك ✦</p>
           </div>
-          <p className="auth-tagline mt-6 animate-fade-up-in" style={{ animationDuration: "600ms" }}>
-            Your expertise is invisible. Aura fixes that.
-          </p>
-
-          <div className="mx-auto my-8" style={{ width: 40, height: 2, backgroundColor: "var(--action)", opacity: 0.5 }} />
-
-          <div className="space-y-6 text-left">
-            <FeatureRow
-              delay={300}
-              icon={<Radio className="w-4 h-4" style={{ color: "var(--text-secondary)" }} />}
-              title="Signal intelligence"
-              desc="Converts what you read into ranked market signals"
-            />
-            <FeatureRow
-              delay={360}
-              icon={<PenLine className="w-4 h-4" style={{ color: "var(--text-secondary)" }} />}
-              title="Flash content"
-              desc="LinkedIn posts in your voice, English or Arabic, in minutes"
-            />
-            <FeatureRow
-              delay={420}
-              icon={<TrendingUp className="w-4 h-4" style={{ color: "var(--text-secondary)" }} />}
-              title="Imprint"
-              desc="Tracks how your visibility compounds over time"
-            />
-          </div>
-        </div>
-
-        <div className="absolute bottom-6 left-0 right-0 auth-footer-note" style={{ zIndex: 1 }}>
-          Closed beta · GCC senior professionals · 2026
+          <p className="au-nfoot">Founding circle · 2026</p>
         </div>
       </div>
-      </div>
-      <PublicFooter />
     </div>
   );
 };
 
-const FeatureRow = ({
-  icon,
-  title,
-  desc,
-  delay = 0,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  desc: string;
-  delay?: number;
-}) => (
-  <div
-    className="flex items-start gap-3 animate-fade-up-in"
-    style={{ animationDelay: `${delay}ms` }}
-  >
-    <div className="auth-feature-icon">
-      {icon}
-    </div>
-    <div>
-      <div className="auth-feature-title">{title}</div>
-      <div className="auth-feature-desc">{desc}</div>
-    </div>
-  </div>
-);
-
 export default Auth;
+
+/* ── styles · every selector scoped under .au ── */
+
+const AU_CSS = `
+.au{
+  --page:#F2F5F9; --n0:#FFFFFF; --n100:#EEF2F7; --n200:#E2E7EE; --n300:#D6DCE4;
+  --n400:#98A2AE; --n500:#5B6673; --n700:#3A434E; --n900:#0F1519;
+  --night:#0F1519; --nline:#26313A; --ncard:#151C22;
+  --act:#0670C4; --act-50:#E6F2FD; --cy:#00CEC9; --cy-b:#5EE3DC; --cy-t:#00807B;
+  --err:#C0392B; --err-50:#FCEAE6;
+  --ui:'Inter',ui-sans-serif,system-ui,-apple-system,sans-serif;
+  --ser:'Instrument Serif',Georgia,serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+  --ar:'Cairo','CairoAR',sans-serif;
+  background:var(--page); color:var(--n900);
+  font-family:var(--ui); font-size:16px; line-height:1.6;
+  -webkit-font-smoothing:antialiased; min-height:100vh;
+}
+.au *,.au *::before,.au *::after{box-sizing:border-box;}
+.au p,.au h1,.au h2,.au ul,.au li{margin:0;padding:0;list-style:none;}
+.au a{color:inherit;text-decoration:none;}
+.au :focus-visible{outline:2px solid var(--act);outline-offset:3px;border-radius:6px;}
+
+.au-shell{display:grid;grid-template-columns:44fr 56fr;min-height:100vh;}
+.au-pane{display:flex;align-items:center;justify-content:center;padding:40px clamp(22px,4vw,56px);}
+.au-form{width:100%;max-width:400px;}
+
+.au-brandrow{display:flex;align-items:center;gap:10px;margin-bottom:26px;}
+.au-bn{font-family:var(--ser);font-size:26px;line-height:1;}
+.au-bsub{font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--n400);padding-left:11px;border-left:1px solid var(--n200);line-height:1.4;max-width:11ch;}
+.au-pill{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(0,128,123,.28);
+  background:rgba(0,206,201,.07);border-radius:999px;padding:7px 13px;margin-bottom:22px;
+  font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--cy-t);}
+.au-dot{width:6px;height:6px;border-radius:50%;background:var(--cy);animation:au-pulse 2.2s ease-in-out infinite;}
+@keyframes au-pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+.au-h1{font-family:var(--ser);font-weight:400;font-size:clamp(34px,3.6vw,46px);
+  line-height:1;letter-spacing:-.028em;}
+.au-h1 em{font-style:italic;color:var(--n400);}
+.au-sub{font-size:15px;color:var(--n500);margin:14px 0 28px;line-height:1.55;max-width:38ch;}
+.au-sub b{color:var(--n900);font-weight:600;}
+
+.au-fields{display:flex;flex-direction:column;gap:16px;}
+.au label{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--n500);margin-bottom:7px;}
+.au-field{width:100%;background:var(--page);border:1px solid var(--n200);color:var(--n900);
+  font-size:15.5px;font-family:inherit;padding:14px 16px;border-radius:12px;outline:none;
+  transition:border-color .25s ease,box-shadow .25s ease,background .25s ease;}
+.au-field::placeholder{color:var(--n400);}
+.au-field:focus{border-color:var(--act);background:var(--n0);box-shadow:0 0 0 4px var(--act-50);}
+.au-field[aria-invalid="true"]{border-color:var(--err);}
+.au-haspeek{padding-right:46px;}
+.au-pwwrap{position:relative;}
+.au-peek{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:transparent;
+  border:0;cursor:pointer;color:var(--n400);padding:10px;display:flex;align-items:center;}
+.au-peek:hover{color:var(--n700);}
+.au-err{margin-top:7px;font-size:12.5px;color:var(--err);}
+.au-note{padding:13px 15px;border-radius:12px;font-size:13.5px;line-height:1.6;color:var(--n700);
+  background:var(--n100);border:1px solid var(--n200);}
+.au-note b{color:var(--n900);font-weight:600;}
+.au-note.warn{background:var(--err-50);border-color:color-mix(in srgb,var(--err) 32%,transparent);color:var(--err);}
+.au-note.warn b{color:var(--err);}
+
+.au-reqs{display:flex;flex-direction:column;gap:8px;}
+.au-reqs li{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--n400);
+  transition:color .25s ease;}
+.au-reqs li i{width:15px;height:15px;border-radius:50%;border:1px solid var(--n300);flex:0 0 15px;
+  transition:background .25s ease,border-color .25s ease;position:relative;}
+.au-reqs li.met{color:var(--n700);}
+.au-reqs li.met i{background:var(--cy);border-color:var(--cy);}
+.au-reqs li.met i::after{content:'';position:absolute;left:4.5px;top:2px;width:4px;height:8px;
+  border:solid #04302F;border-width:0 1.5px 1.5px 0;transform:rotate(45deg);}
+
+.au-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:54px;
+  width:100%;border-radius:999px;font-size:16px;font-weight:600;font-family:inherit;
+  border:1px solid transparent;background:var(--n900);color:#fff;cursor:pointer;margin-top:4px;
+  transition:transform .2s ease,box-shadow .25s ease,opacity .2s ease;}
+.au-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 16px 34px -16px rgba(15,21,25,.7);}
+.au-btn:disabled{cursor:not-allowed;opacity:.5;}
+.au-a{width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.15);display:grid;
+  place-items:center;font-size:11px;transition:transform .22s cubic-bezier(.2,.7,.3,1);}
+.au-btn:hover:not(:disabled) .au-a{transform:translate(2px,-2px);}
+.au-spin{animation:au-spin 1s linear infinite;}
+@keyframes au-spin{to{transform:rotate(360deg);}}
+
+.au-center{text-align:center;}
+.au-linkbtn{background:none;border:0;cursor:pointer;font-family:inherit;font-size:14.5px;
+  font-weight:600;color:var(--act);padding:8px;min-height:44px;}
+.au-linkbtn:hover:not(:disabled){text-decoration:underline;}
+.au-linkbtn:disabled{opacity:.6;cursor:default;}
+.au-linkbtn.quiet{color:var(--n500);font-weight:400;}
+
+.au-foot{margin-top:30px;padding-top:22px;border-top:1px solid var(--n200);
+  font-size:14.5px;color:var(--n500);}
+.au-foot a{color:var(--act);font-weight:600;}
+.au-legal{margin-top:14px;font-family:var(--mono);font-size:9px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--n400);}
+.au-legal a:hover{color:var(--n700);}
+
+.au-night{background:var(--night);position:relative;overflow:hidden;display:flex;
+  align-items:center;justify-content:center;padding:48px clamp(22px,4vw,56px);}
+.au-night::before{content:'';position:absolute;inset:0;background:
+  radial-gradient(680px 380px at 78% 12%,rgba(0,206,201,.15),transparent 62%),
+  radial-gradient(520px 340px at 12% 92%,rgba(6,112,196,.20),transparent 64%);
+  animation:au-aurora 30s ease-in-out infinite alternate;will-change:transform,opacity;}
+@keyframes au-aurora{
+  0%{transform:translate3d(0,0,0) scale(1);opacity:1;}
+  50%{transform:translate3d(-3%,2%,0) scale(1.08);opacity:.85;}
+  100%{transform:translate3d(2%,-2%,0) scale(1.03);opacity:1;}
+}
+.au-stars{position:absolute;inset:0;pointer-events:none;background-image:
+  radial-gradient(1.4px 1.4px at 18% 22%,rgba(238,242,247,.7),transparent),
+  radial-gradient(1.2px 1.2px at 72% 16%,rgba(238,242,247,.55),transparent),
+  radial-gradient(1.2px 1.2px at 40% 48%,rgba(0,206,201,.6),transparent),
+  radial-gradient(1.3px 1.3px at 86% 62%,rgba(238,242,247,.4),transparent),
+  radial-gradient(1.2px 1.2px at 26% 78%,rgba(0,206,201,.4),transparent);}
+.au-nwrap{position:relative;z-index:1;max-width:400px;width:100%;}
+.au-neyebrow{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;
+  color:rgba(255,255,255,.42);margin-bottom:16px;}
+.au-nh{font-family:var(--ser);font-weight:400;font-size:clamp(26px,2.6vw,34px);line-height:1.06;
+  letter-spacing:-.022em;color:#fff;}
+.au-nh em{font-style:italic;color:rgba(255,255,255,.42);}
+.au-card{background:var(--ncard);border:1px solid var(--nline);border-radius:18px;padding:22px;margin-top:26px;}
+.au-ctop{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9.5px;
+  letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.42);}
+.au-tl{display:grid;gap:15px;margin:20px 0 18px;}
+.au-tl li{display:grid;grid-template-columns:auto 1fr;gap:11px;align-items:start;
+  opacity:0;transform:translateY(6px);animation:au-log .5s ease forwards;}
+.au-tl li:nth-child(1){animation-delay:.4s;}
+.au-tl li:nth-child(2){animation-delay:1.4s;}
+.au-tl li:nth-child(3){animation-delay:2.4s;}
+@keyframes au-log{to{opacity:1;transform:none;}}
+.au-tdot{width:8px;height:8px;border-radius:50%;background:var(--cy);margin-top:6px;}
+.au-tt{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:var(--cy-b);
+  display:block;margin-bottom:3px;}
+.au-tx{font-size:14px;line-height:1.5;color:#EEF2F7;}
+.au-agents{display:flex;flex-wrap:wrap;gap:7px;}
+.au-ag{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;
+  padding:7px 10px;border-radius:8px;border:1px solid var(--nline);color:rgba(255,255,255,.6);}
+.au-illus{margin-top:14px;font-family:var(--mono);font-size:9px;letter-spacing:.14em;
+  text-transform:uppercase;color:rgba(255,255,255,.3);}
+.au-ar{font-family:var(--ar);direction:rtl;line-height:1.9;margin-top:24px;font-size:18px;color:var(--cy-b);}
+.au-nfoot{position:absolute;bottom:22px;left:0;right:0;text-align:center;font-family:var(--mono);
+  font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.3);z-index:1;}
+
+.au input:-webkit-autofill,
+.au input:-webkit-autofill:hover,
+.au input:-webkit-autofill:focus,
+.au input:-webkit-autofill:active{
+  -webkit-box-shadow:0 0 0 1000px #F2F5F9 inset !important;
+  -webkit-text-fill-color:#0F1519 !important;
+  caret-color:#0F1519 !important;
+  transition:background-color 9999s ease-in-out 0s;
+}
+
+@media (max-width:900px){
+  .au-shell{grid-template-columns:1fr;}
+  .au-night{display:none;}
+  .au-pane{padding:36px 22px 48px;}
+}
+@media (prefers-reduced-motion:reduce){
+  .au *,.au *::before,.au *::after{animation:none !important;transition:none !important;}
+  .au-tl li{opacity:1;transform:none;}
+}
+`;
