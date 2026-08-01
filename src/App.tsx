@@ -26,8 +26,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import PageViewTracker from "./components/PageViewTracker";
 
 // Lazy-loaded heavy / rarely-visited routes
-// Old landing (src/pages/Landing.tsx) is unmounted but kept in the tree.
-const Landing = lazy(() => import("./pages/LandingV23"));
+// Old landings (src/pages/Landing.tsx, LandingV23.tsx) are kept but unrouted.
 const LandingV2 = lazy(() => import("./pages/LandingV2"));
 const TrendDetail = lazy(() => import("./pages/TrendDetail"));
 const CarouselStudio = lazy(() => import("./pages/CarouselStudio"));
@@ -79,22 +78,16 @@ const App = () => (
             fallback={
               <div
                 className="min-h-screen flex flex-col items-center justify-center gap-3"
-                style={{ background: "var(--paper)" }}
+                style={{ background: "var(--surface-page)" }}
               >
-                <div className="aura-gold-pulse">
-                  <AuraLogo size={48} />
-                </div>
+                <AuraLogo size={48} variant="light" />
                 <div
                   className="text-lg"
-                  style={{
-                    fontFamily: "var(--serif)",
-                    color: "var(--ink)",
-                    letterSpacing: "0.04em",
-                  }}
+                  style={{ color: "var(--text-primary)", letterSpacing: "0.04em" }}
                 >
                   Aura
                 </div>
-                <p className="text-sm" style={{ color: "var(--ink-4)" }}>
+                <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
                   Loading your intelligence…
                 </p>
               </div>
