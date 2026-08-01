@@ -660,10 +660,44 @@ function moveAnchors(move: Move): string[] {
 
 type Gate = { pass: boolean; reasons: string[] };
 
+/** Whitespace/quote-normalised, case-insensitive — "verbatim" up to typography. */
+function canon(s: string): string {
+  return s
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+/** Which of the supplied phrases appear verbatim inside the address. */
+function phraseMatches(text: string, phrases: string[]): { matched: string[]; missed: string[] } {
+  const hay = canon(text);
+  const matched: string[] = [];
+  const missed: string[] = [];
+  for (const p of phrases) (hay.includes(canon(p)) ? matched : missed).push(p);
+  return { matched, missed };
+}
+
+// A qualifier the model bolts on to narrow a phrase's subject. Allowed only in
+// the exact number of times the supplied phrases already contain it.
+const SCOPE_QUALIFIER =
+  /\bon (?:this|that)(?: specific| very)? (?:theme|topic|signal|subject|transformation|shift|thesis|idea|story|point)\b/gi;
+
 function gateAddress(text: string, phrases: string[], move: Move | null, memberName: string | null): Gate {
   const reasons: string[] = [];
   const lower = text.toLowerCase();
   const sents = sentencesOf(text);
+
+  // The claims must be ours, not the model's. Verbatim or nothing.
+  const { matched } = phraseMatches(text, phrases);
+  if (phrases.length >= 2 && matched.length < 2) {
+    reasons.push(`only ${matched.length} supplied phrase(s) reproduced verbatim (need 2)`);
+  }
+
+  const qualUsed = (text.match(SCOPE_QUALIFIER) ?? []).length;
+  const qualAllowed = matched.reduce((n, p) => n + (p.match(SCOPE_QUALIFIER) ?? []).length, 0);
+  if (qualUsed > qualAllowed) reasons.push("added a qualifier that narrows a phrase's subject");
 
   const ints = integersIn(text);
   if (ints.length > 3) reasons.push(`too many numbers (${ints.length})`);
