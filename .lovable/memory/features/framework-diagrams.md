@@ -29,7 +29,7 @@ On regenerate, the previous archetype is excluded so a different visual type is 
 
 ## Branding
 - Dark premium backgrounds, gold (#d4a843) accents, white text
-- Footer: "M. Mahafzah | Business & Digital Transformation Architect | Energy & Utilities"
+- Footer: "M. Mahafdhah | Business & Digital Transformation Architect | Energy & Utilities"
 
 ## UI
 - FrameworkBuilder: shows archetype+style label below diagram preview
