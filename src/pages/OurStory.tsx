@@ -1,37 +1,38 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import AuraLogo from "@/components/brand/AuraLogo";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import PublicFooter from "@/components/PublicFooter";
+import PublicMasthead from "@/components/PublicMasthead";
 
 const label: React.CSSProperties = {
-  fontFamily: "var(--font-mono)",
-  fontSize: 11,
-  letterSpacing: "2.5px",
-  color: "var(--live)",
+  fontFamily: "'IBM Plex Mono', ui-monospace, Menlo, monospace",
+  fontSize: 10,
+  letterSpacing: "0.2em",
+  color: "#00807B",
   textTransform: "uppercase",
-  margin: "46px 0 16px",
+  margin: "52px 0 18px",
   display: "block",
   fontWeight: 400,
 };
 
 const body: React.CSSProperties = {
-  fontFamily: "var(--font-display)",
-  fontSize: 18,
+  fontFamily: "'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif",
+  fontSize: 17,
   lineHeight: 1.75,
-  color: "var(--ink-2)",
+  color: "#3A434E",
   margin: "0 0 18px",
 };
 
 const pull: React.CSSProperties = {
-  fontFamily: "var(--font-display)",
+  fontFamily: "'Instrument Serif', Georgia, serif",
   fontStyle: "italic",
-  fontSize: "clamp(22px, 3vw, 29px)",
-  lineHeight: 1.42,
-  color: "var(--ink)",
-  borderLeft: "2px solid var(--live)",
-  paddingLeft: 22,
-  margin: "38px 0",
+  fontSize: "clamp(24px, 3.2vw, 33px)",
+  lineHeight: 1.28,
+  letterSpacing: "-0.02em",
+  color: "#0F1519",
+  borderLeft: "2px solid #00CEC9",
+  paddingLeft: 24,
+  margin: "42px 0",
 };
 
 const OurStory = () => {
@@ -64,99 +65,45 @@ const OurStory = () => {
     <div
       className="our-story-page"
       style={{
-        ["--lk" as string]: "var(--live)",
+        ["--lk" as string]: "#0670C4",
         minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
-        background: "var(--paper)",
-        color: "var(--ink)",
-        fontFamily: "var(--font-body)",
+        background: "#F2F5F9",
+        color: "#0F1519",
+        fontFamily: "'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif",
       }}
     >
-      {/* Dark instrument top bar */}
-      <header
-        className="flex items-center justify-between px-6 sm:px-10 py-4 sticky top-0 z-40"
-        style={{
-          background: "var(--ob-bg)",
-          borderBottom: "1px solid var(--hair)",
-        }}
-      >
-        <Link
-          to="/"
-          className="flex items-center gap-2"
-          aria-label="Aura home"
-        >
-          <AuraLogo size={26} variant="dark" />
-          <span
-            className="text-sm font-bold tracking-[0.2em]"
-            style={{ color: "var(--glass)", fontFamily: "var(--font-display)" }}
-          >
-            AURA
-          </span>
-        </Link>
-
-        <nav className="flex items-center gap-4 sm:gap-6 text-xs">
-          <Link
-            to="/auth"
-            style={{ color: "var(--glass-2)", fontWeight: 500, transition: "color 150ms ease" }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--live)")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--glass-2)")}
-          >
-            Log in
-          </Link>
-          <Link
-            to="/request-access"
-            className="px-3 py-1.5 rounded-full text-xs font-medium"
-            style={{
-              background: "var(--paper-2)",
-              color: "var(--ink)",
-              border: "1px solid var(--hair)",
-              transition: "all 150ms ease",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "var(--paper-3)";
-              e.currentTarget.style.borderColor = "var(--live)";
-              e.currentTarget.style.color = "var(--ink-2)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "var(--paper-2)";
-              e.currentTarget.style.borderColor = "var(--hair)";
-              e.currentTarget.style.color = "var(--ink)";
-            }}
-          >
-            Request access
-          </Link>
-        </nav>
-      </header>
+      <PublicMasthead />
 
       <main
         className="mx-auto px-5 sm:px-10 flex-1 w-full"
-        style={{ maxWidth: 720, paddingTop: 64, paddingBottom: 60 }}
+        style={{ maxWidth: 760, paddingTop: 64, paddingBottom: 60 }}
       >
         <Link
           to="/"
           className="inline-flex items-center gap-1.5 mb-8"
           style={{
             fontSize: 12,
-            color: "var(--ink-3)",
+            color: "#98A2AE",
             transition: "color 150ms ease",
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--lk)")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--ink-3)")}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "#0670C4")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "#98A2AE")}
         >
           <ArrowLeft size={13} /> Back to home
         </Link>
 
         <div
           className="mb-2 uppercase tracking-[0.12em]"
-          style={{ color: "var(--ink-3)", fontFamily: "var(--font-mono)", fontSize: 12 }}
+          style={{ color: "#5B6673", fontFamily: "'IBM Plex Mono', ui-monospace, Menlo, monospace", fontSize: 12 }}
         >
           OUR STORY
         </div>
 
         <h1
           className="text-3xl sm:text-4xl mb-2"
-          style={{ fontFamily: "var(--font-display)", color: "var(--ink)" }}
+          style={{ fontFamily: "'Instrument Serif', Georgia, serif", color: "#0F1519", letterSpacing: "-0.028em", lineHeight: 1.02 }}
         >
           Why Aura exists.
         </h1>
@@ -283,7 +230,7 @@ const OurStory = () => {
 
         <p style={body}>
           Your work stays yours. The system is built so your private content is never placed in front of us — you can read exactly how in{" "}
-          <Link to="/trust" style={{ color: "var(--lk)", fontWeight: 500, transition: "color 150ms ease" }}>
+          <Link to="/trust" style={{ color: "#0670C4", fontWeight: 500, transition: "color 150ms ease" }}>
             Security &amp; Trust
           </Link>
           .
@@ -307,17 +254,17 @@ const OurStory = () => {
           Expertise should compound into presence — without the noise, and never in your name without your say.
         </div>
 
-        <div className="mt-12 mb-10" style={{ borderTop: "1px solid var(--rule)" }}>
+        <div className="mt-12 mb-10" style={{ borderTop: "1px solid #E2E7EE" }}>
           <div className="pt-8">
             <p
               className="text-xl mb-1"
-              style={{ fontFamily: "var(--font-display)", color: "var(--ink)" }}
+              style={{ fontFamily: "'Instrument Serif', Georgia, serif", color: "#0F1519" }}
             >
-              — Mohammad Mahafdhah
+              — Mohammad Mahafzah
             </p>
             <p
               className="text-sm"
-              style={{ fontFamily: "var(--font-mono)", color: "var(--ink-3)" }}
+              style={{ fontFamily: "'IBM Plex Mono', ui-monospace, Menlo, monospace", color: "#98A2AE" }}
             >
               Building Aura · Riyadh
             </p>
@@ -329,26 +276,27 @@ const OurStory = () => {
             to="/request-access"
             className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full text-sm font-medium"
             style={{
-              background: "var(--act)",
-              color: "var(--paper)",
+              background: "#0F1519",
+              color: "#FFFFFF",
+              borderRadius: 999,
               transition: "all 150ms ease",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = "var(--spot)";
-              e.currentTarget.style.color = "var(--paper)";
+              e.currentTarget.style.background = "#0670C4";
+              e.currentTarget.style.color = "#FFFFFF";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = "var(--act)";
-              e.currentTarget.style.color = "var(--paper)";
+              e.currentTarget.style.background = "#0F1519";
+              e.currentTarget.style.color = "#FFFFFF";
             }}
           >
-            Request access →
+            Request a founder seat →
           </Link>
 
           <Link
             to="/"
             className="text-sm font-medium"
-            style={{ color: "var(--lk)" }}
+            style={{ color: "#0670C4" }}
           >
             New here? See how Aura works →
           </Link>

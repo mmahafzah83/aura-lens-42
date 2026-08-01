@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import AuraLogo from "@/components/brand/AuraLogo";
+import PublicMasthead from "@/components/PublicMasthead";
 import PublicFooter from "@/components/PublicFooter";
 
 export interface LegalSection {
@@ -20,162 +20,41 @@ const LegalPage = ({ title, updated, sections }: Props) => {
   const isTrust = path.startsWith("/trust");
   const isTerms = path.startsWith("/terms");
 
-  const kicker = isTrust ? "TRUST · SECURITY" : isTerms ? "LEGAL · TERMS" : "LEGAL · PRIVACY";
-  const crossTo = isTerms ? "/privacy" : "/terms";
-  const crossLabel = isTerms ? "Read our Privacy Policy →" : "Read our Terms of Service →";
+  const kicker = isTrust ? "Trust · Security" : isTerms ? "Legal · Terms" : "Legal · Privacy";
+  const crossTo = isTrust ? "/privacy" : isTerms ? "/privacy" : "/terms";
+  const crossLabel = isTrust
+    ? "Read our Privacy Policy →"
+    : isTerms
+      ? "Read our Privacy Policy →"
+      : "Read our Terms of Service →";
 
   return (
-    <div
-      className="legal-cluster"
-      style={{
-        ["--lk" as string]: "var(--live)",
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        background: "var(--paper)",
-        color: "var(--ink)",
-        fontFamily: "var(--font-body)",
-      }}
-    >
-      {/* Dark instrument top bar */}
-      <header
-        className="flex items-center justify-between px-6 sm:px-10 py-4 sticky top-0 z-40"
-        style={{
-          background: "var(--ob-bg)",
-          borderBottom: "1px solid var(--hair)",
-        }}
-      >
-        <Link
-          to="/"
-          className="flex items-center gap-2"
-          aria-label="Aura home"
-        >
-          <AuraLogo size={26} variant="dark" />
-          <span
-            className="text-sm font-bold tracking-[0.2em]"
-            style={{ color: "var(--glass)", fontFamily: "var(--font-display)" }}
-          >
-            AURA
-          </span>
-        </Link>
+    <div className="lg">
+      <style>{LG_CSS}</style>
+      <PublicMasthead />
 
-        <nav className="flex items-center gap-4 sm:gap-6 text-xs">
-          <Link
-            to="/auth"
-            style={{ color: "var(--glass-2)", fontWeight: 500, transition: "color 150ms ease" }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--live)")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--glass-2)")}
-          >
-            Log in
-          </Link>
-          <Link
-            to="/request-access"
-            className="px-3 py-1.5 rounded-full text-xs font-medium"
-            style={{
-              background: "var(--paper-2)",
-              color: "var(--ink)",
-              border: "1px solid var(--hair)",
-              transition: "all 150ms ease",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "var(--paper-3)";
-              e.currentTarget.style.borderColor = "var(--live)";
-              e.currentTarget.style.color = "var(--ink-2)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "var(--paper-2)";
-              e.currentTarget.style.borderColor = "var(--hair)";
-              e.currentTarget.style.color = "var(--ink)";
-            }}
-          >
-            Request access
-          </Link>
-        </nav>
-      </header>
+      <main className="lg-main">
+        <Link to="/" className="lg-back"><ArrowLeft size={13} /> Back to home</Link>
 
-      <main
-        className="mx-auto px-5 sm:px-10 flex-1 w-full"
-        style={{ maxWidth: 720, paddingTop: 64, paddingBottom: 60 }}
-      >
-        <Link
-          to="/"
-          className="inline-flex items-center gap-1.5 mb-8"
-          style={{
-            fontSize: 12,
-            color: "var(--ink-3)",
-            transition: "color 150ms ease",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--lk)")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--ink-3)")}
-        >
-          <ArrowLeft size={13} /> Back to home
-        </Link>
+        <div className="lg-eyebrow"><span>{kicker}</span></div>
+        <h1 className="lg-h1">{title}</h1>
+        <p className="lg-updated">Last updated · {updated}</p>
 
-        <div
-          className="mb-2 uppercase tracking-[0.12em]"
-          style={{ color: "var(--ink-3)", fontFamily: "var(--font-mono)", fontSize: 12 }}
-        >
-          {kicker}
-        </div>
-
-        <h1
-          className="text-3xl sm:text-4xl mb-2"
-          style={{ fontFamily: "var(--font-display)", color: "var(--ink)" }}
-        >
-          {title}
-        </h1>
-        <p className="text-xs mb-12" style={{ color: "var(--ink-3)" }}>
-          Last updated · {updated}
-        </p>
-
-        <div className="space-y-10">
+        <div className="lg-sections">
           {sections.map((s, i) => (
-            <section key={i}>
-              <h2
-                className="mb-4"
-                style={{
-                  fontFamily: "var(--font-display)",
-                  color: "var(--ink)",
-                  fontSize: 22,
-                  lineHeight: 1.3,
-                  fontWeight: 500,
-                }}
-              >
-                <span style={{ color: "var(--live)", marginRight: 10 }}>
-                  {String(i + 1).padStart(2, "0")}
-                </span>
+            <section key={i} className="lg-sec">
+              <h2 className="lg-h2">
+                <span className="lg-no">{String(i + 1).padStart(2, "0")}</span>
                 {s.title}
               </h2>
-              <p style={{ color: "var(--ink-2)", fontSize: 15, lineHeight: 1.8, whiteSpace: "pre-line" }}>
-                {s.body}
-              </p>
+              <p className="lg-body">{s.body}</p>
             </section>
           ))}
         </div>
 
-        <div
-          className="mt-16 pt-8 flex items-center justify-between gap-4 flex-wrap"
-          style={{ borderTop: "1px solid var(--rule)" }}
-        >
-          <Link
-            to="/"
-            className="inline-flex items-center gap-1.5"
-            style={{
-              fontSize: 12,
-              color: "var(--ink-3)",
-              transition: "color 150ms ease",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--lk)")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--ink-3)")}
-          >
-            <ArrowLeft size={13} /> Back to home
-          </Link>
-          <Link
-            to={isTrust ? "/privacy" : crossTo}
-            style={{ fontSize: 12, color: "var(--lk)", fontWeight: 500 }}
-          >
-            {isTrust ? "Read our Privacy Policy →" : crossLabel}
-          </Link>
+        <div className="lg-end">
+          <Link to="/" className="lg-back"><ArrowLeft size={13} /> Back to home</Link>
+          <Link to={crossTo} className="lg-cross">{crossLabel}</Link>
         </div>
       </main>
 
@@ -185,3 +64,58 @@ const LegalPage = ({ title, updated, sections }: Props) => {
 };
 
 export default LegalPage;
+
+const LG_CSS = `
+.lg{
+  --page:#F2F5F9; --n0:#FFFFFF; --n200:#E2E7EE; --n300:#D6DCE4;
+  --n400:#98A2AE; --n500:#5B6673; --n700:#3A434E; --n900:#0F1519;
+  --act:#0670C4; --cy:#00CEC9; --cy-t:#00807B;
+  --ui:'Inter',ui-sans-serif,system-ui,-apple-system,sans-serif;
+  --ser:'Instrument Serif',Georgia,serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+  min-height:100vh; display:flex; flex-direction:column;
+  background:var(--page); color:var(--n900);
+  font-family:var(--ui); -webkit-font-smoothing:antialiased;
+}
+.lg *,.lg *::before,.lg *::after{box-sizing:border-box;}
+.lg p,.lg h1,.lg h2{margin:0;}
+.lg a{text-decoration:none;color:inherit;}
+.lg :focus-visible{outline:2px solid var(--act);outline-offset:3px;border-radius:6px;}
+
+.lg-main{flex:1;width:100%;max-width:760px;margin:0 auto;
+  padding:clamp(44px,7vw,76px) clamp(20px,4.5vw,40px) clamp(48px,7vw,72px);}
+.lg-back{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);
+  font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--n500);
+  min-height:40px;transition:color .2s ease;}
+.lg-back:hover{color:var(--n900);}
+.lg-eyebrow{position:relative;display:inline-block;padding:9px 14px;margin:22px 0 20px;}
+.lg-eyebrow span{font-family:var(--mono);font-size:10px;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--n700);}
+.lg-eyebrow::before,.lg-eyebrow::after{content:'';position:absolute;width:13px;height:13px;
+  border:1.5px solid var(--n300);}
+.lg-eyebrow::before{left:0;bottom:0;border-top:0;border-right:0;}
+.lg-eyebrow::after{right:0;top:0;border-bottom:0;border-left:0;}
+.lg-h1{font-family:var(--ser);font-weight:400;font-size:clamp(34px,4.4vw,52px);
+  line-height:1.02;letter-spacing:-.028em;}
+.lg-updated{margin-top:12px;font-family:var(--mono);font-size:10px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--n400);}
+
+.lg-sections{margin-top:clamp(36px,5vw,54px);border-top:2px solid var(--n900);}
+.lg-sec{padding:clamp(26px,3.4vw,34px) 0;border-bottom:1px solid var(--n200);}
+.lg-sec:last-child{border-bottom:0;}
+.lg-h2{font-family:var(--ser);font-weight:400;font-size:clamp(22px,2.6vw,29px);
+  line-height:1.15;letter-spacing:-.018em;display:flex;gap:14px;align-items:baseline;}
+.lg-no{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--cy-t);
+  flex:0 0 auto;transform:translateY(-2px);}
+.lg-body{margin-top:14px;padding-left:38px;font-size:15.5px;line-height:1.78;
+  color:var(--n700);white-space:pre-line;}
+
+.lg-end{margin-top:clamp(40px,6vw,64px);padding-top:26px;border-top:1px solid var(--n200);
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;}
+.lg-cross{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--act);font-weight:500;min-height:40px;display:inline-flex;align-items:center;}
+.lg-cross:hover{text-decoration:underline;}
+
+@media (max-width:560px){ .lg-body{padding-left:0;} }
+@media (prefers-reduced-motion:reduce){ .lg *{transition:none !important;} }
+`;
