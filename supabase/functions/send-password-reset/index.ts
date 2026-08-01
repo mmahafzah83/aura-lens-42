@@ -1,8 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import {
-  emailShell, heading, button, INK_MUTE, OXBLOOD,
-} from "../_shared/email-theme.ts";
+  renderEmail, heading, paragraph, note, ACCENT, BODY, INK_FAINT,
+} from "../_shared/emailTemplate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -81,13 +81,13 @@ serve(async (req) => {
     } catch (_) { /* ignore */ }
     const body = `
       ${heading("Reset your password")}
-      <p style="font-size:15px;line-height:1.6;margin:0 0 18px;">Hi ${name}, we received a request to reset the password for your Aura account. Click below to set a new one.</p>
-      <p style="margin:24px 0;">${button(resetUrl, "Reset my password →")}</p>
-      <p style="font-size:13px;color:${INK_MUTE};margin:0 0 8px;">This link expires in 24 hours.</p>
-      <p style="font-size:13px;color:${INK_MUTE};margin:0 0 18px;">If you didn't request this, you can safely ignore this email.</p>
-      <p style="font-size:12px;color:${INK_MUTE};line-height:1.5;margin:18px 0 0;word-break:break-all;">If the button doesn't work, paste this link:<br/><a href="${resetUrl}" style="color:${OXBLOOD};">${resetUrl}</a></p>
+      ${paragraph(`Hi ${name}, we received a request to reset the password on your Aura account. Use the button below to set a new one.`)}
     `;
-    const html = emailShell({ preheader: "Reset your Aura password", body });
+    const html = renderEmail({
+      preheader: "Reset your Aura password",
+      body,
+      cta: { href: resetUrl, label: "Set a new password" },
+    });
 
     const resendRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
