@@ -788,7 +788,7 @@ const Onboarding = () => {
   };
 
   // ─── Render helpers ───
-  const RAIL = ["Capture", "You", "Calibrate", "Assess", "Read"] as const;
+  const RAIL = ["Capture", "You", "Calibrate", "Assess"] as const;
   // A segment is only "done" if that phase actually ran. Users who skipped the
   // capture-first screen must not see Capture marked complete.
   const [captureFirstRan, setCaptureFirstRan] = useState(false);
@@ -798,11 +798,13 @@ const Onboarding = () => {
     if (showConnectStep) return 1;
     if (step === 0) return 1;
     if (step === 1) return 2;
-    if (step === 2) return 3;
-    return 4;
+    return 3;
   };
   const ProgressDots = () => {
     if (needsIdentityConfirm || needsPassword) return null;
+    // Bookends: the welcome screen and the closing screen are not phases.
+    if (step === 0 && !welcomeAcknowledged) return null;
+    if (step === 3) return null;
     const active = railIndex();
     return (
       <div className="ob-rail" aria-label={`Step ${active + 1} of ${RAIL.length}: ${RAIL[active]}`}>
@@ -1145,7 +1147,26 @@ const Onboarding = () => {
 
   // ───── STEP 0 ─────
   if (step === 0 && !welcomeAcknowledged) {
-    // Capture-first screens sit IN FRONT of this screen. Nothing below changes.
+    const displayName = firstName || prefillFirstName;
+    return cardShell(
+      <>
+        {eyebrow("Private Beta")}
+        {heading(displayName ? `Welcome, ${displayName}.` : "Welcome.")}
+        <div className="text-center space-y-2 mb-10">
+          <p style={{ fontSize: 16, color: "#0F1519", lineHeight: 1.6 }}>
+            You were invited because someone believes the market should see what you know.
+          </p>
+          <p style={{ fontSize: 14, color: "#5B6673", lineHeight: 1.6 }}>
+            Four steps. You can stop anywhere — Aura saves where you are.
+          </p>
+        </div>
+        {primaryBtn(<>Let's begin <ArrowRight className="w-4 h-4" /></>, () => setWelcomeAcknowledged(true))}
+      </>,
+    );
+  }
+
+  // ───── STEP 0 · capture-first screens (after the welcome) ─────
+  if (step === 0 && welcomeAcknowledged && showCaptureFirst) {
     if (showCaptureFirst && cfPhase === "input") {
       return cardShell(
         <>
@@ -1224,23 +1245,6 @@ const Onboarding = () => {
           )}
         </>,
       );
-    }
-    const displayName = firstName || prefillFirstName;
-    return cardShell(
-      <>
-        {eyebrow("Private Beta")}
-        {heading(displayName ? `Welcome, ${displayName}.` : "Welcome.")}
-        <div className="text-center space-y-2 mb-10">
-          <p style={{ fontSize: 16, color: "#0F1519", lineHeight: 1.6 }}>
-            You were invited because someone believes the market should see what you know.
-          </p>
-          <p style={{ fontSize: 14, color: "#5B6673", lineHeight: 1.6 }}>
-            Four steps. You can stop anywhere — Aura saves where you are.
-          </p>
-        </div>
-        {primaryBtn(<>Let's begin <ArrowRight className="w-4 h-4" /></>, () => setWelcomeAcknowledged(true))}
-      </>,
-    );
   }
 
   // ───── STEP 0 (LinkedIn paste + profile form) ─────
