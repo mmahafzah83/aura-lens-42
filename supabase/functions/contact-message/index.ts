@@ -1,4 +1,5 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   renderEmail,
   escapeHtml,
@@ -30,6 +31,20 @@ function bad(error: string) {
   });
 }
 
+async function hashIp(req: Request): Promise<string | null> {
+  const salt = Deno.env.get("IP_HASH_SALT");
+  if (!salt) return null;
+  const ip = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim();
+  if (!ip) return null;
+  const buf = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(`${salt}:${ip}`),
+  );
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -55,6 +70,54 @@ Deno.serve(async (req) => {
     if (!TOPICS.includes(topic)) return bad("Pick a topic from the list.");
     if (message.length < 10) return bad("Message must be at least 10 characters.");
     if (message.length > 5000) return bad("Message must be under 5000 characters.");
+
+    const emailKey = email.toLowerCase();
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { persistSession: false } },
+    );
+
+    // Rate check. Fails OPEN: a broken counter must never silence a real person.
+    try {
+      const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      const { count, error } = await admin
+        .from("contact_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("email", emailKey)
+        .gt("created_at", since);
+      if (error) {
+        console.error("contact-message: rate check failed, failing open", error.message);
+      } else if ((count ?? 0) >= 5) {
+        return new Response(
+          JSON.stringify({
+            error: "Too many messages. Email support@aura-intel.org and I'll pick it up.",
+          }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    } catch (rateErr) {
+      console.error("contact-message: rate check threw, failing open", rateErr);
+    }
+
+    let rowId: string | null = null;
+    try {
+      const { data: inserted, error: insErr } = await admin
+        .from("contact_messages")
+        .insert({
+          email: emailKey,
+          name,
+          topic,
+          message,
+          ip_hash: await hashIp(req),
+        })
+        .select("id")
+        .single();
+      if (insErr) console.error("contact-message: insert failed", insErr.message);
+      else rowId = inserted?.id ?? null;
+    } catch (insThrew) {
+      console.error("contact-message: insert threw", insThrew);
+    }
 
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
     if (!RESEND_API_KEY) {
@@ -105,6 +168,14 @@ Deno.serve(async (req) => {
       });
     }
     await res.text();
+
+    if (rowId) {
+      const { error: updErr } = await admin
+        .from("contact_messages")
+        .update({ delivered: true })
+        .eq("id", rowId);
+      if (updErr) console.error("contact-message: delivered flag failed", updErr.message);
+    }
 
     return new Response(JSON.stringify({ ok: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
