@@ -507,7 +507,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
       {/* Full-screen overlay */}
       <div
         className="fixed inset-0"
-        style={{ background: "rgba(0,0,0,0.8)", zIndex: 999, pointerEvents: "all" }}
+        style={{ background: SCRIM, zIndex: 999, pointerEvents: "all" }}
         onClick={handleCloseRequest}
       />
 
@@ -524,9 +524,10 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
           height: "88vh",
           display: "flex",
           flexDirection: "column",
-          background: "var(--paper)",
+          background: SURFACE,
+          fontFamily: BODY,
           borderRadius: 16,
-          border: "1px solid var(--ink-3)",
+          border: `1px solid ${RULE}`,
           overflow: "hidden",
           willChange: "unset",
         }}
@@ -537,26 +538,30 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {!showResults && step > 0 && (
-                <button onClick={() => setStep((s) => s - 1)} className="text-ink-4 hover:text-ink-5 p-1">
+                <button onClick={() => setStep((s) => s - 1)} className="p-1 transition-colors" style={{ color: INK_FAINT }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = INK)}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = INK_FAINT)}>
                   <ArrowLeft className="w-4 h-4" />
                 </button>
               )}
               <div className="flex items-center gap-2">
-                <Compass className="w-4 h-4 text-brand" />
-                <span className="text-sm text-ink-7 font-medium">Brand Assessment</span>
+                <Compass className="w-4 h-4" style={{ color: INK_SOFT }} />
+                <span className="text-sm font-medium" style={{ color: INK_SOFT }}>Brand Assessment</span>
               </div>
             </div>
-            <button onClick={handleCloseRequest} className="text-ink-4 hover:text-ink-5 p-1">
+            <button onClick={handleCloseRequest} className="p-1 transition-colors" style={{ color: INK_FAINT }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = INK)}
+              onMouseLeave={(e) => (e.currentTarget.style.color = INK_FAINT)}>
               <X className="w-4 h-4" />
             </button>
           </div>
 
           {/* Progress bar */}
           <div className="mt-2 pb-1">
-            <div className="h-1 bg-surface-ink-subtle rounded-full overflow-hidden">
+            <div className="h-1 rounded-full overflow-hidden" style={{ background: RULE }}>
               <div
-                className="h-full bg-brand rounded-full transition-all duration-500"
-                style={{ width: `${progress}%` }}
+                className="h-full rounded-full transition-all duration-500"
+                style={{ width: `${progress}%`, background: ACT }}
               />
             </div>
           </div>
