@@ -204,12 +204,16 @@ serve(async (req) => {
       return json({ error: "unauthorized" }, 401);
     }
 
-    // Verify the caller with their own JWT
-    const userClient = createClient(SUPABASE_URL, ANON, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: userData, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !userData?.user) return json({ error: "unauthorized" }, 401);
+    // Verify the caller with their own JWT. The token must be passed explicitly:
+    // relying on the global Authorization header can make the client validate the
+    // anon key instead of the user token ("missing sub claim").
+    const token = authHeader.slice("Bearer ".length).trim();
+    const userClient = createClient(SUPABASE_URL, ANON);
+    const { data: userData, error: userErr } = await userClient.auth.getUser(token);
+    if (userErr || !userData?.user) {
+      console.error("admin-console auth failed:", userErr?.message);
+      return json({ error: "unauthorized" }, 401);
+    }
     if (userData.user.id !== FOUNDER_ID) return json({ error: "forbidden" }, 403);
     const actorId = userData.user.id;
 
