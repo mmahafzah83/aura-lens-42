@@ -576,10 +576,10 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
                 <CinematicLoading stage={loadingStage} />
               ) : genError ? (
                 <div className="flex flex-col items-center justify-center py-16 px-4 text-center gap-5 max-w-md mx-auto">
-                  <h3 className="text-[18px] text-ink-7 font-medium leading-snug">
+                  <h3 className="text-[18px] font-medium leading-snug" style={{ fontFamily: SERIF, color: INK }}>
                     We couldn't build your analysis right now.
                   </h3>
-                  <p className="text-sm text-ink-5 leading-relaxed">
+                  <p className="text-sm leading-relaxed" style={{ color: INK_SOFT }}>
                     Your answers are saved. We'll process them in the background — you'll see your results next time you visit.
                   </p>
                   <button
@@ -598,7 +598,8 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
                       onOpenChange(false);
                       onNavigate?.("identity");
                     }}
-                    className="mt-2 px-5 py-2.5 rounded-xl text-sm font-medium bg-brand text-white hover:brightness-110 transition"
+                    className="mt-2 px-6 text-sm transition-all hover:-translate-y-0.5"
+                    style={pillBtn}
                   >
                     Go to My Story →
                   </button>
@@ -614,35 +615,19 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
           ) : (
             <div className="max-w-lg mx-auto pt-4">
               {step === QUESTIONS.length - 1 && (
-                <p
-                  className="uppercase"
-                  style={{
-                    fontSize: 10,
-                    letterSpacing: "2px",
-                    color: "var(--action)",
-                    fontWeight: 700,
-                    marginBottom: 8,
-                  }}
-                >
+                <p style={{ ...labelCaps, marginBottom: 8 }}>
                   Final question
                 </p>
               )}
-              <p
-                className="mb-3 uppercase"
-                style={{
-                  fontSize: 11,
-                  letterSpacing: "2px",
-                  color: "var(--spot)",
-                }}
-              >
+              <p className="mb-3" style={labelCaps}>
                 Question {step + 1} of {QUESTIONS.length}
               </p>
               <h2
                 className="leading-snug"
                 style={{
-                  fontFamily: "var(--serif)",
+                  fontFamily: SERIF,
                   fontSize: 22,
-                  color: "var(--ink)",
+                  color: INK,
                   marginBottom: q.sub ? 8 : 24,
                   fontWeight: 500,
                 }}
@@ -650,7 +635,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
                 {q.title}
               </h2>
               {q.sub && (
-                <p className="text-[12px] text-ink-5" style={{ marginBottom: 24 }}>
+                <p className="text-[12px]" style={{ marginBottom: 24, color: INK_SOFT }}>
                   {q.sub}
                 </p>
               )}
@@ -660,7 +645,10 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
                   value={(currentAnswer as string) || ""}
                   onChange={(e) => setAnswers((prev) => ({ ...prev, [step]: e.target.value }))}
                   placeholder={q.placeholder}
-                  className="w-full h-28 bg-surface-ink-raised border border-ink-3 rounded-xl p-3 text-sm text-ink-7 placeholder:text-ink-4 resize-none focus:outline-none focus:border-brand/40 transition-colors"
+                  className="w-full h-28 rounded-xl p-3 text-sm resize-none focus:outline-none transition-colors"
+                  style={{ background: FIELD, border: `1px solid ${RULE}`, color: INK, fontFamily: BODY }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = ACT; e.currentTarget.style.boxShadow = `0 0 0 3px ${ACT_TINT}`; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = RULE; e.currentTarget.style.boxShadow = "none"; }}
                 />
               ) : (
                 <div className="space-y-2">
@@ -676,12 +664,12 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
                         onClick={() => toggleOption(opt)}
                         className="w-full text-left flex items-center justify-between gap-3"
                         style={{
-                          background: sel ? "color-mix(in srgb, var(--action) 12%, transparent)" : "transparent",
-                          borderTop: "1px solid var(--rule)",
-                          borderRight: "1px solid var(--rule)",
-                          borderBottom: "1px solid var(--rule)",
-                          borderLeft: sel ? "3px solid var(--spot)" : "1px solid color-mix(in srgb, var(--spot) 20%, transparent)",
-                          color: sel ? "var(--spot)" : "var(--ink)",
+                          background: sel ? ACT_TINT : SURFACE,
+                          borderTop: `1px solid ${RULE}`,
+                          borderRight: `1px solid ${RULE}`,
+                          borderBottom: `1px solid ${RULE}`,
+                          borderLeft: sel ? `2px solid ${ACT}` : `1px solid ${RULE}`,
+                          color: INK,
                           borderRadius: 12,
                           padding: sel ? "16px 20px 16px 18px" : "16px 20px",
                           fontSize: 15,
@@ -695,7 +683,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
                         <span
                           aria-hidden="true"
                           style={{
-                            color: "var(--spot)",
+                            color: ACT,
                             fontSize: 10,
                             opacity: sel ? 1 : 0,
                             transition: "opacity 200ms ease",
@@ -713,7 +701,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
                   style={{
                     marginTop: 18,
                     fontSize: 13,
-                    color: "var(--ink-5)",
+                    color: INK_SOFT,
                     textAlign: "center",
                     opacity: 0,
                     animation: "aura-fade-in 300ms ease-out forwards",
