@@ -200,8 +200,8 @@ export default function HomeSpine({ userId, onSwitchTab, onStartSignalPost, onOp
   const moves: HomeMove[] = address.row?.moves ?? [];
   const activeMove: HomeMove | null = moves[moveIdx] ?? moves[0] ?? null;
   const shelf = useMemo(
-    () => buildShelf(facts, moves, facts?.signals_active ?? themes.length),
-    [facts, moves, themes.length],
+    () => buildShelf(facts, moves, facts?.signals_active ?? themes.length, layout, metrics),
+    [facts, moves, themes.length, layout, metrics],
   );
 
   const writeOnTopSignal = useCallback(() => {
@@ -236,15 +236,15 @@ export default function HomeSpine({ userId, onSwitchTab, onStartSignalPost, onOp
     }
     if (activeLens === "room") {
       if (empty) return null;
-      return <RoomLens facts={facts} memberName={memberName} onWriteOnSignal={writeOnTopSignal} />;
+      return <RoomLens facts={facts} userId={userId} memberName={memberName} onWriteOnSignal={writeOnTopSignal} />;
     }
-    return <ShapeLens facts={facts} />;
+    return <ShapeLens facts={facts} userId={userId} />;
   })();
 
   const loadingAddress = address.loading && !address.row;
 
   return (
-    <div style={{ display: "grid", gap: 22, marginBlockStart: 22 }}>
+    <div className="home-spine" style={{ display: "grid", gap: 22, marginBlockStart: 22 }}>
       {/* 1 — THE ADDRESS */}
       <section style={{
         background: "var(--v23-night)", borderRadius: 16, padding: "22px 24px",
@@ -390,7 +390,7 @@ export default function HomeSpine({ userId, onSwitchTab, onStartSignalPost, onOp
             <button type="button" onClick={() => setOnStage(null)} style={{
               justifySelf: "start", background: "none", border: 0, padding: 0, cursor: "pointer",
               fontFamily: "var(--font-body)", fontSize: 13, fontWeight: 600, color: "var(--act)",
-            }}>◂ Back to {LENS_LABEL[activeLens]}</button>
+            }}>◂ Back to {LENS_LABEL[activeLens].toLowerCase()}</button>
           )}
 
           {address.loading && !facts ? (
@@ -410,12 +410,12 @@ export default function HomeSpine({ userId, onSwitchTab, onStartSignalPost, onOp
               <div>
                 <ActButton onClick={() => {
                   try { window.dispatchEvent(new CustomEvent("aura:open-capture")); } catch { /* noop */ }
-                }}>Capture the first thing you read</ActButton>
+                }}>Keep the first thing you read</ActButton>
               </div>
             </Card>
-          ) : stage}
+          ) : <div key={onStage ?? activeLens} className="home-stage">{stage}</div>}
 
-          {empty && !onStage && <ShapeLens facts={facts} />}
+          {empty && !onStage && <ShapeLens facts={facts} userId={userId} />}
         </div>
 
         {/* the shelf */}
@@ -449,6 +449,20 @@ export default function HomeSpine({ userId, onSwitchTab, onStartSignalPost, onOp
       <style>{`
         @media (max-width: 900px) {
           .home-spine-grid { grid-template-columns: minmax(0, 1fr) !important; }
+        }
+        .home-spine :focus-visible {
+          outline: 2px solid var(--act);
+          outline-offset: 2px;
+          border-radius: 8px;
+        }
+        .home-spine section :focus-visible { outline-color: var(--act-fill); }
+        .home-stage { animation: home-stage-in 180ms ease both; }
+        @keyframes home-stage-in {
+          from { opacity: 0; transform: translateY(4px); }
+          to   { opacity: 1; transform: none; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .home-stage { animation: none; }
         }
       `}</style>
     </div>
