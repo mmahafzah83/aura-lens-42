@@ -26,7 +26,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import PageViewTracker from "./components/PageViewTracker";
 
 // Lazy-loaded heavy / rarely-visited routes
-// Old landings (src/pages/Landing.tsx, LandingV23.tsx) are kept but unrouted.
+// Older landing pages remain in the tree but are no longer routed or bundled.
 const LandingV2 = lazy(() => import("./pages/LandingV2"));
 const TrendDetail = lazy(() => import("./pages/TrendDetail"));
 const CarouselStudio = lazy(() => import("./pages/CarouselStudio"));
