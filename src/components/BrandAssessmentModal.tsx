@@ -727,7 +727,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
               bottom: 0,
               height: 32,
               pointerEvents: "none",
-              background: "linear-gradient(to bottom, transparent, var(--paper))",
+              background: `linear-gradient(to bottom, rgba(255,255,255,0), ${SURFACE})`,
             }}
           />
         </div>
@@ -737,19 +737,18 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
           <div
             className="shrink-0"
             style={{
-              background: "var(--paper)",
-              borderTop: "0.5px solid var(--surface-ink-subtle)",
+              background: SURFACE,
+              borderTop: `1px solid ${RULE}`,
               padding: "12px 16px",
               animation: "aura-fade-up 300ms ease-out forwards",
             }}
           >
             <button
               onClick={handleNext}
-              className="w-full rounded-xl font-medium tracking-wide transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
+              className="w-full tracking-wide transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98]"
               style={{
-                background: "linear-gradient(to bottom, hsl(43 80% 55%), var(--action))",
-                color: "var(--ink)",
-                padding: step === QUESTIONS.length - 1 ? "16px" : "14px",
+                ...pillBtn,
+                padding: "0 24px",
                 fontSize: step === QUESTIONS.length - 1 ? 15 : 14,
               }}
             >
@@ -764,25 +763,25 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
         <div
           className="fixed inset-0 flex items-center justify-center px-6"
           style={{
-            background: "rgba(10,9,7,0.94)",
+            background: "rgba(15,21,25,0.94)",
             zIndex: 1050,
             animation: "aura-fade-in 400ms ease-out",
           }}
         >
           <div style={{ textAlign: "center", maxWidth: 360 }}>
-            <div style={{ color: "var(--action)", fontSize: 16, marginBottom: 18 }}>{interlude.dots}</div>
+            <div style={{ color: TEAL, fontSize: 16, marginBottom: 18 }}>{interlude.dots}</div>
             <p
               style={{
-                fontFamily: "var(--serif)",
+                fontFamily: SERIF,
                 fontSize: 18,
-                color: "var(--paper)",
+                color: "#FFFFFF",
                 lineHeight: 1.55,
                 margin: 0,
               }}
             >
               {interlude.text}
             </p>
-            <div style={{ color: "var(--action)", fontSize: 16, marginTop: 18 }}>{interlude.dots}</div>
+            <div style={{ color: TEAL, fontSize: 16, marginTop: 18 }}>{interlude.dots}</div>
           </div>
         </div>
       )}
@@ -790,28 +789,30 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
       {confirmClose && (
         <div
           className="fixed inset-0 flex items-center justify-center px-4"
-          style={{ background: "rgba(0,0,0,0.6)", zIndex: 1100 }}
+          style={{ background: SCRIM, zIndex: 1100 }}
           onClick={() => setConfirmClose(false)}
         >
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              background: "var(--ink)",
-              border: "1px solid var(--ink-3)",
+              background: SURFACE,
+              fontFamily: BODY,
+              border: `1px solid ${RULE}`,
               borderRadius: 14,
               padding: 20,
               width: 400,
               maxWidth: "92vw",
             }}
           >
-            <h3 className="text-[15px] text-ink-7 font-medium mb-2">Your analysis is being built</h3>
-            <p className="text-sm text-ink-5 leading-relaxed mb-5">
+            <h3 className="text-[15px] font-medium mb-2" style={{ fontFamily: SERIF, color: INK }}>Your analysis is being built</h3>
+            <p className="text-sm leading-relaxed mb-5" style={{ color: INK_SOFT }}>
               If you close now, your answers are saved and you can regenerate from My Story.
             </p>
             <div className="flex flex-col gap-2">
               <button
                 onClick={() => setConfirmClose(false)}
-                className="w-full py-2.5 rounded-xl text-sm font-medium bg-brand text-white hover:brightness-110 transition"
+                className="w-full text-sm transition-all hover:-translate-y-0.5"
+                style={pillBtn}
               >
                 Wait for results
               </button>
@@ -821,7 +822,8 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
                   setConfirmClose(false);
                   onOpenChange(false);
                 }}
-                className="w-full py-2.5 rounded-xl text-sm text-ink-5 hover:text-ink-7 transition"
+                className="w-full py-2.5 rounded-xl text-sm transition-colors"
+                style={{ background: "transparent", border: 0, color: INK_SOFT, cursor: "pointer" }}
               >
                 Close anyway
               </button>
