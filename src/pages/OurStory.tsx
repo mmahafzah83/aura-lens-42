@@ -234,6 +234,8 @@ const OurStory = () => {
           <Link to="/trust" style={{ color: "var(--lk)", fontWeight: 500, transition: "color 150ms ease" }}>
             Security &amp; Trust
           </Link>
+            Security &amp; Trust
+          </Link>
           .
         </p>
 
