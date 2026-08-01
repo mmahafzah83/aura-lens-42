@@ -255,17 +255,17 @@ const OurStory = () => {
           Expertise should compound into presence — without the noise, and never in your name without your say.
         </div>
 
-        <div className="mt-12 mb-10" style={{ borderTop: "1px solid var(--rule)" }}>
+        <div className="mt-12 mb-10" style={{ borderTop: "1px solid #E2E7EE" }}>
           <div className="pt-8">
             <p
               className="text-xl mb-1"
-              style={{ fontFamily: "var(--font-display)", color: "var(--ink)" }}
+              style={{ fontFamily: "'Instrument Serif', Georgia, serif", color: "#0F1519" }}
             >
-              — Mohammad Mahafdhah
+              — Mohammad Mahafzah
             </p>
             <p
               className="text-sm"
-              style={{ fontFamily: "var(--font-mono)", color: "var(--ink-3)" }}
+              style={{ fontFamily: "'IBM Plex Mono', ui-monospace, Menlo, monospace", color: "#98A2AE" }}
             >
               Building Aura · Riyadh
             </p>
@@ -277,26 +277,27 @@ const OurStory = () => {
             to="/request-access"
             className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full text-sm font-medium"
             style={{
-              background: "var(--act)",
-              color: "var(--paper)",
+              background: "#0F1519",
+              color: "#FFFFFF",
+              borderRadius: 999,
               transition: "all 150ms ease",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = "var(--spot)";
-              e.currentTarget.style.color = "var(--paper)";
+              e.currentTarget.style.background = "#0670C4";
+              e.currentTarget.style.color = "#FFFFFF";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = "var(--act)";
-              e.currentTarget.style.color = "var(--paper)";
+              e.currentTarget.style.background = "#0F1519";
+              e.currentTarget.style.color = "#FFFFFF";
             }}
           >
-            Request access →
+            Request a founder seat →
           </Link>
 
           <Link
             to="/"
             className="text-sm font-medium"
-            style={{ color: "var(--lk)" }}
+            style={{ color: "#0670C4" }}
           >
             New here? See how Aura works →
           </Link>
