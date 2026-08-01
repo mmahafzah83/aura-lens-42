@@ -788,38 +788,38 @@ const Onboarding = () => {
   };
 
   // ─── Render helpers ───
-  const ProgressDots = () => (
-    <div className="flex items-center justify-center gap-2 mb-6">
-      {[0, 1, 2, 3].map((i) => {
-        const isCurrent = i === step;
-        const isDone = i < step;
-        return (
-          <div
-            key={i}
-            className="rounded-full transition-all duration-300 flex items-center justify-center"
-            style={{
-              width: 8,
-              height: 8,
-              background: isCurrent
-                ? "var(--brand)"
-                : isDone
-                ? "var(--pos)"
-                : "transparent",
-              border: isCurrent || isDone ? "none" : "1px solid var(--rule)",
-            }}
-          />
-        );
-      })}
-    </div>
-  );
+  const RAIL = ["Capture", "You", "Calibrate", "Assess", "Read"] as const;
+  const railIndex = (): number => {
+    if (showCaptureFirst) return 0;
+    if (showConnectStep) return 1;
+    if (step === 0) return 1;
+    if (step === 1) return 2;
+    if (step === 2) return 3;
+    return 4;
+  };
+  const ProgressDots = () => {
+    if (needsIdentityConfirm || needsPassword) return null;
+    const active = railIndex();
+    return (
+      <div className="ob-rail" aria-label={`Step ${active + 1} of ${RAIL.length}: ${RAIL[active]}`}>
+        {RAIL.map((name, i) => (
+          <div key={name} className={`ob-seg${i < active ? " done" : ""}${i === active ? " now" : ""}`}>
+            <span className="ob-nm">{name}</span>
+            <span className="ob-bar" />
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   const cardShell = (children: React.ReactNode) => (
     <div
-      className="min-h-screen w-full flex items-center justify-center px-5 py-10"
-      style={{ background: "var(--paper-2)" }}
+      className="ob min-h-screen w-full flex items-center justify-center px-5 py-10"
+      style={{ background: "#EAEFF5" }}
     >
+      <style>{OB_CSS}</style>
       <div
-        style={{ position: "relative", width: "100%", maxWidth: 560, maxHeight: "calc(100dvh - 80px)", display: "flex", flexDirection: "column" }}
+        style={{ position: "relative", width: "100%", maxWidth: 580, maxHeight: "calc(100dvh - 80px)", display: "flex", flexDirection: "column" }}
       >
         <div
           className="w-full"
@@ -828,12 +828,12 @@ const Onboarding = () => {
             overflowY: "auto",
             flex: "1 1 auto",
             minHeight: 0,
-            background: "var(--paper)",
-            color: "var(--ink)",
-            borderRadius: 16,
-            boxShadow: "0 8px 32px rgba(0,0,0,0.08), 0 8px 32px rgba(0,0,0,0.3)",
-            padding: "clamp(32px, 6vw, 48px)",
-            border: "1px solid var(--rule)",
+            background: "#FFFFFF",
+            color: "#0F1519",
+            borderRadius: 26,
+            boxShadow: "0 36px 76px -46px rgba(15,21,25,0.30)",
+            padding: "clamp(28px, 5vw, 44px)",
+            border: "1px solid #E2E7EE",
           }}
         >
           <ProgressDots />
@@ -857,7 +857,7 @@ const Onboarding = () => {
                 style={{
                   background: "none",
                   border: "none",
-                  color: "var(--ink-2)",
+                  color: "#5B6673",
                   fontSize: 12,
                   cursor: "pointer",
                   textDecoration: "underline",
@@ -877,9 +877,9 @@ const Onboarding = () => {
             bottom: 0,
             height: 40,
             pointerEvents: "none",
-            borderBottomLeftRadius: 16,
-            borderBottomRightRadius: 16,
-            background: "linear-gradient(to bottom, transparent, var(--paper))",
+            borderBottomLeftRadius: 26,
+            borderBottomRightRadius: 26,
+            background: "linear-gradient(to bottom, transparent, #FFFFFF)",
           }}
         />
       </div>
@@ -887,51 +887,23 @@ const Onboarding = () => {
   );
 
   const eyebrow = (text: string) => (
-    <p
-      className="font-semibold mb-3"
-      style={{
-        fontSize: 12,
-        letterSpacing: "0.1em",
-        textTransform: "uppercase",
-        color: "var(--brand)",
-      }}
-    >
-      {text}
-    </p>
+    <div className="ob-eyebrow"><span>{text}</span></div>
   );
 
   const heading = (text: string) => (
-    <h1
-      className="font-semibold mb-3"
-      style={{
-        fontFamily: "var(--font-display)",
-        fontSize: 28,
-        lineHeight: 1.2,
-        color: "var(--ink)",
-      }}
-    >
-      {text}
-    </h1>
+    <h1 className="ob-h1">{text}</h1>
   );
 
   const body = (text: React.ReactNode) => (
-    <p style={{ fontSize: 15, lineHeight: 1.7, color: "var(--ink)" }}>
-      {text}
-    </p>
+    <p className="ob-body">{text}</p>
   );
 
   const primaryBtn = (label: React.ReactNode, onClick: () => void, opts: { disabled?: boolean; loading?: boolean } = {}) => (
     <button
       onClick={onClick}
       disabled={opts.disabled || opts.loading}
-      className="w-full font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-      style={{
-        height: 48,
-        background: "var(--brand)",
-        color: "var(--ink)",
-        borderRadius: 10,
-        fontSize: 14,
-      }}
+      className="ob-btn"
+      style={{ marginTop: 22 }}
     >
       {opts.loading && <Loader2 className="w-4 h-4 animate-spin" />}
       {label}
@@ -939,26 +911,17 @@ const Onboarding = () => {
   );
 
   const ghostLink = (label: string, onClick: () => void) => (
-    <button
-      onClick={onClick}
-      className="w-full text-sm py-2 transition-colors"
-      style={{ color: "var(--ink-2)", background: "transparent" }}
-    >
-      {label}
-    </button>
+    <button onClick={onClick} className="ob-ghost">{label}</button>
   );
 
-  const inputCls = "w-full rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/40 transition-colors";
-  const inputStyle: React.CSSProperties = {
-    border: "1px solid var(--rule)",
-    background: "var(--paper-2)",
-    color: "var(--ink)",
-  };
+  const inputCls = "ob-field";
+  const inputStyle: React.CSSProperties = {};
 
   if (checking) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--paper-2)" }}>
-        <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--brand)" }} />
+      <div className="ob min-h-screen flex items-center justify-center" style={{ background: "#EAEFF5" }}>
+        <style>{OB_CSS}</style>
+        <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#0670C4" }} />
       </div>
     );
   }
