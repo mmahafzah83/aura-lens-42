@@ -509,19 +509,25 @@ const small = (n: number) => (n <= 10 ? WORD[n] : String(n));
 function buildFactPhrases(f: Facts, move: Move | null): string[] {
   const p: string[] = [];
   const ts = f.top_signal;
+  // A long theme title read twice makes the address sound stitched.
+  const shortTitle = (t: string) => {
+    const words = String(t).split(/\s+/);
+    return words.length > 7 ? `${words.slice(0, 7).join(" ")}…` : String(t);
+  };
 
   if (ts?.title) {
+    const title = shortTitle(ts.title);
     const month = monthOf(ts.first_fragment_date);
     const n = ts.fragment_count ?? 0;
-    if (n > 0 && month) p.push(`${n} fragments behind "${ts.title}" since ${month}`);
-    else if (n > 0) p.push(`${n} fragments behind "${ts.title}"`);
-    else p.push(`a theme called "${ts.title}"`);
-    if (ts.gained_last_7d) p.push(`new evidence for "${ts.title}" arrived this week`);
-    if (ts.velocity === "accelerating") p.push(`"${ts.title}" is picking up speed`);
+    if (n > 0 && month) p.push(`${n} fragments behind "${title}" since ${month}`);
+    else if (n > 0) p.push(`${n} fragments behind "${title}"`);
+    else p.push(`a theme called "${title}"`);
+    if (ts.gained_last_7d) p.push(`new evidence for "${title}" arrived this week`);
+    if (ts.velocity === "accelerating") p.push(`"${title}" is picking up speed`);
   }
 
   if ((f.signals_never_published_from ?? 0) > 0 && ts?.title) {
-    p.push(`nothing published yet from "${ts.title}"`);
+    p.push(`nothing published yet from "${shortTitle(ts.title)}"`);
   } else if ((f.signals_never_published_from ?? 0) > 0) {
     p.push(`${small(f.signals_never_published_from)} live themes you have never published from`);
   }
@@ -552,9 +558,8 @@ function buildFactPhrases(f: Facts, move: Move | null): string[] {
     p.push(`your ${String(f.facets_dormant[0]).replace(/_/g, " ")} has never registered`);
   }
 
-  if (f.last_night && (f.last_night.sources_read ?? 0) > 0) {
-    p.push(`Aura read ${small(f.last_night.sources_read)} sources overnight`);
-  }
+  const sr = f.last_night?.sources_read ?? 0;
+  if (sr > 0) p.push(`Aura read ${small(sr)} ${sr === 1 ? "source" : "sources"} overnight`);
 
   if (f.tier && f.next_band_name && f.points_to_next_band != null) {
     p.push(`${f.points_to_next_band} points between ${f.tier} and ${f.next_band_name}`);
