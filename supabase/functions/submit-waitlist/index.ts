@@ -2,8 +2,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
-  emailShell, heading, INK, INK_BODY, INK_MUTE,
-} from "../_shared/email-theme.ts";
+  renderEmail, heading, paragraph, signature, escapeHtml as esc,
+} from "../_shared/emailTemplate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -180,20 +180,14 @@ serve(withObserve("submit-waitlist", async (req) => {
     try {
       const resendKey = Deno.env.get("RESEND_API_KEY");
       if (resendKey) {
-        const escapeHtml = (s: string) =>
-          s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-           .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-        const safeName = escapeHtml(name);
+        const safeName = esc(name);
         const body = `
           ${heading(`${safeName}, you're on the list.`)}
-          <p style="font-size:15px;line-height:1.75;color:${INK_BODY};margin:0 0 16px;">We received your request.</p>
-          <p style="font-size:15px;line-height:1.75;color:${INK_BODY};margin:0 0 16px;">Aura is in private beta with fewer than 50 professionals. I review every application personally — not an algorithm, not a form filter. Me.</p>
-          <p style="font-size:15px;line-height:1.75;color:${INK_BODY};margin:0 0 16px;">I'll look at your background this week. If Aura is right for you, you'll receive an invitation with everything you need to get started.</p>
-          <p style="font-size:15px;line-height:1.75;color:${INK_MUTE};margin:16px 0 20px;">In the meantime — keep reading what matters to your sector. That's exactly what Aura will turn into presence.</p>
-          <p style="font-size:15px;color:${INK};font-weight:500;margin:20px 0 4px;">Mohammad Mahafdhah</p>
-          <p style="font-size:13px;color:${INK_MUTE};margin:0 0 8px;">Aura builder</p>
+          ${paragraph("We have your request. Aura is in private beta with fewer than 50 people, and I read every application myself.")}
+          ${paragraph("You'll hear back from me within 24 hours. If Aura is right for you, that reply will include your invitation.")}
+          ${signature()}
         `;
-        const html = emailShell({ preheader: "You're on the list", body });
+        const html = renderEmail({ preheader: "You're on the list", body });
         console.log(`[submit-waitlist] Attempting to send confirmation email to ${email}`);
         const res = await fetch("https://api.resend.com/emails", {
           method: "POST",

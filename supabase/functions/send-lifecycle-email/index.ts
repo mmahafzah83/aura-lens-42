@@ -2,6 +2,10 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { logError } from "../_shared/logError.ts";
+import {
+  renderEmail, heading as h1, paragraph, note, signature,
+  INK, INK_SOFT, INK_FAINT, CANVAS, ACCENT, BODY as BODY_FONT_STACK, MONO,
+} from "../_shared/emailTemplate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,53 +20,27 @@ const REPLY_TO = "mohammad.mahafdhah@aura-intel.org";
 
 type EmailType = "welcome" | "day1" | "day3" | "day7" | "first_signal" | "inactive" | "silence" | "post_ready" | "aura_card_ready" | "aura_card_nudge" | "aura_card_monthly";
 
-const HEADING_FONT = "'Cormorant Garamond', Georgia, 'Times New Roman', serif";
-const BODY_FONT = "'DM Sans', -apple-system, BlinkMacSystemFont, Arial, sans-serif";
+const BODY_FONT = BODY_FONT_STACK;
 
-function horizonEye(size: number, color: string) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 80 80" fill="none">
-    <path d="M8 40 C 22 22, 58 22, 72 40 C 58 58, 22 58, 8 40 Z" stroke="${color}" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-    <circle cx="40" cy="40" r="11" stroke="${color}" stroke-width="2" fill="none"/>
-    <circle cx="40" cy="40" r="4" fill="${color}"/>
-    <line x1="40" y1="6" x2="40" y2="14" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>
-    <line x1="40" y1="66" x2="40" y2="74" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>
-    <line x1="6" y1="40" x2="14" y2="40" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>
-    <line x1="66" y1="40" x2="74" y2="40" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>
-  </svg>`;
+// Every lifecycle email renders through the one shared System-B shell.
+function shell(_BRAND: string, _FONT: string, body: string) {
+  return renderEmail({ body });
 }
 
-function shell(BRAND: string, _FONT: string, body: string) {
-  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f5f1e8;font-family:${BODY_FONT};color:#1c1812;">
-<div style="max-width:560px;margin:0 auto;padding:32px 16px;">
-  <div style="background:#ffffff;border-radius:12px;overflow:hidden;">
-    <div style="padding:32px 36px 0;">${horizonEye(40, BRAND)}</div>
-    <div style="padding:20px 36px 36px;line-height:1.7;font-size:15px;color:#3a3530;">
-      ${body}
-    </div>
-    <div style="padding:20px 36px;border-top:1px solid #efeae0;">
-      <table role="presentation" cellpadding="0" cellspacing="0"><tr>
-        <td style="vertical-align:middle;padding-right:10px;">${horizonEye(20, BRAND)}</td>
-        <td style="vertical-align:middle;font-size:12px;color:#6b665c;">Aura · Personal Intelligence System · <a href="${APP_URL}" style="color:#6b665c;text-decoration:none;">aura-intel.org</a></td>
-      </tr></table>
-    </div>
-  </div>
-</div></body></html>`;
-}
-
-function ctaButton(BRAND: string, label: string, href: string) {
-  return `<p style="margin:28px 0;"><a href="${href}" style="display:inline-block;background:${BRAND};color:#ffffff;padding:0 28px;height:44px;line-height:44px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;font-family:${BODY_FONT};">${label}</a></p>`;
+function ctaButton(_BRAND: string, label: string, href: string) {
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0;"><tr>
+    <td align="center" bgcolor="${INK}" style="border-radius:999px;">
+      <a href="${href}" style="display:inline-block;padding:0 30px;height:48px;line-height:48px;font-family:${BODY_FONT};font-size:15px;font-weight:600;color:#FFFFFF;text-decoration:none;border-radius:999px;">${label}</a>
+    </td>
+  </tr></table>`;
 }
 
 function heading(text: string) {
-  return `<h1 style="font-family:${HEADING_FONT};font-size:28px;line-height:1.2;font-weight:500;color:#1c1812;margin:0 0 20px;">${text}</h1>`;
+  return h1(text);
 }
 
-function signoff(firstName: string, level: string | null) {
-  const role = level ? `${level}` : "Founder, Aura";
-  return firstName
-    ? `<p style="margin-top:28px;color:#3a3530;">— ${firstName}, ${role}<br/><span style="color:#8a8478;font-size:13px;">Aura · Personal Intelligence System</span></p>`
-    : `<p style="margin-top:28px;color:#3a3530;">— The Aura Team<br/><span style="color:#8a8478;font-size:13px;">Aura · Personal Intelligence System</span></p>`;
+function signoff(_firstName: string, _level: string | null) {
+  return signature();
 }
 
 function buildEmail(
@@ -105,7 +83,7 @@ function buildEmail(
       <p style="margin:0 0 18px;">Your system is live. Every article you capture, every insight you note, every voice memo you record — Aura finds the strategic patterns you didn't know were there.</p>
       <p style="margin:0 0 18px;">Your first mission: capture one thing you read this week that shaped your thinking about ${focus}. That single capture seeds your signal graph.</p>
       <p style="margin:0 0 18px;">One capture. That's the beginning.</p>
-      ${ctaButton(BRAND, "Make your first capture →", APP_URL)}
+      ${ctaButton(BRAND, "Make your first capture", APP_URL)}
       ${signoff(name, level)}`;
     return { subject, html: shell(BRAND, FONT, body) };
   }
@@ -118,13 +96,13 @@ function buildEmail(
         ${heading(`${name}, your first signal just formed.`)}
         <p style="margin:0 0 18px;">Aura connected your captures into a pattern: <strong>${top.signal_title}</strong>. This is the topic where your reading runs deepest.</p>
         <p style="margin:0 0 18px;">Aura can draft a LinkedIn post from this signal — in your voice, grounded in what you actually read. One click and you have your first post.</p>
-        ${ctaButton(BRAND, "Draft from your signal →", `${APP_URL}/dashboard?tab=publish`)}
+        ${ctaButton(BRAND, "Draft from your signal", `${APP_URL}/dashboard?tab=publish`)}
         ${signoff(name, level)}`
       : `
         ${heading(`${name}, your signals are forming.`)}
         <p style="margin:0 0 18px;">The captures you've made are being analyzed — signals emerge when Aura detects recurring themes across multiple sources.</p>
         <p style="margin:0 0 18px;">Feed it one more article. That's all it takes to start the pattern.</p>
-        ${ctaButton(BRAND, "Capture something →", APP_URL)}
+        ${ctaButton(BRAND, "Capture something", APP_URL)}
         ${signoff(name, level)}`;
     return { subject, html: shell(BRAND, FONT, body) };
   }
@@ -137,13 +115,13 @@ function buildEmail(
         ${heading(`${name}, your signal graph is forming.`)}
         <p style="margin:0 0 18px;">Aura detected ${signalCount} pattern${signalCount === 1 ? "" : "s"} from your captures. Your strongest: <strong>${top.signal_title}</strong> at ${Math.round(top.confidence * 100)}% confidence.</p>
         <p style="margin:0 0 18px;">This is the topic where your intelligence runs deepest. One more capture on this topic strengthens the signal. Two more and Aura can generate a post that sounds like you wrote it.</p>
-        ${ctaButton(BRAND, "See your signals →", `${APP_URL}/dashboard?tab=intelligence`)}
+        ${ctaButton(BRAND, "See your signals", `${APP_URL}/dashboard?tab=intelligence`)}
         ${signoff(name, level)}`
       : `
         ${heading(`${name}, your signal graph is waiting.`)}
         <p style="margin:0 0 18px;">The captures you've made are being analyzed — signals emerge when Aura detects recurring themes across multiple sources.</p>
         <p style="margin:0 0 18px;">Feed it one more article. That's all it takes to start the pattern.</p>
-        ${ctaButton(BRAND, "Capture something →", APP_URL)}
+        ${ctaButton(BRAND, "Capture something", APP_URL)}
         ${signoff(name, level)}`;
     return { subject, html: shell(BRAND, FONT, body) };
   }
@@ -158,28 +136,28 @@ function buildEmail(
       <p style="margin:0 0 18px;">${tierMessage}</p>
       <p style="margin:0 0 18px;">${trendLine}</p>
       <p style="margin:0 0 18px;">Publishing from your strongest signal builds presence fastest. Your signals are ready.</p>
-      ${ctaButton(BRAND, "Generate your first post →", `${APP_URL}/dashboard?tab=publish`)}
+      ${ctaButton(BRAND, "Generate your first post", `${APP_URL}/dashboard?tab=publish`)}
       ${signoff(name, level)}`;
     return { subject, html: shell(BRAND, FONT, body) };
   }
 
   if (type === "day7") {
-    const subject = "Your weekly intelligence brief";
+    const subject = "Your Aura brief";
     const top = topSignals[0];
     const topLine = top
       ? `<strong>${top.signal_title}</strong> leads at ${Math.round(top.confidence * 100)}%.`
-      : "No leading signal yet — a few more captures unlocks signal detection.";
+      : "No leading signal yet — a few more captures and signals start to form.";
     const fadingLine = fadingCount > 0
       ? `${fadingCount} signal${fadingCount === 1 ? "" : "s"} fading — they need fresh evidence.`
       : "No signals fading.";
-    const trendLine = recentTrend ? `<strong>${recentTrend.headline}</strong> (${recentTrend.source}).` : "Quiet week in your tracked sources.";
+    const trendLine = recentTrend ? `<strong>${recentTrend.headline}</strong> (${recentTrend.source}).` : "Quiet in your tracked sources.";
     const body = `
-      ${heading("One week with Aura. Here's your brief:")}
+      ${heading("Your brief")}
       <p style="margin:0 0 14px;">${signalCount} active signal${signalCount === 1 ? "" : "s"}. ${topLine} ${fadingLine} ${publishedCount} post${publishedCount === 1 ? "" : "s"} on LinkedIn.</p>
       <p style="margin:0 0 14px;">Imprint: <strong>${score ?? 0}</strong>${tier ? ` (${tier})` : ""}.</p>
-      <p style="margin:0 0 18px;">This week's market movement: ${trendLine}</p>
-      <p style="margin:0 0 18px;">The professionals who compound presence fastest publish from their signals weekly. Yours are ready.</p>
-      ${ctaButton(BRAND, "Open your weekly brief →", `${APP_URL}/dashboard?tab=intelligence`)}
+      <p style="margin:0 0 18px;">Recent market movement: ${trendLine}</p>
+      <p style="margin:0 0 18px;">Your signals are ready to publish from.</p>
+      ${ctaButton(BRAND, "Open your weekly brief", `${APP_URL}/dashboard?tab=intelligence`)}
       ${signoff(name, level)}`;
     return { subject, html: shell(BRAND, FONT, body) };
   }
@@ -191,9 +169,9 @@ function buildEmail(
     const body = `
       ${heading(`${name}, your post is waiting.`)}
       <p style="margin:0 0 18px;">You generated a LinkedIn post yesterday — and it's still waiting.</p>
-      <p style="margin:0 0 18px;padding:16px 20px;background:#f5f1e8;border-left:3px solid ${BRAND};font-style:italic;color:#3a3530;">"${preview}${preview.length >= 120 ? "..." : ""}"</p>
-      <p style="margin:0 0 18px;">One tap and it's live. The professionals who build presence don't wait for the perfect moment.</p>
-      ${ctaButton(BRAND, "Open in Publish tab →", `${APP_URL}/home?tab=authority`)}
+      <p style="margin:0 0 18px;padding:16px 20px;background:${CANVAS};border-left:2px solid ${ACCENT};font-style:italic;color:${INK_SOFT};">"${preview}${preview.length >= 120 ? "..." : ""}"</p>
+      <p style="margin:0 0 18px;">One tap and it is live.</p>
+      ${ctaButton(BRAND, "Open in Publish tab", `${APP_URL}/home?tab=authority`)}
       ${signoff(name, level)}`;
     return { subject, html: shell(BRAND, FONT, body) };
   }
@@ -204,7 +182,7 @@ function buildEmail(
       ${heading(`${name}, your Aura Card is ready.`)}
       <p style="margin:0 0 18px;">You finished the four steps — assessment, skills, photo, and country. Aura now has enough to render a shareable read of who you are, in one card.</p>
       <p style="margin:0 0 18px;">Open My Story to preview it, download the PNG, or share it to LinkedIn.</p>
-      ${ctaButton(BRAND, "See your card →", `${APP_URL}/dashboard?tab=identity`)}
+      ${ctaButton(BRAND, "See your card", `${APP_URL}/dashboard?tab=identity`)}
       ${signoff(name, level)}`;
     return { subject, html: shell(BRAND, FONT, body) };
   }
@@ -225,9 +203,9 @@ function buildEmail(
     const body = `
       ${heading(`${name}, you're ${n} step${n === 1 ? "" : "s"} away.`)}
       <p style="margin:0 0 14px;">Your Aura Card renders as soon as these are done:</p>
-      <ul style="margin:0 0 18px;padding-left:20px;color:#3a3530;">${bullets}</ul>
+      <ul style="margin:0 0 18px;padding-left:20px;color:${INK_SOFT};font-family:${BODY_FONT};font-size:15px;line-height:1.65;">${bullets}</ul>
       <p style="margin:0 0 18px;">A few minutes and the card is yours to preview, download, and share.</p>
-      ${ctaButton(BRAND, "Finish and see your card →", `${APP_URL}/dashboard?tab=identity`)}
+      ${ctaButton(BRAND, "Finish and see your card", `${APP_URL}/dashboard?tab=identity`)}
       ${signoff(name, level)}`;
     return { subject, html: shell(BRAND, FONT, body) };
   }
@@ -239,7 +217,7 @@ function buildEmail(
       ${heading(`${name}, your ${month} card is ready.`)}
       <p style="margin:0 0 18px;">A fresh read of who you are this month — your practice, your skills, your point of view. One card, made from your own signals.</p>
       <p style="margin:0 0 18px;">Open it, download the PNG, or share it to LinkedIn.</p>
-      ${ctaButton(BRAND, "View this month's card →", `${APP_URL}/dashboard?tab=identity`)}
+      ${ctaButton(BRAND, "View this month's card", `${APP_URL}/dashboard?tab=identity`)}
       ${signoff(name, level)}`;
     return { subject, html: shell(BRAND, FONT, body) };
   }
@@ -262,8 +240,8 @@ function buildEmail(
     ${heading(`${name}, while you were away:`)}
     <p style="margin:0 0 18px;">${f1Line}${f2Line}</p>
     <p style="margin:0 0 18px;">${trendLine}</p>
-    <p style="margin:0 0 18px;">One capture reverses the trajectory. The intelligence graph rewards consistency, not volume.</p>
-    ${ctaButton(BRAND, "Capture now →", APP_URL)}
+    <p style="margin:0 0 18px;">One capture brings them back. Consistency matters more than volume here.</p>
+    ${ctaButton(BRAND, "Capture now", APP_URL)}
     ${signoff(name, level)}`;
   return { subject, html: shell(BRAND, FONT, body) };
 }
@@ -474,11 +452,10 @@ serve(withObserve("send-lifecycle-email", async (req) => {
       .maybeSingle();
     const tier = (snap?.components as any)?.tier_name || (snap?.components as any)?.tier || null;
 
-    // Brand tokens
-    const { data: dsRow } = await admin.from("design_system").select("tokens").eq("is_active", true).maybeSingle();
-    const ds = (dsRow?.tokens as any) || {};
-    const BRAND = ds?.colors?.brand?.light || "#B08D3A";
-    const FONT = ds?.typography?.body || "DM Sans";
+    // Visual language is fixed by the shared email template; these are legacy
+    // pass-throughs kept only so buildEmail's signature stays unchanged.
+    const BRAND = INK;
+    const FONT = BODY_FONT_STACK;
 
     const { subject, html } = buildEmail(email_type, {
       BRAND,

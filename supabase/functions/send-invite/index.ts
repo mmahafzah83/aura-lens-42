@@ -2,10 +2,9 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
-  emailShell, sectionLabel, divider, button, pullQuote,
-  CARD, RULE, INK, INK_BODY, INK_MUTE, AMBER, OXBLOOD,
-  SERIF, BODY, MONO, ARABIC,
-} from "../_shared/email-theme.ts";
+  renderEmail, label, heading, paragraph, note, quote, divider, signature,
+  escapeHtml as esc,
+} from "../_shared/emailTemplate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,155 +20,39 @@ const REDIRECT_URL = "https://aura-intel.org/auth";
 const ACCEPTANCE_URL = "https://aura-intel.org/accept-invitation";
 
 const buildEmailHtml = () => {
-  const statCell = (num: string, desc: string) => `
-    <td valign="top" style="width:50%;padding:14px 12px;background:${CARD};border:1px solid ${RULE};border-radius:8px;">
-      <div style="font-family:${SERIF};font-size:28px;line-height:1.1;color:${OXBLOOD};margin:0 0 8px;">${num}</div>
-      <div style="font-family:${BODY};font-size:12px;line-height:1.5;color:${INK_MUTE};">${desc}</div>
-    </td>`;
-  const statSpacer = `<td style="width:12px;font-size:0;line-height:0;">&nbsp;</td>`;
-
-  const milestone = (
-    label: string,
-    title: string,
-    desc: string,
-    filled: boolean,
-    isLast: boolean,
-  ) => {
-    const dot = filled
-      ? `<div style="width:13px;height:13px;border-radius:50%;background:${AMBER};margin:4px auto 0;"></div>`
-      : `<div style="width:13px;height:13px;border-radius:50%;border:1px solid ${RULE};box-sizing:border-box;margin:4px auto 0;"></div>`;
-    const line = isLast
-      ? ""
-      : `<div style="width:1px;background:${RULE};margin:6px auto 0;height:100%;min-height:48px;"></div>`;
-    return `
-      <tr>
-        <td valign="top" width="28" style="width:28px;padding:0 12px 0 0;">
-          ${dot}
-          ${line}
-        </td>
-        <td valign="top" style="padding:0 0 22px;">
-          <div style="font-family:${MONO};font-size:10px;letter-spacing:1.5px;color:${INK_MUTE};font-weight:700;margin:0 0 6px;">${label}</div>
-          <div style="font-family:${BODY};font-size:14px;color:${INK};font-weight:600;margin:0 0 6px;line-height:1.4;">${title}</div>
-          <div style="font-family:${BODY};font-size:13px;color:${INK_BODY};line-height:1.55;">${desc}</div>
-        </td>
-      </tr>`;
-  };
-
-  const howRow = (symbol: string, title: string, desc: string, accent: string = AMBER) => `
+  const step = (n: string, title: string, desc: string) => `
     <tr>
-      <td valign="top" width="28" style="width:28px;padding:0 12px 18px 0;font-family:${SERIF};font-size:18px;color:${accent};line-height:1.2;">${symbol}</td>
-      <td valign="top" style="padding:0 0 18px;">
-        <div style="font-family:${BODY};font-size:14px;color:${INK};font-weight:600;margin:0 0 6px;">${title}</div>
-        <div style="font-family:${BODY};font-size:13px;color:${INK_BODY};line-height:1.6;">${desc}</div>
+      <td valign="top" width="26" style="width:26px;padding:0 12px 16px 0;font-family:'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;font-size:11px;letter-spacing:.16em;color:#98A2AE;line-height:1.6;">${n}</td>
+      <td valign="top" style="padding:0 0 16px;">
+        <div style="font-family:'Inter', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;font-size:14px;font-weight:600;color:#0F1519;margin:0 0 4px;">${title}</div>
+        <div style="font-family:'Inter', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;font-size:13px;line-height:1.6;color:#5B6673;">${desc}</div>
       </td>
     </tr>`;
 
   const body = `
-    <p style="font-family:${BODY};font-size:15px;line-height:1.7;color:${INK};font-weight:600;margin:0 0 18px;">{{GREETING}}</p>
-    <p style="font-family:${BODY};font-size:15px;line-height:1.7;color:${INK_BODY};margin:0 0 18px;">I don't send these often. And I'll be honest with you.</p>
-    <p style="font-family:${BODY};font-size:15px;line-height:1.7;color:${INK_BODY};margin:0 0 20px;">I built Aura because I was tired of watching the smartest people in the room stay invisible.</p>
-    ${pullQuote("You know the feeling. You've spent years becoming exceptional at what you do. You've led teams, shaped strategy, solved problems most people can't even name. But when someone outside your direct circle searches your name — they find almost nothing. No signal. No fingerprint. No proof of what you actually know.")}
-    <p style="font-family:${BODY};font-size:15px;line-height:1.7;color:${INK_BODY};margin:0 0 18px;">Meanwhile, professionals who publish consistently — even when their expertise is narrower than yours — are the ones getting invited to the table. The keynote slots. The "have you seen what they wrote?" reputation.</p>
-    <p style="font-family:${BODY};font-size:15px;line-height:1.7;color:${INK_BODY};margin:0 0 18px;">The problem was never your expertise. It was never your knowledge. It was never your ideas.</p>
-    <p style="font-family:${BODY};font-size:15px;line-height:1.7;color:${INK_BODY};margin:0 0 20px;">The problem is that <strong style="color:${INK};">no one has helped you turn what's in your head into what the market sees.</strong></p>
-    <p style="font-family:${SERIF};font-size:22px;line-height:1.3;color:${OXBLOOD};margin:8px 0 28px;">Until now.</p>
-
-    ${divider()}
-
-    ${sectionLabel("WHY I BUILT THIS")}
-    <p style="font-family:${BODY};font-size:15px;line-height:1.7;color:${INK_BODY};margin:0 0 18px;">Because I'm one of you.</p>
-    <p style="font-family:${BODY};font-size:15px;line-height:1.7;color:${INK_BODY};margin:0 0 18px;">I read 30+ articles a week. I see patterns in digital transformation that most reports miss. I hold opinions that could shape how utilities and infrastructure organizations think about their future.</p>
-    <p style="font-family:${BODY};font-size:15px;line-height:1.7;color:${INK_BODY};margin:0 0 18px;">But for years, all of that stayed locked in my head, my notes, my devices. The market had no idea.</p>
-    <p style="font-family:${BODY};font-size:15px;line-height:1.7;color:${INK_BODY};margin:0 0 22px;">So I built the system I wished existed. One that takes what I already read, finds the strategic patterns, understands my voice and my expertise — and turns it into a digital presence that compounds over time.</p>
-    <p style="font-family:${SERIF};font-size:20px;line-height:1.3;color:${OXBLOOD};margin:0 0 28px;">I called it Aura. And now it's ready for you.</p>
-
-    ${divider()}
-
-    ${sectionLabel("THE NUMBERS DON'T LIE")}
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:separate;border-spacing:0;margin:0 0 12px;">
-      <tr>
-        ${statCell("73%", "of decision-makers trust expertise content over marketing materials")}
-        ${statSpacer}
-        ${statCell("82%", "trust companies more when senior leaders are visible online")}
-      </tr>
-      <tr><td colspan="3" style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr>
-      <tr>
-        ${statCell("54%", "have rejected candidates because of invisible online presence")}
-        ${statSpacer}
-        ${statCell("<3%", "of LinkedIn's 1B+ users create original content weekly")}
-      </tr>
-      <tr><td colspan="3" style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr>
-      <tr>
-        <td colspan="3" valign="top" style="padding:14px 12px;background:${CARD};border:1px solid ${RULE};border-radius:8px;text-align:center;">
-          <div style="font-family:${SERIF};font-size:28px;line-height:1.1;color:${OXBLOOD};margin:0 0 8px;">44%</div>
-          <div style="font-family:${BODY};font-size:12px;line-height:1.5;color:${INK_MUTE};">of company value is tied to its leader's reputation</div>
-        </td>
-      </tr>
-    </table>
-    <p style="font-family:${BODY};font-size:14px;line-height:1.7;color:${INK_BODY};margin:22px 0 14px;">You're already in the top 1% of expertise. Aura puts you in the top 1% of visibility — without changing how you spend your week.</p>
-    <p style="font-family:${MONO};font-size:11px;color:${INK_MUTE};margin:0 0 26px;">Sources: Edelman-LinkedIn 2024/2025, Weber Shandwick, Brunswick Group</p>
-
-    ${divider()}
-
-    ${sectionLabel("HOW AURA WORKS")}
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
-      ${howRow("&#10022;", "The identity map", "Aura doesn't start with content. It starts with YOU. Your strengths. Your sector expertise. Your natural voice. It builds a complete map of who you are professionally — so nothing it creates is generic.", AMBER)}
-      ${howRow("&#9670;", "The intelligence engine", "You read an article. Aura reads it too. It finds the strategic pattern you'd miss on a busy Tuesday — and connects it to what matters in your sector right now.", OXBLOOD)}
-      ${howRow("&#9671;", "The voice studio", "Aura writes in your voice. Not templates. Not AI speak. Content that sounds like you wrote it at your absolute best — the version of you that had 3 uninterrupted hours to think and write.", AMBER)}
-      ${howRow("&#9679;", "The Imprint", "Aura tracks your digital visibility over time — what's working, what's growing, where the right people are noticing you. Your reputation, measured and compounding.", OXBLOOD)}
-    </table>
-
-    ${divider()}
-
-    ${sectionLabel("WHAT CHANGES FOR YOU")}
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
-      ${milestone("DAY 1", "Aura learns who you are.", "Your strengths. Your sector. Your voice. By the end of your first session, Aura knows what makes you different from every other professional in your market.", true, false)}
-      ${milestone("WEEK 1", "Your first post goes live.", "A LinkedIn post that sounds like you — not like AI. About a signal Aura found in what you read. Your expertise, visible for the first time to people who've never met you.", true, false)}
-      ${milestone("MONTH 1", "People start to notice.", "Consistent, intelligent content builds recognition. Decision-makers in your sector start seeing your name next to insights they care about. The compound effect begins.", false, false)}
-      ${milestone("MONTH 3", "The invitations arrive.", "Speaking panels. Advisory requests. DMs from people you've never met saying 'I've been following your content.' The market is finding you — because Aura made your expertise impossible to miss.", false, false)}
-      ${milestone("YEAR 1", "You own your space.", "When someone in your industry mentions your topic — your name comes up. Not because you marketed yourself. Because your expertise finally has the fingerprint it always deserved.", false, true)}
-    </table>
-
-    ${divider()}
-
-    ${sectionLabel("YOUR INVITATION")}
-    <p style="font-family:${BODY};font-size:15px;line-height:1.7;color:${INK_BODY};margin:0 0 14px;">You're one of fewer than 50 professionals with access right now.</p>
-    <p style="font-family:${BODY};font-size:15px;line-height:1.7;color:${INK_BODY};margin:0 0 18px;">This isn't a mass email. I reviewed your profile personally.</p>
+    ${label("A private invitation")}
+    ${heading("{{GREETING}} your Aura is ready.")}
+    ${paragraph("I built Aura because the smartest people I know stay invisible. Not for lack of expertise — for lack of a way to turn what they already read and think into something the market can see.")}
+    ${paragraph("Aura reads what you read, finds the pattern in it, and drafts a post in your own voice. You approve it. That's the whole loop.")}
     {{INVITER_NOTE_BLOCK}}
-    <p style="font-family:${BODY};font-size:15px;line-height:1.7;color:${INK_BODY};margin:0 0 18px;">When you click below, Aura will guide you through a 10-minute experience unlike anything you've seen in a professional tool. It will learn your voice, map your strengths, and show you how the market sees your expertise.</p>
-    <p style="font-family:${BODY};font-size:15px;line-height:1.7;color:${INK_BODY};margin:0 0 26px;">Give it your full attention. It's worth it.</p>
-    <div style="margin:0 0 14px;">${button("{{CONFIRMATION_URL}}", "Open my Aura →")}</div>
-    <p style="font-family:${MONO};font-size:11px;color:${INK_MUTE};margin:0 0 28px;">This link expires in 24 hours.</p>
-
     ${divider()}
-
-    ${sectionLabel("YOUR FIRST 10 MINUTES")}
-    <p style="font-family:${BODY};font-size:15px;line-height:1.7;color:${INK_BODY};margin:0 0 22px;">You'll feel the difference immediately.</p>
-
-    <p style="font-family:${BODY};font-size:14px;line-height:1.7;color:${INK};margin:0 0 4px;font-weight:600;">1 · Accept your invitation</p>
-    <p style="font-family:${BODY};font-size:13px;line-height:1.7;color:${INK_BODY};margin:0 0 18px;">A welcome that shows you this was built for someone at your level.</p>
-
-    <p style="font-family:${BODY};font-size:14px;line-height:1.7;color:${INK};margin:0 0 4px;font-weight:600;">2 · Tell Aura who you are</p>
-    <p style="font-family:${BODY};font-size:13px;line-height:1.7;color:${INK_BODY};margin:0 0 18px;">Paste your LinkedIn headline. Aura reads it in 3 seconds — no forms, no typing.</p>
-
-    <p style="font-family:${BODY};font-size:14px;line-height:1.7;color:${INK};margin:0 0 4px;font-weight:600;">3 · Calibrate your edge</p>
-    <p style="font-family:${BODY};font-size:13px;line-height:1.7;color:${INK_BODY};margin:0 0 18px;">10 quick strength sliders. Aura uses them to understand what truly sets you apart — and gives you instant insight on each one.</p>
-
-    <p style="font-family:${BODY};font-size:14px;line-height:1.7;color:${INK};margin:0 0 4px;font-weight:600;">4 · See yourself through the market's eyes</p>
-    <p style="font-family:${BODY};font-size:13px;line-height:1.7;color:${INK_BODY};margin:0 0 22px;">The moment that changes how you see your own expertise. People screenshot this. You'll understand why.</p>
-
+    ${label("Your first ten minutes")}
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 8px;">
+      ${step("01", "Accept your invitation", "One click from the button below.")}
+      ${step("02", "Tell Aura who you are", "Paste your LinkedIn headline. No forms.")}
+      ${step("03", "Calibrate your strengths", "Ten sliders, your own read. Aura corrects it from there.")}
+      ${step("04", "See how the market reads you", "The first thing Aura gives back.")}
+    </table>
     ${divider()}
-
-    <p style="font-family:${BODY};font-size:15px;line-height:1.7;color:${INK_BODY};margin:0 0 22px;">I'll be watching to see what Aura discovers about you.</p>
-    <p dir="rtl" lang="ar" style="font-family:${ARABIC};font-size:16px;color:${OXBLOOD};text-align:center;margin:18px 0 26px;">حتى السوق يعرفك قبل ما يشوفك ✦</p>
-    <p style="font-family:${BODY};font-size:15px;color:${INK};font-weight:600;margin:0 0 4px;">Mohammad Mahafdhah</p>
-    <p style="font-family:${BODY};font-size:13px;color:${INK_MUTE};margin:0;">Aura builder</p>
+    ${paragraph("Fewer than 50 people have access right now. I read your profile myself before sending this.")}
+    ${note("This link expires in 24 hours.")}
+    ${signature()}
   `;
 
-  return emailShell({
-    preheader: "A private invitation. Fewer than 50 professionals have access.",
+  return renderEmail({
+    preheader: "A private invitation. Fewer than 50 people have access.",
     body,
-    maxWidth: 600,
+    cta: { href: "{{CONFIRMATION_URL}}", label: "Open my Aura" },
   });
 };
 
@@ -291,16 +174,10 @@ serve(withObserve("send-invite", async (req) => {
       console.warn("[send-invite] could not wrap confirmationUrl, using raw verify URL", e);
     }
 
-    // Escape inviter note to prevent HTML injection
-    const escapeHtml = (s: string) => s
-      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-    const inviterNoteBlock = inviterNote
-      ? `<div style="margin:8px 0 18px;padding:14px 16px;background:${CARD};border:1px solid ${RULE};border-left:3px solid ${AMBER};border-radius:4px;font-family:${BODY};font-size:14px;line-height:1.7;color:${INK_BODY};font-style:italic;">${escapeHtml(inviterNote)}</div>`
-      : "";
+    const inviterNoteBlock = inviterNote ? quote(esc(inviterNote)) : "";
 
     // Build email HTML
-    const greeting = firstName ? `Hi ${escapeHtml(firstName)},` : "Hi there,";
+    const greeting = firstName ? `${esc(firstName)},` : "Hi there,";
     const html = buildEmailHtml()
       .replace(/{{GREETING}}/g, greeting)
       .replace(/{{CONFIRMATION_URL}}/g, ceremonyUrl)
