@@ -410,7 +410,7 @@ const AnalyticsV2: React.FC<{ onOpenChat?: (msg?: string) => void }> = ({ onOpen
                 : `${Math.min(3, mix.segs.length)} theme${Math.min(3, mix.segs.length) === 1 ? "" : "s"} carry ${mix.topShare}% of the ${mix.total} posts you have live on LinkedIn. "${mix.segs[0].label}" leads at ${mix.segs[0].pct}%.`}
             </Reading>
             <Reading>
-              {`Of those ${postCounts.live}, ${postCounts.throughAura} were written through Aura and ${postCounts.imported} are your own imported history. Posts by other people that Aura found while searching are not counted.`}
+              {`Two numbers, never one: ${postCounts.live} live on LinkedIn · ${postCounts.madeWithAura} made with Aura, ${postCounts.sentFromAura} of them sent from here. The rest is your own imported history. Posts by other people that Aura found while searching are not counted.`}
             </Reading>
           </>
         )}
