@@ -1035,11 +1035,7 @@ function ResultsView({
       >
         <div
           style={{
-            fontSize: 11,
-            letterSpacing: "3px",
-            textTransform: "uppercase",
-            color: "var(--action)",
-            fontWeight: 600,
+            ...labelCaps,
             opacity: 0,
             animation: "aura-fade-in 500ms ease-out 800ms forwards",
           }}
@@ -1049,10 +1045,10 @@ function ResultsView({
 
         <h2
           style={{
-            fontFamily: "var(--serif)",
+            fontFamily: SERIF,
             fontSize: "clamp(28px, 5vw, 36px)",
             fontWeight: 400,
-            color: "var(--ink)",
+            color: INK,
             lineHeight: 1.15,
             letterSpacing: "-0.01em",
             margin: "18px 0 14px",
@@ -1079,7 +1075,7 @@ function ResultsView({
           <p
             style={{
               fontSize: 16,
-              color: "var(--ink-5)",
+              color: INK_SOFT,
               lineHeight: 1.625,
               maxWidth: 520,
               margin: 0,
@@ -1097,8 +1093,9 @@ function ResultsView({
               <span
                 key={i}
                 style={{
-                  border: "1px solid color-mix(in srgb, var(--action) 35%, transparent)",
-                  color: "var(--action)",
+                  border: 0,
+                  background: ACT_TINT,
+                  color: ACT,
                   borderRadius: 999,
                   fontSize: 12,
                   padding: "5px 12px",
@@ -1122,7 +1119,8 @@ function ResultsView({
         <button
           type="button"
           onClick={() => setShowFull(v => !v)}
-          style={{ background: "transparent", border: 0, color: "var(--action)", fontSize: 13, cursor: "pointer", fontWeight: 500 }}
+          className="px-4 py-2.5"
+          style={{ ...quietPill, fontWeight: 500 }}
         >
           {showFull ? "Hide the full picture ↑" : "See the full picture →"}
         </button>
@@ -1132,8 +1130,8 @@ function ResultsView({
       {showFull && (
         <div
           style={{
-            background: "hsl(var(--card))",
-            border: "1px solid hsl(var(--border))",
+            background: SURFACE,
+            border: `1px solid ${RULE}`,
             borderRadius: 14,
             padding: "8px 4px",
           }}
@@ -1142,33 +1140,26 @@ function ResultsView({
             const isOpen = !!openSections[idx];
             const content = extractSection(prose, s.key);
             return (
-              <div key={s.key} style={{ borderBottom: idx < SECTION_DEFS.length - 1 ? "1px solid hsl(var(--border))" : "none" }}>
+              <div key={s.key} style={{ borderBottom: idx < SECTION_DEFS.length - 1 ? `1px solid ${RULE}` : "none" }}>
                 <button
                   type="button"
                   onClick={() => setOpenSections(prev => ({ ...prev, [idx]: !prev[idx] }))}
-                  className="w-full text-left px-4 py-3 flex items-start justify-between gap-3 hover:bg-white/[0.02] transition-colors"
+                  className="w-full text-left px-4 py-3 flex items-start justify-between gap-3 transition-colors"
                   style={{ background: "transparent", border: 0, cursor: "pointer" }}
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div
-                      style={{
-                        fontFamily: "var(--serif)",
-                        fontSize: 14,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.1em",
-                        color: "var(--action)",
-                        fontWeight: 600,
-                      }}
+                      style={{ ...labelCaps, color: ACT, fontWeight: 600 }}
                     >
                       {s.label}
                     </div>
-                    <div style={{ fontSize: 12, fontStyle: "italic", color: "var(--ink-4)", marginTop: 2 }}>
+                    <div style={{ fontSize: 12, fontStyle: "italic", color: INK_FAINT, marginTop: 2 }}>
                       {s.hint}
                     </div>
                   </div>
                   <ChevronDown
-                    className="w-4 h-4 text-ink-4 shrink-0 mt-1"
-                    style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 200ms ease" }}
+                    className="w-4 h-4 shrink-0 mt-1"
+                    style={{ color: INK_FAINT, transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 200ms ease" }}
                   />
                 </button>
                 <div
@@ -1178,14 +1169,21 @@ function ResultsView({
                     transition: "max-height 200ms ease",
                   }}
                 >
-                  <div className="prose prose-sm max-w-none px-4 pb-4
-                    [&_p]:text-ink-6 [&_p]:text-[14px] [&_p]:leading-relaxed [&_p]:mb-2
-                    [&_strong]:text-brand
-                    [&_li]:text-ink-6 [&_li]:text-[14px]
-                  ">
+                  <div
+                    className="prose prose-sm max-w-none px-4 pb-4
+                    [&_p]:text-[14px] [&_p]:leading-relaxed [&_p]:mb-2
+                    [&_li]:text-[14px]
+                  "
+                    style={{
+                      ["--tw-prose-body" as any]: INK_SOFT,
+                      ["--tw-prose-bold" as any]: INK,
+                      ["--tw-prose-bullets" as any]: INK_FAINT,
+                      color: INK_SOFT,
+                    }}
+                  >
                     {content
                       ? <ReactMarkdown>{content}</ReactMarkdown>
-                      : <p className="text-sm text-ink-4 italic">Not enough signal yet — keep using Aura and this will sharpen.</p>}
+                      : <p className="text-sm italic" style={{ color: INK_FAINT }}>Not enough signal yet — keep using Aura and this will sharpen.</p>}
                   </div>
                 </div>
               </div>
