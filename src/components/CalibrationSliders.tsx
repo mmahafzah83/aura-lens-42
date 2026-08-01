@@ -406,25 +406,25 @@ const SummaryCard = ({ summary, scores, submitting, reduceMotion, onFinish, onBa
 
   return (
     <div style={{ textAlign: "center" }}>
-      <div style={{ fontSize: 24, color: BRONZE, marginBottom: 12 }}>✦</div>
+      <div style={{ fontSize: 24, color: ACT, marginBottom: 12 }}>✦</div>
       <h2 style={{
-        fontFamily: "var(--serif)",
-        fontSize: 22, color: "var(--ink)", marginBottom: 24,
+        fontFamily: SERIF,
+        fontSize: 22, color: INK, marginBottom: 24,
       }}>
         Your Calibration
       </h2>
 
       <div style={{ textAlign: "left", maxWidth: 360, margin: "0 auto 20px" }}>
-        <p style={{ fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 8 }}>
+        <p style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: INK_FAINT, marginBottom: 8 }}>
           Strongest edges
         </p>
         {summary.top2.map((d) => (
-          <p key={d.id} style={{ fontSize: 14, color: "var(--ink)", marginBottom: 6, display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ color: BRONZE }}>◆</span>
+          <p key={d.id} style={{ fontSize: 14, color: INK, marginBottom: 6, display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ color: ACT }}>◆</span>
             <span>{d.name}</span>
             <span style={{
-              marginLeft: "auto", color: BRONZE, fontFamily: "var(--font-mono)",
-              boxShadow: numbersDone >= totalNumbers ? "0 0 8px rgba(176,141,58,0.3)" : "none",
+              marginLeft: "auto", color: ACT, fontFamily: MONO,
+              boxShadow: numbersDone >= totalNumbers ? "0 0 8px rgba(6,112,196,0.25)" : "none",
               borderRadius: 4, padding: "0 4px", transition: "box-shadow 400ms ease",
             }}>
               <CountUp value={scores[d.id]} reduceMotion={reduceMotion} onDone={onNumDone} />
@@ -432,15 +432,15 @@ const SummaryCard = ({ summary, scores, submitting, reduceMotion, onFinish, onBa
           </p>
         ))}
 
-        <p style={{ fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--ink-3)", margin: "18px 0 8px" }}>
+        <p style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: INK_FAINT, margin: "18px 0 8px" }}>
           Biggest growth territory
         </p>
-        <p style={{ fontSize: 14, color: "var(--ink-3)", marginBottom: 6, display: "flex", alignItems: "center", gap: 8 }}>
+        <p style={{ fontSize: 14, color: INK_SOFT, marginBottom: 6, display: "flex", alignItems: "center", gap: 8 }}>
           <span>◇</span>
           <span>{summary.lowest.name}</span>
           <span style={{
-            marginLeft: "auto", fontFamily: "var(--font-mono)",
-            color: "var(--ink-3)",
+            marginLeft: "auto", fontFamily: MONO,
+            color: INK_SOFT,
           }}>
             <CountUp value={scores[summary.lowest.id]} reduceMotion={reduceMotion} onDone={onNumDone} />
           </span>
@@ -450,7 +450,7 @@ const SummaryCard = ({ summary, scores, submitting, reduceMotion, onFinish, onBa
       <motion.p
         animate={{ opacity: showPercentile ? 1 : 0 }}
         transition={{ duration: 0.5 }}
-        style={{ fontSize: 13, color: "var(--ink-3)", marginBottom: 12 }}
+        style={{ fontSize: 13, color: INK_SOFT, marginBottom: 12 }}
       >
         Your calibration places you in the {summary.percentile} of professionals who've completed this assessment.
       </motion.p>
@@ -460,7 +460,7 @@ const SummaryCard = ({ summary, scores, submitting, reduceMotion, onFinish, onBa
           <motion.p
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            style={{ fontSize: 13, color: "var(--ink-3)", marginBottom: 20, fontStyle: "italic" }}
+            style={{ fontSize: 13, color: INK_SOFT, marginBottom: 20, fontStyle: "italic" }}
           >
             {companion}
           </motion.p>
@@ -471,19 +471,15 @@ const SummaryCard = ({ summary, scores, submitting, reduceMotion, onFinish, onBa
         <button
           onClick={onBack}
           className="flex items-center gap-1.5 text-sm"
-          style={{ color: "var(--ink-3)", background: "transparent", padding: "10px 8px" }}
+          style={{ color: INK_SOFT, background: "transparent", padding: "10px 8px" }}
         >
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
         <button
           onClick={onFinish}
           disabled={submitting}
-          className="font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-          style={{
-            height: 44, padding: "0 22px",
-            background: BRONZE, color: "var(--ink)",
-            borderRadius: 10, fontSize: 14,
-          }}
+          className="font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-50 hover:-translate-y-0.5"
+          style={pillBtn}
         >
           {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
           Continue <ArrowRight className="w-4 h-4" />
