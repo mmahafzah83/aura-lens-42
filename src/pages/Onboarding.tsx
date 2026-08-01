@@ -1409,6 +1409,9 @@ const Onboarding = () => {
         ) : (
           <>
             {heading("Confirm your profile")}
+            <p className="mb-4" style={{ fontSize: 13, lineHeight: 1.6, color: "#98A2AE" }}>
+              Wrong title or sector, and every draft is aimed at the wrong room.
+            </p>
             {usedLinkedIn && (
               <p className="mb-5 flex items-center gap-2 text-sm" style={{ color: "#12805C" }}>
                 <Check className="w-4 h-4" /> Profile read successfully — edit anything that's not quite right.
@@ -1443,8 +1446,11 @@ const Onboarding = () => {
               <CountryPicker
                 value={countryCode}
                 onChange={(name, code) => { setCountry(name); setCountryCode(code); }}
-                label="Country (optional)"
+                label="Where you're based (optional)"
               />
+              <p style={{ fontSize: 12, lineHeight: 1.6, color: "#98A2AE", marginTop: 6 }}>
+                Used for one thing — the flag on your Aura card. Not your nationality; the country you work from. Leave it blank and nothing changes.
+              </p>
             </div>
             <div className="mb-3">
               <label className="text-xs font-medium block mb-1" style={{ color: "#5B6673" }}>Core practice</label>
@@ -1470,7 +1476,10 @@ const Onboarding = () => {
                 style={{ marginTop: 3, width: 16, height: 16, accentColor: "#0670C4" }}
               />
               <span style={{ fontSize: 13, lineHeight: 1.55, color: "#0F1519" }}>
-                Help shape Aura for leaders in your field. With your permission, Aura learns anonymous, aggregated patterns from how members like you use it — never your content, drafts, or identity. You can change this anytime in Settings.
+                <strong>Make Aura sharper for people in your field.</strong><br />
+                On: Aura studies anonymous patterns across members like you and uses them to improve the system — including for you.<br />
+                Off: nothing changes. You keep every feature and every improvement. You just don't shape them.<br />
+                Never your content, your drafts, or your name. Change it anytime in Settings.
               </span>
             </label>
             {consentTouched && !sharedLearningConsent && (
@@ -1478,9 +1487,7 @@ const Onboarding = () => {
                 border: "1px solid #E2E7EE", borderRadius: 10, background: "#F2F5F9" }}>
                 <p style={{ fontSize: 13, lineHeight: 1.6, color: "#0F1519", margin: 0 }}>
                   <strong>No problem — you keep every feature.</strong><br />
-                  This never touches your content, drafts, or identity. Only anonymous patterns across your field.<br />
-                  With it on, you help sharpen how Aura serves leaders in your field — the same room you're
-                  building presence in. Off, you still benefit from everyone else; you just don't shape it.
+                  This never touches your content, drafts, or identity — only anonymous patterns across your field. Off, you still benefit from everyone else's; you just don't shape them.
                 </p>
                 <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
                   <button type="button" onClick={() => setSharedLearningConsent(true)}
