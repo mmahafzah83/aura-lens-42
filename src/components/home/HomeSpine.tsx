@@ -290,6 +290,8 @@ export default function HomeSpine({ userId, onSwitchTab, onStartSignalPost, onOp
             <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: "var(--v23-on-night)" }}>
               {firstRun
                 ? "You have just arrived. Capture one thing you read and the rest of this page fills itself in."
+                : address.errored
+                ? "Aura's read is not available right now. Everything below is still yours."
                 : "Today's address could not be written. Everything below is still drawn from your own record."}
             </p>
           )}
