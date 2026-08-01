@@ -15,39 +15,53 @@ export interface ShelfItem {
   machine?: boolean;
 }
 
-export function buildShelf(facts: HomeFacts | null, moves: HomeMove[], themes: number): ShelfItem[] {
+export function buildShelf(
+  facts: HomeFacts | null,
+  moves: HomeMove[],
+  themes: number,
+  layout?: WidgetLayout,
+  metrics?: WidgetMetrics | null,
+): ShelfItem[] {
   const f = facts ?? {};
   const ln = f.last_night;
+  const drafts = f.drafts_total ?? 0;
+  const widgetsOn = layout ? WIDGET_DEFS.filter((d) => layout[d.key]).length : 0;
   return [
     {
       key: "moves",
       title: "Today in order",
       fact: moves.length
         ? `${moves.length} move${moves.length === 1 ? "" : "s"} · about ${moves.reduce((a, m) => a + (m.est_minutes || 0), 0)} minutes`
-        : "Nothing worth your time today",
+        : "Nothing today. Keep something you read and one will appear.",
     },
     {
       key: "stand",
       title: "Where you stand",
-      fact: f.imprint != null ? `${f.imprint}/100 · ${f.tier ?? "unbanded"}` : "No score recorded yet",
+      fact: f.imprint != null
+        ? `${f.imprint}/100 · ${f.tier ?? "unbanded"}`
+        : "No score yet. Publishing once gives Aura something to score.",
     },
     {
       key: "own",
       title: "What you own",
-      fact: themes > 0 ? `${themes} live theme${themes === 1 ? "" : "s"}` : "No themes yet",
+      fact: themes > 0
+        ? `${themes} live theme${themes === 1 ? "" : "s"}`
+        : "No themes yet. They form once you have kept a handful of things.",
     },
     {
       key: "night",
       title: "While you slept",
       fact: ln
         ? `${ln.sources_read} read · ${ln.drafts_written} written`
-        : "Aura has not run yet",
+        : "Aura has not run for you yet. It reads overnight.",
       machine: true,
     },
     {
       key: "widgets",
       title: "Your widgets",
-      fact: "The numbers you chose to keep",
+      fact: widgetsOn > 0
+        ? `${widgetsOn} number${widgetsOn === 1 ? "" : "s"} on the shelf${drafts ? ` · ${drafts} draft${drafts === 1 ? "" : "s"} waiting` : ""}`
+        : "Nothing pinned yet. Choose the numbers you want to watch.",
     },
   ];
 }
@@ -60,7 +74,12 @@ export const MovesCard: React.FC<{ moves: HomeMove[]; onGo: (route: string) => v
       <Kicker>Today in order</Kicker>
       <SectionTitle>What to do, in the order that matters</SectionTitle>
     </div>
-    {moves.length === 0 && <div style={{ padding: "18px 20px" }}><Body>Nothing worth your time today.</Body></div>}
+    {moves.length === 0 && (
+      <div style={{ padding: "18px 20px", display: "grid", gap: 6 }}>
+        <Body>Nothing worth your time today.</Body>
+        <Muted>Keep one thing you read and Aura writes tomorrow\u2019s list from it.</Muted>
+      </div>
+    )}
     {moves.map((m, i) => (
       <div key={`${m.what}-${i}`} style={{
         padding: "18px 20px", borderBlockStart: i === 0 ? undefined : "1px solid var(--rule-divider)",
@@ -93,12 +112,12 @@ export const StandCard: React.FC<{ facts: HomeFacts | null }> = ({ facts }) => {
         <Kicker>Where you stand</Kicker>
         <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
           <span style={{ ...MONO, fontSize: 34, fontWeight: 700, color: "var(--text-primary)" }}>
-            {facts?.imprint ?? "—"}
+            {facts?.imprint ?? "\u2014"}
           </span>
           <span style={{ ...MONO, fontSize: 13, color: "var(--text-muted)" }}>/100</span>
         </div>
         <Muted style={{ marginBlockStart: 6 }}>
-          {facts?.tier ?? "Unbanded"}
+          {facts?.imprint == null ? "No score yet — publish once and Aura can measure it" : facts?.tier ?? "Unbanded"}
           {facts?.at_top_band
             ? " — the top band. It is held, not climbed."
             : facts?.points_to_next_band != null
@@ -136,7 +155,12 @@ export const OwnCard: React.FC<{ themes: OwnedTheme[]; onOpen: () => void }> = (
       <SectionTitle>The themes your reading holds up</SectionTitle>
     </div>
     <div style={{ padding: "8px 0" }}>
-      {themes.length === 0 && <div style={{ padding: "12px 20px" }}><Body>No themes yet.</Body></div>}
+      {themes.length === 0 && (
+        <div style={{ padding: "12px 20px", display: "grid", gap: 6 }}>
+          <Body>No themes yet.</Body>
+          <Muted>A theme forms when several things you kept point the same way.</Muted>
+        </div>
+      )}
       {themes.map((t) => (
         <div key={t.id} style={{
           padding: "12px 20px", display: "flex", justifyContent: "space-between", gap: 12, alignItems: "baseline",
@@ -149,7 +173,7 @@ export const OwnCard: React.FC<{ themes: OwnedTheme[]; onOpen: () => void }> = (
       ))}
     </div>
     <div style={{ padding: "14px 20px", borderBlockStart: "1px solid var(--rule-divider)" }}>
-      <ActButton onClick={onOpen}>Open Signals</ActButton>
+      <ActButton onClick={onOpen}>Open your themes</ActButton>
     </div>
   </Card>
 );
@@ -184,8 +208,13 @@ export const NightCard: React.FC<{ facts: HomeFacts | null; generatedAt: string 
                 : "Wrote nothing — there was nothing worth writing."}
             </Body>
           </>
-        ) : <Body>Aura has not run yet.</Body>}
-        <div><ActButton onClick={onOpen}>Open The Overnight</ActButton></div>
+        ) : (
+          <>
+            <Body>Aura has not run for you yet.</Body>
+            <Muted>It reads overnight and writes only when something is worth writing.</Muted>
+          </>
+        )}
+        <div><ActButton onClick={onOpen}>See what Aura read</ActButton></div>
       </div>
     </Card>
   );
@@ -203,10 +232,15 @@ export const WidgetsCard: React.FC<{
       </div>
       <div style={{ padding: 18, display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
         {metrics && on.map((d) => <WidgetBody key={d.key} k={d.key} m={metrics} />)}
-        {on.length === 0 && <Body>You have no widgets on the shelf.</Body>}
+        {on.length === 0 && (
+          <div style={{ display: "grid", gap: 6 }}>
+            <Body>Nothing is pinned here yet.</Body>
+            <Muted>Choose the numbers you want to watch and they appear on this card.</Muted>
+          </div>
+        )}
       </div>
       <div style={{ padding: "14px 20px", borderBlockStart: "1px solid var(--rule-divider)" }}>
-        <ActButton onClick={onEdit}>Edit widgets</ActButton>
+        <ActButton onClick={onEdit}>Choose your widgets</ActButton>
       </div>
     </Card>
   );
