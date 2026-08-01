@@ -1600,7 +1600,8 @@ const Onboarding = () => {
                 bottom: 0,
                 height: 40,
                 pointerEvents: "none",
-                borderRadius: 26,
+                borderBottomLeftRadius: 26,
+                borderBottomRightRadius: 26,
                 background: "linear-gradient(to bottom, transparent, #FFFFFF)",
               }}
             />
