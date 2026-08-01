@@ -56,7 +56,7 @@ const LANDING_V2_CSS = `
 .aura-v2 .nav{max-width:calc(100vw - (var(--gut) * 2))}
 @media(max-width:620px){
 .aura-v2 .nav{padding:5px 5px 5px 10px}
-.aura-v2 .brand{margin-right:8px}
+.aura-v2 .brand{margin-right:6px;font-size:15px;letter-spacing:0}
 .aura-v2 .navalt{margin-left:5px;padding:9px 10px;font-size:12px}
 .aura-v2 .navcta{margin-left:5px;padding:9px 11px;font-size:12px;gap:6px}
 .aura-v2 .navcta .a{display:none}
