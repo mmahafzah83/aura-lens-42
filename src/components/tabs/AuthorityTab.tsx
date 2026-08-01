@@ -28,7 +28,8 @@ import CardPreviewPanel from "@/components/visual-cards/CardPreviewPanel";
 
 import StartFromPanel from "@/components/StartFromPanel";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
-import { isPublishedPost } from "@/lib/postProvenance";
+import { isPublishedPost, countProvenance } from "@/lib/postProvenance";
+import { ProvenanceMark } from "@/components/systemb";
 import { markSuggestionDrafted } from "@/lib/markSuggestionDrafted";
 import FlashPanel from "@/components/FlashPanel";
 import EmptyState from "@/components/ui/EmptyState";
