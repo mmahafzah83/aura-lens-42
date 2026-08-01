@@ -194,7 +194,7 @@ const Onboarding = () => {
   const handleSkipConnect = () => {
     markConnectSeen();
     setShowConnectStep(false);
-    startBreathingTo(1, "Now let's map what makes you different.");
+    startBreathingTo(1, "Now your own read — Aura corrects it from there.");
   };
 
   const seedImprint = () => {
@@ -284,7 +284,7 @@ const Onboarding = () => {
   const [breathing, setBreathing] = useState(false);
   const [breathingLeaving, setBreathingLeaving] = useState(false);
   const [breathingMessage, setBreathingMessage] = useState<string>(
-    "Now let's map what makes you different.",
+    "Now your own read — Aura corrects it from there.",
   );
 
   // Loop-detection safety valve: if this session keeps bouncing back to
@@ -648,7 +648,7 @@ const Onboarding = () => {
         return;
       }
       // Breathing transition into Step 1 (Map your strengths).
-      startBreathingTo(1, "Now let's map what makes you different.");
+      startBreathingTo(1, "Now your own read — Aura corrects it from there.");
     } catch (e: any) {
       toast.error(e.message || "Couldn't save profile — please try again");
     } finally {
@@ -789,6 +789,10 @@ const Onboarding = () => {
 
   // ─── Render helpers ───
   const RAIL = ["Capture", "You", "Calibrate", "Assess", "Read"] as const;
+  // A segment is only "done" if that phase actually ran. Users who skipped the
+  // capture-first screen must not see Capture marked complete.
+  const [captureFirstRan, setCaptureFirstRan] = useState(false);
+  useEffect(() => { if (showCaptureFirst) setCaptureFirstRan(true); }, [showCaptureFirst]);
   const railIndex = (): number => {
     if (showCaptureFirst) return 0;
     if (showConnectStep) return 1;
@@ -803,7 +807,7 @@ const Onboarding = () => {
     return (
       <div className="ob-rail" aria-label={`Step ${active + 1} of ${RAIL.length}: ${RAIL[active]}`}>
         {RAIL.map((name, i) => (
-          <div key={name} className={`ob-seg${i < active ? " done" : ""}${i === active ? " now" : ""}`}>
+          <div key={name} className={`ob-seg${i < active && (i !== 0 || captureFirstRan) ? " done" : ""}${i === active ? " now" : ""}`}>
             <span className="ob-nm">{name}</span>
             <span className="ob-bar" />
           </div>
@@ -1145,7 +1149,7 @@ const Onboarding = () => {
     if (showCaptureFirst && cfPhase === "input") {
       return cardShell(
         <>
-          {eyebrow("1 of 5")}
+          {eyebrow("First — one thing you read")}
           {heading("Paste one thing you read this week.")}
           <p className="mb-3" style={{ fontSize: 15, lineHeight: 1.7, color: "#0F1519" }}>
             Anything — an article, a report, a LinkedIn post you disagreed with. Aura reads it now and shows you something about it before you answer a single question.
@@ -1172,7 +1176,7 @@ const Onboarding = () => {
     if (showCaptureFirst && cfPhase === "reading") {
       return cardShell(
         <>
-          {eyebrow("1 of 5")}
+          {eyebrow("First — one thing you read")}
           {heading("Aura is reading it.")}
           <div className="flex items-center gap-2" style={{ color: "#5B6673", fontSize: 14 }}>
             <Loader2 className="w-4 h-4 animate-spin" style={{ color: "#0670C4" }} />
@@ -1184,7 +1188,7 @@ const Onboarding = () => {
     if (showCaptureFirst && cfPhase === "result") {
       return cardShell(
         <>
-          {eyebrow("2 of 5")}
+          {eyebrow("What Aura found")}
           {cfTimedOut || cfFragments.length === 0 ? (
             <>
               {heading("Aura is still reading it.")}
@@ -1231,7 +1235,7 @@ const Onboarding = () => {
             You were invited because someone believes the market should see what you know.
           </p>
           <p style={{ fontSize: 14, color: "#5B6673", lineHeight: 1.6 }}>
-            Aura makes that happen — in about 7 minutes.
+            Four steps. You can stop anywhere — Aura saves where you are.
           </p>
         </div>
         {primaryBtn(<>Let's begin <ArrowRight className="w-4 h-4" /></>, () => setWelcomeAcknowledged(true))}
@@ -1243,7 +1247,7 @@ const Onboarding = () => {
   if (step === 0 && welcomeAcknowledged) {
     return cardShell(
       <>
-        {eyebrow("Step 1 of 4 — Your starting point")}
+        {eyebrow("Your starting point")}
         {!showForm ? (
           <>
             {heading("Start with what LinkedIn already knows")}
@@ -1442,7 +1446,7 @@ const Onboarding = () => {
     if (captureSuccess) {
       return cardShell(
         <>
-          {eyebrow("Step 4 of 4 — Your first capture")}
+          {eyebrow("Your first capture")}
           {heading("First capture complete.")}
           <p className="mb-3" style={{ fontSize: 15, lineHeight: 1.7, color: "#0F1519" }}>
             Aura is already detecting strategic patterns. After 3-5 more articles, your first signal emerges.
@@ -1471,7 +1475,7 @@ const Onboarding = () => {
 
     return cardShell(
       <>
-        {eyebrow("Step 4 of 4 — Your first capture")}
+        {eyebrow("Your first capture")}
         {stillSearching ? (
           <>
             {heading("Finding something relevant in your sector...")}
@@ -1617,12 +1621,12 @@ const Onboarding = () => {
     <>
       {cardShell(
         <>
-          {eyebrow("Step 3 of 4 — How the market sees you")}
-          {heading("Discover your market position.")}
+          {eyebrow("The part nobody else does")}
+          {heading("This is the part nobody else does.")}
           <p className="mb-6" style={{ fontSize: 15, lineHeight: 1.7, color: "#5B6673" }}>
-            This 5-minute assessment reveals how a CIO in your sector would describe you to a colleague. It shapes how Aura writes your content and positions your expertise.
+            Aura will not write a word until it has this. A short assessment, read together with your LinkedIn and everything you have captured, produces your capability radar, the subjects you genuinely own, and where the ground is still soft.
           </p>
-          {primaryBtn(<>Discover my market position → <ArrowRight className="w-4 h-4" /></>, () => setAssessmentOpen(true))}
+          {primaryBtn(<>Start the assessment <ArrowRight className="w-4 h-4" /></>, () => setAssessmentOpen(true))}
           <div className="mt-3">{ghostLink("I'll do this later", () => { triggerArticleSearch(); saveProgress(3); goStep(3); })}</div>
         </>,
       )}
@@ -1786,7 +1790,7 @@ const BreathingOverlay = ({ leaving, message }: { leaving: boolean; message?: st
         textAlign: "center", maxWidth: 460, padding: "0 24px",
       }}
     >
-      {message || "Now let's map what makes you different."}
+      {message || "Now your own read — Aura corrects it from there."}
     </p>
   </div>
 );
