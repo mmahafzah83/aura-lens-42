@@ -761,6 +761,9 @@ function gateAddress(text: string, phrases: string[], move: Move | null, memberN
   const ints = integersIn(text);
   if (ints.length > 3) reasons.push(`too many numbers (${ints.length})`);
 
+  // The address must never read like software talking to itself.
+  if (LEAK.test(text)) reasons.push("a field name or dot-path appears in the prose");
+
   // Strict: a number must come from a phrase we handed the model. Existing
   // somewhere in `facts` is not enough — a true number in a false sentence is
   // still a lie.
