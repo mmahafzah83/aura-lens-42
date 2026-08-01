@@ -5,7 +5,7 @@ import { useAuthReady } from "@/hooks/useAuthReady";
 import useTierFromImprint from "@/hooks/useTierFromImprint";
 import useJourneyState from "@/hooks/useJourneyState";
 import { trackSignalOpen } from "@/lib/trackSignalOpen";
-import { countPosts } from "@/lib/postProvenance";
+import { countProvenance } from "@/lib/postProvenance";
 import InsightCards from "@/components/home/InsightCards";
 import HomeWidgetRegion from "@/components/widgets/HomeWidgetRegion";
 import { ButtonPrimary, ButtonDark, Chip, IconTile, StatCard } from "@/components/systemb";
