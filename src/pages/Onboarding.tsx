@@ -939,7 +939,7 @@ const Onboarding = () => {
           className="flex items-center gap-2 mb-6 text-xs"
           style={{ color: "var(--ink-3)", padding: "10px 12px", border: "1px solid var(--rule)", borderRadius: 8, background: "var(--paper-2)" }}
         >
-          <Linkedin className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--brand)" }} />
+          <Linkedin className="w-3.5 h-3.5 shrink-0" style={{ color: "#0670C4" }} />
           <span>Read-only access · Aura will never post on your behalf.</span>
         </div>
         {primaryBtn(
@@ -956,7 +956,7 @@ const Onboarding = () => {
   if (needsIdentityConfirm) {
     return cardShell(
       <>
-        <div style={{ textAlign: "center", fontSize: 24, color: "var(--brand)", marginBottom: 12 }}>✦</div>
+        <div style={{ textAlign: "center", fontSize: 24, color: "#0670C4", marginBottom: 12 }}>✦</div>
         {eyebrow("Confirm it's you")}
         {heading("This invitation was sent to:")}
         <p
@@ -1175,7 +1175,7 @@ const Onboarding = () => {
           {eyebrow("1 of 5")}
           {heading("Aura is reading it.")}
           <div className="flex items-center gap-2" style={{ color: "var(--ink-2)", fontSize: 14 }}>
-            <Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--brand)" }} />
+            <Loader2 className="w-4 h-4 animate-spin" style={{ color: "#0670C4" }} />
             Pulling out the claims worth keeping.
           </div>
         </>,
@@ -1203,7 +1203,7 @@ const Onboarding = () => {
                       fontSize: 14,
                       lineHeight: 1.6,
                       color: "var(--ink)",
-                      borderLeft: "2px solid var(--brand)",
+                      borderLeft: "2px solid #0670C4",
                       paddingLeft: 12,
                       marginBottom: 10,
                     }}
@@ -1290,7 +1290,7 @@ const Onboarding = () => {
                       lineHeight: 1.625,
                       color: "var(--ink-2)",
                       background: "var(--paper-2)",
-                      borderLeft: "3px solid var(--brand)",
+                      borderLeft: "3px solid #0670C4",
                     }}
                   >
                     <p className="mb-2" style={{ color: "var(--ink)" }}>
@@ -1398,7 +1398,7 @@ const Onboarding = () => {
                 type="checkbox"
                 checked={sharedLearningConsent}
                 onChange={(e) => { setSharedLearningConsent(e.target.checked); setConsentTouched(true); }}
-                style={{ marginTop: 3, width: 16, height: 16, accentColor: "var(--brand)" }}
+                style={{ marginTop: 3, width: 16, height: 16, accentColor: "#0670C4" }}
               />
               <span style={{ fontSize: 13, lineHeight: 1.55, color: "var(--ink)" }}>
                 Help shape Aura for leaders in your field. With your permission, Aura learns anonymous, aggregated patterns from how members like you use it — never your content, drafts, or identity. You can change this anytime in Settings.
@@ -1416,7 +1416,7 @@ const Onboarding = () => {
                 <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
                   <button type="button" onClick={() => setSharedLearningConsent(true)}
                     style={{ flex: 1, height: 40, borderRadius: 8, fontSize: 13, fontWeight: 600,
-                      background: "var(--brand)", color: "var(--ink)", border: 0, cursor: "pointer" }}>
+                      background: "#0670C4", color: "var(--ink)", border: 0, cursor: "pointer" }}>
                     Keep it on
                   </button>
                   <button type="button" onClick={() => setConsentTouched(false)}
@@ -1456,7 +1456,7 @@ const Onboarding = () => {
             transition={{ duration: 0.4 }}
             className="text-center py-6"
           >
-            <span className="text-2xl inline-block" style={{ color: "var(--brand)" }}>✦</span>
+            <span className="text-2xl inline-block" style={{ color: "#0670C4" }}>✦</span>
             <h3 className="font-display text-lg mt-3" style={{ color: "var(--ink)" }}>
               {capturedTitle || "Your first intelligence capture"}
             </h3>
@@ -1498,7 +1498,7 @@ const Onboarding = () => {
               style={{ border: "1px solid var(--rule)", background: "var(--paper-2)" }}
             >
               <div className="flex items-start gap-3 mb-2">
-                <FileText className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "var(--brand)" }} />
+                <FileText className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#0670C4" }} />
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-sm mb-1" style={{ color: "var(--ink)" }}>{foundArticle.title}</p>
                   <p className="text-xs" style={{ color: "var(--ink-2)" }}>{foundArticle.source || (() => { try { return new URL(foundArticle.url).hostname; } catch { return ""; } })()}</p>
