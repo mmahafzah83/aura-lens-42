@@ -1225,25 +1225,28 @@ const Onboarding = () => {
       return cardShell(
         <>
           {eyebrow("First — one thing you read")}
-          {heading("Paste one thing you read this week.")}
+          {heading("Paste a link to something you read this week.")}
           <p className="mb-3" style={{ fontSize: 15, lineHeight: 1.7, color: "#0F1519" }}>
-            Anything — an article, a report, a LinkedIn post you disagreed with. Aura reads it now and shows you something about it before you answer a single question.
+            An article, a report, a post you disagreed with. Aura reads it now and shows you what it found — before you answer a single question.
           </p>
-          <p className="mb-5" style={{ fontSize: 13, lineHeight: 1.6, color: "#5B6673" }}>
-            We ask for this first because every other question is easier once there's something on the table.
+          <p className="mb-2" style={{ fontSize: 13, lineHeight: 1.6, color: "#5B6673" }}>
+            Every question after this is easier once there's something on the table.
+          </p>
+          <p className="mb-5" style={{ fontSize: 13, lineHeight: 1.6, color: "#98A2AE" }}>
+            This is the only input Aura needs. Everything it writes later starts here.
           </p>
           <input
             value={cfValue}
             onChange={(e) => setCfValue(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") void cfSubmit(); }}
-            placeholder="Paste a link, or type a thought"
+            placeholder="https://…"
             className={inputCls}
             style={{ ...inputStyle, marginBottom: 16 }}
           />
           {primaryBtn("Add it", () => void cfSubmit(), { loading: cfBusy, disabled: !cfValue.trim() })}
           {ghostLink("I'll paste one later", cfSkip)}
           <p style={{ fontSize: 12, lineHeight: 1.6, color: "#5B6673", marginTop: 8 }}>
-            One tap. Nothing is published, now or ever, without you pressing publish.
+            Nothing is published, now or ever, without you pressing publish.
           </p>
         </>,
       );
