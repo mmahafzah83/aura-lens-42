@@ -38,7 +38,7 @@ const buildEmailHtml = () => {
     ${divider()}
     ${label("Your first ten minutes")}
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 8px;">
-      ${step("01", "Accept your invitation", "One click from the button below.")}
+      ${step("01", "Give Aura one thing you read", "A link. Aura reads it and shows you what it found, before it asks you anything.")}
       ${step("02", "Tell Aura who you are", "Paste your LinkedIn headline. No forms.")}
       ${step("03", "Calibrate your strengths", "Ten sliders, your own read. Aura corrects it from there.")}
       ${step("04", "See how the market reads you", "The first thing Aura gives back.")}

@@ -37,7 +37,7 @@ AI-powered LinkedIn thought-leadership engine — strategist, researcher, writer
 - Avoid generic motivational writing
 
 ## Authority CTA Branding
-M. Mahafzah
+M. Mahafdhah
 Strategy | Digital & Business Transformation
 Focus on Utilities & Power
 https://www.linkedin.com/in/mmahafzah/
@@ -48,7 +48,7 @@ https://www.linkedin.com/in/mmahafzah/
 - Max 30 words per slide (headline + supporting text)
 - Headline: 6-10 words max
 - Explanation text: 12-20 words
-- Author name "M. Mahafzah" visible on slides
+- Author name "M. Mahafdhah" visible on slides
 - NO system labels on slides (Hook, Problem, Insight, Pattern Interrupt, Framework Intro, CTA, Save)
 - Dark gradient background + teal/cyan accent highlights
 - Must include: 1 statistic slide, 1 framework slide, 1 architecture diagram slide, 1 conceptual visual slide
