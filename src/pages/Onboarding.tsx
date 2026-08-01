@@ -1053,12 +1053,12 @@ const Onboarding = () => {
   if (needsPassword) {
     const pwdInputStyle: React.CSSProperties = {
       width: "100%",
-      padding: "12px 40px 12px 14px",
-      fontSize: 14,
-      background: "var(--paper-2)",
-      border: "1px solid var(--rule)",
-      borderRadius: 10,
-      color: "var(--ink)",
+      padding: "14px 44px 14px 16px",
+      fontSize: 15.5,
+      background: "#F2F5F9",
+      border: "1px solid #E2E7EE",
+      borderRadius: 12,
+      color: "#0F1519",
       outline: "none",
     };
     const checks = {
@@ -1561,11 +1561,12 @@ const Onboarding = () => {
     return (
       <>
         <div
-          className="min-h-screen w-full flex items-center justify-center px-5 py-10"
-          style={{ background: "var(--paper-2)" }}
+          className="ob min-h-screen w-full flex items-center justify-center px-5 py-10"
+          style={{ background: "#EAEFF5" }}
         >
+          <style>{OB_CSS}</style>
           <div
-            style={{ position: "relative", width: "100%", maxWidth: 560, maxHeight: "calc(100dvh - 80px)", display: "flex", flexDirection: "column" }}
+            style={{ position: "relative", width: "100%", maxWidth: 580, maxHeight: "calc(100dvh - 80px)", display: "flex", flexDirection: "column" }}
           >
             <div
               className="w-full"
@@ -1574,14 +1575,15 @@ const Onboarding = () => {
                 overflowY: "auto",
                 flex: "1 1 auto",
                 minHeight: 0,
-                background: "var(--paper)",
-                color: "var(--ink)",
-                borderRadius: 16,
-                boxShadow: "0 8px 32px rgba(0,0,0,0.08), 0 8px 32px rgba(0,0,0,0.3)",
-                padding: "clamp(32px, 6vw, 48px)",
-                border: "1px solid var(--rule)",
+                background: "#FFFFFF",
+                color: "#0F1519",
+                borderRadius: 26,
+                boxShadow: "0 36px 76px -46px rgba(15,21,25,0.30)",
+                padding: "clamp(28px, 5vw, 44px)",
+                border: "1px solid #E2E7EE",
               }}
             >
+              <ProgressDots />
               <CalibrationSliders
                 sector={sectorFocus || null}
                 onComplete={handleCalibrationComplete}
@@ -1598,9 +1600,8 @@ const Onboarding = () => {
                 bottom: 0,
                 height: 40,
                 pointerEvents: "none",
-                borderBottomLeftRadius: 16,
-                borderBottomRightRadius: 16,
-                background: "linear-gradient(to bottom, transparent, var(--paper))",
+                borderRadius: 26,
+                background: "linear-gradient(to bottom, transparent, #FFFFFF)",
               }}
             />
           </div>
