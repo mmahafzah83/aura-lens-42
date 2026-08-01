@@ -30,6 +30,53 @@ interface FoundArticle {
   source?: string;
 }
 
+const OB_CSS = `
+.ob{
+  --page:#F2F5F9; --plate:#EAEFF5; --n0:#FFFFFF; --n100:#EEF2F7; --n200:#E2E7EE;
+  --n300:#D6DCE4; --n400:#98A2AE; --n500:#5B6673; --n700:#3A434E; --n900:#0F1519;
+  --act:#0670C4; --act-50:#E6F2FD; --cy:#00CEC9; --cy-t:#00807B;
+  --ui:'Inter',ui-sans-serif,system-ui,-apple-system,sans-serif;
+  --ser:'Instrument Serif',Georgia,serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+  font-family:var(--ui); color:var(--n900); -webkit-font-smoothing:antialiased;
+}
+.ob *,.ob *::before,.ob *::after{box-sizing:border-box;}
+.ob :focus-visible{outline:2px solid var(--act);outline-offset:3px;border-radius:6px;}
+.ob-rail{display:flex;align-items:flex-end;gap:0;margin-bottom:30px;}
+.ob-seg{flex:1;display:flex;flex-direction:column;gap:7px;}
+.ob-seg .ob-bar{height:3px;border-radius:2px;background:var(--n200);transition:background .4s ease;}
+.ob-seg.done .ob-bar{background:var(--n900);}
+.ob-seg.now .ob-bar{background:var(--act);}
+.ob-seg .ob-nm{font-family:var(--mono);font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--n400);padding-right:10px;line-height:1.3;}
+.ob-seg.now .ob-nm{color:var(--act);}
+.ob-seg.done .ob-nm{color:var(--n500);}
+.ob-eyebrow{position:relative;display:inline-block;padding:8px 13px;margin-bottom:20px;}
+.ob-eyebrow span{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--n700);}
+.ob-eyebrow::before,.ob-eyebrow::after{content:'';position:absolute;width:12px;height:12px;border:1.5px solid var(--n300);}
+.ob-eyebrow::before{left:0;bottom:0;border-top:0;border-right:0;}
+.ob-eyebrow::after{right:0;top:0;border-bottom:0;border-left:0;}
+.ob-h1{font-family:var(--ser);font-weight:400;font-size:clamp(28px,3.4vw,40px);line-height:1.03;letter-spacing:-.026em;color:var(--n900);margin:0 0 4px;}
+.ob-body{font-size:15.5px;line-height:1.62;color:var(--n700);margin:0;}
+.ob-field{width:100%;background:var(--page);border:1px solid var(--n200);color:var(--n900);font-size:15.5px;font-family:inherit;padding:14px 16px;border-radius:12px;outline:none;transition:border-color .25s ease,box-shadow .25s ease,background .25s ease;}
+.ob-field::placeholder{color:var(--n400);}
+.ob-field:focus{border-color:var(--act);background:var(--n0);box-shadow:0 0 0 4px var(--act-50);}
+.ob-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;width:100%;border-radius:999px;font-size:15.5px;font-weight:600;font-family:inherit;border:1px solid transparent;background:var(--n900);color:#fff;cursor:pointer;transition:transform .2s ease,box-shadow .25s ease,opacity .2s ease;}
+.ob-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 16px 34px -16px rgba(15,21,25,.7);}
+.ob-btn:disabled{opacity:.5;cursor:not-allowed;}
+.ob-ghost{display:block;width:100%;min-height:46px;margin-top:10px;border-radius:999px;background:transparent;color:var(--n500);border:1px solid var(--n200);font-family:inherit;font-size:14.5px;font-weight:500;cursor:pointer;transition:background .2s ease,color .2s ease;}
+.ob-ghost:hover{background:var(--page);color:var(--n900);}
+.ob-line{background:transparent;color:var(--act);border:1px solid var(--act);}
+.ob-line:hover:not(:disabled){background:var(--act-50);box-shadow:none;transform:none;}
+.ob input:-webkit-autofill,.ob input:-webkit-autofill:hover,.ob input:-webkit-autofill:focus,.ob textarea:-webkit-autofill,.ob select:-webkit-autofill{
+  -webkit-box-shadow:0 0 0 1000px #F2F5F9 inset !important;
+  -webkit-text-fill-color:#0F1519 !important;
+  caret-color:#0F1519 !important;
+  transition:background-color 9999s ease-in-out 0s;
+}
+@media (max-width:560px){ .ob-seg .ob-nm{display:none;} }
+@media (prefers-reduced-motion:reduce){ .ob *,.ob *::before,.ob *::after{animation:none !important;transition:none !important;} }
+`;
+
 const Onboarding = () => {
   usePageMeta({
     title: "Aura — Get Started",
@@ -741,38 +788,38 @@ const Onboarding = () => {
   };
 
   // ─── Render helpers ───
-  const ProgressDots = () => (
-    <div className="flex items-center justify-center gap-2 mb-6">
-      {[0, 1, 2, 3].map((i) => {
-        const isCurrent = i === step;
-        const isDone = i < step;
-        return (
-          <div
-            key={i}
-            className="rounded-full transition-all duration-300 flex items-center justify-center"
-            style={{
-              width: 8,
-              height: 8,
-              background: isCurrent
-                ? "var(--brand)"
-                : isDone
-                ? "var(--pos)"
-                : "transparent",
-              border: isCurrent || isDone ? "none" : "1px solid var(--rule)",
-            }}
-          />
-        );
-      })}
-    </div>
-  );
+  const RAIL = ["Capture", "You", "Calibrate", "Assess", "Read"] as const;
+  const railIndex = (): number => {
+    if (showCaptureFirst) return 0;
+    if (showConnectStep) return 1;
+    if (step === 0) return 1;
+    if (step === 1) return 2;
+    if (step === 2) return 3;
+    return 4;
+  };
+  const ProgressDots = () => {
+    if (needsIdentityConfirm || needsPassword) return null;
+    const active = railIndex();
+    return (
+      <div className="ob-rail" aria-label={`Step ${active + 1} of ${RAIL.length}: ${RAIL[active]}`}>
+        {RAIL.map((name, i) => (
+          <div key={name} className={`ob-seg${i < active ? " done" : ""}${i === active ? " now" : ""}`}>
+            <span className="ob-nm">{name}</span>
+            <span className="ob-bar" />
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   const cardShell = (children: React.ReactNode) => (
     <div
-      className="min-h-screen w-full flex items-center justify-center px-5 py-10"
-      style={{ background: "var(--paper-2)" }}
+      className="ob min-h-screen w-full flex items-center justify-center px-5 py-10"
+      style={{ background: "#EAEFF5" }}
     >
+      <style>{OB_CSS}</style>
       <div
-        style={{ position: "relative", width: "100%", maxWidth: 560, maxHeight: "calc(100dvh - 80px)", display: "flex", flexDirection: "column" }}
+        style={{ position: "relative", width: "100%", maxWidth: 580, maxHeight: "calc(100dvh - 80px)", display: "flex", flexDirection: "column" }}
       >
         <div
           className="w-full"
@@ -781,12 +828,12 @@ const Onboarding = () => {
             overflowY: "auto",
             flex: "1 1 auto",
             minHeight: 0,
-            background: "var(--paper)",
-            color: "var(--ink)",
-            borderRadius: 16,
-            boxShadow: "0 8px 32px rgba(0,0,0,0.08), 0 8px 32px rgba(0,0,0,0.3)",
-            padding: "clamp(32px, 6vw, 48px)",
-            border: "1px solid var(--rule)",
+            background: "#FFFFFF",
+            color: "#0F1519",
+            borderRadius: 26,
+            boxShadow: "0 36px 76px -46px rgba(15,21,25,0.30)",
+            padding: "clamp(28px, 5vw, 44px)",
+            border: "1px solid #E2E7EE",
           }}
         >
           <ProgressDots />
@@ -810,7 +857,7 @@ const Onboarding = () => {
                 style={{
                   background: "none",
                   border: "none",
-                  color: "var(--ink-2)",
+                  color: "#5B6673",
                   fontSize: 12,
                   cursor: "pointer",
                   textDecoration: "underline",
@@ -830,9 +877,9 @@ const Onboarding = () => {
             bottom: 0,
             height: 40,
             pointerEvents: "none",
-            borderBottomLeftRadius: 16,
-            borderBottomRightRadius: 16,
-            background: "linear-gradient(to bottom, transparent, var(--paper))",
+            borderBottomLeftRadius: 26,
+            borderBottomRightRadius: 26,
+            background: "linear-gradient(to bottom, transparent, #FFFFFF)",
           }}
         />
       </div>
@@ -840,51 +887,23 @@ const Onboarding = () => {
   );
 
   const eyebrow = (text: string) => (
-    <p
-      className="font-semibold mb-3"
-      style={{
-        fontSize: 12,
-        letterSpacing: "0.1em",
-        textTransform: "uppercase",
-        color: "var(--brand)",
-      }}
-    >
-      {text}
-    </p>
+    <div className="ob-eyebrow"><span>{text}</span></div>
   );
 
   const heading = (text: string) => (
-    <h1
-      className="font-semibold mb-3"
-      style={{
-        fontFamily: "var(--font-display)",
-        fontSize: 28,
-        lineHeight: 1.2,
-        color: "var(--ink)",
-      }}
-    >
-      {text}
-    </h1>
+    <h1 className="ob-h1">{text}</h1>
   );
 
   const body = (text: React.ReactNode) => (
-    <p style={{ fontSize: 15, lineHeight: 1.7, color: "var(--ink)" }}>
-      {text}
-    </p>
+    <p className="ob-body">{text}</p>
   );
 
   const primaryBtn = (label: React.ReactNode, onClick: () => void, opts: { disabled?: boolean; loading?: boolean } = {}) => (
     <button
       onClick={onClick}
       disabled={opts.disabled || opts.loading}
-      className="w-full font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-      style={{
-        height: 48,
-        background: "var(--brand)",
-        color: "var(--ink)",
-        borderRadius: 10,
-        fontSize: 14,
-      }}
+      className="ob-btn"
+      style={{ marginTop: 22 }}
     >
       {opts.loading && <Loader2 className="w-4 h-4 animate-spin" />}
       {label}
@@ -892,26 +911,17 @@ const Onboarding = () => {
   );
 
   const ghostLink = (label: string, onClick: () => void) => (
-    <button
-      onClick={onClick}
-      className="w-full text-sm py-2 transition-colors"
-      style={{ color: "var(--ink-2)", background: "transparent" }}
-    >
-      {label}
-    </button>
+    <button onClick={onClick} className="ob-ghost">{label}</button>
   );
 
-  const inputCls = "w-full rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/40 transition-colors";
-  const inputStyle: React.CSSProperties = {
-    border: "1px solid var(--rule)",
-    background: "var(--paper-2)",
-    color: "var(--ink)",
-  };
+  const inputCls = "ob-field";
+  const inputStyle: React.CSSProperties = {};
 
   if (checking) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--paper-2)" }}>
-        <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--brand)" }} />
+      <div className="ob min-h-screen flex items-center justify-center" style={{ background: "#EAEFF5" }}>
+        <style>{OB_CSS}</style>
+        <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#0670C4" }} />
       </div>
     );
   }
@@ -929,7 +939,7 @@ const Onboarding = () => {
           className="flex items-center gap-2 mb-6 text-xs"
           style={{ color: "var(--ink-3)", padding: "10px 12px", border: "1px solid var(--rule)", borderRadius: 8, background: "var(--paper-2)" }}
         >
-          <Linkedin className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--brand)" }} />
+          <Linkedin className="w-3.5 h-3.5 shrink-0" style={{ color: "#0670C4" }} />
           <span>Read-only access · Aura will never post on your behalf.</span>
         </div>
         {primaryBtn(
@@ -946,7 +956,7 @@ const Onboarding = () => {
   if (needsIdentityConfirm) {
     return cardShell(
       <>
-        <div style={{ textAlign: "center", fontSize: 24, color: "var(--brand)", marginBottom: 12 }}>✦</div>
+        <div style={{ textAlign: "center", fontSize: 24, color: "#0670C4", marginBottom: 12 }}>✦</div>
         {eyebrow("Confirm it's you")}
         {heading("This invitation was sent to:")}
         <p
@@ -1043,12 +1053,12 @@ const Onboarding = () => {
   if (needsPassword) {
     const pwdInputStyle: React.CSSProperties = {
       width: "100%",
-      padding: "12px 40px 12px 14px",
-      fontSize: 14,
-      background: "var(--paper-2)",
-      border: "1px solid var(--rule)",
-      borderRadius: 10,
-      color: "var(--ink)",
+      padding: "14px 44px 14px 16px",
+      fontSize: 15.5,
+      background: "#F2F5F9",
+      border: "1px solid #E2E7EE",
+      borderRadius: 12,
+      color: "#0F1519",
       outline: "none",
     };
     const checks = {
@@ -1165,7 +1175,7 @@ const Onboarding = () => {
           {eyebrow("1 of 5")}
           {heading("Aura is reading it.")}
           <div className="flex items-center gap-2" style={{ color: "var(--ink-2)", fontSize: 14 }}>
-            <Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--brand)" }} />
+            <Loader2 className="w-4 h-4 animate-spin" style={{ color: "#0670C4" }} />
             Pulling out the claims worth keeping.
           </div>
         </>,
@@ -1193,7 +1203,7 @@ const Onboarding = () => {
                       fontSize: 14,
                       lineHeight: 1.6,
                       color: "var(--ink)",
-                      borderLeft: "2px solid var(--brand)",
+                      borderLeft: "2px solid #0670C4",
                       paddingLeft: 12,
                       marginBottom: 10,
                     }}
@@ -1280,7 +1290,7 @@ const Onboarding = () => {
                       lineHeight: 1.625,
                       color: "var(--ink-2)",
                       background: "var(--paper-2)",
-                      borderLeft: "3px solid var(--brand)",
+                      borderLeft: "3px solid #0670C4",
                     }}
                   >
                     <p className="mb-2" style={{ color: "var(--ink)" }}>
@@ -1388,7 +1398,7 @@ const Onboarding = () => {
                 type="checkbox"
                 checked={sharedLearningConsent}
                 onChange={(e) => { setSharedLearningConsent(e.target.checked); setConsentTouched(true); }}
-                style={{ marginTop: 3, width: 16, height: 16, accentColor: "var(--brand)" }}
+                style={{ marginTop: 3, width: 16, height: 16, accentColor: "#0670C4" }}
               />
               <span style={{ fontSize: 13, lineHeight: 1.55, color: "var(--ink)" }}>
                 Help shape Aura for leaders in your field. With your permission, Aura learns anonymous, aggregated patterns from how members like you use it — never your content, drafts, or identity. You can change this anytime in Settings.
@@ -1406,7 +1416,7 @@ const Onboarding = () => {
                 <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
                   <button type="button" onClick={() => setSharedLearningConsent(true)}
                     style={{ flex: 1, height: 40, borderRadius: 8, fontSize: 13, fontWeight: 600,
-                      background: "var(--brand)", color: "var(--ink)", border: 0, cursor: "pointer" }}>
+                      background: "#0670C4", color: "#FFFFFF", border: 0, cursor: "pointer" }}>
                     Keep it on
                   </button>
                   <button type="button" onClick={() => setConsentTouched(false)}
@@ -1446,7 +1456,7 @@ const Onboarding = () => {
             transition={{ duration: 0.4 }}
             className="text-center py-6"
           >
-            <span className="text-2xl inline-block" style={{ color: "var(--brand)" }}>✦</span>
+            <span className="text-2xl inline-block" style={{ color: "#0670C4" }}>✦</span>
             <h3 className="font-display text-lg mt-3" style={{ color: "var(--ink)" }}>
               {capturedTitle || "Your first intelligence capture"}
             </h3>
@@ -1488,7 +1498,7 @@ const Onboarding = () => {
               style={{ border: "1px solid var(--rule)", background: "var(--paper-2)" }}
             >
               <div className="flex items-start gap-3 mb-2">
-                <FileText className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "var(--brand)" }} />
+                <FileText className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#0670C4" }} />
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-sm mb-1" style={{ color: "var(--ink)" }}>{foundArticle.title}</p>
                   <p className="text-xs" style={{ color: "var(--ink-2)" }}>{foundArticle.source || (() => { try { return new URL(foundArticle.url).hostname; } catch { return ""; } })()}</p>
@@ -1551,11 +1561,12 @@ const Onboarding = () => {
     return (
       <>
         <div
-          className="min-h-screen w-full flex items-center justify-center px-5 py-10"
-          style={{ background: "var(--paper-2)" }}
+          className="ob min-h-screen w-full flex items-center justify-center px-5 py-10"
+          style={{ background: "#EAEFF5" }}
         >
+          <style>{OB_CSS}</style>
           <div
-            style={{ position: "relative", width: "100%", maxWidth: 560, maxHeight: "calc(100dvh - 80px)", display: "flex", flexDirection: "column" }}
+            style={{ position: "relative", width: "100%", maxWidth: 580, maxHeight: "calc(100dvh - 80px)", display: "flex", flexDirection: "column" }}
           >
             <div
               className="w-full"
@@ -1564,14 +1575,15 @@ const Onboarding = () => {
                 overflowY: "auto",
                 flex: "1 1 auto",
                 minHeight: 0,
-                background: "var(--paper)",
-                color: "var(--ink)",
-                borderRadius: 16,
-                boxShadow: "0 8px 32px rgba(0,0,0,0.08), 0 8px 32px rgba(0,0,0,0.3)",
-                padding: "clamp(32px, 6vw, 48px)",
-                border: "1px solid var(--rule)",
+                background: "#FFFFFF",
+                color: "#0F1519",
+                borderRadius: 26,
+                boxShadow: "0 36px 76px -46px rgba(15,21,25,0.30)",
+                padding: "clamp(28px, 5vw, 44px)",
+                border: "1px solid #E2E7EE",
               }}
             >
+              <ProgressDots />
               <CalibrationSliders
                 sector={sectorFocus || null}
                 onComplete={handleCalibrationComplete}
@@ -1588,9 +1600,8 @@ const Onboarding = () => {
                 bottom: 0,
                 height: 40,
                 pointerEvents: "none",
-                borderBottomLeftRadius: 16,
-                borderBottomRightRadius: 16,
-                background: "linear-gradient(to bottom, transparent, var(--paper))",
+                borderRadius: 26,
+                background: "linear-gradient(to bottom, transparent, #FFFFFF)",
               }}
             />
           </div>
@@ -1733,15 +1744,8 @@ const ArticleManualPaste = ({
     <button
       onClick={onSave}
       disabled={loading || !url.trim()}
-      className="w-full font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-      style={{
-        height: 44,
-        background: "transparent",
-        color: "var(--brand)",
-        border: "1px solid var(--brand)",
-        borderRadius: 10,
-        fontSize: 14,
-      }}
+      className="ob-btn ob-line"
+      style={{ minHeight: 46, fontSize: 14.5 }}
     >
       {loading && <Loader2 className="w-4 h-4 animate-spin" />}
       Save capture
@@ -1755,22 +1759,32 @@ const BreathingOverlay = ({ leaving, message }: { leaving: boolean; message?: st
   <div
     style={{
       position: "fixed", inset: 0, zIndex: 100,
-      background: "var(--paper-2)",
+      background: "#0F1519",
       display: "flex", alignItems: "center", justifyContent: "center",
       opacity: leaving ? 0 : 1,
       transition: "opacity 300ms ease-out",
+      overflow: "hidden",
     }}
   >
+    <div
+      aria-hidden
+      style={{
+        position: "absolute", inset: 0,
+        background:
+          "radial-gradient(560px 320px at 74% 14%, rgba(0,206,201,0.16), transparent 62%)," +
+          "radial-gradient(460px 300px at 14% 90%, rgba(6,112,196,0.20), transparent 64%)",
+      }}
+    />
     <p
       style={{
-        fontFamily: "var(--font-body)",
-        fontSize: 15, lineHeight: 1.6,
-        color: "var(--ink-2)",
-        textAlign: "center", maxWidth: 420, padding: "0 24px",
+        position: "relative",
+        fontFamily: "'Instrument Serif', Georgia, serif",
+        fontSize: "clamp(22px, 3.4vw, 30px)", lineHeight: 1.2,
+        letterSpacing: "-0.02em", color: "#FFFFFF",
+        textAlign: "center", maxWidth: 460, padding: "0 24px",
       }}
     >
-      {message || "Now let's map what makes you different."}{" "}
-      <span style={{ color: "var(--action)" }}>◆</span>
+      {message || "Now let's map what makes you different."}
     </p>
   </div>
 );
