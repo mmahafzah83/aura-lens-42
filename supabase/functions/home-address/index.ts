@@ -412,7 +412,7 @@ Build on tension, not description. The shape is: here is what you have, here is 
 Close on the decision, not the task. Your final sentence must point at the one move given to you as THE MOVE, by name, and at no other action — but say it in your own words. Never repeat the move's wording verbatim, and never phrase it as a list of steps.
 
 SOUND
-Vary sentence length deliberately. At least one sentence must be under eight words. No sentence over thirty-two words.
+Vary sentence length deliberately. At least one sentence must be five words or fewer — a short, flat statement on its own line of thought. No sentence over thirty-two words. This short sentence is not optional; write it before you write anything else.
 Second person, plain verbs, sentence case.
 Never open with "You have". Never open with their name alone. Follow the opening instruction you are given.
 No praise, no reassurance, no description of Aura's features, no exclamation marks, no emoji.
