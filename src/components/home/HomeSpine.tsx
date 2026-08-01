@@ -199,6 +199,7 @@ export default function HomeSpine({ userId, onSwitchTab, onStartSignalPost, onOp
   }, [facts?.last_night?.newest_signal_draft?.id]);
 
   const moves: HomeMove[] = address.row?.moves ?? [];
+  const activeMove: HomeMove | null = moves[moveIdx] ?? moves[0] ?? null;
   const shelf = useMemo(
     () => buildShelf(facts, moves, facts?.signals_active ?? themes.length),
     [facts, moves, themes.length],
