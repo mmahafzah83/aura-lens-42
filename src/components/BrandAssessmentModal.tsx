@@ -905,20 +905,28 @@ function ResultsView({
   if (!hasAnyStructure) {
     return (
       <div className="space-y-0">
-        <div className="prose prose-sm max-w-none
-          [&_h1]:text-brand [&_h1]:text-base [&_h1]:font-bold [&_h1]:mb-3
-          [&_h2]:text-brand [&_h2]:text-sm [&_h2]:font-bold [&_h2]:mt-6 [&_h2]:mb-3
-          [&_h3]:text-brand [&_h3]:text-sm [&_h3]:font-bold [&_h3]:mt-5 [&_h3]:mb-2
-          [&_p]:text-ink-5 [&_p]:text-[12px] [&_p]:leading-relaxed [&_p]:mb-3
-          [&_strong]:text-brand [&_strong]:font-semibold
-        ">
+        <div
+          className="prose prose-sm max-w-none
+          [&_h1]:text-base [&_h1]:font-bold [&_h1]:mb-3
+          [&_h2]:text-sm [&_h2]:font-bold [&_h2]:mt-6 [&_h2]:mb-3
+          [&_h3]:text-sm [&_h3]:font-bold [&_h3]:mt-5 [&_h3]:mb-2
+          [&_p]:text-[12px] [&_p]:leading-relaxed [&_p]:mb-3
+          [&_strong]:font-semibold
+        "
+          style={{
+            ["--tw-prose-headings" as any]: INK,
+            ["--tw-prose-body" as any]: INK_SOFT,
+            ["--tw-prose-bold" as any]: INK,
+            color: INK_SOFT,
+          }}
+        >
           <ReactMarkdown>{interpretation}</ReactMarkdown>
         </div>
-        <div className="pt-6 mt-6 border-t border-brand/20">
+        <div className="pt-6 mt-6" style={{ borderTop: `1px solid ${RULE}` }}>
           <button
             onClick={onSaveAndContinue}
-            className="w-full py-3 rounded-xl text-sm font-medium tracking-wide hover:brightness-110 transition-all active:scale-[0.98]"
-            style={{ background: "linear-gradient(to bottom, hsl(43 80% 55%), var(--action))", color: "var(--ink)" }}
+            className="w-full text-sm tracking-wide transition-all hover:-translate-y-0.5 active:scale-[0.98]"
+            style={{ ...pillBtn, padding: "0 24px" }}
           >
             View my complete Strategic Identity →
           </button>
