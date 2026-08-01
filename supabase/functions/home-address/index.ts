@@ -389,6 +389,10 @@ const BANNED = [
   // register: a colleague speaking, not a campaign
   "mountain", "wealth of", "treasure", "goldmine", "release it", "your network",
   "put it out there", "get it out there", "share it with the world",
+  // register: copywriter tells — state the situation, do not sell it
+  "tipping point", "hoarding", "hoard", "the evidence is mounting", "at this stage",
+  "put it into the world", "into the world", "picking up speed", "backlog of signals",
+  "looks like hesitation", "the world is waiting", "your moment",
 ];
 
 const OPENINGS = [
