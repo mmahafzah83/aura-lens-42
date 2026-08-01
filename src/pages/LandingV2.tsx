@@ -55,10 +55,10 @@ const LANDING_V2_CSS = `
 .aura-v2 .navalt:hover{background:rgba(255,255,255,.2)}
 .aura-v2 .nav{max-width:calc(100vw - (var(--gut) * 2))}
 @media(max-width:620px){
-.aura-v2 .nav{padding:6px 6px 6px 12px}
+.aura-v2 .nav{padding:5px 5px 5px 10px}
 .aura-v2 .brand{margin-right:8px}
-.aura-v2 .navalt{margin-left:6px;padding:9px 11px;font-size:12.5px}
-.aura-v2 .navcta{margin-left:6px;padding:9px 12px;font-size:12.5px;gap:6px}
+.aura-v2 .navalt{margin-left:5px;padding:9px 10px;font-size:12px}
+.aura-v2 .navcta{margin-left:5px;padding:9px 11px;font-size:12px;gap:6px}
 .aura-v2 .navcta .a{display:none}
 }
 .aura-v2 .navcta:hover{transform:translateY(-1px);box-shadow:0 10px 22px -10px rgba(0,0,0,.45)}
