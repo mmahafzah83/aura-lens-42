@@ -14,6 +14,36 @@ import { captureReportSnapshot } from "@/lib/reportSnapshot";
 import { toast as sonner } from "sonner";
 
 // New section headers (must match brand-assessment EF SYSTEM_PROMPT)
+/* ── System-B "Studio Plate" palette — hard-coded on purpose.
+   This modal portals into document.body, outside every app scope,
+   so it must be fully self-contained. ── */
+const SCRIM = "rgba(15,21,25,0.55)";
+const SURFACE = "#FFFFFF";
+const FIELD = "#F2F5F9";
+const RULE = "#E2E7EE";
+const INK = "#0F1519";
+const INK_SOFT = "#5B6673";
+const INK_FAINT = "#98A2AE";
+const ACT = "#0670C4";
+const ACT_TINT = "#E6F2FD";
+const TEAL = "#00807B";
+const SERIF = "'Instrument Serif', Georgia, serif";
+const BODY = "'Inter', -apple-system, 'Segoe UI', sans-serif";
+const MONO = "'IBM Plex Mono', ui-monospace, Menlo, monospace";
+
+const labelCaps: React.CSSProperties = {
+  fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em",
+  textTransform: "uppercase", color: INK_FAINT,
+};
+const pillBtn: React.CSSProperties = {
+  background: INK, color: "#FFFFFF", borderRadius: 999,
+  minHeight: 48, fontWeight: 600, border: 0, cursor: "pointer",
+};
+const quietPill: React.CSSProperties = {
+  background: SURFACE, border: `1px solid ${RULE}`, color: INK,
+  borderRadius: 999, fontSize: 13, cursor: "pointer",
+};
+
 const SECTION_DEFS: { key: string; label: string; hint: string }[] = [
   { key: "HOW THE MARKET SEES YOU", label: "How the market sees you", hint: "The way a CIO in your sector would describe you to a colleague" },
   { key: "HOW YOU BUILD TRUST", label: "How you build trust", hint: "Your natural way of earning credibility" },
@@ -477,7 +507,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
       {/* Full-screen overlay */}
       <div
         className="fixed inset-0"
-        style={{ background: "rgba(0,0,0,0.8)", zIndex: 999, pointerEvents: "all" }}
+        style={{ background: SCRIM, zIndex: 999, pointerEvents: "all" }}
         onClick={handleCloseRequest}
       />
 
@@ -494,9 +524,10 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
           height: "88vh",
           display: "flex",
           flexDirection: "column",
-          background: "var(--paper)",
+          background: SURFACE,
+          fontFamily: BODY,
           borderRadius: 16,
-          border: "1px solid var(--ink-3)",
+          border: `1px solid ${RULE}`,
           overflow: "hidden",
           willChange: "unset",
         }}
@@ -507,26 +538,30 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {!showResults && step > 0 && (
-                <button onClick={() => setStep((s) => s - 1)} className="text-ink-4 hover:text-ink-5 p-1">
+                <button onClick={() => setStep((s) => s - 1)} className="p-1 transition-colors" style={{ color: INK_FAINT }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = INK)}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = INK_FAINT)}>
                   <ArrowLeft className="w-4 h-4" />
                 </button>
               )}
               <div className="flex items-center gap-2">
-                <Compass className="w-4 h-4 text-brand" />
-                <span className="text-sm text-ink-7 font-medium">Brand Assessment</span>
+                <Compass className="w-4 h-4" style={{ color: INK_SOFT }} />
+                <span className="text-sm font-medium" style={{ color: INK_SOFT }}>Brand Assessment</span>
               </div>
             </div>
-            <button onClick={handleCloseRequest} className="text-ink-4 hover:text-ink-5 p-1">
+            <button onClick={handleCloseRequest} className="p-1 transition-colors" style={{ color: INK_FAINT }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = INK)}
+              onMouseLeave={(e) => (e.currentTarget.style.color = INK_FAINT)}>
               <X className="w-4 h-4" />
             </button>
           </div>
 
           {/* Progress bar */}
           <div className="mt-2 pb-1">
-            <div className="h-1 bg-surface-ink-subtle rounded-full overflow-hidden">
+            <div className="h-1 rounded-full overflow-hidden" style={{ background: RULE }}>
               <div
-                className="h-full bg-brand rounded-full transition-all duration-500"
-                style={{ width: `${progress}%` }}
+                className="h-full rounded-full transition-all duration-500"
+                style={{ width: `${progress}%`, background: ACT }}
               />
             </div>
           </div>
@@ -541,10 +576,10 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
                 <CinematicLoading stage={loadingStage} />
               ) : genError ? (
                 <div className="flex flex-col items-center justify-center py-16 px-4 text-center gap-5 max-w-md mx-auto">
-                  <h3 className="text-[18px] text-ink-7 font-medium leading-snug">
+                  <h3 className="text-[18px] font-medium leading-snug" style={{ fontFamily: SERIF, color: INK }}>
                     We couldn't build your analysis right now.
                   </h3>
-                  <p className="text-sm text-ink-5 leading-relaxed">
+                  <p className="text-sm leading-relaxed" style={{ color: INK_SOFT }}>
                     Your answers are saved. We'll process them in the background — you'll see your results next time you visit.
                   </p>
                   <button
@@ -563,7 +598,8 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
                       onOpenChange(false);
                       onNavigate?.("identity");
                     }}
-                    className="mt-2 px-5 py-2.5 rounded-xl text-sm font-medium bg-brand text-white hover:brightness-110 transition"
+                    className="mt-2 px-6 text-sm transition-all hover:-translate-y-0.5"
+                    style={pillBtn}
                   >
                     Go to My Story →
                   </button>
@@ -579,35 +615,19 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
           ) : (
             <div className="max-w-lg mx-auto pt-4">
               {step === QUESTIONS.length - 1 && (
-                <p
-                  className="uppercase"
-                  style={{
-                    fontSize: 10,
-                    letterSpacing: "2px",
-                    color: "var(--action)",
-                    fontWeight: 700,
-                    marginBottom: 8,
-                  }}
-                >
+                <p style={{ ...labelCaps, marginBottom: 8 }}>
                   Final question
                 </p>
               )}
-              <p
-                className="mb-3 uppercase"
-                style={{
-                  fontSize: 11,
-                  letterSpacing: "2px",
-                  color: "var(--spot)",
-                }}
-              >
+              <p className="mb-3" style={labelCaps}>
                 Question {step + 1} of {QUESTIONS.length}
               </p>
               <h2
                 className="leading-snug"
                 style={{
-                  fontFamily: "var(--serif)",
+                  fontFamily: SERIF,
                   fontSize: 22,
-                  color: "var(--ink)",
+                  color: INK,
                   marginBottom: q.sub ? 8 : 24,
                   fontWeight: 500,
                 }}
@@ -615,7 +635,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
                 {q.title}
               </h2>
               {q.sub && (
-                <p className="text-[12px] text-ink-5" style={{ marginBottom: 24 }}>
+                <p className="text-[12px]" style={{ marginBottom: 24, color: INK_SOFT }}>
                   {q.sub}
                 </p>
               )}
@@ -625,7 +645,10 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
                   value={(currentAnswer as string) || ""}
                   onChange={(e) => setAnswers((prev) => ({ ...prev, [step]: e.target.value }))}
                   placeholder={q.placeholder}
-                  className="w-full h-28 bg-surface-ink-raised border border-ink-3 rounded-xl p-3 text-sm text-ink-7 placeholder:text-ink-4 resize-none focus:outline-none focus:border-brand/40 transition-colors"
+                  className="w-full h-28 rounded-xl p-3 text-sm resize-none focus:outline-none transition-colors"
+                  style={{ background: FIELD, border: `1px solid ${RULE}`, color: INK, fontFamily: BODY }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = ACT; e.currentTarget.style.boxShadow = `0 0 0 3px ${ACT_TINT}`; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = RULE; e.currentTarget.style.boxShadow = "none"; }}
                 />
               ) : (
                 <div className="space-y-2">
@@ -641,12 +664,12 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
                         onClick={() => toggleOption(opt)}
                         className="w-full text-left flex items-center justify-between gap-3"
                         style={{
-                          background: sel ? "color-mix(in srgb, var(--action) 12%, transparent)" : "transparent",
-                          borderTop: "1px solid var(--rule)",
-                          borderRight: "1px solid var(--rule)",
-                          borderBottom: "1px solid var(--rule)",
-                          borderLeft: sel ? "3px solid var(--spot)" : "1px solid color-mix(in srgb, var(--spot) 20%, transparent)",
-                          color: sel ? "var(--spot)" : "var(--ink)",
+                          background: sel ? ACT_TINT : SURFACE,
+                          borderTop: `1px solid ${RULE}`,
+                          borderRight: `1px solid ${RULE}`,
+                          borderBottom: `1px solid ${RULE}`,
+                          borderLeft: sel ? `2px solid ${ACT}` : `1px solid ${RULE}`,
+                          color: INK,
                           borderRadius: 12,
                           padding: sel ? "16px 20px 16px 18px" : "16px 20px",
                           fontSize: 15,
@@ -660,7 +683,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
                         <span
                           aria-hidden="true"
                           style={{
-                            color: "var(--spot)",
+                            color: ACT,
                             fontSize: 10,
                             opacity: sel ? 1 : 0,
                             transition: "opacity 200ms ease",
@@ -678,7 +701,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
                   style={{
                     marginTop: 18,
                     fontSize: 13,
-                    color: "var(--ink-5)",
+                    color: INK_SOFT,
                     textAlign: "center",
                     opacity: 0,
                     animation: "aura-fade-in 300ms ease-out forwards",
@@ -704,7 +727,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
               bottom: 0,
               height: 32,
               pointerEvents: "none",
-              background: "linear-gradient(to bottom, transparent, var(--paper))",
+              background: `linear-gradient(to bottom, rgba(255,255,255,0), ${SURFACE})`,
             }}
           />
         </div>
@@ -714,19 +737,18 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
           <div
             className="shrink-0"
             style={{
-              background: "var(--paper)",
-              borderTop: "0.5px solid var(--surface-ink-subtle)",
+              background: SURFACE,
+              borderTop: `1px solid ${RULE}`,
               padding: "12px 16px",
               animation: "aura-fade-up 300ms ease-out forwards",
             }}
           >
             <button
               onClick={handleNext}
-              className="w-full rounded-xl font-medium tracking-wide transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
+              className="w-full tracking-wide transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98]"
               style={{
-                background: "linear-gradient(to bottom, hsl(43 80% 55%), var(--action))",
-                color: "var(--ink)",
-                padding: step === QUESTIONS.length - 1 ? "16px" : "14px",
+                ...pillBtn,
+                padding: "0 24px",
                 fontSize: step === QUESTIONS.length - 1 ? 15 : 14,
               }}
             >
@@ -741,25 +763,25 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
         <div
           className="fixed inset-0 flex items-center justify-center px-6"
           style={{
-            background: "rgba(10,9,7,0.94)",
+            background: "rgba(15,21,25,0.94)",
             zIndex: 1050,
             animation: "aura-fade-in 400ms ease-out",
           }}
         >
           <div style={{ textAlign: "center", maxWidth: 360 }}>
-            <div style={{ color: "var(--action)", fontSize: 16, marginBottom: 18 }}>{interlude.dots}</div>
+            <div style={{ color: TEAL, fontSize: 16, marginBottom: 18 }}>{interlude.dots}</div>
             <p
               style={{
-                fontFamily: "var(--serif)",
+                fontFamily: SERIF,
                 fontSize: 18,
-                color: "var(--paper)",
+                color: "#FFFFFF",
                 lineHeight: 1.55,
                 margin: 0,
               }}
             >
               {interlude.text}
             </p>
-            <div style={{ color: "var(--action)", fontSize: 16, marginTop: 18 }}>{interlude.dots}</div>
+            <div style={{ color: TEAL, fontSize: 16, marginTop: 18 }}>{interlude.dots}</div>
           </div>
         </div>
       )}
@@ -767,28 +789,30 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
       {confirmClose && (
         <div
           className="fixed inset-0 flex items-center justify-center px-4"
-          style={{ background: "rgba(0,0,0,0.6)", zIndex: 1100 }}
+          style={{ background: SCRIM, zIndex: 1100 }}
           onClick={() => setConfirmClose(false)}
         >
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              background: "var(--ink)",
-              border: "1px solid var(--ink-3)",
+              background: SURFACE,
+              fontFamily: BODY,
+              border: `1px solid ${RULE}`,
               borderRadius: 14,
               padding: 20,
               width: 400,
               maxWidth: "92vw",
             }}
           >
-            <h3 className="text-[15px] text-ink-7 font-medium mb-2">Your analysis is being built</h3>
-            <p className="text-sm text-ink-5 leading-relaxed mb-5">
+            <h3 className="text-[15px] font-medium mb-2" style={{ fontFamily: SERIF, color: INK }}>Your analysis is being built</h3>
+            <p className="text-sm leading-relaxed mb-5" style={{ color: INK_SOFT }}>
               If you close now, your answers are saved and you can regenerate from My Story.
             </p>
             <div className="flex flex-col gap-2">
               <button
                 onClick={() => setConfirmClose(false)}
-                className="w-full py-2.5 rounded-xl text-sm font-medium bg-brand text-white hover:brightness-110 transition"
+                className="w-full text-sm transition-all hover:-translate-y-0.5"
+                style={pillBtn}
               >
                 Wait for results
               </button>
@@ -798,7 +822,8 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
                   setConfirmClose(false);
                   onOpenChange(false);
                 }}
-                className="w-full py-2.5 rounded-xl text-sm text-ink-5 hover:text-ink-7 transition"
+                className="w-full py-2.5 rounded-xl text-sm transition-colors"
+                style={{ background: "transparent", border: 0, color: INK_SOFT, cursor: "pointer" }}
               >
                 Close anyway
               </button>
@@ -880,20 +905,28 @@ function ResultsView({
   if (!hasAnyStructure) {
     return (
       <div className="space-y-0">
-        <div className="prose prose-sm max-w-none
-          [&_h1]:text-brand [&_h1]:text-base [&_h1]:font-bold [&_h1]:mb-3
-          [&_h2]:text-brand [&_h2]:text-sm [&_h2]:font-bold [&_h2]:mt-6 [&_h2]:mb-3
-          [&_h3]:text-brand [&_h3]:text-sm [&_h3]:font-bold [&_h3]:mt-5 [&_h3]:mb-2
-          [&_p]:text-ink-5 [&_p]:text-[12px] [&_p]:leading-relaxed [&_p]:mb-3
-          [&_strong]:text-brand [&_strong]:font-semibold
-        ">
+        <div
+          className="prose prose-sm max-w-none
+          [&_h1]:text-base [&_h1]:font-bold [&_h1]:mb-3
+          [&_h2]:text-sm [&_h2]:font-bold [&_h2]:mt-6 [&_h2]:mb-3
+          [&_h3]:text-sm [&_h3]:font-bold [&_h3]:mt-5 [&_h3]:mb-2
+          [&_p]:text-[12px] [&_p]:leading-relaxed [&_p]:mb-3
+          [&_strong]:font-semibold
+        "
+          style={{
+            ["--tw-prose-headings" as any]: INK,
+            ["--tw-prose-body" as any]: INK_SOFT,
+            ["--tw-prose-bold" as any]: INK,
+            color: INK_SOFT,
+          }}
+        >
           <ReactMarkdown>{interpretation}</ReactMarkdown>
         </div>
-        <div className="pt-6 mt-6 border-t border-brand/20">
+        <div className="pt-6 mt-6" style={{ borderTop: `1px solid ${RULE}` }}>
           <button
             onClick={onSaveAndContinue}
-            className="w-full py-3 rounded-xl text-sm font-medium tracking-wide hover:brightness-110 transition-all active:scale-[0.98]"
-            style={{ background: "linear-gradient(to bottom, hsl(43 80% 55%), var(--action))", color: "var(--ink)" }}
+            className="w-full text-sm tracking-wide transition-all hover:-translate-y-0.5 active:scale-[0.98]"
+            style={{ ...pillBtn, padding: "0 24px" }}
           >
             View my complete Strategic Identity →
           </button>
@@ -1002,11 +1035,7 @@ function ResultsView({
       >
         <div
           style={{
-            fontSize: 11,
-            letterSpacing: "3px",
-            textTransform: "uppercase",
-            color: "var(--action)",
-            fontWeight: 600,
+            ...labelCaps,
             opacity: 0,
             animation: "aura-fade-in 500ms ease-out 800ms forwards",
           }}
@@ -1016,10 +1045,10 @@ function ResultsView({
 
         <h2
           style={{
-            fontFamily: "var(--serif)",
+            fontFamily: SERIF,
             fontSize: "clamp(28px, 5vw, 36px)",
             fontWeight: 400,
-            color: "var(--ink)",
+            color: INK,
             lineHeight: 1.15,
             letterSpacing: "-0.01em",
             margin: "18px 0 14px",
@@ -1046,7 +1075,7 @@ function ResultsView({
           <p
             style={{
               fontSize: 16,
-              color: "var(--ink-5)",
+              color: INK_SOFT,
               lineHeight: 1.625,
               maxWidth: 520,
               margin: 0,
@@ -1064,8 +1093,9 @@ function ResultsView({
               <span
                 key={i}
                 style={{
-                  border: "1px solid color-mix(in srgb, var(--action) 35%, transparent)",
-                  color: "var(--action)",
+                  border: 0,
+                  background: ACT_TINT,
+                  color: ACT,
                   borderRadius: 999,
                   fontSize: 12,
                   padding: "5px 12px",
@@ -1089,7 +1119,8 @@ function ResultsView({
         <button
           type="button"
           onClick={() => setShowFull(v => !v)}
-          style={{ background: "transparent", border: 0, color: "var(--action)", fontSize: 13, cursor: "pointer", fontWeight: 500 }}
+          className="px-4 py-2.5"
+          style={{ ...quietPill, fontWeight: 500 }}
         >
           {showFull ? "Hide the full picture ↑" : "See the full picture →"}
         </button>
@@ -1099,8 +1130,8 @@ function ResultsView({
       {showFull && (
         <div
           style={{
-            background: "hsl(var(--card))",
-            border: "1px solid hsl(var(--border))",
+            background: SURFACE,
+            border: `1px solid ${RULE}`,
             borderRadius: 14,
             padding: "8px 4px",
           }}
@@ -1109,33 +1140,26 @@ function ResultsView({
             const isOpen = !!openSections[idx];
             const content = extractSection(prose, s.key);
             return (
-              <div key={s.key} style={{ borderBottom: idx < SECTION_DEFS.length - 1 ? "1px solid hsl(var(--border))" : "none" }}>
+              <div key={s.key} style={{ borderBottom: idx < SECTION_DEFS.length - 1 ? `1px solid ${RULE}` : "none" }}>
                 <button
                   type="button"
                   onClick={() => setOpenSections(prev => ({ ...prev, [idx]: !prev[idx] }))}
-                  className="w-full text-left px-4 py-3 flex items-start justify-between gap-3 hover:bg-white/[0.02] transition-colors"
+                  className="w-full text-left px-4 py-3 flex items-start justify-between gap-3 transition-colors"
                   style={{ background: "transparent", border: 0, cursor: "pointer" }}
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div
-                      style={{
-                        fontFamily: "var(--serif)",
-                        fontSize: 14,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.1em",
-                        color: "var(--action)",
-                        fontWeight: 600,
-                      }}
+                      style={{ ...labelCaps, color: ACT, fontWeight: 600 }}
                     >
                       {s.label}
                     </div>
-                    <div style={{ fontSize: 12, fontStyle: "italic", color: "var(--ink-4)", marginTop: 2 }}>
+                    <div style={{ fontSize: 12, fontStyle: "italic", color: INK_FAINT, marginTop: 2 }}>
                       {s.hint}
                     </div>
                   </div>
                   <ChevronDown
-                    className="w-4 h-4 text-ink-4 shrink-0 mt-1"
-                    style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 200ms ease" }}
+                    className="w-4 h-4 shrink-0 mt-1"
+                    style={{ color: INK_FAINT, transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 200ms ease" }}
                   />
                 </button>
                 <div
@@ -1145,14 +1169,21 @@ function ResultsView({
                     transition: "max-height 200ms ease",
                   }}
                 >
-                  <div className="prose prose-sm max-w-none px-4 pb-4
-                    [&_p]:text-ink-6 [&_p]:text-[14px] [&_p]:leading-relaxed [&_p]:mb-2
-                    [&_strong]:text-brand
-                    [&_li]:text-ink-6 [&_li]:text-[14px]
-                  ">
+                  <div
+                    className="prose prose-sm max-w-none px-4 pb-4
+                    [&_p]:text-[14px] [&_p]:leading-relaxed [&_p]:mb-2
+                    [&_li]:text-[14px]
+                  "
+                    style={{
+                      ["--tw-prose-body" as any]: INK_SOFT,
+                      ["--tw-prose-bold" as any]: INK,
+                      ["--tw-prose-bullets" as any]: INK_FAINT,
+                      color: INK_SOFT,
+                    }}
+                  >
                     {content
                       ? <ReactMarkdown>{content}</ReactMarkdown>
-                      : <p className="text-sm text-ink-4 italic">Not enough signal yet — keep using Aura and this will sharpen.</p>}
+                      : <p className="text-sm italic" style={{ color: INK_FAINT }}>Not enough signal yet — keep using Aura and this will sharpen.</p>}
                   </div>
                 </div>
               </div>
@@ -1175,24 +1206,24 @@ function ResultsView({
         <button
           type="button"
           onClick={copyOneLiner}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-lg hover:bg-white/[0.04] transition-colors"
-          style={{ background: "transparent", border: "1px solid color-mix(in srgb, var(--action) 35%, transparent)", color: "var(--ink-6)", fontSize: 13, cursor: "pointer" }}
+          className="flex items-center gap-2 px-4 py-2.5 transition-colors"
+          style={quietPill}
         >
           <Copy className="w-3.5 h-3.5" /> Copy my one-liner
         </button>
         <button
           type="button"
           onClick={downloadReport}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-lg hover:bg-white/[0.04] transition-colors"
-          style={{ background: "transparent", border: "1px solid color-mix(in srgb, var(--action) 35%, transparent)", color: "var(--ink-6)", fontSize: 13, cursor: "pointer" }}
+          className="flex items-center gap-2 px-4 py-2.5 transition-colors"
+          style={quietPill}
         >
           <Download className="w-3.5 h-3.5" /> Download full report
         </button>
         <button
           type="button"
           onClick={goToStory}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-lg hover:brightness-110 transition-all active:scale-[0.98]"
-          style={{ background: "linear-gradient(to bottom, hsl(43 80% 55%), var(--action))", color: "var(--ink)", fontSize: 13, cursor: "pointer", border: 0, fontWeight: 600 }}
+          className="flex items-center gap-2 px-6 transition-all hover:-translate-y-0.5 active:scale-[0.98]"
+          style={{ ...pillBtn, fontSize: 13 }}
         >
           Continue <ArrowRight className="w-3.5 h-3.5" />
         </button>
@@ -1245,15 +1276,15 @@ function CinematicLoading({ stage = 0 }: { stage?: number }) {
         }}
         aria-hidden="true"
       >
-        <AuraLogo size={80} variant="auto" />
+        <AuraLogo size={80} variant="light" />
       </div>
       <p
         key={stage}
         style={{
-          fontFamily: "var(--serif)",
+          fontFamily: SERIF,
           fontSize: 18,
           textAlign: "center",
-          color: "var(--ink-2)",
+          color: INK_SOFT,
           maxWidth: 420,
           margin: 0,
           opacity: 0,
