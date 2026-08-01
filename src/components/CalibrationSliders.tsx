@@ -48,8 +48,21 @@ function percentileFor(avg: number): string {
   return "a unique profile";
 }
 
-const BRONZE = "var(--action)";
-const TRACK = "var(--hairline)";
+/* System-B "Studio Plate" palette — hard-coded on purpose. This component
+   renders inside the light .ob card, which does not define System-A vars. */
+const ACT = "#0670C4";        // action / blue
+const TRACK = "#E2E7EE";      // rule / track
+const INK = "#0F1519";        // ink
+const INK_SOFT = "#5B6673";   // ink soft
+const INK_FAINT = "#98A2AE";  // ink faint
+const SERIF = "'Instrument Serif', Georgia, serif";
+const MONO = "'IBM Plex Mono', ui-monospace, Menlo, monospace";
+
+const pillBtn: React.CSSProperties = {
+  minHeight: 48, padding: "0 24px", minWidth: 140,
+  background: INK, color: "#FFFFFF",
+  borderRadius: 999, fontSize: 14, fontWeight: 600,
+};
 
 interface CustomSliderProps {
   value: number;
@@ -65,7 +78,7 @@ const CustomSlider = ({ value, onChange, onChangeEnd }: CustomSliderProps) => {
       <div style={{ position: "relative", height: 4, borderRadius: 999, background: TRACK }}>
         <div style={{
           position: "absolute", left: 0, top: 0, bottom: 0,
-          width: `${value}%`, background: BRONZE, borderRadius: 999,
+          width: `${value}%`, background: ACT, borderRadius: 999,
         }} />
         {/* Thumb */}
         <div
@@ -75,7 +88,7 @@ const CustomSlider = ({ value, onChange, onChangeEnd }: CustomSliderProps) => {
             top: "50%",
             transform: "translate(-50%, -50%)",
             width: 20, height: 20, borderRadius: "50%",
-            background: BRONZE,
+            background: ACT,
             boxShadow: dragging ? "0 2px 12px rgba(0,0,0,0.4)" : "0 2px 8px rgba(0,0,0,0.3)",
             transition: "box-shadow 150ms ease-out",
             pointerEvents: "none",
@@ -229,7 +242,7 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
           >
             <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
-              <span style={{ fontSize: 12, color: "var(--ink-3)" }}>
+              <span style={{ fontSize: 12, color: INK_SOFT }}>
                 {index + 1} of {CALIBRATION_DIMENSIONS.length}
               </span>
             </div>
@@ -238,8 +251,8 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
               animate={{ x: 0 }}
               transition={{ duration: 0.5, ease: "easeOut" }}
               style={{
-                fontFamily: "var(--serif)",
-                fontSize: 22, color: BRONZE, marginBottom: 10, lineHeight: 1.3,
+                fontFamily: SERIF,
+                fontSize: 22, color: INK, marginBottom: 10, lineHeight: 1.3,
                 display: "inline-flex", alignItems: "center", gap: 8,
               }}
             >
@@ -252,7 +265,7 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
               />
             </motion.h2>
             <p style={{
-              fontSize: 15, lineHeight: 1.5, color: "var(--ink-3)",
+              fontSize: 15, lineHeight: 1.5, color: INK_SOFT,
               maxWidth: 360, marginBottom: 24,
             }}>
               {current.description}
@@ -269,8 +282,8 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
               animate={{ scale: reduceMotion ? 1 : [1, 1.05, 1] }}
               transition={{ duration: 0.2 }}
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 36, color: BRONZE, fontWeight: 600,
+                fontFamily: MONO,
+                fontSize: 36, color: INK, fontWeight: 600,
                 textAlign: "center", margin: "8px 0 18px",
               }}
             >
@@ -282,7 +295,7 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
                 animate={{ opacity: insightVisible ? 1 : 0 }}
                 transition={{ duration: insightVisible ? 0.4 : 0.2 }}
                 style={{
-                  fontSize: 14, lineHeight: 1.55, color: "var(--ink-3)",
+                  fontSize: 14, lineHeight: 1.55, color: INK_SOFT,
                   textAlign: "center",
                 }}
               >
@@ -295,19 +308,15 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
                 <button
                   onClick={back}
                   className="flex items-center gap-1.5 text-sm"
-                  style={{ color: "var(--ink-3)", background: "transparent", padding: "10px 8px" }}
+                  style={{ color: INK_SOFT, background: "transparent", padding: "10px 8px" }}
                 >
                   <ArrowLeft className="w-4 h-4" /> Back
                 </button>
               ) : <span />}
               <button
                 onClick={next}
-                className="font-semibold transition-all flex items-center justify-center gap-2"
-                style={{
-                  height: 44, padding: "0 22px", minWidth: 140,
-                  background: BRONZE, color: "var(--ink)",
-                  borderRadius: 10, fontSize: 14,
-                }}
+                className="font-semibold transition-all flex items-center justify-center gap-2 hover:-translate-y-0.5"
+                style={pillBtn}
               >
                 Next <ArrowRight className="w-4 h-4" />
               </button>
@@ -341,7 +350,7 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
-              style={{ fontSize: 13, color: "var(--ink-3)" }}
+              style={{ fontSize: 13, color: INK_SOFT }}
             >
               {companionLine}
             </motion.p>
@@ -397,25 +406,25 @@ const SummaryCard = ({ summary, scores, submitting, reduceMotion, onFinish, onBa
 
   return (
     <div style={{ textAlign: "center" }}>
-      <div style={{ fontSize: 24, color: BRONZE, marginBottom: 12 }}>✦</div>
+      <div style={{ fontSize: 24, color: ACT, marginBottom: 12 }}>✦</div>
       <h2 style={{
-        fontFamily: "var(--serif)",
-        fontSize: 22, color: "var(--ink)", marginBottom: 24,
+        fontFamily: SERIF,
+        fontSize: 22, color: INK, marginBottom: 24,
       }}>
         Your Calibration
       </h2>
 
       <div style={{ textAlign: "left", maxWidth: 360, margin: "0 auto 20px" }}>
-        <p style={{ fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 8 }}>
+        <p style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: INK_FAINT, marginBottom: 8 }}>
           Strongest edges
         </p>
         {summary.top2.map((d) => (
-          <p key={d.id} style={{ fontSize: 14, color: "var(--ink)", marginBottom: 6, display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ color: BRONZE }}>◆</span>
+          <p key={d.id} style={{ fontSize: 14, color: INK, marginBottom: 6, display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ color: ACT }}>◆</span>
             <span>{d.name}</span>
             <span style={{
-              marginLeft: "auto", color: BRONZE, fontFamily: "var(--font-mono)",
-              boxShadow: numbersDone >= totalNumbers ? "0 0 8px rgba(176,141,58,0.3)" : "none",
+              marginLeft: "auto", color: ACT, fontFamily: MONO,
+              boxShadow: numbersDone >= totalNumbers ? "0 0 8px rgba(6,112,196,0.25)" : "none",
               borderRadius: 4, padding: "0 4px", transition: "box-shadow 400ms ease",
             }}>
               <CountUp value={scores[d.id]} reduceMotion={reduceMotion} onDone={onNumDone} />
@@ -423,15 +432,15 @@ const SummaryCard = ({ summary, scores, submitting, reduceMotion, onFinish, onBa
           </p>
         ))}
 
-        <p style={{ fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--ink-3)", margin: "18px 0 8px" }}>
+        <p style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: INK_FAINT, margin: "18px 0 8px" }}>
           Biggest growth territory
         </p>
-        <p style={{ fontSize: 14, color: "var(--ink-3)", marginBottom: 6, display: "flex", alignItems: "center", gap: 8 }}>
+        <p style={{ fontSize: 14, color: INK_SOFT, marginBottom: 6, display: "flex", alignItems: "center", gap: 8 }}>
           <span>◇</span>
           <span>{summary.lowest.name}</span>
           <span style={{
-            marginLeft: "auto", fontFamily: "var(--font-mono)",
-            color: "var(--ink-3)",
+            marginLeft: "auto", fontFamily: MONO,
+            color: INK_SOFT,
           }}>
             <CountUp value={scores[summary.lowest.id]} reduceMotion={reduceMotion} onDone={onNumDone} />
           </span>
@@ -441,7 +450,7 @@ const SummaryCard = ({ summary, scores, submitting, reduceMotion, onFinish, onBa
       <motion.p
         animate={{ opacity: showPercentile ? 1 : 0 }}
         transition={{ duration: 0.5 }}
-        style={{ fontSize: 13, color: "var(--ink-3)", marginBottom: 12 }}
+        style={{ fontSize: 13, color: INK_SOFT, marginBottom: 12 }}
       >
         Your calibration places you in the {summary.percentile} of professionals who've completed this assessment.
       </motion.p>
@@ -451,7 +460,7 @@ const SummaryCard = ({ summary, scores, submitting, reduceMotion, onFinish, onBa
           <motion.p
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            style={{ fontSize: 13, color: "var(--ink-3)", marginBottom: 20, fontStyle: "italic" }}
+            style={{ fontSize: 13, color: INK_SOFT, marginBottom: 20, fontStyle: "italic" }}
           >
             {companion}
           </motion.p>
@@ -462,19 +471,15 @@ const SummaryCard = ({ summary, scores, submitting, reduceMotion, onFinish, onBa
         <button
           onClick={onBack}
           className="flex items-center gap-1.5 text-sm"
-          style={{ color: "var(--ink-3)", background: "transparent", padding: "10px 8px" }}
+          style={{ color: INK_SOFT, background: "transparent", padding: "10px 8px" }}
         >
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
         <button
           onClick={onFinish}
           disabled={submitting}
-          className="font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-          style={{
-            height: 44, padding: "0 22px",
-            background: BRONZE, color: "var(--ink)",
-            borderRadius: 10, fontSize: 14,
-          }}
+          className="font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-50 hover:-translate-y-0.5"
+          style={pillBtn}
         >
           {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
           Continue <ArrowRight className="w-4 h-4" />
