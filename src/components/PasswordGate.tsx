@@ -39,8 +39,8 @@ export default function PasswordGate({ children }: { children: React.ReactNode }
 
   if (checking) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--paper)" }}>
-        <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--action)" }} />
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--surface-page)" }}>
+        <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--act)" }} />
       </div>
     );
   }
@@ -56,6 +56,10 @@ export default function PasswordGate({ children }: { children: React.ReactNode }
 
   return <>{children}</>;
 }
+
+const FF_UI = "'Inter',ui-sans-serif,system-ui,-apple-system,sans-serif";
+const FF_SER = "'Instrument Serif',Georgia,serif";
+const FF_MONO = "'IBM Plex Mono',ui-monospace,Menlo,monospace";
 
 function SetPasswordScreen({ email, onComplete }: { email: string | null; onComplete: () => void }) {
   const [password, setPassword] = useState("");
