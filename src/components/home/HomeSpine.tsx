@@ -1,317 +1,430 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowRight, HelpCircle, Plus } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { countPosts, loadPostCounts } from "@/lib/postProvenance";
-import { bandFromScore, bandFromKey, type TierBand } from "@/hooks/useTierFromImprint";
-import { loadLayout, loadWidgetMetrics, WIDGET_DEFS, DEFAULT_LAYOUT } from "@/components/widgets/widgetData";
+import { loadLayout, loadWidgetMetrics, DEFAULT_LAYOUT } from "@/components/widgets/widgetData";
 import type { WidgetLayout, WidgetMetrics } from "@/components/widgets/widgetData";
-import { WidgetBody } from "@/components/widgets/WidgetCards";
-import { useSinceLastVisit } from "@/hooks/useSinceLastVisit";
-import { draftNightKeys, loadGhostDrafts, nightsLine } from "@/lib/overnightNights";
+import AuraLogo from "@/components/brand/AuraLogo";
+import {
+  useHomeAddress, useHomeLedger, useReadChips,
+  type HomeLens, type HomeMove,
+} from "@/hooks/useHomeAddress";
+import { MONO, Kicker, Card, Body, Muted, ActButton, Skeleton } from "./homeAtoms";
+import { RecordLens, RoomLens, ShapeLens } from "./lenses";
+import {
+  buildShelf, MovesCard, StandCard, OwnCard, NightCard, WidgetsCard,
+  type ShelfKey, type OwnedTheme,
+} from "./shelf";
 
 /**
- * HomeSpine — everything on Home below the one move.
+ * HomeSpine — one stage, three lenses, a shelf.
  *
- * Order is fixed: header strip, three instruments, what changed since a
- * stated time, my widgets. Every number appears exactly once on the page and
- * is read from the canonical source (postProvenance for the two published
- * counts, imprint_snapshots for the score, strategic_signals for themes).
- * Bone surface tokens explicit, mono numerals, logical properties only.
+ * The address is written by the chief-of-staff function and cached per day;
+ * everything else on this page is drawn from facts and real rows. No value
+ * here is a hex literal — every colour is a token from src/index.css.
  */
-
-const MONO: React.CSSProperties = { fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums" };
-const ADD_TILE_DISMISS = "aura_home_add_widget_dismissed";
-
-const editionDate = (d: Date) =>
-  `${d.toLocaleDateString("en-GB", { weekday: "long" })} ${d.toLocaleDateString("en-GB", { day: "numeric", month: "long" })}`.toUpperCase();
-
-const clockLabel = (iso: string) => {
-  const d = new Date(iso);
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${p(d.getHours())}:${p(d.getMinutes())}`;
-};
-
-const startOfMonthIso = () => {
-  const n = new Date();
-  return new Date(n.getFullYear(), n.getMonth(), 1).toISOString();
-};
-
-// ── Atoms ──────────────────────────────────────────────────────────
-
-const SectionLabel: React.FC<React.PropsWithChildren<{ right?: React.ReactNode }>> = ({ children, right }) => (
-  <div style={{
-    display: "flex", alignItems: "center", justifyContent: "space-between",
-    gap: 12, marginBlockEnd: 10, flexWrap: "wrap",
-  }}>
-    <span style={{ ...MONO, fontSize: 10.5, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-      {children}
-    </span>
-    {right}
-  </div>
-);
-
-const Card: React.FC<React.PropsWithChildren<{ style?: React.CSSProperties }>> = ({ children, style }) => (
-  <div style={{
-    background: "var(--surface-card)", border: "1px solid var(--rule-outer)",
-    borderRadius: 16, padding: 18, ...style,
-  }}>{children}</div>
-);
-
-const LinkAction: React.FC<React.PropsWithChildren<{ onClick: () => void }>> = ({ onClick, children }) => (
-  <button type="button" onClick={onClick} style={{
-    display: "inline-flex", alignItems: "center", gap: 6, background: "transparent",
-    border: 0, padding: 0, cursor: "pointer", fontFamily: "var(--font-body)",
-    fontSize: 13, fontWeight: 600, color: "var(--act)",
-  }}>{children}<ArrowRight size={13} aria-hidden /></button>
-);
-
-interface Instrument {
-  value: string;
-  unit?: string;
-  line: string;
-  sub: string;
-  help?: { href: string; label: string };
-}
-
-const InstrumentTile: React.FC<{ i: Instrument }> = ({ i }) => (
-  <Card>
-    <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-      <span style={{ ...MONO, fontSize: 30, fontWeight: 700, color: "var(--text-primary)", lineHeight: 1 }}>{i.value}</span>
-      {i.unit && <span style={{ ...MONO, fontSize: 13, color: "var(--text-muted)" }}>{i.unit}</span>}
-      {i.help && (
-        <a
-          href={i.help.href} target="_blank" rel="noreferrer" aria-label={i.help.label}
-          style={{ marginInlineStart: "auto", color: "var(--text-muted)", display: "inline-flex" }}
-        >
-          <HelpCircle size={15} aria-hidden />
-        </a>
-      )}
-    </div>
-    <div style={{ fontSize: 13, color: "var(--text-secondary)", marginBlockStart: 10, lineHeight: 1.5 }}>{i.line}</div>
-    <div style={{ fontSize: 12.5, color: "var(--text-muted)", marginBlockStart: 4, lineHeight: 1.5 }}>{i.sub}</div>
-  </Card>
-);
-
-// ── Types ──────────────────────────────────────────────────────────
 
 export interface HomeSpineProps {
   userId: string | null | undefined;
   onSwitchTab: (tab: string) => void;
   onStartSignalPost: (p: { topic: string; context: string; signalId: string; signalTitle: string }) => void;
+  onOpenDraft?: (d: { id: string; body: string; language: "en" | "ar"; type: "carousel" | "framework" | "linkedin_post"; topic?: string | null }) => void;
 }
 
-interface SpineData {
-  overnightAt: string | null;
-  draftNights: number;
-  imprint: number | null;
-  band: TierBand | null;
-  bandWeeks: number | null;
-  liveSignals: number;
-  growingSignals: number;
-  publishedMonth: number;
-  publishedThroughAura: number;
+const LENS_LABEL: Record<HomeLens, string> = {
+  record: "The Record", room: "The Room", shape: "The Shape",
+};
+const LENSES: HomeLens[] = ["record", "room", "shape"];
+
+const collapseKey = (uid: string) => `aura_home_address_collapsed_${uid}`;
+const lensKey = (uid: string) => `aura_home_lens_${uid}`;
+const draftDismissKey = (id: string) => `move_dismissed_${id}_${new Date().toISOString().slice(0, 10)}`;
+
+/** Map a stored cta_route onto the dashboard's tabs. */
+function tabForRoute(route: string): string | null {
+  const m = /[?&]tab=([a-z_]+)/i.exec(route || "");
+  const t = m?.[1]?.toLowerCase() ?? null;
+  if (!t) return null;
+  if (t === "signals") return "intelligence";
+  if (t === "composer" || t === "studio") return "authority";
+  if (t === "analytics") return "influence";
+  return t;
 }
 
-export default function HomeSpine({ userId, onSwitchTab, onStartSignalPost }: HomeSpineProps) {
-  const [data, setData] = useState<SpineData | null>(null);
+const firstSentence = (md: string) => {
+  const plain = md.replace(/[#*_`>]/g, "").trim();
+  const m = /^(.+?[.?!])(\s|$)/.exec(plain);
+  return (m?.[1] ?? plain).slice(0, 180);
+};
+
+/** Very small markdown: paragraphs, **bold**, and single line breaks. */
+const Prose: React.FC<{ md: string }> = ({ md }) => (
+  <div style={{ display: "grid", gap: 12 }}>
+    {md.split(/\n{2,}/).map((para, i) => (
+      <p key={i} style={{ margin: 0, fontSize: 15.5, lineHeight: 1.65, color: "var(--text-inverse)" }}>
+        {para.split(/(\*\*[^*]+\*\*)/g).map((chunk, j) =>
+          chunk.startsWith("**") && chunk.endsWith("**")
+            ? <strong key={j} style={{ fontWeight: 700 }}>{chunk.slice(2, -2)}</strong>
+            : <span key={j}>{chunk}</span>,
+        )}
+      </p>
+    ))}
+  </div>
+);
+
+export default function HomeSpine({ userId, onSwitchTab, onStartSignalPost, onOpenDraft }: HomeSpineProps) {
+  const uid = userId ?? "anon";
+  const address = useHomeAddress(userId);
+  const ledger = useHomeLedger(userId);
+  const facts = address.facts;
+  const chips = useReadChips(userId, facts);
+
   const [layout, setLayout] = useState<WidgetLayout>(DEFAULT_LAYOUT);
   const [metrics, setMetrics] = useState<WidgetMetrics | null>(null);
-  const since = useSinceLastVisit(userId);
-  const [addTileHidden, setAddTileHidden] = useState<boolean>(() => {
-    try { return localStorage.getItem(ADD_TILE_DISMISS) === "1"; } catch { return false; }
+  const [themes, setThemes] = useState<OwnedTheme[]>([]);
+  const [memberName, setMemberName] = useState<string>("You");
+
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    try { return localStorage.getItem(collapseKey(uid)) === "1"; } catch { return false; }
   });
+  const [override, setOverride] = useState<{ lens: HomeLens; reason: string } | null>(() => {
+    try {
+      const raw = localStorage.getItem(lensKey(uid));
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  });
+  const [onStage, setOnStage] = useState<ShelfKey | null>(null);
+  const [draftDismissed, setDraftDismissed] = useState(false);
 
-  const load = useCallback(async () => {
-    if (!userId) return;
-    const monthIso = startOfMonthIso();
-
-    const [snapRes, sigRes, findRes, posts, ghostRows] = await Promise.all([
-      supabase.from("imprint_snapshots").select("imprint, tier, created_at")
-        .eq("user_id", userId).order("created_at", { ascending: false }).limit(120),
-      (supabase.from("strategic_signals" as any) as any)
-        .select("id, signal_title, velocity_status, fragment_count, strategic_implications, explanation, created_at, updated_at")
-        .eq("user_id", userId).eq("status", "active").limit(500),
-      (supabase.from("agent_findings" as any) as any)
-        .select("created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(1),
-      loadPostCounts(supabase, userId),
-      loadGhostDrafts(supabase as any, userId),
-    ]);
-
-    // Imprint + how long this band has been held.
-    const snaps = ((snapRes.data as any[]) || []);
-    const latest = snaps[0];
-    const score = typeof latest?.imprint === "number" ? Math.round(latest.imprint) : null;
-    const band = bandFromKey(latest?.tier) ?? bandFromScore(score);
-    let bandWeeks: number | null = null;
-    if (band && latest?.created_at) {
-      let heldSince = latest.created_at as string;
-      for (const s of snaps) {
-        const b = bandFromKey(s?.tier) ?? bandFromScore(s?.imprint);
-        if (b?.key !== band.key) break;
-        heldSince = s.created_at;
-      }
-      bandWeeks = Math.max(1, Math.round((Date.now() - new Date(heldSince).getTime()) / (7 * 86_400_000)));
-    }
-
-    const sigs = ((sigRes.data as any[]) || []);
-    const growing = sigs.filter((s) => (s.velocity_status || "").toLowerCase() === "accelerating").length;
-
-    const counts = countPosts(posts.rows, monthIso);
-
-    setData({
-      overnightAt: ((findRes.data as any[]) || [])[0]?.created_at ?? null,
-      draftNights: draftNightKeys(ghostRows).size,
-      imprint: score,
-      band,
-      bandWeeks,
-      liveSignals: sigs.length,
-      growingSignals: growing,
-      publishedMonth: counts.live,
-      publishedThroughAura: countPosts(posts.rows).throughAura,
-    });
-  }, [userId, onSwitchTab, onStartSignalPost]);
-
-  useEffect(() => { void load().catch(() => {}); }, [load]);
-
+  // ── supporting reads ─────────────────────────────────────────────
   useEffect(() => {
     if (!userId) return;
     let alive = true;
     (async () => {
-      const [l, m] = await Promise.all([loadLayout(userId), loadWidgetMetrics(userId)]);
+      const [l, m, sigs, prof] = await Promise.all([
+        loadLayout(userId),
+        loadWidgetMetrics(userId),
+        (supabase.from("strategic_signals" as any) as any)
+          .select("id, signal_title, fragment_count, velocity_status")
+          .eq("user_id", userId).eq("status", "active")
+          .order("fragment_count", { ascending: false, nullsFirst: false }).limit(6),
+        supabase.from("diagnostic_profiles").select("first_name, last_name").eq("user_id", userId).maybeSingle(),
+      ]);
       if (!alive) return;
       setLayout(l); setMetrics(m);
+      setThemes(((sigs?.data as any[]) || []).map((s) => ({
+        id: s.id, title: s.signal_title, fragments: s.fragment_count ?? 0, velocity: s.velocity_status ?? null,
+      })));
+      const p: any = prof?.data;
+      if (p) setMemberName([p.first_name, p.last_name].filter(Boolean).join(" ") || "You");
     })();
     return () => { alive = false; };
   }, [userId]);
 
-  const overnightFresh = useMemo(() => {
-    if (!data?.overnightAt) return false;
-    return Date.now() - new Date(data.overnightAt).getTime() < 24 * 3600_000;
-  }, [data?.overnightAt]);
+  // ── the lens: Aura's choice unless the member overrode it ────────
+  const auraLens = address.row?.lens ?? "shape";
+  const auraReason = address.row?.lens_reason ?? "";
 
-  const instruments: Instrument[] = useMemo(() => {
-    if (!data) return [];
-    const out: Instrument[] = [];
-    if (data.imprint != null && data.band) {
-      out.push({
-        value: String(data.imprint), unit: "/100",
-        line: "Your presence score",
-        sub: `${data.band.name}${data.bandWeeks ? `, held ${data.bandWeeks} ${data.bandWeeks === 1 ? "week" : "weeks"}` : ""}`,
-        help: { href: "/guide", label: "How the presence score works" },
-      });
+  // An override survives until Aura chooses for a *different* reason.
+  useEffect(() => {
+    if (!override || !auraReason) return;
+    if (override.reason !== auraReason) {
+      setOverride(null);
+      try { localStorage.removeItem(lensKey(uid)); } catch { /* noop */ }
     }
-    out.push({
-      value: String(data.liveSignals),
-      line: "Themes Aura tracks from your reading",
-      sub: data.growingSignals > 0 ? `${data.growingSignals} growing now` : "None growing right now",
-    });
-    out.push({
-      value: String(data.publishedMonth),
-      line: "Posts live on LinkedIn this month",
-      sub: `${data.publishedThroughAura} all-time made with Aura`,
-    });
-    out.push({
-      value: String(data.draftNights), unit: "/7",
-      line: "Nights that produced a draft",
-      sub: nightsLine(data.draftNights),
-    });
-    return out;
-  }, [data]);
+  }, [auraReason, override, uid]);
 
-  // Instruments already carry imprint, live signals and the two published
-  // counts. A widget repeating any of them would put the same number on the
-  // page twice, so those keys are suppressed here (they stay on Widgets).
-  const DUPLICATE_KEYS = new Set(["imprint", "live_signals", "published"]);
-  const onWidgets = WIDGET_DEFS.filter((d) => layout[d.key] && !DUPLICATE_KEYS.has(d.key));
-  const showWidgetRegion = (metrics && onWidgets.length > 0) || !addTileHidden;
+  const empty = (facts?.captures_total ?? 0) === 0;
+  const firstRun = (facts?.days_since_signup ?? 99) <= 1;
+  const activeLens: HomeLens = empty ? "shape" : (override?.lens ?? auraLens);
+
+  const chooseLens = useCallback((l: HomeLens) => {
+    setOnStage(null);
+    if (l === auraLens) {
+      setOverride(null);
+      try { localStorage.removeItem(lensKey(uid)); } catch { /* noop */ }
+      return;
+    }
+    const next = { lens: l, reason: auraReason };
+    setOverride(next);
+    try { localStorage.setItem(lensKey(uid), JSON.stringify(next)); } catch { /* noop */ }
+  }, [auraLens, auraReason, uid]);
+
+  const toggleCollapsed = () => {
+    setCollapsed((c) => {
+      const next = !c;
+      try { localStorage.setItem(collapseKey(uid), next ? "1" : "0"); } catch { /* noop */ }
+      return next;
+    });
+  };
+
+  const goRoute = useCallback((route: string) => {
+    const tab = tabForRoute(route);
+    if (tab) { onSwitchTab(tab); window.scrollTo({ top: 0, behavior: "smooth" }); }
+  }, [onSwitchTab]);
+
+  const openAsk = useCallback(() => {
+    try {
+      window.dispatchEvent(new CustomEvent("aura-open-chat", {
+        detail: { prompt: "Talk to me about today's address." },
+      }));
+    } catch { /* noop */ }
+  }, []);
+
+  const publishDraft = useCallback(async (id: string) => {
+    if (!onOpenDraft) { onSwitchTab("authority"); return; }
+    const { data } = await (supabase.from("linkedin_posts" as any) as any)
+      .select("id, post_text, title, language, content_format").eq("id", id).maybeSingle();
+    const row: any = data;
+    onOpenDraft({
+      id,
+      body: row?.post_text ?? "",
+      language: row?.language === "ar" ? "ar" : "en",
+      type: row?.content_format === "carousel" ? "carousel" : "linkedin_post",
+      topic: row?.title ?? null,
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [onOpenDraft, onSwitchTab]);
+
+  const dismissDraft = useCallback((id: string) => {
+    try { localStorage.setItem(draftDismissKey(id), "1"); } catch { /* noop */ }
+    setDraftDismissed(true);
+  }, []);
+
+  useEffect(() => {
+    const id = facts?.last_night?.newest_signal_draft?.id;
+    if (!id) return;
+    try { setDraftDismissed(localStorage.getItem(draftDismissKey(id)) === "1"); } catch { /* noop */ }
+  }, [facts?.last_night?.newest_signal_draft?.id]);
+
+  const moves: HomeMove[] = address.row?.moves ?? [];
+  const shelf = useMemo(
+    () => buildShelf(facts, moves, facts?.signals_active ?? themes.length),
+    [facts, moves, themes.length],
+  );
+
+  const writeOnTopSignal = useCallback(() => {
+    const t = facts?.top_signal;
+    if (!t) return;
+    onStartSignalPost({ topic: t.title, context: "", signalId: t.id, signalTitle: t.title });
+  }, [facts?.top_signal, onStartSignalPost]);
+
+  const generatedAt = address.row?.generated_at ?? null;
+  const generatedLabel = generatedAt
+    ? new Date(generatedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
+    : null;
+
+  // ── the stage ────────────────────────────────────────────────────
+  const stage = (() => {
+    if (onStage === "moves") return <MovesCard moves={moves} onGo={goRoute} />;
+    if (onStage === "stand") return <StandCard facts={facts} />;
+    if (onStage === "own") return <OwnCard themes={themes} onOpen={() => onSwitchTab("intelligence")} />;
+    if (onStage === "night") return <NightCard facts={facts} generatedAt={generatedAt} onOpen={() => onSwitchTab("overnight")} />;
+    if (onStage === "widgets") return <WidgetsCard layout={layout} metrics={metrics} onEdit={() => onSwitchTab("widgets")} />;
+
+    if (activeLens === "record") {
+      if (empty) return null;
+      return (
+        <RecordLens
+          facts={facts} ledger={ledger} draftDismissed={draftDismissed}
+          onPublishDraft={(id) => { void publishDraft(id); }}
+          onDismissDraft={dismissDraft}
+        />
+      );
+    }
+    if (activeLens === "room") {
+      if (empty) return null;
+      return <RoomLens facts={facts} memberName={memberName} onWriteOnSignal={writeOnTopSignal} />;
+    }
+    return <ShapeLens facts={facts} />;
+  })();
+
+  const loadingAddress = address.loading && !address.row;
 
   return (
-    <div style={{ display: "grid", gap: 26, marginBlockStart: 26 }}>
-      {/* 1 — header strip */}
-      <div style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        gap: 12, flexWrap: "wrap", borderBlockEnd: "1px solid var(--rule-outer)", paddingBlockEnd: 10,
+    <div style={{ display: "grid", gap: 22, marginBlockStart: 22 }}>
+      {/* 1 — THE ADDRESS */}
+      <section style={{
+        background: "var(--v23-night)", borderRadius: 16, padding: "22px 24px",
+        border: "1px solid var(--v23-night-line)",
       }}>
-        <span style={{ ...MONO, fontSize: 10.5, letterSpacing: ".12em", color: "var(--text-muted)" }}>
-          THE BRIEF · {editionDate(new Date())}
-        </span>
-        {overnightFresh && data?.overnightAt && (
-          <span style={{ ...MONO, fontSize: 10.5, letterSpacing: ".12em", color: "var(--text-muted)", display: "inline-flex", alignItems: "center", gap: 7 }}>
-            <span aria-hidden style={{ width: 7, height: 7, borderRadius: 999, background: "var(--machine)" }} />
-            AURA READ YOUR SIGNALS AT {clockLabel(data.overnightAt)}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <AuraLogo size={22} variant="dark" />
+          <span style={{ ...MONO, fontSize: 10.5, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--v23-on-night)" }}>
+            Aura · your chief of staff
           </span>
+          {generatedLabel && (
+            <span style={{ ...MONO, fontSize: 10.5, letterSpacing: ".08em", color: "var(--v23-on-night)" }}>
+              {generatedLabel}
+            </span>
+          )}
+          <button
+            type="button" onClick={toggleCollapsed}
+            aria-label={collapsed ? "Show the full address" : "Collapse the address"}
+            style={{
+              marginInlineStart: "auto", background: "var(--v23-night-lift)", border: 0,
+              borderRadius: 999, inlineSize: 30, blockSize: 30, cursor: "pointer",
+              color: "var(--text-inverse)", display: "inline-flex", alignItems: "center", justifyContent: "center",
+            }}
+          >
+            {collapsed ? <ChevronDown size={16} aria-hidden /> : <ChevronUp size={16} aria-hidden />}
+          </button>
+        </div>
+
+        <div style={{ marginBlockStart: 16 }}>
+          {loadingAddress ? (
+            <div style={{ display: "grid", gap: 10 }}>
+              <Skeleton h={16} w="86%" />
+              <Skeleton h={16} w="72%" />
+              <Skeleton h={16} w="60%" />
+            </div>
+          ) : collapsed ? (
+            <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: "var(--text-inverse)" }}>
+              {address.row?.address_md ? firstSentence(address.row.address_md) : "Today's address is not written."}
+            </p>
+          ) : address.row?.address_md ? (
+            <Prose md={address.row.address_md} />
+          ) : (
+            <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: "var(--v23-on-night)" }}>
+              {firstRun
+                ? "You have just arrived. Capture one thing you read and the rest of this page fills itself in."
+                : "Today's address could not be written. Everything below is still drawn from your own record."}
+            </p>
+          )}
+        </div>
+
+        {!collapsed && chips.length > 0 && (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBlockStart: 16 }}>
+            {chips.map((c) => (
+              <span key={c.key} style={{
+                ...MONO, fontSize: 11, letterSpacing: ".04em", padding: "5px 10px", borderRadius: 999,
+                border: "1px solid var(--v23-night-line)", color: "var(--v23-on-night)",
+              }}>{c.label}</span>
+            ))}
+          </div>
         )}
+
+        {!collapsed && (
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBlockStart: 18 }}>
+            {moves[0] && (
+              <button type="button" onClick={() => goRoute(moves[0].cta_route)} style={{
+                border: 0, borderRadius: 999, padding: "11px 20px", fontSize: 13, fontWeight: 700,
+                cursor: "pointer", background: "var(--text-inverse)", color: "var(--text-primary)",
+                fontFamily: "var(--font-body)",
+              }}>{moves[0].what}</button>
+            )}
+            <button type="button" onClick={openAsk} style={{
+              borderRadius: 999, padding: "11px 20px", fontSize: 13, fontWeight: 600, cursor: "pointer",
+              background: "transparent", color: "var(--text-inverse)",
+              border: "1px solid var(--v23-night-line)", fontFamily: "var(--font-body)",
+            }}>Talk to me about this</button>
+          </div>
+        )}
+      </section>
+
+      {/* 2 — THE LENS BAR */}
+      {!empty && (
+        <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {LENSES.map((l) => {
+              const on = l === activeLens && !onStage;
+              return (
+                <button
+                  key={l} type="button" onClick={() => chooseLens(l)} aria-pressed={on}
+                  style={{
+                    borderRadius: 999, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer",
+                    fontFamily: "var(--font-body)",
+                    background: on ? "var(--surface-inverse)" : "transparent",
+                    color: on ? "var(--text-inverse)" : "var(--text-secondary)",
+                    border: on ? "1px solid var(--surface-inverse)" : "1px solid var(--rule-outer)",
+                  }}
+                >{LENS_LABEL[l]}</button>
+              );
+            })}
+          </div>
+          {override ? (
+            <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
+              You chose this · Aura will keep it
+            </span>
+          ) : auraReason ? (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12.5, color: "var(--text-secondary)" }}>
+              <span aria-hidden style={{
+                inlineSize: 7, blockSize: 7, borderRadius: 999, background: "var(--machine)",
+              }} />
+              Aura chose this — {auraReason}
+            </span>
+          ) : null}
+        </div>
+      )}
+
+      {/* 3 — THE STAGE + THE SHELF */}
+      <div style={{ display: "grid", gap: 18, gridTemplateColumns: "minmax(0, 2.1fr) minmax(240px, 1fr)", alignItems: "start" }}
+           className="home-spine-grid">
+        <div style={{ display: "grid", gap: 12, minInlineSize: 0 }}>
+          {onStage && (
+            <button type="button" onClick={() => setOnStage(null)} style={{
+              justifySelf: "start", background: "none", border: 0, padding: 0, cursor: "pointer",
+              fontFamily: "var(--font-body)", fontSize: 13, fontWeight: 600, color: "var(--act)",
+            }}>◂ Back to {LENS_LABEL[activeLens]}</button>
+          )}
+
+          {address.loading && !facts ? (
+            <Card style={{ display: "grid", gap: 12 }}>
+              <Skeleton h={18} w="40%" />
+              <Skeleton h={12} w="80%" />
+              <Skeleton h={12} w="66%" />
+              <Skeleton h={120} />
+            </Card>
+          ) : empty && !onStage ? (
+            <Card style={{ display: "grid", gap: 12 }}>
+              <Kicker>Start here</Kicker>
+              <Body style={{ fontSize: 15, color: "var(--text-primary)" }}>
+                Nothing has been captured yet, so there is no record and no room to show — only the shape you
+                arrived with.
+              </Body>
+              <div>
+                <ActButton onClick={() => {
+                  try { window.dispatchEvent(new CustomEvent("aura:open-capture")); } catch { /* noop */ }
+                }}>Capture the first thing you read</ActButton>
+              </div>
+            </Card>
+          ) : stage}
+
+          {empty && !onStage && <ShapeLens facts={facts} />}
+        </div>
+
+        {/* the shelf */}
+        <aside style={{ display: "grid", gap: 10, minInlineSize: 0 }}>
+          <Kicker>Your shelf</Kicker>
+          {shelf.map((s) => {
+            const on = onStage === s.key;
+            return (
+              <button
+                key={s.key} type="button" onClick={() => setOnStage(on ? null : s.key)} aria-pressed={on}
+                style={{
+                  textAlign: "start", cursor: "pointer", borderRadius: 14, padding: "13px 14px",
+                  background: "var(--surface-card)", fontFamily: "var(--font-body)",
+                  border: on ? "1px solid var(--act)" : "1px solid var(--rule-outer)",
+                  boxShadow: "var(--v23-card-rest)", display: "grid", gap: 5,
+                }}
+              >
+                <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                  {s.machine && <span aria-hidden style={{
+                    inlineSize: 6, blockSize: 6, borderRadius: 999, background: "var(--machine)",
+                  }} />}
+                  <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-primary)" }}>{s.title}</span>
+                </span>
+                <Muted style={{ fontSize: 12.5 }}>{s.fact}</Muted>
+              </button>
+            );
+          })}
+        </aside>
       </div>
 
-      {/* 3 — instrument row */}
-      {instruments.length > 0 && (
-        <section>
-          <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
-            {instruments.map((i) => <InstrumentTile key={i.line} i={i} />)}
-          </div>
-        </section>
-      )}
-
-      {/* 4 — since your last visit */}
-      {since.baseline && since.timestampLabel && since.rows.length > 0 && (
-        <section>
-          <SectionLabel right={
-            <span style={{ ...MONO, fontSize: 10.5, letterSpacing: ".08em", color: "var(--text-muted)" }}>
-              {since.timestampLabel}
-            </span>
-          }>
-            SINCE YOUR LAST VISIT
-          </SectionLabel>
-          <Card style={{ padding: 0 }}>
-            {since.rows.map((c, idx) => (
-              <div key={c.key} style={{
-                padding: 16,
-                borderBlockStart: idx === 0 ? undefined : "1px solid var(--rule-outer)",
-                display: "grid", gap: 8,
-              }}>
-                <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: "var(--text-primary)" }}>{c.text}</p>
-                <LinkAction onClick={() => {
-                  if (c.action.kind === "start_post" && c.action.post) onStartSignalPost(c.action.post);
-                  else if (c.action.tab) onSwitchTab(c.action.tab);
-                }}>{c.actionLabel}</LinkAction>
-              </div>
-            ))}
-          </Card>
-        </section>
-      )}
-
-      {/* 5 — your widgets */}
-      {showWidgetRegion && (
-        <section>
-          <SectionLabel right={<LinkAction onClick={() => onSwitchTab("widgets")}>Edit widgets</LinkAction>}>
-            YOUR WIDGETS
-          </SectionLabel>
-          <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
-            {metrics && onWidgets.map((d) => <WidgetBody key={d.key} k={d.key} m={metrics} />)}
-            {!addTileHidden && (
-              <div style={{
-                border: "1px dashed var(--rule-outer)", borderRadius: 16, padding: 18,
-                display: "grid", gap: 8, alignContent: "center", justifyItems: "start",
-                background: "transparent", minBlockSize: 120,
-              }}>
-                <button type="button" onClick={() => onSwitchTab("widgets")} style={{
-                  display: "inline-flex", alignItems: "center", gap: 8, background: "transparent",
-                  border: 0, padding: 0, cursor: "pointer", fontFamily: "var(--font-body)",
-                  fontSize: 13, fontWeight: 600, color: "var(--act)",
-                }}><Plus size={14} aria-hidden />Add a widget</button>
-                <button type="button" onClick={() => {
-                  setAddTileHidden(true);
-                  try { localStorage.setItem(ADD_TILE_DISMISS, "1"); } catch { /* noop */ }
-                }} style={{
-                  background: "transparent", border: 0, padding: 0, cursor: "pointer",
-                  fontFamily: "var(--font-body)", fontSize: 12.5, color: "var(--text-muted)",
-                  textDecoration: "underline",
-                }}>No thanks</button>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
+      <style>{`
+        @media (max-width: 900px) {
+          .home-spine-grid { grid-template-columns: minmax(0, 1fr) !important; }
+        }
+      `}</style>
     </div>
   );
 }

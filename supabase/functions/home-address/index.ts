@@ -23,13 +23,36 @@ const FN = "home-address";
 const FOUNDER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 const MODEL = "google/gemini-3-flash-preview";
 
-const TIERS: Record<string, { name: string; next: string | null; nextFloor: number | null }> = {
-  observer:   { name: "Observer",   next: "Explorer",   nextFloor: 15 },
-  explorer:   { name: "Explorer",   next: "Strategist", nextFloor: 35 },
-  strategist: { name: "Strategist", next: "Voice",      nextFloor: 60 },
-  voice:      { name: "Voice",      next: "Presence",   nextFloor: 80 },
-  presence:   { name: "Presence",   next: null,         nextFloor: null },
-};
+// Ratified bands. Floor is inclusive; the last band is the top.
+const BANDS: Array<{ key: string; name: string; floor: number }> = [
+  { key: "observer",   name: "Observer",   floor: 0 },
+  { key: "explorer",   name: "Explorer",   floor: 15 },
+  { key: "strategist", name: "Strategist", floor: 35 },
+  { key: "voice",      name: "Voice",      floor: 60 },
+  { key: "presence",   name: "Presence",   floor: 80 },
+];
+
+function bandFor(imprint: number | null, tierKey: string | null) {
+  let idx = -1;
+  if (imprint != null) {
+    for (let i = 0; i < BANDS.length; i++) if (imprint >= BANDS[i].floor) idx = i;
+  } else if (tierKey) {
+    idx = BANDS.findIndex((b) => b.key === tierKey);
+  }
+  if (idx < 0) return { name: null, next_band_name: null, points_to_next_band: null, at_top_band: false };
+  const atTop = idx === BANDS.length - 1;
+  const next = atTop ? null : BANDS[idx + 1];
+  return {
+    name: BANDS[idx].name,
+    next_band_name: next?.name ?? null,
+    points_to_next_band: next && imprint != null ? Math.max(0, next.floor - imprint) : null,
+    at_top_band: atTop,
+  };
+}
+
+// Fixed, non-judgemental. These facets cannot register before something ships.
+const DORMANT_REASON =
+  "Audience, discernment and conviction can only register once something has been published. They are dormant, not weak.";
 
 const PUBLISHED_STATUSES = ["published", "confirmed"];
 
@@ -160,19 +183,20 @@ async function gatherFacts(admin: SupabaseClient, userId: string): Promise<Facts
   const snap: any = imprintR.data ?? null;
   const imprint = snap?.imprint != null ? Math.round(Number(snap.imprint)) : null;
   const tierKey: string | null = snap?.tier ?? null;
-  const tierDef = tierKey ? TIERS[tierKey] : null;
-  const componentsRaw = snap?.components ?? {};
+  const band = bandFor(imprint, tierKey);
+  // The scores live under components.score_components, not on components itself.
+  const sc = snap?.components?.score_components ?? {};
+  const num = (v: unknown) => (v == null || v === "" ? null : Math.round(Number(v)));
   const components = {
-    signal: componentsRaw?.signal != null ? Math.round(Number(componentsRaw.signal)) : null,
-    content: componentsRaw?.content != null ? Math.round(Number(componentsRaw.content)) : null,
-    capture: componentsRaw?.capture != null ? Math.round(Number(componentsRaw.capture)) : null,
+    signal: num(sc.signal_score),
+    content: num(sc.content_score),
+    capture: num(sc.capture_score),
   };
-  const points_to_next_band =
-    imprint != null && tierDef?.nextFloor != null ? Math.max(0, tierDef.nextFloor - imprint) : null;
 
   // — facets —
   const facets = facetRows.map((f) => ({ facet: f.facet, value: Number(f.value) }));
-  const facets_at_zero = facets.filter((f) => f.value === 0).map((f) => f.facet);
+  // Floats: exact-zero never fires. Below 0.05 is "has not registered yet".
+  const facets_dormant = facets.filter((f) => f.value < 0.05).map((f) => f.facet);
 
   // — drafts / published —
   const drafts = posts.filter((p) => p.tracking_status === "draft");
@@ -235,12 +259,14 @@ async function gatherFacts(admin: SupabaseClient, userId: string): Promise<Facts
     signals_never_published_from,
     top_signal,
     imprint,
-    tier: tierDef?.name ?? null,
+    tier: band.name,
     components,
-    points_to_next_band,
-    next_band_name: tierDef?.next ?? null,
+    points_to_next_band: band.points_to_next_band,
+    next_band_name: band.next_band_name,
+    at_top_band: band.at_top_band,
     facets,
-    facets_at_zero,
+    facets_dormant,
+    facets_dormant_reason: facets_dormant.length ? DORMANT_REASON : null,
     drafts_total,
     drafts_from_signals,
     published_total,
@@ -260,7 +286,7 @@ function chooseLens(f: Facts): { lens: string; lens_reason: string } {
 
   if (dss != null && dss <= 7) return { lens: "shape", lens_reason: "you are in your first week" };
   if (f.captures_total === 0) return { lens: "shape", lens_reason: "nothing has been captured yet" };
-  if (f.published_through_aura === 0 && f.facets_at_zero.length >= 2) {
+  if (f.published_through_aura === 0 && f.facets_dormant.length >= 2) {
     return { lens: "shape", lens_reason: "parts of your picture are still blank" };
   }
   if (dslv != null && dslv >= 3) {
@@ -336,12 +362,12 @@ function chooseMoves(f: Facts): Move[] {
     });
   }
 
-  if (f.facets_at_zero.length > 0) {
+  if (f.facets_dormant.length > 0) {
     c.push({
       key: "fill_facet",
-      title: `Fill the blank in ${f.facets_at_zero[0]}`,
+      title: `Fill the blank in ${f.facets_dormant[0]}`,
       what: "Add evidence for the part of your picture that is still empty.",
-      why: `facets_at_zero includes ${f.facets_at_zero[0]}.`,
+      why: `facets_dormant includes ${f.facets_dormant[0]}.`,
       how: "Capture something that shows that side of your work.",
       outcome: "Aura stops staying quiet where you are strongest but silent.",
       cta_route: "/dashboard?tab=identity",
@@ -360,8 +386,11 @@ Use only the numbers in the facts object. Never compute, estimate, round differe
 
 Write 4 to 6 sentences. Second person. Open with the sharpest true observation, not a greeting.
 Name what they have done before naming what is missing.
+
+State the situation plainly. Do not editorialise, dramatise, or diagnose. Report the position the way a chief of staff reports it: this is where things stand, this is what has not happened yet, this is the next step. No verdicts on the person. No metaphors about systems or traps.
+
 No exclamation marks. No emoji. No praise of Aura. Do not describe features.
-Banned words: authority (as a noun), trajectory, personal brand, thought leader, leverage (as a verb), utilize, facilitate, unlock, elevate, empower, seamless, journey, unleash, supercharge.
+Banned words: authority (as a noun), trajectory, personal brand, thought leader, leverage (as a verb), utilize, facilitate, unlock, elevate, empower, seamless, journey, unleash, supercharge, massive, disconnect, trapped, crucial, vital, stark, glaring.
 If captures_total is 0, do not imply they have done work. Be warm, honest, and point at the single first step.
 
 Return plain markdown. No headings, no bullet lists, no preamble.`;
