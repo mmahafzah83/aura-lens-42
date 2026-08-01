@@ -4,10 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Search, ChevronDown, ArrowLeft, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import usePageMeta from "@/hooks/usePageMeta";
-import AuraLogo from "@/components/brand/AuraLogo";
 import { useGuideArticles } from "@/hooks/useGuideArticles";
 import type { GuideArticle } from "@/hooks/useGuideArticles";
 import PublicFooter from "@/components/PublicFooter";
+import PublicMasthead from "@/components/PublicMasthead";
 
 const SECTION_ORDER = [
   "getting-started",
@@ -218,55 +218,7 @@ const Guide = () => {
         fontFamily: "var(--font-body)",
       }}
     >
-      {/* Dark instrument top bar */}
-      <header
-        className="flex items-center justify-between px-6 sm:px-10 py-4 sticky top-0 z-40"
-        style={{ background: "var(--ob-bg)", borderBottom: "1px solid var(--hair)" }}
-      >
-        <Link to="/" className="flex items-center gap-2" aria-label="Aura home">
-          <AuraLogo size={26} variant="dark" />
-          <span
-            className="text-sm font-bold tracking-[0.2em]"
-            style={{ color: "var(--glass)", fontFamily: "var(--font-display)" }}
-          >
-            AURA
-          </span>
-        </Link>
-        <nav className="flex items-center gap-4 sm:gap-6 text-xs">
-          {authed ? (
-            <Link
-              to="/dashboard"
-              style={{ color: "var(--glass-2)", fontWeight: 500, transition: "color 150ms ease" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--live)")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--glass-2)")}
-            >
-              Back to dashboard
-            </Link>
-          ) : (
-            <>
-              <Link
-                to="/auth"
-                style={{ color: "var(--glass-2)", fontWeight: 500, transition: "color 150ms ease" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--live)")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "var(--glass-2)")}
-              >
-                Log in
-              </Link>
-              <Link
-                to="/request-access"
-                className="px-3 py-1.5 rounded-full text-xs font-medium"
-                style={{
-                  background: "var(--paper-2)",
-                  color: "var(--ink)",
-                  border: "1px solid var(--hair)",
-                }}
-              >
-                Request access
-              </Link>
-            </>
-          )}
-        </nav>
-      </header>
+      <PublicMasthead authed={authed} />
 
       {/* Hero */}
       <section className="px-5 sm:px-10 pt-16 pb-10 text-center max-w-3xl mx-auto w-full">
@@ -472,14 +424,14 @@ const Guide = () => {
           {authed ? "Ready to keep going?" : "Ready to start?"}
         </h2>
         <p className="mb-8 max-w-md mx-auto" style={{ fontSize: 15, color: "var(--ink-2)", lineHeight: 1.625 }}>
-          {authed ? "Jump back into your dashboard and keep building." : "Join the private beta. We review applications weekly."}
+          {authed ? "Jump back into your dashboard and keep building." : "Join the founding fifty. Every application is read personally and answered within twenty-four hours."}
         </p>
         <button
           onClick={() => navigate(authed ? "/dashboard" : "/request-access")}
-          className="px-7 py-3 rounded-xl text-sm font-medium transition-all hover:brightness-110"
-          style={{ background: "var(--action)", color: "var(--paper)", fontWeight: 500 }}
+          className="px-7 py-3 rounded-full text-sm font-medium transition-all hover:brightness-110"
+          style={{ background: "#0F1519", color: "#FFFFFF", fontWeight: 500 }}
         >
-          {authed ? "Back to dashboard" : "Request access"}
+          {authed ? "Back to your dashboard" : "Request a founder seat"}
         </button>
       </section>
 
