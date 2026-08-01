@@ -5,6 +5,7 @@ import {
   useRecordTimeline, useThemeTitles,
   type RecordBucket, type RecordMilestone, type RecordPublished,
 } from "@/hooks/useRecordTimeline";
+import { ProvenanceMark } from "@/components/systemb";
 
 /**
  * THE RECORD — what has actually happened, compressed by age.
