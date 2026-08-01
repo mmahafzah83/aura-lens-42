@@ -30,6 +30,53 @@ interface FoundArticle {
   source?: string;
 }
 
+const OB_CSS = `
+.ob{
+  --page:#F2F5F9; --plate:#EAEFF5; --n0:#FFFFFF; --n100:#EEF2F7; --n200:#E2E7EE;
+  --n300:#D6DCE4; --n400:#98A2AE; --n500:#5B6673; --n700:#3A434E; --n900:#0F1519;
+  --act:#0670C4; --act-50:#E6F2FD; --cy:#00CEC9; --cy-t:#00807B;
+  --ui:'Inter',ui-sans-serif,system-ui,-apple-system,sans-serif;
+  --ser:'Instrument Serif',Georgia,serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+  font-family:var(--ui); color:var(--n900); -webkit-font-smoothing:antialiased;
+}
+.ob *,.ob *::before,.ob *::after{box-sizing:border-box;}
+.ob :focus-visible{outline:2px solid var(--act);outline-offset:3px;border-radius:6px;}
+.ob-rail{display:flex;align-items:flex-end;gap:0;margin-bottom:30px;}
+.ob-seg{flex:1;display:flex;flex-direction:column;gap:7px;}
+.ob-seg .ob-bar{height:3px;border-radius:2px;background:var(--n200);transition:background .4s ease;}
+.ob-seg.done .ob-bar{background:var(--n900);}
+.ob-seg.now .ob-bar{background:var(--act);}
+.ob-seg .ob-nm{font-family:var(--mono);font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--n400);padding-right:10px;line-height:1.3;}
+.ob-seg.now .ob-nm{color:var(--act);}
+.ob-seg.done .ob-nm{color:var(--n500);}
+.ob-eyebrow{position:relative;display:inline-block;padding:8px 13px;margin-bottom:20px;}
+.ob-eyebrow span{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--n700);}
+.ob-eyebrow::before,.ob-eyebrow::after{content:'';position:absolute;width:12px;height:12px;border:1.5px solid var(--n300);}
+.ob-eyebrow::before{left:0;bottom:0;border-top:0;border-right:0;}
+.ob-eyebrow::after{right:0;top:0;border-bottom:0;border-left:0;}
+.ob-h1{font-family:var(--ser);font-weight:400;font-size:clamp(28px,3.4vw,40px);line-height:1.03;letter-spacing:-.026em;color:var(--n900);margin:0 0 4px;}
+.ob-body{font-size:15.5px;line-height:1.62;color:var(--n700);margin:0;}
+.ob-field{width:100%;background:var(--page);border:1px solid var(--n200);color:var(--n900);font-size:15.5px;font-family:inherit;padding:14px 16px;border-radius:12px;outline:none;transition:border-color .25s ease,box-shadow .25s ease,background .25s ease;}
+.ob-field::placeholder{color:var(--n400);}
+.ob-field:focus{border-color:var(--act);background:var(--n0);box-shadow:0 0 0 4px var(--act-50);}
+.ob-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;width:100%;border-radius:999px;font-size:15.5px;font-weight:600;font-family:inherit;border:1px solid transparent;background:var(--n900);color:#fff;cursor:pointer;transition:transform .2s ease,box-shadow .25s ease,opacity .2s ease;}
+.ob-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 16px 34px -16px rgba(15,21,25,.7);}
+.ob-btn:disabled{opacity:.5;cursor:not-allowed;}
+.ob-ghost{display:block;width:100%;min-height:46px;margin-top:10px;border-radius:999px;background:transparent;color:var(--n500);border:1px solid var(--n200);font-family:inherit;font-size:14.5px;font-weight:500;cursor:pointer;transition:background .2s ease,color .2s ease;}
+.ob-ghost:hover{background:var(--page);color:var(--n900);}
+.ob-line{background:transparent;color:var(--act);border:1px solid var(--act);}
+.ob-line:hover:not(:disabled){background:var(--act-50);box-shadow:none;transform:none;}
+.ob input:-webkit-autofill,.ob input:-webkit-autofill:hover,.ob input:-webkit-autofill:focus,.ob textarea:-webkit-autofill,.ob select:-webkit-autofill{
+  -webkit-box-shadow:0 0 0 1000px #F2F5F9 inset !important;
+  -webkit-text-fill-color:#0F1519 !important;
+  caret-color:#0F1519 !important;
+  transition:background-color 9999s ease-in-out 0s;
+}
+@media (max-width:560px){ .ob-seg .ob-nm{display:none;} }
+@media (prefers-reduced-motion:reduce){ .ob *,.ob *::before,.ob *::after{animation:none !important;transition:none !important;} }
+`;
+
 const Onboarding = () => {
   usePageMeta({
     title: "Aura — Get Started",
