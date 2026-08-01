@@ -841,7 +841,7 @@ export default BrandAssessmentModal;
 // ============================================================
 // ResultsView — Card 1 (Verdict) + Card 2 (Full Picture) + Card 3 (Actions)
 // ============================================================
-function ResultsView({
+export function ResultsView({
   interpretation,
   onSaveAndContinue,
   onCopyToast,
@@ -1246,7 +1246,7 @@ const PROCESSING_LINES = [
   "Nearly there — great analysis takes a moment...",
   "Just a few more seconds...",
 ];
-function CinematicLoading({ stage = 0 }: { stage?: number }) {
+export function CinematicLoading({ stage = 0 }: { stage?: number }) {
   const lastIndex = PROCESSING_LINES.length - 1;
   const clamped = Math.min(stage, lastIndex);
   const isLast = clamped === lastIndex;
