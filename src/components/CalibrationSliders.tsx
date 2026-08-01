@@ -270,6 +270,14 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
             }}>
               {current.description}
             </p>
+            {index === 0 && (
+              <p style={{
+                fontSize: 13, lineHeight: 1.6, color: "#98A2AE",
+                maxWidth: 360, marginTop: -16, marginBottom: 24,
+              }}>
+                Where you rate yourself low, Aura stays quiet. Where you rate high, it puts you on record. You can change any of this later.
+              </p>
+            )}
 
             <CustomSlider
               value={currentScore}
