@@ -239,6 +239,9 @@ const Onboarding = () => {
   const [cfFragments, setCfFragments] = useState<{ title: string }[]>([]);
   const [cfCount, setCfCount] = useState(0);
   const [cfTimedOut, setCfTimedOut] = useState(false);
+  // True once a capture exists — either made during the capture-first screens
+  // this session, or already present in `entries`. Drives the closing screen.
+  const [alreadyCaptured, setAlreadyCaptured] = useState(false);
 
   // Step 1
   const [linkedinUrl, setLinkedinUrl] = useState("");
@@ -793,6 +796,23 @@ const Onboarding = () => {
   // capture-first screen must not see Capture marked complete.
   const [captureFirstRan, setCaptureFirstRan] = useState(false);
   useEffect(() => { if (showCaptureFirst) setCaptureFirstRan(true); }, [showCaptureFirst]);
+  // The capture-first result screen means a capture landed this session.
+  useEffect(() => { if (cfPhase === "result") setAlreadyCaptured(true); }, [cfPhase]);
+  // Re-check on entering the closing screen so a capture made earlier counts.
+  useEffect(() => {
+    if (step !== 3 || !userId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { count } = await supabase
+          .from("entries" as any)
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", userId);
+        if (!cancelled && (count ?? 0) > 0) setAlreadyCaptured(true);
+      } catch { /* never block onboarding */ }
+    })();
+    return () => { cancelled = true; };
+  }, [step, userId]);
   const railIndex = (): number => {
     if (showCaptureFirst) return 0;
     if (showConnectStep) return 1;
@@ -1447,6 +1467,22 @@ const Onboarding = () => {
   if (step === 3) {
     const elapsed = Date.now() - articleSearchStartRef.current;
     const stillSearching = !articleSearchDone && elapsed < 20000;
+
+    if (alreadyCaptured) {
+      return cardShell(
+        <>
+          {eyebrow("You're set")}
+          {heading("That's everything Aura needs.")}
+          <p className="mb-3" style={{ fontSize: 15, lineHeight: 1.7, color: "#0F1519" }}>
+            Aura has the read you gave it, your profile, your calibration, and your assessment.
+          </p>
+          <p className="mb-6" style={{ fontSize: 14, lineHeight: 1.7, color: "#5B6673" }}>
+            From here it works in the background — reading, connecting, and bringing you what matters.
+          </p>
+          {primaryBtn(<>Enter Aura ✦</>, () => startBreathingToCeremony())}
+        </>,
+      );
+    }
 
     if (captureSuccess) {
       return cardShell(
