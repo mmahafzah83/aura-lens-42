@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import type { Provenance } from "@/lib/postProvenance";
 
 /**
  * useRecordTimeline — the Record's data layer.
@@ -24,6 +25,7 @@ export interface RecordPublished {
   at: string;
   title: string | null;
   through_aura: boolean;
+  provenance: Provenance;
 }
 
 export interface RecordMilestone {
@@ -43,6 +45,7 @@ export interface RecordTimeline {
   signupAt: string | null;
   publishedTotal: number;
   publishedThroughAura: number;
+  publishedSentFromAura: number;
   fragmentsTotal: number;
   themesTotal: number;
   /** rows read on first paint — reported for the record's own honesty */
@@ -51,7 +54,7 @@ export interface RecordTimeline {
 
 const EMPTY: RecordTimeline = {
   loading: true, days: [], weeks: [], months: [], published: [], milestones: [],
-  signupAt: null, publishedTotal: 0, publishedThroughAura: 0,
+  signupAt: null, publishedTotal: 0, publishedThroughAura: 0, publishedSentFromAura: 0,
   fragmentsTotal: 0, themesTotal: 0, rowsFetched: 0,
 };
 
@@ -77,6 +80,7 @@ export function useRecordTimeline(userId: string | null | undefined): RecordTime
       const months = asBuckets(t.months);
       const published: RecordPublished[] = (Array.isArray(t.published) ? t.published : []).map((p: any) => ({
         id: p.id, at: p.at, title: p.title ?? null, through_aura: !!p.through_aura,
+        provenance: (p.provenance ?? "linkedin_only") as Provenance,
       }));
       const milestones: RecordMilestone[] = (Array.isArray(t.milestones) ? t.milestones : [])
         .filter((m: any) => m && m.at)
@@ -86,6 +90,7 @@ export function useRecordTimeline(userId: string | null | undefined): RecordTime
         signupAt: t.signup_at ?? null,
         publishedTotal: Number(t.published_total ?? 0),
         publishedThroughAura: Number(t.published_through_aura ?? 0),
+        publishedSentFromAura: Number(t.published_sent_from_aura ?? 0),
         fragmentsTotal: Number(t.fragments_total ?? 0),
         themesTotal: Number(t.themes_total ?? 0),
         rowsFetched: days.length + weeks.length + months.length + published.length + milestones.length,
