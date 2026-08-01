@@ -1664,6 +1664,7 @@ const Onboarding = () => {
           className={`aura-ceremony-overlay${ceremonyLeaving ? " is-leaving" : ""}`}
           role="dialog"
           aria-label="Aura sees who you are now"
+          style={{ background: "#0F1519", color: "#FFFFFF" }}
         >
           {/* 4 progress dots — all filled bronze */}
           <div style={{ display: "flex", gap: 8, marginBottom: 28 }}>
@@ -1672,7 +1673,7 @@ const Onboarding = () => {
                 key={i}
                 style={{
                   width: 8, height: 8, borderRadius: 999,
-                  background: "var(--action)",
+                  background: "#00CEC9",
                   display: "inline-block",
                 }}
               />
@@ -1681,15 +1682,15 @@ const Onboarding = () => {
           <span
             aria-hidden="true"
             className="aura-gold-pulse"
-            style={{ fontSize: 24, color: "var(--action)", lineHeight: 1, marginBottom: 22 }}
+            style={{ fontSize: 24, color: "#5EE3DC", lineHeight: 1, marginBottom: 22 }}
           >
             ✦
           </span>
           <h2
             style={{
-              fontFamily: "var(--font-display)",
-              fontSize: 20, lineHeight: 1.35, margin: "0 0 28px",
-              color: "var(--ink)", letterSpacing: "-0.005em",
+              fontFamily: "'Instrument Serif', Georgia, serif",
+              fontSize: "clamp(22px, 3.4vw, 30px)", lineHeight: 1.2, margin: "0 0 28px",
+              color: "#FFFFFF", letterSpacing: "-0.02em",
               textAlign: "center", maxWidth: 420, padding: "0 16px",
             }}
           >
@@ -1699,17 +1700,17 @@ const Onboarding = () => {
             type="button"
             onClick={completeCeremonyAndNavigate}
             style={{
-              background: "var(--action)",
-              color: "var(--ink)",
+              background: "#FFFFFF",
+              color: "#0F1519",
               border: 0,
-              borderRadius: 10,
+              borderRadius: 999,
               fontSize: 15,
               fontWeight: 600,
               padding: "14px 28px",
               width: "100%",
               maxWidth: 320,
               cursor: "pointer",
-              fontFamily: "var(--font-body)",
+              fontFamily: "'Inter', system-ui, sans-serif",
               letterSpacing: "0.01em",
             }}
           >
