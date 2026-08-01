@@ -168,7 +168,7 @@ const AnalyticsV2: React.FC<{ onOpenChat?: (msg?: string) => void }> = ({ onOpen
         supabase.from("imprint_snapshots").select("imprint, tier, components").eq("user_id", user.id)
           .order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("linkedin_posts")
-          .select("id, post_text, title, hook, theme, topic_label, tracking_status, source_type, source_signal_id, source_metadata, published_at, created_at, post_url, linkedin_url")
+          .select("id, post_text, title, hook, theme, topic_label, tracking_status, source_type, source_signal_id, source_metadata, published_at, publish_attempted_at, created_at, post_url, linkedin_url")
           .eq("user_id", user.id).order("created_at", { ascending: false }).limit(1000),
         supabase.from("linkedin_post_metrics").select("post_id, impressions, snapshot_date")
           .eq("user_id", user.id).limit(5000),
@@ -482,7 +482,7 @@ const AnalyticsV2: React.FC<{ onOpenChat?: (msg?: string) => void }> = ({ onOpen
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 620 }}>
               <thead>
                 <tr>
-                  {["Post", "Language", "Source", "Status", ...(hasReach ? ["Reach"] : [])].map(h => (
+                  {["Post", "Language", "Made with", "Source", "Status", ...(hasReach ? ["Reach"] : [])].map(h => (
                     <th key={h} style={{
                       ...MONO, position: "sticky", top: 0, zIndex: 1, textAlign: h === "Reach" ? "right" : "left",
                       fontSize: 10, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--text-muted)",
@@ -498,6 +498,9 @@ const AnalyticsV2: React.FC<{ onOpenChat?: (msg?: string) => void }> = ({ onOpen
                       {r.text}
                     </td>
                     <td style={{ ...MONO, padding: "9px 10px", fontSize: 11.5, color: "var(--text-secondary)", borderBottom: "1px solid var(--rule-divider)" }}>{r.language}</td>
+                    <td style={{ padding: "9px 10px", borderBottom: "1px solid var(--rule-divider)" }}>
+                      {r.provenance ? <ProvenanceMark value={r.provenance} /> : <span style={{ ...MONO, fontSize: 11, color: "var(--text-muted)" }}>—</span>}
+                    </td>
                     <td style={{ ...MONO, padding: "9px 10px", fontSize: 11.5, color: "var(--text-secondary)", borderBottom: "1px solid var(--rule-divider)" }}>{r.source}</td>
                     <td style={{ padding: "9px 10px", borderBottom: "1px solid var(--rule-divider)" }}>
                       <Chip variant={r.live ? "published" : r.status === "failed" || r.status === "rejected" ? "failed" : "cooling"}>
