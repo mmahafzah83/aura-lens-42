@@ -80,6 +80,8 @@ interface Funnel {
   mergedSignals: number;
   /** Aura produced the draft and you published it. */
   publishedThroughAura: number;
+  /** Aura made the API call to LinkedIn. Subset of publishedThroughAura. */
+  publishedSentFromAura: number;
   /** Live on LinkedIn, including your imported history. */
   publishedLive: number;
 }
@@ -154,6 +156,7 @@ export default function MomentumPage() {
             signals: sigLiveRes.count ?? (Number(f.signals) || 0),
             mergedSignals: sigMergedRes.count ?? 0,
             publishedThroughAura: Number(f.published_through_aura) || 0,
+            publishedSentFromAura: Number(f.published_sent_from_aura) || 0,
             publishedLive: Number(f.published_live) || 0,
           }
         : null,
@@ -376,14 +379,19 @@ export default function MomentumPage() {
                 width={Math.min(100, pct(funnel.signals, Math.max(funnel.captures, funnel.signals)))}
               />
               <FunnelRow
-                label="Published through Aura"
+                label="Made with Aura"
                 value={funnel.publishedThroughAura}
                 note={`${pct(funnel.publishedThroughAura, funnel.signals)}% of signals`}
                 width={pct(funnel.publishedThroughAura, Math.max(funnel.signals, 1))}
               />
             </div>
             <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: "14px 0 0" }}>
-              This funnel counts only posts Aura wrote with you. Separately, you have {funnel.publishedLive} post{funnel.publishedLive === 1 ? "" : "s"} live on LinkedIn in total, which includes the history you imported.
+              Two numbers, never one. {funnel.publishedLive} live on LinkedIn ·{" "}
+              {funnel.publishedThroughAura} made with Aura,{" "}
+              {funnel.publishedSentFromAura > 0
+                ? `${funnel.publishedSentFromAura} of them sent from here`
+                : "none sent from here yet"}. The funnel above counts only what Aura wrote with
+              you; the live figure includes the history you imported.
             </p>
           </Card>
         </section>
