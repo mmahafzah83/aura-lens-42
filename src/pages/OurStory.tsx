@@ -3,35 +3,37 @@ import { ArrowLeft } from "lucide-react";
 import AuraLogo from "@/components/brand/AuraLogo";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import PublicFooter from "@/components/PublicFooter";
+import PublicMasthead from "@/components/PublicMasthead";
 
 const label: React.CSSProperties = {
-  fontFamily: "var(--font-mono)",
-  fontSize: 11,
-  letterSpacing: "2.5px",
-  color: "var(--live)",
+  fontFamily: "'IBM Plex Mono', ui-monospace, Menlo, monospace",
+  fontSize: 10,
+  letterSpacing: "0.2em",
+  color: "#00807B",
   textTransform: "uppercase",
-  margin: "46px 0 16px",
+  margin: "52px 0 18px",
   display: "block",
   fontWeight: 400,
 };
 
 const body: React.CSSProperties = {
-  fontFamily: "var(--font-display)",
-  fontSize: 18,
+  fontFamily: "'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif",
+  fontSize: 17,
   lineHeight: 1.75,
-  color: "var(--ink-2)",
+  color: "#3A434E",
   margin: "0 0 18px",
 };
 
 const pull: React.CSSProperties = {
-  fontFamily: "var(--font-display)",
+  fontFamily: "'Instrument Serif', Georgia, serif",
   fontStyle: "italic",
-  fontSize: "clamp(22px, 3vw, 29px)",
-  lineHeight: 1.42,
-  color: "var(--ink)",
-  borderLeft: "2px solid var(--live)",
-  paddingLeft: 22,
-  margin: "38px 0",
+  fontSize: "clamp(24px, 3.2vw, 33px)",
+  lineHeight: 1.28,
+  letterSpacing: "-0.02em",
+  color: "#0F1519",
+  borderLeft: "2px solid #00CEC9",
+  paddingLeft: 24,
+  margin: "42px 0",
 };
 
 const OurStory = () => {
