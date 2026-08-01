@@ -306,6 +306,64 @@ type Move = {
   how: string; outcome: string; cta_route: string; est_minutes: number;
 };
 
+/**
+ * Numbers in prose. A chief of staff says "six drafts", not "drafts_total is 6".
+ * Above one hundred the digits read better, so digits it is.
+ */
+const ONES = [
+  "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+  "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
+  "seventeen", "eighteen", "nineteen",
+];
+const TENS = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"];
+function nw(n: number): string {
+  const v = Math.max(0, Math.round(Number(n) || 0));
+  if (v < 20) return ONES[v];
+  if (v < 100) return TENS[Math.floor(v / 10)] + (v % 10 ? `-${ONES[v % 10]}` : "");
+  if (v < 1000) {
+    const rest = v % 100;
+    return `${ONES[Math.floor(v / 100)]} hundred${rest ? ` and ${nw(rest)}` : ""}`;
+  }
+  return String(v);
+}
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
+
+/** A field name, a snake_case token or a dot-path must never reach the member. */
+const LEAK = /\b[a-z][a-z0-9]*_[a-z0-9_]+\b|\b[a-z][a-z0-9_]*\.[a-z][a-z0-9_]+\b/;
+
+/** Hand-written prose, correct by construction, used if a `why` ever leaks. */
+function fallbackWhy(key: string, f: Facts): string {
+  switch (key) {
+    case "publish_draft":
+      return `You have ${nw(f.drafts_total)} ${plural(f.drafts_total, "draft", "drafts")} waiting and ` +
+        (f.published_through_aura > 0
+          ? `only ${nw(f.published_through_aura)} ${plural(f.published_through_aura, "has", "have")} ever gone out.`
+          : "none of them has ever gone out.");
+    case "draft_from_signal":
+      return `${cap(nw(f.signals_never_published_from))} of your themes have never produced a post, and your ` +
+        `strongest has ${nw(f.top_signal?.fragment_count ?? 0)} fragments behind it.`;
+    case "capture":
+      return f.captures_this_week > 0
+        ? `You have kept ${nw(f.captures_this_week)} ${plural(f.captures_this_week, "thing", "things")} this week, ` +
+          `${nw(f.captures_total)} in all, and nothing today.`
+        : `Nothing has been kept this week. Your record holds ${nw(f.captures_total)} ${plural(f.captures_total, "thing", "things")} in total.`;
+    case "connect_linkedin":
+      return f.published_total > 0
+        ? `You have published ${nw(f.published_total)} ${plural(f.published_total, "post", "posts")} and Aura cannot see how any of them landed.`
+        : "Aura cannot see how anything you post lands, so it cannot learn from it.";
+    case "fill_facet":
+      return `Your reading for ${f.facets_dormant[0] ?? "one part of the picture"} has nothing behind it yet.`;
+    default:
+      return "This is the shortest route from where you are to something published.";
+  }
+}
+
+/** Last line of defence: no move leaves this function speaking in field names. */
+function scrubMoves(moves: Move[], f: Facts): Move[] {
+  return moves.map((m) => (LEAK.test(m.why) ? { ...m, why: fallbackWhy(m.key, f) } : m));
+}
+
 function chooseMoves(f: Facts): Move[] {
   const c: Omit<Move, "rank">[] = [];
 
@@ -315,7 +373,7 @@ function chooseMoves(f: Facts): Move[] {
       key: "publish_draft",
       title: d?.title ? `Publish the draft on ${d.title}` : "Publish a waiting draft",
       what: "Read the draft Aura wrote, edit what does not sound like you, then publish it.",
-      why: `drafts_total is ${f.drafts_total} and published_through_aura is ${f.published_through_aura}.`,
+      why: fallbackWhy("publish_draft", f),
       how: "Open the library, pick the draft, make your edits, press publish.",
       outcome: "One idea leaves your notes and reaches the people who need it.",
       cta_route: "/dashboard?tab=library",
@@ -328,7 +386,7 @@ function chooseMoves(f: Facts): Move[] {
       key: "draft_from_signal",
       title: `Turn "${f.top_signal.title}" into a post`,
       what: "Take your strongest unpublished signal into the composer and draft from it.",
-      why: `signals_never_published_from is ${f.signals_never_published_from} and top_signal.fragment_count is ${f.top_signal.fragment_count}.`,
+      why: fallbackWhy("draft_from_signal", f),
       how: "Open the signal, read the evidence behind it, then send it to the composer.",
       outcome: "The reading you have already done becomes something publishable.",
       cta_route: "/dashboard?tab=signals",
@@ -341,7 +399,7 @@ function chooseMoves(f: Facts): Move[] {
       key: "capture",
       title: "Capture one thing you read today",
       what: "Paste a link, a report or a post you disagreed with.",
-      why: `captures_this_week is ${f.captures_this_week} and captures_total is ${f.captures_total}.`,
+      why: fallbackWhy("capture", f),
       how: "Use the capture box on Home. A link is enough.",
       outcome: "Aura has something new to read tonight.",
       cta_route: "/dashboard?tab=home",
@@ -354,7 +412,7 @@ function chooseMoves(f: Facts): Move[] {
       key: "connect_linkedin",
       title: "Connect LinkedIn",
       what: "Let Aura read how your posts actually performed.",
-      why: `linkedin_connected is false and published_total is ${f.published_total}.`,
+      why: fallbackWhy("connect_linkedin", f),
       how: "Open settings and connect your account. Nothing publishes without you.",
       outcome: "Drafts start being written from what your audience already rewards.",
       cta_route: "/dashboard?tab=settings",
@@ -367,7 +425,7 @@ function chooseMoves(f: Facts): Move[] {
       key: "fill_facet",
       title: `Fill the blank in ${f.facets_dormant[0]}`,
       what: "Add evidence for the part of your picture that is still empty.",
-      why: `facets_dormant includes ${f.facets_dormant[0]}.`,
+      why: fallbackWhy("fill_facet", f),
       how: "Capture something that shows that side of your work.",
       outcome: "Aura stops staying quiet where you are strongest but silent.",
       cta_route: "/dashboard?tab=identity",
@@ -375,7 +433,7 @@ function chooseMoves(f: Facts): Move[] {
     });
   }
 
-  return c.slice(0, 3).map((m, i) => ({ rank: i + 1, ...m }));
+  return scrubMoves(c.slice(0, 3).map((m, i) => ({ rank: i + 1, ...m })), f);
 }
 
 // ──────────────────────────────────────────────────────── PHASE C: ADDRESS
