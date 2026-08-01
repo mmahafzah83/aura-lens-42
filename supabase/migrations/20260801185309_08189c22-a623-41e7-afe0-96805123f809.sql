@@ -1,0 +1,1 @@
+DELETE FROM public.home_address WHERE address_date >= (now() at time zone 'utc')::date - 1;
