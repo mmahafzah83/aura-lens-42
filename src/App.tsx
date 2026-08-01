@@ -45,6 +45,7 @@ const AdminQA = lazy(() => import("./pages/AdminQA"));
 const AdminGuideHealth = lazy(() => import("./pages/AdminGuideHealth"));
 const AdminStandard = lazy(() => import("./pages/AdminStandard"));
 const OurStory = lazy(() => import("./pages/OurStory"));
+const Contact = lazy(() => import("./pages/Contact"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 const CardPreview = lazy(() => import("./pages/CardPreview"));
 const GuideThoughtLeadershipStrategy = lazy(() => import("./pages/GuideThoughtLeadershipStrategy"));
@@ -128,6 +129,7 @@ const App = () => (
             <Route path="/trust" element={<Trust />} />
             <Route path="/our-story" element={<OurStory />} />
             <Route path="/guide" element={<Guide />} />
+            <Route path="/contact" element={<Contact />} />
             <Route path="/guide/thought-leadership-strategy" element={<GuideThoughtLeadershipStrategy />} />
             <Route path="/settings" element={<PasswordGate><Settings /></PasswordGate>} />
             {/* Legacy alias — Preferences is now the first tab inside Settings. */}

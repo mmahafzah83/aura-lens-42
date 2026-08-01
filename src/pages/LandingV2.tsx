@@ -613,7 +613,7 @@ const LANDING_V2_HTML = `
       <p class="foot" style="color:rgba(255,255,255,.4)">Mohammad Mahafdhah · Aura builder</p>
     </div>
     <div><h4>Product</h4><ul><li><a href="#order">The order</a></li><li><a href="#runs">What runs</a></li><li><a href="#questions">Eight questions</a></li><li><a href="/auth">Log in</a></li></ul></div>
-    <div><h4>Company</h4><ul><li><a href="/our-story">Our story</a></li><li><a href="/guide">The guide</a></li><li><a href="/trust">Security &amp; trust</a></li><li><a href="mailto:support@aura-intel.org">Contact</a></li></ul></div>
+    <div><h4>Company</h4><ul><li><a href="/our-story">Our story</a></li><li><a href="/guide">The guide</a></li><li><a href="/trust">Security &amp; trust</a></li><li><a href="/contact">Contact</a></li></ul></div>
     <div><h4>Legal</h4><ul><li><a href="/privacy">Privacy</a></li><li><a href="/terms">Terms</a></li></ul></div>
   </div>
   <div class="fbottom"><span>© 2026 Aura</span><span>aura-intel.org</span><span>Built in Riyadh, for the world</span></div>

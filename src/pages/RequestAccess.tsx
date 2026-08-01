@@ -298,7 +298,7 @@ export default function RequestAccess() {
         <span>aura-intel.org</span>
         <span>
           <Link to="/privacy">Privacy</Link> · <Link to="/terms">Terms</Link> ·{" "}
-          <a href="mailto:support@aura-intel.org">Contact</a>
+          <a href="/contact">Contact</a>
         </span>
       </footer>
     </div>
