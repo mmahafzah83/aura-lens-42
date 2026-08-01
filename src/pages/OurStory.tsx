@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import AuraLogo from "@/components/brand/AuraLogo";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import PublicFooter from "@/components/PublicFooter";
 import PublicMasthead from "@/components/PublicMasthead";
