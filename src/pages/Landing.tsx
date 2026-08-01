@@ -1112,8 +1112,8 @@ const LANDING_HTML = `
   <div class="watermark" aria-hidden="true">AURA</div>
   <div class="wrap founder-wrap">
     <figure class="founder-portrait" data-reveal>
-      <img src="/aura-founder.jpg" alt="Mohammad Mahafzah, who built Aura" loading="lazy" decoding="async" width="760" height="1013">
-      <figcaption>Mohammad Mahafzah · Aura Builder</figcaption>
+      <img src="/aura-founder.jpg" alt="Mohammad Mahafdhah, who built Aura" loading="lazy" decoding="async" width="760" height="1013">
+      <figcaption>Mohammad Mahafdhah · Aura Builder</figcaption>
     </figure>
     <div class="founder-copy">
       <p class="eyebrow sec-eyebrow" data-reveal>WHY I BUILT THIS</p>

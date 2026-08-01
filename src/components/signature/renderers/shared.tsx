@@ -507,7 +507,7 @@ export function renderArabicBidi(line: string): React.ReactNode {
   //
   // Additionally: if the line has NO Arabic characters at all, wrap the
   // whole content in a single LTR-isolated tspan so multi-word Latin
-  // (e.g. "Mohammad Mahafzah", "Director of Digital Transformation")
+  // (e.g. "Mohammad Mahafdhah", "Director of Digital Transformation")
   // preserves word order — otherwise the RTL base reorders neutral
   // whitespace-separated Latin runs.
   const hasAr = /[\u0600-\u06FF]/.test(line);

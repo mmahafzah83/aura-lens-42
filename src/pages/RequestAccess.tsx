@@ -366,7 +366,7 @@ function Ceremony({
       <p className="ra-inbox">Check your inbox — and your spam folder — for a note from Aura.</p>
       {withSignature && (
         <div className="ra-sig">
-          <div className="ra-nm">Mohammad Mahafzah</div>
+          <div className="ra-nm">Mohammad Mahafdhah</div>
           <div className="ra-rl">Aura builder</div>
         </div>
       )}
