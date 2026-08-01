@@ -134,7 +134,8 @@ serve(withObserve("onboarding-find-article", async (req) => {
   }
 
   // Observability log — best-effort, must never block the response.
-  let outcome: "perplexity" | "perplexity_retry" | "curated_fallback" | "error" = "error";
+  let outcome: "perplexity" | "perplexity_retry" | "curated_fallback" | "domain_rejected" | "error" = "error";
+  domainRejected = false;
   let outcomeUrl: string | null = null;
   let logUserId: string | null = null;
   let logSector: string | null = null;
@@ -224,7 +225,7 @@ serve(withObserve("onboarding-find-article", async (req) => {
 
     // Curated evergreen fallback — success path never returns found:false.
     const pick = CURATED_FALLBACKS[Math.floor(Math.random() * CURATED_FALLBACKS.length)];
-    outcome = "curated_fallback";
+    outcome = domainRejected ? "domain_rejected" : "curated_fallback";
     outcomeUrl = pick.url;
     logRow();
     return json({ found: true, article: pick });
