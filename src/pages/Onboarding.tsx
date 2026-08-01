@@ -239,6 +239,9 @@ const Onboarding = () => {
   const [cfFragments, setCfFragments] = useState<{ title: string }[]>([]);
   const [cfCount, setCfCount] = useState(0);
   const [cfTimedOut, setCfTimedOut] = useState(false);
+  // True once a capture exists — either made during the capture-first screens
+  // this session, or already present in `entries`. Drives the closing screen.
+  const [alreadyCaptured, setAlreadyCaptured] = useState(false);
 
   // Step 1
   const [linkedinUrl, setLinkedinUrl] = useState("");
@@ -788,21 +791,40 @@ const Onboarding = () => {
   };
 
   // ─── Render helpers ───
-  const RAIL = ["Capture", "You", "Calibrate", "Assess", "Read"] as const;
+  const RAIL = ["Capture", "You", "Calibrate", "Assess"] as const;
   // A segment is only "done" if that phase actually ran. Users who skipped the
   // capture-first screen must not see Capture marked complete.
   const [captureFirstRan, setCaptureFirstRan] = useState(false);
   useEffect(() => { if (showCaptureFirst) setCaptureFirstRan(true); }, [showCaptureFirst]);
+  // The capture-first result screen means a capture landed this session.
+  useEffect(() => { if (cfPhase === "result") setAlreadyCaptured(true); }, [cfPhase]);
+  // Re-check on entering the closing screen so a capture made earlier counts.
+  useEffect(() => {
+    if (step !== 3 || !userId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { count } = await supabase
+          .from("entries" as any)
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", userId);
+        if (!cancelled && (count ?? 0) > 0) setAlreadyCaptured(true);
+      } catch { /* never block onboarding */ }
+    })();
+    return () => { cancelled = true; };
+  }, [step, userId]);
   const railIndex = (): number => {
     if (showCaptureFirst) return 0;
     if (showConnectStep) return 1;
     if (step === 0) return 1;
     if (step === 1) return 2;
-    if (step === 2) return 3;
-    return 4;
+    return 3;
   };
   const ProgressDots = () => {
     if (needsIdentityConfirm || needsPassword) return null;
+    // Bookends: the welcome screen and the closing screen are not phases.
+    if (step === 0 && !welcomeAcknowledged) return null;
+    if (step === 3) return null;
     const active = railIndex();
     return (
       <div className="ob-rail" aria-label={`Step ${active + 1} of ${RAIL.length}: ${RAIL[active]}`}>
@@ -1145,7 +1167,26 @@ const Onboarding = () => {
 
   // ───── STEP 0 ─────
   if (step === 0 && !welcomeAcknowledged) {
-    // Capture-first screens sit IN FRONT of this screen. Nothing below changes.
+    const displayName = firstName || prefillFirstName;
+    return cardShell(
+      <>
+        {eyebrow("Private Beta")}
+        {heading(displayName ? `Welcome, ${displayName}.` : "Welcome.")}
+        <div className="text-center space-y-2 mb-10">
+          <p style={{ fontSize: 16, color: "#0F1519", lineHeight: 1.6 }}>
+            You were invited because someone believes the market should see what you know.
+          </p>
+          <p style={{ fontSize: 14, color: "#5B6673", lineHeight: 1.6 }}>
+            Four steps. You can stop anywhere — Aura saves where you are.
+          </p>
+        </div>
+        {primaryBtn(<>Let's begin <ArrowRight className="w-4 h-4" /></>, () => setWelcomeAcknowledged(true))}
+      </>,
+    );
+  }
+
+  // ───── STEP 0 · capture-first screens (after the welcome) ─────
+  if (step === 0 && welcomeAcknowledged && showCaptureFirst) {
     if (showCaptureFirst && cfPhase === "input") {
       return cardShell(
         <>
@@ -1225,22 +1266,6 @@ const Onboarding = () => {
         </>,
       );
     }
-    const displayName = firstName || prefillFirstName;
-    return cardShell(
-      <>
-        {eyebrow("Private Beta")}
-        {heading(displayName ? `Welcome, ${displayName}.` : "Welcome.")}
-        <div className="text-center space-y-2 mb-10">
-          <p style={{ fontSize: 16, color: "#0F1519", lineHeight: 1.6 }}>
-            You were invited because someone believes the market should see what you know.
-          </p>
-          <p style={{ fontSize: 14, color: "#5B6673", lineHeight: 1.6 }}>
-            Four steps. You can stop anywhere — Aura saves where you are.
-          </p>
-        </div>
-        {primaryBtn(<>Let's begin <ArrowRight className="w-4 h-4" /></>, () => setWelcomeAcknowledged(true))}
-      </>,
-    );
   }
 
   // ───── STEP 0 (LinkedIn paste + profile form) ─────
@@ -1442,6 +1467,22 @@ const Onboarding = () => {
   if (step === 3) {
     const elapsed = Date.now() - articleSearchStartRef.current;
     const stillSearching = !articleSearchDone && elapsed < 20000;
+
+    if (alreadyCaptured) {
+      return cardShell(
+        <>
+          {eyebrow("You're set")}
+          {heading("That's everything Aura needs.")}
+          <p className="mb-3" style={{ fontSize: 15, lineHeight: 1.7, color: "#0F1519" }}>
+            Aura has the read you gave it, your profile, your calibration, and your assessment.
+          </p>
+          <p className="mb-6" style={{ fontSize: 14, lineHeight: 1.7, color: "#5B6673" }}>
+            From here it works in the background — reading, connecting, and bringing you what matters.
+          </p>
+          {primaryBtn(<>Enter Aura ✦</>, () => startBreathingToCeremony())}
+        </>,
+      );
+    }
 
     if (captureSuccess) {
       return cardShell(
