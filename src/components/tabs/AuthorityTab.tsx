@@ -3530,7 +3530,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
     setLoading(true);
     const { data: { user: authUser } } = await supabase.auth.getUser();
     const uid = authUser?.id;
-    const LI_COLS = "id, title, post_text, format_type, tracking_status, topic_label, created_at, source_metadata, source_type, authorship, acquisition, published_at, linkedin_url, post_url, source_signal_id, content_type";
+    const LI_COLS = "id, title, post_text, format_type, tracking_status, topic_label, created_at, source_metadata, source_type, authorship, acquisition, published_at, publish_attempted_at, linkedin_url, post_url, source_signal_id, content_type";
     const [liDraftsRes, liNeedsReviewRes, liPublishedRes, ciRes, publishedCountRes, auraCountRes, earlierCountRes] = await Promise.all([
       supabase
         .from("linkedin_posts")
