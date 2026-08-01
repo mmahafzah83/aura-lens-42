@@ -221,23 +221,6 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
 
   return (
     <div>
-      {/* Progress dots: 4 onboarding dots, step 2 (index 1) active */}
-      <div className="flex items-center justify-center gap-2 mb-4">
-        {[0, 1, 2, 3].map((i) => (
-          <div key={i} style={{
-            width: 8, height: 8, borderRadius: 999,
-            background: i === 1 ? BRONZE : i < 1 ? "hsl(142 60% 45%)" : "transparent",
-            border: i > 1 ? "1px solid var(--rule)" : "none",
-          }} />
-        ))}
-      </div>
-      <p style={{
-        fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase",
-        color: BRONZE, textAlign: "center", marginBottom: 24, fontWeight: 600,
-      }}>
-        Step 2 of 4 — Map your strengths
-      </p>
-
       <AnimatePresence mode="wait" custom={direction} initial={false}>
         {!isSummary && current ? (
           <motion.div
@@ -494,7 +477,7 @@ const SummaryCard = ({ summary, scores, submitting, reduceMotion, onFinish, onBa
           }}
         >
           {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-          Continue to step 3 <ArrowRight className="w-4 h-4" />
+          Continue <ArrowRight className="w-4 h-4" />
         </button>
       </div>
     </div>

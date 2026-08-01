@@ -521,12 +521,6 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
             </button>
           </div>
 
-          {!showResults && step === 0 && (
-            <p className="text-xs mt-2 mb-1" style={{ color: "var(--spot)", letterSpacing: "0.2em", textTransform: "uppercase", fontWeight: 600, fontSize: 11 }}>
-              Step 4 of 4 — How the market sees you
-            </p>
-          )}
-
           {/* Progress bar */}
           <div className="mt-2 pb-1">
             <div className="h-1 bg-surface-ink-subtle rounded-full overflow-hidden">
@@ -1006,21 +1000,6 @@ function ResultsView({
           padding: "32px 16px",
         }}
       >
-        {/* 800ms empty pause before label */}
-        <div
-          style={{
-            fontSize: 11,
-            letterSpacing: "2px",
-            textTransform: "uppercase",
-            color: "var(--spot)",
-            fontWeight: 600,
-            marginBottom: 16,
-            opacity: 0,
-            animation: "aura-fade-in 500ms ease-out 600ms forwards",
-          }}
-        >
-          Step 5 of 5 — Your market position
-        </div>
         <div
           style={{
             fontSize: 11,
@@ -1215,7 +1194,7 @@ function ResultsView({
           className="flex items-center gap-2 px-5 py-2.5 rounded-lg hover:brightness-110 transition-all active:scale-[0.98]"
           style={{ background: "linear-gradient(to bottom, hsl(43 80% 55%), var(--action))", color: "var(--ink)", fontSize: 13, cursor: "pointer", border: 0, fontWeight: 600 }}
         >
-          Enter Aura <ArrowRight className="w-3.5 h-3.5" />
+          Continue <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>
