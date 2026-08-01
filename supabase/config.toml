@@ -176,3 +176,6 @@ verify_jwt = false
 
 [functions.contact-message]
 verify_jwt = false
+
+[functions.home-address]
+verify_jwt = false
