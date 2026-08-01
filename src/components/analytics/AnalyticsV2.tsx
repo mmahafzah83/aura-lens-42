@@ -4,7 +4,8 @@ import { ButtonGhost, ButtonPrimary, Chip, Tooltip } from "@/components/systemb"
 import { Download, Sparkles } from "lucide-react";
 import { TIER_BANDS, bandFromScore } from "@/hooks/useTierFromImprint";
 import { downloadBlob } from "@/lib/download";
-import { isPublishedPost, isAuraPublishedPost, countPosts } from "@/lib/postProvenance";
+import { countProvenance, provenanceOf, type Provenance } from "@/lib/postProvenance";
+import { ProvenanceMark } from "@/components/systemb";
 
 /**
  * AnalyticsV2 — V23 "three questions, not thirty charts".
@@ -33,6 +34,7 @@ interface PostRow {
   source_signal_id: string | null;
   source_metadata: any;
   published_at: string | null;
+  publish_attempted_at: string | null;
   created_at: string;
   post_url: string | null;
   linkedin_url: string | null;
@@ -166,7 +168,7 @@ const AnalyticsV2: React.FC<{ onOpenChat?: (msg?: string) => void }> = ({ onOpen
         supabase.from("imprint_snapshots").select("imprint, tier, components").eq("user_id", user.id)
           .order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("linkedin_posts")
-          .select("id, post_text, title, hook, theme, topic_label, tracking_status, source_type, source_signal_id, source_metadata, published_at, created_at, post_url, linkedin_url")
+          .select("id, post_text, title, hook, theme, topic_label, tracking_status, source_type, source_signal_id, source_metadata, published_at, publish_attempted_at, created_at, post_url, linkedin_url")
           .eq("user_id", user.id).order("created_at", { ascending: false }).limit(1000),
         supabase.from("linkedin_post_metrics").select("post_id, impressions, snapshot_date")
           .eq("user_id", user.id).limit(5000),
@@ -206,8 +208,8 @@ const AnalyticsV2: React.FC<{ onOpenChat?: (msg?: string) => void }> = ({ onOpen
 
   const rangedPosts = useMemo(() => posts.filter(p => inRange(postDate(p))), [posts, inRange]);
   // Live on LinkedIn — the canonical definition, imported history included.
-  const publishedPosts = useMemo(() => rangedPosts.filter(isPublishedPost), [rangedPosts]);
-  const postCounts = useMemo(() => countPosts(rangedPosts), [rangedPosts]);
+  const publishedPosts = useMemo(() => rangedPosts.filter(p => provenanceOf(p) !== null), [rangedPosts]);
+  const postCounts = useMemo(() => countProvenance(rangedPosts), [rangedPosts]);
   const rangedSignals = useMemo(() => signals.filter(s => inRange(s.created_at)), [signals, inRange]);
   const hasReach = useMemo(() => Object.keys(reach).length > 0, [reach]);
 
@@ -252,7 +254,8 @@ const AnalyticsV2: React.FC<{ onOpenChat?: (msg?: string) => void }> = ({ onOpen
       language: postLanguage(p),
       source: postSource(p),
       status: p.tracking_status ?? "—",
-      live: isPublishedPost(p),
+      live: provenanceOf(p) !== null,
+      provenance: provenanceOf(p) as Provenance | null,
       reach: reach[p.id] ?? null,
       date: postDate(p),
     }));
@@ -407,7 +410,7 @@ const AnalyticsV2: React.FC<{ onOpenChat?: (msg?: string) => void }> = ({ onOpen
                 : `${Math.min(3, mix.segs.length)} theme${Math.min(3, mix.segs.length) === 1 ? "" : "s"} carry ${mix.topShare}% of the ${mix.total} posts you have live on LinkedIn. "${mix.segs[0].label}" leads at ${mix.segs[0].pct}%.`}
             </Reading>
             <Reading>
-              {`Of those ${postCounts.live}, ${postCounts.throughAura} were written through Aura and ${postCounts.imported} are your own imported history. Posts by other people that Aura found while searching are not counted.`}
+              {`Two numbers, never one: ${postCounts.live} live on LinkedIn · ${postCounts.madeWithAura} made with Aura, ${postCounts.sentFromAura} of them sent from here. The rest is your own imported history. Posts by other people that Aura found while searching are not counted.`}
             </Reading>
           </>
         )}
@@ -479,7 +482,7 @@ const AnalyticsV2: React.FC<{ onOpenChat?: (msg?: string) => void }> = ({ onOpen
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 620 }}>
               <thead>
                 <tr>
-                  {["Post", "Language", "Source", "Status", ...(hasReach ? ["Reach"] : [])].map(h => (
+                  {["Post", "Language", "Made with", "Source", "Status", ...(hasReach ? ["Reach"] : [])].map(h => (
                     <th key={h} style={{
                       ...MONO, position: "sticky", top: 0, zIndex: 1, textAlign: h === "Reach" ? "right" : "left",
                       fontSize: 10, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--text-muted)",
@@ -495,6 +498,9 @@ const AnalyticsV2: React.FC<{ onOpenChat?: (msg?: string) => void }> = ({ onOpen
                       {r.text}
                     </td>
                     <td style={{ ...MONO, padding: "9px 10px", fontSize: 11.5, color: "var(--text-secondary)", borderBottom: "1px solid var(--rule-divider)" }}>{r.language}</td>
+                    <td style={{ padding: "9px 10px", borderBottom: "1px solid var(--rule-divider)" }}>
+                      {r.provenance ? <ProvenanceMark value={r.provenance} /> : <span style={{ ...MONO, fontSize: 11, color: "var(--text-muted)" }}>—</span>}
+                    </td>
                     <td style={{ ...MONO, padding: "9px 10px", fontSize: 11.5, color: "var(--text-secondary)", borderBottom: "1px solid var(--rule-divider)" }}>{r.source}</td>
                     <td style={{ padding: "9px 10px", borderBottom: "1px solid var(--rule-divider)" }}>
                       <Chip variant={r.live ? "published" : r.status === "failed" || r.status === "rejected" ? "failed" : "cooling"}>

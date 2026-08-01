@@ -28,7 +28,8 @@ import CardPreviewPanel from "@/components/visual-cards/CardPreviewPanel";
 
 import StartFromPanel from "@/components/StartFromPanel";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
-import { isPublishedPost } from "@/lib/postProvenance";
+import { isPublishedPost, countProvenance, isMadeWithAura } from "@/lib/postProvenance";
+import { ProvenanceMark } from "@/components/systemb";
 import { markSuggestionDrafted } from "@/lib/markSuggestionDrafted";
 import FlashPanel from "@/components/FlashPanel";
 import EmptyState from "@/components/ui/EmptyState";
@@ -2851,6 +2852,8 @@ interface SavedPost {
   topic_label: string | null;
   created_at: string;
   source_metadata: any;
+  published_at?: string | null;
+  publish_attempted_at?: string | null;
   _source: "linkedin_posts" | "content_items";
 }
 
@@ -2974,6 +2977,7 @@ const LibraryCard = ({
 
       <div className="flex items-center gap-2 mt-3">
         <span className="text-xs text-muted-foreground/40">{formatSmartDate(p.created_at)}</span>
+        {isPublished && p._source === "linkedin_posts" && <ProvenanceMark post={p as any} />}
         <div className="flex-1" />
         <Button
           size="sm"
@@ -3528,7 +3532,7 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
     setLoading(true);
     const { data: { user: authUser } } = await supabase.auth.getUser();
     const uid = authUser?.id;
-    const LI_COLS = "id, title, post_text, format_type, tracking_status, topic_label, created_at, source_metadata, source_type, authorship, acquisition, published_at, linkedin_url, post_url, source_signal_id, content_type";
+    const LI_COLS = "id, title, post_text, format_type, tracking_status, topic_label, created_at, source_metadata, source_type, authorship, acquisition, published_at, publish_attempted_at, linkedin_url, post_url, source_signal_id, content_type";
     const [liDraftsRes, liNeedsReviewRes, liPublishedRes, ciRes, publishedCountRes, auraCountRes, earlierCountRes] = await Promise.all([
       supabase
         .from("linkedin_posts")
@@ -3557,24 +3561,23 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
         .limit(100),
       uid
         ? supabase
-            .from("linkedin_posts")
+            .from("post_provenance" as any)
             .select("id", { count: "exact", head: true })
             .eq("user_id", uid)
-            .not("published_at", "is", null)
         : Promise.resolve({ count: 0 } as any),
       uid
         ? supabase
-            .from("linkedin_posts")
+            .from("post_provenance" as any)
             .select("id", { count: "exact", head: true })
             .eq("user_id", uid)
-            .in("authorship", ["aura_drafted", "aura_assisted"])
+            .in("provenance", ["aura_published", "aura_drafted"])
         : Promise.resolve({ count: 0 } as any),
       uid
         ? supabase
-            .from("linkedin_posts")
+            .from("post_provenance" as any)
             .select("id", { count: "exact", head: true })
             .eq("user_id", uid)
-            .in("authorship", ["user_written", "unknown"])
+            .eq("provenance", "linkedin_only")
         : Promise.resolve({ count: 0 } as any),
     ]);
     setPublishedTotal(publishedCountRes?.count ?? 0);
@@ -4408,17 +4411,13 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
         // Split rows by authorship using explicit predicates. Anything that
         // doesn't match either known bucket falls into a visible "Unclassified"
         // group instead of being silently absorbed — surfaces DB drift fast.
-        const AURA_AUTHORSHIP     = new Set(["aura_drafted", "aura_assisted"]);
-        const EARLIER_AUTHORSHIP  = new Set(["user_written", "unknown"]);
-        // P4: filter published rows by the shared library controls first,
-        // then split by authorship. Sort (Recent | Top performing) is applied
-        // per-group so counts of the two sortable groups stay accurate.
+        // Grouping follows the canonical provenance view, never `authorship`:
+        // made with Aura (written here, sent from here or not) vs found on
+        // LinkedIn. The two groups are exhaustive, so nothing is unclassified.
         const filteredPublished = publishedPosts.filter(p => matchesFilters(p, "published"));
-        const auraRows          = applyPublishedSort(filteredPublished.filter((p: any) => AURA_AUTHORSHIP.has(p.authorship)));
-        const earlierRows       = applyPublishedSort(filteredPublished.filter((p: any) => EARLIER_AUTHORSHIP.has(p.authorship)));
-        const unclassifiedRows  = filteredPublished.filter(
-          (p: any) => !AURA_AUTHORSHIP.has(p.authorship) && !EARLIER_AUTHORSHIP.has(p.authorship),
-        );
+        const auraRows          = applyPublishedSort(filteredPublished.filter((p: any) => isMadeWithAura(p)));
+        const earlierRows       = applyPublishedSort(filteredPublished.filter((p: any) => !isMadeWithAura(p)));
+        const unclassifiedRows: typeof filteredPublished = [];
 
         // Small inline sort toggle placed in the Aura / Earlier group headers.
         const SortToggle = () => (

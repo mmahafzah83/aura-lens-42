@@ -204,9 +204,18 @@ async function gatherFacts(admin: SupabaseClient, userId: string): Promise<Facts
   const drafts_from_signals = drafts.filter(
     (p) => p.source_signal_id || (Array.isArray(p?.source_metadata?.signal_ids) && p.source_metadata.signal_ids.length),
   ).length;
-  const publishedRows = posts.filter((p) => PUBLISHED_STATUSES.includes(p.tracking_status));
+  // Canonical provenance — same three branches as public.post_provenance.
+  // published_total = live on LinkedIn. published_through_aura = made with
+  // Aura (written here, whether or not Aura sent it). The two are never
+  // merged into one figure.
+  const publishedRows = posts.filter((p) => !!p.published_at);
   const published_total = publishedRows.length;
-  const published_through_aura = publishedRows.filter((p) => !!p.publish_attempted_at).length;
+  const published_sent_from_aura = publishedRows.filter((p) => !!p.publish_attempted_at).length;
+  const published_written_in_aura = publishedRows.filter(
+    (p) => !p.publish_attempted_at && p?.source_metadata && typeof p.source_metadata === "object" &&
+      Object.prototype.hasOwnProperty.call(p.source_metadata, "source"),
+  ).length;
+  const published_through_aura = published_sent_from_aura + published_written_in_aura;
   const attempts = posts.filter((p) => !!p.publish_attempted_at);
   const publish_attempts = attempts.length;
   const last_publish_attempt = attempts
@@ -271,6 +280,7 @@ async function gatherFacts(admin: SupabaseClient, userId: string): Promise<Facts
     drafts_from_signals,
     published_total,
     published_through_aura,
+    published_sent_from_aura,
     publish_attempts,
     last_publish_attempt,
     last_night,
@@ -609,6 +619,13 @@ function buildFactPhrases(f: Facts, move: Move | null): string[] {
     p.push(lastPub === 0 ? `you published today` : `${small(lastPub)} days since you last pressed publish`);
   } else if ((f.published_total ?? 0) === 0 && (f.captures_total ?? 0) > 0) {
     p.push(`nothing of yours has gone out through Aura yet`);
+  }
+
+  // The two figures, never merged: live on LinkedIn, then made with Aura.
+  if ((f.published_total ?? 0) > 0) {
+    p.push(
+      `${small(f.published_total)} posts live on LinkedIn and ${small(f.published_through_aura ?? 0)} of them made with Aura`,
+    );
   }
 
   const w = f.weeks_with_a_capture_last_4;

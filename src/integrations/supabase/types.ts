@@ -2478,6 +2478,13 @@ export type Database = {
             referencedRelation: "linkedin_posts"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "linkedin_post_metrics_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "post_provenance"
+            referencedColumns: ["id"]
+          },
         ]
       }
       linkedin_posts: {
@@ -4046,6 +4053,152 @@ export type Database = {
         }
         Relationships: []
       }
+      post_provenance: {
+        Row: {
+          acquisition: string | null
+          authorship: string | null
+          carousel_structure_type: string | null
+          claimed_at: string | null
+          comment_count: number | null
+          content_engine_output_type: string | null
+          content_type: string | null
+          created_at: string | null
+          cta_style: string | null
+          engagement_score: number | null
+          enriched_by: string[] | null
+          format_type: string | null
+          framework_type: string | null
+          hook: string | null
+          hook_style: string | null
+          id: string | null
+          like_count: number | null
+          linkedin_post_id: string | null
+          linkedin_url: string | null
+          media_type: string | null
+          original_generated_text: string | null
+          post_text: string | null
+          post_url: string | null
+          provenance: string | null
+          publish_attempted_at: string | null
+          published_at: string | null
+          published_confirmed_at: string | null
+          quality_score: Json | null
+          rejection_reason: string | null
+          repost_count: number | null
+          source_metadata: Json | null
+          source_signal_id: string | null
+          source_trust: number | null
+          source_type: string | null
+          synced_at: string | null
+          theme: string | null
+          title: string | null
+          tone: string | null
+          topic_label: string | null
+          tracking_status: string | null
+          user_id: string | null
+          visual_strategy_type: string | null
+          visual_style: string | null
+        }
+        Insert: {
+          acquisition?: string | null
+          authorship?: string | null
+          carousel_structure_type?: string | null
+          claimed_at?: string | null
+          comment_count?: number | null
+          content_engine_output_type?: string | null
+          content_type?: string | null
+          created_at?: string | null
+          cta_style?: string | null
+          engagement_score?: number | null
+          enriched_by?: string[] | null
+          format_type?: string | null
+          framework_type?: string | null
+          hook?: string | null
+          hook_style?: string | null
+          id?: string | null
+          like_count?: number | null
+          linkedin_post_id?: string | null
+          linkedin_url?: string | null
+          media_type?: string | null
+          original_generated_text?: string | null
+          post_text?: string | null
+          post_url?: string | null
+          provenance?: never
+          publish_attempted_at?: string | null
+          published_at?: string | null
+          published_confirmed_at?: string | null
+          quality_score?: Json | null
+          rejection_reason?: string | null
+          repost_count?: number | null
+          source_metadata?: Json | null
+          source_signal_id?: string | null
+          source_trust?: number | null
+          source_type?: string | null
+          synced_at?: string | null
+          theme?: string | null
+          title?: string | null
+          tone?: string | null
+          topic_label?: string | null
+          tracking_status?: string | null
+          user_id?: string | null
+          visual_strategy_type?: string | null
+          visual_style?: string | null
+        }
+        Update: {
+          acquisition?: string | null
+          authorship?: string | null
+          carousel_structure_type?: string | null
+          claimed_at?: string | null
+          comment_count?: number | null
+          content_engine_output_type?: string | null
+          content_type?: string | null
+          created_at?: string | null
+          cta_style?: string | null
+          engagement_score?: number | null
+          enriched_by?: string[] | null
+          format_type?: string | null
+          framework_type?: string | null
+          hook?: string | null
+          hook_style?: string | null
+          id?: string | null
+          like_count?: number | null
+          linkedin_post_id?: string | null
+          linkedin_url?: string | null
+          media_type?: string | null
+          original_generated_text?: string | null
+          post_text?: string | null
+          post_url?: string | null
+          provenance?: never
+          publish_attempted_at?: string | null
+          published_at?: string | null
+          published_confirmed_at?: string | null
+          quality_score?: Json | null
+          rejection_reason?: string | null
+          repost_count?: number | null
+          source_metadata?: Json | null
+          source_signal_id?: string | null
+          source_trust?: number | null
+          source_type?: string | null
+          synced_at?: string | null
+          theme?: string | null
+          title?: string | null
+          tone?: string | null
+          topic_label?: string | null
+          tracking_status?: string | null
+          user_id?: string | null
+          visual_strategy_type?: string | null
+          visual_style?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "linkedin_posts_source_signal_id_fkey"
+            columns: ["source_signal_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_signals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       unified_content: {
         Row: {
           content_body: string | null
@@ -4238,6 +4391,7 @@ export type Database = {
           captures: number
           published: number
           published_live: number
+          published_sent_from_aura: number
           published_through_aura: number
           signals: number
           used_in_signal: number
