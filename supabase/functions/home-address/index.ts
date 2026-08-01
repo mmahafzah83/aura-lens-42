@@ -736,21 +736,33 @@ function gateAddress(text: string, phrases: string[], move: Move | null, memberN
   return { pass: reasons.length === 0, reasons };
 }
 
-function fallbackAddress(f: Facts, move: Move | null): string {
+const upperFirst = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/** The plain sentence that names today's decision, in the member's language. */
+function decisionSentence(move: Move | null): string {
+  if (!move) return `The decision today is simple: send me one thing you read.`;
+  const byKey: Record<string, string> = {
+    publish_draft: `The decision today is whether that draft goes out or gets killed.`,
+    draft_from_signal: `The decision today is whether you write from it.`,
+    capture: `The decision today is to send me one thing you read.`,
+    connect_linkedin: `The decision today is to connect LinkedIn so your posts report back.`,
+    fill_facet: `The decision today is which of those blanks you fill first.`,
+  };
+  return byKey[move.key] ?? `The decision today is ${move.title.charAt(0).toLowerCase()}${move.title.slice(1)}.`;
+}
+
+/**
+ * Read by a member on the days the model misbehaves, so it is assembled from
+ * the same construction-correct phrases the model would have been given.
+ */
+function fallbackAddress(f: Facts, move: Move | null, phrases: string[]): string {
   if ((f.captures_total ?? 0) === 0) {
     return `I know the shape of your work from your profile and your assessment. What I do not have is what you are reading right now, and that is the part that makes a post sound like you. One link is enough. Send me something today.`;
   }
-  const t = computeTension(f, move);
-  const close = move
-    ? `${move.title}. That is the decision today.`
-    : `Capture one thing you read today.`;
-  // computeTension is written in the third person for the model; the fallback
-  // is read by the member, so it is spoken directly.
-  const second = (s: string) =>
-    s.replace(/\bThey have\b/g, "You have").replace(/\bThey\b/g, "You")
-     .replace(/\btheir\b/g, "your").replace(/\bTheir\b/g, "Your")
-     .replace(/\bthem\b/g, "you");
-  return `${second(t.strength)} ${second(t.gap)} Nothing else this morning matters more. ${close}`;
+  const [a, b] = phrases;
+  if (!a) return decisionSentence(move);
+  if (!b) return `${upperFirst(a)}. ${decisionSentence(move)}`;
+  return `${upperFirst(a)}. ${upperFirst(b)}. ${decisionSentence(move)}`;
 }
 
 async function callModel(apiKey: string, userMsg: string): Promise<string> {
@@ -829,7 +841,7 @@ Your previous attempt was rejected for: ${attempts[0].reasons.join("; ")}. Write
   }
 
   return {
-    text: fallbackAddress(facts, move),
+    text: fallbackAddress(facts, move, phrases),
     model: null,
     quality: { passed: false, fallback: true, failed_attempts: attempts, phrases, checked_at: new Date().toISOString() },
   };
