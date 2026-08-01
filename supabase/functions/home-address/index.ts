@@ -310,19 +310,19 @@ type Move = {
  * Numbers in prose. A chief of staff says "six drafts", not "drafts_total is 6".
  * Above one hundred the digits read better, so digits it is.
  */
-const ONES = [
+const NW_ONES = [
   "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
   "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
   "seventeen", "eighteen", "nineteen",
 ];
-const TENS = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"];
+const NW_TENS = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"];
 function nw(n: number): string {
   const v = Math.max(0, Math.round(Number(n) || 0));
-  if (v < 20) return ONES[v];
-  if (v < 100) return TENS[Math.floor(v / 10)] + (v % 10 ? `-${ONES[v % 10]}` : "");
+  if (v < 20) return NW_ONES[v];
+  if (v < 100) return NW_TENS[Math.floor(v / 10)] + (v % 10 ? `-${NW_ONES[v % 10]}` : "");
   if (v < 1000) {
     const rest = v % 100;
-    return `${ONES[Math.floor(v / 100)]} hundred${rest ? ` and ${nw(rest)}` : ""}`;
+    return `${NW_ONES[Math.floor(v / 100)]} hundred${rest ? ` and ${nw(rest)}` : ""}`;
   }
   return String(v);
 }
