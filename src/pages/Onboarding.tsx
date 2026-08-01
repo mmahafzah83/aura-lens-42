@@ -1416,7 +1416,7 @@ const Onboarding = () => {
                 <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
                   <button type="button" onClick={() => setSharedLearningConsent(true)}
                     style={{ flex: 1, height: 40, borderRadius: 8, fontSize: 13, fontWeight: 600,
-                      background: "#0670C4", color: "var(--ink)", border: 0, cursor: "pointer" }}>
+                      background: "#0670C4", color: "#FFFFFF", border: 0, cursor: "pointer" }}>
                     Keep it on
                   </button>
                   <button type="button" onClick={() => setConsentTouched(false)}
