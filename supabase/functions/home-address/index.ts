@@ -528,11 +528,11 @@ function buildFactPhrases(f: Facts, move: Move | null): string[] {
     const title = shortTitle(ts.title);
     const month = monthOf(ts.first_fragment_date);
     const n = ts.fragment_count ?? 0;
-    if (n > 0 && month) p.push(`${n} fragments behind "${title}" since ${month}`);
-    else if (n > 0) p.push(`${n} fragments behind "${title}"`);
+    if (n > 0 && month) p.push(`${n} fragments on "${title}" since ${month}`);
+    else if (n > 0) p.push(`${n} fragments on "${title}"`);
     else p.push(`a theme called "${title}"`);
     if (ts.gained_last_7d) p.push(`new evidence for "${title}" arrived this week`);
-    if (ts.velocity === "accelerating") p.push(`"${title}" is picking up speed`);
+    if (ts.velocity === "accelerating") p.push(`"${title}" is growing faster than anything else in your record`);
   }
 
   if ((f.signals_never_published_from ?? 0) > 0 && ts?.title) {
@@ -543,7 +543,7 @@ function buildFactPhrases(f: Facts, move: Move | null): string[] {
 
   const nsd = f.last_night?.newest_signal_draft;
   if (nsd?.title) p.push(`a draft already written on "${String(nsd.title).slice(0, 70)}"`);
-  else if ((f.drafts_total ?? 0) > 0) p.push(`${small(f.drafts_total)} drafts waiting, unpublished`);
+  else if ((f.drafts_total ?? 0) > 0) p.push(`${small(f.drafts_total)} drafts written and unpublished`);
 
   const lastPub = daysAgoFrom(f.last_publish_attempt);
   if (lastPub != null) {
@@ -554,21 +554,21 @@ function buildFactPhrases(f: Facts, move: Move | null): string[] {
 
   const w = f.weeks_with_a_capture_last_4;
   if (typeof w === "number" && w < 4) {
-    p.push(`${small(4 - w)} of your last four weeks had no capture`);
+    p.push(`${small(4 - w)} of your last four weeks had no capture of any kind`);
   } else if (w === 4) {
-    p.push(`you captured something in each of the last four weeks`);
+    p.push(`you captured something, on one subject or another, in each of the last four weeks`);
   }
 
-  if (!f.captured_today && (f.captures_total ?? 0) > 0) p.push(`nothing new has come in today`);
+  if (!f.captured_today && (f.captures_total ?? 0) > 0) p.push(`nothing new of any kind has come in today`);
   if ((f.captures_total ?? 0) === 0) p.push(`nothing captured yet, so nothing here sounds like you`);
-  else if ((f.captures_this_week ?? 0) > 0) p.push(`${small(f.captures_this_week)} things captured this week`);
+  else if ((f.captures_this_week ?? 0) > 0) p.push(`${small(f.captures_this_week)} things captured this week across all subjects`);
 
   if ((f.facets_dormant?.length ?? 0) > 0) {
-    p.push(`your ${String(f.facets_dormant[0]).replace(/_/g, " ")} has never registered`);
+    p.push(`your ${String(f.facets_dormant[0]).replace(/_/g, " ")} has never registered in anything you have published`);
   }
 
   const sr = f.last_night?.sources_read ?? 0;
-  if (sr > 0) p.push(`Aura read ${small(sr)} ${sr === 1 ? "source" : "sources"} overnight`);
+  if (sr > 0) p.push(`Aura read ${small(sr)} ${sr === 1 ? "source" : "sources"} for you overnight`);
 
   if (f.tier && f.next_band_name && f.points_to_next_band != null) {
     p.push(`${f.points_to_next_band} points between ${f.tier} and ${f.next_band_name}`);
@@ -576,7 +576,7 @@ function buildFactPhrases(f: Facts, move: Move | null): string[] {
 
   if (f.linkedin_connected === false) p.push(`LinkedIn is not connected, so nothing comes back from your posts`);
 
-  if (move?.key === "capture" && (f.captures_total ?? 0) > 0) p.push(`one link would be enough for tonight`);
+  if (move?.key === "capture" && (f.captures_total ?? 0) > 0) p.push(`one link tonight would be enough to work from`);
 
   return p.slice(0, 10);
 }
