@@ -16,11 +16,33 @@ export const Kicker: React.FC<React.PropsWithChildren<{ style?: React.CSSPropert
   }}>{children}</div>
 );
 
-export const Card: React.FC<React.PropsWithChildren<{ style?: React.CSSProperties }>> = ({ children, style }) => (
-  <div style={{
+/**
+ * Three card weights and no others.
+ *  stage  — the card that holds the stage: elevated, generous padding.
+ *  shelf  — flat, hairline border.
+ *  strip  — no border at all, only a rule above.
+ */
+export type CardWeight = "stage" | "shelf" | "strip";
+
+const WEIGHT: Record<CardWeight, React.CSSProperties> = {
+  stage: {
     background: "var(--surface-card)", border: "1px solid var(--rule-outer)",
-    borderRadius: 16, padding: 18, boxShadow: "var(--v23-card-rest)", ...style,
-  }}>{children}</div>
+    borderRadius: 16, padding: 22, boxShadow: "var(--v23-card-hover)",
+  },
+  shelf: {
+    background: "var(--surface-card)", border: "1px solid var(--rule-outer)",
+    borderRadius: 14, padding: 16, boxShadow: "none",
+  },
+  strip: {
+    background: "transparent", border: 0, borderBlockStart: "1px solid var(--rule-divider)",
+    borderRadius: 0, padding: "14px 0", boxShadow: "none",
+  },
+};
+
+export const Card: React.FC<React.PropsWithChildren<{
+  style?: React.CSSProperties; weight?: CardWeight;
+}>> = ({ children, style, weight = "stage" }) => (
+  <div style={{ ...WEIGHT[weight], ...style }}>{children}</div>
 );
 
 export const Num: React.FC<React.PropsWithChildren<{ size?: number; color?: string }>> = ({ children, size = 14, color }) => (
