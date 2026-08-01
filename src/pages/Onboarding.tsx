@@ -510,11 +510,45 @@ const Onboarding = () => {
         },
       })
       .then(({ data }) => {
-        if (data?.found && data?.article) setFoundArticle(data.article);
+        if (data?.found && data?.article) {
+          setFoundArticle(data.article);
+          // Cache it: the LinkedIn OAuth round trip is a full page navigation
+          // that destroys all React state. sessionStorage survives it.
+          try {
+            if (userId) {
+              sessionStorage.setItem(
+                `aura_ob_article_${userId}`,
+                JSON.stringify({ article: data.article, ts: Date.now() }),
+              );
+            }
+          } catch { /* Safari private mode — never block onboarding */ }
+        }
       })
       .catch(() => {})
       .finally(() => setArticleSearchDone(true));
   };
+
+  // Rehydrate a cached article after a full page reload (LinkedIn OAuth).
+  // Setting articleSearchStartRef keeps the "already fired" guard holding, so
+  // the Edge Function is called at most once per user.
+  useEffect(() => {
+    if (!userId) return;
+    if (articleSearchStartRef.current) return;
+    try {
+      const raw = sessionStorage.getItem(`aura_ob_article_${userId}`);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      const art = parsed?.article;
+      const ts = Number(parsed?.ts || 0);
+      if (!art?.url || !ts || Date.now() - ts > 24 * 60 * 60 * 1000) {
+        try { sessionStorage.removeItem(`aura_ob_article_${userId}`); } catch { /* ignore */ }
+        return;
+      }
+      articleSearchStartRef.current = ts;
+      setFoundArticle(art);
+      setArticleSearchDone(true);
+    } catch { /* ignore */ }
+  }, [userId]);
 
   const confirmIdentityYes = () => {
     if (!userId) return;
