@@ -1,8 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import {
-  emailShell, heading as headingHtml, button, INK, INK_BODY, OXBLOOD, RULE,
-} from "../_shared/email-theme.ts";
+  renderEmail, heading as headingHtml, paragraph, note,
+} from "../_shared/emailTemplate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -60,18 +60,18 @@ serve(async (req) => {
     let heading = "";
     let message = "";
     let warningBlock = "";
-    let ctaBlock = "";
+    let cta: { href: string; label: string } | undefined;
 
     if (type === "password_set") {
       subject = "Your Aura password is set";
       heading = "You're all set.";
-      message = `Hi ${name}, your Aura password has been created. You can now log in anytime at aura-intel.org.`;
-      ctaBlock = `<p style="margin:24px 0;">${button("https://aura-intel.org/auth", "Open Aura →")}</p>`;
+      message = `Hi ${name}, your Aura password has been created. You can log in any time at aura-intel.org.`;
+      cta = { href: "https://aura-intel.org/auth", label: "Open Aura" };
     } else if (type === "password_changed") {
       subject = "Your Aura password was changed";
       heading = "Password updated.";
-      message = `Hi ${name}, your Aura password was just changed. If this was you, no action is needed.`;
-      warningBlock = `<p style="background:#FBF1DA;border:1px solid ${RULE};border-radius:8px;padding:12px 14px;font-size:13px;color:${OXBLOOD};margin:18px 0;"><strong style="color:${INK};">Heads up.</strong> If you didn't make this change, reset your password immediately at aura-intel.org/auth.</p>`;
+      message = `Hi ${name}, your Aura password was just changed. If this was you, nothing else is needed.`;
+      warningBlock = note("If you didn't make this change, reset your password now at aura-intel.org/auth.");
     } else {
       return new Response(JSON.stringify({ error: "Unknown notification type" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -79,11 +79,10 @@ serve(async (req) => {
     }
     const bodyHtml = `
       ${headingHtml(heading)}
-      <p style="font-size:15px;line-height:1.6;margin:0 0 8px;color:${INK_BODY};">${message}</p>
+      ${paragraph(message)}
       ${warningBlock}
-      ${ctaBlock}
     `;
-    const html = emailShell({ preheader: subject, body: bodyHtml });
+    const html = renderEmail({ preheader: subject, body: bodyHtml, cta });
 
     await fetch("https://api.resend.com/emails", {
       method: "POST",
