@@ -53,6 +53,14 @@ const LANDING_V2_CSS = `
 .aura-v2 .navcta{margin-left:12px;display:flex;align-items:center;gap:9px;background:#fff;color:var(--n900);border-radius:999px; padding:11px 16px;font-size:14px;font-weight:600;white-space:nowrap;transition:.2s}
 .aura-v2 .navalt{margin-left:8px;display:inline-flex;align-items:center;background:rgba(255,255,255,.12);color:#fff;border:0;cursor:pointer;font-family:var(--ui);border-radius:999px;padding:11px 14px;font-size:13.5px;font-weight:600;white-space:nowrap;transition:.2s}
 .aura-v2 .navalt:hover{background:rgba(255,255,255,.2)}
+.aura-v2 .nav{max-width:calc(100vw - (var(--gut) * 2))}
+@media(max-width:620px){
+.aura-v2 .nav{padding:6px 6px 6px 12px}
+.aura-v2 .brand{margin-right:8px}
+.aura-v2 .navalt{margin-left:6px;padding:9px 11px;font-size:12.5px}
+.aura-v2 .navcta{margin-left:6px;padding:9px 12px;font-size:12.5px;gap:6px}
+.aura-v2 .navcta .a{display:none}
+}
 .aura-v2 .navcta:hover{transform:translateY(-1px);box-shadow:0 10px 22px -10px rgba(0,0,0,.45)}
 .aura-v2 .navcta .a{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--n100);font-size:10px}
 @media(max-width:1140px){
