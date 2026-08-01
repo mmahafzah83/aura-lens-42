@@ -12,7 +12,6 @@ import Onboarding from "./pages/Onboarding";
 import LinkedInCallback from "./pages/LinkedInCallback";
 import RequestAccess from "./pages/RequestAccess";
 import AcceptInvitation from "./pages/AcceptInvitation";
-import HomeProof from "./pages/__HomeProof";
 import NotFound from "./pages/NotFound";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
@@ -109,7 +108,6 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/login" element={<Auth />} />
             <Route path="/request-access" element={<RequestAccess />} />
-            <Route path="/__home-proof" element={<HomeProof />} />
             <Route path="/accept-invitation" element={<AcceptInvitation />} />
             <Route path="/admin" element={<PasswordGate><AdminGate><Admin /></AdminGate></PasswordGate>} />
             <Route path="/admin/access" element={<PasswordGate><AdminGate><AdminAccess /></AdminGate></PasswordGate>} />
