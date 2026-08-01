@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Loader2, Settings as SettingsIcon } from "lucide-react";
 import { toast } from "sonner";
+import { signOutAndLand } from "@/lib/signOut";
 import { supabase } from "@/integrations/supabase/client";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { AuraCard } from "@/components/ui/AuraCard";
@@ -100,8 +101,7 @@ const handleDeleteAccount = async () => {
     if (error || (data && (data as any).error)) {
       throw new Error((data as any)?.error || error?.message || "Delete failed");
     }
-    await supabase.auth.signOut();
-    navigate("/");
+    await signOutAndLand(navigate);
   } catch (e: any) {
     console.error("[delete-account] failed", e);
     toast.error(e?.message || "We couldn't delete your account. Please try again.");
@@ -442,7 +442,7 @@ const handleDeleteAccount = async () => {
             onClose={() => {}}
             userId={authUser?.id ?? null}
             email={authUser?.email}
-            onSignOut={() => {}}
+            onSignOut={() => { void signOutAndLand(navigate); }}
           />
         ) : (
         <>
