@@ -102,6 +102,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<LandingV2 />} />
             <Route path="/v2" element={<LandingV2 />} />
+            <Route path="/__calib" element={<CalibPreview />} />
             <Route path="/home" element={<PasswordGate><Dashboard /></PasswordGate>} />
             <Route path="/dashboard" element={<PasswordGate><Dashboard /></PasswordGate>} />
             <Route path="/auth" element={<Auth />} />
