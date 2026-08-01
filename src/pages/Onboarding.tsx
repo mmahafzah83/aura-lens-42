@@ -1245,6 +1245,7 @@ const Onboarding = () => {
           )}
         </>,
       );
+    }
   }
 
   // ───── STEP 0 (LinkedIn paste + profile form) ─────
