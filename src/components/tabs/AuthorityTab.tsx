@@ -2851,6 +2851,8 @@ interface SavedPost {
   topic_label: string | null;
   created_at: string;
   source_metadata: any;
+  published_at?: string | null;
+  publish_attempted_at?: string | null;
   _source: "linkedin_posts" | "content_items";
 }
 
