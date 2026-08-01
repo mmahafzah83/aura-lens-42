@@ -1206,24 +1206,24 @@ function ResultsView({
         <button
           type="button"
           onClick={copyOneLiner}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-lg hover:bg-white/[0.04] transition-colors"
-          style={{ background: "transparent", border: "1px solid color-mix(in srgb, var(--action) 35%, transparent)", color: "var(--ink-6)", fontSize: 13, cursor: "pointer" }}
+          className="flex items-center gap-2 px-4 py-2.5 transition-colors"
+          style={quietPill}
         >
           <Copy className="w-3.5 h-3.5" /> Copy my one-liner
         </button>
         <button
           type="button"
           onClick={downloadReport}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-lg hover:bg-white/[0.04] transition-colors"
-          style={{ background: "transparent", border: "1px solid color-mix(in srgb, var(--action) 35%, transparent)", color: "var(--ink-6)", fontSize: 13, cursor: "pointer" }}
+          className="flex items-center gap-2 px-4 py-2.5 transition-colors"
+          style={quietPill}
         >
           <Download className="w-3.5 h-3.5" /> Download full report
         </button>
         <button
           type="button"
           onClick={goToStory}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-lg hover:brightness-110 transition-all active:scale-[0.98]"
-          style={{ background: "linear-gradient(to bottom, hsl(43 80% 55%), var(--action))", color: "var(--ink)", fontSize: 13, cursor: "pointer", border: 0, fontWeight: 600 }}
+          className="flex items-center gap-2 px-6 transition-all hover:-translate-y-0.5 active:scale-[0.98]"
+          style={{ ...pillBtn, fontSize: 13 }}
         >
           Continue <ArrowRight className="w-3.5 h-3.5" />
         </button>
@@ -1276,15 +1276,15 @@ function CinematicLoading({ stage = 0 }: { stage?: number }) {
         }}
         aria-hidden="true"
       >
-        <AuraLogo size={80} variant="auto" />
+        <AuraLogo size={80} variant="light" />
       </div>
       <p
         key={stage}
         style={{
-          fontFamily: "var(--serif)",
+          fontFamily: SERIF,
           fontSize: 18,
           textAlign: "center",
-          color: "var(--ink-2)",
+          color: INK_SOFT,
           maxWidth: 420,
           margin: 0,
           opacity: 0,
