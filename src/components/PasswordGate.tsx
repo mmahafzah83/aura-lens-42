@@ -45,6 +45,11 @@ export default function PasswordGate({ children }: { children: React.ReactNode }
     );
   }
 
+  if (signedOut) {
+    const next = `${location.pathname}${location.search}`;
+    return <Navigate to={`/auth?next=${encodeURIComponent(next)}`} replace />;
+  }
+
   if (needsPassword) {
     return <SetPasswordScreen email={email} onComplete={() => setNeedsPassword(false)} />;
   }
