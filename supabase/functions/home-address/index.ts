@@ -682,7 +682,7 @@ function phraseMatches(text: string, phrases: string[]): { matched: string[]; mi
 // A qualifier the model bolts on to narrow a phrase's subject. Allowed only in
 // the exact number of times the supplied phrases already contain it.
 const SCOPE_QUALIFIER =
-  /\bon (?:this|that)(?: specific| very)? (?:theme|topic|signal|subject|transformation|shift|thesis|idea|story|point)\b/gi;
+  /\b(?:on|about|around|regarding) (?:this|that)(?: specific| very| particular| one)? (?:theme|topic|signal|subject|transformation|shift|thesis|idea|story|point|front|area|angle|thread|matter|question|issue|market|space|move|piece)\b/gi;
 
 function gateAddress(text: string, phrases: string[], move: Move | null, memberName: string | null): Gate {
   const reasons: string[] = [];
