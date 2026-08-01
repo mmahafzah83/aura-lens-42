@@ -621,6 +621,13 @@ function buildFactPhrases(f: Facts, move: Move | null): string[] {
     p.push(`nothing of yours has gone out through Aura yet`);
   }
 
+  // The two figures, never merged: live on LinkedIn, then made with Aura.
+  if ((f.published_total ?? 0) > 0) {
+    p.push(
+      `${small(f.published_total)} posts live on LinkedIn and ${small(f.published_through_aura ?? 0)} of them made with Aura`,
+    );
+  }
+
   const w = f.weeks_with_a_capture_last_4;
   if (typeof w === "number" && w < 4) {
     p.push(`${small(4 - w)} of your last four weeks had no capture of any kind`);
