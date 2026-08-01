@@ -9,6 +9,7 @@ const LINKS: Array<{ label: string; to: string }> = [
   { label: "Home", to: "/" },
   { label: "Our Story", to: "/our-story" },
   { label: "The Guide", to: "/guide" },
+  { label: "Contact", to: "/contact" },
   { label: "Security & Trust", to: "/trust" },
   { label: "Privacy", to: "/privacy" },
   { label: "Terms", to: "/terms" },

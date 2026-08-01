@@ -1888,7 +1888,7 @@ export default function Brief({ onOpenDraft, onSwitchTab, onOpenCapture, onInvit
           <Link to="/guide"   style={{ textDecoration: "none" }}><Mono>Guide</Mono></Link>
           <Link to="/privacy" style={{ textDecoration: "none" }}><Mono>Privacy</Mono></Link>
           <Link to="/terms"   style={{ textDecoration: "none" }}><Mono>Terms</Mono></Link>
-          <a href="mailto:support@aura-intel.org" style={{ textDecoration: "none" }}><Mono>Contact</Mono></a>
+          <a href="/contact" style={{ textDecoration: "none" }}><Mono>Contact</Mono></a>
           <button
             type="button"
             onClick={() => onInvite?.()}
