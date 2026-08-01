@@ -386,6 +386,9 @@ const BANNED = [
   "leveraging", "massive", "disconnect", "trapped", "crucial", "vital", "stark",
   "glaring", "significant", "robust", "journey", "unlock", "elevate", "empower",
   "seamless", "authority", "trajectory", "personal brand", "thought leader",
+  // register: a colleague speaking, not a campaign
+  "mountain", "wealth of", "treasure", "goldmine", "release it", "your network",
+  "put it out there", "get it out there", "share it with the world",
 ];
 
 const OPENINGS = [
