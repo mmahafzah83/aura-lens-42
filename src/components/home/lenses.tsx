@@ -1,10 +1,9 @@
 import React from "react";
 import {
-  MONO, Card, Kicker, Body, Muted, MachineDot, PublishPill, TextButton, GhostButton,
+  MONO, Card, Kicker, Body, Muted, GhostButton,
   SectionTitle, titleCaseFacet,
 } from "./homeAtoms";
 import type { HomeFacts } from "@/hooks/useHomeAddress";
-import type { HomeLedger } from "@/hooks/useHomeAddress";
 
 /**
  * The three lenses. Each renders only from facts and real rows — nothing
@@ -12,112 +11,9 @@ import type { HomeLedger } from "@/hooks/useHomeAddress";
  */
 
 // ── THE RECORD ─────────────────────────────────────────────────────────────
-
-export interface RecordLensProps {
-  facts: HomeFacts | null;
-  ledger: HomeLedger;
-  draftDismissed: boolean;
-  onPublishDraft: (id: string) => void;
-  onDismissDraft: (id: string) => void;
-}
-
-const Counter: React.FC<{ n: number | string; label: string; blue?: boolean }> = ({ n, label, blue }) => (
-  <div style={{ display: "grid", gap: 4 }}>
-    <span style={{ ...MONO, fontSize: 20, fontWeight: 700, color: blue ? "var(--act)" : "var(--text-primary)" }}>{n}</span>
-    <span style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.4 }}>{label}</span>
-  </div>
-);
-
-export const RecordLens: React.FC<RecordLensProps> = ({ facts, ledger, draftDismissed, onPublishDraft, onDismissDraft }) => {
-  const draft = facts?.last_night?.newest_signal_draft ?? null;
-
-  return (
-    <Card style={{ padding: 0 }}>
-      <div style={{ padding: "18px 20px", borderBlockEnd: "1px solid var(--rule-divider)" }}>
-        <Kicker>The record</Kicker>
-        <SectionTitle>What has actually happened</SectionTitle>
-        <Muted>Every line below is an event, not a projection.</Muted>
-      </div>
-
-      <div style={{ padding: "18px 20px" }}>
-        <div style={{ position: "relative", paddingInlineStart: 20 }}>
-          {/* the spine */}
-          <span aria-hidden style={{
-            position: "absolute", insetInlineStart: 3, insetBlockStart: 6, insetBlockEnd: 6,
-            inlineSize: 1, background: "var(--rule-outer)",
-          }} />
-
-          {/* today */}
-          <div style={{ position: "relative", marginBlockEnd: 20 }}>
-            <span aria-hidden style={{
-              position: "absolute", insetInlineStart: -20, insetBlockStart: 5, inlineSize: 7, blockSize: 7,
-              borderRadius: 999, background: "var(--act)",
-            }} />
-            <div style={{ ...MONO, fontSize: 10.5, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-              Today
-            </div>
-            {draft && !draftDismissed ? (
-              <div style={{
-                marginBlockStart: 10, border: "1px solid var(--rule-outer)", borderRadius: 12,
-                padding: 14, background: "var(--surface-page)",
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBlockEnd: 8 }}>
-                  <MachineDot />
-                  <span style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>Aura wrote this overnight from your themes.</span>
-                </div>
-                <p style={{ margin: "0 0 12px", fontSize: 14.5, lineHeight: 1.55, color: "var(--text-primary)", fontWeight: 600 }}>
-                  {draft.title || "A draft is waiting"}
-                </p>
-                <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-                  <PublishPill onClick={() => onPublishDraft(draft.id)}>Publish</PublishPill>
-                  <TextButton onClick={() => onDismissDraft(draft.id)}>Not this one</TextButton>
-                </div>
-              </div>
-            ) : (
-              <Body style={{ marginBlockStart: 8 }}>
-                {draft && draftDismissed
-                  ? "You passed on last night's draft. It stays in Composer."
-                  : "No draft came out of last night."}
-              </Body>
-            )}
-          </div>
-
-          {/* the days */}
-          {ledger.days.length === 0 && !ledger.loading && (
-            <Muted>Nothing recorded in the last two weeks.</Muted>
-          )}
-          {ledger.days.map((d) => (
-            <div key={d.key} style={{ position: "relative", marginBlockEnd: 16 }}>
-              <span aria-hidden style={{
-                position: "absolute", insetInlineStart: -20, insetBlockStart: 6, inlineSize: 7, blockSize: 7,
-                borderRadius: 999, background: d.machine ? "var(--machine)" : "var(--border-strong)",
-              }} />
-              <div style={{ ...MONO, fontSize: 10.5, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-                {d.label}
-              </div>
-              <div style={{ display: "grid", gap: 4, marginBlockStart: 6 }}>
-                {d.lines.map((l, i) => (
-                  <p key={i} style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: "var(--text-secondary)" }}>{l}</p>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div style={{
-        borderBlockStart: "1px solid var(--rule-divider)", padding: "16px 20px",
-        display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))",
-      }}>
-        <Counter n={ledger.daysOnRecord ?? "—"} label="days on the record" />
-        <Counter n={ledger.fragments} label="fragments held" />
-        <Counter n={facts?.signals_active ?? 0} label="themes formed" />
-        <Counter n={`${ledger.nightsProduced}/7`} label="nights that produced something" />
-        <Counter n={facts?.published_total ?? 0} label="entries published" blue />
-      </div>
-    </Card>
-  );
-};
+// Lives in its own file — the Record has its own data layer and zoom model.
+export { RecordLens } from "./RecordLens";
+export type { RecordLensProps, RecordZoom } from "./RecordLens";
 
 // ── THE ROOM ───────────────────────────────────────────────────────────────
 

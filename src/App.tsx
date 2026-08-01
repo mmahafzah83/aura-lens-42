@@ -19,6 +19,7 @@ import Trust from "./pages/Trust";
 import Guide from "./pages/Guide";
 import Settings from "./pages/Settings";
 import PasswordGate from "./components/PasswordGate";
+import RecordProof from "./pages/__RecordProof";
 import AdminGate from "./components/AdminGate";
 import { ThemeProvider } from "./components/ThemeProvider";
 import CookieConsent from "./components/CookieConsent";
@@ -104,6 +105,7 @@ const App = () => (
             <Route path="/" element={<LandingV2 />} />
             <Route path="/v2" element={<LandingV2 />} />
             <Route path="/home" element={<PasswordGate><Dashboard /></PasswordGate>} />
+            <Route path="/__recproof" element={<RecordProof />} />
             <Route path="/dashboard" element={<PasswordGate><Dashboard /></PasswordGate>} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/login" element={<Auth />} />
