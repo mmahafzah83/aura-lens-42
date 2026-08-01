@@ -48,8 +48,21 @@ function percentileFor(avg: number): string {
   return "a unique profile";
 }
 
-const BRONZE = "var(--action)";
-const TRACK = "var(--hairline)";
+/* System-B "Studio Plate" palette — hard-coded on purpose. This component
+   renders inside the light .ob card, which does not define System-A vars. */
+const ACT = "#0670C4";        // action / blue
+const TRACK = "#E2E7EE";      // rule / track
+const INK = "#0F1519";        // ink
+const INK_SOFT = "#5B6673";   // ink soft
+const INK_FAINT = "#98A2AE";  // ink faint
+const SERIF = "'Instrument Serif', Georgia, serif";
+const MONO = "'IBM Plex Mono', ui-monospace, Menlo, monospace";
+
+const pillBtn: React.CSSProperties = {
+  minHeight: 48, padding: "0 24px", minWidth: 140,
+  background: INK, color: "#FFFFFF",
+  borderRadius: 999, fontSize: 14, fontWeight: 600,
+};
 
 interface CustomSliderProps {
   value: number;
@@ -65,7 +78,7 @@ const CustomSlider = ({ value, onChange, onChangeEnd }: CustomSliderProps) => {
       <div style={{ position: "relative", height: 4, borderRadius: 999, background: TRACK }}>
         <div style={{
           position: "absolute", left: 0, top: 0, bottom: 0,
-          width: `${value}%`, background: BRONZE, borderRadius: 999,
+          width: `${value}%`, background: ACT, borderRadius: 999,
         }} />
         {/* Thumb */}
         <div
@@ -75,7 +88,7 @@ const CustomSlider = ({ value, onChange, onChangeEnd }: CustomSliderProps) => {
             top: "50%",
             transform: "translate(-50%, -50%)",
             width: 20, height: 20, borderRadius: "50%",
-            background: BRONZE,
+            background: ACT,
             boxShadow: dragging ? "0 2px 12px rgba(0,0,0,0.4)" : "0 2px 8px rgba(0,0,0,0.3)",
             transition: "box-shadow 150ms ease-out",
             pointerEvents: "none",
