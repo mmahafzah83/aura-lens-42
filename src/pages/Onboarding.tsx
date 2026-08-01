@@ -413,14 +413,14 @@ const Onboarding = () => {
           .limit(1);
         const rid = reg?.[0]?.id;
         if (rid) {
-          const { data: frags, count } = await (supabase.from("evidence_fragments" as any) as any)
-            .select("title", { count: "exact" })
+          const { data: frags } = await (supabase.from("evidence_fragments" as any) as any)
+            .select("title")
             .eq("source_registry_id", rid)
             .order("confidence", { ascending: false })
-            .limit(3);
+            .limit(5);
           if (frags && frags.length > 0) {
             setCfFragments(frags as { title: string }[]);
-            setCfCount(count ?? frags.length);
+            setCfCount(frags.length);
             setCfPhase("result");
             return;
           }
