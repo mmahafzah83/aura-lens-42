@@ -380,18 +380,59 @@ function chooseMoves(f: Facts): Move[] {
 
 // ──────────────────────────────────────────────────────── PHASE C: ADDRESS
 
-const SYSTEM_PROMPT = `You are Aura, this person's chief of staff. You have read their LinkedIn, their assessment, their calibration and everything they have captured. Speak as someone who knows them, to a senior professional. Never as a chatbot, never as a coach.
+const BANNED = [
+  "the record shows", "the record indicates", "this suggests", "high volume of",
+  "is not being converted", "your next step is", "it is worth noting", "in terms of",
+  "leveraging", "massive", "disconnect", "trapped", "crucial", "vital", "stark",
+  "glaring", "significant", "robust", "journey", "unlock", "elevate", "empower",
+  "seamless", "authority", "trajectory", "personal brand", "thought leader",
+];
 
-Use only the numbers in the facts object. Never compute, estimate, round differently, or invent one. If a fact is absent, say nothing about it.
+const OPENINGS = [
+  "Open with a direct observation about where they actually stand.",
+  "Open with a contrast — what is true on one side, what is true on the other.",
+  "Open with a consequence: because of something they did or did not do, this follows.",
+  "Open by naming something they did that you noticed.",
+];
 
-Write 4 to 6 sentences. Second person. Open with the sharpest true observation, not a greeting.
-Name what they have done before naming what is missing.
+const SYSTEM_PROMPT = `You are Aura, this person's chief of staff. You have read their LinkedIn, their assessment, their calibration and everything they have captured. You write them one short address each morning. You sound like a sharp colleague who has already done the reading — never a coach, never a chatbot, never an analyst.
 
-State the situation plainly. Do not editorialise, dramatise, or diagnose. Report the position the way a chief of staff reports it: this is where things stand, this is what has not happened yet, this is the next step. No verdicts on the person. No metaphors about systems or traps.
+SUBSTANCE
+Say one thing. An address is not a recap of the file. Pick the single most useful observation and build four to six sentences around it.
+Three numbers maximum in the whole address, and a number earns its place only if it changes what they do today. Counts of fragments or sources change nothing; leave them out.
+Name a specific thing, never a category. A named signal beats a count of signals.
+Build on tension, not description. The shape is: here is what you have, here is what is missing, here is the decision. The tension is given to you in the input — use it, do not hunt for another.
+Close on the decision, not the task. Your final sentence must point at the one move given to you as THE MOVE, by name, and at no other action.
 
-No exclamation marks. No emoji. No praise of Aura. Do not describe features.
-Banned words: authority (as a noun), trajectory, personal brand, thought leader, leverage (as a verb), utilize, facilitate, unlock, elevate, empower, seamless, journey, unleash, supercharge, massive, disconnect, trapped, crucial, vital, stark, glaring.
-If captures_total is 0, do not imply they have done work. Be warm, honest, and point at the single first step.
+SOUND
+Vary sentence length deliberately. At least one sentence must be under eight words. No sentence over thirty-two words.
+Second person, plain verbs, sentence case.
+Never open with "You have". Never open with their name alone. Follow the opening instruction you are given.
+No praise, no reassurance, no description of Aura's features, no exclamation marks, no emoji.
+
+NUMBERS
+Use only integers that appear in the facts object. Never compute, round differently, or invent one.
+
+BANNED OUTRIGHT — these are analyst tells and must never appear:
+${BANNED.join(" · ")}
+
+EXAMPLES OF THE TARGET REGISTER (do not copy their content, only their sound):
+
+Heavy reader who never publishes:
+"You read more than anyone else on Aura this quarter. You've said almost none of it.
+The signal on AI experimentation moving to enterprise value has been building since May, and there's still nothing of yours in public on it.
+There's a draft from Tuesday that says it well enough.
+Four days is long enough to think about it. Publish it, or kill it."
+
+Day three, one capture:
+"Three days in, and you've given me one thing to read.
+Enough to start, not enough to be right about you. The theme I pulled from it — governance inside transformation programmes — may or may not be yours. I'd want two or three more before I'd stake a post on it.
+Send me something today. Anything you'd have forwarded to a colleague."
+
+Day one, nothing captured:
+"I've read your LinkedIn and your assessment, so I know the shape of you: transformation, governance, the Gulf.
+What I don't have is what you're reading right now — and that's the part that makes a post sound like you, rather than about you.
+One link. That's the whole ask today."
 
 Return plain markdown. No headings, no bullet lists, no preamble.`;
 
@@ -413,61 +454,204 @@ function integersIn(text: string): number[] {
   return [...text.matchAll(/\d+/g)].map((m) => parseInt(m[0], 10));
 }
 
-function fallbackAddress(f: Facts, lens: string): string {
-  if (f.captures_total === 0) {
-    return `Nothing has reached Aura yet, so there is nothing to read back to you. The fastest way to change that is one link — something you read this week and had an opinion about. Aura reads it tonight and shows you what it found. Everything else here starts from that first piece.`;
+function sentencesOf(text: string): string[] {
+  return text
+    .replace(/[#*_`>]/g, " ")
+    .split(/(?<=[.?!])\s+/)
+    .map((s) => s.trim())
+    .filter((s) => s.replace(/[^A-Za-z0-9]/g, "").length > 0);
+}
+
+const wordsIn = (s: string) => s.split(/\s+/).filter(Boolean).length;
+
+/** Day-of-year, so the opening rotates and never repeats within a week. */
+function dayOfYear(d: Date): number {
+  return Math.floor((d.getTime() - Date.UTC(d.getUTCFullYear(), 0, 0)) / 86400000);
+}
+function hashString(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+function openingFor(userId: string, d: Date): string {
+  return OPENINGS[(dayOfYear(d) + hashString(userId)) % OPENINGS.length];
+}
+
+/** The tension is computed here, never by the model. */
+function computeTension(f: Facts, move: Move | null): { strength: string; gap: string } {
+  if ((f.captures_total ?? 0) === 0) {
+    return {
+      strength: "Their profile and assessment already describe the shape of their work.",
+      gap: "Nothing they are reading has reached Aura, so nothing here sounds like them yet.",
+    };
   }
-  const bits: string[] = [];
-  bits.push(`You have ${f.captures_total} captures on file, ${f.captures_this_week} of them this week.`);
-  if (f.signals_active > 0) bits.push(`Aura is holding ${f.signals_active} active signals drawn from them.`);
-  if (f.drafts_total > 0) bits.push(`${f.drafts_total} drafts are waiting on you.`);
-  bits.push(`You have published ${f.published_total} posts, ${f.published_through_aura} of them through Aura.`);
-  if (lens === "record" && f.days_since_last_visit != null) {
-    bits.push(`It has been ${f.days_since_last_visit} days since you last looked.`);
+  if ((f.drafts_total ?? 0) > 0 && (f.published_through_aura ?? 0) === 0) {
+    return {
+      strength: "They have read enough for Aura to write from, and a draft is already written.",
+      gap: "Nothing of theirs has gone out in public through Aura.",
+    };
   }
-  return bits.join(" ");
+  if (f.top_signal && (f.signals_never_published_from ?? 0) > 0) {
+    return {
+      strength: `Their strongest theme is "${f.top_signal.title}", and the evidence behind it keeps arriving.`,
+      gap: "They have never published anything from it.",
+    };
+  }
+  if (!f.captured_today) {
+    return {
+      strength: "There is a working record here and Aura reads it every night.",
+      gap: "Nothing new has come in today, so tonight there is less to read.",
+    };
+  }
+  return {
+    strength: "The record is current and the themes are holding.",
+    gap: `The next thing missing is ${move?.title ?? "a decision on what to say next"}.`,
+  };
+}
+
+/** Keywords the closing sentence must touch for it to be about moves[0]. */
+function moveAnchors(move: Move): string[] {
+  const stop = new Set(["the", "a", "an", "into", "from", "your", "one", "that", "with", "this", "post", "turn", "on"]);
+  const fromTitle = move.title.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/)
+    .filter((w) => w.length > 3 && !stop.has(w));
+  const byKey: Record<string, string[]> = {
+    publish_draft: ["publish", "draft", "post", "kill"],
+    draft_from_signal: ["draft", "write", "post", "signal", "compose"],
+    capture: ["capture", "send", "link", "read", "give"],
+    connect_linkedin: ["connect", "linkedin"],
+    fill_facet: ["capture", "fill", "evidence", "blank"],
+  };
+  return [...new Set([...(byKey[move.key] ?? []), ...fromTitle])];
+}
+
+type Gate = { pass: boolean; reasons: string[] };
+
+function gateAddress(text: string, facts: Facts, move: Move | null, memberName: string | null): Gate {
+  const reasons: string[] = [];
+  const lower = text.toLowerCase();
+  const sents = sentencesOf(text);
+
+  const ints = integersIn(text);
+  if (ints.length > 3) reasons.push(`too many numbers (${ints.length})`);
+
+  const allowed = new Set<number>();
+  collectIntegers(facts, allowed);
+  const unknown = ints.filter((n) => !allowed.has(n));
+  if (unknown.length) reasons.push(`number not in facts: ${unknown.join(", ")}`);
+
+  if (!sents.some((s) => wordsIn(s) < 8)) reasons.push("no sentence under 8 words");
+  const longest = sents.find((s) => wordsIn(s) > 32);
+  if (longest) reasons.push("a sentence exceeds 32 words");
+  if (sents.length < 3 || sents.length > 7) reasons.push(`sentence count is ${sents.length}`);
+
+  const opener = sents[0] ?? "";
+  if (/^you have\b/i.test(opener.trim())) reasons.push('opens with "You have"');
+  if (memberName && new RegExp(`^${memberName.split(/\s+/)[0]}\\b[,.\\s]`, "i").test(opener.trim())) {
+    reasons.push("opens with the member's name");
+  }
+
+  const hits = BANNED.filter((b) => lower.includes(b));
+  if (hits.length) reasons.push(`banned term: ${hits.join(", ")}`);
+
+  if (move) {
+    const closing = (sents[sents.length - 1] ?? "").toLowerCase();
+    const tail = sents.slice(-2).join(" ").toLowerCase();
+    const anchors = moveAnchors(move);
+    if (!anchors.some((a) => closing.includes(a) || tail.includes(a))) {
+      reasons.push("closing sentence does not name the move");
+    }
+  }
+
+  return { pass: reasons.length === 0, reasons };
+}
+
+function fallbackAddress(f: Facts, move: Move | null): string {
+  if ((f.captures_total ?? 0) === 0) {
+    return `I know the shape of your work from your profile and your assessment. What I do not have is what you are reading right now, and that is the part that makes a post sound like you. One link is enough. Send me something today.`;
+  }
+  const t = computeTension(f, move);
+  const close = move
+    ? `${move.title}. That is the decision today.`
+    : `Capture one thing you read today.`;
+  return `${t.strength} ${t.gap} Nothing else on this page matters more this morning. ${close}`;
+}
+
+async function callModel(apiKey: string, userMsg: string): Promise<string> {
+  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: MODEL,
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: userMsg },
+      ],
+    }),
+  });
+  if (!res.ok) throw new Error(`gateway ${res.status}`);
+  const data = await res.json();
+  return String(data?.choices?.[0]?.message?.content ?? "").trim();
 }
 
 async function writeAddress(
   apiKey: string, facts: Facts, lens: string, lensReason: string,
-): Promise<{ text: string; model: string | null; rejected: boolean }> {
+  move: Move | null, userId: string, memberName: string | null,
+): Promise<{ text: string; model: string | null; quality: Record<string, unknown> }> {
   const lensBrief = {
     record: "Focus on what they have built and what the record now shows.",
     room: "Focus on the conversation happening now and where they should stand in it.",
     shape: "Focus on the shape of what they are building and the next piece it needs.",
   }[lens] ?? "";
 
-  const userMsg = `Lens: ${lens}. ${lensBrief}\nReason for the lens (already shown to them, do not repeat it verbatim): ${lensReason}\n\nFacts:\n${JSON.stringify(facts, null, 2)}`;
+  const tension = computeTension(facts, move);
 
-  let text = "";
-  try {
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
+  const base = `Lens: ${lens}. ${lensBrief}
+Reason for the lens (already shown to them, do not repeat it verbatim): ${lensReason}
+
+Opening instruction for today: ${openingFor(userId, new Date())}
+
+Tension (use this, do not look for another):
+- strength: ${tension.strength}
+- gap: ${tension.gap}
+
+THE MOVE — your closing sentence must point at this and nothing else:
+${move ? `${move.title} — ${move.what}` : "No move is available; close on capturing one thing they read today."}
+
+Facts:
+${JSON.stringify(facts, null, 2)}`;
+
+  const attempts: Array<{ attempt: number; reasons: string[] }> = [];
+
+  for (let i = 0; i < 2; i++) {
+    let text = "";
+    try {
+      text = await callModel(apiKey, i === 0 ? base : `${base}
+
+Your previous attempt was rejected for: ${attempts[0].reasons.join("; ")}. Write it again and fix every one of those.`);
+    } catch (e) {
+      attempts.push({ attempt: i + 1, reasons: [`gateway error: ${(e as Error)?.message}`] });
+      break;
+    }
+    if (!text) {
+      attempts.push({ attempt: i + 1, reasons: ["empty response"] });
+      continue;
+    }
+    const g = gateAddress(text, facts, move, memberName);
+    if (g.pass) {
+      return {
+        text,
         model: MODEL,
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: userMsg },
-        ],
-      }),
-    });
-    if (!res.ok) throw new Error(`gateway ${res.status}`);
-    const data = await res.json();
-    text = String(data?.choices?.[0]?.message?.content ?? "").trim();
-  } catch (_) {
-    return { text: fallbackAddress(facts, lens), model: null, rejected: true };
+        quality: { passed: true, attempt: i + 1, failed_attempts: attempts, checked_at: new Date().toISOString() },
+      };
+    }
+    attempts.push({ attempt: i + 1, reasons: g.reasons });
   }
 
-  if (!text) return { text: fallbackAddress(facts, lens), model: null, rejected: true };
-
-  const allowed = new Set<number>();
-  collectIntegers(facts, allowed);
-  const bad = integersIn(text).filter((n) => !allowed.has(n));
-  if (bad.length > 0) {
-    return { text: fallbackAddress(facts, lens), model: null, rejected: true };
-  }
-  return { text, model: MODEL, rejected: false };
+  return {
+    text: fallbackAddress(facts, move),
+    model: null,
+    quality: { passed: false, fallback: true, failed_attempts: attempts, checked_at: new Date().toISOString() },
+  };
 }
 
 // ───────────────────────────────────────────────────────────── GENERATION
@@ -486,15 +670,22 @@ async function generateFor(
   const facts = await gatherFacts(admin, userId);
   const { lens, lens_reason } = chooseLens(facts);
   const moves = chooseMoves(facts);
-  const { text, model, rejected } = await writeAddress(apiKey, facts, lens, lens_reason);
+  const { data: prof } = await admin.from("diagnostic_profiles")
+    .select("first_name").eq("user_id", userId).maybeSingle();
+  const memberName = (prof as any)?.first_name ?? null;
+
+  const { text, model, quality } = await writeAddress(
+    apiKey, facts, lens, lens_reason, moves[0] ?? null, userId, memberName,
+  );
+  const rejected = quality.passed !== true;
 
   if (rejected) {
     await logEfError(admin, {
       function_name: FN,
-      error: "model address rejected — integer not present in facts, fallback stored",
+      error: "address failed the quality gate twice — deterministic fallback stored",
       severity: "info",
       user_id: userId,
-      context: { lens },
+      context: { lens, quality },
     });
   }
 
@@ -507,6 +698,7 @@ async function generateFor(
     moves,
     facts,
     model,
+    quality,
     generated_at: new Date().toISOString(),
   }, { onConflict: "user_id,address_date" }).select().maybeSingle();
   if (error) throw error;
