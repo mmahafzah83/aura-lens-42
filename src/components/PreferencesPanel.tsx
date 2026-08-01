@@ -298,7 +298,7 @@ export default function PreferencesPanel({
       <SectionHeader>Privacy</SectionHeader>
       <ToggleRow
         label="Contribute to shared learning"
-        description="Let Aura learn anonymous, aggregated patterns from how members across your field use it — never your content, identity, or drafts. Turn off anytime."
+        description="Not running yet. When it starts, Aura will learn anonymous, aggregated patterns from how members across your field use it — never your content, identity, or drafts. This is your permission for that day. Turn it off anytime."
         on={sharedLearningOn}
         onChange={updateSharedLearning}
       />
