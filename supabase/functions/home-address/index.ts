@@ -389,6 +389,10 @@ const BANNED = [
   // register: a colleague speaking, not a campaign
   "mountain", "wealth of", "treasure", "goldmine", "release it", "your network",
   "put it out there", "get it out there", "share it with the world",
+  // register: copywriter tells — state the situation, do not sell it
+  "tipping point", "hoarding", "hoard", "the evidence is mounting", "at this stage",
+  "put it into the world", "into the world", "picking up speed", "backlog of signals",
+  "looks like hesitation", "the world is waiting", "your moment",
 ];
 
 const OPENINGS = [
@@ -408,17 +412,22 @@ Build on tension, not description. The shape is: here is what you have, here is 
 Close on the decision, not the task. Your final sentence must point at the one move given to you as THE MOVE, by name, and at no other action — but say it in your own words. Never repeat the move's wording verbatim, and never phrase it as a list of steps.
 
 SOUND
-Vary sentence length deliberately. At least one sentence must be under eight words. No sentence over thirty-two words.
+Vary sentence length deliberately. At least one sentence must be five words or fewer — a short, flat statement on its own line of thought. No sentence over thirty-two words. This short sentence is not optional; write it before you write anything else.
 Second person, plain verbs, sentence case.
 Never open with "You have". Never open with their name alone. Follow the opening instruction you are given.
 No praise, no reassurance, no description of Aura's features, no exclamation marks, no emoji.
 
-EVIDENCE AND NUMBERS
-You are given a short list of EVIDENCE PHRASES. They are written for you in code and they are correct.
-Choose two or three of them and write the connective tissue around them. You may reorder a phrase or change its punctuation and capitalisation, and you may fold it into a longer sentence.
-You may not change any number inside a phrase, combine numbers from different phrases, or state any figure that is not inside a phrase you were given.
-You do not have the underlying data. Do not guess at it. If something is not in a phrase, do not say it.
-The phrases are your evidence, not your skeleton — the address must still read as one continuous thought, not a list of clauses.
+REGISTER
+State the situation. Do not dramatise it. A chief of staff does not tell a director that silence looks like hesitation; he says what is true and lets the director draw the conclusion. No accusation, no urgency theatre, no motivational close.
+
+EVIDENCE — VERBATIM ONLY
+You are given a short list of EVIDENCE PHRASES. They are written in code, they are correct, and each one already carries its own scope.
+You must reproduce two or three of them VERBATIM — character for character, word for word. Do not reword, shorten, expand, pluralise or re-order the words inside a phrase.
+You may place a phrase anywhere in a sentence and punctuate around it, and you may capitalise its first letter if it starts a sentence.
+You may NOT attach a qualifier that narrows a phrase's subject — never add "on this theme", "on this topic", "on that signal", "on this transformation" or anything like it to a phrase that does not already contain it.
+Every other word you write is connective tissue and must make no factual claim of its own: no figures, no dates, no counts, no claims about what they did or did not do beyond what a phrase already states.
+You do not have the underlying data. If it is not in a phrase, you do not know it.
+The address must still read as one continuous thought, not a list of clauses.
 
 BANNED OUTRIGHT — these are analyst tells and must never appear:
 ${BANNED.join(" · ")}
@@ -519,11 +528,11 @@ function buildFactPhrases(f: Facts, move: Move | null): string[] {
     const title = shortTitle(ts.title);
     const month = monthOf(ts.first_fragment_date);
     const n = ts.fragment_count ?? 0;
-    if (n > 0 && month) p.push(`${n} fragments behind "${title}" since ${month}`);
-    else if (n > 0) p.push(`${n} fragments behind "${title}"`);
+    if (n > 0 && month) p.push(`${n} fragments on "${title}" since ${month}`);
+    else if (n > 0) p.push(`${n} fragments on "${title}"`);
     else p.push(`a theme called "${title}"`);
     if (ts.gained_last_7d) p.push(`new evidence for "${title}" arrived this week`);
-    if (ts.velocity === "accelerating") p.push(`"${title}" is picking up speed`);
+    if (ts.velocity === "accelerating") p.push(`"${title}" is growing faster than anything else in your record`);
   }
 
   if ((f.signals_never_published_from ?? 0) > 0 && ts?.title) {
@@ -534,7 +543,7 @@ function buildFactPhrases(f: Facts, move: Move | null): string[] {
 
   const nsd = f.last_night?.newest_signal_draft;
   if (nsd?.title) p.push(`a draft already written on "${String(nsd.title).slice(0, 70)}"`);
-  else if ((f.drafts_total ?? 0) > 0) p.push(`${small(f.drafts_total)} drafts waiting, unpublished`);
+  else if ((f.drafts_total ?? 0) > 0) p.push(`${small(f.drafts_total)} drafts written and unpublished`);
 
   const lastPub = daysAgoFrom(f.last_publish_attempt);
   if (lastPub != null) {
@@ -545,21 +554,21 @@ function buildFactPhrases(f: Facts, move: Move | null): string[] {
 
   const w = f.weeks_with_a_capture_last_4;
   if (typeof w === "number" && w < 4) {
-    p.push(`${small(4 - w)} of your last four weeks had no capture`);
+    p.push(`${small(4 - w)} of your last four weeks had no capture of any kind`);
   } else if (w === 4) {
-    p.push(`you captured something in each of the last four weeks`);
+    p.push(`you captured something, on one subject or another, in each of the last four weeks`);
   }
 
-  if (!f.captured_today && (f.captures_total ?? 0) > 0) p.push(`nothing new has come in today`);
+  if (!f.captured_today && (f.captures_total ?? 0) > 0) p.push(`nothing new of any kind has come in today`);
   if ((f.captures_total ?? 0) === 0) p.push(`nothing captured yet, so nothing here sounds like you`);
-  else if ((f.captures_this_week ?? 0) > 0) p.push(`${small(f.captures_this_week)} things captured this week`);
+  else if ((f.captures_this_week ?? 0) > 0) p.push(`${small(f.captures_this_week)} things captured this week across all subjects`);
 
   if ((f.facets_dormant?.length ?? 0) > 0) {
-    p.push(`your ${String(f.facets_dormant[0]).replace(/_/g, " ")} has never registered`);
+    p.push(`your ${String(f.facets_dormant[0]).replace(/_/g, " ")} has never registered in anything you have published`);
   }
 
   const sr = f.last_night?.sources_read ?? 0;
-  if (sr > 0) p.push(`Aura read ${small(sr)} ${sr === 1 ? "source" : "sources"} overnight`);
+  if (sr > 0) p.push(`Aura read ${small(sr)} ${sr === 1 ? "source" : "sources"} for you overnight`);
 
   if (f.tier && f.next_band_name && f.points_to_next_band != null) {
     p.push(`${f.points_to_next_band} points between ${f.tier} and ${f.next_band_name}`);
@@ -567,7 +576,7 @@ function buildFactPhrases(f: Facts, move: Move | null): string[] {
 
   if (f.linkedin_connected === false) p.push(`LinkedIn is not connected, so nothing comes back from your posts`);
 
-  if (move?.key === "capture" && (f.captures_total ?? 0) > 0) p.push(`one link would be enough for tonight`);
+  if (move?.key === "capture" && (f.captures_total ?? 0) > 0) p.push(`one link tonight would be enough to work from`);
 
   return p.slice(0, 10);
 }
@@ -651,10 +660,44 @@ function moveAnchors(move: Move): string[] {
 
 type Gate = { pass: boolean; reasons: string[] };
 
+/** Whitespace/quote-normalised, case-insensitive — "verbatim" up to typography. */
+function canon(s: string): string {
+  return s
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+/** Which of the supplied phrases appear verbatim inside the address. */
+function phraseMatches(text: string, phrases: string[]): { matched: string[]; missed: string[] } {
+  const hay = canon(text);
+  const matched: string[] = [];
+  const missed: string[] = [];
+  for (const p of phrases) (hay.includes(canon(p)) ? matched : missed).push(p);
+  return { matched, missed };
+}
+
+// A qualifier the model bolts on to narrow a phrase's subject. Allowed only in
+// the exact number of times the supplied phrases already contain it.
+const SCOPE_QUALIFIER =
+  /\b(?:on|about|around|regarding) (?:this|that)(?: specific| very| particular| one)? (?:theme|topic|signal|subject|transformation|shift|thesis|idea|story|point|front|area|angle|thread|matter|question|issue|market|space|move|piece)\b/gi;
+
 function gateAddress(text: string, phrases: string[], move: Move | null, memberName: string | null): Gate {
   const reasons: string[] = [];
   const lower = text.toLowerCase();
   const sents = sentencesOf(text);
+
+  // The claims must be ours, not the model's. Verbatim or nothing.
+  const { matched } = phraseMatches(text, phrases);
+  if (phrases.length >= 2 && matched.length < 2) {
+    reasons.push(`only ${matched.length} supplied phrase(s) reproduced verbatim (need 2)`);
+  }
+
+  const qualUsed = (text.match(SCOPE_QUALIFIER) ?? []).length;
+  const qualAllowed = matched.reduce((n, p) => n + (p.match(SCOPE_QUALIFIER) ?? []).length, 0);
+  if (qualUsed > qualAllowed) reasons.push("added a qualifier that narrows a phrase's subject");
 
   const ints = integersIn(text);
   if (ints.length > 3) reasons.push(`too many numbers (${ints.length})`);
@@ -693,21 +736,33 @@ function gateAddress(text: string, phrases: string[], move: Move | null, memberN
   return { pass: reasons.length === 0, reasons };
 }
 
-function fallbackAddress(f: Facts, move: Move | null): string {
+const upperFirst = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/** The plain sentence that names today's decision, in the member's language. */
+function decisionSentence(move: Move | null): string {
+  if (!move) return `The decision today is simple: send me one thing you read.`;
+  const byKey: Record<string, string> = {
+    publish_draft: `The decision today is whether that draft goes out or gets killed.`,
+    draft_from_signal: `The decision today is whether you write from it.`,
+    capture: `The decision today is to send me one thing you read.`,
+    connect_linkedin: `The decision today is to connect LinkedIn so your posts report back.`,
+    fill_facet: `The decision today is which of those blanks you fill first.`,
+  };
+  return byKey[move.key] ?? `The decision today is ${move.title.charAt(0).toLowerCase()}${move.title.slice(1)}.`;
+}
+
+/**
+ * Read by a member on the days the model misbehaves, so it is assembled from
+ * the same construction-correct phrases the model would have been given.
+ */
+function fallbackAddress(f: Facts, move: Move | null, phrases: string[]): string {
   if ((f.captures_total ?? 0) === 0) {
     return `I know the shape of your work from your profile and your assessment. What I do not have is what you are reading right now, and that is the part that makes a post sound like you. One link is enough. Send me something today.`;
   }
-  const t = computeTension(f, move);
-  const close = move
-    ? `${move.title}. That is the decision today.`
-    : `Capture one thing you read today.`;
-  // computeTension is written in the third person for the model; the fallback
-  // is read by the member, so it is spoken directly.
-  const second = (s: string) =>
-    s.replace(/\bThey have\b/g, "You have").replace(/\bThey\b/g, "You")
-     .replace(/\btheir\b/g, "your").replace(/\bTheir\b/g, "Your")
-     .replace(/\bthem\b/g, "you");
-  return `${second(t.strength)} ${second(t.gap)} Nothing else this morning matters more. ${close}`;
+  const [a, b] = phrases;
+  if (!a) return decisionSentence(move);
+  if (!b) return `${upperFirst(a)}. ${decisionSentence(move)}`;
+  return `${upperFirst(a)}. ${upperFirst(b)}. ${decisionSentence(move)}`;
 }
 
 async function callModel(apiKey: string, userMsg: string): Promise<string> {
@@ -730,7 +785,7 @@ async function callModel(apiKey: string, userMsg: string): Promise<string> {
 async function writeAddress(
   apiKey: string, facts: Facts, lens: string, lensReason: string,
   move: Move | null, userId: string, memberName: string | null,
-): Promise<{ text: string; model: string | null; quality: Record<string, unknown> }> {
+): Promise<{ text: string; model: string | null; quality: Record<string, unknown>; phrases: string[] }> {
   const lensBrief = {
     record: "Focus on what they have built and what the record now shows.",
     room: "Focus on the conversation happening now and where they should stand in it.",
@@ -752,7 +807,7 @@ Tension (use this, do not look for another):
 THE MOVE — your closing sentence must point at this and nothing else:
 ${move ? `${move.title} — ${move.what}` : "No move is available; close on capturing one thing they read today."}
 
-EVIDENCE PHRASES — pick two or three. These are the only facts and the only figures you have:
+EVIDENCE PHRASES — reproduce two or three of these VERBATIM, character for character. They are the only facts and the only figures you have, and each already carries its own scope:
 ${phrases.map((s) => `- ${s}`).join("\n") || "- (no evidence yet)"}`;
 
   const attempts: Array<{ attempt: number; reasons: string[] }> = [];
@@ -762,7 +817,8 @@ ${phrases.map((s) => `- ${s}`).join("\n") || "- (no evidence yet)"}`;
     try {
       text = await callModel(apiKey, i === 0 ? base : `${base}
 
-Your previous attempt was rejected for: ${attempts[0].reasons.join("; ")}. Write it again and fix every one of those.`);
+Your previous attempt was rejected for: ${attempts[0].reasons.join("; ")}. Write it again and fix every one of those.
+Hard requirements on this second attempt: copy at least two of the evidence phrases above letter for letter, and include one sentence of five words or fewer.`);
     } catch (e) {
       attempts.push({ attempt: i + 1, reasons: [`gateway error: ${(e as Error)?.message}`] });
       break;
@@ -773,12 +829,15 @@ Your previous attempt was rejected for: ${attempts[0].reasons.join("; ")}. Write
     }
     const g = gateAddress(text, phrases, move, memberName);
     if (g.pass) {
+      const { matched, missed } = phraseMatches(text, phrases);
       return {
         text,
         model: MODEL,
+        phrases,
         quality: {
           passed: true, attempt: i + 1, failed_attempts: attempts,
-          phrases, checked_at: new Date().toISOString(),
+          phrases, phrases_matched: matched, phrases_unused: missed,
+          checked_at: new Date().toISOString(),
         },
       };
     }
@@ -786,8 +845,9 @@ Your previous attempt was rejected for: ${attempts[0].reasons.join("; ")}. Write
   }
 
   return {
-    text: fallbackAddress(facts, move),
+    text: fallbackAddress(facts, move, phrases),
     model: null,
+    phrases,
     quality: { passed: false, fallback: true, failed_attempts: attempts, phrases, checked_at: new Date().toISOString() },
   };
 }
@@ -812,7 +872,7 @@ async function generateFor(
     .select("first_name").eq("user_id", userId).maybeSingle();
   const memberName = (prof as any)?.first_name ?? null;
 
-  const { text, model, quality } = await writeAddress(
+  const { text, model, quality, phrases } = await writeAddress(
     apiKey, facts, lens, lens_reason, moves[0] ?? null, userId, memberName,
   );
   const rejected = quality.passed !== true;
@@ -834,7 +894,8 @@ async function generateFor(
     lens_reason,
     address_md: text,
     moves,
-    facts,
+    // The evidence trail must be auditable after the fact, not only in memory.
+    facts: { ...facts, fact_phrases: phrases },
     model,
     quality,
     generated_at: new Date().toISOString(),
