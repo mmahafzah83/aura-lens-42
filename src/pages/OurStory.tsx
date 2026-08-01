@@ -231,9 +231,7 @@ const OurStory = () => {
 
         <p style={body}>
           Your work stays yours. The system is built so your private content is never placed in front of us — you can read exactly how in{" "}
-          <Link to="/trust" style={{ color: "var(--lk)", fontWeight: 500, transition: "color 150ms ease" }}>
-            Security &amp; Trust
-          </Link>
+          <Link to="/trust" style={{ color: "#0670C4", fontWeight: 500, transition: "color 150ms ease" }}>
             Security &amp; Trust
           </Link>
           .
