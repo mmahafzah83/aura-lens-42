@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import {
-  renderEmail, heading, paragraph, note, ACCENT, BODY, INK_FAINT,
+  renderEmail, heading, paragraph, note,
 } from "../_shared/emailTemplate.ts";
 
 const corsHeaders = {
@@ -82,6 +82,7 @@ serve(async (req) => {
     const body = `
       ${heading("Reset your password")}
       ${paragraph(`Hi ${name}, we received a request to reset the password on your Aura account. Use the button below to set a new one.`)}
+      ${note("The link expires in 24 hours. If you didn't ask for this, you can ignore this email.")}
     `;
     const html = renderEmail({
       preheader: "Reset your Aura password",
