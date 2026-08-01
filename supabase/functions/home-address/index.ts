@@ -402,7 +402,7 @@ Say one thing. An address is not a recap of the file. Pick the single most usefu
 Three numbers maximum in the whole address, and a number earns its place only if it changes what they do today. Counts of fragments or sources change nothing; leave them out.
 Name a specific thing, never a category. A named signal beats a count of signals.
 Build on tension, not description. The shape is: here is what you have, here is what is missing, here is the decision. The tension is given to you in the input — use it, do not hunt for another.
-Close on the decision, not the task. Your final sentence must point at the one move given to you as THE MOVE, by name, and at no other action.
+Close on the decision, not the task. Your final sentence must point at the one move given to you as THE MOVE, by name, and at no other action — but say it in your own words. Never repeat the move's wording verbatim, and never phrase it as a list of steps.
 
 SOUND
 Vary sentence length deliberately. At least one sentence must be under eight words. No sentence over thirty-two words.
