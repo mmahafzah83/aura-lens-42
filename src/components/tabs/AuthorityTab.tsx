@@ -4412,17 +4412,13 @@ const LibraryTab = ({ onSwitchToCreate, onOpenDraft, onWriteFromPost }: { onSwit
         // Split rows by authorship using explicit predicates. Anything that
         // doesn't match either known bucket falls into a visible "Unclassified"
         // group instead of being silently absorbed — surfaces DB drift fast.
-        const AURA_AUTHORSHIP     = new Set(["aura_drafted", "aura_assisted"]);
-        const EARLIER_AUTHORSHIP  = new Set(["user_written", "unknown"]);
-        // P4: filter published rows by the shared library controls first,
-        // then split by authorship. Sort (Recent | Top performing) is applied
-        // per-group so counts of the two sortable groups stay accurate.
+        // Grouping follows the canonical provenance view, never `authorship`:
+        // made with Aura (written here, sent from here or not) vs found on
+        // LinkedIn. The two groups are exhaustive, so nothing is unclassified.
         const filteredPublished = publishedPosts.filter(p => matchesFilters(p, "published"));
-        const auraRows          = applyPublishedSort(filteredPublished.filter((p: any) => AURA_AUTHORSHIP.has(p.authorship)));
-        const earlierRows       = applyPublishedSort(filteredPublished.filter((p: any) => EARLIER_AUTHORSHIP.has(p.authorship)));
-        const unclassifiedRows  = filteredPublished.filter(
-          (p: any) => !AURA_AUTHORSHIP.has(p.authorship) && !EARLIER_AUTHORSHIP.has(p.authorship),
-        );
+        const auraRows          = applyPublishedSort(filteredPublished.filter((p: any) => isMadeWithAura(p)));
+        const earlierRows       = applyPublishedSort(filteredPublished.filter((p: any) => !isMadeWithAura(p)));
+        const unclassifiedRows: typeof filteredPublished = [];
 
         // Small inline sort toggle placed in the Aura / Earlier group headers.
         const SortToggle = () => (
