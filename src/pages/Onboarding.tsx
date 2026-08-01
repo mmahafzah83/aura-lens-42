@@ -932,12 +932,12 @@ const Onboarding = () => {
       <>
         {eyebrow("Before your assessment")}
         {heading("Connect LinkedIn — so Aura reads your real presence before it assesses you.")}
-        <p className="mb-4" style={{ fontSize: 15, lineHeight: 1.7, color: "var(--ink-2)" }}>
+        <p className="mb-4" style={{ fontSize: 15, lineHeight: 1.7, color: "#5B6673" }}>
           Aura will read your post analytics automatically — impressions, engagement, follower trends. Read-only, never posts without you.
         </p>
         <div
           className="flex items-center gap-2 mb-6 text-xs"
-          style={{ color: "var(--ink-3)", padding: "10px 12px", border: "1px solid var(--rule)", borderRadius: 8, background: "var(--paper-2)" }}
+          style={{ color: "#98A2AE", padding: "10px 12px", border: "1px solid #E2E7EE", borderRadius: 8, background: "#F2F5F9" }}
         >
           <Linkedin className="w-3.5 h-3.5 shrink-0" style={{ color: "#0670C4" }} />
           <span>Read-only access · Aura will never post on your behalf.</span>
@@ -964,13 +964,13 @@ const Onboarding = () => {
           style={{
             fontSize: 18,
             fontFamily: "var(--font-mono)",
-            color: "var(--ink)",
+            color: "#0F1519",
             wordBreak: "break-all",
           }}
         >
           {userEmail || "—"}
         </p>
-        <p className="mb-6" style={{ fontSize: 15, lineHeight: 1.7, color: "var(--ink-2)" }}>
+        <p className="mb-6" style={{ fontSize: 15, lineHeight: 1.7, color: "#5B6673" }}>
           Is this your email address?
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -980,7 +980,7 @@ const Onboarding = () => {
             onClick={confirmIdentityNo}
             disabled={signingOut}
             className="w-full text-sm py-3 transition-colors"
-            style={{ color: "var(--ink-2)", background: "transparent" }}
+            style={{ color: "#5B6673", background: "transparent" }}
           >
             {signingOut ? "Signing out…" : "No, this isn't mine"}
           </button>
@@ -1082,7 +1082,7 @@ const Onboarding = () => {
       <>
         {eyebrow("Welcome to the inner circle.")}
         {heading("Set your password.")}
-        <p className="mb-6" style={{ fontSize: 15, lineHeight: 1.7, color: "var(--ink-2)" }}>
+        <p className="mb-6" style={{ fontSize: 15, lineHeight: 1.7, color: "#5B6673" }}>
           You're one of the first 50 people in Aura. Set your password to get started.
         </p>
         <div style={{ position: "relative", marginBottom: 12 }}>
@@ -1100,7 +1100,7 @@ const Onboarding = () => {
             style={{
               position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
               background: "transparent", border: 0, cursor: "pointer",
-              color: "var(--ink-2)", padding: 4,
+              color: "#5B6673", padding: 4,
             }}
           >{pwdShow ? <EyeOff size={16} /> : <Eye size={16} />}</button>
         </div>
@@ -1121,11 +1121,11 @@ const Onboarding = () => {
             return (
               <div key={key} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
                 {ok ? (
-                  <Check size={14} style={{ color: "var(--pos)" }} />
+                  <Check size={14} style={{ color: "#12805C" }} />
                 ) : (
-                  <span style={{ width: 14, height: 14, borderRadius: 999, border: "1.5px solid var(--rule)", display: "inline-block" }} />
+                  <span style={{ width: 14, height: 14, borderRadius: 999, border: "1.5px solid #E2E7EE", display: "inline-block" }} />
                 )}
-                <span style={{ color: ok ? "var(--ink)" : "var(--ink-2)" }}>{label}</span>
+                <span style={{ color: ok ? "#0F1519" : "#5B6673" }}>{label}</span>
               </div>
             );
           })}
@@ -1147,10 +1147,10 @@ const Onboarding = () => {
         <>
           {eyebrow("1 of 5")}
           {heading("Paste one thing you read this week.")}
-          <p className="mb-3" style={{ fontSize: 15, lineHeight: 1.7, color: "var(--ink)" }}>
+          <p className="mb-3" style={{ fontSize: 15, lineHeight: 1.7, color: "#0F1519" }}>
             Anything — an article, a report, a LinkedIn post you disagreed with. Aura reads it now and shows you something about it before you answer a single question.
           </p>
-          <p className="mb-5" style={{ fontSize: 13, lineHeight: 1.6, color: "var(--ink-2)" }}>
+          <p className="mb-5" style={{ fontSize: 13, lineHeight: 1.6, color: "#5B6673" }}>
             We ask for this first because every other question is easier once there's something on the table.
           </p>
           <input
@@ -1163,7 +1163,7 @@ const Onboarding = () => {
           />
           {primaryBtn("Add it", () => void cfSubmit(), { loading: cfBusy, disabled: !cfValue.trim() })}
           {ghostLink("I'll paste one later", cfSkip)}
-          <p style={{ fontSize: 12, lineHeight: 1.6, color: "var(--ink-2)", marginTop: 8 }}>
+          <p style={{ fontSize: 12, lineHeight: 1.6, color: "#5B6673", marginTop: 8 }}>
             One tap. Nothing is published, now or ever, without you pressing publish.
           </p>
         </>,
@@ -1174,7 +1174,7 @@ const Onboarding = () => {
         <>
           {eyebrow("1 of 5")}
           {heading("Aura is reading it.")}
-          <div className="flex items-center gap-2" style={{ color: "var(--ink-2)", fontSize: 14 }}>
+          <div className="flex items-center gap-2" style={{ color: "#5B6673", fontSize: 14 }}>
             <Loader2 className="w-4 h-4 animate-spin" style={{ color: "#0670C4" }} />
             Pulling out the claims worth keeping.
           </div>
@@ -1188,7 +1188,7 @@ const Onboarding = () => {
           {cfTimedOut || cfFragments.length === 0 ? (
             <>
               {heading("Aura is still reading it.")}
-              <p className="mb-6" style={{ fontSize: 15, lineHeight: 1.7, color: "var(--ink-2)" }}>
+              <p className="mb-6" style={{ fontSize: 15, lineHeight: 1.7, color: "#5B6673" }}>
                 This one is taking a little longer. Nothing is lost — what Aura finds will be waiting for you on your Home.
               </p>
             </>
@@ -1202,7 +1202,7 @@ const Onboarding = () => {
                     style={{
                       fontSize: 14,
                       lineHeight: 1.6,
-                      color: "var(--ink)",
+                      color: "#0F1519",
                       borderLeft: "2px solid #0670C4",
                       paddingLeft: 12,
                       marginBottom: 10,
@@ -1227,10 +1227,10 @@ const Onboarding = () => {
         {eyebrow("Private Beta")}
         {heading(displayName ? `Welcome, ${displayName}.` : "Welcome.")}
         <div className="text-center space-y-2 mb-10">
-          <p style={{ fontSize: 16, color: "var(--ink)", lineHeight: 1.6 }}>
+          <p style={{ fontSize: 16, color: "#0F1519", lineHeight: 1.6 }}>
             You were invited because someone believes the market should see what you know.
           </p>
-          <p style={{ fontSize: 14, color: "var(--ink-2)", lineHeight: 1.6 }}>
+          <p style={{ fontSize: 14, color: "#5B6673", lineHeight: 1.6 }}>
             Aura makes that happen — in about 7 minutes.
           </p>
         </div>
@@ -1247,10 +1247,10 @@ const Onboarding = () => {
         {!showForm ? (
           <>
             {heading("Start with what LinkedIn already knows")}
-            <p className="mb-4" style={{ fontSize: 15, lineHeight: 1.7, color: "var(--ink-2)" }}>
+            <p className="mb-4" style={{ fontSize: 15, lineHeight: 1.7, color: "#5B6673" }}>
               Paste your headline and About section. Aura reads it in seconds and calibrates everything around your level, sector, and voice.
             </p>
-            <label className="text-xs font-medium block mb-1" style={{ color: "var(--ink-2)" }}>
+            <label className="text-xs font-medium block mb-1" style={{ color: "#5B6673" }}>
               Your LinkedIn headline + About section
             </label>
             <div className="relative mb-2">
@@ -1261,7 +1261,7 @@ const Onboarding = () => {
                   ...inputStyle,
                   resize: "vertical",
                   minHeight: 120,
-                  ...(readingLi ? { backgroundImage: "linear-gradient(90deg, transparent, color-mix(in srgb, var(--action) 8%, transparent), transparent)", backgroundSize: "200% 100%", animation: "auraShimmer 1.6s linear infinite" } : {}),
+                  ...(readingLi ? { backgroundImage: "linear-gradient(90deg, transparent, color-mix(in srgb, #0670C4 8%, transparent), transparent)", backgroundSize: "200% 100%", animation: "auraShimmer 1.6s linear infinite" } : {}),
                 } as React.CSSProperties}
                 placeholder={describeMode
                   ? `e.g., "I'm a Director at a leading firm in the GCC, focused on strategy and digital change. 10+ years across the region."`
@@ -1278,7 +1278,7 @@ const Onboarding = () => {
                   type="button"
                   onClick={() => setHelperOpen((v) => !v)}
                   className="text-xs hover:opacity-80 transition-opacity inline-flex items-center gap-1.5"
-                  style={{ color: "var(--ink-2)" }}
+                  style={{ color: "#5B6673" }}
                 >
                   <Lightbulb className="w-4 h-4" /> What should I paste? {helperOpen ? "▾" : "▸"}
                 </button>
@@ -1288,12 +1288,12 @@ const Onboarding = () => {
                     style={{
                       fontSize: 14,
                       lineHeight: 1.625,
-                      color: "var(--ink-2)",
-                      background: "var(--paper-2)",
+                      color: "#5B6673",
+                      background: "#F2F5F9",
                       borderLeft: "3px solid #0670C4",
                     }}
                   >
-                    <p className="mb-2" style={{ color: "var(--ink)" }}>
+                    <p className="mb-2" style={{ color: "#0F1519" }}>
                       Go to your LinkedIn profile and copy two things:
                     </p>
                     <p className="mb-1">
@@ -1313,9 +1313,9 @@ const Onboarding = () => {
                 )}
               </div>
             )}
-            {linkedinError && <p className="text-xs mb-3" style={{ color: "var(--neg)" }}>{linkedinError}</p>}
+            {linkedinError && <p className="text-xs mb-3" style={{ color: "#C0392B" }}>{linkedinError}</p>}
             {readingLi && (
-              <div className="mb-4 text-sm" style={{ color: "var(--ink-2)" }}>
+              <div className="mb-4 text-sm" style={{ color: "#5B6673" }}>
                 {liStatusIdx === 0 && "Reading what you pasted..."}
                 {liStatusIdx === 1 && "Extracting your expertise..."}
                 {liStatusIdx === 2 && "Almost there..."}
@@ -1324,10 +1324,10 @@ const Onboarding = () => {
             <div className="mt-4 mb-4">
               {primaryBtn(<>Calibrate my profile <ArrowRight className="w-4 h-4" /></>, handleReadLinkedIn, { loading: readingLi, disabled: linkedinText.trim().length < 10 })}
             </div>
-            <div className="flex items-center gap-3 my-4" style={{ color: "var(--ink-2)", fontSize: 12 }}>
-              <div className="flex-1 h-px" style={{ background: "var(--rule)" }} />
+            <div className="flex items-center gap-3 my-4" style={{ color: "#5B6673", fontSize: 12 }}>
+              <div className="flex-1 h-px" style={{ background: "#E2E7EE" }} />
               <span>or</span>
-              <div className="flex-1 h-px" style={{ background: "var(--rule)" }} />
+              <div className="flex-1 h-px" style={{ background: "#E2E7EE" }} />
             </div>
             {ghostLink("Fill manually instead", () => { setShowForm(true); setUsedLinkedIn(false); })}
             <div className="mt-2">
@@ -1341,29 +1341,29 @@ const Onboarding = () => {
           <>
             {heading("Confirm your profile")}
             {usedLinkedIn && (
-              <p className="mb-5 flex items-center gap-2 text-sm" style={{ color: "var(--pos)" }}>
+              <p className="mb-5 flex items-center gap-2 text-sm" style={{ color: "#12805C" }}>
                 <Check className="w-4 h-4" /> Profile read successfully — edit anything that's not quite right.
               </p>
             )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
               <div>
-                <label className="text-xs font-medium block mb-1" style={{ color: "var(--ink-2)" }}>First name</label>
+                <label className="text-xs font-medium block mb-1" style={{ color: "#5B6673" }}>First name</label>
                 <input className={inputCls} style={inputStyle} value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="e.g. Sarah" />
               </div>
               <div>
-                <label className="text-xs font-medium block mb-1" style={{ color: "var(--ink-2)" }}>Last name</label>
+                <label className="text-xs font-medium block mb-1" style={{ color: "#5B6673" }}>Last name</label>
                 <input className={inputCls} style={inputStyle} value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="e.g. Al-Rashid" />
               </div>
               <div>
-                <label className="text-xs font-medium block mb-1" style={{ color: "var(--ink-2)" }}>Firm</label>
+                <label className="text-xs font-medium block mb-1" style={{ color: "#5B6673" }}>Firm</label>
                 <input className={inputCls} style={inputStyle} value={firm} onChange={(e) => setFirm(e.target.value)} placeholder="e.g. Your company" />
               </div>
               <div>
-                <label className="text-xs font-medium block mb-1" style={{ color: "var(--ink-2)" }}>Level / title</label>
+                <label className="text-xs font-medium block mb-1" style={{ color: "#5B6673" }}>Level / title</label>
                 <input className={inputCls} style={inputStyle} value={level} onChange={(e) => setLevel(e.target.value)} placeholder="Director" />
               </div>
               <div>
-                <label className="text-xs font-medium block mb-1" style={{ color: "var(--ink-2)" }}>Sector focus</label>
+                <label className="text-xs font-medium block mb-1" style={{ color: "#5B6673" }}>Sector focus</label>
                 <select className={inputCls} style={inputStyle} value={sectorFocus} onChange={(e) => setSectorFocus(e.target.value)}>
                   <option value="">Select…</option>
                   {SECTORS.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -1378,20 +1378,20 @@ const Onboarding = () => {
               />
             </div>
             <div className="mb-3">
-              <label className="text-xs font-medium block mb-1" style={{ color: "var(--ink-2)" }}>Core practice</label>
+              <label className="text-xs font-medium block mb-1" style={{ color: "#5B6673" }}>Core practice</label>
               <input className={inputCls} style={inputStyle} value={corePractice} onChange={(e) => setCorePractice(e.target.value)} placeholder="e.g. Strategy, Operations, Technology" />
             </div>
             <div className="mb-5">
-              <label className="text-xs font-medium block mb-1" style={{ color: "var(--ink-2)" }}>My 3-year ambition</label>
+              <label className="text-xs font-medium block mb-1" style={{ color: "#5B6673" }}>My 3-year ambition</label>
               <input className={inputCls} style={inputStyle} value={northStar} onChange={(e) => setNorthStar(e.target.value)} placeholder="This one's yours — what are you building toward?" />
             </div>
             <label
               className="flex items-start gap-3 mb-5 cursor-pointer select-none"
               style={{
                 padding: "12px 14px",
-                border: "1px solid var(--rule)",
+                border: "1px solid #E2E7EE",
                 borderRadius: 10,
-                background: "var(--paper-2)",
+                background: "#F2F5F9",
               }}
             >
               <input
@@ -1400,14 +1400,14 @@ const Onboarding = () => {
                 onChange={(e) => { setSharedLearningConsent(e.target.checked); setConsentTouched(true); }}
                 style={{ marginTop: 3, width: 16, height: 16, accentColor: "#0670C4" }}
               />
-              <span style={{ fontSize: 13, lineHeight: 1.55, color: "var(--ink)" }}>
+              <span style={{ fontSize: 13, lineHeight: 1.55, color: "#0F1519" }}>
                 Help shape Aura for leaders in your field. With your permission, Aura learns anonymous, aggregated patterns from how members like you use it — never your content, drafts, or identity. You can change this anytime in Settings.
               </span>
             </label>
             {consentTouched && !sharedLearningConsent && (
               <div style={{ margin: "-8px 0 20px", padding: "14px 16px",
-                border: "1px solid var(--rule)", borderRadius: 10, background: "var(--paper-2)" }}>
-                <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--ink)", margin: 0 }}>
+                border: "1px solid #E2E7EE", borderRadius: 10, background: "#F2F5F9" }}>
+                <p style={{ fontSize: 13, lineHeight: 1.6, color: "#0F1519", margin: 0 }}>
                   <strong>No problem — you keep every feature.</strong><br />
                   This never touches your content, drafts, or identity. Only anonymous patterns across your field.<br />
                   With it on, you help sharpen how Aura serves leaders in your field — the same room you're
@@ -1421,7 +1421,7 @@ const Onboarding = () => {
                   </button>
                   <button type="button" onClick={() => setConsentTouched(false)}
                     style={{ flex: 1, height: 40, borderRadius: 8, fontSize: 13, fontWeight: 500,
-                      background: "transparent", color: "var(--ink-2)", border: "1px solid var(--rule)", cursor: "pointer" }}>
+                      background: "transparent", color: "#5B6673", border: "1px solid #E2E7EE", cursor: "pointer" }}>
                     Leave it off
                   </button>
                 </div>
@@ -1444,10 +1444,10 @@ const Onboarding = () => {
         <>
           {eyebrow("Step 4 of 4 — Your first capture")}
           {heading("First capture complete.")}
-          <p className="mb-3" style={{ fontSize: 15, lineHeight: 1.7, color: "var(--ink)" }}>
+          <p className="mb-3" style={{ fontSize: 15, lineHeight: 1.7, color: "#0F1519" }}>
             Aura is already detecting strategic patterns. After 3-5 more articles, your first signal emerges.
           </p>
-          <p className="mb-6 italic" style={{ fontSize: 13, lineHeight: 1.7, color: "var(--ink-2)" }}>
+          <p className="mb-6 italic" style={{ fontSize: 13, lineHeight: 1.7, color: "#5B6673" }}>
             That's the muscle most leaders never build — Aura builds it for you.
           </p>
           <motion.div
@@ -1457,10 +1457,10 @@ const Onboarding = () => {
             className="text-center py-6"
           >
             <span className="text-2xl inline-block" style={{ color: "#0670C4" }}>✦</span>
-            <h3 className="font-display text-lg mt-3" style={{ color: "var(--ink)" }}>
+            <h3 className="font-display text-lg mt-3" style={{ color: "#0F1519" }}>
               {capturedTitle || "Your first intelligence capture"}
             </h3>
-            <p className="text-sm mt-1" style={{ color: "var(--ink-3)" }}>
+            <p className="text-sm mt-1" style={{ color: "#98A2AE" }}>
               Aura is building your first signal.
             </p>
           </motion.div>
@@ -1475,7 +1475,7 @@ const Onboarding = () => {
         {stillSearching ? (
           <>
             {heading("Finding something relevant in your sector...")}
-            <div className="flex items-center gap-3 py-4" style={{ color: "var(--ink-2)" }}>
+            <div className="flex items-center gap-3 py-4" style={{ color: "#5B6673" }}>
               <Loader2 className="w-4 h-4 animate-spin" />
               <span className="text-sm">Aura is searching trusted sources...</span>
             </div>
@@ -1484,7 +1484,7 @@ const Onboarding = () => {
               <button
                 onClick={() => goHome()}
                 className="underline-offset-2 hover:underline"
-                style={{ background: "transparent", color: "var(--ink-3)", fontSize: 12 }}
+                style={{ background: "transparent", color: "#98A2AE", fontSize: 12 }}
               >
                 I'll capture later
               </button>
@@ -1495,21 +1495,21 @@ const Onboarding = () => {
             {heading("Aura found something in your sector.")}
             <div
               className="rounded-xl p-4 mb-5 mt-2"
-              style={{ border: "1px solid var(--rule)", background: "var(--paper-2)" }}
+              style={{ border: "1px solid #E2E7EE", background: "#F2F5F9" }}
             >
               <div className="flex items-start gap-3 mb-2">
                 <FileText className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#0670C4" }} />
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium text-sm mb-1" style={{ color: "var(--ink)" }}>{foundArticle.title}</p>
-                  <p className="text-xs" style={{ color: "var(--ink-2)" }}>{foundArticle.source || (() => { try { return new URL(foundArticle.url).hostname; } catch { return ""; } })()}</p>
+                  <p className="font-medium text-sm mb-1" style={{ color: "#0F1519" }}>{foundArticle.title}</p>
+                  <p className="text-xs" style={{ color: "#5B6673" }}>{foundArticle.source || (() => { try { return new URL(foundArticle.url).hostname; } catch { return ""; } })()}</p>
                 </div>
               </div>
               {foundArticle.summary && (
-                <p className="text-sm italic mb-3" style={{ color: "var(--ink-2)", lineHeight: 1.5 }}>
+                <p className="text-sm italic mb-3" style={{ color: "#5B6673", lineHeight: 1.5 }}>
                   "{foundArticle.summary}"
                 </p>
               )}
-              <p className="text-xs mb-3" style={{ color: "var(--ink-3)", lineHeight: 1.6 }}>
+              <p className="text-xs mb-3" style={{ color: "#98A2AE", lineHeight: 1.6 }}>
                 This is how your first signal starts. One capture now — Aura does the rest.
               </p>
               {primaryBtn(
@@ -1522,13 +1522,13 @@ const Onboarding = () => {
                 { loading: capturing }
               )}
             </div>
-            <div className="my-4 text-xs text-center" style={{ color: "var(--ink-2)" }}>Or paste your own URL:</div>
+            <div className="my-4 text-xs text-center" style={{ color: "#5B6673" }}>Or paste your own URL:</div>
             <ArticleManualPaste url={manualUrl} setUrl={setManualUrl} onSave={() => captureArticle(manualUrl)} loading={capturing} inputCls={inputCls} inputStyle={inputStyle} compact />
             <div className="mt-4 text-center">
               <button
                 onClick={() => goHome()}
                 className="underline-offset-2 hover:underline"
-                style={{ background: "transparent", color: "var(--ink-3)", fontSize: 12 }}
+                style={{ background: "transparent", color: "#98A2AE", fontSize: 12 }}
               >
                 I'll capture later
               </button>
@@ -1537,7 +1537,7 @@ const Onboarding = () => {
         ) : (
           <>
             {heading("Capture the article that's on your mind right now.")}
-            <p className="mb-5" style={{ fontSize: 15, lineHeight: 1.7, color: "var(--ink-2)" }}>
+            <p className="mb-5" style={{ fontSize: 15, lineHeight: 1.7, color: "#5B6673" }}>
               The one you read at 11pm and thought 'this changes things'. Aura will turn it into your first signal.
             </p>
             <ArticleManualPaste url={manualUrl} setUrl={setManualUrl} onSave={() => captureArticle(manualUrl)} loading={capturing} inputCls={inputCls} inputStyle={inputStyle} />
@@ -1545,7 +1545,7 @@ const Onboarding = () => {
               <button
                 onClick={() => goHome()}
                 className="underline-offset-2 hover:underline"
-                style={{ background: "transparent", color: "var(--ink-3)", fontSize: 12 }}
+                style={{ background: "transparent", color: "#98A2AE", fontSize: 12 }}
               >
                 I'll capture later
               </button>
@@ -1618,7 +1618,7 @@ const Onboarding = () => {
         <>
           {eyebrow("Step 3 of 4 — How the market sees you")}
           {heading("Discover your market position.")}
-          <p className="mb-6" style={{ fontSize: 15, lineHeight: 1.7, color: "var(--ink-2)" }}>
+          <p className="mb-6" style={{ fontSize: 15, lineHeight: 1.7, color: "#5B6673" }}>
             This 5-minute assessment reveals how a CIO in your sector would describe you to a colleague. It shapes how Aura writes your content and positions your expertise.
           </p>
           {primaryBtn(<>Discover my market position → <ArrowRight className="w-4 h-4" /></>, () => setAssessmentOpen(true))}
