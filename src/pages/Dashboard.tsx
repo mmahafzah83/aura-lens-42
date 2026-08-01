@@ -999,6 +999,7 @@ const Dashboard = () => {
                   <HomeSpine
                     userId={userId}
                     onSwitchTab={(t) => switchTab(t as TabValue)}
+                    onOpenDraft={(d) => { setDraftPrefill(d as any); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                     onStartSignalPost={(p) => {
                       setSignalDraftPrefill({ ...p, sourceType: "signal", contentFormat: "post" } as any);
                       setActiveTab("authority");
