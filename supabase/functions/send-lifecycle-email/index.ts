@@ -146,7 +146,7 @@ function buildEmail(
     const top = topSignals[0];
     const topLine = top
       ? `<strong>${top.signal_title}</strong> leads at ${Math.round(top.confidence * 100)}%.`
-      : "No leading signal yet — a few more captures unlocks signal detection.";
+      : "No leading signal yet — a few more captures and signals start to form.";
     const fadingLine = fadingCount > 0
       ? `${fadingCount} signal${fadingCount === 1 ? "" : "s"} fading — they need fresh evidence.`
       : "No signals fading.";
