@@ -127,7 +127,10 @@ const RowLabel: React.FC<React.PropsWithChildren<{ id?: string }>> = ({ children
 
 const PublishedLine: React.FC<{ p: RecordPublished }> = ({ p }) => (
   <p style={{ margin: 0, display: "grid", gap: 2 }}>
-    <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--act)" }}>You published.</span>
+    <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+      <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--act)" }}>You published.</span>
+      <ProvenanceMark value={p.provenance} />
+    </span>
     <span style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.5, color: "var(--text-primary)" }}>
       {postTitle(p.title)}
     </span>
@@ -531,8 +534,9 @@ export const RecordLens: React.FC<RecordLensProps> = ({
         <Counter n={t.fragmentsTotal} label="fragments held" />
         <Counter n={t.themesTotal} label="themes formed" />
         <Counter n={`${nightsProduced}/7`} label="nights that produced something" />
-        <Counter n={t.publishedTotal} label="published in total" blue />
-        <Counter n={t.publishedThroughAura} label="published through Aura" blue />
+        <Counter n={t.publishedTotal} label="live on LinkedIn" blue />
+        <Counter n={t.publishedThroughAura} label="made with Aura" blue />
+        <Counter n={t.publishedSentFromAura} label="sent from Aura" blue />
       </div>
     </Card>
   );
