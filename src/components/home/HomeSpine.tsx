@@ -5,7 +5,7 @@ import { loadLayout, loadWidgetMetrics, DEFAULT_LAYOUT } from "@/components/widg
 import type { WidgetLayout, WidgetMetrics } from "@/components/widgets/widgetData";
 import AuraLogo from "@/components/brand/AuraLogo";
 import {
-  useHomeAddress, useHomeLedger, useReadChips,
+  useHomeAddress, useReadChips,
   type HomeLens, type HomeMove,
 } from "@/hooks/useHomeAddress";
 import { MONO, Kicker, Card, Body, Muted, ActButton, Skeleton } from "./homeAtoms";
@@ -74,7 +74,6 @@ const Prose: React.FC<{ md: string }> = ({ md }) => (
 export default function HomeSpine({ userId, onSwitchTab, onStartSignalPost, onOpenDraft }: HomeSpineProps) {
   const uid = userId ?? "anon";
   const address = useHomeAddress(userId);
-  const ledger = useHomeLedger(userId);
   const facts = address.facts;
   const chips = useReadChips(userId, facts);
 
@@ -228,9 +227,10 @@ export default function HomeSpine({ userId, onSwitchTab, onStartSignalPost, onOp
       if (empty) return null;
       return (
         <RecordLens
-          facts={facts} ledger={ledger} draftDismissed={draftDismissed}
+          facts={facts} userId={userId} draftDismissed={draftDismissed}
           onPublishDraft={(id) => { void publishDraft(id); }}
           onDismissDraft={dismissDraft}
+          onOpenSignals={() => onSwitchTab("intelligence")}
         />
       );
     }

@@ -4222,6 +4222,15 @@ export type Database = {
           claimed: number
         }[]
       }
+      home_record_themes: {
+        Args: { p_from: string; p_to: string; p_uid?: string }
+        Returns: {
+          created_at: string
+          id: string
+          title: string
+        }[]
+      }
+      home_record_timeline: { Args: { p_uid?: string }; Returns: Json }
       is_current_user_admin: { Args: never; Returns: boolean }
       momentum_funnel: {
         Args: never
