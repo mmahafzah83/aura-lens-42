@@ -785,7 +785,7 @@ async function callModel(apiKey: string, userMsg: string): Promise<string> {
 async function writeAddress(
   apiKey: string, facts: Facts, lens: string, lensReason: string,
   move: Move | null, userId: string, memberName: string | null,
-): Promise<{ text: string; model: string | null; quality: Record<string, unknown> }> {
+): Promise<{ text: string; model: string | null; quality: Record<string, unknown>; phrases: string[] }> {
   const lensBrief = {
     record: "Focus on what they have built and what the record now shows.",
     room: "Focus on the conversation happening now and where they should stand in it.",
@@ -807,7 +807,7 @@ Tension (use this, do not look for another):
 THE MOVE — your closing sentence must point at this and nothing else:
 ${move ? `${move.title} — ${move.what}` : "No move is available; close on capturing one thing they read today."}
 
-EVIDENCE PHRASES — pick two or three. These are the only facts and the only figures you have:
+EVIDENCE PHRASES — reproduce two or three of these VERBATIM, character for character. They are the only facts and the only figures you have, and each already carries its own scope:
 ${phrases.map((s) => `- ${s}`).join("\n") || "- (no evidence yet)"}`;
 
   const attempts: Array<{ attempt: number; reasons: string[] }> = [];
@@ -828,12 +828,15 @@ Your previous attempt was rejected for: ${attempts[0].reasons.join("; ")}. Write
     }
     const g = gateAddress(text, phrases, move, memberName);
     if (g.pass) {
+      const { matched, missed } = phraseMatches(text, phrases);
       return {
         text,
         model: MODEL,
+        phrases,
         quality: {
           passed: true, attempt: i + 1, failed_attempts: attempts,
-          phrases, checked_at: new Date().toISOString(),
+          phrases, phrases_matched: matched, phrases_unused: missed,
+          checked_at: new Date().toISOString(),
         },
       };
     }
@@ -843,6 +846,7 @@ Your previous attempt was rejected for: ${attempts[0].reasons.join("; ")}. Write
   return {
     text: fallbackAddress(facts, move, phrases),
     model: null,
+    phrases,
     quality: { passed: false, fallback: true, failed_attempts: attempts, phrases, checked_at: new Date().toISOString() },
   };
 }
@@ -867,7 +871,7 @@ async function generateFor(
     .select("first_name").eq("user_id", userId).maybeSingle();
   const memberName = (prof as any)?.first_name ?? null;
 
-  const { text, model, quality } = await writeAddress(
+  const { text, model, quality, phrases } = await writeAddress(
     apiKey, facts, lens, lens_reason, moves[0] ?? null, userId, memberName,
   );
   const rejected = quality.passed !== true;
@@ -889,7 +893,8 @@ async function generateFor(
     lens_reason,
     address_md: text,
     moves,
-    facts,
+    // The evidence trail must be auditable after the fact, not only in memory.
+    facts: { ...facts, fact_phrases: phrases },
     model,
     quality,
     generated_at: new Date().toISOString(),
