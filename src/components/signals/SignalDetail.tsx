@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, LayoutGrid } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ButtonGhost } from "@/components/systemb";
 import { SignalHero, type Signal } from "@/components/tabs/IntelligenceTab";
@@ -67,7 +67,17 @@ const SignalDetail: React.FC<Props> = ({ signalId, onBack, onOpenChat, onDraftTo
           That signal is no longer available.
         </div>
       ) : (
-        <SignalHero signal={signal} onDraft={draftFromSignal} onOpenChat={onOpenChat} />
+        <>
+          <SignalHero signal={signal} onDraft={draftFromSignal} onOpenChat={onOpenChat} />
+          <div style={{ marginTop: 12 }}>
+            <ButtonGhost
+              data-testid="signal-make-carousel"
+              onClick={() => { window.location.href = `/carousel-studio?signal=${signal.id}`; }}
+            >
+              <LayoutGrid size={13} />Make a carousel
+            </ButtonGhost>
+          </div>
+        </>
       )}
     </section>
   );
