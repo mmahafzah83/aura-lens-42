@@ -23,7 +23,7 @@ function nextFrame(): Promise<void> {
 
 /**
  * The preview shows the 1080x1350 slide through a CSS `scale()` wrapper so it
- * fits on screen. html2canvas resolves ancestor transforms, so a capture taken
+ * fits on screen. The rasteriser resolves ancestor transforms, so a capture taken
  * through that wrapper lands as a shrunken thumbnail in the corner of the
  * page. We therefore un-scale the wrappers for the duration of the capture and
  * put them back afterwards. This is a display-scale change on the SAME nodes —
@@ -69,7 +69,13 @@ export function maxFitStep(nodes: HTMLElement[]): number {
 async function captureAll(nodes: HTMLElement[]): Promise<HTMLCanvasElement[]> {
   if (nodes.length === 0) throw new Error("Nothing to export: no slides are mounted.");
 
-  const { default: html2canvas } = await import("html2canvas");
+  // Rasterise through the browser's own layout engine (SVG foreignObject),
+  // NOT through a re-implementation of CSS. html2canvas re-derives text
+  // baselines from font metrics and placed the Anton hero ~40px below its own
+  // highlight block — right on screen, wrong in the PDF. Same class of bug as
+  // the font-metrics race: never let the export resolve a metric differently
+  // from the preview.
+  const { toCanvas, getFontEmbedCSS } = await import("html-to-image");
 
   // Fonts first — measuring or rasterising against fallback metrics is the
   // exact trap the fit ladder already guards against, and it would hit the
@@ -83,15 +89,17 @@ async function captureAll(nodes: HTMLElement[]): Promise<HTMLCanvasElement[]> {
   const restore = unscaleForCapture(nodes);
   try {
     await nextFrame();
+    // Resolve the bundled faces to data: URLs once, then reuse for every
+    // slide: one deterministic font payload, no per-slide network work.
+    const fontEmbedCSS = await getFontEmbedCSS(nodes[0]);
     for (const node of nodes) {
       await inlineImages(node);
-      const canvas = await html2canvas(node, {
+      const canvas = await toCanvas(node, {
         width: CANVAS_W,
         height: CANVAS_H,
-        scale: 1,
-        backgroundColor: null, // the theme paints its own background
-        useCORS: true,
-        logging: false,
+        pixelRatio: 1,
+        cacheBust: false,
+        fontEmbedCSS,
       });
       if (canvas.width !== CANVAS_W || canvas.height !== CANVAS_H) {
         throw new Error(
