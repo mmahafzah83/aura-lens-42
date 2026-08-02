@@ -21,6 +21,36 @@ function nextFrame(): Promise<void> {
   return new Promise((r) => requestAnimationFrame(() => r()));
 }
 
+/**
+ * The preview shows the 1080x1350 slide through a CSS `scale()` wrapper so it
+ * fits on screen. html2canvas resolves ancestor transforms, so a capture taken
+ * through that wrapper lands as a shrunken thumbnail in the corner of the
+ * page. We therefore un-scale the wrappers for the duration of the capture and
+ * put them back afterwards. This is a display-scale change on the SAME nodes —
+ * no clone, no re-render, no second layout of the slide itself, which is
+ * already laid out at its true 1080x1350 in every case.
+ */
+function unscaleForCapture(nodes: HTMLElement[]): () => void {
+  const undo: Array<() => void> = [];
+  for (const node of nodes) {
+    const scaler = node.parentElement;
+    if (scaler?.hasAttribute("data-slide-scaler")) {
+      const prev = scaler.style.transform;
+      scaler.style.transform = "none";
+      undo.push(() => { scaler.style.transform = prev; });
+    }
+    const frame = scaler?.parentElement;
+    if (frame?.hasAttribute("data-slide-frame")) {
+      const prevW = frame.style.width;
+      const prevH = frame.style.height;
+      frame.style.width = `${CANVAS_W}px`;
+      frame.style.height = `${CANVAS_H}px`;
+      undo.push(() => { frame.style.width = prevW; frame.style.height = prevH; });
+    }
+  }
+  return () => undo.forEach((fn) => fn());
+}
+
 /** Slide nodes, in deck order, from a mounted container. */
 export function collectSlideNodes(container: HTMLElement): HTMLElement[] {
   return Array.from(container.querySelectorAll<HTMLElement>("[data-slide-root]")).sort(
@@ -50,24 +80,30 @@ async function captureAll(nodes: HTMLElement[]): Promise<HTMLCanvasElement[]> {
   await nextFrame();
 
   const canvases: HTMLCanvasElement[] = [];
-  for (const node of nodes) {
-    await inlineImages(node);
-    const canvas = await html2canvas(node, {
-      width: CANVAS_W,
-      height: CANVAS_H,
-      windowWidth: CANVAS_W,
-      windowHeight: CANVAS_H,
-      scale: 1,
-      backgroundColor: null, // the theme paints its own background
-      useCORS: true,
-      logging: false,
-    });
-    if (canvas.width !== CANVAS_W || canvas.height !== CANVAS_H) {
-      throw new Error(
-        `Slide ${node.dataset.slideRoot}: captured ${canvas.width}x${canvas.height}, expected ${CANVAS_W}x${CANVAS_H}.`,
-      );
+  const restore = unscaleForCapture(nodes);
+  try {
+    await nextFrame();
+    for (const node of nodes) {
+      await inlineImages(node);
+      const canvas = await html2canvas(node, {
+        width: CANVAS_W,
+        height: CANVAS_H,
+        windowWidth: CANVAS_W,
+        windowHeight: CANVAS_H,
+        scale: 1,
+        backgroundColor: null, // the theme paints its own background
+        useCORS: true,
+        logging: false,
+      });
+      if (canvas.width !== CANVAS_W || canvas.height !== CANVAS_H) {
+        throw new Error(
+          `Slide ${node.dataset.slideRoot}: captured ${canvas.width}x${canvas.height}, expected ${CANVAS_W}x${CANVAS_H}.`,
+        );
+      }
+      canvases.push(canvas);
     }
-    canvases.push(canvas);
+  } finally {
+    restore();
   }
   return canvases;
 }
