@@ -333,6 +333,8 @@ serve(withObserve("lifecycle-emails", async (req) => {
           "support@aura-intel.org",
           `[Aura] S4 pipeline alert — ${founderDigest.length} user(s) stuck`,
           emailShell({ preheader: "S4 pipeline alert", body, maxWidth: 560 }),
+          ADMIN_USER_ID,
+          digestKey,
         );
         await admin.from("lifecycle_email_log").insert({ user_id: ADMIN_USER_ID, message_key: digestKey });
       } catch (e: any) {

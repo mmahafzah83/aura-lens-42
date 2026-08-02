@@ -142,28 +142,63 @@ Deno.serve(async (req) => {
   const resendId = typeof data.email_id === "string"
     ? data.email_id
     : (typeof data.id === "string" ? data.id : null);
-  const userId = tagValue(payload, "user_id");
+  const taggedUserId = tagValue(payload, "user_id");
   const emailType = tagValue(payload, "email_type");
   const messageKey = tagValue(payload, "message_key");
+
+  // Recipient address, for the fallback lookup. `to` may be a string or array.
+  const rawTo = data.to;
+  const recipient = (Array.isArray(rawTo) ? rawTo[0] : rawTo);
+  const recipientEmail = typeof recipient === "string" ? recipient.trim().toLowerCase() : null;
   const clickUrl = ((data.click ?? {}) as Record<string, unknown>)?.link ??
     (typeof data.link === "string" ? data.link : null);
   const occurredAt = typeof payload.created_at === "string"
     ? payload.created_at
     : (typeof data.created_at === "string" ? data.created_at : new Date().toISOString());
 
-  const logFailure = async (message: string) => {
+  let userId: string | null = taggedUserId && UUID_RE.test(taggedUserId) ? taggedUserId : null;
+  let resolvedBy: "tag" | "email_fallback" = "tag";
+
+  const logIssue = async (message: string, severity: "high" | "info" = "high") => {
     await admin.from("ef_error_log").insert({
       function_name: "resend-webhook",
-      severity: "high",
+      severity,
       error_message: message,
-      user_id: userId && UUID_RE.test(userId) ? userId : null,
-      context: { resend_id: resendId, event: eventName, resend_type: resendType },
+      user_id: userId,
+      context: {
+        resend_id: resendId,
+        event: eventName,
+        resend_type: resendType,
+        recipient: recipientEmail,
+      },
     });
   };
 
   try {
-    if (!userId || !UUID_RE.test(userId)) {
-      await logFailure("Verified Resend event carried no usable user_id tag");
+    // The tag is missing or malformed — try to resolve the member by address
+    // before giving up. Events already in flight predate the tagging fix.
+    if (!userId && recipientEmail) {
+      try {
+        const { data: matched } = await admin.auth.admin.listUsers({ page: 1, perPage: 2 });
+        // listUsers cannot filter server-side in all versions; prefer a direct
+        // filtered lookup and fall back to scanning the first page.
+        const { data: byFilter } = await (admin.auth.admin as unknown as {
+          listUsers: (o: Record<string, unknown>) => Promise<{ data?: { users?: { id: string; email?: string }[] } }>;
+        }).listUsers({ page: 1, perPage: 2, filter: `email.eq.${recipientEmail}` });
+        const pool = (byFilter?.users ?? matched?.users ?? []) as { id: string; email?: string }[];
+        const hits = pool.filter((u) => (u.email || "").toLowerCase() === recipientEmail);
+        if (hits.length === 1) {
+          userId = hits[0].id;
+          resolvedBy = "email_fallback";
+        }
+      } catch (e) {
+        console.warn("resend-webhook: email fallback lookup failed", e instanceof Error ? e.message : String(e));
+      }
+    }
+
+    if (!userId) {
+      // An event for an address that is not a member is normal, not a fault.
+      await logIssue("Resend event for a non-member recipient", "info");
       return json({ ok: true, skipped: "no_user_id" });
     }
 
@@ -189,11 +224,12 @@ Deno.serve(async (req) => {
         click_url: clickUrl ?? null,
         resend_type: resendType,
         event_at: occurredAt,
+        resolved_by: resolvedBy,
       },
     });
-    if (error) await logFailure(`product_events insert failed: ${error.message}`);
+    if (error) await logIssue(`product_events insert failed: ${error.message}`, "high");
   } catch (e) {
-    await logFailure(e instanceof Error ? e.message : String(e));
+    await logIssue(e instanceof Error ? e.message : String(e), "high");
   }
 
   // Always 200 for verified events — a 500 makes Resend retry forever.
