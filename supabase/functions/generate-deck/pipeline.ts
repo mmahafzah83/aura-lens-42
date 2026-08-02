@@ -12,8 +12,100 @@ const MODEL = "google/gemini-3-flash-preview";
 export interface SignalContext {
   signal: Record<string, any>;
   evidence: Array<{ title: string; content: string }>;
+  /** Raw, unparaphrased member captures behind this signal. The real voice lives here. */
+  raw: Array<{ title: string; content: string; created_at?: string }>;
+  /** Every voice profile on file. `voice` is the one matched to the deck language. */
+  voices: Array<Record<string, any>>;
   voice: Record<string, any> | null;
   profile: Record<string, any>;
+}
+
+/* ------------------------------------------------------------------ */
+/* Voice DNA                                                           */
+/* ------------------------------------------------------------------ */
+
+function asArray(v: unknown): string[] {
+  if (Array.isArray(v)) return v.map((x) => String(x ?? "").trim()).filter(Boolean);
+  if (typeof v === "string" && v.trim()) return [v.trim()];
+  return [];
+}
+
+export function vocab(voice: Record<string, any> | null | undefined) {
+  const vp = (voice?.vocabulary_preferences ?? {}) as Record<string, any>;
+  return {
+    use: asArray(vp.use),
+    avoid: asArray(vp.avoid),
+    rhythm: typeof vp.rhythm === "string" ? vp.rhythm : asArray(vp.rhythm).join(" "),
+    notes: typeof vp.notes === "string" ? vp.notes : asArray(vp.notes).join(" "),
+  };
+}
+
+/**
+ * One voice DNA, matched to the deck language. is_primary is only a fallback:
+ * writing an English deck against an Arabic profile is how the member's voice
+ * was being lost in the first place.
+ */
+export function resolveVoice(
+  voices: Array<Record<string, any>>,
+  lang: "en" | "ar",
+): Record<string, any> | null {
+  if (!voices?.length) return null;
+  const matched = voices.find((v) => String(v.language ?? "").toLowerCase().startsWith(lang));
+  const primary = voices.find((v) => v.is_primary);
+  const chosen = matched ?? primary ?? voices[0];
+  console.log("[generate-deck] voice profile", JSON.stringify({
+    deck_lang: lang,
+    selected_language: chosen?.language ?? null,
+    matched_on_language: Boolean(matched),
+    is_primary: Boolean(chosen?.is_primary),
+    example_posts: Array.isArray(chosen?.example_posts) ? chosen.example_posts.length : 0,
+    use_phrases: vocab(chosen).use.length,
+    avoid_rules: vocab(chosen).avoid.length,
+  }));
+  return chosen ?? null;
+}
+
+function examplePostText(p: unknown): string {
+  if (typeof p === "string") return p;
+  if (p && typeof p === "object") {
+    const o = p as Record<string, any>;
+    return String(o.content ?? o.text ?? o.post ?? o.body ?? "").trim();
+  }
+  return "";
+}
+
+/**
+ * The member's signature, verbatim and unsummarised. The model must see his
+ * actual sentences — a paraphrase of a voice is not a voice.
+ */
+export function voiceBlock(voice: Record<string, any> | null): string {
+  if (!voice) {
+    return "VOICE: no profile on file. Write plainly, concretely, with no marketing register.";
+  }
+  const v = vocab(voice);
+  const examples = (Array.isArray(voice.example_posts) ? voice.example_posts : [])
+    .map(examplePostText)
+    .filter((t) => t.length > 80)
+    .slice(0, 5);
+
+  return [
+    `VOICE DNA — profile language "${voice.language ?? "unknown"}". This is the member's own signature. Follow it exactly.`,
+    "",
+    `TONE: ${String(voice.tone ?? "").trim() || "(not recorded)"}`,
+    `RHYTHM: ${v.rhythm || "(not recorded)"}`,
+    `NOTES: ${v.notes || "(not recorded)"}`,
+    `PREFERRED STRUCTURES: ${JSON.stringify(voice.preferred_structures ?? "")}`,
+    `STORYTELLING PATTERNS: ${JSON.stringify(voice.storytelling_patterns ?? "")}`,
+    "",
+    "HIS SIGNATURE PHRASES — use these constructions where they fit. Do not invent your own versions of them:",
+    ...v.use.map((u) => `  · ${u}`),
+    "",
+    "HE NEVER WRITES THESE. Any of them in your output fails the deck:",
+    ...v.avoid.map((a) => `  · ${a}`),
+    "",
+    "HIS ACTUAL POSTS — this is what he sounds like. Match this register, sentence length and rhythm:",
+    ...examples.map((e, i) => `--- example ${i + 1} ---\n${e.slice(0, 2200)}`),
+  ].join("\n");
 }
 
 export function bareHandle(raw: unknown): string {
@@ -61,7 +153,7 @@ export async function callTool(
 
 export function contextBlock(ctx: SignalContext): string {
   const s = ctx.signal;
-  return [
+  const out = [
     `SIGNAL: ${s.signal_title}`,
     `EXPLANATION: ${s.explanation ?? ""}`,
     `IMPLICATIONS: ${
@@ -71,9 +163,24 @@ export function contextBlock(ctx: SignalContext): string {
     }`,
     `THEMES: ${(s.theme_tags ?? []).join(", ")}`,
     `CONFIDENCE: ${s.confidence ?? ""}`,
-    "EVIDENCE FRAGMENTS:",
-    ...ctx.evidence.map((e, i) => `  [${i + 1}] ${e.title}: ${e.content}`),
-  ].join("\n");
+  ];
+
+  if (ctx.raw?.length) {
+    out.push(
+      "",
+      "RAW MATERIAL — the member's own captures, in his own words, unedited. Take FACTS from here. Never copy the phrasing of the summaries below over these.",
+      ...ctx.raw.map((e, i) =>
+        `  [raw ${i + 1}${e.created_at ? ` · ${String(e.created_at).slice(0, 10)}` : ""}] ${e.title}: ${e.content}`
+      ),
+    );
+  }
+
+  out.push(
+    "",
+    "EVIDENCE FRAGMENTS — these are AI SUMMARIES, not the member's writing. Use them for facts only. Never borrow their wording; their register is not his.",
+    ...ctx.evidence.map((e, i) => `  [summary ${i + 1}] ${e.title}: ${e.content}`),
+  );
+  return out.join("\n");
 }
 
 /* ------------------------------------------------------------------ */
@@ -287,14 +394,26 @@ export const WRITE_TOOL = {
 export function writeSystem(): string {
   return `You write the content of a LinkedIn carousel for a senior operator. You fill ONLY the slots named in the manifest. You never choose slides, order, length, or layout.
 
+THE ONE RULE ABOVE ALL OTHERS: take FACTS from the evidence, LANGUAGE from the member's example posts. Never the reverse. The evidence fragments are machine summaries written by another model — their register is not his, and copying it is the exact failure you are here to prevent. If a sentence you are about to write could not appear in one of his example posts, delete it and write it again.
+
 - Every text node is { runs: [{ t, lang }] } — never a bare string. Put English technical terms inside an Arabic deck in their own run with lang "en" (AI, smart meter, dashboard, KPI, ERP, API). That is what makes mixed text render correctly.
 - Hero lines: at most 14 characters for English, 20 for Arabic, and at most 4 lines. Count every character including spaces: "Skin in the Game" is 16 and is therefore rejected; "Skin in Game" is 12 and passes. In English that is usually one or two short words per line. Exactly one line may carry highlight true. A longer line wraps and destroys the highlight block.
 - Headline maximum 9 words. Body maximum 2 sentences per node; mark the last body node optional_tail true so the fit ladder may drop it losslessly.
 - If the plan says hasNumber false, DO NOT emit stat_value on any slide. Say nothing rather than inventing a figure. A fabricated number is the single worst failure for this audience.
 - If stat_value is present, source is mandatory and must come from the signal or its evidence, never from general knowledge.
-- Write in the member's voice using their voice profile. Contrarian, specific, commercial. Never the words: thought leader, personal brand, game-changing, seamless, unlock, elevate, empower, utilize, facilitate, or leverage as a verb.
+- Never the words: thought leader, personal brand, game-changing, seamless, unlock, elevate, empower, utilize, facilitate, or leverage as a verb.
 - Western digits only, in every language.
 - No ellipsis anywhere.
+
+THE AI TELLS. Each of these fails the deck outright, so do not write them:
+- "Stop X. Start Y." and every imperative antithesis of that shape.
+- The openers "In today's landscape", "In an era of", "As we navigate", "It's no secret that", "In a world where".
+- More than one three-item parallel list in the whole deck ("people, process and technology").
+- Abstractions with no object: drive value, unlock potential, foundation for, key to success, critical enabler, robust framework, holistic approach, comprehensive strategy, strategic imperative, paradigm shift.
+- Any sentence over 28 words.
+- Any slide that could appear in any company's deck in any industry. Every substantive slide carries at least one of: a named organisation or place, a number, a first-person observation, or a term specific to this sector.
+
+THE SPECIFICITY FLOOR. The deck as a whole must contain at least one concrete particular — a named place or organisation, a dated event, a sourced number, or a first-person observation taken from the member's own raw captures. A beautiful, empty deck is worse than no deck.
 
 Do NOT emit chart data yourself. When the manifest contains a benchmark slide the chart is supplied deterministically from the plan; fill only its headline, hero_lines and source.
 
@@ -357,12 +476,22 @@ export async function writeCaption(
     .map((r: any) => r.t).join("");
   const tags: string[] = Array.isArray(ctx.signal.theme_tags) ? ctx.signal.theme_tags : [];
 
-  const system = `You write the post body that sits above a LinkedIn carousel, in the member's own voice.
+  const v = vocab(ctx.voice);
+  // A sign-off the member actually uses beats a closing question written by a machine.
+  const signOff = v.use.find((u) => /I don't just advise|Strategy is easy|الواقع اللي ما حد يحكيه/i.test(u))
+    ?? v.use.find((u) => u.length > 40 && !/\[/.test(u));
+
+  const system = `You write the post body that sits above a LinkedIn carousel. This is a LinkedIn post in its own right and it must sound exactly like the member's own posts — same rhythm, same phrase set, same sentence length. Take FACTS from the material below, LANGUAGE from his example posts. Never the reverse.
 
 - Between 3 and 6 short lines, one thought per line, separated by single newlines.
 - Set the deck up. NEVER repeat the cover wording; the reader can already see it.
-- The last line is exactly this closing question: "${closing || "What would you do first?"}".
+${
+    signOff
+      ? `- End on his own sign-off, verbatim: "${signOff}". Do not modify it, do not add a question after it.`
+      : `- The last line is exactly this closing question: "${closing || "What would you do first?"}".`
+  }
 - Plain, commercial, specific. No emojis. No ellipsis. Western digits.
+- No "Stop X. Start Y." construction. No openers of the shape "In today's landscape", "In an era of", "As we navigate", "It's no secret that". No sentence over 28 words. At most one three-item list.
 - Never the words: thought leader, personal brand, game-changing, seamless, unlock, elevate, empower, utilize, facilitate, or leverage as a verb.
 - Write in ${p.lang === "ar" ? "Arabic" : "English"}.
 - hashtags: exactly 3, drawn from the signal's themes, each a single CamelCase word with no spaces and no "#".`;
@@ -370,7 +499,15 @@ export async function writeCaption(
   try {
     const raw = await callTool(
       system,
-      [contextBlock(ctx), "", `THE COVER ALREADY SAYS (do not repeat): ${coverText}`, "", `THEMES: ${tags.join(", ")}`].join("\n"),
+      [
+        voiceBlock(ctx.voice),
+        "",
+        contextBlock(ctx),
+        "",
+        `THE COVER ALREADY SAYS (do not repeat): ${coverText}`,
+        "",
+        `THEMES: ${tags.join(", ")}`,
+      ].join("\n"),
       CAPTION_TOOL,
     );
     const lines: string[] = (Array.isArray(raw.lines) ? raw.lines : [])
@@ -396,24 +533,110 @@ export function manifestBlock(manifest: ComposeResult): string {
     .join("\n");
 }
 
+/* ------------------------------------------------------------------ */
+/* Stage 5b — SELF-CRITIQUE                                            */
+/* ------------------------------------------------------------------ */
+
+export interface CritiqueFlag {
+  index: number;
+  verdict: "member" | "generic";
+  tell: string;
+}
+
+const CRITIQUE_TOOL = {
+  name: "emit_verdicts",
+  description: "One verdict per slide. No prose, no praise, no suggestions.",
+  parameters: {
+    type: "object",
+    properties: {
+      verdicts: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            index: { type: "integer" },
+            verdict: { type: "string", enum: ["member", "generic"] },
+            tell: { type: "string" },
+          },
+          required: ["index", "verdict", "tell"],
+        },
+      },
+    },
+    required: ["verdicts"],
+  },
+};
+
+/** Flatten a slide to the words a reader actually sees. */
+export function slideText(slide: any): string {
+  const out: string[] = [];
+  const walk = (v: any) => {
+    if (!v) return;
+    if (Array.isArray(v)) { v.forEach(walk); return; }
+    if (typeof v === "object") {
+      if (Array.isArray(v.runs)) { out.push(v.runs.map((r: any) => r?.t ?? "").join("")); return; }
+      Object.values(v).forEach(walk);
+      return;
+    }
+    if (typeof v === "string") out.push(v);
+  };
+  walk(slide?.slots ?? {});
+  return out.filter(Boolean).join(" · ");
+}
+
+/**
+ * One short call. Does each slide sound like the member's own posts, or like an
+ * assistant? The judge names the tell; it never rewrites.
+ */
+export async function critique(ctx: SignalContext, deck: any): Promise<CritiqueFlag[]> {
+  const v = vocab(ctx.voice);
+  const examples = (Array.isArray(ctx.voice?.example_posts) ? ctx.voice!.example_posts : [])
+    .map(examplePostText).filter((t: string) => t.length > 80).slice(0, 3);
+
+  const system = `You are the member's editor. You know exactly how he writes. For each slide, answer one question only: does this sound like his example posts, or like a generic AI assistant?
+
+Verdict "generic" whenever the slide could have been written about any company in any industry, borrows the register of a consultancy summary, uses a construction he never uses, or reaches for an abstraction with no object.
+"tell" is the specific giveaway, quoted from the slide, in under 15 words. Never suggest a rewrite. Never praise.`;
+
+  const user = [
+    "HE NEVER WRITES:",
+    ...v.avoid.slice(0, 40).map((a) => `  · ${a}`),
+    "",
+    "HE ACTUALLY WRITES:",
+    ...v.use.map((u) => `  · ${u}`),
+    "",
+    ...examples.map((e: string, i: number) => `--- his post ${i + 1} ---\n${e.slice(0, 1400)}`),
+    "",
+    "THE DECK:",
+    ...(deck?.slides ?? []).map((s: any) => `slide ${s.index} (${s.archetype}): ${slideText(s)}`),
+  ].join("\n");
+
+  try {
+    const raw = await callTool(system, user, CRITIQUE_TOOL);
+    const flags: CritiqueFlag[] = (Array.isArray(raw.verdicts) ? raw.verdicts : [])
+      .map((x: any) => ({
+        index: Number(x?.index),
+        verdict: x?.verdict === "generic" ? "generic" : "member",
+        tell: String(x?.tell ?? "").slice(0, 160),
+      }))
+      .filter((x: CritiqueFlag) => Number.isFinite(x.index));
+    console.log("[generate-deck] critique", JSON.stringify(flags));
+    return flags;
+  } catch (e) {
+    console.error("[generate-deck] critique failed:", String(e));
+    return [];
+  }
+}
+
 export async function writeSlides(
   ctx: SignalContext,
   p: Plan,
   manifest: ComposeResult,
   corrections: string[],
 ): Promise<any[]> {
-  const voice = ctx.voice
-    ? `VOICE — tone: ${JSON.stringify(ctx.voice.tone ?? "")}; structures: ${JSON.stringify(
-        ctx.voice.preferred_structures ?? "",
-      )}; patterns: ${JSON.stringify(ctx.voice.storytelling_patterns ?? "")}; examples: ${JSON.stringify(
-        (ctx.voice.example_posts ?? []).slice?.(0, 2) ?? "",
-      ).slice(0, 1500)}`
-    : "VOICE: no profile on file. Write plainly, concretely, with no marketing register.";
-
   const user = [
-    contextBlock(ctx),
+    voiceBlock(ctx.voice),
     "",
-    voice,
+    contextBlock(ctx),
     "",
     `PLAN: ${JSON.stringify(p)}`,
     p.hasNumber

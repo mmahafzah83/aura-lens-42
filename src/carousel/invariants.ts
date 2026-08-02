@@ -45,6 +45,105 @@ const LEVERAGE_AS_VERB =
 const ARABIC_RE = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
 const LATIN_RE = /[A-Za-z]/;
 
+/* ------------------------------------------------------------------ */
+/* INV-18 / INV-19 — the AI tells                                      */
+/* ------------------------------------------------------------------ */
+
+/** "Stop guessing. Start measuring." and every imperative antithesis of that shape. */
+const IMPERATIVE_ANTITHESIS =
+  /\b(stop|quit|forget)\b[^.?!]{0,48}[.?!—-]\s*\b(start|begin)\b/i;
+
+/** Openers that belong to no one. Matched only at the head of a text node. */
+const DEAD_OPENERS = [
+  "in today's landscape",
+  "in today's world",
+  "in an era of",
+  "in the era of",
+  "as we navigate",
+  "it's no secret that",
+  "it is no secret that",
+  "in a world where",
+];
+
+/** Abstractions carrying no object. Each one could sit in any deck in any industry. */
+const EMPTY_ABSTRACTIONS = [
+  "drive value",
+  "driving value",
+  "unlock potential",
+  "foundation for",
+  "key to success",
+  "critical enabler",
+  "robust framework",
+  "holistic approach",
+  "comprehensive strategy",
+  "strategic imperative",
+  "paradigm shift",
+];
+
+/** A three-item parallel list: "people, process, and technology". */
+const TRIPLET_RE =
+  /\b[\w-]+(?:\s+[\w-]+){0,2},\s+[\w-]+(?:\s+[\w-]+){0,2},\s+(?:and\s+)?[\w-]+(?:\s+[\w-]+){0,2}\b/;
+
+const MAX_SENTENCE_WORDS = 28;
+
+/** First-person and lived-observation markers, English and Arabic. */
+const FIRST_PERSON_RE =
+  /\b(i|i'm|i've|my|we|we're|we've|our|us)\b|(?:^|\s)(?:من\s+خبرتي|شفت|رأيت|عندنا|لدينا|أعرف|قابلت)/i;
+
+function sentencesOf(text: string): string[] {
+  return text
+    .split(/(?<=[.!?؟])\s+|\n+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function wordCount(text: string): number {
+  return (text.match(/[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu) ?? []).length;
+}
+
+/** A proper noun: a capitalised word that is not simply the head of a sentence. */
+function hasProperNoun(text: string): boolean {
+  for (const sentence of sentencesOf(text)) {
+    const words = sentence.split(/\s+/);
+    for (let i = 1; i < words.length; i += 1) {
+      const w = words[i].replace(/[^A-Za-z-]/g, "");
+      if (w.length > 1 && /^[A-Z]/.test(w) && w !== "I") return true;
+    }
+    // An all-caps or capitalised acronym anywhere, including at the head.
+    if (/\b[A-Z]{2,}\b/.test(sentence)) return true;
+  }
+  return false;
+}
+
+function hasNumber(text: string): boolean {
+  return /\d/.test(text);
+}
+
+/**
+ * "Could this sentence appear in any company's deck in any industry?" —
+ * operationalised as: no proper noun, no number, no first-person marker.
+ */
+function isAnonymous(text: string): boolean {
+  return !hasProperNoun(text) && !hasNumber(text) && !FIRST_PERSON_RE.test(text);
+}
+
+/** Slides that carry an argument, and are therefore held to the specificity test. */
+const SUBSTANTIVE_ARCHETYPES: string[] = [
+  "frame", "evidence", "callout", "steps", "definition", "quote", "benchmark",
+];
+
+export interface InvariantOptions {
+  /** The member's own `vocabulary_preferences.avoid` list, enforced verbatim. */
+  avoid?: string[];
+  /**
+   * Sector vocabulary drawn from the signal itself — theme tags, title words,
+   * named entities. A slide carrying one of these is not "any company's deck".
+   * When absent the slide-level anonymity test is skipped, because without the
+   * source material there is no way to tell domain language from filler.
+   */
+  domainTerms?: string[];
+}
+
 const HERO_BUDGET: Record<"en" | "ar", number> = { en: 14, ar: 20 };
 
 const CONTRAST_ARCHETYPES: Archetype[] = [
@@ -98,9 +197,22 @@ function contentSlotCount(slide: Slide): number {
   return n;
 }
 
-export function checkInvariants(ir: DeckIR): string[] {
+export function checkInvariants(ir: DeckIR, opts: InvariantOptions = {}): string[] {
   const errors: string[] = [];
   const slides = ir.slides ?? [];
+
+  /** Short enough to be a phrase rather than a description of a habit. */
+  const memberAvoid = (opts.avoid ?? [])
+    .map((a) => String(a ?? "").trim())
+    .filter((a) => a.length >= 3 && a.length <= 40)
+    .map((a) => a.toLowerCase());
+
+  const domainTerms = (opts.domainTerms ?? [])
+    .map((t) => String(t ?? "").trim().toLowerCase())
+    .filter((t) => t.length >= 4);
+
+  let tripletCount = 0;
+  let concreteParticulars = 0;
 
   // INV-08 — numerals are western, always.
   if (ir.numerals !== "western") {
@@ -205,6 +317,79 @@ export function checkInvariants(ir: DeckIR): string[] {
         errors.push(`INV-15: ${where} photo must declare credit explicitly (null means the member's own work).`);
       }
     }
+
+    /* ---------------- INV-18 — the AI tells ---------------- */
+    const prose = slideTextNodes(slide).map(plainText).filter(Boolean);
+    const everything = slideStrings(slide);
+
+    for (const text of prose) {
+      const lower = text.toLowerCase().trim();
+
+      if (IMPERATIVE_ANTITHESIS.test(text)) {
+        errors.push(`INV-18: ${where} uses the "Stop X. Start Y." construction: "${text.slice(0, 90)}".`);
+      }
+      for (const opener of DEAD_OPENERS) {
+        if (lower.startsWith(opener)) {
+          errors.push(`INV-18: ${where} opens with the dead phrase "${opener}".`);
+        }
+      }
+      for (const phrase of EMPTY_ABSTRACTIONS) {
+        if (lower.includes(phrase)) {
+          errors.push(`INV-18: ${where} contains the empty abstraction "${phrase}".`);
+        }
+      }
+      for (const sentence of sentencesOf(text)) {
+        const words = wordCount(sentence);
+        if (words > MAX_SENTENCE_WORDS) {
+          errors.push(
+            `INV-18: ${where} has a ${words}-word sentence, over the limit of ${MAX_SENTENCE_WORDS}: "${sentence.slice(0, 90)}".`,
+          );
+        }
+      }
+      if (TRIPLET_RE.test(text)) tripletCount += 1;
+    }
+
+    // The member's own avoid list, enforced rather than requested.
+    for (const text of everything) {
+      const lower = text.toLowerCase();
+      for (const phrase of memberAvoid) {
+        if (lower.includes(phrase)) {
+          errors.push(`INV-18: ${where} contains "${phrase}", which this member never writes.`);
+        }
+      }
+    }
+
+    // Could this slide belong to anyone? Judged on the slide's own prose, and
+    // only where there is enough of it to judge.
+    const joined = everything.join(" ").trim();
+    const lowerJoined = joined.toLowerCase();
+    const carriesDomainTerm = domainTerms.some((t) => lowerJoined.includes(t));
+    if (!isAnonymous(joined)) concreteParticulars += 1;
+    if (
+      domainTerms.length > 0 &&
+      !carriesDomainTerm &&
+      SUBSTANTIVE_ARCHETYPES.includes(slide.archetype) &&
+      wordCount(joined) >= 12 &&
+      isAnonymous(joined)
+    ) {
+      errors.push(
+        `INV-18: ${where} could appear in any company's deck in any industry — no proper noun, no number, no first-person observation and no term from this signal.`,
+      );
+    }
+  }
+
+  // INV-18 — one triplet is a rhythm, two is a machine writing.
+  if (tripletCount > 1) {
+    errors.push(
+      `INV-18: the deck uses ${tripletCount} three-item parallel lists. At most one is allowed.`,
+    );
+  }
+
+  // INV-19 — the specificity floor. One concrete particular, or the deck fails.
+  if (slides.length && concreteParticulars === 0) {
+    errors.push(
+      "INV-19: This signal is too abstract to write from — pick another or add a capture.",
+    );
   }
 
   // INV-06 — no two consecutive slides share an archetype.
