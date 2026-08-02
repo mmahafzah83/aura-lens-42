@@ -122,6 +122,54 @@ function ReactionIcons({ theme, size }: { theme: Theme; size: number }) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Theme marks — a small, fixed set. Chosen upstream from theme_tags.  */
+/* ------------------------------------------------------------------ */
+
+const ICON_PATHS: Record<string, string[]> = {
+  water: ["M12 2.5s6.5 7 6.5 11.2A6.5 6.5 0 0 1 5.5 13.7C5.5 9.5 12 2.5 12 2.5z"],
+  energy: ["M13 2 4 14h6l-1 8 9-12h-6l1-8z"],
+  data: ["M4 20V10", "M10 20V4", "M16 20v-7", "M22 20H2"],
+  growth: ["M3 17l6-6 4 4 8-8", "M15 7h6v6"],
+  risk: ["M12 3l9 16H3l9-16z", "M12 10v4", "M12 17.2v.1"],
+  people: ["M8 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z", "M2 21c0-3.6 2.7-6 6-6s6 2.4 6 6", "M17 11a3 3 0 1 0 0-6", "M17 15c3 0 5 2.2 5 6"],
+  time: ["M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z", "M12 7v5l3.5 2"],
+  money: ["M12 2v20", "M17 6.5C17 4.6 14.8 3.5 12 3.5S7 4.6 7 6.5 9.2 10 12 11s5 1.9 5 4-2.2 3.5-5 3.5-5-1.4-5-3.5"],
+  network: ["M12 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z", "M5 21a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z", "M19 21a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z", "M12 8v4", "M12 12 6 16", "M12 12l6 4"],
+  gear: ["M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z", "M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2 2 2 0 1 1-4 0 1.7 1.7 0 0 0-2.9-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 3 15a2 2 0 1 1 0-4 1.7 1.7 0 0 0 1.2-2.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 10 4.1a2 2 0 1 1 4 0 1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.7 1.7 0 0 0 21 11a2 2 0 1 1 0 4 1.7 1.7 0 0 0-1.6 1z"],
+};
+
+/** `media.src` of "icon:water" resolves here. Unknown keys render nothing. */
+function IconMark({ src, theme, size }: { src?: string; theme: Theme; size: number }) {
+  const key = (src ?? "").startsWith("icon:") ? src!.slice(5) : "";
+  const paths = ICON_PATHS[key];
+  if (!paths) return null;
+  return (
+    <div
+      style={{
+        width: size, height: size, borderRadius: 18, flex: "0 0 auto",
+        background: theme.panel, border: `1px solid ${theme.rule}`,
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}
+    >
+      <svg
+        width={Math.round(size * 0.56)}
+        height={Math.round(size * 0.56)}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke={theme.accent}
+        strokeWidth={1.7}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+        style={{ display: "block" }}
+      >
+        {paths.map((d, i) => <path key={i} d={d} />)}
+      </svg>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* Identity                                                            */
 /* ------------------------------------------------------------------ */
 
