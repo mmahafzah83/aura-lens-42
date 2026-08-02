@@ -10,7 +10,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { DeckIRSchema, type DeckIR } from "./deckIR.ts";
 import { checkInvariants } from "./invariants.ts";
 import { compose } from "./compose.ts";
-import { plan, writeSlides, assemble, type SignalContext, type Plan, bareHandle } from "./pipeline.ts";
+import { plan, writeSlides, writeCaption, assemble, type SignalContext, type Plan, bareHandle } from "./pipeline.ts";
 import { REQUIRED_SLOTS } from "./slots.ts";
 
 const corsHeaders = {
@@ -41,8 +41,10 @@ async function readContext(db: any, signalId: string, userId: string): Promise<S
   if (error) throw new Error(`signal read failed: ${error.message}`);
   if (!signal) throw new Error("signal not found");
 
+  // Signals here carry between 8 and 570 fragments. Judging stepCount and
+  // hasComparison from a dozen was why every deck came back with neither.
   const ids: string[] = Array.isArray(signal.supporting_evidence_ids)
-    ? signal.supporting_evidence_ids.slice(0, 12)
+    ? signal.supporting_evidence_ids.slice(0, 24)
     : [];
   let evidence: Array<{ title: string; content: string }> = [];
   if (ids.length) {
@@ -67,7 +69,7 @@ async function readContext(db: any, signalId: string, userId: string): Promise<S
   const { data: profile } = await db
     .from("diagnostic_profiles")
     .select(
-      "first_name, last_name, level, firm, avatar_url, linkedin_handle, linkedin_url, content_language",
+      "first_name, last_name, level, firm, avatar_url, avatar_cutout_url, linkedin_handle, linkedin_url, content_language",
     )
     .eq("user_id", userId)
     .maybeSingle();
@@ -93,14 +95,15 @@ async function generate(
   signalId: string,
   requestedLength: number | undefined,
   theme: string,
+  requestedLang?: "en" | "ar",
 ) {
   const started = Date.now();
   const deckId = crypto.randomUUID();
 
   const ctx = await readContext(db, signalId, userId);
-  const p = await plan(ctx);
+  const p = await plan(ctx, requestedLang);
 
-  const cap = requestedLength === 5 || requestedLength === 7 || requestedLength === 10
+  const target = requestedLength === 5 || requestedLength === 7 || requestedLength === 10
     ? (requestedLength as 5 | 7 | 10)
     : undefined;
   const manifest = compose(
@@ -110,7 +113,7 @@ async function generate(
       stepCount: p.stepCount,
       lang: p.lang,
     },
-    cap,
+    target,
   );
 
   let retries = 0;
@@ -152,6 +155,8 @@ async function generate(
     return { ok: false, failures, plan: p, duration_ms };
   }
 
+  const caption = await writeCaption(ctx, p, deck);
+
   await logEvent(db, {
     user_id: userId,
     deck_id: deckId,
@@ -167,6 +172,7 @@ async function generate(
   return {
     ok: true,
     deck,
+    caption,
     plan: p,
     quality: {
       score: Math.max(0, 100 - retries * 15),
@@ -235,6 +241,8 @@ serve(async (req) => {
     const theme = ["midnight", "clay", "gradient", "paper"].includes(body.theme)
       ? body.theme
       : "midnight";
+    const reqLang: "en" | "ar" | undefined =
+      body.lang === "ar" ? "ar" : body.lang === "en" ? "en" : undefined;
 
     // Admin-only self test: run three real signals, one of which carries no number.
     if (body.selftest) {
@@ -260,7 +268,7 @@ serve(async (req) => {
       const results = [];
       for (const s of picks) {
         try {
-          const r: any = await generate(db, user.id, s.id, body.length, theme);
+          const r: any = await generate(db, user.id, s.id, body.length, theme, reqLang);
           results.push({
             signal_id: s.id,
             signal_title: s.signal_title,
@@ -290,7 +298,7 @@ serve(async (req) => {
       return json(out, out.ok ? 200 : 422);
     }
 
-    const result = await generate(db, user.id, body.signal_id, body.length, theme);
+    const result = await generate(db, user.id, body.signal_id, body.length, theme, reqLang);
     return json(result, result.ok ? 200 : 422);
   } catch (e) {
     return json({ error: String(e instanceof Error ? e.message : e) }, 500);
