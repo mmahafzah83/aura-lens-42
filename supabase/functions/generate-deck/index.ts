@@ -10,7 +10,19 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { DeckIRSchema, type DeckIR } from "./deckIR.ts";
 import { checkInvariants } from "./invariants.ts";
 import { compose } from "./compose.ts";
-import { plan, writeSlides, writeCaption, assemble, type SignalContext, type Plan, bareHandle } from "./pipeline.ts";
+import {
+  plan,
+  writeSlides,
+  writeCaption,
+  assemble,
+  critique,
+  resolveVoice,
+  vocab,
+  type SignalContext,
+  type Plan,
+  type CritiqueFlag,
+  bareHandle,
+} from "./pipeline.ts";
 import { REQUIRED_SLOTS } from "./slots.ts";
 
 const corsHeaders = {
@@ -47,24 +59,73 @@ async function readContext(db: any, signalId: string, userId: string): Promise<S
     ? signal.supporting_evidence_ids.slice(0, 24)
     : [];
   let evidence: Array<{ title: string; content: string }> = [];
+  let raw: Array<{ title: string; content: string; created_at?: string }> = [];
   if (ids.length) {
     const { data: frags } = await db
       .from("evidence_fragments")
-      .select("title, content")
+      .select("title, content, confidence, source_registry_id")
       .in("id", ids);
-    evidence = (frags ?? []).map((f: any) => ({
+    const rows = frags ?? [];
+    evidence = rows.map((f: any) => ({
       title: f.title ?? "",
       content: String(f.content ?? "").slice(0, 1200),
     }));
+
+    // The fragments are AI summaries of AI summaries. Walk back through the
+    // source registry to the member's own captures — that is where his
+    // language, his places and his numbers still exist.
+    const registryIds = Array.from(
+      new Set(rows.map((f: any) => f.source_registry_id).filter(Boolean)),
+    ).slice(0, 24);
+    if (registryIds.length) {
+      const { data: sources } = await db
+        .from("source_registry")
+        .select("id, source_id, source_type")
+        .in("id", registryIds)
+        .eq("source_type", "entry");
+      const entryIds = Array.from(
+        new Set((sources ?? []).map((s: any) => s.source_id).filter(Boolean)),
+      ).slice(0, 12);
+      if (entryIds.length) {
+        const { data: entries } = await db
+          .from("entries")
+          .select("title, content, created_at")
+          .in("id", entryIds)
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(5);
+        raw = (entries ?? [])
+          .filter((e: any) => String(e.content ?? "").trim().length > 40)
+          .map((e: any) => ({
+            title: e.title ?? "",
+            content: String(e.content ?? "").slice(0, 2000),
+            created_at: e.created_at,
+          }));
+      }
+    }
+
+    // No traceable capture behind this signal: fall back to the highest
+    // confidence fragments, clearly labelled as summaries in the prompt.
+    if (!raw.length) {
+      evidence = rows
+        .slice()
+        .sort((a: any, b: any) => Number(b.confidence ?? 0) - Number(a.confidence ?? 0))
+        .map((f: any) => ({
+          title: f.title ?? "",
+          content: String(f.content ?? "").slice(0, 1200),
+        }));
+    }
   }
 
-  const { data: voice } = await db
+  // Every profile on file. The one that matches the deck language is chosen
+  // later, once the language is known — is_primary is only a fallback.
+  const { data: voices } = await db
     .from("authority_voice_profiles")
-    .select("tone, preferred_structures, storytelling_patterns, example_posts")
+    .select(
+      "language, is_primary, tone, preferred_structures, storytelling_patterns, example_posts, vocabulary_preferences",
+    )
     .eq("user_id", userId)
-    .order("is_primary", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .order("is_primary", { ascending: false });
 
   const { data: profile } = await db
     .from("diagnostic_profiles")
@@ -74,7 +135,29 @@ async function readContext(db: any, signalId: string, userId: string): Promise<S
     .eq("user_id", userId)
     .maybeSingle();
 
-  return { signal, evidence, voice: voice ?? null, profile: profile ?? {} };
+  console.log("[generate-deck] context", JSON.stringify({
+    fragments: evidence.length,
+    raw_captures: raw.length,
+    voice_profiles: (voices ?? []).map((v: any) => `${v.language}${v.is_primary ? "*" : ""}`),
+  }));
+
+  return {
+    signal,
+    evidence,
+    raw,
+    voices: voices ?? [],
+    voice: null,
+    profile: profile ?? {},
+  };
+}
+
+/** Sector vocabulary for the specificity test — the signal's own words. */
+function domainTermsFor(ctx: SignalContext): string[] {
+  const tags = Array.isArray(ctx.signal.theme_tags) ? ctx.signal.theme_tags : [];
+  const titleWords = String(ctx.signal.signal_title ?? "")
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter((w) => w.length >= 5);
+  return Array.from(new Set([...tags.map(String), ...titleWords].map((t) => t.toLowerCase())));
 }
 
 /* ------------------------------------------------------------------ */
