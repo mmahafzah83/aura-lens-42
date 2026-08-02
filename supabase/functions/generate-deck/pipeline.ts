@@ -299,6 +299,91 @@ export function writeSystem(): string {
 Each slide must carry exactly ONE emphasis: either a stat_value, or exactly one hero line with highlight true, or one chart series with emphasis "alert". Never two.`;
 }
 
+/* ------------------------------------------------------------------ */
+/* Icons — chosen deterministically from the signal's own theme tags   */
+/* ------------------------------------------------------------------ */
+
+const ICON_RULES: Array<[RegExp, string]> = [
+  [/water|desal|wastewater|sewer|hydro/i, "water"],
+  [/energy|power|grid|electric|solar|renewab|carbon|emission/i, "energy"],
+  [/data|analytic|\bai\b|digital|software|platform|sensor|meter/i, "data"],
+  [/growth|revenue|market|commercial|sales|demand/i, "growth"],
+  [/risk|threat|complian|regulat|security|govern/i, "risk"],
+  [/people|talent|team|workforce|leader|customer|citizen/i, "people"],
+  [/time|delay|schedul|deadline|lead time/i, "time"],
+  [/cost|capital|invest|financ|budget|funding|tariff|price/i, "money"],
+  [/network|ecosystem|partner|supply|integrat/i, "network"],
+  [/operat|process|efficien|maintenance|asset|infrastructur/i, "gear"],
+];
+
+export function iconFor(tags: unknown, fallbackText: string, salt = 0): string {
+  const corpus = `${Array.isArray(tags) ? tags.join(" ") : ""} ${fallbackText}`;
+  const hits = ICON_RULES.filter(([re]) => re.test(corpus)).map(([, key]) => key);
+  if (hits.length) return hits[salt % hits.length];
+  return ["gear", "data", "network"][salt % 3];
+}
+
+/* ------------------------------------------------------------------ */
+/* Stage 6 — CAPTION                                                   */
+/* ------------------------------------------------------------------ */
+
+const CAPTION_TOOL = {
+  name: "emit_caption",
+  description: "The LinkedIn post body that carries the deck.",
+  parameters: {
+    type: "object",
+    properties: {
+      lines: { type: "array", items: { type: "string" } },
+      hashtags: { type: "array", items: { type: "string" } },
+    },
+    required: ["lines", "hashtags"],
+  },
+};
+
+export async function writeCaption(
+  ctx: SignalContext,
+  p: Plan,
+  deck: any,
+): Promise<string> {
+  const cover = deck?.slides?.[0]?.slots ?? {};
+  const coverText = [
+    ...(cover.hero_lines ?? []).map((l: any) => (l.runs ?? []).map((r: any) => r.t).join("")),
+    (cover.subline?.runs ?? []).map((r: any) => r.t).join(""),
+  ].join(" ");
+  const closing = ((deck?.slides ?? [])
+    .find((s: any) => s.archetype === "close")?.slots?.cta_pill?.runs ?? [])
+    .map((r: any) => r.t).join("");
+  const tags: string[] = Array.isArray(ctx.signal.theme_tags) ? ctx.signal.theme_tags : [];
+
+  const system = `You write the post body that sits above a LinkedIn carousel, in the member's own voice.
+
+- Between 3 and 6 short lines, one thought per line, separated by single newlines.
+- Set the deck up. NEVER repeat the cover wording; the reader can already see it.
+- The last line is exactly this closing question: "${closing || "What would you do first?"}".
+- Plain, commercial, specific. No emojis. No ellipsis. Western digits.
+- Never the words: thought leader, personal brand, game-changing, seamless, unlock, elevate, empower, utilize, facilitate, or leverage as a verb.
+- Write in ${p.lang === "ar" ? "Arabic" : "English"}.
+- hashtags: exactly 3, drawn from the signal's themes, each a single CamelCase word with no spaces and no "#".`;
+
+  try {
+    const raw = await callTool(
+      system,
+      [contextBlock(ctx), "", `THE COVER ALREADY SAYS (do not repeat): ${coverText}`, "", `THEMES: ${tags.join(", ")}`].join("\n"),
+      CAPTION_TOOL,
+    );
+    const lines: string[] = (Array.isArray(raw.lines) ? raw.lines : [])
+      .map((l: unknown) => String(l).trim()).filter(Boolean).slice(0, 6);
+    const hashtags: string[] = (Array.isArray(raw.hashtags) ? raw.hashtags : [])
+      .map((h: unknown) => `#${String(h).replace(/[^A-Za-z0-9\u0600-\u06FF]/g, "")}`)
+      .filter((h: string) => h.length > 2).slice(0, 3);
+    if (!lines.length) return "";
+    return [lines.join("\n"), hashtags.join(" ")].filter(Boolean).join("\n\n");
+  } catch (e) {
+    console.error("[generate-deck] caption failed:", String(e));
+    return "";
+  }
+}
+
 export function manifestBlock(manifest: ComposeResult): string {
   return manifest.slots
     .map((s) => {
