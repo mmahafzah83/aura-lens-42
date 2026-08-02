@@ -134,11 +134,13 @@ hasComparison is true only if two or more comparable quantities appear in the ma
 stepCount is how many distinct, non-obvious actions the material genuinely supports, between 0 and 7. Do not invent steps to reach a number.
 lang is the language the deck should be written in.`;
 
-export async function plan(ctx: SignalContext): Promise<Plan> {
-  const langHint = (ctx.profile.content_language ?? "en") === "ar" ? "ar" : "en";
+export async function plan(ctx: SignalContext, forceLang?: "en" | "ar"): Promise<Plan> {
+  // The studio's language control wins over the profile default. A member who
+  // picks العربية gets an Arabic deck even when their profile says English.
+  const langHint = forceLang ?? ((ctx.profile.content_language ?? "en") === "ar" ? "ar" : "en");
   const raw = await callTool(
     PLAN_SYSTEM,
-    `${contextBlock(ctx)}\n\nThe member writes in "${langHint}".`,
+    `${contextBlock(ctx)}\n\nWrite this deck in "${langHint}". Report lang as "${langHint}".`,
     PLAN_TOOL,
   );
   const p: Plan = {
@@ -150,7 +152,7 @@ export async function plan(ctx: SignalContext): Promise<Plan> {
     stepCount: Math.max(0, Math.min(7, Number(raw.stepCount ?? 0))),
     hasDefinableTerm: Boolean(raw.hasDefinableTerm),
     term: raw.term ?? null,
-    lang: raw.lang === "ar" ? "ar" : "en",
+    lang: forceLang ?? (raw.lang === "ar" ? "ar" : "en"),
   };
   // Belt and braces: a number claimed but not present in the material is dropped.
   const corpus = `${contextBlock(ctx)}`;
@@ -167,6 +169,19 @@ export async function plan(ctx: SignalContext): Promise<Plan> {
     p.hasComparison = false;
     p.comparisonSeries = null;
   }
+  // A comparison without at least two plotted quantities cannot become a chart.
+  if (p.hasComparison && (p.comparisonSeries?.length ?? 0) < 2) {
+    p.hasComparison = false;
+    p.comparisonSeries = null;
+  }
+  console.log("[generate-deck] plan", JSON.stringify({
+    hasNumber: p.hasNumber,
+    hasComparison: p.hasComparison,
+    series: p.comparisonSeries?.length ?? 0,
+    stepCount: p.stepCount,
+    lang: p.lang,
+    evidence: ctx.evidence.length,
+  }));
   return p;
 }
 
