@@ -31,7 +31,7 @@ describe("invariants catch violations", () => {
 
   it("flags a second emphasis on one slide", () => {
     const ir = base();
-    ir.slides[0].hero_lines_dummy = undefined as never;
+    // The cover already has one highlighted line; a second one competes.
     ir.slides[0].slots.hero_lines![0].highlight = true;
     expect(checkInvariants(ir).some((e) => e.startsWith("INV-04"))).toBe(true);
   });
