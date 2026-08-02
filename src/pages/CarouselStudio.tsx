@@ -24,6 +24,7 @@ import { logDeckEvent } from "@/carousel/render/deckTelemetry";
 import StudioCanvas from "@/carousel/studio/StudioCanvas";
 import SignalPicker, { type StudioSignal } from "@/carousel/studio/SignalPicker";
 import EditPanel from "@/carousel/studio/EditPanel";
+import IdentityBlock from "@/carousel/studio/IdentityBlock";
 import { ARCHETYPE_LABEL, plainFailure } from "@/carousel/studio/slotLabels";
 import { replaceSlide, setSlidePhoto } from "@/carousel/studio/deckEdit";
 
@@ -590,6 +591,9 @@ export default function CarouselStudio() {
 
                 {/* 5 · edit */}
                 <div style={panel}>
+                  <div style={{ paddingBottom: 12, marginBottom: 12, borderBottom: "1px solid var(--border-default)" }}>
+                    <IdentityBlock deck={deck} onChange={setDeck} />
+                  </div>
                   <EditPanel
                     deck={deck}
                     slide={deck.slides[Math.min(current, deck.slides.length - 1)]}
