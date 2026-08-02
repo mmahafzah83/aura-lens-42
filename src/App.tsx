@@ -50,6 +50,8 @@ const CardPreview = lazy(() => import("./pages/CardPreview"));
 const GuideThoughtLeadershipStrategy = lazy(() => import("./pages/GuideThoughtLeadershipStrategy"));
 const SignatureStudio = lazy(() => import("./pages/SignatureStudio"));
 const SignatureHarness = lazy(() => import("./pages/SignatureHarness"));
+// Dev-only carousel renderer harness. Registered below only when import.meta.env.DEV.
+const CarouselPreview = lazy(() => import("./carousel/render/CarouselPreview"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
