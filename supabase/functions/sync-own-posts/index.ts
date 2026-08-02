@@ -11,6 +11,7 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { withObserve } from "../_shared/observe.ts";
 import { activityId, normalizeUrl } from "../_shared/linkedinPost.ts";
 import { resolveIdentity } from "../_shared/identity.ts";
+import { refreshVoiceProfiles } from "../_shared/voiceRefresh.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -126,8 +127,18 @@ Deno.serve(withObserve("sync-own-posts", async (req) => {
       else saved++;
     }
 
+    // New writing means the voice profile is out of date.
+    let voice: unknown = null;
+    if (saved || updated) {
+      try {
+        voice = await refreshVoiceProfiles(db, userId);
+      } catch (e) {
+        console.error("voice refresh after own-post sync failed (non-blocking):", e);
+      }
+    }
+
     console.log(`[sync-own-posts] ${userId}: ${saved} new, ${updated} texts filled, from ${page_url ?? "activity page"}`);
-    return json({ success: true, received: posts.length, saved, updated, rejected: rejected.length });
+    return json({ success: true, received: posts.length, saved, updated, rejected: rejected.length, voice });
   } catch (err) {
     console.error("sync-own-posts error:", err);
     return json({ error: "Sync failed", details: (err as Error).message }, 500);

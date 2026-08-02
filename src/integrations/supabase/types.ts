@@ -3971,10 +3971,15 @@ export type Database = {
           joined_on: string | null
           last_capture: string | null
           lifecycle_emails: number | null
+          newest_post_with_text: string | null
           posts_through_aura: number | null
+          posts_with_text: number | null
+          posts_with_text_primary_lang: number | null
+          primary_language: string | null
           signals: number | null
           state: string | null
           user_id: string | null
+          voice_refreshed_at: string | null
         }
         Relationships: []
       }
