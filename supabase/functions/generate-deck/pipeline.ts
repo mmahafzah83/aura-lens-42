@@ -533,6 +533,110 @@ export function manifestBlock(manifest: ComposeResult): string {
     .join("\n");
 }
 
+/* ------------------------------------------------------------------ */
+/* Stage 5b — SELF-CRITIQUE                                            */
+/* ------------------------------------------------------------------ */
+
+export interface CritiqueFlag {
+  index: number;
+  verdict: "member" | "generic";
+  tell: string;
+}
+
+const CRITIQUE_TOOL = {
+  name: "emit_verdicts",
+  description: "One verdict per slide. No prose, no praise, no suggestions.",
+  parameters: {
+    type: "object",
+    properties: {
+      verdicts: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            index: { type: "integer" },
+            verdict: { type: "string", enum: ["member", "generic"] },
+            tell: { type: "string" },
+          },
+          required: ["index", "verdict", "tell"],
+        },
+      },
+    },
+    required: ["verdicts"],
+  },
+};
+
+/** Flatten a slide to the words a reader actually sees. */
+export function slideText(slide: any): string {
+  const out: string[] = [];
+  const walk = (v: any) => {
+    if (!v) return;
+    if (Array.isArray(v)) { v.forEach(walk); return; }
+    if (typeof v === "object") {
+      if (Array.isArray(v.runs)) { out.push(v.runs.map((r: any) => r?.t ?? "").join("")); return; }
+      Object.values(v).forEach(walk);
+      return;
+    }
+    if (typeof v === "string") out.push(v);
+  };
+  walk(slide?.slots ?? {});
+  return out.filter(Boolean).join(" · ");
+}
+
+/**
+ * One short call. Does each slide sound like the member's own posts, or like an
+ * assistant? The judge names the tell; it never rewrites.
+ */
+export async function critique(ctx: SignalContext, deck: any): Promise<CritiqueFlag[]> {
+  const v = vocab(ctx.voice);
+  const examples = (Array.isArray(ctx.voice?.example_posts) ? ctx.voice!.example_posts : [])
+    .map(examplePostText).filter((t: string) => t.length > 80).slice(0, 3);
+
+  const system = `You are the member's editor. You know exactly how he writes. For each slide, answer one question only: does this sound like his example posts, or like a generic AI assistant?
+
+Verdict "generic" whenever the slide could have been written about any company in any industry, borrows the register of a consultancy summary, uses a construction he never uses, or reaches for an abstraction with no object.
+"tell" is the specific giveaway, quoted from the slide, in under 15 words. Never suggest a rewrite. Never praise.`;
+
+  const user = [
+    "HE NEVER WRITES:",
+    ...v.avoid.slice(0, 40).map((a) => `  · ${a}`),
+    "",
+    "HE ACTUALLY WRITES:",
+    ...v.use.map((u) => `  · ${u}`),
+    "",
+    ...examples.map((e: string, i: number) => `--- his post ${i + 1} ---\n${e.slice(0, 1400)}`),
+    "",
+    "THE DECK:",
+    ...(deck?.slides ?? []).map((s: any) => `slide ${s.index} (${s.archetype}): ${slideText(s)}`),
+  ].join("\n");
+
+  try {
+    const raw = await callTool(system, user, CRITIQUE_TOOL);
+    const flags: CritiqueFlag[] = (Array.isArray(raw.verdicts) ? raw.verdicts : [])
+      .map((x: any) => ({
+        index: Number(x?.index),
+        verdict: x?.verdict === "generic" ? "generic" : "member",
+        tell: String(x?.tell ?? "").slice(0, 160),
+      }))
+      .filter((x: CritiqueFlag) => Number.isFinite(x.index));
+    console.log("[generate-deck] critique", JSON.stringify(flags));
+    return flags;
+  } catch (e) {
+    console.error("[generate-deck] critique failed:", String(e));
+    return [];
+  }
+}
+
+function _unusedManifestBlock(manifest: ComposeResult): string {
+  return manifest.slots
+    .map((s) => {
+      const req = REQUIRED_SLOTS[s.archetype].join(", ");
+      const opt = OPTIONAL_SLOTS[s.archetype].join(", ") || "none";
+      return `slide ${s.index} · archetype ${s.archetype} · role ${s.role}\n  required slots: ${req}\n  optional slots: ${opt}`;
+    })
+    .join("\n");
+}
+
 export async function writeSlides(
   ctx: SignalContext,
   p: Plan,
