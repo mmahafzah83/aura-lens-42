@@ -8,6 +8,7 @@
  * caller refuse to ship the slide rather than render something broken.
  */
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { carouselFontsLoaded, ensureCarouselFonts } from "./fontsReady";
 
 /** Fixed reductions. Bounded on purpose: an unbounded ladder hides bad copy. */
 export const FIT_SCALES = [1, 0.88, 0.78] as const;
@@ -61,7 +62,7 @@ export function useFitLadder(
   // ladder only ever escalates, so the slide would stay wrongly shrunk.
   // `document.fonts.ready` alone is not enough: it can already be settled
   // before these faces are requested.
-  const [fontsReady, setFontsReady] = useState<boolean>(carouselFontsLoaded);
+  const [fontsReady, setFontsReady] = useState<boolean>(carouselFontsLoaded());
   useEffect(() => {
     if (fontsReady) return;
     let live = true;
