@@ -26,10 +26,8 @@ export interface FitState {
 }
 
 function overflows(root: HTMLElement): string | null {
-  const __log = ((window as any).__fitLog ||= []);
   // The slide box itself.
   if (root.scrollHeight > root.clientHeight + 1) {
-    __log.push([root.getAttribute("data-archetype"), root.getAttribute("data-fit"), "height", root.scrollHeight, root.clientHeight]);
     return `INV-02: content overflows the canvas by ${root.scrollHeight - root.clientHeight}px.`;
   }
   if (root.scrollWidth > root.clientWidth + 1) {
@@ -40,7 +38,6 @@ function overflows(root: HTMLElement): string | null {
   for (const hero of Array.from(heroes)) {
     const lh = parseFloat(getComputedStyle(hero).lineHeight);
     if (Number.isFinite(lh) && lh > 0 && hero.offsetHeight > lh * WRAP_TOLERANCE) {
-      __log.push([root.getAttribute("data-archetype"), root.getAttribute("data-fit"), "hero", hero.textContent, hero.offsetHeight, lh]);
       return `INV-02: hero line "${hero.textContent ?? ""}" wrapped onto more than one line.`;
     }
   }
