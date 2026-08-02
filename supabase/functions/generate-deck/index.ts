@@ -208,8 +208,13 @@ async function generate(
     ctx.voice && !String(ctx.voice.language ?? "").toLowerCase().startsWith(p.lang),
   );
 
-  const memberAvoid = vocab(ctx.voice).avoid;
-  const invOpts = { avoid: memberAvoid, domainTerms: domainTermsFor(ctx) };
+  const memberVocab = vocab(ctx.voice);
+  const invOpts = {
+    avoid: memberVocab.avoid,
+    // Read from THIS member's own row at request time — never a static list.
+    signoffs: memberVocab.signoffs,
+    domainTerms: domainTermsFor(ctx),
+  };
 
   const target = requestedLength === 5 || requestedLength === 7 || requestedLength === 10
     ? (requestedLength as 5 | 7 | 10)
