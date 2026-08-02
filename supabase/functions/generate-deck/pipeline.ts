@@ -499,6 +499,8 @@ THE ONE RULE ABOVE ALL OTHERS: take FACTS from the evidence, LANGUAGE from the m
 - Never the words: thought leader, personal brand, game-changing, seamless, unlock, elevate, empower, utilize, facilitate, or leverage as a verb.
 - Western digits only, in every language.
 - No ellipsis anywhere.
+- NO SYMBOL MARKERS ON A SLIDE. A slide is typography, not a text post. Hierarchy comes from the renderer — size, weight, colour and position. Emit no decorative glyphs, no bullet symbols, no arrows and no emoji of any kind inside any text node. A marker inside a paragraph is a rendering defect, not a style, and in a right-to-left paragraph it destroys the edge of the text block.
+- THE QUOTE SLOT: a quote is ONE sharp line ABOUT THE SUBJECT, distilled from the member's raw captures or from the evidence. It is never a statement about the member, never a description of what they do for a living, never a sign-off, never a personal motto, and never attributed to a named person. If the material will not yield such a line, say the plainest true thing the evidence supports rather than reaching for something that sounds quotable.
 - Every argument slide (frame, evidence, callout, steps, definition, quote, benchmark) must carry at least one concrete particular in the language you are writing: a named organisation, place, standard or programme, a number, or a first-person observation. A slide made only of abstractions fails. In an Arabic deck a Latin brand or standard name in its own lang "en" run counts, and so does a named entity introduced by its category word.
 - Arabic hero lines are 20 characters INCLUDING spaces. Count them before you emit. Two short words is usually the maximum; split a third word onto its own line.
 
@@ -598,7 +600,7 @@ ${
     const raw = await callTool(
       system,
       [
-        voiceBlock(ctx.voice, ctx.voiceRhythmOnly),
+        voiceBlock(ctx.voice, ctx.voiceRhythmOnly, "caption"),
         "",
         contextBlock(ctx),
         "",
