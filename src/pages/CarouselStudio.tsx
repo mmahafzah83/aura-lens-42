@@ -250,12 +250,17 @@ export default function CarouselStudio() {
   /* --- media ------------------------------------------------------- */
   const uploadPhoto = useCallback(async (file: File) => {
     if (!deck) return;
+    const problem = await checkImage(file, SLIDE_MEDIA_LIMITS);
+    if (problem) { setError(problem); return; }
     const { data: sess } = await supabase.auth.getSession();
     const uid = sess.session?.user?.id;
     if (!uid) return;
-    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-    const path = `${uid}/${deck.deck_id}/${crypto.randomUUID()}.${ext}`;
-    const { error: upErr } = await supabase.storage.from("deck-media").upload(path, file, { upsert: true });
+    // Re-encode before upload so EXIF (including GPS) never leaves the device.
+    const clean = await stripMetadata(file, "image/jpeg");
+    const path = `${uid}/${deck.deck_id}/${crypto.randomUUID()}.jpg`;
+    const { error: upErr } = await supabase.storage
+      .from("deck-media")
+      .upload(path, clean, { upsert: true, contentType: "image/jpeg" });
     if (upErr) { setError(upErr.message); return; }
     // The bucket is private, so the slide references a long-lived signed URL.
     const { data: signed, error: signErr } = await supabase.storage
