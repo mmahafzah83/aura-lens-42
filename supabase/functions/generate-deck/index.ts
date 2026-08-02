@@ -184,7 +184,15 @@ async function generate(
   const deckId = crypto.randomUUID();
 
   const ctx = await readContext(db, signalId, userId);
+  const langHint: "en" | "ar" =
+    requestedLang ?? ((ctx.profile.content_language ?? "en") === "ar" ? "ar" : "en");
+  // One voice DNA, matched to the deck language, chosen before any writing.
+  ctx.voice = resolveVoice(ctx.voices, langHint);
   const p = await plan(ctx, requestedLang);
+  if (p.lang !== langHint) ctx.voice = resolveVoice(ctx.voices, p.lang);
+
+  const memberAvoid = vocab(ctx.voice).avoid;
+  const invOpts = { avoid: memberAvoid, domainTerms: domainTermsFor(ctx) };
 
   const target = requestedLength === 5 || requestedLength === 7 || requestedLength === 10
     ? (requestedLength as 5 | 7 | 10)
@@ -203,18 +211,31 @@ async function generate(
   let corrections: string[] = [];
   let failures: string[] = [];
   let deck: DeckIR | null = null;
+  let critiqueFlags: CritiqueFlag[] = [];
 
-  for (let attempt = 0; attempt < 2; attempt += 1) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
     const slides = await writeSlides(ctx, p, manifest, corrections);
     const candidate = assemble(ctx, p, manifest, slides, theme, deckId);
     const parsed = DeckIRSchema.safeParse(candidate);
     if (!parsed.success) {
       failures = parsed.error.issues.map((i) => `schema: ${i.path.join(".")} — ${i.message}`);
     } else {
-      failures = checkInvariants(parsed.data);
+      failures = checkInvariants(parsed.data, invOpts);
       if (failures.length === 0) {
-        deck = parsed.data;
-        break;
+        // The invariants catch the mechanical tells. The critique catches the
+        // ones only an ear can hear. One regeneration, with the tell quoted back.
+        critiqueFlags = await critique(ctx, parsed.data);
+        const generic = critiqueFlags.filter((f) => f.verdict === "generic");
+        if (!generic.length || attempt >= 1) {
+          deck = parsed.data;
+          break;
+        }
+        corrections = generic.map(
+          (f) =>
+            `Slide ${f.index} reads as generic AI, not as him. The tell: "${f.tell}". Rewrite that slide from the raw captures and his example posts. Leave every other slide exactly as it was.`,
+        );
+        retries = attempt + 1;
+        continue;
       }
     }
     corrections = failures;
@@ -232,14 +253,27 @@ async function generate(
       lang: p.lang,
       theme,
       length: manifest.length,
-      invariant_failures: failures,
+      invariant_failures: [
+        ...failures,
+        ...critiqueFlags.filter((f) => f.verdict === "generic").map((f) => `VOICE: slide ${f.index} — ${f.tell}`),
+      ],
       duration_ms,
     });
-    return { ok: false, failures, plan: p, duration_ms };
+    const abstract = failures.some((f) => f.startsWith("INV-19"));
+    return {
+      ok: false,
+      failures,
+      message: abstract
+        ? "This signal is too abstract to write from — pick another or add a capture."
+        : undefined,
+      plan: p,
+      duration_ms,
+    };
   }
 
   const caption = await writeCaption(ctx, p, deck);
 
+  const genericFlags = critiqueFlags.filter((f) => f.verdict === "generic");
   await logEvent(db, {
     user_id: userId,
     deck_id: deckId,
@@ -248,7 +282,9 @@ async function generate(
     lang: deck.primary_lang,
     theme: deck.theme,
     length: deck.length,
-    invariant_failures: [],
+    // Voice flags are logged even on a passing deck so we can measure whether
+    // the voice is improving over time.
+    invariant_failures: genericFlags.map((f) => `VOICE: slide ${f.index} — ${f.tell}`),
     duration_ms,
   });
 
@@ -258,12 +294,15 @@ async function generate(
     caption,
     plan: p,
     quality: {
-      score: Math.max(0, 100 - retries * 15),
+      score: Math.max(0, 100 - retries * 15 - genericFlags.length * 10),
       flags: [
         ...(p.hasNumber ? [] : ["no_number_in_signal"]),
         ...(ctx.voice ? [] : ["no_voice_profile"]),
+        ...(ctx.raw.length ? [] : ["no_raw_captures"]),
+        ...genericFlags.map((f) => `voice_generic_slide_${f.index}`),
       ],
       retries,
+      voice_profile: ctx.voice ? String(ctx.voice.language ?? "unknown") : null,
     },
     duration_ms,
   };
