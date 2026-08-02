@@ -1,0 +1,4 @@
+CREATE POLICY "deck media read own" ON storage.objects FOR SELECT TO authenticated USING (bucket_id = 'deck-media' AND auth.uid()::text = (storage.foldername(name))[1]);
+CREATE POLICY "deck media insert own" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'deck-media' AND auth.uid()::text = (storage.foldername(name))[1]);
+CREATE POLICY "deck media update own" ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = 'deck-media' AND auth.uid()::text = (storage.foldername(name))[1]) WITH CHECK (bucket_id = 'deck-media' AND auth.uid()::text = (storage.foldername(name))[1]);
+CREATE POLICY "deck media delete own" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'deck-media' AND auth.uid()::text = (storage.foldername(name))[1]);

@@ -11,6 +11,7 @@ import { DeckIRSchema, type DeckIR } from "./deckIR.ts";
 import { checkInvariants } from "./invariants.ts";
 import { compose } from "./compose.ts";
 import { plan, writeSlides, assemble, type SignalContext, type Plan, bareHandle } from "./pipeline.ts";
+import { REQUIRED_SLOTS } from "./compose.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -182,6 +183,39 @@ async function generate(
 /* HTTP                                                                */
 /* ------------------------------------------------------------------ */
 
+/**
+ * "Try another angle" — one slide, same shape, different words.
+ *
+ * The manifest is reduced to the single slide being rewritten, so the model
+ * spends its whole budget on that slot set and cannot disturb its neighbours.
+ */
+async function rewriteSlide(
+  db: any,
+  userId: string,
+  signalId: string,
+  index: number,
+  archetype: string,
+  avoid: string,
+) {
+  const ctx = await readContext(db, signalId, userId);
+  const p = await plan(ctx);
+  const manifest = {
+    length: 5 as const,
+    slots: [{ index, archetype, role: archetype } as any],
+  };
+  const corrections = [
+    `Rewrite slide ${index} from a different angle. Do not reuse this wording: "${avoid.slice(0, 400)}".`,
+    `Fill exactly the required slots for ${archetype}: ${(REQUIRED_SLOTS as any)[archetype]?.join(", ") ?? ""}.`,
+  ];
+  const written = await writeSlides(ctx, p, manifest as any, corrections);
+  const slide = written.find((s: any) => Number(s?.index) === index) ?? written[0];
+  if (!slide) return { ok: false, failures: ["The writer returned nothing for that slide."] };
+  return {
+    ok: true,
+    slide: { index, archetype, slots: slide.slots ?? {} },
+  };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -245,6 +279,16 @@ serve(async (req) => {
     }
 
     if (!body.signal_id) return json({ error: "signal_id required" }, 400);
+
+    if (typeof body.rewrite_slide === "number" && body.deck) {
+      const idx = body.rewrite_slide;
+      const existing = (body.deck.slides ?? []).find((s: any) => s.index === idx);
+      if (!existing) return json({ error: "slide not found" }, 400);
+      const avoid = JSON.stringify(existing.slots ?? {});
+      const out = await rewriteSlide(db, user.id, body.signal_id, idx, existing.archetype, avoid);
+      return json(out, out.ok ? 200 : 422);
+    }
+
     const result = await generate(db, user.id, body.signal_id, body.length, theme);
     return json(result, result.ok ? 200 : 422);
   } catch (e) {
