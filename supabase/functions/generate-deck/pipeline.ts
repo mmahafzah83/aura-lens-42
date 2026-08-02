@@ -296,6 +296,8 @@ export function writeSystem(): string {
 - Western digits only, in every language.
 - No ellipsis anywhere.
 
+Do NOT emit chart data yourself. When the manifest contains a benchmark slide the chart is supplied deterministically from the plan; fill only its headline, hero_lines and source.
+
 Each slide must carry exactly ONE emphasis: either a stat_value, or exactly one hero line with highlight true, or one chart series with emphasis "alert". Never two.`;
 }
 
@@ -464,7 +466,6 @@ export function assemble(
   const name = [prof.first_name, prof.last_name].filter(Boolean).join(" ").trim() || "Member";
   const title = [prof.level, prof.firm].filter(Boolean).join(", ");
   const handle = bareHandle(prof.linkedin_handle || prof.linkedin_url) || "member";
-  const runLang: "en" | "ar" = p.lang;
   const tn = (t: string) => ({ runs: [{ t, lang: /[\u0600-\u06FF]/.test(t) ? "ar" : "en" }] });
 
   const ordered = manifest.slots.map((slot, i) => {
