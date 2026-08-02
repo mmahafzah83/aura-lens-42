@@ -627,16 +627,6 @@ Verdict "generic" whenever the slide could have been written about any company i
   }
 }
 
-function _unusedManifestBlock(manifest: ComposeResult): string {
-  return manifest.slots
-    .map((s) => {
-      const req = REQUIRED_SLOTS[s.archetype].join(", ");
-      const opt = OPTIONAL_SLOTS[s.archetype].join(", ") || "none";
-      return `slide ${s.index} · archetype ${s.archetype} · role ${s.role}\n  required slots: ${req}\n  optional slots: ${opt}`;
-    })
-    .join("\n");
-}
-
 export async function writeSlides(
   ctx: SignalContext,
   p: Plan,
