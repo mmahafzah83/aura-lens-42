@@ -86,7 +86,6 @@ export function useFitLadder(
       if (state.failed || state.reason) setState((s) => ({ ...s, failed: false, reason: null }));
       return;
     }
-    console.warn('[fit]', root.getAttribute('data-archetype'), state.step, reason, 'sh',root.scrollHeight,'ch',root.clientHeight);
     if (state.step < MAX_FIT_STEP) {
       const next = state.step + 1;
       setState({ step: next, scale: FIT_SCALES[next], failed: false, reason: null });
