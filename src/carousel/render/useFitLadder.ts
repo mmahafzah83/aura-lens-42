@@ -7,7 +7,7 @@
  * `optional_tail`. If it still does not fit, we report the failure and let the
  * caller refuse to ship the slide rather than render something broken.
  */
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 /** Fixed reductions. Bounded on purpose: an unbounded ladder hides bad copy. */
 export const FIT_SCALES = [1, 0.88, 0.78] as const;
@@ -56,6 +56,19 @@ export function useFitLadder(
   const [state, setState] = useState<FitState>({ step: 0, scale: FIT_SCALES[0], failed: false, reason: null });
   const lastSignature = useRef(signature);
 
+  // Measure only once the bundled faces are in. Fallback metrics differ enough
+  // from Anton and Cairo to trigger a phantom wrap, and the ladder only ever
+  // escalates — a slide shrunk against the fallback would never come back.
+  const [fontsReady, setFontsReady] = useState<boolean>(
+    () => typeof document === "undefined" || document.fonts?.status === "loaded",
+  );
+  useEffect(() => {
+    if (fontsReady || typeof document === "undefined" || !document.fonts) return;
+    let live = true;
+    document.fonts.ready.then(() => { if (live) setFontsReady(true); });
+    return () => { live = false; };
+  }, [fontsReady]);
+
   if (lastSignature.current !== signature && state.step !== 0) {
     // Restart the ladder synchronously on new content.
     lastSignature.current = signature;
@@ -66,7 +79,7 @@ export function useFitLadder(
 
   useLayoutEffect(() => {
     const root = ref.current;
-    if (!root) return;
+    if (!root || !fontsReady) return;
     const reason = overflows(root);
     if (!reason) {
       if (state.failed || state.reason) setState((s) => ({ ...s, failed: false, reason: null }));
