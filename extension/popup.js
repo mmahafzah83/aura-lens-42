@@ -235,9 +235,9 @@ $("ownPostsBtn").addEventListener("click", async () => {
       return;
     }
 
-    const filled = result.filled || 0;
-    const inserted = result.inserted || 0;
-    msgEl.innerHTML = `<div class="msg success">✓ ${response.payload.posts.length} posts read · ${filled} texts filled · ${inserted} new</div>`;
+    const filled = result.updated || 0;
+    const added = result.saved || 0;
+    msgEl.innerHTML = `<div class="msg success">✓ ${result.received || response.payload.posts.length} posts read · ${filled} texts filled · ${added} new</div>`;
     loadState();
   } catch (e) {
     msgEl.innerHTML = `<div class="msg error">${e.message}</div>`;
