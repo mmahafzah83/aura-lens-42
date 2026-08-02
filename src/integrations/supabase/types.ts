@@ -837,6 +837,51 @@ export type Database = {
         }
         Relationships: []
       }
+      deck_events: {
+        Row: {
+          created_at: string
+          deck_id: string | null
+          duration_ms: number | null
+          event: string
+          fit_steps: number | null
+          id: string
+          invariant_failures: string[] | null
+          lang: string | null
+          length: number | null
+          signal_id: string | null
+          theme: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deck_id?: string | null
+          duration_ms?: number | null
+          event: string
+          fit_steps?: number | null
+          id?: string
+          invariant_failures?: string[] | null
+          lang?: string | null
+          length?: number | null
+          signal_id?: string | null
+          theme?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          deck_id?: string | null
+          duration_ms?: number | null
+          event?: string
+          fit_steps?: number | null
+          id?: string
+          invariant_failures?: string[] | null
+          lang?: string | null
+          length?: number | null
+          signal_id?: string | null
+          theme?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       design_system: {
         Row: {
           created_at: string | null

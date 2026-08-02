@@ -585,6 +585,7 @@ export function Slide({ deck, slide, theme: themeName, onFit }: SlideProps) {
     <div
       ref={ref}
       data-fit={fit.step}
+      data-slide-root={slide.index}
       data-archetype={slide.archetype}
       dir={deck.dir}
       lang={deck.primary_lang}

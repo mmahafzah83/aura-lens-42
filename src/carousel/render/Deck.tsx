@@ -19,9 +19,10 @@ export function DeckPreview({
       {deck.slides.map((slide) => (
         <div
           key={slide.index}
+          data-slide-frame=""
           style={{ width, height: CANVAS_H * scale, overflow: "hidden", borderRadius: 12, flex: "0 0 auto" }}
         >
-          <div style={{ transform: `scale(${scale})`, transformOrigin: "top left" }}>
+          <div data-slide-scaler="" style={{ transform: `scale(${scale})`, transformOrigin: "top left" }}>
             <Slide deck={deck} slide={slide} theme={theme} onFit={(f) => onFit?.(slide.index, f)} />
           </div>
         </div>
