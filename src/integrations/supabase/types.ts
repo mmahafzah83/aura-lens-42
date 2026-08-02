@@ -934,6 +934,7 @@ export type Database = {
           country: string | null
           country_code: string | null
           created_at: string
+          display_name_override: string | null
           firm: string | null
           first_name: string | null
           generated_skills: Json
@@ -983,6 +984,7 @@ export type Database = {
           country?: string | null
           country_code?: string | null
           created_at?: string
+          display_name_override?: string | null
           firm?: string | null
           first_name?: string | null
           generated_skills?: Json
@@ -1032,6 +1034,7 @@ export type Database = {
           country?: string | null
           country_code?: string | null
           created_at?: string
+          display_name_override?: string | null
           firm?: string | null
           first_name?: string | null
           generated_skills?: Json
