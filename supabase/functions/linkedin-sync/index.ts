@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { withObserve } from "../_shared/observe.ts";
+import { writeLinkedInIdentity, vanityFromLinkedIn } from "../_shared/identity.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,9 +30,26 @@ async function fetchLinkedInProfile(accessToken: string) {
     const res = await fetch("https://api.linkedin.com/v2/userinfo", {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
-    if (res.ok) return { data: await res.json(), error: null };
-    const body = await res.text();
-    return { data: null, error: `HTTP ${res.status}: ${body.slice(0, 200)}` };
+    if (!res.ok) {
+      const body = await res.text();
+      return { data: null, error: `HTTP ${res.status}: ${body.slice(0, 200)}` };
+    }
+    const data = await res.json();
+    // userinfo does not carry vanityName; /v2/me does, and the handle is what
+    // the studio renders under the member's name.
+    if (!vanityFromLinkedIn(data)) {
+      try {
+        const meRes = await fetch(
+          "https://api.linkedin.com/v2/me?projection=(id,localizedFirstName,localizedLastName,vanityName)",
+          { headers: { Authorization: `Bearer ${accessToken}` } },
+        );
+        if (meRes.ok) {
+          const me = await meRes.json();
+          if (me?.vanityName) data.vanityName = me.vanityName;
+        }
+      } catch (_) { /* handle stays unresolved */ }
+    }
+    return { data, error: null };
   } catch (e: any) {
     return { data: null, error: e.message };
   }
@@ -292,6 +310,10 @@ async function syncUserLinkedIn(userId: string, adminClient: any) {
     log(logs, "profile_fetch", "warn", profileResult.error);
   } else {
     log(logs, "profile_fetch", "ok", `name=${profileResult.data?.name || "unknown"}`);
+    // Identity is refreshed on every sync so linkedin_connections never drifts.
+    const ident = await writeLinkedInIdentity(adminClient, userId, profileResult.data);
+    log(logs, "identity_synced", "ok",
+      `display_name=${ident.display_name || "unchanged"}, handle=${ident.handle || "unresolved"}`);
   }
 
   // Log posts result
