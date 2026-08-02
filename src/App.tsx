@@ -135,6 +135,9 @@ const App = () => (
             <Route path="/card-preview" element={<PasswordGate><CardPreview /></PasswordGate>} />
             <Route path="/signature" element={<PasswordGate><SignatureStudio /></PasswordGate>} />
             <Route path="/signature-harness" element={<SignatureHarness />} />
+            {import.meta.env.DEV && (
+              <Route path="/carousel-preview" element={<CarouselPreview />} />
+            )}
             <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>
