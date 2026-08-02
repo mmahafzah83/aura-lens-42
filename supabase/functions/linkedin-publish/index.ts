@@ -351,7 +351,18 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
       return ok ? parsed : "Media must be hosted on approved storage";
     };
 
-    if (documentUrl && !imageUrl) {
+    // Precedence is explicit, not incidental: a row whose media_type says
+    // "document" publishes as a document. An image_url on such a row is a data
+    // defect, so it is logged and ignored rather than silently winning.
+    const mediaType = String((post as any)?.media_type ?? "").toLowerCase();
+    const publishAsDocument = Boolean(documentUrl) && (mediaType === "document" || !imageUrl);
+    if (publishAsDocument && imageUrl) {
+      console.warn("[linkedin-publish] data defect: document post also carries image_url", JSON.stringify({
+        post_id: (post as any)?.id, correlation_id: correlationId,
+      }));
+    }
+
+    if (publishAsDocument) {
       const parsedDoc = approvedStorageUrl(documentUrl);
       if (typeof parsedDoc === "string") {
         await releaseToDraft();
@@ -409,7 +420,7 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
       mediaContent = { media: { id: documentUrn, title: docTitle } };
     }
 
-    if (imageUrl) {
+    if (imageUrl && !publishAsDocument) {
       let parsedImg: URL;
       try {
         parsedImg = new URL(imageUrl);

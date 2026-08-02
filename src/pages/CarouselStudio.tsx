@@ -342,7 +342,9 @@ export default function CarouselStudio() {
       if (upErr) throw new Error(upErr.message);
       const { data: signed, error: signErr } = await supabase.storage
         .from("deck-media")
-        .createSignedUrl(path, 60 * 60);
+        // Seven days, so a parked, queued or retried publish never fetches an
+        // expired URL — the same lifetime the slide photos already get.
+        .createSignedUrl(path, 60 * 60 * 24 * 7);
       if (signErr || !signed) throw new Error(signErr?.message ?? "Could not read the PDF back.");
 
       const { data: row, error: insErr } = await supabase

@@ -21,7 +21,7 @@ export const AVATAR_LIMITS: ImageLimits = { maxBytes: 5 * MB, minWidth: 400, min
  * small that no amount of resampling keeps it sharp; everything else the tool
  * upscales and crops itself.
  */
-export const SLIDE_MEDIA_LIMITS: ImageLimits = { maxBytes: 10 * MB, minWidth: 400, minHeight: 400 };
+export const SLIDE_MEDIA_LIMITS: ImageLimits = { maxBytes: 10 * MB, minWidth: 160, minHeight: 160 };
 /** Shortest side below this and the picture is genuinely unusable. */
 export const MIN_USABLE_SIDE = 400;
 

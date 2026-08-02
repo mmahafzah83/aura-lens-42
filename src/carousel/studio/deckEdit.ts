@@ -186,6 +186,24 @@ export function deleteSlide(deck: DeckIR, slideIndex: number): DeckIR {
   return { ...deck, slides: reindex(deck.slides.filter((s) => s.index !== slideIndex)) };
 }
 
+/**
+ * Reorder one middle slide. Lock semantics are unchanged: the cover stays
+ * first, the closing slide stays last, everything between them moves freely.
+ * A move that would violate a lock is refused by returning the deck unchanged.
+ */
+export function moveSlide(deck: DeckIR, fromIndex: number, toIndex: number): DeckIR {
+  if (fromIndex === toIndex) return deck;
+  const slide = deck.slides.find((s) => s.index === fromIndex);
+  if (!slide || isLocked(deck, slide)) return deck;
+  if (toIndex < 0 || toIndex >= deck.slides.length) return deck;
+  const target = deck.slides.find((s) => s.index === toIndex);
+  // Landing on a locked position would push it out of place.
+  if (!target || isLocked(deck, target)) return deck;
+  const rest = deck.slides.filter((s) => s.index !== fromIndex);
+  rest.splice(toIndex, 0, slide);
+  return { ...deck, slides: reindex(rest) };
+}
+
 export function replaceSlide(deck: DeckIR, slideIndex: number, slide: Slide): DeckIR {
   return {
     ...deck,
