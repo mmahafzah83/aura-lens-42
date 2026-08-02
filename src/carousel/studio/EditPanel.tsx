@@ -72,7 +72,7 @@ function Field({
 }
 
 export function EditPanel({
-  deck, slide, onChange, onRewrite, rewriting, onUploadPhoto,
+  deck, slide, onChange, onRewrite, rewriting, onUploadPhoto, mediaError, mediaSupport,
 }: {
   deck: DeckIR;
   slide: Slide;
@@ -80,11 +80,16 @@ export function EditPanel({
   onRewrite: () => void;
   rewriting: boolean;
   onUploadPhoto: (file: File) => Promise<void>;
+  /** Anything that went wrong on this control, shown right here. */
+  mediaError?: string | null;
+  /** Whether this archetype can show a photo at all, and how. */
+  mediaSupport?: "cover" | "band" | "none";
 }) {
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
   const locked = isLocked(deck, slide);
   const swaps = swappableArchetypes(deck, slide);
+  const canHoldPhoto = mediaSupport !== "none";
 
   const fields: Array<{ key: string; label: string; path: SlotPath; budget?: number; rows?: number; right?: React.ReactNode }> = [];
   for (const slot of SLOT_ORDER) {
@@ -213,11 +218,14 @@ export function EditPanel({
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
-          disabled={uploading}
+          disabled={uploading || !canHoldPhoto}
+          title={canHoldPhoto ? undefined : "This slide has no room for a photo."}
           style={{
             ...labelStyle, display: "inline-flex", alignItems: "center", gap: 6,
             border: "1px solid var(--border-default)", background: "var(--surface-card)",
-            borderRadius: 999, padding: "6px 12px", cursor: "pointer",
+            borderRadius: 999, padding: "6px 12px",
+            cursor: canHoldPhoto ? "pointer" : "not-allowed",
+            opacity: canHoldPhoto ? 1 : 0.5,
           }}
         >
           <ImagePlus size={12} /> {uploading ? "Uploading" : "Add image"}
@@ -232,10 +240,21 @@ export function EditPanel({
           </button>
         )}
       </div>
+      {/* A rejection has to be visible where the member clicked, not in a
+          panel hundreds of pixels below the fold. */}
+      {mediaError && (
+        <div style={{ fontSize: 12.5, color: "var(--error)", lineHeight: 1.6 }}>{mediaError}</div>
+      )}
+      {!canHoldPhoto && (
+        <div style={{ ...labelStyle, opacity: 0.7 }}>
+          This slide type has no room for a photo. Pick another slide to add one.
+        </div>
+      )}
       {/* Say the range before the member picks, so nothing is refused after the fact. */}
-      <div style={{ ...labelStyle, opacity: 0.7 }}>
+      {canHoldPhoto && <div style={{ ...labelStyle, opacity: 0.7 }}>
         JPG, PNG or WebP, up to 10MB. Anything larger than a small thumbnail works — Aura crops and resizes it to fit the slide.
-      </div>
+        {mediaSupport === "cover" ? " On this slide the photo fills the whole cover behind the words." : ""}
+      </div>}
     </div>
   );
 }

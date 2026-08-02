@@ -10,17 +10,19 @@ import { checkInvariants } from "../invariants";
 import { DeckPreview } from "./Deck";
 import { THEME_NAMES, DEFAULT_THEME, type ThemeName } from "./themes";
 import type { FitState } from "./useFitLadder";
-import { collectSlideNodes, exportDeckPdf, exportDeckPngs, maxFitStep, type ExportResult } from "./exportDeck";
+import { collectSlideNodes, exportDeckPdf, exportDeckPngs, formatBytes, maxFitStep, type ExportResult } from "./exportDeck";
 import { logDeckEvent } from "./deckTelemetry";
 
 import enChart from "../__fixtures__/en-7-chart.json";
 import arInlineEn from "../__fixtures__/ar-7-inline-en.json";
 import enNoStat from "../__fixtures__/en-5-no-stat.json";
+import tmp10 from "../__fixtures__/tmp-10.json";
 
 const RAW: Array<[string, unknown]> = [
   ["en-7-chart", enChart],
   ["ar-7-inline-en", arInlineEn],
   ["en-5-no-stat", enNoStat],
+  ["tmp-10", tmp10],
 ];
 
 const btn = (active = false): React.CSSProperties => ({
@@ -121,7 +123,9 @@ function DeckSection({
             </button>
             {result && (
               <span data-export-readout style={{ fontSize: 12, color: "#8FE3D6" }}>
-                {result.slides} slides captured · max fit step {result.maxFitStep} · {result.durationMs} ms
+                {result.slides} slides captured · max fit step {result.maxFitStep} ·{" "}
+                {result.bytes !== undefined ? `${formatBytes(result.bytes)} (${result.bytes} bytes) · ` : ""}
+                {result.durationMs} ms
               </span>
             )}
             {error && (

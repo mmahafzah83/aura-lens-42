@@ -1,0 +1,458 @@
+{
+ "deck_id": "tmp-10-measure",
+ "signal_id": "sig-grid-capex-2026",
+ "primary_lang": "en",
+ "dir": "ltr",
+ "numerals": "western",
+ "theme": "midnight",
+ "length": 10,
+ "profile": {
+  "name": {
+   "runs": [
+    {
+     "t": "Mohammad Mahafdhah",
+     "lang": "en"
+    }
+   ]
+  },
+  "title": {
+   "runs": [
+    {
+     "t": "Grid strategy",
+     "lang": "en"
+    }
+   ]
+  },
+  "handle": "mohammad-mahafdhah",
+  "avatar_url": null,
+  "initials": "MM"
+ },
+ "slides": [
+  {
+   "index": 0,
+   "archetype": "cover_hero",
+   "slots": {
+    "chip": {
+     "runs": [
+      {
+       "t": "Grid capital",
+       "lang": "en"
+      }
+     ]
+    },
+    "hero_lines": [
+     {
+      "runs": [
+       {
+        "t": "The meter",
+        "lang": "en"
+       }
+      ]
+     },
+     {
+      "runs": [
+       {
+        "t": "moved first",
+        "lang": "en"
+       }
+      ],
+      "highlight": true
+     }
+    ],
+    "subline": {
+     "runs": [
+      {
+       "t": "What the 2026 capital plans already decided.",
+       "lang": "en"
+      }
+     ]
+    },
+    "media": {
+     "kind": "photo",
+     "src": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1400",
+     "alt": "test"
+    }
+   }
+  },
+  {
+   "index": 1,
+   "archetype": "frame",
+   "slots": {
+    "headline": {
+     "runs": [
+      {
+       "t": "Two budgets, one grid",
+       "lang": "en"
+      }
+     ]
+    },
+    "hero_lines": [
+     {
+      "runs": [
+       {
+        "t": "Two budgets",
+        "lang": "en"
+       }
+      ],
+      "highlight": true
+     }
+    ],
+    "body": [
+     {
+      "runs": [
+       {
+        "t": "Utilities are funding measurement before they fund generation.",
+        "lang": "en"
+       }
+      ]
+     },
+     {
+      "runs": [
+       {
+        "t": "That order tells you where the next decade of margin sits.",
+        "lang": "en"
+       }
+      ]
+     }
+    ],
+    "media": {
+     "kind": "photo",
+     "src": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1400",
+     "alt": "test"
+    }
+   }
+  },
+  {
+   "index": 2,
+   "archetype": "evidence",
+   "slots": {
+    "stat_value": "3.4x",
+    "stat_label": {
+     "runs": [
+      {
+       "t": "metering spend against storage",
+       "lang": "en"
+      }
+     ]
+    },
+    "source": {
+     "runs": [
+      {
+       "t": "Published capital plans, 2026",
+       "lang": "en"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "index": 3,
+   "archetype": "benchmark",
+   "slots": {
+    "headline": {
+     "runs": [
+      {
+       "t": "Where the money went",
+       "lang": "en"
+      }
+     ]
+    },
+    "media": {
+     "kind": "chart",
+     "placement": "lower",
+     "chart": {
+      "type": "bars",
+      "series": [
+       {
+        "label": {
+         "runs": [
+          {
+           "t": "Metering",
+           "lang": "en"
+          }
+         ]
+        },
+        "value": 34,
+        "unit": "%",
+        "emphasis": "alert"
+       },
+       {
+        "label": {
+         "runs": [
+          {
+           "t": "Storage",
+           "lang": "en"
+          }
+         ]
+        },
+        "value": 10,
+        "unit": "%",
+        "emphasis": "accent"
+       },
+       {
+        "label": {
+         "runs": [
+          {
+           "t": "Transmission",
+           "lang": "en"
+          }
+         ]
+        },
+        "value": 22,
+        "unit": "%",
+        "emphasis": "none"
+       }
+      ]
+     }
+    }
+   }
+  },
+  {
+   "index": 4,
+   "archetype": "quote",
+   "slots": {
+    "quote": {
+     "runs": [
+      {
+       "t": "You cannot trade a load you cannot see.",
+       "lang": "en"
+      }
+     ]
+    },
+    "hero_lines": [
+     {
+      "runs": [
+       {
+        "t": "Read it twice",
+        "lang": "en"
+       }
+      ],
+      "highlight": true
+     }
+    ]
+   }
+  },
+  {
+   "index": 5,
+   "archetype": "steps",
+   "slots": {
+    "headline": {
+     "runs": [
+      {
+       "t": "What to do this quarter",
+       "lang": "en"
+      }
+     ]
+    },
+    "checklist": [
+     {
+      "runs": [
+       {
+        "t": "Ask for the metering line item by name.",
+        "lang": "en"
+       }
+      ]
+     },
+     {
+      "runs": [
+       {
+        "t": "Compare it against storage, not against last year.",
+        "lang": "en"
+       }
+      ]
+     },
+     {
+      "runs": [
+       {
+        "t": "Put one number in front of the board.",
+        "lang": "en"
+       }
+      ]
+     }
+    ],
+    "hero_lines": [
+     {
+      "runs": [
+       {
+        "t": "Three moves",
+        "lang": "en"
+       }
+      ],
+      "highlight": true
+     }
+    ]
+   }
+  },
+  {
+   "index": 6,
+   "archetype": "frame",
+   "slots": {
+    "headline": {
+     "runs": [
+      {
+       "t": "Two budgets, one grid",
+       "lang": "en"
+      }
+     ]
+    },
+    "hero_lines": [
+     {
+      "runs": [
+       {
+        "t": "Two budgets",
+        "lang": "en"
+       }
+      ],
+      "highlight": true
+     }
+    ],
+    "body": [
+     {
+      "runs": [
+       {
+        "t": "Utilities are funding measurement before they fund generation.",
+        "lang": "en"
+       }
+      ]
+     },
+     {
+      "runs": [
+       {
+        "t": "That order tells you where the next decade of margin sits.",
+        "lang": "en"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "index": 7,
+   "archetype": "evidence",
+   "slots": {
+    "stat_value": "3.4x",
+    "stat_label": {
+     "runs": [
+      {
+       "t": "metering spend against storage",
+       "lang": "en"
+      }
+     ]
+    },
+    "source": {
+     "runs": [
+      {
+       "t": "Published capital plans, 2026",
+       "lang": "en"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "index": 8,
+   "archetype": "benchmark",
+   "slots": {
+    "headline": {
+     "runs": [
+      {
+       "t": "Where the money went",
+       "lang": "en"
+      }
+     ]
+    },
+    "media": {
+     "kind": "chart",
+     "placement": "lower",
+     "chart": {
+      "type": "bars",
+      "series": [
+       {
+        "label": {
+         "runs": [
+          {
+           "t": "Metering",
+           "lang": "en"
+          }
+         ]
+        },
+        "value": 34,
+        "unit": "%",
+        "emphasis": "alert"
+       },
+       {
+        "label": {
+         "runs": [
+          {
+           "t": "Storage",
+           "lang": "en"
+          }
+         ]
+        },
+        "value": 10,
+        "unit": "%",
+        "emphasis": "accent"
+       },
+       {
+        "label": {
+         "runs": [
+          {
+           "t": "Transmission",
+           "lang": "en"
+          }
+         ]
+        },
+        "value": 22,
+        "unit": "%",
+        "emphasis": "none"
+       }
+      ]
+     }
+    }
+   }
+  },
+  {
+   "index": 9,
+   "archetype": "close",
+   "slots": {
+    "headline": {
+     "runs": [
+      {
+       "t": "If this was useful",
+       "lang": "en"
+      }
+     ]
+    },
+    "body": [
+     {
+      "runs": [
+       {
+        "t": "I write about grid capital every week.",
+        "lang": "en"
+       }
+      ]
+     }
+    ],
+    "cta_pill": {
+     "runs": [
+      {
+       "t": "Follow for the next one",
+       "lang": "en"
+      }
+     ]
+    },
+    "hero_lines": [
+     {
+      "runs": [
+       {
+        "t": "Your move",
+        "lang": "en"
+       }
+      ],
+      "highlight": true
+     }
+    ]
+   }
+  }
+ ]
+}

@@ -7,10 +7,11 @@
  * RULE B — no network fonts. Everything resolves to a bundled face declared
  * in fonts.css.
  */
-import React, { useRef } from "react";
+import React, { useLayoutEffect, useRef, useState } from "react";
 import "./fonts.css";
 import {
   plainText,
+  type Archetype,
   type DeckIR,
   type HeroLine,
   type Run,
@@ -19,6 +20,7 @@ import {
 } from "../deckIR";
 import { getTheme, type Theme, type ThemeName } from "./themes";
 import { useFitLadder, type FitState } from "./useFitLadder";
+import { INV_16_MEDIA_IN_DOM } from "../invariants";
 
 /* ------------------------------------------------------------------ */
 /* Canvas and type scale                                               */
@@ -47,6 +49,8 @@ function fontFor(lang: Lang, kind: "display" | "text" | "mono"): string {
 function scaleOf(s: number) {
   const px = (n: number) => `${Math.round(n * s)}px`;
   return {
+    /** The raw fit scale, so every derived dimension can stay on the ladder. */
+    scale: s,
     heroEn: px(150),
     heroAr: px(92),
     stat: px(270),
@@ -56,6 +60,12 @@ function scaleOf(s: number) {
     data: px(26),
     source: px(22),
     gap: Math.round(28 * s),
+    /**
+     * A photo band is a dimension like any other: it rides the fit ladder so a
+     * dense slide shrinks the image alongside the type instead of overflowing
+     * the canvas and reporting the overflow as a text problem.
+     */
+    media: Math.round(360 * s),
   };
 }
 
@@ -145,6 +155,7 @@ function IconMark({ src, theme, size }: { src?: string; theme: Theme; size: numb
   if (!paths) return null;
   return (
     <div
+      data-media-node="icon"
       style={{
         width: size, height: size, borderRadius: 18, flex: "0 0 auto",
         background: theme.panel, border: `1px solid ${theme.rule}`,
@@ -340,7 +351,7 @@ function Bars({ slide, primary, theme, s }: { slide: SlideIR; primary: Lang; the
   if (!series.length) return null;
   const max = Math.max(...series.map((x) => Math.abs(x.value))) || 1;
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: Math.round(s.gap * 0.9) }}>
+    <div data-media-node="chart" style={{ display: "flex", flexDirection: "column", gap: Math.round(s.gap * 0.9) }}>
       {series.map((item, i) => {
         const colour = item.emphasis === "alert" ? theme.alert : item.emphasis === "accent" ? theme.accent : theme.neutral;
         return (
@@ -363,23 +374,102 @@ function Bars({ slide, primary, theme, s }: { slide: SlideIR; primary: Lang; the
   );
 }
 
-function MediaBlock({ slide, theme }: { slide: SlideIR; theme: Theme }) {
+/* ------------------------------------------------------------------ */
+/* Where a photo goes, per archetype — ONE table, no default branch     */
+/* ------------------------------------------------------------------ */
+
+/**
+ * `cover`  — full bleed behind the type, with a scrim. The photo IS the slide.
+ * `band`   — a contained block in the content flow, height on the fit ladder.
+ * `none`   — this archetype cannot hold a member photo, and says so before the
+ *            file picker opens rather than swallowing the upload.
+ *
+ * Every archetype appears here and the type is a total `Record`, so adding a
+ * tenth archetype fails the typecheck until someone makes this decision. That
+ * is deliberate: media used to be pasted into a single switch case, and the
+ * other eight archetypes inherited silence.
+ */
+export type MediaPlacementMode = "cover" | "band" | "none";
+
+export const MEDIA_BY_ARCHETYPE: Record<Archetype, MediaPlacementMode> = {
+  cover_hero: "cover",
+  cover_stat: "cover",
+  frame: "band",
+  evidence: "band",
+  // The chart is this slide's visual; a photo behind bars reads as noise.
+  benchmark: "none",
+  quote: "cover",
+  // The numbered list needs the full column.
+  steps: "none",
+  definition: "band",
+  // The standing figure is the one image on the closing slide.
+  close: "none",
+};
+
+export function mediaSupport(archetype: Archetype): MediaPlacementMode {
+  return MEDIA_BY_ARCHETYPE[archetype];
+}
+
+/** The photo a member attached, if this slot carries one at all. */
+function photoSrc(slide: SlideIR): string | null {
   const media = slide.slots.media;
-  if (!media || media.kind === "chart" || media.kind === "icon" || !media.src) return null;
+  if (!media || media.kind === "chart" || media.kind === "icon") return null;
+  return media.src ?? null;
+}
+
+/** A contained band, sized off the same scale object as everything else. */
+function MediaBand({ slide, theme, s }: { slide: SlideIR; theme: Theme; s: ReturnType<typeof scaleOf> }) {
+  const src = photoSrc(slide);
+  if (!src) return null;
+  const media = slide.slots.media!;
   return (
     <div
+      data-media-node="band"
       style={{
         width: "100%",
-        height: media.placement === "full" ? 620 : 380,
+        height: media.placement === "full" ? Math.round(s.media * 1.6) : s.media,
+        flex: "0 0 auto",
+        marginBlockStart: s.gap,
         borderRadius: 18,
-        background: `${theme.panel} center/cover no-repeat`,
-        backgroundImage: `url(${media.src})`,
+        background: theme.panel,
+        backgroundImage: `url(${src})`,
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
         backgroundSize: "cover",
         border: `1px solid ${theme.rule}`,
       }}
       role="img"
       aria-label={media.credit ?? ""}
     />
+  );
+}
+
+/**
+ * Full bleed behind the type. The scrim runs from the reading edge so the hero
+ * keeps its contrast in both directions, and the whole thing sits underneath
+ * the content layer rather than inside the flow.
+ */
+function MediaCover({ slide, deck, theme }: { slide: SlideIR; deck: DeckIR; theme: Theme }) {
+  const src = photoSrc(slide);
+  if (!src) return null;
+  const from = deck.dir === "rtl" ? "to left" : "to right";
+  return (
+    <div data-media-node="cover" aria-hidden style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          backgroundImage: `url(${src})`,
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          backgroundSize: "cover",
+        }}
+      />
+      {/* Two scrims: a directional one for the type column, a vertical one so
+          the identity row and the footer rule never sit on bare photo. */}
+      <div style={{ position: "absolute", inset: 0, background: `linear-gradient(${from}, ${theme.bgSolid} 0%, ${theme.bgSolid}E6 42%, ${theme.bgSolid}66 100%)` }} />
+      <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to bottom, ${theme.bgSolid}D9 0%, ${theme.bgSolid}40 34%, ${theme.bgSolid}CC 100%)` }} />
+    </div>
   );
 }
 
@@ -435,7 +525,6 @@ function SlideBody({ deck, slide, theme, s, hideTails }: PartProps) {
           <Hero lines={slots.hero_lines} {...common} />
           <H2 node={slots.headline} {...common} />
           <Body nodes={slots.body} primary={p} theme={theme} s={s} hideTails={hideTails} />
-          <MediaBlock slide={slide} theme={theme} />
         </Stack>
       );
 
@@ -640,6 +729,37 @@ export interface SlideProps {
   onFit?: (state: FitState) => void;
 }
 
+/**
+ * INV-16, as a real post-render assertion rather than a declared constant.
+ *
+ * If a slide declares media of a visual kind, a node for it must exist in the
+ * DOM after layout. Anything else means the member attached something and the
+ * renderer quietly dropped it — which is precisely what happened when
+ * `MediaBlock` was reachable from exactly one of nine archetypes.
+ */
+function useMediaInDom(
+  ref: React.RefObject<HTMLElement | null>,
+  slide: SlideIR,
+  signature: string,
+): string | null {
+  const [defect, setDefect] = useState<string | null>(null);
+  useLayoutEffect(() => {
+    const root = ref.current;
+    const media = slide.slots.media;
+    if (!root || !media) { setDefect(null); return; }
+    const visual = media.kind === "chart" ? Boolean(media.chart?.series?.length) : Boolean(media.src);
+    if (!visual) { setDefect(null); return; }
+    const drawn = root.querySelector("[data-media-node]");
+    if (drawn) { setDefect(null); return; }
+    const what = media.kind === "chart" ? "a chart" : media.kind === "icon" ? "a mark" : "an image";
+    setDefect(
+      `${INV_16_MEDIA_IN_DOM}: slide ${slide.index + 1} carries ${what}, but a ${slide.archetype.replace(/_/g, " ")} slide cannot show one. Move it to another slide or remove it.`,
+    );
+    // signature forces a re-measure whenever the photo, archetype or fit changes.
+  }, [ref, slide, signature]);
+  return defect;
+}
+
 export function Slide({ deck, slide, theme: themeName, onFit }: SlideProps) {
   const theme = getTheme(themeName ?? deck.theme);
   const ref = useRef<HTMLDivElement | null>(null);
@@ -648,14 +768,23 @@ export function Slide({ deck, slide, theme: themeName, onFit }: SlideProps) {
   const s = scaleOf(fit.scale);
   const hideTails = fit.step >= 2;
 
+  const mediaDefect = useMediaInDom(ref, slide, `${signature}|${photoSrc(slide) ?? ""}|${fit.step}`);
+  // INV-16 rides the same channel as the fit ladder: a slide that declares
+  // media the renderer does not draw is a defect the member must see, not a
+  // silent no-op. This is the exact failure that hid "Add image" for months.
+  const reported: FitState = mediaDefect
+    ? { ...fit, failed: true, reason: mediaDefect }
+    : fit;
+
   const lastReported = useRef<string>("");
-  const key = `${fit.step}|${fit.failed}|${fit.reason ?? ""}`;
+  const key = `${reported.step}|${reported.failed}|${reported.reason ?? ""}`;
   if (onFit && lastReported.current !== key) {
     lastReported.current = key;
-    queueMicrotask(() => onFit(fit));
+    queueMicrotask(() => onFit(reported));
   }
 
   const isClose = slide.archetype === "close";
+  const placement = MEDIA_BY_ARCHETYPE[slide.archetype];
 
   return (
     <div
@@ -663,6 +792,7 @@ export function Slide({ deck, slide, theme: themeName, onFit }: SlideProps) {
       data-fit={fit.step}
       data-slide-root={slide.index}
       data-archetype={slide.archetype}
+      data-bg={theme.bgSolid}
       dir={deck.dir}
       lang={deck.primary_lang}
       style={{
@@ -681,13 +811,17 @@ export function Slide({ deck, slide, theme: themeName, onFit }: SlideProps) {
         fontVariantNumeric: "lining-nums tabular-nums",
       }}
     >
+      {/* Media is drawn HERE, from the table, for every archetype — never from
+          inside an archetype's own switch case. */}
+      {placement === "cover" && <MediaCover slide={slide} deck={deck} theme={theme} />}
       {isClose ? (
         <CloseSlide deck={deck} slide={slide} theme={theme} s={s} hideTails={hideTails} />
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: s.gap }}>
+        <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: s.gap, position: "relative" }}>
           <IdentityBar deck={deck} theme={theme} s={s} />
           <div style={{ flex: "1 1 auto", minHeight: 0, display: "flex", flexDirection: "column", justifyContent: "center" }}>
             <SlideBody deck={deck} slide={slide} theme={theme} s={s} hideTails={hideTails} />
+            {placement === "band" && <MediaBand slide={slide} theme={theme} s={s} />}
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flex: "0 0 auto" }}>
             <div style={{ height: 4, width: 96, borderRadius: 999, background: theme.accent }} />

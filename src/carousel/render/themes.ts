@@ -9,6 +9,12 @@
 
 export interface Theme {
   bg: string;
+  /**
+   * One opaque colour standing in for `bg`. JPEG has no alpha channel, so the
+   * PDF exporter composites every captured page onto this before encoding —
+   * without it a transparent region would encode as black.
+   */
+  bgSolid: string;
   fg: string;
   dim: string;
   head: string;
@@ -27,6 +33,7 @@ export interface Theme {
 export const THEMES = {
   midnight: {
     bg: "radial-gradient(125% 95% at 15% -5%, #1E2F39 0%, #101A20 45%, #0B1216 100%)",
+    bgSolid: "#101A20",
     fg: "#DFE8EA",
     dim: "#A6B4B8",
     head: "#F6FBFB",
@@ -43,6 +50,7 @@ export const THEMES = {
   },
   clay: {
     bg: "radial-gradient(125% 95% at 15% -5%, #4A2C22 0%, #2A1712 48%, #1E100C 100%)",
+    bgSolid: "#2A1712",
     fg: "#F0E2D8",
     dim: "#C0AB9C",
     head: "#FEF8F1",
@@ -59,6 +67,7 @@ export const THEMES = {
   },
   gradient: {
     bg: "linear-gradient(158deg,#E8A765 0%,#C4685A 48%,#7E3230 100%)",
+    bgSolid: "#C4685A",
     fg: "#FFF8F0",
     dim: "#FFEBDC",
     head: "#FFF8F0",
@@ -75,6 +84,7 @@ export const THEMES = {
   },
   paper: {
     bg: "#F1ECE1",
+    bgSolid: "#F1ECE1",
     fg: "#1B1712",
     dim: "#4A4136",
     head: "#1B1712",

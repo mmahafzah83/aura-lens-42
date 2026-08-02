@@ -9,12 +9,20 @@ export type DeckEvent =
   | "exported"
   | "export_failed"
   | "published"
+  | "publish_failed"
   | "abandoned";
 
 export async function logDeckEvent(
   event: DeckEvent,
   deck: DeckIR,
-  extra: { theme?: string; fitSteps?: number; durationMs?: number; invariantFailures?: string[] } = {},
+  extra: {
+    theme?: string;
+    fitSteps?: number;
+    durationMs?: number;
+    invariantFailures?: string[];
+    /** Size of the produced PDF. Logged on every publish attempt, pass or fail. */
+    pdfBytes?: number;
+  } = {},
 ): Promise<void> {
   try {
     const { data } = await supabase.auth.getSession();
@@ -30,6 +38,7 @@ export async function logDeckEvent(
       fit_steps: extra.fitSteps ?? null,
       duration_ms: extra.durationMs ?? null,
       invariant_failures: extra.invariantFailures ?? null,
+      pdf_bytes: extra.pdfBytes ?? null,
     });
   } catch {
     /* telemetry must never break the export */
