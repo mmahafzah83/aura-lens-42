@@ -13,6 +13,10 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@fontsource/anton": "^5.3.0",
+    "@fontsource/cairo": "^5.3.0",
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@fontsource/inter": "^5.3.0",
     "@hookform/resolvers": "^3.10.0",
     "@lovable.dev/mcp-js": "^0.22.0",
     "@radix-ui/react-accordion": "^1.2.11",

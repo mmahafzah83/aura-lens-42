@@ -50,6 +50,8 @@ const CardPreview = lazy(() => import("./pages/CardPreview"));
 const GuideThoughtLeadershipStrategy = lazy(() => import("./pages/GuideThoughtLeadershipStrategy"));
 const SignatureStudio = lazy(() => import("./pages/SignatureStudio"));
 const SignatureHarness = lazy(() => import("./pages/SignatureHarness"));
+// Dev-only carousel renderer harness. Registered below only when import.meta.env.DEV.
+const CarouselPreview = lazy(() => import("./carousel/render/CarouselPreview"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -133,6 +135,9 @@ const App = () => (
             <Route path="/card-preview" element={<PasswordGate><CardPreview /></PasswordGate>} />
             <Route path="/signature" element={<PasswordGate><SignatureStudio /></PasswordGate>} />
             <Route path="/signature-harness" element={<SignatureHarness />} />
+            {import.meta.env.DEV && (
+              <Route path="/carousel-preview" element={<CarouselPreview />} />
+            )}
             <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>
