@@ -135,8 +135,13 @@ function toBlob(canvas: HTMLCanvasElement): Promise<Blob> {
  * One PDF, one slide per page, page box exactly 1080 x 1350pt — the shape
  * LinkedIn accepts as a document post. Any slide failing aborts everything;
  * a 6-of-7 carousel is worse than no carousel.
+ *
+ * The blob form is what direct publishing uploads, so the bytes LinkedIn
+ * receives are byte-for-byte the bytes a manual download would have produced.
  */
-export async function exportDeckPdf(nodes: HTMLElement[], filename: string): Promise<ExportResult> {
+export async function renderDeckPdfBlob(
+  nodes: HTMLElement[],
+): Promise<{ blob: Blob; result: ExportResult }> {
   const t0 = performance.now();
   const canvases = await captureAll(nodes);
   const { default: jsPDF } = await import("jspdf");
@@ -145,8 +150,20 @@ export async function exportDeckPdf(nodes: HTMLElement[], filename: string): Pro
     if (i > 0) pdf.addPage([CANVAS_W, CANVAS_H], "portrait");
     pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, CANVAS_W, CANVAS_H);
   });
-  download(pdf.output("blob"), filename);
-  return { slides: canvases.length, maxFitStep: maxFitStep(nodes), durationMs: Math.round(performance.now() - t0) };
+  return {
+    blob: pdf.output("blob"),
+    result: {
+      slides: canvases.length,
+      maxFitStep: maxFitStep(nodes),
+      durationMs: Math.round(performance.now() - t0),
+    },
+  };
+}
+
+export async function exportDeckPdf(nodes: HTMLElement[], filename: string): Promise<ExportResult> {
+  const { blob, result } = await renderDeckPdfBlob(nodes);
+  download(blob, filename);
+  return result;
 }
 
 /** The same capture, delivered as individual PNGs in a zip. */
