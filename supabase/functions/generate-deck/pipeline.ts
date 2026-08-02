@@ -32,10 +32,49 @@ function asArray(v: unknown): string[] {
   return [];
 }
 
+/**
+ * The ONE shape test for a sign-off, used by both the `signoffs` bucket and
+ * `pickSignOff` so the two can never drift apart. Structural only: no phrase,
+ * industry or person appears here.
+ *
+ * A sign-off is a finished, self-contained declarative statement — no bracketed
+ * slot to fill, no trailing colon inviting a list, not a question, and it ends
+ * in terminal sentence punctuation.
+ */
+export function isSignOff(raw: unknown): boolean {
+  const u = String(raw ?? "").trim();
+  return (
+    u.length >= 25 &&
+    u.length <= 220 &&
+    !/[\[\]{}<>]/.test(u) &&
+    !/[:؟?]\s*$/.test(u) &&
+    /[.!。۔]\s*$/.test(u)
+  );
+}
+
+/**
+ * A marker is a bare typographic glyph with no letter in it at all — the kind
+ * used to structure a LinkedIn post body. Derived from Unicode letter absence,
+ * never from a list of glyphs typed into this file.
+ */
+export function isMarker(raw: unknown): boolean {
+  const u = String(raw ?? "").trim();
+  return u.length > 0 && !/\p{L}/u.test(u);
+}
+
 export function vocab(voice: Record<string, any> | null | undefined) {
   const vp = (voice?.vocabulary_preferences ?? {}) as Record<string, any>;
+  const use = asArray(vp.use);
+  // `use` is three structurally different kinds of thing wearing one name.
+  // Classify by SHAPE and hand each consumer only what it may legitimately use.
+  const markers = use.filter(isMarker);
+  const signoffs = use.filter((u) => !isMarker(u) && isSignOff(u));
+  const openers = use.filter((u) => !isMarker(u) && !isSignOff(u));
   return {
-    use: asArray(vp.use),
+    use,
+    markers,
+    signoffs,
+    openers,
     avoid: asArray(vp.avoid),
     rhythm: typeof vp.rhythm === "string" ? vp.rhythm : asArray(vp.rhythm).join(" "),
     notes: typeof vp.notes === "string" ? vp.notes : asArray(vp.notes).join(" "),
@@ -85,7 +124,11 @@ function examplePostText(p: unknown): string {
  * borrow the cadence, never the phrases, because phrases do not translate and
  * would read as a different person.
  */
-export function voiceBlock(voice: Record<string, any> | null, rhythmOnly = false): string {
+export function voiceBlock(
+  voice: Record<string, any> | null,
+  rhythmOnly = false,
+  scope: "slides" | "caption" = "slides",
+): string {
   if (!voice) {
     return [
       "VOICE: this member has no voice profile yet.",
@@ -105,13 +148,23 @@ export function voiceBlock(voice: Record<string, any> | null, rhythmOnly = false
       `TONE: ${String(voice.tone ?? "").trim() || "(not recorded)"}`,
       "",
       "STILL FORBIDDEN — the member's own avoid list applies in every language:",
-      ...v.avoid.map((a) => `  · ${a}`),
+      ...v.avoid.map((a) => `  - ${a}`),
     ].join("\n");
   }
   const examples = (Array.isArray(voice.example_posts) ? voice.example_posts : [])
     .map(examplePostText)
     .filter((t) => t.length > 80)
     .slice(0, 5);
+
+  // Slides get connectives only. The caption may also close on a sign-off.
+  // Markers never reach any model call, for slides or caption.
+  const phrases = scope === "caption" ? [...v.openers, ...v.signoffs] : v.openers;
+  const heading = scope === "caption"
+    ? "THE MEMBER'S OWN CONSTRUCTIONS — connectives to open or frame a line with, and the closing statements they end a post on:"
+    : [
+        "THE MEMBER'S OWN CONNECTIVES — use these to BEGIN a sentence with, or to frame a contrast.",
+        "They are NOT whole lines to reproduce. Never place one on a slide as the slide's entire content:",
+      ].join("\n");
 
   return [
     `VOICE DNA — profile language "${voice.language ?? "unknown"}". This is the member's own signature. Follow it exactly.`,
@@ -122,11 +175,11 @@ export function voiceBlock(voice: Record<string, any> | null, rhythmOnly = false
     `PREFERRED STRUCTURES: ${JSON.stringify(voice.preferred_structures ?? "")}`,
     `STORYTELLING PATTERNS: ${JSON.stringify(voice.storytelling_patterns ?? "")}`,
     "",
-    "THE MEMBER'S SIGNATURE PHRASES — use these constructions where they fit. Do not invent your own versions of them:",
-    ...v.use.map((u) => `  · ${u}`),
+    heading,
+    ...phrases.map((u) => `  - ${u}`),
     "",
     "THE MEMBER NEVER WRITES THESE. Any of them in your output fails the deck:",
-    ...v.avoid.map((a) => `  · ${a}`),
+    ...v.avoid.map((a) => `  - ${a}`),
     "",
     "THE MEMBER'S ACTUAL POSTS — this is what they sound like. Match this register, sentence length and rhythm:",
     ...examples.map((e, i) => `--- example ${i + 1} ---\n${e.slice(0, 2200)}`),
@@ -153,16 +206,8 @@ export function pickSignOff(voice: Record<string, any> | null | undefined): stri
   const explicit = typeof vp.sign_off === "string" ? vp.sign_off.trim() : "";
   if (explicit) return explicit;
 
-  const candidates = vocab(voice).use
-    .map((u) => String(u).trim())
-    .filter((u) =>
-      u.length >= 25 &&
-      u.length <= 220 &&
-      !/[\[\]{}<>]/.test(u) &&          // no slot to fill in
-      !/[:؟?]\s*$/.test(u) &&           // not a lead-in, not a question
-      /[.!。۔]\s*$/.test(u)              // a finished statement
-    );
-  return candidates[0] ?? null;
+  // Same shape test as the `signoffs` bucket — one definition, two call sites.
+  return vocab(voice).signoffs[0] ?? null;
 }
 
 /* ------------------------------------------------------------------ */
