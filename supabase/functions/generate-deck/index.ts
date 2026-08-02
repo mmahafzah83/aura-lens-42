@@ -8,7 +8,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { DeckIRSchema, type DeckIR } from "./deckIR.ts";
-import { checkInvariants } from "./invariants.ts";
+import { checkInvariants, splitByTier } from "./invariants.ts";
+import { repairDeck } from "./repair.ts";
 import { compose } from "./compose.ts";
 import {
   plan,
@@ -226,6 +227,8 @@ async function generate(
   let retries = 0;
   let corrections: string[] = [];
   let failures: string[] = [];
+  let warnings: string[] = [];
+  let repairs: string[] = [];
   let deck: DeckIR | null = null;
   let critiqueFlags: CritiqueFlag[] = [];
 
@@ -236,14 +239,21 @@ async function generate(
     if (!parsed.success) {
       failures = parsed.error.issues.map((i) => `schema: ${i.path.join(".")} — ${i.message}`);
     } else {
-      failures = checkInvariants(parsed.data, invOpts);
-      if (failures.length === 0) {
+      // Repair what a machine can undo, then judge what is left. Voice and
+      // taste rules mark the deck; they never withhold it.
+      const fixed = repairDeck(parsed.data);
+      const all = checkInvariants(fixed.deck, invOpts);
+      const split = splitByTier(all);
+      failures = split.blocking;
+      if (split.blocking.length === 0) {
+        warnings = split.warnings;
+        repairs = fixed.repaired;
         // The invariants catch the mechanical tells. The critique catches the
         // ones only an ear can hear. One regeneration, with the tell quoted back.
-        critiqueFlags = await critique(ctx, parsed.data);
+        critiqueFlags = await critique(ctx, fixed.deck);
         const generic = critiqueFlags.filter((f) => f.verdict === "generic");
         if (!generic.length || attempt >= 1) {
-          deck = parsed.data;
+          deck = fixed.deck;
           break;
         }
         corrections = generic.map(
