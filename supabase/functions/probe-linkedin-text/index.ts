@@ -9,7 +9,8 @@ const json = (b: unknown, s = 200) => new Response(JSON.stringify(b, null, 2), {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
   const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  if (req.headers.get("Authorization") !== `Bearer ${service}`) return json({ error: "forbidden" }, 403);
+  const gate = Deno.env.get("PROBE_DIAG_SECRET");
+  if (!gate || req.headers.get("x-probe-secret") !== gate) return json({ error: "forbidden" }, 403);
 
   const db = createClient(Deno.env.get("SUPABASE_URL")!, service);
   const { data: conn } = await db.from("linkedin_connections")
