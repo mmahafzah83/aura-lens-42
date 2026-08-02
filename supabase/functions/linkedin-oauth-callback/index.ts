@@ -86,14 +86,33 @@ Deno.serve(withObserve("linkedin-oauth-callback", async (req) => {
     const grantedScopes = (typeof tokenData.scope === "string" && tokenData.scope.trim()) ? tokenData.scope.split(/[\s,]+/).filter(Boolean) : ["r_basicprofile", "w_member_social", "r_member_postAnalytics", "r_member_profileAnalytics"];
     const expiresIn = tokenData.expires_in || 5184000;
 
-    // Fetch LinkedIn profile
-    const profileRes = await fetch("https://api.linkedin.com/v2/me", {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    const profile = await profileRes.json();
+    // Fetch LinkedIn profile. vanityName must be asked for explicitly — it is
+    // what gives us the member's handle and public profile URL.
+    const profileRes = await fetch(
+      "https://api.linkedin.com/v2/me?projection=(id,localizedFirstName,localizedLastName,vanityName)",
+      { headers: { Authorization: `Bearer ${accessToken}` } },
+    );
+    let profile = await profileRes.json();
+    if (!profileRes.ok) {
+      console.error("LinkedIn /v2/me failed:", profileRes.status, JSON.stringify(profile));
+      profile = {};
+    }
 
-    const linkedinId = profile.id || "unknown";
-    const displayName = [profile.localizedFirstName, profile.localizedLastName].filter(Boolean).join(" ") || "LinkedIn User";
+    // OIDC userinfo carries the member's own preferred name spelling, which is
+    // more accurate than the localized first/last split.
+    let userinfo: any = {};
+    try {
+      const uiRes = await fetch("https://api.linkedin.com/v2/userinfo", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (uiRes.ok) userinfo = await uiRes.json();
+    } catch (_) { /* optional */ }
+
+    const linkedinId = profile.id || userinfo.sub || "unknown";
+    const displayName =
+      nameFromLinkedIn(userinfo) || nameFromLinkedIn(profile) || "LinkedIn User";
+    const handle = vanityFromLinkedIn(profile) || vanityFromLinkedIn(userinfo);
+    const profileUrl = profileUrlFor(handle);
     const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
 
     const adminClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -111,6 +130,9 @@ Deno.serve(withObserve("linkedin-oauth-callback", async (req) => {
         user_id: user.id,
         linkedin_id: linkedinId,
         display_name: displayName,
+        profile_name: displayName,
+        handle,
+        profile_url: profileUrl,
         access_token: accessToken,
         refresh_token: refreshToken,
         token_expires_at: expiresAt,
