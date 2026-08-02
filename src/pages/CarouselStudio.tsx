@@ -602,32 +602,69 @@ export default function CarouselStudio() {
 
                 {/* 8 · finish */}
                 <div style={{ ...panel, display: "grid", gap: 12 }}>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <ButtonPrimary onClick={() => runExport("pdf")} disabled={!!busy}>
-                      <FileDown size={13} />{busy === "pdf" ? "Exporting" : "Export PDF"}
-                    </ButtonPrimary>
-                    <ButtonGhost onClick={() => runExport("png")} disabled={!!busy}>
-                      <Images size={13} />{busy === "png" ? "Exporting" : "Export images"}
-                    </ButtonGhost>
+                  {/* the caption — the post body that carries the deck */}
+                  <div style={{ display: "grid", gap: 6 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ ...mono, color: "var(--text-muted)" }}>Caption</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void navigator.clipboard?.writeText(caption).then(() => {
+                            setCopied(true);
+                            window.setTimeout(() => setCopied(false), 1600);
+                          });
+                        }}
+                        style={{
+                          ...mono, background: "none", border: "none", padding: 0, cursor: "pointer",
+                          color: copied ? "var(--success)" : "var(--text-muted)",
+                          display: "flex", alignItems: "center", gap: 5,
+                        }}
+                      >
+                        <Copy size={12} />{copied ? "Copied" : "Copy"}
+                      </button>
+                    </div>
+                    <textarea
+                      value={caption}
+                      onChange={(e) => setCaption(e.target.value)}
+                      dir={deck.dir}
+                      rows={6}
+                      placeholder="Write the words that sit above the deck."
+                      style={{
+                        width: "100%", boxSizing: "border-box", resize: "vertical",
+                        padding: 12, borderRadius: 12, background: "var(--surface-subtle)",
+                        border: "1px solid var(--border-default)", color: "var(--text-primary)",
+                        fontFamily: "var(--ff-ui)", fontSize: 14, lineHeight: 1.65, outline: "none",
+                      }}
+                    />
                   </div>
+
+                  {!published && (
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                      <ButtonPrimary onClick={publishToLinkedIn} disabled={!!publishing || !!busy}>
+                        <Linkedin size={13} />{publishing ?? "Publish to LinkedIn"}
+                      </ButtonPrimary>
+                      <ButtonGhost onClick={() => runExport("pdf")} disabled={!!busy || !!publishing}>
+                        <FileDown size={13} />{busy === "pdf" ? "Exporting" : "Export PDF"}
+                      </ButtonGhost>
+                      <ButtonGhost onClick={() => runExport("png")} disabled={!!busy || !!publishing}>
+                        <Images size={13} />{busy === "png" ? "Exporting" : "Export images"}
+                      </ButtonGhost>
+                    </div>
+                  )}
                   {exported && <div style={{ ...mono, color: "var(--success)" }}>{exported}</div>}
                   {error && <div style={{ fontSize: 13, color: "var(--error)" }}>{error}</div>}
 
-                  {exported && !published && (
-                    <div style={{ display: "grid", gap: 8 }}>
-                      <div style={{ ...mono, color: "var(--text-muted)" }}>Next</div>
-                      <ol style={{ margin: 0, paddingInlineStart: 18, fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.9 }}>
-                        <li>Open LinkedIn.</li>
-                        <li>Create a document post.</li>
-                        <li>Upload the PDF.</li>
-                        <li>Paste your caption.</li>
-                      </ol>
-                      <div><ButtonPrimary onClick={markPublished}>I published this</ButtonPrimary></div>
-                    </div>
-                  )}
                   {published && (
-                    <div style={{ display: "flex", gap: 7, alignItems: "center", color: "var(--success)" }}>
-                      <CheckCircle2 size={14} /><span style={{ fontSize: 13 }}>Counted as published through Aura.</span>
+                    <div style={{ display: "grid", gap: 8 }}>
+                      <div style={{ display: "flex", gap: 7, alignItems: "center", color: "var(--success)" }}>
+                        <CheckCircle2 size={14} />
+                        <span style={{ fontSize: 13 }}>Published, and counted as published through Aura.</span>
+                      </div>
+                      {postUrl && (
+                        <a href={postUrl} target="_blank" rel="noreferrer" style={{ ...mono, color: "var(--brand)" }}>
+                          View it on LinkedIn
+                        </a>
+                      )}
                     </div>
                   )}
                 </div>
