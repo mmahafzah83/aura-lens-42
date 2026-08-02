@@ -639,55 +639,9 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
       return json({ success: true, urn, postUrl });
     }
 
-    if (liRes.status === 401) {
-      try {
-        const bodyText = await liRes.clone().text();
-        await adminClient.from("ef_error_log").insert({
-          function_name: "linkedin-publish",
-          severity: "info",
-          error_message: `post-publish 401 postId=${postId}`,
-          user_id: user.id,
-          context: {
-            stage: "post_publish",
-            postId,
-            status: 401,
-            x_restli_id: liRes.headers.get("x-restli-id"),
-            body_head_300: bodyText.slice(0, 300),
-          },
-        });
-      } catch (e) { console.error("post-publish 401 diagnostics failed:", e); }
-      await adminClient.from("linkedin_posts").update({ tracking_status: "draft" }).eq("id", postId).eq("user_id", user.id);
-      fireFailureAlert(adminClient, {
-        userId: user.id, postId,
-        errorText: "LinkedIn connection expired (401) — reconnect required",
-        postText,
-      });
-      return json({ success: false, error: "LinkedIn connection expired — reconnect in Settings" });
-    }
-
-    const detail = await liRes.text();
-    try {
-      await adminClient.from("ef_error_log").insert({
-        function_name: "linkedin-publish",
-        severity: "info",
-        error_message: `post-publish non-201 postId=${postId} status=${liRes.status}`,
-        user_id: user.id,
-        context: {
-          stage: "post_publish",
-          postId,
-          status: liRes.status,
-          x_restli_id: liRes.headers.get("x-restli-id"),
-          body_head_300: detail.slice(0, 300),
-        },
-      });
-    } catch (e) { console.error("post-publish non-201 diagnostics failed:", e); }
-    await adminClient.from("linkedin_posts").update({ tracking_status: "draft" }).eq("id", postId).eq("user_id", user.id);
-    fireFailureAlert(adminClient, {
-      userId: user.id, postId,
-      errorText: `LinkedIn rejected the post (status ${liRes.status}): ${detail.slice(0, 300)}`,
-      postText,
-    });
-    return json({ success: false, error: "LinkedIn rejected the post", status: liRes.status, detail });
+    // Every non-2xx path (including 401 and a blown deadline) is terminal here:
+    // the attempt already exhausted the retry policy above.
+    return await failTerminal("create_post", pubResult.outcome, pubResult.status, pubResult.body);
   } catch (err) {
     console.error("linkedin-publish error:", err);
     if (typeof postId === "string") {
