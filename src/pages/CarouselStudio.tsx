@@ -19,7 +19,10 @@ import { checkInvariants, splitByTier } from "@/carousel/invariants";
 import { compose } from "@/carousel/compose";
 import { DEFAULT_THEME, THEME_NAMES, THEMES, type ThemeName } from "@/carousel/render/themes";
 import type { FitState } from "@/carousel/render/useFitLadder";
-import { collectSlideNodes, exportDeckPdf, exportDeckPngs, renderDeckPdfBlob } from "@/carousel/render/exportDeck";
+import {
+  DECK_PDF_LIMIT_BYTES, collectSlideNodes, exportDeckPdf, exportDeckPngs, formatBytes, renderDeckPdfBlob,
+} from "@/carousel/render/exportDeck";
+import { mediaSupport } from "@/carousel/render/Slide";
 import { logDeckEvent } from "@/carousel/render/deckTelemetry";
 import StudioCanvas from "@/carousel/studio/StudioCanvas";
 import SignalPicker, { type StudioSignal } from "@/carousel/studio/SignalPicker";
@@ -106,6 +109,11 @@ export default function CarouselStudio() {
   const [stage, setStage] = useState<number | null>(null);
   const [failures, setFailures] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * Anything the "Add image" control has to say. It renders next to that
+   * control — `error` renders in panels the member may not even be looking at.
+   */
+  const [mediaError, setMediaError] = useState<string | null>(null);
   const [current, setCurrent] = useState(0);
   const [fits, setFits] = useState<Record<number, FitState>>({});
   const [rewriting, setRewriting] = useState(false);
@@ -293,26 +301,36 @@ export default function CarouselStudio() {
 
   /* --- media ------------------------------------------------------- */
   const uploadPhoto = useCallback(async (file: File) => {
-    if (!deck) return;
+    setMediaError(null);
+    if (!deck) { setMediaError("There is no deck open to add an image to."); return; }
+    const slide = deck.slides[Math.min(current, deck.slides.length - 1)];
+    // Refuse BEFORE taking the file, never after: an accepted file that draws
+    // nothing is the defect this whole path is being rebuilt to remove.
+    if (mediaSupport(slide.archetype) === "none") {
+      setMediaError(
+        `Slide ${slide.index + 1} is a ${ARCHETYPE_LABEL[slide.archetype] ?? slide.archetype} slide, which has no room for a photo. Pick another slide.`,
+      );
+      return;
+    }
     // The tool does the work: anything usable is resampled and centre-cropped
     // to the slot. The member is never asked to think in pixels.
     const problem = await checkImage(file, SLIDE_MEDIA_LIMITS);
-    if (problem) { setError(problem); return; }
+    if (problem) { setMediaError(problem); return; }
     const { data: sess } = await supabase.auth.getSession();
     const uid = sess.session?.user?.id;
-    if (!uid) return;
+    if (!uid) { setMediaError("Your session expired. Sign in again to add an image."); return; }
     // Re-encode before upload so EXIF (including GPS) never leaves the device.
     const clean = await fitToSlot(file, 1400, 900, "image/jpeg");
     const path = `${uid}/${deck.deck_id}/${crypto.randomUUID()}.jpg`;
     const { error: upErr } = await supabase.storage
       .from("deck-media")
       .upload(path, clean, { upsert: true, contentType: "image/jpeg" });
-    if (upErr) { setError(upErr.message); return; }
+    if (upErr) { setMediaError(upErr.message); return; }
     // The bucket is private, so the slide references a long-lived signed URL.
     const { data: signed, error: signErr } = await supabase.storage
       .from("deck-media")
       .createSignedUrl(path, 60 * 60 * 24 * 365);
-    if (signErr || !signed) { setError(signErr?.message ?? "Could not read the uploaded image back."); return; }
+    if (signErr || !signed) { setMediaError(signErr?.message ?? "Could not read the uploaded image back."); return; }
     setDeck((d) => (d ? setSlidePhoto(d, current, signed.signedUrl) : d));
   }, [deck, current]);
 
@@ -327,8 +345,11 @@ export default function CarouselStudio() {
       const out = kind === "pdf"
         ? await exportDeckPdf(nodes, `${name}.pdf`)
         : await exportDeckPngs(nodes, `${name}-images.zip`);
-      setExported(`${out.slides} slides · ${out.durationMs} ms`);
-      void logDeckEvent("exported", deck, { theme, fitSteps: out.maxFitStep, durationMs: out.durationMs });
+      setExported(`${out.slides} slides · ${out.bytes ? formatBytes(out.bytes) : ""} · ${out.durationMs} ms`);
+      void logDeckEvent("exported", deck, {
+        theme, fitSteps: out.maxFitStep, durationMs: out.durationMs,
+        ...(kind === "pdf" ? { pdfBytes: out.bytes } : {}),
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       void logDeckEvent("export_failed", deck, { theme });
@@ -358,14 +379,29 @@ export default function CarouselStudio() {
       const body = caption.trim() || hook;
       if (!body) throw new Error("Add a caption before publishing.");
 
-      const { blob } = await renderDeckPdfBlob(collectSlideNodes(mountRef.current));
+      const nodes = collectSlideNodes(mountRef.current);
+      const { blob } = await renderDeckPdfBlob(nodes);
+      // Every publish attempt records the size, pass or fail, so an oversized
+      // deck shows up in the numbers instead of in a founder's inbox.
+      void logDeckEvent("rendered", deck, { theme, pdfBytes: blob.size });
+      // Fail fast, with BOTH numbers. "Exceeded the maximum allowed size" on
+      // its own told us nothing about which number was wrong.
+      if (blob.size > DECK_PDF_LIMIT_BYTES) {
+        throw new Error(
+          `The carousel PDF is ${formatBytes(blob.size)}; the limit is ${formatBytes(DECK_PDF_LIMIT_BYTES)}. Remove a slide or a large photo and try again.`,
+        );
+      }
 
       setPublishing("Uploading");
       const path = `${uid}/${deck.deck_id}/carousel.pdf`;
       const { error: upErr } = await supabase.storage
         .from("deck-media")
         .upload(path, blob, { upsert: true, contentType: "application/pdf" });
-      if (upErr) throw new Error(upErr.message);
+      if (upErr) {
+        throw new Error(
+          `${upErr.message} (the carousel PDF is ${formatBytes(blob.size)}, ${deck.slides.length} slides).`,
+        );
+      }
       const { data: signed, error: signErr } = await supabase.storage
         .from("deck-media")
         // Seven days, so a parked, queued or retried publish never fetches an
@@ -405,10 +441,11 @@ export default function CarouselStudio() {
 
       setPostUrl(out.postUrl ?? null);
       setPublished(true);
-      void logDeckEvent("published", deck, { theme });
+      void logDeckEvent("published", deck, { theme, pdfBytes: blob.size });
       try { localStorage.removeItem(DRAFT_KEY); } catch { /* nothing to clear */ }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
+      void logDeckEvent("publish_failed", deck, { theme });
     } finally {
       setPublishing(null);
     }
@@ -705,6 +742,8 @@ export default function CarouselStudio() {
                     onRewrite={rewriteSlide}
                     rewriting={rewriting}
                     onUploadPhoto={uploadPhoto}
+                    mediaError={mediaError}
+                    mediaSupport={mediaSupport(deck.slides[Math.min(current, deck.slides.length - 1)].archetype)}
                   />
                 </div>
 

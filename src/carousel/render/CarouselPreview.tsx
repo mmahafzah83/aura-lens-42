@@ -10,7 +10,7 @@ import { checkInvariants } from "../invariants";
 import { DeckPreview } from "./Deck";
 import { THEME_NAMES, DEFAULT_THEME, type ThemeName } from "./themes";
 import type { FitState } from "./useFitLadder";
-import { collectSlideNodes, exportDeckPdf, exportDeckPngs, maxFitStep, type ExportResult } from "./exportDeck";
+import { collectSlideNodes, exportDeckPdf, exportDeckPngs, formatBytes, maxFitStep, type ExportResult } from "./exportDeck";
 import { logDeckEvent } from "./deckTelemetry";
 
 import enChart from "../__fixtures__/en-7-chart.json";
@@ -121,7 +121,9 @@ function DeckSection({
             </button>
             {result && (
               <span data-export-readout style={{ fontSize: 12, color: "#8FE3D6" }}>
-                {result.slides} slides captured · max fit step {result.maxFitStep} · {result.durationMs} ms
+                {result.slides} slides captured · max fit step {result.maxFitStep} ·{" "}
+                {result.bytes !== undefined ? `${formatBytes(result.bytes)} (${result.bytes} bytes) · ` : ""}
+                {result.durationMs} ms
               </span>
             )}
             {error && (

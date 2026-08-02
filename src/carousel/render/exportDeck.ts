@@ -15,6 +15,37 @@ export interface ExportResult {
   slides: number;
   maxFitStep: number;
   durationMs: number;
+  /** Bytes of the produced file, when there is one. */
+  bytes?: number;
+}
+
+/** JPEG quality for PDF pages. High enough to be invisible, small enough to send. */
+const PDF_JPEG_QUALITY = 0.94;
+
+/**
+ * The opaque colour a page is composited onto before JPEG encoding. Read from
+ * the slide root, which publishes its theme's solid stand-in — several themes
+ * paint a gradient, and a gradient has no single computed background colour.
+ */
+function backgroundOf(node: HTMLElement): string {
+  return node.dataset.bg || "#000000";
+}
+
+/**
+ * JPEG has no alpha channel: any transparent pixel would encode as black. So
+ * the capture is flattened onto the theme background explicitly rather than
+ * trusting each slide to have painted an opaque backdrop.
+ */
+function flatten(canvas: HTMLCanvasElement, background: string): HTMLCanvasElement {
+  const out = document.createElement("canvas");
+  out.width = canvas.width;
+  out.height = canvas.height;
+  const ctx = out.getContext("2d");
+  if (!ctx) throw new Error("Could not open a 2D context to flatten the page.");
+  ctx.fillStyle = background;
+  ctx.fillRect(0, 0, out.width, out.height);
+  ctx.drawImage(canvas, 0, 0);
+  return out;
 }
 
 function nextFrame(): Promise<void> {
@@ -100,6 +131,9 @@ async function captureAll(nodes: HTMLElement[]): Promise<HTMLCanvasElement[]> {
         pixelRatio: 1,
         cacheBust: false,
         fontEmbedCSS,
+        // The rasteriser and the flattening step agree on one colour, so
+        // preview, PNG and PDF can never disagree about the backdrop.
+        backgroundColor: backgroundOf(node),
       });
       if (canvas.width !== CANVAS_W || canvas.height !== CANVAS_H) {
         throw new Error(
@@ -136,6 +170,13 @@ function toBlob(canvas: HTMLCanvasElement): Promise<Blob> {
  * LinkedIn accepts as a document post. Any slide failing aborts everything;
  * a 6-of-7 carousel is worse than no carousel.
  *
+ * Pages are embedded as JPEG, not PNG. Lossless PNG pages put a seven-slide
+ * deck in the 15-35MB range once base64-encoded, past the Storage ceiling and
+ * far past what a member on a mobile connection should be made to download,
+ * for a difference nobody can see in LinkedIn's downsampled document viewer.
+ * Capture stays at full 1080x1350, pixelRatio 1 — the saving is the codec, not
+ * the resolution, because dropping resolution would soften the hero type.
+ *
  * The blob form is what direct publishing uploads, so the bytes LinkedIn
  * receives are byte-for-byte the bytes a manual download would have produced.
  */
@@ -148,14 +189,17 @@ export async function renderDeckPdfBlob(
   const pdf = new jsPDF({ unit: "pt", format: [CANVAS_W, CANVAS_H], orientation: "portrait" });
   canvases.forEach((canvas, i) => {
     if (i > 0) pdf.addPage([CANVAS_W, CANVAS_H], "portrait");
-    pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, CANVAS_W, CANVAS_H);
+    const page = flatten(canvas, backgroundOf(nodes[i]));
+    pdf.addImage(page.toDataURL("image/jpeg", PDF_JPEG_QUALITY), "JPEG", 0, 0, CANVAS_W, CANVAS_H);
   });
+  const blob = pdf.output("blob") as Blob;
   return {
-    blob: pdf.output("blob"),
+    blob,
     result: {
       slides: canvases.length,
       maxFitStep: maxFitStep(nodes),
       durationMs: Math.round(performance.now() - t0),
+      bytes: blob.size,
     },
   };
 }
@@ -166,7 +210,10 @@ export async function exportDeckPdf(nodes: HTMLElement[], filename: string): Pro
   return result;
 }
 
-/** The same capture, delivered as individual PNGs in a zip. */
+/**
+ * The same capture, delivered as individual PNGs in a zip. This one stays
+ * LOSSLESS on purpose: it is a designer deliverable a member may re-edit.
+ */
 export async function exportDeckPngs(nodes: HTMLElement[], filename: string): Promise<ExportResult> {
   const t0 = performance.now();
   const canvases = await captureAll(nodes);
@@ -175,6 +222,21 @@ export async function exportDeckPngs(nodes: HTMLElement[], filename: string): Pr
   for (let i = 0; i < canvases.length; i++) {
     zip.file(`slide-${String(i + 1).padStart(2, "0")}.png`, await toBlob(canvases[i]));
   }
-  download(await zip.generateAsync({ type: "blob" }), filename);
-  return { slides: canvases.length, maxFitStep: maxFitStep(nodes), durationMs: Math.round(performance.now() - t0) };
+  const zipped = await zip.generateAsync({ type: "blob" });
+  download(zipped, filename);
+  return {
+    slides: canvases.length,
+    maxFitStep: maxFitStep(nodes),
+    durationMs: Math.round(performance.now() - t0),
+    bytes: zipped.size,
+  };
+}
+
+/** Storage ceiling for `deck-media`, mirrored so we can fail fast and say the number. */
+export const DECK_PDF_LIMIT_BYTES = 25 * 1024 * 1024;
+
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} bytes`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
 }
