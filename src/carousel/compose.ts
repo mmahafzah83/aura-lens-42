@@ -54,9 +54,11 @@ function baseRoles(length: DeckLength): Role[] {
   // middle slot yields: Benchmark, because its comparison can ride on the
   // Evidence slide's chart while nothing else can absorb a Definition or a
   // Summary.
+  // Steps are interleaved rather than stacked: three consecutive "steps"
+  // slides would break INV-06 (no two adjacent slides share an archetype).
   return [
-    "cover", "frame", "evidence", "definition",
-    "quote", "steps_1", "steps_2", "steps_3", "summary", "close",
+    "cover", "frame", "evidence", "steps_1", "definition",
+    "steps_2", "quote", "steps_3", "summary", "close",
   ];
 }
 
