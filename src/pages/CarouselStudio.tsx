@@ -12,6 +12,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, CheckCircle2, FileDown, Images, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { SLIDE_MEDIA_LIMITS, checkImage, stripMetadata } from "@/lib/imagePrep";
 import { ButtonPrimary, ButtonGhost } from "@/components/systemb";
 import { DeckIRSchema, plainText, type DeckIR, type DeckLength } from "@/carousel/deckIR";
 import { checkInvariants } from "@/carousel/invariants";
