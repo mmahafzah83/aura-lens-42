@@ -10,16 +10,16 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, CheckCircle2, FileDown, Images, Sparkles } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Copy, FileDown, Images, Linkedin, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { SLIDE_MEDIA_LIMITS, checkImage, stripMetadata } from "@/lib/imagePrep";
+import { SLIDE_MEDIA_LIMITS, checkImage, fitToSlot } from "@/lib/imagePrep";
 import { ButtonPrimary, ButtonGhost } from "@/components/systemb";
 import { DeckIRSchema, plainText, type DeckIR, type DeckLength } from "@/carousel/deckIR";
 import { checkInvariants } from "@/carousel/invariants";
 import { compose } from "@/carousel/compose";
 import { DEFAULT_THEME, THEME_NAMES, THEMES, type ThemeName } from "@/carousel/render/themes";
 import type { FitState } from "@/carousel/render/useFitLadder";
-import { collectSlideNodes, exportDeckPdf, exportDeckPngs } from "@/carousel/render/exportDeck";
+import { collectSlideNodes, exportDeckPdf, exportDeckPngs, renderDeckPdfBlob } from "@/carousel/render/exportDeck";
 import { logDeckEvent } from "@/carousel/render/deckTelemetry";
 import StudioCanvas from "@/carousel/studio/StudioCanvas";
 import SignalPicker, { type StudioSignal } from "@/carousel/studio/SignalPicker";
@@ -102,6 +102,10 @@ export default function CarouselStudio() {
   const [busy, setBusy] = useState<null | "pdf" | "png">(null);
   const [exported, setExported] = useState<string | null>(null);
   const [published, setPublished] = useState(false);
+  const [caption, setCaption] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [publishing, setPublishing] = useState<null | string>(null);
+  const [postUrl, setPostUrl] = useState<string | null>(null);
   const [canvasWidth, setCanvasWidth] = useState(360);
 
   const mountRef = useRef<HTMLDivElement | null>(null);
@@ -119,11 +123,11 @@ export default function CarouselStudio() {
         supabase.from("diagnostic_profiles").select("content_language, avatar_url").eq("user_id", uid).maybeSingle(),
         supabase
           .from("strategic_signals")
-          .select("id, signal_title, explanation, strategic_implications, theme_tags, confidence, priority_score")
+          .select("id, signal_title, explanation, strategic_implications, theme_tags, confidence, priority_score, created_at")
           .eq("user_id", uid)
           .eq("status", "active")
           .order("priority_score", { ascending: false })
-          .limit(12),
+          .limit(200),
       ]);
       if (dead) return;
       if ((prof as any)?.content_language === "ar") setLang("ar");
@@ -137,7 +141,7 @@ export default function CarouselStudio() {
         else {
           const { data: one } = await supabase
             .from("strategic_signals")
-            .select("id, signal_title, explanation, strategic_implications, theme_tags, confidence, priority_score")
+            .select("id, signal_title, explanation, strategic_implications, theme_tags, confidence, priority_score, created_at")
             .eq("id", preselected)
             .maybeSingle();
           if (!dead && one) setSignal(one as unknown as StudioSignal);
@@ -183,7 +187,7 @@ export default function CarouselStudio() {
   const availability = useMemo(() => lengthAvailability(signal, lang), [signal, lang]);
   useEffect(() => {
     // Aura picks the longest length the signal can actually fill.
-    const best = ([10, 7, 5] as DeckLength[]).find((L) => availability[L].ok) ?? 5;
+    const best = ([7, 10, 5] as DeckLength[]).find((L) => availability[L].ok) ?? 5;
     setLength(best);
   }, [availability]);
 
@@ -203,6 +207,8 @@ export default function CarouselStudio() {
     setDeck(null);
     setExported(null);
     setPublished(false);
+    setPostUrl(null);
+    setCaption("");
     setFits({});
     setStage(0);
     const ticker = window.setInterval(() => setStage((s) => (s === null ? 0 : Math.min(s + 1, STAGES.length - 1))), 2600);
@@ -210,7 +216,7 @@ export default function CarouselStudio() {
       const { data: sess } = await supabase.auth.getSession();
       if (!sess.session) throw new Error("Your session expired. Sign in again.");
       const { data, error: fnError } = await supabase.functions.invoke("generate-deck", {
-        body: { signal_id: signal.id, length, theme },
+        body: { signal_id: signal.id, length, theme, lang },
       });
       if (fnError && !data) throw fnError;
       const result: any = data;
@@ -221,6 +227,7 @@ export default function CarouselStudio() {
       const parsed = DeckIRSchema.safeParse(result.deck);
       if (!parsed.success) throw new Error("The deck came back in a shape the renderer does not accept.");
       setDeck({ ...parsed.data, theme });
+      setCaption(typeof result.caption === "string" ? result.caption : "");
       setCurrent(0);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -228,7 +235,7 @@ export default function CarouselStudio() {
       window.clearInterval(ticker);
       setStage(null);
     }
-  }, [signal, length, theme]);
+  }, [signal, length, theme, lang]);
 
   /* --- try another angle ------------------------------------------ */
   const rewriteSlide = useCallback(async () => {
@@ -251,13 +258,15 @@ export default function CarouselStudio() {
   /* --- media ------------------------------------------------------- */
   const uploadPhoto = useCallback(async (file: File) => {
     if (!deck) return;
+    // The tool does the work: anything usable is resampled and centre-cropped
+    // to the slot. The member is never asked to think in pixels.
     const problem = await checkImage(file, SLIDE_MEDIA_LIMITS);
     if (problem) { setError(problem); return; }
     const { data: sess } = await supabase.auth.getSession();
     const uid = sess.session?.user?.id;
     if (!uid) return;
     // Re-encode before upload so EXIF (including GPS) never leaves the device.
-    const clean = await stripMetadata(file, "image/jpeg");
+    const clean = await fitToSlot(file, 1400, 900, "image/jpeg");
     const path = `${uid}/${deck.deck_id}/${crypto.randomUUID()}.jpg`;
     const { error: upErr } = await supabase.storage
       .from("deck-media")
@@ -333,7 +342,17 @@ export default function CarouselStudio() {
       }}
     >
       <div style={{ maxWidth: 1180, margin: "0 auto" }}>
-        <ButtonGhost onClick={() => (deck || signal ? startOver() : navigate("/n"))} style={{ marginBottom: 14 }}>
+        <ButtonGhost
+          onClick={() => {
+            // Inside the studio "Start again" returns to the signal picker.
+            // At the picker, Back leaves the studio for wherever the member
+            // came from — and for a cold load, the dashboard.
+            if (deck || signal) { startOver(); return; }
+            if (window.history.length > 1) navigate(-1);
+            else navigate("/dashboard");
+          }}
+          style={{ marginBottom: 14 }}
+        >
           <ArrowLeft size={13} />{deck || signal ? "Start again" : "Back"}
         </ButtonGhost>
 
