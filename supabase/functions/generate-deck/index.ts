@@ -330,6 +330,8 @@ async function generate(
       ],
       retries,
       voice_profile: ctx.voice ? String(ctx.voice.language ?? "unknown") : null,
+      warnings,
+      repairs,
     },
     duration_ms,
   };
@@ -505,11 +507,12 @@ serve(async (req) => {
       if (!existing) return json({ error: "slide not found" }, 400);
       const avoid = JSON.stringify(existing.slots ?? {});
       const out = await rewriteSlide(db, user.id, body.signal_id, idx, existing.archetype, avoid, body.deck.primary_lang === "ar" ? "ar" : "en");
-      return json(out, out.ok ? 200 : 422);
+      // Always 200: a refusal is an answer the studio must be able to read.
+      return json(out);
     }
 
     const result = await generate(db, user.id, body.signal_id, body.length, theme, reqLang);
-    return json(result, result.ok ? 200 : 422);
+    return json(result);
   } catch (e) {
     return json({ error: String(e instanceof Error ? e.message : e) }, 500);
   }
