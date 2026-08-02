@@ -203,9 +203,10 @@ async function rewriteSlide(
   index: number,
   archetype: string,
   avoid: string,
+  lang?: "en" | "ar",
 ) {
   const ctx = await readContext(db, signalId, userId);
-  const p = await plan(ctx);
+  const p = await plan(ctx, lang);
   const manifest = {
     length: 5 as const,
     slots: [{ index, archetype, role: archetype } as any],
@@ -294,7 +295,7 @@ serve(async (req) => {
       const existing = (body.deck.slides ?? []).find((s: any) => s.index === idx);
       if (!existing) return json({ error: "slide not found" }, 400);
       const avoid = JSON.stringify(existing.slots ?? {});
-      const out = await rewriteSlide(db, user.id, body.signal_id, idx, existing.archetype, avoid);
+      const out = await rewriteSlide(db, user.id, body.signal_id, idx, existing.archetype, avoid, body.deck.primary_lang === "ar" ? "ar" : "en");
       return json(out, out.ok ? 200 : 422);
     }
 
