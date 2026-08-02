@@ -88,8 +88,6 @@ async function captureAll(nodes: HTMLElement[]): Promise<HTMLCanvasElement[]> {
       const canvas = await html2canvas(node, {
         width: CANVAS_W,
         height: CANVAS_H,
-        windowWidth: CANVAS_W,
-        windowHeight: CANVAS_H,
         scale: 1,
         backgroundColor: null, // the theme paints its own background
         useCORS: true,
