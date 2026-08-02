@@ -699,10 +699,11 @@ Verdict "generic" whenever the slide could have been written about any company i
 
   const user = [
     "THIS MEMBER NEVER WRITES:",
-    ...v.avoid.slice(0, 40).map((a) => `  · ${a}`),
+    ...v.avoid.slice(0, 40).map((a) => `  - ${a}`),
     "",
-    "THIS MEMBER ACTUALLY WRITES:",
-    ...v.use.map((u) => `  · ${u}`),
+    // Connectives only. Sign-offs belong in the caption, markers nowhere.
+    "THIS MEMBER'S OWN CONNECTIVES:",
+    ...v.openers.map((u) => `  - ${u}`),
     "",
     ...examples.map((e: string, i: number) => `--- their post ${i + 1} ---\n${e.slice(0, 1400)}`),
     "",
