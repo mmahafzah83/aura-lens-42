@@ -208,6 +208,45 @@ $("captureBtn").addEventListener("click", async () => {
    GUIDED CAPTURE
    ═══════════════════════════════════════════ */
 
+$("ownPostsBtn").addEventListener("click", async () => {
+  const btn = $("ownPostsBtn");
+  const msgEl = $("captureMsg");
+  btn.disabled = true;
+  $("ownPostsBtnText").textContent = "Saving…";
+  msgEl.innerHTML = "";
+
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.id || !tab.url?.includes("linkedin.com")) {
+      msgEl.innerHTML = '<div class="msg error">Open your LinkedIn activity page first</div>';
+      return;
+    }
+
+    const { auraHandle } = await chrome.storage.local.get("auraHandle");
+    const response = await chrome.tabs.sendMessage(tab.id, { action: "capture_own_posts", handle: auraHandle });
+    if (!response?.success) {
+      msgEl.innerHTML = `<div class="msg error">${response?.error || "Nothing captured"}</div>`;
+      return;
+    }
+
+    const result = await chrome.runtime.sendMessage({ action: "save_own_posts", payload: response.payload });
+    if (!result?.success) {
+      msgEl.innerHTML = `<div class="msg error">${result?.error || "Save failed"}</div>`;
+      return;
+    }
+
+    const filled = result.filled || 0;
+    const inserted = result.inserted || 0;
+    msgEl.innerHTML = `<div class="msg success">✓ ${response.payload.posts.length} posts read · ${filled} texts filled · ${inserted} new</div>`;
+    loadState();
+  } catch (e) {
+    msgEl.innerHTML = `<div class="msg error">${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    $("ownPostsBtnText").textContent = "Save My Post Text";
+  }
+});
+
 $("guidedBtn").addEventListener("click", async () => {
   const btn = $("guidedBtn");
   const msgEl = $("captureMsg");
