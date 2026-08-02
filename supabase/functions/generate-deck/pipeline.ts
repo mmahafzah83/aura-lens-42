@@ -12,8 +12,100 @@ const MODEL = "google/gemini-3-flash-preview";
 export interface SignalContext {
   signal: Record<string, any>;
   evidence: Array<{ title: string; content: string }>;
+  /** Raw, unparaphrased member captures behind this signal. The real voice lives here. */
+  raw: Array<{ title: string; content: string; created_at?: string }>;
+  /** Every voice profile on file. `voice` is the one matched to the deck language. */
+  voices: Array<Record<string, any>>;
   voice: Record<string, any> | null;
   profile: Record<string, any>;
+}
+
+/* ------------------------------------------------------------------ */
+/* Voice DNA                                                           */
+/* ------------------------------------------------------------------ */
+
+function asArray(v: unknown): string[] {
+  if (Array.isArray(v)) return v.map((x) => String(x ?? "").trim()).filter(Boolean);
+  if (typeof v === "string" && v.trim()) return [v.trim()];
+  return [];
+}
+
+export function vocab(voice: Record<string, any> | null | undefined) {
+  const vp = (voice?.vocabulary_preferences ?? {}) as Record<string, any>;
+  return {
+    use: asArray(vp.use),
+    avoid: asArray(vp.avoid),
+    rhythm: typeof vp.rhythm === "string" ? vp.rhythm : asArray(vp.rhythm).join(" "),
+    notes: typeof vp.notes === "string" ? vp.notes : asArray(vp.notes).join(" "),
+  };
+}
+
+/**
+ * One voice DNA, matched to the deck language. is_primary is only a fallback:
+ * writing an English deck against an Arabic profile is how the member's voice
+ * was being lost in the first place.
+ */
+export function resolveVoice(
+  voices: Array<Record<string, any>>,
+  lang: "en" | "ar",
+): Record<string, any> | null {
+  if (!voices?.length) return null;
+  const matched = voices.find((v) => String(v.language ?? "").toLowerCase().startsWith(lang));
+  const primary = voices.find((v) => v.is_primary);
+  const chosen = matched ?? primary ?? voices[0];
+  console.log("[generate-deck] voice profile", JSON.stringify({
+    deck_lang: lang,
+    selected_language: chosen?.language ?? null,
+    matched_on_language: Boolean(matched),
+    is_primary: Boolean(chosen?.is_primary),
+    example_posts: Array.isArray(chosen?.example_posts) ? chosen.example_posts.length : 0,
+    use_phrases: vocab(chosen).use.length,
+    avoid_rules: vocab(chosen).avoid.length,
+  }));
+  return chosen ?? null;
+}
+
+function examplePostText(p: unknown): string {
+  if (typeof p === "string") return p;
+  if (p && typeof p === "object") {
+    const o = p as Record<string, any>;
+    return String(o.content ?? o.text ?? o.post ?? o.body ?? "").trim();
+  }
+  return "";
+}
+
+/**
+ * The member's signature, verbatim and unsummarised. The model must see his
+ * actual sentences — a paraphrase of a voice is not a voice.
+ */
+export function voiceBlock(voice: Record<string, any> | null): string {
+  if (!voice) {
+    return "VOICE: no profile on file. Write plainly, concretely, with no marketing register.";
+  }
+  const v = vocab(voice);
+  const examples = (Array.isArray(voice.example_posts) ? voice.example_posts : [])
+    .map(examplePostText)
+    .filter((t) => t.length > 80)
+    .slice(0, 5);
+
+  return [
+    `VOICE DNA — profile language "${voice.language ?? "unknown"}". This is the member's own signature. Follow it exactly.`,
+    "",
+    `TONE: ${String(voice.tone ?? "").trim() || "(not recorded)"}`,
+    `RHYTHM: ${v.rhythm || "(not recorded)"}`,
+    `NOTES: ${v.notes || "(not recorded)"}`,
+    `PREFERRED STRUCTURES: ${JSON.stringify(voice.preferred_structures ?? "")}`,
+    `STORYTELLING PATTERNS: ${JSON.stringify(voice.storytelling_patterns ?? "")}`,
+    "",
+    "HIS SIGNATURE PHRASES — use these constructions where they fit. Do not invent your own versions of them:",
+    ...v.use.map((u) => `  · ${u}`),
+    "",
+    "HE NEVER WRITES THESE. Any of them in your output fails the deck:",
+    ...v.avoid.map((a) => `  · ${a}`),
+    "",
+    "HIS ACTUAL POSTS — this is what he sounds like. Match this register, sentence length and rhythm:",
+    ...examples.map((e, i) => `--- example ${i + 1} ---\n${e.slice(0, 2200)}`),
+  ].join("\n");
 }
 
 export function bareHandle(raw: unknown): string {
@@ -61,7 +153,7 @@ export async function callTool(
 
 export function contextBlock(ctx: SignalContext): string {
   const s = ctx.signal;
-  return [
+  const out = [
     `SIGNAL: ${s.signal_title}`,
     `EXPLANATION: ${s.explanation ?? ""}`,
     `IMPLICATIONS: ${
@@ -71,9 +163,24 @@ export function contextBlock(ctx: SignalContext): string {
     }`,
     `THEMES: ${(s.theme_tags ?? []).join(", ")}`,
     `CONFIDENCE: ${s.confidence ?? ""}`,
-    "EVIDENCE FRAGMENTS:",
-    ...ctx.evidence.map((e, i) => `  [${i + 1}] ${e.title}: ${e.content}`),
-  ].join("\n");
+  ];
+
+  if (ctx.raw?.length) {
+    out.push(
+      "",
+      "RAW MATERIAL — the member's own captures, in his own words, unedited. Take FACTS from here. Never copy the phrasing of the summaries below over these.",
+      ...ctx.raw.map((e, i) =>
+        `  [raw ${i + 1}${e.created_at ? ` · ${String(e.created_at).slice(0, 10)}` : ""}] ${e.title}: ${e.content}`
+      ),
+    );
+  }
+
+  out.push(
+    "",
+    "EVIDENCE FRAGMENTS — these are AI SUMMARIES, not the member's writing. Use them for facts only. Never borrow their wording; their register is not his.",
+    ...ctx.evidence.map((e, i) => `  [summary ${i + 1}] ${e.title}: ${e.content}`),
+  );
+  return out.join("\n");
 }
 
 /* ------------------------------------------------------------------ */
