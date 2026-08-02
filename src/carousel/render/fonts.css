@@ -1,0 +1,110 @@
+/*
+ * Bundled faces only. NO NETWORK FONTS — a font fetched at export time
+ * silently falls back and ships a serif headline. Files come from the
+ * @fontsource packages in node_modules, so Vite fingerprints and inlines them
+ * into the build output; nothing is ever requested from a CDN.
+ *
+ * font-display: block — we would rather wait than export the fallback.
+ */
+
+/* Anton — English display only. Anton has no Arabic coverage. */
+@font-face {
+  font-family: "AuraAnton";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("../../../node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2") format("woff2");
+}
+
+/* Inter — English body and headings. */
+@font-face {
+  font-family: "AuraInter";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("../../../node_modules/@fontsource/inter/files/inter-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "AuraInter";
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+  src: url("../../../node_modules/@fontsource/inter/files/inter-latin-500-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "AuraInter";
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url("../../../node_modules/@fontsource/inter/files/inter-latin-700-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "AuraInter";
+  font-style: normal;
+  font-weight: 800;
+  font-display: block;
+  src: url("../../../node_modules/@fontsource/inter/files/inter-latin-800-normal.woff2") format("woff2");
+}
+
+/* IBM Plex Mono — data, sources, chart labels. */
+@font-face {
+  font-family: "AuraMono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("../../../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "AuraMono";
+  font-style: normal;
+  font-weight: 600;
+  font-display: block;
+  src: url("../../../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-600-normal.woff2") format("woff2");
+}
+
+/* Cairo — every Arabic weight, plus its Latin subset for stray digits. */
+@font-face {
+  font-family: "AuraCairo";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("../../../node_modules/@fontsource/cairo/files/cairo-arabic-400-normal.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
+}
+@font-face {
+  font-family: "AuraCairo";
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url("../../../node_modules/@fontsource/cairo/files/cairo-arabic-700-normal.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
+}
+@font-face {
+  font-family: "AuraCairo";
+  font-style: normal;
+  font-weight: 900;
+  font-display: block;
+  src: url("../../../node_modules/@fontsource/cairo/files/cairo-arabic-900-normal.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
+}
+@font-face {
+  font-family: "AuraCairo";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("../../../node_modules/@fontsource/cairo/files/cairo-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "AuraCairo";
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url("../../../node_modules/@fontsource/cairo/files/cairo-latin-700-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "AuraCairo";
+  font-style: normal;
+  font-weight: 900;
+  font-display: block;
+  src: url("../../../node_modules/@fontsource/cairo/files/cairo-latin-900-normal.woff2") format("woff2");
+}
