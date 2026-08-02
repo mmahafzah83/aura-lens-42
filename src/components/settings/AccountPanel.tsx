@@ -3,6 +3,7 @@ import { Camera, Loader2 } from "lucide-react";
 import { downloadBlob } from "@/lib/download";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { AVATAR_LIMITS, checkImage, cutOutBackground, toSquareJpeg } from "@/lib/imagePrep";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { AuraCard } from "@/components/ui/AuraCard";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,12 @@ export default function AccountPanel({ userId, email }: Props) {
   const [firstName, setFirstName] = useState("");
   const [initialName, setInitialName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [cutoutUrl, setCutoutUrl] = useState<string | null>(null);
+  const [cutoutPreview, setCutoutPreview] = useState<string | null>(null);
+  const [cutoutBlob, setCutoutBlob] = useState<Blob | null>(null);
+  const [enhancing, setEnhancing] = useState(false);
+  const [savingCutout, setSavingCutout] = useState(false);
+  const [photoNote, setPhotoNote] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -54,7 +61,7 @@ export default function AccountPanel({ userId, email }: Props) {
     let cancelled = false;
     (async () => {
       const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
-        .select("first_name, avatar_url")
+        .select("first_name, avatar_url, avatar_cutout_url")
         .eq("user_id", userId)
         .maybeSingle();
       if (cancelled) return;
@@ -62,6 +69,7 @@ export default function AccountPanel({ userId, email }: Props) {
       setFirstName(p.first_name || "");
       setInitialName(p.first_name || "");
       setAvatarUrl(p.avatar_url || null);
+      setCutoutUrl(p.avatar_cutout_url || null);
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -69,12 +77,23 @@ export default function AccountPanel({ userId, email }: Props) {
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    if (fileRef.current) fileRef.current.value = "";
     if (!file || !userId) return;
+    setPhotoNote(null);
+    setCutoutPreview(null);
+    setCutoutBlob(null);
+
+    const problem = await checkImage(file, AVATAR_LIMITS);
+    if (problem) { setPhotoNote(problem); return; }
+
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop() || "jpg";
-      const path = `${userId}/avatar.${ext}`;
-      const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+      // Re-encoding to a square JPEG also drops EXIF, including any GPS tag.
+      const square = await toSquareJpeg(file);
+      const path = `${userId}/avatar.jpg`;
+      const { error: upErr } = await supabase.storage
+        .from("avatars")
+        .upload(path, square, { upsert: true, contentType: "image/jpeg" });
       if (upErr) throw upErr;
       const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
       const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
@@ -82,12 +101,56 @@ export default function AccountPanel({ userId, email }: Props) {
         .update({ avatar_url: publicUrl }).eq("user_id", userId);
       setAvatarUrl(publicUrl);
       toast.success("Photo updated");
+
+      // Optional enhancement. Runs entirely in this browser; silent if it fails.
+      setEnhancing(true);
+      const cut = await cutOutBackground(file);
+      if (cut) {
+        setCutoutBlob(cut);
+        setCutoutPreview(URL.createObjectURL(cut));
+      }
+      setEnhancing(false);
     } catch {
       toast.error("Upload failed");
+      setEnhancing(false);
     } finally {
       setUploading(false);
-      if (fileRef.current) fileRef.current.value = "";
     }
+  };
+
+  const keepCutout = async () => {
+    if (!userId || !cutoutBlob) return;
+    setSavingCutout(true);
+    try {
+      const path = `${userId}/avatar-cutout.png`;
+      const { error: upErr } = await supabase.storage
+        .from("avatars")
+        .upload(path, cutoutBlob, { upsert: true, contentType: "image/png" });
+      if (upErr) throw upErr;
+      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+      const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+      await (supabase.from("diagnostic_profiles" as any) as any)
+        .update({ avatar_cutout_url: publicUrl }).eq("user_id", userId);
+      setCutoutUrl(publicUrl);
+      setCutoutPreview(null);
+      setCutoutBlob(null);
+      toast.success("Cut-out saved");
+    } catch {
+      // Silent by design — the plain square is already in place.
+      setCutoutPreview(null);
+      setCutoutBlob(null);
+    } finally {
+      setSavingCutout(false);
+    }
+  };
+
+  const usePlainSquare = async () => {
+    setCutoutPreview(null);
+    setCutoutBlob(null);
+    if (!userId || !cutoutUrl) return;
+    await (supabase.from("diagnostic_profiles" as any) as any)
+      .update({ avatar_cutout_url: null }).eq("user_id", userId);
+    setCutoutUrl(null);
   };
 
   const handleSaveName = async () => {
@@ -176,6 +239,48 @@ export default function AccountPanel({ userId, email }: Props) {
                 </div>
                 <input ref={fileRef} type="file" accept="image/*" onChange={handleUpload} className="hidden" />
               </div>
+
+              {photoNote && (
+                <div style={{ fontSize: 12, color: "var(--error)" }}>{photoNote}</div>
+              )}
+
+              {enhancing && (
+                <div style={{ fontSize: 12, color: "var(--ink-4)", display: "flex", alignItems: "center", gap: 8 }}>
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Tidying up the background — this happens on your device.
+                </div>
+              )}
+
+              {cutoutPreview && (
+                <div style={{ border: "0.5px solid var(--rule)", borderRadius: 8, padding: 14 }}>
+                  <div style={{ fontSize: 13, color: "var(--ink)", marginBlockEnd: 10 }}>
+                    We removed the background so your closing slide can use your photo.
+                    Keep it, or use the plain square.
+                  </div>
+                  <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
+                    <figure style={{ margin: 0, textAlign: "center" }}>
+                      {avatarUrl && (
+                        <img src={avatarUrl} alt="Plain square photo"
+                          style={{ inlineSize: 72, blockSize: 72, borderRadius: 8, objectFit: "cover", border: "0.5px solid var(--rule)" }} />
+                      )}
+                      <figcaption style={{ fontSize: 11, color: "var(--ink-4)", marginBlockStart: 4 }}>Plain square</figcaption>
+                    </figure>
+                    <figure style={{ margin: 0, textAlign: "center" }}>
+                      <img src={cutoutPreview} alt="Photo with the background removed"
+                        style={{ inlineSize: 72, blockSize: 72, borderRadius: 8, objectFit: "contain", background: "var(--paper-2)", border: "0.5px solid var(--rule)" }} />
+                      <figcaption style={{ fontSize: 11, color: "var(--ink-4)", marginBlockStart: 4 }}>Cut-out</figcaption>
+                    </figure>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <Button variant="default" size="sm" onClick={keepCutout} disabled={savingCutout}>
+                        {savingCutout ? "Saving…" : "Keep the cut-out"}
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={usePlainSquare} disabled={savingCutout}>
+                        Use the plain square
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Name */}
               <div>
