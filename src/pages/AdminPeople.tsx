@@ -22,6 +22,9 @@ type Row = {
   imprint: number | null;
   last_nudge_type: string | null;
   last_nudge_at: string | null;
+  posts_with_text: number | null;
+  newest_post_with_text: string | null;
+  voice_refreshed_at: string | null;
 };
 
 type Stage = "Observer" | "Explorer" | "Strategist" | "Voice" | "Presence";
@@ -387,7 +390,7 @@ export default function AdminPeople() {
   }, [filtered]);
 
   const exportCsv = () => {
-    const header = ["email","first_name","sector_focus","signed_up","last_seen","captures","signals","posts","imprint","stage","status"];
+    const header = ["email","first_name","sector_focus","signed_up","last_seen","captures","signals","posts","posts_with_text","newest_post_with_text","voice_refreshed_at","imprint","stage","status"];
     const esc = (v: any) => {
       const s = v == null ? "" : String(v);
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
@@ -397,6 +400,7 @@ export default function AdminPeople() {
       lines.push([
         r.email, r.first_name, r.sector_focus, r.signed_up, r.last_seen,
         r.captures, r.signals, r.posts, r.imprint,
+        r.posts_with_text ?? 0, r.newest_post_with_text, r.voice_refreshed_at,
         stageOf(r.imprint), statusOf(r),
       ].map(esc).join(","));
     }
@@ -570,6 +574,7 @@ export default function AdminPeople() {
                   <th style={th}>Captures</th>
                   <th style={th}>Signals</th>
                   <th style={th}>Posts</th>
+                  <th style={th}>Voice corpus</th>
                   <th style={th}>Imprint</th>
                   <th style={th}>Stage</th>
                   <th style={th}>Last nudge</th>
@@ -594,6 +599,15 @@ export default function AdminPeople() {
                       <td style={td}>{r.captures}</td>
                       <td style={td}>{r.signals}</td>
                       <td style={td}>{r.posts}</td>
+                      <td style={td}>
+                        <div style={{ color: (r.posts_with_text ?? 0) >= 5 ? "inherit" : "var(--glass-2)" }}>
+                          {r.posts_with_text ?? 0} with text
+                        </div>
+                        <div style={{ fontSize: 11, color: "var(--glass-2)" }}>
+                          {r.newest_post_with_text ? `newest ${fmtDate(r.newest_post_with_text)}` : "no text yet"}
+                          {r.voice_refreshed_at ? ` · voice ${fmtDate(r.voice_refreshed_at)}` : " · voice never"}
+                        </div>
+                      </td>
                       <td style={td}>{r.imprint ?? "—"}</td>
                       <td style={td}>{stageOf(r.imprint)}</td>
                       <td style={td}>
