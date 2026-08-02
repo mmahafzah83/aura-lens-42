@@ -922,6 +922,7 @@ export type Database = {
           audit_method: string | null
           audit_results: Json | null
           aura_card_ready_at: string | null
+          avatar_cutout_url: string | null
           avatar_url: string | null
           brand_assessment_answers: Json | null
           brand_assessment_completed_at: string | null
@@ -970,6 +971,7 @@ export type Database = {
           audit_method?: string | null
           audit_results?: Json | null
           aura_card_ready_at?: string | null
+          avatar_cutout_url?: string | null
           avatar_url?: string | null
           brand_assessment_answers?: Json | null
           brand_assessment_completed_at?: string | null
@@ -1018,6 +1020,7 @@ export type Database = {
           audit_method?: string | null
           audit_results?: Json | null
           aura_card_ready_at?: string | null
+          avatar_cutout_url?: string | null
           avatar_url?: string | null
           brand_assessment_answers?: Json | null
           brand_assessment_completed_at?: string | null

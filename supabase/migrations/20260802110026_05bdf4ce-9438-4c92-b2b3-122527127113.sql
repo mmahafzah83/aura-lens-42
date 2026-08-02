@@ -1,0 +1,1 @@
+alter table public.diagnostic_profiles add column if not exists avatar_cutout_url text;
