@@ -96,6 +96,10 @@ serve(async (req) => {
         reply_to: "mohammad.mahafdhah@aura-intel.org",
         subject,
         html,
+        tags: [
+          { name: "user_id", value: userData.user.id },
+          { name: "email_type", value: String(type).replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 250) },
+        ],
       }),
     });
 

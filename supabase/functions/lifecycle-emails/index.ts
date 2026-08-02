@@ -134,7 +134,17 @@ function buildEmail(lang: Lang, key: MessageKey, firstName: string, signalTitle?
   };
 }
 
-async function sendResend(apiKey: string, to: string, subject: string, html: string) {
+async function sendResend(
+  apiKey: string,
+  to: string,
+  subject: string,
+  html: string,
+  userId?: string,
+  messageKey?: string,
+) {
+  const tags: { name: string; value: string }[] = [{ name: "email_type", value: "lifecycle" }];
+  if (userId) tags.unshift({ name: "user_id", value: userId });
+  if (messageKey) tags.push({ name: "message_key", value: messageKey.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 250) });
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
@@ -144,6 +154,7 @@ async function sendResend(apiKey: string, to: string, subject: string, html: str
       subject,
       reply_to: "mohammad.mahafdhah@aura-intel.org",
       html,
+      tags,
     }),
   });
   if (!res.ok) {

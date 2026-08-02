@@ -102,6 +102,10 @@ serve(async (req) => {
         reply_to: "mohammad.mahafdhah@aura-intel.org",
         subject: "Reset your Aura password",
         html,
+        tags: [
+          ...(linkData.user?.id ? [{ name: "user_id", value: linkData.user.id }] : []),
+          { name: "email_type", value: "password_reset" },
+        ],
       }),
     });
     if (!resendRes.ok) {

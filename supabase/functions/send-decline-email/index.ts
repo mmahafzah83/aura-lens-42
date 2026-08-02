@@ -101,6 +101,8 @@ serve(withObserve("send-decline-email", async (req) => {
         reply_to: REPLY_TO,
         subject: "Update on your Aura application",
         html,
+        // Declined applicants are not members — no user_id tag.
+        tags: [{ name: "email_type", value: "application_declined" }],
       }),
     });
     if (!res.ok) {
