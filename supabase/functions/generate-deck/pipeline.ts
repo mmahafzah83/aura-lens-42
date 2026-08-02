@@ -686,9 +686,15 @@ export function assemble(
   deckId: string,
 ): unknown {
   const prof = ctx.profile;
-  const name = [prof.first_name, prof.last_name].filter(Boolean).join(" ").trim() || "Member";
+  // Identity comes pre-resolved (override > LinkedIn > profile columns).
+  const ident: any = (ctx as any).identity ?? {};
+  const name = String(ident.name ?? "").trim()
+    || [prof.first_name, prof.last_name].filter(Boolean).join(" ").trim()
+    || "Member";
   const title = [prof.level, prof.firm].filter(Boolean).join(", ");
-  const handle = bareHandle(prof.linkedin_handle || prof.linkedin_url) || "member";
+  const handle = String(ident.handle ?? "").trim()
+    || bareHandle(prof.linkedin_handle || prof.linkedin_url)
+    || "member";
   const tn = (t: string) => ({ runs: [{ t, lang: /[\u0600-\u06FF]/.test(t) ? "ar" : "en" }] });
 
   const ordered = manifest.slots.map((slot, i) => {

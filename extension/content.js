@@ -346,12 +346,131 @@
   }
 
   /* ═══════════════════════════════════════════
+     EXTRACTOR: THE MEMBER'S OWN POSTS
+
+     Only runs on the member's own activity page, and only keeps posts whose
+     author link is the member. Nobody else's writing is ever sent.
+     ═══════════════════════════════════════════ */
+
+  function ownHandleFromPage() {
+    const m = window.location.href.match(/linkedin\.com\/in\/([^/?#]+)/i);
+    return m ? decodeURIComponent(m[1]).toLowerCase() : null;
+  }
+
+  function relativeToIso(text) {
+    const m = (text || "").match(/(\d+)\s*(m|h|d|w|mo|y|minute|hour|day|week|month|year)s?\b/i);
+    if (!m) return null;
+    const n = parseInt(m[1], 10);
+    const unit = m[2].toLowerCase();
+    const d = new Date();
+    if (unit === "m" || unit === "minute") d.setMinutes(d.getMinutes() - n);
+    else if (unit === "h" || unit === "hour") d.setHours(d.getHours() - n);
+    else if (unit === "d" || unit === "day") d.setDate(d.getDate() - n);
+    else if (unit === "w" || unit === "week") d.setDate(d.getDate() - n * 7);
+    else if (unit === "mo" || unit === "month") d.setMonth(d.getMonth() - n);
+    else if (unit === "y" || unit === "year") d.setFullYear(d.getFullYear() - n);
+    else return null;
+    return d.toISOString();
+  }
+
+  function extractOwnPosts(expectedHandle) {
+    const pageHandle = ownHandleFromPage();
+    const handle = (expectedHandle || pageHandle || "").toLowerCase().replace(/^@/, "");
+    const onOwnActivity = /\/in\/[^/]+\/recent-activity/i.test(window.location.href) ||
+      /\/in\/[^/]+\/?$/i.test(window.location.pathname);
+
+    if (!onOwnActivity) {
+      return {
+        success: false,
+        error: "Open your own LinkedIn activity page (your profile → Show all posts), then try again.",
+      };
+    }
+    if (handle && pageHandle && handle !== pageHandle) {
+      return { success: false, error: "This is someone else's profile. Aura only saves your own posts." };
+    }
+
+    const seen = new Set();
+    const posts = [];
+    const elements = document.querySelectorAll(
+      ".feed-shared-update-v2, .occludable-update, [data-urn], .profile-creator-shared-feed-update__container"
+    );
+
+    for (const el of elements) {
+      // Reposts and other people's content carry a different actor link.
+      const actor = el.querySelector("a.update-components-actor__meta-link[href*='/in/'], .update-components-actor__container-link[href*='/in/'], a[href*='/in/'][class*='actor']");
+      if (actor && handle) {
+        const actorHandle = (actor.getAttribute("href") || "").match(/\/in\/([^/?#]+)/i);
+        if (actorHandle && decodeURIComponent(actorHandle[1]).toLowerCase() !== handle) continue;
+      }
+
+      const textEl = el.querySelector(".feed-shared-inline-show-more-text, .update-components-text, .feed-shared-text, .break-words");
+      const text = (textEl?.innerText || "").trim();
+      if (text.length < 40) continue;
+
+      const urn = el.getAttribute("data-urn") || el.querySelector("[data-urn]")?.getAttribute("data-urn") || "";
+      const linkEl = el.querySelector("a[href*='/posts/'], a[href*='/feed/update/']");
+      const activity = (urn.match(/\d{15,25}/) || [])[0] ||
+        ((linkEl?.href || "").match(/\d{15,25}/) || [])[0];
+      const url = linkEl
+        ? normalizeUrl(linkEl.href)
+        : activity
+          ? `https://www.linkedin.com/feed/update/urn:li:activity:${activity}`
+          : null;
+      if (!url) continue;
+
+      const key = activity || url;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      const timeEl = el.querySelector("time[datetime]");
+      const published_at = timeEl?.getAttribute("datetime") ||
+        relativeToIso(el.querySelector(".update-components-actor__sub-description")?.innerText);
+
+      const socialCounts = el.querySelector(".social-details-social-counts")?.innerText || "";
+      const reactions = (socialCounts.match(/([\d.,KkMm]+)\s*(?:reaction|like)/i) || [])[1];
+      const comments = (socialCounts.match(/([\d.,KkMm]+)\s*comment/i) || [])[1];
+      const reposts = (socialCounts.match(/([\d.,KkMm]+)\s*(?:repost|share)/i) || [])[1];
+
+      posts.push({
+        post_url: url,
+        post_text: text.slice(0, 20000),
+        published_at: published_at || null,
+        author_url: handle ? `https://www.linkedin.com/in/${handle}` : null,
+        like_count: parseNumber(reactions),
+        comment_count: parseNumber(comments),
+        repost_count: parseNumber(reposts),
+      });
+    }
+
+    if (!posts.length) {
+      return {
+        success: false,
+        error: "No posts visible yet. Scroll down your activity page to load them, then try again.",
+      };
+    }
+    return { success: true, payload: { posts, page_url: window.location.href } };
+  }
+
+  /* ═══════════════════════════════════════════
      MESSAGE HANDLER
      ═══════════════════════════════════════════ */
 
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg.action === "detect_page") {
       sendResponse({ pageType: detectPageType(), url: window.location.href });
+      return true;
+    }
+
+    // Capture the member's OWN post text from their own activity page.
+    // LinkedIn's API never returns post commentary, so this is how the
+    // corpus keeps growing after the one-off data-export import.
+    if (msg.action === "capture_own_posts") {
+      try {
+        const result = extractOwnPosts(msg.handle);
+        sendResponse(result);
+      } catch (e) {
+        sendResponse({ success: false, error: e.message });
+      }
       return true;
     }
 

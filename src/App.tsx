@@ -30,6 +30,7 @@ import PageViewTracker from "./components/PageViewTracker";
 const LandingV2 = lazy(() => import("./pages/LandingV2"));
 const TrendDetail = lazy(() => import("./pages/TrendDetail"));
 const CarouselStudio = lazy(() => import("./pages/CarouselStudio"));
+const LinkedInImport = lazy(() => import("./pages/LinkedInImport"));
 const EditionStudio = lazy(() => import("./pages/EditionStudio"));
 const Admin = lazy(() => import("./pages/Admin"));
 const AdminAccess = lazy(() => import("./pages/AdminAccess"));
@@ -130,6 +131,7 @@ const App = () => (
             {/* Legacy alias — Preferences is now the first tab inside Settings. */}
             <Route path="/preferences" element={<Navigate to="/settings?tab=preferences" replace />} />
             <Route path="/carousel-studio" element={<PasswordGate><CarouselStudio /></PasswordGate>} />
+            <Route path="/linkedin-import" element={<PasswordGate><LinkedInImport /></PasswordGate>} />
             <Route path="/edition" element={<PasswordGate><EditionStudio /></PasswordGate>} />
             <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             <Route path="/card-preview" element={<PasswordGate><CardPreview /></PasswordGate>} />
