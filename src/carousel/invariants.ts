@@ -160,7 +160,7 @@ export interface InvariantOptions {
   domainTerms?: string[];
 }
 
-const HERO_BUDGET: Record<"en" | "ar", number> = { en: 14, ar: 20 };
+export const HERO_BUDGET: Record<"en" | "ar", number> = { en: 18, ar: 26 };
 
 const CONTRAST_ARCHETYPES: Archetype[] = [
   "evidence",
