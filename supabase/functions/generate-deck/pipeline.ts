@@ -521,18 +521,10 @@ export async function writeSlides(
   manifest: ComposeResult,
   corrections: string[],
 ): Promise<any[]> {
-  const voice = ctx.voice
-    ? `VOICE — tone: ${JSON.stringify(ctx.voice.tone ?? "")}; structures: ${JSON.stringify(
-        ctx.voice.preferred_structures ?? "",
-      )}; patterns: ${JSON.stringify(ctx.voice.storytelling_patterns ?? "")}; examples: ${JSON.stringify(
-        (ctx.voice.example_posts ?? []).slice?.(0, 2) ?? "",
-      ).slice(0, 1500)}`
-    : "VOICE: no profile on file. Write plainly, concretely, with no marketing register.";
-
   const user = [
-    contextBlock(ctx),
+    voiceBlock(ctx.voice),
     "",
-    voice,
+    contextBlock(ctx),
     "",
     `PLAN: ${JSON.stringify(p)}`,
     p.hasNumber
