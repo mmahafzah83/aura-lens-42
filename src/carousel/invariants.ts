@@ -339,7 +339,8 @@ export function checkInvariants(ir: DeckIR, opts: InvariantOptions = {}): string
         errors.push(
           stripMarkers(text)
             ? `INV-20: ${where} carries a symbol marker inside slide text: "${text.slice(0, 60)}".`
-            : `INV-20b: ${where} has a text node made only of symbol markers: "${text.slice(0, 60)}".`,
+            // Nothing survives the strip, so the repair cannot help: blocking.
+            : `INV-01: ${where} has a text node made only of symbol markers, leaving it empty once they are removed.`,
         );
       }
       // INV-21 — a sign-off is a statement about the member. It belongs at the
