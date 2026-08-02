@@ -56,16 +56,16 @@ export function useFitLadder(
   const [state, setState] = useState<FitState>({ step: 0, scale: FIT_SCALES[0], failed: false, reason: null });
   const lastSignature = useRef(signature);
 
-  // Measure only once the bundled faces are in. Fallback metrics differ enough
-  // from Anton and Cairo to trigger a phantom wrap, and the ladder only ever
-  // escalates — a slide shrunk against the fallback would never come back.
-  const [fontsReady, setFontsReady] = useState<boolean>(
-    () => typeof document === "undefined" || document.fonts?.status === "loaded",
-  );
+  // Measure only once the four bundled faces are in. Fallback metrics are far
+  // wider than Anton, so measuring early reports a phantom wrap — and the
+  // ladder only ever escalates, so the slide would stay wrongly shrunk.
+  // `document.fonts.ready` alone is not enough: it can already be settled
+  // before these faces are requested.
+  const [fontsReady, setFontsReady] = useState<boolean>(carouselFontsLoaded);
   useEffect(() => {
-    if (fontsReady || typeof document === "undefined" || !document.fonts) return;
+    if (fontsReady) return;
     let live = true;
-    document.fonts.ready.then(() => { if (live) setFontsReady(true); });
+    ensureCarouselFonts().then(() => { if (live) setFontsReady(true); });
     return () => { live = false; };
   }, [fontsReady]);
 
