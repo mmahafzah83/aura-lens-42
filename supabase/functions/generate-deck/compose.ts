@@ -99,10 +99,7 @@ function resolve(role: Role, input: ComposeInput): Archetype {
 function collides(roles: Role[], input: ComposeInput): boolean {
   const seq = roles.map((r) => resolve(r, input));
   for (let i = 1; i < seq.length; i += 1) {
-    // Split step slides are intentionally adjacent in the manifest; the writer
-    // stage alternates them, so only non-step collisions matter here.
-    const stepPair = roles[i].startsWith("steps") && roles[i - 1].startsWith("steps");
-    if (!stepPair && seq[i] === seq[i - 1]) return true;
+    if (seq[i] === seq[i - 1]) return true;
   }
   return false;
 }
