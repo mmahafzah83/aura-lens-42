@@ -118,7 +118,7 @@ export const ProfileSchema = z.strictObject({
   name: TextNodeSchema,
   title: TextNodeSchema.optional(),
   /** BARE handle — no "in/" prefix. The LinkedIn glyph replaces the prefix at render. */
-  handle: z.string().regex(/^[a-zA-Z0-9-]+$/),
+  handle: z.string().regex(/^[\p{L}\p{N}._-]+$/u).optional(),
   avatar_url: z.string().nullable().optional(),
   avatar_cutout_url: z.string().nullable().optional(),
   initials: z.string().optional(),
