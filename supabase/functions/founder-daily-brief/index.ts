@@ -975,7 +975,11 @@ ${sectionClose("A cross on any row means do not act on that number until it is r
           const resp = await fetch("https://api.resend.com/emails", {
             method: "POST",
             headers: { Authorization: `Bearer ${RESEND}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ from: "Aura <alerts@aura-intel.org>", to: [TO], subject, html }),
+            body: JSON.stringify({
+              from: "Aura <alerts@aura-intel.org>", to: [TO], subject, html,
+              // Admin alert address, not a member inbox — no user_id tag.
+              tags: [{ name: "email_type", value: "founder_daily_brief" }],
+            }),
           });
           resendStatus = resp.status;
           sent = resp.ok;

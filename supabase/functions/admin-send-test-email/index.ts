@@ -48,6 +48,7 @@ Deno.serve(async (req) => {
 
     const subject = `Aura test email — ${new Date().toISOString()}`;
     const html = `<p>This is a test email sent from the Admin console through the same Resend path lifecycle emails use.</p><p>Sent at ${new Date().toISOString()}.</p>`;
+    const messageKey = `TEST_${Date.now()}`;
 
     const resendRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -58,6 +59,11 @@ Deno.serve(async (req) => {
         reply_to: REPLY_TO,
         subject,
         html,
+        tags: [
+          { name: "user_id", value: uid },
+          { name: "email_type", value: "admin_test" },
+          { name: "message_key", value: messageKey },
+        ],
       }),
     });
 
@@ -66,7 +72,6 @@ Deno.serve(async (req) => {
     const ok = status >= 200 && status < 300;
 
     // Write to lifecycle_email_log regardless of outcome.
-    const messageKey = `TEST_${ok ? "OK" : "FAIL"}_${Date.now()}`;
     try {
       await admin.from("lifecycle_email_log").insert({
         user_id: uid,
