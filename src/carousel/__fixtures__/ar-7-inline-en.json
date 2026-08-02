@@ -1,0 +1,104 @@
+{
+  "deck_id": "fx-ar-7-inline-en",
+  "signal_id": "sig-grid-capex-2026",
+  "primary_lang": "ar",
+  "dir": "rtl",
+  "numerals": "western",
+  "theme": "clay",
+  "length": 7,
+  "profile": {
+    "name": { "runs": [{ "t": "محمد محافظة", "lang": "ar" }] },
+    "title": { "runs": [{ "t": "استراتيجية الشبكة", "lang": "ar" }] },
+    "handle": "mohammad-mahafdhah",
+    "avatar_url": null
+  },
+  "slides": [
+    {
+      "index": 0,
+      "archetype": "cover_hero",
+      "slots": {
+        "chip": { "runs": [{ "t": "رأس المال", "lang": "ar" }] },
+        "hero_lines": [
+          { "runs": [{ "t": "العداد", "lang": "ar" }] },
+          { "runs": [{ "t": "تحرك أولاً", "lang": "ar" }], "highlight": true }
+        ],
+        "subline": { "runs": [{ "t": "ما قررته خطط رأس المال لعام 2026 مسبقاً.", "lang": "ar" }] }
+      }
+    },
+    {
+      "index": 1,
+      "archetype": "frame",
+      "slots": {
+        "headline": { "runs": [{ "t": "ميزانيتان وشبكة واحدة", "lang": "ar" }] },
+        "body": [
+          {
+            "runs": [
+              { "t": "الشركات تمول ", "lang": "ar" },
+              { "t": "smart meters", "lang": "en" },
+              { "t": " قبل أن تمول التوليد.", "lang": "ar" }
+            ]
+          },
+          { "runs": [{ "t": "هذا الترتيب يكشف أين سيكون الهامش في العقد القادم.", "lang": "ar" }] }
+        ]
+      }
+    },
+    {
+      "index": 2,
+      "archetype": "evidence",
+      "slots": {
+        "stat_value": "3.4x",
+        "stat_label": { "runs": [{ "t": "الإنفاق على القياس مقابل التخزين", "lang": "ar" }] },
+        "source": { "runs": [{ "t": "خطط رأس المال المنشورة، 2026", "lang": "ar" }] }
+      }
+    },
+    {
+      "index": 3,
+      "archetype": "benchmark",
+      "slots": {
+        "headline": { "runs": [{ "t": "أين ذهب المال", "lang": "ar" }] },
+        "media": {
+          "kind": "chart",
+          "placement": "lower",
+          "chart": {
+            "type": "bars",
+            "series": [
+              { "label": { "runs": [{ "t": "القياس", "lang": "ar" }] }, "value": 34, "unit": "%", "emphasis": "alert" },
+              { "label": { "runs": [{ "t": "التخزين", "lang": "ar" }] }, "value": 10, "unit": "%", "emphasis": "accent" }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "index": 4,
+      "archetype": "quote",
+      "slots": {
+        "quote": { "runs": [{ "t": "لا يمكنك تداول حمل لا تراه.", "lang": "ar" }] },
+        "hero_lines": [{ "runs": [{ "t": "اقرأها مرتين", "lang": "ar" }], "highlight": true }]
+      }
+    },
+    {
+      "index": 5,
+      "archetype": "steps",
+      "slots": {
+        "headline": { "runs": [{ "t": "ماذا تفعل هذا الربع", "lang": "ar" }] },
+        "checklist": [
+          { "runs": [{ "t": "اطلب بند القياس بالاسم.", "lang": "ar" }] },
+          { "runs": [{ "t": "قارنه بالتخزين لا بالعام الماضي.", "lang": "ar" }] },
+          { "runs": [{ "t": "ضع رقماً واحداً أمام المجلس.", "lang": "ar" }] }
+        ],
+        "hero_lines": [{ "runs": [{ "t": "ثلاث خطوات", "lang": "ar" }], "highlight": true }]
+      }
+    },
+    {
+      "index": 6,
+      "archetype": "close",
+      "slots": {
+        "headline": { "runs": [{ "t": "إذا كان هذا مفيداً", "lang": "ar" }] },
+        "body": [{ "runs": [{ "t": "أكتب عن رأس مال الشبكة كل أسبوع.", "lang": "ar" }] }],
+        "cta_pill": { "runs": [{ "t": "تابع للمزيد", "lang": "ar" }] },
+        "hero_lines": [{ "runs": [{ "t": "دورك الآن", "lang": "ar" }], "highlight": true }]
+      }
+    }
+  ]
+}

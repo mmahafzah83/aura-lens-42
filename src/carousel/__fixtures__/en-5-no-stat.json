@@ -1,0 +1,65 @@
+{
+  "deck_id": "fx-en-5-no-stat",
+  "signal_id": "sig-hiring-quiet-2026",
+  "primary_lang": "en",
+  "dir": "ltr",
+  "numerals": "western",
+  "theme": "paper",
+  "length": 5,
+  "profile": {
+    "name": { "runs": [{ "t": "Mohammad Mahafdhah", "lang": "en" }] },
+    "handle": "mohammad-mahafdhah"
+  },
+  "slides": [
+    {
+      "index": 0,
+      "archetype": "cover_hero",
+      "slots": {
+        "chip": { "runs": [{ "t": "Hiring", "lang": "en" }] },
+        "hero_lines": [
+          { "runs": [{ "t": "Nobody said", "lang": "en" }] },
+          { "runs": [{ "t": "it out loud", "lang": "en" }], "highlight": true }
+        ],
+        "subline": { "runs": [{ "t": "The quiet change in how teams are being staffed.", "lang": "en" }] }
+      }
+    },
+    {
+      "index": 1,
+      "archetype": "frame",
+      "slots": {
+        "headline": { "runs": [{ "t": "The job stopped being a job", "lang": "en" }] },
+        "body": [
+          { "runs": [{ "t": "Roles are being written as scopes of work, not as titles.", "lang": "en" }] },
+          { "runs": [{ "t": "The signal carries no published figure, so this deck carries none.", "lang": "en" }] }
+        ]
+      }
+    },
+    {
+      "index": 2,
+      "archetype": "definition",
+      "slots": {
+        "term": { "runs": [{ "t": "Scope hire", "lang": "en" }] },
+        "term_def": { "runs": [{ "t": "A role defined by the outcome it owns rather than the box it sits in.", "lang": "en" }] },
+        "hero_lines": [{ "runs": [{ "t": "Name it", "lang": "en" }], "highlight": true }]
+      }
+    },
+    {
+      "index": 3,
+      "archetype": "quote",
+      "slots": {
+        "quote": { "runs": [{ "t": "We stopped hiring for the org chart we had.", "lang": "en" }] },
+        "hero_lines": [{ "runs": [{ "t": "Sit with it", "lang": "en" }], "highlight": true }]
+      }
+    },
+    {
+      "index": 4,
+      "archetype": "close",
+      "slots": {
+        "headline": { "runs": [{ "t": "One question for Monday", "lang": "en" }] },
+        "body": [{ "runs": [{ "t": "Which of your open roles is a title looking for a scope?", "lang": "en" }] }],
+        "cta_pill": { "runs": [{ "t": "Follow for the next one", "lang": "en" }] },
+        "hero_lines": [{ "runs": [{ "t": "Your move", "lang": "en" }], "highlight": true }]
+      }
+    }
+  ]
+}
