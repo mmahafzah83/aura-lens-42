@@ -122,6 +122,54 @@ function ReactionIcons({ theme, size }: { theme: Theme; size: number }) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Theme marks — a small, fixed set. Chosen upstream from theme_tags.  */
+/* ------------------------------------------------------------------ */
+
+const ICON_PATHS: Record<string, string[]> = {
+  water: ["M12 2.5s6.5 7 6.5 11.2A6.5 6.5 0 0 1 5.5 13.7C5.5 9.5 12 2.5 12 2.5z"],
+  energy: ["M13 2 4 14h6l-1 8 9-12h-6l1-8z"],
+  data: ["M4 20V10", "M10 20V4", "M16 20v-7", "M22 20H2"],
+  growth: ["M3 17l6-6 4 4 8-8", "M15 7h6v6"],
+  risk: ["M12 3l9 16H3l9-16z", "M12 10v4", "M12 17.2v.1"],
+  people: ["M8 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z", "M2 21c0-3.6 2.7-6 6-6s6 2.4 6 6", "M17 11a3 3 0 1 0 0-6", "M17 15c3 0 5 2.2 5 6"],
+  time: ["M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z", "M12 7v5l3.5 2"],
+  money: ["M12 2v20", "M17 6.5C17 4.6 14.8 3.5 12 3.5S7 4.6 7 6.5 9.2 10 12 11s5 1.9 5 4-2.2 3.5-5 3.5-5-1.4-5-3.5"],
+  network: ["M12 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z", "M5 21a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z", "M19 21a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z", "M12 8v4", "M12 12 6 16", "M12 12l6 4"],
+  gear: ["M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z", "M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2 2 2 0 1 1-4 0 1.7 1.7 0 0 0-2.9-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 3 15a2 2 0 1 1 0-4 1.7 1.7 0 0 0 1.2-2.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 10 4.1a2 2 0 1 1 4 0 1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.7 1.7 0 0 0 21 11a2 2 0 1 1 0 4 1.7 1.7 0 0 0-1.6 1z"],
+};
+
+/** `media.src` of "icon:water" resolves here. Unknown keys render nothing. */
+function IconMark({ src, theme, size }: { src?: string; theme: Theme; size: number }) {
+  const key = (src ?? "").startsWith("icon:") ? src!.slice(5) : "";
+  const paths = ICON_PATHS[key];
+  if (!paths) return null;
+  return (
+    <div
+      style={{
+        width: size, height: size, borderRadius: 18, flex: "0 0 auto",
+        background: theme.panel, border: `1px solid ${theme.rule}`,
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}
+    >
+      <svg
+        width={Math.round(size * 0.56)}
+        height={Math.round(size * 0.56)}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke={theme.accent}
+        strokeWidth={1.7}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+        style={{ display: "block" }}
+      >
+        {paths.map((d, i) => <path key={i} d={d} />)}
+      </svg>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* Identity                                                            */
 /* ------------------------------------------------------------------ */
 
@@ -309,7 +357,7 @@ function Bars({ slide, primary, theme, s }: { slide: SlideIR; primary: Lang; the
 
 function MediaBlock({ slide, theme }: { slide: SlideIR; theme: Theme }) {
   const media = slide.slots.media;
-  if (!media || media.kind === "chart" || !media.src) return null;
+  if (!media || media.kind === "chart" || media.kind === "icon" || !media.src) return null;
   return (
     <div
       style={{
@@ -375,6 +423,7 @@ function SlideBody({ deck, slide, theme, s, hideTails }: PartProps) {
     case "frame":
       return (
         <Stack gap={s.gap}>
+          {slots.media?.kind === "icon" && <IconMark src={slots.media.src} theme={theme} size={Math.round(112 * (parseInt(s.h2, 10) / 54))} />}
           <Hero lines={slots.hero_lines} {...common} />
           <H2 node={slots.headline} {...common} />
           <Body nodes={slots.body} primary={p} theme={theme} s={s} hideTails={hideTails} />
@@ -444,6 +493,7 @@ function SlideBody({ deck, slide, theme, s, hideTails }: PartProps) {
     case "definition":
       return (
         <Stack gap={s.gap}>
+          {slots.media?.kind === "icon" && <IconMark src={slots.media.src} theme={theme} size={Math.round(112 * (parseInt(s.h2, 10) / 54))} />}
           <Hero lines={slots.hero_lines} {...common} />
           <Txt
             node={slots.term}
@@ -470,7 +520,9 @@ function SlideBody({ deck, slide, theme, s, hideTails }: PartProps) {
 }
 
 /** Close: a three-row grid whose figure row is a FIXED height, so text can never overlap it. */
-const CLOSE_FIGURE_H = 430;
+const CLOSE_FIGURE_H = 470;
+/** The figure occupies a fixed column so the head lands in the same place on every deck. */
+const CLOSE_FIGURE_W = 430;
 
 function CloseSlide({ deck, slide, theme, s, hideTails }: PartProps) {
   const p = deck.primary_lang;
@@ -510,14 +562,29 @@ function CloseSlide({ deck, slide, theme, s, hideTails }: PartProps) {
       </div>
       <div style={{ height: CLOSE_FIGURE_H, display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 32 }}>
         {figureSrc ? (
+          // A cut-out figure STANDING in the slide: bottom-anchored, sized by
+          // height so the head sits in the upper third of the figure zone, and
+          // with no frame, border, radius or shadow anywhere near it. A square
+          // avatar has no transparency, so it is dissolved into the background
+          // by a bottom fade rather than stopping at a hard edge.
           <div
             style={{
-              flex: "1 1 auto",
+              width: CLOSE_FIGURE_W,
+              flex: "0 0 auto",
               height: "100%",
               backgroundImage: `url(${figureSrc})`,
-              backgroundSize: "contain",
-              backgroundPosition: "bottom center",
+              backgroundSize: "auto 100%",
+              backgroundPosition: deck.dir === "rtl" ? "bottom right" : "bottom left",
               backgroundRepeat: "no-repeat",
+              border: "none",
+              borderRadius: 0,
+              boxShadow: "none",
+              ...(deck.profile.avatar_cutout_url
+                ? {}
+                : {
+                    maskImage: "linear-gradient(to bottom, #000 0%, #000 58%, rgba(0,0,0,.55) 82%, rgba(0,0,0,0) 100%)",
+                    WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 58%, rgba(0,0,0,.55) 82%, rgba(0,0,0,0) 100%)",
+                  }),
             }}
             role="img"
             aria-label=""

@@ -335,7 +335,79 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
 
     // Optional single image (additive — text-only posts are unaffected)
     const imageUrl: string | undefined = (post as any)?.source_metadata?.image_url;
+    // Optional carousel PDF. A document post is the same publish path with a
+    // different upload endpoint — there is exactly one publisher in this app.
+    const documentUrl: string | undefined = (post as any)?.source_metadata?.document_url;
     let mediaContent: Record<string, unknown> | undefined;
+
+    /** Storage-only. The same gate the image path uses; SSRF is the risk. */
+    const approvedStorageUrl = (raw: string): URL | string => {
+      let parsed: URL;
+      try { parsed = new URL(raw); } catch { return "Invalid media URL"; }
+      if (parsed.protocol !== "https:") return "Media URL must be https";
+      const h = parsed.hostname.toLowerCase();
+      const ok = h.endsWith(".supabase.co") || h.endsWith(".supabase.in") ||
+        h.endsWith(".lovable.app") || h.endsWith(".lovable.dev");
+      return ok ? parsed : "Media must be hosted on approved storage";
+    };
+
+    if (documentUrl && !imageUrl) {
+      const parsedDoc = approvedStorageUrl(documentUrl);
+      if (typeof parsedDoc === "string") {
+        await releaseToDraft();
+        return json({ success: false, error: parsedDoc }, 400);
+      }
+      const initResult = await runStep("register_upload", (signal) =>
+        linkedinFetch("https://api.linkedin.com/rest/documents?action=initializeUpload", {
+          method: "POST",
+          signal,
+          headers: {
+            Authorization: `Bearer ${connection.access_token}`,
+            "X-Restli-Protocol-Version": "2.0.0",
+            "LinkedIn-Version": LINKEDIN_VERSION,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            initializeUploadRequest: { owner: `urn:li:person:${connection.linkedin_id}` },
+          }),
+        }, { userId: user.id, adminClient, purpose: "document-init" }));
+      if (initResult.outcome !== "ok") {
+        return await failTerminal("register_upload", initResult.outcome, initResult.status, initResult.body);
+      }
+      let initJson: any = {};
+      try { initJson = JSON.parse(initResult.body); } catch { /* handled below */ }
+      const uploadUrl: string = initJson?.value?.uploadUrl;
+      const documentUrn: string = initJson?.value?.document;
+      if (!uploadUrl || !documentUrn) {
+        return await failTerminal("register_upload", "refused", initResult.status, initResult.body);
+      }
+
+      const docRes = await fetch(parsedDoc.toString());
+      if (!docRes.ok) {
+        await releaseToDraft();
+        return json({ success: false, error: "Could not read the stored carousel", status: docRes.status });
+      }
+      const docBytes = new Uint8Array(await docRes.arrayBuffer());
+
+      const upResult = await runStep("upload_binary", (signal) =>
+        linkedinFetch(uploadUrl, {
+          method: "PUT",
+          signal,
+          headers: {
+            Authorization: `Bearer ${connection.access_token}`,
+            "Content-Type": "application/pdf",
+          },
+          body: docBytes,
+        }, { userId: user.id, adminClient, purpose: "document-upload" }));
+      if (upResult.outcome !== "ok") {
+        return await failTerminal("upload_binary", upResult.outcome, upResult.status, upResult.body);
+      }
+
+      const docTitle = String(
+        (post as any)?.source_metadata?.document_title ?? "Carousel",
+      ).slice(0, 100);
+      mediaContent = { media: { id: documentUrn, title: docTitle } };
+    }
 
     if (imageUrl) {
       let parsedImg: URL;

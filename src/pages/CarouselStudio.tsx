@@ -10,16 +10,16 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, CheckCircle2, FileDown, Images, Sparkles } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Copy, FileDown, Images, Linkedin, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { SLIDE_MEDIA_LIMITS, checkImage, stripMetadata } from "@/lib/imagePrep";
+import { SLIDE_MEDIA_LIMITS, checkImage, fitToSlot } from "@/lib/imagePrep";
 import { ButtonPrimary, ButtonGhost } from "@/components/systemb";
 import { DeckIRSchema, plainText, type DeckIR, type DeckLength } from "@/carousel/deckIR";
 import { checkInvariants } from "@/carousel/invariants";
 import { compose } from "@/carousel/compose";
 import { DEFAULT_THEME, THEME_NAMES, THEMES, type ThemeName } from "@/carousel/render/themes";
 import type { FitState } from "@/carousel/render/useFitLadder";
-import { collectSlideNodes, exportDeckPdf, exportDeckPngs } from "@/carousel/render/exportDeck";
+import { collectSlideNodes, exportDeckPdf, exportDeckPngs, renderDeckPdfBlob } from "@/carousel/render/exportDeck";
 import { logDeckEvent } from "@/carousel/render/deckTelemetry";
 import StudioCanvas from "@/carousel/studio/StudioCanvas";
 import SignalPicker, { type StudioSignal } from "@/carousel/studio/SignalPicker";
@@ -102,6 +102,10 @@ export default function CarouselStudio() {
   const [busy, setBusy] = useState<null | "pdf" | "png">(null);
   const [exported, setExported] = useState<string | null>(null);
   const [published, setPublished] = useState(false);
+  const [caption, setCaption] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [publishing, setPublishing] = useState<null | string>(null);
+  const [postUrl, setPostUrl] = useState<string | null>(null);
   const [canvasWidth, setCanvasWidth] = useState(360);
 
   const mountRef = useRef<HTMLDivElement | null>(null);
@@ -119,11 +123,11 @@ export default function CarouselStudio() {
         supabase.from("diagnostic_profiles").select("content_language, avatar_url").eq("user_id", uid).maybeSingle(),
         supabase
           .from("strategic_signals")
-          .select("id, signal_title, explanation, strategic_implications, theme_tags, confidence, priority_score")
+          .select("id, signal_title, explanation, strategic_implications, theme_tags, confidence, priority_score, created_at")
           .eq("user_id", uid)
           .eq("status", "active")
           .order("priority_score", { ascending: false })
-          .limit(12),
+          .limit(200),
       ]);
       if (dead) return;
       if ((prof as any)?.content_language === "ar") setLang("ar");
@@ -137,7 +141,7 @@ export default function CarouselStudio() {
         else {
           const { data: one } = await supabase
             .from("strategic_signals")
-            .select("id, signal_title, explanation, strategic_implications, theme_tags, confidence, priority_score")
+            .select("id, signal_title, explanation, strategic_implications, theme_tags, confidence, priority_score, created_at")
             .eq("id", preselected)
             .maybeSingle();
           if (!dead && one) setSignal(one as unknown as StudioSignal);
@@ -183,7 +187,7 @@ export default function CarouselStudio() {
   const availability = useMemo(() => lengthAvailability(signal, lang), [signal, lang]);
   useEffect(() => {
     // Aura picks the longest length the signal can actually fill.
-    const best = ([10, 7, 5] as DeckLength[]).find((L) => availability[L].ok) ?? 5;
+    const best = ([7, 10, 5] as DeckLength[]).find((L) => availability[L].ok) ?? 5;
     setLength(best);
   }, [availability]);
 
@@ -203,6 +207,8 @@ export default function CarouselStudio() {
     setDeck(null);
     setExported(null);
     setPublished(false);
+    setPostUrl(null);
+    setCaption("");
     setFits({});
     setStage(0);
     const ticker = window.setInterval(() => setStage((s) => (s === null ? 0 : Math.min(s + 1, STAGES.length - 1))), 2600);
@@ -210,7 +216,7 @@ export default function CarouselStudio() {
       const { data: sess } = await supabase.auth.getSession();
       if (!sess.session) throw new Error("Your session expired. Sign in again.");
       const { data, error: fnError } = await supabase.functions.invoke("generate-deck", {
-        body: { signal_id: signal.id, length, theme },
+        body: { signal_id: signal.id, length, theme, lang },
       });
       if (fnError && !data) throw fnError;
       const result: any = data;
@@ -221,6 +227,7 @@ export default function CarouselStudio() {
       const parsed = DeckIRSchema.safeParse(result.deck);
       if (!parsed.success) throw new Error("The deck came back in a shape the renderer does not accept.");
       setDeck({ ...parsed.data, theme });
+      setCaption(typeof result.caption === "string" ? result.caption : "");
       setCurrent(0);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -228,7 +235,7 @@ export default function CarouselStudio() {
       window.clearInterval(ticker);
       setStage(null);
     }
-  }, [signal, length, theme]);
+  }, [signal, length, theme, lang]);
 
   /* --- try another angle ------------------------------------------ */
   const rewriteSlide = useCallback(async () => {
@@ -251,13 +258,15 @@ export default function CarouselStudio() {
   /* --- media ------------------------------------------------------- */
   const uploadPhoto = useCallback(async (file: File) => {
     if (!deck) return;
+    // The tool does the work: anything usable is resampled and centre-cropped
+    // to the slot. The member is never asked to think in pixels.
     const problem = await checkImage(file, SLIDE_MEDIA_LIMITS);
     if (problem) { setError(problem); return; }
     const { data: sess } = await supabase.auth.getSession();
     const uid = sess.session?.user?.id;
     if (!uid) return;
     // Re-encode before upload so EXIF (including GPS) never leaves the device.
-    const clean = await stripMetadata(file, "image/jpeg");
+    const clean = await fitToSlot(file, 1400, 900, "image/jpeg");
     const path = `${uid}/${deck.deck_id}/${crypto.randomUUID()}.jpg`;
     const { error: upErr } = await supabase.storage
       .from("deck-media")
@@ -292,29 +301,80 @@ export default function CarouselStudio() {
     }
   }, [deck, theme]);
 
-  /* --- published --------------------------------------------------- */
-  const markPublished = useCallback(async () => {
-    if (!deck) return;
-    const { data: sess } = await supabase.auth.getSession();
-    const uid = sess.session?.user?.id;
-    if (!uid) return;
-    const cover = deck.slides[0];
-    const hook = (cover?.slots.hero_lines ?? []).map((l) => plainText(l)).join(" ").trim();
-    const caption = [hook, plainText(cover?.slots.subline)].filter(Boolean).join(" — ");
-    await supabase.from("linkedin_posts").insert({
-      user_id: uid,
-      post_text: caption || hook || deck.signal_id,
-      title: hook || null,
-      content_type: "carousel",
-      source_type: "aura_generated",
-      media_type: "document",
-      source_signal_id: deck.signal_id,
-      published_at: new Date().toISOString(),
-    } as any);
-    void logDeckEvent("published", deck, { theme });
-    setPublished(true);
-    try { localStorage.removeItem(DRAFT_KEY); } catch { /* nothing to clear */ }
-  }, [deck, theme]);
+  /* --- publish straight to LinkedIn -------------------------------- */
+  /**
+   * The same PDF the member would have downloaded is uploaded for them. There
+   * is exactly one publisher in this app: linkedin-publish owns idempotency,
+   * retries, the deadline and the telemetry, and this path hands it a post row
+   * carrying the document rather than a second publishing implementation.
+   */
+  const publishToLinkedIn = useCallback(async () => {
+    if (!deck || !mountRef.current) return;
+    setError(null);
+    setPublishing("Building the PDF");
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const uid = sess.session?.user?.id;
+      if (!uid) throw new Error("Your session expired. Sign in again.");
+
+      const cover = deck.slides[0];
+      const hook = (cover?.slots.hero_lines ?? []).map((l) => plainText(l)).join(" ").trim();
+      const body = caption.trim() || hook;
+      if (!body) throw new Error("Add a caption before publishing.");
+
+      const { blob } = await renderDeckPdfBlob(collectSlideNodes(mountRef.current));
+
+      setPublishing("Uploading");
+      const path = `${uid}/${deck.deck_id}/carousel.pdf`;
+      const { error: upErr } = await supabase.storage
+        .from("deck-media")
+        .upload(path, blob, { upsert: true, contentType: "application/pdf" });
+      if (upErr) throw new Error(upErr.message);
+      const { data: signed, error: signErr } = await supabase.storage
+        .from("deck-media")
+        .createSignedUrl(path, 60 * 60);
+      if (signErr || !signed) throw new Error(signErr?.message ?? "Could not read the PDF back.");
+
+      const { data: row, error: insErr } = await supabase
+        .from("linkedin_posts")
+        .insert({
+          user_id: uid,
+          post_text: body,
+          title: hook || null,
+          content_type: "carousel",
+          source_type: "aura_generated",
+          media_type: "document",
+          tracking_status: "draft",
+          source_signal_id: deck.signal_id,
+          source_metadata: {
+            document_url: signed.signedUrl,
+            document_title: (hook || "Carousel").slice(0, 100),
+            deck_id: deck.deck_id,
+            language: deck.primary_lang,
+          },
+        } as any)
+        .select("id")
+        .single();
+      if (insErr || !row) throw new Error(insErr?.message ?? "Could not stage the post.");
+
+      setPublishing("Posting to LinkedIn");
+      const { data: res, error: fnErr } = await supabase.functions.invoke("linkedin-publish", {
+        body: { postId: (row as any).id },
+      });
+      if (fnErr && !res) throw fnErr;
+      const out: any = res;
+      if (!out?.success) throw new Error(out?.error ?? "LinkedIn refused the post.");
+
+      setPostUrl(out.postUrl ?? null);
+      setPublished(true);
+      void logDeckEvent("published", deck, { theme });
+      try { localStorage.removeItem(DRAFT_KEY); } catch { /* nothing to clear */ }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setPublishing(null);
+    }
+  }, [deck, caption, theme]);
 
   /* ---------------------------------------------------------------- */
 
@@ -333,7 +393,17 @@ export default function CarouselStudio() {
       }}
     >
       <div style={{ maxWidth: 1180, margin: "0 auto" }}>
-        <ButtonGhost onClick={() => (deck || signal ? startOver() : navigate("/n"))} style={{ marginBottom: 14 }}>
+        <ButtonGhost
+          onClick={() => {
+            // Inside the studio "Start again" returns to the signal picker.
+            // At the picker, Back leaves the studio for wherever the member
+            // came from — and for a cold load, the dashboard.
+            if (deck || signal) { startOver(); return; }
+            if (window.history.length > 1) navigate(-1);
+            else navigate("/dashboard");
+          }}
+          style={{ marginBottom: 14 }}
+        >
           <ArrowLeft size={13} />{deck || signal ? "Start again" : "Back"}
         </ButtonGhost>
 
@@ -532,32 +602,69 @@ export default function CarouselStudio() {
 
                 {/* 8 · finish */}
                 <div style={{ ...panel, display: "grid", gap: 12 }}>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <ButtonPrimary onClick={() => runExport("pdf")} disabled={!!busy}>
-                      <FileDown size={13} />{busy === "pdf" ? "Exporting" : "Export PDF"}
-                    </ButtonPrimary>
-                    <ButtonGhost onClick={() => runExport("png")} disabled={!!busy}>
-                      <Images size={13} />{busy === "png" ? "Exporting" : "Export images"}
-                    </ButtonGhost>
+                  {/* the caption — the post body that carries the deck */}
+                  <div style={{ display: "grid", gap: 6 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ ...mono, color: "var(--text-muted)" }}>Caption</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void navigator.clipboard?.writeText(caption).then(() => {
+                            setCopied(true);
+                            window.setTimeout(() => setCopied(false), 1600);
+                          });
+                        }}
+                        style={{
+                          ...mono, background: "none", border: "none", padding: 0, cursor: "pointer",
+                          color: copied ? "var(--success)" : "var(--text-muted)",
+                          display: "flex", alignItems: "center", gap: 5,
+                        }}
+                      >
+                        <Copy size={12} />{copied ? "Copied" : "Copy"}
+                      </button>
+                    </div>
+                    <textarea
+                      value={caption}
+                      onChange={(e) => setCaption(e.target.value)}
+                      dir={deck.dir}
+                      rows={6}
+                      placeholder="Write the words that sit above the deck."
+                      style={{
+                        width: "100%", boxSizing: "border-box", resize: "vertical",
+                        padding: 12, borderRadius: 12, background: "var(--surface-subtle)",
+                        border: "1px solid var(--border-default)", color: "var(--text-primary)",
+                        fontFamily: "var(--ff-ui)", fontSize: 14, lineHeight: 1.65, outline: "none",
+                      }}
+                    />
                   </div>
+
+                  {!published && (
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                      <ButtonPrimary onClick={publishToLinkedIn} disabled={!!publishing || !!busy}>
+                        <Linkedin size={13} />{publishing ?? "Publish to LinkedIn"}
+                      </ButtonPrimary>
+                      <ButtonGhost onClick={() => runExport("pdf")} disabled={!!busy || !!publishing}>
+                        <FileDown size={13} />{busy === "pdf" ? "Exporting" : "Export PDF"}
+                      </ButtonGhost>
+                      <ButtonGhost onClick={() => runExport("png")} disabled={!!busy || !!publishing}>
+                        <Images size={13} />{busy === "png" ? "Exporting" : "Export images"}
+                      </ButtonGhost>
+                    </div>
+                  )}
                   {exported && <div style={{ ...mono, color: "var(--success)" }}>{exported}</div>}
                   {error && <div style={{ fontSize: 13, color: "var(--error)" }}>{error}</div>}
 
-                  {exported && !published && (
-                    <div style={{ display: "grid", gap: 8 }}>
-                      <div style={{ ...mono, color: "var(--text-muted)" }}>Next</div>
-                      <ol style={{ margin: 0, paddingInlineStart: 18, fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.9 }}>
-                        <li>Open LinkedIn.</li>
-                        <li>Create a document post.</li>
-                        <li>Upload the PDF.</li>
-                        <li>Paste your caption.</li>
-                      </ol>
-                      <div><ButtonPrimary onClick={markPublished}>I published this</ButtonPrimary></div>
-                    </div>
-                  )}
                   {published && (
-                    <div style={{ display: "flex", gap: 7, alignItems: "center", color: "var(--success)" }}>
-                      <CheckCircle2 size={14} /><span style={{ fontSize: 13 }}>Counted as published through Aura.</span>
+                    <div style={{ display: "grid", gap: 8 }}>
+                      <div style={{ display: "flex", gap: 7, alignItems: "center", color: "var(--success)" }}>
+                        <CheckCircle2 size={14} />
+                        <span style={{ fontSize: 13 }}>Published, and counted as published through Aura.</span>
+                      </div>
+                      {postUrl && (
+                        <a href={postUrl} target="_blank" rel="noreferrer" style={{ ...mono, color: "var(--brand)" }}>
+                          View it on LinkedIn
+                        </a>
+                      )}
                     </div>
                   )}
                 </div>

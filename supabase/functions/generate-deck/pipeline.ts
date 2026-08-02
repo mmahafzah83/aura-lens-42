@@ -134,11 +134,13 @@ hasComparison is true only if two or more comparable quantities appear in the ma
 stepCount is how many distinct, non-obvious actions the material genuinely supports, between 0 and 7. Do not invent steps to reach a number.
 lang is the language the deck should be written in.`;
 
-export async function plan(ctx: SignalContext): Promise<Plan> {
-  const langHint = (ctx.profile.content_language ?? "en") === "ar" ? "ar" : "en";
+export async function plan(ctx: SignalContext, forceLang?: "en" | "ar"): Promise<Plan> {
+  // The studio's language control wins over the profile default. A member who
+  // picks العربية gets an Arabic deck even when their profile says English.
+  const langHint = forceLang ?? ((ctx.profile.content_language ?? "en") === "ar" ? "ar" : "en");
   const raw = await callTool(
     PLAN_SYSTEM,
-    `${contextBlock(ctx)}\n\nThe member writes in "${langHint}".`,
+    `${contextBlock(ctx)}\n\nWrite this deck in "${langHint}". Report lang as "${langHint}".`,
     PLAN_TOOL,
   );
   const p: Plan = {
@@ -150,7 +152,7 @@ export async function plan(ctx: SignalContext): Promise<Plan> {
     stepCount: Math.max(0, Math.min(7, Number(raw.stepCount ?? 0))),
     hasDefinableTerm: Boolean(raw.hasDefinableTerm),
     term: raw.term ?? null,
-    lang: raw.lang === "ar" ? "ar" : "en",
+    lang: forceLang ?? (raw.lang === "ar" ? "ar" : "en"),
   };
   // Belt and braces: a number claimed but not present in the material is dropped.
   const corpus = `${contextBlock(ctx)}`;
@@ -167,6 +169,19 @@ export async function plan(ctx: SignalContext): Promise<Plan> {
     p.hasComparison = false;
     p.comparisonSeries = null;
   }
+  // A comparison without at least two plotted quantities cannot become a chart.
+  if (p.hasComparison && (p.comparisonSeries?.length ?? 0) < 2) {
+    p.hasComparison = false;
+    p.comparisonSeries = null;
+  }
+  console.log("[generate-deck] plan", JSON.stringify({
+    hasNumber: p.hasNumber,
+    hasComparison: p.hasComparison,
+    series: p.comparisonSeries?.length ?? 0,
+    stepCount: p.stepCount,
+    lang: p.lang,
+    evidence: ctx.evidence.length,
+  }));
   return p;
 }
 
@@ -281,7 +296,94 @@ export function writeSystem(): string {
 - Western digits only, in every language.
 - No ellipsis anywhere.
 
+Do NOT emit chart data yourself. When the manifest contains a benchmark slide the chart is supplied deterministically from the plan; fill only its headline, hero_lines and source.
+
 Each slide must carry exactly ONE emphasis: either a stat_value, or exactly one hero line with highlight true, or one chart series with emphasis "alert". Never two.`;
+}
+
+/* ------------------------------------------------------------------ */
+/* Icons — chosen deterministically from the signal's own theme tags   */
+/* ------------------------------------------------------------------ */
+
+const ICON_RULES: Array<[RegExp, string]> = [
+  [/water|desal|wastewater|sewer|hydro/i, "water"],
+  [/energy|power|grid|electric|solar|renewab|carbon|emission/i, "energy"],
+  [/data|analytic|\bai\b|digital|software|platform|sensor|meter/i, "data"],
+  [/growth|revenue|market|commercial|sales|demand/i, "growth"],
+  [/risk|threat|complian|regulat|security|govern/i, "risk"],
+  [/people|talent|team|workforce|leader|customer|citizen/i, "people"],
+  [/time|delay|schedul|deadline|lead time/i, "time"],
+  [/cost|capital|invest|financ|budget|funding|tariff|price/i, "money"],
+  [/network|ecosystem|partner|supply|integrat/i, "network"],
+  [/operat|process|efficien|maintenance|asset|infrastructur/i, "gear"],
+];
+
+export function iconFor(tags: unknown, fallbackText: string, salt = 0): string {
+  const corpus = `${Array.isArray(tags) ? tags.join(" ") : ""} ${fallbackText}`;
+  const hits = ICON_RULES.filter(([re]) => re.test(corpus)).map(([, key]) => key);
+  if (hits.length) return hits[salt % hits.length];
+  return ["gear", "data", "network"][salt % 3];
+}
+
+/* ------------------------------------------------------------------ */
+/* Stage 6 — CAPTION                                                   */
+/* ------------------------------------------------------------------ */
+
+const CAPTION_TOOL = {
+  name: "emit_caption",
+  description: "The LinkedIn post body that carries the deck.",
+  parameters: {
+    type: "object",
+    properties: {
+      lines: { type: "array", items: { type: "string" } },
+      hashtags: { type: "array", items: { type: "string" } },
+    },
+    required: ["lines", "hashtags"],
+  },
+};
+
+export async function writeCaption(
+  ctx: SignalContext,
+  p: Plan,
+  deck: any,
+): Promise<string> {
+  const cover = deck?.slides?.[0]?.slots ?? {};
+  const coverText = [
+    ...(cover.hero_lines ?? []).map((l: any) => (l.runs ?? []).map((r: any) => r.t).join("")),
+    (cover.subline?.runs ?? []).map((r: any) => r.t).join(""),
+  ].join(" ");
+  const closing = ((deck?.slides ?? [])
+    .find((s: any) => s.archetype === "close")?.slots?.cta_pill?.runs ?? [])
+    .map((r: any) => r.t).join("");
+  const tags: string[] = Array.isArray(ctx.signal.theme_tags) ? ctx.signal.theme_tags : [];
+
+  const system = `You write the post body that sits above a LinkedIn carousel, in the member's own voice.
+
+- Between 3 and 6 short lines, one thought per line, separated by single newlines.
+- Set the deck up. NEVER repeat the cover wording; the reader can already see it.
+- The last line is exactly this closing question: "${closing || "What would you do first?"}".
+- Plain, commercial, specific. No emojis. No ellipsis. Western digits.
+- Never the words: thought leader, personal brand, game-changing, seamless, unlock, elevate, empower, utilize, facilitate, or leverage as a verb.
+- Write in ${p.lang === "ar" ? "Arabic" : "English"}.
+- hashtags: exactly 3, drawn from the signal's themes, each a single CamelCase word with no spaces and no "#".`;
+
+  try {
+    const raw = await callTool(
+      system,
+      [contextBlock(ctx), "", `THE COVER ALREADY SAYS (do not repeat): ${coverText}`, "", `THEMES: ${tags.join(", ")}`].join("\n"),
+      CAPTION_TOOL,
+    );
+    const lines: string[] = (Array.isArray(raw.lines) ? raw.lines : [])
+      .map((l: unknown) => String(l).trim()).filter(Boolean).slice(0, 6);
+    const hashtags: string[] = (Array.isArray(raw.hashtags) ? raw.hashtags : [])
+      .map((h: unknown) => `#${String(h).replace(/[^A-Za-z0-9\u0600-\u06FF]/g, "")}`)
+      .filter((h: string) => h.length > 2).slice(0, 3);
+    if (!lines.length) return "";
+    return [lines.join("\n"), hashtags.join(" ")].filter(Boolean).join("\n\n");
+  } catch (e) {
+    console.error("[generate-deck] caption failed:", String(e));
+    return "";
+  }
 }
 
 export function manifestBlock(manifest: ComposeResult): string {
@@ -364,6 +466,7 @@ export function assemble(
   const name = [prof.first_name, prof.last_name].filter(Boolean).join(" ").trim() || "Member";
   const title = [prof.level, prof.firm].filter(Boolean).join(", ");
   const handle = bareHandle(prof.linkedin_handle || prof.linkedin_url) || "member";
+  const tn = (t: string) => ({ runs: [{ t, lang: /[\u0600-\u06FF]/.test(t) ? "ar" : "en" }] });
 
   const ordered = manifest.slots.map((slot, i) => {
     const found = slides.find((s) => Number(s?.index) === slot.index) ?? slides[i] ?? {};
@@ -374,6 +477,42 @@ export function assemble(
     };
     // The model may not override the composed archetype.
     if (!p.hasNumber) delete built.slots.stat_value;
+
+    // A benchmark slide EXISTS to hold a chart. The plan already produced the
+    // series, so the chart is assembled deterministically rather than hoped for
+    // from the model — a benchmark slide with no bars is a blank slide.
+    if (slot.archetype === "benchmark") {
+      const series = (p.comparisonSeries ?? []).slice(0, 5);
+      if (series.length >= 2) {
+        const peak = Math.max(...series.map((x) => Math.abs(Number(x.value) || 0)));
+        built.slots.media = {
+          kind: "chart",
+          placement: "inline",
+          chart: {
+            type: "bars",
+            series: series.map((x) => ({
+              label: tn(String(x.label ?? "")),
+              value: Number(x.value) || 0,
+              ...(x.unit ? { unit: String(x.unit) } : {}),
+              emphasis: Math.abs(Number(x.value) || 0) === peak ? "accent" : "none",
+            })),
+          },
+        };
+      } else if (built.slots.media?.kind === "chart") {
+        delete built.slots.media;
+      }
+    } else if (
+      (slot.archetype === "frame" || slot.archetype === "definition") &&
+      !built.slots.media
+    ) {
+      // A mark, drawn from the signal's own themes. Never decoration for its
+      // own sake, and never an emoji.
+      built.slots.media = {
+        kind: "icon",
+        placement: "inline",
+        src: `icon:${iconFor(ctx.signal.theme_tags, String(ctx.signal.signal_title ?? ""), slot.index)}`,
+      };
+    }
     return built;
   });
 
@@ -386,10 +525,11 @@ export function assemble(
     theme,
     length: manifest.length,
     profile: {
-      name: { runs: [{ t: name, lang: p.lang === "ar" ? "ar" : "en" }] },
+      name: { runs: [{ t: name, lang: /[\u0600-\u06FF]/.test(name) ? "ar" : "en" }] },
       ...(title ? { title: { runs: [{ t: title, lang: "en" }] } } : {}),
       handle,
       avatar_url: prof.avatar_url ?? null,
+      avatar_cutout_url: prof.avatar_cutout_url ?? null,
     },
     slides: ordered,
   });
