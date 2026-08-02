@@ -476,12 +476,22 @@ export async function writeCaption(
     .map((r: any) => r.t).join("");
   const tags: string[] = Array.isArray(ctx.signal.theme_tags) ? ctx.signal.theme_tags : [];
 
-  const system = `You write the post body that sits above a LinkedIn carousel, in the member's own voice.
+  const v = vocab(ctx.voice);
+  // A sign-off the member actually uses beats a closing question written by a machine.
+  const signOff = v.use.find((u) => /I don't just advise|Strategy is easy|الواقع اللي ما حد يحكيه/i.test(u))
+    ?? v.use.find((u) => u.length > 40 && !/\[/.test(u));
+
+  const system = `You write the post body that sits above a LinkedIn carousel. This is a LinkedIn post in its own right and it must sound exactly like the member's own posts — same rhythm, same phrase set, same sentence length. Take FACTS from the material below, LANGUAGE from his example posts. Never the reverse.
 
 - Between 3 and 6 short lines, one thought per line, separated by single newlines.
 - Set the deck up. NEVER repeat the cover wording; the reader can already see it.
-- The last line is exactly this closing question: "${closing || "What would you do first?"}".
+${
+    signOff
+      ? `- End on his own sign-off, verbatim: "${signOff}". Do not modify it, do not add a question after it.`
+      : `- The last line is exactly this closing question: "${closing || "What would you do first?"}".`
+  }
 - Plain, commercial, specific. No emojis. No ellipsis. Western digits.
+- No "Stop X. Start Y." construction. No openers of the shape "In today's landscape", "In an era of", "As we navigate", "It's no secret that". No sentence over 28 words. At most one three-item list.
 - Never the words: thought leader, personal brand, game-changing, seamless, unlock, elevate, empower, utilize, facilitate, or leverage as a verb.
 - Write in ${p.lang === "ar" ? "Arabic" : "English"}.
 - hashtags: exactly 3, drawn from the signal's themes, each a single CamelCase word with no spaces and no "#".`;
@@ -489,7 +499,15 @@ export async function writeCaption(
   try {
     const raw = await callTool(
       system,
-      [contextBlock(ctx), "", `THE COVER ALREADY SAYS (do not repeat): ${coverText}`, "", `THEMES: ${tags.join(", ")}`].join("\n"),
+      [
+        voiceBlock(ctx.voice),
+        "",
+        contextBlock(ctx),
+        "",
+        `THE COVER ALREADY SAYS (do not repeat): ${coverText}`,
+        "",
+        `THEMES: ${tags.join(", ")}`,
+      ].join("\n"),
       CAPTION_TOOL,
     );
     const lines: string[] = (Array.isArray(raw.lines) ? raw.lines : [])
