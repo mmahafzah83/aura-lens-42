@@ -355,6 +355,19 @@
       return true;
     }
 
+    // Capture the member's OWN post text from their own activity page.
+    // LinkedIn's API never returns post commentary, so this is how the
+    // corpus keeps growing after the one-off data-export import.
+    if (msg.action === "capture_own_posts") {
+      try {
+        const result = extractOwnPosts(msg.handle);
+        sendResponse(result);
+      } catch (e) {
+        sendResponse({ success: false, error: e.message });
+      }
+      return true;
+    }
+
     // Collect post URLs from activity feed or profile page
     if (msg.action === "collect_post_urls") {
       try {
