@@ -197,6 +197,10 @@ serve(withObserve("send-invite", async (req) => {
         subject: firstName ? `Your Aura is ready, ${firstName}` : "Your Aura is ready",
         reply_to: "mohammad.mahafdhah@aura-intel.org",
         html,
+        tags: [
+          ...(linkRes.data?.user?.id ? [{ name: "user_id", value: linkRes.data.user.id }] : []),
+          { name: "email_type", value: "invite" },
+        ],
       }),
     });
 

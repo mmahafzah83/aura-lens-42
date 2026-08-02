@@ -134,7 +134,17 @@ function buildEmail(lang: Lang, key: MessageKey, firstName: string, signalTitle?
   };
 }
 
-async function sendResend(apiKey: string, to: string, subject: string, html: string) {
+async function sendResend(
+  apiKey: string,
+  to: string,
+  subject: string,
+  html: string,
+  userId?: string,
+  messageKey?: string,
+) {
+  const tags: { name: string; value: string }[] = [{ name: "email_type", value: "lifecycle" }];
+  if (userId) tags.unshift({ name: "user_id", value: userId });
+  if (messageKey) tags.push({ name: "message_key", value: messageKey.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 250) });
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
@@ -144,6 +154,7 @@ async function sendResend(apiKey: string, to: string, subject: string, html: str
       subject,
       reply_to: "mohammad.mahafdhah@aura-intel.org",
       html,
+      tags,
     }),
   });
   if (!res.ok) {
@@ -266,7 +277,7 @@ serve(withObserve("lifecycle-emails", async (req) => {
       // 6. M4
       if (signalCount >= 1 && latestSignal?.created_at && latestSignal.created_at > cutoff3d && !has("M4")) {
         const { subject, html } = buildEmail(lang, "M4", firstName, latestSignal.signal_title || undefined);
-        await sendResend(RESEND_API_KEY, u.email, subject, html);
+        await sendResend(RESEND_API_KEY, u.email, subject, html, u.id, "M4");
         await admin.from("lifecycle_email_log").insert({ user_id: u.id, message_key: "M4" });
         results.push({ email: u.email, state: "SENT_M4" });
         continue;
@@ -275,7 +286,7 @@ serve(withObserve("lifecycle-emails", async (req) => {
       // 7. M3
       if (captureCount >= 1 && captureCount <= 2 && signalCount === 0 && lastEntryAt && lastEntryAt < cutoff48h && !has("M3")) {
         const { subject, html } = buildEmail(lang, "M3", firstName);
-        await sendResend(RESEND_API_KEY, u.email, subject, html);
+        await sendResend(RESEND_API_KEY, u.email, subject, html, u.id, "M3");
         await admin.from("lifecycle_email_log").insert({ user_id: u.id, message_key: "M3" });
         results.push({ email: u.email, state: "SENT_M3" });
         continue;
@@ -284,7 +295,7 @@ serve(withObserve("lifecycle-emails", async (req) => {
       // 8. M1
       if (captureCount === 0 && new Date(u.created_at).getTime() < now - 24 * 60 * 60 * 1000 && !has("M1")) {
         const { subject, html } = buildEmail(lang, "M1", firstName);
-        await sendResend(RESEND_API_KEY, u.email, subject, html);
+        await sendResend(RESEND_API_KEY, u.email, subject, html, u.id, "M1");
         await admin.from("lifecycle_email_log").insert({ user_id: u.id, message_key: "M1" });
         results.push({ email: u.email, state: "SENT_M1" });
         continue;
@@ -322,6 +333,8 @@ serve(withObserve("lifecycle-emails", async (req) => {
           "support@aura-intel.org",
           `[Aura] S4 pipeline alert — ${founderDigest.length} user(s) stuck`,
           emailShell({ preheader: "S4 pipeline alert", body, maxWidth: 560 }),
+          ADMIN_USER_ID,
+          digestKey,
         );
         await admin.from("lifecycle_email_log").insert({ user_id: ADMIN_USER_ID, message_key: digestKey });
       } catch (e: any) {

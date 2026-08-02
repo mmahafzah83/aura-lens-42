@@ -156,6 +156,8 @@ Deno.serve(async (req) => {
         reply_to: email,
         subject: `Contact — ${topic} — ${name}`,
         html,
+        // Public contact form: the sender is not a member, so no user_id tag.
+        tags: [{ name: "email_type", value: "contact_message" }],
       }),
     });
 

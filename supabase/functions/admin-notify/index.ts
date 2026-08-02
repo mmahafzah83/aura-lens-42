@@ -142,7 +142,17 @@ Deno.serve(async (req) => {
       const er = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { Authorization: `Bearer ${RESEND}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ from: "Aura <alerts@aura-intel.org>", to: [ADMIN_ALERT_EMAIL], subject, html: htmlOut }),
+        body: JSON.stringify({
+          from: "Aura <alerts@aura-intel.org>",
+          to: [ADMIN_ALERT_EMAIL],
+          subject,
+          html: htmlOut,
+          // No member recipient — this is an ops alert to the admin address.
+          tags: [
+            { name: "email_type", value: "admin_alert" },
+            { name: "message_key", value: String(dedupe_key || "admin_alert").replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 250) },
+          ],
+        }),
       });
       emailed = er.ok;
       if (!er.ok) console.error("[admin-notify] email failed", er.status, (await er.text()).slice(0, 200));

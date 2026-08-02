@@ -491,6 +491,10 @@ serve(withObserve("send-lifecycle-email", async (req) => {
         reply_to: REPLY_TO,
         subject,
         html,
+        tags: [
+          { name: "user_id", value: String(user_id) },
+          { name: "email_type", value: String(email_type).replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 250) },
+        ],
       }),
     });
 

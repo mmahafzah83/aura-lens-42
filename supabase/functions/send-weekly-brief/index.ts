@@ -582,6 +582,10 @@ Rules:
             to: [email],
             subject,
             html,
+            tags: [
+              { name: "user_id", value: String(userId) },
+              { name: "email_type", value: "weekly_brief" },
+            ],
           }),
         });
 
