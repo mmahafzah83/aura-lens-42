@@ -257,8 +257,12 @@ export default function CarouselStudio() {
     const path = `${uid}/${deck.deck_id}/${crypto.randomUUID()}.${ext}`;
     const { error: upErr } = await supabase.storage.from("deck-media").upload(path, file, { upsert: true });
     if (upErr) { setError(upErr.message); return; }
-    const { data: pub } = supabase.storage.from("deck-media").getPublicUrl(path);
-    setDeck((d) => (d ? setSlidePhoto(d, current, pub.publicUrl) : d));
+    // The bucket is private, so the slide references a long-lived signed URL.
+    const { data: signed, error: signErr } = await supabase.storage
+      .from("deck-media")
+      .createSignedUrl(path, 60 * 60 * 24 * 365);
+    if (signErr || !signed) { setError(signErr?.message ?? "Could not read the uploaded image back."); return; }
+    setDeck((d) => (d ? setSlidePhoto(d, current, signed.signedUrl) : d));
   }, [deck, current]);
 
   /* --- export ------------------------------------------------------ */
