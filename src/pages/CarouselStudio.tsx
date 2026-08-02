@@ -35,6 +35,14 @@ const mono: React.CSSProperties = {
   fontFamily: "var(--ff-mono)", fontSize: 10.5, letterSpacing: ".09em", textTransform: "uppercase",
 };
 
+/** Move-left / move-right on a filmstrip thumbnail. Always visible, keyboard reachable. */
+const stepBtn: React.CSSProperties = {
+  width: 26, height: 18, borderRadius: 6, lineHeight: 1,
+  border: "1px solid var(--border-default)",
+  background: "var(--surface-card)", color: "var(--text-secondary)",
+  fontSize: 12, cursor: "pointer", padding: 0,
+};
+
 const panel: React.CSSProperties = {
   background: "var(--surface-card)",
   border: "1px solid var(--border-default)",
@@ -589,8 +597,8 @@ export default function CarouselStudio() {
                           padding: 7, textAlign: "start",
                         }}
                       >
-                        <span style={{ ...mono, fontSize: 8.5, opacity: 0.75 }}>
-                          {locked ? "🔒 " : ""}{ARCHETYPE_LABEL[s.archetype] ?? s.archetype}
+                        <span style={{ ...mono, fontSize: 8.5, opacity: locked ? 0.5 : 0.75 }}>
+                          {ARCHETYPE_LABEL[s.archetype] ?? s.archetype}{locked ? " (fixed)" : ""}
                         </span>
                         <span style={{ ...mono, fontSize: 9, color: bad ? THEMES[theme].alert : THEMES[theme].accent }}>
                           {s.index + 1}/{deck.slides.length}
