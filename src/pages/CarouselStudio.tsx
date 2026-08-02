@@ -92,6 +92,7 @@ export default function CarouselStudio() {
   const [theme, setTheme] = useState<ThemeName>(DEFAULT_THEME);
   const [length, setLength] = useState<DeckLength>(7);
   const [hasAvatar, setHasAvatar] = useState(true);
+  const [voiceFlags, setVoiceFlags] = useState<string[]>([]);
 
   const [deck, setDeck] = useState<DeckIR | null>(null);
   const [stage, setStage] = useState<number | null>(null);
@@ -211,6 +212,7 @@ export default function CarouselStudio() {
     setPostUrl(null);
     setCaption("");
     setFits({});
+    setVoiceFlags([]);
     setStage(0);
     const ticker = window.setInterval(() => setStage((s) => (s === null ? 0 : Math.min(s + 1, STAGES.length - 1))), 2600);
     try {
@@ -229,6 +231,7 @@ export default function CarouselStudio() {
       if (!parsed.success) throw new Error("The deck came back in a shape the renderer does not accept.");
       setDeck({ ...parsed.data, theme });
       setCaption(typeof result.caption === "string" ? result.caption : "");
+      setVoiceFlags(Array.isArray(result.quality?.flags) ? result.quality.flags : []);
       setCurrent(0);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -576,6 +579,16 @@ export default function CarouselStudio() {
                         </div>
                       ))}
                     </>
+                  )}
+                  {voiceFlags.includes("no_voice_profile") && (
+                    <div style={{ fontSize: 12.5, color: "var(--text-secondary)", lineHeight: 1.6 }}>
+                      This will sound more like you once Aura has read a few of your posts.
+                    </div>
+                  )}
+                  {voiceFlags.includes("voice_profile_other_language") && (
+                    <div style={{ fontSize: 12.5, color: "var(--text-secondary)", lineHeight: 1.6 }}>
+                      Aura only knows your writing in your other language, so it followed your rhythm here, not your phrases.
+                    </div>
                   )}
                   {noFigure && (
                     <div style={{ fontSize: 12.5, color: "var(--text-secondary)", lineHeight: 1.6 }}>

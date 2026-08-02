@@ -17,6 +17,8 @@ export interface SignalContext {
   /** Every voice profile on file. `voice` is the one matched to the deck language. */
   voices: Array<Record<string, any>>;
   voice: Record<string, any> | null;
+  /** True when `voice` is in a different language than the deck: rhythm only, never phrases. */
+  voiceRhythmOnly?: boolean;
   profile: Record<string, any>;
 }
 
@@ -75,14 +77,37 @@ function examplePostText(p: unknown): string {
 }
 
 /**
- * The member's signature, verbatim and unsummarised. The model must see his
- * actual sentences — a paraphrase of a voice is not a voice.
+ * The requesting member's own signature, verbatim and unsummarised. Every value
+ * here is read from that member's row at request time. Nothing about any
+ * individual member is ever hardcoded in this file.
+ *
+ * `rhythmOnly` is set when the only profile on file is in another language: we
+ * borrow the cadence, never the phrases, because phrases do not translate and
+ * would read as a different person.
  */
-export function voiceBlock(voice: Record<string, any> | null): string {
+export function voiceBlock(voice: Record<string, any> | null, rhythmOnly = false): string {
   if (!voice) {
-    return "VOICE: no profile on file. Write plainly, concretely, with no marketing register.";
+    return [
+      "VOICE: this member has no voice profile yet.",
+      "Write in a plain, concrete, non-promotional register drawn only from the material below:",
+      "short declarative sentences, ordinary working words, no marketing lift, no house style,",
+      "no invented personality. Say what the evidence says, in the fewest words that carry it.",
+    ].join("\n");
   }
   const v = vocab(voice);
+  if (rhythmOnly) {
+    return [
+      `VOICE: the only profile on file is in "${voice.language ?? "another language"}", and this deck is not in that language.`,
+      "Take RHYTHM ONLY from it — sentence length, paragraph density, where the emphasis falls.",
+      "Do NOT reuse any phrase, opener, marker or sign-off from it; they belong to the other language.",
+      "",
+      `RHYTHM: ${v.rhythm || "(not recorded)"}`,
+      `TONE: ${String(voice.tone ?? "").trim() || "(not recorded)"}`,
+      "",
+      "STILL FORBIDDEN — the member's own avoid list applies in every language:",
+      ...v.avoid.map((a) => `  · ${a}`),
+    ].join("\n");
+  }
   const examples = (Array.isArray(voice.example_posts) ? voice.example_posts : [])
     .map(examplePostText)
     .filter((t) => t.length > 80)
@@ -97,13 +122,13 @@ export function voiceBlock(voice: Record<string, any> | null): string {
     `PREFERRED STRUCTURES: ${JSON.stringify(voice.preferred_structures ?? "")}`,
     `STORYTELLING PATTERNS: ${JSON.stringify(voice.storytelling_patterns ?? "")}`,
     "",
-    "HIS SIGNATURE PHRASES — use these constructions where they fit. Do not invent your own versions of them:",
+    "THE MEMBER'S SIGNATURE PHRASES — use these constructions where they fit. Do not invent your own versions of them:",
     ...v.use.map((u) => `  · ${u}`),
     "",
-    "HE NEVER WRITES THESE. Any of them in your output fails the deck:",
+    "THE MEMBER NEVER WRITES THESE. Any of them in your output fails the deck:",
     ...v.avoid.map((a) => `  · ${a}`),
     "",
-    "HIS ACTUAL POSTS — this is what he sounds like. Match this register, sentence length and rhythm:",
+    "THE MEMBER'S ACTUAL POSTS — this is what they sound like. Match this register, sentence length and rhythm:",
     ...examples.map((e, i) => `--- example ${i + 1} ---\n${e.slice(0, 2200)}`),
   ].join("\n");
 }
@@ -113,6 +138,31 @@ export function bareHandle(raw: unknown): string {
   if (!s) return "";
   const m = s.match(/(?:linkedin\.com\/)?(?:in\/)?([A-Za-z0-9-]+)\/?$/);
   return m ? m[1] : "";
+}
+
+/**
+ * A closing line, chosen from the requesting member's OWN `use` array.
+ *
+ * Structural only — no phrase, industry or person is named here. A sign-off is
+ * a self-contained declarative statement: no bracketed slot to fill, no
+ * trailing colon inviting a list, no question. If their profile carries an
+ * explicit `sign_off`, that wins.
+ */
+export function pickSignOff(voice: Record<string, any> | null | undefined): string | null {
+  const vp = (voice?.vocabulary_preferences ?? {}) as Record<string, any>;
+  const explicit = typeof vp.sign_off === "string" ? vp.sign_off.trim() : "";
+  if (explicit) return explicit;
+
+  const candidates = vocab(voice).use
+    .map((u) => String(u).trim())
+    .filter((u) =>
+      u.length >= 25 &&
+      u.length <= 220 &&
+      !/[\[\]{}<>]/.test(u) &&          // no slot to fill in
+      !/[:؟?]\s*$/.test(u) &&           // not a lead-in, not a question
+      /[.!。۔]\s*$/.test(u)              // a finished statement
+    );
+  return candidates[0] ?? null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -394,9 +444,9 @@ export const WRITE_TOOL = {
 export function writeSystem(): string {
   return `You write the content of a LinkedIn carousel for a senior operator. You fill ONLY the slots named in the manifest. You never choose slides, order, length, or layout.
 
-THE ONE RULE ABOVE ALL OTHERS: take FACTS from the evidence, LANGUAGE from the member's example posts. Never the reverse. The evidence fragments are machine summaries written by another model — their register is not his, and copying it is the exact failure you are here to prevent. If a sentence you are about to write could not appear in one of his example posts, delete it and write it again.
+THE ONE RULE ABOVE ALL OTHERS: take FACTS from the evidence, LANGUAGE from the member's own example posts. Never the reverse. The evidence fragments are machine summaries written by another model — their register is not the member's, and copying it is the exact failure you are here to prevent. If a sentence you are about to write could not appear in one of their example posts, delete it and write it again. If no example posts are supplied, write plainly and concretely and invent no personality.
 
-- Every text node is { runs: [{ t, lang }] } — never a bare string. Put English technical terms inside an Arabic deck in their own run with lang "en" (AI, smart meter, dashboard, KPI, ERP, API). That is what makes mixed text render correctly.
+- Every text node is { runs: [{ t, lang }] } — never a bare string. Put English technical terms inside an Arabic deck in their own run with lang "en" (AI, dashboard, KPI, ERP, API). That is what makes mixed text render correctly.
 - Hero lines: at most 14 characters for English, 20 for Arabic, and at most 4 lines. Count every character including spaces: "Skin in the Game" is 16 and is therefore rejected; "Skin in Game" is 12 and passes. In English that is usually one or two short words per line. Exactly one line may carry highlight true. A longer line wraps and destroys the highlight block.
 - Headline maximum 9 words. Body maximum 2 sentences per node; mark the last body node optional_tail true so the fit ladder may drop it losslessly.
 - If the plan says hasNumber false, DO NOT emit stat_value on any slide. Say nothing rather than inventing a figure. A fabricated number is the single worst failure for this audience.
@@ -404,6 +454,8 @@ THE ONE RULE ABOVE ALL OTHERS: take FACTS from the evidence, LANGUAGE from the m
 - Never the words: thought leader, personal brand, game-changing, seamless, unlock, elevate, empower, utilize, facilitate, or leverage as a verb.
 - Western digits only, in every language.
 - No ellipsis anywhere.
+- Every argument slide (frame, evidence, callout, steps, definition, quote, benchmark) must carry at least one concrete particular in the language you are writing: a named organisation, place, standard or programme, a number, or a first-person observation. A slide made only of abstractions fails. In an Arabic deck a Latin brand or standard name in its own lang "en" run counts, and so does a named entity introduced by its category word.
+- Arabic hero lines are 20 characters INCLUDING spaces. Count them before you emit. Two short words is usually the maximum; split a third word onto its own line.
 
 THE AI TELLS. Each of these fails the deck outright, so do not write them:
 - "Stop X. Start Y." and every imperative antithesis of that shape.
@@ -477,17 +529,18 @@ export async function writeCaption(
   const tags: string[] = Array.isArray(ctx.signal.theme_tags) ? ctx.signal.theme_tags : [];
 
   const v = vocab(ctx.voice);
-  // A sign-off the member actually uses beats a closing question written by a machine.
-  const signOff = v.use.find((u) => /I don't just advise|Strategy is easy|الواقع اللي ما حد يحكيه/i.test(u))
-    ?? v.use.find((u) => u.length > 40 && !/\[/.test(u));
+  // A sign-off the member actually uses beats a closing question written by a
+  // machine — but it must come from THEIR own `use` array. No literal from any
+  // real person may ever appear here.
+  const signOff = ctx.voiceRhythmOnly ? null : pickSignOff(ctx.voice);
 
-  const system = `You write the post body that sits above a LinkedIn carousel. This is a LinkedIn post in its own right and it must sound exactly like the member's own posts — same rhythm, same phrase set, same sentence length. Take FACTS from the material below, LANGUAGE from his example posts. Never the reverse.
+  const system = `You write the post body that sits above a LinkedIn carousel. This is a LinkedIn post in its own right and it must sound exactly like the member's own posts — same rhythm, same phrase set, same sentence length. Take FACTS from the material below, LANGUAGE from their example posts. Never the reverse.
 
 - Between 3 and 6 short lines, one thought per line, separated by single newlines.
 - Set the deck up. NEVER repeat the cover wording; the reader can already see it.
 ${
     signOff
-      ? `- End on his own sign-off, verbatim: "${signOff}". Do not modify it, do not add a question after it.`
+      ? `- End on the member's own sign-off, verbatim: "${signOff}". Do not modify it, do not add a question after it.`
       : `- The last line is exactly this closing question: "${closing || "What would you do first?"}".`
   }
 - Plain, commercial, specific. No emojis. No ellipsis. Western digits.
@@ -500,7 +553,7 @@ ${
     const raw = await callTool(
       system,
       [
-        voiceBlock(ctx.voice),
+        voiceBlock(ctx.voice, ctx.voiceRhythmOnly),
         "",
         contextBlock(ctx),
         "",
@@ -588,23 +641,23 @@ export function slideText(slide: any): string {
  * assistant? The judge names the tell; it never rewrites.
  */
 export async function critique(ctx: SignalContext, deck: any): Promise<CritiqueFlag[]> {
-  const v = vocab(ctx.voice);
-  const examples = (Array.isArray(ctx.voice?.example_posts) ? ctx.voice!.example_posts : [])
+  const v = vocab(ctx.voiceRhythmOnly ? { vocabulary_preferences: { avoid: vocab(ctx.voice).avoid } } : ctx.voice);
+  const examples = (ctx.voiceRhythmOnly ? [] : Array.isArray(ctx.voice?.example_posts) ? ctx.voice!.example_posts : [])
     .map(examplePostText).filter((t: string) => t.length > 80).slice(0, 3);
 
-  const system = `You are the member's editor. You know exactly how he writes. For each slide, answer one question only: does this sound like his example posts, or like a generic AI assistant?
+  const system = `You are this member's editor. You know exactly how they write. For each slide, answer one question only: does this sound like their example posts, or like a generic AI assistant?
 
-Verdict "generic" whenever the slide could have been written about any company in any industry, borrows the register of a consultancy summary, uses a construction he never uses, or reaches for an abstraction with no object.
+Verdict "generic" whenever the slide could have been written about any company in any industry, borrows the register of a machine-written summary, uses a construction this member never uses, or reaches for an abstraction with no object. Judge only against the material below — never against any other person's writing.
 "tell" is the specific giveaway, quoted from the slide, in under 15 words. Never suggest a rewrite. Never praise.`;
 
   const user = [
-    "HE NEVER WRITES:",
+    "THIS MEMBER NEVER WRITES:",
     ...v.avoid.slice(0, 40).map((a) => `  · ${a}`),
     "",
-    "HE ACTUALLY WRITES:",
+    "THIS MEMBER ACTUALLY WRITES:",
     ...v.use.map((u) => `  · ${u}`),
     "",
-    ...examples.map((e: string, i: number) => `--- his post ${i + 1} ---\n${e.slice(0, 1400)}`),
+    ...examples.map((e: string, i: number) => `--- their post ${i + 1} ---\n${e.slice(0, 1400)}`),
     "",
     "THE DECK:",
     ...(deck?.slides ?? []).map((s: any) => `slide ${s.index} (${s.archetype}): ${slideText(s)}`),
@@ -634,7 +687,7 @@ export async function writeSlides(
   corrections: string[],
 ): Promise<any[]> {
   const user = [
-    voiceBlock(ctx.voice),
+    voiceBlock(ctx.voice, ctx.voiceRhythmOnly),
     "",
     contextBlock(ctx),
     "",
