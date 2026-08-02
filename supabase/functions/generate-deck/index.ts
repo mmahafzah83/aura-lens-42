@@ -27,20 +27,6 @@ function json(body: unknown, status = 200) {
   });
 }
 
-interface SignalContext {
-  signal: Record<string, any>;
-  evidence: Array<{ title: string; content: string }>;
-  voice: Record<string, any> | null;
-  profile: Record<string, any>;
-}
-
-function bareHandle(raw: unknown): string {
-  const s = String(raw ?? "").trim();
-  if (!s) return "";
-  const m = s.match(/(?:linkedin\.com\/)?(?:in\/)?([A-Za-z0-9-]+)\/?$/);
-  return m ? m[1] : "";
-}
-
 async function readContext(db: any, signalId: string, userId: string): Promise<SignalContext> {
   const { data: signal, error } = await db
     .from("strategic_signals")
