@@ -121,12 +121,28 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
 
     const { data: post, error: postErr } = await adminClient
       .from("linkedin_posts")
-      .select("id, post_text, published_confirmed_at, source_metadata, original_generated_text, source_signal_id")
+      .select("id, post_text, published_confirmed_at, source_metadata, original_generated_text, source_signal_id, linkedin_post_id, post_url")
       .eq("id", postId)
       .eq("user_id", user.id)
       .maybeSingle();
 
     if (postErr || !post) return json({ error: "Post not found" }, 404);
+
+    // ── IDEMPOTENCY ──────────────────────────────────────────────────────
+    // The key is derived from the post row id, so a retry of the same post can
+    // never produce a second LinkedIn post. If the row already carries a URN,
+    // the work is done — return the existing result before any publish call.
+    const correlationId = newCorrelationId();
+    const idempotencyKey = idempotencyKeyFor(postId);
+    const existingUrn: string | null = (post as any).linkedin_post_id ?? null;
+    if (existingUrn) {
+      return json({
+        success: true,
+        already_published: true,
+        urn: existingUrn,
+        postUrl: (post as any).post_url ?? `https://www.linkedin.com/feed/update/${existingUrn}/`,
+      });
+    }
     if (post.published_confirmed_at) return json({ success: false, error: "Already published" });
 
     const postText: string = post.post_text ?? "";
