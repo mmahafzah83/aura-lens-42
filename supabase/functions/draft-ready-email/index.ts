@@ -574,6 +574,11 @@ serve(async (req) => {
             reply_to: REPLY_TO,
             subject,
             html,
+            tags: [
+              { name: "user_id", value: String(pick.user_id) },
+              { name: "email_type", value: "draft_ready" },
+              { name: "message_key", value: bareKey.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 250) },
+            ],
           }),
         });
         resendStatus = resp.status;

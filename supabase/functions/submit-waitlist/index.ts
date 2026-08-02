@@ -201,6 +201,8 @@ serve(withObserve("submit-waitlist", async (req) => {
             subject: `You're on the list, ${name}`.replace(/[\r\n]/g, " "),
             reply_to: "mohammad.mahafdhah@aura-intel.org",
             html,
+            // Waitlist applicants are not members yet — no user_id tag.
+            tags: [{ name: "email_type", value: "waitlist_confirmation" }],
           }),
         });
         const resBody = await res.text();

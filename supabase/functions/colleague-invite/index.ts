@@ -153,6 +153,8 @@ serve(withObserve("colleague-invite", async (req) => {
             subject: `${inviterName || "A colleague"} thinks you should see this`.replace(/[\r\n]/g, " "),
             reply_to: "mohammad.mahafdhah@aura-intel.org",
             html: referralHtml,
+            // The invited person is not a member yet — no user_id tag.
+            tags: [{ name: "email_type", value: "colleague_referral" }],
           }),
         });
       } catch (e) {
@@ -172,6 +174,8 @@ serve(withObserve("colleague-invite", async (req) => {
             to: ["mohammad.mahafdhah@aura-intel.org"],
             subject: `New colleague invite: ${email}`,
             html: `<p><strong>${callerEmail}</strong> (${inviterName || "unknown name"}) invited <strong>${email}</strong> to the Aura beta.</p>${note ? `<p>Note: "${note}"</p>` : ""}<p>A referral email has been sent to ${email}.</p>`,
+            // Admin notification address — no member recipient.
+            tags: [{ name: "email_type", value: "colleague_invite_admin" }],
           }),
         });
       } catch (e) {
