@@ -301,29 +301,80 @@ export default function CarouselStudio() {
     }
   }, [deck, theme]);
 
-  /* --- published --------------------------------------------------- */
-  const markPublished = useCallback(async () => {
-    if (!deck) return;
-    const { data: sess } = await supabase.auth.getSession();
-    const uid = sess.session?.user?.id;
-    if (!uid) return;
-    const cover = deck.slides[0];
-    const hook = (cover?.slots.hero_lines ?? []).map((l) => plainText(l)).join(" ").trim();
-    const caption = [hook, plainText(cover?.slots.subline)].filter(Boolean).join(" — ");
-    await supabase.from("linkedin_posts").insert({
-      user_id: uid,
-      post_text: caption || hook || deck.signal_id,
-      title: hook || null,
-      content_type: "carousel",
-      source_type: "aura_generated",
-      media_type: "document",
-      source_signal_id: deck.signal_id,
-      published_at: new Date().toISOString(),
-    } as any);
-    void logDeckEvent("published", deck, { theme });
-    setPublished(true);
-    try { localStorage.removeItem(DRAFT_KEY); } catch { /* nothing to clear */ }
-  }, [deck, theme]);
+  /* --- publish straight to LinkedIn -------------------------------- */
+  /**
+   * The same PDF the member would have downloaded is uploaded for them. There
+   * is exactly one publisher in this app: linkedin-publish owns idempotency,
+   * retries, the deadline and the telemetry, and this path hands it a post row
+   * carrying the document rather than a second publishing implementation.
+   */
+  const publishToLinkedIn = useCallback(async () => {
+    if (!deck || !mountRef.current) return;
+    setError(null);
+    setPublishing("Building the PDF");
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const uid = sess.session?.user?.id;
+      if (!uid) throw new Error("Your session expired. Sign in again.");
+
+      const cover = deck.slides[0];
+      const hook = (cover?.slots.hero_lines ?? []).map((l) => plainText(l)).join(" ").trim();
+      const body = caption.trim() || hook;
+      if (!body) throw new Error("Add a caption before publishing.");
+
+      const { blob } = await renderDeckPdfBlob(collectSlideNodes(mountRef.current));
+
+      setPublishing("Uploading");
+      const path = `${uid}/${deck.deck_id}/carousel.pdf`;
+      const { error: upErr } = await supabase.storage
+        .from("deck-media")
+        .upload(path, blob, { upsert: true, contentType: "application/pdf" });
+      if (upErr) throw new Error(upErr.message);
+      const { data: signed, error: signErr } = await supabase.storage
+        .from("deck-media")
+        .createSignedUrl(path, 60 * 60);
+      if (signErr || !signed) throw new Error(signErr?.message ?? "Could not read the PDF back.");
+
+      const { data: row, error: insErr } = await supabase
+        .from("linkedin_posts")
+        .insert({
+          user_id: uid,
+          post_text: body,
+          title: hook || null,
+          content_type: "carousel",
+          source_type: "aura_generated",
+          media_type: "document",
+          tracking_status: "draft",
+          source_signal_id: deck.signal_id,
+          source_metadata: {
+            document_url: signed.signedUrl,
+            document_title: (hook || "Carousel").slice(0, 100),
+            deck_id: deck.deck_id,
+            language: deck.primary_lang,
+          },
+        } as any)
+        .select("id")
+        .single();
+      if (insErr || !row) throw new Error(insErr?.message ?? "Could not stage the post.");
+
+      setPublishing("Posting to LinkedIn");
+      const { data: res, error: fnErr } = await supabase.functions.invoke("linkedin-publish", {
+        body: { postId: (row as any).id },
+      });
+      if (fnErr && !res) throw fnErr;
+      const out: any = res;
+      if (!out?.success) throw new Error(out?.error ?? "LinkedIn refused the post.");
+
+      setPostUrl(out.postUrl ?? null);
+      setPublished(true);
+      void logDeckEvent("published", deck, { theme });
+      try { localStorage.removeItem(DRAFT_KEY); } catch { /* nothing to clear */ }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setPublishing(null);
+    }
+  }, [deck, caption, theme]);
 
   /* ---------------------------------------------------------------- */
 
