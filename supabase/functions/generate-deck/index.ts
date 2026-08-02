@@ -329,6 +329,7 @@ async function rewriteSlide(
 ) {
   const ctx = await readContext(db, signalId, userId);
   const p = await plan(ctx, lang);
+  ctx.voice = resolveVoice(ctx.voices, p.lang);
   const manifest = {
     length: 5 as const,
     slots: [{ index, archetype, role: archetype } as any],
