@@ -135,6 +135,13 @@ const SUBSTANTIVE_ARCHETYPES: string[] = [
 export interface InvariantOptions {
   /** The member's own `vocabulary_preferences.avoid` list, enforced verbatim. */
   avoid?: string[];
+  /**
+   * Sector vocabulary drawn from the signal itself — theme tags, title words,
+   * named entities. A slide carrying one of these is not "any company's deck".
+   * When absent the slide-level anonymity test is skipped, because without the
+   * source material there is no way to tell domain language from filler.
+   */
+  domainTerms?: string[];
 }
 
 const HERO_BUDGET: Record<"en" | "ar", number> = { en: 14, ar: 20 };
@@ -199,6 +206,10 @@ export function checkInvariants(ir: DeckIR, opts: InvariantOptions = {}): string
     .map((a) => String(a ?? "").trim())
     .filter((a) => a.length >= 3 && a.length <= 40)
     .map((a) => a.toLowerCase());
+
+  const domainTerms = (opts.domainTerms ?? [])
+    .map((t) => String(t ?? "").trim().toLowerCase())
+    .filter((t) => t.length >= 4);
 
   let tripletCount = 0;
   let concreteParticulars = 0;
@@ -351,14 +362,18 @@ export function checkInvariants(ir: DeckIR, opts: InvariantOptions = {}): string
     // Could this slide belong to anyone? Judged on the slide's own prose, and
     // only where there is enough of it to judge.
     const joined = everything.join(" ").trim();
+    const lowerJoined = joined.toLowerCase();
+    const carriesDomainTerm = domainTerms.some((t) => lowerJoined.includes(t));
     if (!isAnonymous(joined)) concreteParticulars += 1;
     if (
+      domainTerms.length > 0 &&
+      !carriesDomainTerm &&
       SUBSTANTIVE_ARCHETYPES.includes(slide.archetype) &&
       wordCount(joined) >= 12 &&
       isAnonymous(joined)
     ) {
       errors.push(
-        `INV-18: ${where} could appear in any company's deck in any industry — it carries no proper noun, no number and no first-person observation.`,
+        `INV-18: ${where} could appear in any company's deck in any industry — no proper noun, no number, no first-person observation and no term from this signal.`,
       );
     }
   }
