@@ -520,7 +520,9 @@ function SlideBody({ deck, slide, theme, s, hideTails }: PartProps) {
 }
 
 /** Close: a three-row grid whose figure row is a FIXED height, so text can never overlap it. */
-const CLOSE_FIGURE_H = 430;
+const CLOSE_FIGURE_H = 470;
+/** The figure occupies a fixed column so the head lands in the same place on every deck. */
+const CLOSE_FIGURE_W = 430;
 
 function CloseSlide({ deck, slide, theme, s, hideTails }: PartProps) {
   const p = deck.primary_lang;
@@ -560,14 +562,29 @@ function CloseSlide({ deck, slide, theme, s, hideTails }: PartProps) {
       </div>
       <div style={{ height: CLOSE_FIGURE_H, display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 32 }}>
         {figureSrc ? (
+          // A cut-out figure STANDING in the slide: bottom-anchored, sized by
+          // height so the head sits in the upper third of the figure zone, and
+          // with no frame, border, radius or shadow anywhere near it. A square
+          // avatar has no transparency, so it is dissolved into the background
+          // by a bottom fade rather than stopping at a hard edge.
           <div
             style={{
-              flex: "1 1 auto",
+              width: CLOSE_FIGURE_W,
+              flex: "0 0 auto",
               height: "100%",
               backgroundImage: `url(${figureSrc})`,
-              backgroundSize: "contain",
-              backgroundPosition: "bottom center",
+              backgroundSize: "auto 100%",
+              backgroundPosition: "bottom left",
               backgroundRepeat: "no-repeat",
+              border: "none",
+              borderRadius: 0,
+              boxShadow: "none",
+              ...(deck.profile.avatar_cutout_url
+                ? {}
+                : {
+                    maskImage: "linear-gradient(to bottom, #000 0%, #000 58%, rgba(0,0,0,.55) 82%, rgba(0,0,0,0) 100%)",
+                    WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 58%, rgba(0,0,0,.55) 82%, rgba(0,0,0,0) 100%)",
+                  }),
             }}
             role="img"
             aria-label=""
