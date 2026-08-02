@@ -446,28 +446,21 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
       console.error("pre-publish diagnostics failed:", e);
     }
 
-    const liRes = await linkedinFetch("https://api.linkedin.com/rest/posts", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${connection.access_token}`,
-        "X-Restli-Protocol-Version": "2.0.0",
-        "LinkedIn-Version": LINKEDIN_VERSION,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    }, { userId: user.id, adminClient, purpose: "publish" });
+    const pubResult = await runStep("create_post", (signal) =>
+      linkedinFetch("https://api.linkedin.com/rest/posts", {
+        method: "POST",
+        signal,
+        headers: {
+          Authorization: `Bearer ${connection.access_token}`,
+          "X-Restli-Protocol-Version": "2.0.0",
+          "LinkedIn-Version": LINKEDIN_VERSION,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      }, { userId: user.id, adminClient, purpose: "publish" }));
 
-    if (liRes.status === 201) {
-      const urn = liRes.headers.get("x-restli-id") ?? "";
-      try {
-        await adminClient.from("ef_error_log").insert({
-          function_name: "linkedin-publish",
-          severity: "info",
-          error_message: `post-publish 201 postId=${postId} urn=${urn}`,
-          user_id: user.id,
-          context: { stage: "post_publish", postId, status: 201, x_restli_id: urn },
-        });
-      } catch (e) { console.error("post-publish diagnostics failed:", e); }
+    if (pubResult.outcome === "ok") {
+      const urn = pubResult.headers["x-restli-id"] ?? "";
       const postUrl = `https://www.linkedin.com/feed/update/${urn}/`;
       const now = new Date().toISOString();
       await adminClient
