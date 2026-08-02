@@ -574,7 +574,7 @@ function CloseSlide({ deck, slide, theme, s, hideTails }: PartProps) {
               height: "100%",
               backgroundImage: `url(${figureSrc})`,
               backgroundSize: "auto 100%",
-              backgroundPosition: "bottom left",
+              backgroundPosition: deck.dir === "rtl" ? "bottom right" : "bottom left",
               backgroundRepeat: "no-repeat",
               border: "none",
               borderRadius: 0,
