@@ -13,21 +13,22 @@ Deno.serve(async (req) => {
   if (!gate || req.headers.get("x-probe-secret") !== gate) return json({ error: "forbidden" }, 403);
 
   const db = createClient(Deno.env.get("SUPABASE_URL")!, service);
-  const { data: conn } = await db.from("linkedin_connections")
+  const { data: conns } = await db.from("linkedin_connections")
     .select("user_id, access_token, linkedin_id").eq("status", "active")
-    .not("access_token", "is", null).order("updated_at", { ascending: false }).limit(1).maybeSingle();
-  if (!conn) return json({ error: "no active connection" }, 404);
+    .not("access_token", "is", null);
 
-  const { data: post } = await db.from("linkedin_posts")
-    .select("linkedin_post_id, post_url").eq("user_id", conn.user_id)
-    .or("linkedin_post_id.like.%7%,post_url.like.%activity%")
-    .not("linkedin_post_id", "is", null).limit(50);
+  let conn: any = null; let cand = { id: "", url: "" };
+  for (const c of conns ?? []) {
+    const { data: rows } = await db.from("linkedin_posts")
+      .select("linkedin_post_id, post_url").eq("user_id", c.user_id).limit(200);
+    const hit = (rows ?? []).map((p: any) => ({ id: String(p.linkedin_post_id ?? ""), url: String(p.post_url ?? "") }))
+      .find((p: any) => /\d{15,25}/.test(`${p.id} ${p.url}`));
+    if (hit) { conn = c; cand = hit; break; }
+  }
+  if (!conn) return json({ error: "no active connection with a post urn" }, 404);
 
-  const cand = (post ?? []).map((p: any) => ({ id: String(p.linkedin_post_id ?? ""), url: String(p.post_url ?? "") }))
-    .find((p: any) => /\d{15,25}/.test(p.id) || /\d{15,25}/.test(p.url)) ?? { id: "", url: "" };
-  const raw = cand.id;
   const numeric = (`${cand.id} ${cand.url}`.match(/\d{15,25}/) ?? [])[0] ?? "";
-  const shareUrn = raw.startsWith("urn:") ? raw : `urn:li:share:${numeric}`;
+  const shareUrn = cand.id.startsWith("urn:") ? cand.id : `urn:li:share:${numeric}`;
   const ugcUrn = `urn:li:ugcPost:${numeric}`;
   const memberUrn = `urn:li:person:${conn.linkedin_id}`;
   const headers = {
