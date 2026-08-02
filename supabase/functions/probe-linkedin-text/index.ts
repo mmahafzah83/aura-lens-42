@@ -20,10 +20,13 @@ Deno.serve(async (req) => {
 
   const { data: post } = await db.from("linkedin_posts")
     .select("linkedin_post_id, post_url").eq("user_id", conn.user_id)
-    .eq("source_type", "linkedin_export").not("linkedin_post_id", "is", null).limit(1).maybeSingle();
+    .or("linkedin_post_id.like.%7%,post_url.like.%activity%")
+    .not("linkedin_post_id", "is", null).limit(50);
 
-  const raw = String(post?.linkedin_post_id ?? "");
-  const numeric = (raw.match(/\d{15,25}/) ?? [])[0] ?? "";
+  const cand = (post ?? []).map((p: any) => ({ id: String(p.linkedin_post_id ?? ""), url: String(p.post_url ?? "") }))
+    .find((p: any) => /\d{15,25}/.test(p.id) || /\d{15,25}/.test(p.url)) ?? { id: "", url: "" };
+  const raw = cand.id;
+  const numeric = (`${cand.id} ${cand.url}`.match(/\d{15,25}/) ?? [])[0] ?? "";
   const shareUrn = raw.startsWith("urn:") ? raw : `urn:li:share:${numeric}`;
   const ugcUrn = `urn:li:ugcPost:${numeric}`;
   const memberUrn = `urn:li:person:${conn.linkedin_id}`;
@@ -38,14 +41,17 @@ Deno.serve(async (req) => {
     ["a2) GET /rest/posts/{ugcUrn}", `https://api.linkedin.com/rest/posts/${encodeURIComponent(ugcUrn)}`],
     ["b) GET /rest/posts?q=author", `https://api.linkedin.com/rest/posts?author=${encodeURIComponent(memberUrn)}&q=author&count=5`],
     ["c) GET /v2/ugcPosts/{ugcUrn}", `https://api.linkedin.com/v2/ugcPosts/${encodeURIComponent(ugcUrn)}`],
-    ["d) GET /rest/shares?q=owners", `https://api.linkedin.com/rest/shares?q=owners&owners=${encodeURIComponent(memberUrn)}&count=5`],
+    ["d) GET /rest/shares?q=owners (v202401)", `https://api.linkedin.com/rest/shares?q=owners&owners=${encodeURIComponent(memberUrn)}&count=5`],
+    ["d2) GET /v2/shares?q=owners", `https://api.linkedin.com/v2/shares?q=owners&owners=${encodeURIComponent(memberUrn)}&count=5`],
+    ["f) per-post analytics with postUrn", `https://api.linkedin.com/rest/memberCreatorPostAnalytics?q=memberAndPost&postUrn=${encodeURIComponent(ugcUrn)}&queryType=IMPRESSION&aggregation=TOTAL&dateRange=(start:(day:1,month:1,year:2026),end:(day:1,month:8,year:2026))`],
     ["e) analytics (current sync path)", `https://api.linkedin.com/rest/memberCreatorPostAnalytics?q=me&queryType=IMPRESSION&aggregation=TOTAL&dateRange=(start:(day:1,month:1,year:2026),end:(day:1,month:8,year:2026))`],
   ];
 
   const results = [];
   for (const [name, url] of probes) {
     try {
-      const res = await fetch(url, { headers });
+      const h = name.startsWith("d)") ? { ...headers, "LinkedIn-Version": "202401" } : headers;
+      const res = await fetch(url, { headers: h });
       const body = await res.text();
       results.push({
         probe: name,
@@ -58,5 +64,5 @@ Deno.serve(async (req) => {
       results.push({ probe: name, url, status: 0, error: (e as Error).message });
     }
   }
-  return json({ tested_urn: shareUrn, post_url: post?.post_url ?? null, results });
+  return json({ tested_urn: shareUrn, tested_ugc: ugcUrn, post_url: cand.url, candidates: (post ?? []).length, results });
 });
