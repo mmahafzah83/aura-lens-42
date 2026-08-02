@@ -98,7 +98,7 @@ export function SignalPicker({
               {Math.round((s.confidence ?? 0) * 100)}% confidence
             </span>
             {(s.theme_tags ?? []).slice(0, 3).map((t) => (
-              <Chip key={t}>{t}</Chip>
+              <Chip key={t} variant="cooling">{t}</Chip>
             ))}
           </div>
         </button>
