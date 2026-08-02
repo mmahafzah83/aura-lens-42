@@ -3,7 +3,7 @@
  * actually fill, return the ordered slot manifest. The writer stage fills the
  * manifest; it never decides the shape.
  */
-import type { Archetype, DeckLength } from "./deckIR";
+import type { Archetype, DeckLength } from "./deckIR.ts";
 
 export interface ComposeInput {
   hasNumber: boolean;
@@ -122,8 +122,10 @@ function fillableRoles(length: DeckLength, input: ComposeInput): Role[] | null {
  * Choose the LONGEST length the plan can actually fill. When a length cannot
  * be filled without padding, fall to the next one down.
  */
-export function compose(input: ComposeInput): ComposeResult {
-  const candidates: DeckLength[] = [10, 7, 5];
+export function compose(input: ComposeInput, maxLength?: DeckLength): ComposeResult {
+  const candidates: DeckLength[] = ([10, 7, 5] as DeckLength[]).filter(
+    (l) => !maxLength || l <= maxLength,
+  );
   for (const length of candidates) {
     const roles = fillableRoles(length, input);
     if (roles) {
