@@ -16,7 +16,14 @@ export interface ImageLimits {
 }
 
 export const AVATAR_LIMITS: ImageLimits = { maxBytes: 5 * MB, minWidth: 400, minHeight: 400 };
-export const SLIDE_MEDIA_LIMITS: ImageLimits = { maxBytes: 10 * MB, minWidth: 1400, minHeight: 900 };
+/**
+ * A member does not think in pixels. The only thing we refuse is a picture so
+ * small that no amount of resampling keeps it sharp; everything else the tool
+ * upscales and crops itself.
+ */
+export const SLIDE_MEDIA_LIMITS: ImageLimits = { maxBytes: 10 * MB, minWidth: 400, minHeight: 400 };
+/** Shortest side below this and the picture is genuinely unusable. */
+export const MIN_USABLE_SIDE = 400;
 
 const ALLOWED = ["image/jpeg", "image/png", "image/webp"];
 
@@ -50,8 +57,8 @@ export async function checkImage(file: File, limits: ImageLimits): Promise<strin
   }
   const { width, height } = bitmap;
   bitmap.close?.();
-  if (width < limits.minWidth || height < limits.minHeight) {
-    return `That picture is ${width}×${height}. Please use one at least ${limits.minWidth}×${limits.minHeight} so it stays sharp.`;
+  if (Math.min(width, height) < Math.min(limits.minWidth, limits.minHeight)) {
+    return "This picture is too small to stay sharp — try a larger one.";
   }
   return null;
 }
@@ -83,6 +90,46 @@ export async function stripMetadata(file: File, mime = "image/jpeg"): Promise<Bl
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("canvas unavailable");
   ctx.drawImage(bitmap, 0, 0);
+  bitmap.close?.();
+  return await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("encode failed"))), mime, 0.92);
+  });
+}
+
+/**
+ * Fit any picture to a slot: centre-weighted crop to the slot's aspect ratio,
+ * then resample up or down to the slot's dimensions. Faces sit above centre in
+ * almost every photograph, so the crop window is biased upward rather than
+ * taken from the geometric middle. EXIF, including GPS, is gone by the time
+ * this returns because the pixels have been redrawn.
+ */
+export async function fitToSlot(
+  file: Blob,
+  targetW = 1400,
+  targetH = 900,
+  mime = "image/jpeg",
+): Promise<Blob> {
+  const bitmap = await decode(file as File);
+  const targetRatio = targetW / targetH;
+  const srcRatio = bitmap.width / bitmap.height;
+
+  let cropW = bitmap.width;
+  let cropH = bitmap.height;
+  if (srcRatio > targetRatio) cropW = Math.round(bitmap.height * targetRatio);
+  else cropH = Math.round(bitmap.width / targetRatio);
+
+  const sx = Math.round((bitmap.width - cropW) / 2);
+  // 38% down rather than 50%: the subject's head survives the crop.
+  const sy = Math.round((bitmap.height - cropH) * 0.38);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = targetW;
+  canvas.height = targetH;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("canvas unavailable");
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(bitmap, sx, sy, cropW, cropH, 0, 0, targetW, targetH);
   bitmap.close?.();
   return await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("encode failed"))), mime, 0.92);
