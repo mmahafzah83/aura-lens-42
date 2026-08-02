@@ -163,7 +163,7 @@ async function hasMeaningfulTransparency(blob: Blob): Promise<boolean> {
  * Background-removed PNG, or null when it isn't worth offering.
  * Never throws: a failure here is silent by design.
  */
-export async function cutOutBackground(file: File, timeoutMs = 45000): Promise<Blob | null> {
+export async function cutOutBackground(file: Blob, timeoutMs = 45000): Promise<Blob | null> {
   try {
     const work = (async () => {
       const { removeBackground } = await import("@imgly/background-removal");
