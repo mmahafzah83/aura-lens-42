@@ -3902,6 +3902,50 @@ export type Database = {
       }
     }
     Views: {
+      cockpit_assertions: {
+        Row: {
+          claim: string | null
+          detail: string | null
+          ok: boolean | null
+          status: string | null
+        }
+        Relationships: []
+      }
+      cockpit_members: {
+        Row: {
+          active_7d: boolean | null
+          captures: number | null
+          day_n: number | null
+          first_name: string | null
+          joined_on: string | null
+          last_capture: string | null
+          lifecycle_emails: number | null
+          posts_through_aura: number | null
+          signals: number | null
+          state: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      cockpit_pulse: {
+        Row: {
+          active_7d: number | null
+          as_of: string | null
+          captures_7d: number | null
+          captures_total: number | null
+          cold: number | null
+          drawer: number | null
+          emails_7d: number | null
+          faults_48h: number | null
+          health_open: number | null
+          members: number | null
+          posts_through_aura: number | null
+          posts_total: number | null
+          shipping: number | null
+          started: number | null
+        }
+        Relationships: []
+      }
       daily_brief_latest: {
         Row: {
           audit: Json | null
@@ -4368,6 +4412,7 @@ export type Database = {
         }[]
       }
       founder_brief_verify: { Args: never; Returns: Json }
+      founder_uuid: { Args: never; Returns: string }
       founding_seats: {
         Args: never
         Returns: {

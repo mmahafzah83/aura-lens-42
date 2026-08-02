@@ -3,6 +3,18 @@ import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { linkedinFetch } from "../_shared/linkedinFetch.ts";
 import { alertPublishFailure } from "../_shared/publishFailureAlert.ts";
+import {
+  callWithPolicy,
+  memberMessage,
+  OVERALL_DEADLINE_MS,
+  type PublishStep,
+} from "../_shared/publishPolicy.ts";
+import {
+  attemptRows,
+  idempotencyKeyFor,
+  newCorrelationId,
+  recordAttempt,
+} from "../_shared/publishTelemetry.ts";
 
 const LINKEDIN_VERSION = "202605";
 
@@ -109,12 +121,28 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
 
     const { data: post, error: postErr } = await adminClient
       .from("linkedin_posts")
-      .select("id, post_text, published_confirmed_at, source_metadata, original_generated_text, source_signal_id")
+      .select("id, post_text, published_confirmed_at, source_metadata, original_generated_text, source_signal_id, linkedin_post_id, post_url")
       .eq("id", postId)
       .eq("user_id", user.id)
       .maybeSingle();
 
     if (postErr || !post) return json({ error: "Post not found" }, 404);
+
+    // ── IDEMPOTENCY ──────────────────────────────────────────────────────
+    // The key is derived from the post row id, so a retry of the same post can
+    // never produce a second LinkedIn post. If the row already carries a URN,
+    // the work is done — return the existing result before any publish call.
+    const correlationId = newCorrelationId();
+    const idempotencyKey = idempotencyKeyFor(postId);
+    const existingUrn: string | null = (post as any).linkedin_post_id ?? null;
+    if (existingUrn) {
+      return json({
+        success: true,
+        already_published: true,
+        urn: existingUrn,
+        postUrl: (post as any).post_url ?? `https://www.linkedin.com/feed/update/${existingUrn}/`,
+      });
+    }
     if (post.published_confirmed_at) return json({ success: false, error: "Already published" });
 
     const postText: string = post.post_text ?? "";
@@ -241,6 +269,70 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
       await adminClient.from("linkedin_posts").update({ tracking_status: "draft" }).eq("id", postId).eq("user_id", user.id);
     };
 
+    // ── ATTEMPT ENVELOPE ─────────────────────────────────────────────────
+    // One 90s deadline covers every LinkedIn call this invocation makes, so a
+    // publish can never hang without reaching a terminal state.
+    const deadlineAt = Date.now() + OVERALL_DEADLINE_MS;
+    await adminClient
+      .from("linkedin_posts")
+      .update({ publish_attempted_at: new Date().toISOString() })
+      .eq("id", postId).eq("user_id", user.id);
+
+    const runStep = async (
+      step: PublishStep,
+      fetcher: (signal: AbortSignal) => Promise<Response>,
+    ) => {
+      const result = await callWithPolicy({ step, fetcher, deadlineAt });
+      const rows = attemptRows(
+        { correlation_id: correlationId, post_id: postId!, user_id: user.id, idempotency_key: idempotencyKey },
+        result.attempts,
+        result.outcome,
+        result.body,
+      );
+      for (const r of rows) await recordAttempt(adminClient, r);
+      return result;
+    };
+
+    /** Terminal failure: the post is parked, the member gets one plain sentence. */
+    const failTerminal = async (
+      step: PublishStep,
+      outcome: "refused" | "unreachable" | "timeout",
+      status: number | null,
+      body: string,
+    ) => {
+      const message = memberMessage(outcome, status, body, step);
+      const uncertain = outcome === "timeout" && step === "create_post";
+      await adminClient
+        .from("linkedin_posts")
+        .update({
+          tracking_status: uncertain ? "needs_review" : "draft",
+          source_metadata: {
+            ...((post as any).source_metadata ?? {}),
+            publish_error: message,
+            publish_failure_reason: outcome === "timeout" ? "timeout" : outcome,
+            publish_failure_step: step,
+            publish_failure_status: status,
+            publish_correlation_id: correlationId,
+            failed_at: new Date().toISOString(),
+          },
+        })
+        .eq("id", postId).eq("user_id", user.id);
+      fireFailureAlert(adminClient, {
+        userId: user.id, postId,
+        errorText: `${outcome} at ${step} (status ${status ?? "none"}): ${body.slice(0, 300)}`,
+        postText,
+      });
+      return json({
+        success: false,
+        error: message,
+        reason: outcome === "timeout" ? "timeout" : outcome,
+        step,
+        status,
+        correlation_id: correlationId,
+        needs_check: uncertain,
+      });
+    };
+
     // Optional single image (additive — text-only posts are unaffected)
     const imageUrl: string | undefined = (post as any)?.source_metadata?.image_url;
     let mediaContent: Record<string, unknown> | undefined;
@@ -267,27 +359,27 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
         await releaseToDraft();
         return json({ success: false, error: "Image must be hosted on approved storage" }, 400);
       }
-      const initRes = await linkedinFetch("https://api.linkedin.com/rest/images?action=initializeUpload", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${connection.access_token}`,
-          "X-Restli-Protocol-Version": "2.0.0",
-          "LinkedIn-Version": LINKEDIN_VERSION,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ initializeUploadRequest: { owner: `urn:li:person:${connection.linkedin_id}` } }),
-      }, { userId: user.id, adminClient, purpose: "image-init" });
-      if (!initRes.ok) {
-        const d = await initRes.text();
-        await releaseToDraft();
-        return json({ success: false, error: "Image init failed", status: initRes.status, detail: d });
+      const initResult = await runStep("register_upload", (signal) =>
+        linkedinFetch("https://api.linkedin.com/rest/images?action=initializeUpload", {
+          method: "POST",
+          signal,
+          headers: {
+            Authorization: `Bearer ${connection.access_token}`,
+            "X-Restli-Protocol-Version": "2.0.0",
+            "LinkedIn-Version": LINKEDIN_VERSION,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ initializeUploadRequest: { owner: `urn:li:person:${connection.linkedin_id}` } }),
+        }, { userId: user.id, adminClient, purpose: "image-init" }));
+      if (initResult.outcome !== "ok") {
+        return await failTerminal("register_upload", initResult.outcome, initResult.status, initResult.body);
       }
-      const initJson = await initRes.json();
+      let initJson: any = {};
+      try { initJson = JSON.parse(initResult.body); } catch { /* handled below */ }
       const uploadUrl: string = initJson?.value?.uploadUrl;
       const imageUrn: string = initJson?.value?.image;
       if (!uploadUrl || !imageUrn) {
-        await releaseToDraft();
-        return json({ success: false, error: "Image init returned no upload URL", detail: JSON.stringify(initJson) });
+        return await failTerminal("register_upload", "refused", initResult.status, initResult.body);
       }
 
       const imgRes = await fetch(parsedImg.toString());
@@ -297,15 +389,15 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
       }
       const imgBytes = new Uint8Array(await imgRes.arrayBuffer());
 
-      const upRes = await linkedinFetch(uploadUrl, {
-        method: "PUT",
-        headers: { Authorization: `Bearer ${connection.access_token}` },
-        body: imgBytes,
-      }, { userId: user.id, adminClient, purpose: "image-upload" });
-      if (!(upRes.status === 200 || upRes.status === 201)) {
-        const d = await upRes.text();
-        await releaseToDraft();
-        return json({ success: false, error: "Image upload failed", status: upRes.status, detail: d });
+      const upResult = await runStep("upload_binary", (signal) =>
+        linkedinFetch(uploadUrl, {
+          method: "PUT",
+          signal,
+          headers: { Authorization: `Bearer ${connection.access_token}` },
+          body: imgBytes,
+        }, { userId: user.id, adminClient, purpose: "image-upload" }));
+      if (upResult.outcome !== "ok") {
+        return await failTerminal("upload_binary", upResult.outcome, upResult.status, upResult.body);
       }
 
       mediaContent = { media: { id: imageUrn } };
@@ -354,28 +446,21 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
       console.error("pre-publish diagnostics failed:", e);
     }
 
-    const liRes = await linkedinFetch("https://api.linkedin.com/rest/posts", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${connection.access_token}`,
-        "X-Restli-Protocol-Version": "2.0.0",
-        "LinkedIn-Version": LINKEDIN_VERSION,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    }, { userId: user.id, adminClient, purpose: "publish" });
+    const pubResult = await runStep("create_post", (signal) =>
+      linkedinFetch("https://api.linkedin.com/rest/posts", {
+        method: "POST",
+        signal,
+        headers: {
+          Authorization: `Bearer ${connection.access_token}`,
+          "X-Restli-Protocol-Version": "2.0.0",
+          "LinkedIn-Version": LINKEDIN_VERSION,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      }, { userId: user.id, adminClient, purpose: "publish" }));
 
-    if (liRes.status === 201) {
-      const urn = liRes.headers.get("x-restli-id") ?? "";
-      try {
-        await adminClient.from("ef_error_log").insert({
-          function_name: "linkedin-publish",
-          severity: "info",
-          error_message: `post-publish 201 postId=${postId} urn=${urn}`,
-          user_id: user.id,
-          context: { stage: "post_publish", postId, status: 201, x_restli_id: urn },
-        });
-      } catch (e) { console.error("post-publish diagnostics failed:", e); }
+    if (pubResult.outcome === "ok") {
+      const urn = pubResult.headers["x-restli-id"] ?? "";
       const postUrl = `https://www.linkedin.com/feed/update/${urn}/`;
       const now = new Date().toISOString();
       await adminClient
@@ -554,55 +639,9 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
       return json({ success: true, urn, postUrl });
     }
 
-    if (liRes.status === 401) {
-      try {
-        const bodyText = await liRes.clone().text();
-        await adminClient.from("ef_error_log").insert({
-          function_name: "linkedin-publish",
-          severity: "info",
-          error_message: `post-publish 401 postId=${postId}`,
-          user_id: user.id,
-          context: {
-            stage: "post_publish",
-            postId,
-            status: 401,
-            x_restli_id: liRes.headers.get("x-restli-id"),
-            body_head_300: bodyText.slice(0, 300),
-          },
-        });
-      } catch (e) { console.error("post-publish 401 diagnostics failed:", e); }
-      await adminClient.from("linkedin_posts").update({ tracking_status: "draft" }).eq("id", postId).eq("user_id", user.id);
-      fireFailureAlert(adminClient, {
-        userId: user.id, postId,
-        errorText: "LinkedIn connection expired (401) — reconnect required",
-        postText,
-      });
-      return json({ success: false, error: "LinkedIn connection expired — reconnect in Settings" });
-    }
-
-    const detail = await liRes.text();
-    try {
-      await adminClient.from("ef_error_log").insert({
-        function_name: "linkedin-publish",
-        severity: "info",
-        error_message: `post-publish non-201 postId=${postId} status=${liRes.status}`,
-        user_id: user.id,
-        context: {
-          stage: "post_publish",
-          postId,
-          status: liRes.status,
-          x_restli_id: liRes.headers.get("x-restli-id"),
-          body_head_300: detail.slice(0, 300),
-        },
-      });
-    } catch (e) { console.error("post-publish non-201 diagnostics failed:", e); }
-    await adminClient.from("linkedin_posts").update({ tracking_status: "draft" }).eq("id", postId).eq("user_id", user.id);
-    fireFailureAlert(adminClient, {
-      userId: user.id, postId,
-      errorText: `LinkedIn rejected the post (status ${liRes.status}): ${detail.slice(0, 300)}`,
-      postText,
-    });
-    return json({ success: false, error: "LinkedIn rejected the post", status: liRes.status, detail });
+    // Every non-2xx path (including 401 and a blown deadline) is terminal here:
+    // the attempt already exhausted the retry policy above.
+    return await failTerminal("create_post", pubResult.outcome, pubResult.status, pubResult.body);
   } catch (err) {
     console.error("linkedin-publish error:", err);
     if (typeof postId === "string") {
