@@ -464,6 +464,8 @@ export function assemble(
   const name = [prof.first_name, prof.last_name].filter(Boolean).join(" ").trim() || "Member";
   const title = [prof.level, prof.firm].filter(Boolean).join(", ");
   const handle = bareHandle(prof.linkedin_handle || prof.linkedin_url) || "member";
+  const runLang: "en" | "ar" = p.lang;
+  const tn = (t: string) => ({ runs: [{ t, lang: /[\u0600-\u06FF]/.test(t) ? "ar" : "en" }] });
 
   const ordered = manifest.slots.map((slot, i) => {
     const found = slides.find((s) => Number(s?.index) === slot.index) ?? slides[i] ?? {};
@@ -474,6 +476,42 @@ export function assemble(
     };
     // The model may not override the composed archetype.
     if (!p.hasNumber) delete built.slots.stat_value;
+
+    // A benchmark slide EXISTS to hold a chart. The plan already produced the
+    // series, so the chart is assembled deterministically rather than hoped for
+    // from the model — a benchmark slide with no bars is a blank slide.
+    if (slot.archetype === "benchmark") {
+      const series = (p.comparisonSeries ?? []).slice(0, 5);
+      if (series.length >= 2) {
+        const peak = Math.max(...series.map((x) => Math.abs(Number(x.value) || 0)));
+        built.slots.media = {
+          kind: "chart",
+          placement: "inline",
+          chart: {
+            type: "bars",
+            series: series.map((x) => ({
+              label: tn(String(x.label ?? "")),
+              value: Number(x.value) || 0,
+              ...(x.unit ? { unit: String(x.unit) } : {}),
+              emphasis: Math.abs(Number(x.value) || 0) === peak ? "accent" : "none",
+            })),
+          },
+        };
+      } else if (built.slots.media?.kind === "chart") {
+        delete built.slots.media;
+      }
+    } else if (
+      (slot.archetype === "frame" || slot.archetype === "definition") &&
+      !built.slots.media
+    ) {
+      // A mark, drawn from the signal's own themes. Never decoration for its
+      // own sake, and never an emoji.
+      built.slots.media = {
+        kind: "icon",
+        placement: "inline",
+        src: `icon:${iconFor(ctx.signal.theme_tags, String(ctx.signal.signal_title ?? ""), slot.index)}`,
+      };
+    }
     return built;
   });
 
@@ -486,10 +524,11 @@ export function assemble(
     theme,
     length: manifest.length,
     profile: {
-      name: { runs: [{ t: name, lang: p.lang === "ar" ? "ar" : "en" }] },
+      name: { runs: [{ t: name, lang: /[\u0600-\u06FF]/.test(name) ? "ar" : "en" }] },
       ...(title ? { title: { runs: [{ t: title, lang: "en" }] } } : {}),
       handle,
       avatar_url: prof.avatar_url ?? null,
+      avatar_cutout_url: prof.avatar_cutout_url ?? null,
     },
     slides: ordered,
   });
