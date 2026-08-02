@@ -49,8 +49,13 @@ const DROP_ORDER: Role[] = ["summary", "steps_3", "steps_2", "steps_1", "steps",
 function baseRoles(length: DeckLength): Role[] {
   if (length === 5) return ["cover", "frame", "evidence", "quote", "close"];
   if (length === 7) return ["cover", "frame", "evidence", "benchmark", "quote", "steps", "close"];
+  // 10 = the seven, plus a standalone Definition, plus Steps split across three
+  // single-step slides, plus a Summary. That arithmetic reaches eleven, so one
+  // middle slot yields: Benchmark, because its comparison can ride on the
+  // Evidence slide's chart while nothing else can absorb a Definition or a
+  // Summary.
   return [
-    "cover", "frame", "evidence", "benchmark", "definition",
+    "cover", "frame", "evidence", "definition",
     "quote", "steps_1", "steps_2", "steps_3", "summary", "close",
   ];
 }

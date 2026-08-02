@@ -31,6 +31,7 @@
       "archetype": "frame",
       "slots": {
         "headline": { "runs": [{ "t": "Two budgets, one grid", "lang": "en" }] },
+        "hero_lines": [{ "runs": [{ "t": "Two budgets", "lang": "en" }], "highlight": true }],
         "body": [
           { "runs": [{ "t": "Utilities are funding measurement before they fund generation.", "lang": "en" }] },
           { "runs": [{ "t": "That order tells you where the next decade of margin sits.", "lang": "en" }] }

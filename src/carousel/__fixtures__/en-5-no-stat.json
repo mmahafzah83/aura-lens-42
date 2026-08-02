@@ -28,6 +28,7 @@
       "archetype": "frame",
       "slots": {
         "headline": { "runs": [{ "t": "The job stopped being a job", "lang": "en" }] },
+        "hero_lines": [{ "runs": [{ "t": "Quietly", "lang": "en" }], "highlight": true }],
         "body": [
           { "runs": [{ "t": "Roles are being written as scopes of work, not as titles.", "lang": "en" }] },
           { "runs": [{ "t": "The signal carries no published figure, so this deck carries none.", "lang": "en" }] }

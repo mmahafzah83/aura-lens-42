@@ -30,6 +30,7 @@
       "archetype": "frame",
       "slots": {
         "headline": { "runs": [{ "t": "ميزانيتان وشبكة واحدة", "lang": "ar" }] },
+        "hero_lines": [{ "runs": [{ "t": "ميزانيتان", "lang": "ar" }], "highlight": true }],
         "body": [
           {
             "runs": [
