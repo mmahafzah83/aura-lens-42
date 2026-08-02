@@ -20,7 +20,7 @@ export function StudioCanvas({
   width: number;
   current: number;
   onFit: (index: number, state: FitState) => void;
-  mountRef: React.RefObject<HTMLDivElement | null>;
+  mountRef: React.MutableRefObject<HTMLDivElement | null>;
 }) {
   const scale = width / CANVAS_W;
   const rowRef = useRef<HTMLDivElement | null>(null);
