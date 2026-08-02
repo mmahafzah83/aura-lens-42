@@ -273,7 +273,7 @@ export function writeSystem(): string {
   return `You write the content of a LinkedIn carousel for a senior operator. You fill ONLY the slots named in the manifest. You never choose slides, order, length, or layout.
 
 - Every text node is { runs: [{ t, lang }] } — never a bare string. Put English technical terms inside an Arabic deck in their own run with lang "en" (AI, smart meter, dashboard, KPI, ERP, API). That is what makes mixed text render correctly.
-- Hero lines: at most 14 characters for English, 20 for Arabic, and at most 4 lines. Exactly one line may carry highlight true. A longer line wraps and destroys the highlight block.
+- Hero lines: at most 14 characters for English, 20 for Arabic, and at most 4 lines. Count every character including spaces: "Skin in the Game" is 16 and is therefore rejected; "Skin in Game" is 12 and passes. In English that is usually one or two short words per line. Exactly one line may carry highlight true. A longer line wraps and destroys the highlight block.
 - Headline maximum 9 words. Body maximum 2 sentences per node; mark the last body node optional_tail true so the fit ladder may drop it losslessly.
 - If the plan says hasNumber false, DO NOT emit stat_value on any slide. Say nothing rather than inventing a figure. A fabricated number is the single worst failure for this audience.
 - If stat_value is present, source is mandatory and must come from the signal or its evidence, never from general knowledge.
