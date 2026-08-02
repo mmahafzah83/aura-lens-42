@@ -465,10 +465,13 @@ function MediaCover({ slide, deck, theme }: { slide: SlideIR; deck: DeckIR; them
           backgroundSize: "cover",
         }}
       />
-      {/* Two scrims: a directional one for the type column, a vertical one so
-          the identity row and the footer rule never sit on bare photo. */}
-      <div style={{ position: "absolute", inset: 0, background: `linear-gradient(${from}, ${theme.bgSolid} 0%, ${theme.bgSolid}E6 42%, ${theme.bgSolid}66 100%)` }} />
-      <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to bottom, ${theme.bgSolid}D9 0%, ${theme.bgSolid}40 34%, ${theme.bgSolid}CC 100%)` }} />
+      {/* Two scrims: a directional one holding contrast under the type column,
+          and a vertical one so the identity row and the footer rule never sit
+          on bare photo. Heavy where the words are, and genuinely transparent
+          away from them — a scrim dark enough everywhere is just a tint, and
+          then the member cannot tell their photo arrived at all. */}
+      <div style={{ position: "absolute", inset: 0, background: `linear-gradient(${from}, ${theme.bgSolid}F2 0%, ${theme.bgSolid}B3 45%, ${theme.bgSolid}1A 100%)` }} />
+      <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to bottom, ${theme.bgSolid}CC 0%, ${theme.bgSolid}00 30%, ${theme.bgSolid}00 62%, ${theme.bgSolid}D9 100%)` }} />
     </div>
   );
 }
