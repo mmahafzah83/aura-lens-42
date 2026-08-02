@@ -130,15 +130,25 @@ async function readContext(db: any, signalId: string, userId: string): Promise<S
   const { data: profile } = await db
     .from("diagnostic_profiles")
     .select(
-      "first_name, last_name, level, firm, avatar_url, avatar_cutout_url, linkedin_handle, linkedin_url, content_language",
+      "display_name_override, first_name, last_name, level, firm, avatar_url, avatar_cutout_url, linkedin_handle, linkedin_url, content_language",
     )
     .eq("user_id", userId)
     .maybeSingle();
+
+  // The name and handle on a slide come from one resolver, never from
+  // whatever columns happen to be at hand.
+  const { data: connection } = await db
+    .from("linkedin_connections")
+    .select("display_name, profile_name, handle, profile_url")
+    .eq("user_id", userId)
+    .maybeSingle();
+  const identity = resolveIdentityFrom(connection, profile);
 
   console.log("[generate-deck] context", JSON.stringify({
     fragments: evidence.length,
     raw_captures: raw.length,
     voice_profiles: (voices ?? []).map((v: any) => `${v.language}${v.is_primary ? "*" : ""}`),
+    identity: `${identity.name} (@${identity.handle}) via ${identity.name_source}/${identity.handle_source}`,
   }));
 
   return {
@@ -148,6 +158,7 @@ async function readContext(db: any, signalId: string, userId: string): Promise<S
     voices: voices ?? [],
     voice: null,
     profile: profile ?? {},
+    identity,
   };
 }
 
