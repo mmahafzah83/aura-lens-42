@@ -481,7 +481,7 @@ Generate a 1-page BILINGUAL meeting prep memo. Output BOTH English and Arabic ve
 
 **النسخة العربية — مذكرة تحضير الاجتماع**
 
-Same structure in formal Arabic (فصحى راقية). Use Vision 2030 terminology.
+Same structure in formal Arabic (فصحى راقية). Use the terminology of the member's own market and sector, never a market they did not name.
 
 VAULT STATS: ${totalStats.total} captures + ${totalStats.documents} documents | Pillars: ${totalStats.pillars.join(", ")}
 ${docList}

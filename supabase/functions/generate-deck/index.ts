@@ -24,6 +24,7 @@ import {
   bareHandle,
 } from "./pipeline.ts";
 import { REQUIRED_SLOTS } from "./slots.ts";
+import { resolveIdentityFrom } from "../_shared/identity.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -201,6 +202,10 @@ async function generate(
   ctx.voice = resolveVoice(ctx.voices, langHint);
   const p = await plan(ctx, requestedLang);
   if (p.lang !== langHint) ctx.voice = resolveVoice(ctx.voices, p.lang);
+  // A profile in another language gives us cadence, never phrases.
+  ctx.voiceRhythmOnly = Boolean(
+    ctx.voice && !String(ctx.voice.language ?? "").toLowerCase().startsWith(p.lang),
+  );
 
   const memberAvoid = vocab(ctx.voice).avoid;
   const invOpts = { avoid: memberAvoid, domainTerms: domainTermsFor(ctx) };
@@ -243,7 +248,7 @@ async function generate(
         }
         corrections = generic.map(
           (f) =>
-            `Slide ${f.index} reads as generic AI, not as him. The tell: "${f.tell}". Rewrite that slide from the raw captures and his example posts. Leave every other slide exactly as it was.`,
+            `Slide ${f.index} reads as generic AI, not as this member. The tell: "${f.tell}". Rewrite that slide from the member's own raw captures and example posts. Leave every other slide exactly as it was.`,
         );
         retries = attempt + 1;
         continue;
@@ -309,6 +314,7 @@ async function generate(
       flags: [
         ...(p.hasNumber ? [] : ["no_number_in_signal"]),
         ...(ctx.voice ? [] : ["no_voice_profile"]),
+        ...(ctx.voiceRhythmOnly ? ["voice_profile_other_language"] : []),
         ...(ctx.raw.length ? [] : ["no_raw_captures"]),
         ...genericFlags.map((f) => `voice_generic_slide_${f.index}`),
       ],

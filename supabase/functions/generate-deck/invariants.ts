@@ -90,6 +90,14 @@ const MAX_SENTENCE_WORDS = 28;
 const FIRST_PERSON_RE =
   /\b(i|i'm|i've|my|we|we're|we've|our|us)\b|(?:^|\s)(?:من\s+خبرتي|شفت|رأيت|عندنا|لدينا|أعرف|قابلت)/i;
 
+/**
+ * Words that introduce a named entity in Arabic, where capitalisation cannot.
+ * Deliberately generic across sectors and countries: organisation, authority,
+ * ministry, company, bank, hospital, university, city, market, year, standard.
+ */
+const ARABIC_NAMED_ENTITY_RE =
+  /(?:^|\s)(?:شركة|مؤسسة|هيئة|وزارة|بنك|مستشفى|جامعة|مدينة|سوق|قطاع|معيار|مجلس|إدارة|منصة|برنامج|مشروع|تقرير|عام|سنة)\b/;
+
 function sentencesOf(text: string): string[] {
   return text
     .split(/(?<=[.!?؟])\s+|\n+/)
@@ -112,11 +120,19 @@ function hasProperNoun(text: string): boolean {
     // An all-caps or capitalised acronym anywhere, including at the head.
     if (/\b[A-Z]{2,}\b/.test(sentence)) return true;
   }
+  // Scripts without letter case (Arabic among them) carry no capitalisation
+  // signal, so a Latin token of any case inside Arabic prose — a brand, a
+  // standard, an acronym — counts, as does a named-entity marker word.
+  if (ARABIC_RE.test(text)) {
+    if (/[A-Za-z]{2,}/.test(text)) return true;
+    if (ARABIC_NAMED_ENTITY_RE.test(text)) return true;
+  }
   return false;
 }
 
 function hasNumber(text: string): boolean {
-  return /\d/.test(text);
+  // Western digits and Arabic-Indic digits both count as a number.
+  return /[\d\u0660-\u0669\u06F0-\u06F9]/.test(text);
 }
 
 /**
