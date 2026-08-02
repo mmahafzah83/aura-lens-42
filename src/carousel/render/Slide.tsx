@@ -357,7 +357,7 @@ function Bars({ slide, primary, theme, s }: { slide: SlideIR; primary: Lang; the
 
 function MediaBlock({ slide, theme }: { slide: SlideIR; theme: Theme }) {
   const media = slide.slots.media;
-  if (!media || media.kind === "chart" || !media.src) return null;
+  if (!media || media.kind === "chart" || media.kind === "icon" || !media.src) return null;
   return (
     <div
       style={{
@@ -423,6 +423,7 @@ function SlideBody({ deck, slide, theme, s, hideTails }: PartProps) {
     case "frame":
       return (
         <Stack gap={s.gap}>
+          {slots.media?.kind === "icon" && <IconMark src={slots.media.src} theme={theme} size={Math.round(112 * (parseInt(s.h2, 10) / 54))} />}
           <Hero lines={slots.hero_lines} {...common} />
           <H2 node={slots.headline} {...common} />
           <Body nodes={slots.body} primary={p} theme={theme} s={s} hideTails={hideTails} />
@@ -492,6 +493,7 @@ function SlideBody({ deck, slide, theme, s, hideTails }: PartProps) {
     case "definition":
       return (
         <Stack gap={s.gap}>
+          {slots.media?.kind === "icon" && <IconMark src={slots.media.src} theme={theme} size={Math.round(112 * (parseInt(s.h2, 10) / 54))} />}
           <Hero lines={slots.hero_lines} {...common} />
           <Txt
             node={slots.term}
