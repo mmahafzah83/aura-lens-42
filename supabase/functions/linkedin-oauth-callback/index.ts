@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { withObserve } from "../_shared/observe.ts";
+import { nameFromLinkedIn, vanityFromLinkedIn, profileUrlFor } from "../_shared/identity.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
