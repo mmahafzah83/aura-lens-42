@@ -232,6 +232,10 @@ export function EditPanel({
           </button>
         )}
       </div>
+      {/* Say the range before the member picks, so nothing is refused after the fact. */}
+      <div style={{ ...labelStyle, opacity: 0.7 }}>
+        JPG, PNG or WebP, up to 10MB. Anything larger than a small thumbnail works — Aura crops and resizes it to fit the slide.
+      </div>
     </div>
   );
 }

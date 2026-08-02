@@ -152,6 +152,11 @@ export interface InvariantOptions {
   /** The member's own `vocabulary_preferences.avoid` list, enforced verbatim. */
   avoid?: string[];
   /**
+   * The member's own finished sign-off statements, classified from their row at
+   * request time. A sign-off belongs at the end of a post body, never on a slide.
+   */
+  signoffs?: string[];
+  /**
    * Sector vocabulary drawn from the signal itself — theme tags, title words,
    * named entities. A slide carrying one of these is not "any company's deck".
    * When absent the slide-level anonymity test is skipped, because without the
@@ -161,13 +166,58 @@ export interface InvariantOptions {
 }
 
 /* ------------------------------------------------------------------ */
+/* INV-20 — marker glyphs                                              */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Symbol and pictographic characters. A slide is typography: hierarchy comes
+ * from size, weight, colour and position, never from a glyph pasted into a
+ * paragraph. Derived from Unicode classes, never from a list of a member's
+ * actual markers.
+ */
+export const MARKER_RE =
+  /[\p{Extended_Pictographic}\p{So}\u2190-\u21FF\u2600-\u27BF\u25A0-\u25FF\u2B00-\u2BFF\uFE0F\u20E3]/gu;
+
+export function stripMarkers(text: string): string {
+  return text.replace(MARKER_RE, " ").replace(/\s{2,}/g, " ").trim();
+}
+
+/** Case-folded, diacritic-free, punctuation-free, whitespace-collapsed. */
+export function normaliseForMatch(text: string): string {
+  return String(text ?? "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036F\u064B-\u0652\u0670]/g, "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * True when either string contains the other at 85% or more of the shorter
+ * one's length — so a light rewording or a translation is still caught.
+ */
+export function nearlyContains(a: string, b: string): boolean {
+  const x = normaliseForMatch(a);
+  const y = normaliseForMatch(b);
+  if (!x || !y) return false;
+  const [short, long] = x.length <= y.length ? [x, y] : [y, x];
+  if (short.length < 12) return false;
+  const window = Math.ceil(short.length * 0.85);
+  for (let i = 0; i + window <= short.length; i += 1) {
+    if (long.includes(short.slice(i, i + window))) return true;
+  }
+  return false;
+}
+
+/* ------------------------------------------------------------------ */
 /* Tiers — not every failure deserves a blank screen                   */
 /* ------------------------------------------------------------------ */
 
 export type InvariantTier = "error" | "repair" | "warn";
 
 /** Deterministically repairable by `repairDeck` before the deck is judged. */
-const REPAIRABLE = ["INV-04", "INV-05", "INV-13"];
+const REPAIRABLE = ["INV-04", "INV-05", "INV-13", "INV-20"];
 /** Voice and taste rules: reported to the member, never a reason to ship nothing. */
 const WARNINGS = ["INV-06", "INV-10", "INV-12", "INV-18", "INV-19"];
 
@@ -254,6 +304,11 @@ export function checkInvariants(ir: DeckIR, opts: InvariantOptions = {}): string
     .map((t) => String(t ?? "").trim().toLowerCase())
     .filter((t) => t.length >= 4);
 
+  /** The member's own finished sign-offs, read from their row at request time. */
+  const memberSignoffs = (opts.signoffs ?? [])
+    .map((s) => String(s ?? "").trim())
+    .filter((s) => s.length >= 25);
+
   let tripletCount = 0;
   let concreteParticulars = 0;
 
@@ -274,6 +329,30 @@ export function checkInvariants(ir: DeckIR, opts: InvariantOptions = {}): string
     // INV-17 — unknown archetypes would silently render generic.
     if (!(ARCHETYPES as readonly string[]).includes(slide.archetype)) {
       errors.push(`INV-17: ${where} uses an archetype outside the nine implemented.`);
+    }
+
+    for (const text of slideStrings(slide)) {
+      // INV-20 — a marker glyph inside a paragraph is a rendering defect, and
+      // a direction-neutral one wrecks the edge of an RTL text block.
+      MARKER_RE.lastIndex = 0;
+      if (MARKER_RE.test(text)) {
+        errors.push(
+          stripMarkers(text)
+            ? `INV-20: ${where} carries a symbol marker inside slide text: "${text.slice(0, 60)}".`
+            // Nothing survives the strip, so the repair cannot help: blocking.
+            : `INV-01: ${where} has a text node made only of symbol markers, leaving it empty once they are removed.`,
+        );
+      }
+      // INV-21 — a sign-off is a statement about the member. It belongs at the
+      // end of the post body and never on a slide.
+      for (const so of memberSignoffs) {
+        if (nearlyContains(text, so)) {
+          errors.push(
+            `INV-21: ${where} reproduces the member's own sign-off: "${text.slice(0, 90)}". Replace it with one line about the subject, taken from the member's raw captures.`,
+          );
+          break;
+        }
+      }
     }
 
     // INV-01 — no empty slide.

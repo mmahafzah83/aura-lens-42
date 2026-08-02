@@ -7,7 +7,7 @@
  * was the reason members were staring at "Aura would not ship this deck".
  */
 import { plainText, type DeckIR } from "./deckIR.ts";
-import { HERO_BUDGET } from "./invariants.ts";
+import { HERO_BUDGET, MARKER_RE } from "./invariants.ts";
 
 const ARABIC_RE = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
 
@@ -36,6 +36,38 @@ export function repairDeck(ir: DeckIR): { deck: DeckIR; repaired: string[] } {
   for (const slide of deck.slides ?? []) {
     const where = `slide ${slide.index} (${slide.archetype})`;
     const s: any = slide.slots;
+
+    // INV-20 — a marker glyph is mechanically removable. Strip it and collapse
+    // the whitespace it leaves behind; a node emptied by the strip is dropped
+    // so the blocking emptiness check can see it.
+    const scrubNode = (node: any) => {
+      if (!node?.runs) return;
+      for (const run of node.runs) {
+        MARKER_RE.lastIndex = 0;
+        if (!MARKER_RE.test(String(run.t ?? ""))) continue;
+        run.t = String(run.t).replace(MARKER_RE, " ").replace(/\s{2,}/g, " ");
+        repaired.push(`INV-20: ${where} stripped a symbol marker from slide text.`);
+      }
+      node.runs = node.runs.filter((r: any) => String(r.t ?? "").trim().length > 0);
+      if (!node.runs.length) node.runs = null;
+    };
+    const scrubKey = (key: string) => {
+      const v = s[key];
+      if (Array.isArray(v)) {
+        for (const n of v) scrubNode(n);
+        const kept = v.filter((n: any) => n?.runs?.length);
+        if (kept.length) s[key] = kept; else delete s[key];
+      } else if (v?.runs) {
+        scrubNode(v);
+        if (!v.runs?.length) delete s[key];
+      }
+    };
+    for (const key of [
+      "chip", "subline", "headline", "stat_label", "source", "callout_label",
+      "callout_body", "quote", "term", "term_def", "cta_pill", "body",
+      "checklist", "hero_lines",
+    ]) scrubKey(key);
+    for (const item of s.media?.chart?.series ?? []) scrubNode(item.label);
 
     // INV-13 — a hero line over budget is trimmed, never a reason to fail.
     for (const line of s.hero_lines ?? []) {

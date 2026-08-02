@@ -26,13 +26,21 @@ import SignalPicker, { type StudioSignal } from "@/carousel/studio/SignalPicker"
 import EditPanel from "@/carousel/studio/EditPanel";
 import IdentityBlock from "@/carousel/studio/IdentityBlock";
 import { ARCHETYPE_LABEL, plainFailure } from "@/carousel/studio/slotLabels";
-import { replaceSlide, setSlidePhoto } from "@/carousel/studio/deckEdit";
+import { isLocked, moveSlide, replaceSlide, setSlidePhoto } from "@/carousel/studio/deckEdit";
 
 const DRAFT_KEY = "aura_deck_draft_v1";
 const STAGES = ["Reading your signal", "Planning", "Writing", "Checking"] as const;
 
 const mono: React.CSSProperties = {
   fontFamily: "var(--ff-mono)", fontSize: 10.5, letterSpacing: ".09em", textTransform: "uppercase",
+};
+
+/** Move-left / move-right on a filmstrip thumbnail. Always visible, keyboard reachable. */
+const stepBtn: React.CSSProperties = {
+  width: 26, height: 18, borderRadius: 6, lineHeight: 1,
+  border: "1px solid var(--border-default)",
+  background: "var(--surface-card)", color: "var(--text-secondary)",
+  fontSize: 12, cursor: "pointer", padding: 0,
 };
 
 const panel: React.CSSProperties = {
@@ -109,6 +117,24 @@ export default function CarouselStudio() {
   const [publishing, setPublishing] = useState<null | string>(null);
   const [postUrl, setPostUrl] = useState<string | null>(null);
   const [canvasWidth, setCanvasWidth] = useState(360);
+  /** The thumbnail currently being dragged in the filmstrip. */
+  const [dragFrom, setDragFrom] = useState<number | null>(null);
+  const [dropAt, setDropAt] = useState<number | null>(null);
+
+  /**
+   * Reorder. Everything keyed by slide index is recomputed: the fit-ladder map
+   * is cleared so a stale entry can never mark the wrong slide as overflowing.
+   */
+  const reorder = useCallback((from: number, to: number) => {
+    setDeck((d) => {
+      if (!d) return d;
+      const next = moveSlide(d, from, to);
+      if (next === d) return d;
+      setFits({});
+      setCurrent(to);
+      return next;
+    });
+  }, []);
 
   const mountRef = useRef<HTMLDivElement | null>(null);
   const canvasBoxRef = useRef<HTMLDivElement | null>(null);
@@ -342,7 +368,9 @@ export default function CarouselStudio() {
       if (upErr) throw new Error(upErr.message);
       const { data: signed, error: signErr } = await supabase.storage
         .from("deck-media")
-        .createSignedUrl(path, 60 * 60);
+        // Seven days, so a parked, queued or retried publish never fetches an
+        // expired URL — the same lifetime the slide photos already get.
+        .createSignedUrl(path, 60 * 60 * 24 * 7);
       if (signErr || !signed) throw new Error(signErr?.message ?? "Could not read the PDF back.");
 
       const { data: row, error: insErr } = await supabase
@@ -526,27 +554,79 @@ export default function CarouselStudio() {
             <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
               {deck.slides.map((s) => {
                 const bad = fits[s.index]?.failed;
+                const locked = isLocked(deck, s);
                 return (
-                  <button
-                    key={s.index}
-                    type="button"
-                    onClick={() => setCurrent(s.index)}
-                    style={{
-                      flex: "0 0 auto", width: 92, height: 62, borderRadius: 10, cursor: "pointer",
-                      background: THEMES[theme].bg,
-                      color: THEMES[theme].fg,
-                      border: `2px solid ${s.index === current ? "var(--brand)" : "transparent"}`,
-                      display: "flex", flexDirection: "column", justifyContent: "space-between",
-                      padding: 7, textAlign: "start",
-                    }}
-                  >
-                    <span style={{ ...mono, fontSize: 8.5, opacity: 0.75 }}>
-                      {ARCHETYPE_LABEL[s.archetype] ?? s.archetype}
-                    </span>
-                    <span style={{ ...mono, fontSize: 9, color: bad ? THEMES[theme].alert : THEMES[theme].accent }}>
-                      {s.index + 1}/{deck.slides.length}
-                    </span>
-                  </button>
+                  <div key={s.index} style={{ display: "flex", alignItems: "stretch", flex: "0 0 auto" }}>
+                    <div
+                      aria-hidden
+                      style={{
+                        width: 3, borderRadius: 2, marginInlineEnd: 4,
+                        background: dropAt === s.index && dragFrom !== null ? "var(--brand)" : "transparent",
+                      }}
+                    />
+                    <div style={{ display: "grid", gap: 4 }}>
+                      <button
+                        type="button"
+                        draggable={!locked}
+                        title={locked
+                          ? s.index === 0
+                            ? "The cover always stays first"
+                            : "The closing slide always stays last"
+                          : "Drag to reorder"}
+                        onDragStart={() => { if (!locked) setDragFrom(s.index); }}
+                        onDragOver={(e) => {
+                          if (dragFrom === null || locked) return;
+                          e.preventDefault();
+                          setDropAt(s.index);
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          if (dragFrom !== null && !locked) reorder(dragFrom, s.index);
+                          setDragFrom(null); setDropAt(null);
+                        }}
+                        onDragEnd={() => { setDragFrom(null); setDropAt(null); }}
+                        onClick={() => setCurrent(s.index)}
+                        style={{
+                          width: 92, height: 62, borderRadius: 10,
+                          cursor: locked ? "pointer" : "grab",
+                          opacity: dragFrom === s.index ? 0.5 : 1,
+                          background: THEMES[theme].bg,
+                          color: THEMES[theme].fg,
+                          border: `2px solid ${s.index === current ? "var(--brand)" : "transparent"}`,
+                          display: "flex", flexDirection: "column", justifyContent: "space-between",
+                          padding: 7, textAlign: "start",
+                        }}
+                      >
+                        <span style={{ ...mono, fontSize: 8.5, opacity: locked ? 0.5 : 0.75 }}>
+                          {ARCHETYPE_LABEL[s.archetype] ?? s.archetype}{locked ? " (fixed)" : ""}
+                        </span>
+                        <span style={{ ...mono, fontSize: 9, color: bad ? THEMES[theme].alert : THEMES[theme].accent }}>
+                          {s.index + 1}/{deck.slides.length}
+                        </span>
+                      </button>
+                      {/* Touch and keyboard need an explicit control; drag alone is not enough. */}
+                      <div style={{ display: "flex", gap: 4, justifyContent: "center" }}>
+                        <button
+                          type="button"
+                          aria-label={`Move slide ${s.index + 1} earlier`}
+                          disabled={locked || isLocked(deck, deck.slides[s.index - 1] ?? s) || s.index === 0}
+                          onClick={() => reorder(s.index, s.index - 1)}
+                          style={stepBtn}
+                        >
+                          ‹
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`Move slide ${s.index + 1} later`}
+                          disabled={locked || isLocked(deck, deck.slides[s.index + 1] ?? s)}
+                          onClick={() => reorder(s.index, s.index + 1)}
+                          style={stepBtn}
+                        >
+                          ›
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 );
               })}
             </div>

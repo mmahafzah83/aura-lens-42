@@ -173,23 +173,31 @@ function IconMark({ src, theme, size }: { src?: string; theme: Theme; size: numb
 /* Identity                                                            */
 /* ------------------------------------------------------------------ */
 
-function IdentityBar({ deck, theme, s }: { deck: DeckIR; theme: Theme; s: ReturnType<typeof scaleOf> }) {
+function IdentityBar({
+  deck, theme, s, showAvatar = true,
+}: { deck: DeckIR; theme: Theme; s: ReturnType<typeof scaleOf>; showAvatar?: boolean }) {
   const primary = deck.primary_lang;
-  const avatar = deck.profile.avatar_url;
+  // The close slide already carries the standing figure. One photo per slide.
+  const avatar = showAvatar ? deck.profile.avatar_url : null;
+  // A cut-out has transparent regions; a plate behind it would show through.
+  const isCutout = Boolean(deck.profile.avatar_cutout_url);
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 22, flex: "0 0 auto" }}>
       {avatar ? (
         <img
           src={avatar}
           alt=""
-          style={{ width: 74, height: 74, borderRadius: 999, objectFit: "cover", flex: "0 0 auto", background: theme.neutral }}
+          style={{
+            width: 74, height: 74, borderRadius: 999, objectFit: "cover", flex: "0 0 auto",
+            ...(isCutout ? {} : { background: theme.neutral }),
+          }}
         />
-      ) : (
+      ) : showAvatar ? (
         // No avatar: an accent rule, never a fabricated monogram. Initials in a
         // disc read as a missing asset, and Arabic names are not idiomatically
         // abbreviated.
         <div style={{ width: 10, height: 74, borderRadius: 6, background: theme.accent, flex: "0 0 auto" }} />
-      )}
+      ) : null}
       <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
         <Txt
           node={deck.profile.name}
@@ -537,7 +545,8 @@ function CloseSlide({ deck, slide, theme, s, hideTails }: PartProps) {
         rowGap: s.gap,
       }}
     >
-      <IdentityBar deck={deck} theme={theme} s={s} />
+      {/* No avatar disc here — the standing figure below is the one photo. */}
+      <IdentityBar deck={deck} theme={theme} s={s} showAvatar={false} />
       <div style={{ display: "flex", flexDirection: "column", gap: s.gap, minHeight: 0, justifyContent: "center" }}>
         <Hero lines={slots.hero_lines} primary={p} theme={theme} s={s} />
         <H2 node={slots.headline} primary={p} theme={theme} s={s} />
