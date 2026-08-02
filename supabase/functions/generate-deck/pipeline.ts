@@ -454,6 +454,8 @@ THE ONE RULE ABOVE ALL OTHERS: take FACTS from the evidence, LANGUAGE from the m
 - Never the words: thought leader, personal brand, game-changing, seamless, unlock, elevate, empower, utilize, facilitate, or leverage as a verb.
 - Western digits only, in every language.
 - No ellipsis anywhere.
+- Every argument slide (frame, evidence, callout, steps, definition, quote, benchmark) must carry at least one concrete particular in the language you are writing: a named organisation, place, standard or programme, a number, or a first-person observation. A slide made only of abstractions fails. In an Arabic deck a Latin brand or standard name in its own lang "en" run counts, and so does a named entity introduced by its category word.
+- Arabic hero lines are 20 characters INCLUDING spaces. Count them before you emit. Two short words is usually the maximum; split a third word onto its own line.
 
 THE AI TELLS. Each of these fails the deck outright, so do not write them:
 - "Stop X. Start Y." and every imperative antithesis of that shape.

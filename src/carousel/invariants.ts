@@ -379,10 +379,15 @@ export function checkInvariants(ir: DeckIR, opts: InvariantOptions = {}): string
     // only where there is enough of it to judge.
     const joined = everything.join(" ").trim();
     const lowerJoined = joined.toLowerCase();
-    const carriesDomainTerm = domainTerms.some((t) => lowerJoined.includes(t));
+    // Domain terms come from the signal, which may be written in a different
+    // script from the deck. A term can only be "missing" from prose it could
+    // have appeared in, so terms in a foreign script are not held against it.
+    const slideIsArabic = ARABIC_RE.test(joined);
+    const comparableTerms = domainTerms.filter((t) => ARABIC_RE.test(t) === slideIsArabic);
+    const carriesDomainTerm = comparableTerms.some((t) => lowerJoined.includes(t));
     if (!isAnonymous(joined)) concreteParticulars += 1;
     if (
-      domainTerms.length > 0 &&
+      comparableTerms.length > 0 &&
       !carriesDomainTerm &&
       SUBSTANTIVE_ARCHETYPES.includes(slide.archetype) &&
       wordCount(joined) >= 12 &&
