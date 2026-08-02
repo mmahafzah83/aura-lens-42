@@ -413,6 +413,65 @@ serve(async (req) => {
 
     if (!body.signal_id) return json({ error: "signal_id required" }, 400);
 
+    /**
+     * Admin-only A/B: the same signal written once with the old context
+     * (is_primary voice, summaries only, no vocabulary_preferences) and once
+     * with the new one. Returns the cover hero lines and the frame body of each.
+     */
+    if (body.voice_ab) {
+      const { data: prof } = await db
+        .from("diagnostic_profiles").select("is_admin").eq("user_id", user.id).maybeSingle();
+      if (!prof?.is_admin) return json({ error: "forbidden" }, 403);
+
+      const lang: "en" | "ar" = reqLang ?? "en";
+      const ctx = await readContext(db, body.signal_id, user.id);
+      const p = await plan(ctx, lang);
+      const manifest = compose(
+        { hasNumber: p.hasNumber, hasComparison: p.hasComparison, stepCount: p.stepCount, lang: p.lang },
+        5,
+      );
+
+      const flatten = (slides: any[], archetype: string) => {
+        const s = slides.find((x: any) => x?.archetype === archetype) ??
+          manifest.slots.map((m, i) => (m.archetype === archetype ? slides[i] : null)).find(Boolean);
+        const slots = s?.slots ?? {};
+        const runs = (n: any) => (n?.runs ?? []).map((r: any) => r.t).join("");
+        return {
+          hero_lines: (slots.hero_lines ?? []).map(runs),
+          headline: runs(slots.headline),
+          subline: runs(slots.subline),
+          body: (slots.body ?? []).map(runs),
+        };
+      };
+
+      // OLD: the primary profile regardless of language, no vocabulary, no raw.
+      const oldVoice = ctx.voices.find((v: any) => v.is_primary) ?? ctx.voices[0] ?? null;
+      const oldCtx: SignalContext = {
+        ...ctx,
+        raw: [],
+        voice: oldVoice
+          ? { ...oldVoice, vocabulary_preferences: {}, example_posts: (oldVoice.example_posts ?? []).slice(0, 2) }
+          : null,
+      };
+      const oldSlides = await writeSlides(oldCtx, p, manifest, []);
+
+      // NEW: language-matched voice, full vocabulary_preferences, raw captures.
+      const newCtx: SignalContext = { ...ctx, voice: resolveVoice(ctx.voices, p.lang) };
+      const newSlides = await writeSlides(newCtx, p, manifest, []);
+
+      return json({
+        ok: true,
+        deck_lang: p.lang,
+        selected_profile: {
+          old: oldVoice ? { language: oldVoice.language, is_primary: oldVoice.is_primary } : null,
+          new: newCtx.voice ? { language: newCtx.voice.language, is_primary: newCtx.voice.is_primary } : null,
+        },
+        raw_captures: ctx.raw.length,
+        old: { cover: flatten(oldSlides, "cover_hero"), frame: flatten(oldSlides, "frame") },
+        new: { cover: flatten(newSlides, "cover_hero"), frame: flatten(newSlides, "frame") },
+      });
+    }
+
     if (typeof body.rewrite_slide === "number" && body.deck) {
       const idx = body.rewrite_slide;
       const existing = (body.deck.slides ?? []).find((s: any) => s.index === idx);
