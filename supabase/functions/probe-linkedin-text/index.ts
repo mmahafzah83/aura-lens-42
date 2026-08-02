@@ -65,5 +65,5 @@ Deno.serve(async (req) => {
       results.push({ probe: name, url, status: 0, error: (e as Error).message });
     }
   }
-  return json({ tested_urn: shareUrn, tested_ugc: ugcUrn, post_url: cand.url, candidates: (post ?? []).length, results });
+  return json({ tested_urn: shareUrn, tested_ugc: ugcUrn, post_url: cand.url, candidates: (conns ?? []).length, results });
 });
