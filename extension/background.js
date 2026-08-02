@@ -36,42 +36,37 @@ async function refreshToken() {
   }
 }
 
-/* ── Send payload to Aura ── */
-async function sendToAura(payload) {
+/* ── Send payload to an Aura edge function ── */
+async function postToAura(fn, payload) {
   const { auraToken } = await chrome.storage.local.get("auraToken");
   if (!auraToken) throw new Error("Not authenticated");
 
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/browser-capture`, {
+  const call = (token) => fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${auraToken}`,
+      Authorization: `Bearer ${token}`,
       apikey: SUPABASE_ANON_KEY,
     },
     body: JSON.stringify(payload),
   });
+
+  let res = await call(auraToken);
 
   if (res.status === 401) {
     // Try token refresh and retry once
     await refreshToken();
     const { auraToken: newToken } = await chrome.storage.local.get("auraToken");
     if (!newToken) throw new Error("Session expired. Please log in again.");
-
-    const retry = await fetch(`${SUPABASE_URL}/functions/v1/browser-capture`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${newToken}`,
-        apikey: SUPABASE_ANON_KEY,
-      },
-      body: JSON.stringify(payload),
-    });
-    if (!retry.ok) throw new Error(`HTTP ${retry.status}`);
-    return retry.json();
+    res = await call(newToken);
   }
 
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
+}
+
+async function sendToAura(payload) {
+  return postToAura("browser-capture", payload);
 }
 
 /* ── Retry Queue ── */
@@ -208,6 +203,21 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         sendResponse(result);
       } catch (e) {
         await addToRetryQueue(msg.payload);
+        await incrementError();
+        sendResponse({ success: false, error: e.message });
+      }
+    })();
+    return true; // async
+  }
+
+  // Popup requests: save the member's own post text
+  if (msg.action === "save_own_posts") {
+    (async () => {
+      try {
+        const result = await postToAura("sync-own-posts", msg.payload);
+        await updateStats({ type: "own_posts", posts: msg.payload.posts }, result);
+        sendResponse({ success: true, ...result });
+      } catch (e) {
         await incrementError();
         sendResponse({ success: false, error: e.message });
       }
