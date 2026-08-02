@@ -11,11 +11,12 @@ import { DeckIRSchema, type DeckIR } from "./deckIR.ts";
 import { checkInvariants } from "./invariants.ts";
 import { compose } from "./compose.ts";
 import { plan, writeSlides, assemble, type SignalContext, type Plan, bareHandle } from "./pipeline.ts";
-import { REQUIRED_SLOTS } from "./compose.ts";
+import { REQUIRED_SLOTS } from "./slots.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
@@ -217,7 +218,7 @@ async function rewriteSlide(
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
 
   try {
     const authHeader = req.headers.get("Authorization") || "";
