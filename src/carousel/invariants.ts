@@ -304,6 +304,11 @@ export function checkInvariants(ir: DeckIR, opts: InvariantOptions = {}): string
     .map((t) => String(t ?? "").trim().toLowerCase())
     .filter((t) => t.length >= 4);
 
+  /** The member's own finished sign-offs, read from their row at request time. */
+  const memberSignoffs = (opts.signoffs ?? [])
+    .map((s) => String(s ?? "").trim())
+    .filter((s) => s.length >= 25);
+
   let tripletCount = 0;
   let concreteParticulars = 0;
 
@@ -324,6 +329,29 @@ export function checkInvariants(ir: DeckIR, opts: InvariantOptions = {}): string
     // INV-17 — unknown archetypes would silently render generic.
     if (!(ARCHETYPES as readonly string[]).includes(slide.archetype)) {
       errors.push(`INV-17: ${where} uses an archetype outside the nine implemented.`);
+    }
+
+    for (const text of slideStrings(slide)) {
+      // INV-20 — a marker glyph inside a paragraph is a rendering defect, and
+      // a direction-neutral one wrecks the edge of an RTL text block.
+      MARKER_RE.lastIndex = 0;
+      if (MARKER_RE.test(text)) {
+        errors.push(
+          stripMarkers(text)
+            ? `INV-20: ${where} carries a symbol marker inside slide text: "${text.slice(0, 60)}".`
+            : `INV-20b: ${where} has a text node made only of symbol markers: "${text.slice(0, 60)}".`,
+        );
+      }
+      // INV-21 — a sign-off is a statement about the member. It belongs at the
+      // end of the post body and never on a slide.
+      for (const so of memberSignoffs) {
+        if (nearlyContains(text, so)) {
+          errors.push(
+            `INV-21: ${where} reproduces the member's own sign-off: "${text.slice(0, 90)}". Replace it with one line about the subject, taken from the member's raw captures.`,
+          );
+          break;
+        }
+      }
     }
 
     // INV-01 — no empty slide.
