@@ -205,7 +205,12 @@ function Hero({ lines, primary, theme, s }: { lines?: HeroLine[]; primary: Lang;
             fontFamily: fontFor(primary, "display"),
             fontWeight: ar ? 900 : 400,
             fontSize: ar ? s.heroAr : s.heroEn,
-            lineHeight: ar ? 1.42 : 0.93,
+            // >= 1 on purpose. A line-height below 1 makes the line box
+            // shorter than the glyphs, and html2canvas then draws the text
+            // half a line below its own highlight block — right on screen,
+            // wrong in the PDF. Same class of bug as the font-metrics race:
+            // never let the export resolve a metric differently.
+            lineHeight: ar ? 1.42 : 1.0,
             // Arabic is never uppercased.
             textTransform: ar ? "none" : "uppercase",
             color: line.highlight ? theme.accentInk : theme.head,
