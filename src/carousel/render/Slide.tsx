@@ -198,6 +198,10 @@ function Hero({ lines, primary, theme, s }: { lines?: HeroLine[]; primary: Lang;
           key={i}
           data-hero-line=""
           style={{
+            // inline-block so offsetHeight is the real line box: an inline
+            // span reports its font box instead, and the fit ladder then
+            // shrinks type that never actually wrapped.
+            display: "inline-block",
             fontFamily: fontFor(primary, "display"),
             fontWeight: ar ? 900 : 400,
             fontSize: ar ? s.heroAr : s.heroEn,
