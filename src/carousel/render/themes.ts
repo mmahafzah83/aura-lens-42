@@ -2,9 +2,9 @@
  * Themes are plain objects of literal strings, NOT a stylesheet.
  *
  * html2canvas runs inside an iframe and cannot read CSS custom properties, so
- * any `var(--x)` inside a slide resolves differently in the export than in the
- * preview. Every colour in the slide subtree must reach the DOM as an inline
- * literal. That is the whole reason this file exists.
+ * a custom property referenced inside a slide resolves differently in the
+ * export than in the preview. Every colour in the slide subtree must reach the
+ * DOM as an inline literal. That is the whole reason this file exists.
  */
 
 export interface Theme {
