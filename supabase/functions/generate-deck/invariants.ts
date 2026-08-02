@@ -160,7 +160,34 @@ export interface InvariantOptions {
   domainTerms?: string[];
 }
 
-const HERO_BUDGET: Record<"en" | "ar", number> = { en: 14, ar: 20 };
+/* ------------------------------------------------------------------ */
+/* Tiers — not every failure deserves a blank screen                   */
+/* ------------------------------------------------------------------ */
+
+export type InvariantTier = "error" | "repair" | "warn";
+
+/** Deterministically repairable by `repairDeck` before the deck is judged. */
+const REPAIRABLE = ["INV-04", "INV-05", "INV-13"];
+/** Voice and taste rules: reported to the member, never a reason to ship nothing. */
+const WARNINGS = ["INV-06", "INV-10", "INV-12", "INV-18", "INV-19"];
+
+/** The tier a single failure string belongs to. Anything unknown is hard. */
+export function tierOf(failure: string): InvariantTier {
+  const code = String(failure).slice(0, 6);
+  if (REPAIRABLE.includes(code)) return "repair";
+  if (WARNINGS.includes(code)) return "warn";
+  return "error";
+}
+
+/** Split a flat failure list into what blocks the deck and what merely marks it. */
+export function splitByTier(failures: string[]): { blocking: string[]; warnings: string[] } {
+  const blocking: string[] = [];
+  const warnings: string[] = [];
+  for (const f of failures) (tierOf(f) === "warn" ? warnings : blocking).push(f);
+  return { blocking, warnings };
+}
+
+export const HERO_BUDGET: Record<"en" | "ar", number> = { en: 18, ar: 26 };
 
 const CONTRAST_ARCHETYPES: Archetype[] = [
   "evidence",
