@@ -123,8 +123,10 @@ function fillableRoles(length: DeckLength, input: ComposeInput): Role[] | null {
  * Choose the LONGEST length the plan can actually fill. When a length cannot
  * be filled without padding, fall to the next one down.
  */
-export function compose(input: ComposeInput): ComposeResult {
-  const candidates: DeckLength[] = [10, 7, 5];
+export function compose(input: ComposeInput, maxLength?: DeckLength): ComposeResult {
+  const candidates: DeckLength[] = ([10, 7, 5] as DeckLength[]).filter(
+    (l) => !maxLength || l <= maxLength,
+  );
   for (const length of candidates) {
     const roles = fillableRoles(length, input);
     if (roles) {
