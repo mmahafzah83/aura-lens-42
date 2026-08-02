@@ -16,13 +16,11 @@ import { logDeckEvent } from "./deckTelemetry";
 import enChart from "../__fixtures__/en-7-chart.json";
 import arInlineEn from "../__fixtures__/ar-7-inline-en.json";
 import enNoStat from "../__fixtures__/en-5-no-stat.json";
-import tmp10 from "../__fixtures__/tmp-10.json";
 
 const RAW: Array<[string, unknown]> = [
   ["en-7-chart", enChart],
   ["ar-7-inline-en", arInlineEn],
   ["en-5-no-stat", enNoStat],
-  ["tmp-10", tmp10],
 ];
 
 const btn = (active = false): React.CSSProperties => ({
