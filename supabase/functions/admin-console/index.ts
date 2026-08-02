@@ -306,13 +306,14 @@ serve(async (req) => {
       const ids = users.map((u) => u.id);
       if (ids.length === 0) return json({ rows: [] });
 
-      const [profiles, entries, signals, posts, snaps, nudges] = await Promise.all([
+      const [profiles, entries, signals, posts, snaps, nudges, voices] = await Promise.all([
         admin.from("diagnostic_profiles").select("user_id, first_name, sector_focus").in("user_id", ids),
         admin.from("entries").select("user_id").in("user_id", ids),
         admin.from("strategic_signals").select("user_id").in("user_id", ids),
-        admin.from("linkedin_posts").select("user_id").in("user_id", ids),
+        admin.from("linkedin_posts").select("user_id, post_text, published_at, synced_at").in("user_id", ids),
         admin.from("score_snapshots").select("user_id, score, created_at").in("user_id", ids).order("created_at", { ascending: false }),
         admin.from("lifecycle_emails").select("user_id, email_type, sent_at").in("user_id", ids).order("sent_at", { ascending: false }),
+        admin.from("authority_voice_profiles").select("user_id, updated_at").in("user_id", ids).order("updated_at", { ascending: false }),
       ]);
 
       const profileMap = new Map<string, { first_name: string | null; sector_focus: string | null }>();
@@ -334,6 +335,22 @@ serve(async (req) => {
         }
       });
 
+      // Voice corpus health: how much of the member's own writing we actually hold.
+      const voiceRefreshed = new Map<string, string>();
+      (voices.data ?? []).forEach((v: any) => {
+        if (!voiceRefreshed.has(v.user_id) && v.updated_at) voiceRefreshed.set(v.user_id, v.updated_at);
+      });
+      const withText = new Map<string, number>();
+      const newestText = new Map<string, string>();
+      ((posts.data ?? []) as any[]).forEach((p: any) => {
+        if (!p.post_text || !String(p.post_text).trim()) return;
+        withText.set(p.user_id, (withText.get(p.user_id) ?? 0) + 1);
+        const when = p.published_at ?? p.synced_at ?? null;
+        if (when && (!newestText.get(p.user_id) || when > newestText.get(p.user_id)!)) {
+          newestText.set(p.user_id, when);
+        }
+      });
+
       const rows = users.map((u) => {
         const p = profileMap.get(u.id) || { first_name: null, sector_focus: null };
         return {
@@ -349,6 +366,9 @@ serve(async (req) => {
           imprint: latestSnap.get(u.id) ?? null,
           last_nudge_type: latestNudge.get(u.id)?.type ?? null,
           last_nudge_at: latestNudge.get(u.id)?.at ?? null,
+          posts_with_text: withText.get(u.id) ?? 0,
+          newest_post_with_text: newestText.get(u.id) ?? null,
+          voice_refreshed_at: voiceRefreshed.get(u.id) ?? null,
         };
       });
       return json({ rows });
