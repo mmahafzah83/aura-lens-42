@@ -399,8 +399,8 @@ export default function AdminPeople() {
     for (const r of filtered) {
       lines.push([
         r.email, r.first_name, r.sector_focus, r.signed_up, r.last_seen,
-        r.captures, r.signals, r.posts, r.imprint,
-        r.posts_with_text ?? 0, r.newest_post_with_text, r.voice_refreshed_at,
+        r.captures, r.signals, r.posts,
+        r.posts_with_text ?? 0, r.newest_post_with_text, r.voice_refreshed_at, r.imprint,
         stageOf(r.imprint), statusOf(r),
       ].map(esc).join(","));
     }
