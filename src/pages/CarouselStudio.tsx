@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SLIDE_MEDIA_LIMITS, checkImage, fitToSlot } from "@/lib/imagePrep";
 import { ButtonPrimary, ButtonGhost } from "@/components/systemb";
 import { DeckIRSchema, plainText, type DeckIR, type DeckLength } from "@/carousel/deckIR";
-import { checkInvariants } from "@/carousel/invariants";
+import { checkInvariants, splitByTier } from "@/carousel/invariants";
 import { compose } from "@/carousel/compose";
 import { DEFAULT_THEME, THEME_NAMES, THEMES, type ThemeName } from "@/carousel/render/themes";
 import type { FitState } from "@/carousel/render/useFitLadder";
@@ -193,12 +193,18 @@ export default function CarouselStudio() {
     setLength(best);
   }, [availability]);
 
-  const invariantFailures = useMemo(() => (deck ? checkInvariants(deck) : []), [deck]);
+  const tiered = useMemo(
+    () => splitByTier(deck ? checkInvariants(deck) : []),
+    [deck],
+  );
+  const invariantFailures = tiered.blocking;
   const fitFailures = useMemo(
     () => Object.values(fits).filter((f) => f.failed).map((f) => f.reason ?? "A slide does not fit."),
     [fits],
   );
   const allFailures = [...invariantFailures, ...fitFailures];
+  // Voice and taste notes: worth reading, never worth withholding the deck.
+  const notes = tiered.warnings;
   const noFigure = Boolean(deck && !deck.slides.some((s) => s.slots.stat_value));
 
   /* --- stage 3 · generate ----------------------------------------- */
@@ -580,6 +586,11 @@ export default function CarouselStudio() {
                       ))}
                     </>
                   )}
+                  {notes.slice(0, 4).map((f, i) => (
+                    <div key={`n${i}`} style={{ fontSize: 12.5, color: "var(--text-secondary)", lineHeight: 1.6 }}>
+                      {plainFailure(f)}
+                    </div>
+                  ))}
                   {voiceFlags.includes("no_voice_profile") && (
                     <div style={{ fontSize: 12.5, color: "var(--text-secondary)", lineHeight: 1.6 }}>
                       This will sound more like you once Aura has read a few of your posts.
