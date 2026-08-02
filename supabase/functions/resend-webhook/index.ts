@@ -159,18 +159,21 @@ Deno.serve(async (req) => {
   let userId: string | null = taggedUserId && UUID_RE.test(taggedUserId) ? taggedUserId : null;
   let resolvedBy: "tag" | "email_fallback" = "tag";
 
-  const logIssue = async (message: string, severity: "high" | "info" = "high") => {
+  const errContext = () => ({
+    resend_id: resendId,
+    event: eventName,
+    resend_type: resendType,
+    recipient: recipientEmail,
+  });
+
+  // Genuine failures only — insert errors and thrown exceptions.
+  const logFailure = async (message: string) => {
     await admin.from("ef_error_log").insert({
       function_name: "resend-webhook",
-      severity,
+      severity: "high",
       error_message: message,
       user_id: userId,
-      context: {
-        resend_id: resendId,
-        event: eventName,
-        resend_type: resendType,
-        recipient: recipientEmail,
-      },
+      context: errContext(),
     });
   };
 
@@ -179,14 +182,12 @@ Deno.serve(async (req) => {
     // before giving up. Events already in flight predate the tagging fix.
     if (!userId && recipientEmail) {
       try {
-        const { data: matched } = await admin.auth.admin.listUsers({ page: 1, perPage: 2 });
-        // listUsers cannot filter server-side in all versions; prefer a direct
-        // filtered lookup and fall back to scanning the first page.
-        const { data: byFilter } = await (admin.auth.admin as unknown as {
+        const { data: found } = await (admin.auth.admin as unknown as {
           listUsers: (o: Record<string, unknown>) => Promise<{ data?: { users?: { id: string; email?: string }[] } }>;
         }).listUsers({ page: 1, perPage: 2, filter: `email.eq.${recipientEmail}` });
-        const pool = (byFilter?.users ?? matched?.users ?? []) as { id: string; email?: string }[];
-        const hits = pool.filter((u) => (u.email || "").toLowerCase() === recipientEmail);
+        const hits = (found?.users ?? []).filter(
+          (u) => (u.email || "").toLowerCase() === recipientEmail,
+        );
         if (hits.length === 1) {
           userId = hits[0].id;
           resolvedBy = "email_fallback";
@@ -198,7 +199,13 @@ Deno.serve(async (req) => {
 
     if (!userId) {
       // An event for an address that is not a member is normal, not a fault.
-      await logIssue("Resend event for a non-member recipient", "info");
+      await admin.from("ef_error_log").insert({
+        function_name: "resend-webhook",
+        severity: 'info',
+        error_message: "Resend event for a non-member recipient",
+        user_id: null,
+        context: errContext(),
+      });
       return json({ ok: true, skipped: "no_user_id" });
     }
 
@@ -227,9 +234,9 @@ Deno.serve(async (req) => {
         resolved_by: resolvedBy,
       },
     });
-    if (error) await logIssue(`product_events insert failed: ${error.message}`, "high");
+    if (error) await logFailure(`product_events insert failed: ${error.message}`);
   } catch (e) {
-    await logIssue(e instanceof Error ? e.message : String(e), "high");
+    await logFailure(e instanceof Error ? e.message : String(e));
   }
 
   // Always 200 for verified events — a 500 makes Resend retry forever.
