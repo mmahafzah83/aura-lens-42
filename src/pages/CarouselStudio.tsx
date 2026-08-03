@@ -285,7 +285,13 @@ export default function CarouselStudio() {
       const { data: sess } = await supabase.auth.getSession();
       if (!sess.session) throw new Error("Your session expired. Sign in again.");
       const { data, error: fnError } = await supabase.functions.invoke("generate-deck", {
-        body: { signal_id: signal.id, length, theme, lang },
+        body: {
+          signal_id: signal.id,
+          length,
+          theme,
+          lang,
+          ...(sourceText ? { source_text: sourceText } : {}),
+        },
       });
       if (fnError && !data) throw fnError;
       const result: any = data;
@@ -305,7 +311,7 @@ export default function CarouselStudio() {
       window.clearInterval(ticker);
       setStage(null);
     }
-  }, [signal, length, theme, lang]);
+  }, [signal, length, theme, lang, sourceText]);
 
   /* --- handoff from /compose: fire Generate once ------------------- */
   const autoFiredRef = useRef(false);
@@ -314,10 +320,11 @@ export default function CarouselStudio() {
     if (autoFiredRef.current) return;
     if (!preselected) return;
     if (!signal || signal.id !== preselected) return;
+    if (!sourceReady) return;
     if (deck || stage !== null) return;
     autoFiredRef.current = true;
     void generate();
-  }, [autogenerate, preselected, signal, deck, stage, generate]);
+  }, [autogenerate, preselected, signal, deck, stage, generate, sourceReady]);
 
   /* --- try another angle ------------------------------------------ */
   const rewriteSlide = useCallback(async () => {
