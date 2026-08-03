@@ -488,6 +488,7 @@ export default function StudioPanel({
     setConfirmingPost(false);
     setAskReplace(false);
     setAskLangSwitch(null);
+    langChosenRef.current = false;
     preselectedRef.current = Boolean(next?.choice);
     draftPrefillRef.current = null;
     liveRef.current = {
@@ -987,7 +988,6 @@ export default function StudioPanel({
     setDeckFailures([]);
     setProblem(null);
     setStatus(null);
-    setBusyMessage(T.makingSlides[lang]);
     let timedOut = false;
     const timeout = new Promise<"timeout">((resolve) => {
       window.setTimeout(() => { timedOut = true; resolve("timeout"); }, 90000);
@@ -1029,7 +1029,6 @@ export default function StudioPanel({
       setDeckFailures([T.connectionDropped[lang]]);
     } finally {
       setDeckBusy(false);
-      setBusyMessage(null);
     }
   }, [choice, content, theme, deckLength, writeLang, lang, saveDraft]);
 
@@ -1257,8 +1256,16 @@ export default function StudioPanel({
   }, [fits, current, lang]);
 
   const doneMap = useMemo(
-    () => ({ 1: Boolean(choice), 2: content.trim().length > 0, 3: Boolean(deck), 4: published }),
-    [choice, content, deck, published],
+    () => ({
+      // P2 — every tick is derived from what the post actually IS: a subject
+      // chosen, words written, a format decided (and, for slides, a deck that
+      // exists), a link on LinkedIn. Never from the highest step visited.
+      1: Boolean(choice),
+      2: content.trim().length > 0,
+      3: Boolean(format) && (format === "post" || Boolean(deck)),
+      4: published,
+    }),
+    [choice, content, deck, format, published],
   );
 
   /**
