@@ -1263,7 +1263,7 @@ export default function StudioPanel({
 
   const saveLink = useCallback(async () => {
     const url = linkInput.trim();
-    if (!/linkedin\.com/i.test(url)) { setProblem(T.linkBad[lang]); return; }
+    if (!plausibleLinkedInUrl(url)) { setProblem(T.linkBad[lang]); return; }
     setBusy("link");
     setBusyMessage(T.savingLink[lang]);
     setProblem(null);
@@ -1277,6 +1277,7 @@ export default function StudioPanel({
     setBusyMessage(null);
     setPublished(true);
     setPostUrl(url);
+    setLinkSaved(true);
     setStatus(T.linkSaved[lang]);
   }, [linkInput, ensurePostRow, syncRowToScreen, finalisePublished, choice, lang]);
 
