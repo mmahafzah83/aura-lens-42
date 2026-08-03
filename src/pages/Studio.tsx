@@ -174,14 +174,59 @@ export default function Studio() {
     return () => window.removeEventListener("resize", measure);
   }, [deck, step]);
 
+  /* ---------- bring back the piece -------------------------------- */
+  const restoredRef = useRef(false);
+  useEffect(() => {
+    if (restoredRef.current) return;
+    restoredRef.current = true;
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as {
+        content?: unknown; deck?: unknown; choice?: unknown; writeLang?: unknown;
+      };
+      let restoredAnything = false;
+      if (typeof saved.content === "string" && saved.content.trim()) {
+        setContent(saved.content);
+        restoredAnything = true;
+      }
+      if (saved.deck) {
+        // A corrupt deck is ignored, never thrown.
+        const parsed = DeckIRSchema.safeParse(saved.deck);
+        if (parsed.success) {
+          setDeck(parsed.data);
+          setTheme(parsed.data.theme as ThemeName);
+          restoredAnything = true;
+        }
+      }
+      if (saved.choice && typeof saved.choice === "object") {
+        const c = saved.choice as Choice;
+        if (typeof c.title === "string") setChoice({ id: c.id ?? null, title: c.title, insight: c.insight ?? "" });
+      }
+      if (saved.writeLang === "ar" || saved.writeLang === "en") setWriteLang(saved.writeLang);
+      if (restoredAnything) {
+        setStep(2);
+        setStatus(T.draftRestored[lang]);
+      }
+    } catch { /* an unreadable draft is simply not restored */ }
+  }, [lang]);
+
   /* ---------- keep the piece ------------------------------------- */
   useEffect(() => {
     if (!content && !deck) return;
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify({ content, deck, choice, writeLang }));
+      // Success channel only. A failure message is never written from here.
       setStatus(T.savedMoment[lang]);
     } catch { /* quota never blocks editing */ }
   }, [content, deck, choice, writeLang, lang]);
+
+  /* A success note fades; a problem does not. */
+  useEffect(() => {
+    if (!status) return;
+    const t = window.setTimeout(() => setStatus(null), 4000);
+    return () => window.clearTimeout(t);
+  }, [status]);
 
   const remember = useCallback(() => {
     setUndoStack((s) => [...s.slice(-9), { content, deck }]);
