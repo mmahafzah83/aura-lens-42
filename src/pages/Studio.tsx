@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ButtonPrimary, ButtonGhost } from "@/components/systemb";
 import { loadStartCards, type StartCard } from "@/components/composer/startCards";
 import { stripMarkdown, fixArabicDirectionalSymbols } from "@/lib/textFormat";
-import { DeckIRSchema, plainText, type DeckIR } from "@/carousel/deckIR";
+import { DeckIRSchema, type DeckIR } from "@/carousel/deckIR";
 import { DEFAULT_THEME, type ThemeName } from "@/carousel/render/themes";
 import type { FitState } from "@/carousel/render/useFitLadder";
 import { collectSlideNodes, exportDeckPdf } from "@/carousel/render/exportDeck";
@@ -20,15 +20,15 @@ import StudioCanvas from "@/carousel/studio/StudioCanvas";
 import { plainFailure } from "@/carousel/studio/slotLabels";
 import { moveSlide, replaceSlide, setSlidePhoto } from "@/carousel/studio/deckEdit";
 import { SLIDE_MEDIA_LIMITS, checkImage, fitToSlot } from "@/lib/imagePrep";
-import TopBar from "@/components/studio/TopBar";
 import JourneyMap from "@/components/studio/JourneyMap";
+import BusyBar from "@/components/studio/BusyBar";
 import PostureQuestion from "@/components/studio/PostureQuestion";
 import StageCard from "@/components/studio/StageCard";
-import ZonePiece, { type ShowingKey } from "@/components/studio/ZonePiece";
+import ZonePiece from "@/components/studio/ZonePiece";
 import ZoneStage from "@/components/studio/ZoneStage";
 import ZoneInspector from "@/components/studio/ZoneInspector";
 import ZoneLook from "@/components/studio/ZoneLook";
-import { T, attentionText, pictureProblem, startReason, type Lang, type Posture } from "@/components/studio/strings";
+import { T, attentionText, pictureProblem, postureLabel, startReason, type Lang, type Posture } from "@/components/studio/strings";
 
 const POSTURE_KEY = "aura_studio_posture";
 const DRAFT_KEY = "aura_studio_draft_v1";
@@ -36,59 +36,31 @@ const DRAFT_KEY = "aura_studio_draft_v1";
 /** Two tabs that both do something. There is no third. */
 type SubNav = "build" | "look";
 
+/** What the member decided this piece should be. Chosen at step 3. */
+type Format = "post" | "slides";
+
 interface Choice {
   id: string | null;
   title: string;
   insight: string;
 }
 
-/** Every readable word on a slide, for matching it back to a line of the post. */
-function slideWords(slots: unknown): string {
-  const out: string[] = [];
-  const walk = (v: any) => {
-    if (!v) return;
-    if (Array.isArray(v)) { v.forEach(walk); return; }
-    if (typeof v === "string") { out.push(v); return; }
-    if (typeof v === "object" && Array.isArray(v.runs)) { out.push(plainText(v)); return; }
-    if (typeof v === "object") Object.values(v).forEach(walk);
-  };
-  Object.values(slots as Record<string, unknown>).forEach(walk);
-  return out.join(" ");
-}
-
-function bestSourceLine(post: string, slots: unknown): string {
-  const lines = post.split("\n").map((l) => l.trim()).filter((l) => l.length > 12);
-  if (lines.length === 0) return "";
-  const words = new Set(slideWords(slots).toLowerCase().split(/\W+/).filter((w) => w.length > 3));
-  let best = lines[0];
-  let bestScore = -1;
-  for (const line of lines) {
-    const score = line
-      .toLowerCase()
-      .split(/\W+/)
-      .filter((w) => w.length > 3 && words.has(w)).length;
-    if (score > bestScore) { bestScore = score; best = line; }
-  }
-  return best.length > 120 ? `${best.slice(0, 120)}…` : best;
-}
-
 export default function Studio() {
   /* ---------- session and preferences ---------------------------- */
   const [ready, setReady] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [firstName, setFirstName] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   const [lang, setLang] = useState<Lang>("en");
   const [writeLang, setWriteLang] = useState<Lang>("en");
 
   const [posture, setPosture] = useState<Posture>("editor");
   const [askingPosture, setAskingPosture] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   /* ---------- the piece ------------------------------------------ */
   const [step, setStep] = useState(1);
   const [sub, setSub] = useState<SubNav>("build");
-  const [showing, setShowing] = useState<ShowingKey>("post");
+  const [format, setFormat] = useState<Format | null>(null);
 
   const [cards, setCards] = useState<StartCard[]>([]);
   const [cardsLoading, setCardsLoading] = useState(false);
