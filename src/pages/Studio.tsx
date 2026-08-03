@@ -607,28 +607,35 @@ export default function Studio() {
    * publishing paths, and the existing source_metadata is merged, never lost.
    */
   const finalisePublished = useCallback(
-    async (id: string, url: string | null) => {
+    async (id: string, url: string | null, alreadyPublished = false) => {
       const now = new Date().toISOString();
       const { data: existing } = await supabase
         .from("linkedin_posts")
-        .select("source_metadata")
+        .select("source_metadata, published_at")
         .eq("id", id)
         .maybeSingle();
       const prev = ((existing as any)?.source_metadata as Record<string, unknown>) || {};
+      // A replay of an already-published post must never reset real numbers,
+      // nor stamp a client clock over the server's own publish time.
+      const fresh = !alreadyPublished && !(existing as any)?.published_at;
       await supabase
         .from("linkedin_posts")
         .update({
           tracking_status: "published",
-          published_at: now,
+          ...(fresh ? { published_at: now } : {}),
           acquisition: "published_via_aura",
           ...(url ? { post_url: url, published_confirmed_at: now } : {}),
-          like_count: 0,
-          comment_count: 0,
-          repost_count: 0,
-          engagement_score: 0,
-          source_trust: 100,
-          enriched_by: [],
-          synced_at: now,
+          ...(fresh
+            ? {
+                like_count: 0,
+                comment_count: 0,
+                repost_count: 0,
+                engagement_score: 0,
+                source_trust: 100,
+                enriched_by: [],
+                synced_at: now,
+              }
+            : {}),
           source_metadata: { ...prev, ...pieceMeta(), ...(url ? { external_url: url } : {}) },
         } as any)
         .eq("id", id);
