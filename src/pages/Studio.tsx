@@ -353,6 +353,10 @@ export default function Studio() {
       remember();
       setDraftId(d.id);
       setDraftSource(d._source);
+      // A new piece is in the room: forget the row the last one created.
+      postRowRef.current = d._source === "linkedin_posts" ? d.id : null;
+      originDraftRef.current = null;
+      generatedTextRef.current = null;
       setContent(d.body);
       setWriteLang(d.language);
       setNotReady(null);
