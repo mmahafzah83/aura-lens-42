@@ -6,10 +6,13 @@
  * nothing here is shared with any other member-facing screen.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ButtonPrimary, ButtonGhost } from "@/components/systemb";
 import { loadStartCards, type StartCard } from "@/components/composer/startCards";
+import { loadStudioDrafts, loadStudioDraft, type StudioDraft } from "@/components/studio/draftsSource";
+import { track } from "@/lib/track";
+import { formatSmartDate } from "@/lib/formatDate";
 import { stripMarkdown, fixArabicDirectionalSymbols } from "@/lib/textFormat";
 import { DeckIRSchema, type DeckIR } from "@/carousel/deckIR";
 import { DEFAULT_THEME, type ThemeName } from "@/carousel/render/themes";
@@ -45,6 +48,18 @@ function sourceStamp(text: string): string {
 const POSTURE_KEY = "aura_studio_posture";
 const DRAFT_KEY = "aura_studio_draft_v1";
 
+/**
+ * The quality gate, said as one sentence a member can act on. Never a list,
+ * never a score, never a verdict. In Arabic the English weakness is not shown
+ * at all — a plain Arabic sentence stands in its place.
+ */
+function gateSentence(firstWeakness: string | undefined, lang: Lang): string {
+  const w = (firstWeakness || "").trim();
+  if (lang === "ar" || !w) return T.notReadyPlain[lang];
+  const tidy = w.replace(/\s+/g, " ").replace(/^[-•\d.\s]+/, "");
+  return `${T.notReadyLead.en} ${tidy.endsWith(".") ? tidy : `${tidy}.`}`;
+}
+
 /** Two tabs that both do something. There is no third. */
 type SubNav = "build" | "look";
 
@@ -58,6 +73,7 @@ interface Choice {
 }
 
 export default function Studio() {
+  const [searchParams] = useSearchParams();
   /* ---------- session and preferences ---------------------------- */
   const [ready, setReady] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -98,6 +114,15 @@ export default function Studio() {
   const [pictureNotice, setPictureNotice] = useState<string | null>(null);
 
   const [draftId, setDraftId] = useState<string | null>(null);
+  /** Which table the open draft came from. Decides the publish promotion. */
+  const [draftSource, setDraftSource] = useState<"content_items" | "linkedin_posts" | null>(null);
+  const [drafts, setDrafts] = useState<StudioDraft[]>([]);
+  const [draftsLoading, setDraftsLoading] = useState(true);
+  /** All active subjects, loaded only when the member asks to see them. */
+  const [allSignals, setAllSignals] = useState<Array<{ id: string; title: string; insight: string }>>([]);
+  const [showAllSubjects, setShowAllSubjects] = useState(false);
+  /** The quality gate held this post. One sentence, never a checklist. */
+  const [notReady, setNotReady] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   /** In flight. Never a tick — the action has not finished. */
   const [busyMessage, setBusyMessage] = useState<string | null>(null);
@@ -142,9 +167,15 @@ export default function Studio() {
       setLang(seeded);
       setWriteLang(seeded);
       setReady(true);
+      // The composer opening is the first number the company reads.
+      void track("composer_opened", {
+        source: searchParams.get("draft") ? "studio_deep_link" : "studio",
+        signal_id: searchParams.get("signal") || null,
+        move_state: null,
+      });
     })();
     return () => { dead = true; };
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
     try {
@@ -176,9 +207,14 @@ export default function Studio() {
       if (!raw) return;
       const saved = JSON.parse(raw) as {
         content?: unknown; deck?: unknown; choice?: unknown; writeLang?: unknown;
-        step?: unknown; format?: unknown;
+        step?: unknown; format?: unknown; draftId?: unknown; draftSource?: unknown;
       };
       let restoredAnything = false;
+      // Without the row id a reload inserts a second row for the same piece.
+      if (typeof saved.draftId === "string" && saved.draftId) setDraftId(saved.draftId);
+      if (saved.draftSource === "content_items" || saved.draftSource === "linkedin_posts") {
+        setDraftSource(saved.draftSource);
+      }
       if (typeof saved.content === "string" && saved.content.trim()) {
         setContent(saved.content);
         restoredAnything = true;
@@ -222,11 +258,14 @@ export default function Studio() {
     // changes save themselves, so no live region fires on every keystroke.
     const t = window.setTimeout(() => {
       try {
-        localStorage.setItem(DRAFT_KEY, JSON.stringify({ content, deck, choice, writeLang, step, format }));
+        localStorage.setItem(
+          DRAFT_KEY,
+          JSON.stringify({ content, deck, choice, writeLang, step, format, draftId, draftSource }),
+        );
       } catch { /* quota never blocks editing */ }
     }, 1500);
     return () => window.clearTimeout(t);
-  }, [content, deck, choice, writeLang, step, format]);
+  }, [content, deck, choice, writeLang, step, format, draftId, draftSource]);
 
   /* A success note fades; a problem does not. */
   useEffect(() => {
@@ -272,13 +311,86 @@ export default function Studio() {
     return () => { dead = true; };
   }, [userId, posture]);
 
+  /* ---------- step 1: the drafts already waiting ------------------ */
+  const openDraft = useCallback(
+    async (d: StudioDraft, source: string) => {
+      remember();
+      setDraftId(d.id);
+      setDraftSource(d._source);
+      setContent(d.body);
+      setWriteLang(d.language);
+      setNotReady(null);
+      if (d.signalId || d.title || d.topic) {
+        setChoice({ id: d.signalId ?? null, title: d.title || d.topic || "", insight: "" });
+      }
+      setStep(2);
+      setStatus(T.draftOpened[lang]);
+      void track("composer_opened", { source, signal_id: d.signalId ?? null, move_state: "drafted" });
+    },
+    [remember, lang],
+  );
+
+  useEffect(() => {
+    if (!userId) return;
+    let dead = false;
+    setDraftsLoading(true);
+    (async () => {
+      const rows = await loadStudioDrafts();
+      if (dead) return;
+      setDrafts(rows);
+      setDraftsLoading(false);
+    })();
+    return () => { dead = true; };
+  }, [userId]);
+
+  /* The lifecycle emails deep-link straight into one draft. */
+  const deepLinkRef = useRef(false);
+  useEffect(() => {
+    if (!userId || deepLinkRef.current) return;
+    const id = searchParams.get("draft");
+    if (!id) return;
+    deepLinkRef.current = true;
+    (async () => {
+      const d = await loadStudioDraft(id);
+      if (!d) { setProblem(T.draftMissing[lang]); return; }
+      await openDraft(d, "lifecycle_email");
+    })();
+  }, [userId, searchParams, openDraft, lang]);
+
+  /* Every subject, on request. The three ranked cards are a shortcut, not a cap. */
+  useEffect(() => {
+    if (!showAllSubjects || !userId || allSignals.length > 0) return;
+    let dead = false;
+    (async () => {
+      const { data } = await supabase
+        .from("strategic_signals")
+        .select("id, signal_title, explanation, what_it_means_for_you, strength_score")
+        .eq("user_id", userId)
+        .eq("status", "active")
+        .order("strength_score", { ascending: false })
+        .limit(200);
+      if (dead) return;
+      setAllSignals(
+        ((data as any[]) || [])
+          .filter((s) => s.signal_title)
+          .map((s) => ({
+            id: s.id as string,
+            title: s.signal_title as string,
+            insight: (s.what_it_means_for_you || s.explanation || "") as string,
+          })),
+      );
+    })();
+    return () => { dead = true; };
+  }, [showAllSubjects, userId, allSignals.length]);
+
   /* ---------- step 2: the words ----------------------------------- */
-  const generate = useCallback(async (picked?: Choice) => {
+  const generate = useCallback(async (picked?: Choice, langOverride?: Lang) => {
     const target = picked ?? choice;
     if (!target) return;
     const runId = ++genRunId.current;
-    const useLang = writeLang;
+    const useLang = langOverride ?? writeLang;
     setGenError(null);
+    setNotReady(null);
     setGenerating(true);
     setBusyMessage(T.writing[lang]);
     setStep(2);
@@ -314,6 +426,14 @@ export default function Studio() {
       if (!res.ok || !text) { setGenError("failed"); return; }
       remember();
       setContent(fixArabicDirectionalSymbols(stripMarkdown(String(text)), useLang));
+      // The gate already ran at generation. If it held the post, the words stay
+      // fully editable and only the publish action waits.
+      if (json?.blocked === true) {
+        const weak: string[] = Array.isArray(json?.quality_gate?.weaknesses)
+          ? json.quality_gate.weaknesses.filter((w: unknown) => typeof w === "string" && w.trim())
+          : [];
+        setNotReady(gateSentence(weak[0], lang));
+      }
     } catch {
       if (runId === genRunId.current) setGenError("failed");
     } finally {
@@ -323,10 +443,55 @@ export default function Studio() {
   }, [choice, writeLang, remember, lang]);
 
   /* ---------- the draft row --------------------------------------- */
+  /** The subject, written as a title so the Library never shows a raw line. */
+  const pieceTitle = useCallback((): string => {
+    const t = (choice?.title || typedTopic || "").trim();
+    if (t) return t.slice(0, 120);
+    const line = content.split("\n").map((l) => l.trim()).find(Boolean) || "";
+    return line.slice(0, 120);
+  }, [choice, typedTopic, content]);
+
+  const pieceMeta = useCallback(
+    () => ({
+      source: "studio",
+      topic: choice?.title || typedTopic || null,
+      language: writeLang,
+      _language: writeLang,
+      signal_ids: choice?.id ? [choice.id] : [],
+    }),
+    [choice, typedTopic, writeLang],
+  );
+
   const saveDraft = useCallback(async (): Promise<string | null> => {
     if (!userId || !content.trim()) return null;
+    const title = pieceTitle();
     if (draftId) {
-      await supabase.from("linkedin_posts").update({ post_text: content }).eq("id", draftId);
+      if (draftSource === "content_items") {
+        // A content_items draft keeps its own row; the linkedin_posts twin is
+        // created only when the piece is actually published.
+        await supabase
+          .from("content_items")
+          .update({ body: content, language: writeLang } as any)
+          .eq("id", draftId);
+        return draftId;
+      }
+      // Never overwrite what the edge functions wrote into source_metadata.
+      const { data: existing } = await supabase
+        .from("linkedin_posts")
+        .select("source_metadata")
+        .eq("id", draftId)
+        .maybeSingle();
+      const prev = ((existing as any)?.source_metadata as Record<string, unknown>) || {};
+      await supabase
+        .from("linkedin_posts")
+        .update({
+          post_text: content,
+          title,
+          topic_label: title || null,
+          source_signal_id: choice?.id || null,
+          source_metadata: { ...prev, ...pieceMeta() },
+        } as any)
+        .eq("id", draftId);
       return draftId;
     }
     const { data: ins, error } = await supabase
@@ -339,22 +504,135 @@ export default function Studio() {
         tracking_status: "draft",
         source_type: "aura_generated",
         authorship: "aura_drafted",
+        title,
+        topic_label: title || null,
         source_signal_id: choice?.id || null,
-        source_metadata: {
-          source: "studio",
-          topic: choice?.title || typedTopic || null,
-          language: writeLang,
-          _language: writeLang,
-          signal_ids: choice?.id ? [choice.id] : [],
-        },
+        source_metadata: pieceMeta(),
       } as any)
       .select("id")
       .single();
     if (error) return null;
     const id = (ins as any)?.id as string;
     setDraftId(id);
+    setDraftSource("linkedin_posts");
     return id;
-  }, [userId, content, draftId, choice, typedTopic, writeLang]);
+  }, [userId, content, draftId, draftSource, choice, writeLang, pieceTitle, pieceMeta]);
+
+  /**
+   * Publishing to LinkedIn from a content_items draft needs a linkedin_posts
+   * row. This makes one and remembers where the piece came from, so the
+   * content_items twin can be retired the moment the post goes live.
+   */
+  const originDraftRef = useRef<{ id: string; source: "content_items" | "linkedin_posts" } | null>(null);
+  const ensurePostRow = useCallback(async (): Promise<string | null> => {
+    if (draftId && draftSource === "content_items") {
+      originDraftRef.current = { id: draftId, source: "content_items" };
+      const title = pieceTitle();
+      const { data: ins, error } = await supabase
+        .from("linkedin_posts")
+        .insert({
+          user_id: userId,
+          post_text: content,
+          original_generated_text: content,
+          format_type: "post",
+          tracking_status: "draft",
+          source_type: "aura_generated",
+          authorship: "aura_drafted",
+          title,
+          topic_label: title || null,
+          source_signal_id: choice?.id || null,
+          source_metadata: pieceMeta(),
+        } as any)
+        .select("id")
+        .single();
+      if (error) return null;
+      return (ins as any)?.id as string;
+    }
+    return saveDraft();
+  }, [draftId, draftSource, userId, content, choice, pieceTitle, pieceMeta, saveDraft]);
+
+  /**
+   * A published post must COUNT. The cockpit reads `published_at`, the archive
+   * and the metric matcher read `post_url`. Both are written here, on both
+   * publishing paths, and the existing source_metadata is merged, never lost.
+   */
+  const finalisePublished = useCallback(
+    async (id: string, url: string | null) => {
+      const now = new Date().toISOString();
+      const { data: existing } = await supabase
+        .from("linkedin_posts")
+        .select("source_metadata")
+        .eq("id", id)
+        .maybeSingle();
+      const prev = ((existing as any)?.source_metadata as Record<string, unknown>) || {};
+      await supabase
+        .from("linkedin_posts")
+        .update({
+          tracking_status: "published",
+          published_at: now,
+          acquisition: "published_via_aura",
+          ...(url ? { post_url: url, published_confirmed_at: now } : {}),
+          like_count: 0,
+          comment_count: 0,
+          repost_count: 0,
+          engagement_score: 0,
+          source_trust: 100,
+          enriched_by: [],
+          synced_at: now,
+          source_metadata: { ...prev, ...pieceMeta(), ...(url ? { external_url: url } : {}) },
+        } as any)
+        .eq("id", id);
+
+      // The content_items twin is retired, or the invariant grows a duplicate.
+      const origin = originDraftRef.current;
+      if (origin?.source === "content_items") {
+        await supabase.from("content_items").update({ status: "published" } as any).eq("id", origin.id);
+      } else if (draftSource === "content_items" && draftId) {
+        await supabase.from("content_items").update({ status: "published" } as any).eq("id", draftId);
+      }
+
+      // Aura learns from what was actually posted. Best-effort, never blocking.
+      try {
+        if (userId && content.trim().length > 50) {
+          const { data: vp } = await supabase
+            .from("authority_voice_profiles")
+            .select("example_posts")
+            .eq("user_id", userId)
+            .eq("language", writeLang)
+            .maybeSingle();
+          const existingExamples = Array.isArray((vp as any)?.example_posts) ? ((vp as any).example_posts as any[]) : [];
+          const updated = [...existingExamples, content].slice(-10);
+          if (vp) {
+            await supabase
+              .from("authority_voice_profiles")
+              .update({ example_posts: updated } as any)
+              .eq("user_id", userId)
+              .eq("language", writeLang);
+          } else {
+            const { data: anyRow } = await supabase
+              .from("authority_voice_profiles")
+              .select("id")
+              .eq("user_id", userId)
+              .limit(1);
+            await supabase.from("authority_voice_profiles").insert({
+              user_id: userId,
+              example_posts: updated,
+              language: writeLang,
+              is_primary: !anyRow || anyRow.length === 0,
+            } as any);
+          }
+        }
+      } catch { /* the member never sees a learning failure */ }
+
+      // The Imprint must keep moving. Fire and forget.
+      if (userId) {
+        void supabase.functions
+          .invoke("calculate-aura-score", { body: { user_id: userId } })
+          .catch(() => { /* never surfaced */ });
+      }
+    },
+    [pieceMeta, draftSource, draftId, userId, content, writeLang],
+  );
 
   /* ---------- step 3: the slides, right here ---------------------- */
   const makeSlides = useCallback(async (lengthOverride?: 5 | 7 | 10) => {
@@ -501,24 +779,39 @@ export default function Studio() {
     setBusy("post");
     setProblem(null);
     setStatus(null);
+    setNotReady(null);
     setBusyMessage(T.posting[lang]);
-    const id = await saveDraft();
+    await saveDraft();
+    const id = await ensurePostRow();
     if (!id) { setBusy(null); setBusyMessage(null); setProblem(T.postFailed[lang]); return; }
     const { data, error } = await supabase.functions.invoke("linkedin-publish", {
-      body: { postId: id, advisory: true },
+      body: { postId: id },
     });
     setBusy(null);
     setBusyMessage(null);
     const payload = data as any;
     const message = `${payload?.error || ""} ${error?.message || ""}`.toLowerCase();
     if (payload?.success === true) {
-      setPostUrl((payload?.postUrl as string) || null);
+      const url = (payload?.postUrl as string) || null;
+      setPostUrl(url);
       setPublished(true);
       setStatus(T.postedHelp[lang]);
+      await finalisePublished(id, url);
+      void track("post_published", { signal_id: choice?.id || null, route: "linkedin" });
+      return;
+    }
+    if (payload?.blocked === true) {
+      // Held by the gate. The member stays here, with their words editable.
+      const weak: string[] = Array.isArray(payload?.weaknesses)
+        ? payload.weaknesses.filter((w: unknown) => typeof w === "string" && w.trim())
+        : [];
+      setNotReady(gateSentence(weak[0], lang));
+      setProblem(gateSentence(weak[0], lang));
+      setStep(2);
       return;
     }
     setProblem(message.includes("not connected") ? T.notConnected[lang] : T.postFailed[lang]);
-  }, [saveDraft, lang]);
+  }, [saveDraft, ensurePostRow, finalisePublished, choice, lang]);
 
   /** Save and come back later: says where it went, and keeps the step. */
   const saveAndComeBack = useCallback(async () => {
@@ -568,28 +861,17 @@ export default function Studio() {
     setBusy("link");
     setBusyMessage(T.savingLink[lang]);
     setProblem(null);
-    const id = draftId ?? (await saveDraft());
+    await saveDraft();
+    const id = await ensurePostRow();
     if (!id) { setBusy(null); setBusyMessage(null); setProblem(T.postFailed[lang]); return; }
-    await supabase
-      .from("linkedin_posts")
-      .update({
-        tracking_status: "published",
-        source_metadata: {
-          source: "studio",
-          topic: choice?.title || typedTopic || null,
-          language: writeLang,
-          _language: writeLang,
-          signal_ids: choice?.id ? [choice.id] : [],
-          external_url: url,
-        },
-      } as any)
-      .eq("id", id);
+    await finalisePublished(id, url);
+    void track("post_published", { signal_id: choice?.id || null, route: "manual" });
     setBusy(null);
     setBusyMessage(null);
     setPublished(true);
     setPostUrl(url);
     setStatus(T.linkSaved[lang]);
-  }, [linkInput, draftId, saveDraft, choice, typedTopic, writeLang, lang]);
+  }, [linkInput, saveDraft, ensurePostRow, finalisePublished, choice, lang]);
 
   /* ---------- derived --------------------------------------------- */
   const attention = useMemo(() => {
@@ -903,6 +1185,39 @@ export default function Studio() {
 
       {step === 1 && (
         <StageCard title={T.chooseHead[lang]} subtitle={T.chooseHelp[lang]} align={rtlShell ? "right" : "left"} defaultOpen>
+          {/* Work already waiting. Nothing a member wrote may become unreachable. */}
+          {!draftsLoading && drafts.length > 0 && (
+            <div style={{ marginBottom: 20 }}>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
+                {T.draftsHead[lang]}
+              </p>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--text-muted)", margin: "4px 0 8px" }}>
+                {T.draftsHelp[lang]}
+              </p>
+              <div style={{ display: "grid", gap: 8 }}>
+                {drafts.slice(0, 12).map((d) => (
+                  <button
+                    key={d.id}
+                    type="button"
+                    onClick={() => void openDraft(d, "studio_drafts_list")}
+                    style={{
+                      textAlign: rtlShell ? "right" : "left", cursor: "pointer",
+                      background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
+                      borderRadius: 12, padding: 12,
+                    }}
+                  >
+                    <span dir="auto" style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 600, color: "var(--text-primary)", overflowWrap: "anywhere" }}>
+                      {d.title || d.body.split("\n").map((l) => l.trim()).find(Boolean)?.slice(0, 120) || T.untitledDraft[lang]}
+                    </span>
+                    <span style={{ display: "block", fontFamily: "var(--ff-mono)", fontSize: 11, color: "var(--text-muted)", marginTop: 6 }}>
+                      {T.draftSaved[lang]} {formatSmartDate(d.created_at)} · {d.language === "ar" ? T.langAr[lang] : T.langEn[lang]}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {cardsLoading && (
             <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--text-secondary)" }}>
               {T.loading[lang]}
@@ -951,6 +1266,51 @@ export default function Studio() {
                 </button>
               );
             })}
+          </div>
+
+          {/* The ranked three are a shortcut, never the whole shelf. */}
+          <div style={{ marginTop: 12 }}>
+            <button
+              type="button"
+              onClick={() => setShowAllSubjects((v) => !v)}
+              aria-expanded={showAllSubjects}
+              style={{
+                minHeight: 44, padding: 0, background: "transparent", border: 0, cursor: "pointer",
+                fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--act)",
+              }}
+            >
+              {showAllSubjects ? T.hideAllSubjects[lang] : T.seeAllSubjects[lang]}
+            </button>
+            {showAllSubjects && (
+              <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
+                {allSignals.length === 0 && (
+                  <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, color: "var(--text-secondary)", margin: 0 }}>
+                    {T.allSubjectsEmpty[lang]}
+                  </p>
+                )}
+                {allSignals.map((s) => {
+                  const on = choice?.id === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => { setChoice({ id: s.id, title: s.title, insight: s.insight }); setTypedTopic(""); }}
+                      style={{
+                        textAlign: rtlShell ? "right" : "left", cursor: "pointer",
+                        background: on ? "var(--act-tint)" : "var(--surface-subtle)",
+                        border: `1px solid ${on ? "var(--act)" : "var(--border-default)"}`,
+                        borderRadius: 12, padding: 12,
+                      }}
+                    >
+                      <span dir="auto" style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>
+                        {s.title}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div style={{ marginTop: 16 }}>
@@ -1052,6 +1412,34 @@ export default function Studio() {
           align={rtlShell ? "right" : "left"}
           lang={lang}
         >
+          {notReady && (
+            <p
+              role="status"
+              aria-live="polite"
+              style={{
+                fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.75, fontWeight: 600,
+                color: "var(--error)", background: "var(--error-tint)", borderRadius: 12,
+                padding: 12, margin: "0 0 12px",
+              }}
+            >
+              {notReady}
+            </p>
+          )}
+          {/* Change the language of the piece without going back a step. */}
+          <div style={{ marginBottom: 12 }}>
+            <ButtonGhost
+              onClick={() => {
+                const other: Lang = writeLang === "ar" ? "en" : "ar";
+                setWriteLang(other);
+                setNotReady(null);
+                void generate(undefined, other);
+              }}
+              disabled={generating || !choice}
+              style={{ minHeight: 44 }}
+            >
+              {writeLang === "ar" ? T.writeAgainEn[lang] : T.writeAgainAr[lang]}
+            </ButtonGhost>
+          </div>
           {writeArea}
         </StageCard>
       )}
@@ -1234,13 +1622,20 @@ export default function Studio() {
                 </p>
               )}
               {!published && !confirmingPost && (
+                <>
+                {notReady && (
+                  <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--error)", margin: "0 0 10px", lineHeight: 1.75 }}>
+                    {notReady}
+                  </p>
+                )}
                 <ButtonPrimary
                   onClick={requestPost}
-                  disabled={!content.trim() || content.length > POST_MAX_CHARS || busy === "post"}
+                  disabled={!content.trim() || content.length > POST_MAX_CHARS || busy === "post" || Boolean(notReady)}
                   style={{ minHeight: 44 }}
                 >
                   {T.postItNow[lang]}
                 </ButtonPrimary>
+                </>
               )}
             </>
           ) : (

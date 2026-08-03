@@ -343,6 +343,36 @@ export const T = {
 
   // Card control
   cardToggle: { en: "Show or hide this section", ar: "أظهر أو أخفِ هذا القسم" },
+
+  // Your drafts, on step 1
+  draftsHead: { en: "Your drafts", ar: "مسوّداتك" },
+  draftsHelp: {
+    en: "Pieces already written for you. Open one and carry on.",
+    ar: "أعمال مكتوبة لك بالفعل. افتح واحداً وتابع.",
+  },
+  draftSaved: { en: "saved", ar: "حُفظ" },
+  draftOpened: { en: "We opened that draft. Carry on where it stopped.", ar: "فتحنا تلك المسوّدة. تابع من حيث توقفت." },
+  draftMissing: { en: "That draft is no longer there.", ar: "تلك المسوّدة لم تعد موجودة." },
+  untitledDraft: { en: "Untitled draft", ar: "مسوّدة بلا عنوان" },
+
+  // Every subject, not only the ranked three
+  seeAllSubjects: { en: "See all your subjects", ar: "اعرض كل مواضيعك" },
+  hideAllSubjects: { en: "Show fewer subjects", ar: "اعرض عدداً أقل" },
+  allSubjectsEmpty: { en: "You have no saved subjects yet.", ar: "لا توجد مواضيع محفوظة بعد." },
+
+  // Writing language, changed after the first draft
+  writeAgainEn: { en: "Write this in English instead", ar: "اكتبه بالإنجليزية بدلاً من ذلك" },
+  writeAgainAr: { en: "Write this in Arabic instead", ar: "اكتبه بالعربية بدلاً من ذلك" },
+
+  // The quality gate, in one sentence a member can act on
+  notReadyLead: {
+    en: "This is not ready to go out yet. One change first:",
+    ar: "هذا ليس جاهزاً للنشر بعد. تغيير واحد أولاً:",
+  },
+  notReadyPlain: {
+    en: "This is not ready to go out yet. Sharpen the opening line and try again.",
+    ar: "هذا ليس جاهزاً للنشر بعد. اجعل السطر الأول أوضح ثم حاول مرة أخرى.",
+  },
 } as const;
 
 /**
