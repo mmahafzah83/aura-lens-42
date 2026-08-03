@@ -1092,7 +1092,7 @@ export default function Studio() {
             theme={theme}
             width={canvasWidth}
             current={current}
-            onFit={(state) => setFits((f) => ({ ...f, [current]: state }))}
+            onFit={(i, state) => setFits((f) => ({ ...f, [i]: state }))}
             mountRef={mountRef}
           />
         </div>
