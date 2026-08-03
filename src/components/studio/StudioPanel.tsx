@@ -2150,20 +2150,34 @@ export default function StudioPanel({
                   {T.overLimitHead[lang]} {content.length - POST_MAX_CHARS} {T.overLimitTail[lang]}
                 </p>
               )}
-              {!published && !confirmingPost && (
+              {!published && (
                 <>
-                {notReady && (
-                  <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--error)", margin: "0 0 10px", lineHeight: 1.75 }}>
-                    {notReady}
-                  </p>
-                )}
-                <ButtonPrimary
-                  onClick={requestPost}
-                  disabled={!content.trim() || content.length > POST_MAX_CHARS || busy === "post" || Boolean(notReady)}
-                  style={{ minHeight: 44 }}
-                >
-                  {T.postItNow[lang]}
-                </ButtonPrimary>
+                  {notReady && (
+                    <div style={{ display: "grid", gap: 10, margin: "0 0 12px" }}>
+                      <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--error)", margin: 0, lineHeight: 1.75 }}>
+                        {notReady}
+                      </p>
+                      {/* P1b — Aura advises, the member decides. Always a way out. */}
+                      <div>
+                        <ButtonGhost onClick={() => { setNotReady(null); void publishNow(true); }} disabled={busy === "post"} style={{ minHeight: 44 }}>
+                          {T.postAnyway[lang]}
+                        </ButtonGhost>
+                      </div>
+                    </div>
+                  )}
+                  {/* P4 — ONE POSITION. The trigger never moves and never leaves
+                      the layout; the confirmation opens directly beneath it. */}
+                  <ButtonPrimary
+                    onClick={requestPost}
+                    disabled={
+                      !content.trim() || content.length > POST_MAX_CHARS ||
+                      busy === "post" || confirmingPost || Boolean(notReady)
+                    }
+                    style={{ minHeight: 44 }}
+                  >
+                    {T.postItNow[lang]}
+                  </ButtonPrimary>
+                  <div style={{ marginTop: 12 }}>{confirmPanel}</div>
                 </>
               )}
             </>
