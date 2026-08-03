@@ -660,12 +660,37 @@ export default function Studio() {
           resize: "vertical",
         }}
       />
-      <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-mono)", fontSize: 11, color: content.length > 2800 ? "var(--error)" : "var(--text-muted)", margin: "6px 0 14px" }}>
+      <p style={{ fontFamily: "var(--ff-mono)", fontSize: 11, color: content.length > 2800 ? "var(--error)" : "var(--text-muted)", margin: "6px 0 14px" }}>
         {content.length} {T.characters[lang]}
         {content.length > 2800 ? ` — ${T.tooLong[lang]}` : ""}
       </p>
+      {confirmingPost && (
+        <div
+          style={{
+            background: "var(--surface-subtle)",
+            border: "1px solid var(--act)",
+            borderRadius: 12,
+            padding: 14,
+            marginBottom: 12,
+            display: "grid",
+            gap: 10,
+          }}
+        >
+          <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, lineHeight: 1.7, color: "var(--text-primary)", margin: 0 }}>
+            {T.confirmPostHead[lang]}
+          </p>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <ButtonPrimary onClick={() => { setStep(4); void postText(); }} disabled={busy === "post"} style={{ minHeight: 44 }}>
+              {T.confirmPostYes[lang]}
+            </ButtonPrimary>
+            <ButtonGhost onClick={() => setConfirmingPost(false)} style={{ minHeight: 44 }}>
+              {T.confirmPostNo[lang]}
+            </ButtonGhost>
+          </div>
+        </div>
+      )}
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <ButtonPrimary onClick={() => { setStep(4); setSub("look"); void postText(); }} disabled={!content.trim() || busy === "post"} style={{ minHeight: 44 }}>
+        <ButtonPrimary onClick={() => setConfirmingPost(true)} disabled={!content.trim() || busy === "post" || confirmingPost} style={{ minHeight: 44 }}>
           {T.optPost[lang]}
         </ButtonPrimary>
         <ButtonGhost onClick={() => void makeSlides()} disabled={!content.trim() || !choice?.id} style={{ minHeight: 44 }}>
@@ -677,7 +702,7 @@ export default function Studio() {
       </div>
       {!choice?.id && content.trim() && (
         <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--text-muted)", margin: "8px 0 0" }}>
-          {T.slidesNeedPost[lang]}
+          {T.typedTopicNoSlides[lang]}
         </p>
       )}
     </>
