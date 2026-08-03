@@ -6,10 +6,13 @@
  * nothing here is shared with any other member-facing screen.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ButtonPrimary, ButtonGhost } from "@/components/systemb";
 import { loadStartCards, type StartCard } from "@/components/composer/startCards";
+import { loadStudioDrafts, loadStudioDraft, type StudioDraft } from "@/components/studio/draftsSource";
+import { track } from "@/lib/track";
+import { formatSmartDate } from "@/lib/formatDate";
 import { stripMarkdown, fixArabicDirectionalSymbols } from "@/lib/textFormat";
 import { DeckIRSchema, type DeckIR } from "@/carousel/deckIR";
 import { DEFAULT_THEME, type ThemeName } from "@/carousel/render/themes";
@@ -58,6 +61,7 @@ interface Choice {
 }
 
 export default function Studio() {
+  const [searchParams] = useSearchParams();
   /* ---------- session and preferences ---------------------------- */
   const [ready, setReady] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -98,6 +102,15 @@ export default function Studio() {
   const [pictureNotice, setPictureNotice] = useState<string | null>(null);
 
   const [draftId, setDraftId] = useState<string | null>(null);
+  /** Which table the open draft came from. Decides the publish promotion. */
+  const [draftSource, setDraftSource] = useState<"content_items" | "linkedin_posts" | null>(null);
+  const [drafts, setDrafts] = useState<StudioDraft[]>([]);
+  const [draftsLoading, setDraftsLoading] = useState(true);
+  /** All active subjects, loaded only when the member asks to see them. */
+  const [allSignals, setAllSignals] = useState<Array<{ id: string; title: string; insight: string }>>([]);
+  const [showAllSubjects, setShowAllSubjects] = useState(false);
+  /** The quality gate held this post. One sentence, never a checklist. */
+  const [notReady, setNotReady] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   /** In flight. Never a tick — the action has not finished. */
   const [busyMessage, setBusyMessage] = useState<string | null>(null);
