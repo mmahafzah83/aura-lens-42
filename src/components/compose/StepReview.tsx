@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { ButtonGhost, ButtonPrimary } from "@/components/systemb";
 import { S, type Lang } from "./strings";
 import { Heading, Helper, Muted, TextLink } from "./ui";
@@ -19,6 +19,73 @@ interface Props {
 
 const MAX = 3000;
 
+const PencilIcon: React.FC = () => (
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="var(--text-muted)"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden
+  >
+    <path d="M12 20h9" />
+    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+  </svg>
+);
+
+/** Honest time estimate: climbs to 92% over ~15s, then holds. */
+const PostingRing: React.FC = () => {
+  const [pct, setPct] = useState(0);
+  useEffect(() => {
+    setPct(0);
+    const step = 92 / (15000 / 200);
+    const id = setInterval(() => setPct((p) => Math.min(92, p + step)), 200);
+    return () => clearInterval(id);
+  }, []);
+
+  const size = 44;
+  const stroke = 4;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+
+  return (
+    <span style={{ position: "relative", width: size, height: size, display: "inline-block", flexShrink: 0 }}>
+      <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }} aria-hidden>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--surface-subtle)" strokeWidth={stroke} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke="var(--machine)"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={c * (1 - pct / 100)}
+          style={{ transition: "stroke-dashoffset 200ms linear" }}
+        />
+      </svg>
+      <span
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontFamily: "var(--ff-mono)",
+          fontSize: 12,
+          color: "var(--machine-text)",
+        }}
+      >
+        {Math.round(pct)}%
+      </span>
+    </span>
+  );
+};
+
 /** Model A — the member is the editor-in-chief. One post, directly editable. */
 const StepReview: React.FC<Props> = ({
   lang, writeLang, content, onContentChange, busy, notice, publishDisabled,
@@ -26,28 +93,55 @@ const StepReview: React.FC<Props> = ({
 }) => {
   const rtl = writeLang === "ar";
   const over = content.length > MAX;
+  const [focused, setFocused] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const active = focused || hovered;
 
   return (
     <div>
       <Heading>{S.s5Head[lang]}</Heading>
       <Helper>{S.s5Help[lang]}</Helper>
 
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 7,
+          marginTop: 18,
+          flexDirection: rtl ? "row-reverse" : "row",
+          justifyContent: rtl ? "flex-start" : "flex-start",
+        }}
+        dir={rtl ? "rtl" : "ltr"}
+      >
+        <PencilIcon />
+        <span style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--text-secondary)" }}>
+          {S.s5EditHint[lang]}
+        </span>
+      </div>
+
       <textarea
         value={content}
         onChange={(e) => onContentChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
         dir={rtl ? "rtl" : "ltr"}
         spellCheck={false}
         style={{
           display: "block",
           width: "100%",
           boxSizing: "border-box",
-          marginTop: 20,
+          marginTop: 8,
           minHeight: 260,
           resize: "vertical",
           background: "var(--surface-card)",
-          border: "1px solid var(--border-default)",
+          border: `1px solid ${active ? "var(--act)" : "var(--border-default)"}`,
           borderRadius: 14,
-          boxShadow: "var(--shadow-card)",
+          boxShadow: focused
+            ? "0 0 0 3px color-mix(in srgb, var(--act) 14%, transparent)"
+            : "var(--shadow-card)",
+          transition: "border-color 120ms ease, box-shadow 120ms ease",
           padding: 20,
           outline: "none",
           fontFamily: "var(--ff-ui)",
@@ -58,7 +152,7 @@ const StepReview: React.FC<Props> = ({
         }}
       />
 
-      <div style={{ marginTop: 8 }}>
+      <div style={{ marginTop: 8, display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
         <span
           style={{
             fontFamily: "var(--ff-mono)",
@@ -67,6 +161,9 @@ const StepReview: React.FC<Props> = ({
           }}
         >
           {content.length.toLocaleString("en-US")} / 3,000
+        </span>
+        <span style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)" }}>
+          {S.s5EditHint2[lang]}
         </span>
       </div>
 
@@ -91,7 +188,16 @@ const StepReview: React.FC<Props> = ({
         </p>
       )}
 
-      {busy && (
+      {busy === "post" && (
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 18 }}>
+          <PostingRing />
+          <span style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, fontWeight: 600, color: "var(--machine-text)" }}>
+            {S.s5Posting[lang]}
+          </span>
+        </div>
+      )}
+
+      {busy === "save" && (
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 18 }}>
           <style>{"@keyframes composeSpin{to{transform:rotate(360deg)}}"}</style>
           <span
@@ -107,7 +213,7 @@ const StepReview: React.FC<Props> = ({
             }}
           />
           <span style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, fontWeight: 600, color: "var(--machine-text)" }}>
-            {busy === "post" ? S.s5Posting[lang] : S.s5Saving[lang]}
+            {S.s5Saving[lang]}
           </span>
         </div>
       )}
