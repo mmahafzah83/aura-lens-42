@@ -1412,6 +1412,34 @@ export default function Studio() {
           align={rtlShell ? "right" : "left"}
           lang={lang}
         >
+          {notReady && (
+            <p
+              role="status"
+              aria-live="polite"
+              style={{
+                fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.75, fontWeight: 600,
+                color: "var(--error)", background: "var(--error-tint)", borderRadius: 12,
+                padding: 12, margin: "0 0 12px",
+              }}
+            >
+              {notReady}
+            </p>
+          )}
+          {/* Change the language of the piece without going back a step. */}
+          <div style={{ marginBottom: 12 }}>
+            <ButtonGhost
+              onClick={() => {
+                const other: Lang = writeLang === "ar" ? "en" : "ar";
+                setWriteLang(other);
+                setNotReady(null);
+                void generate(other);
+              }}
+              disabled={generating || !choice}
+              style={{ minHeight: 44 }}
+            >
+              {writeLang === "ar" ? T.writeAgainEn[lang] : T.writeAgainAr[lang]}
+            </ButtonGhost>
+          </div>
           {writeArea}
         </StageCard>
       )}
@@ -1594,13 +1622,20 @@ export default function Studio() {
                 </p>
               )}
               {!published && !confirmingPost && (
+                <>
+                {notReady && (
+                  <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--error)", margin: "0 0 10px", lineHeight: 1.75 }}>
+                    {notReady}
+                  </p>
+                )}
                 <ButtonPrimary
                   onClick={requestPost}
-                  disabled={!content.trim() || content.length > POST_MAX_CHARS || busy === "post"}
+                  disabled={!content.trim() || content.length > POST_MAX_CHARS || busy === "post" || Boolean(notReady)}
                   style={{ minHeight: 44 }}
                 >
                   {T.postItNow[lang]}
                 </ButtonPrimary>
+                </>
               )}
             </>
           ) : (
