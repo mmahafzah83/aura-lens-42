@@ -1262,6 +1262,13 @@ export default function StudioPanel({
     setStatus(T.linkSaved[lang]);
   }, [linkInput, ensurePostRow, syncRowToScreen, finalisePublished, choice, lang]);
 
+  /** P9 — the onward choices. The shell owns navigation; we only ask. */
+  const goTab = useCallback((tab: "library" | "influence") => {
+    try {
+      window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab } }));
+    } catch { /* navigation is never allowed to throw at a member */ }
+  }, []);
+
   /* ---------- derived --------------------------------------------- */
   const attention = useMemo(() => {
     const fit = fits[current];
@@ -1882,7 +1889,14 @@ export default function StudioPanel({
               {notReady}
             </p>
           )}
-          {/* Change the language of the piece without going back a step. */}
+          {notReady && !(format === "slides" && deck) && (
+            <div style={{ margin: "0 0 12px" }}>
+              <ButtonGhost onClick={() => { setNotReady(null); setStep(4); void publishNow(true); }} disabled={busy === "post"} style={{ minHeight: 44 }}>
+                {T.postAnyway[lang]}
+              </ButtonGhost>
+            </div>
+          )}
+          {/* Change the writing language without going back a step. */}
           <div style={{ marginBottom: 12 }}>
             <ButtonGhost
               onClick={() => {
@@ -2242,6 +2256,7 @@ export default function StudioPanel({
                   value={linkInput}
                   onChange={(e) => setLinkInput(e.target.value)}
                   placeholder={T.linkPlaceholder[lang]}
+                  disabled={published}
                   style={{
                     flex: "1 1 280px", minHeight: 44, padding: "0 12px", borderRadius: 10,
                     background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
@@ -2250,11 +2265,11 @@ export default function StudioPanel({
                   }}
                 />
                 {exported ? (
-                  <ButtonPrimary onClick={() => void saveLink()} disabled={!linkInput.trim() || busy === "link"} style={{ minHeight: 44 }}>
+                  <ButtonPrimary onClick={() => void saveLink()} disabled={published || !linkInput.trim() || busy === "link"} style={{ minHeight: 44 }}>
                     {busy === "link" ? T.savingLink[lang] : T.linkSave[lang]}
                   </ButtonPrimary>
                 ) : (
-                  <ButtonGhost onClick={() => void saveLink()} disabled={!linkInput.trim() || busy === "link"} style={{ minHeight: 44 }}>
+                  <ButtonGhost onClick={() => void saveLink()} disabled={published || !linkInput.trim() || busy === "link"} style={{ minHeight: 44 }}>
                     {busy === "link" ? T.savingLink[lang] : T.linkSave[lang]}
                   </ButtonGhost>
                 )}
