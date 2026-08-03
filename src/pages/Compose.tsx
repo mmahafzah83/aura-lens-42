@@ -370,6 +370,11 @@ const Compose: React.FC = () => {
           busy={busy}
           notice={notice}
           publishDisabled={publishDisabled}
+          deckAvailable={!!selected?.id}
+          onMakeDeck={async () => {
+            await insertDraft();
+            navigate(`/carousel-studio?signal=${selected!.id}&autogenerate=1`);
+          }}
           onSwitchLanguage={() => {
             const other: Lang = writeLang === "ar" ? "en" : "ar";
             setWriteLang(other);
