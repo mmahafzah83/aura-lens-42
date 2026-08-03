@@ -94,6 +94,7 @@ export default function CarouselStudio() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const preselected = params.get("signal");
+  const autogenerate = params.get("autogenerate");
 
   const [signals, setSignals] = useState<StudioSignal[]>([]);
   const [loadingSignals, setLoadingSignals] = useState(true);
@@ -280,6 +281,18 @@ export default function CarouselStudio() {
       setStage(null);
     }
   }, [signal, length, theme, lang]);
+
+  /* --- handoff from /compose: fire Generate once ------------------- */
+  const autoFiredRef = useRef(false);
+  useEffect(() => {
+    if (autogenerate !== "1") return;
+    if (autoFiredRef.current) return;
+    if (!preselected) return;
+    if (!signal || signal.id !== preselected) return;
+    if (deck || stage !== null) return;
+    autoFiredRef.current = true;
+    void generate();
+  }, [autogenerate, preselected, signal, deck, stage, generate]);
 
   /* --- try another angle ------------------------------------------ */
   const rewriteSlide = useCallback(async () => {
