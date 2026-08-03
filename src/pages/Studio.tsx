@@ -124,8 +124,6 @@ export default function Studio() {
       const seeded: Lang = (profile as any)?.content_language === "ar" ? "ar" : "en";
       setLang(seeded);
       setWriteLang(seeded);
-      setFirstName(((profile as any)?.first_name as string) || "");
-      setAvatarUrl(((profile as any)?.avatar_url as string) || null);
       setReady(true);
     })();
     return () => { dead = true; };
@@ -161,6 +159,7 @@ export default function Studio() {
       if (!raw) return;
       const saved = JSON.parse(raw) as {
         content?: unknown; deck?: unknown; choice?: unknown; writeLang?: unknown;
+        step?: unknown; format?: unknown;
       };
       let restoredAnything = false;
       if (typeof saved.content === "string" && saved.content.trim()) {
@@ -181,8 +180,11 @@ export default function Studio() {
         if (typeof c.title === "string") setChoice({ id: c.id ?? null, title: c.title, insight: c.insight ?? "" });
       }
       if (saved.writeLang === "ar" || saved.writeLang === "en") setWriteLang(saved.writeLang);
+      if (saved.format === "post" || saved.format === "slides") setFormat(saved.format);
       if (restoredAnything) {
-        setStep(2);
+        // Reopen exactly where they stopped.
+        const s = Number(saved.step);
+        setStep(s >= 1 && s <= 4 ? s : 2);
         // The language is not resolved yet at this point, so the message is
         // raised later, from whatever `lang` is then.
         setRestoredFlag(true);
@@ -200,11 +202,11 @@ export default function Studio() {
   useEffect(() => {
     if (!content && !deck) return;
     try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ content, deck, choice, writeLang }));
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ content, deck, choice, writeLang, step, format }));
       // Success channel only. A failure message is never written from here.
       setStatus(T.savedMoment[lang]);
     } catch { /* quota never blocks editing */ }
-  }, [content, deck, choice, writeLang, lang]);
+  }, [content, deck, choice, writeLang, lang, step, format]);
 
   /* A success note fades; a problem does not. */
   useEffect(() => {
@@ -254,6 +256,7 @@ export default function Studio() {
     const useLang = writeLang;
     setGenError(null);
     setGenerating(true);
+    setBusyMessage(T.writing[lang]);
     setStep(2);
     setSub("build");
 
@@ -287,14 +290,13 @@ export default function Studio() {
       if (!res.ok || !text) { setGenError("failed"); return; }
       remember();
       setContent(fixArabicDirectionalSymbols(stripMarkdown(String(text)), useLang));
-      setShowing("post");
     } catch {
       if (runId === genRunId.current) setGenError("failed");
     } finally {
       window.clearTimeout(timer);
-      if (runId === genRunId.current) setGenerating(false);
+      if (runId === genRunId.current) { setGenerating(false); setBusyMessage(null); }
     }
-  }, [choice, writeLang, remember]);
+  }, [choice, writeLang, remember, lang]);
 
   /* ---------- the draft row --------------------------------------- */
   const saveDraft = useCallback(async (): Promise<string | null> => {
@@ -335,7 +337,6 @@ export default function Studio() {
     if (!choice?.id || !content.trim()) return;
     setStep(3);
     setSub("build");
-    setShowing("slides");
     setDeckBusy(true);
     setDeckFailures([]);
     setProblem(null);
