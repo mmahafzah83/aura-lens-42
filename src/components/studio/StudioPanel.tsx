@@ -508,6 +508,7 @@ export default function StudioPanel({
     setPublished(false);
     setPostUrl(null);
     setLinkInput("");
+    setLinkSaved(false);
     setNotReady(null);
     setProblem(null);
     setStatus(null);
