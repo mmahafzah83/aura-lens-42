@@ -239,6 +239,8 @@ export default function StudioPanel({
   const [postUrl, setPostUrl] = useState<string | null>(null);
   const [published, setPublished] = useState(false);
   const [linkInput, setLinkInput] = useState("");
+  /** The member's own LinkedIn address for this post, stored. */
+  const [linkSaved, setLinkSaved] = useState(false);
 
   /**
    * P1c — set the moment the member CHOOSES a writing language. From then on a
