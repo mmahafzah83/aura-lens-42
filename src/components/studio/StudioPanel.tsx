@@ -212,22 +212,11 @@ export default function StudioPanel() {
   const [canvasWidth, setCanvasWidth] = useState(520);
   const [narrow, setNarrow] = useState(false);
   /**
-   * THE phone branch. One breakpoint, one source: `usePhone`. Above it the
-   * desktop tree renders exactly as before; below it a different shape.
+   * R1 — there is no phone BRANCH any more. The same tree renders at every
+   * width; this boolean only chooses a comfortable field size on small
+   * screens, so iOS does not zoom the page when a field takes focus.
    */
   const isPhone = useIsPhone();
-  /**
-   * L1 — which FULL-SCREEN layer is open on a phone. Only ever one at a time,
-   * and never on a desktop.
-   */
-  const [layer, setLayer] = useState<null | "editor" | "look" | "piece">(null);
-  /** J6 — a breakpoint change closes any layer; it must never reopen itself. */
-  useEffect(() => { setLayer(null); }, [isPhone]);
-  /**
-   * L1 — generating slides moves the member from screen A (the format choice)
-   * to screen B (the editor). Once per deck: closing it must not reopen it.
-   */
-  const autoOpenedRef = useRef<string | null>(null);
   const rtlShell = lang === "ar";
   const rtlWrite = writeLang === "ar";
 
