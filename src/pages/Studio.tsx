@@ -16,6 +16,7 @@ import { DEFAULT_THEME, type ThemeName } from "@/carousel/render/themes";
 import type { FitState } from "@/carousel/render/useFitLadder";
 import { collectSlideNodes, exportDeckPdf } from "@/carousel/render/exportDeck";
 import { mediaSupport } from "@/carousel/render/Slide";
+import StudioCanvas from "@/carousel/studio/StudioCanvas";
 import { plainFailure } from "@/carousel/studio/slotLabels";
 import { moveSlide, replaceSlide, setSlidePhoto } from "@/carousel/studio/deckEdit";
 import { SLIDE_MEDIA_LIMITS, checkImage, fitToSlot } from "@/lib/imagePrep";
@@ -26,7 +27,8 @@ import StageCard from "@/components/studio/StageCard";
 import ZonePiece, { type ShowingKey } from "@/components/studio/ZonePiece";
 import ZoneStage from "@/components/studio/ZoneStage";
 import ZoneInspector from "@/components/studio/ZoneInspector";
-import { T, type Lang, type Posture } from "@/components/studio/strings";
+import ZoneLook from "@/components/studio/ZoneLook";
+import { T, attentionText, startReason, type Lang, type Posture } from "@/components/studio/strings";
 
 const POSTURE_KEY = "aura_studio_posture";
 const DRAFT_KEY = "aura_studio_draft_v1";
@@ -99,7 +101,8 @@ export default function Studio() {
   const genRunId = useRef(0);
 
   const [deck, setDeck] = useState<DeckIR | null>(null);
-  const [theme] = useState<ThemeName>(DEFAULT_THEME);
+  const [theme, setTheme] = useState<ThemeName>(DEFAULT_THEME);
+  const [deckLength, setDeckLength] = useState<5 | 7 | 10>(7);
   const [deckBusy, setDeckBusy] = useState(false);
   const [deckFailures, setDeckFailures] = useState<string[]>([]);
   const [current, setCurrent] = useState(0);
@@ -109,6 +112,9 @@ export default function Studio() {
 
   const [draftId, setDraftId] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
+  /** Failures. Never a tick, never overwritten by an autosave. */
+  const [problem, setProblem] = useState<string | null>(null);
+  const [confirmingPost, setConfirmingPost] = useState(false);
   const [busy, setBusy] = useState<null | "post" | "save" | "export">(null);
   const [postUrl, setPostUrl] = useState<string | null>(null);
   const [published, setPublished] = useState(false);
