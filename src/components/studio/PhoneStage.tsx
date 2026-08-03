@@ -140,6 +140,7 @@ export const PhoneStage: React.FC<{
                 // constraints and no definite size collapses to zero.
                 height: "100%",
                 aspectRatio: "4 / 5",
+                maxHeight: "100%",
                 maxWidth: "100%",
                 display: "grid",
                 placeItems: "center",
@@ -153,7 +154,8 @@ export const PhoneStage: React.FC<{
             </div>
           </div>
 
-          {/* Row 2 — filmstrip and the two wide steps. Never behind the sheet. */}
+          {/* Row 2 — filmstrip and the two wide steps, always under the slide
+              and always inside the layer. */}
           <div style={{ flex: "0 0 auto", display: "grid", gap: 8, alignContent: "start" }}>
           <div
             dir={dir}
