@@ -20,8 +20,7 @@ const HINTS: Record<PageKey, { desc: string; action?: HintAction }> = {
     action: { label: "Capture your first source →", eventName: "aura:open-capture" },
   },
   publish: {
-    desc: "Create content from your signals — try Flash mode for 3 Arabic or English post variations in 60 seconds.",
-    action: { label: "Try Flash mode →", eventName: "aura:open-flash" },
+    desc: "Create content from your signals — choose a subject, get a post in your voice, publish it.",
   },
   impact: {
     desc: "Your digital presence starts here. The score updates as you capture, build signals, and publish — your LinkedIn analytics sync automatically.",

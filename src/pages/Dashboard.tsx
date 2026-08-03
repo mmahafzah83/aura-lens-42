@@ -46,7 +46,6 @@ import usePageMeta from "@/hooks/usePageMeta";
 import { track, getTrackSessionId } from "@/lib/track";
 import { isProfileComplete } from "@/lib/onboarding";
 
-import ComposerV2 from "@/components/composer/ComposerV2";
 import AnalyticsV2 from "@/components/analytics/AnalyticsV2";
 import LibraryPage from "@/components/library/LibraryPage";
 import OvernightPage from "@/components/overnight/OvernightPage";
@@ -69,13 +68,9 @@ const NAV_ITEMS = [
   { value: "identity", label: "My Story", pageHeader: "My Story", icon: User, docTitle: "Aura — My Story" },
 ] as const;
 
-/**
- * `studio` is a HIDDEN tab: it renders like any other panel but is deliberately
- * absent from NAV_ITEMS, so no navigation item appears for it.
- */
-type TabValue = typeof NAV_ITEMS[number]["value"] | "studio";
+type TabValue = typeof NAV_ITEMS[number]["value"];
 
-const isTabValue = (v: string) => v === "studio" || NAV_ITEMS.some(n => n.value === v);
+const isTabValue = (v: string) => NAV_ITEMS.some(n => n.value === v);
 
 const Dashboard = () => {
   usePageMeta({
@@ -225,14 +220,6 @@ const Dashboard = () => {
   // FirstVisitHint action wiring (M-0-4): respond to events emitted by hint CTAs.
   useEffect(() => {
     const openCap = () => setCaptureOpen(true);
-    const openFlash = () => {
-      setActiveTab("authority");
-      setSearchParams({ tab: "authority" });
-      window.setTimeout(() => {
-        const el = document.querySelector('[data-format-tile="flash"]') as HTMLElement | null;
-        if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); el.click(); }
-      }, 250);
-    };
     const switchTab = (e: Event) => {
       const detail = (e as CustomEvent).detail as { tab?: string } | undefined;
       const target = detail?.tab;
@@ -247,11 +234,9 @@ const Dashboard = () => {
       }
     };
     window.addEventListener("aura:open-capture", openCap);
-    window.addEventListener("aura:open-flash", openFlash);
     window.addEventListener("aura:switch-tab", switchTab);
     return () => {
       window.removeEventListener("aura:open-capture", openCap);
-      window.removeEventListener("aura:open-flash", openFlash);
       window.removeEventListener("aura:switch-tab", switchTab);
     };
   }, [setSearchParams]);
@@ -265,6 +250,8 @@ const Dashboard = () => {
       strategy: "intelligence",
       today: "home",
       publish: "authority",
+      composer: "authority",
+      studio: "authority",
       impact: "influence",
       "my-story": "identity",
     };
@@ -962,7 +949,7 @@ const Dashboard = () => {
         </div>
         <div
           className={
-            activeTab === "intelligence" || activeTab === "studio"
+            activeTab === "intelligence" || activeTab === "authority"
               ? "max-w-[1400px] mx-auto px-5 sm:px-10 lg:px-14 pb-[88px] md:pb-12"
               : "max-w-[1400px] mx-auto px-5 sm:px-10 lg:px-14 pb-[88px] md:pb-12 overflow-hidden"
           }
@@ -1059,12 +1046,11 @@ const Dashboard = () => {
             {activeTab === "authority" && (
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
-                  <ComposerV2
+                  <StudioPanel
                     signalPrefill={signalDraftPrefill}
                     onSignalPrefillConsumed={() => setSignalDraftPrefill(null)}
                     draftPrefill={draftPrefill}
                     onDraftPrefillConsumed={() => setDraftPrefill(null)}
-                    onOpenDraft={(d) => { setDraftPrefill(d as any); setActiveTab("authority"); }}
                     onOpenCapture={() => handleOpenCapture()}
                   />
                 </ErrorBoundary>
@@ -1091,14 +1077,6 @@ const Dashboard = () => {
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
                   <WidgetsPage />
-                </ErrorBoundary>
-              </div>
-            )}
-
-            {activeTab === "studio" && (
-              <div className="animate-tab-spring aura-page">
-                <ErrorBoundary>
-                  <StudioPanel />
                 </ErrorBoundary>
               </div>
             )}

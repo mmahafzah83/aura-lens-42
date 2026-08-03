@@ -112,7 +112,26 @@ interface Choice {
   insight: string;
 }
 
-export default function StudioPanel() {
+/**
+ * C2 — the shell hands the studio its context. Every entry point in the app
+ * (Home, My Story, Signals, Overnight, Library, TrendDetail, lifecycle email)
+ * already computes these in Dashboard; the studio honours them.
+ */
+export interface StudioPanelProps {
+  signalPrefill?: any;
+  onSignalPrefillConsumed?: () => void;
+  draftPrefill?: any;
+  onDraftPrefillConsumed?: () => void;
+  onOpenCapture?: () => void;
+}
+
+export default function StudioPanel({
+  signalPrefill,
+  onSignalPrefillConsumed,
+  draftPrefill,
+  onDraftPrefillConsumed,
+  onOpenCapture,
+}: StudioPanelProps = {}) {
   const [searchParams] = useSearchParams();
   /* ---------- session and preferences ---------------------------- */
   const [ready, setReady] = useState(false);
@@ -242,7 +261,9 @@ export default function StudioPanel() {
       // Once per session: a query-param change must never inflate the metric.
       // A `?draft=` deep link is reported by `openDraft` instead, so the boot
       // emit stands aside — one open, one event.
-      if (!searchParams.get("draft") && !alreadyOpened("new")) {
+      // A `?draft=` deep link is opened by Dashboard and reported by
+      // `openDraft`, so the boot emit stands aside — one open, one event.
+      if (!searchParams.has("draft") && !alreadyOpened("new")) {
         void track("composer_opened", {
           source: "studio",
           signal_id: searchParams.get("signal") || null,
@@ -465,26 +486,58 @@ export default function StudioPanel() {
     return () => { dead = true; };
   }, [userId]);
 
-  /* The lifecycle emails deep-link straight into one draft. */
-  const deepLinkRef = useRef(false);
+  /**
+   * C3 — ONE owner of `?draft=`. Dashboard resolves the row (from BOTH
+   * `content_items` and `linkedin_posts`, honouring `src=`) and hands it here
+   * as `draftPrefill`. The studio no longer reads or deletes the parameter.
+   */
+  const draftPrefillRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!userId || deepLinkRef.current) return;
-    const id = searchParams.get("draft");
-    if (!id) return;
-    deepLinkRef.current = true;
+    if (!userId || !draftPrefill?.id) return;
+    if (draftPrefillRef.current === draftPrefill.id) return;
+    draftPrefillRef.current = draftPrefill.id;
     (async () => {
-      const d = await loadStudioDraft(id);
-      if (!d) {
+      const d: StudioDraft = {
+        id: draftPrefill.id,
+        body: draftPrefill.body || "",
+        language: draftPrefill.language === "ar" ? "ar" : "en",
+        type: draftPrefill.type === "carousel" ? "carousel" : draftPrefill.type === "framework" ? "framework" : "linkedin_post",
+        topic: draftPrefill.topic ?? null,
+        _source: draftPrefill._source === "content_items" ? "content_items" : "linkedin_posts",
+        title: draftPrefill.title ?? draftPrefill.topic ?? null,
+        created_at: draftPrefill.created_at ?? new Date().toISOString(),
+        signalId: draftPrefill.signalId ?? null,
+      };
+      // The shell may hand over a stub; the full row is authoritative.
+      const full = (await loadStudioDraft(d.id)) ?? (d.body ? d : null);
+      if (!full) {
         setProblem(T.draftMissing[lang]);
-        // An open that could not land is still an open: count it once, and say so.
-        if (!alreadyOpened(`draft:${id}`)) {
+        if (!alreadyOpened(`draft:${d.id}`)) {
           void track("composer_opened", { source: "lifecycle_email_missing", signal_id: null, move_state: null });
         }
+        onDraftPrefillConsumed?.();
         return;
       }
-      await openDraft(d, "lifecycle_email");
+      await openDraft(full, "dashboard_draft");
+      onDraftPrefillConsumed?.();
     })();
-  }, [userId, searchParams, openDraft, lang]);
+  }, [userId, draftPrefill, openDraft, lang, onDraftPrefillConsumed]);
+
+  /**
+   * C2 — a subject handed over by Home, My Story, Signals or TrendDetail.
+   * A carousel request lands on the deck format.
+   */
+  useEffect(() => {
+    if (!signalPrefill) return;
+    const title: string = signalPrefill.topic || signalPrefill.signalTitle || signalPrefill.trendHeadline || "";
+    if (title) {
+      preselectedRef.current = true;
+      setChoice({ id: signalPrefill.signalId ?? null, title, insight: signalPrefill.context || "" });
+      setTypedTopic("");
+    }
+    if (signalPrefill.contentFormat === "carousel") setFormat("slides");
+    onSignalPrefillConsumed?.();
+  }, [signalPrefill, onSignalPrefillConsumed]);
 
   /* Every subject, on request. The three ranked cards are a shortcut, not a cap. */
   useEffect(() => {
@@ -1460,9 +1513,16 @@ export default function StudioPanel() {
             </p>
           )}
           {!cardsLoading && cards.length === 0 && (
-            <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--text-secondary)", lineHeight: 1.7 }}>
-              {T.chooseEmpty[lang]}
-            </p>
+            <div style={{ display: "grid", gap: 10, justifyItems: rtlShell ? "end" : "start" }}>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--text-secondary)", lineHeight: 1.7, margin: 0 }}>
+                {T.chooseEmpty[lang]}
+              </p>
+              {onOpenCapture && (
+                <ButtonPrimary onClick={() => onOpenCapture()} style={{ minHeight: 44 }}>
+                  {T.captureNow[lang]}
+                </ButtonPrimary>
+              )}
+            </div>
           )}
           <div style={{ display: "grid", gap: 10 }}>
             {cards.map((c) => {

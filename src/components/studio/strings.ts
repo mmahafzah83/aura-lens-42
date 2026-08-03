@@ -90,6 +90,7 @@ export const T = {
     en: "Aura writes from what you read. Save an article you found interesting and come back.",
     ar: "أورا تكتب مما تقرأه. احفظ مقالاً لفت انتباهك ثم عُد.",
   },
+  captureNow: { en: "Capture something", ar: "التقط شيئًا" },
   pasteHead: { en: "Paste my own post", ar: "الصق منشوري" },
   pasteHelp: {
     en: "Bring your own words. Aura will take them from here.",

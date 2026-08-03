@@ -29,7 +29,6 @@ import PageViewTracker from "./components/PageViewTracker";
 // Older landing pages remain in the tree but are no longer routed or bundled.
 const LandingV2 = lazy(() => import("./pages/LandingV2"));
 const TrendDetail = lazy(() => import("./pages/TrendDetail"));
-const CarouselStudio = lazy(() => import("./pages/CarouselStudio"));
 const LinkedInImport = lazy(() => import("./pages/LinkedInImport"));
 const EditionStudio = lazy(() => import("./pages/EditionStudio"));
 const Admin = lazy(() => import("./pages/Admin"));
@@ -51,7 +50,6 @@ const CardPreview = lazy(() => import("./pages/CardPreview"));
 const GuideThoughtLeadershipStrategy = lazy(() => import("./pages/GuideThoughtLeadershipStrategy"));
 const SignatureStudio = lazy(() => import("./pages/SignatureStudio"));
 const SignatureHarness = lazy(() => import("./pages/SignatureHarness"));
-const Compose = lazy(() => import("./pages/Compose"));
 const Studio = lazy(() => import("./pages/Studio"));
 // Dev-only carousel renderer harness. Registered below only when import.meta.env.DEV.
 const CarouselPreview = lazy(() => import("./carousel/render/CarouselPreview"));
@@ -132,14 +130,15 @@ const App = () => (
             <Route path="/settings" element={<PasswordGate><Settings /></PasswordGate>} />
             {/* Legacy alias — Preferences is now the first tab inside Settings. */}
             <Route path="/preferences" element={<Navigate to="/settings?tab=preferences" replace />} />
-            <Route path="/carousel-studio" element={<PasswordGate><CarouselStudio /></PasswordGate>} />
+            {/* Retired surfaces — both are bookmarked, so they redirect into the studio with every parameter intact. */}
+            <Route path="/carousel-studio" element={<Studio />} />
+            <Route path="/compose" element={<Studio />} />
             <Route path="/linkedin-import" element={<PasswordGate><LinkedInImport /></PasswordGate>} />
             <Route path="/edition" element={<PasswordGate><EditionStudio /></PasswordGate>} />
             <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             <Route path="/card-preview" element={<PasswordGate><CardPreview /></PasswordGate>} />
             <Route path="/signature" element={<PasswordGate><SignatureStudio /></PasswordGate>} />
             <Route path="/signature-harness" element={<PasswordGate><SignatureHarness /></PasswordGate>} />
-            <Route path="/compose" element={<PasswordGate><Compose /></PasswordGate>} />
             <Route path="/studio" element={<PasswordGate><Studio /></PasswordGate>} />
             {import.meta.env.DEV && (
               <Route path="/carousel-preview" element={<CarouselPreview />} />
