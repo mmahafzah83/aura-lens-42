@@ -1080,6 +1080,14 @@ export default function StudioPanel() {
    * side of the viewport (never display:none, never visibility:hidden).
    */
   const canvasInStage = step === 3 && format === "slides" && Boolean(deck);
+  /**
+   * K5 — whichever mount is live reports fit. The on-screen preview only
+   * exists at step 3; outside it the off-screen export mount keeps the
+   * "a bit long" line honest.
+   */
+  const reportFit = useCallback((i: number, state: FitState) => {
+    setFits((f) => ({ ...f, [i]: state }));
+  }, []);
 
   /* ---------- content wrapper --------------------------------------
    * Page content only: no height, no page padding, no page background — the
@@ -1947,7 +1955,7 @@ export default function StudioPanel() {
               width={canvasWidth}
               current={current}
               onCurrent={setCurrent}
-              onFit={(i, state) => setFits((f) => ({ ...f, [i]: state }))}
+              onFit={reportFit}
               mountRef={mountRef}
               boxRef={canvasBoxRef}
               showCanvas={canvasInStage}
@@ -2246,7 +2254,6 @@ export default function StudioPanel() {
             open={sheet === "inspector"}
             title={T.zoneInspector[lang]}
             expanded={sheetTall}
-            height={phoneSheetH}
             onExpanded={setSheetTall}
             onClose={() => setSheet(null)}
           >
@@ -2271,7 +2278,6 @@ export default function StudioPanel() {
             open={sheet === "look"}
             title={T.lookHead[lang]}
             expanded={sheetTall}
-            height={phoneSheetH}
             onExpanded={setSheetTall}
             onClose={() => setSheet(null)}
           >
@@ -2291,7 +2297,6 @@ export default function StudioPanel() {
             open={sheet === "piece"}
             title={T.zonePiece[lang]}
             expanded={sheetTall}
-            height={phoneSheetH}
             onExpanded={setSheetTall}
             onClose={() => setSheet(null)}
           >
@@ -2390,7 +2395,7 @@ export default function StudioPanel() {
       {/* J4 — THE EXPORT MOUNT. Always off-screen, always EXPORT_WIDTH wide,
           whatever the screen is. Portalled to <body> so no ancestor can clip
           it. The on-screen preview keeps its own, screen-sized mount. */}
-      {deck &&
+      {deck && !canvasInStage &&
         createPortal(
           <div
             aria-hidden="true"
@@ -2402,7 +2407,7 @@ export default function StudioPanel() {
               theme={theme}
               width={EXPORT_WIDTH}
               current={current}
-              onFit={() => { /* fitting is reported by the on-screen preview only */ }}
+              onFit={reportFit}
               mountRef={exportMountRef}
             />
           </div>,
