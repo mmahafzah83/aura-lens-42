@@ -651,6 +651,8 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
       // Quality gate intentionally uses a different model (GPT-4o) for independent evaluation
       let gateResult: any = null;
       let gateSkipReason: string | null = null;
+      let hookReplaced = false;
+      let hookOriginal: string | null = null;
       try {
         const gatePromise = supabase.functions.invoke("evaluate-content-quality", {
           body: {
@@ -663,6 +665,9 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
             grounding_text: groundingContext || null,
             content_kind: "post",
           },
+          ...((isCron || isServiceRole)
+            ? { headers: { Authorization: `Bearer ${SERVICE_ROLE}` } }
+            : { headers: { Authorization: authHeader } }),
         });
         const timeout = new Promise((resolve) => {
           setTimeout(() => {
@@ -674,8 +679,13 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         if (gateRes?.data && !gateRes?.error) {
           gateResult = gateRes.data;
           if (gateResult?.scores?.hook < 7 && gateResult?.improved_hook) {
-            const firstLine = content.split("\n")[0];
-            if (firstLine) content = content.replace(firstLine, gateResult.improved_hook);
+            const lines = content.split("\n");
+            if (lines.length) {
+              hookOriginal = lines[0];
+              lines[0] = gateResult.improved_hook;
+              content = lines.join("\n");
+              hookReplaced = true;
+            }
           }
         } else {
           gateSkipReason = gateRes?.error === "timeout" ? "gate_timeout" : "gate_invoke_error";
@@ -699,6 +709,8 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         verdict: gateResult.verdict,
         weaknesses: Array.isArray(gateResult.weaknesses) ? gateResult.weaknesses : [],
         skipped: gateResult.skipped || false,
+        hook_replaced: hookReplaced,
+        original_hook: hookOriginal,
       } : null;
 
       // Observability: record every gate outcome, always, without blocking the response.
@@ -710,7 +722,7 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
           function_name: "generate-authority-content",
           language: effectiveLanguage,
           overall_score: gatePayload?.overall_score ?? 0,
-          pass: gatePayload ? gatePayload.pass : false,
+          pass: (gatePayload && !gatePayload.skipped) ? gatePayload.pass : null,
           assertions: gateResult?.assertions ?? null,
           weaknesses: Array.isArray(gateResult?.weaknesses) ? gateResult.weaknesses : [],
           skipped: gateResult ? (gateResult.skipped === true) : true,
@@ -726,7 +738,7 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
 
       // A gate that cannot answer must never swallow the draft. Only an actual
       // failing verdict blocks; a timeout / invoke error returns the draft free.
-      const gateBlocked = gatePayload ? gatePayload.pass === false : false;
+      const gateBlocked = (gatePayload && !gatePayload.skipped) ? gatePayload.pass === false : false;
 
       return new Response(JSON.stringify({
         content,
