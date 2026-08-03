@@ -1317,7 +1317,7 @@ export default function StudioPanel() {
   /** 64px shell navigation + 64px action bar + 8px of air. */
   const PHONE_BOTTOM_RESERVE = 136;
   /** Filmstrip, counter and the two wide steps under the slide. */
-  const PHONE_NAV_ROW = 140;
+  const PHONE_NAV_ROW = 200;
   const phoneColumnH = Math.max(320, viewportH - stageTop - PHONE_BOTTOM_RESERVE);
   const phoneSheetH = sheet
     ? Math.max(
@@ -1392,7 +1392,7 @@ export default function StudioPanel() {
       {/* M1 — on a phone the pinned four-pill header IS the journey map: same
           behaviour, clickable in any order, and it never scrolls away. */}
       {isPhone ? (
-        <PhoneProgress lang={lang} step={step} done={doneMap} onStep={(n) => setStep(n)} rtl={rtlShell} />
+        <PhoneProgress lang={lang} step={step} done={doneMap} onStep={(n) => setStep(n)} />
       ) : (
         <JourneyMap lang={lang} step={step} done={doneMap} onStep={(n) => setStep(n)} />
       )}
