@@ -118,6 +118,10 @@ export default function Studio() {
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState<null | "failed" | "session">(null);
   const genRunId = useRef(0);
+  /** The exact text Aura last generated. Anything else is the member's own. */
+  const generatedTextRef = useRef<string | null>(null);
+  /** Asked before a language rewrite would replace words the member owns. */
+  const [askLangSwitch, setAskLangSwitch] = useState<Lang | null>(null);
 
   const [deck, setDeck] = useState<DeckIR | null>(null);
   const [theme, setTheme] = useState<ThemeName>(DEFAULT_THEME);
@@ -141,6 +145,14 @@ export default function Studio() {
   const [showAllSubjects, setShowAllSubjects] = useState(false);
   /** The quality gate held this post. One sentence, never a checklist. */
   const [notReady, setNotReady] = useState<string | null>(null);
+  /**
+   * No state may disable the action that clears it: editing the words is
+   * exactly the signal that lifts the block. The gate re-runs server-side.
+   */
+  const changeContent = useCallback((next: string) => {
+    setContent(next);
+    setNotReady(null);
+  }, []);
   const [status, setStatus] = useState<string | null>(null);
   /** In flight. Never a tick — the action has not finished. */
   const [busyMessage, setBusyMessage] = useState<string | null>(null);
