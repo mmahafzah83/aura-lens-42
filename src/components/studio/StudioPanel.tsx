@@ -2395,17 +2395,17 @@ export default function StudioPanel() {
             }
             primary={
               step === 3 && format === "slides" && !deck ? (
-                <ButtonPrimary onClick={() => void makeSlides()} disabled={deckBusy} style={{ minHeight: 50, width: "100%" }}>
+                <ButtonPrimary onClick={() => void makeSlides()} disabled={!phonePrimaryEnabled} style={{ minHeight: 50, width: "100%" }}>
                   {deckBusy ? T.makingSlides[lang] : T.makeSlides[lang]}
                 </ButtonPrimary>
               ) : step < 4 ? (
-                <ButtonPrimary onClick={onContinue} disabled={!canContinue || generating} style={{ minHeight: 50, width: "100%" }}>
+                <ButtonPrimary onClick={onContinue} disabled={!phonePrimaryEnabled} style={{ minHeight: 50, width: "100%" }}>
                   {T.continue[lang]} {rtlShell ? "←" : "→"}
                 </ButtonPrimary>
               ) : !(format === "slides" && deck) && !published && !confirmingPost ? (
                 <ButtonPrimary
                   onClick={requestPost}
-                  disabled={!content.trim() || content.length > POST_MAX_CHARS || busy === "post" || Boolean(notReady)}
+                  disabled={!phonePrimaryEnabled}
                   style={{ minHeight: 50, width: "100%" }}
                 >
                   {T.postItNow[lang]}
@@ -2416,24 +2416,23 @@ export default function StudioPanel() {
         </>
       )}
 
-      {/* The deck mount, kept alive with real layout whenever a deck exists.
-          Portalled to <body>: the dashboard tab container clips its overflow
-          and creates a positioning ancestor, and the PDF export needs this
-          mount to have real, unclipped layout. */}
-      {deck && !canvasInStage &&
+      {/* J4 — THE EXPORT MOUNT. Always off-screen, always EXPORT_WIDTH wide,
+          whatever the screen is. Portalled to <body> so no ancestor can clip
+          it. The on-screen preview keeps its own, screen-sized mount. */}
+      {deck &&
         createPortal(
           <div
             aria-hidden="true"
             dir="ltr"
-            style={{ position: "absolute", left: -99999, top: 0, width: canvasWidth }}
+            style={{ position: "absolute", left: -99999, top: 0, width: EXPORT_WIDTH }}
           >
             <StudioCanvas
               deck={deck}
               theme={theme}
-              width={canvasWidth}
+              width={EXPORT_WIDTH}
               current={current}
-              onFit={(i, state) => setFits((f) => ({ ...f, [i]: state }))}
-              mountRef={mountRef}
+              onFit={() => { /* fitting is reported by the on-screen preview only */ }}
+              mountRef={exportMountRef}
             />
           </div>,
           document.body,
