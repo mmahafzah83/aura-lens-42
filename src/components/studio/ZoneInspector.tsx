@@ -89,6 +89,16 @@ export const ZoneInspector: React.FC<{
   const available = swappableArchetypes(deck, slide);
   const canHoldPicture = mediaSupport(slide.archetype) !== "none";
 
+  // A move only happens if the landing position is itself movable, so the
+  // button is disabled whenever `moveSlide` would return the deck unchanged.
+  const landingFree = (to: number) => {
+    if (to < 0 || to >= deck.slides.length) return false;
+    const target = deck.slides.find((s) => s.index === to);
+    return Boolean(target) && !isLocked(deck, target!);
+  };
+  const canMoveEarlier = !locked && landingFree(slide.index - 1);
+  const canMoveLater = !locked && landingFree(slide.index + 1);
+
   const fields: Array<{ key: string; label: string; path: SlotPath; budget?: number; rows: number }> = [];
   for (const slot of SLOT_ORDER) {
     const value = (slide.slots as Slots)[slot];
