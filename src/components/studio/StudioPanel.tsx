@@ -1900,12 +1900,14 @@ export default function StudioPanel() {
               to be a column is now a sheet, and the sheet is anchored below
               the slide so the slide is never covered. */}
           {format === "slides" && isPhone && (
-            <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
+            <div style={{ marginTop: 12 }}>
               <PhoneStage
                 lang={lang}
                 deck={deck}
                 theme={theme}
-                width={canvasWidth}
+                width={phoneSlideWidth}
+                slideH={phoneSlideH}
+                columnH={phoneColumnH}
                 current={current}
                 onCurrent={setCurrent}
                 onFit={(i, state) => setFits((f) => ({ ...f, [i]: state }))}
@@ -1913,36 +1915,34 @@ export default function StudioPanel() {
                 boxRef={canvasBoxRef}
                 showCanvas={canvasInStage}
                 empty={<span>{T.noSlidesYet[lang]}</span>}
-              />
-
-              {/* Collapsed rows. None of them consumes height until asked. */}
-              {([
+                footer={
+                  <div style={{ display: "flex", gap: 8, overflowX: "auto", WebkitOverflowScrolling: "touch", paddingTop: 4 }}>
+                    {([
                 ["inspector", T.openSlideEditor[lang], !deck],
                 ["look", T.openLook[lang], false],
                 ["piece", T.openThisPiece[lang], false],
-              ] as Array<["inspector" | "look" | "piece", string, boolean]>).map(([key, label, refused]) => (
-                <div key={key} style={{ display: "grid", gap: 4 }}>
-                  <button
+                    ] as Array<["inspector" | "look" | "piece", string, boolean]>).map(([key, label, refused]) => (
+                      <button
+                    key={key}
                     type="button"
                     disabled={refused}
                     onClick={() => { setSheet(key); setSheetTall(false); }}
+                    title={refused ? T.noSlidesYet[lang] : undefined}
                     style={{
-                      width: "100%", minHeight: 52, padding: "0 14px", borderRadius: 12,
-                      textAlign: rtlShell ? "right" : "left", cursor: refused ? "not-allowed" : "pointer",
+                      flex: "0 0 auto", minHeight: 48, padding: "0 14px", borderRadius: 12,
+                      cursor: refused ? "not-allowed" : "pointer",
                       opacity: refused ? 0.6 : 1,
                       background: "var(--surface-card)", border: "1px solid var(--border-default)",
-                      fontFamily: "var(--ff-ui)", fontSize: 15, fontWeight: 600, color: "var(--text-primary)",
+                      fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 600, color: "var(--text-primary)",
+                      whiteSpace: "nowrap",
                     }}
-                  >
+                      >
                     {label}
-                  </button>
-                  {refused && (
-                    <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.6, color: "var(--text-muted)", margin: 0 }}>
-                      {T.noSlidesYet[lang]}
-                    </p>
-                  )}
-                </div>
-              ))}
+                      </button>
+                    ))}
+                  </div>
+                }
+              />
             </div>
           )}
 
