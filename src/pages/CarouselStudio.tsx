@@ -671,6 +671,19 @@ export default function CarouselStudio() {
         {/* 4–8 · the deck */}
         {deck && (
           <div style={{ display: "grid", gap: 16 }}>
+            {failures.length > 0 && (
+              <div style={{ ...panel, background: "var(--error-tint)", border: "none", display: "grid", gap: 8 }}>
+                <div style={{ ...mono, color: "var(--error)" }}>
+                  {lang === "ar"
+                    ? "لم نتمكن من إتمام الكاروسيل — لنجرّب مرة أخرى."
+                    : "We couldn't finish your carousel — let's try again."}
+                </div>
+                {failures.map((f, i) => (
+                  <div key={i} style={{ fontSize: 13, color: "var(--text-primary)", lineHeight: 1.6 }}>{f}</div>
+                ))}
+                <div><ButtonGhost onClick={generate}>Try again</ButtonGhost></div>
+              </div>
+            )}
             {/* filmstrip */}
             <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
               {deck.slides.map((s) => {
