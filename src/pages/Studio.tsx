@@ -353,19 +353,29 @@ export default function Studio() {
     setShowing("slides");
     setDeckBusy(true);
     setDeckFailures([]);
-    setStatus(null);
+    setProblem(null);
+    let timedOut = false;
+    const timeout = new Promise<"timeout">((resolve) => {
+      window.setTimeout(() => { timedOut = true; resolve("timeout"); }, 90000);
+    });
     try {
       await saveDraft();
-      const { data, error } = await supabase.functions.invoke("generate-deck", {
+      const call = supabase.functions.invoke("generate-deck", {
         body: {
           signal_id: choice.id,
-          length: 7,
+          length: deckLength,
           theme,
           lang: writeLang,
           // Always: the slides adapt the words the member approved.
           source_text: content,
         },
       });
+      const raced = await Promise.race([call, timeout]);
+      if (raced === "timeout" || timedOut) {
+        setProblem(T.slidesTimedOut[lang]);
+        return;
+      }
+      const { data, error } = raced as Awaited<typeof call>;
       if (error && !data) throw error;
       const result: any = data;
       if (!result?.ok) {
@@ -383,23 +393,29 @@ export default function Studio() {
     } finally {
       setDeckBusy(false);
     }
-  }, [choice, content, theme, writeLang, saveDraft, remember]);
+  }, [choice, content, theme, deckLength, writeLang, lang, saveDraft, remember]);
 
   const changeThisLine = useCallback(async () => {
     if (!deck) return;
     setChangingLine(true);
+    setProblem(null);
     try {
       const { data } = await supabase.functions.invoke("generate-deck", {
         body: { signal_id: deck.signal_id, rewrite_slide: current, deck },
       });
       const result: any = data;
-      if (result?.ok && result.slide) {
-        remember();
-        setDeck((d) => (d ? replaceSlide(d, current, result.slide) : d));
-      }
-    } catch { /* the slide simply stays as it was */ }
+      if (!result?.ok || !result.slide) { setProblem(T.lineChangeFailed[lang]); return; }
+      // A malformed slide is refused here, not discovered later at export.
+      const candidate = replaceSlide(deck, current, result.slide);
+      const parsed = DeckIRSchema.safeParse(candidate);
+      if (!parsed.success) { setProblem(T.lineChangeFailed[lang]); return; }
+      remember();
+      setDeck({ ...parsed.data, theme });
+    } catch {
+      setProblem(T.lineChangeFailed[lang]);
+    }
     finally { setChangingLine(false); }
-  }, [deck, current, remember]);
+  }, [deck, current, theme, lang, remember]);
 
   const uploadPicture = useCallback(async (file: File) => {
     setPictureNotice(null);
