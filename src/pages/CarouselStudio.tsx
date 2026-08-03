@@ -288,7 +288,6 @@ export default function CarouselStudio() {
     if (!signal) return;
     setError(null);
     setFailures([]);
-    setDeck(null);
     setExported(null);
     setPublished(false);
     setPostUrl(null);
@@ -317,6 +316,8 @@ export default function CarouselStudio() {
       }
       const parsed = DeckIRSchema.safeParse(result.deck);
       if (!parsed.success) throw new Error("The deck came back in a shape the renderer does not accept.");
+      // Only now is the previous deck replaced: a failed run above leaves the
+      // member's existing deck untouched on screen.
       setDeck({ ...parsed.data, theme });
       setCaption(typeof result.caption === "string" ? result.caption : "");
       setVoiceFlags(Array.isArray(result.quality?.flags) ? result.quality.flags : []);
