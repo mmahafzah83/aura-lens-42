@@ -1013,6 +1013,24 @@ export default function StudioPanel() {
     else setProblem(T.postFailed[lang]);
   }, [saveDraft, lang]);
 
+  /**
+   * L3 — "settled" means: every slide has reported a fit AND two consecutive
+   * readings a quarter of a second apart are identical. Reads a ref, never
+   * stale state, and gives up after eight seconds rather than hanging.
+   */
+  const waitForSlidesSettled = useCallback(async (count: number) => {
+    const deadline = Date.now() + 8000;
+    let previous = "";
+    while (Date.now() < deadline) {
+      const snapshot = Array.from({ length: count }, (_, i) => fitsRef.current[i]);
+      const signature = JSON.stringify(snapshot);
+      if (snapshot.every(Boolean) && signature === previous) return true;
+      previous = signature;
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    return false;
+  }, []);
+
   const exportFile = useCallback(async () => {
     // Never fails silently: if it cannot run, the member is told why.
     if (!deck) { setProblem(T.exportNoDeck[lang]); return; }
