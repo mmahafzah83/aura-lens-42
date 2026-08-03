@@ -163,6 +163,9 @@ export default function StudioPanel() {
   const [deckSource, setDeckSource] = useState<string | null>(null);
   const [current, setCurrent] = useState(0);
   const [fits, setFits] = useState<Record<number, FitState>>({});
+  /** The same reports, readable from inside an await loop without going stale. */
+  const fitsRef = useRef<Record<number, FitState>>({});
+  fitsRef.current = fits;
   const [changingLine, setChangingLine] = useState(false);
   const [pictureNotice, setPictureNotice] = useState<string | null>(null);
 
