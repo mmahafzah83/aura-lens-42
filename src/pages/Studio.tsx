@@ -673,7 +673,7 @@ export default function Studio() {
           tracking_status: "published",
           ...(fresh ? { published_at: now } : {}),
           acquisition: "published_via_aura",
-          ...(url ? { post_url: url, published_confirmed_at: now } : {}),
+          ...(url ? { post_url: url, ...(fresh ? { published_confirmed_at: now } : {}) } : {}),
           ...(fresh
             ? {
                 like_count: 0,
