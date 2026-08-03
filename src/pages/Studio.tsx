@@ -644,9 +644,9 @@ export default function Studio() {
       const origin = originDraftRef.current;
       if (origin?.source === "content_items") {
         await supabase.from("content_items").update({ status: "published" } as any).eq("id", origin.id);
-      } else if (draftSource === "content_items" && draftId) {
-        await supabase.from("content_items").update({ status: "published" } as any).eq("id", draftId);
       }
+      // Spent. A later publish in this session must not re-mark this twin.
+      originDraftRef.current = null;
 
       // Aura learns from what was actually posted. Best-effort, never blocking.
       try {
