@@ -36,8 +36,8 @@ export const T = {
   // Posture
   postureHead: { en: "How would you like to work with Aura?", ar: "كيف تحب أن تعمل مع أورا؟" },
   postureSub: {
-    en: "You can change this whenever you like, on any piece.",
-    ar: "يمكنك تغيير هذا متى شئت، في أي عمل.",
+    en: "You can change this whenever you like, on any post.",
+    ar: "يمكنك تغيير هذا متى شئت، في أي منشور.",
   },
   postureDelegator: { en: "Write it for me", ar: "اكتبه لي" },
   postureDelegatorSub: { en: "Aura drafts, you approve. Fastest.", ar: "أورا تكتب وأنت توافق. الأسرع." },
@@ -69,16 +69,15 @@ export const T = {
   subBuild: { en: "Build", ar: "البناء" },
   subLook: { en: "Look", ar: "المظهر" },
   savedMoment: { en: "Saved a moment ago", ar: "حُفظ قبل لحظات" },
-  undo: { en: "Undo", ar: "تراجع" },
   saveLater: { en: "Save and come back later", ar: "احفظ وعُد لاحقاً" },
   saveLaterNote: {
-    en: "Saved to Your pieces. You can reopen it and carry on from this step.",
-    ar: "محفوظ في أعمالك. يمكنك فتحه والمتابعة من هذه الخطوة.",
+    en: "Saved to your drafts. You can reopen it and carry on from this step.",
+    ar: "محفوظ في مسوّداتك. يمكنك فتحه والمتابعة من هذه الخطوة.",
   },
   continue: { en: "Continue", ar: "متابعة" },
 
   // Step 1 — choose
-  chooseHead: { en: "What is this piece about?", ar: "عن ماذا يدور هذا العمل؟" },
+  chooseHead: { en: "What is this post about?", ar: "عن ماذا يدور هذا المنشور؟" },
   chooseHelp: {
     en: "These come from what you saved. Pick one, or type your own subject.",
     ar: "هذه من المواد التي حفظتها. اختر واحدة، أو اكتب موضوعك.",
@@ -137,8 +136,8 @@ export const T = {
     ar: "يصبح منشورك النص المرافق، وتبني أورا ملف شرائح معه.",
   },
 
-  // Zone: this piece
-  zonePiece: { en: "This piece", ar: "هذا العمل" },
+  // Zone: this post
+  zonePiece: { en: "This post", ar: "هذا المنشور" },
   stillToDo: { en: "Still to do", ar: "ما تبقّى" },
   todoWords: { en: "Words approved", ar: "الكلمات معتمدة" },
   todoSlides: { en: "Slides made", ar: "الشرائح جاهزة" },
@@ -172,8 +171,8 @@ export const T = {
   alwaysLast: { en: "This one always comes last.", ar: "هذه دائماً في النهاية." },
   cannotUse: { en: "Not available here", ar: "غير متاح هنا" },
   lockedLayout: {
-    en: "The first and last slides keep their shape so your piece opens and closes the same way every time.",
-    ar: "الشريحة الأولى والأخيرة تحتفظان بشكلهما ليبدأ عملك وينتهي بالطريقة نفسها في كل مرة.",
+    en: "The first and last slides keep their shape so your post opens and closes the same way every time.",
+    ar: "الشريحة الأولى والأخيرة تحتفظان بشكلهما ليبدأ منشورك وينتهي بالطريقة نفسها في كل مرة.",
   },
 
   // Layout reasons
@@ -205,7 +204,7 @@ export const T = {
     en: "We could not post it just now. Your words are kept — edit anything and try again.",
     ar: "لم نتمكن من نشره الآن. كلماتك محفوظة — عدّل ما تشاء وحاول مرة أخرى.",
   },
-  savingPiece: { en: "Saving your piece…", ar: "نحفظ عملك…" },
+  savingPiece: { en: "Saving your post…", ar: "نحفظ منشورك…" },
 
   // Publish — slides
   captionHead: { en: "Your caption", ar: "النص المرافق" },
@@ -362,8 +361,8 @@ export const T = {
   // Your drafts, on step 1
   draftsHead: { en: "Your drafts", ar: "مسوّداتك" },
   draftsHelp: {
-    en: "Pieces already written for you. Open one and carry on.",
-    ar: "أعمال مكتوبة لك بالفعل. افتح واحداً وتابع.",
+    en: "Posts already written for you. Open one and carry on.",
+    ar: "منشورات مكتوبة لك بالفعل. افتح واحداً وتابع.",
   },
   draftSaved: { en: "saved", ar: "حُفظ" },
   draftOpened: { en: "We opened that draft. Carry on where it stopped.", ar: "فتحنا تلك المسوّدة. تابع من حيث توقفت." },
@@ -379,15 +378,38 @@ export const T = {
   writeAgainEn: { en: "Write this in English instead", ar: "اكتبه بالإنجليزية بدلاً من ذلك" },
   writeAgainAr: { en: "Write this in Arabic instead", ar: "اكتبه بالعربية بدلاً من ذلك" },
 
-  // The quality gate, in one sentence a member can act on
-  notReadyLead: {
-    en: "This is not ready to go out yet. One change first:",
-    ar: "هذا ليس جاهزاً للنشر بعد. تغيير واحد أولاً:",
+  // P1 — the quality gate, in OUR sentences, chosen by category.
+  // The judge's own words never reach a member: only these four exist.
+  gateUnsupportedNumber: {
+    en: "One number in this post isn't backed by anything you've saved. Change it or take it out.",
+    ar: "رقم في هذا المنشور لا يستند إلى شيء مما حفظته. غيّره أو احذفه.",
   },
-  notReadyPlain: {
-    en: "This is not ready to go out yet. Sharpen the opening line and try again.",
-    ar: "هذا ليس جاهزاً للنشر بعد. اجعل السطر الأول أوضح ثم حاول مرة أخرى.",
+  gateLanguage: {
+    en: "This is written in English but your posts usually go out in Arabic. Post it as it is, or write it in Arabic instead.",
+    ar: "هذا مكتوب بالإنجليزية بينما تنشر عادةً بالعربية. انشره كما هو، أو اكتبه بالعربية بدلاً من ذلك.",
   },
+  gateGeneric: {
+    en: "This reads like anyone could have written it. Add the detail only you would know.",
+    ar: "هذا يقرأ وكأن أي شخص كتبه. أضف التفصيل الذي تعرفه أنت وحدك.",
+  },
+  gateOther: {
+    en: "This isn't ready to go out yet. Change one thing and try again.",
+    ar: "هذا ليس جاهزاً للنشر بعد. غيّر شيئاً واحداً وحاول مرة أخرى.",
+  },
+  postAnyway: { en: "Post it anyway", ar: "انشره على أي حال" },
+
+  // P3 — progress that indicates progress
+  aboutSecondsLeft: { en: "about {n} seconds left", ar: "يتبقى {n} ثانية تقريباً" },
+
+  // P9 — the ending
+  cycleDoneHead: { en: "That post is now counted.", ar: "هذا المنشور محسوب الآن." },
+  cycleDoneBody: {
+    en: "We have the link, so it will show up in your library and in how you are performing.",
+    ar: "لدينا الرابط، لذا سيظهر في مكتبتك وفي أدائك.",
+  },
+  writeAnother: { en: "Write another", ar: "اكتب منشوراً آخر" },
+  goToLibrary: { en: "Go to your library", ar: "اذهب إلى مكتبتك" },
+  seePerformance: { en: "See how it performs", ar: "شاهد أداءه" },
 } as const;
 
 /**
