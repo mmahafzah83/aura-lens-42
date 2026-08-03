@@ -1489,6 +1489,10 @@ export default function Studio() {
             <ButtonGhost
               onClick={() => {
                 const other: Lang = writeLang === "ar" ? "en" : "ar";
+                // Words the member owns are never silently replaced.
+                const ownWords =
+                  content.trim().length > 0 && content !== (generatedTextRef.current ?? "");
+                if (ownWords) { setAskLangSwitch(other); return; }
                 setWriteLang(other);
                 setNotReady(null);
                 void generate(undefined, other);
@@ -1498,6 +1502,35 @@ export default function Studio() {
             >
               {writeLang === "ar" ? T.writeAgainEn[lang] : T.writeAgainAr[lang]}
             </ButtonGhost>
+            {askLangSwitch && (
+              <div
+                style={{
+                  marginTop: 10, background: "var(--surface-subtle)",
+                  border: "1px solid var(--border-default)", borderRadius: 12, padding: 12,
+                }}
+              >
+                <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.75, color: "var(--text-primary)", margin: "0 0 10px" }}>
+                  {askLangSwitch === "ar" ? T.langSwitchHeadAr[lang] : T.langSwitchHeadEn[lang]}
+                </p>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <ButtonPrimary
+                    onClick={() => {
+                      const other = askLangSwitch;
+                      setAskLangSwitch(null);
+                      setWriteLang(other);
+                      setNotReady(null);
+                      void generate(undefined, other);
+                    }}
+                    style={{ minHeight: 44 }}
+                  >
+                    {T.langSwitchYes[lang]}
+                  </ButtonPrimary>
+                  <ButtonGhost onClick={() => setAskLangSwitch(null)} style={{ minHeight: 44 }}>
+                    {T.langSwitchNo[lang]}
+                  </ButtonGhost>
+                </div>
+              </div>
+            )}
           </div>
           {writeArea}
         </StageCard>
