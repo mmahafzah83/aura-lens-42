@@ -211,7 +211,115 @@ export const T = {
   slidesWord: { en: "slides", ar: "شريحة" },
   captionNote: { en: "we open LinkedIn with your caption already copied.", ar: "نفتح لينكدإن ونصّك المرافق منسوخ بالفعل." },
   linkNote: { en: "so Aura can tell you how it performed.", ar: "لتخبرك أورا كيف كان أداؤه." },
+
+  // Confirm before posting
+  confirmPostHead: {
+    en: "Post this to LinkedIn now? It will appear on your profile straight away.",
+    ar: "أننشر هذا على لينكدإن الآن؟ سيظهر على ملفك فوراً.",
+  },
+  confirmPostYes: { en: "Post it", ar: "انشره" },
+  confirmPostNo: { en: "Not yet", ar: "ليس الآن" },
+
+  // Reordering reasons
+  cannotMoveEarlier: { en: "The opening slide always comes first.", ar: "الشريحة الافتتاحية تأتي أولاً دائماً." },
+  cannotMoveLater: { en: "The closing slide always comes last.", ar: "الشريحة الختامية تأتي أخيراً دائماً." },
+
+  // Look tab
+  lookHead: { en: "How it looks", ar: "شكل العمل" },
+  lookTheme: { en: "Colours", ar: "الألوان" },
+  lookLength: { en: "How many slides", ar: "عدد الشرائح" },
+  lookLengthNote: {
+    en: "Changing this makes the slides again from your post.",
+    ar: "تغيير هذا يعيد صنع الشرائح من منشورك.",
+  },
+  lookNeedsDeck: { en: "Make the slides first.", ar: "اصنع الشرائح أولاً." },
+
+  // Problems
+  exportNoDeck: { en: "There are no slides to make a file from yet.", ar: "لا توجد شرائح لعمل ملف منها بعد." },
+  exportNotReady: {
+    en: "The slides are not ready on screen yet. Wait a moment and try again.",
+    ar: "الشرائح ليست جاهزة على الشاشة بعد. انتظر لحظة وحاول مرة أخرى.",
+  },
+  slidesTimedOut: {
+    en: "The slides took too long. Nothing was lost — try once more.",
+    ar: "استغرقت الشرائح وقتاً طويلاً. لم يُفقد شيء — جرّب مرة أخرى.",
+  },
+  lineChangeFailed: {
+    en: "Aura could not find another way to say this line. Your words are unchanged.",
+    ar: "لم تجد أورا صياغة أخرى لهذا السطر. كلماتك كما هي.",
+  },
+  typedTopicNoSlides: {
+    en: "Slides are built from a saved subject. Pick one from your saved material to make slides.",
+    ar: "الشرائح تُبنى من موضوع محفوظ. اختر واحداً من موادك المحفوظة لصنع الشرائح.",
+  },
+  draftRestored: { en: "We brought back what you were writing.", ar: "أعدنا ما كنت تكتبه." },
 } as const;
+
+/** Arabic names for the slot labels rendered by the inspector. */
+export const slotLabelAr: Record<string, string> = {
+  chip: "التسمية",
+  hero_lines: "الافتتاحية",
+  headline: "العنوان",
+  subline: "التأطير",
+  term: "المصطلح",
+  term_def: "التعريف",
+  quote: "الاقتباس",
+  stat_value: "الرقم",
+  stat_label: "ماذا يقيس",
+  source: "المصدر",
+  body: "الفكرة الأساسية",
+  checklist: "الخطوات",
+  callout_label: "تسمية التنويه",
+  callout_body: "التنويه",
+  cta_pill: "سؤال الختام",
+  media: "الصورة",
+};
+
+/** Arabic names for the slide layouts. */
+export const archetypeLabelAr: Record<string, string> = {
+  cover_hero: "الغلاف",
+  cover_stat: "غلاف برقم",
+  frame: "التأطير",
+  evidence: "الدليل",
+  benchmark: "المقارنة",
+  quote: "اقتباس",
+  steps: "خطوات",
+  definition: "تعريف",
+  close: "الختام",
+};
+
+/**
+ * Arabic forms of the plain-English problem lines produced by `plainFailure`.
+ * Matched on a stable fragment of the English text; anything unmatched falls
+ * back to a general Arabic line rather than leaking English.
+ */
+export const attentionAr: Array<[RegExp, string]> = [
+  [/one emphasis only/i, "لا يمكن إبراز أكثر من عنصر واحد في الشريحة."],
+  [/without a source/i, "هناك رقم بلا مصدر. أضف من أين جاء."],
+  [/nothing on it/i, "هناك شريحة فارغة. أضف نصاً أو احذفها."],
+  [/same layout/i, "شريحتان متجاورتان تستخدمان الشكل نفسه."],
+  [/too long for the slide|overflows/i, "النص أطول من مساحة الشريحة."],
+  [/hook line/i, "سطر الافتتاحية أطول من المسموح، وسينكسر على سطرين."],
+  [/adjust something/i, "احتاجت أورا إلى تعديل شيء وستحاول مرة أخرى."],
+];
+
+/** Translate one plain-English problem line for an Arabic interface. */
+export function attentionText(englishLine: string, lang: Lang): string {
+  if (lang !== "ar") return englishLine;
+  for (const [pattern, arabic] of attentionAr) {
+    if (pattern.test(englishLine)) return arabic;
+  }
+  return "احتاجت أورا إلى تعديل شيء وستحاول مرة أخرى.";
+}
+
+/** Arabic version of a start-card reason, keyed off its kind. */
+export function startReason(kind: string, count: number, english: string, lang: Lang): string {
+  if (lang !== "ar") return english;
+  if (kind === "new_evidence") return `${count} مصدراً يقف خلف هذا الآن — بعضها وصل بعد آخر منشور لك عنه.`;
+  if (kind === "accelerating") return `يكتسب زخماً — ${count} مصدراً وما زال يتصاعد.`;
+  if (kind === "never_written") return `أقوى إشاراتك ولم تكتب عنها بعد — ${count} مصدراً.`;
+  return english;
+}
 
 export function tr(key: keyof typeof T, lang: Lang): string {
   const entry = T[key] as Record<string, unknown>;
