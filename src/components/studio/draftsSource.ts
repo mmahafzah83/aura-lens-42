@@ -56,7 +56,7 @@ export async function loadStudioDrafts(): Promise<StudioDraft[]> {
         type: normaliseType(r.type),
         topic: params.topic ?? null,
         _source: "content_items",
-        title: params.topic ?? null,
+        title: r.title || params.topic || null,
         created_at: r.created_at,
         signalId: params.signal_id ?? null,
       });
