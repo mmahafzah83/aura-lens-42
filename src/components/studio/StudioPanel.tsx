@@ -1297,9 +1297,7 @@ export default function StudioPanel() {
   return shell(
     <>
       {/* One slim strip. This is a page inside Aura; the shell owns navigation.
-          On a phone at the writing step the post is the only thing on screen,
-          so this strip stands down there (M5). */}
-      {(!isPhone || step !== 2) && (
+          It renders at every width; on a narrow screen it simply wraps. */}
       <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", paddingBottom: 6 }}>
         <button
           type="button"
