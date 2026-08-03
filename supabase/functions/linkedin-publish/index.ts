@@ -728,7 +728,7 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
         console.error("voice-distill kick outer failure (non-blocking):", e);
       }
 
-      return json({ success: true, urn, postUrl });
+      return json({ success: true, urn, postUrl, ...(quality_note ? { quality_note } : {}) });
     }
 
     // Every non-2xx path (including 401 and a blown deadline) is terminal here:
