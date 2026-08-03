@@ -340,8 +340,7 @@ export default function StudioPanel() {
     // Debounced, and silent: `T.editHint` already tells the member their
     // changes save themselves, so no live region fires on every keystroke.
     const t = window.setTimeout(persistNow, 1500);
-    // RULE: a debounced save always flushes before the component disappears.
-    return () => { window.clearTimeout(t); persistNow(); };
+    return () => window.clearTimeout(t);
   }, [content, deck, choice, writeLang, step, format, draftId, draftSource, persistNow]);
 
   /* Backgrounding the tab or closing the page is also a disappearance. */
@@ -353,6 +352,9 @@ export default function StudioPanel() {
     return () => {
       document.removeEventListener("visibilitychange", onHide);
       window.removeEventListener("pagehide", flush);
+      // RULE: a debounced save always flushes before the component can vanish.
+      // Tapping a navigation item unmounts this tab; the last words still land.
+      persistNow();
     };
   }, [persistNow]);
 
