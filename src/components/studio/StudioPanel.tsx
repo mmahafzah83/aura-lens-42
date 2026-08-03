@@ -34,6 +34,11 @@ import ZonePiece from "@/components/studio/ZonePiece";
 import ZoneStage from "@/components/studio/ZoneStage";
 import ZoneInspector from "@/components/studio/ZoneInspector";
 import ZoneLook from "@/components/studio/ZoneLook";
+import PhoneProgress from "@/components/studio/PhoneProgress";
+import PhoneActionBar from "@/components/studio/PhoneActionBar";
+import PhoneSheet from "@/components/studio/PhoneSheet";
+import PhoneStage from "@/components/studio/PhoneStage";
+import { useIsPhone, PHONE_MAX_WIDTH } from "@/components/studio/usePhone";
 import { T, attentionText, pictureProblem, postureLabel, startReason, type Lang, type Posture } from "@/components/studio/strings";
 
 /** Slides need enough words to divide up. Below this the option is refused. */
@@ -201,6 +206,14 @@ export default function StudioPanel() {
   const canvasBoxRef = useRef<HTMLDivElement | null>(null);
   const [canvasWidth, setCanvasWidth] = useState(520);
   const [narrow, setNarrow] = useState(false);
+  /**
+   * THE phone branch. One breakpoint, one source: `usePhone`. Above it the
+   * desktop tree renders exactly as before; below it a different shape.
+   */
+  const isPhone = useIsPhone();
+  /** Which bottom sheet is open on a phone. Only ever one at a time. */
+  const [sheet, setSheet] = useState<null | "inspector" | "look" | "piece">(null);
+  const [sheetTall, setSheetTall] = useState(false);
 
   const rtlShell = lang === "ar";
   const rtlWrite = writeLang === "ar";
@@ -251,12 +264,13 @@ export default function StudioPanel() {
     const measure = () => {
       setNarrow(window.innerWidth < 900);
       const w = canvasBoxRef.current?.clientWidth ?? 520;
-      setCanvasWidth(Math.max(260, Math.min(720, w - 28)));
+      const gutter = window.innerWidth < PHONE_MAX_WIDTH ? 0 : 28;
+      setCanvasWidth(Math.max(260, Math.min(720, w - gutter)));
     };
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
-  }, [deck, step]);
+  }, [deck, step, isPhone, sheet]);
 
   /* ---------- bring back the piece -------------------------------- */
   const restoredRef = useRef(false);
@@ -1067,11 +1081,12 @@ export default function StudioPanel() {
    * or they get half-RTL, which is worse than either.
    * The bottom padding clears BOTH the mobile navigation bar and the capture
    * button that floats above it, so no studio control sits underneath them.
+   * On a phone it must clear the one-thumb action bar as well.
    */
   const shell = (children: React.ReactNode) => (
     <div
       dir={rtlShell ? "rtl" : "ltr"}
-      className="pb-[152px] md:pb-0"
+      className={isPhone ? "pb-[188px] md:pb-0" : "pb-[152px] md:pb-0"}
       style={{ maxWidth: 1360, margin: "0 auto" }}
     >
       {children}
@@ -1237,9 +1252,33 @@ export default function StudioPanel() {
     if (step === 3) { setStep(4); }
   };
 
+  /**
+   * M2/M4 — a focused field on a phone scrolls itself into the middle of the
+   * viewport, so the on-screen keyboard can never end up covering the words
+   * being typed or the action bar underneath them.
+   */
+  const scrollFocused = (e: React.FocusEvent<HTMLElement>) => {
+    if (!isPhone) return;
+    const el = e.currentTarget;
+    window.setTimeout(() => el.scrollIntoView({ block: "center", behavior: "smooth" }), 250);
+  };
+
+  /** M8 — a refused control always says why, in words, beside it. */
+  const phoneBarNote =
+    step < 4 && !canContinue
+      ? step === 1
+        ? T.chooseHelp[lang]
+        : step === 2
+          ? T.slidesNeedPost[lang]
+          : T.phoneNoActionYet[lang]
+      : null;
+
   return shell(
     <>
-      {/* One slim strip. This is a page inside Aura; the shell owns navigation. */}
+      {/* One slim strip. This is a page inside Aura; the shell owns navigation.
+          On a phone at the writing step the post is the only thing on screen,
+          so this strip stands down there (M5). */}
+      {(!isPhone || step !== 2) && (
       <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", paddingBottom: 6 }}>
         <button
           type="button"
@@ -1264,6 +1303,7 @@ export default function StudioPanel() {
           {T.helpLink[lang]}
         </button>
       </div>
+      )}
 
       {helpOpen && (
         <div
@@ -1293,8 +1333,29 @@ export default function StudioPanel() {
         </div>
       )}
 
-      <JourneyMap lang={lang} step={step} done={doneMap} onStep={(n) => setStep(n)} />
+      {/* M1 — on a phone the pinned four-pill header IS the journey map: same
+          behaviour, clickable in any order, and it never scrolls away. */}
+      {isPhone ? (
+        <PhoneProgress lang={lang} step={step} done={doneMap} onStep={(n) => setStep(n)} rtl={rtlShell} />
+      ) : (
+        <JourneyMap lang={lang} step={step} done={doneMap} onStep={(n) => setStep(n)} />
+      )}
 
+      {/* On a phone the forward and save controls live in the one thumb zone
+          instead, so this strip carries only what Aura has to say. */}
+      {isPhone ? (
+        <div style={{ display: "grid", gap: 4, padding: "0 0 10px" }}>
+          <span role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 13, color: "var(--machine-text)" }}>
+            {busyMessage ? `… ${busyMessage}` : ""}
+          </span>
+          <span role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 13, color: "var(--text-secondary)" }}>
+            {status ? `✓ ${status}` : ""}
+          </span>
+          <span role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--error)", lineHeight: 1.6 }}>
+            {problem ?? ""}
+          </span>
+        </div>
+      ) : (
       <div
         style={{
           display: "flex",
@@ -1354,6 +1415,7 @@ export default function StudioPanel() {
           </ButtonPrimary>
         )}
       </div>
+      )}
 
       {/* Motion for anything in flight, on every step. */}
       {busyMessage && <BusyBar message={busyMessage} />}
@@ -1500,11 +1562,12 @@ export default function StudioPanel() {
                   setTypedTopic(e.target.value);
                   setChoice(e.target.value.trim() ? { id: null, title: e.target.value.trim(), insight: "" } : null);
                 }}
+                onFocus={scrollFocused}
                 placeholder={T.chooseOwnPlaceholder[lang]}
                 style={{
                   flex: "1 1 260px", minHeight: 44, padding: "0 12px", borderRadius: 10,
                   background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
-                  fontFamily: "var(--ff-ui)", fontSize: 14, color: "var(--text-primary)",
+                  fontFamily: "var(--ff-ui)", fontSize: isPhone ? 16 : 14, color: "var(--text-primary)",
                   textAlign: rtlShell ? "right" : "left",
                 }}
               />
@@ -1554,10 +1617,11 @@ export default function StudioPanel() {
                 rows={6}
                 dir={rtlWrite ? "rtl" : "ltr"}
                 onChange={(e) => setPasted(e.target.value)}
+                onFocus={scrollFocused}
                 placeholder={T.pastePlaceholder[lang]}
                 style={{
                   width: "100%", background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
-                  borderRadius: 12, padding: 12, fontFamily: "var(--ff-ui)", fontSize: 14,
+                  borderRadius: 12, padding: 12, fontFamily: "var(--ff-ui)", fontSize: isPhone ? 16 : 14,
                   lineHeight: rtlWrite ? 1.9 : 1.75, textAlign: rtlWrite ? "right" : "left",
                   color: "var(--text-primary)", resize: "vertical",
                 }}
@@ -1580,7 +1644,60 @@ export default function StudioPanel() {
         </StageCard>
       )}
 
-      {step === 2 && (
+      {/* M5 — on a phone the write step IS the post. No card, no side content,
+          no competing action: the only way forward is the action bar. */}
+      {step === 2 && isPhone && (
+        <div style={{ display: "grid", gap: 8 }}>
+          {notReady && (
+            <p
+              role="status"
+              aria-live="polite"
+              style={{
+                fontFamily: "var(--ff-ui)", fontSize: 14, lineHeight: 1.75, fontWeight: 600,
+                color: "var(--error)", background: "var(--error-tint)", borderRadius: 12, padding: 12, margin: 0,
+              }}
+            >
+              {notReady}
+            </p>
+          )}
+          {genError && (
+            <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 14, color: "var(--error)", margin: 0 }}>
+              {genError === "session" ? T.sessionEnded[lang] : T.writeFailed[lang]}{" "}
+              <button type="button" onClick={() => generate()} style={{ background: "transparent", border: 0, color: "var(--act)", fontWeight: 700, cursor: "pointer", minHeight: 44 }}>
+                {T.tryAgain[lang]}
+              </button>
+            </p>
+          )}
+          <textarea
+            value={content}
+            onChange={(e) => changeContent(e.target.value)}
+            onFocus={scrollFocused}
+            rows={18}
+            dir={rtlWrite ? "rtl" : "ltr"}
+            aria-label={T.writeHead[lang]}
+            style={{
+              width: "100%",
+              background: "var(--surface-subtle)",
+              border: "1px solid var(--border-default)",
+              borderRadius: 12,
+              padding: 14,
+              fontFamily: "var(--ff-ui)",
+              // 16px exactly: anything smaller makes iOS zoom the page on focus.
+              fontSize: 16,
+              lineHeight: rtlWrite ? 2 : 1.85,
+              textAlign: rtlWrite ? "right" : "left",
+              color: "var(--text-primary)",
+              resize: "vertical",
+            }}
+          />
+          <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.6, color: content.length > 2800 ? "var(--error)" : "var(--text-muted)", margin: 0 }}>
+            {content.length} {T.characters[lang]}
+            {content.length > 2800 ? ` — ${T.tooLong[lang]}` : ""} · {T.editHint[lang]}
+          </p>
+        </div>
+      )}
+
+      {step === 2 && !isPhone && (
         <StageCard
           title={T.writeHead[lang]}
           subtitle={T.writeHelp[lang]}
@@ -1723,7 +1840,57 @@ export default function StudioPanel() {
             </div>
           )}
 
-          {format === "slides" && (
+          {/* M3 — the phone shape: the slide is the hero, everything that used
+              to be a column is now a sheet, and the sheet is anchored below
+              the slide so the slide is never covered. */}
+          {format === "slides" && isPhone && (
+            <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
+              <PhoneStage
+                lang={lang}
+                deck={deck}
+                theme={theme}
+                width={canvasWidth}
+                current={current}
+                onCurrent={setCurrent}
+                onFit={(i, state) => setFits((f) => ({ ...f, [i]: state }))}
+                mountRef={mountRef}
+                boxRef={canvasBoxRef}
+                showCanvas={canvasInStage}
+                empty={<span>{T.noSlidesYet[lang]}</span>}
+              />
+
+              {/* Collapsed rows. None of them consumes height until asked. */}
+              {([
+                ["inspector", T.openSlideEditor[lang], !deck],
+                ["look", T.openLook[lang], false],
+                ["piece", T.openThisPiece[lang], false],
+              ] as Array<["inspector" | "look" | "piece", string, boolean]>).map(([key, label, refused]) => (
+                <div key={key} style={{ display: "grid", gap: 4 }}>
+                  <button
+                    type="button"
+                    disabled={refused}
+                    onClick={() => { setSheet(key); setSheetTall(false); }}
+                    style={{
+                      width: "100%", minHeight: 52, padding: "0 14px", borderRadius: 12,
+                      textAlign: rtlShell ? "right" : "left", cursor: refused ? "not-allowed" : "pointer",
+                      opacity: refused ? 0.6 : 1,
+                      background: "var(--surface-card)", border: "1px solid var(--border-default)",
+                      fontFamily: "var(--ff-ui)", fontSize: 15, fontWeight: 600, color: "var(--text-primary)",
+                    }}
+                  >
+                    {label}
+                  </button>
+                  {refused && (
+                    <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.6, color: "var(--text-muted)", margin: 0 }}>
+                      {T.noSlidesYet[lang]}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {format === "slides" && !isPhone && (
           <div
             style={{
               display: "grid",
@@ -1795,7 +1962,7 @@ export default function StudioPanel() {
         </>
       )}
 
-      {step === 4 && (
+      {step === 4 && !isPhone && (
         <StageCard title={T.publishHead[lang]} align={rtlShell ? "right" : "left"} defaultOpen>
           {published && (
             <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 14, color: "var(--text-primary)", margin: "0 0 10px" }}>
@@ -1927,6 +2094,222 @@ export default function StudioPanel() {
             </>
           )}
         </StageCard>
+      )}
+
+      {/* M6 — STEP 4 ON A PHONE: one numbered card per action, in order, each
+          carrying exactly one control. Never two primaries on screen. */}
+      {step === 4 && isPhone && (
+        <div style={{ display: "grid", gap: 12 }}>
+          {published && (
+            <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 14, lineHeight: 1.7, color: "var(--text-primary)", margin: 0 }}>
+              {T.postedHead[lang]} {T.postedHelp[lang]}{" "}
+              {postUrl && (
+                <a href={postUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--act)", fontWeight: 700 }}>
+                  {T.seeOnLinkedIn[lang]}
+                </a>
+              )}
+            </p>
+          )}
+
+          {confirmPanel}
+
+          <p
+            dir={rtlWrite ? "rtl" : "ltr"}
+            style={{
+              whiteSpace: "pre-wrap", background: "var(--surface-subtle)",
+              border: "1px solid var(--border-default)", borderRadius: 12, padding: 14,
+              fontFamily: "var(--ff-ui)", fontSize: 16, lineHeight: rtlWrite ? 2 : 1.85,
+              textAlign: rtlWrite ? "right" : "left", color: "var(--text-primary)", margin: 0,
+            }}
+          >
+            {content}
+          </p>
+
+          {content.length > POST_MAX_CHARS && (
+            <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, fontWeight: 600, color: "var(--error)", margin: 0 }}>
+              {T.overLimitHead[lang]} {content.length - POST_MAX_CHARS} {T.overLimitTail[lang]}
+            </p>
+          )}
+          {notReady && (
+            <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, fontWeight: 600, lineHeight: 1.75, color: "var(--error)", margin: 0 }}>
+              {notReady}
+            </p>
+          )}
+
+          {/* Words only: the single way out is the primary in the thumb zone. */}
+          {format === "slides" && deck && (
+            <>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: 1.7, color: "var(--text-muted)", margin: 0 }}>
+                {T.whySlidesManual[lang]}
+              </p>
+              {([
+                [1, T.captionHead[lang], "", (
+                  <ButtonGhost key="c" onClick={() => void copyCaption()} style={{ minHeight: 48, width: "100%" }}>
+                    {T.copyCaption[lang]}
+                  </ButtonGhost>
+                )],
+                [2, T.s4Get[lang], "", (
+                  <ButtonGhost key="g" onClick={() => void exportFile()} disabled={busy === "export"} style={{ minHeight: 48, width: "100%" }}>
+                    {busy === "export" ? T.exporting[lang] : T.exportFile[lang]}
+                  </ButtonGhost>
+                )],
+                [3, T.s4Open[lang], "", (
+                  <ButtonGhost key="o" onClick={() => void openLinkedIn()} style={{ minHeight: 48, width: "100%" }}>
+                    {T.openLinkedIn[lang]}
+                  </ButtonGhost>
+                )],
+                [4, T.s4Link[lang], T.whyLink[lang], (
+                  <div key="l" style={{ display: "grid", gap: 10 }}>
+                    <label htmlFor="studio-link-phone" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>
+                      {T.linkPlaceholder[lang]}
+                    </label>
+                    <input
+                      id="studio-link-phone"
+                      value={linkInput}
+                      onChange={(e) => setLinkInput(e.target.value)}
+                      onFocus={scrollFocused}
+                      placeholder={T.linkPlaceholder[lang]}
+                      style={{
+                        width: "100%", minHeight: 48, padding: "0 12px", borderRadius: 10,
+                        background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
+                        fontFamily: "var(--ff-ui)", fontSize: 16, color: "var(--text-primary)",
+                        textAlign: rtlShell ? "right" : "left",
+                      }}
+                    />
+                    <ButtonGhost onClick={() => void saveLink()} disabled={!linkInput.trim() || busy === "link"} style={{ minHeight: 48, width: "100%" }}>
+                      {busy === "link" ? T.savingLink[lang] : T.linkSave[lang]}
+                    </ButtonGhost>
+                    {!linkInput.trim() && (
+                      <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.6, color: "var(--text-muted)", margin: 0 }}>
+                        {T.linkPlaceholder[lang]}
+                      </p>
+                    )}
+                  </div>
+                )],
+              ] as Array<[number, string, string, React.ReactNode]>).map(([n, head, why, control]) => (
+                <div
+                  key={n}
+                  style={{
+                    background: "var(--surface-card)", border: "1px solid var(--border-default)",
+                    borderRadius: 14, padding: 14, display: "grid", gap: 10,
+                  }}
+                >
+                  <p style={{ fontFamily: "var(--ff-ui)", fontSize: 15, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
+                    {n} · {head}
+                  </p>
+                  {why && (
+                    <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: 1.7, color: "var(--text-muted)", margin: 0 }}>
+                      {why}
+                    </p>
+                  )}
+                  {control}
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ---- the phone sheets: one column of the desktop grid at a time ---- */}
+      {isPhone && (
+        <>
+          <PhoneSheet
+            lang={lang}
+            rtl={rtlShell}
+            open={sheet === "inspector"}
+            title={T.zoneInspector[lang]}
+            expanded={sheetTall}
+            onExpanded={setSheetTall}
+            onClose={() => setSheet(null)}
+          >
+            <ZoneInspector
+              lang={lang}
+              writeLang={writeLang}
+              deck={deck}
+              current={current}
+              onDeck={(next) => { remember(); setDeck(next); }}
+              attention={attention}
+              onChangeLine={() => void changeThisLine()}
+              changing={changingLine}
+              onUploadPicture={uploadPicture}
+              pictureNotice={pictureNotice}
+              onMove={move}
+            />
+          </PhoneSheet>
+
+          <PhoneSheet
+            lang={lang}
+            rtl={rtlShell}
+            open={sheet === "look"}
+            title={T.lookHead[lang]}
+            expanded={sheetTall}
+            onExpanded={setSheetTall}
+            onClose={() => setSheet(null)}
+          >
+            <ZoneLook
+              lang={lang}
+              theme={theme}
+              onTheme={(t) => { setTheme(t); setDeck((d) => (d ? { ...d, theme: t } : d)); }}
+              length={deckLength}
+              onLength={(n) => { setDeckLength(n); if (deck) void makeSlides(n); }}
+              hasDeck={Boolean(deck)}
+            />
+          </PhoneSheet>
+
+          <PhoneSheet
+            lang={lang}
+            rtl={rtlShell}
+            open={sheet === "piece"}
+            title={T.zonePiece[lang]}
+            expanded={sheetTall}
+            onExpanded={setSheetTall}
+            onClose={() => setSheet(null)}
+          >
+            <ZonePiece
+              lang={lang}
+              writeLang={writeLang}
+              subject={choice?.title || typedTopic}
+              content={content}
+              onContentChange={changeContent}
+              todo={{
+                words: content.trim().length > 0,
+                slides: Boolean(deck),
+                cover: Boolean(deck?.slides.some((s) => s.slots.media?.src)),
+                published,
+              }}
+            />
+          </PhoneSheet>
+
+          {/* M2 — the only floating thing on a phone. At most two controls. */}
+          <PhoneActionBar
+            rtl={rtlShell}
+            note={phoneBarNote}
+            secondary={
+              <ButtonGhost onClick={() => void saveAndComeBack()} disabled={busy === "save"} style={{ minHeight: 50, width: "100%" }}>
+                {busy === "save" ? T.savingPiece[lang] : T.saveLater[lang]}
+              </ButtonGhost>
+            }
+            primary={
+              step === 3 && format === "slides" && !deck ? (
+                <ButtonPrimary onClick={() => void makeSlides()} disabled={deckBusy} style={{ minHeight: 50, width: "100%" }}>
+                  {deckBusy ? T.makingSlides[lang] : T.makeSlides[lang]}
+                </ButtonPrimary>
+              ) : step < 4 ? (
+                <ButtonPrimary onClick={onContinue} disabled={!canContinue || generating} style={{ minHeight: 50, width: "100%" }}>
+                  {T.continue[lang]} {rtlShell ? "←" : "→"}
+                </ButtonPrimary>
+              ) : !(format === "slides" && deck) && !published && !confirmingPost ? (
+                <ButtonPrimary
+                  onClick={requestPost}
+                  disabled={!content.trim() || content.length > POST_MAX_CHARS || busy === "post" || Boolean(notReady)}
+                  style={{ minHeight: 50, width: "100%" }}
+                >
+                  {T.postItNow[lang]}
+                </ButtonPrimary>
+              ) : undefined
+            }
+          />
+        </>
       )}
 
       {/* The deck mount, kept alive with real layout whenever a deck exists.

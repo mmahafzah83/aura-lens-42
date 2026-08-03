@@ -8,6 +8,7 @@ import {
 import { REQUIRED_SLOTS } from "@/carousel/slots";
 import { mediaSupport } from "@/carousel/render/Slide";
 import { T, archetypeLabelAr, slotLabelAr, type Lang } from "./strings";
+import { useIsPhone } from "./usePhone";
 
 const heading: React.CSSProperties = {
   fontFamily: "var(--ff-mono)", fontSize: 10.5, letterSpacing: ".09em",
@@ -56,22 +57,25 @@ export const ZoneInspector: React.FC<{
   const [uploading, setUploading] = useState(false);
   const [layoutOpen, setLayoutOpen] = useState(false);
   const rtl = writeLang === "ar";
+  // M4 — 16px on a phone, so iOS never zooms the page when a field is focused.
+  const isPhone = useIsPhone();
+  const fieldSize = isPhone ? 16 : 14;
 
   const slide = deck?.slides[Math.min(current, (deck?.slides.length ?? 1) - 1)] ?? null;
 
   const shell = (children: React.ReactNode) => (
     <div
       style={{
-        background: "var(--surface-card)",
-        border: "1px solid var(--border-default)",
+        background: isPhone ? "transparent" : "var(--surface-card)",
+        border: isPhone ? "0" : "1px solid var(--border-default)",
         borderRadius: 14,
-        padding: 14,
+        padding: isPhone ? 0 : 14,
         display: "grid",
         gap: 14,
         minWidth: 0,
       }}
     >
-      <p style={heading}>{T.zoneInspector[lang]}</p>
+      {!isPhone && <p style={heading}>{T.zoneInspector[lang]}</p>}
       {children}
     </div>
   );
@@ -180,7 +184,7 @@ export const ZoneInspector: React.FC<{
                 borderRadius: 10,
                 padding: "9px 11px",
                 fontFamily: "var(--ff-ui)",
-                fontSize: 14,
+                fontSize: fieldSize,
                 lineHeight: rtl ? 1.9 : 1.75,
                 textAlign: rtl ? "right" : "left",
                 color: "var(--text-primary)",
