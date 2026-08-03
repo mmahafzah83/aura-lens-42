@@ -52,6 +52,7 @@ import LibraryPage from "@/components/library/LibraryPage";
 import OvernightPage from "@/components/overnight/OvernightPage";
 import MomentumPage from "@/components/momentum/MomentumPage";
 import WidgetsPage from "@/components/widgets/WidgetsPage";
+import StudioPanel from "@/components/studio/StudioPanel";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
