@@ -367,6 +367,8 @@ export default function Studio() {
     setDeckBusy(true);
     setDeckFailures([]);
     setProblem(null);
+    setStatus(null);
+    setBusyMessage(T.makingSlides[lang]);
     let timedOut = false;
     const timeout = new Promise<"timeout">((resolve) => {
       window.setTimeout(() => { timedOut = true; resolve("timeout"); }, 90000);
@@ -405,6 +407,7 @@ export default function Studio() {
       setDeckFailures([plainFailure("failed")]);
     } finally {
       setDeckBusy(false);
+      setBusyMessage(null);
     }
   }, [choice, content, theme, deckLength, writeLang, lang, saveDraft, remember]);
 
@@ -412,6 +415,7 @@ export default function Studio() {
     if (!deck) return;
     setChangingLine(true);
     setProblem(null);
+    setBusyMessage(T.changingLine[lang]);
     try {
       const { data } = await supabase.functions.invoke("generate-deck", {
         body: { signal_id: deck.signal_id, rewrite_slide: current, deck },
@@ -427,7 +431,7 @@ export default function Studio() {
     } catch {
       setProblem(T.lineChangeFailed[lang]);
     }
-    finally { setChangingLine(false); }
+    finally { setChangingLine(false); setBusyMessage(null); }
   }, [deck, current, theme, lang, remember]);
 
   const uploadPicture = useCallback(async (file: File) => {
@@ -436,7 +440,9 @@ export default function Studio() {
     const slide = deck.slides[Math.min(current, deck.slides.length - 1)];
     if (mediaSupport(slide.archetype) === "none") { setPictureNotice(T.noPictureHere[lang]); return; }
     const imageProblem = await checkImage(file, SLIDE_MEDIA_LIMITS);
-    if (imageProblem) { setPictureNotice(imageProblem); return; }
+    if (imageProblem) { setPictureNotice(pictureProblem(imageProblem, lang)); return; }
+    setBusyMessage(T.uploading[lang]);
+    try {
     const { data: sess } = await supabase.auth.getSession();
     const uid = sess.session?.user?.id;
     if (!uid) { setPictureNotice(T.sessionEnded[lang]); return; }
@@ -445,13 +451,19 @@ export default function Studio() {
     const { error: upErr } = await supabase.storage
       .from("deck-media")
       .upload(path, clean, { upsert: true, contentType: "image/jpeg" });
-    if (upErr) { setPictureNotice(upErr.message); return; }
+    // A provider's message is never shown to a member.
+    if (upErr) { setPictureNotice(T.picUploadFailed[lang]); return; }
     const { data: signed, error: signErr } = await supabase.storage
       .from("deck-media")
       .createSignedUrl(path, 60 * 60 * 24 * 365);
-    if (signErr || !signed) { setPictureNotice(upErr?.message ?? T.exportFailed[lang]); return; }
+    if (signErr || !signed) { setPictureNotice(T.picUploadFailed[lang]); return; }
     remember();
     setDeck((d) => (d ? setSlidePhoto(d, current, signed.signedUrl) : d));
+    } catch {
+      setPictureNotice(T.picUploadFailed[lang]);
+    } finally {
+      setBusyMessage(null);
+    }
   }, [deck, current, lang, remember]);
 
   const move = useCallback((from: number, to: number) => {
@@ -773,6 +785,14 @@ export default function Studio() {
         {step === 3 && subLink("build", T.subBuild[lang])}
         {step === 3 && subLink("look", T.subLook[lang])}
         <span style={{ flex: 1 }} />
+        {/* In flight: no tick, because nothing has finished. */}
+        <span
+          role="status"
+          aria-live="polite"
+          style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--machine-text)" }}
+        >
+          {busyMessage ? `… ${busyMessage}` : ""}
+        </span>
         <span
           role="status"
           aria-live="polite"
