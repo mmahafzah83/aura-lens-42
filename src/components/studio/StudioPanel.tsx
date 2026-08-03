@@ -617,8 +617,10 @@ export default function StudioPanel() {
     setDraftId(id);
     setDraftSource("linkedin_posts");
     postRowRef.current = id;
+    // An identifier that must survive a reload is written the moment it exists.
+    persistNow();
     return id;
-  }, [userId, content, draftId, draftSource, choice, writeLang, pieceTitle, pieceMeta]);
+  }, [userId, content, draftId, draftSource, choice, writeLang, pieceTitle, pieceMeta, persistNow]);
 
   /**
    * Publishing to LinkedIn from a content_items draft needs a linkedin_posts
@@ -652,12 +654,13 @@ export default function StudioPanel() {
       if (error) return null;
       const newId = (ins as any)?.id as string;
       postRowRef.current = newId;
+      persistNow();
       return newId;
     }
     const id = await saveDraft();
-    if (id) postRowRef.current = id;
+    if (id) { postRowRef.current = id; persistNow(); }
     return id;
-  }, [draftId, draftSource, userId, content, choice, pieceTitle, pieceMeta, saveDraft]);
+  }, [draftId, draftSource, userId, content, choice, pieceTitle, pieceMeta, saveDraft, persistNow]);
 
   /**
    * INVARIANT — WHAT IS ON SCREEN IS WHAT PUBLISHES.
