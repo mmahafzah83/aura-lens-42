@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { T, type Lang } from "./strings";
-import { ABOVE_ACTION_BAR } from "./usePhone";
+import { ABOVE_ACTION_BAR, PHONE_SHEET_H, PHONE_SHEET_H_TALL } from "./usePhone";
 
 /**
  * M3 — the bottom sheet.
@@ -20,12 +20,18 @@ export const PhoneSheet: React.FC<{
   expanded: boolean;
   onExpanded: (v: boolean) => void;
   onClose: () => void;
-  /** Exact height in px, computed so the slide above always stays visible. */
-  height?: number;
   children: React.ReactNode;
-}> = ({ lang, rtl, open, title, expanded, onExpanded, onClose, height, children }) => {
+}> = ({ lang, rtl, open, title, expanded, onExpanded, onClose, children }) => {
   const panelRef = useRef<HTMLDivElement | null>(null);
   const openerRef = useRef<HTMLElement | null>(null);
+  /**
+   * K1 — the close handler is held in a ref, NEVER in the dependency array.
+   * The call site passes a fresh arrow on every render; depending on it made
+   * the effect tear down and re-run on every keystroke, which stole focus out
+   * of whatever field the member was typing in.
+   */
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
 
   useEffect(() => {
     if (!open) return;
@@ -37,10 +43,11 @@ export const PhoneSheet: React.FC<{
           'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
         ) ?? [],
       ).filter((el) => !el.hasAttribute("disabled"));
-    window.setTimeout(() => focusables()[0]?.focus(), 0);
+    // Runs once per opening, never again while the member types.
+    const t = window.setTimeout(() => focusables()[0]?.focus(), 0);
 
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { onClose(); return; }
+      if (e.key === "Escape") { closeRef.current(); return; }
       if (e.key !== "Tab") return;
       const items = focusables();
       if (items.length === 0) return;
@@ -61,11 +68,12 @@ export const PhoneSheet: React.FC<{
 
     const opener = openerRef.current;
     return () => {
+      window.clearTimeout(t);
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = previous;
       opener?.focus?.();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open || typeof document === "undefined") return null;
 
@@ -76,7 +84,9 @@ export const PhoneSheet: React.FC<{
         aria-hidden="true"
         onClick={onClose}
         className="md:hidden"
-        style={{ position: "fixed", inset: 0, zIndex: 46, background: "rgba(0,0,0,.35)" }}
+        // K3 — above the action bar (48), so nothing outside the sheet can be
+        // tapped while a modal sheet is open.
+        style={{ position: "fixed", inset: 0, zIndex: 49, background: "rgba(0,0,0,.35)" }}
       />
     <div
       ref={panelRef}
@@ -92,8 +102,10 @@ export const PhoneSheet: React.FC<{
         left: 0,
         right: 0,
         bottom: ABOVE_ACTION_BAR,
-        zIndex: 47,
-        height: height ? `${height}px` : expanded ? "78vh" : "42vh",
+        zIndex: 50,
+        // K2 — the sheet's height is CSS, and the two states differ by a full
+        // 14dvh, so expanding visibly shrinks the slide above it.
+        height: expanded ? PHONE_SHEET_H_TALL : PHONE_SHEET_H,
         background: "var(--surface-card)",
         borderTop: "1px solid var(--border-default)",
         borderStartStartRadius: 18,
