@@ -6,9 +6,7 @@ import { useEffect, useState } from "react";
  */
 export const PHONE_MAX_WIDTH = 768;
 
-/** The bottom navigation the Dashboard owns, plus the device's own safe area. */
-export const NAV_CLEARANCE = "calc(64px + env(safe-area-inset-bottom, 0px))";
-/** The one-thumb action bar sits directly above the navigation. */
+/** The one-thumb action bar sits directly above the shell navigation. */
 export const ACTION_BAR_HEIGHT = 64;
 
 /**
