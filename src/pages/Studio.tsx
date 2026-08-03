@@ -737,13 +737,59 @@ export default function Studio() {
 
   return shell(
     <>
-      <TopBar
-        lang={lang}
-        posture={posture}
-        firstName={firstName}
-        avatarUrl={avatarUrl}
-        onChangePosture={() => setAskingPosture(true)}
-      />
+      {/* One slim strip. This is a page inside Aura; the shell owns navigation. */}
+      <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", paddingBottom: 6 }}>
+        <button
+          type="button"
+          onClick={() => setAskingPosture(true)}
+          style={{
+            minHeight: 44, padding: "0 12px", borderRadius: 999, cursor: "pointer",
+            background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
+            fontFamily: "var(--ff-ui)", fontSize: 13, color: "var(--text-secondary)",
+          }}
+        >
+          {T.workingAs[lang]}: {postureLabel(posture, lang)} · {T.change[lang]}
+        </button>
+        <button
+          type="button"
+          onClick={() => setHelpOpen((v) => !v)}
+          aria-expanded={helpOpen}
+          style={{
+            minHeight: 44, padding: 0, background: "transparent", border: 0, cursor: "pointer",
+            fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--act)",
+          }}
+        >
+          {T.helpLink[lang]}
+        </button>
+      </div>
+
+      {helpOpen && (
+        <div
+          style={{
+            background: "var(--surface-card)", border: "1px solid var(--border-default)",
+            borderRadius: 14, padding: 14, margin: "0 0 12px", display: "grid", gap: 12,
+          }}
+        >
+          {([
+            [T.helpHowHead[lang], T.helpHowBody[lang]],
+            [T.helpDrawsHead[lang], T.helpDrawsBody[lang]],
+            [T.helpVoiceHead[lang], T.helpVoiceBody[lang]],
+            [T.helpGetHead[lang], T.helpGetBody[lang]],
+          ] as Array<[string, string]>).map(([head, body]) => (
+            <div key={head}>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
+                {head}
+              </p>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: 1.75, color: "var(--text-secondary)", margin: "4px 0 0" }}>
+                {body}
+              </p>
+            </div>
+          ))}
+          <div>
+            <ButtonGhost onClick={() => setHelpOpen(false)} style={{ minHeight: 44 }}>{T.helpClose[lang]}</ButtonGhost>
+          </div>
+        </div>
+      )}
 
       <JourneyMap lang={lang} step={step} done={doneMap} onStep={(n) => setStep(n)} />
 
@@ -792,13 +838,23 @@ export default function Studio() {
         <ButtonGhost onClick={undo} disabled={undoStack.length === 0} style={{ minHeight: 44 }}>
           {T.undo[lang]}
         </ButtonGhost>
-        <ButtonGhost onClick={() => void keepForLater()} style={{ minHeight: 44 }}>
-          {T.saveAndClose[lang]}
-        </ButtonGhost>
-        <ButtonPrimary onClick={() => setStep((s) => Math.min(4, s + 1))} disabled={step >= 4} style={{ minHeight: 44 }}>
-          {T.continue[lang]} →
-        </ButtonPrimary>
+        <span style={{ display: "grid", gap: 2 }}>
+          <ButtonGhost onClick={() => void saveAndComeBack()} disabled={busy === "save"} style={{ minHeight: 44 }}>
+            {T.saveLater[lang]}
+          </ButtonGhost>
+          <span style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)", maxWidth: 260 }}>
+            {T.saveLaterNote[lang]}
+          </span>
+        </span>
+        {step < 4 && (
+          <ButtonPrimary onClick={onContinue} disabled={!canContinue || generating} style={{ minHeight: 44 }}>
+            {T.continue[lang]} {rtlShell ? "←" : "→"}
+          </ButtonPrimary>
+        )}
       </div>
+
+      {/* Motion for anything in flight, on every step. */}
+      {busyMessage && <BusyBar message={busyMessage} />}
 
       {step === 1 && (
         <StageCard title={T.chooseHead[lang]} subtitle={T.chooseHelp[lang]} align={rtlShell ? "right" : "left"} defaultOpen>
