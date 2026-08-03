@@ -38,7 +38,7 @@ import PhoneProgress from "@/components/studio/PhoneProgress";
 import PhoneActionBar from "@/components/studio/PhoneActionBar";
 import PhoneSheet from "@/components/studio/PhoneSheet";
 import PhoneStage from "@/components/studio/PhoneStage";
-import { useIsPhone, PHONE_MAX_WIDTH, EXPORT_WIDTH } from "@/components/studio/usePhone";
+import { useIsPhone, PHONE_MAX_WIDTH, EXPORT_WIDTH, clampCanvasWidth } from "@/components/studio/usePhone";
 import { T, attentionText, pictureProblem, postureLabel, startReason, type Lang, type Posture } from "@/components/studio/strings";
 
 /** Slides need enough words to divide up. Below this the option is refused. */
@@ -222,10 +222,6 @@ export default function StudioPanel() {
   const [sheetTall, setSheetTall] = useState(false);
   /** J6 — a breakpoint change closes any sheet; it must never reopen itself. */
   useEffect(() => { setSheet(null); setSheetTall(false); }, [isPhone]);
-  /** The top of the pinned step-3 column, measured, so the column can end exactly at the action bar. */
-  const [stageTop, setStageTop] = useState(220);
-  const [viewportH, setViewportH] = useState(() => (typeof window === "undefined" ? 740 : window.innerHeight));
-
   const rtlShell = lang === "ar";
   const rtlWrite = writeLang === "ar";
 
@@ -274,26 +270,14 @@ export default function StudioPanel() {
   useEffect(() => {
     const measure = () => {
       setNarrow(window.innerWidth < 900);
-      setViewportH(window.innerHeight);
       const w = canvasBoxRef.current?.clientWidth ?? 520;
       const gutter = window.innerWidth < PHONE_MAX_WIDTH ? 0 : 28;
-      setCanvasWidth(Math.max(260, Math.min(720, w - gutter)));
+      setCanvasWidth(clampCanvasWidth(w - gutter));
     };
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
   }, [deck, step, isPhone, sheet]);
-
-  /**
-   * J2 — the step-3 phone column starts where it actually sits on screen and
-   * ends at the action bar, so nothing below the fold has to be scrolled to.
-   */
-  useEffect(() => {
-    if (!isPhone || step !== 3) return;
-    const el = canvasBoxRef.current;
-    if (!el) return;
-    setStageTop(Math.max(120, Math.round(el.getBoundingClientRect().top)));
-  }, [isPhone, step, format, deck, sheet, sheetTall, viewportH]);
 
   /* ---------- bring back the piece -------------------------------- */
   const restoredRef = useRef(false);
@@ -1096,6 +1080,14 @@ export default function StudioPanel() {
    * side of the viewport (never display:none, never visibility:hidden).
    */
   const canvasInStage = step === 3 && format === "slides" && Boolean(deck);
+  /**
+   * K5 — whichever mount is live reports fit. The on-screen preview only
+   * exists at step 3; outside it the off-screen export mount keeps the
+   * "a bit long" line honest.
+   */
+  const reportFit = useCallback((i: number, state: FitState) => {
+    setFits((f) => ({ ...f, [i]: state }));
+  }, []);
 
   /* ---------- content wrapper --------------------------------------
    * Page content only: no height, no page padding, no page background — the
@@ -1311,23 +1303,11 @@ export default function StudioPanel() {
           ? T.phoneNeedWords[lang]
           : step === 3
             ? T.slidesNeedPost[lang]
-            : null;
-
-  /* ---------- J2: the step-3 phone column, in numbers ---------------- */
-  /** 64px shell navigation + 64px action bar + 8px of air. */
-  const PHONE_BOTTOM_RESERVE = 136;
-  /** Filmstrip, counter and the two wide steps under the slide. */
-  const PHONE_NAV_ROW = 200;
-  const phoneColumnH = Math.max(320, viewportH - stageTop - PHONE_BOTTOM_RESERVE);
-  const phoneSheetH = sheet
-    ? Math.max(
-        180,
-        Math.min(Math.round(viewportH * (sheetTall ? 0.78 : 0.42)), phoneColumnH - (sheetTall ? 160 : 200)),
-      )
-    : 0;
-  // The slide keeps whatever the sheet is not using: it shrinks, never hides.
-  const phoneSlideH = Math.max(140, sheet ? phoneColumnH - phoneSheetH : phoneColumnH - PHONE_NAV_ROW);
-  const phoneSlideWidth = Math.max(200, Math.min(canvasWidth, Math.round(phoneSlideH * 0.8)));
+            // K6 — step 4 with slides has no one-tap publish. Where there is no
+            // primary there is a sentence saying why, never an empty bar.
+            : step === 4 && format === "slides" && deck
+              ? T.whySlidesManual[lang]
+              : null;
 
   return shell(
     <>
@@ -1905,15 +1885,14 @@ export default function StudioPanel() {
                 lang={lang}
                 deck={deck}
                 theme={theme}
-                width={phoneSlideWidth}
-                slideH={phoneSlideH}
-                columnH={phoneColumnH}
                 current={current}
                 onCurrent={setCurrent}
-                onFit={(i, state) => setFits((f) => ({ ...f, [i]: state }))}
+                onFit={reportFit}
                 mountRef={mountRef}
                 boxRef={canvasBoxRef}
                 showCanvas={canvasInStage}
+                sheetOpen={sheet !== null}
+                sheetTall={sheetTall}
                 empty={<span>{T.noSlidesYet[lang]}</span>}
                 footer={
                   <div style={{ display: "flex", gap: 8, overflowX: "auto", WebkitOverflowScrolling: "touch", paddingTop: 4 }}>
@@ -1976,7 +1955,7 @@ export default function StudioPanel() {
               width={canvasWidth}
               current={current}
               onCurrent={setCurrent}
-              onFit={(i, state) => setFits((f) => ({ ...f, [i]: state }))}
+              onFit={reportFit}
               mountRef={mountRef}
               boxRef={canvasBoxRef}
               showCanvas={canvasInStage}
@@ -2275,7 +2254,6 @@ export default function StudioPanel() {
             open={sheet === "inspector"}
             title={T.zoneInspector[lang]}
             expanded={sheetTall}
-            height={phoneSheetH}
             onExpanded={setSheetTall}
             onClose={() => setSheet(null)}
           >
@@ -2300,7 +2278,6 @@ export default function StudioPanel() {
             open={sheet === "look"}
             title={T.lookHead[lang]}
             expanded={sheetTall}
-            height={phoneSheetH}
             onExpanded={setSheetTall}
             onClose={() => setSheet(null)}
           >
@@ -2320,7 +2297,6 @@ export default function StudioPanel() {
             open={sheet === "piece"}
             title={T.zonePiece[lang]}
             expanded={sheetTall}
-            height={phoneSheetH}
             onExpanded={setSheetTall}
             onClose={() => setSheet(null)}
           >
@@ -2419,7 +2395,7 @@ export default function StudioPanel() {
       {/* J4 — THE EXPORT MOUNT. Always off-screen, always EXPORT_WIDTH wide,
           whatever the screen is. Portalled to <body> so no ancestor can clip
           it. The on-screen preview keeps its own, screen-sized mount. */}
-      {deck &&
+      {deck && !canvasInStage &&
         createPortal(
           <div
             aria-hidden="true"
@@ -2431,7 +2407,7 @@ export default function StudioPanel() {
               theme={theme}
               width={EXPORT_WIDTH}
               current={current}
-              onFit={() => { /* fitting is reported by the on-screen preview only */ }}
+              onFit={reportFit}
               mountRef={exportMountRef}
             />
           </div>,

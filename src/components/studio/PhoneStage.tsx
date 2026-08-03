@@ -1,19 +1,27 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import StudioCanvas from "@/carousel/studio/StudioCanvas";
 import type { DeckIR } from "@/carousel/deckIR";
 import type { ThemeName } from "@/carousel/render/themes";
 import type { FitState } from "@/carousel/render/useFitLadder";
 import { T, type Lang } from "./strings";
+import {
+  PHONE_COLUMN_H,
+  PHONE_ROWS_BELOW,
+  PHONE_ROWS_BELOW_SHEET,
+  PHONE_SHEET_H,
+  PHONE_SHEET_H_TALL,
+  clampCanvasWidth,
+} from "./usePhone";
 
 const wideBtn = (disabled: boolean): React.CSSProperties => ({
   flex: "1 1 0",
-  minHeight: 48,
+  minHeight: 44,
   borderRadius: 12,
   border: "1px solid var(--border-default)",
   background: "var(--surface-card)",
   color: disabled ? "var(--text-muted)" : "var(--text-primary)",
   fontFamily: "var(--ff-ui)",
-  fontSize: 15,
+  fontSize: 14,
   fontWeight: 600,
   cursor: disabled ? "not-allowed" : "pointer",
   opacity: disabled ? 0.6 : 1,
@@ -32,20 +40,19 @@ export const PhoneStage: React.FC<{
   lang: Lang;
   deck: DeckIR | null;
   theme: ThemeName;
-  width: number;
   current: number;
   onCurrent: (i: number) => void;
   onFit: (index: number, state: FitState) => void;
   mountRef: React.MutableRefObject<HTMLDivElement | null>;
   boxRef: React.MutableRefObject<HTMLDivElement | null>;
   showCanvas: boolean;
-  /** Height in px the slide row may occupy right now. Never zero, never covered. */
-  slideH: number;
-  /** Height in px of the whole non-scrolling column. */
-  columnH: number;
+  /** A sheet is open, so the column ends where the sheet begins. */
+  sheetOpen: boolean;
+  /** The open sheet is expanded, so the slide shrinks further. */
+  sheetTall: boolean;
   empty?: React.ReactNode;
   footer?: React.ReactNode;
-}> = ({ lang, deck, theme, width, current, onCurrent, onFit, mountRef, boxRef, showCanvas, slideH, columnH, empty, footer }) => {
+}> = ({ lang, deck, theme, current, onCurrent, onFit, mountRef, boxRef, showCanvas, sheetOpen, sheetTall, empty, footer }) => {
   const count = deck?.slides.length ?? 0;
   const rtl = lang === "ar";
   // J5 — the filmstrip mirrors on the INTERFACE language, not on the language
@@ -53,6 +60,24 @@ export const PhoneStage: React.FC<{
   const dir = rtl ? "rtl" : "ltr";
   const atStart = current <= 0;
   const atEnd = current >= count - 1;
+
+  /**
+   * The slide BOX is laid out by CSS alone. This observer only reports how
+   * wide that box ended up so the renderer knows how many pixels to draw —
+   * it never feeds a layout decision back into the layout.
+   */
+  const slideBoxRef = React.useRef<HTMLDivElement | null>(null);
+  const [renderWidth, setRenderWidth] = useState(320);
+  useEffect(() => {
+    const el = slideBoxRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width ?? 0;
+      if (w > 0) setRenderWidth(clampCanvasWidth(w));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [showCanvas]);
 
   const prev = (
     <button
@@ -81,18 +106,25 @@ export const PhoneStage: React.FC<{
     <div
       ref={boxRef}
       style={{
-        display: "grid",
-        gridTemplateRows: "auto 1fr",
-        gap: 10,
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
         minWidth: 0,
-        height: columnH,
+        // K2 — fixed height, in CSS. The page itself never scrolls here.
+        height: PHONE_COLUMN_H,
         overflow: "hidden",
+        // When a sheet is open the column stops where the sheet starts, so the
+        // slide shrinks through flex instead of being covered.
+        paddingBottom: sheetOpen ? `calc(${sheetTall ? PHONE_SHEET_H_TALL : PHONE_SHEET_H} + 8px)` : 0,
+        boxSizing: "border-box",
+        transition: "padding-bottom .2s ease",
       }}
     >
       {!deck && (
         <div
           style={{
-            height: slideH,
+            flex: "1 1 auto",
+            minHeight: 0,
             display: "grid",
             placeItems: "center",
             background: "var(--surface-card)",
@@ -103,6 +135,7 @@ export const PhoneStage: React.FC<{
             fontSize: 14,
             color: "var(--text-muted)",
             textAlign: "center",
+            overflow: "hidden",
           }}
         >
           {empty ?? T.noSlidesYet[lang]}
@@ -111,15 +144,31 @@ export const PhoneStage: React.FC<{
 
       {deck && (
         <>
-          {/* Row 1, pinned: the slide, sized to the space actually left over. */}
-          <div style={{ height: slideH, display: "grid", placeItems: "center", overflow: "hidden", borderRadius: 14 }}>
-            {showCanvas && (
-              <StudioCanvas deck={deck} theme={theme} width={width} current={current} onFit={onFit} mountRef={mountRef} />
-            )}
+          {/* Row 1 — the slide takes whatever space is left, and no pixel value
+              anywhere says how much that is. */}
+          <div style={{ flex: "1 1 auto", minHeight: 0, display: "grid", placeItems: "center", overflow: "hidden" }}>
+            <div
+              ref={slideBoxRef}
+              style={{
+                // Height first, ratio second: an aspect-ratio box with two max
+                // constraints and no definite size collapses to zero.
+                height: "100%",
+                aspectRatio: "4 / 5",
+                maxWidth: "100%",
+                display: "grid",
+                placeItems: "center",
+                overflow: "hidden",
+                borderRadius: 14,
+              }}
+            >
+              {showCanvas && (
+                <StudioCanvas deck={deck} theme={theme} width={renderWidth} current={current} onFit={onFit} mountRef={mountRef} />
+              )}
+            </div>
           </div>
 
-          {/* Row 2: the filmstrip and the two wide steps. */}
-          <div style={{ display: "grid", gap: 8, alignContent: "start", overflow: "hidden" }}>
+          {/* Row 2 — filmstrip and the two wide steps. Never behind the sheet. */}
+          <div style={{ flex: "0 0 auto", display: "grid", gap: 8, alignContent: "start" }}>
           <div
             dir={dir}
             style={{ display: "flex", gap: 8, overflowX: "auto", WebkitOverflowScrolling: "touch", paddingBottom: 2 }}
@@ -133,8 +182,8 @@ export const PhoneStage: React.FC<{
                 aria-label={`${T.slideOf[lang]} ${s.index + 1}`}
                 style={{
                   flex: "0 0 auto",
-                  minWidth: 48,
-                  minHeight: 48,
+                  minWidth: 44,
+                  minHeight: 44,
                   borderRadius: 10,
                   cursor: "pointer",
                   fontFamily: "var(--ff-mono)",
@@ -149,18 +198,19 @@ export const PhoneStage: React.FC<{
             ))}
           </div>
 
-          <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, color: "var(--text-secondary)", margin: 0, textAlign: "center" }}>
-            {T.slideOf[lang]} {current + 1} {T.of[lang]} {count}
-          </p>
-
-          <div dir={rtl ? "rtl" : "ltr"} style={{ display: "flex", gap: 10 }}>
+          <div dir={rtl ? "rtl" : "ltr"} style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {rtl ? [next, prev] : [prev, next]}
           </div>
+          <p aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--text-secondary)", margin: 0, textAlign: "center" }}>
+            {T.slideOf[lang]} {current + 1} {T.of[lang]} {count}
+          </p>
           </div>
         </>
       )}
 
-      {footer}
+      {/* Row 3 — the sheet openers. They stand down while a sheet is open, so
+          the filmstrip and the two steps always keep their place. */}
+      {!sheetOpen && footer && <div style={{ flex: "0 0 auto" }}>{footer}</div>}
     </div>
   );
 };
