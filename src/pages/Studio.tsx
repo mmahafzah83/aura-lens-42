@@ -972,12 +972,50 @@ export default function Studio() {
 
       {step === 3 && (
         <>
+          {/* The job first: what shape should this take? */}
+          <StageCard title={T.formatHead[lang]} align={rtlShell ? "right" : "left"} defaultOpen>
+            <div style={{ display: "grid", gap: 10 }}>
+              {([
+                ["post", T.formatWords[lang], T.formatWordsHelp[lang]],
+                ["slides", T.formatSlides[lang], T.formatSlidesHelp[lang]],
+              ] as Array<[Format, string, string]>).map(([key, label, help]) => {
+                const on = format === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => {
+                      setFormat(key);
+                      if (key === "slides" && !deck && !deckBusy && content.trim()) void makeSlides();
+                    }}
+                    style={{
+                      textAlign: rtlShell ? "right" : "left",
+                      cursor: "pointer",
+                      background: on ? "var(--act-tint)" : "var(--surface-subtle)",
+                      border: `1px solid ${on ? "var(--act)" : "var(--border-default)"}`,
+                      borderRadius: 12,
+                      padding: 14,
+                    }}
+                  >
+                    <span style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>
+                      {label}
+                    </span>
+                    <span style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: 1.7, color: "var(--text-secondary)", marginTop: 4 }}>
+                      {help}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </StageCard>
+
           {deckBusy && (
-            <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--machine-text)", background: "var(--machine-tint)", padding: "10px 12px", borderRadius: 10, margin: "0 0 12px" }}>
-              {T.makingSlides[lang]}
-            </p>
+            <div style={{ margin: "12px 0" }}>
+              <BusyBar message={T.makingSlides[lang]} />
+            </div>
           )}
-          {deckFailures.length > 0 && (
+          {format === "slides" && deckFailures.length > 0 && (
             <div role="status" aria-live="polite" style={{ background: "var(--error-tint)", borderRadius: 12, padding: 12, margin: "0 0 12px" }}>
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, fontWeight: 700, color: "var(--error)", margin: 0 }}>
                 {T.slidesFailedHead[lang]}
@@ -989,28 +1027,25 @@ export default function Studio() {
             </div>
           )}
 
+          {format === "slides" && (
           <div
             style={{
               display: "grid",
               gridTemplateColumns: narrow ? "1fr" : "200px 1fr 300px",
               gap: 12,
               alignItems: "start",
+              marginTop: 12,
             }}
           >
             <ZonePiece
               lang={lang}
-              writeLang={writeLang}
               subject={choice?.title || typedTopic}
-              showing={showing}
-              onShowing={setShowing}
-              slideCount={deck?.slides.length ?? 0}
               todo={{
                 words: content.trim().length > 0,
                 slides: Boolean(deck),
                 cover: Boolean(deck?.slides.some((s) => s.slots.media?.src)),
                 published,
               }}
-              postText={content}
             />
             <ZoneStage
               lang={lang}
@@ -1022,8 +1057,6 @@ export default function Studio() {
               onFit={(i, state) => setFits((f) => ({ ...f, [i]: state }))}
               mountRef={mountRef}
               boxRef={canvasBoxRef}
-              mode={showing}
-              postEditor={writeArea}
               showCanvas={canvasInStage}
               empty={
                 <span>
@@ -1059,10 +1092,10 @@ export default function Studio() {
                 onUploadPicture={uploadPicture}
                 pictureNotice={pictureNotice}
                 onMove={move}
-                cameFromLine={cameFromLine}
               />
             )}
           </div>
+          )}
         </>
       )}
 
