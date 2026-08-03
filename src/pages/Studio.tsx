@@ -1061,7 +1061,7 @@ export default function Studio() {
       )}
       <textarea
         value={content}
-        onChange={(e) => setContent(e.target.value)}
+        onChange={(e) => changeContent(e.target.value)}
         rows={14}
         dir={rtlWrite ? "rtl" : "ltr"}
         aria-label={T.writeHead[lang]}
@@ -1589,7 +1589,7 @@ export default function Studio() {
               writeLang={writeLang}
               subject={choice?.title || typedTopic}
               content={content}
-              onContentChange={setContent}
+              onContentChange={changeContent}
               todo={{
                 words: content.trim().length > 0,
                 slides: Boolean(deck),
