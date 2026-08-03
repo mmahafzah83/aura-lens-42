@@ -1978,7 +1978,7 @@ export default function StudioPanel() {
               width={canvasWidth}
               current={current}
               onCurrent={setCurrent}
-              onFit={reportFit}
+              onFit={ignoreFit}
               mountRef={mountRef}
               boxRef={canvasBoxRef}
               showCanvas={canvasInStage}
