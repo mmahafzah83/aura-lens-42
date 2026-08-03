@@ -779,24 +779,39 @@ export default function Studio() {
     setBusy("post");
     setProblem(null);
     setStatus(null);
+    setNotReady(null);
     setBusyMessage(T.posting[lang]);
-    const id = await saveDraft();
+    await saveDraft();
+    const id = await ensurePostRow();
     if (!id) { setBusy(null); setBusyMessage(null); setProblem(T.postFailed[lang]); return; }
     const { data, error } = await supabase.functions.invoke("linkedin-publish", {
-      body: { postId: id, advisory: true },
+      body: { postId: id },
     });
     setBusy(null);
     setBusyMessage(null);
     const payload = data as any;
     const message = `${payload?.error || ""} ${error?.message || ""}`.toLowerCase();
     if (payload?.success === true) {
-      setPostUrl((payload?.postUrl as string) || null);
+      const url = (payload?.postUrl as string) || null;
+      setPostUrl(url);
       setPublished(true);
       setStatus(T.postedHelp[lang]);
+      await finalisePublished(id, url);
+      void track("post_published", { signal_id: choice?.id || null, route: "linkedin" });
+      return;
+    }
+    if (payload?.blocked === true) {
+      // Held by the gate. The member stays here, with their words editable.
+      const weak: string[] = Array.isArray(payload?.weaknesses)
+        ? payload.weaknesses.filter((w: unknown) => typeof w === "string" && w.trim())
+        : [];
+      setNotReady(gateSentence(weak[0], lang));
+      setProblem(gateSentence(weak[0], lang));
+      setStep(2);
       return;
     }
     setProblem(message.includes("not connected") ? T.notConnected[lang] : T.postFailed[lang]);
-  }, [saveDraft, lang]);
+  }, [saveDraft, ensurePostRow, finalisePublished, choice, lang]);
 
   /** Save and come back later: says where it went, and keeps the step. */
   const saveAndComeBack = useCallback(async () => {
@@ -846,28 +861,17 @@ export default function Studio() {
     setBusy("link");
     setBusyMessage(T.savingLink[lang]);
     setProblem(null);
-    const id = draftId ?? (await saveDraft());
+    await saveDraft();
+    const id = await ensurePostRow();
     if (!id) { setBusy(null); setBusyMessage(null); setProblem(T.postFailed[lang]); return; }
-    await supabase
-      .from("linkedin_posts")
-      .update({
-        tracking_status: "published",
-        source_metadata: {
-          source: "studio",
-          topic: choice?.title || typedTopic || null,
-          language: writeLang,
-          _language: writeLang,
-          signal_ids: choice?.id ? [choice.id] : [],
-          external_url: url,
-        },
-      } as any)
-      .eq("id", id);
+    await finalisePublished(id, url);
+    void track("post_published", { signal_id: choice?.id || null, route: "manual" });
     setBusy(null);
     setBusyMessage(null);
     setPublished(true);
     setPostUrl(url);
     setStatus(T.linkSaved[lang]);
-  }, [linkInput, draftId, saveDraft, choice, typedTopic, writeLang, lang]);
+  }, [linkInput, saveDraft, ensurePostRow, finalisePublished, choice, lang]);
 
   /* ---------- derived --------------------------------------------- */
   const attention = useMemo(() => {
