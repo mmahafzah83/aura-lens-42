@@ -1642,7 +1642,60 @@ export default function StudioPanel() {
         </StageCard>
       )}
 
-      {step === 2 && (
+      {/* M5 — on a phone the write step IS the post. No card, no side content,
+          no competing action: the only way forward is the action bar. */}
+      {step === 2 && isPhone && (
+        <div style={{ display: "grid", gap: 8 }}>
+          {notReady && (
+            <p
+              role="status"
+              aria-live="polite"
+              style={{
+                fontFamily: "var(--ff-ui)", fontSize: 14, lineHeight: 1.75, fontWeight: 600,
+                color: "var(--error)", background: "var(--error-tint)", borderRadius: 12, padding: 12, margin: 0,
+              }}
+            >
+              {notReady}
+            </p>
+          )}
+          {genError && (
+            <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 14, color: "var(--error)", margin: 0 }}>
+              {genError === "session" ? T.sessionEnded[lang] : T.writeFailed[lang]}{" "}
+              <button type="button" onClick={() => generate()} style={{ background: "transparent", border: 0, color: "var(--act)", fontWeight: 700, cursor: "pointer", minHeight: 44 }}>
+                {T.tryAgain[lang]}
+              </button>
+            </p>
+          )}
+          <textarea
+            value={content}
+            onChange={(e) => changeContent(e.target.value)}
+            onFocus={scrollFocused}
+            rows={18}
+            dir={rtlWrite ? "rtl" : "ltr"}
+            aria-label={T.writeHead[lang]}
+            style={{
+              width: "100%",
+              background: "var(--surface-subtle)",
+              border: "1px solid var(--border-default)",
+              borderRadius: 12,
+              padding: 14,
+              fontFamily: "var(--ff-ui)",
+              // 16px exactly: anything smaller makes iOS zoom the page on focus.
+              fontSize: 16,
+              lineHeight: rtlWrite ? 2 : 1.85,
+              textAlign: rtlWrite ? "right" : "left",
+              color: "var(--text-primary)",
+              resize: "vertical",
+            }}
+          />
+          <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.6, color: content.length > 2800 ? "var(--error)" : "var(--text-muted)", margin: 0 }}>
+            {content.length} {T.characters[lang]}
+            {content.length > 2800 ? ` — ${T.tooLong[lang]}` : ""} · {T.editHint[lang]}
+          </p>
+        </div>
+      )}
+
+      {step === 2 && !isPhone && (
         <StageCard
           title={T.writeHead[lang]}
           subtitle={T.writeHelp[lang]}
