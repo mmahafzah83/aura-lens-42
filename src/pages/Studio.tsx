@@ -1185,6 +1185,39 @@ export default function Studio() {
 
       {step === 1 && (
         <StageCard title={T.chooseHead[lang]} subtitle={T.chooseHelp[lang]} align={rtlShell ? "right" : "left"} defaultOpen>
+          {/* Work already waiting. Nothing a member wrote may become unreachable. */}
+          {!draftsLoading && drafts.length > 0 && (
+            <div style={{ marginBottom: 20 }}>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
+                {T.draftsHead[lang]}
+              </p>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--text-muted)", margin: "4px 0 8px" }}>
+                {T.draftsHelp[lang]}
+              </p>
+              <div style={{ display: "grid", gap: 8 }}>
+                {drafts.slice(0, 12).map((d) => (
+                  <button
+                    key={d.id}
+                    type="button"
+                    onClick={() => void openDraft(d, "studio_drafts_list")}
+                    style={{
+                      textAlign: rtlShell ? "right" : "left", cursor: "pointer",
+                      background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
+                      borderRadius: 12, padding: 12,
+                    }}
+                  >
+                    <span dir="auto" style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 600, color: "var(--text-primary)", overflowWrap: "anywhere" }}>
+                      {d.title || d.body.split("\n").map((l) => l.trim()).find(Boolean)?.slice(0, 120) || T.untitledDraft[lang]}
+                    </span>
+                    <span style={{ display: "block", fontFamily: "var(--ff-mono)", fontSize: 11, color: "var(--text-muted)", marginTop: 6 }}>
+                      {T.draftSaved[lang]} {formatSmartDate(d.created_at)} · {d.language === "ar" ? T.langAr[lang] : T.langEn[lang]}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {cardsLoading && (
             <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--text-secondary)" }}>
               {T.loading[lang]}
@@ -1233,6 +1266,51 @@ export default function Studio() {
                 </button>
               );
             })}
+          </div>
+
+          {/* The ranked three are a shortcut, never the whole shelf. */}
+          <div style={{ marginTop: 12 }}>
+            <button
+              type="button"
+              onClick={() => setShowAllSubjects((v) => !v)}
+              aria-expanded={showAllSubjects}
+              style={{
+                minHeight: 44, padding: 0, background: "transparent", border: 0, cursor: "pointer",
+                fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--act)",
+              }}
+            >
+              {showAllSubjects ? T.hideAllSubjects[lang] : T.seeAllSubjects[lang]}
+            </button>
+            {showAllSubjects && (
+              <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
+                {allSignals.length === 0 && (
+                  <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, color: "var(--text-secondary)", margin: 0 }}>
+                    {T.allSubjectsEmpty[lang]}
+                  </p>
+                )}
+                {allSignals.map((s) => {
+                  const on = choice?.id === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => { setChoice({ id: s.id, title: s.title, insight: s.insight }); setTypedTopic(""); }}
+                      style={{
+                        textAlign: rtlShell ? "right" : "left", cursor: "pointer",
+                        background: on ? "var(--act-tint)" : "var(--surface-subtle)",
+                        border: `1px solid ${on ? "var(--act)" : "var(--border-default)"}`,
+                        borderRadius: 12, padding: 12,
+                      }}
+                    >
+                      <span dir="auto" style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>
+                        {s.title}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div style={{ marginTop: 16 }}>
