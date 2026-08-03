@@ -2150,9 +2150,16 @@ export default function StudioPanel({
               }
               footer={
                 !deck ? (
-                  <ButtonPrimary onClick={() => void makeSlides()} disabled={deckBusy} style={{ minHeight: 44 }}>
-                    {deckBusy ? T.makingSlides[lang] : T.makeSlides[lang]}
-                  </ButtonPrimary>
+                  <span style={{ display: "grid", gap: 4, justifyItems: rtlShell ? "end" : "start" }}>
+                    <ButtonPrimary onClick={() => void makeSlides()} disabled={!canMakeSlides || deckBusy} style={{ minHeight: 44 }}>
+                      {deckBusy ? T.makingSlides[lang] : T.makeSlides[lang]}
+                    </ButtonPrimary>
+                    {!canMakeSlides && !deckBusy && (
+                      <span style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)" }}>
+                        {T.whyNoWords[lang]}
+                      </span>
+                    )}
+                  </span>
                 ) : null
               }
             />
