@@ -85,6 +85,11 @@ export const S = {
   s5SwitchNote: { en: "This rewrites it in the other language.", ar: "هذا يعيد كتابته باللغة الأخرى." },
   s5Post: { en: "Post it to LinkedIn", ar: "انشره على لينكدإن" },
   s5Save: { en: "Save for later", ar: "احفظه لوقت لاحق" },
+  s5EditHint: {
+    en: "You can edit this — change any word before you post.",
+    ar: "يمكنك تعديل هذا — غيّر أي كلمة قبل النشر.",
+  },
+  s5EditHint2: { en: "This is your draft. Edit anything you like.", ar: "هذه مسودّتك. عدّل ما تشاء." },
   s5Posting: {
     en: "Posting to LinkedIn — this can take up to a minute.",
     ar: "جارٍ النشر على لينكدإن — قد يستغرق حتى دقيقة.",
@@ -103,6 +108,8 @@ export const S = {
   s6PostedHead: { en: "Posted.", ar: "تم النشر." },
   s6PostedHelp: { en: "It is live on your LinkedIn now.", ar: "إنه منشور على لينكدإن الآن." },
   s6SeeIt: { en: "See it on LinkedIn", ar: "شاهده على لينكدإن" },
+  s6CopyLink: { en: "Copy link", ar: "انسخ الرابط" },
+  s6Copied: { en: "Copied ✓", ar: "تم النسخ ✓" },
   s6SavedHead: { en: "Saved.", ar: "تم الحفظ." },
   s6SavedHelp: { en: "You will find it in your drafts in the Composer.", ar: "ستجده في مسوداتك داخل المنصّة." },
   s6Next: {
