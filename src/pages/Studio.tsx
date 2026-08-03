@@ -838,7 +838,6 @@ export default function Studio() {
     setStatus(null);
     setNotReady(null);
     setBusyMessage(T.posting[lang]);
-    await saveDraft();
     const id = await ensurePostRow();
     if (!id) { setBusy(null); setBusyMessage(null); setProblem(T.postFailed[lang]); return; }
     const { data, error } = await supabase.functions.invoke("linkedin-publish", {
@@ -853,7 +852,7 @@ export default function Studio() {
       setPostUrl(url);
       setPublished(true);
       setStatus(T.postedHelp[lang]);
-      await finalisePublished(id, url);
+      await finalisePublished(id, url, payload?.already_published === true);
       void track("post_published", { signal_id: choice?.id || null, route: "linkedin" });
       return;
     }
@@ -862,13 +861,13 @@ export default function Studio() {
       const weak: string[] = Array.isArray(payload?.weaknesses)
         ? payload.weaknesses.filter((w: unknown) => typeof w === "string" && w.trim())
         : [];
+      // One sentence, one place: the banner beside the words it concerns.
       setNotReady(gateSentence(weak[0], lang));
-      setProblem(gateSentence(weak[0], lang));
       setStep(2);
       return;
     }
     setProblem(message.includes("not connected") ? T.notConnected[lang] : T.postFailed[lang]);
-  }, [saveDraft, ensurePostRow, finalisePublished, choice, lang]);
+  }, [ensurePostRow, finalisePublished, choice, lang]);
 
   /** Save and come back later: says where it went, and keeps the step. */
   const saveAndComeBack = useCallback(async () => {
@@ -918,7 +917,6 @@ export default function Studio() {
     setBusy("link");
     setBusyMessage(T.savingLink[lang]);
     setProblem(null);
-    await saveDraft();
     const id = await ensurePostRow();
     if (!id) { setBusy(null); setBusyMessage(null); setProblem(T.postFailed[lang]); return; }
     await finalisePublished(id, url);
@@ -928,7 +926,7 @@ export default function Studio() {
     setPublished(true);
     setPostUrl(url);
     setStatus(T.linkSaved[lang]);
-  }, [linkInput, saveDraft, ensurePostRow, finalisePublished, choice, lang]);
+  }, [linkInput, ensurePostRow, finalisePublished, choice, lang]);
 
   /* ---------- derived --------------------------------------------- */
   const attention = useMemo(() => {
