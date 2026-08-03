@@ -1475,12 +1475,26 @@ export default function StudioPanel({
     </>
   );
 
-  /* One way forward. The label never changes; the step does. */
-  const canContinue =
-    step === 1 ? Boolean(choice) || Boolean(pasted.trim())
-      : step === 2 ? content.trim().length > 0
-        : step === 3 ? format === "post" || Boolean(deck)
-          : false;
+  /* One way forward, and it is enabled by exactly the CURRENT step's
+     done-condition — never by anything else. When it is off, the reason is
+     printed in words beside it. */
+  const canContinue = step === 1 ? doneMap[1] : step === 2 ? doneMap[2] : step === 3 ? doneMap[3] : false;
+  const continueReason = canContinue
+    ? ""
+    : step === 1
+      ? T.whyNoSubject[lang]
+      : step === 2
+        ? T.whyNoWords[lang]
+        : step === 3
+          ? (format === null ? T.whyNoFormat[lang] : T.whyNoSlides[lang])
+          : "";
+
+  /* Save and come back later: only when there is something a save would keep. */
+  const canSave = wordsReady || slidesMade;
+  /* Make the slides. */
+  const canMakeSlides = wordsReady && format === "slides" && !slidesMade;
+  /* Save the link. */
+  const canSaveLink = plausibleLinkedInUrl(linkInput) && !linkSaved;
 
   /* Exactly one primary per screen. On step 3 the slide-making button in the
      stage IS the primary, so the strip does not offer a second one. */
