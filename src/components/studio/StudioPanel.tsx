@@ -1625,17 +1625,28 @@ export default function StudioPanel({
           </ButtonGhost>
         )}
         <span style={{ display: "grid", gap: 2 }}>
-          <ButtonGhost onClick={() => void saveAndComeBack()} disabled={busy === "save"} style={{ minHeight: 44 }}>
+          <ButtonGhost onClick={() => void saveAndComeBack()} disabled={!canSave || busy === "save"} style={{ minHeight: 44 }}>
             {T.saveLater[lang]}
           </ButtonGhost>
-          <span style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)", maxWidth: 260 }}>
-            {T.saveLaterNote[lang]}
-          </span>
+          {/* The precondition, never a promise. "Saved to your drafts" is a
+              transient confirmation and appears only after a real save. */}
+          {!canSave && (
+            <span style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)", maxWidth: 260 }}>
+              {T.nothingToSaveYet[lang]}
+            </span>
+          )}
         </span>
         {step < 4 && !stageOwnsPrimary && (
-          <ButtonPrimary onClick={onContinue} disabled={!canContinue || generating} style={{ minHeight: 44 }}>
-            {T.continue[lang]} {rtlShell ? "←" : "→"}
-          </ButtonPrimary>
+          <span style={{ display: "grid", gap: 2 }}>
+            <ButtonPrimary onClick={onContinue} disabled={!canContinue || generating} style={{ minHeight: 44 }}>
+              {T.continue[lang]} {rtlShell ? "←" : "→"}
+            </ButtonPrimary>
+            {!canContinue && continueReason && (
+              <span style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)", maxWidth: 260 }}>
+                {continueReason}
+              </span>
+            )}
+          </span>
         )}
       </div>
 
