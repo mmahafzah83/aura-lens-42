@@ -1,6 +1,6 @@
 import React from "react";
 import { THEME_NAMES, THEMES, type ThemeName } from "@/carousel/render/themes";
-import { T, type Lang } from "./strings";
+import { T, themeLabel, type Lang } from "./strings";
 
 const heading: React.CSSProperties = {
   fontFamily: "var(--ff-mono)",
@@ -53,19 +53,41 @@ export const ZoneLook: React.FC<{
           <button
             key={t}
             type="button"
-            aria-label={t}
+            aria-label={themeLabel(t, lang)}
             aria-pressed={t === theme}
-            disabled={t === theme}
             onClick={() => onTheme(t)}
             style={{
-              width: 46,
-              height: 58,
-              borderRadius: 10,
-              cursor: t === theme ? "default" : "pointer",
-              background: THEMES[t].bg,
-              border: `2px solid ${t === theme ? "var(--act)" : "var(--border-default)"}`,
+              display: "grid",
+              gap: 4,
+              justifyItems: "center",
+              padding: 0,
+              background: "transparent",
+              border: 0,
+              cursor: "pointer",
             }}
-          />
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                display: "block",
+                width: 46,
+                height: 58,
+                borderRadius: 10,
+                background: THEMES[t].bg,
+                border: `2px solid ${t === theme ? "var(--act)" : "var(--border-default)"}`,
+              }}
+            />
+            <span
+              style={{
+                fontFamily: "var(--ff-ui)",
+                fontSize: 11.5,
+                fontWeight: t === theme ? 700 : 500,
+                color: t === theme ? "var(--act)" : "var(--text-secondary)",
+              }}
+            >
+              {themeLabel(t, lang)}
+            </span>
+          </button>
         ))}
       </div>
     </div>
@@ -78,9 +100,8 @@ export const ZoneLook: React.FC<{
             key={n}
             type="button"
             aria-pressed={n === length}
-            disabled={n === length}
             onClick={() => onLength(n)}
-            style={{ ...pill(n === length), cursor: n === length ? "default" : "pointer" }}
+            style={pill(n === length)}
           >
             {n}
           </button>
