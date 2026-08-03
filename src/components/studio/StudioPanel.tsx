@@ -588,18 +588,38 @@ export default function StudioPanel({
   /**
    * C2 — a subject handed over by Home, My Story, Signals or TrendDetail.
    * A carousel request lands on the deck format.
+   *
+   * N1 — an ARRIVING subject that is not the one on screen is a NEW piece:
+   * reset everything first, so the row id of the piece just published can
+   * never be reused for this one.
    */
+  const choiceRef = useRef<Choice | null>(null);
+  choiceRef.current = choice;
   useEffect(() => {
     if (!signalPrefill) return;
     const title: string = signalPrefill.topic || signalPrefill.signalTitle || signalPrefill.trendHeadline || "";
-    if (title) {
+    const nextFormat: Format | null = signalPrefill.contentFormat === "carousel" ? "slides" : null;
+    const cur = choiceRef.current;
+    const same =
+      Boolean(cur) &&
+      (signalPrefill.signalId
+        ? cur!.id === signalPrefill.signalId
+        : Boolean(title) && cur!.title === title);
+    if (title && !same) {
+      startNewPiece({
+        choice: { id: signalPrefill.signalId ?? null, title, insight: signalPrefill.context || "" },
+        format: nextFormat,
+      });
+    } else if (title) {
       preselectedRef.current = true;
       setChoice({ id: signalPrefill.signalId ?? null, title, insight: signalPrefill.context || "" });
       setTypedTopic("");
+      if (nextFormat) setFormat(nextFormat);
+    } else if (nextFormat) {
+      setFormat(nextFormat);
     }
-    if (signalPrefill.contentFormat === "carousel") setFormat("slides");
     onSignalPrefillConsumed?.();
-  }, [signalPrefill, onSignalPrefillConsumed]);
+  }, [signalPrefill, onSignalPrefillConsumed, startNewPiece]);
 
   /* Every subject, on request. The three ranked cards are a shortcut, not a cap. */
   useEffect(() => {
