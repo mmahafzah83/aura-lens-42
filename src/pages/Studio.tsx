@@ -960,6 +960,9 @@ export default function Studio() {
               onFit={(i, state) => setFits((f) => ({ ...f, [i]: state }))}
               mountRef={mountRef}
               boxRef={canvasBoxRef}
+              mode={showing}
+              postEditor={writeArea}
+              showCanvas={canvasInStage}
               empty={
                 <span>
                   {content.trim() && choice?.id ? (
@@ -967,25 +970,36 @@ export default function Studio() {
                       {T.makeSlides[lang]}
                     </ButtonPrimary>
                   ) : (
-                    T.slidesNeedPost[lang]
+                    choice?.id ? T.slidesNeedPost[lang] : T.typedTopicNoSlides[lang]
                   )}
                 </span>
               }
             />
-            <ZoneInspector
-              lang={lang}
-              writeLang={writeLang}
-              deck={deck}
-              current={current}
-              onDeck={(next) => { remember(); setDeck(next); }}
-              attention={attention}
-              onChangeLine={() => void changeThisLine()}
-              changing={changingLine}
-              onUploadPicture={uploadPicture}
-              pictureNotice={pictureNotice}
-              onMove={move}
-              cameFromLine={cameFromLine}
-            />
+            {sub === "look" ? (
+              <ZoneLook
+                lang={lang}
+                theme={theme}
+                onTheme={(t) => { setTheme(t); setDeck((d) => (d ? { ...d, theme: t } : d)); }}
+                length={deckLength}
+                onLength={(n) => { setDeckLength(n); if (deck) void makeSlides(); }}
+                hasDeck={Boolean(deck)}
+              />
+            ) : (
+              <ZoneInspector
+                lang={lang}
+                writeLang={writeLang}
+                deck={deck}
+                current={current}
+                onDeck={(next) => { remember(); setDeck(next); }}
+                attention={attention}
+                onChangeLine={() => void changeThisLine()}
+                changing={changingLine}
+                onUploadPicture={uploadPicture}
+                pictureNotice={pictureNotice}
+                onMove={move}
+                cameFromLine={cameFromLine}
+              />
+            )}
           </div>
         </>
       )}
