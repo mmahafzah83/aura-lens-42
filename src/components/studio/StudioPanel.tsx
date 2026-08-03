@@ -1333,8 +1333,29 @@ export default function StudioPanel() {
         </div>
       )}
 
-      <JourneyMap lang={lang} step={step} done={doneMap} onStep={(n) => setStep(n)} />
+      {/* M1 — on a phone the pinned four-pill header IS the journey map: same
+          behaviour, clickable in any order, and it never scrolls away. */}
+      {isPhone ? (
+        <PhoneProgress lang={lang} step={step} done={doneMap} onStep={(n) => setStep(n)} rtl={rtlShell} />
+      ) : (
+        <JourneyMap lang={lang} step={step} done={doneMap} onStep={(n) => setStep(n)} />
+      )}
 
+      {/* On a phone the forward and save controls live in the one thumb zone
+          instead, so this strip carries only what Aura has to say. */}
+      {isPhone ? (
+        <div style={{ display: "grid", gap: 4, padding: "0 0 10px" }}>
+          <span role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 13, color: "var(--machine-text)" }}>
+            {busyMessage ? `… ${busyMessage}` : ""}
+          </span>
+          <span role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 13, color: "var(--text-secondary)" }}>
+            {status ? `✓ ${status}` : ""}
+          </span>
+          <span role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--error)", lineHeight: 1.6 }}>
+            {problem ?? ""}
+          </span>
+        </div>
+      ) : (
       <div
         style={{
           display: "flex",
@@ -1394,6 +1415,7 @@ export default function StudioPanel() {
           </ButtonPrimary>
         )}
       </div>
+      )}
 
       {/* Motion for anything in flight, on every step. */}
       {busyMessage && <BusyBar message={busyMessage} />}
