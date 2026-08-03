@@ -1513,9 +1513,16 @@ export default function StudioPanel({
             </p>
           )}
           {!cardsLoading && cards.length === 0 && (
-            <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--text-secondary)", lineHeight: 1.7 }}>
-              {T.chooseEmpty[lang]}
-            </p>
+            <div style={{ display: "grid", gap: 10, justifyItems: rtlShell ? "end" : "start" }}>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--text-secondary)", lineHeight: 1.7, margin: 0 }}>
+                {T.chooseEmpty[lang]}
+              </p>
+              {onOpenCapture && (
+                <ButtonPrimary onClick={() => onOpenCapture()} style={{ minHeight: 44 }}>
+                  {T.captureNow[lang]}
+                </ButtonPrimary>
+              )}
+            </div>
           )}
           <div style={{ display: "grid", gap: 10 }}>
             {cards.map((c) => {
