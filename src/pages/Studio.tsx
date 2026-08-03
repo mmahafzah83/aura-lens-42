@@ -989,7 +989,7 @@ export default function Studio() {
                 theme={theme}
                 onTheme={(t) => { setTheme(t); setDeck((d) => (d ? { ...d, theme: t } : d)); }}
                 length={deckLength}
-                onLength={(n) => { setDeckLength(n); if (deck) void makeSlides(); }}
+                onLength={(n) => { setDeckLength(n); if (deck) void makeSlides(n); }}
                 hasDeck={Boolean(deck)}
               />
             ) : (
