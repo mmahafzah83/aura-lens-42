@@ -514,6 +514,7 @@ export default function StudioPanel({
     setAskReplace(false);
     setAskLangSwitch(null);
     langChosenRef.current = false;
+    setPendingRestore(null);
     preselectedRef.current = Boolean(next?.choice);
     draftPrefillRef.current = null;
     liveRef.current = {
