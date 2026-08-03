@@ -1958,7 +1958,7 @@ export const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed,
                           )}
                         </div>
                         <div className="flex gap-2 mt-0.5">
-                          <Button size="sm" onClick={handlePublishToLinkedIn} disabled={publishingLive || uploadingImage || !previewText.trim() || count > 3000} className="h-8 text-xs">
+                          <Button size="sm" onClick={handlePublishToLinkedIn} disabled={publishingLive || uploadingImage || !previewText.trim() || count > 3000 || gateBlocked} className="h-8 text-xs">
                             {publishingLive ? "Publishing…" : "Publish now"}
                           </Button>
                           <Button size="sm" variant="ghost" onClick={() => setConfirmLiveOpen(false)} disabled={publishingLive} className="h-8 text-xs">
@@ -2120,12 +2120,16 @@ export const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed,
                       <p className="text-xs text-muted-foreground leading-relaxed">
                         This draft did not pass review, so publishing is paused. The full draft is below — read it, then regenerate.
                       </p>
-                      {(qualityGate?.weaknesses || []).filter(Boolean).length > 0 && (
+                      {(qualityGate?.weaknesses || []).filter(Boolean).length > 0 ? (
                         <ul className="list-disc pl-4 space-y-1 text-xs text-foreground/80">
                           {(qualityGate!.weaknesses || []).filter(Boolean).map((w, i) => (
                             <li key={i}>{w}</li>
                           ))}
                         </ul>
+                      ) : (
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          We could not list specific issues. You can publish this and we will look into it.
+                        </p>
                       )}
                       <Button
                         size="sm"
@@ -2207,6 +2211,7 @@ export const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed,
                   const evidenceCount = sig?.fragment_count ?? 0;
                   const gate = qualityGate;
                   const gateActive = !!gate && !gate.skipped;
+                  const gateSkipped = !!gate && gate.skipped === true;
                   const dims: { key: string; label: string; raw: number }[] = gateActive ? [
                     { key: "voice", label: "Voice", raw: gate!.scores?.voice ?? 0 },
                     { key: "hook", label: "Hook", raw: gate!.scores?.hook ?? 0 },
