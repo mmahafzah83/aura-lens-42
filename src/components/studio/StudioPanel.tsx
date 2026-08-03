@@ -1083,13 +1083,19 @@ export default function StudioPanel() {
    */
   const canvasInStage = step === 3 && format === "slides" && Boolean(deck);
   /**
-   * K5 — whichever mount is live reports fit. The on-screen preview only
-   * exists at step 3; outside it the off-screen export mount keeps the
-   * "a bit long" line honest.
+   * L4 — ONE WRITER OF FIT, AT ONE WIDTH.
+   *
+   * Fit is only ever reported by the off-screen export mount, which is always
+   * `EXPORT_WIDTH` wide and always alive while a deck exists. The on-screen
+   * previews render at whatever width the screen gives them and must never
+   * write fit state, or "this line is a bit long" would appear at one step and
+   * vanish at the next for the same deck.
    */
   const reportFit = useCallback((i: number, state: FitState) => {
     setFits((f) => ({ ...f, [i]: state }));
   }, []);
+  /** The on-screen previews report nothing. */
+  const ignoreFit = useCallback((_i: number, _s: FitState) => {}, []);
 
   /* ---------- content wrapper --------------------------------------
    * Page content only: no height, no page padding, no page background — the
