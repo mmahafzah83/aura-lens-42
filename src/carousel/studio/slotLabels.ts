@@ -58,17 +58,20 @@ const GENERIC = "Aura needed to adjust something and will try again.";
 /** Plain-English rewrite of an invariant failure. Members do not read INV codes. */
 export function plainFailure(raw: string): string {
   const body = raw.replace(/^INV-\d+[a-z]?:\s*/, "");
+  // One filter, applied to every branch below: no code, no field paths, no
+  // rule numbers ever reach a member.
+  const leaks = /schema|Array must contain|slots|INV-|slides\.\d+|\bZod\b|\bnull\b|undefined|\{|\}/i;
+  const safe = (out: string) => (leaks.test(out) || !out.trim() ? GENERIC : out);
   if (raw.startsWith("INV-13")) {
     const m = body.match(/hero line "(.+?)" is (\d+) characters, over the (en|ar) budget of (\d+)/);
     if (m) return `The hook line "${m[1]}" is ${m[2]} characters. It must be ${m[4]} or fewer, or it wraps.`;
     return GENERIC;
   }
-  if (raw.startsWith("INV-04")) return `${body.split(" — ")[0]} Each slide may carry one emphasis only.`;
+  if (raw.startsWith("INV-04")) return safe(`${body.split(" — ")[0]} Each slide may carry one emphasis only.`);
   if (raw.startsWith("INV-05")) return "A number is shown without a source. Add where it came from.";
   if (raw.startsWith("INV-01")) return "A slide has nothing on it. Add text or remove the slide.";
   if (raw.startsWith("INV-06")) return "Two slides next to each other use the same layout.";
-  if (raw.startsWith("INV-02")) return body.replace("content overflows the canvas", "The text is too long for the slide");
-  const leaks = /schema:|Array must contain|slots|INV-|slides\.\d+|\bZod\b/i;
+  if (raw.startsWith("INV-02")) return safe(body.replace("content overflows the canvas", "The text is too long for the slide"));
   if (raw.startsWith("INV-12") || raw.startsWith("INV-10")) {
     return leaks.test(body) ? GENERIC : body;
   }

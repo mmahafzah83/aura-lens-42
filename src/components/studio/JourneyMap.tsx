@@ -32,7 +32,6 @@ export const JourneyMap: React.FC<{
             <li key={n}>
               <button
                 type="button"
-                disabled={isCurrent}
                 onClick={() => onStep(n)}
                 aria-current={isCurrent ? "step" : undefined}
                 style={{
@@ -42,13 +41,13 @@ export const JourneyMap: React.FC<{
                   gap: 8,
                   padding: "0 14px",
                   borderRadius: 10,
-                  cursor: isCurrent ? "default" : "pointer",
+                  cursor: "pointer",
                   fontFamily: "var(--ff-ui)",
                   fontSize: 13.5,
                   fontWeight: isCurrent ? 700 : 500,
-                  background: isCurrent ? "var(--act)" : isDone ? "var(--act-tint)" : "var(--surface-card)",
-                  color: isCurrent ? "var(--surface-card)" : isDone ? "var(--act)" : "var(--text-secondary)",
-                  border: `1px solid ${isCurrent || isDone ? "var(--act)" : "var(--border-default)"}`,
+                  background: isCurrent || isDone ? "var(--act-tint)" : "var(--surface-card)",
+                  color: isCurrent || isDone ? "var(--act)" : "var(--text-secondary)",
+                  border: `${isCurrent ? 2 : 1}px solid ${isCurrent || isDone ? "var(--act)" : "var(--border-default)"}`,
                 }}
               >
                 <span aria-hidden="true">{isDone && !isCurrent ? "✓" : n}</span>

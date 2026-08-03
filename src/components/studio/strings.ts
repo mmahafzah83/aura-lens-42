@@ -48,8 +48,8 @@ export const T = {
   },
   postureAuthor: { en: "I'll write, you do the rest", ar: "أنا أكتب، وأنتِ تتولّين الباقي" },
   postureAuthorSub: {
-    en: "You bring your own words. Aura makes the slides and handles the timing.",
-    ar: "أنت تأتي بكلماتك. أورا تصنع الشرائح وتتولّى التوقيت.",
+    en: "You bring your own words. Aura tidies them, keeps them in your record and puts them on LinkedIn.",
+    ar: "أنت تأتي بكلماتك. أورا ترتّبها وتحفظها في سجلك وتنشرها على لينكدإن.",
   },
   postureNameDelegator: { en: "Write it for me", ar: "اكتبه لي" },
   postureNameEditor: { en: "Write it, I shape it", ar: "اكتبه وأشكّله" },
@@ -76,7 +76,6 @@ export const T = {
     ar: "محفوظ في أعمالك. يمكنك فتحه والمتابعة من هذه الخطوة.",
   },
   continue: { en: "Continue", ar: "متابعة" },
-  back: { en: "Back", ar: "رجوع" },
 
   // Step 1 — choose
   chooseHead: { en: "What is this piece about?", ar: "عن ماذا يدور هذا العمل؟" },
@@ -87,7 +86,6 @@ export const T = {
   sources: { en: "sources", ar: "مصدر" },
   chooseOwn: { en: "Write about something else", ar: "اكتب عن شيء آخر" },
   chooseOwnPlaceholder: { en: "What do you want to write about?", ar: "عن ماذا تريد أن تكتب؟" },
-  chooseUse: { en: "Use this one", ar: "استخدم هذا" },
   chooseEmpty: {
     en: "Aura writes from what you read. Save an article you found interesting and come back.",
     ar: "أورا تكتب مما تقرأه. احفظ مقالاً لفت انتباهك ثم عُد.",
@@ -98,7 +96,6 @@ export const T = {
     ar: "أحضر كلماتك. أورا ستكمل من هنا.",
   },
   pastePlaceholder: { en: "Paste your post here…", ar: "الصق منشورك هنا…" },
-  pasteUse: { en: "Use these words", ar: "استخدم هذه الكلمات" },
 
   // Step 2 — write
   writeHead: { en: "Your post", ar: "منشورك" },
@@ -149,7 +146,6 @@ export const T = {
   todoNote: { en: "This is where you are, not a checkpoint.", ar: "هذا موقعك الحالي، وليس شرطاً." },
 
   // Zone: stage
-  zoneStage: { en: "Stage", ar: "المسرح" },
   prevSlide: { en: "Previous slide", ar: "الشريحة السابقة" },
   nextSlide: { en: "Next slide", ar: "الشريحة التالية" },
   slideOf: { en: "Slide", ar: "شريحة" },
@@ -206,20 +202,19 @@ export const T = {
     en: "We could not post it just now. Your words are kept — edit anything and try again.",
     ar: "لم نتمكن من نشره الآن. كلماتك محفوظة — عدّل ما تشاء وحاول مرة أخرى.",
   },
-  savedForLater: { en: "Kept. You will find it with your pieces.", ar: "تم الحفظ. ستجده مع أعمالك." },
   savingPiece: { en: "Saving your piece…", ar: "نحفظ عملك…" },
 
   // Publish — slides
   captionHead: { en: "Your caption", ar: "النص المرافق" },
   copyCaption: { en: "Copy the caption", ar: "انسخ النص المرافق" },
-  s4Get: { en: "1 Get the file", ar: "١ احصل على الملف" },
+  s4Get: { en: "Get the file", ar: "احصل على الملف" },
   s4Open: {
-    en: "2 Open LinkedIn and paste the caption, then attach the file",
-    ar: "٢ افتح لينكدإن والصق النص المرافق، ثم أرفق الملف",
+    en: "Open LinkedIn and paste the caption, then attach the file",
+    ar: "افتح لينكدإن والصق النص المرافق، ثم أرفق الملف",
   },
   s4Link: {
-    en: "3 Come back and paste the link to your post",
-    ar: "٣ عُد والصق رابط منشورك",
+    en: "Come back and paste the link to your post",
+    ar: "عُد والصق رابط منشورك",
   },
   whyLink: {
     en: "Worth the thirty seconds: with the link, Aura can tell you how the post performed, keep it in your record, and learn your voice from what actually worked.",
@@ -236,7 +231,6 @@ export const T = {
   // Step 4
   publishHead: { en: "Put it on LinkedIn", ar: "انشره على لينكدإن" },
   postItNow: { en: "Post it to LinkedIn", ar: "انشره على لينكدإن" },
-  slidesWord: { en: "slides", ar: "شريحة" },
 
   // Confirm before posting
   confirmPostHead: {
@@ -292,6 +286,63 @@ export const T = {
     en: "The picture could not be added just now. Please try once more.",
     ar: "تعذّر إضافة الصورة الآن. جرّب مرة أخرى من فضلك.",
   },
+
+  // Writing language
+  writeLangLabel: { en: "Language of the post", ar: "لغة المنشور" },
+  langEn: { en: "English", ar: "الإنجليزية" },
+  langAr: { en: "عربي", ar: "العربية" },
+
+  // Your words, on every step
+  yourWords: { en: "Your words", ar: "كلماتك" },
+  editWords: { en: "Edit these words", ar: "عدّل هذه الكلمات" },
+  hideWords: { en: "Done editing", ar: "انتهيت من التعديل" },
+
+  // Slides and the words drifting apart
+  slidesStale: {
+    en: "Your words changed since these slides were made.",
+    ar: "تغيّرت كلماتك بعد صنع هذه الشرائح.",
+  },
+  slidesRemake: { en: "Make them again", ar: "اصنعها مرة أخرى" },
+
+  // Limits
+  slidesTooShort: {
+    en: "Slides need a longer post — about 400 characters. Write a little more first.",
+    ar: "الشرائح تحتاج منشوراً أطول — نحو 400 حرف. اكتب قليلاً أولاً.",
+  },
+  overLimitHead: { en: "LinkedIn allows 3,000 characters. Remove", ar: "لينكدإن يسمح بـ3000 حرف. احذف" },
+  overLimitTail: { en: "characters.", ar: "حرفاً." },
+
+  // Replacing written words
+  replaceHead: {
+    en: "You already have a post written here. Using the pasted words will replace it.",
+    ar: "لديك منشور مكتوب هنا بالفعل. استخدام الكلمات الملصقة سيستبدله.",
+  },
+  replaceYes: { en: "Replace it", ar: "استبدله" },
+  replaceNo: { en: "Keep what I have", ar: "أبقِ ما لديّ" },
+
+  // Failures in our own words
+  slidesFailedPlain: {
+    en: "A slide did not come out right. Nothing was lost — try once more.",
+    ar: "لم تخرج إحدى الشرائح كما يجب. لم يُفقد شيء — جرّب مرة أخرى.",
+  },
+  slidesFailedShape: {
+    en: "The slides came back in a shape Aura could not use. Try once more.",
+    ar: "عادت الشرائح بشكل لم تستطع أورا استخدامه. جرّب مرة أخرى.",
+  },
+  connectionDropped: {
+    en: "Your connection dropped. Nothing was lost — try once more.",
+    ar: "انقطع اتصالك. لم يُفقد شيء — جرّب مرة أخرى.",
+  },
+
+  // Step 4
+  savingLink: { en: "Saving the link…", ar: "نحفظ الرابط…" },
+  whySlidesManual: {
+    en: "A plain post can go straight from here. A slide file cannot — LinkedIn does not accept documents from other tools, so you attach the file yourself, once.",
+    ar: "المنشور النصي يخرج من هنا مباشرة. ملف الشرائح لا يمكنه ذلك — لينكدإن لا يقبل المستندات من أدوات أخرى، لذا ترفق الملف بنفسك مرة واحدة.",
+  },
+
+  // Card control
+  cardToggle: { en: "Show or hide this section", ar: "أظهر أو أخفِ هذا القسم" },
 } as const;
 
 /**
@@ -382,6 +433,18 @@ export function startReason(kind: string, count: number, english: string, lang: 
 export function tr(key: keyof typeof T, lang: Lang): string {
   const entry = T[key] as Record<string, unknown>;
   return String(entry[lang]);
+}
+
+/** Real names for the slide colour sets. Never an internal key. */
+export const themeName: Record<string, { en: string; ar: string }> = {
+  midnight: { en: "Midnight", ar: "منتصف الليل" },
+  clay: { en: "Clay", ar: "طينيّ" },
+  gradient: { en: "Gradient", ar: "متدرّج" },
+  paper: { en: "Paper", ar: "ورقيّ" },
+};
+
+export function themeLabel(key: string, lang: Lang): string {
+  return themeName[key]?.[lang] ?? key;
 }
 
 export function postureLabel(p: Posture, lang: Lang): string {

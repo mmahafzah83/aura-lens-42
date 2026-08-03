@@ -30,6 +30,18 @@ import ZoneInspector from "@/components/studio/ZoneInspector";
 import ZoneLook from "@/components/studio/ZoneLook";
 import { T, attentionText, pictureProblem, postureLabel, startReason, type Lang, type Posture } from "@/components/studio/strings";
 
+/** Slides need enough words to divide up. Below this the option is refused. */
+const SLIDES_MIN_CHARS = 400;
+/** LinkedIn's own ceiling. */
+const POST_MAX_CHARS = 3000;
+
+/** A cheap, stable stamp of the text a deck was built from. */
+function sourceStamp(text: string): string {
+  let h = 0;
+  for (let i = 0; i < text.length; i += 1) h = (h * 31 + text.charCodeAt(i)) | 0;
+  return `${text.length}:${h}`;
+}
+
 const POSTURE_KEY = "aura_studio_posture";
 const DRAFT_KEY = "aura_studio_draft_v1";
 
@@ -78,6 +90,8 @@ export default function Studio() {
   const [deckLength, setDeckLength] = useState<5 | 7 | 10>(7);
   const [deckBusy, setDeckBusy] = useState(false);
   const [deckFailures, setDeckFailures] = useState<string[]>([]);
+  /** The words these slides were built from. Lets us say when they drift apart. */
+  const [deckSource, setDeckSource] = useState<string | null>(null);
   const [current, setCurrent] = useState(0);
   const [fits, setFits] = useState<Record<number, FitState>>({});
   const [changingLine, setChangingLine] = useState(false);
@@ -92,7 +106,10 @@ export default function Studio() {
   const [restoredFlag, setRestoredFlag] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [confirmingPost, setConfirmingPost] = useState(false);
-  const [busy, setBusy] = useState<null | "post" | "save" | "export">(null);
+  const [busy, setBusy] = useState<null | "post" | "save" | "export" | "link">(null);
+  const [exported, setExported] = useState(false);
+  /** Raised when pasted words would overwrite a post the member already has. */
+  const [askReplace, setAskReplace] = useState(false);
   const [postUrl, setPostUrl] = useState<string | null>(null);
   const [published, setPublished] = useState(false);
   const [linkInput, setLinkInput] = useState("");
@@ -201,12 +218,15 @@ export default function Studio() {
   /* ---------- keep the piece ------------------------------------- */
   useEffect(() => {
     if (!content && !deck) return;
-    try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ content, deck, choice, writeLang, step, format }));
-      // Success channel only. A failure message is never written from here.
-      setStatus(T.savedMoment[lang]);
-    } catch { /* quota never blocks editing */ }
-  }, [content, deck, choice, writeLang, lang, step, format]);
+    // Debounced, and silent: `T.editHint` already tells the member their
+    // changes save themselves, so no live region fires on every keystroke.
+    const t = window.setTimeout(() => {
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({ content, deck, choice, writeLang, step, format }));
+      } catch { /* quota never blocks editing */ }
+    }, 1500);
+    return () => window.clearTimeout(t);
+  }, [content, deck, choice, writeLang, step, format]);
 
   /* A success note fades; a problem does not. */
   useEffect(() => {
@@ -232,6 +252,7 @@ export default function Studio() {
   }, []);
 
   /* ---------- step 1: the subject --------------------------------- */
+  const preselectedRef = useRef(false);
   useEffect(() => {
     if (!userId) return;
     let dead = false;
@@ -241,8 +262,11 @@ export default function Studio() {
       if (dead) return;
       setCards(rows);
       setCardsLoading(false);
-      if (posture === "delegator" && rows[0]) {
-        setChoice({ id: rows[0].signalId, title: rows[0].title, insight: rows[0].insight });
+      // First entry only. Changing posture later never overwrites a subject
+      // the member has already chosen.
+      if (!preselectedRef.current && posture === "delegator" && rows[0]) {
+        preselectedRef.current = true;
+        setChoice((c) => c ?? { id: rows[0].signalId, title: rows[0].title, insight: rows[0].insight });
       }
     })();
     return () => { dead = true; };
@@ -334,7 +358,11 @@ export default function Studio() {
 
   /* ---------- step 3: the slides, right here ---------------------- */
   const makeSlides = useCallback(async (lengthOverride?: 5 | 7 | 10) => {
-    if (!choice?.id || !content.trim()) return;
+    // Never silent: every refusal says why.
+    if (!content.trim()) { setProblem(T.slidesNeedPost[lang]); return; }
+    if (content.trim().length < SLIDES_MIN_CHARS) { setProblem(T.slidesTooShort[lang]); return; }
+    if (!choice?.id) { setProblem(T.typedTopicNoSlides[lang]); return; }
+    const builtFrom = content;
     setStep(3);
     setSub("build");
     setDeckBusy(true);
@@ -367,17 +395,21 @@ export default function Studio() {
       if (error && !data) throw error;
       const result: any = data;
       if (!result?.ok) {
-        setDeckFailures((result?.failures ?? ["A slide did not come out right."]).map(plainFailure));
+        // An empty list is no message at all, so it falls back like a missing one.
+        const raw: string[] = Array.isArray(result?.failures) ? result.failures.filter((f: unknown) => typeof f === "string" && f.trim()) : [];
+        setDeckFailures(raw.length > 0 ? raw.map(plainFailure) : [T.slidesFailedPlain[lang]]);
         return;
       }
       const parsed = DeckIRSchema.safeParse(result.deck);
-      if (!parsed.success) { setDeckFailures([plainFailure("schema")]); return; }
+      if (!parsed.success) { setDeckFailures([T.slidesFailedShape[lang]]); return; }
       remember();
       setDeck({ ...parsed.data, theme });
+      setDeckSource(builtFrom);
+      setExported(false);
       setCurrent(0);
       setFits({});
     } catch {
-      setDeckFailures([plainFailure("failed")]);
+      setDeckFailures([T.connectionDropped[lang]]);
     } finally {
       setDeckBusy(false);
       setBusyMessage(null);
@@ -512,6 +544,7 @@ export default function Studio() {
       const nodes = collectSlideNodes(mountRef.current);
       if (nodes.length === 0) { setProblem(T.exportNotReady[lang]); return; }
       await exportDeckPdf(nodes, `aura-${deck.deck_id.slice(0, 8)}.pdf`);
+      setExported(true);
       setStatus(T.exportDone[lang]);
     } catch {
       setProblem(T.exportFailed[lang]);
@@ -532,9 +565,11 @@ export default function Studio() {
   const saveLink = useCallback(async () => {
     const url = linkInput.trim();
     if (!/linkedin\.com/i.test(url)) { setProblem(T.linkBad[lang]); return; }
-    const id = draftId ?? (await saveDraft());
-    if (!id) { setProblem(T.postFailed[lang]); return; }
+    setBusy("link");
+    setBusyMessage(T.savingLink[lang]);
     setProblem(null);
+    const id = draftId ?? (await saveDraft());
+    if (!id) { setBusy(null); setBusyMessage(null); setProblem(T.postFailed[lang]); return; }
     await supabase
       .from("linkedin_posts")
       .update({
@@ -549,6 +584,8 @@ export default function Studio() {
         },
       } as any)
       .eq("id", id);
+    setBusy(null);
+    setBusyMessage(null);
     setPublished(true);
     setPostUrl(url);
     setStatus(T.linkSaved[lang]);
@@ -718,12 +755,20 @@ export default function Studio() {
         : step === 3 ? format === "post" || Boolean(deck)
           : false;
 
+  /* Exactly one primary per screen. On step 3 the slide-making button in the
+     stage IS the primary, so the strip does not offer a second one. */
+  const stageOwnsPrimary = step === 3 && format === "slides" && !deck;
+
   const onContinue = () => {
     if (step === 1) {
       if (pasted.trim()) {
+        // Words already written are never replaced without being asked.
+        if (content.trim() && !askReplace) { setAskReplace(true); return; }
         remember();
         setChoice((c) => c ?? { id: null, title: typedTopic.trim() || pasted.trim().slice(0, 60), insight: "" });
         setContent(fixArabicDirectionalSymbols(stripMarkdown(pasted), writeLang));
+        setPasted("");
+        setAskReplace(false);
         setStep(2);
         return;
       }
@@ -846,7 +891,7 @@ export default function Studio() {
             {T.saveLaterNote[lang]}
           </span>
         </span>
-        {step < 4 && (
+        {step < 4 && !stageOwnsPrimary && (
           <ButtonPrimary onClick={onContinue} disabled={!canContinue || generating} style={{ minHeight: 44 }}>
             {T.continue[lang]} {rtlShell ? "←" : "→"}
           </ButtonPrimary>
@@ -931,7 +976,36 @@ export default function Studio() {
             </div>
           </div>
 
-          {posture === "author" && (
+          <div style={{ marginTop: 18 }}>
+            <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--text-primary)", margin: "0 0 6px" }}>
+              {T.writeLangLabel[lang]}
+            </p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {([["en", T.langEn[lang]], ["ar", T.langAr[lang]]] as Array<[Lang, string]>).map(([key, label]) => {
+                const on = writeLang === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => setWriteLang(key)}
+                    style={{
+                      minHeight: 44, padding: "0 16px", borderRadius: 10, cursor: "pointer",
+                      fontFamily: "var(--ff-ui)", fontSize: 13.5, fontWeight: on ? 700 : 500,
+                      background: on ? "var(--act-tint)" : "var(--surface-subtle)",
+                      color: on ? "var(--act)" : "var(--text-secondary)",
+                      border: `1px solid ${on ? "var(--act)" : "var(--border-default)"}`,
+                    }}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Own words are offered to everyone, whatever posture. */}
+          {(
             <div style={{ marginTop: 18 }}>
               <label htmlFor="studio-paste" style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
                 {T.pasteHead[lang]}
@@ -953,6 +1027,19 @@ export default function Studio() {
                   color: "var(--text-primary)", resize: "vertical",
                 }}
               />
+              {askReplace && (
+                <div style={{ marginTop: 10, background: "var(--surface-subtle)", border: "1px solid var(--border-default)", borderRadius: 12, padding: 12 }}>
+                  <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-primary)", margin: "0 0 10px" }}>
+                    {T.replaceHead[lang]}
+                  </p>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <ButtonPrimary onClick={onContinue} style={{ minHeight: 44 }}>{T.replaceYes[lang]}</ButtonPrimary>
+                    <ButtonGhost onClick={() => { setAskReplace(false); setPasted(""); }} style={{ minHeight: 44 }}>
+                      {T.replaceNo[lang]}
+                    </ButtonGhost>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </StageCard>
@@ -963,8 +1050,7 @@ export default function Studio() {
           title={T.writeHead[lang]}
           subtitle={T.writeHelp[lang]}
           align={rtlShell ? "right" : "left"}
-          defaultOpen={posture !== "delegator" || content.length > 0}
-          collapsible
+          lang={lang}
         >
           {writeArea}
         </StageCard>
@@ -980,18 +1066,21 @@ export default function Studio() {
                 ["slides", T.formatSlides[lang], T.formatSlidesHelp[lang]],
               ] as Array<[Format, string, string]>).map(([key, label, help]) => {
                 const on = format === key;
+                const shortForSlides = key === "slides" && content.trim().length < SLIDES_MIN_CHARS;
+                const noSignalForSlides = key === "slides" && !choice?.id;
+                const refused = shortForSlides || noSignalForSlides;
+                const why = shortForSlides ? T.slidesTooShort[lang] : noSignalForSlides ? T.typedTopicNoSlides[lang] : "";
                 return (
                   <button
                     key={key}
                     type="button"
                     aria-pressed={on}
-                    onClick={() => {
-                      setFormat(key);
-                      if (key === "slides" && !deck && !deckBusy && content.trim()) void makeSlides();
-                    }}
+                    disabled={refused}
+                    onClick={() => setFormat(key)}
                     style={{
                       textAlign: rtlShell ? "right" : "left",
-                      cursor: "pointer",
+                      cursor: refused ? "not-allowed" : "pointer",
+                      opacity: refused ? 0.7 : 1,
                       background: on ? "var(--act-tint)" : "var(--surface-subtle)",
                       border: `1px solid ${on ? "var(--act)" : "var(--border-default)"}`,
                       borderRadius: 12,
@@ -1004,17 +1093,17 @@ export default function Studio() {
                     <span style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: 1.7, color: "var(--text-secondary)", marginTop: 4 }}>
                       {help}
                     </span>
+                    {refused && (
+                      <span style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.7, fontWeight: 600, color: "var(--error)", marginTop: 6 }}>
+                        {why}
+                      </span>
+                    )}
                   </button>
                 );
               })}
             </div>
           </StageCard>
 
-          {deckBusy && (
-            <div style={{ margin: "12px 0" }}>
-              <BusyBar message={T.makingSlides[lang]} />
-            </div>
-          )}
           {format === "slides" && deckFailures.length > 0 && (
             <div role="status" aria-live="polite" style={{ background: "var(--error-tint)", borderRadius: 12, padding: 12, margin: "0 0 12px" }}>
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, fontWeight: 700, color: "var(--error)", margin: 0 }}>
@@ -1024,6 +1113,17 @@ export default function Studio() {
                 {attentionText(deckFailures[0], lang)}
               </p>
               <ButtonGhost onClick={() => void makeSlides()} style={{ minHeight: 44 }}>{T.tryAgain[lang]}</ButtonGhost>
+            </div>
+          )}
+
+          {format === "slides" && deck && deckSource !== null && sourceStamp(deckSource) !== sourceStamp(content) && (
+            <div style={{ background: "var(--surface-subtle)", border: "1px solid var(--deadline)", borderRadius: 12, padding: 12, margin: "0 0 12px" }}>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-primary)", margin: "0 0 10px" }}>
+                {T.slidesStale[lang]}
+              </p>
+              <ButtonGhost onClick={() => void makeSlides()} disabled={deckBusy} style={{ minHeight: 44 }}>
+                {T.slidesRemake[lang]}
+              </ButtonGhost>
             </div>
           )}
 
@@ -1039,7 +1139,10 @@ export default function Studio() {
           >
             <ZonePiece
               lang={lang}
+              writeLang={writeLang}
               subject={choice?.title || typedTopic}
+              content={content}
+              onContentChange={setContent}
               todo={{
                 words: content.trim().length > 0,
                 slides: Boolean(deck),
@@ -1058,18 +1161,15 @@ export default function Studio() {
               mountRef={mountRef}
               boxRef={canvasBoxRef}
               showCanvas={canvasInStage}
-              empty={
-                <span>
-                  {content.trim() && choice?.id ? (
-                    <ButtonPrimary onClick={() => void makeSlides()} style={{ minHeight: 44 }}>
-                      {T.makeSlides[lang]}
-                    </ButtonPrimary>
-                  ) : (
-                    choice?.id ? T.slidesNeedPost[lang] : T.typedTopicNoSlides[lang]
-                  )}
-                </span>
-              }
+              empty={<span>{T.noSlidesYet[lang]}</span>}
             />
+            {!deck && (
+              <div style={{ gridColumn: narrow ? "auto" : "2", marginTop: 4 }}>
+                <ButtonPrimary onClick={() => void makeSlides()} disabled={deckBusy} style={{ minHeight: 44 }}>
+                  {deckBusy ? T.makingSlides[lang] : T.makeSlides[lang]}
+                </ButtonPrimary>
+              </div>
+            )}
             {sub === "look" ? (
               <ZoneLook
                 lang={lang}
@@ -1115,7 +1215,7 @@ export default function Studio() {
           {confirmPanel}
 
           {/* ONE path, decided by what the member actually made. */}
-          {!deck ? (
+          {!(format === "slides" && deck) ? (
             <>
               <p
                 dir={rtlWrite ? "rtl" : "ltr"}
@@ -1128,8 +1228,17 @@ export default function Studio() {
               >
                 {content}
               </p>
+              {content.length > POST_MAX_CHARS && (
+                <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--error)", margin: "0 0 10px" }}>
+                  {T.overLimitHead[lang]} {content.length - POST_MAX_CHARS} {T.overLimitTail[lang]}
+                </p>
+              )}
               {!published && !confirmingPost && (
-                <ButtonPrimary onClick={requestPost} disabled={!content.trim() || busy === "post"} style={{ minHeight: 44 }}>
+                <ButtonPrimary
+                  onClick={requestPost}
+                  disabled={!content.trim() || content.length > POST_MAX_CHARS || busy === "post"}
+                  style={{ minHeight: 44 }}
+                >
                   {T.postItNow[lang]}
                 </ButtonPrimary>
               )}
@@ -1156,12 +1265,22 @@ export default function Studio() {
                 </ButtonGhost>
               </div>
 
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.7, color: "var(--text-muted)", margin: "0 0 14px" }}>
+                {T.whySlidesManual[lang]}
+              </p>
+
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: "0 0 8px" }}>
                 1 · {T.s4Get[lang]}
               </p>
-              <ButtonPrimary onClick={() => void exportFile()} disabled={busy === "export"} style={{ minHeight: 44 }}>
-                {busy === "export" ? T.exporting[lang] : T.exportFile[lang]}
-              </ButtonPrimary>
+              {exported ? (
+                <ButtonGhost onClick={() => void exportFile()} disabled={busy === "export"} style={{ minHeight: 44 }}>
+                  {busy === "export" ? T.exporting[lang] : T.exportFile[lang]}
+                </ButtonGhost>
+              ) : (
+                <ButtonPrimary onClick={() => void exportFile()} disabled={busy === "export"} style={{ minHeight: 44 }}>
+                  {busy === "export" ? T.exporting[lang] : T.exportFile[lang]}
+                </ButtonPrimary>
+              )}
 
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: "18px 0 8px" }}>
                 2 · {T.s4Open[lang]}
@@ -1192,9 +1311,15 @@ export default function Studio() {
                     textAlign: rtlShell ? "right" : "left",
                   }}
                 />
-                <ButtonPrimary onClick={() => void saveLink()} disabled={!linkInput.trim()} style={{ minHeight: 44 }}>
-                  {T.linkSave[lang]}
-                </ButtonPrimary>
+                {exported ? (
+                  <ButtonPrimary onClick={() => void saveLink()} disabled={!linkInput.trim() || busy === "link"} style={{ minHeight: 44 }}>
+                    {busy === "link" ? T.savingLink[lang] : T.linkSave[lang]}
+                  </ButtonPrimary>
+                ) : (
+                  <ButtonGhost onClick={() => void saveLink()} disabled={!linkInput.trim() || busy === "link"} style={{ minHeight: 44 }}>
+                    {busy === "link" ? T.savingLink[lang] : T.linkSave[lang]}
+                  </ButtonGhost>
+                )}
               </div>
             </>
           )}
