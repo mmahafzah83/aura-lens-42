@@ -1877,15 +1877,14 @@ export default function StudioPanel() {
                 lang={lang}
                 deck={deck}
                 theme={theme}
-                width={phoneSlideWidth}
-                slideH={phoneSlideH}
-                columnH={phoneColumnH}
                 current={current}
                 onCurrent={setCurrent}
-                onFit={(i, state) => setFits((f) => ({ ...f, [i]: state }))}
+                onFit={reportFit}
                 mountRef={mountRef}
                 boxRef={canvasBoxRef}
                 showCanvas={canvasInStage}
+                sheetOpen={sheet !== null}
+                sheetTall={sheetTall}
                 empty={<span>{T.noSlidesYet[lang]}</span>}
                 footer={
                   <div style={{ display: "flex", gap: 8, overflowX: "auto", WebkitOverflowScrolling: "touch", paddingTop: 4 }}>
