@@ -781,6 +781,49 @@ export default function CarouselStudio() {
                 />
               </div>
 
+              {deck.slides.length > 1 && (
+                <div
+                  dir={deck.dir}
+                  style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "center", marginTop: 10 }}
+                >
+                  <button
+                    type="button"
+                    aria-label={lang === "ar" ? "الشريحة السابقة" : "Previous slide"}
+                    disabled={current === 0}
+                    onClick={() => setCurrent((c) => Math.max(0, c - 1))}
+                    style={{
+                      minWidth: 34, minHeight: 34, borderRadius: 8,
+                      border: "1px solid var(--border)", background: "transparent",
+                      color: "var(--act)", fontSize: 16,
+                      cursor: current === 0 ? "not-allowed" : "pointer",
+                      opacity: current === 0 ? 0.4 : 1,
+                    }}
+                  >
+                    ‹
+                  </button>
+                  <span style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>
+                    {lang === "ar"
+                      ? `الشريحة ${current + 1} من ${deck.slides.length}`
+                      : `Slide ${current + 1} of ${deck.slides.length}`}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label={lang === "ar" ? "الشريحة التالية" : "Next slide"}
+                    disabled={current === deck.slides.length - 1}
+                    onClick={() => setCurrent((c) => Math.min(deck.slides.length - 1, c + 1))}
+                    style={{
+                      minWidth: 34, minHeight: 34, borderRadius: 8,
+                      border: "1px solid var(--border)", background: "transparent",
+                      color: "var(--act)", fontSize: 16,
+                      cursor: current === deck.slides.length - 1 ? "not-allowed" : "pointer",
+                      opacity: current === deck.slides.length - 1 ? 0.4 : 1,
+                    }}
+                  >
+                    ›
+                  </button>
+                </div>
+              )}
+
               <div style={{ display: "grid", gap: 16, minWidth: 0 }}>
                 {/* 7 · quality, visible */}
                 <div style={{ ...panel, display: "grid", gap: 8 }}>
