@@ -413,7 +413,10 @@ export default function StudioPanel({
     liveRef.current = v;
     if (!v.content && !v.deck && !postRowRef.current) return;
     try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...v, postRowId: postRowRef.current }));
+      localStorage.setItem(
+        DRAFT_KEY,
+        JSON.stringify({ ...v, postRowId: postRowRef.current, savedAt: new Date().toISOString() }),
+      );
     } catch { /* quota never blocks editing */ }
   }, []);
 
