@@ -485,6 +485,26 @@ export default function CarouselStudio() {
       }}
     >
       <div style={{ maxWidth: 1180, margin: "0 auto" }}>
+        {draftParam && (
+          <div style={{ marginBottom: 12 }}>
+            <a
+              href={`/home?tab=authority&draft=${draftParam}&src=linkedin_posts`}
+              onClick={(e) => {
+                e.preventDefault();
+                navigate(`/home?tab=authority&draft=${draftParam}&src=linkedin_posts`);
+              }}
+              style={{
+                fontFamily: "var(--ff-ui)",
+                fontSize: 13.5,
+                color: "var(--act)",
+                textDecoration: "none",
+                fontWeight: 600,
+              }}
+            >
+              {lang === "ar" ? "← العودة إلى منشورك" : "← Back to your post"}
+            </a>
+          </div>
+        )}
         <ButtonGhost
           onClick={() => {
             // Inside the studio "Start again" returns to the signal picker.
