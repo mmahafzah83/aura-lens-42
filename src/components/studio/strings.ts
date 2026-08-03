@@ -154,8 +154,10 @@ export const T = {
 
   // Phone layout — the small-screen shape of the same room
   stepWord: { en: "Step", ar: "الخطوة" },
-  sheetExpand: { en: "Make this taller", ar: "وسّع هذا الجزء" },
-  sheetShrink: { en: "Make this shorter", ar: "صغّر هذا الجزء" },
+  layerBack: { en: "Back", ar: "رجوع" },
+  layerDone: { en: "Done", ar: "تم" },
+  slideEditorTitle: { en: "Slide editor", ar: "محرّر الشرائح" },
+  exportSettling: { en: "Getting the slides ready…", ar: "نُجهّز الشرائح…" },
   openThisPiece: { en: "Open this piece", ar: "افتح هذا العمل" },
   openLook: { en: "Open colours and length", ar: "افتح الألوان والطول" },
   openSlideEditor: { en: "Open the slide editor", ar: "افتح محرّر الشريحة" },

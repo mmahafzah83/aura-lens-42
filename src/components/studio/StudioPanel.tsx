@@ -36,7 +36,7 @@ import ZoneInspector from "@/components/studio/ZoneInspector";
 import ZoneLook from "@/components/studio/ZoneLook";
 import PhoneProgress from "@/components/studio/PhoneProgress";
 import PhoneActionBar from "@/components/studio/PhoneActionBar";
-import PhoneSheet from "@/components/studio/PhoneSheet";
+import PhoneLayer from "@/components/studio/PhoneLayer";
 import PhoneStage from "@/components/studio/PhoneStage";
 import { useIsPhone, PHONE_MAX_WIDTH, EXPORT_WIDTH, clampCanvasWidth } from "@/components/studio/usePhone";
 import { T, attentionText, pictureProblem, postureLabel, startReason, type Lang, type Posture } from "@/components/studio/strings";
@@ -163,6 +163,9 @@ export default function StudioPanel() {
   const [deckSource, setDeckSource] = useState<string | null>(null);
   const [current, setCurrent] = useState(0);
   const [fits, setFits] = useState<Record<number, FitState>>({});
+  /** The same reports, readable from inside an await loop without going stale. */
+  const fitsRef = useRef<Record<number, FitState>>({});
+  fitsRef.current = fits;
   const [changingLine, setChangingLine] = useState(false);
   const [pictureNotice, setPictureNotice] = useState<string | null>(null);
 
@@ -217,11 +220,18 @@ export default function StudioPanel() {
    * desktop tree renders exactly as before; below it a different shape.
    */
   const isPhone = useIsPhone();
-  /** Which bottom sheet is open on a phone. Only ever one at a time. */
-  const [sheet, setSheet] = useState<null | "inspector" | "look" | "piece">(null);
-  const [sheetTall, setSheetTall] = useState(false);
-  /** J6 — a breakpoint change closes any sheet; it must never reopen itself. */
-  useEffect(() => { setSheet(null); setSheetTall(false); }, [isPhone]);
+  /**
+   * L1 — which FULL-SCREEN layer is open on a phone. Only ever one at a time,
+   * and never on a desktop.
+   */
+  const [layer, setLayer] = useState<null | "editor" | "look" | "piece">(null);
+  /** J6 — a breakpoint change closes any layer; it must never reopen itself. */
+  useEffect(() => { setLayer(null); }, [isPhone]);
+  /**
+   * L1 — generating slides moves the member from screen A (the format choice)
+   * to screen B (the editor). Once per deck: closing it must not reopen it.
+   */
+  const autoOpenedRef = useRef<string | null>(null);
   const rtlShell = lang === "ar";
   const rtlWrite = writeLang === "ar";
 
@@ -277,7 +287,7 @@ export default function StudioPanel() {
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
-  }, [deck, step, isPhone, sheet]);
+  }, [deck, step, isPhone, layer]);
 
   /* ---------- bring back the piece -------------------------------- */
   const restoredRef = useRef(false);
@@ -1011,6 +1021,24 @@ export default function StudioPanel() {
     else setProblem(T.postFailed[lang]);
   }, [saveDraft, lang]);
 
+  /**
+   * L3 — "settled" means: every slide has reported a fit AND two consecutive
+   * readings a quarter of a second apart are identical. Reads a ref, never
+   * stale state, and gives up after eight seconds rather than hanging.
+   */
+  const waitForSlidesSettled = useCallback(async (count: number) => {
+    const deadline = Date.now() + 8000;
+    let previous = "";
+    while (Date.now() < deadline) {
+      const snapshot = Array.from({ length: count }, (_, i) => fitsRef.current[i]);
+      const signature = JSON.stringify(snapshot);
+      if (snapshot.every(Boolean) && signature === previous) return true;
+      previous = signature;
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    return false;
+  }, []);
+
   const exportFile = useCallback(async () => {
     // Never fails silently: if it cannot run, the member is told why.
     if (!deck) { setProblem(T.exportNoDeck[lang]); return; }
@@ -1019,8 +1047,15 @@ export default function StudioPanel() {
     setBusy("export");
     setProblem(null);
     setStatus(null);
-    setBusyMessage(T.exporting[lang]);
+    // L3 — the mount exists long before it has settled. Wait for every slide
+    // to report a fit, and for those reports to stop changing, before any node
+    // is collected — with the wait visible, and a plain sentence if it never
+    // settles.
+    setBusyMessage(T.exportSettling[lang]);
     try {
+      const settled = await waitForSlidesSettled(deck.slides.length);
+      if (!settled) { setProblem(T.exportNotReady[lang]); return; }
+      setBusyMessage(T.exporting[lang]);
       const nodes = collectSlideNodes(exportMountRef.current);
       if (nodes.length === 0) { setProblem(T.exportNotReady[lang]); return; }
       await exportDeckPdf(nodes, `aura-${deck.deck_id.slice(0, 8)}.pdf`);
@@ -1032,7 +1067,7 @@ export default function StudioPanel() {
       setBusy(null);
       setBusyMessage(null);
     }
-  }, [deck, lang]);
+  }, [deck, lang, waitForSlidesSettled]);
 
   const copyCaption = useCallback(async () => {
     try { await navigator.clipboard.writeText(content); setStatus(T.captionCopied[lang]); } catch { /* nothing copied */ }
@@ -1081,13 +1116,26 @@ export default function StudioPanel() {
    */
   const canvasInStage = step === 3 && format === "slides" && Boolean(deck);
   /**
-   * K5 — whichever mount is live reports fit. The on-screen preview only
-   * exists at step 3; outside it the off-screen export mount keeps the
-   * "a bit long" line honest.
+   * L4 — ONE WRITER OF FIT, AT ONE WIDTH.
+   *
+   * Fit is only ever reported by the off-screen export mount, which is always
+   * `EXPORT_WIDTH` wide and always alive while a deck exists. The on-screen
+   * previews render at whatever width the screen gives them and must never
+   * write fit state, or "this line is a bit long" would appear at one step and
+   * vanish at the next for the same deck.
    */
   const reportFit = useCallback((i: number, state: FitState) => {
     setFits((f) => ({ ...f, [i]: state }));
   }, []);
+  /** The on-screen previews report nothing. */
+  const ignoreFit = useCallback((_i: number, _s: FitState) => {}, []);
+
+  useEffect(() => {
+    if (!isPhone || step !== 3 || format !== "slides" || !deck) return;
+    if (autoOpenedRef.current === deck.deck_id) return;
+    autoOpenedRef.current = deck.deck_id;
+    setLayer("editor");
+  }, [isPhone, step, format, deck]);
 
   /* ---------- content wrapper --------------------------------------
    * Page content only: no height, no page padding, no page background — the
@@ -1308,6 +1356,39 @@ export default function StudioPanel() {
             : step === 4 && format === "slides" && deck
               ? T.whySlidesManual[lang]
               : null;
+
+  /**
+   * L1 — the same bar in every layer: the member moves between the three
+   * full-screen tasks without going back to the page first.
+   */
+  const phoneLayerTabs = (
+    <>
+      {([
+        ["editor", T.slideEditorTitle[lang], format !== "slides" || !deck],
+        ["look", T.lookHead[lang], false],
+        ["piece", T.zonePiece[lang], false],
+      ] as Array<["editor" | "look" | "piece", string, boolean]>).map(([key, label, refused]) => (
+        <button
+          key={key}
+          type="button"
+          disabled={refused}
+          onClick={() => setLayer(key)}
+          aria-current={layer === key ? "true" : undefined}
+          style={{
+            flex: "0 0 auto", minHeight: 44, padding: "0 12px", borderRadius: 999,
+            cursor: refused ? "not-allowed" : "pointer",
+            opacity: refused ? 0.6 : 1,
+            background: layer === key ? "var(--act-tint)" : "var(--surface-subtle)",
+            color: layer === key ? "var(--act)" : "var(--text-secondary)",
+            border: `1px solid ${layer === key ? "var(--act)" : "var(--border-default)"}`,
+            fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap",
+          }}
+        >
+          {label}
+        </button>
+      ))}
+    </>
+  );
 
   return shell(
     <>
@@ -1876,52 +1957,34 @@ export default function StudioPanel() {
             </div>
           )}
 
-          {/* M3 — the phone shape: the slide is the hero, everything that used
-              to be a column is now a sheet, and the sheet is anchored below
-              the slide so the slide is never covered. */}
-          {format === "slides" && isPhone && (
-            <div style={{ marginTop: 12 }}>
-              <PhoneStage
-                lang={lang}
-                deck={deck}
-                theme={theme}
-                current={current}
-                onCurrent={setCurrent}
-                onFit={reportFit}
-                mountRef={mountRef}
-                boxRef={canvasBoxRef}
-                showCanvas={canvasInStage}
-                sheetOpen={sheet !== null}
-                sheetTall={sheetTall}
-                empty={<span>{T.noSlidesYet[lang]}</span>}
-                footer={
-                  <div style={{ display: "flex", gap: 8, overflowX: "auto", WebkitOverflowScrolling: "touch", paddingTop: 4 }}>
-                    {([
-                ["inspector", T.openSlideEditor[lang], !deck],
+          {/* L1 — SCREEN A on a phone: the format choice, in normal flow, and
+              the doors to the full-screen layers. The slide editor itself is
+              never rendered in the page — it is a layer, below. */}
+          {isPhone && (
+            <div style={{ display: "flex", gap: 8, overflowX: "auto", WebkitOverflowScrolling: "touch", marginTop: 12, paddingBottom: 4 }}>
+              {([
+                ["editor", T.openSlideEditor[lang], format !== "slides" || !deck],
                 ["look", T.openLook[lang], false],
                 ["piece", T.openThisPiece[lang], false],
-                    ] as Array<["inspector" | "look" | "piece", string, boolean]>).map(([key, label, refused]) => (
-                      <button
-                    key={key}
-                    type="button"
-                    disabled={refused}
-                    onClick={() => { setSheet(key); setSheetTall(false); }}
-                    title={refused ? T.noSlidesYet[lang] : undefined}
-                    style={{
-                      flex: "0 0 auto", minHeight: 48, padding: "0 14px", borderRadius: 12,
-                      cursor: refused ? "not-allowed" : "pointer",
-                      opacity: refused ? 0.6 : 1,
-                      background: "var(--surface-card)", border: "1px solid var(--border-default)",
-                      fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 600, color: "var(--text-primary)",
-                      whiteSpace: "nowrap",
-                    }}
-                      >
-                    {label}
-                      </button>
-                    ))}
-                  </div>
-                }
-              />
+              ] as Array<["editor" | "look" | "piece", string, boolean]>).map(([key, label, refused]) => (
+                <button
+                  key={key}
+                  type="button"
+                  disabled={refused}
+                  onClick={() => setLayer(key)}
+                  title={refused ? T.noSlidesYet[lang] : undefined}
+                  style={{
+                    flex: "0 0 auto", minHeight: 48, padding: "0 14px", borderRadius: 12,
+                    cursor: refused ? "not-allowed" : "pointer",
+                    opacity: refused ? 0.6 : 1,
+                    background: "var(--surface-card)", border: "1px solid var(--border-default)",
+                    fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 600, color: "var(--text-primary)",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           )}
 
@@ -1955,7 +2018,7 @@ export default function StudioPanel() {
               width={canvasWidth}
               current={current}
               onCurrent={setCurrent}
-              onFit={reportFit}
+              onFit={ignoreFit}
               mountRef={mountRef}
               boxRef={canvasBoxRef}
               showCanvas={canvasInStage}
@@ -2245,42 +2308,56 @@ export default function StudioPanel() {
         </div>
       )}
 
-      {/* ---- the phone sheets: one column of the desktop grid at a time ---- */}
-      {isPhone && (
-        <>
-          <PhoneSheet
-            lang={lang}
-            rtl={rtlShell}
-            open={sheet === "inspector"}
-            title={T.zoneInspector[lang]}
-            expanded={sheetTall}
-            onExpanded={setSheetTall}
-            onClose={() => setSheet(null)}
-          >
-            <ZoneInspector
-              lang={lang}
-              writeLang={writeLang}
-              deck={deck}
-              current={current}
-              onDeck={(next) => { remember(); setDeck(next); }}
-              attention={attention}
-              onChangeLine={() => void changeThisLine()}
-              changing={changingLine}
-              onUploadPicture={uploadPicture}
-              pictureNotice={pictureNotice}
-              onMove={move}
-            />
-          </PhoneSheet>
+      {/* ---- L1: the phone LAYERS. One full screen for one task. ---- */}
+      {isPhone && layer === "editor" && (
+        <PhoneLayer lang={lang} rtl={rtlShell} title={T.slideEditorTitle[lang]} onClose={() => setLayer(null)} tabs={phoneLayerTabs}>
+          {/* The slide takes the room that is left; the fields for the slide
+              sit under it and scroll on their own if they are long. */}
+          <div style={{ flex: "1 1 auto", minHeight: 0, display: "flex", flexDirection: "column", padding: "8px 12px" }}>
+            <div style={{ flex: "1 1 auto", minHeight: 0 }}>
+              <PhoneStage
+                lang={lang}
+                deck={deck}
+                theme={theme}
+                current={current}
+                onCurrent={setCurrent}
+                onFit={ignoreFit}
+                mountRef={mountRef}
+                boxRef={canvasBoxRef}
+                showCanvas={Boolean(deck)}
+                empty={<span>{T.noSlidesYet[lang]}</span>}
+              />
+            </div>
+            <div style={{ flex: "0 0 auto", maxHeight: "42%", overflowY: "auto", WebkitOverflowScrolling: "touch", marginTop: 8 }}>
+              <ZoneInspector
+                lang={lang}
+                writeLang={writeLang}
+                deck={deck}
+                current={current}
+                onDeck={(next) => { remember(); setDeck(next); }}
+                attention={attention}
+                onChangeLine={() => void changeThisLine()}
+                changing={changingLine}
+                onUploadPicture={uploadPicture}
+                pictureNotice={pictureNotice}
+                onMove={move}
+              />
+            </div>
+            <div style={{ flex: "0 0 auto", display: "flex", gap: 10, paddingTop: 8 }}>
+              <ButtonGhost onClick={() => void saveAndComeBack()} disabled={busy === "save"} style={{ minHeight: 50, flex: "1 1 0" }}>
+                {busy === "save" ? T.savingPiece[lang] : T.saveLater[lang]}
+              </ButtonGhost>
+              <ButtonPrimary onClick={() => { setLayer(null); setStep(4); }} style={{ minHeight: 50, flex: "1 1 0" }}>
+                {T.continue[lang]} {rtlShell ? "←" : "→"}
+              </ButtonPrimary>
+            </div>
+          </div>
+        </PhoneLayer>
+      )}
 
-          <PhoneSheet
-            lang={lang}
-            rtl={rtlShell}
-            open={sheet === "look"}
-            title={T.lookHead[lang]}
-            expanded={sheetTall}
-            onExpanded={setSheetTall}
-            onClose={() => setSheet(null)}
-          >
+      {isPhone && layer === "look" && (
+        <PhoneLayer lang={lang} rtl={rtlShell} title={T.lookHead[lang]} onClose={() => setLayer(null)} tabs={phoneLayerTabs}>
+          <div style={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: "12px" }}>
             <ZoneLook
               lang={lang}
               theme={theme}
@@ -2289,17 +2366,13 @@ export default function StudioPanel() {
               onLength={(n) => { setDeckLength(n); if (deck) void makeSlides(n); }}
               hasDeck={Boolean(deck)}
             />
-          </PhoneSheet>
+          </div>
+        </PhoneLayer>
+      )}
 
-          <PhoneSheet
-            lang={lang}
-            rtl={rtlShell}
-            open={sheet === "piece"}
-            title={T.zonePiece[lang]}
-            expanded={sheetTall}
-            onExpanded={setSheetTall}
-            onClose={() => setSheet(null)}
-          >
+      {isPhone && layer === "piece" && (
+        <PhoneLayer lang={lang} rtl={rtlShell} title={T.zonePiece[lang]} onClose={() => setLayer(null)} tabs={phoneLayerTabs}>
+          <div style={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: "12px" }}>
             {/* J7 — the two controls the phone had lost live here, where there
                 is room for them: undo, and writing the piece in the other language. */}
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
@@ -2358,9 +2431,13 @@ export default function StudioPanel() {
                 published,
               }}
             />
-          </PhoneSheet>
+          </div>
+        </PhoneLayer>
+      )}
 
-          {/* M2 — the only floating thing on a phone. At most two controls. */}
+      {/* M2 — the only floating thing on a phone. At most two controls. */}
+      {isPhone && (
+        <>
           <PhoneActionBar
             rtl={rtlShell}
             note={phoneBarNote}
@@ -2392,10 +2469,11 @@ export default function StudioPanel() {
         </>
       )}
 
-      {/* J4 — THE EXPORT MOUNT. Always off-screen, always EXPORT_WIDTH wide,
-          whatever the screen is. Portalled to <body> so no ancestor can clip
-          it. The on-screen preview keeps its own, screen-sized mount. */}
-      {deck && !canvasInStage &&
+      {/* J4/L4 — THE EXPORT MOUNT. Always off-screen, always EXPORT_WIDTH wide,
+          and alive for as long as a deck exists — it is both the source of the
+          exported file and the ONE writer of fit state. Portalled to <body> so
+          no ancestor can clip it. */}
+      {deck &&
         createPortal(
           <div
             aria-hidden="true"

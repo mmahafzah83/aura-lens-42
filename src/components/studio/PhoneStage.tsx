@@ -4,14 +4,7 @@ import type { DeckIR } from "@/carousel/deckIR";
 import type { ThemeName } from "@/carousel/render/themes";
 import type { FitState } from "@/carousel/render/useFitLadder";
 import { T, type Lang } from "./strings";
-import {
-  PHONE_COLUMN_H,
-  PHONE_ROWS_BELOW,
-  PHONE_ROWS_BELOW_SHEET,
-  PHONE_SHEET_H,
-  PHONE_SHEET_H_TALL,
-  clampCanvasWidth,
-} from "./usePhone";
+import { clampCanvasWidth } from "./usePhone";
 
 const wideBtn = (disabled: boolean): React.CSSProperties => ({
   flex: "1 1 0",
@@ -28,13 +21,13 @@ const wideBtn = (disabled: boolean): React.CSSProperties => ({
 });
 
 /**
- * M3 — STEP 3 ON A PHONE.
+ * L1 — THE SLIDE, INSIDE THE FULL-SCREEN EDITING LAYER.
  *
- * The slide is the hero: full width, 4/5, at the very top of the content, so
- * the bottom sheet below it can never cover it. Under the slide sits the
- * filmstrip, then two full-width buttons carrying real words rather than bare
- * arrow glyphs. Everything mirrors in Arabic, including the scroll direction
- * of the filmstrip and the order of the two buttons.
+ * This component owns no viewport geometry at all: it fills whatever box its
+ * parent gives it (`height: 100%`), the slide takes the remaining space
+ * through flex at a 4/5 ratio, and the filmstrip and the two wide steps sit
+ * under it. Everything mirrors in Arabic, including the scroll direction of
+ * the filmstrip and the order of the two buttons.
  */
 export const PhoneStage: React.FC<{
   lang: Lang;
@@ -46,13 +39,9 @@ export const PhoneStage: React.FC<{
   mountRef: React.MutableRefObject<HTMLDivElement | null>;
   boxRef: React.MutableRefObject<HTMLDivElement | null>;
   showCanvas: boolean;
-  /** A sheet is open, so the column ends where the sheet begins. */
-  sheetOpen: boolean;
-  /** The open sheet is expanded, so the slide shrinks further. */
-  sheetTall: boolean;
   empty?: React.ReactNode;
   footer?: React.ReactNode;
-}> = ({ lang, deck, theme, current, onCurrent, onFit, mountRef, boxRef, showCanvas, sheetOpen, sheetTall, empty, footer }) => {
+}> = ({ lang, deck, theme, current, onCurrent, onFit, mountRef, boxRef, showCanvas, empty, footer }) => {
   const count = deck?.slides.length ?? 0;
   const rtl = lang === "ar";
   // J5 — the filmstrip mirrors on the INTERFACE language, not on the language
@@ -110,14 +99,11 @@ export const PhoneStage: React.FC<{
         flexDirection: "column",
         gap: 8,
         minWidth: 0,
-        // K2 — fixed height, in CSS. The page itself never scrolls here.
-        height: PHONE_COLUMN_H,
+        // L1 — no viewport arithmetic: the layer above decides the box.
+        height: "100%",
+        minHeight: 0,
         overflow: "hidden",
-        // When a sheet is open the column stops where the sheet starts, so the
-        // slide shrinks through flex instead of being covered.
-        paddingBottom: sheetOpen ? `calc(${sheetTall ? PHONE_SHEET_H_TALL : PHONE_SHEET_H} + 8px)` : 0,
         boxSizing: "border-box",
-        transition: "padding-bottom .2s ease",
       }}
     >
       {!deck && (
@@ -154,6 +140,7 @@ export const PhoneStage: React.FC<{
                 // constraints and no definite size collapses to zero.
                 height: "100%",
                 aspectRatio: "4 / 5",
+                maxHeight: "100%",
                 maxWidth: "100%",
                 display: "grid",
                 placeItems: "center",
@@ -167,7 +154,8 @@ export const PhoneStage: React.FC<{
             </div>
           </div>
 
-          {/* Row 2 — filmstrip and the two wide steps. Never behind the sheet. */}
+          {/* Row 2 — filmstrip and the two wide steps, always under the slide
+              and always inside the layer. */}
           <div style={{ flex: "0 0 auto", display: "grid", gap: 8, alignContent: "start" }}>
           <div
             dir={dir}
@@ -208,9 +196,8 @@ export const PhoneStage: React.FC<{
         </>
       )}
 
-      {/* Row 3 — the sheet openers. They stand down while a sheet is open, so
-          the filmstrip and the two steps always keep their place. */}
-      {!sheetOpen && footer && <div style={{ flex: "0 0 auto" }}>{footer}</div>}
+      {/* Row 3 — anything the caller wants under the two steps. */}
+      {footer && <div style={{ flex: "0 0 auto" }}>{footer}</div>}
     </div>
   );
 };
