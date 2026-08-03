@@ -30,6 +30,18 @@ import ZoneInspector from "@/components/studio/ZoneInspector";
 import ZoneLook from "@/components/studio/ZoneLook";
 import { T, attentionText, pictureProblem, postureLabel, startReason, type Lang, type Posture } from "@/components/studio/strings";
 
+/** Slides need enough words to divide up. Below this the option is refused. */
+const SLIDES_MIN_CHARS = 400;
+/** LinkedIn's own ceiling. */
+const POST_MAX_CHARS = 3000;
+
+/** A cheap, stable stamp of the text a deck was built from. */
+function sourceStamp(text: string): string {
+  let h = 0;
+  for (let i = 0; i < text.length; i += 1) h = (h * 31 + text.charCodeAt(i)) | 0;
+  return `${text.length}:${h}`;
+}
+
 const POSTURE_KEY = "aura_studio_posture";
 const DRAFT_KEY = "aura_studio_draft_v1";
 
@@ -78,6 +90,8 @@ export default function Studio() {
   const [deckLength, setDeckLength] = useState<5 | 7 | 10>(7);
   const [deckBusy, setDeckBusy] = useState(false);
   const [deckFailures, setDeckFailures] = useState<string[]>([]);
+  /** The words these slides were built from. Lets us say when they drift apart. */
+  const [deckSource, setDeckSource] = useState<string | null>(null);
   const [current, setCurrent] = useState(0);
   const [fits, setFits] = useState<Record<number, FitState>>({});
   const [changingLine, setChangingLine] = useState(false);
@@ -92,7 +106,10 @@ export default function Studio() {
   const [restoredFlag, setRestoredFlag] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [confirmingPost, setConfirmingPost] = useState(false);
-  const [busy, setBusy] = useState<null | "post" | "save" | "export">(null);
+  const [busy, setBusy] = useState<null | "post" | "save" | "export" | "link">(null);
+  const [exported, setExported] = useState(false);
+  /** Raised when pasted words would overwrite a post the member already has. */
+  const [askReplace, setAskReplace] = useState(false);
   const [postUrl, setPostUrl] = useState<string | null>(null);
   const [published, setPublished] = useState(false);
   const [linkInput, setLinkInput] = useState("");
@@ -201,12 +218,15 @@ export default function Studio() {
   /* ---------- keep the piece ------------------------------------- */
   useEffect(() => {
     if (!content && !deck) return;
-    try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ content, deck, choice, writeLang, step, format }));
-      // Success channel only. A failure message is never written from here.
-      setStatus(T.savedMoment[lang]);
-    } catch { /* quota never blocks editing */ }
-  }, [content, deck, choice, writeLang, lang, step, format]);
+    // Debounced, and silent: `T.editHint` already tells the member their
+    // changes save themselves, so no live region fires on every keystroke.
+    const t = window.setTimeout(() => {
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({ content, deck, choice, writeLang, step, format }));
+      } catch { /* quota never blocks editing */ }
+    }, 1500);
+    return () => window.clearTimeout(t);
+  }, [content, deck, choice, writeLang, step, format]);
 
   /* A success note fades; a problem does not. */
   useEffect(() => {
@@ -232,6 +252,7 @@ export default function Studio() {
   }, []);
 
   /* ---------- step 1: the subject --------------------------------- */
+  const preselectedRef = useRef(false);
   useEffect(() => {
     if (!userId) return;
     let dead = false;
@@ -241,8 +262,11 @@ export default function Studio() {
       if (dead) return;
       setCards(rows);
       setCardsLoading(false);
-      if (posture === "delegator" && rows[0]) {
-        setChoice({ id: rows[0].signalId, title: rows[0].title, insight: rows[0].insight });
+      // First entry only. Changing posture later never overwrites a subject
+      // the member has already chosen.
+      if (!preselectedRef.current && posture === "delegator" && rows[0]) {
+        preselectedRef.current = true;
+        setChoice((c) => c ?? { id: rows[0].signalId, title: rows[0].title, insight: rows[0].insight });
       }
     })();
     return () => { dead = true; };
@@ -334,7 +358,11 @@ export default function Studio() {
 
   /* ---------- step 3: the slides, right here ---------------------- */
   const makeSlides = useCallback(async (lengthOverride?: 5 | 7 | 10) => {
-    if (!choice?.id || !content.trim()) return;
+    // Never silent: every refusal says why.
+    if (!content.trim()) { setProblem(T.slidesNeedPost[lang]); return; }
+    if (content.trim().length < SLIDES_MIN_CHARS) { setProblem(T.slidesTooShort[lang]); return; }
+    if (!choice?.id) { setProblem(T.typedTopicNoSlides[lang]); return; }
+    const builtFrom = content;
     setStep(3);
     setSub("build");
     setDeckBusy(true);
@@ -367,17 +395,21 @@ export default function Studio() {
       if (error && !data) throw error;
       const result: any = data;
       if (!result?.ok) {
-        setDeckFailures((result?.failures ?? ["A slide did not come out right."]).map(plainFailure));
+        // An empty list is no message at all, so it falls back like a missing one.
+        const raw: string[] = Array.isArray(result?.failures) ? result.failures.filter((f: unknown) => typeof f === "string" && f.trim()) : [];
+        setDeckFailures(raw.length > 0 ? raw.map(plainFailure) : [T.slidesFailedPlain[lang]]);
         return;
       }
       const parsed = DeckIRSchema.safeParse(result.deck);
-      if (!parsed.success) { setDeckFailures([plainFailure("schema")]); return; }
+      if (!parsed.success) { setDeckFailures([T.slidesFailedShape[lang]]); return; }
       remember();
       setDeck({ ...parsed.data, theme });
+      setDeckSource(builtFrom);
+      setExported(false);
       setCurrent(0);
       setFits({});
     } catch {
-      setDeckFailures([plainFailure("failed")]);
+      setDeckFailures([T.connectionDropped[lang]]);
     } finally {
       setDeckBusy(false);
       setBusyMessage(null);
@@ -512,6 +544,7 @@ export default function Studio() {
       const nodes = collectSlideNodes(mountRef.current);
       if (nodes.length === 0) { setProblem(T.exportNotReady[lang]); return; }
       await exportDeckPdf(nodes, `aura-${deck.deck_id.slice(0, 8)}.pdf`);
+      setExported(true);
       setStatus(T.exportDone[lang]);
     } catch {
       setProblem(T.exportFailed[lang]);
@@ -532,9 +565,11 @@ export default function Studio() {
   const saveLink = useCallback(async () => {
     const url = linkInput.trim();
     if (!/linkedin\.com/i.test(url)) { setProblem(T.linkBad[lang]); return; }
-    const id = draftId ?? (await saveDraft());
-    if (!id) { setProblem(T.postFailed[lang]); return; }
+    setBusy("link");
+    setBusyMessage(T.savingLink[lang]);
     setProblem(null);
+    const id = draftId ?? (await saveDraft());
+    if (!id) { setBusy(null); setBusyMessage(null); setProblem(T.postFailed[lang]); return; }
     await supabase
       .from("linkedin_posts")
       .update({
@@ -549,6 +584,8 @@ export default function Studio() {
         },
       } as any)
       .eq("id", id);
+    setBusy(null);
+    setBusyMessage(null);
     setPublished(true);
     setPostUrl(url);
     setStatus(T.linkSaved[lang]);
