@@ -56,10 +56,11 @@ const DRAFT_KEY = "aura_studio_draft_v1";
 function gateSentence(firstWeakness: string | undefined, lang: Lang): string {
   const w = (firstWeakness || "").trim();
   if (lang === "ar" || !w) return T.notReadyPlain[lang];
-  // Only ever show a number the member can verify. Judge output that carries a
-  // ratio, a percentage or a score is discarded in favour of the plain sentence.
-  if (/\d\s*\/\s*\d|%|score/i.test(w)) return T.notReadyPlain[lang];
-  const tidy = w.replace(/\s+/g, " ").replace(/^[-•\d.\s]+/, "");
+  // Only ever show a number the member can verify. Any digit at all, a
+  // percentage or a score means the judge is arguing with a measurement the
+  // member cannot check, so the plain sentence stands in its place instead.
+  if (/\d|%|score/i.test(w)) return T.notReadyPlain[lang];
+  const tidy = w.replace(/\s+/g, " ").replace(/^[-•.\s]+/, "");
   return `${T.notReadyLead.en} ${tidy.endsWith(".") ? tidy : `${tidy}.`}`;
 }
 
