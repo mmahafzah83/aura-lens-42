@@ -222,10 +222,6 @@ export default function StudioPanel() {
   const [sheetTall, setSheetTall] = useState(false);
   /** J6 — a breakpoint change closes any sheet; it must never reopen itself. */
   useEffect(() => { setSheet(null); setSheetTall(false); }, [isPhone]);
-  /** The top of the pinned step-3 column, measured, so the column can end exactly at the action bar. */
-  const [stageTop, setStageTop] = useState(220);
-  const [viewportH, setViewportH] = useState(() => (typeof window === "undefined" ? 740 : window.innerHeight));
-
   const rtlShell = lang === "ar";
   const rtlWrite = writeLang === "ar";
 
@@ -274,26 +270,14 @@ export default function StudioPanel() {
   useEffect(() => {
     const measure = () => {
       setNarrow(window.innerWidth < 900);
-      setViewportH(window.innerHeight);
       const w = canvasBoxRef.current?.clientWidth ?? 520;
       const gutter = window.innerWidth < PHONE_MAX_WIDTH ? 0 : 28;
-      setCanvasWidth(Math.max(260, Math.min(720, w - gutter)));
+      setCanvasWidth(clampCanvasWidth(w - gutter));
     };
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
   }, [deck, step, isPhone, sheet]);
-
-  /**
-   * J2 — the step-3 phone column starts where it actually sits on screen and
-   * ends at the action bar, so nothing below the fold has to be scrolled to.
-   */
-  useEffect(() => {
-    if (!isPhone || step !== 3) return;
-    const el = canvasBoxRef.current;
-    if (!el) return;
-    setStageTop(Math.max(120, Math.round(el.getBoundingClientRect().top)));
-  }, [isPhone, step, format, deck, sheet, sheetTall, viewportH]);
 
   /* ---------- bring back the piece -------------------------------- */
   const restoredRef = useRef(false);
