@@ -143,8 +143,6 @@ export default function StudioPanel() {
   const generatedTextRef = useRef<string | null>(null);
   /** Asked before a language rewrite would replace words the member owns. */
   const [askLangSwitch, setAskLangSwitch] = useState<Lang | null>(null);
-  /** composer_opened fires once per session, never per navigation. */
-  const openedTrackedRef = useRef(false);
   /**
    * The linkedin_posts row this piece lives in. Held in a ref, not state, so an
    * async sequence never re-reads a null captured at render and inserts twice.
