@@ -422,8 +422,8 @@ export default function Studio() {
     if (!deck) return;
     const slide = deck.slides[Math.min(current, deck.slides.length - 1)];
     if (mediaSupport(slide.archetype) === "none") { setPictureNotice(T.noPictureHere[lang]); return; }
-    const problem = await checkImage(file, SLIDE_MEDIA_LIMITS);
-    if (problem) { setPictureNotice(problem); return; }
+    const imageProblem = await checkImage(file, SLIDE_MEDIA_LIMITS);
+    if (imageProblem) { setPictureNotice(imageProblem); return; }
     const { data: sess } = await supabase.auth.getSession();
     const uid = sess.session?.user?.id;
     if (!uid) { setPictureNotice(T.sessionEnded[lang]); return; }
@@ -538,9 +538,9 @@ export default function Studio() {
   /* ---------- derived --------------------------------------------- */
   const attention = useMemo(() => {
     const fit = fits[current];
-    if (fit?.failed) return plainFailure(fit.reason ?? "A slide does not fit.");
+    if (fit?.failed) return attentionText(plainFailure(fit.reason ?? "A slide does not fit."), lang);
     return null;
-  }, [fits, current]);
+  }, [fits, current, lang]);
 
   const doneMap = useMemo(
     () => ({ 1: Boolean(choice), 2: content.trim().length > 0, 3: Boolean(deck), 4: published }),
