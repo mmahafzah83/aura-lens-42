@@ -516,6 +516,7 @@ export default function StudioPanel({
         deck: null,
         writeLang: d.language,
         step: 2,
+        format: d.type === "carousel" ? "slides" : "post",
         draftId: d.id,
         draftSource: d._source,
         choice: { id: d.signalId ?? null, title: d.title || d.topic || "", insight: "" },
