@@ -30,7 +30,7 @@ export async function loadStudioDrafts(): Promise<StudioDraft[]> {
     const [ci, lp] = await Promise.all([
       supabase
         .from("content_items")
-        .select("id, type, body, language, status, generation_params, created_at")
+        .select("id, type, body, language, status, title, generation_params, created_at")
         .eq("status", "draft")
         .order("created_at", { ascending: false })
         .limit(100),
