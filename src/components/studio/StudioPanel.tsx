@@ -2457,10 +2457,11 @@ export default function StudioPanel() {
         </>
       )}
 
-      {/* J4 — THE EXPORT MOUNT. Always off-screen, always EXPORT_WIDTH wide,
-          whatever the screen is. Portalled to <body> so no ancestor can clip
-          it. The on-screen preview keeps its own, screen-sized mount. */}
-      {deck && !canvasInStage &&
+      {/* J4/L4 — THE EXPORT MOUNT. Always off-screen, always EXPORT_WIDTH wide,
+          and alive for as long as a deck exists — it is both the source of the
+          exported file and the ONE writer of fit state. Portalled to <body> so
+          no ancestor can clip it. */}
+      {deck &&
         createPortal(
           <div
             aria-hidden="true"
