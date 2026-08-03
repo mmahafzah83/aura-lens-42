@@ -2275,6 +2275,7 @@ export default function StudioPanel() {
             open={sheet === "inspector"}
             title={T.zoneInspector[lang]}
             expanded={sheetTall}
+            height={phoneSheetH}
             onExpanded={setSheetTall}
             onClose={() => setSheet(null)}
           >
@@ -2299,6 +2300,7 @@ export default function StudioPanel() {
             open={sheet === "look"}
             title={T.lookHead[lang]}
             expanded={sheetTall}
+            height={phoneSheetH}
             onExpanded={setSheetTall}
             onClose={() => setSheet(null)}
           >
@@ -2318,9 +2320,55 @@ export default function StudioPanel() {
             open={sheet === "piece"}
             title={T.zonePiece[lang]}
             expanded={sheetTall}
+            height={phoneSheetH}
             onExpanded={setSheetTall}
             onClose={() => setSheet(null)}
           >
+            {/* J7 — the two controls the phone had lost live here, where there
+                is room for them: undo, and writing the piece in the other language. */}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+              <ButtonGhost onClick={undo} disabled={undoStack.length === 0} style={{ minHeight: 44 }}>
+                {T.undo[lang]}
+              </ButtonGhost>
+              <ButtonGhost
+                onClick={() => {
+                  const other: Lang = writeLang === "ar" ? "en" : "ar";
+                  const ownWords = content.trim().length > 0 && content !== (generatedTextRef.current ?? "");
+                  if (ownWords) { setAskLangSwitch(other); return; }
+                  setWriteLang(other);
+                  setNotReady(null);
+                  void generate(undefined, other);
+                }}
+                disabled={generating || !choice}
+                style={{ minHeight: 44 }}
+              >
+                {writeLang === "ar" ? T.writeAgainEn[lang] : T.writeAgainAr[lang]}
+              </ButtonGhost>
+            </div>
+            {askLangSwitch && (
+              <div style={{ marginBottom: 12, background: "var(--surface-subtle)", border: "1px solid var(--border-default)", borderRadius: 12, padding: 12 }}>
+                <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, lineHeight: 1.75, color: "var(--text-primary)", margin: "0 0 10px" }}>
+                  {askLangSwitch === "ar" ? T.langSwitchHeadAr[lang] : T.langSwitchHeadEn[lang]}
+                </p>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <ButtonPrimary
+                    onClick={() => {
+                      const other = askLangSwitch;
+                      setAskLangSwitch(null);
+                      setWriteLang(other);
+                      setNotReady(null);
+                      void generate(undefined, other);
+                    }}
+                    style={{ minHeight: 44 }}
+                  >
+                    {T.langSwitchYes[lang]}
+                  </ButtonPrimary>
+                  <ButtonGhost onClick={() => setAskLangSwitch(null)} style={{ minHeight: 44 }}>
+                    {T.langSwitchNo[lang]}
+                  </ButtonGhost>
+                </div>
+              </div>
+            )}
             <ZonePiece
               lang={lang}
               writeLang={writeLang}
