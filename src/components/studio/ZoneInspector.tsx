@@ -43,10 +43,9 @@ export const ZoneInspector: React.FC<{
   onUploadPicture: (file: File) => Promise<void>;
   pictureNotice: string | null;
   onMove: (from: number, to: number) => void;
-  cameFromLine: string;
 }> = ({
   lang, writeLang, deck, current, onDeck, attention, onChangeLine, changing,
-  onUploadPicture, pictureNotice, onMove, cameFromLine,
+  onUploadPicture, pictureNotice, onMove,
 }) => {
   const slotLabel = (key: string) =>
     (lang === "ar" ? slotLabelAr[key] : undefined) ?? SLOT_LABEL[key] ?? key;
@@ -348,9 +347,6 @@ export const ZoneInspector: React.FC<{
         )}
       </div>
 
-      <p style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, lineHeight: 1.7, color: "var(--text-muted)", margin: 0 }}>
-        {T.cameFrom[lang]} “{cameFromLine || "—"}”
-      </p>
     </>,
   );
 };

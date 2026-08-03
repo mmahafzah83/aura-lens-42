@@ -32,15 +32,11 @@ export const ZoneStage: React.FC<{
   mountRef: React.MutableRefObject<HTMLDivElement | null>;
   boxRef: React.MutableRefObject<HTMLDivElement | null>;
   empty?: React.ReactNode;
-  /** "post" shows the member's words here; "slides" shows the deck. */
-  mode: "post" | "slides";
-  /** The editable post, rendered when mode is "post". */
-  postEditor: React.ReactNode;
   /** False when the mount lives offscreen instead (so it survives step changes). */
   showCanvas: boolean;
 }> = ({
   lang, deck, theme, width, current, onCurrent, onFit, mountRef, boxRef, empty,
-  mode, postEditor, showCanvas,
+  showCanvas,
 }) => {
   const count = deck?.slides.length ?? 0;
   const dir = deck?.dir ?? (lang === "ar" ? "rtl" : "ltr");
@@ -56,9 +52,7 @@ export const ZoneStage: React.FC<{
         minWidth: 0,
       }}
     >
-      {mode === "post" && postEditor}
-
-      {mode === "slides" && !deck && (
+      {!deck && (
         <div
           style={{
             minHeight: 260,
@@ -74,7 +68,7 @@ export const ZoneStage: React.FC<{
         </div>
       )}
 
-      {mode === "slides" && deck && (
+      {deck && (
         <>
           {showCanvas && (
             <StudioCanvas
