@@ -263,6 +263,22 @@ export default function CarouselStudio() {
     [fits],
   );
   const allFailures = [...invariantFailures, ...fitFailures];
+  /**
+   * Every issue, tied to the slide it belongs to, so no line is a dead end.
+   * The invariant strings carry "slide N"; the fit map is keyed by index.
+   */
+  const issues = useMemo(() => {
+    const out: Array<{ text: string; index?: number }> = [];
+    for (const f of invariantFailures) {
+      const m = /slide (\d+)/i.exec(f);
+      out.push({ text: plainFailure(f), index: m ? Number(m[1]) : undefined });
+    }
+    for (const [key, state] of Object.entries(fits)) {
+      if (!state?.failed) continue;
+      out.push({ text: plainFailure(state.reason ?? "A slide does not fit."), index: Number(key) });
+    }
+    return out;
+  }, [invariantFailures, fits]);
   // Voice and taste notes: worth reading, never worth withholding the deck.
   const notes = tiered.warnings;
   const noFigure = Boolean(deck && !deck.slides.some((s) => s.slots.stat_value));
