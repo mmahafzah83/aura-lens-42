@@ -1081,11 +1081,12 @@ export default function StudioPanel() {
    * or they get half-RTL, which is worse than either.
    * The bottom padding clears BOTH the mobile navigation bar and the capture
    * button that floats above it, so no studio control sits underneath them.
+   * On a phone it must clear the one-thumb action bar as well.
    */
   const shell = (children: React.ReactNode) => (
     <div
       dir={rtlShell ? "rtl" : "ltr"}
-      className="pb-[152px] md:pb-0"
+      className={isPhone ? "pb-[188px] md:pb-0" : "pb-[152px] md:pb-0"}
       style={{ maxWidth: 1360, margin: "0 auto" }}
     >
       {children}
