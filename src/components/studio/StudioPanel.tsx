@@ -34,10 +34,6 @@ import ZonePiece from "@/components/studio/ZonePiece";
 import ZoneStage from "@/components/studio/ZoneStage";
 import ZoneInspector from "@/components/studio/ZoneInspector";
 import ZoneLook from "@/components/studio/ZoneLook";
-import PhoneProgress from "@/components/studio/PhoneProgress";
-import PhoneActionBar from "@/components/studio/PhoneActionBar";
-import PhoneLayer from "@/components/studio/PhoneLayer";
-import PhoneStage from "@/components/studio/PhoneStage";
 import { useIsPhone, PHONE_MAX_WIDTH, EXPORT_WIDTH, clampCanvasWidth } from "@/components/studio/usePhone";
 import { T, attentionText, pictureProblem, postureLabel, startReason, type Lang, type Posture } from "@/components/studio/strings";
 
@@ -216,22 +212,11 @@ export default function StudioPanel() {
   const [canvasWidth, setCanvasWidth] = useState(520);
   const [narrow, setNarrow] = useState(false);
   /**
-   * THE phone branch. One breakpoint, one source: `usePhone`. Above it the
-   * desktop tree renders exactly as before; below it a different shape.
+   * R1 — there is no phone BRANCH any more. The same tree renders at every
+   * width; this boolean only chooses a comfortable field size on small
+   * screens, so iOS does not zoom the page when a field takes focus.
    */
   const isPhone = useIsPhone();
-  /**
-   * L1 — which FULL-SCREEN layer is open on a phone. Only ever one at a time,
-   * and never on a desktop.
-   */
-  const [layer, setLayer] = useState<null | "editor" | "look" | "piece">(null);
-  /** J6 — a breakpoint change closes any layer; it must never reopen itself. */
-  useEffect(() => { setLayer(null); }, [isPhone]);
-  /**
-   * L1 — generating slides moves the member from screen A (the format choice)
-   * to screen B (the editor). Once per deck: closing it must not reopen it.
-   */
-  const autoOpenedRef = useRef<string | null>(null);
   const rtlShell = lang === "ar";
   const rtlWrite = writeLang === "ar";
 
@@ -287,7 +272,7 @@ export default function StudioPanel() {
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
-  }, [deck, step, isPhone, layer]);
+  }, [deck, step, isPhone]);
 
   /* ---------- bring back the piece -------------------------------- */
   const restoredRef = useRef(false);
@@ -1130,27 +1115,19 @@ export default function StudioPanel() {
   /** The on-screen previews report nothing. */
   const ignoreFit = useCallback((_i: number, _s: FitState) => {}, []);
 
-  useEffect(() => {
-    if (!isPhone || step !== 3 || format !== "slides" || !deck) return;
-    if (autoOpenedRef.current === deck.deck_id) return;
-    autoOpenedRef.current = deck.deck_id;
-    setLayer("editor");
-  }, [isPhone, step, format, deck]);
-
   /* ---------- content wrapper --------------------------------------
    * Page content only: no height, no page padding, no page background — the
    * Aura shell owns those. DIRECTION, however, is the panel's own: the shell
    * sets no `dir` anywhere, and this panel branches on `rtlShell` for text
    * alignment and arrow glyphs, so an Arabic member needs a real RTL box here
    * or they get half-RTL, which is worse than either.
-   * The bottom padding clears BOTH the mobile navigation bar and the capture
-   * button that floats above it, so no studio control sits underneath them.
-   * On a phone it must clear the one-thumb action bar as well.
+   * R2 — the bottom padding that clears the shell navigation belongs to the
+   * Dashboard tab container (`pb-[88px] md:pb-12`). The panel adds no second
+   * offset of its own.
    */
   const shell = (children: React.ReactNode) => (
     <div
       dir={rtlShell ? "rtl" : "ltr"}
-      className={isPhone ? "pb-[188px] md:pb-0" : "pb-[152px] md:pb-0"}
       style={{ maxWidth: 1360, margin: "0 auto" }}
     >
       {children}
@@ -1267,7 +1244,8 @@ export default function StudioPanel() {
           borderRadius: 12,
           padding: 14,
           fontFamily: "var(--ff-ui)",
-          fontSize: 15,
+          // R2 — 16px on a small screen, so iOS does not zoom the page on focus.
+          fontSize: isPhone ? 16 : 15,
           lineHeight: rtlWrite ? 1.9 : 1.75,
           textAlign: rtlWrite ? "right" : "left",
           color: "var(--text-primary)",
@@ -1316,86 +1294,10 @@ export default function StudioPanel() {
     if (step === 3) { setStep(4); }
   };
 
-  /**
-   * M2/M4 — a focused field on a phone scrolls itself into the middle of the
-   * viewport, so the on-screen keyboard can never end up covering the words
-   * being typed or the action bar underneath them.
-   */
-  const scrollFocused = (e: React.FocusEvent<HTMLElement>) => {
-    if (!isPhone) return;
-    const el = e.currentTarget;
-    window.setTimeout(() => el.scrollIntoView({ block: "center", behavior: "smooth" }), 250);
-  };
-
-  /** M8 — a refused control always says why, in words, beside it. */
-  /**
-   * J3 — the note and the primary are ONE expression. If a primary is enabled
-   * anywhere on this screen, there is no note; if it is refused, the note says
-   * why in the words of the state the member is actually in.
-   */
-  const phonePrimaryEnabled =
-    step === 4
-      ? !(format === "slides" && deck) && !published && !confirmingPost
-        && Boolean(content.trim()) && content.length <= POST_MAX_CHARS
-        && busy !== "post" && !notReady
-      : stageOwnsPrimary
-        ? !deckBusy
-        : canContinue && !generating;
-
-  const phoneBarNote =
-    phonePrimaryEnabled || busyMessage
-      ? null
-      : step === 1
-        ? T.chooseHelp[lang]
-        : step === 2
-          ? T.phoneNeedWords[lang]
-          : step === 3
-            ? T.slidesNeedPost[lang]
-            // K6 — step 4 with slides has no one-tap publish. Where there is no
-            // primary there is a sentence saying why, never an empty bar.
-            : step === 4 && format === "slides" && deck
-              ? T.whySlidesManual[lang]
-              : null;
-
-  /**
-   * L1 — the same bar in every layer: the member moves between the three
-   * full-screen tasks without going back to the page first.
-   */
-  const phoneLayerTabs = (
-    <>
-      {([
-        ["editor", T.slideEditorTitle[lang], format !== "slides" || !deck],
-        ["look", T.lookHead[lang], false],
-        ["piece", T.zonePiece[lang], false],
-      ] as Array<["editor" | "look" | "piece", string, boolean]>).map(([key, label, refused]) => (
-        <button
-          key={key}
-          type="button"
-          disabled={refused}
-          onClick={() => setLayer(key)}
-          aria-current={layer === key ? "true" : undefined}
-          style={{
-            flex: "0 0 auto", minHeight: 44, padding: "0 12px", borderRadius: 999,
-            cursor: refused ? "not-allowed" : "pointer",
-            opacity: refused ? 0.6 : 1,
-            background: layer === key ? "var(--act-tint)" : "var(--surface-subtle)",
-            color: layer === key ? "var(--act)" : "var(--text-secondary)",
-            border: `1px solid ${layer === key ? "var(--act)" : "var(--border-default)"}`,
-            fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap",
-          }}
-        >
-          {label}
-        </button>
-      ))}
-    </>
-  );
-
   return shell(
     <>
       {/* One slim strip. This is a page inside Aura; the shell owns navigation.
-          On a phone at the writing step the post is the only thing on screen,
-          so this strip stands down there (M5). */}
-      {(!isPhone || step !== 2) && (
+          It renders at every width; on a narrow screen it simply wraps. */}
       <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", paddingBottom: 6 }}>
         <button
           type="button"
@@ -1420,7 +1322,6 @@ export default function StudioPanel() {
           {T.helpLink[lang]}
         </button>
       </div>
-      )}
 
       {helpOpen && (
         <div
@@ -1450,29 +1351,11 @@ export default function StudioPanel() {
         </div>
       )}
 
-      {/* M1 — on a phone the pinned four-pill header IS the journey map: same
-          behaviour, clickable in any order, and it never scrolls away. */}
-      {isPhone ? (
-        <PhoneProgress lang={lang} step={step} done={doneMap} onStep={(n) => setStep(n)} />
-      ) : (
-        <JourneyMap lang={lang} step={step} done={doneMap} onStep={(n) => setStep(n)} />
-      )}
+      {/* One journey map, at every width. */}
+      <JourneyMap lang={lang} step={step} done={doneMap} onStep={(n) => setStep(n)} />
 
-      {/* On a phone the forward and save controls live in the one thumb zone
-          instead, so this strip carries only what Aura has to say. */}
-      {isPhone ? (
-        <div style={{ display: "grid", gap: 4, padding: "0 0 10px" }}>
-          <span role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 13, color: "var(--machine-text)" }}>
-            {busyMessage ? `… ${busyMessage}` : ""}
-          </span>
-          <span role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 13, color: "var(--text-secondary)" }}>
-            {status ? `✓ ${status}` : ""}
-          </span>
-          <span role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--error)", lineHeight: 1.6 }}>
-            {problem ?? ""}
-          </span>
-        </div>
-      ) : (
+      {/* One status strip, at every width: what Aura is doing, what it has
+          done, and what is in the way. */}
       <div
         style={{
           display: "flex",
@@ -1532,7 +1415,6 @@ export default function StudioPanel() {
           </ButtonPrimary>
         )}
       </div>
-      )}
 
       {/* Motion for anything in flight, on every step. */}
       {busyMessage && <BusyBar message={busyMessage} />}
@@ -1679,7 +1561,6 @@ export default function StudioPanel() {
                   setTypedTopic(e.target.value);
                   setChoice(e.target.value.trim() ? { id: null, title: e.target.value.trim(), insight: "" } : null);
                 }}
-                onFocus={scrollFocused}
                 placeholder={T.chooseOwnPlaceholder[lang]}
                 style={{
                   flex: "1 1 260px", minHeight: 44, padding: "0 12px", borderRadius: 10,
@@ -1734,7 +1615,6 @@ export default function StudioPanel() {
                 rows={6}
                 dir={rtlWrite ? "rtl" : "ltr"}
                 onChange={(e) => setPasted(e.target.value)}
-                onFocus={scrollFocused}
                 placeholder={T.pastePlaceholder[lang]}
                 style={{
                   width: "100%", background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
@@ -1761,60 +1641,7 @@ export default function StudioPanel() {
         </StageCard>
       )}
 
-      {/* M5 — on a phone the write step IS the post. No card, no side content,
-          no competing action: the only way forward is the action bar. */}
-      {step === 2 && isPhone && (
-        <div style={{ display: "grid", gap: 8 }}>
-          {notReady && (
-            <p
-              role="status"
-              aria-live="polite"
-              style={{
-                fontFamily: "var(--ff-ui)", fontSize: 14, lineHeight: 1.75, fontWeight: 600,
-                color: "var(--error)", background: "var(--error-tint)", borderRadius: 12, padding: 12, margin: 0,
-              }}
-            >
-              {notReady}
-            </p>
-          )}
-          {genError && (
-            <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 14, color: "var(--error)", margin: 0 }}>
-              {genError === "session" ? T.sessionEnded[lang] : T.writeFailed[lang]}{" "}
-              <button type="button" onClick={() => generate()} style={{ background: "transparent", border: 0, color: "var(--act)", fontWeight: 700, cursor: "pointer", minHeight: 44 }}>
-                {T.tryAgain[lang]}
-              </button>
-            </p>
-          )}
-          <textarea
-            value={content}
-            onChange={(e) => changeContent(e.target.value)}
-            onFocus={scrollFocused}
-            rows={18}
-            dir={rtlWrite ? "rtl" : "ltr"}
-            aria-label={T.writeHead[lang]}
-            style={{
-              width: "100%",
-              background: "var(--surface-subtle)",
-              border: "1px solid var(--border-default)",
-              borderRadius: 12,
-              padding: 14,
-              fontFamily: "var(--ff-ui)",
-              // 16px exactly: anything smaller makes iOS zoom the page on focus.
-              fontSize: 16,
-              lineHeight: rtlWrite ? 2 : 1.85,
-              textAlign: rtlWrite ? "right" : "left",
-              color: "var(--text-primary)",
-              resize: "vertical",
-            }}
-          />
-          <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.6, color: content.length > 2800 ? "var(--error)" : "var(--text-muted)", margin: 0 }}>
-            {content.length} {T.characters[lang]}
-            {content.length > 2800 ? ` — ${T.tooLong[lang]}` : ""} · {T.editHint[lang]}
-          </p>
-        </div>
-      )}
-
-      {step === 2 && !isPhone && (
+      {step === 2 && (
         <StageCard
           title={T.writeHead[lang]}
           subtitle={T.writeHelp[lang]}
@@ -1957,38 +1784,7 @@ export default function StudioPanel() {
             </div>
           )}
 
-          {/* L1 — SCREEN A on a phone: the format choice, in normal flow, and
-              the doors to the full-screen layers. The slide editor itself is
-              never rendered in the page — it is a layer, below. */}
-          {isPhone && (
-            <div style={{ display: "flex", gap: 8, overflowX: "auto", WebkitOverflowScrolling: "touch", marginTop: 12, paddingBottom: 4 }}>
-              {([
-                ["editor", T.openSlideEditor[lang], format !== "slides" || !deck],
-                ["look", T.openLook[lang], false],
-                ["piece", T.openThisPiece[lang], false],
-              ] as Array<["editor" | "look" | "piece", string, boolean]>).map(([key, label, refused]) => (
-                <button
-                  key={key}
-                  type="button"
-                  disabled={refused}
-                  onClick={() => setLayer(key)}
-                  title={refused ? T.noSlidesYet[lang] : undefined}
-                  style={{
-                    flex: "0 0 auto", minHeight: 48, padding: "0 14px", borderRadius: 12,
-                    cursor: refused ? "not-allowed" : "pointer",
-                    opacity: refused ? 0.6 : 1,
-                    background: "var(--surface-card)", border: "1px solid var(--border-default)",
-                    fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 600, color: "var(--text-primary)",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {format === "slides" && !isPhone && (
+          {format === "slides" && (
           <div
             style={{
               display: "grid",
@@ -2060,7 +1856,7 @@ export default function StudioPanel() {
         </>
       )}
 
-      {step === 4 && !isPhone && (
+      {step === 4 && (
         <StageCard title={T.publishHead[lang]} align={rtlShell ? "right" : "left"} defaultOpen>
           {published && (
             <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 14, color: "var(--text-primary)", margin: "0 0 10px" }}>
@@ -2175,7 +1971,7 @@ export default function StudioPanel() {
                   style={{
                     flex: "1 1 280px", minHeight: 44, padding: "0 12px", borderRadius: 10,
                     background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
-                    fontFamily: "var(--ff-ui)", fontSize: 14, color: "var(--text-primary)",
+                    fontFamily: "var(--ff-ui)", fontSize: isPhone ? 16 : 14, color: "var(--text-primary)",
                     textAlign: rtlShell ? "right" : "left",
                   }}
                 />
@@ -2192,281 +1988,6 @@ export default function StudioPanel() {
             </>
           )}
         </StageCard>
-      )}
-
-      {/* M6 — STEP 4 ON A PHONE: one numbered card per action, in order, each
-          carrying exactly one control. Never two primaries on screen. */}
-      {step === 4 && isPhone && (
-        <div style={{ display: "grid", gap: 12 }}>
-          {published && (
-            <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 14, lineHeight: 1.7, color: "var(--text-primary)", margin: 0 }}>
-              {T.postedHead[lang]} {T.postedHelp[lang]}{" "}
-              {postUrl && (
-                <a href={postUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--act)", fontWeight: 700 }}>
-                  {T.seeOnLinkedIn[lang]}
-                </a>
-              )}
-            </p>
-          )}
-
-          {confirmPanel}
-
-          <p
-            dir={rtlWrite ? "rtl" : "ltr"}
-            style={{
-              whiteSpace: "pre-wrap", background: "var(--surface-subtle)",
-              border: "1px solid var(--border-default)", borderRadius: 12, padding: 14,
-              fontFamily: "var(--ff-ui)", fontSize: 16, lineHeight: rtlWrite ? 2 : 1.85,
-              textAlign: rtlWrite ? "right" : "left", color: "var(--text-primary)", margin: 0,
-            }}
-          >
-            {content}
-          </p>
-
-          {content.length > POST_MAX_CHARS && (
-            <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, fontWeight: 600, color: "var(--error)", margin: 0 }}>
-              {T.overLimitHead[lang]} {content.length - POST_MAX_CHARS} {T.overLimitTail[lang]}
-            </p>
-          )}
-          {notReady && (
-            <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, fontWeight: 600, lineHeight: 1.75, color: "var(--error)", margin: 0 }}>
-              {notReady}
-            </p>
-          )}
-
-          {/* Words only: the single way out is the primary in the thumb zone. */}
-          {format === "slides" && deck && (
-            <>
-              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: 1.7, color: "var(--text-muted)", margin: 0 }}>
-                {T.whySlidesManual[lang]}
-              </p>
-              {([
-                [1, T.captionHead[lang], "", (
-                  <ButtonGhost key="c" onClick={() => void copyCaption()} style={{ minHeight: 48, width: "100%" }}>
-                    {T.copyCaption[lang]}
-                  </ButtonGhost>
-                )],
-                [2, T.s4Get[lang], "", (
-                  <ButtonGhost key="g" onClick={() => void exportFile()} disabled={busy === "export"} style={{ minHeight: 48, width: "100%" }}>
-                    {busy === "export" ? T.exporting[lang] : T.exportFile[lang]}
-                  </ButtonGhost>
-                )],
-                [3, T.s4Open[lang], "", (
-                  <ButtonGhost key="o" onClick={() => void openLinkedIn()} style={{ minHeight: 48, width: "100%" }}>
-                    {T.openLinkedIn[lang]}
-                  </ButtonGhost>
-                )],
-                [4, T.s4Link[lang], T.whyLink[lang], (
-                  <div key="l" style={{ display: "grid", gap: 10 }}>
-                    <label htmlFor="studio-link-phone" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>
-                      {T.linkPlaceholder[lang]}
-                    </label>
-                    <input
-                      id="studio-link-phone"
-                      value={linkInput}
-                      onChange={(e) => setLinkInput(e.target.value)}
-                      onFocus={scrollFocused}
-                      placeholder={T.linkPlaceholder[lang]}
-                      style={{
-                        width: "100%", minHeight: 48, padding: "0 12px", borderRadius: 10,
-                        background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
-                        fontFamily: "var(--ff-ui)", fontSize: 16, color: "var(--text-primary)",
-                        textAlign: rtlShell ? "right" : "left",
-                      }}
-                    />
-                    <ButtonGhost onClick={() => void saveLink()} disabled={!linkInput.trim() || busy === "link"} style={{ minHeight: 48, width: "100%" }}>
-                      {busy === "link" ? T.savingLink[lang] : T.linkSave[lang]}
-                    </ButtonGhost>
-                    {!linkInput.trim() && (
-                      <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.6, color: "var(--text-muted)", margin: 0 }}>
-                        {T.linkPlaceholder[lang]}
-                      </p>
-                    )}
-                  </div>
-                )],
-              ] as Array<[number, string, string, React.ReactNode]>).map(([n, head, why, control]) => (
-                <div
-                  key={n}
-                  style={{
-                    background: "var(--surface-card)", border: "1px solid var(--border-default)",
-                    borderRadius: 14, padding: 14, display: "grid", gap: 10,
-                  }}
-                >
-                  <p style={{ fontFamily: "var(--ff-ui)", fontSize: 15, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
-                    {n} · {head}
-                  </p>
-                  {why && (
-                    <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: 1.7, color: "var(--text-muted)", margin: 0 }}>
-                      {why}
-                    </p>
-                  )}
-                  {control}
-                </div>
-              ))}
-            </>
-          )}
-        </div>
-      )}
-
-      {/* ---- L1: the phone LAYERS. One full screen for one task. ---- */}
-      {isPhone && layer === "editor" && (
-        <PhoneLayer lang={lang} rtl={rtlShell} title={T.slideEditorTitle[lang]} onClose={() => setLayer(null)} tabs={phoneLayerTabs}>
-          {/* The slide takes the room that is left; the fields for the slide
-              sit under it and scroll on their own if they are long. */}
-          <div style={{ flex: "1 1 auto", minHeight: 0, display: "flex", flexDirection: "column", padding: "8px 12px" }}>
-            <div style={{ flex: "1 1 auto", minHeight: 0 }}>
-              <PhoneStage
-                lang={lang}
-                deck={deck}
-                theme={theme}
-                current={current}
-                onCurrent={setCurrent}
-                onFit={ignoreFit}
-                mountRef={mountRef}
-                boxRef={canvasBoxRef}
-                showCanvas={Boolean(deck)}
-                empty={<span>{T.noSlidesYet[lang]}</span>}
-              />
-            </div>
-            <div style={{ flex: "0 0 auto", maxHeight: "42%", overflowY: "auto", WebkitOverflowScrolling: "touch", marginTop: 8 }}>
-              <ZoneInspector
-                lang={lang}
-                writeLang={writeLang}
-                deck={deck}
-                current={current}
-                onDeck={(next) => { remember(); setDeck(next); }}
-                attention={attention}
-                onChangeLine={() => void changeThisLine()}
-                changing={changingLine}
-                onUploadPicture={uploadPicture}
-                pictureNotice={pictureNotice}
-                onMove={move}
-              />
-            </div>
-            <div style={{ flex: "0 0 auto", display: "flex", gap: 10, paddingTop: 8 }}>
-              <ButtonGhost onClick={() => void saveAndComeBack()} disabled={busy === "save"} style={{ minHeight: 50, flex: "1 1 0" }}>
-                {busy === "save" ? T.savingPiece[lang] : T.saveLater[lang]}
-              </ButtonGhost>
-              <ButtonPrimary onClick={() => { setLayer(null); setStep(4); }} style={{ minHeight: 50, flex: "1 1 0" }}>
-                {T.continue[lang]} {rtlShell ? "←" : "→"}
-              </ButtonPrimary>
-            </div>
-          </div>
-        </PhoneLayer>
-      )}
-
-      {isPhone && layer === "look" && (
-        <PhoneLayer lang={lang} rtl={rtlShell} title={T.lookHead[lang]} onClose={() => setLayer(null)} tabs={phoneLayerTabs}>
-          <div style={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: "12px" }}>
-            <ZoneLook
-              lang={lang}
-              theme={theme}
-              onTheme={(t) => { setTheme(t); setDeck((d) => (d ? { ...d, theme: t } : d)); }}
-              length={deckLength}
-              onLength={(n) => { setDeckLength(n); if (deck) void makeSlides(n); }}
-              hasDeck={Boolean(deck)}
-            />
-          </div>
-        </PhoneLayer>
-      )}
-
-      {isPhone && layer === "piece" && (
-        <PhoneLayer lang={lang} rtl={rtlShell} title={T.zonePiece[lang]} onClose={() => setLayer(null)} tabs={phoneLayerTabs}>
-          <div style={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: "12px" }}>
-            {/* J7 — the two controls the phone had lost live here, where there
-                is room for them: undo, and writing the piece in the other language. */}
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-              <ButtonGhost onClick={undo} disabled={undoStack.length === 0} style={{ minHeight: 44 }}>
-                {T.undo[lang]}
-              </ButtonGhost>
-              <ButtonGhost
-                onClick={() => {
-                  const other: Lang = writeLang === "ar" ? "en" : "ar";
-                  const ownWords = content.trim().length > 0 && content !== (generatedTextRef.current ?? "");
-                  if (ownWords) { setAskLangSwitch(other); return; }
-                  setWriteLang(other);
-                  setNotReady(null);
-                  void generate(undefined, other);
-                }}
-                disabled={generating || !choice}
-                style={{ minHeight: 44 }}
-              >
-                {writeLang === "ar" ? T.writeAgainEn[lang] : T.writeAgainAr[lang]}
-              </ButtonGhost>
-            </div>
-            {askLangSwitch && (
-              <div style={{ marginBottom: 12, background: "var(--surface-subtle)", border: "1px solid var(--border-default)", borderRadius: 12, padding: 12 }}>
-                <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, lineHeight: 1.75, color: "var(--text-primary)", margin: "0 0 10px" }}>
-                  {askLangSwitch === "ar" ? T.langSwitchHeadAr[lang] : T.langSwitchHeadEn[lang]}
-                </p>
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  <ButtonPrimary
-                    onClick={() => {
-                      const other = askLangSwitch;
-                      setAskLangSwitch(null);
-                      setWriteLang(other);
-                      setNotReady(null);
-                      void generate(undefined, other);
-                    }}
-                    style={{ minHeight: 44 }}
-                  >
-                    {T.langSwitchYes[lang]}
-                  </ButtonPrimary>
-                  <ButtonGhost onClick={() => setAskLangSwitch(null)} style={{ minHeight: 44 }}>
-                    {T.langSwitchNo[lang]}
-                  </ButtonGhost>
-                </div>
-              </div>
-            )}
-            <ZonePiece
-              lang={lang}
-              writeLang={writeLang}
-              subject={choice?.title || typedTopic}
-              content={content}
-              onContentChange={changeContent}
-              todo={{
-                words: content.trim().length > 0,
-                slides: Boolean(deck),
-                cover: Boolean(deck?.slides.some((s) => s.slots.media?.src)),
-                published,
-              }}
-            />
-          </div>
-        </PhoneLayer>
-      )}
-
-      {/* M2 — the only floating thing on a phone. At most two controls. */}
-      {isPhone && (
-        <>
-          <PhoneActionBar
-            rtl={rtlShell}
-            note={phoneBarNote}
-            secondary={
-              <ButtonGhost onClick={() => void saveAndComeBack()} disabled={busy === "save"} style={{ minHeight: 50, width: "100%" }}>
-                {busy === "save" ? T.savingPiece[lang] : T.saveLater[lang]}
-              </ButtonGhost>
-            }
-            primary={
-              step === 3 && format === "slides" && !deck ? (
-                <ButtonPrimary onClick={() => void makeSlides()} disabled={!phonePrimaryEnabled} style={{ minHeight: 50, width: "100%" }}>
-                  {deckBusy ? T.makingSlides[lang] : T.makeSlides[lang]}
-                </ButtonPrimary>
-              ) : step < 4 ? (
-                <ButtonPrimary onClick={onContinue} disabled={!phonePrimaryEnabled} style={{ minHeight: 50, width: "100%" }}>
-                  {T.continue[lang]} {rtlShell ? "←" : "→"}
-                </ButtonPrimary>
-              ) : !(format === "slides" && deck) && !published && !confirmingPost ? (
-                <ButtonPrimary
-                  onClick={requestPost}
-                  disabled={!phonePrimaryEnabled}
-                  style={{ minHeight: 50, width: "100%" }}
-                >
-                  {T.postItNow[lang]}
-                </ButtonPrimary>
-              ) : undefined
-            }
-          />
-        </>
       )}
 
       {/* J4/L4 — THE EXPORT MOUNT. Always off-screen, always EXPORT_WIDTH wide,

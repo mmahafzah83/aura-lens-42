@@ -152,19 +152,7 @@ export const T = {
   of: { en: "of", ar: "من" },
   noSlidesYet: { en: "No slides yet.", ar: "لا شرائح بعد." },
 
-  // Phone layout — the small-screen shape of the same room
-  stepWord: { en: "Step", ar: "الخطوة" },
-  layerBack: { en: "Back", ar: "رجوع" },
-  layerDone: { en: "Done", ar: "تم" },
-  slideEditorTitle: { en: "Slide editor", ar: "محرّر الشرائح" },
   exportSettling: { en: "Getting the slides ready…", ar: "نُجهّز الشرائح…" },
-  openThisPiece: { en: "Open this piece", ar: "افتح هذا العمل" },
-  openLook: { en: "Open colours and length", ar: "افتح الألوان والطول" },
-  openSlideEditor: { en: "Open the slide editor", ar: "افتح محرّر الشريحة" },
-  phoneNeedWords: {
-    en: "Write something first, then you can carry on.",
-    ar: "اكتب شيئاً أولاً، ثم يمكنك المتابعة.",
-  },
 
   // Zone: inspector
   zoneInspector: { en: "Change this slide", ar: "غيّر هذه الشريحة" },

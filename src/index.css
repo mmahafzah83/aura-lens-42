@@ -2272,11 +2272,3 @@ button[aria-disabled="true"],
 .v23-lift:focus-visible .v23-read-affordance,
 .v23-row:hover .v23-read-affordance,
 .v23-row:focus-visible .v23-read-affordance { opacity: 1 !important; }
-
-/*
- * L2 — while a studio full-screen editing layer is open on a phone, nothing
- * outside it may be tapped. The shell bottom navigation (z-index 50) sits
- * below the layer (z-index 70) anyway; this removes it from the page entirely
- * so it cannot be reached at all.
- */
-body[data-studio-layer="open"] [data-shell-nav] { display: none !important; }

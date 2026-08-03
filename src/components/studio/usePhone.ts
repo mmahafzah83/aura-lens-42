@@ -1,22 +1,16 @@
 import { useEffect, useState } from "react";
 
 /**
- * THE single breakpoint for the studio. Everything phone-shaped is driven from
- * this one constant — there is no second number anywhere in the studio.
+ * R1 — THE PHONE IS NOT DESIGNED, IT IS SAFE.
+ *
+ * There is no phone layout any more: the studio renders the SAME components at
+ * every width and simply stacks them into one column when the screen is
+ * narrow. Nothing here describes geometry — no column height, no sheet, no
+ * action bar, no reserve. The only survivors are the breakpoint (used for two
+ * cheap comfort details: 16px fields so iOS does not zoom, and 44px targets),
+ * the raster resolutions, and the boolean itself.
  */
 export const PHONE_MAX_WIDTH = 768;
-
-/** The one-thumb action bar sits directly above the shell navigation. */
-export const ACTION_BAR_HEIGHT = 64;
-
-/**
- * L1 — THERE IS NO PHONE COLUMN GEOMETRY ANY MORE.
- *
- * Editing on a phone happens inside `PhoneLayer`, a `position: fixed; inset: 0`
- * surface. Inside it every height is a percentage of the layer itself, so no
- * constant here can describe — or misdescribe — where the page happens to be
- * scrolled to.
- */
 
 /**
  * The RESOLUTION the preview canvas is rasterised at — not a layout value.

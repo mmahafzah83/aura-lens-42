@@ -1108,10 +1108,7 @@ const Dashboard = () => {
       </main>
 
       {/* ── Mobile Floating Capture FAB ── */}
-      {/* The studio owns the whole thumb zone on a phone, so the floating
-          capture button stands down while that tab is open — it must never
-          overlap the studio's own action bar. */}
-      {!chatOpen && !showOnboarding && !showDiagnostic && !captureOpen && activeTab !== "studio" && (
+      {!chatOpen && !showOnboarding && !showDiagnostic && !captureOpen && (
         <button
           onClick={() => setCaptureOpen(true)}
           aria-label="Capture"
@@ -1135,7 +1132,6 @@ const Dashboard = () => {
       {/* ── Mobile Bottom Nav ── */}
       {!chatOpen && !showOnboarding && !showDiagnostic && (
         <div
-          data-shell-nav="true"
           className="fixed left-0 right-0 md:hidden"
           style={{ bottom: 0, zIndex: 50 }}
         >
