@@ -1054,8 +1054,9 @@ export default function Studio() {
             </p>
           )}
 
+          {confirmPanel}
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 18 }}>
-            <ButtonPrimary onClick={() => void postText()} disabled={!content.trim() || busy === "post"} style={{ minHeight: 44 }}>
+            <ButtonPrimary onClick={requestPost} disabled={!content.trim() || busy === "post" || confirmingPost} style={{ minHeight: 44 }}>
               {T.publishAsPost[lang]}
             </ButtonPrimary>
           </div>
