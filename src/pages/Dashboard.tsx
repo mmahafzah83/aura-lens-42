@@ -1057,6 +1057,7 @@ const Dashboard = () => {
                     onSignalPrefillConsumed={() => setSignalDraftPrefill(null)}
                     draftPrefill={draftPrefill}
                     onDraftPrefillConsumed={() => setDraftPrefill(null)}
+                    onOpenDraft={(d) => { setDraftPrefill(d as any); setActiveTab("authority"); }}
                     onOpenCapture={() => handleOpenCapture()}
                   />
                 </ErrorBoundary>

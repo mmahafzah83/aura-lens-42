@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { CreateTab } from "@/components/tabs/AuthorityTab";
 import { loadStartCards, type StartCard } from "./startCards";
+import DraftsList from "./DraftsList";
 import { Chip } from "@/components/systemb";
 import { Loader2, Sparkles, TrendingUp, FileText } from "lucide-react";
 
@@ -36,6 +37,7 @@ interface ComposerV2Props {
   onDraftPrefillConsumed?: () => void;
   onGoToLibrary?: () => void;
   onOpenCapture?: () => void;
+  onOpenDraft?: (d: any) => void;
 }
 
 const KIND_META: Record<StartCard["kind"], { label: string; Icon: typeof Sparkles }> = {
@@ -176,6 +178,7 @@ export default function ComposerV2({
   onDraftPrefillConsumed,
   onGoToLibrary,
   onOpenCapture,
+  onOpenDraft,
 }: ComposerV2Props) {
   const [cards, setCards] = useState<StartCard[]>([]);
   const [totalSignals, setTotalSignals] = useState<number | null>(null);
@@ -222,6 +225,9 @@ export default function ComposerV2({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 34 }}>
+      {/* ── YOUR DRAFTS — renders nothing when there are none ───────── */}
+      <DraftsList onOpenDraft={onOpenDraft} />
+
       {/* ── ZONE 1 — START ───────────────────────────────────────────── */}
       <section aria-label="Start">
         <ZoneLabel n="01" title="Start from a signal" note="Ranked from what your signals actually did." />
