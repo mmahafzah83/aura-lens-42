@@ -227,6 +227,11 @@ export default function StudioPanel() {
   const [layer, setLayer] = useState<null | "editor" | "look" | "piece">(null);
   /** J6 — a breakpoint change closes any layer; it must never reopen itself. */
   useEffect(() => { setLayer(null); }, [isPhone]);
+  /**
+   * L1 — generating slides moves the member from screen A (the format choice)
+   * to screen B (the editor). Once per deck: closing it must not reopen it.
+   */
+  const autoOpenedRef = useRef<string | null>(null);
   const rtlShell = lang === "ar";
   const rtlWrite = writeLang === "ar";
 
