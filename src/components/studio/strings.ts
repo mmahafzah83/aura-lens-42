@@ -76,6 +76,42 @@ export const T = {
   },
   continue: { en: "Continue", ar: "متابعة" },
 
+  // Preconditions — every control says, in words, why it cannot be pressed.
+  nothingToSaveYet: { en: "Nothing to save yet", ar: "لا شيء لحفظه بعد" },
+  whyNoSubject: {
+    en: "Choose a subject first, or paste words of your own.",
+    ar: "اختر موضوعاً أولاً، أو الصق كلماتك.",
+  },
+  whyNoWords: {
+    en: "Write or generate the post first.",
+    ar: "اكتب المنشور أو ولّده أولاً.",
+  },
+  whyNoFormat: {
+    en: "Choose words or slides first.",
+    ar: "اختر نصاً أو شرائح أولاً.",
+  },
+  whyNoSlides: {
+    en: "Make the slides first.",
+    ar: "اصنع الشرائح أولاً.",
+  },
+  whyNoLink: {
+    en: "Paste the LinkedIn address of your post.",
+    ar: "الصق رابط منشورك على لينكدإن.",
+  },
+  whyLinkAlready: {
+    en: "The link is saved.",
+    ar: "تم حفظ الرابط.",
+  },
+
+  // The restore — announced, never assumed.
+  restoreLine: {
+    en: "You have an unfinished post about {subject} — {when}.",
+    ar: "لديك منشور غير مكتمل عن {subject} — {when}.",
+  },
+  restoreSubjectUnknown: { en: "an earlier subject", ar: "موضوع سابق" },
+  restoreCarryOn: { en: "Carry on", ar: "تابع" },
+  restoreStartNew: { en: "Start something new", ar: "ابدأ شيئاً جديداً" },
+
   // Step 1 — choose
   chooseHead: { en: "What is this post about?", ar: "عن ماذا يدور هذا المنشور؟" },
   chooseHelp: {
