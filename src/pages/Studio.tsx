@@ -619,6 +619,38 @@ export default function Studio() {
   }, [draftId, draftSource, userId, content, choice, pieceTitle, pieceMeta, saveDraft]);
 
   /**
+   * INVARIANT — WHAT IS ON SCREEN IS WHAT PUBLISHES.
+   *
+   * `linkedin-publish` reads `post_text` from the row, not from the request, so
+   * any edit made after the row was created would otherwise be silently
+   * discarded — and a post held by the gate could never be fixed. Every path
+   * that hands the member's work to an external service calls this first.
+   * Always an UPDATE against a known row id, never an INSERT.
+   */
+  const syncRowToScreen = useCallback(
+    async (id: string) => {
+      const title = pieceTitle();
+      const { data: existing } = await supabase
+        .from("linkedin_posts")
+        .select("source_metadata")
+        .eq("id", id)
+        .maybeSingle();
+      const prev = ((existing as any)?.source_metadata as Record<string, unknown>) || {};
+      await supabase
+        .from("linkedin_posts")
+        .update({
+          post_text: content,
+          title,
+          topic_label: title || null,
+          source_signal_id: choice?.id || null,
+          source_metadata: { ...prev, ...pieceMeta() },
+        } as any)
+        .eq("id", id);
+    },
+    [content, choice, pieceTitle, pieceMeta],
+  );
+
+  /**
    * A published post must COUNT. The cockpit reads `published_at`, the archive
    * and the metric matcher read `post_url`. Both are written here, on both
    * publishing paths, and the existing source_metadata is merged, never lost.
