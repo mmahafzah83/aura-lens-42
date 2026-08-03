@@ -272,7 +272,7 @@ export default function StudioPanel() {
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
-  }, [deck, step, isPhone, layer]);
+  }, [deck, step, isPhone]);
 
   /* ---------- bring back the piece -------------------------------- */
   const restoredRef = useRef(false);
@@ -1114,13 +1114,6 @@ export default function StudioPanel() {
   }, []);
   /** The on-screen previews report nothing. */
   const ignoreFit = useCallback((_i: number, _s: FitState) => {}, []);
-
-  useEffect(() => {
-    if (!isPhone || step !== 3 || format !== "slides" || !deck) return;
-    if (autoOpenedRef.current === deck.deck_id) return;
-    autoOpenedRef.current = deck.deck_id;
-    setLayer("editor");
-  }, [isPhone, step, format, deck]);
 
   /* ---------- content wrapper --------------------------------------
    * Page content only: no height, no page padding, no page background — the
