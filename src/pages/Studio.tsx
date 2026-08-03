@@ -769,7 +769,7 @@ export default function Studio() {
         <ButtonGhost onClick={() => void keepForLater()} style={{ minHeight: 44 }}>
           {T.saveAndClose[lang]}
         </ButtonGhost>
-        <ButtonPrimary onClick={() => setStep((s) => Math.min(4, s + 1))} style={{ minHeight: 44 }}>
+        <ButtonPrimary onClick={() => setStep((s) => Math.min(4, s + 1))} disabled={step >= 4} style={{ minHeight: 44 }}>
           {T.continue[lang]} →
         </ButtonPrimary>
       </div>
@@ -1131,7 +1131,7 @@ export default function Studio() {
           <ButtonGhost onClick={() => void exportFile()} disabled={!deck || busy === "export"} style={{ minHeight: 44 }}>
             {T.exportFile[lang]}
           </ButtonGhost>
-          <ButtonPrimary onClick={() => { setStep(4); setSub("look"); }} style={{ minHeight: 44 }}>
+          <ButtonPrimary onClick={() => { setStep(4); setSub("look"); }} disabled={step === 4} style={{ minHeight: 44 }}>
             {T.putOnLinkedIn[lang]} →
           </ButtonPrimary>
         </span>
