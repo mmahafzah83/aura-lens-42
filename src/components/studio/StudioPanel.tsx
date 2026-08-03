@@ -407,6 +407,7 @@ export default function StudioPanel() {
       postRowRef.current = d._source === "linkedin_posts" ? d.id : null;
       originDraftRef.current = null;
       generatedTextRef.current = null;
+      persistNow();
       setContent(d.body);
       setWriteLang(d.language);
       setNotReady(null);
@@ -419,7 +420,7 @@ export default function StudioPanel() {
         void track("composer_opened", { source, signal_id: d.signalId ?? null, move_state: "drafted" });
       }
     },
-    [remember, lang],
+    [remember, lang, persistNow],
   );
 
   useEffect(() => {
