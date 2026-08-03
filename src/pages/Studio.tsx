@@ -16,6 +16,7 @@ import { DEFAULT_THEME, type ThemeName } from "@/carousel/render/themes";
 import type { FitState } from "@/carousel/render/useFitLadder";
 import { collectSlideNodes, exportDeckPdf } from "@/carousel/render/exportDeck";
 import { mediaSupport } from "@/carousel/render/Slide";
+import StudioCanvas from "@/carousel/studio/StudioCanvas";
 import { plainFailure } from "@/carousel/studio/slotLabels";
 import { moveSlide, replaceSlide, setSlidePhoto } from "@/carousel/studio/deckEdit";
 import { SLIDE_MEDIA_LIMITS, checkImage, fitToSlot } from "@/lib/imagePrep";
@@ -26,7 +27,8 @@ import StageCard from "@/components/studio/StageCard";
 import ZonePiece, { type ShowingKey } from "@/components/studio/ZonePiece";
 import ZoneStage from "@/components/studio/ZoneStage";
 import ZoneInspector from "@/components/studio/ZoneInspector";
-import { T, type Lang, type Posture } from "@/components/studio/strings";
+import ZoneLook from "@/components/studio/ZoneLook";
+import { T, attentionText, startReason, type Lang, type Posture } from "@/components/studio/strings";
 
 const POSTURE_KEY = "aura_studio_posture";
 const DRAFT_KEY = "aura_studio_draft_v1";
@@ -99,7 +101,8 @@ export default function Studio() {
   const genRunId = useRef(0);
 
   const [deck, setDeck] = useState<DeckIR | null>(null);
-  const [theme] = useState<ThemeName>(DEFAULT_THEME);
+  const [theme, setTheme] = useState<ThemeName>(DEFAULT_THEME);
+  const [deckLength, setDeckLength] = useState<5 | 7 | 10>(7);
   const [deckBusy, setDeckBusy] = useState(false);
   const [deckFailures, setDeckFailures] = useState<string[]>([]);
   const [current, setCurrent] = useState(0);
@@ -109,6 +112,9 @@ export default function Studio() {
 
   const [draftId, setDraftId] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
+  /** Failures. Never a tick, never overwritten by an autosave. */
+  const [problem, setProblem] = useState<string | null>(null);
+  const [confirmingPost, setConfirmingPost] = useState(false);
   const [busy, setBusy] = useState<null | "post" | "save" | "export">(null);
   const [postUrl, setPostUrl] = useState<string | null>(null);
   const [published, setPublished] = useState(false);
@@ -168,14 +174,59 @@ export default function Studio() {
     return () => window.removeEventListener("resize", measure);
   }, [deck, step]);
 
+  /* ---------- bring back the piece -------------------------------- */
+  const restoredRef = useRef(false);
+  useEffect(() => {
+    if (restoredRef.current) return;
+    restoredRef.current = true;
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as {
+        content?: unknown; deck?: unknown; choice?: unknown; writeLang?: unknown;
+      };
+      let restoredAnything = false;
+      if (typeof saved.content === "string" && saved.content.trim()) {
+        setContent(saved.content);
+        restoredAnything = true;
+      }
+      if (saved.deck) {
+        // A corrupt deck is ignored, never thrown.
+        const parsed = DeckIRSchema.safeParse(saved.deck);
+        if (parsed.success) {
+          setDeck(parsed.data);
+          setTheme(parsed.data.theme as ThemeName);
+          restoredAnything = true;
+        }
+      }
+      if (saved.choice && typeof saved.choice === "object") {
+        const c = saved.choice as Choice;
+        if (typeof c.title === "string") setChoice({ id: c.id ?? null, title: c.title, insight: c.insight ?? "" });
+      }
+      if (saved.writeLang === "ar" || saved.writeLang === "en") setWriteLang(saved.writeLang);
+      if (restoredAnything) {
+        setStep(2);
+        setStatus(T.draftRestored[lang]);
+      }
+    } catch { /* an unreadable draft is simply not restored */ }
+  }, [lang]);
+
   /* ---------- keep the piece ------------------------------------- */
   useEffect(() => {
     if (!content && !deck) return;
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify({ content, deck, choice, writeLang }));
+      // Success channel only. A failure message is never written from here.
       setStatus(T.savedMoment[lang]);
     } catch { /* quota never blocks editing */ }
   }, [content, deck, choice, writeLang, lang]);
+
+  /* A success note fades; a problem does not. */
+  useEffect(() => {
+    if (!status) return;
+    const t = window.setTimeout(() => setStatus(null), 4000);
+    return () => window.clearTimeout(t);
+  }, [status]);
 
   const remember = useCallback(() => {
     setUndoStack((s) => [...s.slice(-9), { content, deck }]);
@@ -295,26 +346,36 @@ export default function Studio() {
   }, [userId, content, draftId, choice, typedTopic, writeLang]);
 
   /* ---------- step 3: the slides, right here ---------------------- */
-  const makeSlides = useCallback(async () => {
+  const makeSlides = useCallback(async (lengthOverride?: 5 | 7 | 10) => {
     if (!choice?.id || !content.trim()) return;
     setStep(3);
     setSub("build");
     setShowing("slides");
     setDeckBusy(true);
     setDeckFailures([]);
-    setStatus(null);
+    setProblem(null);
+    let timedOut = false;
+    const timeout = new Promise<"timeout">((resolve) => {
+      window.setTimeout(() => { timedOut = true; resolve("timeout"); }, 90000);
+    });
     try {
       await saveDraft();
-      const { data, error } = await supabase.functions.invoke("generate-deck", {
+      const call = supabase.functions.invoke("generate-deck", {
         body: {
           signal_id: choice.id,
-          length: 7,
+          length: lengthOverride ?? deckLength,
           theme,
           lang: writeLang,
           // Always: the slides adapt the words the member approved.
           source_text: content,
         },
       });
+      const raced = await Promise.race([call, timeout]);
+      if (raced === "timeout" || timedOut) {
+        setProblem(T.slidesTimedOut[lang]);
+        return;
+      }
+      const { data, error } = raced as Awaited<typeof call>;
       if (error && !data) throw error;
       const result: any = data;
       if (!result?.ok) {
@@ -332,31 +393,37 @@ export default function Studio() {
     } finally {
       setDeckBusy(false);
     }
-  }, [choice, content, theme, writeLang, saveDraft, remember]);
+  }, [choice, content, theme, deckLength, writeLang, lang, saveDraft, remember]);
 
   const changeThisLine = useCallback(async () => {
     if (!deck) return;
     setChangingLine(true);
+    setProblem(null);
     try {
       const { data } = await supabase.functions.invoke("generate-deck", {
         body: { signal_id: deck.signal_id, rewrite_slide: current, deck },
       });
       const result: any = data;
-      if (result?.ok && result.slide) {
-        remember();
-        setDeck((d) => (d ? replaceSlide(d, current, result.slide) : d));
-      }
-    } catch { /* the slide simply stays as it was */ }
+      if (!result?.ok || !result.slide) { setProblem(T.lineChangeFailed[lang]); return; }
+      // A malformed slide is refused here, not discovered later at export.
+      const candidate = replaceSlide(deck, current, result.slide);
+      const parsed = DeckIRSchema.safeParse(candidate);
+      if (!parsed.success) { setProblem(T.lineChangeFailed[lang]); return; }
+      remember();
+      setDeck({ ...parsed.data, theme });
+    } catch {
+      setProblem(T.lineChangeFailed[lang]);
+    }
     finally { setChangingLine(false); }
-  }, [deck, current, remember]);
+  }, [deck, current, theme, lang, remember]);
 
   const uploadPicture = useCallback(async (file: File) => {
     setPictureNotice(null);
     if (!deck) return;
     const slide = deck.slides[Math.min(current, deck.slides.length - 1)];
     if (mediaSupport(slide.archetype) === "none") { setPictureNotice(T.noPictureHere[lang]); return; }
-    const problem = await checkImage(file, SLIDE_MEDIA_LIMITS);
-    if (problem) { setPictureNotice(problem); return; }
+    const imageProblem = await checkImage(file, SLIDE_MEDIA_LIMITS);
+    if (imageProblem) { setPictureNotice(imageProblem); return; }
     const { data: sess } = await supabase.auth.getSession();
     const uid = sess.session?.user?.id;
     if (!uid) { setPictureNotice(T.sessionEnded[lang]); return; }
@@ -387,10 +454,12 @@ export default function Studio() {
 
   /* ---------- step 4: LinkedIn ------------------------------------ */
   const postText = useCallback(async () => {
+    setConfirmingPost(false);
     setBusy("post");
+    setProblem(null);
     setStatus(T.posting[lang]);
     const id = await saveDraft();
-    if (!id) { setBusy(null); setStatus(T.postFailed[lang]); return; }
+    if (!id) { setBusy(null); setStatus(null); setProblem(T.postFailed[lang]); return; }
     const { data, error } = await supabase.functions.invoke("linkedin-publish", {
       body: { postId: id, advisory: true },
     });
@@ -403,26 +472,34 @@ export default function Studio() {
       setStatus(T.postedHelp[lang]);
       return;
     }
-    setStatus(message.includes("not connected") ? T.notConnected[lang] : T.postFailed[lang]);
+    setStatus(null);
+    setProblem(message.includes("not connected") ? T.notConnected[lang] : T.postFailed[lang]);
   }, [saveDraft, lang]);
 
   const keepForLater = useCallback(async () => {
     setBusy("save");
+    setProblem(null);
     const id = await saveDraft();
     setBusy(null);
-    setStatus(id ? T.savedForLater[lang] : T.postFailed[lang]);
+    if (id) setStatus(T.savedForLater[lang]);
+    else setProblem(T.postFailed[lang]);
   }, [saveDraft, lang]);
 
   const exportFile = useCallback(async () => {
-    if (!deck || !mountRef.current) return;
+    // Never fails silently: if it cannot run, the member is told why.
+    if (!deck) { setProblem(T.exportNoDeck[lang]); return; }
+    if (!mountRef.current) { setProblem(T.exportNotReady[lang]); return; }
     setBusy("export");
+    setProblem(null);
     setStatus(T.exporting[lang]);
     try {
       const nodes = collectSlideNodes(mountRef.current);
+      if (nodes.length === 0) { setStatus(null); setProblem(T.exportNotReady[lang]); return; }
       await exportDeckPdf(nodes, `aura-${deck.deck_id.slice(0, 8)}.pdf`);
       setStatus(T.exportDone[lang]);
     } catch {
-      setStatus(T.exportFailed[lang]);
+      setStatus(null);
+      setProblem(T.exportFailed[lang]);
     } finally {
       setBusy(null);
     }
@@ -435,9 +512,10 @@ export default function Studio() {
 
   const saveLink = useCallback(async () => {
     const url = linkInput.trim();
-    if (!/linkedin\.com/i.test(url)) { setStatus(T.linkBad[lang]); return; }
+    if (!/linkedin\.com/i.test(url)) { setProblem(T.linkBad[lang]); return; }
     const id = draftId ?? (await saveDraft());
-    if (!id) { setStatus(T.postFailed[lang]); return; }
+    if (!id) { setProblem(T.postFailed[lang]); return; }
+    setProblem(null);
     await supabase
       .from("linkedin_posts")
       .update({
@@ -460,9 +538,9 @@ export default function Studio() {
   /* ---------- derived --------------------------------------------- */
   const attention = useMemo(() => {
     const fit = fits[current];
-    if (fit?.failed) return plainFailure(fit.reason ?? "A slide does not fit.");
+    if (fit?.failed) return attentionText(plainFailure(fit.reason ?? "A slide does not fit."), lang);
     return null;
-  }, [fits, current]);
+  }, [fits, current, lang]);
 
   const doneMap = useMemo(
     () => ({ 1: Boolean(choice), 2: content.trim().length > 0, 3: Boolean(deck), 4: published }),
@@ -473,6 +551,14 @@ export default function Studio() {
     const slide = deck?.slides[Math.min(current, (deck?.slides.length ?? 1) - 1)];
     return slide ? bestSourceLine(content, slide.slots) : "";
   }, [deck, current, content]);
+
+  /**
+   * The exporter reads real DOM nodes, so the deck mount must exist with real
+   * layout for as long as a deck exists — not only while step 3 is on screen.
+   * When the stage is not showing it, the same mount is rendered off to the
+   * side of the viewport (never display:none, never visibility:hidden).
+   */
+  const canvasInStage = step === 3 && showing === "slides" && Boolean(deck);
 
   /* ---------- shell ------------------------------------------------ */
   const shell = (children: React.ReactNode) => (
@@ -525,7 +611,11 @@ export default function Studio() {
     <button
       key={key}
       type="button"
-      onClick={() => setSub(key)}
+      onClick={() => {
+        if (key === "start") { setStep(1); setSub("start"); return; }
+        setSub(key);
+        if (key === "build") setShowing(deck ? "slides" : "post");
+      }}
       style={{
         minHeight: 44,
         padding: "0 4px",
@@ -578,12 +668,37 @@ export default function Studio() {
           resize: "vertical",
         }}
       />
-      <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-mono)", fontSize: 11, color: content.length > 2800 ? "var(--error)" : "var(--text-muted)", margin: "6px 0 14px" }}>
+      <p style={{ fontFamily: "var(--ff-mono)", fontSize: 11, color: content.length > 2800 ? "var(--error)" : "var(--text-muted)", margin: "6px 0 14px" }}>
         {content.length} {T.characters[lang]}
         {content.length > 2800 ? ` — ${T.tooLong[lang]}` : ""}
       </p>
+      {confirmingPost && (
+        <div
+          style={{
+            background: "var(--surface-subtle)",
+            border: "1px solid var(--act)",
+            borderRadius: 12,
+            padding: 14,
+            marginBottom: 12,
+            display: "grid",
+            gap: 10,
+          }}
+        >
+          <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, lineHeight: 1.7, color: "var(--text-primary)", margin: 0 }}>
+            {T.confirmPostHead[lang]}
+          </p>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <ButtonPrimary onClick={() => { setStep(4); void postText(); }} disabled={busy === "post"} style={{ minHeight: 44 }}>
+              {T.confirmPostYes[lang]}
+            </ButtonPrimary>
+            <ButtonGhost onClick={() => setConfirmingPost(false)} style={{ minHeight: 44 }}>
+              {T.confirmPostNo[lang]}
+            </ButtonGhost>
+          </div>
+        </div>
+      )}
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <ButtonPrimary onClick={() => { setStep(4); setSub("look"); void postText(); }} disabled={!content.trim() || busy === "post"} style={{ minHeight: 44 }}>
+        <ButtonPrimary onClick={() => setConfirmingPost(true)} disabled={!content.trim() || busy === "post" || confirmingPost} style={{ minHeight: 44 }}>
           {T.optPost[lang]}
         </ButtonPrimary>
         <ButtonGhost onClick={() => void makeSlides()} disabled={!content.trim() || !choice?.id} style={{ minHeight: 44 }}>
@@ -595,7 +710,7 @@ export default function Studio() {
       </div>
       {!choice?.id && content.trim() && (
         <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--text-muted)", margin: "8px 0 0" }}>
-          {T.slidesNeedPost[lang]}
+          {T.typedTopicNoSlides[lang]}
         </p>
       )}
     </>
@@ -624,9 +739,10 @@ export default function Studio() {
           marginBottom: 14,
         }}
       >
-        {subLink("start", T.subStart[lang])}
-        {subLink("build", T.subBuild[lang])}
-        {subLink("look", T.subLook[lang])}
+        {/* The tabs only exist where they change what is on screen. */}
+        {step === 3 && subLink("start", T.subStart[lang])}
+        {step === 3 && subLink("build", T.subBuild[lang])}
+        {step === 3 && subLink("look", T.subLook[lang])}
         <span style={{ flex: 1 }} />
         <span
           role="status"
@@ -635,13 +751,25 @@ export default function Studio() {
         >
           {status ? `✓ ${status}` : ""}
         </span>
+        <span
+          role="status"
+          aria-live="polite"
+          style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, fontWeight: 600, color: "var(--error)" }}
+        >
+          {problem ?? ""}
+        </span>
+        {problem && (
+          <ButtonGhost onClick={() => setProblem(null)} style={{ minHeight: 44 }}>
+            {T.cancel[lang]}
+          </ButtonGhost>
+        )}
         <ButtonGhost onClick={undo} disabled={undoStack.length === 0} style={{ minHeight: 44 }}>
           {T.undo[lang]}
         </ButtonGhost>
         <ButtonGhost onClick={() => void keepForLater()} style={{ minHeight: 44 }}>
           {T.saveAndClose[lang]}
         </ButtonGhost>
-        <ButtonPrimary onClick={() => setStep((s) => Math.min(4, s + 1))} style={{ minHeight: 44 }}>
+        <ButtonPrimary onClick={() => setStep((s) => Math.min(4, s + 1))} disabled={step >= 4} style={{ minHeight: 44 }}>
           {T.continue[lang]} →
         </ButtonPrimary>
       </div>
@@ -675,7 +803,7 @@ export default function Studio() {
                     {c.title}
                   </p>
                   <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: 1.7, color: "var(--text-secondary)", margin: "6px 0 0" }}>
-                    {c.reason}
+                    {startReason(c.kind, c.fragmentCount, c.reason, lang)}
                   </p>
                   {c.insight && (
                     <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: 1.7, color: "var(--text-muted)", margin: "6px 0 0" }}>
@@ -801,7 +929,7 @@ export default function Studio() {
                 {T.slidesFailedHead[lang]}
               </p>
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, color: "var(--error)", margin: "4px 0 8px", lineHeight: 1.7 }}>
-                {deckFailures[0]}
+                {attentionText(deckFailures[0], lang)}
               </p>
               <ButtonGhost onClick={() => void makeSlides()} style={{ minHeight: 44 }}>{T.tryAgain[lang]}</ButtonGhost>
             </div>
@@ -840,6 +968,9 @@ export default function Studio() {
               onFit={(i, state) => setFits((f) => ({ ...f, [i]: state }))}
               mountRef={mountRef}
               boxRef={canvasBoxRef}
+              mode={showing}
+              postEditor={writeArea}
+              showCanvas={canvasInStage}
               empty={
                 <span>
                   {content.trim() && choice?.id ? (
@@ -847,25 +978,36 @@ export default function Studio() {
                       {T.makeSlides[lang]}
                     </ButtonPrimary>
                   ) : (
-                    T.slidesNeedPost[lang]
+                    choice?.id ? T.slidesNeedPost[lang] : T.typedTopicNoSlides[lang]
                   )}
                 </span>
               }
             />
-            <ZoneInspector
-              lang={lang}
-              writeLang={writeLang}
-              deck={deck}
-              current={current}
-              onDeck={(next) => { remember(); setDeck(next); }}
-              attention={attention}
-              onChangeLine={() => void changeThisLine()}
-              changing={changingLine}
-              onUploadPicture={uploadPicture}
-              pictureNotice={pictureNotice}
-              onMove={move}
-              cameFromLine={cameFromLine}
-            />
+            {sub === "look" ? (
+              <ZoneLook
+                lang={lang}
+                theme={theme}
+                onTheme={(t) => { setTheme(t); setDeck((d) => (d ? { ...d, theme: t } : d)); }}
+                length={deckLength}
+                onLength={(n) => { setDeckLength(n); if (deck) void makeSlides(n); }}
+                hasDeck={Boolean(deck)}
+              />
+            ) : (
+              <ZoneInspector
+                lang={lang}
+                writeLang={writeLang}
+                deck={deck}
+                current={current}
+                onDeck={(next) => { remember(); setDeck(next); }}
+                attention={attention}
+                onChangeLine={() => void changeThisLine()}
+                changing={changingLine}
+                onUploadPicture={uploadPicture}
+                pictureNotice={pictureNotice}
+                onMove={move}
+                cameFromLine={cameFromLine}
+              />
+            )}
           </div>
         </>
       )}
@@ -942,6 +1084,20 @@ export default function Studio() {
         </StageCard>
       )}
 
+      {/* The deck mount, kept alive with real layout whenever a deck exists. */}
+      {deck && !canvasInStage && (
+        <div aria-hidden="true" style={{ position: "absolute", left: -99999, top: 0, width: canvasWidth }}>
+          <StudioCanvas
+            deck={deck}
+            theme={theme}
+            width={canvasWidth}
+            current={current}
+            onFit={(i, state) => setFits((f) => ({ ...f, [i]: state }))}
+            mountRef={mountRef}
+          />
+        </div>
+      )}
+
       <div
         style={{
           position: "sticky",
@@ -975,7 +1131,7 @@ export default function Studio() {
           <ButtonGhost onClick={() => void exportFile()} disabled={!deck || busy === "export"} style={{ minHeight: 44 }}>
             {T.exportFile[lang]}
           </ButtonGhost>
-          <ButtonPrimary onClick={() => { setStep(4); setSub("look"); }} style={{ minHeight: 44 }}>
+          <ButtonPrimary onClick={() => { setStep(4); setSub("look"); }} disabled={step === 4} style={{ minHeight: 44 }}>
             {T.putOnLinkedIn[lang]} →
           </ButtonPrimary>
         </span>

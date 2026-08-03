@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { T, type Lang } from "./strings";
 
-export type ShowingKey = "post" | "slides" | "picture";
+export type ShowingKey = "post" | "slides";
 
 const heading: React.CSSProperties = {
   fontFamily: "var(--ff-mono)",
@@ -29,7 +29,6 @@ export const ZonePiece: React.FC<{
   const rows: Array<{ key: ShowingKey; label: string }> = [
     { key: "post", label: T.showPost[lang] },
     { key: "slides", label: `${T.showSlides[lang]} · ${slideCount}` },
-    { key: "picture", label: T.showPicture[lang] },
   ];
 
   const checks: Array<[string, boolean]> = [
@@ -73,13 +72,15 @@ export const ZonePiece: React.FC<{
             <button
               key={r.key}
               type="button"
+              aria-pressed={showing === r.key}
+              disabled={showing === r.key}
               onClick={() => onShowing(r.key)}
               style={{
                 minHeight: 44,
                 textAlign: lang === "ar" ? "right" : "left",
                 padding: "0 10px",
                 borderRadius: 9,
-                cursor: "pointer",
+                cursor: showing === r.key ? "default" : "pointer",
                 fontFamily: "var(--ff-ui)",
                 fontSize: 13.5,
                 fontWeight: showing === r.key ? 700 : 500,

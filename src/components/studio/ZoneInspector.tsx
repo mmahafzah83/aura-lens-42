@@ -7,7 +7,7 @@ import {
 } from "@/carousel/studio/deckEdit";
 import { REQUIRED_SLOTS } from "@/carousel/slots";
 import { mediaSupport } from "@/carousel/render/Slide";
-import { T, type Lang } from "./strings";
+import { T, archetypeLabelAr, slotLabelAr, type Lang } from "./strings";
 
 const heading: React.CSSProperties = {
   fontFamily: "var(--ff-mono)", fontSize: 10.5, letterSpacing: ".09em",
@@ -48,6 +48,11 @@ export const ZoneInspector: React.FC<{
   lang, writeLang, deck, current, onDeck, attention, onChangeLine, changing,
   onUploadPicture, pictureNotice, onMove, cameFromLine,
 }) => {
+  const slotLabel = (key: string) =>
+    (lang === "ar" ? slotLabelAr[key] : undefined) ?? SLOT_LABEL[key] ?? key;
+  const archetypeLabel = (key: string) =>
+    (lang === "ar" ? archetypeLabelAr[key] : undefined) ?? ARCHETYPE_LABEL[key] ?? key;
+
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
   const [layoutOpen, setLayoutOpen] = useState(false);
@@ -84,6 +89,16 @@ export const ZoneInspector: React.FC<{
   const available = swappableArchetypes(deck, slide);
   const canHoldPicture = mediaSupport(slide.archetype) !== "none";
 
+  // A move only happens if the landing position is itself movable, so the
+  // button is disabled whenever `moveSlide` would return the deck unchanged.
+  const landingFree = (to: number) => {
+    if (to < 0 || to >= deck.slides.length) return false;
+    const target = deck.slides.find((s) => s.index === to);
+    return Boolean(target) && !isLocked(deck, target!);
+  };
+  const canMoveEarlier = !locked && landingFree(slide.index - 1);
+  const canMoveLater = !locked && landingFree(slide.index + 1);
+
   const fields: Array<{ key: string; label: string; path: SlotPath; budget?: number; rows: number }> = [];
   for (const slot of SLOT_ORDER) {
     const value = (slide.slots as Slots)[slot];
@@ -94,7 +109,7 @@ export const ZoneInspector: React.FC<{
         const isHero = slot === "hero_lines";
         fields.push({
           key: `${slot}-${i}`,
-          label: `${SLOT_LABEL[slot] ?? slot}${value.length > 1 ? ` ${i + 1}` : ""}`,
+          label: `${slotLabel(slot)}${value.length > 1 ? ` ${i + 1}` : ""}`,
           path: { slot, i },
           budget: isHero ? heroBudgetFor(text) : undefined,
           rows: isHero ? 1 : 2,
@@ -104,7 +119,7 @@ export const ZoneInspector: React.FC<{
     }
     fields.push({
       key: slot,
-      label: SLOT_LABEL[slot] ?? slot,
+      label: slotLabel(slot),
       path: { slot },
       rows: slot === "body" || slot === "quote" ? 3 : 2,
     });
@@ -146,8 +161,6 @@ export const ZoneInspector: React.FC<{
               <label htmlFor={`studio-slot-${slide.index}-${f.key}`} style={heading}>{f.label}</label>
               {f.budget !== undefined && (
                 <span
-                  role="status"
-                  aria-live="polite"
                   style={{ ...heading, color: over ? "var(--error)" : "var(--text-muted)" }}
                 >
                   {value.length}/{f.budget}
@@ -248,14 +261,36 @@ export const ZoneInspector: React.FC<{
             {slide.index === 0 ? T.alwaysFirst[lang] : T.alwaysLast[lang]}
           </p>
         ) : (
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button type="button" onClick={() => onMove(slide.index, slide.index - 1)} style={smallBtn}>
-              ← {T.moveEarlier[lang]}
-            </button>
-            <button type="button" onClick={() => onMove(slide.index, slide.index + 1)} style={smallBtn}>
-              {T.moveLater[lang]} →
-            </button>
-          </div>
+          <>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button
+                type="button"
+                disabled={!canMoveEarlier}
+                onClick={() => onMove(slide.index, slide.index - 1)}
+                style={{ ...smallBtn, opacity: canMoveEarlier ? 1 : 0.55, cursor: canMoveEarlier ? "pointer" : "not-allowed" }}
+              >
+                ← {T.moveEarlier[lang]}
+              </button>
+              <button
+                type="button"
+                disabled={!canMoveLater}
+                onClick={() => onMove(slide.index, slide.index + 1)}
+                style={{ ...smallBtn, opacity: canMoveLater ? 1 : 0.55, cursor: canMoveLater ? "pointer" : "not-allowed" }}
+              >
+                {T.moveLater[lang]} →
+              </button>
+            </div>
+            {!canMoveEarlier && (
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12, lineHeight: 1.6, color: "var(--text-muted)", margin: 0 }}>
+                {T.cannotMoveEarlier[lang]}
+              </p>
+            )}
+            {!canMoveLater && (
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12, lineHeight: 1.6, color: "var(--text-muted)", margin: 0 }}>
+                {T.cannotMoveLater[lang]}
+              </p>
+            )}
+          </>
         )}
       </div>
 
@@ -299,7 +334,7 @@ export const ZoneInspector: React.FC<{
                       cursor: ok ? "pointer" : "not-allowed",
                     }}
                   >
-                    {ARCHETYPE_LABEL[a] ?? a}
+                    {archetypeLabel(a)}
                   </button>
                   {!ok && (
                     <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12, lineHeight: 1.6, color: "var(--text-muted)", margin: 0 }}>

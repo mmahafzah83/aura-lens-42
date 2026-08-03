@@ -32,7 +32,16 @@ export const ZoneStage: React.FC<{
   mountRef: React.MutableRefObject<HTMLDivElement | null>;
   boxRef: React.MutableRefObject<HTMLDivElement | null>;
   empty?: React.ReactNode;
-}> = ({ lang, deck, theme, width, current, onCurrent, onFit, mountRef, boxRef, empty }) => {
+  /** "post" shows the member's words here; "slides" shows the deck. */
+  mode: "post" | "slides";
+  /** The editable post, rendered when mode is "post". */
+  postEditor: React.ReactNode;
+  /** False when the mount lives offscreen instead (so it survives step changes). */
+  showCanvas: boolean;
+}> = ({
+  lang, deck, theme, width, current, onCurrent, onFit, mountRef, boxRef, empty,
+  mode, postEditor, showCanvas,
+}) => {
   const count = deck?.slides.length ?? 0;
   const dir = deck?.dir ?? (lang === "ar" ? "rtl" : "ltr");
 
@@ -47,7 +56,9 @@ export const ZoneStage: React.FC<{
         minWidth: 0,
       }}
     >
-      {!deck && (
+      {mode === "post" && postEditor}
+
+      {mode === "slides" && !deck && (
         <div
           style={{
             minHeight: 260,
@@ -63,16 +74,18 @@ export const ZoneStage: React.FC<{
         </div>
       )}
 
-      {deck && (
+      {mode === "slides" && deck && (
         <>
-          <StudioCanvas
-            deck={deck}
-            theme={theme}
-            width={width}
-            current={current}
-            onFit={onFit}
-            mountRef={mountRef}
-          />
+          {showCanvas && (
+            <StudioCanvas
+              deck={deck}
+              theme={theme}
+              width={width}
+              current={current}
+              onFit={onFit}
+              mountRef={mountRef}
+            />
+          )}
 
           <div
             dir={dir}
@@ -95,7 +108,6 @@ export const ZoneStage: React.FC<{
             </button>
             <span
               role="status"
-              aria-live="polite"
               style={{ fontFamily: "var(--ff-ui)", fontSize: 13, color: "var(--text-secondary)" }}
             >
               {T.slideOf[lang]} {current + 1} {T.of[lang]} {count}
@@ -119,13 +131,15 @@ export const ZoneStage: React.FC<{
               <button
                 key={s.index}
                 type="button"
+                aria-current={s.index === current ? "true" : undefined}
+                disabled={s.index === current}
                 onClick={() => onCurrent(s.index)}
                 aria-label={`${T.slideOf[lang]} ${s.index + 1}`}
                 style={{
                   minWidth: 44,
                   minHeight: 44,
                   borderRadius: 8,
-                  cursor: "pointer",
+                  cursor: s.index === current ? "default" : "pointer",
                   fontFamily: "var(--ff-mono)",
                   fontSize: 12,
                   background: s.index === current ? "var(--act-tint)" : "var(--surface-subtle)",

@@ -32,6 +32,7 @@ export const JourneyMap: React.FC<{
             <li key={n}>
               <button
                 type="button"
+                disabled={isCurrent}
                 onClick={() => onStep(n)}
                 aria-current={isCurrent ? "step" : undefined}
                 style={{
@@ -41,7 +42,7 @@ export const JourneyMap: React.FC<{
                   gap: 8,
                   padding: "0 14px",
                   borderRadius: 10,
-                  cursor: "pointer",
+                  cursor: isCurrent ? "default" : "pointer",
                   fontFamily: "var(--ff-ui)",
                   fontSize: 13.5,
                   fontWeight: isCurrent ? 700 : 500,
