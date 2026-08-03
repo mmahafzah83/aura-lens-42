@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ButtonPrimary, ButtonGhost } from "@/components/systemb";
 import { loadStartCards, type StartCard } from "@/components/composer/startCards";
 import { stripMarkdown, fixArabicDirectionalSymbols } from "@/lib/textFormat";
-import { DeckIRSchema, plainText, type DeckIR } from "@/carousel/deckIR";
+import { DeckIRSchema, type DeckIR } from "@/carousel/deckIR";
 import { DEFAULT_THEME, type ThemeName } from "@/carousel/render/themes";
 import type { FitState } from "@/carousel/render/useFitLadder";
 import { collectSlideNodes, exportDeckPdf } from "@/carousel/render/exportDeck";
@@ -20,15 +20,15 @@ import StudioCanvas from "@/carousel/studio/StudioCanvas";
 import { plainFailure } from "@/carousel/studio/slotLabels";
 import { moveSlide, replaceSlide, setSlidePhoto } from "@/carousel/studio/deckEdit";
 import { SLIDE_MEDIA_LIMITS, checkImage, fitToSlot } from "@/lib/imagePrep";
-import TopBar from "@/components/studio/TopBar";
 import JourneyMap from "@/components/studio/JourneyMap";
+import BusyBar from "@/components/studio/BusyBar";
 import PostureQuestion from "@/components/studio/PostureQuestion";
 import StageCard from "@/components/studio/StageCard";
-import ZonePiece, { type ShowingKey } from "@/components/studio/ZonePiece";
+import ZonePiece from "@/components/studio/ZonePiece";
 import ZoneStage from "@/components/studio/ZoneStage";
 import ZoneInspector from "@/components/studio/ZoneInspector";
 import ZoneLook from "@/components/studio/ZoneLook";
-import { T, attentionText, pictureProblem, startReason, type Lang, type Posture } from "@/components/studio/strings";
+import { T, attentionText, pictureProblem, postureLabel, startReason, type Lang, type Posture } from "@/components/studio/strings";
 
 const POSTURE_KEY = "aura_studio_posture";
 const DRAFT_KEY = "aura_studio_draft_v1";
@@ -36,59 +36,31 @@ const DRAFT_KEY = "aura_studio_draft_v1";
 /** Two tabs that both do something. There is no third. */
 type SubNav = "build" | "look";
 
+/** What the member decided this piece should be. Chosen at step 3. */
+type Format = "post" | "slides";
+
 interface Choice {
   id: string | null;
   title: string;
   insight: string;
 }
 
-/** Every readable word on a slide, for matching it back to a line of the post. */
-function slideWords(slots: unknown): string {
-  const out: string[] = [];
-  const walk = (v: any) => {
-    if (!v) return;
-    if (Array.isArray(v)) { v.forEach(walk); return; }
-    if (typeof v === "string") { out.push(v); return; }
-    if (typeof v === "object" && Array.isArray(v.runs)) { out.push(plainText(v)); return; }
-    if (typeof v === "object") Object.values(v).forEach(walk);
-  };
-  Object.values(slots as Record<string, unknown>).forEach(walk);
-  return out.join(" ");
-}
-
-function bestSourceLine(post: string, slots: unknown): string {
-  const lines = post.split("\n").map((l) => l.trim()).filter((l) => l.length > 12);
-  if (lines.length === 0) return "";
-  const words = new Set(slideWords(slots).toLowerCase().split(/\W+/).filter((w) => w.length > 3));
-  let best = lines[0];
-  let bestScore = -1;
-  for (const line of lines) {
-    const score = line
-      .toLowerCase()
-      .split(/\W+/)
-      .filter((w) => w.length > 3 && words.has(w)).length;
-    if (score > bestScore) { bestScore = score; best = line; }
-  }
-  return best.length > 120 ? `${best.slice(0, 120)}…` : best;
-}
-
 export default function Studio() {
   /* ---------- session and preferences ---------------------------- */
   const [ready, setReady] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [firstName, setFirstName] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   const [lang, setLang] = useState<Lang>("en");
   const [writeLang, setWriteLang] = useState<Lang>("en");
 
   const [posture, setPosture] = useState<Posture>("editor");
   const [askingPosture, setAskingPosture] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   /* ---------- the piece ------------------------------------------ */
   const [step, setStep] = useState(1);
   const [sub, setSub] = useState<SubNav>("build");
-  const [showing, setShowing] = useState<ShowingKey>("post");
+  const [format, setFormat] = useState<Format | null>(null);
 
   const [cards, setCards] = useState<StartCard[]>([]);
   const [cardsLoading, setCardsLoading] = useState(false);
@@ -152,8 +124,6 @@ export default function Studio() {
       const seeded: Lang = (profile as any)?.content_language === "ar" ? "ar" : "en";
       setLang(seeded);
       setWriteLang(seeded);
-      setFirstName(((profile as any)?.first_name as string) || "");
-      setAvatarUrl(((profile as any)?.avatar_url as string) || null);
       setReady(true);
     })();
     return () => { dead = true; };
@@ -189,6 +159,7 @@ export default function Studio() {
       if (!raw) return;
       const saved = JSON.parse(raw) as {
         content?: unknown; deck?: unknown; choice?: unknown; writeLang?: unknown;
+        step?: unknown; format?: unknown;
       };
       let restoredAnything = false;
       if (typeof saved.content === "string" && saved.content.trim()) {
@@ -209,8 +180,11 @@ export default function Studio() {
         if (typeof c.title === "string") setChoice({ id: c.id ?? null, title: c.title, insight: c.insight ?? "" });
       }
       if (saved.writeLang === "ar" || saved.writeLang === "en") setWriteLang(saved.writeLang);
+      if (saved.format === "post" || saved.format === "slides") setFormat(saved.format);
       if (restoredAnything) {
-        setStep(2);
+        // Reopen exactly where they stopped.
+        const s = Number(saved.step);
+        setStep(s >= 1 && s <= 4 ? s : 2);
         // The language is not resolved yet at this point, so the message is
         // raised later, from whatever `lang` is then.
         setRestoredFlag(true);
@@ -228,11 +202,11 @@ export default function Studio() {
   useEffect(() => {
     if (!content && !deck) return;
     try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ content, deck, choice, writeLang }));
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ content, deck, choice, writeLang, step, format }));
       // Success channel only. A failure message is never written from here.
       setStatus(T.savedMoment[lang]);
     } catch { /* quota never blocks editing */ }
-  }, [content, deck, choice, writeLang, lang]);
+  }, [content, deck, choice, writeLang, lang, step, format]);
 
   /* A success note fades; a problem does not. */
   useEffect(() => {
@@ -282,6 +256,7 @@ export default function Studio() {
     const useLang = writeLang;
     setGenError(null);
     setGenerating(true);
+    setBusyMessage(T.writing[lang]);
     setStep(2);
     setSub("build");
 
@@ -315,14 +290,13 @@ export default function Studio() {
       if (!res.ok || !text) { setGenError("failed"); return; }
       remember();
       setContent(fixArabicDirectionalSymbols(stripMarkdown(String(text)), useLang));
-      setShowing("post");
     } catch {
       if (runId === genRunId.current) setGenError("failed");
     } finally {
       window.clearTimeout(timer);
-      if (runId === genRunId.current) setGenerating(false);
+      if (runId === genRunId.current) { setGenerating(false); setBusyMessage(null); }
     }
-  }, [choice, writeLang, remember]);
+  }, [choice, writeLang, remember, lang]);
 
   /* ---------- the draft row --------------------------------------- */
   const saveDraft = useCallback(async (): Promise<string | null> => {
@@ -363,7 +337,6 @@ export default function Studio() {
     if (!choice?.id || !content.trim()) return;
     setStep(3);
     setSub("build");
-    setShowing("slides");
     setDeckBusy(true);
     setDeckFailures([]);
     setProblem(null);
@@ -515,12 +488,15 @@ export default function Studio() {
     setProblem(message.includes("not connected") ? T.notConnected[lang] : T.postFailed[lang]);
   }, [saveDraft, lang]);
 
-  const keepForLater = useCallback(async () => {
+  /** Save and come back later: says where it went, and keeps the step. */
+  const saveAndComeBack = useCallback(async () => {
     setBusy("save");
     setProblem(null);
+    setBusyMessage(T.savingPiece[lang]);
     const id = await saveDraft();
     setBusy(null);
-    if (id) setStatus(T.savedForLater[lang]);
+    setBusyMessage(null);
+    if (id) setStatus(T.saveLaterNote[lang]);
     else setProblem(T.postFailed[lang]);
   }, [saveDraft, lang]);
 
@@ -545,10 +521,13 @@ export default function Studio() {
     }
   }, [deck, lang]);
 
-  const openLinkedIn = useCallback(async () => {
+  const copyCaption = useCallback(async () => {
     try { await navigator.clipboard.writeText(content); setStatus(T.captionCopied[lang]); } catch { /* nothing copied */ }
-    window.open("https://www.linkedin.com/feed/", "_blank", "noopener,noreferrer");
   }, [content, lang]);
+
+  const openLinkedIn = useCallback(() => {
+    window.open("https://www.linkedin.com/feed/", "_blank", "noopener,noreferrer");
+  }, []);
 
   const saveLink = useCallback(async () => {
     const url = linkInput.trim();
@@ -587,18 +566,13 @@ export default function Studio() {
     [choice, content, deck, published],
   );
 
-  const cameFromLine = useMemo(() => {
-    const slide = deck?.slides[Math.min(current, (deck?.slides.length ?? 1) - 1)];
-    return slide ? bestSourceLine(content, slide.slots) : "";
-  }, [deck, current, content]);
-
   /**
    * The exporter reads real DOM nodes, so the deck mount must exist with real
    * layout for as long as a deck exists — not only while step 3 is on screen.
    * When the stage is not showing it, the same mount is rendered off to the
    * side of the viewport (never display:none, never visibility:hidden).
    */
-  const canvasInStage = step === 3 && showing === "slides" && Boolean(deck);
+  const canvasInStage = step === 3 && format === "slides" && Boolean(deck);
 
   /* ---------- shell ------------------------------------------------ */
   const shell = (children: React.ReactNode) => (
@@ -651,10 +625,7 @@ export default function Studio() {
     <button
       key={key}
       type="button"
-      onClick={() => {
-        setSub(key);
-        if (key === "build") setShowing(deck ? "slides" : "post");
-      }}
+      onClick={() => setSub(key)}
       style={{
         minHeight: 44,
         padding: "0 4px",
@@ -699,13 +670,9 @@ export default function Studio() {
     </div>
   ) : null;
 
+  /* The centre editor. Step 2 only. */
   const writeArea = (
     <>
-      {generating && (
-        <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--machine-text)", background: "var(--machine-tint)", padding: "10px 12px", borderRadius: 10, margin: "0 0 12px" }}>
-          {T.writing[lang]}
-        </p>
-      )}
       {genError && (
         <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--error)", margin: "0 0 12px" }}>
           {genError === "session" ? T.sessionEnded[lang] : T.writeFailed[lang]}{" "}
@@ -738,35 +705,91 @@ export default function Studio() {
         {content.length} {T.characters[lang]}
         {content.length > 2800 ? ` — ${T.tooLong[lang]}` : ""}
       </p>
-      {confirmPanel}
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <ButtonPrimary onClick={requestPost} disabled={!content.trim() || busy === "post" || confirmingPost} style={{ minHeight: 44 }}>
-          {T.optPost[lang]}
-        </ButtonPrimary>
-        <ButtonGhost onClick={() => void makeSlides()} disabled={!content.trim() || !choice?.id} style={{ minHeight: 44 }}>
-          {T.optSlides[lang]}
-        </ButtonGhost>
-        <ButtonGhost onClick={() => void keepForLater()} disabled={!content.trim()} style={{ minHeight: 44 }}>
-          {T.optLater[lang]}
-        </ButtonGhost>
-      </div>
-      {!choice?.id && content.trim() && (
-        <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--text-muted)", margin: "8px 0 0" }}>
-          {T.typedTopicNoSlides[lang]}
-        </p>
-      )}
+      <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--text-muted)", margin: 0 }}>
+        {T.editHint[lang]}
+      </p>
     </>
   );
 
+  /* One way forward. The label never changes; the step does. */
+  const canContinue =
+    step === 1 ? Boolean(choice) || Boolean(pasted.trim())
+      : step === 2 ? content.trim().length > 0
+        : step === 3 ? format === "post" || Boolean(deck)
+          : false;
+
+  const onContinue = () => {
+    if (step === 1) {
+      if (pasted.trim()) {
+        remember();
+        setChoice((c) => c ?? { id: null, title: typedTopic.trim() || pasted.trim().slice(0, 60), insight: "" });
+        setContent(fixArabicDirectionalSymbols(stripMarkdown(pasted), writeLang));
+        setStep(2);
+        return;
+      }
+      if (content.trim()) { setStep(2); return; }
+      void generate();
+      return;
+    }
+    if (step === 2) { setStep(3); return; }
+    if (step === 3) { setStep(4); }
+  };
+
   return shell(
     <>
-      <TopBar
-        lang={lang}
-        posture={posture}
-        firstName={firstName}
-        avatarUrl={avatarUrl}
-        onChangePosture={() => setAskingPosture(true)}
-      />
+      {/* One slim strip. This is a page inside Aura; the shell owns navigation. */}
+      <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", paddingBottom: 6 }}>
+        <button
+          type="button"
+          onClick={() => setAskingPosture(true)}
+          style={{
+            minHeight: 44, padding: "0 12px", borderRadius: 999, cursor: "pointer",
+            background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
+            fontFamily: "var(--ff-ui)", fontSize: 13, color: "var(--text-secondary)",
+          }}
+        >
+          {T.workingAs[lang]}: {postureLabel(posture, lang)} · {T.change[lang]}
+        </button>
+        <button
+          type="button"
+          onClick={() => setHelpOpen((v) => !v)}
+          aria-expanded={helpOpen}
+          style={{
+            minHeight: 44, padding: 0, background: "transparent", border: 0, cursor: "pointer",
+            fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--act)",
+          }}
+        >
+          {T.helpLink[lang]}
+        </button>
+      </div>
+
+      {helpOpen && (
+        <div
+          style={{
+            background: "var(--surface-card)", border: "1px solid var(--border-default)",
+            borderRadius: 14, padding: 14, margin: "0 0 12px", display: "grid", gap: 12,
+          }}
+        >
+          {([
+            [T.helpHowHead[lang], T.helpHowBody[lang]],
+            [T.helpDrawsHead[lang], T.helpDrawsBody[lang]],
+            [T.helpVoiceHead[lang], T.helpVoiceBody[lang]],
+            [T.helpGetHead[lang], T.helpGetBody[lang]],
+          ] as Array<[string, string]>).map(([head, body]) => (
+            <div key={head}>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
+                {head}
+              </p>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: 1.75, color: "var(--text-secondary)", margin: "4px 0 0" }}>
+                {body}
+              </p>
+            </div>
+          ))}
+          <div>
+            <ButtonGhost onClick={() => setHelpOpen(false)} style={{ minHeight: 44 }}>{T.helpClose[lang]}</ButtonGhost>
+          </div>
+        </div>
+      )}
 
       <JourneyMap lang={lang} step={step} done={doneMap} onStep={(n) => setStep(n)} />
 
@@ -815,13 +838,23 @@ export default function Studio() {
         <ButtonGhost onClick={undo} disabled={undoStack.length === 0} style={{ minHeight: 44 }}>
           {T.undo[lang]}
         </ButtonGhost>
-        <ButtonGhost onClick={() => void keepForLater()} style={{ minHeight: 44 }}>
-          {T.saveAndClose[lang]}
-        </ButtonGhost>
-        <ButtonPrimary onClick={() => setStep((s) => Math.min(4, s + 1))} disabled={step >= 4} style={{ minHeight: 44 }}>
-          {T.continue[lang]} →
-        </ButtonPrimary>
+        <span style={{ display: "grid", gap: 2 }}>
+          <ButtonGhost onClick={() => void saveAndComeBack()} disabled={busy === "save"} style={{ minHeight: 44 }}>
+            {T.saveLater[lang]}
+          </ButtonGhost>
+          <span style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)", maxWidth: 260 }}>
+            {T.saveLaterNote[lang]}
+          </span>
+        </span>
+        {step < 4 && (
+          <ButtonPrimary onClick={onContinue} disabled={!canContinue || generating} style={{ minHeight: 44 }}>
+            {T.continue[lang]} {rtlShell ? "←" : "→"}
+          </ButtonPrimary>
+        )}
       </div>
+
+      {/* Motion for anything in flight, on every step. */}
+      {busyMessage && <BusyBar message={busyMessage} />}
 
       {step === 1 && (
         <StageCard title={T.chooseHead[lang]} subtitle={T.chooseHelp[lang]} align={rtlShell ? "right" : "left"} defaultOpen>
@@ -839,9 +872,17 @@ export default function Studio() {
             {cards.map((c) => {
               const on = choice?.id === c.signalId;
               return (
-                <div
+                <button
                   key={c.signalId}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => {
+                    setChoice({ id: c.signalId, title: c.title, insight: c.insight });
+                    setTypedTopic("");
+                  }}
                   style={{
+                    textAlign: rtlShell ? "right" : "left",
+                    cursor: "pointer",
                     background: on ? "var(--act-tint)" : "var(--surface-subtle)",
                     border: `1px solid ${on ? "var(--act)" : "var(--border-default)"}`,
                     borderRadius: 12,
@@ -859,23 +900,10 @@ export default function Studio() {
                       {c.insight}
                     </p>
                   )}
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10, flexWrap: "wrap" }}>
-                    <ButtonPrimary
-                      onClick={() => {
-                        const next = { id: c.signalId, title: c.title, insight: c.insight };
-                        setChoice(next);
-                        setTypedTopic("");
-                        void generate(next);
-                      }}
-                      style={{ minHeight: 44 }}
-                    >
-                      {T.chooseUse[lang]}
-                    </ButtonPrimary>
-                    <span style={{ fontFamily: "var(--ff-mono)", fontSize: 11, color: "var(--text-muted)" }}>
-                      {c.fragmentCount} {T.sources[lang]}
-                    </span>
-                  </div>
-                </div>
+                  <span style={{ display: "block", fontFamily: "var(--ff-mono)", fontSize: 11, color: "var(--text-muted)", marginTop: 10 }}>
+                    {c.fragmentCount} {T.sources[lang]}
+                  </span>
+                </button>
               );
             })}
           </div>
@@ -888,7 +916,10 @@ export default function Studio() {
               <input
                 id="studio-topic"
                 value={typedTopic}
-                onChange={(e) => { setTypedTopic(e.target.value); if (e.target.value) setChoice(null); }}
+                onChange={(e) => {
+                  setTypedTopic(e.target.value);
+                  setChoice(e.target.value.trim() ? { id: null, title: e.target.value.trim(), insight: "" } : null);
+                }}
                 placeholder={T.chooseOwnPlaceholder[lang]}
                 style={{
                   flex: "1 1 260px", minHeight: 44, padding: "0 12px", borderRadius: 10,
@@ -897,17 +928,6 @@ export default function Studio() {
                   textAlign: rtlShell ? "right" : "left",
                 }}
               />
-              <ButtonGhost
-                disabled={!typedTopic.trim()}
-                onClick={() => {
-                  const next = { id: null, title: typedTopic.trim(), insight: "" };
-                  setChoice(next);
-                  void generate(next);
-                }}
-                style={{ minHeight: 44 }}
-              >
-                {T.chooseUse[lang]}
-              </ButtonGhost>
             </div>
           </div>
 
@@ -933,21 +953,6 @@ export default function Studio() {
                   color: "var(--text-primary)", resize: "vertical",
                 }}
               />
-              <div style={{ marginTop: 10 }}>
-                <ButtonPrimary
-                  disabled={!pasted.trim()}
-                  onClick={() => {
-                    remember();
-                    setChoice((c) => c ?? { id: null, title: typedTopic.trim() || pasted.trim().slice(0, 60), insight: "" });
-                    setContent(fixArabicDirectionalSymbols(stripMarkdown(pasted), writeLang));
-                    setStep(2);
-                    setSub("build");
-                  }}
-                  style={{ minHeight: 44 }}
-                >
-                  {T.pasteUse[lang]}
-                </ButtonPrimary>
-              </div>
             </div>
           )}
         </StageCard>
@@ -967,12 +972,50 @@ export default function Studio() {
 
       {step === 3 && (
         <>
+          {/* The job first: what shape should this take? */}
+          <StageCard title={T.formatHead[lang]} align={rtlShell ? "right" : "left"} defaultOpen>
+            <div style={{ display: "grid", gap: 10 }}>
+              {([
+                ["post", T.formatWords[lang], T.formatWordsHelp[lang]],
+                ["slides", T.formatSlides[lang], T.formatSlidesHelp[lang]],
+              ] as Array<[Format, string, string]>).map(([key, label, help]) => {
+                const on = format === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => {
+                      setFormat(key);
+                      if (key === "slides" && !deck && !deckBusy && content.trim()) void makeSlides();
+                    }}
+                    style={{
+                      textAlign: rtlShell ? "right" : "left",
+                      cursor: "pointer",
+                      background: on ? "var(--act-tint)" : "var(--surface-subtle)",
+                      border: `1px solid ${on ? "var(--act)" : "var(--border-default)"}`,
+                      borderRadius: 12,
+                      padding: 14,
+                    }}
+                  >
+                    <span style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>
+                      {label}
+                    </span>
+                    <span style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: 1.7, color: "var(--text-secondary)", marginTop: 4 }}>
+                      {help}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </StageCard>
+
           {deckBusy && (
-            <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--machine-text)", background: "var(--machine-tint)", padding: "10px 12px", borderRadius: 10, margin: "0 0 12px" }}>
-              {T.makingSlides[lang]}
-            </p>
+            <div style={{ margin: "12px 0" }}>
+              <BusyBar message={T.makingSlides[lang]} />
+            </div>
           )}
-          {deckFailures.length > 0 && (
+          {format === "slides" && deckFailures.length > 0 && (
             <div role="status" aria-live="polite" style={{ background: "var(--error-tint)", borderRadius: 12, padding: 12, margin: "0 0 12px" }}>
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, fontWeight: 700, color: "var(--error)", margin: 0 }}>
                 {T.slidesFailedHead[lang]}
@@ -984,28 +1027,25 @@ export default function Studio() {
             </div>
           )}
 
+          {format === "slides" && (
           <div
             style={{
               display: "grid",
               gridTemplateColumns: narrow ? "1fr" : "200px 1fr 300px",
               gap: 12,
               alignItems: "start",
+              marginTop: 12,
             }}
           >
             <ZonePiece
               lang={lang}
-              writeLang={writeLang}
               subject={choice?.title || typedTopic}
-              showing={showing}
-              onShowing={setShowing}
-              slideCount={deck?.slides.length ?? 0}
               todo={{
                 words: content.trim().length > 0,
                 slides: Boolean(deck),
                 cover: Boolean(deck?.slides.some((s) => s.slots.media?.src)),
                 published,
               }}
-              postText={content}
             />
             <ZoneStage
               lang={lang}
@@ -1017,8 +1057,6 @@ export default function Studio() {
               onFit={(i, state) => setFits((f) => ({ ...f, [i]: state }))}
               mountRef={mountRef}
               boxRef={canvasBoxRef}
-              mode={showing}
-              postEditor={writeArea}
               showCanvas={canvasInStage}
               empty={
                 <span>
@@ -1054,10 +1092,10 @@ export default function Studio() {
                 onUploadPicture={uploadPicture}
                 pictureNotice={pictureNotice}
                 onMove={move}
-                cameFromLine={cameFromLine}
               />
             )}
           </div>
+          )}
         </>
       )}
 
@@ -1075,62 +1113,91 @@ export default function Studio() {
           )}
 
           {confirmPanel}
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 18 }}>
-            <ButtonPrimary onClick={requestPost} disabled={!content.trim() || busy === "post" || confirmingPost} style={{ minHeight: 44 }}>
-              {T.publishAsPost[lang]}
-            </ButtonPrimary>
-          </div>
 
-          <h3 style={{ fontFamily: "var(--ff-ui)", fontSize: 15, fontWeight: 700, color: "var(--text-primary)", margin: "0 0 8px" }}>
-            {T.slidesPublishHead[lang]}
-          </h3>
-          <ol style={{ margin: 0, paddingInlineStart: 20, display: "grid", gap: 8 }}>
-            <li style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-secondary)" }}>
-              <strong style={{ color: "var(--text-primary)" }}>{T.slidesStep1[lang]}</strong>
-              {" — "}{T.fileSteps[lang]} {deck?.slides.length ?? 0} {T.slidesWord[lang]}.
-            </li>
-            <li style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-secondary)" }}>
-              <strong style={{ color: "var(--text-primary)" }}>{T.slidesStep2[lang]}</strong>
-              {" — "}{T.captionNote[lang]}
-            </li>
-            <li style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-secondary)" }}>
-              <strong style={{ color: "var(--text-primary)" }}>{T.slidesStep3[lang]}</strong>
-              {" — "}{T.linkNote[lang]}
-            </li>
-          </ol>
-          <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.7, color: "var(--text-muted)", margin: "10px 0 14px" }}>
-            {T.slidesWhy[lang]}
-          </p>
+          {/* ONE path, decided by what the member actually made. */}
+          {!deck ? (
+            <>
+              <p
+                dir={rtlWrite ? "rtl" : "ltr"}
+                style={{
+                  whiteSpace: "pre-wrap", background: "var(--surface-subtle)",
+                  border: "1px solid var(--border-default)", borderRadius: 12, padding: 12,
+                  fontFamily: "var(--ff-ui)", fontSize: 14, lineHeight: rtlWrite ? 1.9 : 1.75,
+                  textAlign: rtlWrite ? "right" : "left", color: "var(--text-primary)", margin: "0 0 14px",
+                }}
+              >
+                {content}
+              </p>
+              {!published && !confirmingPost && (
+                <ButtonPrimary onClick={requestPost} disabled={!content.trim() || busy === "post"} style={{ minHeight: 44 }}>
+                  {T.postItNow[lang]}
+                </ButtonPrimary>
+              )}
+            </>
+          ) : (
+            <>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 700, color: "var(--text-primary)", margin: "0 0 6px" }}>
+                {T.captionHead[lang]}
+              </p>
+              <p
+                dir={rtlWrite ? "rtl" : "ltr"}
+                style={{
+                  whiteSpace: "pre-wrap", background: "var(--surface-subtle)",
+                  border: "1px solid var(--border-default)", borderRadius: 12, padding: 12,
+                  fontFamily: "var(--ff-ui)", fontSize: 14, lineHeight: rtlWrite ? 1.9 : 1.75,
+                  textAlign: rtlWrite ? "right" : "left", color: "var(--text-primary)", margin: 0,
+                }}
+              >
+                {content}
+              </p>
+              <div style={{ margin: "10px 0 18px" }}>
+                <ButtonGhost onClick={() => void copyCaption()} style={{ minHeight: 44 }}>
+                  {T.copyCaption[lang]}
+                </ButtonGhost>
+              </div>
 
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-            <ButtonGhost onClick={() => void exportFile()} disabled={!deck || busy === "export"} style={{ minHeight: 44 }}>
-              {busy === "export" ? T.exporting[lang] : T.exportFile[lang]}
-            </ButtonGhost>
-            <ButtonGhost onClick={() => void openLinkedIn()} style={{ minHeight: 44 }}>
-              {T.openLinkedIn[lang]}
-            </ButtonGhost>
-          </div>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: "0 0 8px" }}>
+                1 · {T.s4Get[lang]}
+              </p>
+              <ButtonPrimary onClick={() => void exportFile()} disabled={busy === "export"} style={{ minHeight: 44 }}>
+                {busy === "export" ? T.exporting[lang] : T.exportFile[lang]}
+              </ButtonPrimary>
 
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 14 }}>
-            <label htmlFor="studio-link" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>
-              {T.linkPlaceholder[lang]}
-            </label>
-            <input
-              id="studio-link"
-              value={linkInput}
-              onChange={(e) => setLinkInput(e.target.value)}
-              placeholder={T.linkPlaceholder[lang]}
-              style={{
-                flex: "1 1 280px", minHeight: 44, padding: "0 12px", borderRadius: 10,
-                background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
-                fontFamily: "var(--ff-ui)", fontSize: 14, color: "var(--text-primary)",
-                textAlign: rtlShell ? "right" : "left",
-              }}
-            />
-            <ButtonPrimary onClick={() => void saveLink()} disabled={!linkInput.trim()} style={{ minHeight: 44 }}>
-              {T.linkSave[lang]}
-            </ButtonPrimary>
-          </div>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: "18px 0 8px" }}>
+                2 · {T.s4Open[lang]}
+              </p>
+              <ButtonGhost onClick={() => void openLinkedIn()} style={{ minHeight: 44 }}>
+                {T.openLinkedIn[lang]}
+              </ButtonGhost>
+
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: "18px 0 6px" }}>
+                3 · {T.s4Link[lang]}
+              </p>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.7, color: "var(--text-muted)", margin: "0 0 10px" }}>
+                {T.whyLink[lang]}
+              </p>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <label htmlFor="studio-link" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>
+                  {T.linkPlaceholder[lang]}
+                </label>
+                <input
+                  id="studio-link"
+                  value={linkInput}
+                  onChange={(e) => setLinkInput(e.target.value)}
+                  placeholder={T.linkPlaceholder[lang]}
+                  style={{
+                    flex: "1 1 280px", minHeight: 44, padding: "0 12px", borderRadius: 10,
+                    background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
+                    fontFamily: "var(--ff-ui)", fontSize: 14, color: "var(--text-primary)",
+                    textAlign: rtlShell ? "right" : "left",
+                  }}
+                />
+                <ButtonPrimary onClick={() => void saveLink()} disabled={!linkInput.trim()} style={{ minHeight: 44 }}>
+                  {T.linkSave[lang]}
+                </ButtonPrimary>
+              </div>
+            </>
+          )}
         </StageCard>
       )}
 
@@ -1147,45 +1214,6 @@ export default function Studio() {
           />
         </div>
       )}
-
-      <div
-        style={{
-          position: "sticky",
-          bottom: 0,
-          marginTop: 18,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 12,
-          flexWrap: "wrap",
-          padding: "10px 14px",
-          borderRadius: 14,
-          background: "var(--surface-card)",
-          border: "1px solid var(--border-default)",
-        }}
-      >
-        <span style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--text-secondary)" }}>
-          {T.changedMind[lang]}{" "}
-          <button
-            type="button"
-            onClick={undo}
-            disabled={undoStack.length === 0}
-            style={{ background: "transparent", border: 0, cursor: "pointer", minHeight: 44, fontFamily: "var(--ff-ui)", fontSize: 12.5, fontWeight: 700, color: "var(--act)" }}
-          >
-            {T.undo[lang]}
-          </button>
-          {" · "}
-          {T.undoBeforeSlides[lang]}
-        </span>
-        <span style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <ButtonGhost onClick={() => void exportFile()} disabled={!deck || busy === "export"} style={{ minHeight: 44 }}>
-            {T.exportFile[lang]}
-          </ButtonGhost>
-          <ButtonPrimary onClick={() => setStep(4)} disabled={step === 4} style={{ minHeight: 44 }}>
-            {T.putOnLinkedIn[lang]} →
-          </ButtonPrimary>
-        </span>
-      </div>
     </>,
   );
 }

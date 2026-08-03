@@ -7,14 +7,31 @@ export const T = {
   signIn: { en: "Please sign in", ar: "من فضلك سجّل الدخول" },
   signInLink: { en: "Go to sign in", ar: "اذهب لتسجيل الدخول" },
 
-  // Top bar
-  wordmark: { en: "Aura", ar: "أورا" },
-  navHome: { en: "Home", ar: "الرئيسية" },
-  navPieces: { en: "Your pieces", ar: "أعمالك" },
-  navHow: { en: "How Aura writes", ar: "كيف تكتب أورا" },
-  navGuides: { en: "Guides", ar: "الأدلة" },
+  // Slim strip
   workingAs: { en: "Working as", ar: "طريقة العمل" },
   change: { en: "change", ar: "تغيير" },
+  helpLink: { en: "How the composer works", ar: "كيف يعمل المحرّر" },
+  helpClose: { en: "Close", ar: "إغلاق" },
+  helpHowHead: { en: "How Aura writes", ar: "كيف تكتب أورا" },
+  helpHowBody: {
+    en: "Aura drafts a first version from the subject you choose. You then change any word. Nothing leaves this page until you say so.",
+    ar: "تكتب أورا نسخة أولى من الموضوع الذي تختاره. بعدها تغيّر أي كلمة. لا شيء يخرج من هذه الصفحة حتى تطلب ذلك.",
+  },
+  helpDrawsHead: { en: "What it draws on", ar: "على ماذا تعتمد" },
+  helpDrawsBody: {
+    en: "Only your own material: the articles and notes you saved, and the subjects Aura found in them. Nobody else's work is used.",
+    ar: "على موادك أنت فقط: المقالات والملاحظات التي حفظتها، والمواضيع التي وجدتها أورا فيها. لا تُستخدم مواد أي شخص آخر.",
+  },
+  helpVoiceHead: { en: "How your voice was captured", ar: "كيف التقطنا صوتك" },
+  helpVoiceBody: {
+    en: "From the posts you wrote yourself. Aura keeps the words you tend to use, the length of your sentences and how you close. If you have written little, Aura stays plain rather than inventing a style for you.",
+    ar: "من المنشورات التي كتبتها بنفسك. تحتفظ أورا بالكلمات التي تميل إليها، وطول جملك، وطريقة ختامك. إن كتبت القليل، تبقى أورا مباشرة بدل اختراع أسلوب لك.",
+  },
+  helpGetHead: { en: "What you get from using it", ar: "ماذا تكسب من استخدامه" },
+  helpGetBody: {
+    en: "A finished post in minutes, a record of everything you published, and a voice that gets closer to yours each time you post.",
+    ar: "منشور جاهز في دقائق، وسجل بكل ما نشرته، وصوت يقترب من صوتك في كل مرة تنشر فيها.",
+  },
 
   // Posture
   postureHead: { en: "How would you like to work with Aura?", ar: "كيف تحب أن تعمل مع أورا؟" },
@@ -41,7 +58,7 @@ export const T = {
   // Journey map
   step1: { en: "Choose the subject", ar: "اختر الموضوع" },
   step2: { en: "Write the post", ar: "اكتب المنشور" },
-  step3: { en: "Make the slides", ar: "اصنع الشرائح" },
+  step3: { en: "Choose how it looks", ar: "اختر شكله" },
   step4: { en: "Put it on LinkedIn", ar: "انشره على لينكدإن" },
   mapNote: {
     en: "Click any step to go back. Nothing is locked.",
@@ -53,8 +70,13 @@ export const T = {
   subLook: { en: "Look", ar: "المظهر" },
   savedMoment: { en: "Saved a moment ago", ar: "حُفظ قبل لحظات" },
   undo: { en: "Undo", ar: "تراجع" },
-  saveAndClose: { en: "Save and close", ar: "احفظ وأغلق" },
+  saveLater: { en: "Save and come back later", ar: "احفظ وعُد لاحقاً" },
+  saveLaterNote: {
+    en: "Saved to Your pieces. You can reopen it and carry on from this step.",
+    ar: "محفوظ في أعمالك. يمكنك فتحه والمتابعة من هذه الخطوة.",
+  },
   continue: { en: "Continue", ar: "متابعة" },
+  back: { en: "Back", ar: "رجوع" },
 
   // Step 1 — choose
   chooseHead: { en: "What is this piece about?", ar: "عن ماذا يدور هذا العمل؟" },
@@ -91,9 +113,10 @@ export const T = {
   },
   sessionEnded: { en: "Your sign-in ended. Sign in again and try once more.", ar: "انتهت جلستك. سجّل الدخول وحاول مرة أخرى." },
   tryAgain: { en: "Try again", ar: "حاول مرة أخرى" },
-  optPost: { en: "Put this on LinkedIn", ar: "انشر هذا على لينكدإن" },
-  optSlides: { en: "Also make slides", ar: "اصنع شرائح أيضاً" },
-  optLater: { en: "Keep it for later", ar: "احتفظ به لوقت لاحق" },
+  editHint: {
+    en: "Edit anything here — your changes save by themselves.",
+    ar: "عدّل ما تشاء هنا — تُحفظ تغييراتك من تلقاء نفسها.",
+  },
   characters: { en: "characters", ar: "حرفاً" },
   tooLong: { en: "This is long for LinkedIn. Shorter posts are read more.", ar: "هذا طويل للينكدإن. المنشورات الأقصر تُقرأ أكثر." },
 
@@ -103,20 +126,27 @@ export const T = {
   makeSlides: { en: "Make the slides", ar: "اصنع الشرائح" },
   slidesNeedPost: { en: "Write the post first — the slides are made from your words.", ar: "اكتب المنشور أولاً — الشرائح تُصنع من كلماتك." },
 
+  // Step 3 — the format choice
+  formatHead: { en: "How should this go out?", ar: "كيف سيخرج هذا؟" },
+  formatWords: { en: "Words only", ar: "كلمات فقط" },
+  formatWordsHelp: {
+    en: "A normal LinkedIn post. Nothing else to make.",
+    ar: "منشور عادي على لينكدإن. لا شيء آخر لصنعه.",
+  },
+  formatSlides: { en: "Words and slides", ar: "كلمات وشرائح" },
+  formatSlidesHelp: {
+    en: "Your post becomes the caption, and Aura builds a slide file to go with it.",
+    ar: "يصبح منشورك النص المرافق، وتبني أورا ملف شرائح معه.",
+  },
+
   // Zone: this piece
   zonePiece: { en: "This piece", ar: "هذا العمل" },
-  showing: { en: "Showing", ar: "المعروض" },
-  showPost: { en: "The post", ar: "المنشور" },
-  showSlides: { en: "The slides", ar: "الشرائح" },
   stillToDo: { en: "Still to do", ar: "ما تبقّى" },
   todoWords: { en: "Words approved", ar: "الكلمات معتمدة" },
   todoSlides: { en: "Slides made", ar: "الشرائح جاهزة" },
   todoCover: { en: "Cover picture", ar: "صورة الغلاف" },
   todoPublish: { en: "Put on LinkedIn", ar: "منشور على لينكدإن" },
   todoNote: { en: "This is where you are, not a checkpoint.", ar: "هذا موقعك الحالي، وليس شرطاً." },
-  readAll: { en: "read all", ar: "اقرأ الكل" },
-  readLess: { en: "show less", ar: "أظهر أقل" },
-  noPostYet: { en: "No words yet.", ar: "لا كلمات بعد." },
 
   // Zone: stage
   zoneStage: { en: "Stage", ar: "المسرح" },
@@ -141,7 +171,6 @@ export const T = {
   moveLater: { en: "Move later", ar: "حرّكها للأمام" },
   alwaysFirst: { en: "This one always comes first.", ar: "هذه دائماً في البداية." },
   alwaysLast: { en: "This one always comes last.", ar: "هذه دائماً في النهاية." },
-  cameFrom: { en: "This slide came from this line of your post:", ar: "هذه الشريحة جاءت من هذا السطر في منشورك:" },
   cannotUse: { en: "Not available here", ar: "غير متاح هنا" },
   lockedLayout: {
     en: "The first and last slides keep their shape so your piece opens and closes the same way every time.",
@@ -158,11 +187,8 @@ export const T = {
     ar: "هذا الشكل يحتاج جزءاً لا تملكه الشريحة بعد، مثل رقم أو اقتباس.",
   },
 
-  // Footer
-  changedMind: { en: "Changed your mind?", ar: "غيّرت رأيك؟" },
-  undoBeforeSlides: { en: "Go back to before the slides were made", ar: "ارجع إلى ما قبل صنع الشرائح" },
-  exportFile: { en: "Export the file", ar: "صدّر الملف" },
-  putOnLinkedIn: { en: "Put on LinkedIn", ar: "انشره على لينكدإن" },
+  // The file
+  exportFile: { en: "Get the file", ar: "احصل على الملف" },
   exporting: { en: "Making the file…", ar: "نجهّز الملف…" },
   exportDone: { en: "The file is on your computer.", ar: "الملف الآن على جهازك." },
   exportFailed: { en: "The file could not be made. Try once more.", ar: "تعذّر إنشاء الملف. جرّب مرة أخرى." },
@@ -181,15 +207,23 @@ export const T = {
     ar: "لم نتمكن من نشره الآن. كلماتك محفوظة — عدّل ما تشاء وحاول مرة أخرى.",
   },
   savedForLater: { en: "Kept. You will find it with your pieces.", ar: "تم الحفظ. ستجده مع أعمالك." },
+  savingPiece: { en: "Saving your piece…", ar: "نحفظ عملك…" },
 
   // Publish — slides
-  slidesPublishHead: { en: "Putting slides on LinkedIn takes three steps", ar: "نشر الشرائح على لينكدإن يتم في ثلاث خطوات" },
-  slidesStep1: { en: "Aura makes the file", ar: "أورا تصنع الملف" },
-  slidesStep2: { en: "You upload it to LinkedIn", ar: "أنت ترفعه على لينكدإن" },
-  slidesStep3: { en: "You paste the link back here", ar: "أنت تلصق الرابط هنا" },
-  slidesWhy: {
-    en: "Why we ask for the link: it's the only way Aura knows the post went live. Without it, your slides won't count towards anything you see in Aura.",
-    ar: "لماذا نطلب الرابط: هذه الطريقة الوحيدة لتعرف أورا أن المنشور صار حياً. بدونه لن تُحتسب شرائحك في أي شيء تراه في أورا.",
+  captionHead: { en: "Your caption", ar: "النص المرافق" },
+  copyCaption: { en: "Copy the caption", ar: "انسخ النص المرافق" },
+  s4Get: { en: "1 Get the file", ar: "١ احصل على الملف" },
+  s4Open: {
+    en: "2 Open LinkedIn and paste the caption, then attach the file",
+    ar: "٢ افتح لينكدإن والصق النص المرافق، ثم أرفق الملف",
+  },
+  s4Link: {
+    en: "3 Come back and paste the link to your post",
+    ar: "٣ عُد والصق رابط منشورك",
+  },
+  whyLink: {
+    en: "Worth the thirty seconds: with the link, Aura can tell you how the post performed, keep it in your record, and learn your voice from what actually worked.",
+    ar: "تستحق ثلاثين ثانية: بالرابط تستطيع أورا أن تخبرك بأداء المنشور، وتحفظه في سجلك، وتتعلّم صوتك مما نجح فعلاً.",
   },
   openLinkedIn: { en: "Open LinkedIn", ar: "افتح لينكدإن" },
   captionCopied: { en: "Your caption is copied.", ar: "تم نسخ النص المرافق." },
@@ -199,13 +233,10 @@ export const T = {
   linkBad: { en: "That does not look like a LinkedIn link.", ar: "هذا لا يبدو رابط لينكدإن." },
   cancel: { en: "Cancel", ar: "إلغاء" },
 
-  // Step 4 chooser
+  // Step 4
   publishHead: { en: "Put it on LinkedIn", ar: "انشره على لينكدإن" },
-  publishAsPost: { en: "Send the words as a post", ar: "أرسل الكلمات كمنشور" },
-  fileSteps: { en: "a PDF of your", ar: "ملف PDF من" },
+  postItNow: { en: "Post it to LinkedIn", ar: "انشره على لينكدإن" },
   slidesWord: { en: "slides", ar: "شريحة" },
-  captionNote: { en: "we open LinkedIn with your caption already copied.", ar: "نفتح لينكدإن ونصّك المرافق منسوخ بالفعل." },
-  linkNote: { en: "so Aura can tell you how it performed.", ar: "لتخبرك أورا كيف كان أداؤه." },
 
   // Confirm before posting
   confirmPostHead: {
