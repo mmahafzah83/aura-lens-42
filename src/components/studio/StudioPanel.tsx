@@ -731,7 +731,7 @@ export default function StudioPanel({
       window.clearTimeout(timer);
       if (runId === genRunId.current) { setGenerating(false); setBusyMessage(null); }
     }
-  }, [choice, writeLang, lang]);
+  }, [choice, writeLang, lang, applyGate]);
 
   /* ---------- the draft row --------------------------------------- */
   /** The subject, written as a title so the Library never shows a raw line. */
@@ -1778,7 +1778,7 @@ export default function StudioPanel({
                     key={key}
                     type="button"
                     aria-pressed={on}
-                    onClick={() => setWriteLang(key)}
+                    onClick={() => { langChosenRef.current = true; setWriteLang(key); }}
                     style={{
                       minHeight: 44, padding: "0 16px", borderRadius: 10, cursor: "pointer",
                       fontFamily: "var(--ff-ui)", fontSize: 13.5, fontWeight: on ? 700 : 500,
@@ -1864,6 +1864,7 @@ export default function StudioPanel({
                 const ownWords =
                   content.trim().length > 0 && content !== (generatedTextRef.current ?? "");
                 if (ownWords) { setAskLangSwitch(other); return; }
+                langChosenRef.current = true;
                 setWriteLang(other);
                 setNotReady(null);
                 void generate(undefined, other);
@@ -1888,7 +1889,8 @@ export default function StudioPanel({
                     onClick={() => {
                       const other = askLangSwitch;
                       setAskLangSwitch(null);
-                      setWriteLang(other);
+                      langChosenRef.current = true;
+                setWriteLang(other);
                       setNotReady(null);
                       void generate(undefined, other);
                     }}
