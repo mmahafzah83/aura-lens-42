@@ -96,7 +96,7 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
 
   let postId: string | undefined;
   let advisory: unknown = false;
-  let quality_note: { overall_score: number; verdict: unknown; blocked_would_have: boolean } | null = null;
+  let quality_note: { overall_score: number; gate_category: string; blocked_would_have: boolean } | null = null;
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return json({ error: "Unauthorized" }, 401);
@@ -239,7 +239,7 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
 
       if (gateError || !gate) {
         if (advisory === true) {
-          quality_note = { overall_score: overallScore, verdict: gate?.verdict ?? null, blocked_would_have: true };
+          quality_note = { overall_score: overallScore, gate_category: typeof gate?.category === "string" ? gate.category : "other", blocked_would_have: true };
         } else {
         return json({
           success: false,
@@ -250,7 +250,7 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
         }
       } else if (!passed) {
         if (advisory === true) {
-          quality_note = { overall_score: overallScore, verdict: gate?.verdict ?? null, blocked_would_have: true };
+          quality_note = { overall_score: overallScore, gate_category: typeof gate?.category === "string" ? gate.category : "other", blocked_would_have: true };
         } else {
         // Only a CATEGORY leaves this server. No weakness, no verdict, no
         // judge wording of any kind reaches a member's screen.
