@@ -8,6 +8,7 @@
  * and it never sets a page height, page padding or a page-level `dir`.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ButtonPrimary, ButtonGhost } from "@/components/systemb";
@@ -49,6 +50,23 @@ function sourceStamp(text: string): string {
 
 const POSTURE_KEY = "aura_studio_posture";
 const DRAFT_KEY = "aura_studio_draft_v1";
+/**
+ * `composer_opened` is one event per PIECE per session. The studio is a tab
+ * now, so it unmounts on every navigation — a ref guard would reset each time
+ * and inflate the number. The session, not the component, remembers.
+ */
+const OPEN_KEY = "aura_studio_opened_v1";
+function alreadyOpened(pieceKey: string): boolean {
+  try {
+    const seen = JSON.parse(sessionStorage.getItem(OPEN_KEY) || "[]") as unknown;
+    const list = Array.isArray(seen) ? (seen as string[]) : [];
+    if (list.includes(pieceKey)) return true;
+    sessionStorage.setItem(OPEN_KEY, JSON.stringify([...list, pieceKey].slice(-50)));
+    return false;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * The quality gate, said as one sentence a member can act on. Never a list,
