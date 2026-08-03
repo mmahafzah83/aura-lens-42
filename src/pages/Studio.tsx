@@ -1113,62 +1113,91 @@ export default function Studio() {
           )}
 
           {confirmPanel}
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 18 }}>
-            <ButtonPrimary onClick={requestPost} disabled={!content.trim() || busy === "post" || confirmingPost} style={{ minHeight: 44 }}>
-              {T.publishAsPost[lang]}
-            </ButtonPrimary>
-          </div>
 
-          <h3 style={{ fontFamily: "var(--ff-ui)", fontSize: 15, fontWeight: 700, color: "var(--text-primary)", margin: "0 0 8px" }}>
-            {T.slidesPublishHead[lang]}
-          </h3>
-          <ol style={{ margin: 0, paddingInlineStart: 20, display: "grid", gap: 8 }}>
-            <li style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-secondary)" }}>
-              <strong style={{ color: "var(--text-primary)" }}>{T.slidesStep1[lang]}</strong>
-              {" — "}{T.fileSteps[lang]} {deck?.slides.length ?? 0} {T.slidesWord[lang]}.
-            </li>
-            <li style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-secondary)" }}>
-              <strong style={{ color: "var(--text-primary)" }}>{T.slidesStep2[lang]}</strong>
-              {" — "}{T.captionNote[lang]}
-            </li>
-            <li style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-secondary)" }}>
-              <strong style={{ color: "var(--text-primary)" }}>{T.slidesStep3[lang]}</strong>
-              {" — "}{T.linkNote[lang]}
-            </li>
-          </ol>
-          <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.7, color: "var(--text-muted)", margin: "10px 0 14px" }}>
-            {T.slidesWhy[lang]}
-          </p>
+          {/* ONE path, decided by what the member actually made. */}
+          {!deck ? (
+            <>
+              <p
+                dir={rtlWrite ? "rtl" : "ltr"}
+                style={{
+                  whiteSpace: "pre-wrap", background: "var(--surface-subtle)",
+                  border: "1px solid var(--border-default)", borderRadius: 12, padding: 12,
+                  fontFamily: "var(--ff-ui)", fontSize: 14, lineHeight: rtlWrite ? 1.9 : 1.75,
+                  textAlign: rtlWrite ? "right" : "left", color: "var(--text-primary)", margin: "0 0 14px",
+                }}
+              >
+                {content}
+              </p>
+              {!published && !confirmingPost && (
+                <ButtonPrimary onClick={requestPost} disabled={!content.trim() || busy === "post"} style={{ minHeight: 44 }}>
+                  {T.postItNow[lang]}
+                </ButtonPrimary>
+              )}
+            </>
+          ) : (
+            <>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 700, color: "var(--text-primary)", margin: "0 0 6px" }}>
+                {T.captionHead[lang]}
+              </p>
+              <p
+                dir={rtlWrite ? "rtl" : "ltr"}
+                style={{
+                  whiteSpace: "pre-wrap", background: "var(--surface-subtle)",
+                  border: "1px solid var(--border-default)", borderRadius: 12, padding: 12,
+                  fontFamily: "var(--ff-ui)", fontSize: 14, lineHeight: rtlWrite ? 1.9 : 1.75,
+                  textAlign: rtlWrite ? "right" : "left", color: "var(--text-primary)", margin: 0,
+                }}
+              >
+                {content}
+              </p>
+              <div style={{ margin: "10px 0 18px" }}>
+                <ButtonGhost onClick={() => void copyCaption()} style={{ minHeight: 44 }}>
+                  {T.copyCaption[lang]}
+                </ButtonGhost>
+              </div>
 
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-            <ButtonGhost onClick={() => void exportFile()} disabled={!deck || busy === "export"} style={{ minHeight: 44 }}>
-              {busy === "export" ? T.exporting[lang] : T.exportFile[lang]}
-            </ButtonGhost>
-            <ButtonGhost onClick={() => void openLinkedIn()} style={{ minHeight: 44 }}>
-              {T.openLinkedIn[lang]}
-            </ButtonGhost>
-          </div>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: "0 0 8px" }}>
+                1 · {T.s4Get[lang]}
+              </p>
+              <ButtonPrimary onClick={() => void exportFile()} disabled={busy === "export"} style={{ minHeight: 44 }}>
+                {busy === "export" ? T.exporting[lang] : T.exportFile[lang]}
+              </ButtonPrimary>
 
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 14 }}>
-            <label htmlFor="studio-link" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>
-              {T.linkPlaceholder[lang]}
-            </label>
-            <input
-              id="studio-link"
-              value={linkInput}
-              onChange={(e) => setLinkInput(e.target.value)}
-              placeholder={T.linkPlaceholder[lang]}
-              style={{
-                flex: "1 1 280px", minHeight: 44, padding: "0 12px", borderRadius: 10,
-                background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
-                fontFamily: "var(--ff-ui)", fontSize: 14, color: "var(--text-primary)",
-                textAlign: rtlShell ? "right" : "left",
-              }}
-            />
-            <ButtonPrimary onClick={() => void saveLink()} disabled={!linkInput.trim()} style={{ minHeight: 44 }}>
-              {T.linkSave[lang]}
-            </ButtonPrimary>
-          </div>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: "18px 0 8px" }}>
+                2 · {T.s4Open[lang]}
+              </p>
+              <ButtonGhost onClick={() => void openLinkedIn()} style={{ minHeight: 44 }}>
+                {T.openLinkedIn[lang]}
+              </ButtonGhost>
+
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: "18px 0 6px" }}>
+                3 · {T.s4Link[lang]}
+              </p>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.7, color: "var(--text-muted)", margin: "0 0 10px" }}>
+                {T.whyLink[lang]}
+              </p>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <label htmlFor="studio-link" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>
+                  {T.linkPlaceholder[lang]}
+                </label>
+                <input
+                  id="studio-link"
+                  value={linkInput}
+                  onChange={(e) => setLinkInput(e.target.value)}
+                  placeholder={T.linkPlaceholder[lang]}
+                  style={{
+                    flex: "1 1 280px", minHeight: 44, padding: "0 12px", borderRadius: 10,
+                    background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
+                    fontFamily: "var(--ff-ui)", fontSize: 14, color: "var(--text-primary)",
+                    textAlign: rtlShell ? "right" : "left",
+                  }}
+                />
+                <ButtonPrimary onClick={() => void saveLink()} disabled={!linkInput.trim()} style={{ minHeight: 44 }}>
+                  {T.linkSave[lang]}
+                </ButtonPrimary>
+              </div>
+            </>
+          )}
         </StageCard>
       )}
 
