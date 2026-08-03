@@ -1317,6 +1317,39 @@ export default function StudioPanel() {
               ? T.whySlidesManual[lang]
               : null;
 
+  /**
+   * L1 — the same bar in every layer: the member moves between the three
+   * full-screen tasks without going back to the page first.
+   */
+  const phoneLayerTabs = (
+    <>
+      {([
+        ["editor", T.slideEditorTitle[lang], format !== "slides" || !deck],
+        ["look", T.lookHead[lang], false],
+        ["piece", T.zonePiece[lang], false],
+      ] as Array<["editor" | "look" | "piece", string, boolean]>).map(([key, label, refused]) => (
+        <button
+          key={key}
+          type="button"
+          disabled={refused}
+          onClick={() => setLayer(key)}
+          aria-current={layer === key ? "true" : undefined}
+          style={{
+            flex: "0 0 auto", minHeight: 44, padding: "0 12px", borderRadius: 999,
+            cursor: refused ? "not-allowed" : "pointer",
+            opacity: refused ? 0.6 : 1,
+            background: layer === key ? "var(--act-tint)" : "var(--surface-subtle)",
+            color: layer === key ? "var(--act)" : "var(--text-secondary)",
+            border: `1px solid ${layer === key ? "var(--act)" : "var(--border-default)"}`,
+            fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap",
+          }}
+        >
+          {label}
+        </button>
+      ))}
+    </>
+  );
+
   return shell(
     <>
       {/* One slim strip. This is a page inside Aura; the shell owns navigation.
