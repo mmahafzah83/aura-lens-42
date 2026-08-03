@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { T, type Lang } from "./strings";
+import { useIsPhone } from "./usePhone";
 
 const heading: React.CSSProperties = {
   fontFamily: "var(--ff-mono)",
@@ -22,6 +23,8 @@ export const ZonePiece: React.FC<{
 }> = ({ lang, writeLang, subject, content, onContentChange, todo }) => {
   const [editing, setEditing] = useState(false);
   const rtl = writeLang === "ar";
+  // M4 — never below 16px on a phone, or iOS zooms the page on focus.
+  const isPhone = useIsPhone();
   const checks: Array<[string, boolean]> = [
     [T.todoWords[lang], todo.words],
     [T.todoSlides[lang], todo.slides],
@@ -32,10 +35,10 @@ export const ZonePiece: React.FC<{
   return (
     <div
       style={{
-        background: "var(--surface-card)",
-        border: "1px solid var(--border-default)",
+        background: isPhone ? "transparent" : "var(--surface-card)",
+        border: isPhone ? "0" : "1px solid var(--border-default)",
         borderRadius: 14,
-        padding: 14,
+        padding: isPhone ? 0 : 14,
         display: "grid",
         gap: 16,
       }}
@@ -73,7 +76,7 @@ export const ZonePiece: React.FC<{
               borderRadius: 10,
               padding: 10,
               fontFamily: "var(--ff-ui)",
-              fontSize: 13,
+              fontSize: isPhone ? 16 : 13,
               lineHeight: rtl ? 1.9 : 1.75,
               textAlign: rtl ? "right" : "left",
               color: "var(--text-primary)",
