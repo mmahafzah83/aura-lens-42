@@ -112,7 +112,26 @@ interface Choice {
   insight: string;
 }
 
-export default function StudioPanel() {
+/**
+ * C2 — the shell hands the studio its context. Every entry point in the app
+ * (Home, My Story, Signals, Overnight, Library, TrendDetail, lifecycle email)
+ * already computes these in Dashboard; the studio honours them.
+ */
+export interface StudioPanelProps {
+  signalPrefill?: any;
+  onSignalPrefillConsumed?: () => void;
+  draftPrefill?: any;
+  onDraftPrefillConsumed?: () => void;
+  onOpenCapture?: () => void;
+}
+
+export default function StudioPanel({
+  signalPrefill,
+  onSignalPrefillConsumed,
+  draftPrefill,
+  onDraftPrefillConsumed,
+  onOpenCapture,
+}: StudioPanelProps = {}) {
   const [searchParams] = useSearchParams();
   /* ---------- session and preferences ---------------------------- */
   const [ready, setReady] = useState(false);
@@ -242,7 +261,9 @@ export default function StudioPanel() {
       // Once per session: a query-param change must never inflate the metric.
       // A `?draft=` deep link is reported by `openDraft` instead, so the boot
       // emit stands aside — one open, one event.
-      if (!searchParams.get("draft") && !alreadyOpened("new")) {
+      // A `?draft=` deep link is opened by Dashboard and reported by
+      // `openDraft`, so the boot emit stands aside — one open, one event.
+      if (!searchParams.has("draft") && !alreadyOpened("new")) {
         void track("composer_opened", {
           source: "studio",
           signal_id: searchParams.get("signal") || null,
