@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { T, type Lang } from "./strings";
 import { ABOVE_ACTION_BAR } from "./usePhone";
@@ -20,21 +20,69 @@ export const PhoneSheet: React.FC<{
   expanded: boolean;
   onExpanded: (v: boolean) => void;
   onClose: () => void;
+  /** Exact height in px, computed so the slide above always stays visible. */
+  height?: number;
   children: React.ReactNode;
-}> = ({ lang, rtl, open, title, expanded, onExpanded, onClose, children }) => {
+}> = ({ lang, rtl, open, title, expanded, onExpanded, onClose, height, children }) => {
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const openerRef = useRef<HTMLElement | null>(null);
+
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    // Whatever opened the sheet gets the focus back when it closes.
+    openerRef.current = (document.activeElement as HTMLElement) ?? null;
+    const focusables = () =>
+      Array.from(
+        panelRef.current?.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      ).filter((el) => !el.hasAttribute("disabled"));
+    window.setTimeout(() => focusables()[0]?.focus(), 0);
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { onClose(); return; }
+      if (e.key !== "Tab") return;
+      const items = focusables();
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      if (e.shiftKey && (active === first || !panelRef.current?.contains(active))) {
+        e.preventDefault(); last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault(); first.focus();
+      }
+    };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+
+    // One scroll container at a time: the page behind the sheet is frozen.
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const opener = openerRef.current;
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previous;
+      opener?.focus?.();
+    };
   }, [open, onClose]);
 
   if (!open || typeof document === "undefined") return null;
 
   return createPortal(
+    <>
+      {/* A tap anywhere outside puts the slide back in full view. */}
+      <div
+        aria-hidden="true"
+        onClick={onClose}
+        className="md:hidden"
+        style={{ position: "fixed", inset: 0, zIndex: 46, background: "rgba(0,0,0,.35)" }}
+      />
     <div
+      ref={panelRef}
       dir={rtl ? "rtl" : "ltr"}
       role="dialog"
+      aria-modal="true"
       aria-label={title}
       className="md:hidden"
       style={{
@@ -45,7 +93,7 @@ export const PhoneSheet: React.FC<{
         right: 0,
         bottom: ABOVE_ACTION_BAR,
         zIndex: 47,
-        height: expanded ? "78vh" : "42vh",
+        height: height ? `${height}px` : expanded ? "78vh" : "42vh",
         background: "var(--surface-card)",
         borderTop: "1px solid var(--border-default)",
         borderStartStartRadius: 18,
@@ -106,7 +154,8 @@ export const PhoneSheet: React.FC<{
       <div style={{ overflowY: "auto", WebkitOverflowScrolling: "touch", padding: "12px 16px 20px" }}>
         {children}
       </div>
-    </div>,
+    </div>
+    </>,
     document.body,
   );
 };
