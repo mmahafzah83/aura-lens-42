@@ -1214,45 +1214,6 @@ export default function Studio() {
           />
         </div>
       )}
-
-      <div
-        style={{
-          position: "sticky",
-          bottom: 0,
-          marginTop: 18,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 12,
-          flexWrap: "wrap",
-          padding: "10px 14px",
-          borderRadius: 14,
-          background: "var(--surface-card)",
-          border: "1px solid var(--border-default)",
-        }}
-      >
-        <span style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--text-secondary)" }}>
-          {T.changedMind[lang]}{" "}
-          <button
-            type="button"
-            onClick={undo}
-            disabled={undoStack.length === 0}
-            style={{ background: "transparent", border: 0, cursor: "pointer", minHeight: 44, fontFamily: "var(--ff-ui)", fontSize: 12.5, fontWeight: 700, color: "var(--act)" }}
-          >
-            {T.undo[lang]}
-          </button>
-          {" · "}
-          {T.undoBeforeSlides[lang]}
-        </span>
-        <span style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <ButtonGhost onClick={() => void exportFile()} disabled={!deck || busy === "export"} style={{ minHeight: 44 }}>
-            {T.exportFile[lang]}
-          </ButtonGhost>
-          <ButtonPrimary onClick={() => setStep(4)} disabled={step === 4} style={{ minHeight: 44 }}>
-            {T.putOnLinkedIn[lang]} →
-          </ButtonPrimary>
-        </span>
-      </div>
     </>,
   );
 }
