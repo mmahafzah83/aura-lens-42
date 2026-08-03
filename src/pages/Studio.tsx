@@ -1691,14 +1691,14 @@ export default function Studio() {
               boxRef={canvasBoxRef}
               showCanvas={canvasInStage}
               empty={<span>{T.noSlidesYet[lang]}</span>}
+              footer={
+                !deck ? (
+                  <ButtonPrimary onClick={() => void makeSlides()} disabled={deckBusy} style={{ minHeight: 44 }}>
+                    {deckBusy ? T.makingSlides[lang] : T.makeSlides[lang]}
+                  </ButtonPrimary>
+                ) : null
+              }
             />
-            {!deck && (
-              <div style={{ gridColumn: narrow ? "auto" : "2", marginTop: 4 }}>
-                <ButtonPrimary onClick={() => void makeSlides()} disabled={deckBusy} style={{ minHeight: 44 }}>
-                  {deckBusy ? T.makingSlides[lang] : T.makeSlides[lang]}
-                </ButtonPrimary>
-              </div>
-            )}
             {sub === "look" ? (
               <ZoneLook
                 lang={lang}
