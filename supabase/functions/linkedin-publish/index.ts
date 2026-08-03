@@ -245,19 +245,20 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
           success: false,
           blocked: true,
           error: "Quality check unavailable — try again",
-          weaknesses: [],
+          gate_category: "other",
         });
         }
       } else if (!passed) {
         if (advisory === true) {
           quality_note = { overall_score: overallScore, verdict: gate?.verdict ?? null, blocked_would_have: true };
         } else {
+        // Only a CATEGORY leaves this server. No weakness, no verdict, no
+        // judge wording of any kind reaches a member's screen.
         return json({
           success: false,
           blocked: true,
           error: "Held by the quality gate",
-          weaknesses,
-          quality_gate: { overall_score: overallScore, verdict: gate?.verdict ?? null, assertions: gate?.assertions ?? null },
+          gate_category: typeof gate?.category === "string" ? gate.category : "other",
         });
         }
       }

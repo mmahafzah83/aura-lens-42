@@ -116,6 +116,17 @@ Return JSON:
     const result = JSON.parse(jsonSlice || "{}");
     result.judge_model = JUDGE_MODEL;
 
+    // ── ONE CATEGORY, NEVER PROSE ────────────────────────────────────────
+    // Callers that face a member must have something they can turn into their
+    // OWN sentence. The judge's wording is internal and stays internal.
+    const a = result?.assertions ?? {};
+    const scores = result?.scores ?? {};
+    let category: "unsupported_number" | "language" | "generic" | "other" = "other";
+    if (a.grounded_number === false) category = "unsupported_number";
+    else if (a.register_match === false) category = "language";
+    else if (Number(scores.specificity ?? 10) < 6 || a.domain_match === false) category = "generic";
+    result.category = category;
+
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
