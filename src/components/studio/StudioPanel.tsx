@@ -240,7 +240,20 @@ export default function StudioPanel({
   const rtlWrite = writeLang === "ar";
 
   /* ---------- boot ------------------------------------------------ */
+  /**
+   * N2 — ONCE PER MOUNT. This effect seeds the language from the profile.
+   * Dashboard strips `?draft=` after resolving a deep link, which mutates
+   * `searchParams`; if this effect depended on it, the re-run would clobber
+   * the language `openDraft` just set from the row. Query parameters are
+   * read from `window.location.search` at first run instead.
+   * RULE: an effect that seeds state from a profile runs once; an effect that
+   * reacts to the URL must not also seed state.
+   */
+  const bootedRef = useRef(false);
   useEffect(() => {
+    if (bootedRef.current) return;
+    bootedRef.current = true;
+    const firstQuery = new URLSearchParams(window.location.search);
     let dead = false;
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -259,20 +272,18 @@ export default function StudioPanel({
       setReady(true);
       // The composer opening is the first number the company reads.
       // Once per session: a query-param change must never inflate the metric.
-      // A `?draft=` deep link is reported by `openDraft` instead, so the boot
-      // emit stands aside — one open, one event.
       // A `?draft=` deep link is opened by Dashboard and reported by
       // `openDraft`, so the boot emit stands aside — one open, one event.
-      if (!searchParams.has("draft") && !alreadyOpened("new")) {
+      if (!firstQuery.has("draft") && !alreadyOpened("new")) {
         void track("composer_opened", {
           source: "studio",
-          signal_id: searchParams.get("signal") || null,
+          signal_id: firstQuery.get("signal") || null,
           move_state: null,
         });
       }
     })();
     return () => { dead = true; };
-  }, [searchParams]);
+  }, []);
 
   useEffect(() => {
     try {
