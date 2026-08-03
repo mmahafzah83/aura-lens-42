@@ -107,6 +107,9 @@ export default function CarouselStudio() {
   const [length, setLength] = useState<DeckLength>(7);
   const [hasAvatar, setHasAvatar] = useState(true);
   const [voiceFlags, setVoiceFlags] = useState<string[]>([]);
+  /** The approved post behind this handoff. The carousel adapts it rather than regenerating. */
+  const [sourceText, setSourceText] = useState<string | null>(null);
+  const [sourceReady, setSourceReady] = useState(false);
 
   const [deck, setDeck] = useState<DeckIR | null>(null);
   const [stage, setStage] = useState<number | null>(null);
@@ -194,6 +197,24 @@ export default function CarouselStudio() {
 
   /* --- restore an unfinished deck --------------------------------- */
   useEffect(() => {
+    let dead = false;
+    if (!draftParam) { setSourceReady(true); return; }
+    setSourceReady(false);
+    (async () => {
+      const { data } = await supabase
+        .from("linkedin_posts")
+        .select("post_text")
+        .eq("id", draftParam)
+        .maybeSingle();
+      if (dead) return;
+      const text = typeof (data as any)?.post_text === "string" ? (data as any).post_text.trim() : "";
+      setSourceText(text || null);
+      setSourceReady(true);
+    })();
+    return () => { dead = true; };
+  }, [draftParam]);
+
+  useEffect(() => {
     try {
       const raw = localStorage.getItem(DRAFT_KEY);
       if (!raw) return;
@@ -264,7 +285,13 @@ export default function CarouselStudio() {
       const { data: sess } = await supabase.auth.getSession();
       if (!sess.session) throw new Error("Your session expired. Sign in again.");
       const { data, error: fnError } = await supabase.functions.invoke("generate-deck", {
-        body: { signal_id: signal.id, length, theme, lang },
+        body: {
+          signal_id: signal.id,
+          length,
+          theme,
+          lang,
+          ...(sourceText ? { source_text: sourceText } : {}),
+        },
       });
       if (fnError && !data) throw fnError;
       const result: any = data;
@@ -284,7 +311,7 @@ export default function CarouselStudio() {
       window.clearInterval(ticker);
       setStage(null);
     }
-  }, [signal, length, theme, lang]);
+  }, [signal, length, theme, lang, sourceText]);
 
   /* --- handoff from /compose: fire Generate once ------------------- */
   const autoFiredRef = useRef(false);
@@ -293,10 +320,11 @@ export default function CarouselStudio() {
     if (autoFiredRef.current) return;
     if (!preselected) return;
     if (!signal || signal.id !== preselected) return;
+    if (!sourceReady) return;
     if (deck || stage !== null) return;
     autoFiredRef.current = true;
     void generate();
-  }, [autogenerate, preselected, signal, deck, stage, generate]);
+  }, [autogenerate, preselected, signal, deck, stage, generate, sourceReady]);
 
   /* --- try another angle ------------------------------------------ */
   const rewriteSlide = useCallback(async () => {

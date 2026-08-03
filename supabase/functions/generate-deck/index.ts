@@ -221,11 +221,13 @@ async function generate(
   requestedLength: number | undefined,
   theme: string,
   requestedLang?: "en" | "ar",
+  sourceText?: string,
 ) {
   const started = Date.now();
   const deckId = crypto.randomUUID();
 
   const ctx = await readContext(db, signalId, userId);
+  if (typeof sourceText === "string" && sourceText.trim()) ctx.sourceText = sourceText.trim();
   const langHint: "en" | "ar" =
     requestedLang ?? ((ctx.profile.content_language ?? "en") === "ar" ? "ar" : "en");
   // One voice DNA, matched to the deck language, chosen before any writing.
@@ -431,6 +433,10 @@ serve(async (req) => {
       : "midnight";
     const reqLang: "en" | "ar" | undefined =
       body.lang === "ar" ? "ar" : body.lang === "en" ? "en" : undefined;
+    const sourceText: string | undefined =
+      typeof body.source_text === "string" && body.source_text.trim()
+        ? String(body.source_text).slice(0, 8000)
+        : undefined;
 
     // Admin-only self test: run three real signals, one of which carries no number.
     if (body.selftest) {
@@ -546,7 +552,7 @@ serve(async (req) => {
       return json(out);
     }
 
-    const result = await generate(db, user.id, body.signal_id, body.length, theme, reqLang);
+    const result = await generate(db, user.id, body.signal_id, body.length, theme, reqLang, sourceText);
     return json(result);
   } catch (e) {
     return json({ error: String(e instanceof Error ? e.message : e) }, 500);

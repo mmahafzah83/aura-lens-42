@@ -20,6 +20,8 @@ export interface SignalContext {
   /** True when `voice` is in a different language than the deck: rhythm only, never phrases. */
   voiceRhythmOnly?: boolean;
   profile: Record<string, any>;
+  /** The member's approved post. When present, the writer ADAPTS it instead of regenerating. */
+  sourceText?: string;
 }
 
 /* ------------------------------------------------------------------ */
@@ -734,7 +736,26 @@ export async function writeSlides(
   manifest: ComposeResult,
   corrections: string[],
 ): Promise<any[]> {
+  const src = typeof ctx.sourceText === "string" ? ctx.sourceText.trim() : "";
+  const adaptation = src
+    ? [
+        `THE MEMBER'S APPROVED POST — this is the source of truth. Your job is to ADAPT it into slides, not to write something new:\n\n<<<\n${src}\n>>>`,
+        "",
+        "ADAPTATION DOCTRINE — it overrides any instruction to invent from the signal:",
+        "1. SOURCE OF TRUTH is the approved post above. Take the WORDS and the VOICE from it. Do NOT introduce any claim, number, name, or line that is not already in the post. The evidence below may only VERIFY a number that is already in the post — never add new facts.",
+        "2. ONE IDEA PER SLIDE. Split the post's argument into its distinct points; each point becomes one slide, in the post's own order.",
+        "3. THE COVER carries the post's opening hook — the strongest line — as the hero line and headline. Keep the member's hook; do not invent a new one.",
+        "4. EACH SLIDE EARNS THE NEXT: end a slide on a line that opens a small tension the next slide resolves. Sequence for momentum; do not merely chunk.",
+        "5. SIMPLIFY WITHOUT LOSING VALUE: compress each point to its essential sentence, but KEEP the one concrete particular (the number or the name). If a line is over the hero-line budget, reshape it shorter — never drop the number to fit.",
+        "6. PRESERVE VOICE: use the member's phrasing, connectives, and register from the post. Do not run a fresh voice pass that overwrites their words.",
+        "7. THE CLOSE is the post's closing question or line.",
+        "8. STAY IN THE POST'S LANGUAGE exactly — never translate. An Arabic post becomes an Arabic carousel in the member's own words.",
+        "All existing budgets, banned vocabulary, number-integrity and AI-tell rules remain in force on the adapted text.",
+        "",
+      ].join("\n")
+    : "";
   const user = [
+    ...(adaptation ? [adaptation] : []),
     voiceBlock(ctx.voice, ctx.voiceRhythmOnly),
     "",
     contextBlock(ctx),
