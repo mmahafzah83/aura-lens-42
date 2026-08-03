@@ -95,6 +95,8 @@ export default function CarouselStudio() {
   const [params] = useSearchParams();
   const preselected = params.get("signal");
   const autogenerate = params.get("autogenerate");
+  const langParam = params.get("lang");
+  const draftParam = params.get("draft");
 
   const [signals, setSignals] = useState<StudioSignal[]>([]);
   const [loadingSignals, setLoadingSignals] = useState(true);
@@ -167,7 +169,9 @@ export default function CarouselStudio() {
           .limit(200),
       ]);
       if (dead) return;
-      if ((prof as any)?.content_language === "ar") setLang("ar");
+      // An explicit handoff choice wins over the stored profile preference.
+      if (langParam === "ar" || langParam === "en") setLang(langParam);
+      else if ((prof as any)?.content_language === "ar") setLang("ar");
       setHasAvatar(Boolean((prof as any)?.avatar_url));
       const list = (rows ?? []) as unknown as StudioSignal[];
       setSignals(list);
@@ -586,7 +590,11 @@ export default function CarouselStudio() {
 
             {failures.length > 0 && (
               <div style={{ ...panel, background: "var(--error-tint)", border: "none", display: "grid", gap: 8 }}>
-                <div style={{ ...mono, color: "var(--error)" }}>Aura would not ship this deck</div>
+                <div style={{ ...mono, color: "var(--error)" }}>
+                  {lang === "ar"
+                    ? "لم نتمكن من إتمام الكاروسيل — لنجرّب مرة أخرى."
+                    : "We couldn't finish your carousel — let's try again."}
+                </div>
                 {failures.map((f, i) => (
                   <div key={i} style={{ fontSize: 13, color: "var(--text-primary)", lineHeight: 1.6 }}>{f}</div>
                 ))}
