@@ -378,6 +378,7 @@ export default function Studio() {
     const runId = ++genRunId.current;
     const useLang = writeLang;
     setGenError(null);
+    setNotReady(null);
     setGenerating(true);
     setBusyMessage(T.writing[lang]);
     setStep(2);
@@ -413,6 +414,14 @@ export default function Studio() {
       if (!res.ok || !text) { setGenError("failed"); return; }
       remember();
       setContent(fixArabicDirectionalSymbols(stripMarkdown(String(text)), useLang));
+      // The gate already ran at generation. If it held the post, the words stay
+      // fully editable and only the publish action waits.
+      if (json?.blocked === true) {
+        const weak: string[] = Array.isArray(json?.quality_gate?.weaknesses)
+          ? json.quality_gate.weaknesses.filter((w: unknown) => typeof w === "string" && w.trim())
+          : [];
+        setNotReady(gateSentence(weak[0], lang));
+      }
     } catch {
       if (runId === genRunId.current) setGenError("failed");
     } finally {
