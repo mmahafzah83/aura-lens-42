@@ -56,8 +56,26 @@ const DRAFT_KEY = "aura_studio_draft_v1";
 function gateSentence(firstWeakness: string | undefined, lang: Lang): string {
   const w = (firstWeakness || "").trim();
   if (lang === "ar" || !w) return T.notReadyPlain[lang];
+  // Only ever show a number the member can verify. Judge output that carries a
+  // ratio, a percentage or a score is discarded in favour of the plain sentence.
+  if (/\d\s*\/\s*\d|%|score/i.test(w)) return T.notReadyPlain[lang];
   const tidy = w.replace(/\s+/g, " ").replace(/^[-•\d.\s]+/, "");
   return `${T.notReadyLead.en} ${tidy.endsWith(".") ? tidy : `${tidy}.`}`;
+}
+
+/** A relative "saved …" stamp that never leaks English into the Arabic shell. */
+function savedAgo(dateStr: string, lang: Lang): string {
+  if (lang !== "ar") return formatSmartDate(dateStr);
+  const d = new Date(dateStr);
+  if (!dateStr || isNaN(d.getTime())) return "";
+  const mins = Math.floor((Date.now() - d.getTime()) / 60000);
+  if (mins < 1) return "الآن";
+  if (mins < 60) return `قبل ${mins} دقيقة`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `قبل ${hrs} ساعة`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `قبل ${days} يوم`;
+  return d.toLocaleDateString("ar", { month: "short", day: "numeric" });
 }
 
 /** Two tabs that both do something. There is no third. */
