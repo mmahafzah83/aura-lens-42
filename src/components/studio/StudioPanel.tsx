@@ -1971,7 +1971,7 @@ export default function StudioPanel() {
                   style={{
                     flex: "1 1 280px", minHeight: 44, padding: "0 12px", borderRadius: 10,
                     background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
-                    fontFamily: "var(--ff-ui)", fontSize: 14, color: "var(--text-primary)",
+                    fontFamily: "var(--ff-ui)", fontSize: isPhone ? 16 : 14, color: "var(--text-primary)",
                     textAlign: rtlShell ? "right" : "left",
                   }}
                 />
