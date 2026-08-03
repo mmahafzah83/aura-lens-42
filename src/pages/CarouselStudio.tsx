@@ -720,7 +720,7 @@ export default function CarouselStudio() {
                         }}
                       >
                         <span style={{ ...mono, fontSize: 8.5, opacity: locked ? 0.5 : 0.75 }}>
-                          {ARCHETYPE_LABEL[s.archetype] ?? s.archetype}{locked ? " (fixed)" : ""}
+                          {ARCHETYPE_LABEL[s.archetype] ?? s.archetype}
                         </span>
                         <span style={{ ...mono, fontSize: 9, color: bad ? THEMES[theme].alert : THEMES[theme].accent }}>
                           {s.index + 1}/{deck.slides.length}
@@ -728,6 +728,14 @@ export default function CarouselStudio() {
                       </button>
                       {/* Touch and keyboard need an explicit control; drag alone is not enough. */}
                       <div style={{ display: "flex", gap: 4, justifyContent: "center" }}>
+                        {locked ? (
+                          <span style={{ ...mono, fontSize: 8.5, color: "var(--text-secondary)", textAlign: "center" }}>
+                            {s.index === 0
+                              ? (lang === "ar" ? "تبقى الأولى دائمًا" : "Always first")
+                              : (lang === "ar" ? "تبقى الأخيرة دائمًا" : "Always last")}
+                          </span>
+                        ) : (
+                        <>
                         <button
                           type="button"
                           aria-label={`Move slide ${s.index + 1} earlier`}
@@ -746,6 +754,8 @@ export default function CarouselStudio() {
                         >
                           ›
                         </button>
+                        </>
+                        )}
                       </div>
                     </div>
                   </div>
